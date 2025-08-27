@@ -61,4 +61,13 @@ export class WalletService {
       { account: user, amount },
     ]);
   }
+
+  async withdraw(accountId: string, amount: number): Promise<void> {
+    const user = await this.accounts.findOneByOrFail({ id: accountId });
+    const house = await this.accounts.findOneByOrFail({ name: 'house' });
+    await this.record([
+      { account: user, amount: -amount },
+      { account: house, amount },
+    ]);
+  }
 }

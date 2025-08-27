@@ -14,3 +14,9 @@ export const MessageResponseSchema = z.object({
   message: z.string(),
 });
 export type MessageResponse = z.infer<typeof MessageResponseSchema>;
+
+export const WithdrawRequestSchema = z.object({
+  amount: z.number(),
+  deviceId: z.string(),
+});
+export type WithdrawRequest = z.infer<typeof WithdrawRequestSchema>;

@@ -13,6 +13,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusResponse'
+  /wallet/{id}/withdraw:
+    post:
+      summary: Withdraw funds
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WithdrawRequest'
+      responses:
+        '200':
+          description: Withdrawal result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
 components:
   schemas:
     StatusResponse:
@@ -36,3 +58,13 @@ components:
           type: string
       required:
         - message
+    WithdrawRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+        deviceId:
+          type: string
+      required:
+        - amount
+        - deviceId
