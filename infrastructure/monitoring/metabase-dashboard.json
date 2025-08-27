@@ -1,0 +1,23 @@
+{
+  "name": "PokerHub Metrics",
+  "cards": [
+    {
+      "name": "Daily Active Players",
+      "dataset_query": {
+        "type": "native",
+        "native": {
+          "query": "SELECT countDistinct(playerId) FROM hand_start WHERE toDate(timestamp) = today()"
+        }
+      }
+    },
+    {
+      "name": "Total Payouts",
+      "dataset_query": {
+        "type": "native",
+        "native": {
+          "query": "SELECT sum(amount) FROM wallet_credit"
+        }
+      }
+    }
+  ]
+}

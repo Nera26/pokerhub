@@ -12,6 +12,9 @@ export class Account {
   @Column({ type: 'int', default: 0 })
   balance: number;
 
+  @Column({ type: 'boolean', default: false })
+  kycVerified: boolean;
+
   @OneToMany(() => JournalEntry, (entry) => entry.account)
   entries: JournalEntry[];
 }

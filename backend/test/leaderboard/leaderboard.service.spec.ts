@@ -26,10 +26,18 @@ class MockCache {
   }
 }
 
+class MockAnalytics {
+  events: any[] = [];
+  rangeStream(_stream: string, since: number): Promise<any[]> {
+    return Promise.resolve(this.events.filter((e) => e.ts >= since));
+  }
+}
+
 describe('LeaderboardService', () => {
   let dataSource: DataSource;
   let repo: Repository<User>;
   let cache: MockCache;
+  let analytics: MockAnalytics;
   let service: LeaderboardService;
 
   beforeAll(async () => {
@@ -71,7 +79,12 @@ describe('LeaderboardService', () => {
       { id: '44444444-4444-4444-4444-444444444444', username: 'dave' },
     ]);
     cache = new MockCache();
-    service = new LeaderboardService(cache as unknown as Cache, repo);
+    analytics = new MockAnalytics();
+    service = new LeaderboardService(
+      cache as unknown as Cache,
+      repo,
+      analytics as unknown as any,
+    );
   });
 
   it('uses cache around DB query', async () => {
@@ -88,5 +101,25 @@ describe('LeaderboardService', () => {
     await service.invalidate();
     await service.getTopPlayers();
     expect(spy).toHaveBeenCalledTimes(2);
+  });
+
+  it('rebuild filters by session minimum and decay', async () => {
+    analytics.events = [
+      {
+        playerId: 'alice',
+        sessionId: 's1',
+        points: 10,
+        ts: Date.now(),
+      },
+      {
+        playerId: 'bob',
+        sessionId: 's2',
+        points: 20,
+        ts: Date.now() - 40 * 24 * 60 * 60 * 1000, // too old
+      },
+    ];
+    await service.rebuild({ days: 30, minSessions: 1, decay: 0.5 });
+    const top = await service.getTopPlayers();
+    expect(top).toEqual(['alice']);
   });
 });

@@ -29,7 +29,12 @@ export class AnalyticsService {
   }
 
   async recordGameEvent(event: Record<string, any>) {
-    await this.redis.xadd('analytics:game', '*', 'event', JSON.stringify(event));
+    await this.redis.xadd(
+      'analytics:game',
+      '*',
+      'event',
+      JSON.stringify(event),
+    );
   }
 
   async recordTournamentEvent(event: Record<string, any>) {
@@ -39,6 +44,15 @@ export class AnalyticsService {
       'event',
       JSON.stringify(event),
     );
+  }
+
+  async rangeStream(
+    stream: string,
+    since: number,
+  ): Promise<Record<string, any>[]> {
+    const start = `${since}-0`;
+    const entries = await this.redis.xrange(stream, start, '+');
+    return entries.map(([, fields]) => JSON.parse(fields[1]));
   }
 
   async query(sql: string) {
