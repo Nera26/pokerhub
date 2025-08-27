@@ -14,9 +14,11 @@ describe('AppController', () => {
     appController = app.get<AppController>(AppController);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
-    });
+  it('should return greeting', () => {
+    expect(appController.getHello()).toBe('PokerHub backend is running');
+  });
+
+  it('should return health', () => {
+    expect(appController.getHealth()).toEqual({ status: 'ok' });
   });
 });
