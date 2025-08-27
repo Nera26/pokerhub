@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+export const StatusResponseSchema = z.object({
+  status: z.string(),
+});
+export type StatusResponse = z.infer<typeof StatusResponseSchema>;
+
 export const LoginResponseSchema = z.object({
   token: z.string(),
 });
