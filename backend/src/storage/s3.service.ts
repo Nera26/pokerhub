@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   S3Client,
@@ -12,6 +12,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 export class S3Service {
   private readonly client: S3Client;
   private readonly bucket: string;
+  private readonly logger = new Logger(S3Service.name);
 
   constructor(private readonly config: ConfigService) {
     this.client = new S3Client({
@@ -30,8 +31,17 @@ export class S3Service {
   async ensureBucket(): Promise<void> {
     try {
       await this.client.send(new CreateBucketCommand({ Bucket: this.bucket }));
-    } catch {
-      // bucket likely exists
+    } catch (err: unknown) {
+      const { name } = err as { name?: string };
+      if (
+        name !== 'BucketAlreadyOwnedByYou' &&
+        name !== 'BucketAlreadyExists'
+      ) {
+        this.logger.error(
+          `Failed to create bucket ${this.bucket}`,
+          err as Error,
+        );
+      }
     }
   }
 
@@ -46,15 +56,26 @@ export class S3Service {
   }
 
   async downloadObject(key: string): Promise<Buffer> {
-    const { Body } = await this.client.send(
-      new GetObjectCommand({ Bucket: this.bucket, Key: key }),
-    );
-    if (!Body) {
+    let body: any;
+    try {
+      ({ Body: body } = await this.client.send(
+        new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+      ));
+    } catch (err: unknown) {
+      const message = (err as Error).message ?? err;
+      throw new Error(`Failed to retrieve object ${key}: ${message}`);
+    }
+    if (!body) {
       throw new Error('Object body is empty');
     }
-    const chunks = [] as Uint8Array[];
-    for await (const chunk of Body as any as AsyncIterable<Uint8Array>) {
-      chunks.push(chunk);
+    const chunks: Uint8Array[] = [];
+    try {
+      for await (const chunk of body as AsyncIterable<Uint8Array>) {
+        chunks.push(chunk);
+      }
+    } catch (err: unknown) {
+      const message = (err as Error).message ?? err;
+      throw new Error(`Error streaming object ${key}: ${message}`);
     }
     return Buffer.concat(chunks);
   }
