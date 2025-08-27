@@ -65,6 +65,7 @@
     "eslint-plugin-prettier": "^5.2.2",
     "globals": "^16.0.0",
     "jest": "^30.0.0",
+    "js-yaml": "^4.1.0",
     "pg-mem": "^3.0.5",
     "prettier": "^3.4.2",
     "source-map-support": "^0.5.21",
@@ -75,7 +76,8 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
-    "typescript-eslint": "^8.20.0"
+    "typescript-eslint": "^8.20.0",
+    "zod": "^3.25.76"
   },
   "jest": {
     "moduleFileExtensions": [
@@ -96,6 +98,10 @@
     "testPathIgnorePatterns": [
       "/node_modules/",
       "<rootDir>/test/.*\\.e2e-spec\\.ts$"
-    ]
+    ],
+    "moduleNameMapper": {
+      "^@shared/(.*)$": "<rootDir>/../shared/$1"
+    },
+    "modulePaths": ["<rootDir>/node_modules"]
   }
 }

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { getBaseUrl } from '@/lib/base-url';
 import { handleResponse, ApiError } from './client';
 import { serverFetch } from '@/lib/server-fetch';
-import { MessageResponseSchema, type MessageResponse } from './schemas';
+import { MessageResponseSchema, type MessageResponse } from '@shared/types';
 
 export const NotificationTypeSchema = z.enum(['bonus', 'tournament', 'system']);
 export type NotificationType = z.infer<typeof NotificationTypeSchema>;

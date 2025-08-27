@@ -14,12 +14,15 @@
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
-    "incremental": true,
-    "skipLibCheck": true,
-    "strictNullChecks": true,
-    "forceConsistentCasingInFileNames": true,
-    "noImplicitAny": false,
-    "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
+  "incremental": true,
+  "skipLibCheck": true,
+  "strictNullChecks": true,
+  "forceConsistentCasingInFileNames": true,
+  "noImplicitAny": false,
+  "strictBindCallApply": false,
+  "noFallthroughCasesInSwitch": false,
+  "paths": {
+    "@shared/*": ["../shared/*"]
+  }
   }
 }
