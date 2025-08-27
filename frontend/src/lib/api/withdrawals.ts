@@ -33,3 +33,48 @@ export async function rejectWithdrawal(
     MessageResponseSchema,
   );
 }
+
+export async function reserveFunds(
+  user: string,
+  amount: number,
+): Promise<MessageResponse> {
+  return handleResponse(
+    serverFetch(`${getBaseUrl()}/api/wallet/${user}/reserve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ amount }),
+    }),
+    MessageResponseSchema,
+  );
+}
+
+export async function commitFunds(
+  user: string,
+  amount: number,
+): Promise<MessageResponse> {
+  return handleResponse(
+    serverFetch(`${getBaseUrl()}/api/wallet/${user}/commit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ amount }),
+    }),
+    MessageResponseSchema,
+  );
+}
+
+export async function rollbackFunds(
+  user: string,
+  amount: number,
+): Promise<MessageResponse> {
+  return handleResponse(
+    serverFetch(`${getBaseUrl()}/api/wallet/${user}/rollback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ amount }),
+    }),
+    MessageResponseSchema,
+  );
+}
