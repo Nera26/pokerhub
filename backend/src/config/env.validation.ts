@@ -1,0 +1,19 @@
+import * as Joi from 'joi';
+
+export const validationSchema = Joi.object({
+  DATABASE_URL: Joi.string().uri().required(),
+  REDIS_URL: Joi.string().uri().required(),
+  RABBITMQ_URL: Joi.string().uri().required(),
+  AWS_REGION: Joi.string().required(),
+  AWS_S3_BUCKET: Joi.string().required(),
+  AWS_ACCESS_KEY_ID: Joi.string().required(),
+  AWS_SECRET_ACCESS_KEY: Joi.string().required(),
+  AWS_ENDPOINT: Joi.string().uri().optional(),
+  CLICKHOUSE_URL: Joi.string().uri().optional(),
+  ELASTIC_URL: Joi.string().uri().optional(),
+  LOKI_URL: Joi.string().uri().optional(),
+  OTEL_EXPORTER_OTLP_ENDPOINT: Joi.string().uri().optional(),
+  OTEL_SERVICE_NAME: Joi.string().optional(),
+  LOG_PROVIDER: Joi.string().optional(),
+  PORT: Joi.number().integer().optional(),
+});
