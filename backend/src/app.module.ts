@@ -43,7 +43,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
         type: 'postgres',
         url: config.get<string>('database.url'),
         autoLoadEntities: true,
-        synchronize: true, // turn off in production
+        synchronize: config.get<boolean>('database.synchronize', false),
       }),
       inject: [ConfigService],
     }),
