@@ -1,0 +1,21 @@
+{
+  "dashboard": {
+    "title": "Events Metrics",
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "Hand Starts",
+        "targets": [
+          { "query": "SELECT count() FROM hand_start_events" }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Wallet Credits",
+        "targets": [
+          { "query": "SELECT sum(amount) FROM wallet_credit_events" }
+        ]
+      }
+    ]
+  }
+}

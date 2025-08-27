@@ -20,6 +20,8 @@ services:
       - AWS_REGION=${AWS_REGION}
       - AWS_ENDPOINT=http://${LOCALSTACK_HOST}:${LOCALSTACK_PORT}
       - DB_SYNC=${DB_SYNC}
+      - KAFKA_BROKER=redpanda:9092
+      - ANALYTICS_S3_BUCKET=pokerhub-events
     depends_on:
       db:
         condition: service_healthy
@@ -28,6 +30,10 @@ services:
       rabbitmq:
         condition: service_healthy
       localstack:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+      clickhouse:
         condition: service_healthy
 
   db:
@@ -69,6 +75,28 @@ services:
       - EDGE_PORT=${LOCALSTACK_PORT}
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:${LOCALSTACK_PORT}/health']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redpanda:
+    image: redpandadata/redpanda:latest
+    command: redpanda start --kafka-addr 0.0.0.0:9092 --advertise-kafka-addr redpanda:9092
+    ports:
+      - '9092:9092'
+    healthcheck:
+      test: ['CMD', 'rpk', 'cluster', 'info', '-X', 'brokers=redpanda:9092']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    ports:
+      - '8123:8123'
+      - '9000:9000'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8123/ping']
       interval: 5s
       timeout: 5s
       retries: 5

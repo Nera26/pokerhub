@@ -1,0 +1,13 @@
+{
+  "name": "Events Overview",
+  "cards": [
+    {
+      "name": "Total Hand Starts",
+      "query": "SELECT count(*) FROM hand_start_events"
+    },
+    {
+      "name": "Total Wallet Credits",
+      "query": "SELECT sum(amount) FROM wallet_credit_events"
+    }
+  ]
+}
