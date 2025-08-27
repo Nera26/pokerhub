@@ -2,9 +2,13 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+
+import { MessagingModule } from './messaging/messaging.module';
+
 import { RedisModule } from './redis/redis.module';
 import { SessionModule } from './session/session.module';
 import { LeaderboardModule } from './leaderboard/leaderboard.module';
+
 
 @Module({
   imports: [
@@ -20,6 +24,9 @@ import { LeaderboardModule } from './leaderboard/leaderboard.module';
       synchronize: true, // turn off in production
     }),
 
+    MessagingModule,
+
+
     // Redis (caching / pub-sub)
     RedisModule,
 
@@ -28,6 +35,7 @@ import { LeaderboardModule } from './leaderboard/leaderboard.module';
 
     // Feature modules
     LeaderboardModule,
+
   ],
   controllers: [AppController],
   providers: [AppService],
