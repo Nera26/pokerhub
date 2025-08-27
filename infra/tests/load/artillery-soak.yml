@@ -1,0 +1,17 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 86400
+      arrivalRate: 1
+  defaults:
+    headers:
+      User-Agent: "artillery-soak"
+scenarios:
+  - name: soak-random-table
+    flow:
+      - get:
+          url: "/tables/random"
+          capture:
+            - as: gc
+              from: header("X-GC-Pause")
+      - think: 1

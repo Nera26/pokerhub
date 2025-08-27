@@ -14,32 +14,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-      - name: Build image
-        run: |
-          docker build -t ghcr.io/${{ github.repository }}/room-worker:${{ github.sha }} .
-      - name: Push image
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker push ghcr.io/${{ github.repository }}/room-worker:${{ github.sha }}
       - name: Configure kubectl
         uses: azure/setup-kubectl@v3
         with:
           version: v1.27.3
-      - name: Deploy canary
-        run: |
-          kubectl apply -f infra/tests/load/k8s-room-workers.yaml
-          kubectl set image deployment/room-worker room-worker=ghcr.io/${{ github.repository }}/room-worker:${{ github.sha }} \
-            --record
-          kubectl rollout status deployment/room-worker --timeout=120s
-      - name: Run k6 load test
-        uses: grafana/k6-action@v0.2.0
-        with:
-          filename: infra/tests/load/k6-room-workers.js
-          arguments: --summary-export=summary.json
-      - name: Rollback on failure
-        if: failure()
-        run: |
-          kubectl rollout undo deployment/room-worker
+      - name: Canary deploy
+        run: bash docs/scripts/canary-deploy.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
       - name: Upload summary
         if: always()
         uses: actions/upload-artifact@v3

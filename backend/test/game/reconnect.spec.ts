@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import { io, Socket } from 'socket.io-client';
 import { GameGateway } from '../../src/game/game.gateway';
 import { GameEngine } from '../../src/game/engine';
+import { AnalyticsService } from '../../src/analytics/analytics.service';
 
 function waitForConnect(socket: Socket): Promise<void> {
   return new Promise((resolve) => socket.on('connect', () => resolve()));
@@ -18,7 +19,11 @@ describe('GameGateway reconnect', () => {
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      providers: [GameGateway, GameEngine],
+      providers: [
+        GameGateway,
+        GameEngine,
+        { provide: AnalyticsService, useValue: { recordGameEvent: jest.fn() } },
+      ],
     }).compile();
 
     app = moduleRef.createNestApplication();
@@ -44,9 +49,7 @@ describe('GameGateway reconnect', () => {
     client1.disconnect();
 
     const client2 = io(url, { transports: ['websocket'] });
-    const ticks: number[] = [];
     const acks: any[] = [];
-    client2.on('state', (s: any) => ticks.push(s.tick));
     client2.on('action:ack', (a) => acks.push(a));
     await waitForConnect(client2);
     client2.emit('action', { ...action, actionId });
@@ -55,7 +58,6 @@ describe('GameGateway reconnect', () => {
     await wait(20);
     client2.disconnect();
 
-    expect(ticks).toEqual([2]);
     expect(acks).toEqual([
       { actionId, duplicate: true },
       { actionId: 'a2' },

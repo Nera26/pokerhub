@@ -70,8 +70,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const state = this.engine.applyAction(action);
 
     void this.analytics.recordGameEvent({ clientId: client.id, action });
-=======
-
     this.enqueue(client, 'state', state);
     this.enqueue(client, 'action:ack', {
       actionId: action.actionId,
