@@ -3,6 +3,10 @@ import { INestApplication } from '@nestjs/common';
 import { io, Socket } from 'socket.io-client';
 import { GameGateway } from '../../src/game/game.gateway';
 import { GameEngine } from '../../src/game/engine';
+
+import { ClockService } from '../../src/game/clock.service';
+
+
 import { AnalyticsService } from '../../src/analytics/analytics.service';
 
 function waitForConnect(socket: Socket): Promise<void> {
@@ -22,6 +26,10 @@ describe('GameGateway reconnect', () => {
       providers: [
         GameGateway,
         GameEngine,
+
+        ClockService,
+
+
         { provide: AnalyticsService, useValue: { recordGameEvent: jest.fn() } },
       ],
     }).compile();

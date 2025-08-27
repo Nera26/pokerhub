@@ -11,6 +11,7 @@ import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { GameEngine, GameAction } from './engine';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { ClockService } from './clock.service';
 
 interface AckPayload {
   actionId: string;
@@ -38,17 +39,28 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
 
+  private tick = 0;
+
   constructor(
     private readonly engine: GameEngine,
     private readonly analytics: AnalyticsService,
-  ) {}
+    private readonly clock: ClockService,
+  ) {
+    this.clock.onTick((now) => {
+      if (this.server) {
+        this.server.emit('server:Clock', Number(now / 1_000_000n));
+      }
+    });
+  }
 
   handleConnection(client: Socket) {
     this.logger.debug(`Client connected: ${client.id}`);
+    this.clock.setTimer(client.id, 30_000, () => this.handleTimeout(client.id));
   }
 
   handleDisconnect(client: Socket) {
     this.logger.debug(`Client disconnected: ${client.id}`);
+    this.clock.clearTimer(client.id);
   }
 
   @SubscribeMessage('action')
@@ -67,13 +79,24 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     this.processed.add(action.actionId);
+    this.clock.clearTimer(action.playerId);
     const state = this.engine.applyAction(action);
 
     void this.analytics.recordGameEvent({ clientId: client.id, action });
+
+
+    const payload = { ...state, tick: ++this.tick };
+    this.enqueue(client, 'state', payload);
+
     this.enqueue(client, 'state', state);
+
     this.enqueue(client, 'action:ack', {
       actionId: action.actionId,
     } satisfies AckPayload);
+
+    this.clock.setTimer(action.playerId, 30_000, () =>
+      this.handleTimeout(action.playerId),
+    );
   }
 
   private enqueue(client: Socket, event: string, data: unknown) {
@@ -114,7 +137,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('replay')
   handleReplay(@ConnectedSocket() client: Socket) {
     const state = this.engine.replayHand();
+    client.emit('state', { ...state, tick: this.tick });
+  }
 
-    client.emit('state', state);
+  private handleTimeout(playerId: string) {
+    const state = this.engine.applyAction({ type: 'fold', playerId });
+    if (this.server) {
+      this.server.emit('state', { ...state, tick: ++this.tick });
+    }
   }
 }
