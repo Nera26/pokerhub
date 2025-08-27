@@ -1,0 +1,394 @@
+'use client';
+
+import { useMemo, useState, useEffect, useRef } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import Image from 'next/image';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faSearch,
+  faEye,
+  faReply,
+  faChevronLeft,
+  faChevronRight,
+  faPaperPlane,
+} from '@fortawesome/free-solid-svg-icons';
+
+import { CardContent } from '../ui/Card';
+import Modal from '../ui/Modal';
+import Button from '../ui/Button';
+import useVirtualizedList from '@/hooks/useVirtualizedList';
+
+type Message = {
+  id: number;
+  sender: string;
+  userId: string;
+  avatar: string;
+  subject: string;
+  preview: string;
+  content: string;
+  time: string;
+  read: boolean;
+};
+
+const seed: Message[] = [
+  /* …same seed as before… */
+];
+
+const formSchema = z.object({
+  search: z.string().optional(),
+  replyText: z
+    .string()
+    .trim()
+    .min(1, 'Reply is required')
+    .max(1000, 'Reply must be at most 1000 characters'),
+});
+
+type FormValues = z.infer<typeof formSchema>;
+
+export default function Messages() {
+  const [messages, setMessages] = useState<Message[]>(seed);
+  const [page, setPage] = useState(1);
+  const [viewing, setViewing] = useState<Message | null>(null);
+  const [replyTo, setReplyTo] = useState<Message | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: { search: '', replyText: '' },
+  });
+
+  const search = watch('search') ?? '';
+  const replyText = watch('replyText');
+
+  const pageSize = 6;
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return messages;
+    return messages.filter((m) => {
+      const hay =
+        `${m.sender} ${m.userId} ${m.subject} ${m.preview} ${m.content}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [messages, search]);
+
+  useEffect(() => setPage(1), [search]);
+
+  const total = filtered.length;
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const startIdx = (page - 1) * pageSize;
+  const endIdx = Math.min(startIdx + pageSize, total);
+  const pageItems = filtered.slice(startIdx, endIdx);
+
+  const parentRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizedList<HTMLDivElement>({
+    count: pageItems.length,
+    parentRef,
+    estimateSize: 88,
+  });
+
+  const unread = messages.filter((m) => !m.read).length;
+
+  const openView = (m: Message) => {
+    setMessages((prev) =>
+      prev.map((x) => (x.id === m.id ? { ...x, read: true } : x)),
+    );
+    setViewing({ ...m, read: true });
+  };
+
+  const openReply = (m: Message) => {
+    setReplyTo(m);
+    setValue('replyText', '');
+    setMessages((prev) =>
+      prev.map((x) => (x.id === m.id ? { ...x, read: true } : x)),
+    );
+  };
+
+  const sendReply = () =>
+    handleSubmit(({ replyText }) => {
+      if (!replyTo || !replyText.trim()) return;
+      setReplyTo(null);
+      setValue('replyText', '');
+    })();
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <section className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Messages</h2>
+          <p className="text-text-secondary">View and respond to user DMs</p>
+        </div>
+        <div className="flex items-center gap-2 bg-card-bg px-3 py-2 rounded-xl">
+          <span className="w-2 h-2 bg-accent-yellow rounded-full animate-pulse" />
+          <span className="text-sm font-semibold">{unread} Unread</span>
+        </div>
+      </section>
+
+      {/* Search */}
+      <section>
+        <div className="relative">
+          <FontAwesomeIcon
+            icon={faSearch}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary"
+          />
+          <input
+            {...register('search')}
+            placeholder="Search messages..."
+            className="w-full bg-card-bg border border-dark rounded-xl pl-12 pr-4 py-3 text-text-primary focus:border-accent-yellow focus:outline-none"
+          />
+        </div>
+      </section>
+
+      {/* Table */}
+      <section className="bg-card-bg rounded-2xl card-shadow overflow-hidden">
+        {/* Header row — removed border */}
+        <div className="bg-primary-bg px-6 py-4">
+          <div className="grid grid-cols-12 gap-4 text-text-secondary text-sm font-semibold">
+            <div className="col-span-3">Sender</div>
+            <div className="col-span-5">Message Preview</div>
+            <div className="col-span-2">Date</div>
+            <div className="col-span-2">Actions</div>
+          </div>
+        </div>
+
+        {pageItems.length === 0 ? (
+          <CardContent className="text-center text-text-secondary">
+            No results.
+          </CardContent>
+        ) : (
+          <div ref={parentRef} className="h-96 overflow-auto">
+            <div
+              style={{
+                height: `${virtualizer.getTotalSize()}px`,
+                position: 'relative',
+              }}
+            >
+              {virtualizer.getVirtualItems().map((virtualRow) => {
+                const m = pageItems[virtualRow.index];
+                return (
+                  <div
+                    key={m.id}
+                    className={`px-6 py-4 transition-colors transition-opacity duration-200 cursor-pointer hover:bg-hover-bg ${
+                      m.read ? 'opacity-60' : ''
+                    }`}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                  >
+                    <div className="grid grid-cols-12 gap-4 items-center">
+                      {/* Sender */}
+                      <div className="col-span-3 flex items-center gap-3">
+                        <div className="relative">
+                          <Image
+                            src={m.avatar}
+                            alt={m.sender}
+                            width={40}
+                            height={40}
+                            className="w-10 h-10 rounded-full"
+                          />
+                          {!m.read && (
+                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent-yellow rounded-full grid place-items-center">
+                              <div className="w-2 h-2 bg-black rounded-full" />
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-semibold">{m.sender}</p>
+                          <p className="text-text-secondary text-xs">
+                            ID: {m.userId}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Preview */}
+                      <div className="col-span-5">
+                        <p className="text-text-primary font-medium">
+                          {m.subject}
+                        </p>
+                        <p className="text-text-secondary text-sm">
+                          {m.preview}
+                        </p>
+                      </div>
+
+                      {/* Date */}
+                      <div className="col-span-2">
+                        <p className="text-text-secondary text-sm">{m.time}</p>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="col-span-2 flex gap-2">
+                        <Button
+                          variant="chipBlue"
+                          onClick={() => openView(m)}
+                          leftIcon={<FontAwesomeIcon icon={faEye} />}
+                          aria-label="View"
+                        >
+                          View
+                        </Button>
+                        <Button
+                          variant="chipYellow"
+                          onClick={() => openReply(m)}
+                          leftIcon={<FontAwesomeIcon icon={faReply} />}
+                          aria-label="Reply"
+                        >
+                          Reply
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Footer / pagination — removed border */}
+        <div className="bg-primary-bg px-6 py-4">
+          <div className="flex items-center justify-between">
+            <p className="text-text-secondary text-sm">
+              Showing {endIdx} of {total} messages
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                className="bg-card-bg border border-dark px-3 py-2 rounded-lg text-sm font-semibold"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                leftIcon={<FontAwesomeIcon icon={faChevronLeft} />}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="chipYellow"
+                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                disabled={page >= pageCount}
+                rightIcon={<FontAwesomeIcon icon={faChevronRight} />}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* View modal */}
+      <Modal isOpen={!!viewing} onClose={() => setViewing(null)}>
+        {viewing && (
+          <>
+            <div className="bg-primary-bg px-6 py-4 border-b border-dark flex items-center justify-between -mx-6 -mt-6 rounded-t-2xl">
+              <h3 className="text-xl font-bold">Message Details</h3>
+              <button
+                className="text-text-secondary hover:text-text-primary"
+                onClick={() => setViewing(null)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <Image
+                  src={viewing.avatar}
+                  alt={viewing.sender}
+                  width={48}
+                  height={48}
+                  className="w-12 h-12 rounded-full"
+                />
+                <div>
+                  <p className="font-bold text-lg">{viewing.sender}</p>
+                  <p className="text-text-secondary text-sm">
+                    ID: {viewing.userId}
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-primary-bg rounded-xl p-4 mb-4">
+                <h4 className="font-semibold mb-2">{viewing.subject}</h4>
+                <p className="text-text-secondary leading-relaxed">
+                  {viewing.content}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between text-sm text-text-secondary">
+                <span>{viewing.time}</span>
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-accent-blue" />
+                  Viewed by Admin
+                </span>
+              </div>
+            </div>
+          </>
+        )}
+      </Modal>
+
+      {/* Reply modal */}
+      <Modal isOpen={!!replyTo} onClose={() => setReplyTo(null)}>
+        {replyTo && (
+          <>
+            <div className="bg-primary-bg px-6 py-4 border-b border-dark flex items-center justify-between -mx-6 -mt-6 rounded-t-2xl">
+              <h3 className="text-xl font-bold">
+                Reply to{' '}
+                <span className="text-accent-yellow">{replyTo.sender}</span>
+              </h3>
+              <button
+                className="text-text-secondary hover:text-text-primary"
+                onClick={() => setReplyTo(null)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="p-6">
+              <label className="block text-sm font-semibold mb-2">
+                Your Reply
+              </label>
+              <textarea
+                {...register('replyText')}
+                placeholder="Type your reply here..."
+                maxLength={1000}
+                className="w-full bg-primary-bg border border-dark rounded-xl p-4 text-text-primary focus:border-accent-yellow focus:outline-none min-h-[120px] resize-none"
+              />
+              <div className="flex items-center justify-between mt-2 text-xs text-text-secondary">
+                <span>Max 1000 characters</span>
+                <span>{replyText.length}/1000</span>
+              </div>
+              {errors.replyText && (
+                <p className="text-danger-red text-xs mt-1">
+                  {errors.replyText.message}
+                </p>
+              )}
+
+              <div className="flex gap-3 justify-end mt-4">
+                <Button
+                  variant="ghost"
+                  className="bg-card-bg border border-dark"
+                  onClick={() => setReplyTo(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={sendReply}
+                  leftIcon={<FontAwesomeIcon icon={faPaperPlane} />}
+                >
+                  Send Reply
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+      </Modal>
+    </div>
+  );
+}

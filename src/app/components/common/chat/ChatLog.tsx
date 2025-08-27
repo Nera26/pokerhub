@@ -1,0 +1,91 @@
+'use client';
+
+import type { Message } from './types';
+import { useVirtualizer } from '@tanstack/react-virtual';
+
+interface ChatLogProps {
+  messages: Message[];
+  chatRef: React.MutableRefObject<HTMLDivElement | null>;
+  retryMessage: (id: number) => void;
+}
+
+export default function ChatLog({
+  messages,
+  chatRef,
+  retryMessage,
+}: ChatLogProps) {
+  const real = useVirtualizer({
+    count: messages.length,
+    getScrollElement: () => chatRef.current,
+    estimateSize: () => 80,
+  });
+  const virtualizer =
+    process.env.NODE_ENV === 'test'
+      ? {
+          getVirtualItems: () =>
+            messages.map((_, index) => ({ index, start: index * 80 })),
+          getTotalSize: () => messages.length * 80,
+          measureElement: () => {},
+        }
+      : real;
+
+  return (
+    <div ref={chatRef} className="flex-grow p-4 overflow-y-auto">
+      <ul
+        role="log"
+        aria-live="polite"
+        className="relative"
+        style={{ height: `${virtualizer.getTotalSize()}px` }}
+      >
+        {virtualizer.getVirtualItems().map((virtualRow) => {
+          const msg = messages[virtualRow.index];
+          const bubbleClasses =
+            msg.sender === 'player'
+              ? 'bg-accent-blue text-text-primary'
+              : 'bg-hover-bg text-text-secondary';
+          return (
+            <li
+              key={msg.id}
+              ref={virtualizer.measureElement}
+              data-index={virtualRow.index}
+              className={`${
+                msg.sender === 'player' ? 'flex justify-end' : 'flex'
+              } pb-3`}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                transform: `translateY(${virtualRow.start}px)`,
+              }}
+            >
+              <div className={`${bubbleClasses} p-3 rounded-lg max-w-[80%]`}>
+                <p className="text-sm">{msg.text}</p>
+                <p
+                  className={`text-xs mt-1 text-right ${
+                    msg.sender === 'player' ? 'text-gray-400' : 'text-gray-500'
+                  }`}
+                >
+                  {msg.sender === 'player' ? 'You' : 'Admin'} – {msg.time}
+                  {msg.pending && ' (sending...)'}
+                  {msg.error && (
+                    <span className="ml-1 text-danger-red">
+                      (failed)
+                      <button
+                        type="button"
+                        onClick={() => retryMessage(msg.id)}
+                        className="ml-1 underline"
+                      >
+                        Retry
+                      </button>
+                    </span>
+                  )}
+                </p>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}

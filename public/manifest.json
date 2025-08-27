@@ -1,0 +1,16 @@
+{
+  "name": "PokerHub",
+  "short_name": "PokerHub",
+  "description": "PokerHub progressive web app",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/pokerhub-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

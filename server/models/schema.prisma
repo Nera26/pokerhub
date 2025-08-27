@@ -1,0 +1,37 @@
+// Prisma schema for PokerHub backend
+// Run `npx prisma migrate dev --name init` to create migrations
+// Requires: npm install prisma @prisma/client
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  username  String   @unique
+  games     Player[]
+  createdAt DateTime @default(now())
+}
+
+model Game {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  players   Player[]
+}
+
+model Player {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  game      Game     @relation(fields: [gameId], references: [id])
+  gameId    Int
+  stack     Int
+  joinedAt  DateTime @default(now())
+}

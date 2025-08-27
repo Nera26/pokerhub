@@ -1,0 +1,489 @@
+/* src/app/globals.css */
+
+/* 1) Tailwind CSS-first */
+@import 'tailwindcss';
+
+/* 3) Tokens */
+@theme {
+  /* Colors */
+  --color-primary-bg: #0e0e11;
+  --color-card-bg: #1a1a1f;
+  --color-hover-bg: #2a2a2e;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #bfbfbf;
+  --color-accent-yellow: #ffd700;
+  --color-accent-green: #0a6e34;
+  --color-accent-blue: #007bff;
+  --color-danger-red: #ff4d4f;
+  --color-border-dark: #2e2e32;
+  --color-chip-gold: #ffd34d;
+  --color-chip-gold-ring: #c9a117;
+  --color-chip-black: #0b0b0d;
+  --color-chip-black-ring: #2c2c33;
+  --color-chip-green: #24a264;
+  --color-chip-green-ring: #11683e;
+  --color-felt-start: #3daa5b;
+  --color-felt-mid: #1e7d32;
+  --color-felt-end: #0a3315;
+  --color-felt-vignette: rgba(0, 0, 0, 0.55);
+  --color-table-rim: #d4af37;
+  --color-table-rim-glow: rgba(212, 175, 55, 0.6);
+  --color-card-glass: rgba(0, 0, 0, 0.4);
+  --color-card-glass-solid: rgba(0, 0, 0, 0.48);
+  --color-hairline: rgba(255, 255, 255, 0.12);
+  --shadow-chip: rgba(0, 0, 0, 0.55);
+  --color-pos-utg: #2dd4bf;
+  --glow-pos-utg: rgba(45, 212, 191, 0.4);
+  --color-pos-mp: #34d399;
+  --glow-pos-mp: rgba(52, 211, 153, 0.4);
+  --color-pos-co: #38bdf8;
+  --glow-pos-co: rgba(56, 189, 248, 0.4);
+  --color-pos-hj: #4ade80;
+  --glow-pos-hj: rgba(74, 222, 128, 0.4);
+  --color-pos-lj: #3b82f6;
+  --glow-pos-lj: rgba(59, 130, 246, 0.4);
+
+  /* Gradients */
+  --gradient-chip-gold: linear-gradient(180deg, #ffe17a, #ffcf5a, #e6a91c);
+  --gradient-chip-black: linear-gradient(180deg, #1b1b1f, #0b0b0d, #1b1b1f);
+  --gradient-chip-green: linear-gradient(180deg, #27b36d, #0a6e34, #177847);
+  --gradient-chip-highlight: radial-gradient(circle, #fff, transparent 60%);
+
+  /* Spacing */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.25rem;
+  --space-xl: 1.5rem;
+  --space-2xl: 2rem;
+
+  /* Typography */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-weight-normal: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Radius */
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+}
+
+/* 4) Base */
+@layer base {
+  /* Use a consistent base; Tailwind already uses rem */
+  :root {
+    font-size: 16px;
+    --font-sans: system-ui, sans-serif;
+  }
+
+  /* Keep text size consistent across pages/browsers */
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Prevent iOS focus-zoom on forms (Android can also behave weird) */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    background: var(--color-primary-bg);
+    color: var(--color-text-primary);
+    /* Visible custom scrollbar */
+    -ms-overflow-style: auto; /* IE and Edge */
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: var(--color-border-dark) var(--color-card-bg);
+  }
+  body::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  body::-webkit-scrollbar-track {
+    background: var(--color-card-bg);
+  }
+  body::-webkit-scrollbar-thumb {
+    background-color: var(--color-border-dark);
+    border-radius: 4px;
+    border: 2px solid var(--color-card-bg);
+  }
+  body::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-accent-yellow);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    *,
+    ::before,
+    ::after {
+      transition-property:
+        background-color, border-color, color, fill, stroke, opacity, transform;
+      transition-duration: 150ms;
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+
+  /* Pulses & deals */
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.7;
+      transform: scale(1.05);
+    }
+  }
+  @keyframes cardDeal {
+    from {
+      transform: scale(0) rotate(180deg);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1) rotate(0);
+      opacity: 1;
+    }
+  }
+
+  /* Table seat states */
+  @keyframes soft-pulse {
+    0%,
+    100% {
+      opacity: 0.6;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+  @keyframes rim-sweep {
+    0% {
+      clip-path: inset(0 100% 0 0);
+      opacity: 1;
+    }
+    100% {
+      clip-path: inset(0 0 0 0);
+      opacity: 0;
+    }
+  }
+  @keyframes balance-bloom {
+    0%,
+    100% {
+      filter: brightness(1);
+    }
+    50% {
+      filter: brightness(1.6);
+    }
+  }
+  @keyframes balance-delta-up {
+    0% {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(-4px);
+    }
+  }
+  @keyframes balance-delta-down {
+    0% {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(4px);
+    }
+  }
+}
+
+/* 5) Components */
+@layer components {
+  /* ---- Buttons (alert style) ---- */
+  .btn-alert-red {
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: var(--radius-xl);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.06);
+    font-weight: 600;
+    font-size: 12px;
+    transition:
+      background 0.2s,
+      box-shadow 0.2s;
+  }
+  .btn-alert-red:hover {
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 0 15px 5px rgba(255, 77, 79, 0.25);
+  }
+
+  .btn-alert-yellow {
+    color: #000;
+    padding: 4px 10px;
+    border-radius: var(--radius-xl);
+    border: 1px solid rgba(0, 0, 0, 0.25);
+    background: rgba(0, 0, 0, 0.06);
+    font-weight: 600;
+    font-size: 12px;
+    transition:
+      background 0.2s,
+      box-shadow 0.2s;
+  }
+  .btn-alert-yellow:hover {
+    background: rgba(0, 0, 0, 0.12);
+    box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.25);
+  }
+
+  .alert-row {
+    padding: 1rem;
+    border-radius: var(--radius-xl);
+  }
+  .alert-danger-tint {
+    background: rgba(255, 77, 79, 0.1);
+    border: 1px solid var(--color-danger-red);
+  }
+  .alert-yellow-tint {
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid var(--color-accent-yellow);
+  }
+  .alert-danger-solid {
+    background: var(--color-danger-red);
+    color: #fff;
+    border: none;
+  }
+  .alert-title-danger {
+    color: var(--color-danger-red);
+    font-weight: 600;
+  }
+  .alert-title-yellow {
+    color: var(--color-accent-yellow);
+    font-weight: 600;
+  }
+
+  /* ---- Glow / shadows ---- */
+  .hover-glow-yellow {
+    transition: box-shadow 0.3s;
+  }
+  .hover-glow-yellow:hover {
+    box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.3);
+  }
+
+  .hover-glow-green {
+    transition: box-shadow 0.3s;
+  }
+  .hover-glow-green:hover {
+    box-shadow: 0 0 15px 5px rgba(28, 139, 76, 0.4);
+  }
+
+  .focus-glow-yellow:focus {
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.5);
+    border-color: var(--color-accent-yellow);
+  }
+
+  .brand-pulse {
+    animation: pulse 2s infinite ease-in-out;
+  }
+  .card-shadow {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+  .turn-glow {
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+  }
+  .folded-player {
+    opacity: 0.4;
+    filter: grayscale(100%);
+  }
+  .timer-animation {
+    animation: pulse 1s infinite;
+  }
+  .card-appear {
+    animation: cardDeal 0.3s ease-out;
+  }
+
+  /* ---- Poker table oval (optional extra class on your container) ---- */
+  .table-oval {
+    position: relative;
+    background: radial-gradient(
+      120% 80% at 50% 50%,
+      rgba(28, 139, 76, 0.95) 0%,
+      #167344 55%,
+      #0f5a36 100%
+    );
+    border-radius: 9999px;
+    box-shadow:
+      0 25px 60px rgba(0, 0, 0, 0.45),
+      inset 0 -10px 25px rgba(0, 0, 0, 0.35);
+  }
+  /* Golden rail */
+  .table-oval::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border: 8px solid var(--color-accent-yellow);
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6) inset;
+  }
+  /* Inner arc / track hint */
+  .table-oval::after {
+    content: '';
+    position: absolute;
+    inset: 12% 35% 18% 8%;
+    border-left: 4px solid rgba(255, 215, 0, 0.6);
+    border-bottom: 4px solid rgba(255, 215, 0, 0.6);
+    border-radius: 60% 90% 80% 65%/65% 80% 60% 85%;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.25));
+  }
+
+  /* ---- Playing cards ---- */
+  .playing-card {
+    width: 3.5rem;
+    height: 5rem;
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.22);
+  }
+  .playing-card--red {
+    color: #ef4444;
+  }
+  .playing-card--black {
+    color: #111827;
+  }
+
+  /* ---- Dealer chip ---- */
+  .dealer-chip {
+    width: 28px;
+    height: 28px;
+    border-radius: 9999px;
+    background: var(--color-accent-yellow);
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.35);
+  }
+
+  /* ---- Range slider look (Raise amount) ---- */
+  input[type='range'] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 9999px;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 215, 0, 0.9),
+      rgba(255, 215, 0, 0.5)
+    );
+    outline: none;
+  }
+  input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 9999px;
+    background: var(--color-accent-yellow);
+    border: 2px solid #000;
+    cursor: pointer;
+  }
+  input[type='range']::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 9999px;
+    background: var(--color-accent-yellow);
+    border: 2px solid #000;
+    cursor: pointer;
+  }
+}
+
+/* 6) Utilities / aliases used in your TSX */
+@layer utilities {
+  /* BG + Text */
+  .bg-primary-bg {
+    background-color: var(--color-primary-bg);
+  }
+  .bg-dark-bg {
+    background-color: var(--color-primary-bg);
+  } /* alias */
+  .bg-card-bg {
+    background-color: var(--color-card-bg);
+  }
+  .bg-hover-bg {
+    background-color: var(--color-hover-bg);
+  }
+  .text-primary {
+    color: var(--color-text-primary);
+  }
+  .text-text-primary {
+    color: var(--color-text-primary);
+  }
+  .text-secondary {
+    color: var(--color-text-secondary);
+  }
+  .text-text-secondary {
+    color: var(--color-text-secondary);
+  }
+  .text-accent-yellow {
+    color: var(--color-accent-yellow);
+  }
+  .text-accent-green {
+    color: var(--color-accent-green);
+  }
+  .text-accent-blue {
+    color: var(--color-accent-blue);
+  }
+  .text-danger-red {
+    color: var(--color-danger-red);
+  }
+  .bg-accent-yellow {
+    background-color: var(--color-accent-yellow);
+  }
+  .bg-accent-green {
+    background-color: var(--color-accent-green);
+  }
+  .bg-accent-blue {
+    background-color: var(--color-accent-blue);
+  }
+  .bg-danger-red {
+    background-color: var(--color-danger-red);
+  }
+
+  /* Borders */
+  .border-dark {
+    border-color: var(--color-border-dark);
+  }
+  .border-border-color {
+    border-color: var(--color-border-dark);
+  } /* alias */
+
+  /* Radius */
+  .rounded-xl {
+    border-radius: var(--radius-xl);
+  }
+  .rounded-2xl {
+    border-radius: var(--radius-2xl);
+  }
+}

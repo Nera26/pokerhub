@@ -1,0 +1,24 @@
+{
+  "layout": {
+    "skip": "Skip to main content"
+  },
+  "login": {
+    "tagline": "Join the community of poker enthusiasts!",
+    "brandButton": "Join the Community",
+    "title": "Login",
+    "forgot": "Forgot Password?",
+    "noAccount": "Don't have an account?",
+    "signUp": "Sign Up",
+    "footer": {
+      "copyright": "\u00a9 2024 PokerHub. All rights reserved.",
+      "terms": "Terms of Service",
+      "privacy": "Privacy Policy"
+    }
+  },
+  "serviceWorker": {
+    "updatePrompt": "A new version is available. Refresh now?",
+    "reload": "Refresh",
+    "dismiss": "Dismiss",
+    "offlineNotice": "You are offline. Changes will sync once connection is restored."
+  }
+}
