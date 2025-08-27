@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+  backend:
+    ports:
+      - "${BACKEND_PORT}:3000"
+    volumes:
+      - ./backend:/app
+
+  db:
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  redis:
+    ports:
+      - "${REDIS_PORT}:6379"
+
+  rabbitmq:
+    ports:
+      - "${RABBITMQ_PORT}:5672"
+      - "${RABBITMQ_MGMT_PORT}:15672"
+
+  localstack:
+    ports:
+      - "${LOCALSTACK_PORT}:4566"
