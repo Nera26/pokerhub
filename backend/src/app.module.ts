@@ -10,6 +10,7 @@ import {
   analyticsConfig,
   telemetryConfig,
 } from './config';
+import { validationSchema } from './config/env.validation';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -27,6 +28,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      validationSchema,
       load: [
         databaseConfig,
         redisConfig,

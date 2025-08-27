@@ -33,11 +33,11 @@ services:
   db:
     image: postgres:15
     environment:
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASS}
-      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=pokerhub
     healthcheck:
-      test: ['CMD', 'pg_isready', '-U', '${DB_USER}']
+      test: ['CMD', 'pg_isready', '-U', 'postgres']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -53,8 +53,8 @@ services:
   rabbitmq:
     image: rabbitmq:3-management
     environment:
-      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
-      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS}
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
     healthcheck:
       test: ['CMD', 'rabbitmq-diagnostics', 'status']
       interval: 5s
