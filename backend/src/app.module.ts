@@ -24,7 +24,11 @@ import { GameModule } from './game/game.module';
 import { StorageModule } from './storage/storage.module';
 import { LoggingModule } from './logging/logging.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+
+import { TournamentModule } from './tournament/tournament.module';
+
 import { WalletModule } from './wallet/wallet.module';
+
 
 @Module({
   imports: [
@@ -67,7 +71,11 @@ import { WalletModule } from './wallet/wallet.module';
     StorageModule,
     LoggingModule,
     AnalyticsModule,
+
+    TournamentModule,
+
     WalletModule,
+
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,0 +1,7 @@
+{
+  "levels": [
+    { "level": 1, "smallBlind": 100, "bigBlind": 200, "ante": 0, "durationMinutes": 15 },
+    { "level": 2, "smallBlind": 200, "bigBlind": 400, "ante": 0, "durationMinutes": 15 },
+    { "level": 3, "smallBlind": 300, "bigBlind": 600, "ante": 0, "durationMinutes": 15 }
+  ]
+}
