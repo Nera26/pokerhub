@@ -10,6 +10,7 @@ import {
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { GameEngine, GameAction } from './engine';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 interface AckPayload {
   actionId: string;
@@ -37,7 +38,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
 
-  constructor(private readonly engine: GameEngine) {}
+  constructor(
+    private readonly engine: GameEngine,
+    private readonly analytics: AnalyticsService,
+  ) {}
 
   handleConnection(client: Socket) {
     this.logger.debug(`Client connected: ${client.id}`);
@@ -64,6 +68,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     this.processed.add(action.actionId);
     const state = this.engine.applyAction(action);
+
+    void this.analytics.recordGameEvent({ clientId: client.id, action });
+=======
 
     this.enqueue(client, 'state', state);
     this.enqueue(client, 'action:ack', {
@@ -109,6 +116,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('replay')
   handleReplay(@ConnectedSocket() client: Socket) {
     const state = this.engine.replayHand();
+
     client.emit('state', state);
   }
 }
