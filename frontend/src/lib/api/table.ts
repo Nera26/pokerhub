@@ -3,6 +3,7 @@ import { getBaseUrl } from '@/lib/base-url';
 import { handleResponse } from './client';
 import { serverFetch } from '@/lib/server-fetch';
 import { getSocket } from '@/app/utils/socket';
+import { GameActionSchema, type GameAction } from '@shared/types';
 
 const PlayerSchema = z.object({
   id: z.number(),
@@ -57,7 +58,8 @@ interface ActionAck {
   duplicate?: boolean;
 }
 
-async function sendAction(action: Record<string, unknown> & { type: string }) {
+async function sendAction(action: GameAction) {
+  GameActionSchema.parse(action);
   const socket = getSocket();
   const actionId = crypto.randomUUID();
   const payload = { ...action, actionId };
