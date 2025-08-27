@@ -15,34 +15,60 @@ services:
   backend:
     build: ./backend
     command: npm run start:dev
-    volumes:
-      - ./backend:/app
+    env_file: .env
     environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASS=postgres
-      - DB_NAME=pokerhub
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-    ports:
-      - '3000:3000'
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ENDPOINT=http://${LOCALSTACK_HOST}:${LOCALSTACK_PORT}
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+
   db:
     image: postgres:15
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=pokerhub
-    volumes:
-      - db-data:/var/lib/postgresql/data
-    ports:
-      - '5432:5432'
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+      - POSTGRES_DB=${DB_NAME}
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', '${DB_USER}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   redis:
     image: redis:7
-    ports:
-      - '6379:6379'
-volumes:
-  db-data:
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS}
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', 'status']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  localstack:
+    image: localstack/localstack
+    environment:
+      - SERVICES=${LOCALSTACK_SERVICES}
+      - DEFAULT_REGION=${AWS_REGION}
+      - EDGE_PORT=${LOCALSTACK_PORT}
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:${LOCALSTACK_PORT}/health']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
