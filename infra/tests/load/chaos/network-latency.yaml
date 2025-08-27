@@ -1,0 +1,17 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: room-worker-network-delay
+spec:
+  action: delay
+  mode: one
+  selector:
+    namespaces:
+      - default
+    labelSelectors:
+      app: room-worker
+  delay:
+    latency: '100ms'
+  duration: '1m'
+  scheduler:
+    cron: '0 */1 * * *'

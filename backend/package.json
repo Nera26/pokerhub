@@ -33,6 +33,7 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/microservices": "^11.1.6",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/platform-socket.io": "^11.0.1",
     "@nestjs/typeorm": "^11.0.0",
     "@nestjs/websockets": "^11.1.6",
     "@opentelemetry/auto-instrumentations-node": "^0.50.2",
@@ -65,6 +66,7 @@
     "eslint-plugin-prettier": "^5.2.2",
     "globals": "^16.0.0",
     "jest": "^30.0.0",
+    "js-yaml": "^4.1.0",
     "pg-mem": "^3.0.5",
     "prettier": "^3.4.2",
     "source-map-support": "^0.5.21",
@@ -75,7 +77,12 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
-    "typescript-eslint": "^8.20.0"
+    "typescript-eslint": "^8.20.0",
+
+    "zod": "^3.25.76"
+
+    "socket.io-client": "^4.8.1"
+
   },
   "jest": {
     "moduleFileExtensions": [
@@ -96,6 +103,10 @@
     "testPathIgnorePatterns": [
       "/node_modules/",
       "<rootDir>/test/.*\\.e2e-spec\\.ts$"
-    ]
+    ],
+    "moduleNameMapper": {
+      "^@shared/(.*)$": "<rootDir>/../shared/$1"
+    },
+    "modulePaths": ["<rootDir>/node_modules"]
   }
 }
