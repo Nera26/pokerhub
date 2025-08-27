@@ -1,37 +1,49 @@
 import { SessionService } from './session.service';
 import type Redis from 'ioredis';
 
-describe('SessionService', () => {
-  class MockRedis {
-    store = new Map<string, string>();
-    ttl = new Map<string, number>();
-    set(key: string, value: string, mode: string, ttl: number) {
-      this.store.set(key, value);
-      this.ttl.set(key, ttl);
-    }
-    get(key: string) {
-      return this.store.get(key) ?? null;
-    }
-    del(key: string) {
-      this.store.delete(key);
-      this.ttl.delete(key);
-    }
+class MockRedis {
+  store = new Map<string, string>();
+  set(key: string, value: string, mode: string, ttl: number) {
+    this.store.set(key, value);
   }
+  get(key: string) {
+    return this.store.get(key) ?? null;
+  }
+  del(key: string) {
+    this.store.delete(key);
+  }
+}
 
+class MockConfig {
+  get(key: string, def?: any) {
+    const map: Record<string, any> = {
+      'auth.jwtSecret': 'test-secret',
+      'auth.accessTtl': 900,
+      'auth.refreshTtl': 3600,
+    };
+    return map[key] ?? def;
+  }
+}
+
+describe('SessionService', () => {
   let service: SessionService;
   let client: MockRedis;
 
   beforeEach(() => {
     client = new MockRedis();
     const typed: unknown = client;
-    service = new SessionService(typed as Redis);
+    service = new SessionService(typed as Redis, new MockConfig() as any);
   });
 
-  it('creates and deletes sessions with ttl', async () => {
-    await service.createSession('token', 'user', 100);
-    expect(await service.getSession('token')).toBe('user');
-    expect(client.ttl.get('session:token')).toBe(100);
-    await service.deleteSession('token');
-    expect(await service.getSession('token')).toBeNull();
+  it('issues, verifies, rotates and revokes tokens', async () => {
+    const issued = await service.issueTokens('user1');
+    expect(service.verifyAccessToken(issued.accessToken)).toBe('user1');
+    const rotated = await service.rotate(issued.refreshToken);
+    expect(rotated).toBeTruthy();
+    if (rotated) {
+      expect(service.verifyAccessToken(rotated.accessToken)).toBe('user1');
+      await service.revoke(rotated.refreshToken);
+      expect(await client.get(`refresh:${rotated.refreshToken}`)).toBeNull();
+    }
   });
 });

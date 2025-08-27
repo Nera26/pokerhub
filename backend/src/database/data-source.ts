@@ -5,10 +5,11 @@ import { Tournament } from './entities/tournament.entity';
 import { User } from './entities/user.entity';
 import { Account } from '../wallet/account.entity';
 import { JournalEntry } from '../wallet/journal-entry.entity';
+import { Hand } from './entities/hand.entity';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL,
-  entities: [User, Tournament, Table, Account, JournalEntry],
+  entities: [User, Tournament, Table, Account, JournalEntry, Hand],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
 });

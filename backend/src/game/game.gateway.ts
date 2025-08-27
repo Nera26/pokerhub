@@ -9,7 +9,8 @@ import {
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
-import { GameEngine, GameAction } from './engine';
+import { GameAction } from './engine';
+import { RoomManager } from './room.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { ClockService } from './clock.service';
 
@@ -42,7 +43,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private tick = 0;
 
   constructor(
-    private readonly engine: GameEngine,
+    private readonly rooms: RoomManager,
     private readonly analytics: AnalyticsService,
     private readonly clock: ClockService,
   ) {
@@ -66,7 +67,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('action')
   handleAction(
     @ConnectedSocket() client: Socket,
-    @MessageBody() action: GameAction & { actionId: string },
+    @MessageBody()
+    action: (GameAction & { actionId: string }) & {
+      tableId?: string;
+    },
   ) {
     if (this.isRateLimited(client)) return;
 
@@ -80,15 +84,24 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     this.processed.add(action.actionId);
     this.clock.clearTimer(action.playerId);
-    const state = this.engine.applyAction(action);
+    const tableId = action.tableId ?? 'default';
+    const { tableId: _t, actionId: _a, ...rest } = action;
+    const gameAction = rest as GameAction;
+    const room = this.rooms.get(tableId);
+    const state = room.apply(gameAction);
 
     void this.analytics.recordGameEvent({ clientId: client.id, action });
-
 
     const payload = { ...state, tick: ++this.tick };
     this.enqueue(client, 'state', payload);
 
-    this.enqueue(client, 'state', state);
+    // Notify spectators with public state
+    if (this.server?.of) {
+      this.server
+        .of('/spectate')
+        .to(tableId)
+        .emit('state', { ...room.getPublicState(), tick: this.tick });
+    }
 
     this.enqueue(client, 'action:ack', {
       actionId: action.actionId,
@@ -136,12 +149,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('replay')
   handleReplay(@ConnectedSocket() client: Socket) {
-    const state = this.engine.replayHand();
+    const room = this.rooms.get('default');
+    const state = room.replay();
     client.emit('state', { ...state, tick: this.tick });
   }
 
   private handleTimeout(playerId: string) {
-    const state = this.engine.applyAction({ type: 'fold', playerId });
+    const room = this.rooms.get('default');
+    const state = room.apply({ type: 'fold', playerId } as GameAction);
     if (this.server) {
       this.server.emit('state', { ...state, tick: ++this.tick });
     }

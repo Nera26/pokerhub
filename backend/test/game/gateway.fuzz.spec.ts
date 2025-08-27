@@ -1,10 +1,15 @@
 import fc from 'fast-check';
 import { GameGateway } from '../../src/game/game.gateway';
+import { RoomManager } from '../../src/game/room.service';
+import { ClockService } from '../../src/game/clock.service';
 
 // Simple stubs for dependencies
-class DummyEngine {
-  applyAction() {
-    return { street: 'preflop', pot: 0, players: [] } as any;
+class DummyRoom extends RoomManager {
+  override get() {
+    return {
+      apply: () => ({ street: 'preflop', pot: 0, players: [] }),
+      getPublicState: () => ({ street: 'preflop', pot: 0, players: [] }),
+    } as any;
   }
 }
 
@@ -17,8 +22,9 @@ describe('GameGateway fuzz tests', () => {
     fc.assert(
       fc.property(fc.object(), (payload) => {
         const gateway = new GameGateway(
-          new DummyEngine() as any,
+          new DummyRoom() as any,
           new DummyAnalytics() as any,
+          new ClockService(),
         );
         const client: any = { id: 'c1', emit: jest.fn() };
         expect(() =>
@@ -32,8 +38,9 @@ describe('GameGateway fuzz tests', () => {
     fc.assert(
       fc.property(fc.string(), (id) => {
         const gateway = new GameGateway(
-          new DummyEngine() as any,
+          new DummyRoom() as any,
           new DummyAnalytics() as any,
+          new ClockService(),
         );
         const client: any = { id: 'c1', emit: jest.fn() };
         const action = { type: 'next', actionId: id } as any;
@@ -42,7 +49,10 @@ describe('GameGateway fuzz tests', () => {
         const acks = client.emit.mock.calls
           .filter(([ev]: any[]) => ev === 'action:ack')
           .map(([, data]: any[]) => data);
-        expect(acks).toEqual([{ actionId: id }, { actionId: id, duplicate: true }]);
+        expect(acks).toEqual([
+          { actionId: id },
+          { actionId: id, duplicate: true },
+        ]);
       }),
     );
   });

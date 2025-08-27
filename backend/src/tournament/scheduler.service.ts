@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { Queue } from 'bullmq';
 
 /**
  * TournamentScheduler wraps BullMQ queues for scheduling tournament events
@@ -7,12 +8,11 @@ import { Injectable } from '@nestjs/common';
  */
 @Injectable()
 export class TournamentScheduler {
-  private registrationQueue: any | undefined;
-  private breakQueue: any | undefined;
+  private queues: Map<string, Queue> = new Map();
 
-  private async getQueue(name: string): Promise<any> {
-    if (name === 'registration' && this.registrationQueue) return this.registrationQueue;
-    if (name === 'break' && this.breakQueue) return this.breakQueue;
+  private async getQueue(name: string): Promise<Queue> {
+    const existing = this.queues.get(name);
+    if (existing) return existing;
 
     const bull = await import('bullmq');
     const queue = new bull.Queue(name, {
@@ -22,9 +22,7 @@ export class TournamentScheduler {
       },
     });
 
-    if (name === 'registration') this.registrationQueue = queue;
-    else if (name === 'break') this.breakQueue = queue;
-
+    this.queues.set(name, queue);
     return queue;
   }
 
@@ -34,8 +32,28 @@ export class TournamentScheduler {
     close: Date,
   ): Promise<void> {
     const queue = await this.getQueue('registration');
-    await queue.add('open', { tournamentId }, { delay: open.getTime() - Date.now() });
-    await queue.add('close', { tournamentId }, { delay: close.getTime() - Date.now() });
+    await queue.add(
+      'open',
+      { tournamentId },
+      { delay: open.getTime() - Date.now() },
+    );
+    await queue.add(
+      'close',
+      { tournamentId },
+      { delay: close.getTime() - Date.now() },
+    );
+  }
+
+  async scheduleLateRegistration(
+    tournamentId: string,
+    close: Date,
+  ): Promise<void> {
+    const queue = await this.getQueue('late-registration');
+    await queue.add(
+      'close',
+      { tournamentId },
+      { delay: close.getTime() - Date.now() },
+    );
   }
 
   async scheduleBreak(
@@ -44,7 +62,36 @@ export class TournamentScheduler {
     durationMs: number,
   ): Promise<void> {
     const queue = await this.getQueue('break');
-    await queue.add('start', { tournamentId }, { delay: start.getTime() - Date.now() });
-    await queue.add('end', { tournamentId }, { delay: start.getTime() - Date.now() + durationMs });
+    await queue.add(
+      'start',
+      { tournamentId },
+      { delay: start.getTime() - Date.now() },
+    );
+    await queue.add(
+      'end',
+      { tournamentId },
+      { delay: start.getTime() - Date.now() + durationMs },
+    );
+  }
+
+  async scheduleLevelUps(
+    tournamentId: string,
+    structure: { level: number; durationMinutes: number }[],
+    start: Date,
+  ): Promise<void> {
+    const queue = await this.getQueue('level-up');
+    let current = start.getTime();
+    for (const lvl of structure) {
+      if (lvl.level === 1) {
+        current += lvl.durationMinutes * 60_000;
+        continue;
+      }
+      await queue.add(
+        'level',
+        { tournamentId, level: lvl.level },
+        { delay: current - Date.now() },
+      );
+      current += lvl.durationMinutes * 60_000;
+    }
   }
 }

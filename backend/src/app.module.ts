@@ -10,6 +10,7 @@ import {
   analyticsConfig,
   telemetryConfig,
   rabbitmqConfig,
+  authConfig,
 } from './config';
 import { validationSchema } from './config/env.validation';
 import { AppController } from './app.controller';
@@ -29,7 +30,6 @@ import { TournamentModule } from './tournament/tournament.module';
 
 import { WalletModule } from './wallet/wallet.module';
 
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -43,6 +43,7 @@ import { WalletModule } from './wallet/wallet.module';
         analyticsConfig,
         telemetryConfig,
         rabbitmqConfig,
+        authConfig,
       ],
     }),
     LoggerModule.forRoot(),
@@ -75,7 +76,6 @@ import { WalletModule } from './wallet/wallet.module';
     TournamentModule,
 
     WalletModule,
-
   ],
   controllers: [AppController],
   providers: [AppService],

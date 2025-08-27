@@ -5,3 +5,4 @@ export { default as loggingConfig } from './logging.config';
 export { default as analyticsConfig } from './analytics.config';
 export { default as telemetryConfig } from './telemetry.config';
 export { default as rabbitmqConfig } from './rabbitmq.config';
+export { default as authConfig } from './auth.config';

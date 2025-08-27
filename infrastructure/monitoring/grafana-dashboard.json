@@ -1,6 +1,27 @@
 {
   "dashboard": {
-    "title": "PokerHub Overview",
-    "panels": []
+    "title": "PokerHub Analytics",
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "Hands per minute",
+        "datasource": "ClickHouse",
+        "targets": [
+          {
+            "query": "SELECT count() AS hands, toStartOfMinute(timestamp) AS ts FROM hand_start GROUP BY ts ORDER BY ts"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Total Wallet Credits",
+        "datasource": "ClickHouse",
+        "targets": [
+          {
+            "query": "SELECT sum(amount) AS credits, toStartOfHour(timestamp) AS ts FROM wallet_credit GROUP BY ts ORDER BY ts"
+          }
+        ]
+      }
+    ]
   }
 }

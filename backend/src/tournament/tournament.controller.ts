@@ -1,5 +1,9 @@
-import { Controller, Get } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { TournamentService } from './tournament.service';
+import type {
+  CalculatePrizesRequest,
+  CalculatePrizesResponse,
+} from '../schemas/tournament';
 
 @Controller('tournaments')
 export class TournamentController {
@@ -8,5 +12,16 @@ export class TournamentController {
   @Get()
   list() {
     return this.service.list();
+  }
+
+  @Post(':id/prizes')
+  calculatePrizes(
+    @Param('id') id: string,
+    @Body() body: CalculatePrizesRequest,
+  ): CalculatePrizesResponse {
+    return this.service.calculatePrizes(body.prizePool, body.payouts, {
+      bountyPct: body.bountyPct,
+      satelliteSeatCost: body.satelliteSeatCost,
+    });
   }
 }

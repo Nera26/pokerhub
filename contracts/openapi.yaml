@@ -95,6 +95,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+  /wallet/{id}/withdraw:
+    post:
+      summary: Withdraw funds
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WithdrawRequest'
+      responses:
+        '200':
+          description: Withdrawal accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /tournaments:
     get:
       summary: List tournaments
@@ -105,6 +127,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TournamentList'
+  /tournaments/{id}/prizes:
+    post:
+      summary: Calculate prize distribution
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalculatePrizesRequest'
+      responses:
+        '200':
+          description: Prize distribution
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalculatePrizesResponse'
   /leaderboard:
     get:
       summary: Get leaderboard
@@ -115,6 +159,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LeaderboardResponse'
+  /leaderboard/rebuild:
+    post:
+      summary: Rebuild leaderboard
+      parameters:
+        - in: query
+          name: days
+          schema:
+            type: integer
+            maximum: 30
+      responses:
+        '202':
+          description: Rebuild started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+  /hands/{id}/proof:
+    get:
+      summary: Get RNG proof for a hand
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Hand commitment proof
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HandProof'
 components:
   schemas:
     StatusResponse:
@@ -145,6 +221,16 @@ components:
           type: number
       required:
         - amount
+    WithdrawRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+        deviceId:
+          type: string
+      required:
+        - amount
+        - deviceId
     GameAction:
       type: object
       properties:
@@ -194,7 +280,51 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Tournament'
+    CalculatePrizesRequest:
+      type: object
+      properties:
+        prizePool:
+          type: number
+        payouts:
+          type: array
+          items:
+            type: number
+        bountyPct:
+          type: number
+        satelliteSeatCost:
+          type: number
+      required:
+        - prizePool
+        - payouts
+    CalculatePrizesResponse:
+      type: object
+      properties:
+        prizes:
+          type: array
+          items:
+            type: number
+        bountyPool:
+          type: number
+        seats:
+          type: number
+        remainder:
+          type: number
+      required:
+        - prizes
     LeaderboardResponse:
       type: array
       items:
         type: string
+    HandProof:
+      type: object
+      properties:
+        seed:
+          type: string
+        nonce:
+          type: string
+        commitment:
+          type: string
+      required:
+        - seed
+        - nonce
+        - commitment
