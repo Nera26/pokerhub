@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+  Index,
+} from 'typeorm';
 import { Account } from './account.entity';
 
 @Entity()
@@ -14,6 +21,16 @@ export class JournalEntry {
 
   @Column({ type: 'int' })
   amount: number;
+
+  @Column()
+  refType: string;
+
+  @Column()
+  refId: string;
+
+  @Column()
+  @Index({ unique: true })
+  hash: string;
 
   @CreateDateColumn()
   createdAt: Date;
