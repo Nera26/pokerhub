@@ -105,4 +105,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     info.count++;
     return false;
   }
+
+  @SubscribeMessage('replay')
+  handleReplay(@ConnectedSocket() client: Socket) {
+    const state = this.engine.replayHand();
+    client.emit('state', state);
+  }
 }
