@@ -13,6 +13,108 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusResponse'
+  /game/action:
+    post:
+      summary: Perform a game action
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameAction'
+      responses:
+        '200':
+          description: Action accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /wallet/{id}/reserve:
+    post:
+      summary: Reserve funds in wallet
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Amount'
+      responses:
+        '200':
+          description: Funds reserved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /wallet/{id}/commit:
+    post:
+      summary: Commit reserved funds
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Amount'
+      responses:
+        '200':
+          description: Funds committed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /wallet/{id}/rollback:
+    post:
+      summary: Roll back reserved funds
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Amount'
+      responses:
+        '200':
+          description: Funds rolled back
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /tournaments:
+    get:
+      summary: List tournaments
+      responses:
+        '200':
+          description: Tournaments list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TournamentList'
+  /leaderboard:
+    get:
+      summary: Get leaderboard
+      responses:
+        '200':
+          description: Top players
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaderboardResponse'
 components:
   schemas:
     StatusResponse:
@@ -36,3 +138,63 @@ components:
           type: string
       required:
         - message
+    Amount:
+      type: object
+      properties:
+        amount:
+          type: number
+      required:
+        - amount
+    GameAction:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - join
+            - bet
+        tableId:
+          type: string
+        amount:
+          type: number
+      required:
+        - type
+        - tableId
+    Tournament:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        buyIn:
+          type: number
+        prizePool:
+          type: number
+        players:
+          type: object
+          properties:
+            current:
+              type: number
+            max:
+              type: number
+          required:
+            - current
+            - max
+        registered:
+          type: boolean
+      required:
+        - id
+        - title
+        - buyIn
+        - prizePool
+        - players
+        - registered
+    TournamentList:
+      type: array
+      items:
+        $ref: '#/components/schemas/Tournament'
+    LeaderboardResponse:
+      type: array
+      items:
+        type: string
