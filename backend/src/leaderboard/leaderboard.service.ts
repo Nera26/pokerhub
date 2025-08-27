@@ -1,12 +1,19 @@
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../database/entities/user.entity';
 
 @Injectable()
 export class LeaderboardService {
   private readonly cacheKey = 'leaderboard:hot';
   private readonly ttl = 30; // seconds
 
-  constructor(@Inject(CACHE_MANAGER) private readonly cache: Cache) {}
+  constructor(
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
+    @InjectRepository(User) private readonly userRepo: Repository<User>,
+  ) {}
 
   async getTopPlayers(): Promise<string[]> {
     const cached = await this.cache.get<string[]>(this.cacheKey);
@@ -23,8 +30,11 @@ export class LeaderboardService {
     await this.cache.del(this.cacheKey);
   }
 
-  private fetchTopPlayers(): Promise<string[]> {
-    // TODO: replace with real DB query
-    return Promise.resolve(['alice', 'bob', 'carol']);
+  private async fetchTopPlayers(): Promise<string[]> {
+    const users = await this.userRepo.find({
+      order: { username: 'ASC' },
+      take: 3,
+    });
+    return users.map((u) => u.username);
   }
 }

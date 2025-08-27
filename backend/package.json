@@ -39,6 +39,7 @@
     "@opentelemetry/exporter-trace-otlp-http": "^0.50.0",
     "@opentelemetry/sdk-node": "^0.50.0",
     "amqplib": "^0.10.9",
+    "cache-manager": "^7.2.0",
     "cache-manager-ioredis": "^2.1.0",
     "ioredis": "^5.7.0",
     "nestjs-pino": "^4.4.0",
