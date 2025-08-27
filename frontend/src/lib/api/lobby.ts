@@ -3,6 +3,7 @@ import { getBaseUrl } from '@/lib/base-url';
 import { handleResponse, ApiError } from './client';
 import { serverFetch } from '@/lib/server-fetch';
 import type { GameType } from '@/types/game-type';
+import { TournamentSchema, type Tournament } from '@shared/types';
 
 const gameTypeEnum = z.enum(['texas', 'omaha', 'allin', 'tournaments']);
 
@@ -23,17 +24,6 @@ const TableSchema = z.object({
 export type Table = Omit<z.infer<typeof TableSchema>, 'gameType'> & {
   gameType: GameType;
 };
-
-const TournamentSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  buyIn: z.number(),
-  fee: z.number().optional(),
-  prizePool: z.union([z.number(), z.string()]),
-  players: z.object({ current: z.number(), max: z.number() }),
-  registered: z.boolean(),
-});
-export type Tournament = z.infer<typeof TournamentSchema>;
 
 export async function fetchLobbyData<T>(
   endpoint: string,
