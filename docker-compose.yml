@@ -19,6 +19,7 @@ services:
     environment:
       - AWS_REGION=${AWS_REGION}
       - AWS_ENDPOINT=http://${LOCALSTACK_HOST}:${LOCALSTACK_PORT}
+      - DB_SYNC=${DB_SYNC}
     depends_on:
       db:
         condition: service_healthy

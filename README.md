@@ -37,4 +37,4 @@ The project provides a Docker setup for the full stack:
    Override values in `.env` or extend `docker-compose.override.yml` for local tweaks.
 
 The compose configuration uses health checks so the backend only starts once PostgreSQL, Redis, RabbitMQ, and LocalStack are
-ready. TypeORM runs with `synchronize: true`, applying pending migrations during container bootstrap.
+ ready. TypeORM's `synchronize` option is controlled by the `DB_SYNC` flag (defaults to `true` in this compose setup).
