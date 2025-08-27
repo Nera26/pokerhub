@@ -18,6 +18,16 @@ The project provides a Docker setup for the full stack:
    cp .env.example .env
    ```
 
+   The `.env` file uses URL-style connection strings:
+
+   ```
+   DATABASE_URL=postgres://postgres:postgres@db:5432/pokerhub
+   REDIS_URL=redis://redis:6379
+   RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+   ```
+
+   Adjust the URLs as needed for your local environment.
+
 2. Start all services:
 
    ```bash
