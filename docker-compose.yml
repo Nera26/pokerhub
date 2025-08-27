@@ -1,5 +1,17 @@
 version: '3.8'
 services:
+  api-gateway:
+    image: kong:3.7
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
+    volumes:
+      - ./infrastructure/api-gateway/kong.yml:/usr/local/kong/declarative/kong.yml:ro
+    ports:
+      - '8080:8000'
+      - '8443:8443'
+    depends_on:
+      - backend
   backend:
     build: ./backend
     command: npm run start:dev

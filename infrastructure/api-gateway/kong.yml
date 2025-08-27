@@ -1,0 +1,44 @@
+_format_version: "3.0"
+services:
+  - name: backend
+    url: http://backend:3000
+    routes:
+      - name: backend-http
+        paths:
+          - /
+        protocols:
+          - http
+          - https
+      - name: backend-ws
+        paths:
+          - /socket.io
+        protocols:
+          - http
+          - https
+          - ws
+          - wss
+    plugins:
+      - name: jwt
+      - name: rate-limiting
+        config:
+          minute: 60
+          policy: local
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          headers:
+            - Authorization
+            - Content-Type
+          exposed_headers:
+            - X-RateLimit-Limit
+            - X-RateLimit-Remaining
+          credentials: true
+          max_age: 3600
