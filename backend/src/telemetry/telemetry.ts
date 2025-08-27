@@ -23,3 +23,10 @@ export function setupTelemetry() {
   sdk.start();
   return sdk;
 }
+
+export async function shutdownTelemetry() {
+  if (!sdk) return;
+
+  await sdk.shutdown();
+  sdk = undefined;
+}
