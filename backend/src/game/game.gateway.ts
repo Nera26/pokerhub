@@ -36,4 +36,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const state = this.engine.applyAction(action);
     client.emit('state', state);
   }
+
+  @SubscribeMessage('replay')
+  handleReplay(@ConnectedSocket() client: Socket) {
+    const state = this.engine.replayHand();
+    client.emit('state', state);
+  }
 }
