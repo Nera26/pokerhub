@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Account } from './account.entity';
 import { JournalEntry } from './journal-entry.entity';
+import { SettlementEntry } from '../game/settlement';
 
 interface Movement {
   account: Account;
@@ -60,5 +61,25 @@ export class WalletService {
       { account: reserve, amount: -amount },
       { account: user, amount },
     ]);
+  }
+
+  async settleHand(entries: SettlementEntry[]): Promise<void> {
+    const reserve = await this.accounts.findOneByOrFail({ name: 'reserve' });
+    const house = await this.accounts.findOneByOrFail({ name: 'house' });
+
+    for (const entry of entries) {
+      const account = await this.accounts.findOneByOrFail({ id: entry.playerId });
+      if (entry.delta > 0) {
+        await this.record([
+          { account: reserve, amount: -entry.delta },
+          { account, amount: entry.delta },
+        ]);
+      } else if (entry.delta < 0) {
+        await this.record([
+          { account: reserve, amount: entry.delta },
+          { account: house, amount: -entry.delta },
+        ]);
+      }
+    }
   }
 }

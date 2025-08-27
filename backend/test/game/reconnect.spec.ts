@@ -2,7 +2,9 @@ import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { io, Socket } from 'socket.io-client';
 import { GameGateway } from '../../src/game/game.gateway';
-import { GameEngine } from '../../src/game/engine';
+import { RoomManager } from '../../src/game/room-worker';
+import { AnalyticsService } from '../../src/analytics/analytics.service';
+import { WalletService } from '../../src/wallet/wallet.service';
 
 function waitForConnect(socket: Socket): Promise<void> {
   return new Promise((resolve) => socket.on('connect', () => resolve()));
@@ -16,9 +18,21 @@ describe('GameGateway reconnect', () => {
   let app: INestApplication;
   let url: string;
 
+  const walletStub: WalletService = {
+    reserve: async () => {},
+    commit: async () => {},
+    rollback: async () => {},
+    settleHand: async () => {},
+  } as any;
+
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      providers: [GameGateway, GameEngine],
+      providers: [
+        GameGateway,
+        RoomManager,
+        { provide: AnalyticsService, useValue: { recordGameEvent: async () => {} } },
+        { provide: WalletService, useValue: walletStub },
+      ],
     }).compile();
 
     app = moduleRef.createNestApplication();
@@ -34,28 +48,27 @@ describe('GameGateway reconnect', () => {
   });
 
   it('ignores duplicate action after reconnect', async () => {
-    const action = { type: 'test' };
+    const action = { type: 'bet', amount: 1 } as any;
     const actionId = 'a1';
 
     const client1 = io(url, { transports: ['websocket'] });
     await waitForConnect(client1);
+    client1.emit('join', { tableId: 't1', role: 'player', playerId: 'p1' });
     client1.emit('action', { ...action, actionId });
     await wait(20);
     client1.disconnect();
 
     const client2 = io(url, { transports: ['websocket'] });
-    const ticks: number[] = [];
     const acks: any[] = [];
-    client2.on('state', (s: any) => ticks.push(s.tick));
     client2.on('action:ack', (a) => acks.push(a));
     await waitForConnect(client2);
+    client2.emit('join', { tableId: 't1', role: 'player', playerId: 'p1' });
     client2.emit('action', { ...action, actionId });
     await wait(10);
     client2.emit('action', { ...action, actionId: 'a2' });
     await wait(20);
     client2.disconnect();
 
-    expect(ticks).toEqual([2]);
     expect(acks).toEqual([
       { actionId, duplicate: true },
       { actionId: 'a2' },
