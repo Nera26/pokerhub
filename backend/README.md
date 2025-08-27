@@ -57,6 +57,14 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+## Telemetry
+
+The API initializes OpenTelemetry tracing during bootstrap via `setupTelemetry()`.
+To flush remaining spans before exit, signal handlers in `main.ts` invoke
+`shutdownTelemetry()` on `SIGINT` or `SIGTERM`. When running the application in
+other contexts such as tests, call `shutdownTelemetry()` before process exit to
+ensure telemetry is properly flushed.
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
