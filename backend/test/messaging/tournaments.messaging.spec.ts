@@ -14,7 +14,7 @@ describe('Tournaments messaging', () => {
 
     const producer = module.get<TournamentsProducer>(TournamentsProducer);
     const date = new Date('2025-01-01T00:00:00Z');
-    await producer.scheduleTournament('t1', date);
+    producer.scheduleTournament('t1', date);
     expect(emit).toHaveBeenCalledWith('tournaments.schedule', {
       tournamentId: 't1',
       startDate: date.toISOString(),
@@ -24,7 +24,10 @@ describe('Tournaments messaging', () => {
   it('consumer should handle scheduling event', () => {
     const consumer = new TournamentsConsumer();
     expect(() =>
-      consumer.handleSchedule({ tournamentId: 't1', startDate: '2025-01-01T00:00:00Z' }),
+      consumer.handleSchedule({
+        tournamentId: 't1',
+        startDate: '2025-01-01T00:00:00Z',
+      }),
     ).not.toThrow();
   });
 });

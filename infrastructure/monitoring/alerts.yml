@@ -1,0 +1,10 @@
+groups:
+  - name: pokerhub-alerts
+    rules:
+      - alert: HighErrorRate
+        expr: rate(http_server_requests_errors_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"

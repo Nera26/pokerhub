@@ -9,6 +9,9 @@ export class User {
   @Column()
   username: string;
 
+  @Column({ nullable: true })
+  avatarKey?: string;
+
   @ManyToMany(() => Table, (table) => table.players)
   tables: Table[];
 }
