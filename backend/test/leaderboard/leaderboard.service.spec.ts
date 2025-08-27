@@ -1,10 +1,30 @@
 import { LeaderboardService } from '../../src/leaderboard/leaderboard.service';
 import type { Cache } from 'cache-manager';
-import { newDb } from 'pg-mem';
-import { DataSource, Repository } from 'typeorm';
-import { User } from '../../src/database/entities/user.entity';
-import { Table } from '../../src/database/entities/table.entity';
-import { Tournament } from '../../src/database/entities/tournament.entity';
+
+class MockRedis {
+  zset = new Map<string, number>();
+  async zrevrange(_key: string, _start: number, _stop: number) {
+    return Array.from(this.zset.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(_start, _stop + 1)
+      .map(([id]) => id);
+  }
+  pipeline() {
+    return {
+      del: () => this,
+      zadd: (_key: string, score: number, member: string) => {
+        this.zset.set(member, score);
+        return this;
+      },
+      exec: async () => {
+        /* no-op */
+      },
+    };
+  }
+  async xrange() {
+    return [];
+  }
+}
 
 class MockCache {
   store = new Map<string, any>();
@@ -27,55 +47,21 @@ class MockCache {
 }
 
 describe('LeaderboardService', () => {
-  let dataSource: DataSource;
-  let repo: Repository<User>;
   let cache: MockCache;
+  let redis: MockRedis;
   let service: LeaderboardService;
 
-  beforeAll(async () => {
-    const db = newDb();
-    db.public.registerFunction({
-      name: 'version',
-      returns: 'text',
-      implementation: () => 'pg-mem',
-    });
-    db.public.registerFunction({
-      name: 'current_database',
-      returns: 'text',
-      implementation: () => 'test',
-    });
-    db.public.registerFunction({
-      name: 'uuid_generate_v4',
-      returns: 'text',
-      implementation: () => '00000000-0000-0000-0000-000000000000',
-    });
-    dataSource = db.adapters.createTypeormDataSource({
-      type: 'postgres',
-      entities: [User, Table, Tournament],
-      synchronize: true,
-    }) as DataSource;
-    await dataSource.initialize();
-    repo = dataSource.getRepository(User);
-  });
-
-  afterAll(async () => {
-    await dataSource.destroy();
-  });
-
-  beforeEach(async () => {
-    await repo.createQueryBuilder().delete().from(User).where('1=1').execute();
-    await repo.save([
-      { id: '11111111-1111-1111-1111-111111111111', username: 'alice' },
-      { id: '22222222-2222-2222-2222-222222222222', username: 'bob' },
-      { id: '33333333-3333-3333-3333-333333333333', username: 'carol' },
-      { id: '44444444-4444-4444-4444-444444444444', username: 'dave' },
-    ]);
+  beforeEach(() => {
     cache = new MockCache();
-    service = new LeaderboardService(cache as unknown as Cache, repo);
+    redis = new MockRedis();
+    redis.zset.set('alice', 100);
+    redis.zset.set('bob', 90);
+    redis.zset.set('carol', 80);
+    service = new LeaderboardService(cache as unknown as Cache, redis as any);
   });
 
-  it('uses cache around DB query', async () => {
-    const spy = jest.spyOn(repo, 'find');
+  it('uses cache around Redis query', async () => {
+    const spy = jest.spyOn(redis, 'zrevrange');
     const first = await service.getTopPlayers();
     expect(first).toEqual(['alice', 'bob', 'carol']);
     expect(spy).toHaveBeenCalledTimes(1);

@@ -13,6 +13,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusResponse'
+  /leaderboard:
+    get:
+      summary: Get leaderboard
+      responses:
+        '200':
+          description: Top players
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaderboardResponse'
+  /leaderboard/rebuild:
+    post:
+      summary: Rebuild leaderboard
+      parameters:
+        - in: query
+          name: days
+          schema:
+            type: integer
+            minimum: 1
+            default: 30
+      responses:
+        '200':
+          description: Rebuild triggered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
 components:
   schemas:
     StatusResponse:
@@ -36,3 +63,7 @@ components:
           type: string
       required:
         - message
+    LeaderboardResponse:
+      type: array
+      items:
+        type: string
