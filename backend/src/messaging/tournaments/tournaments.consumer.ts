@@ -8,7 +8,10 @@ export class TournamentsConsumer {
   @MessagePattern('tournaments.schedule')
   handleSchedule(
     @Payload()
-    payload: { tournamentId: string; startDate: string },
+    payload: {
+      tournamentId: string;
+      startDate: string;
+    },
   ) {
     this.logger.debug(
       `Scheduling tournament ${payload.tournamentId} at ${payload.startDate}`,

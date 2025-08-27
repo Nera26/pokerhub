@@ -9,6 +9,7 @@ import {
   loggingConfig,
   analyticsConfig,
   telemetryConfig,
+  rabbitmqConfig,
 } from './config';
 import { validationSchema } from './config/env.validation';
 import { AppController } from './app.controller';
@@ -36,6 +37,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
         loggingConfig,
         analyticsConfig,
         telemetryConfig,
+        rabbitmqConfig,
       ],
     }),
     LoggerModule.forRoot(),
