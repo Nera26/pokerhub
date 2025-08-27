@@ -28,6 +28,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { TournamentModule } from './tournament/tournament.module';
 
 import { WalletModule } from './wallet/wallet.module';
+import { HandsModule } from './hands/hands.module';
 
 
 @Module({
@@ -75,6 +76,7 @@ import { WalletModule } from './wallet/wallet.module';
     TournamentModule,
 
     WalletModule,
+    HandsModule,
 
   ],
   controllers: [AppController],

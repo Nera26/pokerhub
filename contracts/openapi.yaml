@@ -13,6 +13,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusResponse'
+  /hands/{id}/proof:
+    get:
+      summary: Get hand proof
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Hand proof
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HandProof'
+        '404':
+          description: Proof not found
 components:
   schemas:
     StatusResponse:
@@ -36,3 +55,16 @@ components:
           type: string
       required:
         - message
+    HandProof:
+      type: object
+      properties:
+        seed:
+          type: string
+        nonce:
+          type: string
+        commitment:
+          type: string
+      required:
+        - seed
+        - nonce
+        - commitment

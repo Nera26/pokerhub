@@ -1,5 +1,5 @@
 import { randomBytes, createHash } from 'crypto';
-import { appendFileSync } from 'fs';
+import { HandsService } from '../hands/hands.service';
 
 /**
  * Hash seed||nonce using sha256.
@@ -56,15 +56,14 @@ export class HandRNG {
   private readonly nonce: Buffer;
   readonly commitment: string;
 
-  constructor() {
+  constructor(
+    private readonly handId: string,
+    private readonly hands: HandsService,
+  ) {
     this.seed = randomBytes(32);
     this.nonce = randomBytes(16);
     this.commitment = hashCommitment(this.seed, this.nonce);
-    log({
-      stage: 'commit',
-      commitment: this.commitment,
-      nonce: this.nonce.toString('hex'),
-    });
+    this.hands.recordCommitment(this.handId, this.commitment);
   }
 
   /**
@@ -77,22 +76,14 @@ export class HandRNG {
   /**
    * Reveal seed & nonce after showdown and log proof.
    */
-  reveal(): HandProof {
+  reveal(log?: unknown): HandProof {
     const proof: HandProof = {
       commitment: this.commitment,
       seed: this.seed.toString('hex'),
       nonce: this.nonce.toString('hex'),
     };
-    log({ stage: 'reveal', ...proof });
+    this.hands.recordReveal(this.handId, proof, log);
     return proof;
-  }
-}
-
-function log(entry: unknown) {
-  try {
-    appendFileSync('hand-log', JSON.stringify(entry) + '\n');
-  } catch {
-    // ignore logging errors
   }
 }
 

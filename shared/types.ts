@@ -14,3 +14,6 @@ export const MessageResponseSchema = z.object({
   message: z.string(),
 });
 export type MessageResponse = z.infer<typeof MessageResponseSchema>;
+
+export { HandProofSchema } from '../backend/src/schemas/hands';
+export type { HandProof } from '../backend/src/schemas/hands';
