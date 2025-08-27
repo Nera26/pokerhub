@@ -3,6 +3,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 import { TournamentsProducer } from './tournaments/tournaments.producer';
 import { TournamentsConsumer } from './tournaments/tournaments.consumer';
+import { AnalyticsModule } from '../analytics/analytics.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { TournamentsConsumer } from './tournaments/tournaments.consumer';
         inject: [ConfigService],
       },
     ]),
+    AnalyticsModule,
   ],
   providers: [TournamentsProducer],
   controllers: [TournamentsConsumer],

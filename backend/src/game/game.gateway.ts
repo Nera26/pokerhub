@@ -10,6 +10,7 @@ import {
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { GameEngine, GameAction } from './engine';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 @WebSocketGateway({ namespace: 'game' })
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -18,7 +19,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
 
-  constructor(private readonly engine: GameEngine) {}
+  constructor(
+    private readonly engine: GameEngine,
+    private readonly analytics: AnalyticsService,
+  ) {}
 
   handleConnection(client: Socket) {
     this.logger.debug(`Client connected: ${client.id}`);
@@ -34,6 +38,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() action: GameAction,
   ) {
     const state = this.engine.applyAction(action);
+    void this.analytics.recordGameEvent({ clientId: client.id, action });
     client.emit('state', state);
   }
 }
