@@ -8,6 +8,7 @@ import { LeaderboardModule } from './leaderboard/leaderboard.module';
 
 @Module({
   imports: [
+    // Database (Postgres via TypeORM)
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST || 'localhost',
@@ -16,10 +17,16 @@ import { LeaderboardModule } from './leaderboard/leaderboard.module';
       password: process.env.DB_PASS || 'postgres',
       database: process.env.DB_NAME || 'pokerhub',
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: true, // turn off in production
     }),
+
+    // Redis (caching / pub-sub)
     RedisModule,
+
+    // Sessions (e.g., Redis-backed)
     SessionModule,
+
+    // Feature modules
     LeaderboardModule,
   ],
   controllers: [AppController],
