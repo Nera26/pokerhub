@@ -7,7 +7,7 @@ import {
   LoginResponseSchema,
   MessageResponse,
   MessageResponseSchema,
-} from './schemas';
+} from '@shared/types';
 
 export async function login(
   email: string,
@@ -38,7 +38,7 @@ export async function requestPasswordReset(
   email: string,
 ): Promise<MessageResponse> {
   return handleResponse(
-    serverFetch('/api/auth/request-reset', {
+    serverFetch(`${getBaseUrl()}/api/auth/request-reset`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
@@ -52,7 +52,7 @@ export async function verifyResetCode(
   code: string,
 ): Promise<MessageResponse> {
   return handleResponse(
-    serverFetch('/api/auth/verify-reset-code', {
+    serverFetch(`${getBaseUrl()}/api/auth/verify-reset-code`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, code }),
@@ -67,7 +67,7 @@ export async function resetPassword(
   password: string,
 ): Promise<MessageResponse> {
   return handleResponse(
-    serverFetch('/api/auth/reset-password', {
+    serverFetch(`${getBaseUrl()}/api/auth/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, code, password }),

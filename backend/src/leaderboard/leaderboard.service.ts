@@ -3,6 +3,7 @@ import { Cache } from 'cache-manager';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../database/entities/user.entity';
+import { EtlService } from '../analytics/etl.service';
 
 @Injectable()
 export class LeaderboardService {
@@ -13,7 +14,12 @@ export class LeaderboardService {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
-  ) {}
+    private readonly etl: EtlService,
+  ) {
+    setInterval(() => {
+      void this.rebuild();
+    }, 24 * 60 * 60 * 1000);
+  }
 
   async getTopPlayers(): Promise<string[]> {
     const cached = await this.cache.get<string[]>(this.cacheKey);
@@ -28,6 +34,11 @@ export class LeaderboardService {
 
   async invalidate(): Promise<void> {
     await this.cache.del(this.cacheKey);
+  }
+
+  async rebuild(): Promise<void> {
+    await this.etl.run();
+    await this.invalidate();
   }
 
   private async fetchTopPlayers(): Promise<string[]> {

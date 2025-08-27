@@ -1,0 +1,38 @@
+openapi: 3.1.0
+info:
+  title: PokerHub API
+  version: 1.0.0
+paths:
+  /status:
+    get:
+      summary: Get service status
+      responses:
+        '200':
+          description: Service status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+components:
+  schemas:
+    StatusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+      required:
+        - token
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message

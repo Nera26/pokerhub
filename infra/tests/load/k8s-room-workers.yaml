@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: room-worker
+  labels:
+    app: room-worker
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: room-worker
+  template:
+    metadata:
+      labels:
+        app: room-worker
+    spec:
+      containers:
+        - name: room-worker
+          image: pokerhub/room-worker:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: NODE_ENV
+              value: production
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: room-worker
+spec:
+  selector:
+    app: room-worker
+  ports:
+    - port: 80
+      targetPort: 8080
+  type: ClusterIP
