@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - name: Lint lockfile
+        run: npx lockfile-lint --path package-lock.json --type npm --validate-https --allow-hosts registry.npmjs.org
+      - name: Run ESLint
+        run: npm run lint
+      - name: Run type checks
+        run: npm run typecheck
+      - run: ANALYZE=true npm run build
+      - name: Check bundle sizes
+        run: npm run bundle:check
+      - name: Run performance tests
+        run: npm run test:perf
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+      - name: Run accessibility tests
+        run: npm run test:a11y
+      - name: Run unit tests
+        run: npm test
+      - name: Run visual regression tests
+        run: npm run test:visual
+        env:
+          CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+
+  e2e:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: [chromium, webkit, mobile-chrome, mobile-safari]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+      - name: Run end-to-end tests
+        run: npm run test:e2e -- --project=${{ matrix.project }}
