@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { getBaseUrl } from '@/lib/base-url';
 import { handleResponse } from './client';
 import { serverFetch } from '@/lib/server-fetch';
+import { getSocket } from '@/app/utils/socket';
 
 const PlayerSchema = z.object({
   id: z.number(),
@@ -49,4 +50,53 @@ export async function fetchTable(
     cache: 'no-store',
   });
   return handleResponse(res, TableDataSchema);
+}
+
+interface ActionAck {
+  actionId: string;
+  duplicate?: boolean;
+}
+
+async function sendAction(action: Record<string, unknown> & { type: string }) {
+  const socket = getSocket();
+  const actionId = crypto.randomUUID();
+  const payload = { ...action, actionId };
+  let attempt = 0;
+  const maxAttempts = 5;
+
+  return new Promise<void>((resolve, reject) => {
+    function handleAck(ack: ActionAck) {
+      if (ack.actionId === actionId) {
+        socket.off('action:ack', handleAck);
+        clearTimeout(timeoutId);
+        resolve();
+      }
+    }
+
+    function send() {
+      attempt++;
+      socket.emit('action', payload);
+      const delay = Math.pow(2, attempt) * 100;
+      timeoutId = setTimeout(() => {
+        if (attempt >= maxAttempts) {
+          socket.off('action:ack', handleAck);
+          reject(new Error('ACK timeout'));
+          return;
+        }
+        send();
+      }, delay);
+    }
+
+    let timeoutId: ReturnType<typeof setTimeout>;
+    socket.on('action:ack', handleAck);
+    send();
+  });
+}
+
+export function joinTable(tableId: string) {
+  return sendAction({ type: 'join', tableId });
+}
+
+export function bet(tableId: string, amount: number) {
+  return sendAction({ type: 'bet', tableId, amount });
 }
