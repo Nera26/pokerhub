@@ -13,6 +13,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusResponse'
+  /tournaments:
+    get:
+      summary: List tournaments
+      responses:
+        '200':
+          description: Tournament list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TournamentInfo'
+  /tournaments/prizes:
+    post:
+      summary: Calculate tournament prizes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrizeCalcRequest'
+      responses:
+        '200':
+          description: Prize calculation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrizeCalcResponse'
 components:
   schemas:
     StatusResponse:
@@ -36,3 +64,66 @@ components:
           type: string
       required:
         - message
+    TournamentInfo:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        buyIn:
+          type: number
+        prizePool:
+          type: number
+        players:
+          type: object
+          properties:
+            current:
+              type: number
+            max:
+              type: number
+        registered:
+          type: boolean
+      required:
+        - id
+        - title
+        - buyIn
+        - prizePool
+        - players
+        - registered
+    PrizeCalcRequest:
+      type: object
+      properties:
+        prizePool:
+          type: number
+        payouts:
+          type: array
+          items:
+            type: number
+        options:
+          type: object
+          properties:
+            bounty:
+              type: number
+            pko:
+              type: boolean
+            satelliteTicketValue:
+              type: number
+      required:
+        - prizePool
+        - payouts
+    PrizeCalcResponse:
+      type: object
+      properties:
+        prizes:
+          type: array
+          items:
+            type: number
+        bounty:
+          type: number
+        pko:
+          type: boolean
+        seats:
+          type: number
+      required:
+        - prizes

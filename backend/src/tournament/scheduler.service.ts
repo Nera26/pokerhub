@@ -7,12 +7,12 @@ import { Injectable } from '@nestjs/common';
  */
 @Injectable()
 export class TournamentScheduler {
-  private registrationQueue: any | undefined;
-  private breakQueue: any | undefined;
+  /** cache of BullMQ queues keyed by queue name */
+  private queues = new Map<string, any>();
 
   private async getQueue(name: string): Promise<any> {
-    if (name === 'registration' && this.registrationQueue) return this.registrationQueue;
-    if (name === 'break' && this.breakQueue) return this.breakQueue;
+    const existing = this.queues.get(name);
+    if (existing) return existing;
 
     const bull = await import('bullmq');
     const queue = new bull.Queue(name, {
@@ -21,10 +21,7 @@ export class TournamentScheduler {
         port: Number(process.env.REDIS_PORT ?? 6379),
       },
     });
-
-    if (name === 'registration') this.registrationQueue = queue;
-    else if (name === 'break') this.breakQueue = queue;
-
+    this.queues.set(name, queue);
     return queue;
   }
 
@@ -38,6 +35,14 @@ export class TournamentScheduler {
     await queue.add('close', { tournamentId }, { delay: close.getTime() - Date.now() });
   }
 
+  async scheduleLateRegistration(
+    tournamentId: string,
+    close: Date,
+  ): Promise<void> {
+    const queue = await this.getQueue('late-registration');
+    await queue.add('close', { tournamentId }, { delay: close.getTime() - Date.now() });
+  }
+
   async scheduleBreak(
     tournamentId: string,
     start: Date,
@@ -46,5 +51,14 @@ export class TournamentScheduler {
     const queue = await this.getQueue('break');
     await queue.add('start', { tournamentId }, { delay: start.getTime() - Date.now() });
     await queue.add('end', { tournamentId }, { delay: start.getTime() - Date.now() + durationMs });
+  }
+
+  async scheduleLevelUp(
+    tournamentId: string,
+    level: number,
+    at: Date,
+  ): Promise<void> {
+    const queue = await this.getQueue('level');
+    await queue.add('level', { tournamentId, level }, { delay: at.getTime() - Date.now() });
   }
 }

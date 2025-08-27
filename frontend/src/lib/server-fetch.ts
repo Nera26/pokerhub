@@ -33,6 +33,12 @@ export async function serverFetch(
         { status: 200, headers: { 'Content-Type': 'application/json' } },
       );
     }
+    if (url.includes('/api/tournaments/prizes')) {
+      return new Response(
+        JSON.stringify({ prizes: [500, 300, 200] }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
     if (url.includes('/api/tournaments')) {
       return new Response(JSON.stringify([]), {
         status: 200,
