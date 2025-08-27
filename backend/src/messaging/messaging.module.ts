@@ -1,18 +1,22 @@
 import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ConfigService } from '@nestjs/config';
 import { TournamentsProducer } from './tournaments/tournaments.producer';
 import { TournamentsConsumer } from './tournaments/tournaments.consumer';
 
 @Module({
   imports: [
-    ClientsModule.register([
+    ClientsModule.registerAsync([
       {
         name: 'TOURNAMENTS_SERVICE',
-        transport: Transport.RMQ,
-        options: {
-          urls: [process.env.RABBITMQ_URL ?? 'amqp://localhost:5672'],
-          queue: 'tournaments',
-        },
+        useFactory: (config: ConfigService) => ({
+          transport: Transport.RMQ,
+          options: {
+            urls: [config.get<string>('rabbitmq.url')],
+            queue: config.get<string>('rabbitmq.queue'),
+          },
+        }),
+        inject: [ConfigService],
       },
     ]),
   ],
