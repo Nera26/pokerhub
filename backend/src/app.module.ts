@@ -2,10 +2,17 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+
 import { MessagingModule } from './messaging/messaging.module';
+
+import { RedisModule } from './redis/redis.module';
+import { SessionModule } from './session/session.module';
+import { LeaderboardModule } from './leaderboard/leaderboard.module';
+
 
 @Module({
   imports: [
+    // Database (Postgres via TypeORM)
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST || 'localhost',
@@ -14,9 +21,21 @@ import { MessagingModule } from './messaging/messaging.module';
       password: process.env.DB_PASS || 'postgres',
       database: process.env.DB_NAME || 'pokerhub',
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: true, // turn off in production
     }),
+
     MessagingModule,
+
+
+    // Redis (caching / pub-sub)
+    RedisModule,
+
+    // Sessions (e.g., Redis-backed)
+    SessionModule,
+
+    // Feature modules
+    LeaderboardModule,
+
   ],
   controllers: [AppController],
   providers: [AppService],
