@@ -140,6 +140,31 @@ describe('LeaderboardService', () => {
     expect(top[0]).toBe('alice');
   });
 
+  it('supports player specific session minimums and decay', async () => {
+    const now = Date.now();
+    analytics.events = [
+      { playerId: 'alice', sessionId: 'a1', points: 10, ts: now },
+      { playerId: 'alice', sessionId: 'a2', points: 10, ts: now },
+      {
+        playerId: 'bob',
+        sessionId: 'b1',
+        points: 10,
+        ts: now - 5 * 24 * 60 * 60 * 1000,
+      },
+    ];
+    const minSessionsFn = jest.fn((id: string) => (id === 'alice' ? 3 : 1));
+    const decayFn = jest.fn((id: string) => (id === 'alice' ? 1 : 0.5));
+    await service.rebuild({
+      days: 30,
+      minSessions: minSessionsFn,
+      decay: decayFn,
+    });
+    const top = await service.getTopPlayers();
+    expect(top).toEqual(['bob']);
+    expect(minSessionsFn).toHaveBeenCalledTimes(2);
+    expect(decayFn).toHaveBeenCalledTimes(2);
+  });
+
   it('rebuild is deterministic regardless of event order', async () => {
     const now = Date.now();
     const events = [
