@@ -252,11 +252,11 @@ export class WalletService {
     const accounts = await this.accounts.find();
     const report: ReconcileRow[] = [];
     for (const acc of accounts) {
-      const { sum } = (await this.journals
+      const { sum } = ((await this.journals
         .createQueryBuilder('j')
         .where('j.accountId = :id', { id: acc.id })
         .select('COALESCE(SUM(j.amount),0)', 'sum')
-        .getRawOne()) || { sum: 0 };
+        .getRawOne()) as { sum: number } | null) ?? { sum: 0 };
       const total = Number(sum);
       if (total !== Number(acc.balance)) {
         report.push({
@@ -350,6 +350,9 @@ export class WalletService {
         try {
           await this.checkVelocity('deposit', deviceId, ip);
           const user = await this.accounts.findOneByOrFail({ id: accountId });
+          if (!user.kycVerified) {
+            throw new Error('KYC required');
+          }
           const house = await this.accounts.findOneByOrFail({ name: 'house' });
           const ref = randomUUID();
           await this.record('deposit', ref, [

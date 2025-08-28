@@ -6,11 +6,12 @@ import { JournalEntry } from '../src/wallet/journal-entry.entity';
 import { Disbursement } from '../src/wallet/disbursement.entity';
 import { WalletService } from '../src/wallet/wallet.service';
 import { EventPublisher } from '../src/events/events.service';
+import type Redis from 'ioredis';
 
 jest.setTimeout(20000);
 
 describe('WalletService zero-sum property', () => {
-  const events: EventPublisher = { emit: jest.fn() } as any;
+  const events = { emit: jest.fn() } as unknown as EventPublisher;
   const userId = '11111111-1111-1111-1111-111111111111';
 
   async function setup() {
@@ -32,7 +33,7 @@ describe('WalletService zero-sum property', () => {
       implementation: () => {
         const id = seq.toString(16).padStart(32, '0');
         seq++;
-        return `${id.slice(0,8)}-${id.slice(8,12)}-${id.slice(12,16)}-${id.slice(16,20)}-${id.slice(20)}`;
+        return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(16, 20)}-${id.slice(20)}`;
       },
     });
     const dataSource = db.adapters.createTypeormDataSource({
@@ -44,15 +45,44 @@ describe('WalletService zero-sum property', () => {
     const accountRepo = dataSource.getRepository(Account);
     const journalRepo = dataSource.getRepository(JournalEntry);
     const disbRepo = dataSource.getRepository(Disbursement);
-    const redis: any = { incr: jest.fn().mockResolvedValue(0), expire: jest.fn() };
-    const service = new WalletService(accountRepo, journalRepo, disbRepo, events, redis);
-    (service as any).enqueueDisbursement = jest.fn();
+    const redis = {
+      incr: (): Promise<number> => Promise.resolve(0),
+      expire: (): Promise<void> => Promise.resolve(),
+    } as unknown as Redis;
+    const service = new WalletService(
+      accountRepo,
+      journalRepo,
+      disbRepo,
+      events,
+      redis,
+    );
+    Object.assign(service, { enqueueDisbursement: jest.fn() });
     await accountRepo.save([
-      { id: userId, name: 'user', balance: 0 },
-      { id: '00000000-0000-0000-0000-000000000001', name: 'reserve', balance: 0 },
-      { id: '00000000-0000-0000-0000-000000000002', name: 'house', balance: 0 },
-      { id: '00000000-0000-0000-0000-000000000003', name: 'rake', balance: 0 },
-      { id: '00000000-0000-0000-0000-000000000004', name: 'prize', balance: 0 },
+      { id: userId, name: 'user', balance: 0, kycVerified: true },
+      {
+        id: '00000000-0000-0000-0000-000000000001',
+        name: 'reserve',
+        balance: 0,
+        kycVerified: true,
+      },
+      {
+        id: '00000000-0000-0000-0000-000000000002',
+        name: 'house',
+        balance: 0,
+        kycVerified: true,
+      },
+      {
+        id: '00000000-0000-0000-0000-000000000003',
+        name: 'rake',
+        balance: 0,
+        kycVerified: true,
+      },
+      {
+        id: '00000000-0000-0000-0000-000000000004',
+        name: 'prize',
+        balance: 0,
+        kycVerified: true,
+      },
     ]);
     await service.deposit(userId, 1000, 'dev', '127.0.0.1');
     return { dataSource, service, journalRepo };
@@ -93,4 +123,3 @@ describe('WalletService zero-sum property', () => {
     );
   });
 });
-
