@@ -38,10 +38,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private readonly processed = new Set<string>();
 
+
   private readonly queues = new Map<
     string,
     { event: string; data: unknown }[]
   >();
+
+
+  private readonly queues = new Map<string, { event: string; data: unknown }[]>();
+
+
 
   private readonly sending = new Set<string>();
   private readonly actionCounterKey = 'game:action_counter';
@@ -98,6 +104,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
+
     this.processed.add(actionId);
     await this.redis.set(key, '1', 'EX', this.processedTtlSeconds);
 
@@ -107,6 +114,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
     const parsed = result.data;
+
+    const { actionId, ...rest } = action;
+    const parsed = GameActionSchema.parse(rest);
+
 
     if (parsed.playerId) {
       this.clock.clearTimer(parsed.playerId);
@@ -132,6 +143,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         .to(tableId)
         .emit('state', { ...publicState, tick: this.tick });
     }
+
+
 
     this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
 

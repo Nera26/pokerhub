@@ -122,7 +122,9 @@ export default function PlayerSeat({
           >
             <span className="font-semibold">{player.username}</span>
             {player.lastAction && <span>{player.lastAction}</span>}
-            {isHero && <PlayerHoleCards cards={player.cards ?? []} isHero />}
+            {isHero && player.cards && (
+              <PlayerHoleCards cards={player.cards} isHero />
+            )}
           </div>
         </div>
       </div>

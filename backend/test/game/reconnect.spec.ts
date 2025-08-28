@@ -81,7 +81,7 @@ describe('GameGateway reconnect', () => {
   });
 
   it('ignores duplicate action after reconnect', async () => {
-    const action = { type: 'next' };
+    const action = { type: 'next', tableId: 'default' };
     const actionId = 'a1';
 
     const client1 = io(url, { transports: ['websocket'] });
