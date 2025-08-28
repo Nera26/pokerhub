@@ -18,6 +18,14 @@ jobs:
           PG_SNAPSHOT_ID: ${{ vars.PG_SNAPSHOT_ID }}
           REDIS_SNAPSHOT_ID: ${{ vars.REDIS_SNAPSHOT_ID }}
           SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+      - name: Restore snapshots to test cluster
+        run: bash infra/scripts/restore-test-cluster.sh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          PG_SNAPSHOT_ID: ${{ vars.PG_SNAPSHOT_ID }}
+          REDIS_SNAPSHOT_ID: ${{ vars.REDIS_SNAPSHOT_ID }}
+          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
       - name: Notify Slack on failure
         if: failure()
         uses: slackapi/slack-github-action@v1.24.0
