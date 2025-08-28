@@ -5,7 +5,7 @@ import { EtlService } from './etl.service';
 import { RedisModule } from '../redis/redis.module';
 import { EventConsumer } from './event-consumer';
 import { CollusionService } from './collusion.service';
-import { ReviewController } from '../routes/review.controller';
+import { ReviewController } from './review.controller';
 import { FlaggedSessionJob } from './flagged-session.job';
 import { AdminController } from '../routes/admin.controller';
 
