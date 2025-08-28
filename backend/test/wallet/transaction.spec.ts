@@ -7,6 +7,7 @@ import { WalletService } from '../../src/wallet/wallet.service';
 import { EventPublisher } from '../../src/events/events.service';
 import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
 import { KycService } from '../../src/wallet/kyc.service';
+import { SettlementJournal } from '../../src/wallet/settlement-journal.entity';
 
 describe('WalletService transactions', () => {
   let dataSource: DataSource;
@@ -37,7 +38,7 @@ describe('WalletService transactions', () => {
     });
     dataSource = db.adapters.createTypeormDataSource({
       type: 'postgres',
-      entities: [Account, JournalEntry, Disbursement],
+      entities: [Account, JournalEntry, Disbursement, SettlementJournal],
       synchronize: true,
     }) as DataSource;
     await dataSource.initialize();
@@ -48,6 +49,7 @@ describe('WalletService transactions', () => {
       expire: jest.fn(),
     };
     const disbRepo = dataSource.getRepository(Disbursement);
+    const settleRepo = dataSource.getRepository(SettlementJournal);
     const provider = {
       initiate3DS: jest.fn(),
       getStatus: jest.fn(),
@@ -57,6 +59,7 @@ describe('WalletService transactions', () => {
       accountRepo,
       journalRepo,
       disbRepo,
+      settleRepo,
       events,
       redis,
       provider,

@@ -9,6 +9,7 @@ import { EventPublisher } from '../src/events/events.service';
 import type Redis from 'ioredis';
 import { PaymentProviderService } from '../src/wallet/payment-provider.service';
 import { KycService } from '../src/wallet/kyc.service';
+import { SettlementJournal } from '../src/wallet/settlement-journal.entity';
 
 jest.setTimeout(20000);
 
@@ -40,13 +41,14 @@ describe('WalletService zero-sum property', () => {
     });
     const dataSource = db.adapters.createTypeormDataSource({
       type: 'postgres',
-      entities: [Account, JournalEntry, Disbursement],
+      entities: [Account, JournalEntry, Disbursement, SettlementJournal],
       synchronize: true,
     }) as DataSource;
     await dataSource.initialize();
     const accountRepo = dataSource.getRepository(Account);
     const journalRepo = dataSource.getRepository(JournalEntry);
     const disbRepo = dataSource.getRepository(Disbursement);
+    const settleRepo = dataSource.getRepository(SettlementJournal);
     const redis = {
       incr: (): Promise<number> => Promise.resolve(0),
       expire: (): Promise<void> => Promise.resolve(),
@@ -60,6 +62,7 @@ describe('WalletService zero-sum property', () => {
       accountRepo,
       journalRepo,
       disbRepo,
+      settleRepo,
       events,
       redis,
       provider,

@@ -8,6 +8,7 @@ import { WalletService } from '../../src/wallet/wallet.service';
 import { EventPublisher } from '../../src/events/events.service';
 import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
 import { KycService } from '../../src/wallet/kyc.service';
+import { SettlementJournal } from '../../src/wallet/settlement-journal.entity';
 
 jest.setTimeout(20000);
 
@@ -42,13 +43,14 @@ describe('WalletService balance invariants', () => {
     });
     const dataSource = db.adapters.createTypeormDataSource({
       type: 'postgres',
-      entities: [Account, JournalEntry, Disbursement],
+      entities: [Account, JournalEntry, Disbursement, SettlementJournal],
       synchronize: true,
     }) as DataSource;
     await dataSource.initialize();
     const accountRepo = dataSource.getRepository(Account);
     const journalRepo = dataSource.getRepository(JournalEntry);
     const disbRepo = dataSource.getRepository(Disbursement);
+    const settleRepo = dataSource.getRepository(SettlementJournal);
     const redis: any = {
       incr: jest.fn().mockResolvedValue(0),
       expire: jest.fn(),
@@ -62,6 +64,7 @@ describe('WalletService balance invariants', () => {
       accountRepo,
       journalRepo,
       disbRepo,
+      settleRepo,
       events,
       redis,
       provider,
@@ -85,13 +88,13 @@ describe('WalletService balance invariants', () => {
   const reserveArb = fc.record({
     type: fc.constant<'reserve'>('reserve'),
     amount: fc.integer({ min: 1, max: 100 }),
-    ref: fc.string({ minLength: 1, maxLength: 10 }),
+    ref: fc.hexaString({ minLength: 1, maxLength: 10 }),
   });
 
   const rollbackArb = fc.record({
     type: fc.constant<'rollback'>('rollback'),
     amount: fc.integer({ min: 1, max: 100 }),
-    ref: fc.string({ minLength: 1, maxLength: 10 }),
+    ref: fc.hexaString({ minLength: 1, maxLength: 10 }),
   });
 
   const commitArb = fc.integer({ min: 1, max: 100 }).chain((amount) =>
@@ -99,7 +102,7 @@ describe('WalletService balance invariants', () => {
       type: fc.constant<'commit'>('commit'),
       amount: fc.constant(amount),
       rake: fc.integer({ min: 0, max: amount }),
-      ref: fc.string({ minLength: 1, maxLength: 10 }),
+      ref: fc.hexaString({ minLength: 1, maxLength: 10 }),
     }),
   );
 

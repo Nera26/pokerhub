@@ -8,6 +8,7 @@ import { EventPublisher } from '../../src/events/events.service';
 import type Redis from 'ioredis';
 import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
 import { KycService } from '../../src/wallet/kyc.service';
+import { SettlementJournal } from '../../src/wallet/settlement-journal.entity';
 
 describe('WalletService deposit', () => {
   let dataSource: DataSource;
@@ -50,18 +51,20 @@ describe('WalletService deposit', () => {
     });
     dataSource = db.adapters.createTypeormDataSource({
       type: 'postgres',
-      entities: [Account, JournalEntry, Disbursement],
+      entities: [Account, JournalEntry, Disbursement, SettlementJournal],
       synchronize: true,
     }) as DataSource;
     await dataSource.initialize();
     const accountRepo = dataSource.getRepository(Account);
     const journalRepo = dataSource.getRepository(JournalEntry);
     const disbRepo = dataSource.getRepository(Disbursement);
+    const settleRepo = dataSource.getRepository(SettlementJournal);
     const kyc = { validate: jest.fn().mockResolvedValue(undefined) } as unknown as KycService;
     service = new WalletService(
       accountRepo,
       journalRepo,
       disbRepo,
+      settleRepo,
       events,
       redis,
       provider,
@@ -78,8 +81,10 @@ describe('WalletService deposit', () => {
     const accountRepo = dataSource.getRepository(Account);
     const journalRepo = dataSource.getRepository(JournalEntry);
     const disbRepo = dataSource.getRepository(Disbursement);
+    const settleRepo = dataSource.getRepository(SettlementJournal);
     await journalRepo.createQueryBuilder().delete().execute();
     await disbRepo.createQueryBuilder().delete().execute();
+    await settleRepo.createQueryBuilder().delete().execute();
     await accountRepo.createQueryBuilder().delete().execute();
     await accountRepo.save([
       {
