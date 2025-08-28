@@ -205,6 +205,10 @@ export const HandProofResponseSchema = z.object({
 });
 export type HandProofResponse = z.infer<typeof HandProofResponseSchema>;
 
+// Alias matching OpenAPI schema name
+export const HandProofSchema = HandProofResponseSchema;
+export type HandProof = HandProofResponse;
+
 // Raw JSONL hand history
 export const HandLogResponseSchema = z.string();
 export type HandLogResponse = z.infer<typeof HandLogResponseSchema>;
