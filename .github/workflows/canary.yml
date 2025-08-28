@@ -18,6 +18,10 @@ jobs:
         uses: azure/setup-kubectl@v3
         with:
           version: v1.27.3
+      - name: Validate observability configs
+        run: |
+          python -m pip install pyyaml >/dev/null
+          python infra/observability/validate.py
       - name: Canary deploy
         run: bash docs/scripts/canary-deploy.sh
         env:

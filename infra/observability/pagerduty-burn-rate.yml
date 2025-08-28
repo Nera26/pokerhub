@@ -1,0 +1,8 @@
+service: pokerhub
+slo: 0.99
+alerts:
+  - window: 1h
+    burn_rate_threshold: 14.4
+  - window: 6h
+    burn_rate_threshold: 6
+pagerduty_service: pokerhub-ops
