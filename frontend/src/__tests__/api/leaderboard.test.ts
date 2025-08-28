@@ -13,9 +13,15 @@ describe('leaderboard api', () => {
       ok: true,
       status: 200,
       headers: { get: () => 'application/json' },
-      json: async () => ['alice', 'bob'],
+      json: async () => [
+        { playerId: 'alice', rank: 1, points: 100 },
+        { playerId: 'bob', rank: 2, points: 90 },
+      ],
     });
 
-    await expect(fetchLeaderboard()).resolves.toEqual(['alice', 'bob']);
+    await expect(fetchLeaderboard()).resolves.toEqual([
+      { playerId: 'alice', rank: 1, points: 100 },
+      { playerId: 'bob', rank: 2, points: 90 },
+    ]);
   });
 });
