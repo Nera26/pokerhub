@@ -1,22 +1,49 @@
-import http from 'k6/http';
+import ws from 'k6/ws';
 import { Trend } from 'k6/metrics';
 import { sleep } from 'k6';
 
 export const options = {
-  vus: 10000,
-  duration: '5m',
+  vus: Number(__ENV.SOCKETS) || 80000,
+  duration: __ENV.DURATION || '5m',
   thresholds: {
-    http_req_failed: ['rate<0.01'],
-    table_req_latency: ['p(95)<300'],
+    ack_latency: [`p(95)<${__ENV.ACK_P95_MS || 120}`],
   },
 };
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
-const tableLatency = new Trend('table_req_latency', true);
+const tables = Number(__ENV.TABLES) || 10000;
+const loss = Number(__ENV.PACKET_LOSS) || 0.05; // 5% packet loss
+const jitterMs = Number(__ENV.JITTER_MS) || 50; // jitter before sending
+
+const ACK_LATENCY = new Trend('ack_latency', true);
 
 export default function () {
-  const start = Date.now();
-  http.get(`${BASE_URL}/tables/random`);
-  tableLatency.add(Date.now() - start);
-  sleep(1);
+  const tableId = __VU % tables;
+  const url = `${__ENV.WS_URL || 'ws://localhost:3001'}?table=${tableId}`;
+
+  ws.connect(url, function (socket) {
+    let start = 0;
+
+    socket.on('open', function () {
+      // inject client side jitter
+      sleep(Math.random() * jitterMs / 1000);
+      start = Date.now();
+      if (Math.random() > loss) {
+        socket.send('action');
+      }
+    });
+
+    socket.on('message', function () {
+      ACK_LATENCY.add(Date.now() - start);
+      socket.close();
+    });
+
+    socket.on('error', function (e) {
+      console.error('socket error', e);
+    });
+
+    socket.setTimeout(function () {
+      // close if no ack
+      socket.close();
+    }, 1000);
+  });
 }

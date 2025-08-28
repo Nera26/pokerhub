@@ -4,6 +4,46 @@ on:
   workflow_dispatch:
 
 jobs:
+  staging-ack-latency:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start proxy and metrics stack
+        run: |
+          docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 ghcr.io/shopify/toxiproxy
+          UPSTREAM=staging.pokerhub:80 ./load/toxiproxy-soak.sh
+          cp load/prometheus.yml ./prometheus.yml
+          sed -i 's/host.docker.internal/localhost/' prometheus.yml
+          docker run -d --name prom -p 9090:9090 -v $PWD/prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus
+      - name: Run 10k table scenario with faults
+        uses: grafana/k6-action@v0.2.0
+        env:
+          WS_URL: ws://localhost:3001
+          TABLES: 10000
+          SOCKETS: 80000
+          ACK_P95_MS: 120
+        with:
+          filename: load/k6-10k-tables.js
+          flags: --address 0.0.0.0:5656 --summary-export=ack-summary.json --out json=ack-telemetry.json --out prometheus
+      - name: Capture metrics
+        if: always()
+        run: curl -s http://localhost:5656/metrics > k6-prom-metrics.txt || true
+      - name: Collect logs
+        if: always()
+        run: |
+          docker logs toxiproxy > toxiproxy.log || true
+          docker logs prom > prom.log || true
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: staging-ack-latency
+          path: |
+            ack-summary.json
+            ack-telemetry.json
+            k6-prom-metrics.txt
+            toxiproxy.log
+            prom.log
   tables-10k:
     runs-on: ubuntu-latest
     steps:
