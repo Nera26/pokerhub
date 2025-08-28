@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 1.1.0
+  version: 1.2.0
 paths:
   /status:
     get:
@@ -13,6 +13,80 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServiceStatusResponse'
+  /auth/login:
+    post:
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+  /auth/logout:
+    post:
+      summary: Logout
+      responses:
+        '200':
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /auth/request-reset:
+    post:
+      summary: Request password reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestResetRequest'
+      responses:
+        '200':
+          description: Reset requested
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /auth/verify-reset-code:
+    post:
+      summary: Verify reset code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyResetCodeRequest'
+      responses:
+        '200':
+          description: Code verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /auth/reset-password:
+    post:
+      summary: Reset password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /tables:
     get:
       summary: Get lobby tables
@@ -378,6 +452,16 @@ components:
       required:
         - status
         - contractVersion
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
     LoginResponse:
       type: object
       properties:
@@ -392,6 +476,36 @@ components:
           type: string
       required:
         - message
+    RequestResetRequest:
+      type: object
+      properties:
+        email:
+          type: string
+      required:
+        - email
+    VerifyResetCodeRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        code:
+          type: string
+      required:
+        - email
+        - code
+    ResetPasswordRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        code:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - code
+        - password
     Amount:
       type: object
       properties:
