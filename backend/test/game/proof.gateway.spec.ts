@@ -44,10 +44,13 @@ describe('GameGateway proof', () => {
     );
     const client: any = { id: 'c1', emit: jest.fn() };
     await gateway.handleProof(client, { handId: 'h1' });
+    const frameId = client.emit.mock.calls[0][1].frameId as string;
+    gateway.handleFrameAck(client, { frameId });
     expect(client.emit).toHaveBeenCalledWith('proof', {
       commitment: 'c',
       seed: 's',
       nonce: 'n',
+      frameId: expect.any(String),
     });
   });
 });
