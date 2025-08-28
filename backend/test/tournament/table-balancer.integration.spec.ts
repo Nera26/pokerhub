@@ -87,4 +87,78 @@ describe('TableBalancerService integration', () => {
     expect(Math.max(...after) - Math.min(...after)).toBeLessThanOrEqual(1);
     expect(after.reduce((a, b) => a + b, 0)).toBe(120);
   });
+
+  it('does not move the same player twice within the window', async () => {
+    const tables: Table[] = [
+      { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
+      { id: 'tbl2', seats: [], tournament: { id: 't1' } as Tournament } as Table,
+    ];
+    const players1 = ['p1', 'p2', 'p3', 'p4'];
+    const players2 = ['p5', 'p6'];
+    let seatId = 0;
+    players1.forEach((id) => {
+      const seat: Seat = {
+        id: `s${seatId++}`,
+        table: tables[0],
+        user: { id } as any,
+        position: tables[0].seats.length,
+        lastMovedHand: 0,
+      } as Seat;
+      tables[0].seats.push(seat);
+    });
+    players2.forEach((id) => {
+      const seat: Seat = {
+        id: `s${seatId++}`,
+        table: tables[1],
+        user: { id } as any,
+        position: tables[1].seats.length,
+        lastMovedHand: 0,
+      } as Seat;
+      tables[1].seats.push(seat);
+    });
+    const seatsRepo = createSeatRepo(tables);
+    const tablesRepo = { find: jest.fn(async () => tables) } as any;
+    const tournamentsRepo = createTournamentRepo([
+      {
+        id: 't1',
+        title: 'Test',
+        buyIn: 0,
+        prizePool: 0,
+        maxPlayers: 1000,
+        state: TournamentState.RUNNING,
+        tables,
+      } as Tournament,
+    ]);
+    const scheduler: any = {};
+    const service = new TournamentService(
+      tournamentsRepo,
+      seatsRepo,
+      tablesRepo,
+      scheduler,
+    );
+    const balancer = new TableBalancerService(tablesRepo, service);
+
+    await balancer.rebalanceIfNeeded('t1', 10, 5);
+    const initialSecondTable = new Set(players2);
+    const movedFirst = tables[1].seats
+      .map((s) => s.user.id)
+      .find((id) => !initialSecondTable.has(id))!;
+
+    // create new imbalance with two additional players on table 2
+    ['p7', 'p8'].forEach((id) => {
+      const seat: Seat = {
+        id: `s${seatId++}`,
+        table: tables[1],
+        user: { id } as any,
+        position: tables[1].seats.length,
+        lastMovedHand: 0,
+      } as Seat;
+      tables[1].seats.push(seat);
+    });
+
+    await balancer.rebalanceIfNeeded('t1', 12, 5);
+
+    // player moved first should remain on table 2
+    expect(tables[1].seats.map((s) => s.user.id)).toContain(movedFirst);
+  });
 });

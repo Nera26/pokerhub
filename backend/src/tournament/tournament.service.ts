@@ -210,17 +210,14 @@ export class TournamentService {
     tournamentId: string,
     currentHand = 0,
     avoidWithin = 10,
+    recentlyMoved: Map<string, number> = new Map(),
   ): Promise<void> {
     const tables = await this.tables.find({
       where: { tournament: { id: tournamentId } },
       relations: ['seats', 'seats.user'],
     });
-    const recentlyMoved = new Map<string, number>();
     const tablePlayers = tables.map((t) =>
-      t.seats.map((s) => {
-        recentlyMoved.set(s.user.id, s.lastMovedHand);
-        return s.user.id;
-      }),
+      t.seats.map((s) => s.user.id),
     );
     const balanced = this.balanceTables(
       tablePlayers,
@@ -236,6 +233,7 @@ export class TournamentService {
         if (seat && seat.table.id !== tables[i].id) {
           seat.table = tables[i];
           seat.lastMovedHand = currentHand;
+          recentlyMoved.set(playerId, currentHand);
           await this.seats.save(seat);
         }
       }
