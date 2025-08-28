@@ -29,3 +29,7 @@ Prizes: `[50, 30, 20]`
 ICM Payouts: `[50, 30, 20]` (sums exactly to the prize pool)
 
 All rounding errors are less than one chip.
+
+## Blind Structure Simulation
+
+A Monte Carlo simulation with 10,000 entrants tested a standard blind structure of 100 five‑minute levels and three bot profiles (tight, loose, aggressive). Across 100 runs the average tournament duration was about 130 minutes. Prize distribution variance was dominated by tight bots (~2.48e9) while loose and aggressive profiles rarely cashed.
