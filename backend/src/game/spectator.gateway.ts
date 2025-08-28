@@ -24,14 +24,12 @@ export class SpectatorGateway implements OnGatewayConnection {
     const room = this.rooms.get(tableId);
     void client.join(tableId);
 
-    client.emit('state', await room.getPublicState());
-    const listener = () =>
-      room.getPublicState().then((s) => client.emit('state', s));
+    const state = await room.getPublicState();
+    client.emit('state', state);
 
-    client.emit('state', room.getPublicState());
-    const listener = () => {
+    const listener = async () => {
       if (client.connected) {
-        client.emit('state', room.getPublicState());
+        client.emit('state', await room.getPublicState());
       } else {
         SpectatorGateway.droppedFrames.add(1);
       }
