@@ -1,9 +1,9 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
-import helmet from 'helmet';
-import cookieParser from 'cookie-parser';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import {
   databaseConfig,
   redisConfig,
@@ -50,6 +50,10 @@ import { AuthModule } from './auth/auth.module';
       ],
     }),
     LoggerModule.forRoot(),
+    ThrottlerModule.forRoot({
+      ttl: 60,
+      limit: 100,
+    }),
     // Database (Postgres via TypeORM)
     TypeOrmModule.forRootAsync({
       useFactory: (config: ConfigService) => ({
@@ -82,36 +86,12 @@ import { AuthModule } from './auth/auth.module';
     AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(cookieParser(), (req, res, next) => {
-        const original = res.cookie.bind(res);
-        res.cookie = (name: string, value: any, options: any = {}) =>
-          original(name, value, {
-            sameSite: 'strict',
-            httpOnly: true,
-            secure: true,
-            ...options,
-          });
-        next();
-      })
-      .forRoutes('*');
-    consumer
-      .apply(
-        helmet({
-          contentSecurityPolicy: {
-            directives: {
-              defaultSrc: ["'self'"],
-              scriptSrc: ["'self'"],
-              styleSrc: ["'self'"],
-            },
-          },
-          hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
-        }),
-      )
-      .forRoutes('*');
-  }
-}
+export class AppModule {}

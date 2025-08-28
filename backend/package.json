@@ -37,6 +37,7 @@
     "@nestjs/microservices": "^11.1.6",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/platform-socket.io": "^11.0.1",
+    "@nestjs/throttler": "^6.4.0",
     "@nestjs/typeorm": "^11.0.0",
     "@nestjs/websockets": "^11.1.6",
     "@opentelemetry/auto-instrumentations-node": "^0.50.2",
