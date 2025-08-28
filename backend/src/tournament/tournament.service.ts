@@ -11,6 +11,11 @@ import { TournamentScheduler } from './scheduler.service';
 
 @Injectable()
 export class TournamentService {
+  private currentLevels = new Map<string, number>();
+  private patchedLevels = new Map<
+    string,
+    Map<number, { smallBlind: number; bigBlind: number }>
+  >();
   constructor(
     @InjectRepository(Tournament)
     private readonly tournaments: Repository<Tournament>,
@@ -106,6 +111,66 @@ export class TournamentService {
     const t = await this.get(id);
     t.state = state;
     await this.tournaments.save(t);
+  }
+
+  /**
+   * Enter a scheduled break. The tournament state is set to PAUSED and
+   * normal play resumes when {@link endBreak} is called.
+   */
+  async startBreak(id: string): Promise<void> {
+    await this.pause(id);
+  }
+
+  /** Resume play after a break. */
+  async endBreak(id: string): Promise<void> {
+    await this.resume(id);
+  }
+
+  /**
+   * Auto-fold a player when their action times out. Returns the action taken
+   * so calling code can broadcast it to the table.
+   */
+  async autoFoldOnTimeout(_seatId: string): Promise<'fold'> {
+    return 'fold';
+  }
+
+  /**
+   * Handle a level up. The current level is tracked per tournament so that
+   * all tables stay synchronized.
+   */
+  async handleLevelUp(tournamentId: string, level: number): Promise<void> {
+    this.currentLevels.set(tournamentId, level);
+  }
+
+  getCurrentLevel(tournamentId: string): number {
+    return this.currentLevels.get(tournamentId) ?? 1;
+  }
+
+  /**
+   * Hot patch the blinds for a specific level. The values are stored in
+   * memory so new tables can pick them up immediately.
+   */
+  async hotPatchLevel(
+    tournamentId: string,
+    level: number,
+    smallBlind: number,
+    bigBlind: number,
+  ): Promise<void> {
+    let levels = this.patchedLevels.get(tournamentId);
+    if (!levels) {
+      levels = new Map();
+      this.patchedLevels.set(tournamentId, levels);
+    }
+    levels.set(level, { smallBlind, bigBlind });
+  }
+
+  getHotPatchedLevel(
+    tournamentId: string,
+    level: number,
+  ):
+    | { smallBlind: number; bigBlind: number }
+    | undefined {
+    return this.patchedLevels.get(tournamentId)?.get(level);
   }
 
   async register(tournamentId: string, userId: string): Promise<Seat> {

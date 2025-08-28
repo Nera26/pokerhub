@@ -128,6 +128,15 @@ export type TournamentScheduleRequest = z.infer<
   typeof TournamentScheduleRequestSchema
 >;
 
+export const HotPatchLevelRequestSchema = z.object({
+  level: z.number().int().positive(),
+  smallBlind: z.number().int().positive(),
+  bigBlind: z.number().int().positive(),
+});
+export type HotPatchLevelRequest = z.infer<
+  typeof HotPatchLevelRequestSchema
+>;
+
 export const LeaderboardEntrySchema = z.object({
   playerId: z.string(),
   rank: z.number().int().positive(),

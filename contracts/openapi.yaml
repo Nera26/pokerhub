@@ -170,7 +170,29 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CalculatePrizesResponse'
+              $ref: '#/components/schemas/CalculatePrizesResponse'
+  /tournaments/{id}/levels/hot-patch:
+    post:
+      summary: Hot patch blind level
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HotPatchLevelRequest'
+      responses:
+        '200':
+          description: Level patched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /leaderboard:
     get:
       summary: Get leaderboard
@@ -420,6 +442,19 @@ components:
         format: date-time
     required:
       - startTime
+  HotPatchLevelRequest:
+    type: object
+    properties:
+      level:
+        type: integer
+      smallBlind:
+        type: integer
+      bigBlind:
+        type: integer
+    required:
+      - level
+      - smallBlind
+      - bigBlind
   LeaderboardResponse:
     type: array
     items:

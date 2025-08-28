@@ -3,6 +3,7 @@ import { TournamentService } from './tournament.service';
 import type {
   CalculatePrizesRequest,
   CalculatePrizesResponse,
+  HotPatchLevelRequest,
 } from '../schemas/tournament';
 
 @Controller('tournaments')
@@ -28,5 +29,18 @@ export class TournamentController {
       bountyPct: body.bountyPct,
       satelliteSeatCost: body.satelliteSeatCost,
     });
+  }
+
+  @Post(':id/levels/hot-patch')
+  hotPatchLevel(
+    @Param('id') id: string,
+    @Body() body: HotPatchLevelRequest,
+  ) {
+    return this.service.hotPatchLevel(
+      id,
+      body.level,
+      body.smallBlind,
+      body.bigBlind,
+    );
   }
 }
