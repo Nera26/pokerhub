@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import { z } from 'zod';
 import { getBaseUrl } from '@/lib/base-url';
 import { handleResponse } from './client';

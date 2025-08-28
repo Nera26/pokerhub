@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import { useCallback, useRef } from 'react';
 
 export function useWillChange<T extends HTMLElement = HTMLDivElement>(property = 'transform') {

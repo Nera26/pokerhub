@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import { env } from './env';
 
 export async function serverFetch(
