@@ -22,12 +22,28 @@ async function waitFor(cond: () => boolean, timeout = 200) {
   }
 }
 
-describe('GameGateway reconnect', () => {
-  let app: INestApplication;
-  let url: string;
+class FakeRedis {
+  private count = 0;
+  private store = new Map<string, string>();
+  async incr() {
+    return ++this.count;
+  }
+  async expire() {
+    return 1;
+  }
+  async exists(key: string) {
+    return this.store.has(key) ? 1 : 0;
+  }
+  async set(key: string, value: string, _mode: string, _ttl: number) {
+    this.store.set(key, value);
+    return 'OK';
+  }
+}
 
-  beforeAll(async () => {
-    const store = new Map<string, string>();
+describe('GameGateway restart', () => {
+  let redis: FakeRedis;
+
+  async function createApp() {
     const moduleRef = await Test.createTestingModule({
       providers: [
         GameGateway,
@@ -35,44 +51,32 @@ describe('GameGateway reconnect', () => {
         ClockService,
         { provide: AnalyticsService, useValue: { recordGameEvent: jest.fn() } },
         { provide: EventPublisher, useValue: { emit: jest.fn() } },
-        {
-          provide: 'REDIS_CLIENT',
-          useValue: {
-            incr: async () => 1,
-            expire: async () => 1,
-            exists: async (key: string) => (store.has(key) ? 1 : 0),
-            set: async (key: string, value: string, _mode: string, _ttl: number) => {
-              store.set(key, value);
-              return 'OK';
-            },
-          },
-        },
+        { provide: 'REDIS_CLIENT', useValue: redis },
       ],
     }).compile();
 
-    app = moduleRef.createNestApplication();
+    const app = moduleRef.createNestApplication();
     await app.init();
     const server = app.getHttpServer();
     await new Promise<void>((res) => server.listen(0, res));
     const address = server.address();
-    url = `http://localhost:${address.port}/game`;
-  });
+    return { app, url: `http://localhost:${address.port}/game` };
+  }
 
-  afterAll(async () => {
-    await app.close();
-  });
-
-  it('ignores duplicate action after reconnect', async () => {
+  it('ignores duplicate action after server restart', async () => {
+    redis = new FakeRedis();
+    const { app, url } = await createApp();
     const action = { type: 'next' };
     const actionId = 'a1';
-
     const client1 = io(url, { transports: ['websocket'] });
     await waitForConnect(client1);
     client1.emit('action', { ...action, actionId });
     await wait(100);
     client1.disconnect();
+    await app.close();
 
-    const client2 = io(url, { transports: ['websocket'] });
+    const { app: app2, url: url2 } = await createApp();
+    const client2 = io(url2, { transports: ['websocket'] });
     const acks: any[] = [];
     client2.on('action:ack', (a) => acks.push(a));
     await waitForConnect(client2);
@@ -80,6 +84,7 @@ describe('GameGateway reconnect', () => {
     client2.emit('action', { ...action, actionId: 'a2' });
     await waitFor(() => acks.length >= 1, 500);
     client2.disconnect();
+    await app2.close();
 
     expect(acks[0]).toEqual({ actionId, duplicate: true });
   });
