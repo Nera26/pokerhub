@@ -123,4 +123,38 @@ describe('LeaderboardService', () => {
     const top = await service.getTopPlayers();
     expect(top).toEqual(['alice']);
   });
+
+  it('applies rating decay based on event age', async () => {
+    const now = Date.now();
+    analytics.events = [
+      { playerId: 'alice', sessionId: 'a1', points: 10, ts: now },
+      {
+        playerId: 'bob',
+        sessionId: 'b1',
+        points: 10,
+        ts: now - 10 * 24 * 60 * 60 * 1000,
+      },
+    ];
+    await service.rebuild({ days: 30, minSessions: 1, decay: 0.9 });
+    const top = await service.getTopPlayers();
+    expect(top[0]).toBe('alice');
+  });
+
+  it('rebuild is deterministic regardless of event order', async () => {
+    const now = Date.now();
+    const events = [
+      { playerId: 'alice', sessionId: 'a', points: 5, ts: now },
+      { playerId: 'bob', sessionId: 'b', points: 5, ts: now },
+      { playerId: 'carol', sessionId: 'c', points: 5, ts: now },
+    ];
+    analytics.events = events;
+    await service.rebuild({ days: 30, minSessions: 1, decay: 1 });
+    const first = await service.getTopPlayers();
+    expect(first).toEqual(['alice', 'bob', 'carol']);
+
+    analytics.events = [...events].reverse();
+    await service.rebuild({ days: 30, minSessions: 1, decay: 1 });
+    const second = await service.getTopPlayers();
+    expect(second).toEqual(first);
+  });
 });
