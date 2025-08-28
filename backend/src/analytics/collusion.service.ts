@@ -110,6 +110,23 @@ export class CollusionService {
     sessionId: string,
     action: 'warn' | 'restrict' | 'ban',
   ) {
-    await this.redis.hset(`collusion:session:${sessionId}`, { status: action });
+    const key = `collusion:session:${sessionId}`;
+    const current = await this.redis.hget(key, 'status');
+    const order: Array<'flagged' | 'warn' | 'restrict' | 'ban'> = [
+      'flagged',
+      'warn',
+      'restrict',
+      'ban',
+    ];
+    const currentIndex = order.indexOf((current as any) || 'flagged');
+    const nextIndex = order.indexOf(action);
+    if (nextIndex !== currentIndex + 1) {
+      throw new Error('Invalid review action');
+    }
+    await this.redis.hset(key, { status: action });
+    await this.redis.rpush(
+      `${key}:log`,
+      JSON.stringify({ action, timestamp: Date.now() }),
+    );
   }
 }

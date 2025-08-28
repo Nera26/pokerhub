@@ -6,6 +6,7 @@ describe('CollusionService', () => {
     sets = new Map<string, Set<string>>();
     sorted = new Map<string, number[]>();
     hashes = new Map<string, Record<string, string>>();
+    lists = new Map<string, string[]>();
     async sadd(key: string, value: string) {
       if (!this.sets.has(key)) this.sets.set(key, new Set());
       this.sets.get(key)!.add(value);
@@ -27,8 +28,20 @@ describe('CollusionService', () => {
       if (!this.hashes.has(key)) this.hashes.set(key, {});
       Object.assign(this.hashes.get(key)!, obj);
     }
+    async hget(key: string, field: string) {
+      return this.hashes.get(key)?.[field] ?? null;
+    }
     async hgetall(key: string) {
       return this.hashes.get(key) ?? {};
+    }
+    async rpush(key: string, value: string) {
+      if (!this.lists.has(key)) this.lists.set(key, []);
+      this.lists.get(key)!.push(value);
+    }
+    async lrange(key: string, start: number, stop: number) {
+      const arr = this.lists.get(key) ?? [];
+      if (stop === -1) return arr.slice(start);
+      return arr.slice(start, stop + 1);
     }
   }
 
@@ -64,10 +77,15 @@ describe('CollusionService', () => {
     expect(features.vpipCorrelation).toBeCloseTo(1);
     expect(features.timingSimilarity).toBeCloseTo(1);
     await service.flagSession('s1', ['u1', 'u2'], features);
-    let flagged = await service.listFlaggedSessions();
-    expect(flagged[0]).toMatchObject({ id: 's1', status: 'flagged' });
+    await expect(service.applyAction('s1', 'restrict')).rejects.toThrow(
+      'Invalid review action',
+    );
     await service.applyAction('s1', 'warn');
-    flagged = await service.listFlaggedSessions();
-    expect(flagged[0].status).toBe('warn');
+    await service.applyAction('s1', 'restrict');
+    await service.applyAction('s1', 'ban');
+    const flagged = await service.listFlaggedSessions();
+    expect(flagged[0]).toMatchObject({ id: 's1', status: 'ban' });
+    const log = await client.lrange('collusion:session:s1:log', 0, -1);
+    expect(log).toHaveLength(3);
   });
 });
