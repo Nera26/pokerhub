@@ -1,0 +1,13 @@
+config:
+  target: "ws://localhost:3000"
+  phases:
+    - duration: 60
+      arrivalRate: 10000
+  engines:
+    ws: {}
+  processor: "./artillery-ws-processor.js"
+scenarios:
+  - engine: ws
+    name: ws-packet-loss
+    flow:
+      - function: sendPing
