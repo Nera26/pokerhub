@@ -11,7 +11,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Hand } from '../database/entities/hand.entity';
 import { HandLog } from '../game/hand-log';
-import type { HandProofResponse, HandLogResponse } from '../schemas/hands';
+import { HandStateResponse as HandStateResponseSchema } from '../schemas/hands';
+import type {
+  HandProofResponse,
+  HandLogResponse,
+  HandStateResponse,
+} from '../schemas/hands';
 
 @Controller('hands')
 export class HandsController {
@@ -53,7 +58,7 @@ export class HandsController {
   async getState(
     @Param('id') id: string,
     @Param('actionIndex') actionIndex: string,
-  ): Promise<unknown> {
+  ): Promise<HandStateResponse> {
     const file = join(process.cwd(), '../storage/hand-logs', `${id}.jsonl`);
     let raw: string;
     try {
@@ -75,6 +80,6 @@ export class HandsController {
     if (!state) {
       throw new NotFoundException('state not found');
     }
-    return state; // If you have a HandStateResponse type, you can switch to that.
+    return HandStateResponseSchema.parse(state);
   }
 }
