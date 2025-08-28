@@ -232,20 +232,99 @@ components:
         - amount
         - deviceId
     GameAction:
+      oneOf:
+        - $ref: '#/components/schemas/PostBlindAction'
+        - $ref: '#/components/schemas/BetAction'
+        - $ref: '#/components/schemas/RaiseAction'
+        - $ref: '#/components/schemas/CallAction'
+        - $ref: '#/components/schemas/CheckAction'
+        - $ref: '#/components/schemas/FoldAction'
+        - $ref: '#/components/schemas/NextAction'
+      discriminator:
+        propertyName: type
+    PostBlindAction:
       type: object
       properties:
         type:
           type: string
-          enum:
-            - join
-            - bet
+          enum: [postBlind]
         tableId:
+          type: string
+        playerId:
           type: string
         amount:
           type: number
-      required:
-        - type
-        - tableId
+      required: [type, tableId, playerId, amount]
+    BetAction:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [bet]
+        tableId:
+          type: string
+        playerId:
+          type: string
+        amount:
+          type: number
+      required: [type, tableId, playerId, amount]
+    RaiseAction:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [raise]
+        tableId:
+          type: string
+        playerId:
+          type: string
+        amount:
+          type: number
+      required: [type, tableId, playerId, amount]
+    CallAction:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [call]
+        tableId:
+          type: string
+        playerId:
+          type: string
+        amount:
+          type: number
+      required: [type, tableId, playerId]
+    CheckAction:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [check]
+        tableId:
+          type: string
+        playerId:
+          type: string
+      required: [type, tableId, playerId]
+    FoldAction:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [fold]
+        tableId:
+          type: string
+        playerId:
+          type: string
+      required: [type, tableId, playerId]
+    NextAction:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [next]
+        tableId:
+          type: string
+      required: [type, tableId]
     Tournament:
       type: object
       properties:

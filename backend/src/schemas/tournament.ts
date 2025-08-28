@@ -1,12 +1,12 @@
 import { z } from 'zod';
 
 export const TournamentSchema = z.object({
-  id: z.string(),
+  id: z.string().uuid(),
   title: z.string(),
   buyIn: z.number(),
   prizePool: z.number(),
-  players: z.object({ current: z.number(), max: z.number() }),
-  registered: z.boolean(),
+  maxPlayers: z.number(),
+  state: z.enum(['REG_OPEN', 'RUNNING', 'PAUSED', 'FINISHED']),
 });
 
 export const TournamentListSchema = z.array(TournamentSchema);
@@ -34,3 +34,9 @@ export type CalculatePrizesRequest = z.infer<
 export type CalculatePrizesResponse = z.infer<
   typeof CalculatePrizesResponseSchema
 >;
+
+export const RegisterRequestSchema = z.object({
+  userId: z.string().uuid(),
+});
+
+export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;

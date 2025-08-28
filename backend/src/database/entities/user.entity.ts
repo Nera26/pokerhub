@@ -1,5 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToMany,
+  OneToMany,
+} from 'typeorm';
 import { Table } from './table.entity';
+import { Seat } from './seat.entity';
 
 @Entity()
 export class User {
@@ -14,4 +21,7 @@ export class User {
 
   @ManyToMany(() => Table, (table) => table.players)
   tables: Table[];
+
+  @OneToMany(() => Seat, (seat) => seat.user)
+  seats: Seat[];
 }

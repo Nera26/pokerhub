@@ -14,6 +14,11 @@ export class TournamentController {
     return this.service.list();
   }
 
+  @Post(':id/register')
+  register(@Param('id') id: string, @Body('userId') userId: string) {
+    return this.service.register(id, userId);
+  }
+
   @Post(':id/prizes')
   calculatePrizes(
     @Param('id') id: string,

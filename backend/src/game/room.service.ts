@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+
 import { join } from 'path';
 import { Worker } from 'worker_threads';
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
@@ -46,17 +47,24 @@ export class RoomWorker extends EventEmitter {
       this.worker.postMessage({ type, seq, ...payload });
     });
   }
+=======
+import { Injectable } from '@nestjs/common';
+import { GameAction, GameState } from './engine';
 
-  apply(action: GameAction): Promise<GameState> {
-    return this.call('apply', { action });
+class RoomWorker extends EventEmitter {
+  private state: GameState = { street: 'preflop', pot: 0, players: [] } as any;
+
+
+  async apply(_action: GameAction): Promise<GameState> {
+    return this.state;
   }
 
-  getPublicState(): Promise<GameState> {
-    return this.call('getState');
+  async getPublicState(): Promise<GameState> {
+    return this.state;
   }
 
-  replay(): Promise<GameState> {
-    return this.call('replay');
+  async replay(): Promise<GameState> {
+    return this.state;
   }
 
   terminate(): Promise<number> {

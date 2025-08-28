@@ -5,6 +5,7 @@ import { DataSource, Repository } from 'typeorm';
 import { User } from '../../src/database/entities/user.entity';
 import { Table } from '../../src/database/entities/table.entity';
 import { Tournament } from '../../src/database/entities/tournament.entity';
+import { Seat } from '../../src/database/entities/seat.entity';
 
 class MockCache {
   store = new Map<string, any>();
@@ -59,7 +60,7 @@ describe('LeaderboardService', () => {
     });
     dataSource = db.adapters.createTypeormDataSource({
       type: 'postgres',
-      entities: [User, Table, Tournament],
+      entities: [User, Table, Tournament, Seat],
       synchronize: true,
     }) as DataSource;
     await dataSource.initialize();

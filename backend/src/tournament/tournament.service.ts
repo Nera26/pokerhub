@@ -1,45 +1,32 @@
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import {
+  Tournament,
+  TournamentState,
+} from '../database/entities/tournament.entity';
+import { Seat } from '../database/entities/seat.entity';
+import { Table } from '../database/entities/table.entity';
 import { TournamentScheduler } from './scheduler.service';
-
-export enum TournamentState {
-  REG_OPEN = 'REG_OPEN',
-  RUNNING = 'RUNNING',
-  PAUSED = 'PAUSED',
-  FINISHED = 'FINISHED',
-}
-
-export interface TournamentInfo {
-  id: string;
-  title: string;
-  buyIn: number;
-  prizePool: number;
-  players: { current: number; max: number };
-  registered: boolean;
-  state: TournamentState;
-}
 
 @Injectable()
 export class TournamentService {
-  constructor(private readonly scheduler: TournamentScheduler) {}
+  constructor(
+    @InjectRepository(Tournament)
+    private readonly tournaments: Repository<Tournament>,
+    @InjectRepository(Seat)
+    private readonly seats: Repository<Seat>,
+    @InjectRepository(Table)
+    private readonly tables: Repository<Table>,
+    private readonly scheduler: TournamentScheduler,
+  ) {}
 
-  private tournaments: TournamentInfo[] = [
-    {
-      id: 't1',
-      title: 'Daily Free Roll',
-      buyIn: 0,
-      prizePool: 1000,
-      players: { current: 0, max: 100 },
-      registered: false,
-      state: TournamentState.REG_OPEN,
-    },
-  ];
-
-  list(): TournamentInfo[] {
-    return this.tournaments;
+  async list(): Promise<Tournament[]> {
+    return this.tournaments.find();
   }
 
-  getState(id: string): TournamentState | undefined {
-    return this.tournaments.find((t) => t.id === id)?.state;
+  async getState(id: string): Promise<TournamentState | undefined> {
+    return (await this.tournaments.findOne({ where: { id } }))?.state;
   }
 
   async scheduleTournament(
@@ -66,36 +53,39 @@ export class TournamentService {
     );
   }
 
-  openRegistration(id: string): void {
-    this.setState(id, TournamentState.REG_OPEN);
+  async openRegistration(id: string): Promise<void> {
+    await this.setState(id, TournamentState.REG_OPEN);
   }
 
-  start(id: string): void {
-    const t = this.get(id);
+  async start(id: string): Promise<void> {
+    const t = await this.get(id);
     if (t.state !== TournamentState.REG_OPEN) {
       throw new Error(`Invalid transition from ${t.state} to RUNNING`);
     }
     t.state = TournamentState.RUNNING;
+    await this.tournaments.save(t);
   }
 
-  pause(id: string): void {
-    const t = this.get(id);
+  async pause(id: string): Promise<void> {
+    const t = await this.get(id);
     if (t.state !== TournamentState.RUNNING) {
       throw new Error(`Invalid transition from ${t.state} to PAUSED`);
     }
     t.state = TournamentState.PAUSED;
+    await this.tournaments.save(t);
   }
 
-  resume(id: string): void {
-    const t = this.get(id);
+  async resume(id: string): Promise<void> {
+    const t = await this.get(id);
     if (t.state !== TournamentState.PAUSED) {
       throw new Error(`Invalid transition from ${t.state} to RUNNING`);
     }
     t.state = TournamentState.RUNNING;
+    await this.tournaments.save(t);
   }
 
-  finish(id: string): void {
-    const t = this.get(id);
+  async finish(id: string): Promise<void> {
+    const t = await this.get(id);
     if (
       t.state !== TournamentState.RUNNING &&
       t.state !== TournamentState.PAUSED
@@ -103,17 +93,87 @@ export class TournamentService {
       throw new Error(`Invalid transition from ${t.state} to FINISHED`);
     }
     t.state = TournamentState.FINISHED;
+    await this.tournaments.save(t);
   }
 
-  private get(id: string): TournamentInfo {
-    const t = this.tournaments.find((t) => t.id === id);
+  private async get(id: string): Promise<Tournament> {
+    const t = await this.tournaments.findOne({ where: { id } });
     if (!t) throw new Error(`Tournament ${id} not found`);
     return t;
   }
 
-  private setState(id: string, state: TournamentState): void {
-    const t = this.get(id);
+  private async setState(id: string, state: TournamentState): Promise<void> {
+    const t = await this.get(id);
     t.state = state;
+    await this.tournaments.save(t);
+  }
+
+  async register(tournamentId: string, userId: string): Promise<Seat> {
+    const t = await this.get(tournamentId);
+    const now = new Date();
+    const regOpen = t.state === TournamentState.REG_OPEN;
+    const lateReg =
+      t.state === TournamentState.RUNNING &&
+      t.registrationClose &&
+      now < t.registrationClose;
+    if (!regOpen && !lateReg) {
+      throw new Error('registration closed');
+    }
+    const tables = await this.tables.find({
+      where: { tournament: { id: tournamentId } },
+      relations: ['seats'],
+    });
+    let target = tables[0];
+    let min = tables[0]?.seats.length ?? 0;
+    for (const tbl of tables) {
+      if (tbl.seats.length < min) {
+        min = tbl.seats.length;
+        target = tbl;
+      }
+    }
+    const seat = this.seats.create({
+      table: target,
+      user: { id: userId } as any,
+      position: target.seats.length,
+      lastMovedHand: 0,
+    });
+    return this.seats.save(seat);
+  }
+
+  async balanceTournament(
+    tournamentId: string,
+    currentHand = 0,
+    avoidWithin = 10,
+  ): Promise<void> {
+    const tables = await this.tables.find({
+      where: { tournament: { id: tournamentId } },
+      relations: ['seats', 'seats.user'],
+    });
+    const recentlyMoved = new Map<string, number>();
+    const tablePlayers = tables.map((t) =>
+      t.seats.map((s) => {
+        recentlyMoved.set(s.user.id, s.lastMovedHand);
+        return s.user.id;
+      }),
+    );
+    const balanced = this.balanceTables(
+      tablePlayers,
+      recentlyMoved,
+      currentHand,
+      avoidWithin,
+    );
+    for (let i = 0; i < balanced.length; i++) {
+      for (const playerId of balanced[i]) {
+        const seat = tables
+          .flatMap((t) => t.seats)
+          .find((s) => s.user.id === playerId);
+        if (seat && seat.table.id !== tables[i].id) {
+          seat.table = tables[i];
+          seat.lastMovedHand = currentHand;
+          await this.seats.save(seat);
+        }
+      }
+    }
   }
 
   /**

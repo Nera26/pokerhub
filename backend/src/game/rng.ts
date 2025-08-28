@@ -48,6 +48,15 @@ export interface HandProof extends HandCommitment {
 }
 
 /**
+ * Verify that a revealed seed/nonce pair matches the original commitment.
+ */
+export function verifyProof(proof: HandProof): boolean {
+  const seed = Buffer.from(proof.seed, 'hex');
+  const nonce = Buffer.from(proof.nonce, 'hex');
+  return hashCommitment(seed, nonce) === proof.commitment;
+}
+
+/**
  * Per-hand RNG helper implementing commit-reveal protocol.
  */
 export class HandRNG {

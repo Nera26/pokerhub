@@ -13,8 +13,9 @@ PokerHub uses a commit–reveal scheme to guarantee that each hand is dealt from
    - Because the shuffle is deterministic, anyone who knows the seed can reproduce the deck.
 3. **Reveal**
    - After the showdown the server reveals the `seed`.
-   - The tuple `{ commitment, seed, nonce }` is appended to `hand-log`.
-   - Players recompute `sha256(seed || nonce)` to verify it matches the earlier commitment, then reproduce the shuffle to confirm the deck.
+   - The tuple `{ commitment, seed, nonce }` is appended to `hand-log` and stored in the `hand` table.
+   - Players can retrieve the proof via `GET /hands/{handId}/proof` or by sending a `proof` event over the `game` WebSocket namespace with `{ handId }`.
+   - After fetching the proof, recompute `sha256(seed || nonce)` to verify it matches the earlier commitment, then reproduce the shuffle to confirm the deck.
 
 ## Verification CLI
 
