@@ -1,23 +1,47 @@
-# Game Engine Load & Soak Testing
+# Game Engine Overview
 
-## High‑scale simulation
-- Script: `load/k6-ws-soak.js`
-- Default scale: 80k sockets spread over 10k tables
-- Network faults: 5% packet loss and up to 200 ms jitter
-- Deterministic replay: provide identical `RNG_SEED` to reproduce event sequences
+PokerHub's game engine orchestrates the lifecycle of each hand over a WebSocket connection. This document outlines the core states, messages, timers, and notable edge cases.
 
-## Running the 24 h soak test
-```sh
-k6 run load/k6-ws-soak.js \
-  -e WS_URL=ws://localhost:3000 \
-  -e METRICS_URL=http://localhost:3000/metrics \
-  -e RNG_SEED=1
+## State Diagram
+
+```mermaid
+stateDiagram-v2
+    [*] --> Waiting
+    Waiting --> PreFlop: seats filled
+    PreFlop --> Flop: burn & deal flop
+    Flop --> Turn: burn & deal turn
+    Turn --> River: burn & deal river
+    River --> Showdown: actions complete
+    Showdown --> Payouts
+    Payouts --> [*]
 ```
-The script pulls `{ heapUsed, gcPauseP95 }` from `METRICS_URL` at start and end.
-It fails when:
-- memory growth exceeds **1 %**
-- GC pause p95 exceeds **50 ms**
 
-## Latest results
-_No 24 h soak run has been recorded yet._
-Run the command above and append the metrics here when available.
+Each transition is triggered by server events once required player actions are complete or their timers expire.
+
+## Message Schemas
+
+Messages flow over the `game` namespace. Key payloads:
+
+- `state`: `{ handId, state, expiresAt }`
+- `action`: `{ handId, playerId, type, amount? }`
+- `deal`: `{ handId, street, cards }`
+- `result`: `{ handId, payouts: [{ playerId, amount }] }`
+
+All messages include an `id` and are encoded as JSON.
+
+## Timers
+
+| Timer            | Default | Purpose                                   |
+|------------------|---------|-------------------------------------------|
+| `actionTimer`    | 20 s    | Max time a player has to act              |
+| `handTimeout`    | 2 m     | Fails the hand if it never completes      |
+| `heartbeat`      | 10 s    | Detects dead WebSocket connections        |
+
+Timers emit warnings five seconds before expiry so clients can surface countdowns.
+
+## Edge Cases
+
+- **Disconnect during action** – player auto-folds when `actionTimer` expires.
+- **Simultaneous actions** – server queues actions and applies them in receipt order.
+- **Empty table** – if all players leave, the hand ends and blinds are refunded.
+- **Replay** – providing the same RNG seed reproduces dealing for debugging.
