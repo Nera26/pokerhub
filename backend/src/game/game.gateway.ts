@@ -14,9 +14,13 @@ import { GameAction } from './engine';
 import { RoomManager } from './room.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { ClockService } from './clock.service';
+
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Hand } from '../database/entities/hand.entity';
+=======
+import { GameActionSchema, type GameAction as WireGameAction } from '@shared/types';
+
 
 interface AckPayload {
   actionId: string;
@@ -27,7 +31,8 @@ interface AckPayload {
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(GameGateway.name);
 
-  private readonly processed = new Set<string>();
+  private readonly processedPrefix = 'game:processed';
+  private readonly processedTtlSeconds = 60;
 
   private readonly queues = new Map<
     string,
@@ -56,6 +61,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
+  private processedKey(id: string) {
+    return `${this.processedPrefix}:${id}`;
+  }
+
   handleConnection(client: Socket) {
     this.logger.debug(`Client connected: ${client.id}`);
     this.clock.setTimer(client.id, 30_000, () => this.handleTimeout(client.id));
@@ -69,14 +78,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('action')
   async handleAction(
     @ConnectedSocket() client: Socket,
-    @MessageBody()
-    action: (GameAction & { actionId: string }) & {
-      tableId?: string;
-    },
+    @MessageBody() action: WireGameAction & { actionId: string },
   ) {
     if (await this.isRateLimited(client)) return;
 
-    if (this.processed.has(action.actionId)) {
+    const key = this.processedKey(action.actionId);
+    if ((await this.redis.exists(key)) === 1) {
       this.enqueue(client, 'action:ack', {
         actionId: action.actionId,
         duplicate: true,
@@ -84,15 +91,27 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    this.processed.add(action.actionId);
     this.clock.clearTimer(action.playerId);
     const tableId = action.tableId ?? 'default';
     const { tableId: _t, actionId: _a, ...rest } = action;
     const gameAction = rest as GameAction;
+=======
+
+    const { actionId, ...rest } = action;
+    const parsed = GameActionSchema.parse(rest);
+
+    this.processed.add(actionId);
+    this.clock.clearTimer(parsed.playerId);
+    const { tableId, ...wire } = parsed;
+    const gameAction = wire as GameAction;
+
     const room = this.rooms.get(tableId);
     const state = await room.apply(gameAction);
 
-    void this.analytics.recordGameEvent({ clientId: client.id, action });
+    void this.analytics.recordGameEvent({
+      clientId: client.id,
+      action: { actionId, ...parsed },
+    });
 
     const payload = { ...state, tick: ++this.tick };
     this.enqueue(client, 'state', payload);
@@ -106,51 +125,61 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         .emit('state', { ...publicState, tick: this.tick });
     }
 
+
     this.enqueue(client, 'action:ack', {
       actionId: action.actionId,
     } satisfies AckPayload);
+    await this.redis.set(key, '1', 'EX', this.processedTtlSeconds);
+=======
+    this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+
 
     this.clock.setTimer(
       action.playerId,
       30_000,
       () => void this.handleTimeout(action.playerId),
+=======
+
+    this.clock.setTimer(parsed.playerId, 30_000, () =>
+      void this.handleTimeout(parsed.playerId),
+
     );
   }
 
   @SubscribeMessage('join')
-  handleJoin(
+  async handleJoin(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: AckPayload,
   ) {
-    if (this.isRateLimited(client)) return;
-    this.acknowledge(client, 'join', payload);
+    if (await this.isRateLimited(client)) return;
+    await this.acknowledge(client, 'join', payload);
   }
 
   @SubscribeMessage('buy-in')
-  handleBuyIn(
+  async handleBuyIn(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: AckPayload,
   ) {
-    if (this.isRateLimited(client)) return;
-    this.acknowledge(client, 'buy-in', payload);
+    if (await this.isRateLimited(client)) return;
+    await this.acknowledge(client, 'buy-in', payload);
   }
 
   @SubscribeMessage('sitout')
-  handleSitout(
+  async handleSitout(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: AckPayload,
   ) {
-    if (this.isRateLimited(client)) return;
-    this.acknowledge(client, 'sitout', payload);
+    if (await this.isRateLimited(client)) return;
+    await this.acknowledge(client, 'sitout', payload);
   }
 
   @SubscribeMessage('rebuy')
-  handleRebuy(
+  async handleRebuy(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: AckPayload,
   ) {
-    if (this.isRateLimited(client)) return;
-    this.acknowledge(client, 'rebuy', payload);
+    if (await this.isRateLimited(client)) return;
+    await this.acknowledge(client, 'rebuy', payload);
   }
 
   @SubscribeMessage('proof')
@@ -173,16 +202,30 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private acknowledge(client: Socket, event: string, payload: AckPayload) {
     if (this.processed.has(payload.actionId)) {
+=======
+  private async acknowledge(
+    client: Socket,
+    event: string,
+    payload: AckPayload,
+  ) {
+    const key = this.processedKey(payload.actionId);
+    if ((await this.redis.exists(key)) === 1) {
+
       this.enqueue(client, `${event}:ack`, {
         actionId: payload.actionId,
         duplicate: true,
       } satisfies AckPayload);
       return;
     }
+
     this.processed.add(payload.actionId);
     this.enqueue(client, `${event}:ack`, {
       actionId: payload.actionId,
     } as AckPayload);
+=======
+    this.enqueue(client, `${event}:ack`, { actionId: payload.actionId } as AckPayload);
+    await this.redis.set(key, '1', 'EX', this.processedTtlSeconds);
+
   }
 
   private enqueue(client: Socket, event: string, data: unknown) {

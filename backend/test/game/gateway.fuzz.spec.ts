@@ -25,11 +25,19 @@ class DummyAnalytics {
 
 class DummyRedis {
   private count = 0;
+  private store = new Map<string, string>();
   async incr() {
     return ++this.count;
   }
   async expire() {
     return 1;
+  }
+  async exists(key: string) {
+    return this.store.has(key) ? 1 : 0;
+  }
+  async set(key: string, value: string, _mode: string, _ttl: number) {
+    this.store.set(key, value);
+    return 'OK';
   }
 }
 
