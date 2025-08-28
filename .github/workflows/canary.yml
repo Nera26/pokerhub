@@ -18,6 +18,7 @@ jobs:
       STABLE: api
       CANARY: api-canary
       PROMETHEUS: ${{ vars.PROMETHEUS_URL }}
+      SLO_QUERY: ${{ vars.SLO_QUERY }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Node
@@ -32,7 +33,7 @@ jobs:
         run: |
           python -m pip install pyyaml >/dev/null
           python infra/observability/validate.py
-      - name: Canary deploy
+      - name: Deploy canary and monitor SLO burn rate
         run: bash infra/scripts/canary-deploy.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

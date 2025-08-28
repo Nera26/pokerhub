@@ -1,16 +1,19 @@
 # Canary Deployment Runbook
 
-This document explains how to roll out a canary deployment and verify it with load tests.
+Use this runbook to release a canary and watch its SLO health.
 
-## Steps
+## Trigger
 
-1. Build and push the container image.
-2. Deploy the canary using `docs/scripts/canary-deploy.sh`:
-   ```bash
-   IMAGE=ghcr.io/<org>/pokerhub/room-worker:<sha> \
-   GITHUB_TOKEN=<token> GITHUB_ACTOR=<actor> \
-   bash docs/scripts/canary-deploy.sh
-   ```
-3. The script runs the k6 load test and exports `summary.json`.
-4. Monitor metrics and roll back if the script exits non-zero.
-5. Remove the canary deployment after validation.
+1. Go to **Actions → Canary Deploy** in GitHub.
+2. Click **Run workflow**. It sends 5 % of traffic to `api-canary` for 30 minutes.
+
+## Monitor
+
+1. The workflow polls Prometheus each minute using `SLO_QUERY`.
+2. If burn rate exceeds `SLO_BURN_THRESHOLD` it rolls back automatically and the job fails.
+3. When the burn rate stays below the threshold for 30 minutes the canary is promoted to 100 %.
+
+## Observability
+
+- Watch the workflow logs and Prometheus/Grafana dashboards for errors or latency.
+- Download the `k6-summary` artifact for load‑test details.
