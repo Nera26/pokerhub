@@ -13,25 +13,36 @@ const engine = new GameEngine(
   workerData.tableId,
 );
 
-parentPort.on('message', (msg: { type: string; seq: number; action?: GameAction }) => {
-  let state: GameState;
-  switch (msg.type) {
-    case 'apply':
-      state = engine.applyAction(msg.action as GameAction);
-      while (state.phase === 'DEAL') {
-        state = engine.applyAction({ type: 'next' });
-      }
-      parentPort!.postMessage({ event: 'state', state });
-      parentPort!.postMessage({ seq: msg.seq, state });
-      break;
-    case 'getState':
-      state = engine.getPublicState();
-      parentPort!.postMessage({ seq: msg.seq, state });
-      break;
-    case 'replay':
-      state = engine.replayHand();
-      parentPort!.postMessage({ event: 'state', state });
-      parentPort!.postMessage({ seq: msg.seq, state });
-      break;
-  }
-});
+parentPort.on(
+  'message',
+  (msg: { type: string; seq: number; action?: GameAction; from?: number }) => {
+    let state: GameState;
+    switch (msg.type) {
+      case 'apply':
+        state = engine.applyAction(msg.action as GameAction);
+        while (state.phase === 'DEAL') {
+          state = engine.applyAction({ type: 'next' });
+        }
+        parentPort!.postMessage({ event: 'state', state });
+        parentPort!.postMessage({ seq: msg.seq, state });
+        break;
+      case 'getState':
+        state = engine.getPublicState();
+        parentPort!.postMessage({ seq: msg.seq, state });
+        break;
+      case 'replay':
+        state = engine.replayHand();
+        parentPort!.postMessage({ event: 'state', state });
+        parentPort!.postMessage({ seq: msg.seq, state });
+        break;
+      case 'resume':
+        const from = msg.from ?? 0;
+        const log = engine
+          .getHandLog()
+          .filter(([index]) => index >= from)
+          .map(([index, , , post]) => [index, post] as [number, GameState]);
+        parentPort!.postMessage({ seq: msg.seq, states: log });
+        break;
+    }
+  },
+);

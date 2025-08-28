@@ -477,6 +477,21 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.enqueue(client, 'state', payload);
   }
 
+  @SubscribeMessage('resume')
+  async handleResume(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() body: { tick: number },
+  ) {
+    const from = body?.tick ?? 0;
+    const room = this.rooms.get('default');
+    const states = await room.resume(from);
+    for (const [index, state] of states) {
+      const payload = { version: '1', ...state, tick: index + 1 };
+      GameStateSchema.parse(payload);
+      this.enqueue(client, 'state', payload);
+    }
+  }
+
   private async handleTimeout(playerId: string) {
     const room = this.rooms.get('default');
     const state = await room.apply({ type: 'fold', playerId } as GameAction);
