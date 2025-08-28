@@ -1,0 +1,62 @@
+name: load-tests
+
+on:
+  workflow_dispatch:
+
+jobs:
+  tables-10k:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run 10k table scenario
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: load/k6-10k-tables.js
+          flags: --summary-export=10k-summary.json
+          cloud: true
+          token: ${{ secrets.K6_CLOUD_API_TOKEN }}
+      - name: Upload summary
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: tables-10k-summary
+          path: 10k-summary.json
+
+  packet-loss:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run packet loss scenario
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: load/k6-ws-packet-loss.js
+          flags: --summary-export=packet-summary.json
+          cloud: true
+          token: ${{ secrets.K6_CLOUD_API_TOKEN }}
+      - name: Upload summary
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: packet-loss-summary
+          path: packet-summary.json
+
+  soak:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1440
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run soak scenario
+        uses: grafana/k6-action@v0.2.0
+        env:
+          METRICS_URL: http://localhost:3000/metrics
+        with:
+          filename: load/k6-ws-soak.js
+          flags: --summary-export=soak-summary.json
+          cloud: true
+          token: ${{ secrets.K6_CLOUD_API_TOKEN }}
+      - name: Upload summary
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: soak-summary
+          path: soak-summary.json
