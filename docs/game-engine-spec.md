@@ -38,6 +38,33 @@ stateDiagram-v2
 }
 ```
 
+## State Verification
+
+To validate that a hand progressed deterministically, any action in the log can be
+replayed on demand.
+
+Fetch the server-side reconstruction at a specific index:
+
+```http
+GET /api/hands/{handId}/state/{actionIndex}
+```
+
+The response is a `GameState` payload.  Clients can fetch the full log via
+`GET /api/game/hand/{handId}/log` and independently replay actions to verify
+the returned state matches their own simulation.
+
+### Example
+
+```bash
+curl /api/hands/hand1/state/3 | jq
+# {
+#   "street": "flop",
+#   "pot": 120,
+#   "currentBet": 20,
+#   "players": [ ... ]
+# }
+```
+
 ## Timers
 
 - **Action**: 30s per decision

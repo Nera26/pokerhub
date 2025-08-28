@@ -141,6 +141,25 @@ export type LeaderboardRebuildQuery = z.infer<
   typeof LeaderboardRebuildQuerySchema
 >;
 
+export const HandStateResponseSchema = z.object({
+  street: z.enum(['preflop', 'flop', 'turn', 'river', 'showdown']),
+  pot: z.number(),
+  sidePots: z.array(
+    z.object({ amount: z.number(), players: z.array(z.string()) }),
+  ),
+  currentBet: z.number(),
+  players: z.array(
+    z.object({
+      id: z.string(),
+      stack: z.number(),
+      folded: z.boolean(),
+      bet: z.number(),
+      allIn: z.boolean(),
+    }),
+  ),
+});
+export type HandStateResponse = z.infer<typeof HandStateResponseSchema>;
+
 export const HandProofResponseSchema = z.object({
   seed: z.string(),
   nonce: z.string(),

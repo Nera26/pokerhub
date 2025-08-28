@@ -279,6 +279,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HandProof'
+  /hands/{id}/state/{actionIndex}:
+    get:
+      summary: Reconstruct hand state at action index
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: actionIndex
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Reconstructed hand state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HandState'
   /game/hand/{id}/log:
     get:
       summary: Export hand log
@@ -697,3 +718,54 @@ components:
       - seed
       - nonce
       - commitment
+  HandState:
+    type: object
+    properties:
+      street:
+        type: string
+        enum: [preflop, flop, turn, river, showdown]
+      pot:
+        type: number
+      sidePots:
+        type: array
+        items:
+          type: object
+          properties:
+            amount:
+              type: number
+            players:
+              type: array
+              items:
+                type: string
+          required:
+            - amount
+            - players
+      currentBet:
+        type: number
+      players:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+            stack:
+              type: number
+            folded:
+              type: boolean
+            bet:
+              type: number
+            allIn:
+              type: boolean
+          required:
+            - id
+            - stack
+            - folded
+            - bet
+            - allIn
+    required:
+      - street
+      - pot
+      - sidePots
+      - currentBet
+      - players
