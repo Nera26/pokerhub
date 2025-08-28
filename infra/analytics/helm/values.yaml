@@ -1,0 +1,8 @@
+redpanda:
+  replicaCount: 1
+
+clickhouse:
+  replicaCount: 1
+  auth:
+    username: default
+    password: default

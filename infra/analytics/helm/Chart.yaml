@@ -1,0 +1,10 @@
+apiVersion: v2
+name: analytics-stack
+version: 0.1.0
+dependencies:
+  - name: redpanda
+    version: 5.7.5
+    repository: https://charts.bitnami.com/bitnami
+  - name: clickhouse
+    version: 4.0.3
+    repository: https://charts.bitnami.com/bitnami

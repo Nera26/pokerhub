@@ -1,11 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
-import { EventConsumer } from './event-consumer';
+import { EtlService } from './etl.service';
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule);
-  const consumer = app.get(EventConsumer);
-  await consumer.run();
+  const etl = app.get(EtlService);
+  await etl.run();
 }
 
 void bootstrap();
