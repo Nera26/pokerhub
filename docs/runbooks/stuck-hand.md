@@ -1,15 +1,20 @@
 # Stuck Hand Runbook
 
-When a game hand fails to progress, follow this guide to resolve the incident.
+When a hand fails to advance to the next state, use this guide to restore normal play.
 
-## Symptoms
+## Detection
 - Hand timer exceeds expected duration.
-- Players report frozen or unresponsive table.
+- Players report a frozen or unresponsive table.
+- `handTimeout` metrics in Grafana breach 2 m threshold.
 
-## Steps
-1. Inspect hand state via `scripts/hand-inspect.sh`.
-2. If state is corrupt, restart the hand worker.
-3. Refund affected players and notify support.
+## Mitigation Steps
+1. Inspect hand state via `scripts/hand-inspect.sh <handId>`.
+2. If a corrupt state is found, restart the hand worker with `pm2 restart hand-worker`.
+3. Refund affected players and append a note in the incident tracker.
+
+## Verification
+- Confirm the worker resumes processing new hands.
+- Monitor the table for one full orbit to ensure timers fire correctly.
 
 ## Escalation
 - PagerDuty: pokerhub-eng

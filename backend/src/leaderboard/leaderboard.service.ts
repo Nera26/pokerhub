@@ -42,8 +42,8 @@ export class LeaderboardService {
   async rebuild(
     options: {
       days?: number;
-      minSessions?: number;
-      decay?: number;
+      minSessions?: number | ((playerId: string) => number);
+      decay?: number | ((playerId: string) => number);
     } = {},
   ): Promise<void> {
     const { days = 30, minSessions = 10, decay = 0.95 } = options;
@@ -67,13 +67,21 @@ export class LeaderboardService {
       const entry = scores.get(playerId) ?? { sessions: new Set(), rating: 0 };
       entry.sessions.add(sessionId);
       const ageDays = (now - ts) / (24 * 60 * 60 * 1000);
-      entry.rating += points * Math.pow(decay, ageDays);
+      const playerDecay =
+        typeof decay === 'function' ? decay(playerId) : decay;
+      entry.rating += points * Math.pow(playerDecay, ageDays);
       scores.set(playerId, entry);
     }
 
     const leaders = [...scores.entries()]
-      .filter(([, v]) => v.sessions.size >= minSessions)
-      .sort((a, b) => b[1].rating - a[1].rating)
+      .filter(([id, v]) =>
+        v.sessions.size >=
+        (typeof minSessions === 'function' ? minSessions(id) : minSessions),
+      )
+      .sort((a, b) => {
+        const diff = b[1].rating - a[1].rating;
+        return diff !== 0 ? diff : a[0].localeCompare(b[0]);
+      })
       .map(([id]) => id)
       .slice(0, 100);
 

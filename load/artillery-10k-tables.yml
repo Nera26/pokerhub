@@ -1,0 +1,15 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 300
+      arrivalRate: 10000
+  plugins:
+    metrics-by-endpoint: {}
+  defaults:
+    headers:
+      User-Agent: "artillery-10k-tables"
+scenarios:
+  - name: fetch-random-table
+    flow:
+      - get:
+          url: "/tables/random"

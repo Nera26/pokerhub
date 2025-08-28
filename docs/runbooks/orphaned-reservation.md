@@ -1,15 +1,20 @@
 # Orphaned Reservation Runbook
 
-Guidance for clearing reservations that were never released.
+Use this guide when seat reservations are not released after players disconnect.
 
-## Symptoms
+## Detection
 - Seats remain reserved after players disconnect.
-- Reservation TTLs exceed expected thresholds.
+- Reservation TTL metrics exceed thresholds in Grafana.
+- Support tickets from users unable to join tables.
 
-## Steps
-1. Locate reservation in Redis using the player ID.
-2. Manually release or expire the reservation.
-3. Notify the player to reconnect and verify seat status.
+## Mitigation Steps
+1. Locate the reservation in Redis with `scripts/reservation-find.sh <playerId>`.
+2. Manually release or expire the reservation using `redis-cli`.
+3. Ask the player to reconnect and confirm the seat status.
+
+## Verification
+- Ensure the seat appears free in the lobby.
+- Monitor for reoccurrence over the next hour.
 
 ## Escalation
 - PagerDuty: pokerhub-eng

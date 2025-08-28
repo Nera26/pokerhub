@@ -48,3 +48,13 @@ export const TournamentScheduleRequestSchema = z.object({
 export type TournamentScheduleRequest = z.infer<
   typeof TournamentScheduleRequestSchema
 >;
+
+export const HotPatchLevelRequestSchema = z.object({
+  level: z.number().int().positive(),
+  smallBlind: z.number().int().positive(),
+  bigBlind: z.number().int().positive(),
+});
+
+export type HotPatchLevelRequest = z.infer<
+  typeof HotPatchLevelRequestSchema
+>;

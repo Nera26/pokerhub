@@ -1,0 +1,19 @@
+groups:
+  - name: observability-alerts
+    rules:
+      - alert: UptimeSLOViolation
+        expr: (1 - avg_over_time(service_availability_ratio[30d])) > (1 - 0.9995)
+        for: 5m
+        labels:
+          severity: critical
+          pagerduty_service: pokerhub-sre
+        annotations:
+          summary: "Uptime below 99.95% SLO"
+      - alert: ActionAckLatencySLOViolation
+        expr: histogram_quantile(0.95, sum(rate(socket_action_ack_latency_ms_bucket[5m])) by (le)) > 120
+        for: 5m
+        labels:
+          severity: critical
+          pagerduty_service: pokerhub-sre
+        annotations:
+          summary: "Action ACK latency p95 over 120ms"
