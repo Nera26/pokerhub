@@ -1,11 +1,32 @@
 import {
   TournamentService,
-  TournamentState,
 } from '../../src/tournament/tournament.service';
+import {
+  Tournament,
+  TournamentState,
+} from '../../src/database/entities/tournament.entity';
+import { Seat } from '../../src/database/entities/seat.entity';
+import { Table } from '../../src/database/entities/table.entity';
+import { Repository } from 'typeorm';
 
 describe('TournamentService algorithms', () => {
   let service: TournamentService;
   let scheduler: any;
+  let tournamentsRepo: any;
+  let seatsRepo: any;
+  let tablesRepo: any;
+
+  function createRepo<T extends { id: string }>(initial: T[] = []) {
+    const items = new Map(initial.map((i) => [i.id, i]));
+    return {
+      find: jest.fn(async () => Array.from(items.values())),
+      findOne: jest.fn(async ({ where: { id } }) => items.get(id)),
+      save: jest.fn(async (obj: T) => {
+        items.set(obj.id, obj);
+        return obj;
+      }),
+    };
+  }
 
   beforeEach(() => {
     scheduler = {
@@ -13,7 +34,25 @@ describe('TournamentService algorithms', () => {
       scheduleBreak: jest.fn(),
       scheduleLevelUps: jest.fn(),
     };
-    service = new TournamentService(scheduler);
+    tournamentsRepo = createRepo<Tournament>([
+      {
+        id: 't1',
+        title: 'Daily Free Roll',
+        buyIn: 0,
+        prizePool: 1000,
+        maxPlayers: 100,
+        state: TournamentState.REG_OPEN,
+        tables: [],
+      } as Tournament,
+    ]);
+    seatsRepo = createRepo<Seat>();
+    tablesRepo = { find: jest.fn() };
+    service = new TournamentService(
+      tournamentsRepo as Repository<Tournament>,
+      seatsRepo as Repository<Seat>,
+      tablesRepo as Repository<Table>,
+      scheduler,
+    );
   });
 
   describe('balanceTables', () => {
@@ -61,15 +100,15 @@ describe('TournamentService algorithms', () => {
   });
 
   describe('state transitions', () => {
-    it('follows REG_OPEN → RUNNING → PAUSED → FINISHED', () => {
-      service.openRegistration('t1');
-      expect(service.getState('t1')).toBe(TournamentState.REG_OPEN);
-      service.start('t1');
-      expect(service.getState('t1')).toBe(TournamentState.RUNNING);
-      service.pause('t1');
-      expect(service.getState('t1')).toBe(TournamentState.PAUSED);
-      service.finish('t1');
-      expect(service.getState('t1')).toBe(TournamentState.FINISHED);
+    it('follows REG_OPEN → RUNNING → PAUSED → FINISHED', async () => {
+      await service.openRegistration('t1');
+      expect(await service.getState('t1')).toBe(TournamentState.REG_OPEN);
+      await service.start('t1');
+      expect(await service.getState('t1')).toBe(TournamentState.RUNNING);
+      await service.pause('t1');
+      expect(await service.getState('t1')).toBe(TournamentState.PAUSED);
+      await service.finish('t1');
+      expect(await service.getState('t1')).toBe(TournamentState.FINISHED);
     });
   });
 
