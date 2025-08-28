@@ -13,6 +13,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServiceStatusResponse'
+  /tables:
+    get:
+      summary: Get lobby tables
+      responses:
+        '200':
+          description: Tables list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Table'
   /game/action:
     post:
       summary: Perform a game action
@@ -516,6 +528,65 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Tournament'
+    Table:
+      type: object
+      properties:
+        id:
+          type: string
+        tableName:
+          type: string
+        gameType:
+          type: string
+          enum: [texas, omaha, allin, tournaments]
+        stakes:
+          type: object
+          properties:
+            small:
+              type: number
+            big:
+              type: number
+          required: [small, big]
+        players:
+          type: object
+          properties:
+            current:
+              type: number
+            max:
+              type: number
+          required: [current, max]
+        buyIn:
+          type: object
+          properties:
+            min:
+              type: number
+            max:
+              type: number
+          required: [min, max]
+        stats:
+          type: object
+          properties:
+            handsPerHour:
+              type: number
+            avgPot:
+              type: number
+            rake:
+              type: number
+          required: [handsPerHour, avgPot, rake]
+        createdAgo:
+          type: string
+      required:
+        - id
+        - tableName
+        - gameType
+        - stakes
+        - players
+        - buyIn
+        - stats
+        - createdAgo
+    TableList:
+      type: array
+      items:
+        $ref: '#/components/schemas/Table'
     CalculatePrizesRequest:
       type: object
       properties:
