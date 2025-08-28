@@ -9,10 +9,10 @@ class RoomWorker extends EventEmitter {
   private seq = 0;
   private readonly pending = new Map<number, (s: GameState) => void>();
 
-  constructor(playerIds?: string[]) {
+  constructor(private readonly tableId: string, playerIds?: string[]) {
     super();
     this.worker = new Worker(resolve(__dirname, './room.worker.ts'), {
-      workerData: { playerIds },
+      workerData: { tableId, playerIds },
       execArgv: ['-r', 'ts-node/register'],
     });
     this.worker.on('message', (msg: any) => {
@@ -64,7 +64,7 @@ export class RoomManager implements OnModuleDestroy {
 
   get(tableId: string): RoomWorker {
     if (!this.rooms.has(tableId)) {
-      this.rooms.set(tableId, new RoomWorker());
+      this.rooms.set(tableId, new RoomWorker(tableId));
     }
     return this.rooms.get(tableId)!;
   }

@@ -1,5 +1,8 @@
 import { HandLog } from '../../src/game/hand-log';
 import { GameAction, GameState } from '../../src/game/state-machine';
+import type { HandProof } from '../../src/game/rng';
+import { existsSync, readFileSync, unlinkSync } from 'fs';
+import { join } from 'path';
 
 describe('HandLog', () => {
   it('reconstructs state by action index', () => {
@@ -36,5 +39,28 @@ describe('HandLog', () => {
 
     expect(log.reconstruct(0)).toEqual(s1);
     expect(log.reconstruct(1)).toEqual(s2);
+  });
+
+  it('persists entries and proofs to jsonl file', () => {
+    const tableId = 'spec-table';
+    const path = join(process.cwd(), '../storage/hand-logs', `${tableId}.jsonl`);
+    if (existsSync(path)) unlinkSync(path);
+    const log = new HandLog(tableId);
+    const s0: GameState = {
+      street: 'preflop',
+      pot: 0,
+      sidePots: [],
+      currentBet: 0,
+      players: [],
+    };
+    const action: GameAction = { type: 'check', playerId: 'A' };
+    log.record(action, s0, s0);
+    const proof: HandProof = { seed: 's', nonce: 'n', commitment: 'c' };
+    log.recordProof(proof);
+    const data = readFileSync(path, 'utf8').trim();
+    expect(data).toBe(
+      JSON.stringify([0, action, s0, s0, proof]),
+    );
+    unlinkSync(path);
   });
 });

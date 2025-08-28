@@ -251,6 +251,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HandProof'
+  /game/hand/{id}/log:
+    get:
+      summary: Export hand log
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Hand log entries
+          content:
+            text/plain:
+              schema:
+                type: string
   /review/sessions:
     get:
       summary: List flagged sessions

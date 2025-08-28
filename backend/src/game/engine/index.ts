@@ -13,7 +13,7 @@ import { EventPublisher } from '../../events/events.service';
  * track of per-action logs and settlement results.
  */
 export class GameEngine {
-  private readonly log = new HandLog();
+  private readonly log: HandLog;
   private readonly settlement = new SettlementJournal();
   private readonly initialStacks: Map<string, number>; // for delta calc
   private readonly machine: HandStateMachine;
@@ -25,6 +25,7 @@ export class GameEngine {
     private readonly wallet?: WalletService,
     private readonly handRepo?: Repository<Hand>,
     private readonly events?: EventPublisher,
+    private readonly tableId?: string,
   ) {
     const players = playerIds.map((id) => ({
       id,
@@ -41,6 +42,7 @@ export class GameEngine {
       currentBet: 0,
       players,
     });
+    this.log = new HandLog(this.tableId);
     if (this.wallet) {
       void this.reserveStacks();
     }
