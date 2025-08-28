@@ -18,9 +18,10 @@ import { ClockService } from './clock.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Hand } from '../database/entities/hand.entity';
-=======
-import { GameActionSchema, type GameAction as WireGameAction } from '@shared/types';
-
+import {
+  GameActionSchema,
+  type GameAction as WireGameAction,
+} from '@shared/types';
 
 interface AckPayload {
   actionId: string;
@@ -33,6 +34,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private readonly processedPrefix = 'game:processed';
   private readonly processedTtlSeconds = 60;
+
+  private readonly processed = new Set<string>();
 
   private readonly queues = new Map<
     string,
@@ -91,17 +94,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    this.clock.clearTimer(action.playerId);
-    const tableId = action.tableId ?? 'default';
-    const { tableId: _t, actionId: _a, ...rest } = action;
-    const gameAction = rest as GameAction;
-=======
-
     const { actionId, ...rest } = action;
     const parsed = GameActionSchema.parse(rest);
 
     this.processed.add(actionId);
-    this.clock.clearTimer(parsed.playerId);
+    if (parsed.playerId) {
+      this.clock.clearTimer(parsed.playerId);
+    }
     const { tableId, ...wire } = parsed;
     const gameAction = wire as GameAction;
 
@@ -125,25 +124,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         .emit('state', { ...publicState, tick: this.tick });
     }
 
-
-    this.enqueue(client, 'action:ack', {
-      actionId: action.actionId,
-    } satisfies AckPayload);
-    await this.redis.set(key, '1', 'EX', this.processedTtlSeconds);
-=======
     this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+    await this.redis.set(key, '1', 'EX', this.processedTtlSeconds);
 
-
-    this.clock.setTimer(
-      action.playerId,
-      30_000,
-      () => void this.handleTimeout(action.playerId),
-=======
-
-    this.clock.setTimer(parsed.playerId, 30_000, () =>
-      void this.handleTimeout(parsed.playerId),
-
-    );
+    if (parsed.playerId) {
+      this.clock.setTimer(
+        parsed.playerId,
+        30_000,
+        () => void this.handleTimeout(parsed.playerId),
+      );
+    }
   }
 
   @SubscribeMessage('join')
@@ -200,17 +190,21 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
-  private acknowledge(client: Socket, event: string, payload: AckPayload) {
-    if (this.processed.has(payload.actionId)) {
-=======
   private async acknowledge(
     client: Socket,
     event: string,
     payload: AckPayload,
   ) {
+    if (this.processed.has(payload.actionId)) {
+      this.enqueue(client, `${event}:ack`, {
+        actionId: payload.actionId,
+        duplicate: true,
+      } satisfies AckPayload);
+      return;
+    }
+
     const key = this.processedKey(payload.actionId);
     if ((await this.redis.exists(key)) === 1) {
-
       this.enqueue(client, `${event}:ack`, {
         actionId: payload.actionId,
         duplicate: true,
@@ -222,10 +216,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.enqueue(client, `${event}:ack`, {
       actionId: payload.actionId,
     } as AckPayload);
-=======
-    this.enqueue(client, `${event}:ack`, { actionId: payload.actionId } as AckPayload);
     await this.redis.set(key, '1', 'EX', this.processedTtlSeconds);
-
   }
 
   private enqueue(client: Socket, event: string, data: unknown) {
