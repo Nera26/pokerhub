@@ -12,11 +12,6 @@ import { metrics, trace, SpanStatusCode } from '@opentelemetry/api';
 import type { Queue } from 'bullmq';
 import { PaymentProviderService, ProviderStatus } from './payment-provider.service';
 import { KycService } from './kyc.service';
-=======
-import {
-  PaymentProviderService,
-  ProviderStatus,
-} from './payment-provider.service';
 
 
 interface Movement {
@@ -48,15 +43,12 @@ export class WalletService {
     private readonly journals: Repository<JournalEntry>,
     @InjectRepository(Disbursement)
     private readonly disbursements: Repository<Disbursement>,
+    @InjectRepository(SettlementJournal)
+    private readonly settlements: Repository<SettlementJournal>,
     private readonly events: EventPublisher,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
     private readonly provider: PaymentProviderService,
-
     private readonly kyc: KycService,
-=======
-    @InjectRepository(SettlementJournal)
-    private readonly settlements?: Repository<SettlementJournal>,
-
   ) {}
 
   private payoutQueue?: Queue;
