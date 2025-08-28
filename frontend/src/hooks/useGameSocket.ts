@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { Socket } from 'socket.io-client';
 import { getSocket, disconnectSocket } from '@/app/utils/socket';
+import { setServerTime } from '@/lib/server-time';
 
 interface AckPayload {
   actionId: string;
@@ -28,9 +29,14 @@ export default function useGameSocket() {
       }
       s.emit('replay');
     };
+    const handleClock = (serverNow: number) => {
+      setServerTime(serverNow);
+    };
     s.on('connect', handleConnect);
+    s.on('server:Clock', handleClock);
     return () => {
       s.off('connect', handleConnect);
+      s.off('server:Clock', handleClock);
       disconnectSocket('game');
     };
   }, []);

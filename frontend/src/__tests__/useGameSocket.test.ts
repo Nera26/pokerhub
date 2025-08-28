@@ -1,5 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import useGameSocket from '@/hooks/useGameSocket';
+import { getServerTime } from '@/lib/server-time';
 
 const handlers: Record<string, ((...args: any[]) => void)[]> = {};
 
@@ -44,6 +45,15 @@ describe('useGameSocket', () => {
     expect(socket.emit).toHaveBeenCalledWith('buy-in', expect.any(Object));
     expect(socket.emit).toHaveBeenCalledWith('sitout', expect.any(Object));
     expect(socket.emit).toHaveBeenCalledWith('rebuy', expect.any(Object));
+  });
+
+  it('updates server time offset on server:Clock', () => {
+    const originalNow = Date.now;
+    Date.now = () => 1000;
+    renderHook(() => useGameSocket());
+    handlers['server:Clock']?.forEach((h) => h(5000));
+    expect(getServerTime()).toBe(5000);
+    Date.now = originalNow;
   });
 });
 
