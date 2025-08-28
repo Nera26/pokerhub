@@ -1,4 +1,4 @@
-import { HandLog } from '../hand-log';
+import { HandLog, HandLogEntry } from '../hand-log';
 import { HandStateMachine, GameAction, GameState } from '../state-machine';
 import { SettlementJournal } from '../settlement';
 import { WalletService } from '../../wallet/wallet.service';
@@ -53,8 +53,8 @@ export class GameEngine {
   }
 
   applyAction(action: GameAction): GameState {
+    const preState = structuredClone(this.machine.getState());
     const state = this.machine.apply(action);
-    this.log.record(action);
 
     // If only one player remains, settle immediately
     if (
@@ -63,6 +63,9 @@ export class GameEngine {
     ) {
       state.street = 'showdown';
     }
+
+    const postState = structuredClone(this.machine.getState());
+    this.log.record(action, preState, postState);
 
     if (state.street === 'showdown') {
       void this.settle();
@@ -80,7 +83,7 @@ export class GameEngine {
     return this.machine.getState();
   }
 
-  getHandLog() {
+  getHandLog(): HandLogEntry[] {
     return this.log.getAll();
   }
 
@@ -92,7 +95,7 @@ export class GameEngine {
     const replay = new GameEngine(
       this.machine.getState().players.map((p) => p.id),
     );
-    for (const action of this.getHandLog()) {
+    for (const [, action] of this.getHandLog()) {
       replay.applyAction(action);
     }
     return replay.getState();
