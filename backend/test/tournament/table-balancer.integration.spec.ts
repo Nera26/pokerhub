@@ -70,11 +70,13 @@ describe('TableBalancerService integration', () => {
       } as Tournament,
     ]);
     const scheduler: any = {};
+    const rooms: any = { get: jest.fn() };
     const service = new TournamentService(
       tournamentsRepo,
       seatsRepo,
       tablesRepo,
       scheduler,
+      rooms,
     );
     const balancer = new TableBalancerService(tablesRepo, service);
 
@@ -130,11 +132,13 @@ describe('TableBalancerService integration', () => {
       } as Tournament,
     ]);
     const scheduler: any = {};
+    const rooms: any = { get: jest.fn() };
     const service = new TournamentService(
       tournamentsRepo,
       seatsRepo,
       tablesRepo,
       scheduler,
+      rooms,
     );
     const balancer = new TableBalancerService(tablesRepo, service);
 

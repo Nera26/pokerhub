@@ -9,6 +9,7 @@ import { Seat } from '../database/entities/seat.entity';
 import { Table } from '../database/entities/table.entity';
 import { TournamentScheduler } from './scheduler.service';
 import { calculateIcmPayouts as icmPayouts } from './structures/icm';
+import { RoomManager } from '../game/room.service';
 
 @Injectable()
 export class TournamentService {
@@ -25,6 +26,7 @@ export class TournamentService {
     @InjectRepository(Table)
     private readonly tables: Repository<Table>,
     private readonly scheduler: TournamentScheduler,
+    private readonly rooms: RoomManager,
   ) {}
 
   async list(): Promise<Tournament[]> {
@@ -131,7 +133,16 @@ export class TournamentService {
    * Auto-fold a player when their action times out. Returns the action taken
    * so calling code can broadcast it to the table.
    */
-  async autoFoldOnTimeout(_seatId: string): Promise<'fold'> {
+  async autoFoldOnTimeout(seatId: string): Promise<'fold'> {
+    const seat = await this.seats.findOne({
+      where: { id: seatId },
+      relations: ['table', 'user'],
+    });
+    if (!seat) {
+      throw new Error(`Seat ${seatId} not found`);
+    }
+    const room = this.rooms.get(seat.table.id);
+    await room.apply({ type: 'fold', playerId: seat.user.id });
     return 'fold';
   }
 
