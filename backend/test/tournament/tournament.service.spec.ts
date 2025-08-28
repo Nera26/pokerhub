@@ -9,6 +9,7 @@ import { Seat } from '../../src/database/entities/seat.entity';
 import { Table } from '../../src/database/entities/table.entity';
 import { Repository } from 'typeorm';
 import * as fc from 'fast-check';
+import { icmRaw } from '../../src/tournament/structures/icm';
 
 describe('TournamentService algorithms', () => {
   let service: TournamentService;
@@ -168,7 +169,7 @@ describe('TournamentService algorithms', () => {
       const stacks = [4000, 3500, 2500];
       const prizes = [60, 30, 10];
       const res = service.calculateIcmPayouts(stacks, prizes);
-      const raw = (service as any).icmRecursive(stacks, prizes);
+      const raw = icmRaw(stacks, prizes);
       res.forEach((p: number, i: number) => {
         expect(Math.abs(p - raw[i])).toBeLessThan(1);
       });
@@ -190,7 +191,7 @@ describe('TournamentService algorithms', () => {
             const res = service.calculateIcmPayouts(stacks, p);
             const totalPrizes = p.reduce((a, b) => a + b, 0);
             expect(res.reduce((a, b) => a + b, 0)).toBe(totalPrizes);
-            const raw = (service as any).icmRecursive(stacks, p);
+            const raw = icmRaw(stacks, p);
             res.forEach((pay: number, i: number) => {
               expect(Math.abs(pay - raw[i])).toBeLessThan(1);
             });

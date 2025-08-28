@@ -4,6 +4,9 @@ import { TournamentController } from './tournament.controller';
 import { TournamentService } from './tournament.service';
 import { TournamentScheduler } from './scheduler.service';
 import { TableBalancerService } from './table-balancer.service';
+import { PkoService } from './pko.service';
+import { RebuyService } from './rebuy.service';
+import { SatelliteService } from './satellite.service';
 import { Tournament } from '../database/entities/tournament.entity';
 import { Seat } from '../database/entities/seat.entity';
 import { Table } from '../database/entities/table.entity';
@@ -11,7 +14,20 @@ import { Table } from '../database/entities/table.entity';
 @Module({
   imports: [TypeOrmModule.forFeature([Tournament, Seat, Table])],
   controllers: [TournamentController],
-  providers: [TournamentService, TournamentScheduler, TableBalancerService],
-  exports: [TournamentService, TableBalancerService],
+  providers: [
+    TournamentService,
+    TournamentScheduler,
+    TableBalancerService,
+    PkoService,
+    RebuyService,
+    SatelliteService,
+  ],
+  exports: [
+    TournamentService,
+    TableBalancerService,
+    PkoService,
+    RebuyService,
+    SatelliteService,
+  ],
 })
 export class TournamentModule {}
