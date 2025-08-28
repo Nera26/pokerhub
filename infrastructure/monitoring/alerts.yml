@@ -29,3 +29,19 @@ groups:
           severity: warning
         annotations:
           summary: "Dropped frames detected"
+      - alert: ErrorBudgetBurnRate1h
+        expr: error_budget_burn_rate_1h > 14.4
+        for: 2m
+        labels:
+          severity: critical
+          pagerduty_service: pokerhub-sre
+        annotations:
+          summary: "1h error budget burn rate too high"
+      - alert: ErrorBudgetBurnRate6h
+        expr: error_budget_burn_rate_6h > 6
+        for: 15m
+        labels:
+          severity: critical
+          pagerduty_service: pokerhub-sre
+        annotations:
+          summary: "6h error budget burn rate too high"
