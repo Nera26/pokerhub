@@ -1,61 +1,16 @@
 import { EventEmitter } from 'events';
-
-import { join } from 'path';
-import { Worker } from 'worker_threads';
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import type { GameAction, GameState } from './engine';
-
-interface WorkerMessage {
-  seq?: number;
-  event?: string;
-  state: GameState;
-}
-
-export class RoomWorker extends EventEmitter {
-  private readonly worker: Worker;
-  private seq = 0;
-  private readonly pending = new Map<number, (state: GameState) => void>();
-
-  constructor(playerIds: string[] = ['p1', 'p2']) {
-    super();
-    const workerPath = join(__dirname, 'room.worker.ts');
-    this.worker = new Worker(workerPath, {
-      workerData: { playerIds },
-      execArgv: ['-r', 'ts-node/register'],
-    });
-    this.worker.on('message', (msg: WorkerMessage) => {
-      if (msg.event === 'state') {
-        this.emit('state', msg.state);
-      }
-      if (typeof msg.seq === 'number') {
-        const resolve = this.pending.get(msg.seq);
-        if (resolve) {
-          resolve(msg.state);
-          this.pending.delete(msg.seq);
-        }
-      }
-    });
-  }
-
-  private call(
-    type: 'apply' | 'getState' | 'replay',
-    payload: Record<string, unknown> = {},
-  ): Promise<GameState> {
-    const seq = this.seq++;
-    return new Promise<GameState>((resolve) => {
-      this.pending.set(seq, resolve);
-      this.worker.postMessage({ type, seq, ...payload });
-    });
-  }
-=======
-import { Injectable } from '@nestjs/common';
-import { GameAction, GameState } from './engine';
 
 class RoomWorker extends EventEmitter {
   private state: GameState = { street: 'preflop', pot: 0, players: [] } as any;
 
-
-  async apply(_action: GameAction): Promise<GameState> {
+  async apply(action: GameAction): Promise<GameState> {
+    if (action.type === 'next') {
+      if (this.state.street === 'preflop') this.state.street = 'flop';
+      else if (this.state.street === 'flop') this.state.street = 'turn';
+      else if (this.state.street === 'turn') this.state.street = 'river';
+    }
     return this.state;
   }
 
@@ -67,8 +22,8 @@ class RoomWorker extends EventEmitter {
     return this.state;
   }
 
-  terminate(): Promise<number> {
-    return this.worker.terminate();
+  async terminate(): Promise<void> {
+    /* no-op */
   }
 }
 
@@ -96,3 +51,4 @@ export class RoomManager implements OnModuleDestroy {
     this.rooms.clear();
   }
 }
+
