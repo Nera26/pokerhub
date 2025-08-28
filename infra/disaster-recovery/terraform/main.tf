@@ -27,6 +27,11 @@ variable "redis_cluster_id" {
   type        = string
 }
 
+variable "clickhouse_backup_bucket" {
+  description = "S3 bucket storing ClickHouse backups"
+  type        = string
+}
+
 provider "aws" {
   region = var.primary_region
 }
@@ -62,6 +67,72 @@ resource "aws_s3_bucket_object" "redis_copy" {
   bucket   = aws_s3_bucket.redis_snapshots.id
   key      = "${aws_elasticache_snapshot.redis.snapshot_name}.rdb"
   source   = aws_elasticache_snapshot.redis.snapshot_name
+}
+
+# Cross-region read replica for Postgres with PITR enabled
+resource "aws_db_instance" "pg_replica" {
+  provider               = aws.secondary
+  identifier              = "pg-dr-replica"
+  replicate_source_db     = var.pg_instance_id
+  instance_class          = "db.t3.micro"
+  publicly_accessible     = false
+  backup_retention_period = 7
+}
+
+# ClickHouse backup bucket replica with versioning for PITR
+resource "aws_s3_bucket" "clickhouse_replica" {
+  provider = aws.secondary
+  bucket   = "${var.clickhouse_backup_bucket}-dr"
+
+  versioning {
+    enabled = true
+  }
+}
+
+resource "aws_iam_role" "clickhouse_replication" {
+  name = "clickhouse-replication-role"
+
+  assume_role_policy = jsonencode({
+    Version   = "2012-10-17",
+    Statement = [{
+      Effect    = "Allow",
+      Principal = { Service = "s3.amazonaws.com" },
+      Action    = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "clickhouse_replication" {
+  role = aws_iam_role.clickhouse_replication.id
+
+  policy = jsonencode({
+    Version   = "2012-10-17",
+    Statement = [{
+      Effect   = "Allow",
+      Action   = ["s3:*"],
+      Resource = [
+        "arn:aws:s3:::${var.clickhouse_backup_bucket}",
+        "arn:aws:s3:::${var.clickhouse_backup_bucket}/*",
+        aws_s3_bucket.clickhouse_replica.arn,
+        "${aws_s3_bucket.clickhouse_replica.arn}/*"
+      ]
+    }]
+  })
+}
+
+resource "aws_s3_bucket_replication_configuration" "clickhouse" {
+  bucket = var.clickhouse_backup_bucket
+  role   = aws_iam_role.clickhouse_replication.arn
+
+  rule {
+    id     = "dr-replica"
+    status = "Enabled"
+
+    destination {
+      bucket        = aws_s3_bucket.clickhouse_replica.arn
+      storage_class = "STANDARD"
+    }
+  }
 }
 
 # CloudWatch rule to trigger nightly restore tests (executed via CronJobs in k8s)
