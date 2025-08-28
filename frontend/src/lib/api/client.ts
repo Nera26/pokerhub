@@ -1,4 +1,8 @@
 import { ZodError, ZodSchema } from 'zod';
+import { API_CONTRACT_VERSION } from '@shared/constants';
+import { ServiceStatusResponseSchema } from '@shared/types';
+import { getBaseUrl } from '@/lib/base-url';
+import { serverFetch } from '@/lib/server-fetch';
 
 /**
  * Error thrown by API helpers when a request fails or returns an unexpected body.
@@ -29,6 +33,24 @@ export interface ResponseLike {
   };
   json?: () => Promise<unknown>;
   text?: () => Promise<string>;
+}
+
+export async function checkApiContractVersion(): Promise<void> {
+  try {
+    const baseUrl = getBaseUrl();
+    const res = serverFetch(`${baseUrl}/status`);
+    const { contractVersion } = await handleResponse(
+      res,
+      ServiceStatusResponseSchema,
+    );
+    const [backendMajor] = contractVersion.split('.');
+    const [frontendMajor] = API_CONTRACT_VERSION.split('.');
+    if (backendMajor !== frontendMajor && typeof window !== 'undefined') {
+      window.alert('Please upgrade your app.');
+    }
+  } catch {
+    // ignore errors
+  }
 }
 
 /**

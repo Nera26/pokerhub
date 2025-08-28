@@ -1,7 +1,8 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
+import { checkApiContractVersion } from '@/lib/api/client';
 import dynamic from 'next/dynamic';
 
 const ReactQueryDevtools =
@@ -32,6 +33,10 @@ export default function ReactQueryProvider({
         },
       }),
   );
+
+  useEffect(() => {
+    void checkApiContractVersion();
+  }, []);
 
   return (
     <QueryClientProvider client={client}>

@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
+import { ServiceStatusResponse } from '@shared/types';
 
 @Controller()
 export class AppController {
@@ -11,7 +12,7 @@ export class AppController {
   }
 
   @Get('status')
-  getStatus(): { status: string } {
+  getStatus(): ServiceStatusResponse {
     return this.appService.getStatus();
   }
 }
