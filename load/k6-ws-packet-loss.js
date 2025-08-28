@@ -1,12 +1,15 @@
 import ws from 'k6/ws';
-import { Trend } from 'k6';
+import { Trend } from 'k6/metrics';
 
 export const options = {
   vus: Number(__ENV.VUS) || 10000,
   duration: __ENV.DURATION || '1m',
+  thresholds: {
+    ws_latency: ['p(95)<120'],
+  },
 };
 
-const latency = new Trend('ws_latency');
+const latency = new Trend('ws_latency', true);
 
 export default function () {
   const url = __ENV.WS_URL || 'ws://localhost:3000';
