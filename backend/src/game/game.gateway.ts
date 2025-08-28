@@ -24,7 +24,8 @@ interface AckPayload {
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(GameGateway.name);
 
-  private readonly processed = new Set<string>();
+  private readonly processedPrefix = 'game:processed';
+  private readonly processedTtlSeconds = 60;
 
   private readonly queues = new Map<
     string,
@@ -52,6 +53,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
+  private processedKey(id: string) {
+    return `${this.processedPrefix}:${id}`;
+  }
+
   handleConnection(client: Socket) {
     this.logger.debug(`Client connected: ${client.id}`);
     this.clock.setTimer(client.id, 30_000, () => this.handleTimeout(client.id));
@@ -72,15 +77,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     if (await this.isRateLimited(client)) return;
 
-    if (this.processed.has(action.actionId)) {
+    const key = this.processedKey(action.actionId);
+    if ((await this.redis.exists(key)) === 1) {
       this.enqueue(client, 'action:ack', {
         actionId: action.actionId,
         duplicate: true,
       } satisfies AckPayload);
       return;
     }
-
-    this.processed.add(action.actionId);
     this.clock.clearTimer(action.playerId);
     const tableId = action.tableId ?? 'default';
     const { tableId: _t, actionId: _a, ...rest } = action;
@@ -105,6 +109,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.enqueue(client, 'action:ack', {
       actionId: action.actionId,
     } satisfies AckPayload);
+    await this.redis.set(key, '1', 'EX', this.processedTtlSeconds);
 
     this.clock.setTimer(action.playerId, 30_000, () =>
       void this.handleTimeout(action.playerId),
@@ -112,51 +117,56 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('join')
-  handleJoin(
+  async handleJoin(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: AckPayload,
   ) {
-    if (this.isRateLimited(client)) return;
-    this.acknowledge(client, 'join', payload);
+    if (await this.isRateLimited(client)) return;
+    await this.acknowledge(client, 'join', payload);
   }
 
   @SubscribeMessage('buy-in')
-  handleBuyIn(
+  async handleBuyIn(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: AckPayload,
   ) {
-    if (this.isRateLimited(client)) return;
-    this.acknowledge(client, 'buy-in', payload);
+    if (await this.isRateLimited(client)) return;
+    await this.acknowledge(client, 'buy-in', payload);
   }
 
   @SubscribeMessage('sitout')
-  handleSitout(
+  async handleSitout(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: AckPayload,
   ) {
-    if (this.isRateLimited(client)) return;
-    this.acknowledge(client, 'sitout', payload);
+    if (await this.isRateLimited(client)) return;
+    await this.acknowledge(client, 'sitout', payload);
   }
 
   @SubscribeMessage('rebuy')
-  handleRebuy(
+  async handleRebuy(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: AckPayload,
   ) {
-    if (this.isRateLimited(client)) return;
-    this.acknowledge(client, 'rebuy', payload);
+    if (await this.isRateLimited(client)) return;
+    await this.acknowledge(client, 'rebuy', payload);
   }
 
-  private acknowledge(client: Socket, event: string, payload: AckPayload) {
-    if (this.processed.has(payload.actionId)) {
+  private async acknowledge(
+    client: Socket,
+    event: string,
+    payload: AckPayload,
+  ) {
+    const key = this.processedKey(payload.actionId);
+    if ((await this.redis.exists(key)) === 1) {
       this.enqueue(client, `${event}:ack`, {
         actionId: payload.actionId,
         duplicate: true,
       } satisfies AckPayload);
       return;
     }
-    this.processed.add(payload.actionId);
     this.enqueue(client, `${event}:ack`, { actionId: payload.actionId } as AckPayload);
+    await this.redis.set(key, '1', 'EX', this.processedTtlSeconds);
   }
 
   private enqueue(client: Socket, event: string, data: unknown) {
