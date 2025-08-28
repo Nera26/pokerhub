@@ -23,7 +23,9 @@ import { Hand } from '../database/entities/hand.entity';
 
 import {
   GameActionSchema,
+  GameStateSchema,
   type GameAction as WireGameAction,
+  type GameActionPayload,
 } from '@shared/types';
 import { metrics } from '@opentelemetry/api';
 import PQueue from 'p-queue';
@@ -147,9 +149,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const start = Date.now();
     const { actionId, ...rest } = action;
     let tableId = rest.tableId ?? 'unknown';
-    let parsed: GameAction;
+    let parsed: WireGameAction;
     try {
-      parsed = GameActionSchema.parse(rest) as GameAction;
+      parsed = GameActionSchema.parse(rest);
       tableId = parsed.tableId;
     } catch (err) {
       this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
@@ -173,9 +175,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (parsed.playerId) {
       this.clock.clearTimer(parsed.playerId);
     }
-    const { tableId: parsedTableId, ...wire } = parsed;
+    const { tableId: parsedTableId, version: _v, ...wire } = parsed;
     tableId = parsedTableId;
-    const gameAction = wire as GameAction;
+    const gameAction = wire as GameActionPayload;
 
     const room = this.rooms.get(tableId);
     const state = await room.apply(gameAction);
@@ -190,15 +192,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       void this.collusion.record(userId, deviceId, ip);
     }
 
-    const payload = { ...state, tick: ++this.tick };
+    const payload = { version: '1', ...state, tick: ++this.tick };
+    GameStateSchema.parse(payload);
     this.enqueue(client, 'state', payload, true);
 
     if (this.server?.of) {
       const publicState = await room.getPublicState();
+      const spectatorPayload = { version: '1', ...publicState, tick: this.tick };
+      GameStateSchema.parse(spectatorPayload);
       this.server
         .of('/spectate')
         .to(tableId)
-        .emit('state', { ...publicState, tick: this.tick });
+        .emit('state', spectatorPayload);
     }
 
     this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
@@ -453,14 +458,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleReplay(@ConnectedSocket() client: Socket) {
     const room = this.rooms.get('default');
     const state = await room.replay();
-    this.enqueue(client, 'state', { ...state, tick: this.tick });
+    const payload = { version: '1', ...state, tick: this.tick };
+    GameStateSchema.parse(payload);
+    this.enqueue(client, 'state', payload);
   }
 
   private async handleTimeout(playerId: string) {
     const room = this.rooms.get('default');
     const state = await room.apply({ type: 'fold', playerId } as GameAction);
     if (this.server) {
-      this.server.emit('state', { ...state, tick: ++this.tick });
+      const payload = { version: '1', ...state, tick: ++this.tick };
+      GameStateSchema.parse(payload);
+      this.server.emit('state', payload);
     }
   }
 }
