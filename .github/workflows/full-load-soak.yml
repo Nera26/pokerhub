@@ -1,0 +1,85 @@
+name: full-load-soak
+
+on:
+  workflow_dispatch:
+
+jobs:
+  soak-10k:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1440
+    env:
+      METRICS_URL: http://localhost:3000/metrics
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toxiproxy CLI
+        run: |
+          TOXI_VER=v2.5.0
+          TOXI_BASE=https://github.com/Shopify/toxiproxy/releases/download/$TOXI_VER
+          curl -sSL $TOXI_BASE/toxiproxy-cli-linux-amd64 -o /usr/local/bin/toxiproxy-cli
+          chmod +x /usr/local/bin/toxiproxy-cli
+      - name: Start toxiproxy
+        run: |
+          docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 \
+            ghcr.io/shopify/toxiproxy
+      - name: Configure toxiproxy
+        run: load/toxiproxy-soak.sh
+        env:
+          PROXY_PORT: 3001
+          UPSTREAM: localhost:3000
+      - name: Start GC/heap collector
+        run: |
+          load/collect-gc-heap.sh &
+          echo $! > collector.pid
+        env:
+          GRAFANA_PUSH_URL: ${{ secrets.GRAFANA_PUSH_URL }}
+      - name: Run 10k table latency test
+        uses: grafana/k6-action@v0.2.0
+        env:
+          WS_URL: ws://localhost:3001
+          TABLES: 10000
+          SOCKETS: 80000
+        with:
+          filename: load/k6-10k-tables.js
+          flags: >-
+            --summary-export=ack-summary.json
+            -o experimental-prometheus-rw=${{ secrets.GRAFANA_PROM_URL }}
+      - name: Run 24h websocket soak
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: load/k6-ws-soak.js
+          flags: >-
+            --summary-export=soak-summary.json
+            -o experimental-prometheus-rw=${{ secrets.GRAFANA_PROM_URL }}
+      - name: Stop GC/heap collector
+        if: always()
+        run: kill $(cat collector.pid)
+      - name: Check heap leak
+        run: |
+          start=$(grep -m1 nodejs_heap_size_used_bytes gc-heap-metrics.log | awk '{print $2}')
+          end=$(grep nodejs_heap_size_used_bytes gc-heap-metrics.log | tail -1 | awk '{print $2}')
+          python - "$start" "$end" <<'PY'
+import sys
+s=float(sys.argv[1]); e=float(sys.argv[2])
+leak=(e-s)*100/s
+print(f"heap growth: {leak}%")
+if leak > 1:
+    sys.exit('heap leak exceeded 1%')
+PY
+      - name: Publish Grafana dashboard
+        run: |
+          curl -sS -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.GRAFANA_API_KEY }}" \
+            -d '{"dashboard": '$(cat load/grafana-ack-latency.json)', "overwrite": true}' \
+            ${{ secrets.GRAFANA_API_URL }}/api/dashboards/db
+      - name: Stop toxiproxy
+        if: always()
+        run: docker rm -f toxiproxy
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: load-soak-results
+          path: |
+            ack-summary.json
+            soak-summary.json
+            gc-heap-metrics.log
