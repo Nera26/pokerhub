@@ -60,3 +60,23 @@ jobs:
         with:
           name: soak-summary
           path: soak-summary.json
+
+  tournament-10k:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tournament 10k scenario
+        uses: grafana/k6-action@v0.2.0
+        env:
+          BASE_URL: https://staging.pokerhub
+        with:
+          filename: load/k6-tournament-10k.js
+          flags: --summary-export=tournament-summary.json
+          cloud: true
+          token: ${{ secrets.K6_CLOUD_API_TOKEN }}
+      - name: Upload summary
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: tournament-10k-summary
+          path: tournament-summary.json
