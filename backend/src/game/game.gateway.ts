@@ -58,6 +58,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       description: 'Global action counter within rate limit window',
     },
   );
+  private static readonly frameRetries = GameGateway.meter.createCounter(
+    'frame_retries_total',
+    {
+      description: 'Total number of frame retransmissions',
+    },
+  );
+  private static readonly framesDropped = GameGateway.meter.createCounter(
+    'frames_dropped_total',
+    {
+      description: 'Total number of frames dropped after retries exhausted',
+    },
+  );
 
   private readonly processedPrefix = 'game:processed';
   private readonly processedTtlSeconds = 60;
@@ -380,12 +392,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (!frames.has(frameId)) return;
       if (frame.attempt >= this.maxFrameAttempts) {
         frames.delete(frameId);
+        GameGateway.framesDropped.add(1, { event });
         return;
       }
       const delay = Math.pow(2, frame.attempt) * 100;
       frame.timeout = setTimeout(() => {
         if (!frames.has(frameId)) return;
         client.emit(event, payload);
+        GameGateway.frameRetries.add(1, { event });
         frame.attempt++;
         retry();
       }, delay);
