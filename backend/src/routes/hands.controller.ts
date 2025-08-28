@@ -2,6 +2,7 @@ import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Hand } from '../database/entities/hand.entity';
+import type { HandProofResponse } from '../schemas/hands';
 
 @Controller('hands')
 export class HandsController {
@@ -10,14 +11,14 @@ export class HandsController {
   ) {}
 
   @Get(':id/proof')
-  async getProof(@Param('id') id: string) {
+  async getProof(@Param('id') id: string): Promise<HandProofResponse> {
     const hand = await this.hands.findOne({ where: { id } });
     if (!hand) {
       throw new NotFoundException('hand not found');
     }
     return {
-      seed: hand.seed,
-      nonce: hand.nonce,
+      seed: hand.seed!,
+      nonce: hand.nonce!,
       commitment: hand.commitment,
     };
   }

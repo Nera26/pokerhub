@@ -1,7 +1,14 @@
 import { GameAction, GameState } from './state-machine';
+import type { HandProof } from './rng';
 
-// [index, action, preState, postState]
-export type HandLogEntry = [number, GameAction, GameState, GameState];
+// [index, action, preState, postState, proof]
+export type HandLogEntry = [
+  number,
+  GameAction,
+  GameState,
+  GameState,
+  HandProof?,
+];
 
 export class HandLog {
   private readonly entries: HandLogEntry[] = [];
@@ -14,6 +21,13 @@ export class HandLog {
       structuredClone(preState),
       structuredClone(postState),
     ]);
+  }
+
+  recordProof(proof: HandProof) {
+    const last = this.entries[this.entries.length - 1];
+    if (last) {
+      last[4] = structuredClone(proof);
+    }
   }
 
   getAll(): HandLogEntry[] {

@@ -10,16 +10,24 @@ To ensure every deck is provably fair, PokerHub uses a commit–reveal scheme ba
 1. Compute `commitment = sha256(seed || nonce)`.
 2. Broadcast `{ commitment, nonce }` to all players and persist it in `hand-log`.
 3. Shuffle the deck with a Fisher–Yates algorithm seeded by `seed`.
-4. After showdown, reveal `seed` so anyone can verify the shuffle.
+4. After showdown, reveal `seed` and append the proof to the hand log so anyone can verify the shuffle.
 
 ## Verification
 
 Players or auditors can reproduce the deck:
 
+1. Fetch the proof after the hand ends:
+
 ```sh
-node backend/src/game/verify.js <seed> <nonce> [commitment]
+curl /hands/<handId>/proof
 ```
 
-1. Recompute `sha256(seed || nonce)` and confirm it matches the published `commitment`.
-2. Feed `seed` into the verifier to obtain the deterministic deck order.
-3. Compare the deck with cards dealt during the hand to prove fairness.
+2. Run the verifier with the returned values:
+
+```sh
+npx ts-node backend/src/game/verify.ts <seed> <nonce> [commitment]
+```
+
+3. Recompute `sha256(seed || nonce)` and confirm it matches the published `commitment`.
+4. Feed `seed` into the verifier to obtain the deterministic deck order.
+5. Compare the deck with cards dealt during the hand to prove fairness.
