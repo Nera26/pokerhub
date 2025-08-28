@@ -972,10 +972,19 @@ components:
         type: integer
       points:
         type: number
+      net:
+        type: number
+      bb100:
+        type: number
+      hours:
+        type: number
     required:
       - playerId
       - rank
       - points
+      - net
+      - bb100
+      - hours
   HandProof:
     type: object
     properties:
