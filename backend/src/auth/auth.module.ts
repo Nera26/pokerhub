@@ -10,6 +10,8 @@ import { CountryProvider } from './providers/country-provider';
 import { startKycWorker } from './kyc.worker';
 import { AuthController } from './auth.controller';
 import { RateLimitGuard } from './rate-limit.guard';
+import { SessionModule } from '../session/session.module';
+import { AuthService } from './auth.service';
 
 @Injectable()
 class KycWorker implements OnModuleInit {
@@ -32,19 +34,24 @@ function providerFactory(config: ConfigService): CountryProvider {
   }
 }
 
-  @Module({
-    imports: [ConfigModule, TypeOrmModule.forFeature([Account, KycVerification])],
-    providers: [
-      {
-        provide: 'COUNTRY_PROVIDER',
-        inject: [ConfigService],
-        useFactory: providerFactory,
-      },
-      KycService,
-      KycWorker,
-      RateLimitGuard,
-    ],
-    controllers: [AuthController],
-    exports: [KycService],
-  })
-  export class AuthModule {}
+@Module({
+  imports: [
+    ConfigModule,
+    TypeOrmModule.forFeature([Account, KycVerification]),
+    SessionModule,
+  ],
+  providers: [
+    {
+      provide: 'COUNTRY_PROVIDER',
+      inject: [ConfigService],
+      useFactory: providerFactory,
+    },
+    KycService,
+    KycWorker,
+    RateLimitGuard,
+    AuthService,
+  ],
+  controllers: [AuthController],
+  exports: [KycService],
+})
+export class AuthModule {}

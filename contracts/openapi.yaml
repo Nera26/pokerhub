@@ -29,6 +29,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+        '429':
+          description: Too many login attempts
   /auth/logout:
     post:
       summary: Logout
