@@ -18,7 +18,14 @@ import { ClockService } from './clock.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Hand } from '../database/entities/hand.entity';
+
+import {
+  GameActionSchema,
+  type GameAction as WireGameAction,
+} from '@shared/types';
+=======
 import { type GameAction as WireGameAction } from '@shared/types';
+
 
 interface AckPayload {
   actionId: string;
@@ -32,7 +39,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly processedPrefix = 'game:processed';
   private readonly processedTtlSeconds = 60;
 
+  private readonly processed = new Set<string>();
+
+  private readonly queues = new Map<
+    string,
+    { event: string; data: unknown }[]
+  >();
+
+=======
   private readonly queues = new Map<string, { event: string; data: unknown }[]>();
+
   private readonly sending = new Set<string>();
   private readonly actionCounterKey = 'game:action_counter';
 
@@ -85,10 +101,22 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
+
+    const { actionId, ...rest } = action;
+    const parsed = GameActionSchema.parse(rest);
+
+    this.processed.add(actionId);
+    if (parsed.playerId) {
+      this.clock.clearTimer(parsed.playerId);
+    }
+    const { tableId, ...wire } = parsed;
+    const gameAction = wire as GameAction;
+=======
     this.clock.clearTimer(action.playerId);
     const tableId = action.tableId ?? 'default';
     const { tableId: _t, actionId: _a, ...rest } = action;
     const gameAction = rest as GameAction;
+
 
     const room = this.rooms.get(tableId);
     const state = await room.apply(gameAction);
@@ -109,6 +137,17 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         .emit('state', { ...publicState, tick: this.tick });
     }
 
+    this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+    await this.redis.set(key, '1', 'EX', this.processedTtlSeconds);
+
+    if (parsed.playerId) {
+      this.clock.setTimer(
+        parsed.playerId,
+        30_000,
+        () => void this.handleTimeout(parsed.playerId),
+      );
+    }
+=======
     this.enqueue(client, 'action:ack', { actionId: action.actionId } satisfies AckPayload);
     await this.redis.set(key, '1', 'EX', this.processedTtlSeconds);
 
@@ -117,6 +156,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       30_000,
       () => void this.handleTimeout(action.playerId),
     );
+
   }
 
   @SubscribeMessage('join')
@@ -182,6 +222,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     event: string,
     payload: AckPayload,
   ) {
+    if (this.processed.has(payload.actionId)) {
+      this.enqueue(client, `${event}:ack`, {
+        actionId: payload.actionId,
+        duplicate: true,
+      } satisfies AckPayload);
+      return;
+    }
+
     const key = this.processedKey(payload.actionId);
     if ((await this.redis.exists(key)) === 1) {
       this.enqueue(client, `${event}:ack`, {
