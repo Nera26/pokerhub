@@ -13,6 +13,7 @@ import {
   telemetryConfig,
   rabbitmqConfig,
   authConfig,
+  rateLimitConfig,
 } from './config';
 import { validationSchema } from './config/env.validation';
 import { AppController } from './app.controller';
@@ -48,6 +49,7 @@ import { AuthModule } from './auth/auth.module';
         telemetryConfig,
         rabbitmqConfig,
         authConfig,
+        rateLimitConfig,
       ],
     }),
     LoggerModule.forRoot(),

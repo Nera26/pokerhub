@@ -49,6 +49,7 @@ stateDiagram-v2
 
 ## Denial of Service
 - Velocity limits on deposits and withdrawals throttle abusive clients.
+- Redis-backed rate limiting on authentication endpoints blocks brute-force attempts.
 
 ## Elevation of Privilege
 - KYC verification and sanctions screening prevent prohibited users from accessing funds.
