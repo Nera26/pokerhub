@@ -261,6 +261,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FlaggedSessionsResponse'
+  /admin/flagged-sessions:
+    get:
+      summary: List flagged sessions
+      responses:
+        '200':
+          description: Flagged sessions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlaggedSessionsResponse'
   /review/sessions/{id}/{action}:
     post:
       summary: Apply review action
