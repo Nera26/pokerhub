@@ -1,40 +1,62 @@
 import { EventEmitter } from 'events';
-import { GameEngine, GameAction, GameState } from './engine';
-import { Repository } from 'typeorm';
-import { Hand } from '../database/entities/hand.entity';
-import { Injectable, Optional } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { EventPublisher } from '../events/events.service';
+import { join } from 'path';
+import { Worker } from 'worker_threads';
+import { Injectable } from '@nestjs/common';
+import { GameAction, GameState } from './engine';
+
+interface WorkerMessage {
+  seq?: number;
+  event?: string;
+  state: GameState;
+}
 
 export class RoomWorker extends EventEmitter {
-  private readonly engine: GameEngine;
+  private readonly worker: Worker;
+  private seq = 0;
+  private readonly pending = new Map<number, (state: GameState) => void>();
 
-  constructor(
-    private readonly handRepo?: Repository<Hand>,
-    private readonly events: EventPublisher,
-    playerIds: string[] = ['p1', 'p2'],
-  ) {
+  constructor(playerIds: string[] = ['p1', 'p2']) {
     super();
-    this.engine = new GameEngine(
-      playerIds,
-      undefined,
-      this.handRepo,
-      this.events,
-    );
+    const workerPath = join(__dirname, 'room.worker.ts');
+    this.worker = new Worker(workerPath, {
+      workerData: { playerIds },
+      execArgv: ['-r', 'ts-node/register'],
+    });
+    this.worker.on('message', (msg: WorkerMessage) => {
+      if (msg.event === 'state') {
+        this.emit('state', msg.state);
+      }
+      if (typeof msg.seq === 'number') {
+        const resolve = this.pending.get(msg.seq);
+        if (resolve) {
+          resolve(msg.state);
+          this.pending.delete(msg.seq);
+        }
+      }
+    });
   }
 
-  apply(action: GameAction): GameState {
-    const state = this.engine.applyAction(action);
-    this.emit('state', this.engine.getPublicState());
-    return state;
+  private call(
+    type: 'apply' | 'getState' | 'replay',
+    payload: Record<string, unknown> = {},
+  ): Promise<GameState> {
+    const seq = this.seq++;
+    return new Promise<GameState>((resolve) => {
+      this.pending.set(seq, resolve);
+      this.worker.postMessage({ type, seq, ...payload });
+    });
   }
 
-  getPublicState(): GameState {
-    return this.engine.getPublicState();
+  apply(action: GameAction): Promise<GameState> {
+    return this.call('apply', { action });
   }
 
-  replay(): GameState {
-    return this.engine.replayHand();
+  getPublicState(): Promise<GameState> {
+    return this.call('getState');
+  }
+
+  replay(): Promise<GameState> {
+    return this.call('replay');
   }
 }
 
@@ -42,16 +64,9 @@ export class RoomWorker extends EventEmitter {
 export class RoomManager {
   private readonly rooms = new Map<string, RoomWorker>();
 
-  constructor(
-    @Optional()
-    @InjectRepository(Hand)
-    private readonly hands?: Repository<Hand>,
-    private readonly events: EventPublisher,
-  ) {}
-
   get(tableId: string): RoomWorker {
     if (!this.rooms.has(tableId)) {
-      this.rooms.set(tableId, new RoomWorker(this.hands, this.events));
+      this.rooms.set(tableId, new RoomWorker());
     }
     return this.rooms.get(tableId)!;
   }

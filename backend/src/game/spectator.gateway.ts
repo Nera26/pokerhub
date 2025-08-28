@@ -13,12 +13,13 @@ export class SpectatorGateway implements OnGatewayConnection {
 
   constructor(private readonly rooms: RoomManager) {}
 
-  handleConnection(client: Socket) {
+  async handleConnection(client: Socket) {
     const tableId = (client.handshake.query.tableId as string) || 'default';
     const room = this.rooms.get(tableId);
     void client.join(tableId);
-    client.emit('state', room.getPublicState());
-    const listener = () => client.emit('state', room.getPublicState());
+    client.emit('state', await room.getPublicState());
+    const listener = () =>
+      room.getPublicState().then((s) => client.emit('state', s));
     room.on('state', listener);
     client.on('disconnect', () => room.off('state', listener));
   }
