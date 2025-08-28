@@ -19,8 +19,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Hand } from '../database/entities/hand.entity';
 
-import { type GameAction as WireGameAction } from '@shared/types';
-=======
 import {
   GameActionSchema,
   type GameAction as WireGameAction,
@@ -42,11 +40,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly processed = new Set<string>();
 
 
-  private readonly queues = new Map<
-    string,
-    { event: string; data: unknown }[]
-  >();
-=======
   private readonly queues = new Map<string, { event: string; data: unknown }[]>();
 
 
@@ -104,13 +97,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    this.processed.add(action.actionId);
-    this.clock.clearTimer(action.playerId);
-    const tableId = action.tableId ?? 'default';
-    const { tableId: _t, actionId: _a, ...rest } = action;
-    const gameAction = rest as GameAction;
-=======
-
     const { actionId, ...rest } = action;
     const parsed = GameActionSchema.parse(rest);
 
@@ -142,17 +128,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
 
-    this.enqueue(client, 'action:ack', {
-      actionId: action.actionId,
-    } satisfies AckPayload);
-    await this.redis.set(key, '1', 'EX', this.processedTtlSeconds);
-
-    this.clock.setTimer(
-      action.playerId,
-      30_000,
-      () => void this.handleTimeout(action.playerId),
-    );
-=======
     this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
     await this.redis.set(key, '1', 'EX', this.processedTtlSeconds);
 

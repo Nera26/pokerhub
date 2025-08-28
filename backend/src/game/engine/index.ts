@@ -88,8 +88,12 @@ export class GameEngine {
   }
 
   getPublicState(): GameState {
-    // Currently there are no hole cards in state; return as-is.
-    return this.machine.getState();
+    const state = structuredClone(this.machine.getState());
+    for (const player of state.players as Array<Record<string, unknown>>) {
+      delete player.cards;
+      delete (player as any).holeCards;
+    }
+    return state;
   }
 
   getHandLog(): HandLogEntry[] {
