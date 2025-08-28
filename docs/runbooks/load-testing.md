@@ -26,16 +26,22 @@ Each step exports a JSON summary (`10k-summary.json` or `packet-summary.json`). 
    ```
 4. Inspect metrics for latency and error rates.
 
-## 24h Soak with GC Tracking
+## 24h Soak with CPU/GC Monitoring
 
 1. Deploy canary or test environment.
-2. Execute the k6 soak test:
+2. Start the metrics collector (exits non‑zero when limits are hit):
+   ```bash
+   METRICS_URL=http://localhost:3000/metrics \
+   CPU_THRESHOLD=80 HEAP_THRESHOLD=$((512*1024*1024)) GC_THRESHOLD=50 \
+   load/collect-gc-heap.sh &
+   ```
+3. Execute the k6 soak test:
    ```bash
    k6 run load/k6-ws-soak.js --summary-export=soak-summary.json
    ```
-3. Alternatively run the Artillery soak:
+4. Alternatively run the Artillery soak:
    ```bash
    artillery run load/artillery-ws-packet-loss.yml
    ```
-4. Monitor `gc_pause_ms` or captured `X-GC-Pause` headers for garbage collection pauses.
-5. Review resource usage and roll back if thresholds are exceeded.
+5. The k6 script enforces <1% heap growth, p95 GC pause <50 ms and CPU usage <80%.
+6. After the test, review `gc-heap-metrics.log` and roll back if thresholds were breached.
