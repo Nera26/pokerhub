@@ -50,7 +50,7 @@ GET /api/hands/{handId}/state/{actionIndex}
 ```
 
 The response is a `GameState` payload.  Clients can fetch the full log via
-`GET /api/game/hand/{handId}/log` and independently replay actions to verify
+`GET /api/hands/{handId}/log` and independently replay actions to verify
 the returned state matches their own simulation.
 
 ### Example

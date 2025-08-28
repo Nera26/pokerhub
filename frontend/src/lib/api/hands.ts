@@ -27,7 +27,7 @@ export async function fetchHandLog(
   { signal }: { signal?: AbortSignal } = {},
 ): Promise<HandLogResponse> {
   const baseUrl = getBaseUrl();
-  const res = await serverFetch(`${baseUrl}/api/game/hand/${id}/log`, {
+  const res = await serverFetch(`${baseUrl}/api/hands/${id}/log`, {
     credentials: 'include',
     signal,
   });
