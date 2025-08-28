@@ -1,34 +1,29 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { fetchTable, type TableData } from '@/lib/api/table';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { TableState } from '@/app/store/tableStore';
-import calculateSidePots from '@/app/components/tables/calculateSidePots';
-
-function toTableState(data: TableData): TableState {
-  const { main, sidePots } = calculateSidePots(data.players, data.pot);
-  return {
-    handId: '#0',
-    seats: data.players.map((p) => ({
-      id: p.id,
-      name: p.username,
-      avatar: p.avatar,
-      balance: p.chips,
-      inHand: !p.isFolded,
-    })),
-    pot: { main, sidePots },
-    street: 'pre',
-  };
-}
+import useGameSocket from './useGameSocket';
 
 export function useTableState(tableId?: string) {
+  const { socket } = useGameSocket();
+  const queryClient = useQueryClient();
   const queryKey = ['table', tableId ?? 'local'] as const;
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleState = (state: TableState) => {
+      queryClient.setQueryData<TableState>(queryKey, state);
+    };
+    socket.on('state', handleState);
+    return () => {
+      socket.off('state', handleState);
+    };
+  }, [socket, queryClient, queryKey]);
+
   return useQuery<TableState>({
     queryKey,
-    queryFn: ({ signal }) => {
-      if (!tableId) return Promise.reject(new Error('tableId required'));
-      return fetchTable(tableId, { signal }).then(toTableState);
-    },
-    enabled: !!tableId,
+    queryFn: async () => undefined,
+    enabled: false,
   });
 }

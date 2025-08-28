@@ -24,4 +24,11 @@ describe('socket utils', () => {
     expect(ioClient).toHaveBeenCalledTimes(2);
     expect(second).not.toBe(first);
   });
+
+  it('creates namespaced socket', () => {
+    const gameSocket = getSocket({ namespace: 'game' });
+    expect(gameSocket).toBeDefined();
+    expect((ioClient as jest.Mock).mock.calls[0][0]).toContain('/game');
+    disconnectSocket('game');
+  });
 });
