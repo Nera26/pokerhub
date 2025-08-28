@@ -14,6 +14,7 @@ import { GameAction } from './engine';
 import { RoomManager } from './room.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { ClockService } from './clock.service';
+import { GameActionSchema, type GameAction as WireGameAction } from '@shared/types';
 
 interface AckPayload {
   actionId: string;
@@ -65,10 +66,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('action')
   async handleAction(
     @ConnectedSocket() client: Socket,
-    @MessageBody()
-    action: (GameAction & { actionId: string }) & {
-      tableId?: string;
-    },
+    @MessageBody() action: WireGameAction & { actionId: string },
   ) {
     if (await this.isRateLimited(client)) return;
 
@@ -80,15 +78,20 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    this.processed.add(action.actionId);
-    this.clock.clearTimer(action.playerId);
-    const tableId = action.tableId ?? 'default';
-    const { tableId: _t, actionId: _a, ...rest } = action;
-    const gameAction = rest as GameAction;
+    const { actionId, ...rest } = action;
+    const parsed = GameActionSchema.parse(rest);
+
+    this.processed.add(actionId);
+    this.clock.clearTimer(parsed.playerId);
+    const { tableId, ...wire } = parsed;
+    const gameAction = wire as GameAction;
     const room = this.rooms.get(tableId);
     const state = await room.apply(gameAction);
 
-    void this.analytics.recordGameEvent({ clientId: client.id, action });
+    void this.analytics.recordGameEvent({
+      clientId: client.id,
+      action: { actionId, ...parsed },
+    });
 
     const payload = { ...state, tick: ++this.tick };
     this.enqueue(client, 'state', payload);
@@ -102,12 +105,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         .emit('state', { ...publicState, tick: this.tick });
     }
 
-    this.enqueue(client, 'action:ack', {
-      actionId: action.actionId,
-    } satisfies AckPayload);
+    this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
 
-    this.clock.setTimer(action.playerId, 30_000, () =>
-      void this.handleTimeout(action.playerId),
+    this.clock.setTimer(parsed.playerId, 30_000, () =>
+      void this.handleTimeout(parsed.playerId),
     );
   }
 
