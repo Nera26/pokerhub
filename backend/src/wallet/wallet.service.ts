@@ -4,9 +4,11 @@ import { Repository, In } from 'typeorm';
 import { createHash, randomUUID } from 'crypto';
 import { Account } from './account.entity';
 import { JournalEntry } from './journal-entry.entity';
+import { Disbursement } from './disbursement.entity';
 import { EventPublisher } from '../events/events.service';
 import Redis from 'ioredis';
 import { metrics, trace, SpanStatusCode } from '@opentelemetry/api';
+import type { Queue } from 'bullmq';
 
 interface Movement {
   account: Account;
@@ -35,9 +37,30 @@ export class WalletService {
     @InjectRepository(Account) private readonly accounts: Repository<Account>,
     @InjectRepository(JournalEntry)
     private readonly journals: Repository<JournalEntry>,
+    @InjectRepository(Disbursement)
+    private readonly disbursements: Repository<Disbursement>,
     private readonly events: EventPublisher,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
   ) {}
+
+  private disbursementQueue?: Queue;
+
+  private async getQueue(): Promise<Queue> {
+    if (this.disbursementQueue) return this.disbursementQueue;
+    const bull = await import('bullmq');
+    this.disbursementQueue = new bull.Queue('disbursements', {
+      connection: {
+        host: process.env.REDIS_HOST ?? 'localhost',
+        port: Number(process.env.REDIS_PORT ?? 6379),
+      },
+    });
+    return this.disbursementQueue;
+  }
+
+  protected async enqueueDisbursement(id: string): Promise<void> {
+    const queue = await this.getQueue();
+    await queue.add('payout', { id });
+  }
 
   private buildHash(
     refType: string,
@@ -200,6 +223,26 @@ export class WalletService {
     );
   }
 
+  async processDisbursement(id: string): Promise<void> {
+    const disb = await this.disbursements.findOneByOrFail({ id });
+    await this.events.emit('wallet.disbursement.request', {
+      id: disb.id,
+      accountId: disb.accountId,
+      amount: disb.amount,
+      idempotencyKey: disb.idempotencyKey,
+    });
+  }
+
+  async handleProviderCallback(idempotencyKey: string): Promise<void> {
+    const disb = await this.disbursements.findOne({
+      where: { idempotencyKey },
+    });
+    if (!disb || disb.status === 'completed') return;
+    disb.status = 'completed';
+    disb.completedAt = new Date();
+    await this.disbursements.save(disb);
+  }
+
   async totalBalance(): Promise<number> {
     const accounts = await this.accounts.find();
     return accounts.reduce((sum, acc) => sum + acc.balance, 0);
@@ -270,6 +313,14 @@ export class WalletService {
             { account: user, amount: -amount },
             { account: house, amount },
           ]);
+          const disb = await this.disbursements.save({
+            id: randomUUID(),
+            accountId,
+            amount,
+            idempotencyKey: randomUUID(),
+            status: 'pending',
+          });
+          await this.enqueueDisbursement(disb.id);
           span.setStatus({ code: SpanStatusCode.OK });
         } catch (err) {
           span.recordException(err as Error);

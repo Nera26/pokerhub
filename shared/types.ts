@@ -26,6 +26,11 @@ export const WithdrawRequestSchema = z.object({
 });
 export type WithdrawRequest = z.infer<typeof WithdrawRequestSchema>;
 
+export const ProviderCallbackSchema = z.object({
+  idempotencyKey: z.string(),
+});
+export type ProviderCallback = z.infer<typeof ProviderCallbackSchema>;
+
 const BaseAction = z.object({
   tableId: z.string(),
   playerId: z.string(),
