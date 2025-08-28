@@ -1,7 +1,9 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import {
   databaseConfig,
   redisConfig,
@@ -29,6 +31,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { TournamentModule } from './tournament/tournament.module';
 
 import { WalletModule } from './wallet/wallet.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -76,8 +79,39 @@ import { WalletModule } from './wallet/wallet.module';
     TournamentModule,
 
     WalletModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(cookieParser(), (req, res, next) => {
+        const original = res.cookie.bind(res);
+        res.cookie = (name: string, value: any, options: any = {}) =>
+          original(name, value, {
+            sameSite: 'strict',
+            httpOnly: true,
+            secure: true,
+            ...options,
+          });
+        next();
+      })
+      .forRoutes('*');
+    consumer
+      .apply(
+        helmet({
+          contentSecurityPolicy: {
+            directives: {
+              defaultSrc: ["'self'"],
+              scriptSrc: ["'self'"],
+              styleSrc: ["'self'"],
+            },
+          },
+          hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+        }),
+      )
+      .forRoutes('*');
+  }
+}
