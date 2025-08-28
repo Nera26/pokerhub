@@ -104,6 +104,23 @@ export const TournamentListSchema = z.array(TournamentSchema);
 export type Tournament = z.infer<typeof TournamentSchema>;
 export type TournamentList = z.infer<typeof TournamentListSchema>;
 
+export const TableSchema = z.object({
+  id: z.string(),
+  tableName: z.string(),
+  stakes: z.object({ small: z.number(), big: z.number() }),
+  players: z.object({ current: z.number(), max: z.number() }),
+  buyIn: z.object({ min: z.number(), max: z.number() }),
+  stats: z.object({
+    handsPerHour: z.number(),
+    avgPot: z.number(),
+    rake: z.number(),
+  }),
+  createdAgo: z.string(),
+});
+export const TablesResponseSchema = z.array(TableSchema);
+export type Table = z.infer<typeof TableSchema>;
+export type TablesResponse = z.infer<typeof TablesResponseSchema>;
+
 export const LeaderboardRebuildQuerySchema = z.object({
   days: z.number().int().positive().max(30).optional(),
 });

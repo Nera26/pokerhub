@@ -14,7 +14,7 @@
     "test": "NEXT_PUBLIC_E2E=0 jest --coverage",
     "test:e2e": "http_proxy= https_proxy= HTTP_PROXY= HTTPS_PROXY= NO_PROXY=localhost,127.0.0.1 NEXT_PUBLIC_E2E=1 playwright test --retries=2 --fail-on-flaky-tests",
     "test:a11y": "http_proxy= https_proxy= HTTP_PROXY= HTTPS_PROXY= NO_PROXY=localhost,127.0.0.1 NEXT_PUBLIC_E2E=1 playwright test e2e/accessibility.spec.ts --retries=2 --fail-on-flaky-tests",
-    "test:e2e:integration": "http_proxy= https_proxy= HTTP_PROXY= HTTPS_PROXY= NO_PROXY=localhost,127.0.0.1 NEXT_PUBLIC_E2E=0 playwright test e2e/gameplay.spec.ts --config=playwright.integration.config.ts --retries=0",
+    "test:e2e:integration": "http_proxy= https_proxy= HTTP_PROXY= HTTPS_PROXY= NO_PROXY=localhost,127.0.0.1 NODE_PATH=./node_modules NEXT_PUBLIC_E2E=0 playwright test e2e/gameplay.spec.ts e2e/lobby-tables.spec.ts --config=playwright.integration.config.ts --retries=0",
     "playwright:install": "playwright install --with-deps",
     "format": "prettier --write .",
     "prepare": "husky install",

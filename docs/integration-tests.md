@@ -18,7 +18,8 @@ The tests will:
 1. Log in through the UI.
 2. Join a poker table and play a hand.
 3. Observe `hand.start` and `hand.end` events over WebSocket.
-4. Fetch `/hands/{id}/proof` and verify the RNG commit–reveal hash.
+4. Fetch `/tables` and validate the response against shared Zod types.
+5. Fetch `/hands/{id}/proof` and verify the RNG commit–reveal hash.
 
 If the API schema changes, Zod parsing fails and the tests fail,
 ensuring contract mismatches are caught. Proofs from each run are

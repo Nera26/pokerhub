@@ -20,7 +20,7 @@ jobs:
         run: npx playwright install --with-deps
       - name: Start services
         run: docker compose -f docker-compose.yml -f docker-compose.test.yml up -d --build
-      - name: Run integration tests
+      - name: Run integration tests (lobby + gameplay)
         working-directory: frontend
         run: npm run test:e2e:integration
       - name: Stop services
