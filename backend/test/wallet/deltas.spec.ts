@@ -3,6 +3,7 @@ import { newDb } from 'pg-mem';
 import fc from 'fast-check';
 import { Account } from '../../src/wallet/account.entity';
 import { JournalEntry } from '../../src/wallet/journal-entry.entity';
+import { Disbursement } from '../../src/wallet/disbursement.entity';
 import { WalletService } from '../../src/wallet/wallet.service';
 import { EventPublisher } from '../../src/events/events.service';
 
@@ -39,17 +40,32 @@ describe('WalletService transaction deltas', () => {
     });
     const dataSource = db.adapters.createTypeormDataSource({
       type: 'postgres',
-      entities: [Account, JournalEntry],
+      entities: [Account, JournalEntry, Disbursement],
       synchronize: true,
     }) as DataSource;
     await dataSource.initialize();
     const accountRepo = dataSource.getRepository(Account);
     const journalRepo = dataSource.getRepository(JournalEntry);
-    const redis: any = { incr: jest.fn().mockResolvedValue(0), expire: jest.fn() };
-    const service = new WalletService(accountRepo, journalRepo, events, redis);
+    const disbRepo = dataSource.getRepository(Disbursement);
+    const redis: any = {
+      incr: jest.fn().mockResolvedValue(0),
+      expire: jest.fn(),
+    };
+    const service = new WalletService(
+      accountRepo,
+      journalRepo,
+      disbRepo,
+      events,
+      redis,
+    );
+    (service as any).enqueueDisbursement = jest.fn();
     await accountRepo.save([
       { id: userId, name: 'user', balance: 1000 },
-      { id: '00000000-0000-0000-0000-000000000001', name: 'reserve', balance: 0 },
+      {
+        id: '00000000-0000-0000-0000-000000000001',
+        name: 'reserve',
+        balance: 0,
+      },
       { id: '00000000-0000-0000-0000-000000000002', name: 'house', balance: 0 },
       { id: '00000000-0000-0000-0000-000000000003', name: 'rake', balance: 0 },
       { id: '00000000-0000-0000-0000-000000000004', name: 'prize', balance: 0 },
@@ -69,16 +85,14 @@ describe('WalletService transaction deltas', () => {
     ref: fc.string({ minLength: 1, maxLength: 10 }),
   });
 
-  const commitArb = fc
-    .integer({ min: 1, max: 100 })
-    .chain((amount) =>
-      fc.record({
-        type: fc.constant<'commit'>('commit'),
-        amount: fc.constant(amount),
-        rake: fc.integer({ min: 0, max: amount }),
-        ref: fc.string({ minLength: 1, maxLength: 10 }),
-      }),
-    );
+  const commitArb = fc.integer({ min: 1, max: 100 }).chain((amount) =>
+    fc.record({
+      type: fc.constant<'commit'>('commit'),
+      amount: fc.constant(amount),
+      rake: fc.integer({ min: 0, max: amount }),
+      ref: fc.string({ minLength: 1, maxLength: 10 }),
+    }),
+  );
 
   const opArb = fc.oneof(reserveArb, rollbackArb, commitArb);
 
@@ -102,10 +116,7 @@ describe('WalletService transaction deltas', () => {
             const entries = await journalRepo.find({
               where: { refType: op.type, refId: op.ref },
             });
-            const total = entries.reduce(
-              (sum, e) => sum + Number(e.amount),
-              0,
-            );
+            const total = entries.reduce((sum, e) => sum + Number(e.amount), 0);
             expect(total).toBe(0);
           }
         } finally {
@@ -116,4 +127,3 @@ describe('WalletService transaction deltas', () => {
     );
   });
 });
-

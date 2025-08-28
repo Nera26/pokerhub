@@ -117,6 +117,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+  /wallet/provider/callback:
+    post:
+      summary: Payment provider callback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProviderCallback'
+      responses:
+        '200':
+          description: Callback processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /tournaments:
     get:
       summary: List tournaments
@@ -306,6 +322,13 @@ components:
       required:
         - amount
         - deviceId
+    ProviderCallback:
+      type: object
+      properties:
+        idempotencyKey:
+          type: string
+      required:
+        - idempotencyKey
     GameAction:
       oneOf:
         - $ref: '#/components/schemas/PostBlindAction'
@@ -500,7 +523,6 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/FlaggedSession'
-=======
   HotPatchLevelRequest:
     type: object
     properties:

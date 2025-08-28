@@ -2,6 +2,7 @@ import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
 import { Account } from '../../src/wallet/account.entity';
 import { JournalEntry } from '../../src/wallet/journal-entry.entity';
+import { Disbursement } from '../../src/wallet/disbursement.entity';
 import { WalletService } from '../../src/wallet/wallet.service';
 import { EventPublisher } from '../../src/events/events.service';
 
@@ -34,7 +35,7 @@ describe('WalletService transactions', () => {
     });
     dataSource = db.adapters.createTypeormDataSource({
       type: 'postgres',
-      entities: [Account, JournalEntry],
+      entities: [Account, JournalEntry, Disbursement],
       synchronize: true,
     }) as DataSource;
     await dataSource.initialize();
@@ -44,7 +45,15 @@ describe('WalletService transactions', () => {
       incr: jest.fn().mockResolvedValue(0),
       expire: jest.fn(),
     };
-    service = new WalletService(accountRepo, journalRepo, events, redis);
+    const disbRepo = dataSource.getRepository(Disbursement);
+    service = new WalletService(
+      accountRepo,
+      journalRepo,
+      disbRepo,
+      events,
+      redis,
+    );
+    (service as any).enqueueDisbursement = jest.fn();
     await accountRepo.save([
       {
         id: '11111111-1111-1111-1111-111111111111',

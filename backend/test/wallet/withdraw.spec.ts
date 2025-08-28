@@ -2,6 +2,7 @@ import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
 import { Account } from '../../src/wallet/account.entity';
 import { JournalEntry } from '../../src/wallet/journal-entry.entity';
+import { Disbursement } from '../../src/wallet/disbursement.entity';
 import { WalletService } from '../../src/wallet/wallet.service';
 import { EventPublisher } from '../../src/events/events.service';
 
@@ -42,13 +43,21 @@ describe('WalletService withdraw', () => {
     });
     dataSource = db.adapters.createTypeormDataSource({
       type: 'postgres',
-      entities: [Account, JournalEntry],
+      entities: [Account, JournalEntry, Disbursement],
       synchronize: true,
     }) as DataSource;
     await dataSource.initialize();
     const accountRepo = dataSource.getRepository(Account);
     const journalRepo = dataSource.getRepository(JournalEntry);
-    service = new WalletService(accountRepo, journalRepo, events, redis);
+    const disbRepo = dataSource.getRepository(Disbursement);
+    service = new WalletService(
+      accountRepo,
+      journalRepo,
+      disbRepo,
+      events,
+      redis,
+    );
+    (service as any).enqueueDisbursement = jest.fn();
     await accountRepo.save([
       {
         id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
@@ -115,5 +124,23 @@ describe('WalletService withdraw', () => {
         '2.2.2.2',
       ),
     ).rejects.toThrow('Rate limit exceeded');
+  });
+
+  it('marks disbursement complete only once', async () => {
+    await service.withdraw(
+      'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      100,
+      'dev2',
+      '3.3.3.3',
+    );
+    const disbRepo = dataSource.getRepository(Disbursement);
+    const disb = await disbRepo.findOneByOrFail({
+      accountId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    });
+    await service.handleProviderCallback(disb.idempotencyKey);
+    await service.handleProviderCallback(disb.idempotencyKey);
+    const updated = await disbRepo.findOneByOrFail({ id: disb.id });
+    expect(updated.status).toBe('completed');
+    expect(updated.completedAt).toBeTruthy();
   });
 });

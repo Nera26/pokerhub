@@ -1,7 +1,12 @@
 import { Controller, Post, Param, Body, Req } from '@nestjs/common';
 import { WalletService } from '../wallet/wallet.service';
 import type { Request } from 'express';
-import { WithdrawSchema, type WithdrawRequest } from '../schemas/wallet';
+import {
+  WithdrawSchema,
+  type WithdrawRequest,
+  ProviderCallbackSchema,
+  type ProviderCallback,
+} from '../schemas/wallet';
 
 interface TxDto {
   amount: number;
@@ -40,5 +45,12 @@ export class WalletController {
     const parsed = WithdrawSchema.parse(body);
     await this.wallet.withdraw(id, parsed.amount, parsed.deviceId, req.ip);
     return { message: 'withdrawn' };
+  }
+
+  @Post('provider/callback')
+  async providerCallback(@Body() body: ProviderCallback) {
+    const parsed = ProviderCallbackSchema.parse(body);
+    await this.wallet.handleProviderCallback(parsed.idempotencyKey);
+    return { message: 'acknowledged' };
   }
 }
