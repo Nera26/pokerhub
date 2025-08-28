@@ -1,7 +1,8 @@
 import ws from 'k6/ws';
-import { Trend } from 'k6/metrics';
+import { Trend, Counter } from 'k6/metrics';
 
 const ACK_LATENCY = new Trend('ack_latency', true);
+const RATE_LIMIT_ERRORS = new Counter('rate_limit_errors');
 
 export const options = {
   vus: Number(__ENV.SOCKETS || 50),
@@ -13,7 +14,7 @@ export const options = {
 
 export default function () {
   const tables = Number(__ENV.TABLES || 10);
-  const actionsPerMin = Number(__ENV.ACTIONS_PER_MIN || 180);
+  const actionsPerMin = Number(__ENV.ACTIONS_PER_MIN || 6000);
   const url = __ENV.WS_URL || 'ws://localhost:3001';
 
   ws.connect(`${url}?table=${__VU % tables}`, function (socket) {
@@ -22,8 +23,12 @@ export default function () {
     socket.on('open', function () {
       socket.setInterval(function () {
         const start = Date.now();
-        const handler = () => {
-          ACK_LATENCY.add(Date.now() - start);
+        const handler = (msg) => {
+          if (String(msg).includes('rate limit exceeded')) {
+            RATE_LIMIT_ERRORS.add(1);
+          } else {
+            ACK_LATENCY.add(Date.now() - start);
+          }
           socket.off('message', handler);
         };
         socket.on('message', handler);
