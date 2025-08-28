@@ -3,6 +3,7 @@ import Redis from 'ioredis';
 import {
   calculateVpipCorrelation,
   calculateTimingSimilarity,
+  calculateSeatProximity,
 } from './collusion.model';
 
 @Injectable()
@@ -60,6 +61,8 @@ export class CollusionService {
     userB: string,
     vpipA: number[],
     vpipB: number[],
+    seatsA: number[],
+    seatsB: number[],
   ) {
     const [sharedDevices, sharedIps, timesA, timesB] = await Promise.all([
       this.shared(`collusion:user:devices:${userA}`, `collusion:user:devices:${userB}`),
@@ -76,6 +79,7 @@ export class CollusionService {
       sharedIps,
       vpipCorrelation: calculateVpipCorrelation(vpipA, vpipB),
       timingSimilarity: calculateTimingSimilarity(timesA, timesB),
+      seatProximity: calculateSeatProximity(seatsA, seatsB),
     };
   }
 
