@@ -20,6 +20,12 @@ import { Repository } from 'typeorm';
 import { Hand } from '../database/entities/hand.entity';
 
 import { type GameAction as WireGameAction } from '@shared/types';
+=======
+import {
+  GameActionSchema,
+  type GameAction as WireGameAction,
+} from '@shared/types';
+
 
 interface AckPayload {
   actionId: string;
@@ -35,10 +41,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private readonly processed = new Set<string>();
 
+
   private readonly queues = new Map<
     string,
     { event: string; data: unknown }[]
   >();
+=======
+  private readonly queues = new Map<string, { event: string; data: unknown }[]>();
+
 
   private readonly sending = new Set<string>();
   private readonly actionCounterKey = 'game:action_counter';
@@ -99,6 +109,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const tableId = action.tableId ?? 'default';
     const { tableId: _t, actionId: _a, ...rest } = action;
     const gameAction = rest as GameAction;
+=======
+
+    const { actionId, ...rest } = action;
+    const parsed = GameActionSchema.parse(rest);
+
+    this.processed.add(actionId);
+    if (parsed.playerId) {
+      this.clock.clearTimer(parsed.playerId);
+    }
+    const { tableId, ...wire } = parsed;
+    const gameAction = wire as GameAction;
+
 
     const room = this.rooms.get(tableId);
     const state = await room.apply(gameAction);
@@ -119,6 +141,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         .emit('state', { ...publicState, tick: this.tick });
     }
 
+
     this.enqueue(client, 'action:ack', {
       actionId: action.actionId,
     } satisfies AckPayload);
@@ -129,6 +152,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       30_000,
       () => void this.handleTimeout(action.playerId),
     );
+=======
+    this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+    await this.redis.set(key, '1', 'EX', this.processedTtlSeconds);
+
+    if (parsed.playerId) {
+      this.clock.setTimer(
+        parsed.playerId,
+        30_000,
+        () => void this.handleTimeout(parsed.playerId),
+      );
+    }
+
   }
 
   @SubscribeMessage('join')

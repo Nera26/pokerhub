@@ -4,6 +4,9 @@ import {
   CalculatePrizesRequest,
   CalculatePrizesResponse,
   CalculatePrizesResponseSchema,
+  TournamentScheduleRequest,
+  MessageResponseSchema,
+  type MessageResponse,
 } from '@shared/types';
 
 export async function calculatePrizes(
@@ -31,5 +34,21 @@ export async function calculatePrizes(
     }
     throw err as ApiError;
   }
+}
+
+export async function scheduleTournament(
+  id: string,
+  body: TournamentScheduleRequest,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<MessageResponse> {
+  const baseUrl = getBaseUrl();
+  const res = await fetch(`${baseUrl}/api/tournaments/${id}/schedule`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    credentials: 'include',
+    signal,
+  });
+  return handleResponse(res, MessageResponseSchema);
 }
 

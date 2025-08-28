@@ -1,0 +1,44 @@
+name: load-smoke
+
+on:
+  push:
+    paths:
+      - 'load/**'
+      - '.github/workflows/load-smoke.yml'
+  pull_request:
+    paths:
+      - 'load/**'
+      - '.github/workflows/load-smoke.yml'
+
+jobs:
+  k6:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run k6 smoke test
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: load/k6-ws-packet-loss.js
+          arguments: --vus 10 --duration 10s --summary-export=k6-summary.json
+      - name: Upload k6 summary
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: k6-summary
+          path: k6-summary.json
+
+  artillery:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Artillery
+        run: npm install -g artillery@2
+      - name: Run Artillery smoke test
+        run: |
+          artillery run load/artillery-ws-packet-loss.yml --output artillery-summary.json --overrides '{"phases":[{"duration":10,"arrivalRate":10}]}'
+      - name: Upload Artillery summary
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: artillery-summary
+          path: artillery-summary.json

@@ -127,6 +127,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TournamentList'
+  /tournaments/{id}/schedule:
+    post:
+      summary: Schedule tournament
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TournamentScheduleRequest'
+      responses:
+        '200':
+          description: Tournament scheduled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /tournaments/{id}/prizes:
     post:
       summary: Calculate prize distribution
@@ -375,30 +397,51 @@ components:
       required:
         - prizePool
         - payouts
-    CalculatePrizesResponse:
-      type: object
-      properties:
-        prizes:
-          type: array
-          items:
-            type: number
-        bountyPool:
+  CalculatePrizesResponse:
+    type: object
+    properties:
+      prizes:
+        type: array
+        items:
           type: number
-        seats:
-          type: number
-        remainder:
-          type: number
-      required:
-        - prizes
-    LeaderboardResponse:
-      type: array
-      items:
+      bountyPool:
+        type: number
+      seats:
+        type: number
+      remainder:
+        type: number
+    required:
+      - prizes
+  TournamentScheduleRequest:
+    type: object
+    properties:
+      startTime:
         type: string
-    HandProof:
-      type: object
-      properties:
-        seed:
-          type: string
+        format: date-time
+    required:
+      - startTime
+  LeaderboardResponse:
+    type: array
+    items:
+      $ref: '#/components/schemas/LeaderboardEntry'
+  LeaderboardEntry:
+    type: object
+    properties:
+      playerId:
+        type: string
+      rank:
+        type: integer
+      points:
+        type: number
+    required:
+      - playerId
+      - rank
+      - points
+  HandProof:
+    type: object
+    properties:
+      seed:
+        type: string
         nonce:
           type: string
         commitment:
