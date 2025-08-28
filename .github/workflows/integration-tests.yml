@@ -1,0 +1,28 @@
+name: integration-tests
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps
+      - name: Start services
+        run: docker compose -f docker-compose.yml -f docker-compose.test.yml up -d --build
+      - name: Run integration tests
+        working-directory: frontend
+        run: npm run test:e2e:integration
+      - name: Stop services
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.test.yml down -v
