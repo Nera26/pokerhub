@@ -38,8 +38,26 @@ export class LeaderboardService {
     );
   }
 
-  async getTopPlayers(): Promise<string[]> {
-    const cached = await this.cache.get<string[]>(this.cacheKey);
+  async getTopPlayers(): Promise<
+    {
+      playerId: string;
+      rank: number;
+      points: number;
+      net: number;
+      bb100: number;
+      hours: number;
+    }[]
+  > {
+    const cached = await this.cache.get<
+      {
+        playerId: string;
+        rank: number;
+        points: number;
+        net: number;
+        bb100: number;
+        hours: number;
+      }[]
+    >(this.cacheKey);
     if (cached) {
       return cached;
     }
@@ -99,7 +117,17 @@ export class LeaderboardService {
   ): Promise<void> {
     const { minSessions = 10, decay = 0.95 } = options;
     const now = Date.now();
-    const scores = new Map<string, { sessions: Set<string>; rating: number }>();
+    const scores = new Map<
+      string,
+      {
+        sessions: Set<string>;
+        rating: number;
+        net: number;
+        bb: number;
+        hands: number;
+        duration: number;
+      }
+    >();
 
     const minSessionsFn =
       typeof minSessions === 'function' ? minSessions : () => minSessions;
@@ -112,14 +140,31 @@ export class LeaderboardService {
         playerId,
         sessionId,
         points = 0,
+        net = 0,
+        bb = 0,
+        hands = 0,
+        duration = 0,
         ts = now,
       } = ev as {
         playerId: string;
         sessionId: string;
         points?: number;
+        net?: number;
+        bb?: number;
+        hands?: number;
+        duration?: number;
         ts?: number;
       };
-      const entry = scores.get(playerId) ?? { sessions: new Set(), rating: 0 };
+      const entry =
+        scores.get(playerId) ??
+        {
+          sessions: new Set<string>(),
+          rating: 0,
+          net: 0,
+          bb: 0,
+          hands: 0,
+          duration: 0,
+        };
       entry.sessions.add(sessionId);
       const ageDays = (now - ts) / DAY_MS;
       let playerDecay = decayCache.get(playerId);
@@ -128,6 +173,10 @@ export class LeaderboardService {
         decayCache.set(playerId, playerDecay);
       }
       entry.rating += points * Math.pow(playerDecay, ageDays);
+      entry.net += net;
+      entry.bb += bb;
+      entry.hands += hands;
+      entry.duration += duration;
       scores.set(playerId, entry);
     }
 
@@ -144,17 +193,40 @@ export class LeaderboardService {
         const diff = b[1].rating - a[1].rating;
         return diff !== 0 ? diff : a[0].localeCompare(b[0]);
       })
-      .map(([id]) => id)
+      .map(([id, v], idx) => ({
+        playerId: id,
+        rank: idx + 1,
+        points: v.rating,
+        net: v.net,
+        bb100: v.hands ? (v.bb / v.hands) * 100 : 0,
+        hours: v.duration / 3600000,
+      }))
       .slice(0, 100);
 
     await this.cache.set(this.cacheKey, leaders, { ttl: this.ttl });
   }
 
-  private async fetchTopPlayers(): Promise<string[]> {
+  private async fetchTopPlayers(): Promise<
+    {
+      playerId: string;
+      rank: number;
+      points: number;
+      net: number;
+      bb100: number;
+      hours: number;
+    }[]
+  > {
     const users = await this.userRepo.find({
       order: { username: 'ASC' },
       take: 3,
     });
-    return users.map((u) => u.username);
+    return users.map((u, idx) => ({
+      playerId: u.username,
+      rank: idx + 1,
+      points: 0,
+      net: 0,
+      bb100: 0,
+      hours: 0,
+    }));
   }
 }

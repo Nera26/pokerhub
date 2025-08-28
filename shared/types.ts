@@ -252,6 +252,9 @@ export const LeaderboardEntrySchema = z.object({
   playerId: z.string(),
   rank: z.number().int().positive(),
   points: z.number(),
+  net: z.number(),
+  bb100: z.number(),
+  hours: z.number(),
 });
 export const LeaderboardResponseSchema = z.array(LeaderboardEntrySchema);
 export type LeaderboardEntry = z.infer<typeof LeaderboardEntrySchema>;

@@ -27,6 +27,10 @@ describe('leaderboard rebuild', () => {
             playerId: fc.uuid(),
             sessionId: fc.uuid(),
             points: fc.integer({ min: 0, max: 100 }),
+            net: fc.integer({ min: -1000, max: 1000 }),
+            bb: fc.integer({ min: -200, max: 200 }),
+            hands: fc.integer({ min: 1, max: 500 }),
+            duration: fc.integer({ min: 1, max: 1_000_000 }),
             daysAgo: fc.integer({ min: 0, max: 29 }),
           }),
           { maxLength: 50 },
@@ -37,6 +41,10 @@ describe('leaderboard rebuild', () => {
             playerId: r.playerId,
             sessionId: r.sessionId,
             points: r.points,
+            net: r.net,
+            bb: r.bb,
+            hands: r.hands,
+            duration: r.duration,
             ts: now - r.daysAgo * DAY_MS,
           }));
           const cache = new MockCache();
@@ -46,13 +54,35 @@ describe('leaderboard rebuild', () => {
             {} as any,
           );
 
-          const scores = new Map<string, { sessions: Set<string>; rating: number }>();
+          const scores = new Map<
+            string,
+            {
+              sessions: Set<string>;
+              rating: number;
+              net: number;
+              bb: number;
+              hands: number;
+              duration: number;
+            }
+          >();
           for (const ev of events) {
             const entry =
-              scores.get(ev.playerId) ?? { sessions: new Set<string>(), rating: 0 };
+              scores.get(ev.playerId) ??
+              {
+                sessions: new Set<string>(),
+                rating: 0,
+                net: 0,
+                bb: 0,
+                hands: 0,
+                duration: 0,
+              };
             entry.sessions.add(ev.sessionId);
             const ageDays = (now - ev.ts) / DAY_MS;
             entry.rating += ev.points * Math.pow(0.95, ageDays);
+            entry.net += ev.net;
+            entry.bb += ev.bb;
+            entry.hands += ev.hands;
+            entry.duration += ev.duration;
             scores.set(ev.playerId, entry);
           }
           const expected = [...scores.entries()]
@@ -61,12 +91,72 @@ describe('leaderboard rebuild', () => {
               const diff = b[1].rating - a[1].rating;
               return diff !== 0 ? diff : a[0].localeCompare(b[0]);
             })
-            .map(([id]) => id)
+            .map(([id, v], idx) => ({
+              playerId: id,
+              rank: idx + 1,
+              points: v.rating,
+              net: v.net,
+              bb100: v.hands ? (v.bb / v.hands) * 100 : 0,
+              hours: v.duration / 3600000,
+            }))
             .slice(0, 100);
 
           await (service as any).rebuildWithEvents(events);
           const top = await service.getTopPlayers();
           expect(top).toEqual(expected);
+        },
+      ),
+      { numRuns: 20 },
+    );
+  });
+
+  it('is deterministic for random streams', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.array(
+          fc.record({
+            playerId: fc.uuid(),
+            sessionId: fc.uuid(),
+            points: fc.integer({ min: 0, max: 100 }),
+            net: fc.integer({ min: -1000, max: 1000 }),
+            bb: fc.integer({ min: -200, max: 200 }),
+            hands: fc.integer({ min: 1, max: 500 }),
+            duration: fc.integer({ min: 1, max: 1_000_000 }),
+            daysAgo: fc.integer({ min: 0, max: 29 }),
+          }),
+          { maxLength: 50 },
+        ),
+        async (records) => {
+          const now = Date.now();
+          const events = records.map((r) => ({
+            playerId: r.playerId,
+            sessionId: r.sessionId,
+            points: r.points,
+            net: r.net,
+            bb: r.bb,
+            hands: r.hands,
+            duration: r.duration,
+            ts: now - r.daysAgo * DAY_MS,
+          }));
+
+          const cache1 = new MockCache();
+          const service1 = new LeaderboardService(
+            cache1 as any,
+            { find: jest.fn() } as any,
+            {} as any,
+          );
+          await (service1 as any).rebuildWithEvents(events);
+          const top1 = await service1.getTopPlayers();
+
+          const cache2 = new MockCache();
+          const service2 = new LeaderboardService(
+            cache2 as any,
+            { find: jest.fn() } as any,
+            {} as any,
+          );
+          await (service2 as any).rebuildWithEvents([...events].reverse());
+          const top2 = await service2.getTopPlayers();
+          expect(top1).toEqual(top2);
         },
       ),
       { numRuns: 20 },

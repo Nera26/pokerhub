@@ -93,7 +93,7 @@ describe('LeaderboardService', () => {
   it('uses cache around DB query', async () => {
     const spy = jest.spyOn(repo, 'find');
     const first = await service.getTopPlayers();
-    expect(first).toEqual(['alice', 'bob', 'carol']);
+    expect(first.map((p) => p.playerId)).toEqual(['alice', 'bob', 'carol']);
     expect(spy).toHaveBeenCalledTimes(1);
     expect(cache.ttl.get('leaderboard:hot')).toBe(30);
 
@@ -123,7 +123,7 @@ describe('LeaderboardService', () => {
     ];
     await service.rebuild({ days: 30, minSessions: 1, decay: 0.5 });
     const top = await service.getTopPlayers();
-    expect(top).toEqual(['alice']);
+    expect(top.map((p) => p.playerId)).toEqual(['alice']);
   });
 
   it('applies rating decay based on event age', async () => {
@@ -139,7 +139,7 @@ describe('LeaderboardService', () => {
     ];
     await service.rebuild({ days: 30, minSessions: 1, decay: 0.9 });
     const top = await service.getTopPlayers();
-    expect(top[0]).toBe('alice');
+    expect(top[0].playerId).toBe('alice');
   });
 
   it('supports player specific session minimums and decay', async () => {
@@ -162,7 +162,7 @@ describe('LeaderboardService', () => {
       decay: decayFn,
     });
     const top = await service.getTopPlayers();
-    expect(top).toEqual(['bob']);
+    expect(top.map((p) => p.playerId)).toEqual(['bob']);
     expect(minSessionsFn).toHaveBeenCalledTimes(2);
     expect(decayFn).toHaveBeenCalledTimes(2);
   });
@@ -177,7 +177,11 @@ describe('LeaderboardService', () => {
     analytics.events = events;
     await service.rebuild({ days: 30, minSessions: 1, decay: 1 });
     const first = await service.getTopPlayers();
-    expect(first).toEqual(['alice', 'bob', 'carol']);
+    expect(first.map((p) => p.playerId)).toEqual([
+      'alice',
+      'bob',
+      'carol',
+    ]);
 
     analytics.events = [...events].reverse();
     await service.rebuild({ days: 30, minSessions: 1, decay: 1 });
@@ -216,7 +220,10 @@ describe('LeaderboardService', () => {
     await fs.writeFile(file, lines.join('\n'));
     await service.rebuildFromEvents(1);
     const top = await service.getTopPlayers();
-    expect(top.slice(0, 2)).toEqual(['alice', 'bob']);
+    expect(top.slice(0, 2).map((p) => p.playerId)).toEqual([
+      'alice',
+      'bob',
+    ]);
     await fs.rm(dir, { recursive: true, force: true });
   });
 });
