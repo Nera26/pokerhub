@@ -8,6 +8,7 @@ import {
 import { Seat } from '../../src/database/entities/seat.entity';
 import { Table } from '../../src/database/entities/table.entity';
 import { Repository } from 'typeorm';
+import * as fc from 'fast-check';
 
 describe('TournamentService algorithms', () => {
   let service: TournamentService;
@@ -138,6 +139,63 @@ describe('TournamentService algorithms', () => {
         't1',
         expect.any(Array),
         start,
+      );
+    });
+  });
+
+  describe('resolveBubbleElimination', () => {
+    it('splits prizes among simultaneous busts', () => {
+      const busts = [
+        { id: 'a', stack: 5000 },
+        { id: 'b', stack: 3000 },
+        { id: 'c', stack: 2000 },
+      ];
+      const res = service.resolveBubbleElimination(busts, [100, 50, 25]);
+      expect(res.map((r) => r.prize)).toEqual([59, 58, 58]);
+      expect(res.map((r) => r.id)).toEqual(['a', 'b', 'c']);
+    });
+  });
+
+  describe('calculateIcmPayouts', () => {
+    it('returns payouts matching prize pool', () => {
+      const stacks = [5000, 3000, 2000];
+      const prizes = [50, 30, 20];
+      const res = service.calculateIcmPayouts(stacks, prizes);
+      expect(res.reduce((a, b) => a + b, 0)).toBe(100);
+    });
+
+    it('rounding error is less than one chip', () => {
+      const stacks = [4000, 3500, 2500];
+      const prizes = [60, 30, 10];
+      const res = service.calculateIcmPayouts(stacks, prizes);
+      const raw = (service as any).icmRecursive(stacks, prizes);
+      res.forEach((p: number, i: number) => {
+        expect(Math.abs(p - raw[i])).toBeLessThan(1);
+      });
+    });
+
+    it('property: payout sums equal prize pool and rounding error <1', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer({ min: 1, max: 1000 }), {
+            minLength: 2,
+            maxLength: 5,
+          }),
+          fc.array(fc.integer({ min: 1, max: 100 }), {
+            minLength: 1,
+            maxLength: 5,
+          }),
+          (stacks: number[], prizes: number[]) => {
+            const p = prizes.slice(0, stacks.length);
+            const res = service.calculateIcmPayouts(stacks, p);
+            const totalPrizes = p.reduce((a, b) => a + b, 0);
+            expect(res.reduce((a, b) => a + b, 0)).toBe(totalPrizes);
+            const raw = (service as any).icmRecursive(stacks, p);
+            res.forEach((pay: number, i: number) => {
+              expect(Math.abs(pay - raw[i])).toBeLessThan(1);
+            });
+          },
+        ),
       );
     });
   });
