@@ -7,7 +7,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Inject, Logger } from '@nestjs/common';
+import { Inject, Logger, Optional } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import Redis from 'ioredis';
 import { GameAction } from './engine';
@@ -18,10 +18,14 @@ import { ClockService } from './clock.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Hand } from '../database/entities/hand.entity';
+
 import {
   GameActionSchema,
   type GameAction as WireGameAction,
 } from '@shared/types';
+=======
+import { type GameAction as WireGameAction } from '@shared/types';
+
 
 interface AckPayload {
   actionId: string;
@@ -42,6 +46,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     { event: string; data: unknown }[]
   >();
 
+=======
+  private readonly queues = new Map<string, { event: string; data: unknown }[]>();
+
   private readonly sending = new Set<string>();
   private readonly actionCounterKey = 'game:action_counter';
 
@@ -54,7 +61,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly rooms: RoomManager,
     private readonly analytics: AnalyticsService,
     private readonly clock: ClockService,
-    @InjectRepository(Hand) private readonly hands: Repository<Hand>,
+    @Optional() @InjectRepository(Hand) private readonly hands: Repository<Hand>,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
   ) {
     this.clock.onTick((now) => {
@@ -65,7 +72,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   private processedKey(id: string) {
-    return `${this.processedPrefix}:${id}`;
+  return `${this.processedPrefix}:${id}`;
   }
 
   handleConnection(client: Socket) {
@@ -94,6 +101,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
+
     const { actionId, ...rest } = action;
     const parsed = GameActionSchema.parse(rest);
 
@@ -103,19 +111,24 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     const { tableId, ...wire } = parsed;
     const gameAction = wire as GameAction;
+=======
+    this.clock.clearTimer(action.playerId);
+    const tableId = action.tableId ?? 'default';
+    const { tableId: _t, actionId: _a, ...rest } = action;
+    const gameAction = rest as GameAction;
+
 
     const room = this.rooms.get(tableId);
     const state = await room.apply(gameAction);
 
     void this.analytics.recordGameEvent({
       clientId: client.id,
-      action: { actionId, ...parsed },
+      action,
     });
 
     const payload = { ...state, tick: ++this.tick };
     this.enqueue(client, 'state', payload);
 
-    // Notify spectators with public state
     if (this.server?.of) {
       const publicState = await room.getPublicState();
       this.server
@@ -134,6 +147,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         () => void this.handleTimeout(parsed.playerId),
       );
     }
+=======
+    this.enqueue(client, 'action:ack', { actionId: action.actionId } satisfies AckPayload);
+    await this.redis.set(key, '1', 'EX', this.processedTtlSeconds);
+
+    this.clock.setTimer(
+      action.playerId,
+      30_000,
+      () => void this.handleTimeout(action.playerId),
+    );
+
   }
 
   @SubscribeMessage('join')
@@ -178,6 +201,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() payload: { handId: string },
   ) {
     if (await this.isRateLimited(client)) return;
+    if (!this.hands) {
+      client.emit('server:Error', 'proof unavailable');
+      return;
+    }
     const hand = await this.hands.findOne({ where: { id: payload.handId } });
     if (!hand || !hand.seed || !hand.nonce) {
       client.emit('server:Error', 'proof unavailable');
@@ -212,7 +239,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    this.processed.add(payload.actionId);
     this.enqueue(client, `${event}:ack`, {
       actionId: payload.actionId,
     } as AckPayload);
@@ -240,9 +266,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   private async isRateLimited(client: Socket): Promise<boolean> {
-    const count = await this.redis.incr(this.actionCounterKey);
+    const key = `${this.actionCounterKey}:${client.id}`;
+    const count = await this.redis.incr(key);
     if (count === 1) {
-      await this.redis.expire(this.actionCounterKey, 10);
+      await this.redis.expire(key, 10);
     }
     if (count > 30) {
       client.emit('server:Error', 'rate limit exceeded');
@@ -266,3 +293,4 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 }
+
