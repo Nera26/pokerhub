@@ -5,8 +5,9 @@ import { newDb } from 'pg-mem';
 import { Table } from './entities/table.entity';
 import { Tournament } from './entities/tournament.entity';
 import { User } from './entities/user.entity';
+import { AntiCheatFlag } from './entities/antiCheatFlag.entity';
 
-const entities = [User, Tournament, Table];
+const entities = [User, Tournament, Table, AntiCheatFlag];
 let dataSource: DataSource;
 
 @Module({
