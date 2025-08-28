@@ -18,19 +18,27 @@ interface PendingAction {
 export default function useGameSocket() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const pending = useRef<PendingAction | null>(null);
+  const lastTick = useRef(0);
 
   useEffect(() => {
     const s = getSocket({ namespace: 'game' });
     setSocket(s);
+    const handleState = (state: { tick?: number }) => {
+      if (typeof state.tick === 'number') {
+        lastTick.current = state.tick;
+      }
+    };
     const handleConnect = () => {
       if (pending.current) {
         s.emit(pending.current.event, pending.current.payload);
       }
-      s.emit('replay');
+      s.emit('resume', { tick: lastTick.current });
     };
     s.on('connect', handleConnect);
+    s.on('state', handleState);
     return () => {
       s.off('connect', handleConnect);
+      s.off('state', handleState);
       disconnectSocket('game');
     };
   }, []);

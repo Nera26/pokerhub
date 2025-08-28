@@ -7,7 +7,7 @@ import type { GameAction, GameState } from './engine';
 class RoomWorker extends EventEmitter {
   private readonly worker: Worker;
   private seq = 0;
-  private readonly pending = new Map<number, (s: GameState) => void>();
+  private readonly pending = new Map<number, (s: unknown) => void>();
 
   constructor(private readonly tableId: string, playerIds?: string[]) {
     super();
@@ -25,22 +25,25 @@ class RoomWorker extends EventEmitter {
         const resolver = this.pending.get(seq);
         if (resolver) {
           this.pending.delete(seq);
-          resolver(msg.state as GameState);
+          resolver((msg.state ?? msg.states) as unknown);
         }
       }
     });
   }
 
-  private call(type: string, action?: GameAction): Promise<GameState> {
+  private call<T = GameState>(
+    type: string,
+    payload?: Record<string, unknown>,
+  ): Promise<T> {
     return new Promise((resolve) => {
       const seq = ++this.seq;
       this.pending.set(seq, resolve);
-      this.worker.postMessage({ type, seq, action });
+      this.worker.postMessage({ type, seq, ...(payload ?? {}) });
     });
   }
 
   apply(action: GameAction): Promise<GameState> {
-    return this.call('apply', action);
+    return this.call('apply', { action });
   }
 
   getPublicState(): Promise<GameState> {
@@ -49,6 +52,10 @@ class RoomWorker extends EventEmitter {
 
   replay(): Promise<GameState> {
     return this.call('replay');
+  }
+
+  resume(from: number): Promise<Array<[number, GameState]>> {
+    return this.call('resume', { from });
   }
 
   async terminate(): Promise<void> {
