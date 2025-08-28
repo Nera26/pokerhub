@@ -15,7 +15,7 @@ jobs:
       - name: Install backend deps
         working-directory: backend
         run: npm ci
-      - name: Run backend tests
+      - name: Run backend tests (unit + property)
         working-directory: backend
         run: npm test
       - name: Install frontend deps
