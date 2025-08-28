@@ -89,9 +89,9 @@ export class GameEngine {
 
   getPublicState(): GameState {
     const state = structuredClone(this.machine.getState());
-    for (const player of state.players as Array<Record<string, unknown>>) {
+    for (const player of state.players as unknown as Array<Record<string, unknown>>) {
       delete player.cards;
-      delete (player as any).holeCards;
+      delete player['holeCards'];
     }
     return state;
   }
@@ -120,7 +120,9 @@ export class GameEngine {
     if (winners.length === 0) return;
 
     if (this.handRepo) {
-      const existing = await this.handRepo.findOne({ where: { id: this.handId } });
+      const existing = await this.handRepo.findOne({
+        where: { id: this.handId },
+      });
       if (existing?.settled) return;
     }
 
@@ -147,8 +149,9 @@ export class GameEngine {
       await this.wallet.commit(this.handId, totalLoss, 0);
     }
 
+    const proof = this.rng.reveal();
+    this.log.recordProof(proof);
     if (this.handRepo) {
-      const proof = this.rng.reveal();
       await this.handRepo.save({
         id: this.handId,
         log: JSON.stringify(this.getHandLog()),
