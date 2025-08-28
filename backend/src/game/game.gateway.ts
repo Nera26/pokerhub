@@ -23,9 +23,6 @@ import {
   GameActionSchema,
   type GameAction as WireGameAction,
 } from '@shared/types';
-=======
-import { type GameAction as WireGameAction } from '@shared/types';
-
 
 interface AckPayload {
   actionId: string;
@@ -40,13 +37,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly processedTtlSeconds = 60;
 
   private readonly processed = new Set<string>();
-
-  private readonly queues = new Map<
-    string,
-    { event: string; data: unknown }[]
-  >();
-
-=======
   private readonly queues = new Map<string, { event: string; data: unknown }[]>();
 
   private readonly sending = new Set<string>();
@@ -72,7 +62,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   private processedKey(id: string) {
-  return `${this.processedPrefix}:${id}`;
+    return `${this.processedPrefix}:${id}`;
   }
 
   handleConnection(client: Socket) {
@@ -111,12 +101,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     const { tableId, ...wire } = parsed;
     const gameAction = wire as GameAction;
-=======
-    this.clock.clearTimer(action.playerId);
-    const tableId = action.tableId ?? 'default';
-    const { tableId: _t, actionId: _a, ...rest } = action;
-    const gameAction = rest as GameAction;
-
 
     const room = this.rooms.get(tableId);
     const state = await room.apply(gameAction);
@@ -147,16 +131,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         () => void this.handleTimeout(parsed.playerId),
       );
     }
-=======
-    this.enqueue(client, 'action:ack', { actionId: action.actionId } satisfies AckPayload);
-    await this.redis.set(key, '1', 'EX', this.processedTtlSeconds);
-
-    this.clock.setTimer(
-      action.playerId,
-      30_000,
-      () => void this.handleTimeout(action.playerId),
-    );
-
   }
 
   @SubscribeMessage('join')
