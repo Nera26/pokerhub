@@ -18,6 +18,7 @@ import { validationSchema } from './config/env.validation';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { API_CONTRACT_VERSION } from '@shared/constants';
+import { AuthController } from './routes/auth.controller';
 
 import { MessagingModule } from './messaging/messaging.module';
 
@@ -86,7 +87,7 @@ import { AuthModule } from './auth/auth.module';
     WalletModule,
     AuthModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, AuthController],
   providers: [
     AppService,
     {
