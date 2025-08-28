@@ -1,0 +1,80 @@
+name: Contract Validation
+
+on:
+  pull_request:
+    paths:
+      - 'contracts/**'
+      - 'backend/**'
+      - 'frontend/**'
+      - 'shared/**'
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/**'
+      - 'backend/**'
+      - 'frontend/**'
+      - 'shared/**'
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install backend deps
+        run: npm ci
+        working-directory: backend
+      - name: Install frontend deps
+        run: npm ci
+        working-directory: frontend
+      - name: Validate OpenAPI against Zod schemas
+        run: npm test test/contracts
+        working-directory: backend
+      - name: Generate shared types from OpenAPI
+        run: npx -y openapi-zod-client contracts/openapi.yaml -o shared/types.ts --export-schemas
+      - name: Check generated types are committed
+        run: git diff --exit-code shared/types.ts
+      - name: Frontend typecheck
+        run: npm run typecheck
+        working-directory: frontend
+      - name: Require FE & BE approvals for contract changes
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+            });
+            const contractChange = files.some(f =>
+              f.filename.startsWith('contracts/') ||
+              f.filename.startsWith('shared/') ||
+              f.filename.startsWith('backend/') ||
+              f.filename.startsWith('frontend/')
+            );
+            if (!contractChange) {
+              core.info('No contract related files changed');
+              return;
+            }
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+            });
+            const feMembers = await github.paginate(github.rest.teams.listMembersInOrg, {
+              org: context.repo.owner,
+              team_slug: 'FrontendTeam',
+            });
+            const beMembers = await github.paginate(github.rest.teams.listMembersInOrg, {
+              org: context.repo.owner,
+              team_slug: 'BackendTeam',
+            });
+            const feApproved = reviews.some(r => r.state === 'APPROVED' && feMembers.some(m => m.login === r.user.login));
+            const beApproved = reviews.some(r => r.state === 'APPROVED' && beMembers.some(m => m.login === r.user.login));
+            if (!(feApproved && beApproved)) {
+              core.setFailed('Contract changes require approvals from both frontend and backend teams.');
+            }
