@@ -1,10 +1,12 @@
 # Load Testing Scenarios
 
-This directory contains WebSocket load test scripts for PokerHub.
+This directory contains load test scripts for PokerHub.
 
 - `k6-ws-packet-loss.js` – k6 scenario establishing 10k sockets and simulating packet loss.
 - `artillery-ws-packet-loss.yml` – Artillery scenario with equivalent behavior via a processor.
 - `k6-ws-soak.js` – 24h k6 soak test emulating 80k sockets across 10k tables with 5% packet loss and 200 ms jitter. Deterministic runs are achieved via a seed and the script checks memory leak (<1%) and GC pause p95 (<50 ms) using a metrics endpoint.
+- `k6-10k-tables.js` – k6 HTTP test hitting `/tables/random` with 10 k virtual users while recording a latency histogram.
+- `artillery-10k-tables.yml` – Artillery equivalent to `k6-10k-tables.js` that captures per-endpoint latency histograms.
 
 All scripts assume the server is reachable via `ws://localhost:3000` by default.
 Environment variables:

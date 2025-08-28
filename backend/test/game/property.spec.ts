@@ -52,4 +52,18 @@ describe('GameEngine property tests', () => {
       }),
     );
   });
+
+  it('player stacks never go negative', () => {
+    fc.assert(
+      fc.property(fc.array(actionArb, { maxLength: 20 }), (actions) => {
+        const engine = new GameEngine(players);
+        actions.forEach((a) => {
+          engine.applyAction(a);
+          engine.getState().players.forEach((p) => {
+            expect(p.stack).toBeGreaterThanOrEqual(0);
+          });
+        });
+      }),
+    );
+  });
 });

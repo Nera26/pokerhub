@@ -1,5 +1,7 @@
 import fc from 'fast-check';
 import { ZodError } from 'zod';
+import { ZodFastCheck } from 'zod-fast-check';
+import { GameActionSchema } from '@shared/types';
 jest.mock('../../src/game/room.service', () => ({
   RoomManager: class {
     get() {
@@ -67,6 +69,27 @@ describe('GameGateway fuzz tests', () => {
 
         await expect(
           gateway.handleAction(client, { ...payload, actionId: 'x' } as any),
+        ).rejects.toBeInstanceOf(ZodError);
+      }),
+    );
+  });
+
+  it('rejects schema-derived malformed frames', async () => {
+    const zfc = ZodFastCheck();
+    const validAction = zfc.inputOf(GameActionSchema);
+    await fc.assert(
+      fc.asyncProperty(validAction, async (action) => {
+        const gateway = new GameGateway(
+          new RoomManager() as any,
+          new DummyAnalytics() as any,
+          new ClockService(),
+          new DummyRepo() as any,
+          new DummyRedis() as any,
+        );
+        const client: any = { id: 'c1', emit: jest.fn() };
+        const malformed = { ...action, type: 'bogus' } as any;
+        await expect(
+          gateway.handleAction(client, { ...malformed, actionId: 'x' } as any),
         ).rejects.toBeInstanceOf(ZodError);
       }),
     );

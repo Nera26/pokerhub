@@ -6,13 +6,16 @@ on:
 jobs:
   soak:
     runs-on: ubuntu-latest
+    timeout-minutes: 1440
     steps:
       - uses: actions/checkout@v4
       - name: Run k6 soak test
         uses: grafana/k6-action@v0.2.0
+        env:
+          METRICS_URL: http://localhost:3000/metrics
         with:
-          filename: infra/tests/load/k6-soak.js
-          arguments: --summary-export=soak-summary.json
+          filename: load/k6-ws-soak.js
+          flags: --summary-export=soak-summary.json
       - name: Upload summary
         if: always()
         uses: actions/upload-artifact@v3
