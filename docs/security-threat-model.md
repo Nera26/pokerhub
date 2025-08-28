@@ -2,6 +2,36 @@
 
 This document outlines the STRIDE threat model for PokerHub.
 
+## Review State Diagram
+
+```mermaid
+stateDiagram-v2
+    [*] --> Flagged
+    Flagged --> Warn
+    Warn --> Restrict
+    Restrict --> Ban
+```
+
+## Message Schemas
+
+### `FlaggedSession`
+
+```json
+{
+  "id": "uuid",
+  "users": ["uuid"],
+  "status": "flagged | warn | restrict | ban"
+}
+```
+
+### `ReviewAction`
+
+```json
+{
+  "action": "warn | restrict | ban"
+}
+```
+
 ## Spoofing
 - Enforce strong authentication with short-lived JWTs and refresh token rotation.
 - Same-site, HTTP-only cookies prevent credential reuse across sites.
