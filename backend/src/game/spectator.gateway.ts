@@ -6,6 +6,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { RoomManager } from './room.service';
 import { metrics } from '@opentelemetry/api';
+import type { GameState } from './engine';
 
 @WebSocketGateway({ namespace: 'spectate' })
 export class SpectatorGateway implements OnGatewayConnection {
@@ -27,9 +28,9 @@ export class SpectatorGateway implements OnGatewayConnection {
     const state = await room.getPublicState();
     client.emit('state', state);
 
-    const listener = async () => {
+    const listener = (s: GameState) => {
       if (client.connected) {
-        client.emit('state', await room.getPublicState());
+        client.emit('state', s);
       } else {
         SpectatorGateway.droppedFrames.add(1);
       }

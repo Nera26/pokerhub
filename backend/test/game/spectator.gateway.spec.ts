@@ -46,10 +46,10 @@ describe('SpectatorGateway', () => {
     const getStateSpy = jest.spyOn(room, 'getPublicState');
 
     await gateway.handleConnection(client);
-    room.emit('state');
+    room.emit('state', { n: 2 });
     await new Promise((r) => setImmediate(r));
 
-    expect(getStateSpy).toHaveBeenCalledTimes(2);
+    expect(getStateSpy).toHaveBeenCalledTimes(1);
     const states = client.emit.mock.calls
       .filter(([ev]) => ev === 'state')
       .map(([, s]) => s);
@@ -69,12 +69,12 @@ describe('SpectatorGateway', () => {
     const client = createClient();
 
     await gateway.handleConnection(client);
-    room.emit('state');
+    room.emit('state', {});
     await new Promise((r) => setImmediate(r));
     expect(addMock).not.toHaveBeenCalled();
 
     client.connected = false;
-    room.emit('state');
+    room.emit('state', {});
     await new Promise((r) => setImmediate(r));
     expect(addMock).toHaveBeenCalledTimes(1);
 

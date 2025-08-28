@@ -1,4 +1,5 @@
 import fc from 'fast-check';
+import { ZodError } from 'zod';
 jest.mock('../../src/game/room.service', () => ({
   RoomManager: class {
     get() {
@@ -62,12 +63,11 @@ describe('GameGateway fuzz tests', () => {
 
         await expect(
           gateway.handleAction(client, { ...payload, actionId: 'x' } as any),
-        ).resolves.toBeUndefined();
+        ).rejects.toBeInstanceOf(ZodError);
 
-        await gateway.handleAction(client, {
-          ...payload,
-          actionId: 'x',
-        } as any);
+        await expect(
+          gateway.handleAction(client, { ...payload, actionId: 'x' } as any),
+        ).rejects.toBeInstanceOf(ZodError);
       }),
     );
   });
@@ -83,7 +83,7 @@ describe('GameGateway fuzz tests', () => {
           new DummyRedis() as any,
         );
         const client: any = { id: 'c1', emit: jest.fn() };
-        const action = { type: 'next', actionId: id } as any;
+        const action = { type: 'next', tableId: 'default', actionId: id } as any;
         await gateway.handleAction(client, action);
         await gateway.handleAction(client, action);
         const acks = client.emit.mock.calls

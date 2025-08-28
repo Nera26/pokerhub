@@ -17,7 +17,7 @@ const PlayerSchema = z.object({
   isAllIn: z.boolean().optional(),
   isWinner: z.boolean().optional(),
   timeLeft: z.number().optional(),
-  cards: z.array(z.string()).optional(),
+  cards: z.tuple([z.string(), z.string()]).optional(),
   pos: z.string().optional(),
   lastAction: z.string().optional(),
 });
