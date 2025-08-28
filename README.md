@@ -38,3 +38,18 @@ The project provides a Docker setup for the full stack:
 
 The compose configuration uses health checks so the backend only starts once PostgreSQL, Redis, RabbitMQ, and LocalStack are
  ready. TypeORM's `synchronize` option is controlled by the `DB_SYNC` flag (defaults to `true` in this compose setup).
+
+### Subtree Sync Scripts
+
+Use the provided npm scripts to synchronize the frontend and backend subtrees with their upstream repositories.
+
+```bash
+npm run pull:frontend   # git subtree pull --prefix frontend frontend-remote main --squash
+npm run pull:backend    # git subtree pull --prefix backend backend-remote main --squash
+npm run pull:all        # pull both subtrees
+
+npm run push:frontend   # git subtree push --prefix frontend frontend-remote main
+npm run push:backend    # git subtree push --prefix backend backend-remote main
+npm run push:all        # push both subtrees
+```
+

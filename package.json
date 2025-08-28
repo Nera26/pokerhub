@@ -1,0 +1,16 @@
+{
+  "name": "pokerhub",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "pull:frontend": "git subtree pull --prefix frontend frontend-remote main --squash",
+    "pull:backend": "git subtree pull --prefix backend backend-remote main --squash",
+    "pull:all": "npm run pull:frontend && npm run pull:backend",
+    "push:frontend": "git subtree push --prefix frontend frontend-remote main",
+    "push:backend": "git subtree push --prefix backend backend-remote main",
+    "push:all": "npm run push:frontend && npm run push:backend"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}

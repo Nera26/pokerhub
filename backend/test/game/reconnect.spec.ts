@@ -63,6 +63,17 @@ describe('GameGateway reconnect', () => {
               store.set(key, value);
               return 'OK';
             },
+            multi: () => {
+              const results: [null, number][] = [];
+              const chain = {
+                incr: (_k: string) => {
+                  results.push([null, results.length + 1]);
+                  return chain;
+                },
+                exec: async () => results,
+              };
+              return chain;
+            },
           },
         },
       ],
@@ -81,7 +92,7 @@ describe('GameGateway reconnect', () => {
   });
 
   it('ignores duplicate action after reconnect', async () => {
-    const action = { type: 'next', tableId: 'default' };
+    const action = { type: 'next', tableId: 'default', version: '1' };
     const actionId = 'a1';
 
     const client1 = io(url, { transports: ['websocket'] });
