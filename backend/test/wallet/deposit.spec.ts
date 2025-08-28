@@ -5,19 +5,20 @@ import { JournalEntry } from '../../src/wallet/journal-entry.entity';
 import { Disbursement } from '../../src/wallet/disbursement.entity';
 import { WalletService } from '../../src/wallet/wallet.service';
 import { EventPublisher } from '../../src/events/events.service';
+import type Redis from 'ioredis';
 
 describe('WalletService deposit', () => {
   let dataSource: DataSource;
   let service: WalletService;
-  const events: EventPublisher = { emit: jest.fn() } as any;
-  const redis: any = {
-    store: {} as Record<string, number>,
-    async incr(key: string) {
-      this.store[key] = (this.store[key] ?? 0) + 1;
-      return this.store[key];
+  const events = { emit: jest.fn() } as unknown as EventPublisher;
+  const redisStore: Record<string, number> = {};
+  const redis = {
+    incr: (key: string): Promise<number> => {
+      redisStore[key] = (redisStore[key] ?? 0) + 1;
+      return Promise.resolve(redisStore[key]);
     },
-    async expire() {},
-  };
+    expire: (): Promise<void> => Promise.resolve(),
+  } as unknown as Redis;
 
   beforeAll(async () => {
     const db = newDb();
@@ -57,7 +58,9 @@ describe('WalletService deposit', () => {
       events,
       redis,
     );
-    (service as any).enqueueDisbursement = jest.fn();
+    (
+      service as unknown as { enqueueDisbursement: jest.Mock }
+    ).enqueueDisbursement = jest.fn();
     await accountRepo.save([
       {
         id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
@@ -69,6 +72,12 @@ describe('WalletService deposit', () => {
         id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
         name: 'house',
         balance: 1000,
+        kycVerified: false,
+      },
+      {
+        id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+        name: 'unverified',
+        balance: 0,
         kycVerified: false,
       },
     ]);
@@ -105,5 +114,16 @@ describe('WalletService deposit', () => {
         '2.2.2.2',
       ),
     ).rejects.toThrow('Rate limit exceeded');
+  });
+
+  it('rejects deposits for unverified accounts', async () => {
+    await expect(
+      service.deposit(
+        'cccccccc-cccc-cccc-cccc-cccccccccccc',
+        100,
+        'd2',
+        '3.3.3.3',
+      ),
+    ).rejects.toThrow('KYC required');
   });
 });

@@ -8,10 +8,21 @@ import { Account } from '../wallet/account.entity';
 import { JournalEntry } from '../wallet/journal-entry.entity';
 import { Hand } from './entities/hand.entity';
 import { AntiCheatFlag } from './entities/antiCheatFlag.entity';
+import { KycVerification } from './entities/kycVerification.entity';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL,
-  entities: [User, Tournament, Table, Seat, Account, JournalEntry, Hand, AntiCheatFlag],
+  entities: [
+    User,
+    Tournament,
+    Table,
+    Seat,
+    Account,
+    JournalEntry,
+    Hand,
+    AntiCheatFlag,
+    KycVerification,
+  ],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
 });
