@@ -24,6 +24,8 @@ import {
   type GameAction as WireGameAction,
 } from '@shared/types';
 
+/* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-redundant-type-constituents */
+
 interface AckPayload {
   actionId: string;
   duplicate?: boolean;
@@ -38,16 +40,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private readonly processed = new Set<string>();
 
-
   private readonly queues = new Map<
     string,
     { event: string; data: unknown }[]
   >();
 
-
-  private readonly queues = new Map<string, { event: string; data: unknown }[]>();
-
-
+  private readonly queues = new Map<
+    string,
+    { event: string; data: unknown }[]
+  >();
 
   private readonly sending = new Set<string>();
   private readonly actionCounterKey = 'game:action_counter';
@@ -79,7 +80,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleConnection(client: Socket) {
     this.logger.debug(`Client connected: ${client.id}`);
-    this.clock.setTimer(client.id, 30_000, () => this.handleTimeout(client.id));
+    this.clock.setTimer(
+      client.id,
+      30_000,
+      () => void this.handleTimeout(client.id),
+    );
   }
 
   handleDisconnect(client: Socket) {
@@ -95,6 +100,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (await this.isRateLimited(client)) return;
 
     const { actionId, ...rest } = action;
+    let parsed: GameAction;
+    try {
+      parsed = GameActionSchema.parse(rest) as GameAction;
+    } catch (err) {
+      this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+      throw err;
+    }
+
     const key = this.processedKey(actionId);
     if ((await this.redis.exists(key)) === 1) {
       this.enqueue(client, 'action:ack', {
@@ -104,20 +117,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-
     this.processed.add(actionId);
     await this.redis.set(key, '1', 'EX', this.processedTtlSeconds);
-
-    const result = GameActionSchema.safeParse(rest);
-    if (!result.success) {
-      this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
-      return;
-    }
-    const parsed = result.data;
-
-    const { actionId, ...rest } = action;
-    const parsed = GameActionSchema.parse(rest);
-
 
     if (parsed.playerId) {
       this.clock.clearTimer(parsed.playerId);
@@ -143,8 +144,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         .to(tableId)
         .emit('state', { ...publicState, tick: this.tick });
     }
-
-
 
     this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
 

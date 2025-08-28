@@ -1,0 +1,7 @@
+apiVersion: v2
+name: kafka-stack
+version: 0.1.0
+dependencies:
+  - name: kafka
+    version: 26.5.0
+    repository: https://charts.bitnami.com/bitnami
