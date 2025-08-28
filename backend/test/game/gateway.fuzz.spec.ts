@@ -17,6 +17,16 @@ class DummyAnalytics {
   async recordGameEvent(): Promise<void> {}
 }
 
+class DummyRedis {
+  private count = 0;
+  async incr() {
+    return ++this.count;
+  }
+  async expire() {
+    return 1;
+  }
+}
+
 describe('GameGateway fuzz tests', () => {
   it('handles malformed actions without throwing', async () => {
     await fc.assert(
@@ -25,11 +35,16 @@ describe('GameGateway fuzz tests', () => {
           new DummyRoom() as any,
           new DummyAnalytics() as any,
           new ClockService(),
+          new DummyRedis() as any,
         );
         const client: any = { id: 'c1', emit: jest.fn() };
+
         await expect(
           gateway.handleAction(client, { ...payload, actionId: 'x' } as any),
         ).resolves.toBeUndefined();
+
+        await gateway.handleAction(client, { ...payload, actionId: 'x' } as any);
+
       }),
     );
   });
@@ -41,6 +56,7 @@ describe('GameGateway fuzz tests', () => {
           new DummyRoom() as any,
           new DummyAnalytics() as any,
           new ClockService(),
+          new DummyRedis() as any,
         );
         const client: any = { id: 'c1', emit: jest.fn() };
         const action = { type: 'next', actionId: id } as any;

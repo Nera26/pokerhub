@@ -1,5 +1,6 @@
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
@@ -16,6 +17,9 @@ export function setupTelemetry() {
     }),
     traceExporter: new OTLPTraceExporter({
       url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
+    }),
+    metricReader: new PrometheusExporter({
+      port: Number(process.env.OTEL_PROMETHEUS_PORT) || 9464,
     }),
     instrumentations: [getNodeAutoInstrumentations()],
   });

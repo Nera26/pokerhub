@@ -6,6 +6,7 @@ import { Account } from './account.entity';
 import { JournalEntry } from './journal-entry.entity';
 import { EventPublisher } from '../events/events.service';
 import Redis from 'ioredis';
+import { metrics, trace, SpanStatusCode } from '@opentelemetry/api';
 
 interface Movement {
   account: Account;
@@ -14,6 +15,16 @@ interface Movement {
 
 @Injectable()
 export class WalletService {
+  private static readonly tracer = trace.getTracer('wallet');
+  private static readonly meter = metrics.getMeter('wallet');
+  private static readonly txnCounter = WalletService.meter.createCounter(
+    'wallet_transactions_total',
+    { description: 'Total wallet operations executed' },
+  );
+  private static readonly txnDuration = WalletService.meter.createHistogram(
+    'wallet_transaction_duration_ms',
+    { description: 'Duration of wallet operations', unit: 'ms' },
+  );
   constructor(
     @InjectRepository(Account) private readonly accounts: Repository<Account>,
     @InjectRepository(JournalEntry)
@@ -88,23 +99,65 @@ export class WalletService {
     amount: number,
     refId: string,
   ): Promise<void> {
-    const user = await this.accounts.findOneByOrFail({ id: accountId });
-    const reserve = await this.accounts.findOneByOrFail({ name: 'reserve' });
-    await this.record('reserve', refId, [
-      { account: user, amount: -amount },
-      { account: reserve, amount },
-    ]);
+    return WalletService.tracer.startActiveSpan(
+      'wallet.reserve',
+      async (span) => {
+        const start = Date.now();
+        WalletService.txnCounter.add(1, { operation: 'reserve' });
+        try {
+          const user = await this.accounts.findOneByOrFail({ id: accountId });
+          const reserve = await this.accounts.findOneByOrFail({
+            name: 'reserve',
+          });
+          await this.record('reserve', refId, [
+            { account: user, amount: -amount },
+            { account: reserve, amount },
+          ]);
+          span.setStatus({ code: SpanStatusCode.OK });
+        } catch (err) {
+          span.recordException(err as Error);
+          span.setStatus({ code: SpanStatusCode.ERROR });
+          throw err;
+        } finally {
+          WalletService.txnDuration.record(Date.now() - start, {
+            operation: 'reserve',
+          });
+          span.end();
+        }
+      },
+    );
   }
 
   async commit(refId: string, amount: number, rake: number): Promise<void> {
-    const reserve = await this.accounts.findOneByOrFail({ name: 'reserve' });
-    const prize = await this.accounts.findOneByOrFail({ name: 'prize' });
-    const rakeAcc = await this.accounts.findOneByOrFail({ name: 'rake' });
-    await this.record('commit', refId, [
-      { account: reserve, amount: -amount },
-      { account: prize, amount: amount - rake },
-      { account: rakeAcc, amount: rake },
-    ]);
+    return WalletService.tracer.startActiveSpan(
+      'wallet.commit',
+      async (span) => {
+        const start = Date.now();
+        WalletService.txnCounter.add(1, { operation: 'commit' });
+        try {
+          const reserve = await this.accounts.findOneByOrFail({
+            name: 'reserve',
+          });
+          const prize = await this.accounts.findOneByOrFail({ name: 'prize' });
+          const rakeAcc = await this.accounts.findOneByOrFail({ name: 'rake' });
+          await this.record('commit', refId, [
+            { account: reserve, amount: -amount },
+            { account: prize, amount: amount - rake },
+            { account: rakeAcc, amount: rake },
+          ]);
+          span.setStatus({ code: SpanStatusCode.OK });
+        } catch (err) {
+          span.recordException(err as Error);
+          span.setStatus({ code: SpanStatusCode.ERROR });
+          throw err;
+        } finally {
+          WalletService.txnDuration.record(Date.now() - start, {
+            operation: 'commit',
+          });
+          span.end();
+        }
+      },
+    );
   }
 
   async rollback(
@@ -112,12 +165,33 @@ export class WalletService {
     amount: number,
     refId: string,
   ): Promise<void> {
-    const reserve = await this.accounts.findOneByOrFail({ name: 'reserve' });
-    const user = await this.accounts.findOneByOrFail({ id: accountId });
-    await this.record('rollback', refId, [
-      { account: reserve, amount: -amount },
-      { account: user, amount },
-    ]);
+    return WalletService.tracer.startActiveSpan(
+      'wallet.rollback',
+      async (span) => {
+        const start = Date.now();
+        WalletService.txnCounter.add(1, { operation: 'rollback' });
+        try {
+          const reserve = await this.accounts.findOneByOrFail({
+            name: 'reserve',
+          });
+          const user = await this.accounts.findOneByOrFail({ id: accountId });
+          await this.record('rollback', refId, [
+            { account: reserve, amount: -amount },
+            { account: user, amount },
+          ]);
+          span.setStatus({ code: SpanStatusCode.OK });
+        } catch (err) {
+          span.recordException(err as Error);
+          span.setStatus({ code: SpanStatusCode.ERROR });
+          throw err;
+        } finally {
+          WalletService.txnDuration.record(Date.now() - start, {
+            operation: 'rollback',
+          });
+          span.end();
+        }
+      },
+    );
   }
 
   private async checkRateLimit(deviceId: string, ip: string) {
@@ -140,19 +214,38 @@ export class WalletService {
     deviceId: string,
     ip: string,
   ): Promise<void> {
-    const user = await this.accounts.findOneByOrFail({ id: accountId });
-    if (!user.kycVerified) {
-      throw new Error('KYC required');
-    }
-    if (amount > 100000) {
-      throw new Error('AML limit exceeded');
-    }
-    await this.checkRateLimit(deviceId, ip);
-    const house = await this.accounts.findOneByOrFail({ name: 'house' });
-    const ref = randomUUID();
-    await this.record('withdraw', ref, [
-      { account: user, amount: -amount },
-      { account: house, amount },
-    ]);
+    return WalletService.tracer.startActiveSpan(
+      'wallet.withdraw',
+      async (span) => {
+        const start = Date.now();
+        WalletService.txnCounter.add(1, { operation: 'withdraw' });
+        try {
+          const user = await this.accounts.findOneByOrFail({ id: accountId });
+          if (!user.kycVerified) {
+            throw new Error('KYC required');
+          }
+          if (amount > 100000) {
+            throw new Error('AML limit exceeded');
+          }
+          await this.checkRateLimit(deviceId, ip);
+          const house = await this.accounts.findOneByOrFail({ name: 'house' });
+          const ref = randomUUID();
+          await this.record('withdraw', ref, [
+            { account: user, amount: -amount },
+            { account: house, amount },
+          ]);
+          span.setStatus({ code: SpanStatusCode.OK });
+        } catch (err) {
+          span.recordException(err as Error);
+          span.setStatus({ code: SpanStatusCode.ERROR });
+          throw err;
+        } finally {
+          WalletService.txnDuration.record(Date.now() - start, {
+            operation: 'withdraw',
+          });
+          span.end();
+        }
+      },
+    );
   }
 }

@@ -34,6 +34,13 @@ describe('GameGateway reconnect', () => {
         ClockService,
         { provide: AnalyticsService, useValue: { recordGameEvent: jest.fn() } },
         { provide: EventPublisher, useValue: { emit: jest.fn() } },
+        {
+          provide: 'REDIS_CLIENT',
+          useValue: {
+            incr: async () => 1,
+            expire: async () => 1,
+          },
+        },
       ],
     }).compile();
 

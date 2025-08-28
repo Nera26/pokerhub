@@ -1,8 +1,7 @@
-import { HandLog } from '../hand-log';
+import { HandLog, HandLogEntry } from '../hand-log';
 import { HandStateMachine, GameAction, GameState } from '../state-machine';
 import { SettlementJournal } from '../settlement';
 import { WalletService } from '../../wallet/wallet.service';
-import { writeHandLedger } from '../../wallet/hand-ledger';
 import { randomUUID } from 'crypto';
 import { HandRNG } from '../rng';
 import { Repository } from 'typeorm';
@@ -42,10 +41,20 @@ export class GameEngine {
       currentBet: 0,
       players,
     });
+    if (this.wallet) {
+      void this.reserveStacks();
+    }
     this.events?.emit('hand.start', {
       handId: this.handId,
       players: playerIds,
     });
+  }
+
+  private async reserveStacks() {
+    const state = this.machine.getState();
+    for (const player of state.players) {
+      await this.wallet!.reserve(player.id, player.stack, this.handId);
+    }
   }
 
   getHandId() {
@@ -53,8 +62,8 @@ export class GameEngine {
   }
 
   applyAction(action: GameAction): GameState {
+    const preState = structuredClone(this.machine.getState());
     const state = this.machine.apply(action);
-    this.log.record(action);
 
     // If only one player remains, settle immediately
     if (
@@ -63,6 +72,9 @@ export class GameEngine {
     ) {
       state.street = 'showdown';
     }
+
+    const postState = structuredClone(this.machine.getState());
+    this.log.record(action, preState, postState);
 
     if (state.street === 'showdown') {
       void this.settle();
@@ -80,7 +92,7 @@ export class GameEngine {
     return this.machine.getState();
   }
 
-  getHandLog() {
+  getHandLog(): HandLogEntry[] {
     return this.log.getAll();
   }
 
@@ -92,7 +104,7 @@ export class GameEngine {
     const replay = new GameEngine(
       this.machine.getState().players.map((p) => p.id),
     );
-    for (const action of this.getHandLog()) {
+    for (const [, action] of this.getHandLog()) {
       replay.applyAction(action);
     }
     return replay.getState();
@@ -103,20 +115,32 @@ export class GameEngine {
     const winners = state.players.filter((p) => !p.folded);
     if (winners.length === 0) return;
 
+    if (this.handRepo) {
+      const existing = await this.handRepo.findOne({ where: { id: this.handId } });
+      if (existing?.settled) return;
+    }
+
     const share = Math.floor(state.pot / winners.length);
     winners.forEach((p) => (p.stack += share));
     const remainder = state.pot - share * winners.length;
     if (remainder > 0) winners[0].stack += remainder;
     state.pot = 0;
 
+    let totalLoss = 0;
     for (const player of state.players) {
       const initial = this.initialStacks.get(player.id) ?? 0;
       const delta = player.stack - initial;
       this.settlement.record({ playerId: player.id, delta });
+      const loss = Math.max(initial - player.stack, 0);
+      const refund = initial - loss;
+      if (this.wallet && refund > 0) {
+        await this.wallet.rollback(player.id, refund, this.handId);
+      }
+      totalLoss += loss;
     }
 
-    if (this.wallet) {
-      await writeHandLedger(this.wallet, this.handId, this.settlement.getAll());
+    if (this.wallet && totalLoss > 0) {
+      await this.wallet.commit(this.handId, totalLoss, 0);
     }
 
     if (this.handRepo) {
@@ -127,6 +151,7 @@ export class GameEngine {
         commitment: proof.commitment,
         seed: proof.seed,
         nonce: proof.nonce,
+        settled: true,
       });
     }
 

@@ -1,10 +1,19 @@
-import { TournamentService } from '../../src/tournament/tournament.service';
+import {
+  TournamentService,
+  TournamentState,
+} from '../../src/tournament/tournament.service';
 
 describe('TournamentService algorithms', () => {
   let service: TournamentService;
+  let scheduler: any;
 
   beforeEach(() => {
-    service = new TournamentService();
+    scheduler = {
+      scheduleRegistration: jest.fn(),
+      scheduleBreak: jest.fn(),
+      scheduleLevelUps: jest.fn(),
+    };
+    service = new TournamentService(scheduler);
   });
 
   describe('balanceTables', () => {
@@ -48,6 +57,49 @@ describe('TournamentService algorithms', () => {
       expect(res.seats).toBe(2);
       expect(res.remainder).toBe(0);
       expect(res.prizes[0]).toBe(100);
+    });
+  });
+
+  describe('state transitions', () => {
+    it('follows REG_OPEN → RUNNING → PAUSED → FINISHED', () => {
+      service.openRegistration('t1');
+      expect(service.getState('t1')).toBe(TournamentState.REG_OPEN);
+      service.start('t1');
+      expect(service.getState('t1')).toBe(TournamentState.RUNNING);
+      service.pause('t1');
+      expect(service.getState('t1')).toBe(TournamentState.PAUSED);
+      service.finish('t1');
+      expect(service.getState('t1')).toBe(TournamentState.FINISHED);
+    });
+  });
+
+  describe('scheduler integration', () => {
+    it('uses scheduler queues', async () => {
+      const open = new Date(Date.now() + 1000);
+      const close = new Date(Date.now() + 2000);
+      const start = close;
+      await service.scheduleTournament('t1', {
+        registration: { open, close },
+        structure: [
+          { level: 1, durationMinutes: 10 },
+          { level: 2, durationMinutes: 10 },
+        ],
+        breaks: [
+          { start: new Date(Date.now() + 3000), durationMs: 60000 },
+        ],
+        start,
+      });
+      expect(scheduler.scheduleRegistration).toHaveBeenCalledWith(
+        't1',
+        open,
+        close,
+      );
+      expect(scheduler.scheduleBreak).toHaveBeenCalled();
+      expect(scheduler.scheduleLevelUps).toHaveBeenCalledWith(
+        't1',
+        expect.any(Array),
+        start,
+      );
     });
   });
 });

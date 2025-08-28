@@ -58,6 +58,42 @@ interface ActionAck {
   duplicate?: boolean;
 }
 
+async function emitWithAck(event: string, data: Record<string, unknown>) {
+  const socket = getSocket();
+  const actionId = crypto.randomUUID();
+  const payload = { ...data, actionId };
+  let attempt = 0;
+  const maxAttempts = 5;
+
+  return new Promise<void>((resolve, reject) => {
+    function handleAck(ack: ActionAck) {
+      if (ack.actionId === actionId) {
+        socket.off(`${event}:ack`, handleAck);
+        clearTimeout(timeoutId);
+        resolve();
+      }
+    }
+
+    function send() {
+      attempt++;
+      socket.emit(event, payload);
+      const delay = Math.pow(2, attempt) * 100;
+      timeoutId = setTimeout(() => {
+        if (attempt >= maxAttempts) {
+          socket.off(`${event}:ack`, handleAck);
+          reject(new Error('ACK timeout'));
+          return;
+        }
+        send();
+      }, delay);
+    }
+
+    let timeoutId: ReturnType<typeof setTimeout>;
+    socket.on(`${event}:ack`, handleAck);
+    send();
+  });
+}
+
 async function sendAction(action: GameAction) {
   GameActionSchema.parse(action);
   const socket = getSocket();
@@ -96,9 +132,21 @@ async function sendAction(action: GameAction) {
 }
 
 export function joinTable(tableId: string) {
-  return sendAction({ type: 'join', tableId });
+  return emitWithAck('join', { tableId });
 }
 
 export function bet(tableId: string, amount: number) {
   return sendAction({ type: 'bet', tableId, amount });
+}
+
+export function buyIn(tableId: string, amount: number) {
+  return emitWithAck('buy-in', { tableId, amount });
+}
+
+export function sitOut(tableId: string) {
+  return emitWithAck('sitout', { tableId });
+}
+
+export function rebuy(tableId: string, amount: number) {
+  return emitWithAck('rebuy', { tableId, amount });
 }
