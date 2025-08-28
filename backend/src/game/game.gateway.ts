@@ -14,6 +14,9 @@ import { GameAction } from './engine';
 import { RoomManager } from './room.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { ClockService } from './clock.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Hand } from '../database/entities/hand.entity';
 
 interface AckPayload {
   actionId: string;
@@ -43,6 +46,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly rooms: RoomManager,
     private readonly analytics: AnalyticsService,
     private readonly clock: ClockService,
+    @InjectRepository(Hand) private readonly hands: Repository<Hand>,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
   ) {
     this.clock.onTick((now) => {
@@ -106,8 +110,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       actionId: action.actionId,
     } satisfies AckPayload);
 
-    this.clock.setTimer(action.playerId, 30_000, () =>
-      void this.handleTimeout(action.playerId),
+    this.clock.setTimer(
+      action.playerId,
+      30_000,
+      () => void this.handleTimeout(action.playerId),
     );
   }
 
@@ -147,6 +153,24 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.acknowledge(client, 'rebuy', payload);
   }
 
+  @SubscribeMessage('proof')
+  async handleProof(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { handId: string },
+  ) {
+    if (await this.isRateLimited(client)) return;
+    const hand = await this.hands.findOne({ where: { id: payload.handId } });
+    if (!hand || !hand.seed || !hand.nonce) {
+      client.emit('server:Error', 'proof unavailable');
+      return;
+    }
+    this.enqueue(client, 'proof', {
+      commitment: hand.commitment,
+      seed: hand.seed,
+      nonce: hand.nonce,
+    });
+  }
+
   private acknowledge(client: Socket, event: string, payload: AckPayload) {
     if (this.processed.has(payload.actionId)) {
       this.enqueue(client, `${event}:ack`, {
@@ -156,7 +180,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
     this.processed.add(payload.actionId);
-    this.enqueue(client, `${event}:ack`, { actionId: payload.actionId } as AckPayload);
+    this.enqueue(client, `${event}:ack`, {
+      actionId: payload.actionId,
+    } as AckPayload);
   }
 
   private enqueue(client: Socket, event: string, data: unknown) {

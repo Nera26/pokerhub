@@ -1,11 +1,28 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { io, Socket } from 'socket.io-client';
+jest.mock('../../src/game/room.service', () => ({
+  RoomManager: class {
+    get() {
+      return {
+        apply: async () => ({ street: 'preflop', pot: 0, players: [] }),
+        getPublicState: async () => ({
+          street: 'preflop',
+          pot: 0,
+          players: [],
+        }),
+        replay: async () => ({ street: 'preflop', pot: 0, players: [] }),
+      } as any;
+    }
+  },
+}));
 import { GameGateway } from '../../src/game/game.gateway';
 import { RoomManager } from '../../src/game/room.service';
 import { ClockService } from '../../src/game/clock.service';
 import { AnalyticsService } from '../../src/analytics/analytics.service';
 import { EventPublisher } from '../../src/events/events.service';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Hand } from '../../src/database/entities/hand.entity';
 
 function waitForConnect(socket: Socket): Promise<void> {
   return new Promise((resolve) => socket.on('connect', () => resolve()));
@@ -34,6 +51,7 @@ describe('GameGateway reconnect', () => {
         ClockService,
         { provide: AnalyticsService, useValue: { recordGameEvent: jest.fn() } },
         { provide: EventPublisher, useValue: { emit: jest.fn() } },
+        { provide: getRepositoryToken(Hand), useValue: { findOne: jest.fn() } },
         {
           provide: 'REDIS_CLIENT',
           useValue: {
