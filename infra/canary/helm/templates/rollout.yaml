@@ -2,6 +2,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: Rollout
 metadata:
   name: canary-rollout
+  annotations:
+    pokerhub.io/release: "{{ .Release.Name }}-{{ .Release.Revision }}"
 spec:
   replicas: {{ .Values.replicaCount }}
   strategy:
@@ -20,6 +22,8 @@ spec:
     metadata:
       labels:
         app: canary-rollout
+      annotations:
+        pokerhub.io/release: "{{ .Release.Name }}-{{ .Release.Revision }}"
     spec:
       containers:
         - name: app
