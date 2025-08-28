@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: canary-rollout
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    canary:
+      steps:
+        - setWeight: 5
+        - pause: {duration: 1m}
+        - analysis:
+            templates:
+              - templateName: canary-success
+      rollbackOnFailure: true
+  selector:
+    matchLabels:
+      app: canary-rollout
+  template:
+    metadata:
+      labels:
+        app: canary-rollout
+    spec:
+      containers:
+        - name: app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: {{ .Values.image.port }}
