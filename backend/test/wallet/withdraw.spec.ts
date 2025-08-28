@@ -5,6 +5,7 @@ import { JournalEntry } from '../../src/wallet/journal-entry.entity';
 import { Disbursement } from '../../src/wallet/disbursement.entity';
 import { WalletService } from '../../src/wallet/wallet.service';
 import { EventPublisher } from '../../src/events/events.service';
+import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
 
 describe('WalletService withdraw', () => {
   let dataSource: DataSource;
@@ -18,6 +19,10 @@ describe('WalletService withdraw', () => {
     },
     async expire() {},
   };
+  const provider = {
+    initiate3DS: jest.fn().mockResolvedValue({ id: 'tx' }),
+    getStatus: jest.fn().mockResolvedValue('approved'),
+  } as unknown as PaymentProviderService;
 
   beforeAll(async () => {
     const db = newDb();
@@ -56,8 +61,21 @@ describe('WalletService withdraw', () => {
       disbRepo,
       events,
       redis,
+      provider,
     );
     (service as any).enqueueDisbursement = jest.fn();
+  });
+
+  beforeEach(async () => {
+    redis.store = {};
+    (provider.initiate3DS as jest.Mock).mockResolvedValue({ id: 'tx' });
+    (provider.getStatus as jest.Mock).mockResolvedValue('approved');
+    const accountRepo = dataSource.getRepository(Account);
+    const journalRepo = dataSource.getRepository(JournalEntry);
+    const disbRepo = dataSource.getRepository(Disbursement);
+    await journalRepo.createQueryBuilder().delete().execute();
+    await disbRepo.createQueryBuilder().delete().execute();
+    await accountRepo.createQueryBuilder().delete().execute();
     await accountRepo.save([
       {
         id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
@@ -142,5 +160,20 @@ describe('WalletService withdraw', () => {
     const updated = await disbRepo.findOneByOrFail({ id: disb.id });
     expect(updated.status).toBe('completed');
     expect(updated.completedAt).toBeTruthy();
+  });
+
+  it('aborts risky withdrawals', async () => {
+    (provider.initiate3DS as jest.Mock).mockResolvedValueOnce({ id: 'risk' });
+    (provider.getStatus as jest.Mock).mockResolvedValueOnce('risky');
+    await expect(
+      service.withdraw(
+        'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        100,
+        'd9',
+        '9.9.9.9',
+      ),
+    ).rejects.toThrow('Transaction flagged as risky');
+    const jRepo = dataSource.getRepository(JournalEntry);
+    expect(await jRepo.count()).toBe(0);
   });
 });

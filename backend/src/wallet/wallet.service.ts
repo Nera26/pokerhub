@@ -9,6 +9,7 @@ import { EventPublisher } from '../events/events.service';
 import Redis from 'ioredis';
 import { metrics, trace, SpanStatusCode } from '@opentelemetry/api';
 import type { Queue } from 'bullmq';
+import { PaymentProviderService, ProviderStatus } from './payment-provider.service';
 
 interface Movement {
   account: Account;
@@ -41,6 +42,7 @@ export class WalletService {
     private readonly disbursements: Repository<Disbursement>,
     private readonly events: EventPublisher,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
+    private readonly provider: PaymentProviderService,
   ) {}
 
   private disbursementQueue?: Queue;
@@ -77,6 +79,7 @@ export class WalletService {
     refType: string,
     refId: string,
     entries: Movement[],
+    meta?: { providerTxnId?: string; providerStatus?: string },
   ): Promise<void> {
     const sum = entries.reduce((acc, e) => acc + e.amount, 0);
     if (sum !== 0) {
@@ -102,6 +105,8 @@ export class WalletService {
           refType,
           refId,
           hash,
+          providerTxnId: meta?.providerTxnId,
+          providerStatus: meta?.providerStatus,
         });
         entry.account.balance += entry.amount;
         await manager.save(Account, entry.account);
@@ -308,19 +313,43 @@ export class WalletService {
           }
           await this.checkVelocity('withdraw', deviceId, ip);
           const house = await this.accounts.findOneByOrFail({ name: 'house' });
+          const challenge = await this.provider.initiate3DS(accountId, amount);
+          const status: ProviderStatus = await this.provider.getStatus(
+            challenge.id,
+          );
+          if (status === 'risky') {
+            throw new Error('Transaction flagged as risky');
+          }
           const ref = randomUUID();
-          await this.record('withdraw', ref, [
-            { account: user, amount: -amount },
-            { account: house, amount },
-          ]);
-          const disb = await this.disbursements.save({
-            id: randomUUID(),
-            accountId,
-            amount,
-            idempotencyKey: randomUUID(),
-            status: 'pending',
-          });
-          await this.enqueueDisbursement(disb.id);
+          await this.record(
+            'withdraw',
+            ref,
+            [
+              { account: user, amount: -amount },
+              { account: house, amount },
+            ],
+            { providerTxnId: challenge.id, providerStatus: status },
+          );
+          if (status === 'chargeback') {
+            await this.record(
+              'withdraw_reversal',
+              `${ref}:reversal`,
+              [
+                { account: user, amount },
+                { account: house, amount: -amount },
+              ],
+              { providerTxnId: challenge.id, providerStatus: 'chargeback' },
+            );
+          } else {
+            const disb = await this.disbursements.save({
+              id: randomUUID(),
+              accountId,
+              amount,
+              idempotencyKey: randomUUID(),
+              status: 'pending',
+            });
+            await this.enqueueDisbursement(disb.id);
+          }
           span.setStatus({ code: SpanStatusCode.OK });
         } catch (err) {
           span.recordException(err as Error);
@@ -354,11 +383,34 @@ export class WalletService {
             throw new Error('KYC required');
           }
           const house = await this.accounts.findOneByOrFail({ name: 'house' });
+          const challenge = await this.provider.initiate3DS(accountId, amount);
+          const status: ProviderStatus = await this.provider.getStatus(
+            challenge.id,
+          );
+          if (status === 'risky') {
+            throw new Error('Transaction flagged as risky');
+          }
           const ref = randomUUID();
-          await this.record('deposit', ref, [
-            { account: house, amount: -amount },
-            { account: user, amount },
-          ]);
+          await this.record(
+            'deposit',
+            ref,
+            [
+              { account: house, amount: -amount },
+              { account: user, amount },
+            ],
+            { providerTxnId: challenge.id, providerStatus: status },
+          );
+          if (status === 'chargeback') {
+            await this.record(
+              'deposit_reversal',
+              `${ref}:reversal`,
+              [
+                { account: house, amount },
+                { account: user, amount: -amount },
+              ],
+              { providerTxnId: challenge.id, providerStatus: 'chargeback' },
+            );
+          }
           span.setStatus({ code: SpanStatusCode.OK });
         } catch (err) {
           span.recordException(err as Error);

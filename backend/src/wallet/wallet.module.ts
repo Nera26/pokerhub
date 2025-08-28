@@ -8,6 +8,7 @@ import { WalletController } from '../routes/wallet.controller';
 import { EventsModule } from '../events/events.module';
 import { RedisModule } from '../redis/redis.module';
 import { startDisbursementWorker } from './disbursement.worker';
+import { PaymentProviderService } from './payment-provider.service';
 
 @Injectable()
 class DisbursementWorker implements OnModuleInit {
@@ -25,7 +26,7 @@ class DisbursementWorker implements OnModuleInit {
     EventsModule,
     RedisModule,
   ],
-  providers: [WalletService, DisbursementWorker],
+  providers: [WalletService, DisbursementWorker, PaymentProviderService],
   controllers: [WalletController],
   exports: [WalletService],
 })
