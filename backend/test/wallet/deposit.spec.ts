@@ -7,6 +7,7 @@ import { WalletService } from '../../src/wallet/wallet.service';
 import { EventPublisher } from '../../src/events/events.service';
 import type Redis from 'ioredis';
 import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
+import { KycService } from '../../src/wallet/kyc.service';
 
 describe('WalletService deposit', () => {
   let dataSource: DataSource;
@@ -56,6 +57,7 @@ describe('WalletService deposit', () => {
     const accountRepo = dataSource.getRepository(Account);
     const journalRepo = dataSource.getRepository(JournalEntry);
     const disbRepo = dataSource.getRepository(Disbursement);
+    const kyc = { validate: jest.fn().mockResolvedValue(undefined) } as unknown as KycService;
     service = new WalletService(
       accountRepo,
       journalRepo,
@@ -63,6 +65,7 @@ describe('WalletService deposit', () => {
       events,
       redis,
       provider,
+      kyc,
     );
     (service as unknown as { enqueueDisbursement: jest.Mock })
       .enqueueDisbursement = jest.fn();
@@ -176,5 +179,10 @@ describe('WalletService deposit', () => {
     const jRepo = dataSource.getRepository(JournalEntry);
     const entries = await jRepo.find();
     expect(entries.filter((e) => e.providerStatus === 'chargeback').length).toBe(4);
+  });
+
+  it('returns KYC status', async () => {
+    const status = await service.status('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+    expect(status).toEqual({ kycVerified: true });
   });
 });

@@ -1,9 +1,9 @@
 import { WalletService } from './wallet.service';
 
-export async function startDisbursementWorker(wallet: WalletService) {
+export async function startPayoutWorker(wallet: WalletService) {
   const bull = await import('bullmq');
   new bull.Worker(
-    'disbursements',
+    'payout',
     async (job) => {
       await wallet.processDisbursement(job.data.id);
     },

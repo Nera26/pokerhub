@@ -1,4 +1,4 @@
-import { Controller, Post, Param, Body, Req } from '@nestjs/common';
+import { Controller, Post, Param, Body, Req, Get } from '@nestjs/common';
 import { WalletService } from '../wallet/wallet.service';
 import type { Request } from 'express';
 import {
@@ -6,6 +6,8 @@ import {
   type WithdrawRequest,
   ProviderCallbackSchema,
   type ProviderCallback,
+  WalletStatusSchema,
+  type WalletStatusResponse,
 } from '../schemas/wallet';
 
 interface TxDto {
@@ -52,5 +54,11 @@ export class WalletController {
     const parsed = ProviderCallbackSchema.parse(body);
     await this.wallet.handleProviderCallback(parsed.idempotencyKey);
     return { message: 'acknowledged' };
+  }
+
+  @Get(':id/status')
+  async status(@Param('id') id: string): Promise<WalletStatusResponse> {
+    const res = await this.wallet.status(id);
+    return WalletStatusSchema.parse(res);
   }
 }

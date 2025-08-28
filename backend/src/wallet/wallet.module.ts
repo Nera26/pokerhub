@@ -8,16 +8,17 @@ import { WalletService } from './wallet.service';
 import { WalletController } from '../routes/wallet.controller';
 import { EventsModule } from '../events/events.module';
 import { RedisModule } from '../redis/redis.module';
-import { startDisbursementWorker } from './disbursement.worker';
+import { startPayoutWorker } from './payout.worker';
 import { PaymentProviderService } from './payment-provider.service';
+import { KycService } from './kyc.service';
 
 @Injectable()
-class DisbursementWorker implements OnModuleInit {
+class PayoutWorker implements OnModuleInit {
   constructor(private readonly wallet: WalletService) {}
 
   async onModuleInit() {
     if (process.env.NODE_ENV === 'test') return;
-    await startDisbursementWorker(this.wallet);
+    await startPayoutWorker(this.wallet);
   }
 }
 
@@ -32,7 +33,7 @@ class DisbursementWorker implements OnModuleInit {
     EventsModule,
     RedisModule,
   ],
-  providers: [WalletService, DisbursementWorker, PaymentProviderService],
+  providers: [WalletService, PayoutWorker, PaymentProviderService, KycService],
   controllers: [WalletController],
   exports: [WalletService],
 })

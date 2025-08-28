@@ -14,11 +14,13 @@ import WithdrawModalContent from '@/app/components/wallet/WithdrawModalContent';
 import ToastNotification, {
   ToastType,
 } from '@/app/components/ui/ToastNotification';
+import { getStatus } from '@/lib/api/wallet';
 
 export default function WalletPage() {
   // Balances
   const [realBalance] = useState<number>(1250.0);
   const [creditBalance] = useState<number>(350.0);
+  const [kycVerified, setKycVerified] = useState(false);
 
   // Pending transactions (static example data)
   const [pendingTransactions] = useState([
@@ -112,6 +114,9 @@ export default function WalletPage() {
   // Update document title (optional)
   useEffect(() => {
     document.title = 'Wallet – PokerHub';
+    getStatus('u1')
+      .then((res) => setKycVerified(res.kycVerified))
+      .catch(() => setKycVerified(false));
   }, []);
 
   return (
@@ -121,6 +126,7 @@ export default function WalletPage() {
         <WalletSummary
           realBalance={realBalance}
           creditBalance={creditBalance}
+          kycVerified={kycVerified}
           onDeposit={openDepositModal}
           onWithdraw={openWithdrawModal}
         />

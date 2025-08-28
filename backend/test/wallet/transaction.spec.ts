@@ -5,6 +5,8 @@ import { JournalEntry } from '../../src/wallet/journal-entry.entity';
 import { Disbursement } from '../../src/wallet/disbursement.entity';
 import { WalletService } from '../../src/wallet/wallet.service';
 import { EventPublisher } from '../../src/events/events.service';
+import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
+import { KycService } from '../../src/wallet/kyc.service';
 
 describe('WalletService transactions', () => {
   let dataSource: DataSource;
@@ -46,12 +48,19 @@ describe('WalletService transactions', () => {
       expire: jest.fn(),
     };
     const disbRepo = dataSource.getRepository(Disbursement);
+    const provider = {
+      initiate3DS: jest.fn(),
+      getStatus: jest.fn(),
+    } as unknown as PaymentProviderService;
+    const kyc = { validate: jest.fn().mockResolvedValue(undefined) } as unknown as KycService;
     service = new WalletService(
       accountRepo,
       journalRepo,
       disbRepo,
       events,
       redis,
+      provider,
+      kyc,
     );
     (service as any).enqueueDisbursement = jest.fn();
     await accountRepo.save([

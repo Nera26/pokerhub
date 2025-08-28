@@ -10,10 +10,14 @@ import { EventPublisher } from '../events/events.service';
 import Redis from 'ioredis';
 import { metrics, trace, SpanStatusCode } from '@opentelemetry/api';
 import type { Queue } from 'bullmq';
+import { PaymentProviderService, ProviderStatus } from './payment-provider.service';
+import { KycService } from './kyc.service';
+=======
 import {
   PaymentProviderService,
   ProviderStatus,
 } from './payment-provider.service';
+
 
 interface Movement {
   account: Account;
@@ -47,22 +51,26 @@ export class WalletService {
     private readonly events: EventPublisher,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
     private readonly provider: PaymentProviderService,
+
+    private readonly kyc: KycService,
+=======
     @InjectRepository(SettlementJournal)
     private readonly settlements?: Repository<SettlementJournal>,
+
   ) {}
 
-  private disbursementQueue?: Queue;
+  private payoutQueue?: Queue;
 
   private async getQueue(): Promise<Queue> {
-    if (this.disbursementQueue) return this.disbursementQueue;
+    if (this.payoutQueue) return this.payoutQueue;
     const bull = await import('bullmq');
-    this.disbursementQueue = new bull.Queue('disbursements', {
+    this.payoutQueue = new bull.Queue('payout', {
       connection: {
         host: process.env.REDIS_HOST ?? 'localhost',
         port: Number(process.env.REDIS_PORT ?? 6379),
       },
     });
-    return this.disbursementQueue;
+    return this.payoutQueue;
   }
 
   protected async enqueueDisbursement(id: string): Promise<void> {
@@ -260,12 +268,21 @@ export class WalletService {
 
   async processDisbursement(id: string): Promise<void> {
     const disb = await this.disbursements.findOneByOrFail({ id });
+    const account = await this.accounts.findOneByOrFail({
+      id: disb.accountId,
+    });
+    await this.kyc.validate(account);
     await this.events.emit('wallet.disbursement.request', {
       id: disb.id,
       accountId: disb.accountId,
       amount: disb.amount,
       idempotencyKey: disb.idempotencyKey,
     });
+  }
+
+  async status(accountId: string): Promise<{ kycVerified: boolean }> {
+    const account = await this.accounts.findOneByOrFail({ id: accountId });
+    return { kycVerified: account.kycVerified };
   }
 
   async handleProviderCallback(idempotencyKey: string): Promise<void> {
