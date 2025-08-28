@@ -1,4 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import { TournamentScheduler } from './scheduler.service';
+
+export enum TournamentState {
+  REG_OPEN = 'REG_OPEN',
+  RUNNING = 'RUNNING',
+  PAUSED = 'PAUSED',
+  FINISHED = 'FINISHED',
+}
 
 export interface TournamentInfo {
   id: string;
@@ -7,10 +15,13 @@ export interface TournamentInfo {
   prizePool: number;
   players: { current: number; max: number };
   registered: boolean;
+  state: TournamentState;
 }
 
 @Injectable()
 export class TournamentService {
+  constructor(private readonly scheduler: TournamentScheduler) {}
+
   private tournaments: TournamentInfo[] = [
     {
       id: 't1',
@@ -19,11 +30,90 @@ export class TournamentService {
       prizePool: 1000,
       players: { current: 0, max: 100 },
       registered: false,
+      state: TournamentState.REG_OPEN,
     },
   ];
 
   list(): TournamentInfo[] {
     return this.tournaments;
+  }
+
+  getState(id: string): TournamentState | undefined {
+    return this.tournaments.find((t) => t.id === id)?.state;
+  }
+
+  async scheduleTournament(
+    tournamentId: string,
+    opts: {
+      registration: { open: Date; close: Date };
+      structure: { level: number; durationMinutes: number }[];
+      breaks: { start: Date; durationMs: number }[];
+      start: Date;
+    },
+  ): Promise<void> {
+    await this.scheduler.scheduleRegistration(
+      tournamentId,
+      opts.registration.open,
+      opts.registration.close,
+    );
+    for (const b of opts.breaks) {
+      await this.scheduler.scheduleBreak(tournamentId, b.start, b.durationMs);
+    }
+    await this.scheduler.scheduleLevelUps(
+      tournamentId,
+      opts.structure,
+      opts.start,
+    );
+  }
+
+  openRegistration(id: string): void {
+    this.setState(id, TournamentState.REG_OPEN);
+  }
+
+  start(id: string): void {
+    const t = this.get(id);
+    if (t.state !== TournamentState.REG_OPEN) {
+      throw new Error(`Invalid transition from ${t.state} to RUNNING`);
+    }
+    t.state = TournamentState.RUNNING;
+  }
+
+  pause(id: string): void {
+    const t = this.get(id);
+    if (t.state !== TournamentState.RUNNING) {
+      throw new Error(`Invalid transition from ${t.state} to PAUSED`);
+    }
+    t.state = TournamentState.PAUSED;
+  }
+
+  resume(id: string): void {
+    const t = this.get(id);
+    if (t.state !== TournamentState.PAUSED) {
+      throw new Error(`Invalid transition from ${t.state} to RUNNING`);
+    }
+    t.state = TournamentState.RUNNING;
+  }
+
+  finish(id: string): void {
+    const t = this.get(id);
+    if (
+      t.state !== TournamentState.RUNNING &&
+      t.state !== TournamentState.PAUSED
+    ) {
+      throw new Error(`Invalid transition from ${t.state} to FINISHED`);
+    }
+    t.state = TournamentState.FINISHED;
+  }
+
+  private get(id: string): TournamentInfo {
+    const t = this.tournaments.find((t) => t.id === id);
+    if (!t) throw new Error(`Tournament ${id} not found`);
+    return t;
+  }
+
+  private setState(id: string, state: TournamentState): void {
+    const t = this.get(id);
+    t.state = state;
   }
 
   /**
