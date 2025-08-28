@@ -13,6 +13,12 @@ interface Movement {
   amount: number;
 }
 
+export interface ReconcileRow {
+  account: string;
+  balance: number;
+  journal: number;
+}
+
 @Injectable()
 export class WalletService {
   private static readonly tracer = trace.getTracer('wallet');
@@ -197,6 +203,28 @@ export class WalletService {
   async totalBalance(): Promise<number> {
     const accounts = await this.accounts.find();
     return accounts.reduce((sum, acc) => sum + acc.balance, 0);
+  }
+
+  async reconcile(): Promise<ReconcileRow[]> {
+    const accounts = await this.accounts.find();
+    const report: ReconcileRow[] = [];
+    for (const acc of accounts) {
+      const { sum } =
+        (await this.journals
+          .createQueryBuilder('j')
+          .where('j.accountId = :id', { id: acc.id })
+          .select('COALESCE(SUM(j.amount),0)', 'sum')
+          .getRawOne()) || { sum: 0 };
+      const total = Number(sum);
+      if (total !== Number(acc.balance)) {
+        report.push({
+          account: acc.name,
+          balance: Number(acc.balance),
+          journal: total,
+        });
+      }
+    }
+    return report;
   }
 
   private async checkRateLimit(deviceId: string, ip: string) {
