@@ -8,6 +8,16 @@ on:
 jobs:
   canary:
     runs-on: ubuntu-latest
+    environment: production
+    env:
+      CANARY_TRAFFIC_PERCENT: 5
+      CANARY_DURATION_MINUTES: 30
+      SLO_BURN_THRESHOLD: ${{ vars.SLO_BURN_THRESHOLD }}
+      NAMESPACE: ${{ vars.K8S_NAMESPACE }}
+      SERVICE: api
+      STABLE: api
+      CANARY: api-canary
+      PROMETHEUS: ${{ vars.PROMETHEUS_URL }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Node
@@ -23,7 +33,7 @@ jobs:
           python -m pip install pyyaml >/dev/null
           python infra/observability/validate.py
       - name: Canary deploy
-        run: bash docs/scripts/canary-deploy.sh
+        run: bash infra/scripts/canary-deploy.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
