@@ -13,6 +13,7 @@ import Redis from 'ioredis';
 import { GameAction } from './engine';
 import { RoomManager } from './room.service';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { CollusionService } from '../analytics/collusion.service';
 import { ClockService } from './clock.service';
 
 import { InjectRepository } from '@nestjs/typeorm';
@@ -75,6 +76,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @InjectRepository(Hand)
     private readonly hands: Repository<Hand>,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
+    @Optional() private readonly collusion?: CollusionService,
   ) {
     this.clock.onTick((now) => {
       if (this.server) {
@@ -147,6 +149,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       clientId: client.id,
       action: { ...parsed, actionId },
     });
+
+    const { userId, deviceId, ip } = this.getClientMeta(client);
+    if (userId && deviceId && ip && this.collusion) {
+      void this.collusion.record(userId, deviceId, ip);
+    }
 
     const payload = { ...state, tick: ++this.tick };
     this.enqueue(client, 'state', payload);
@@ -300,6 +307,24 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       (client as any)?.conn?.remoteAddress ??
       client.id;
     return `${this.actionCounterKey}:${ip}`;
+  }
+
+  private getClientMeta(client: Socket) {
+    const userId =
+      (client as any)?.data?.userId ??
+      ((client.handshake?.auth as any)?.userId as string | undefined);
+    const deviceId =
+      (client as any)?.data?.deviceId ??
+      ((client.handshake?.auth as any)?.deviceId as string | undefined);
+    const xff = client.handshake?.headers?.['x-forwarded-for'] as
+      | string
+      | undefined;
+    const ip =
+      xff?.split(',')[0].trim() ??
+      client.handshake?.address ??
+      (client as any)?.conn?.remoteAddress ??
+      client.id;
+    return { userId, deviceId, ip };
   }
 
   private async isRateLimited(client: Socket): Promise<boolean> {

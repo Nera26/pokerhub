@@ -12,3 +12,7 @@ export const FlaggedSessionSchema = z.object({
   status: ReviewStatusSchema,
 });
 export type FlaggedSession = z.infer<typeof FlaggedSessionSchema>;
+export const FlaggedSessionsResponseSchema = z.array(FlaggedSessionSchema);
+export type FlaggedSessionsResponse = z.infer<
+  typeof FlaggedSessionsResponseSchema
+>;

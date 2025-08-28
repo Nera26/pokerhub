@@ -23,3 +23,15 @@ This document outlines the STRIDE threat model for PokerHub.
 ## Elevation of Privilege
 - KYC verification and sanctions screening prevent prohibited users from accessing funds.
 
+## Incident Triage Workflow
+1. Automated detectors flag anomalies and collusion signals.
+2. Review flagged sessions via the admin dashboard and correlate with logs.
+3. Escalate confirmed incidents to the security team for deeper analysis.
+4. Document findings and track them through resolution.
+
+## Mitigation Steps
+- Restrict or ban offending accounts using the review APIs.
+- Invalidate active sessions and rotate credentials when compromise is suspected.
+- Apply rate limits or temporary table locks to contain live attacks.
+- Update analytics rules and monitoring thresholds based on post-mortem lessons.
+
