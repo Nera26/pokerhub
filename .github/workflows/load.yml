@@ -120,3 +120,21 @@ jobs:
         with:
           name: tournament-10k-summary
           path: tournament-summary.json
+
+  chaos-reconnect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply network chaos
+        run: kubectl apply -f infra/tests/load/chaos/network-latency.yaml
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          npm ci
+      - name: Verify reconnect resume without duplicates
+        run: |
+          cd backend
+          npm test -- test/game/reconnect.spec.ts
+      - name: Cleanup chaos
+        if: always()
+        run: kubectl delete -f infra/tests/load/chaos/network-latency.yaml || true
