@@ -3,10 +3,10 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { fetchHandProof } from '@/lib/api/hands';
-import type { HandProofResponse } from '@shared/types';
+import type { HandProof } from '@shared/types';
 
 export function useHandProof(handId: string, enabled = true) {
-  return useQuery<HandProofResponse>({
+  return useQuery<HandProof>({
     queryKey: ['handProof', handId],
     queryFn: ({ signal }) => fetchHandProof(handId, { signal }),
     enabled: Boolean(handId) && enabled,

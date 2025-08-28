@@ -12,30 +12,13 @@ import { Repository } from 'typeorm';
 import { Hand } from '../database/entities/hand.entity';
 import { HandLog } from '../game/hand-log';
 import { HandStateResponse as HandStateResponseSchema } from '../schemas/hands';
-import type {
-  HandProofResponse,
-  HandLogResponse,
-  HandStateResponse,
-} from '../schemas/hands';
+import type { HandLogResponse, HandStateResponse } from '../schemas/hands';
 
 @Controller('hands')
 export class HandsController {
   constructor(
     @InjectRepository(Hand) private readonly hands: Repository<Hand>,
   ) {}
-
-  @Get(':id/proof')
-  async getProof(@Param('id') id: string): Promise<HandProofResponse> {
-    const hand = await this.hands.findOne({ where: { id } });
-    if (!hand) {
-      throw new NotFoundException('hand not found');
-    }
-    return {
-      seed: hand.seed!,
-      nonce: hand.nonce!,
-      commitment: hand.commitment,
-    };
-  }
 
   @Get(':id/log')
   @Header('Content-Type', 'text/plain')

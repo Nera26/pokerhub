@@ -353,6 +353,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HandProof'
+        '404':
+          description: Hand not found
 
   /hands/{id}/log:
     get:

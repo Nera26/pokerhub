@@ -2,10 +2,10 @@ import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import request from 'supertest';
-import { HandsController } from '../../src/routes/hands.controller';
+import { HandController } from '../../src/game/hand.controller';
 import { Hand } from '../../src/database/entities/hand.entity';
 
-describe('HandsController', () => {
+describe('HandController', () => {
   let app: INestApplication;
   const store = new Map<string, Hand>();
   const repo = {
@@ -18,7 +18,7 @@ describe('HandsController', () => {
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      controllers: [HandsController],
+      controllers: [HandController],
       providers: [{ provide: getRepositoryToken(Hand), useValue: repo }],
     }).compile();
 
