@@ -95,6 +95,34 @@ describe('GameGateway fuzz tests', () => {
     );
   });
 
+  it('processes out-of-order action frames gracefully', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.array(fc.string(), { minLength: 2, maxLength: 5 }),
+        async (ids) => {
+          const gateway = new GameGateway(
+            new RoomManager() as any,
+            new DummyAnalytics() as any,
+            new ClockService(),
+            new DummyRepo() as any,
+            new DummyRedis() as any,
+          );
+          const client: any = { id: 'c1', emit: jest.fn() };
+          const actions = ids.map(
+            (id) => ({ type: 'next', tableId: 'default', actionId: id } as any),
+          );
+          for (const action of actions.slice().reverse()) {
+            await gateway.handleAction(client, action);
+          }
+          const ackCount = client.emit.mock.calls.filter(
+            ([ev]: any[]) => ev === 'action:ack',
+          ).length;
+          expect(ackCount).toBe(ids.length);
+        },
+      ),
+    );
+  });
+
   it('acknowledges replayed actionIds', async () => {
     await fc.assert(
       fc.asyncProperty(fc.string(), async (id) => {

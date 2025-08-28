@@ -66,4 +66,21 @@ describe('GameEngine property tests', () => {
       }),
     );
   });
+
+  it('maintains double-entry and non-negative stacks at each step', () => {
+    fc.assert(
+      fc.property(fc.array(actionArb, { maxLength: 20 }), (actions) => {
+        const engine = new GameEngine(players);
+        const initialTotal = totalChips(engine.getState());
+        actions.forEach((a) => {
+          engine.applyAction(a);
+          const state = engine.getState();
+          expect(totalChips(state)).toBe(initialTotal);
+          state.players.forEach((p) => {
+            expect(p.stack).toBeGreaterThanOrEqual(0);
+          });
+        });
+      }),
+    );
+  });
 });
