@@ -213,6 +213,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HandProof'
+  /review/sessions:
+    get:
+      summary: List flagged sessions
+      responses:
+        '200':
+          description: Flagged sessions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlaggedSessionsResponse'
+  /review/sessions/{id}/{action}:
+    post:
+      summary: Apply review action
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: action
+          required: true
+          schema:
+            $ref: '#/components/schemas/ReviewAction'
+      responses:
+        '200':
+          description: Action applied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
 components:
   schemas:
     StatusResponse:
@@ -420,10 +451,32 @@ components:
         format: date-time
     required:
       - startTime
-  LeaderboardResponse:
-    type: array
-    items:
-      $ref: '#/components/schemas/LeaderboardEntry'
+    LeaderboardResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/LeaderboardEntry'
+    ReviewAction:
+      type: string
+      enum: [warn, restrict, ban]
+    ReviewStatus:
+      type: string
+      enum: [flagged, warn, restrict, ban]
+    FlaggedSession:
+      type: object
+      properties:
+        id:
+          type: string
+        users:
+          type: array
+          items:
+            type: string
+        status:
+          $ref: '#/components/schemas/ReviewStatus'
+      required: [id, users, status]
+    FlaggedSessionsResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/FlaggedSession'
   LeaderboardEntry:
     type: object
     properties:
@@ -442,11 +495,11 @@ components:
     properties:
       seed:
         type: string
-        nonce:
-          type: string
-        commitment:
-          type: string
-      required:
-        - seed
-        - nonce
-        - commitment
+      nonce:
+        type: string
+      commitment:
+        type: string
+    required:
+      - seed
+      - nonce
+      - commitment

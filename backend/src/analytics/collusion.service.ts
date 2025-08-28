@@ -1,5 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import Redis from 'ioredis';
+import {
+  calculateVpipCorrelation,
+  calculateTimingSimilarity,
+} from './collusion.model';
 
 @Injectable()
 export class CollusionService {
@@ -13,6 +17,8 @@ export class CollusionService {
   ) {
     await this.redis.sadd(`collusion:device:${deviceId}`, userId);
     await this.redis.sadd(`collusion:ip:${ip}`, userId);
+    await this.redis.sadd(`collusion:user:devices:${userId}`, deviceId);
+    await this.redis.sadd(`collusion:user:ips:${userId}`, ip);
     await this.redis.zadd(
       `collusion:times:${userId}`,
       timestamp,
@@ -36,5 +42,74 @@ export class CollusionService {
       }
     }
     return false;
+  }
+
+  private async shared(
+    keyA: string,
+    keyB: string,
+  ): Promise<string[]> {
+    const [a, b] = await Promise.all([
+      this.redis.smembers(keyA),
+      this.redis.smembers(keyB),
+    ]);
+    return a.filter((v) => b.includes(v));
+  }
+
+  async extractFeatures(
+    userA: string,
+    userB: string,
+    vpipA: number[],
+    vpipB: number[],
+  ) {
+    const [sharedDevices, sharedIps, timesA, timesB] = await Promise.all([
+      this.shared(`collusion:user:devices:${userA}`, `collusion:user:devices:${userB}`),
+      this.shared(`collusion:user:ips:${userA}`, `collusion:user:ips:${userB}`),
+      this.redis
+        .zrange(`collusion:times:${userA}`, 0, -1)
+        .then((t) => t.map(Number)),
+      this.redis
+        .zrange(`collusion:times:${userB}`, 0, -1)
+        .then((t) => t.map(Number)),
+    ]);
+    return {
+      sharedDevices,
+      sharedIps,
+      vpipCorrelation: calculateVpipCorrelation(vpipA, vpipB),
+      timingSimilarity: calculateTimingSimilarity(timesA, timesB),
+    };
+  }
+
+  async flagSession(
+    sessionId: string,
+    users: string[],
+    features: Record<string, unknown>,
+  ) {
+    await this.redis.hset(`collusion:session:${sessionId}`, {
+      users: JSON.stringify(users),
+      status: 'flagged',
+      features: JSON.stringify(features),
+    });
+    await this.redis.sadd('collusion:flagged', sessionId);
+  }
+
+  async listFlaggedSessions() {
+    const ids = await this.redis.smembers('collusion:flagged');
+    const result = [];
+    for (const id of ids) {
+      const data = await this.redis.hgetall(`collusion:session:${id}`);
+      result.push({
+        id,
+        users: JSON.parse(data.users ?? '[]'),
+        status: data.status ?? 'flagged',
+      });
+    }
+    return result;
+  }
+
+  async applyAction(
+    sessionId: string,
+    action: 'warn' | 'restrict' | 'ban',
+  ) {
+    await this.redis.hset(`collusion:session:${sessionId}`, { status: action });
   }
 }

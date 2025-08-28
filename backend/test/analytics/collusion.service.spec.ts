@@ -5,6 +5,7 @@ describe('CollusionService', () => {
   class MockRedis {
     sets = new Map<string, Set<string>>();
     sorted = new Map<string, number[]>();
+    hashes = new Map<string, Record<string, string>>();
     async sadd(key: string, value: string) {
       if (!this.sets.has(key)) this.sets.set(key, new Set());
       this.sets.get(key)!.add(value);
@@ -21,6 +22,13 @@ describe('CollusionService', () => {
     async zrange(key: string, start: number, stop: number) {
       const arr = this.sorted.get(key) ?? [];
       return arr.map((n) => n.toString());
+    }
+    async hset(key: string, obj: Record<string, string>) {
+      if (!this.hashes.has(key)) this.hashes.set(key, {});
+      Object.assign(this.hashes.get(key)!, obj);
+    }
+    async hgetall(key: string) {
+      return this.hashes.get(key) ?? {};
     }
   }
 
@@ -45,5 +53,21 @@ describe('CollusionService', () => {
     );
     await service.record('u1', 'd1', '1.1.1.1', 1005);
     expect(await service.hasFastActions('u1', 10)).toBe(true);
+  });
+
+  it('extracts features and flags sessions', async () => {
+    await service.record('u1', 'd1', '2.2.2.2', 1000);
+    await service.record('u2', 'd1', '2.2.2.2', 1000);
+    const features = await service.extractFeatures('u1', 'u2', [1, 0, 1], [1, 0, 1]);
+    expect(features.sharedDevices).toEqual(['d1']);
+    expect(features.sharedIps).toEqual(['2.2.2.2']);
+    expect(features.vpipCorrelation).toBeCloseTo(1);
+    expect(features.timingSimilarity).toBeCloseTo(1);
+    await service.flagSession('s1', ['u1', 'u2'], features);
+    let flagged = await service.listFlaggedSessions();
+    expect(flagged[0]).toMatchObject({ id: 's1', status: 'flagged' });
+    await service.applyAction('s1', 'warn');
+    flagged = await service.listFlaggedSessions();
+    expect(flagged[0].status).toBe('warn');
   });
 });
