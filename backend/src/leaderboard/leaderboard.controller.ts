@@ -1,4 +1,11 @@
-import { Controller, Get, Post, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Query,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { LeaderboardService } from './leaderboard.service';
 import { LeaderboardRebuildQuerySchema } from '../schemas/leaderboard';
 
@@ -12,6 +19,7 @@ export class LeaderboardController {
   }
 
   @Post('rebuild')
+  @HttpCode(HttpStatus.ACCEPTED)
   rebuild(@Query() query: unknown) {
     const { days } = LeaderboardRebuildQuerySchema.parse(query);
     void this.leaderboardService.rebuild({ days });
