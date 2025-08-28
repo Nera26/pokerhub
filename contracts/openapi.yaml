@@ -283,18 +283,12 @@ paths:
   /hands/{id}/log:
     get:
       summary: Export hand log
-
-  /hands/{id}/state/{actionIndex}:
-    get:
-      summary: Reconstruct hand state at action index
-
       parameters:
         - in: path
           name: id
           required: true
           schema:
             type: string
-
       responses:
         '200':
           description: Hand log entries
@@ -303,6 +297,15 @@ paths:
               schema:
                 type: string
 
+  /hands/{id}/state/{actionIndex}:
+    get:
+      summary: Reconstruct hand state at action index
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
         - in: path
           name: actionIndex
           required: true
@@ -314,24 +317,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HandState'
-
-  /game/hand/{id}/log:
-    get:
-      summary: Export hand log
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Hand log entries
-          content:
-            text/plain:
-              schema:
-                type: string
+                $ref: '#/components/schemas/HandStateResponse'
   /review/sessions:
     get:
       summary: List flagged sessions
@@ -755,7 +741,7 @@ components:
       - seed
       - nonce
       - commitment
-  HandState:
+  HandStateResponse:
     type: object
     properties:
       street:
