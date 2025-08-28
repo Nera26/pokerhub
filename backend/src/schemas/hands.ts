@@ -7,3 +7,6 @@ export const HandProofResponse = z.object({
 });
 
 export type HandProofResponse = z.infer<typeof HandProofResponse>;
+
+export const HandLogResponse = z.string();
+export type HandLogResponse = z.infer<typeof HandLogResponse>;

@@ -16,10 +16,11 @@ To ensure every deck is provably fair, PokerHub uses a commit–reveal scheme ba
 
 Players or auditors can reproduce the deck:
 
-1. Fetch the proof after the hand ends:
+1. Fetch the hand log and proof after the hand ends:
 
 ```sh
-curl /hands/<handId>/proof
+curl /hands/<handId>/log   # JSONL entries
+curl /hands/<handId>/proof # { seed, nonce, commitment }
 ```
 
 2. Run the verifier with the returned values:
@@ -30,4 +31,4 @@ npx ts-node backend/src/game/verify.ts <seed> <nonce> [commitment]
 
 3. Recompute `sha256(seed || nonce)` and confirm it matches the published `commitment`.
 4. Feed `seed` into the verifier to obtain the deterministic deck order.
-5. Compare the deck with cards dealt during the hand to prove fairness.
+5. Parse the JSONL log to reconstruct deals and compare with observed cards to prove fairness.
