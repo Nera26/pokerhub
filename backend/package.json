@@ -41,6 +41,7 @@
     "@nestjs/websockets": "^11.1.6",
     "@opentelemetry/auto-instrumentations-node": "^0.50.2",
     "@opentelemetry/exporter-trace-otlp-http": "^0.50.0",
+    "@opentelemetry/exporter-prometheus": "^0.50.0",
     "@opentelemetry/sdk-node": "^0.50.0",
     "amqplib": "^0.10.9",
     "bullmq": "^5.58.2",

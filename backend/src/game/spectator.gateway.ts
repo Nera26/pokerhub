@@ -5,11 +5,17 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { RoomManager } from './room.service';
+import { metrics } from '@opentelemetry/api';
 
 @WebSocketGateway({ namespace: 'spectate' })
 export class SpectatorGateway implements OnGatewayConnection {
   @WebSocketServer()
   server!: Server;
+  private static readonly meter = metrics.getMeter('game');
+  private static readonly droppedFrames = SpectatorGateway.meter.createCounter(
+    'game_frames_dropped_total',
+    { description: 'Number of state frames dropped for disconnected clients' },
+  );
 
   constructor(private readonly rooms: RoomManager) {}
 
@@ -18,7 +24,13 @@ export class SpectatorGateway implements OnGatewayConnection {
     const room = this.rooms.get(tableId);
     void client.join(tableId);
     client.emit('state', room.getPublicState());
-    const listener = () => client.emit('state', room.getPublicState());
+    const listener = () => {
+      if (client.connected) {
+        client.emit('state', room.getPublicState());
+      } else {
+        SpectatorGateway.droppedFrames.add(1);
+      }
+    };
     room.on('state', listener);
     client.on('disconnect', () => room.off('state', listener));
   }

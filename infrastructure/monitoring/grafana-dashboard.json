@@ -21,6 +21,46 @@
             "query": "SELECT sum(amount) AS credits, toStartOfHour(timestamp) AS ts FROM wallet_credit GROUP BY ts ORDER BY ts"
           }
         ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Request Latency",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.9, sum(rate(http_server_requests_duration_seconds_bucket[5m])) by (le))"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "CPU Usage",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(process_cpu_seconds_total[1m])"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Error Rate",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(http_server_requests_errors_total[5m])"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Dropped Frames",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(game_frames_dropped_total[5m])"
+          }
+        ]
       }
     ]
   }
