@@ -55,11 +55,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     { event: string; data: unknown }[]
   >();
 
-  private readonly queues = new Map<
-    string,
-    { event: string; data: unknown }[]
-  >();
-
   private readonly sending = new Set<string>();
   private readonly actionCounterKey = 'game:action_counter';
 
