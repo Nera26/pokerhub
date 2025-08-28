@@ -26,6 +26,7 @@ import {
   type GameAction as WireGameAction,
 } from '@shared/types';
 import { metrics } from '@opentelemetry/api';
+import PQueue from 'p-queue';
 
 /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-redundant-type-constituents */
 
@@ -55,12 +56,19 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private readonly processed = new Set<string>();
 
+
   private readonly queues = new Map<
     string,
     { event: string; data: unknown; critical?: boolean }[]
   >();
 
   private readonly sending = new Set<string>();
+=======
+  private readonly queues = new Map<string, PQueue>();
+  private readonly queueLimit = Number(
+    process.env.GATEWAY_QUEUE_LIMIT ?? '100',
+  );
+
   private readonly actionCounterKey = 'game:action_counter';
 
   private readonly frameAcks = new Map<
@@ -107,6 +115,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleDisconnect(client: Socket) {
     this.logger.debug(`Client disconnected: ${client.id}`);
     this.clock.clearTimer(client.id);
+
     const frames = this.frameAcks.get(client.id);
     if (frames) {
       for (const f of frames.values()) {
@@ -114,6 +123,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
       this.frameAcks.delete(client.id);
     }
+=======
+    this.queues.get(client.id)?.clear();
+    this.queues.delete(client.id);
+
   }
 
   @SubscribeMessage('action')
@@ -234,12 +247,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     if (await this.isRateLimited(client)) return;
     if (!this.hands) {
-      client.emit('server:Error', 'proof unavailable');
+      this.enqueue(client, 'server:Error', 'proof unavailable');
       return;
     }
     const hand = await this.hands.findOne({ where: { id: payload.handId } });
     if (!hand || !hand.seed || !hand.nonce) {
-      client.emit('server:Error', 'proof unavailable');
+      this.enqueue(client, 'server:Error', 'proof unavailable');
       return;
     }
     this.enqueue(
@@ -309,6 +322,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     critical = false,
   ) {
     const id = client.id;
+
     const queue = this.queues.get(id) ?? [];
     queue.push({ event, data, critical });
     this.queues.set(id, queue);
@@ -332,6 +346,20 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     this.sending.delete(id);
     this.flush(client);
+=======
+    let queue = this.queues.get(id);
+    if (!queue) {
+      queue = new PQueue({ concurrency: 1, intervalCap: 30, interval: 10_000 });
+      this.queues.set(id, queue);
+    }
+    if (queue.size + queue.pending >= this.queueLimit) {
+      client.emit('server:Error', 'throttled');
+      return;
+    }
+    void queue.add(async () => {
+      client.emit(event, data);
+    });
+
   }
 
   private trackFrame(
@@ -420,7 +448,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleReplay(@ConnectedSocket() client: Socket) {
     const room = this.rooms.get('default');
     const state = await room.replay();
-    client.emit('state', { ...state, tick: this.tick });
+    this.enqueue(client, 'state', { ...state, tick: this.tick });
   }
 
   private async handleTimeout(playerId: string) {
