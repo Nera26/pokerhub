@@ -57,10 +57,11 @@ export class AnalyticsService {
       );
       return;
     }
-    await this.producer.send({
-      topic: event,
-      messages: [{ value: JSON.stringify(data) }],
-    });
+    const payload = { value: JSON.stringify(data) };
+    await Promise.all([
+      this.producer.send({ topic: event, messages: [payload] }),
+      this.ingest(event.replace('.', '_'), data as Record<string, any>),
+    ]);
   }
 
   async recordGameEvent(event: Record<string, any>) {
