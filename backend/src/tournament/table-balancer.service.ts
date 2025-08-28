@@ -11,6 +11,8 @@ import { TournamentService } from './tournament.service';
  */
 @Injectable()
 export class TableBalancerService {
+  private readonly lastMoved = new Map<string, Map<string, number>>();
+
   constructor(
     @InjectRepository(Table) private readonly tables: Repository<Table>,
     private readonly tournamentService: TournamentService,
@@ -35,10 +37,16 @@ export class TableBalancerService {
     const max = Math.max(...counts);
     const min = Math.min(...counts);
     if (max - min > 1) {
+      let recentlyMoved = this.lastMoved.get(tournamentId);
+      if (!recentlyMoved) {
+        recentlyMoved = new Map();
+        this.lastMoved.set(tournamentId, recentlyMoved);
+      }
       await this.tournamentService.balanceTournament(
         tournamentId,
         currentHand,
         avoidWithin,
+        recentlyMoved,
       );
       return true;
     }
