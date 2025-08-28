@@ -2,28 +2,7 @@ import { z, type ZodType } from 'zod';
 import { getBaseUrl } from '@/lib/base-url';
 import { handleResponse, ApiError } from './client';
 import { serverFetch } from '@/lib/server-fetch';
-import type { GameType } from '@/types/game-type';
-import { TournamentSchema, type Tournament } from '@shared/types';
-
-const gameTypeEnum = z.enum(['texas', 'omaha', 'allin', 'tournaments']);
-
-const TableSchema = z.object({
-  id: z.string(),
-  tableName: z.string(),
-  gameType: gameTypeEnum,
-  stakes: z.object({ small: z.number(), big: z.number() }),
-  players: z.object({ current: z.number(), max: z.number() }),
-  buyIn: z.object({ min: z.number(), max: z.number() }),
-  stats: z.object({
-    handsPerHour: z.number(),
-    avgPot: z.number(),
-    rake: z.number(),
-  }),
-  createdAgo: z.string(),
-});
-export type Table = Omit<z.infer<typeof TableSchema>, 'gameType'> & {
-  gameType: GameType;
-};
+import { TableSchema, type Table, TournamentSchema, type Tournament } from '@shared/types';
 
 export async function fetchLobbyData<T>(
   endpoint: string,
