@@ -1,17 +1,23 @@
 import fc from 'fast-check';
+jest.mock('../../src/game/room.service', () => ({
+  RoomManager: class {
+    get() {
+      return {
+        apply: async () => ({ street: 'preflop', pot: 0, players: [] }),
+        getPublicState: async () => ({
+          street: 'preflop',
+          pot: 0,
+          players: [],
+        }),
+      } as any;
+    }
+  },
+}));
 import { GameGateway } from '../../src/game/game.gateway';
 import { RoomManager } from '../../src/game/room.service';
 import { ClockService } from '../../src/game/clock.service';
 
 // Simple stubs for dependencies
-class DummyRoom extends RoomManager {
-  override get() {
-    return {
-      apply: async () => ({ street: 'preflop', pot: 0, players: [] }),
-      getPublicState: async () => ({ street: 'preflop', pot: 0, players: [] }),
-    } as any;
-  }
-}
 
 class DummyAnalytics {
   async recordGameEvent(): Promise<void> {}
@@ -35,14 +41,21 @@ class DummyRedis {
   }
 }
 
+class DummyRepo {
+  async findOne() {
+    return null;
+  }
+}
+
 describe('GameGateway fuzz tests', () => {
   it('handles malformed actions without throwing', async () => {
     await fc.assert(
       fc.asyncProperty(fc.object(), async (payload) => {
         const gateway = new GameGateway(
-          new DummyRoom() as any,
+          new RoomManager() as any,
           new DummyAnalytics() as any,
           new ClockService(),
+          new DummyRepo() as any,
           new DummyRedis() as any,
         );
         const client: any = { id: 'c1', emit: jest.fn() };
@@ -51,8 +64,10 @@ describe('GameGateway fuzz tests', () => {
           gateway.handleAction(client, { ...payload, actionId: 'x' } as any),
         ).resolves.toBeUndefined();
 
-        await gateway.handleAction(client, { ...payload, actionId: 'x' } as any);
-
+        await gateway.handleAction(client, {
+          ...payload,
+          actionId: 'x',
+        } as any);
       }),
     );
   });
@@ -61,9 +76,10 @@ describe('GameGateway fuzz tests', () => {
     await fc.assert(
       fc.asyncProperty(fc.string(), async (id) => {
         const gateway = new GameGateway(
-          new DummyRoom() as any,
+          new RoomManager() as any,
           new DummyAnalytics() as any,
           new ClockService(),
+          new DummyRepo() as any,
           new DummyRedis() as any,
         );
         const client: any = { id: 'c1', emit: jest.fn() };
