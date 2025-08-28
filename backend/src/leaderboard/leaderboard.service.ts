@@ -13,6 +13,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 @Injectable()
 export class LeaderboardService {
   private readonly cacheKey = 'leaderboard:hot';
+  private readonly dataKey = 'leaderboard:data';
   private readonly ttl = 30; // seconds
   private static readonly meter = metrics.getMeter('leaderboard');
   private static readonly rebuildEventsDuration =
@@ -27,7 +28,7 @@ export class LeaderboardService {
   constructor(
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
-    @InjectRepository(User) private readonly userRepo: Repository<User>,
+    @InjectRepository(User) private readonly _userRepo: Repository<User>,
     private readonly analytics: AnalyticsService,
   ) {
     setInterval(
@@ -203,7 +204,10 @@ export class LeaderboardService {
       }))
       .slice(0, 100);
 
-    await this.cache.set(this.cacheKey, leaders, { ttl: this.ttl });
+    await Promise.all([
+      this.cache.set(this.dataKey, leaders),
+      this.cache.set(this.cacheKey, leaders, { ttl: this.ttl }),
+    ]);
   }
 
   private async fetchTopPlayers(): Promise<
@@ -216,17 +220,16 @@ export class LeaderboardService {
       hours: number;
     }[]
   > {
-    const users = await this.userRepo.find({
-      order: { username: 'ASC' },
-      take: 3,
-    });
-    return users.map((u, idx) => ({
-      playerId: u.username,
-      rank: idx + 1,
-      points: 0,
-      net: 0,
-      bb100: 0,
-      hours: 0,
-    }));
+    const cached = await this.cache.get<
+      {
+        playerId: string;
+        rank: number;
+        points: number;
+        net: number;
+        bb100: number;
+        hours: number;
+      }[]
+    >(this.dataKey);
+    return cached ?? [];
   }
 }
