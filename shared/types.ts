@@ -13,6 +13,12 @@ export type ServiceStatusResponse = z.infer<
   typeof ServiceStatusResponseSchema
 >;
 
+export const LoginRequestSchema = z.object({
+  email: z.string().email(),
+  password: z.string(),
+});
+export type LoginRequest = z.infer<typeof LoginRequestSchema>;
+
 export const LoginResponseSchema = z.object({
   token: z.string(),
 });
@@ -22,6 +28,26 @@ export const MessageResponseSchema = z.object({
   message: z.string(),
 });
 export type MessageResponse = z.infer<typeof MessageResponseSchema>;
+
+export const RequestResetRequestSchema = z.object({
+  email: z.string().email(),
+});
+export type RequestResetRequest = z.infer<typeof RequestResetRequestSchema>;
+
+export const VerifyResetCodeRequestSchema = z.object({
+  email: z.string().email(),
+  code: z.string(),
+});
+export type VerifyResetCodeRequest = z.infer<
+  typeof VerifyResetCodeRequestSchema
+>;
+
+export const ResetPasswordRequestSchema = z.object({
+  email: z.string().email(),
+  code: z.string(),
+  password: z.string(),
+});
+export type ResetPasswordRequest = z.infer<typeof ResetPasswordRequestSchema>;
 
 export const AmountSchema = z.object({
   amount: z.number().int().positive(),
