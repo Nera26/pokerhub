@@ -5,7 +5,13 @@ if (!parentPort) {
   throw new Error('Worker must be run as a worker thread');
 }
 
-const engine = new GameEngine(workerData.playerIds);
+const engine = new GameEngine(
+  workerData.playerIds,
+  undefined,
+  undefined,
+  undefined,
+  workerData.tableId,
+);
 
 parentPort.on('message', (msg: { type: string; seq: number; action?: GameAction }) => {
   let state: GameState;
