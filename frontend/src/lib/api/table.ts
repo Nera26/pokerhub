@@ -135,8 +135,8 @@ export function joinTable(tableId: string) {
   return emitWithAck('join', { tableId });
 }
 
-export function bet(tableId: string, amount: number) {
-  return sendAction({ type: 'bet', tableId, amount });
+export function bet(tableId: string, playerId: string, amount: number) {
+  return sendAction({ type: 'bet', tableId, playerId, amount });
 }
 
 export function buyIn(tableId: string, amount: number) {
