@@ -9,6 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Inject, Logger, Optional } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
+import { randomUUID } from 'crypto';
 import Redis from 'ioredis';
 import { GameAction } from './engine';
 import { RoomManager } from './room.service';
@@ -34,6 +35,10 @@ interface AckPayload {
   duplicate?: boolean;
 }
 
+interface FrameAckPayload {
+  frameId: string;
+}
+
 @WebSocketGateway({ namespace: 'game' })
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(GameGateway.name);
@@ -51,11 +56,26 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private readonly processed = new Set<string>();
 
+
+  private readonly queues = new Map<
+    string,
+    { event: string; data: unknown; critical?: boolean }[]
+  >();
+
+  private readonly sending = new Set<string>();
+=======
   private readonly queues = new Map<string, PQueue>();
   private readonly queueLimit = Number(
     process.env.GATEWAY_QUEUE_LIMIT ?? '100',
   );
+
   private readonly actionCounterKey = 'game:action_counter';
+
+  private readonly frameAcks = new Map<
+    string,
+    Map<string, { event: string; payload: Record<string, unknown>; attempt: number; timeout?: ReturnType<typeof setTimeout> }>
+  >();
+  private readonly maxFrameAttempts = 5;
 
   @WebSocketServer()
   server!: Server;
@@ -95,8 +115,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleDisconnect(client: Socket) {
     this.logger.debug(`Client disconnected: ${client.id}`);
     this.clock.clearTimer(client.id);
+
+    const frames = this.frameAcks.get(client.id);
+    if (frames) {
+      for (const f of frames.values()) {
+        if (f.timeout) clearTimeout(f.timeout);
+      }
+      this.frameAcks.delete(client.id);
+    }
+=======
     this.queues.get(client.id)?.clear();
     this.queues.delete(client.id);
+
   }
 
   @SubscribeMessage('action')
@@ -152,7 +182,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     const payload = { ...state, tick: ++this.tick };
-    this.enqueue(client, 'state', payload);
+    this.enqueue(client, 'state', payload, true);
 
     if (this.server?.of) {
       const publicState = await room.getPublicState();
@@ -225,11 +255,29 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.enqueue(client, 'server:Error', 'proof unavailable');
       return;
     }
-    this.enqueue(client, 'proof', {
-      commitment: hand.commitment,
-      seed: hand.seed,
-      nonce: hand.nonce,
-    });
+    this.enqueue(
+      client,
+      'proof',
+      {
+        commitment: hand.commitment,
+        seed: hand.seed,
+        nonce: hand.nonce,
+      },
+      true,
+    );
+  }
+
+  @SubscribeMessage('frame:ack')
+  handleFrameAck(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: FrameAckPayload,
+  ) {
+    const frames = this.frameAcks.get(client.id);
+    const frame = frames?.get(payload.frameId);
+    if (frame) {
+      if (frame.timeout) clearTimeout(frame.timeout);
+      frames!.delete(payload.frameId);
+    }
   }
 
   private async acknowledge(
@@ -267,8 +315,38 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
-  private enqueue(client: Socket, event: string, data: unknown) {
+  private enqueue(
+    client: Socket,
+    event: string,
+    data: unknown,
+    critical = false,
+  ) {
     const id = client.id;
+
+    const queue = this.queues.get(id) ?? [];
+    queue.push({ event, data, critical });
+    this.queues.set(id, queue);
+    this.flush(client);
+  }
+
+  private flush(client: Socket) {
+    const id = client.id;
+    if (this.sending.has(id)) return;
+    const queue = this.queues.get(id);
+    if (!queue || queue.length === 0) return;
+    this.sending.add(id);
+    const { event, data, critical } = queue.shift()!;
+    let payload = data;
+    if (critical) {
+      payload = { ...(data as Record<string, unknown>), frameId: randomUUID() };
+    }
+    client.emit(event, payload);
+    if (critical) {
+      this.trackFrame(client, event, payload as Record<string, unknown>);
+    }
+    this.sending.delete(id);
+    this.flush(client);
+=======
     let queue = this.queues.get(id);
     if (!queue) {
       queue = new PQueue({ concurrency: 1, intervalCap: 30, interval: 10_000 });
@@ -281,6 +359,40 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     void queue.add(async () => {
       client.emit(event, data);
     });
+
+  }
+
+  private trackFrame(
+    client: Socket,
+    event: string,
+    payload: Record<string, unknown>,
+  ) {
+    const id = client.id;
+    const frameId = payload.frameId as string;
+    const frames = this.frameAcks.get(id) ?? new Map();
+    this.frameAcks.set(id, frames);
+    const frame = { event, payload, attempt: 1 } as {
+      event: string;
+      payload: Record<string, unknown>;
+      attempt: number;
+      timeout?: ReturnType<typeof setTimeout>;
+    };
+    frames.set(frameId, frame);
+    const retry = () => {
+      if (!frames.has(frameId)) return;
+      if (frame.attempt >= this.maxFrameAttempts) {
+        frames.delete(frameId);
+        return;
+      }
+      const delay = Math.pow(2, frame.attempt) * 100;
+      frame.timeout = setTimeout(() => {
+        if (!frames.has(frameId)) return;
+        client.emit(event, payload);
+        frame.attempt++;
+        retry();
+      }, delay);
+    };
+    retry();
   }
 
   private getRateLimitKey(client: Socket): string {

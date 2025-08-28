@@ -6,6 +6,17 @@ import { serverFetch } from '@/lib/server-fetch';
 import { getSocket } from '@/app/utils/socket';
 import { GameActionSchema, type GameAction } from '@shared/types';
 
+if (typeof window !== 'undefined') {
+  const socket = getSocket();
+  const sendAck = (payload: { frameId?: string }) => {
+    if (payload?.frameId) {
+      socket.emit('frame:ack', { frameId: payload.frameId });
+    }
+  };
+  socket.on('state', sendAck);
+  socket.on('proof', sendAck);
+}
+
 const PlayerSchema = z.object({
   id: z.number(),
   username: z.string(),
