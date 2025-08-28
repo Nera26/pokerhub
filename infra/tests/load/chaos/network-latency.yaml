@@ -1,9 +1,9 @@
 apiVersion: chaos-mesh.org/v1alpha1
 kind: NetworkChaos
 metadata:
-  name: room-worker-network-delay
+  name: room-worker-netem
 spec:
-  action: delay
+  action: netem
   mode: one
   selector:
     namespaces:
@@ -11,7 +11,12 @@ spec:
     labelSelectors:
       app: room-worker
   delay:
-    latency: '100ms'
+    latency: '200ms'
+    jitter: '200ms'
+    correlation: '0'
+  loss:
+    loss: '5'
+    correlation: '0'
   duration: '1m'
   scheduler:
     cron: '0 */1 * * *'
