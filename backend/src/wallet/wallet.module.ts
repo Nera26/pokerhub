@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Account } from './account.entity';
 import { JournalEntry } from './journal-entry.entity';
 import { Disbursement } from './disbursement.entity';
+import { SettlementJournal } from './settlement-journal.entity';
 import { WalletService } from './wallet.service';
 import { WalletController } from '../routes/wallet.controller';
 import { EventsModule } from '../events/events.module';
@@ -22,7 +23,12 @@ class DisbursementWorker implements OnModuleInit {
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Account, JournalEntry, Disbursement]),
+    TypeOrmModule.forFeature([
+      Account,
+      JournalEntry,
+      Disbursement,
+      SettlementJournal,
+    ]),
     EventsModule,
     RedisModule,
   ],

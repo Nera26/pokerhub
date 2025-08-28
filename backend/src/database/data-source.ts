@@ -6,6 +6,7 @@ import { User } from './entities/user.entity';
 import { Seat } from './entities/seat.entity';
 import { Account } from '../wallet/account.entity';
 import { JournalEntry } from '../wallet/journal-entry.entity';
+import { SettlementJournal } from '../wallet/settlement-journal.entity';
 import { Hand } from './entities/hand.entity';
 import { AntiCheatFlag } from './entities/antiCheatFlag.entity';
 import { KycVerification } from './entities/kycVerification.entity';
@@ -20,6 +21,7 @@ export const AppDataSource = new DataSource({
     Seat,
     Account,
     JournalEntry,
+    SettlementJournal,
     Hand,
     AntiCheatFlag,
     KycVerification,
