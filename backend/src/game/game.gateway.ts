@@ -50,6 +50,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       unit: 'ms',
     },
   );
+  private static readonly globalActionCount = GameGateway.meter.createHistogram(
+    'game_action_global_count',
+    {
+      description: 'Global action counter within rate limit window',
+    },
+  );
 
   private readonly processedPrefix = 'game:processed';
   private readonly processedTtlSeconds = 60;
@@ -62,6 +68,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   );
 
   private readonly actionCounterKey = 'game:action_counter';
+  private readonly globalActionCounterKey = 'game:action_counter:global';
+  private readonly globalLimit = Number(
+    process.env.GATEWAY_GLOBAL_LIMIT ?? '10000',
+  );
 
   private readonly frameAcks = new Map<
     string,
@@ -416,9 +426,21 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private async isRateLimited(client: Socket): Promise<boolean> {
     const key = this.getRateLimitKey(client);
-    const count = await this.redis.incr(key);
+    const [[, count], [, global]] = (await this.redis
+      .multi()
+      .incr(key)
+      .incr(this.globalActionCounterKey)
+      .exec()) as unknown as [[null, number], [null, number]];
     if (count === 1) {
       await this.redis.expire(key, 10);
+    }
+    if (global === 1) {
+      await this.redis.expire(this.globalActionCounterKey, 10);
+    }
+    GameGateway.globalActionCount.record(global);
+    if (global > this.globalLimit) {
+      this.enqueue(client, 'server:Error', 'rate limit exceeded');
+      return true;
     }
     if (count > 30) {
       client.emit('server:Error', 'rate limit exceeded');

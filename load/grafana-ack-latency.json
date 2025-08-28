@@ -15,6 +15,19 @@
           }
         }
       ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Global action count",
+      "targets": [
+        {
+          "expr": "max_over_time(game_action_global_count_sum[1m])",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        }
+      ]
     }
   ]
 }
