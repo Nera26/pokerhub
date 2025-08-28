@@ -36,6 +36,7 @@ export class GameEngine {
     }));
     this.initialStacks = new Map(players.map((p) => [p.id, p.stack]));
     this.machine = new HandStateMachine({
+      phase: 'WAIT_BLINDS',
       street: 'preflop',
       pot: 0,
       sidePots: [],
@@ -65,24 +66,25 @@ export class GameEngine {
 
   applyAction(action: GameAction): GameState {
     const preState = structuredClone(this.machine.getState());
-    const state = this.machine.apply(action);
+    let state = this.machine.apply(action);
 
-    // If only one player remains, settle immediately
+    // If only one player remains, move directly to showdown
     if (
       this.machine.activePlayers().length <= 1 &&
-      state.street !== 'showdown'
+      state.phase === 'BETTING_ROUND'
     ) {
-      state.street = 'showdown';
+      state.phase = 'SHOWDOWN';
+    }
+
+    if (state.phase === 'SHOWDOWN') {
+      state = this.machine.apply({ type: 'next' });
+      void this.settle();
     }
 
     const postState = structuredClone(this.machine.getState());
     this.log.record(action, preState, postState);
 
-    if (state.street === 'showdown') {
-      void this.settle();
-    }
-
-    return state;
+    return postState;
   }
 
   getState(): GameState {
