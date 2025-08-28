@@ -1,12 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { ServiceStatusResponse } from '@shared/types';
 
 @Injectable()
 export class AppService {
+  constructor(
+    @Inject('API_CONTRACT_VERSION') private readonly version: string,
+  ) {}
+
   getHello(): string {
     return 'Hello World!';
   }
 
-  getStatus(): { status: string } {
-    return { status: 'ok' };
+  getStatus(): ServiceStatusResponse {
+    return { status: 'ok', contractVersion: this.version };
   }
 }

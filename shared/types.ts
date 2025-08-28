@@ -5,6 +5,12 @@ export const StatusResponseSchema = z.object({
 });
 export type StatusResponse = z.infer<typeof StatusResponseSchema>;
 
+export const ServiceStatusResponseSchema = z.object({
+  status: z.string(),
+  contractVersion: z.string(),
+});
+export type ServiceStatusResponse = z.infer<typeof ServiceStatusResponseSchema>;
+
 export const LoginResponseSchema = z.object({
   token: z.string(),
 });

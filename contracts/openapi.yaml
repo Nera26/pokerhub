@@ -12,7 +12,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StatusResponse'
+                $ref: '#/components/schemas/ServiceStatusResponse'
   /game/action:
     post:
       summary: Perform a game action
@@ -333,6 +333,16 @@ components:
           type: string
       required:
         - status
+    ServiceStatusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        contractVersion:
+          type: string
+      required:
+        - status
+        - contractVersion
     LoginResponse:
       type: object
       properties:

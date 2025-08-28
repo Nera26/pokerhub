@@ -17,6 +17,7 @@ import {
 import { validationSchema } from './config/env.validation';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { API_CONTRACT_VERSION } from '@shared/constants';
 
 import { MessagingModule } from './messaging/messaging.module';
 
@@ -88,6 +89,10 @@ import { AuthModule } from './auth/auth.module';
   controllers: [AppController],
   providers: [
     AppService,
+    {
+      provide: 'API_CONTRACT_VERSION',
+      useValue: API_CONTRACT_VERSION,
+    },
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
