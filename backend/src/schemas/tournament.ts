@@ -40,3 +40,11 @@ export const RegisterRequestSchema = z.object({
 });
 
 export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
+
+export const TournamentScheduleRequestSchema = z.object({
+  startTime: z.string().datetime(),
+});
+
+export type TournamentScheduleRequest = z.infer<
+  typeof TournamentScheduleRequestSchema
+>;

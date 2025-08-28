@@ -1,7 +1,14 @@
 import { z } from 'zod';
 
-export const LeaderboardResponseSchema = z.array(z.string());
+export const LeaderboardEntrySchema = z.object({
+  playerId: z.string(),
+  rank: z.number().int().positive(),
+  points: z.number(),
+});
 
+export const LeaderboardResponseSchema = z.array(LeaderboardEntrySchema);
+
+export type LeaderboardEntry = z.infer<typeof LeaderboardEntrySchema>;
 export type LeaderboardResponse = z.infer<typeof LeaderboardResponseSchema>;
 
 export const LeaderboardRebuildQuerySchema = z.object({

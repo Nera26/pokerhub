@@ -88,9 +88,6 @@ export const TournamentListSchema = z.array(TournamentSchema);
 export type Tournament = z.infer<typeof TournamentSchema>;
 export type TournamentList = z.infer<typeof TournamentListSchema>;
 
-export const LeaderboardResponseSchema = z.array(z.string());
-export type LeaderboardResponse = z.infer<typeof LeaderboardResponseSchema>;
-
 export const LeaderboardRebuildQuerySchema = z.object({
   days: z.number().int().positive().max(30).optional(),
 });
@@ -123,3 +120,19 @@ export type CalculatePrizesRequest = z.infer<
 export type CalculatePrizesResponse = z.infer<
   typeof CalculatePrizesResponseSchema
 >;
+
+export const TournamentScheduleRequestSchema = z.object({
+  startTime: z.string().datetime(),
+});
+export type TournamentScheduleRequest = z.infer<
+  typeof TournamentScheduleRequestSchema
+>;
+
+export const LeaderboardEntrySchema = z.object({
+  playerId: z.string(),
+  rank: z.number().int().positive(),
+  points: z.number(),
+});
+export const LeaderboardResponseSchema = z.array(LeaderboardEntrySchema);
+export type LeaderboardEntry = z.infer<typeof LeaderboardEntrySchema>;
+export type LeaderboardResponse = z.infer<typeof LeaderboardResponseSchema>;

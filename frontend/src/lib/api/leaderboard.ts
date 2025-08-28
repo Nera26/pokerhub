@@ -3,13 +3,15 @@ import { getBaseUrl } from '@/lib/base-url';
 import { serverFetch } from '@/lib/server-fetch';
 import { handleResponse } from './client';
 import {
+  LeaderboardEntry,
   LeaderboardResponseSchema,
-  type LeaderboardResponse,
   StatusResponseSchema,
   type StatusResponse,
 } from '@shared/types';
 
-export async function fetchLeaderboard({ signal }: { signal?: AbortSignal } = {}): Promise<LeaderboardResponse> {
+export async function fetchLeaderboard({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<LeaderboardEntry[]> {
   const baseUrl = getBaseUrl();
   const res = serverFetch(`${baseUrl}/api/leaderboard`, {
     credentials: 'include',
