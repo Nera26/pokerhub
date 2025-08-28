@@ -1,4 +1,4 @@
-process.env.DATABASE_URL = 'postgres://localhost/test';
+process.env.DATABASE_URL = '';
 process.env.REDIS_URL = 'redis://localhost';
 process.env.RABBITMQ_URL = 'amqp://localhost';
 process.env.AWS_REGION = 'us-east-1';
@@ -9,26 +9,69 @@ process.env.JWT_SECRET = 'secret';
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+import { newDb } from 'pg-mem';
 import request from 'supertest';
 import { UsersService } from '../src/users/users.service';
 import { UsersController } from '../src/routes/users.controller';
+import { UserRepository } from '../src/users/user.repository';
+import { User } from '../src/database/entities/user.entity';
+import { Table } from '../src/database/entities/table.entity';
+import { Seat } from '../src/database/entities/seat.entity';
+import { Tournament } from '../src/database/entities/tournament.entity';
 
-@Module({
-  controllers: [UsersController],
-  providers: [UsersService],
-})
-class UsersTestModule {}
+function createTestModule() {
+  let dataSource: DataSource;
+  @Module({
+    imports: [
+      TypeOrmModule.forRootAsync({
+        useFactory: () => {
+          const db = newDb();
+          db.public.registerFunction({
+            name: 'version',
+            returns: 'text',
+            implementation: () => 'pg-mem',
+          });
+          db.public.registerFunction({
+            name: 'current_database',
+            returns: 'text',
+            implementation: () => 'test',
+          });
+          db.public.registerFunction({
+            name: 'uuid_generate_v4',
+            returns: 'text',
+            implementation: () => '00000000-0000-0000-0000-000000000000',
+          });
+          dataSource = db.adapters.createTypeormDataSource({
+            type: 'postgres',
+            entities: [User, Table, Seat, Tournament],
+            synchronize: true,
+          }) as DataSource;
+          return dataSource.options;
+        },
+        dataSourceFactory: async () => dataSource.initialize(),
+      }),
+      TypeOrmModule.forFeature([User]),
+    ],
+    controllers: [UsersController],
+    providers: [UsersService, UserRepository],
+  })
+  class UsersTestModule {}
+  return UsersTestModule;
+}
 
 describe('UsersController (e2e)', () => {
   let app: INestApplication;
   let service: UsersService;
 
   beforeEach(async () => {
+    const UsersTestModule = createTestModule();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [UsersTestModule],
     }).compile();
     service = moduleFixture.get(UsersService);
-    service.reset();
+    await service.reset();
     app = moduleFixture.createNestApplication();
     await app.init();
   });
