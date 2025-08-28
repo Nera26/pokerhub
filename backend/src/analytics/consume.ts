@@ -8,4 +8,4 @@ async function bootstrap() {
   await consumer.run();
 }
 
-bootstrap();
+void bootstrap();

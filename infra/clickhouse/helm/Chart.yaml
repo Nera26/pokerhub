@@ -1,0 +1,7 @@
+apiVersion: v2
+name: clickhouse-stack
+version: 0.1.0
+dependencies:
+  - name: clickhouse
+    version: 4.0.3
+    repository: https://charts.bitnami.com/bitnami

@@ -1,0 +1,4 @@
+kafka:
+  replicaCount: 1
+  zookeeper:
+    enabled: true
