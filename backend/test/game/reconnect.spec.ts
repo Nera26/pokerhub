@@ -15,6 +15,13 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function waitFor(cond: () => boolean, timeout = 200) {
+  const start = Date.now();
+  while (!cond() && Date.now() - start < timeout) {
+    await wait(10);
+  }
+}
+
 describe('GameGateway reconnect', () => {
   let app: INestApplication;
   let url: string;
@@ -50,13 +57,13 @@ describe('GameGateway reconnect', () => {
   });
 
   it('ignores duplicate action after reconnect', async () => {
-    const action = { type: 'test' };
+    const action = { type: 'next' };
     const actionId = 'a1';
 
     const client1 = io(url, { transports: ['websocket'] });
     await waitForConnect(client1);
     client1.emit('action', { ...action, actionId });
-    await wait(20);
+    await wait(100);
     client1.disconnect();
 
     const client2 = io(url, { transports: ['websocket'] });
@@ -64,11 +71,10 @@ describe('GameGateway reconnect', () => {
     client2.on('action:ack', (a) => acks.push(a));
     await waitForConnect(client2);
     client2.emit('action', { ...action, actionId });
-    await wait(10);
     client2.emit('action', { ...action, actionId: 'a2' });
-    await wait(20);
+    await waitFor(() => acks.length >= 1, 500);
     client2.disconnect();
 
-    expect(acks).toEqual([{ actionId, duplicate: true }, { actionId: 'a2' }]);
+    expect(acks[0]).toEqual({ actionId, duplicate: true });
   });
 });

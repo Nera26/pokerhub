@@ -86,7 +86,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const { tableId: _t, actionId: _a, ...rest } = action;
     const gameAction = rest as GameAction;
     const room = this.rooms.get(tableId);
-    const state = room.apply(gameAction);
+    const state = await room.apply(gameAction);
 
     void this.analytics.recordGameEvent({ clientId: client.id, action });
 
@@ -95,10 +95,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     // Notify spectators with public state
     if (this.server?.of) {
+      const publicState = await room.getPublicState();
       this.server
         .of('/spectate')
         .to(tableId)
-        .emit('state', { ...room.getPublicState(), tick: this.tick });
+        .emit('state', { ...publicState, tick: this.tick });
     }
 
     this.enqueue(client, 'action:ack', {
@@ -106,7 +107,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     } satisfies AckPayload);
 
     this.clock.setTimer(action.playerId, 30_000, () =>
-      this.handleTimeout(action.playerId),
+      void this.handleTimeout(action.playerId),
     );
   }
 
@@ -191,15 +192,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('replay')
-  handleReplay(@ConnectedSocket() client: Socket) {
+  async handleReplay(@ConnectedSocket() client: Socket) {
     const room = this.rooms.get('default');
-    const state = room.replay();
+    const state = await room.replay();
     client.emit('state', { ...state, tick: this.tick });
   }
 
-  private handleTimeout(playerId: string) {
+  private async handleTimeout(playerId: string) {
     const room = this.rooms.get('default');
-    const state = room.apply({ type: 'fold', playerId } as GameAction);
+    const state = await room.apply({ type: 'fold', playerId } as GameAction);
     if (this.server) {
       this.server.emit('state', { ...state, tick: ++this.tick });
     }

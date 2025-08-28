@@ -7,8 +7,8 @@ import { ClockService } from '../../src/game/clock.service';
 class DummyRoom extends RoomManager {
   override get() {
     return {
-      apply: () => ({ street: 'preflop', pot: 0, players: [] }),
-      getPublicState: () => ({ street: 'preflop', pot: 0, players: [] }),
+      apply: async () => ({ street: 'preflop', pot: 0, players: [] }),
+      getPublicState: async () => ({ street: 'preflop', pot: 0, players: [] }),
     } as any;
   }
 }
@@ -38,7 +38,13 @@ describe('GameGateway fuzz tests', () => {
           new DummyRedis() as any,
         );
         const client: any = { id: 'c1', emit: jest.fn() };
+
+        await expect(
+          gateway.handleAction(client, { ...payload, actionId: 'x' } as any),
+        ).resolves.toBeUndefined();
+
         await gateway.handleAction(client, { ...payload, actionId: 'x' } as any);
+
       }),
     );
   });
