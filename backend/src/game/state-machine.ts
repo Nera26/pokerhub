@@ -1,5 +1,12 @@
 export type Street = 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
 
+export type HandPhase =
+  | 'WAIT_BLINDS'
+  | 'DEAL'
+  | 'BETTING_ROUND'
+  | 'SHOWDOWN'
+  | 'SETTLE';
+
 export type GameAction =
   | { type: 'postBlind'; playerId: string; amount: number }
   | { type: 'bet'; playerId: string; amount: number }
@@ -18,6 +25,7 @@ export interface PlayerState {
 }
 
 export interface GameState {
+  phase: HandPhase;
   street: Street;
   pot: number;
   sidePots: { amount: number; players: string[] }[];
@@ -30,32 +38,71 @@ const ORDER: Street[] = ['preflop', 'flop', 'turn', 'river', 'showdown'];
 export class HandStateMachine {
   constructor(private readonly state: GameState) {}
 
+  private blindsPosted = new Set<string>();
+
   apply(action: GameAction): GameState {
-    switch (action.type) {
-      case 'postBlind':
-      case 'bet':
-      case 'raise': {
-        const player = this.findPlayer(action.playerId);
-        this.placeBet(player, action.amount);
+    switch (this.state.phase) {
+      case 'WAIT_BLINDS': {
+        if (action.type === 'postBlind') {
+          const player = this.findPlayer(action.playerId);
+          this.placeBet(player, action.amount);
+          this.blindsPosted.add(player.id);
+          if (this.blindsPosted.size === this.state.players.length) {
+            this.state.phase = 'DEAL';
+          }
+        }
         break;
       }
-      case 'call': {
-        const player = this.findPlayer(action.playerId);
-        const toCall = this.state.currentBet - player.bet;
-        this.placeBet(player, toCall);
+      case 'DEAL': {
+        if (action.type === 'next') {
+          this.state.phase = 'BETTING_ROUND';
+        }
         break;
       }
-      case 'check': {
+      case 'BETTING_ROUND': {
+        switch (action.type) {
+          case 'bet':
+          case 'raise':
+          case 'postBlind': {
+            const player = this.findPlayer(action.playerId);
+            this.placeBet(player, action.amount);
+            break;
+          }
+          case 'call': {
+            const player = this.findPlayer(action.playerId);
+            const toCall = this.state.currentBet - player.bet;
+            this.placeBet(player, toCall);
+            break;
+          }
+          case 'check': {
+            break;
+          }
+          case 'fold': {
+            const player = this.findPlayer(action.playerId);
+            player.folded = true;
+            break;
+          }
+          case 'next': {
+            this.finishBettingRound();
+            if (this.state.street === 'river') {
+              this.advanceStreet();
+              this.state.phase = 'SHOWDOWN';
+            } else {
+              this.advanceStreet();
+              this.state.phase = 'DEAL';
+            }
+            break;
+          }
+        }
         break;
       }
-      case 'fold': {
-        const player = this.findPlayer(action.playerId);
-        player.folded = true;
+      case 'SHOWDOWN': {
+        if (action.type === 'next') {
+          this.state.phase = 'SETTLE';
+        }
         break;
       }
-      case 'next': {
-        this.finishBettingRound();
-        this.advanceStreet();
+      case 'SETTLE': {
         break;
       }
     }

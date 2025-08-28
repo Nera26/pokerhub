@@ -6,12 +6,15 @@ describe('RoomWorker lifecycle', () => {
   it('creates, reuses, and terminates workers', async () => {
     const manager = new RoomManager();
     const worker1 = manager.get('t1');
-
     const state0 = await worker1.getPublicState();
-    expect(state0.street).toBe('preflop');
+    expect(state0.phase).toBe('WAIT_BLINDS');
 
-    const state1 = await worker1.apply({ type: 'next' });
-    expect(state1.street).toBe('flop');
+    await worker1.apply({ type: 'postBlind', playerId: 'p1', amount: 1 });
+    const state1 = await worker1.apply({ type: 'postBlind', playerId: 'p2', amount: 2 });
+    expect(state1.phase).toBe('BETTING_ROUND');
+
+    const state2 = await worker1.apply({ type: 'next' });
+    expect(state2.street).toBe('flop');
 
     const sameWorker = manager.get('t1');
     expect(sameWorker).toBe(worker1);
@@ -29,6 +32,8 @@ describe('RoomWorker lifecycle', () => {
   it('replays current hand', async () => {
     const manager = new RoomManager();
     const worker = manager.get('t2');
+    await worker.apply({ type: 'postBlind', playerId: 'p1', amount: 1 });
+    await worker.apply({ type: 'postBlind', playerId: 'p2', amount: 2 });
     await worker.apply({ type: 'next' });
     const replay = await worker.replay();
     expect(replay.street).toBe('flop');

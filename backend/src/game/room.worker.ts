@@ -17,8 +17,10 @@ parentPort.on('message', (msg: { type: string; seq: number; action?: GameAction 
   let state: GameState;
   switch (msg.type) {
     case 'apply':
-      engine.applyAction(msg.action as GameAction);
-      state = engine.getPublicState();
+      state = engine.applyAction(msg.action as GameAction);
+      while (state.phase === 'DEAL') {
+        state = engine.applyAction({ type: 'next' });
+      }
       parentPort!.postMessage({ event: 'state', state });
       parentPort!.postMessage({ seq: msg.seq, state });
       break;
