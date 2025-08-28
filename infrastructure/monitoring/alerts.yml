@@ -8,3 +8,24 @@ groups:
           severity: warning
         annotations:
           summary: "High error rate detected"
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, sum(rate(http_server_requests_duration_seconds_bucket[5m])) by (le)) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High request latency"
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total[1m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+      - alert: DroppedFrames
+        expr: rate(game_frames_dropped_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Dropped frames detected"
