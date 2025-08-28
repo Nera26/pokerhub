@@ -359,6 +359,88 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+  /users:
+    post:
+      summary: Create user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /users/{id}:
+    put:
+      summary: Update user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /users/{id}/ban:
+    post:
+      summary: Ban user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BanUserRequest'
+      responses:
+        '200':
+          description: Banned user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /users/{id}/balance:
+    post:
+      summary: Adjust user balance
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BalanceAdjustmentRequest'
+      responses:
+        '200':
+          description: Updated balance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
 components:
   schemas:
     StatusResponse:
@@ -423,6 +505,52 @@ components:
           type: boolean
       required:
         - kycVerified
+    CreateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        avatarKey:
+          type: string
+      required:
+        - username
+    UpdateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        avatarKey:
+          type: string
+    BanUserRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+    BalanceAdjustmentRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+      required:
+        - amount
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        avatarKey:
+          type: string
+        banned:
+          type: boolean
+        balance:
+          type: number
+      required:
+        - id
+        - username
+        - banned
+        - balance
     GameAction:
       oneOf:
         - $ref: '#/components/schemas/PostBlindAction'

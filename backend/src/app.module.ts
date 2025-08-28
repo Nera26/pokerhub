@@ -18,6 +18,8 @@ import { validationSchema } from './config/env.validation';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { API_CONTRACT_VERSION } from '@shared/constants';
+import { UsersController } from './routes/users.controller';
+import { UsersService } from './users/users.service';
 
 import { MessagingModule } from './messaging/messaging.module';
 
@@ -86,9 +88,10 @@ import { AuthModule } from './auth/auth.module';
     WalletModule,
     AuthModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, UsersController],
   providers: [
     AppService,
+    UsersService,
     {
       provide: 'API_CONTRACT_VERSION',
       useValue: API_CONTRACT_VERSION,
