@@ -2,6 +2,7 @@ export interface CollusionFeatures {
   vpipCorrelation: number;
   chipDumpScore: number;
   timingSimilarity: number;
+  seatProximity: number;
 }
 
 export function calculateVpipCorrelation(vpipA: number[], vpipB: number[]): number {
@@ -49,16 +50,34 @@ export function calculateTimingSimilarity(timesA: number[], timesB: number[]): n
   return 1 / (1 + avgDiff);
 }
 
+export function calculateSeatProximity(
+  seatsA: number[],
+  seatsB: number[],
+): number {
+  if (seatsA.length !== seatsB.length || seatsA.length === 0) {
+    return 0;
+  }
+  let diff = 0;
+  for (let i = 0; i < seatsA.length; i++) {
+    diff += Math.abs(seatsA[i] - seatsB[i]);
+  }
+  const avgDiff = diff / seatsA.length;
+  return 1 / (1 + avgDiff);
+}
+
 export function buildCollusionFeatures(
   vpipA: number[],
   vpipB: number[],
   transfers: { from: string; to: string; amount: number }[],
   timesA: number[],
   timesB: number[],
+  seatsA: number[],
+  seatsB: number[],
 ): CollusionFeatures {
   return {
     vpipCorrelation: calculateVpipCorrelation(vpipA, vpipB),
     chipDumpScore: detectChipDump(transfers),
     timingSimilarity: calculateTimingSimilarity(timesA, timesB),
+    seatProximity: calculateSeatProximity(seatsA, seatsB),
   };
 }

@@ -71,11 +71,19 @@ describe('CollusionService', () => {
   it('extracts features and flags sessions', async () => {
     await service.record('u1', 'd1', '2.2.2.2', 1000);
     await service.record('u2', 'd1', '2.2.2.2', 1000);
-    const features = await service.extractFeatures('u1', 'u2', [1, 0, 1], [1, 0, 1]);
+    const features = await service.extractFeatures(
+      'u1',
+      'u2',
+      [1, 0, 1],
+      [1, 0, 1],
+      [0, 1, 2],
+      [1, 2, 3],
+    );
     expect(features.sharedDevices).toEqual(['d1']);
     expect(features.sharedIps).toEqual(['2.2.2.2']);
     expect(features.vpipCorrelation).toBeCloseTo(1);
     expect(features.timingSimilarity).toBeCloseTo(1);
+    expect(features.seatProximity).toBeCloseTo(0.5);
     await service.flagSession('s1', ['u1', 'u2'], features);
     await expect(service.applyAction('s1', 'restrict')).rejects.toThrow(
       'Invalid review action',
