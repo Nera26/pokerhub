@@ -33,10 +33,15 @@ export default function ReactQueryProvider({
         },
       }),
   );
+  const [compatible, setCompatible] = useState(true);
 
   useEffect(() => {
-    void checkApiContractVersion();
+    checkApiContractVersion().catch(() => setCompatible(false));
   }, []);
+
+  if (!compatible) {
+    return <div>Please upgrade your app.</div>;
+  }
 
   return (
     <QueryClientProvider client={client}>

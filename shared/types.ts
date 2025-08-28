@@ -9,7 +9,9 @@ export const ServiceStatusResponseSchema = z.object({
   status: z.string(),
   contractVersion: z.string(),
 });
-export type ServiceStatusResponse = z.infer<typeof ServiceStatusResponseSchema>;
+export type ServiceStatusResponse = z.infer<
+  typeof ServiceStatusResponseSchema
+>;
 
 export const LoginResponseSchema = z.object({
   token: z.string(),
@@ -104,9 +106,19 @@ export const TournamentListSchema = z.array(TournamentSchema);
 export type Tournament = z.infer<typeof TournamentSchema>;
 export type TournamentList = z.infer<typeof TournamentListSchema>;
 
+// --- Table / Game Types ---
+export const GameTypeSchema = z.enum([
+  'texas',
+  'omaha',
+  'allin',
+  'tournaments',
+]);
+export type GameType = z.infer<typeof GameTypeSchema>;
+
 export const TableSchema = z.object({
   id: z.string(),
   tableName: z.string(),
+  gameType: GameTypeSchema,
   stakes: z.object({ small: z.number(), big: z.number() }),
   players: z.object({ current: z.number(), max: z.number() }),
   buyIn: z.object({ min: z.number(), max: z.number() }),
@@ -117,14 +129,17 @@ export const TableSchema = z.object({
   }),
   createdAgo: z.string(),
 });
-export const TablesResponseSchema = z.array(TableSchema);
+export const TableListSchema = z.array(TableSchema);
 export type Table = z.infer<typeof TableSchema>;
-export type TablesResponse = z.infer<typeof TablesResponseSchema>;
+export type TableList = z.infer<typeof TableListSchema>;
 
+// --- Leaderboard ---
 export const LeaderboardRebuildQuerySchema = z.object({
   days: z.number().int().positive().max(30).optional(),
 });
-export type LeaderboardRebuildQuery = z.infer<typeof LeaderboardRebuildQuerySchema>;
+export type LeaderboardRebuildQuery = z.infer<
+  typeof LeaderboardRebuildQuerySchema
+>;
 
 export const HandProofResponseSchema = z.object({
   seed: z.string(),
@@ -169,9 +184,7 @@ export const HotPatchLevelRequestSchema = z.object({
   smallBlind: z.number().int().positive(),
   bigBlind: z.number().int().positive(),
 });
-export type HotPatchLevelRequest = z.infer<
-  typeof HotPatchLevelRequestSchema
->;
+export type HotPatchLevelRequest = z.infer<typeof HotPatchLevelRequestSchema>;
 
 export const LeaderboardEntrySchema = z.object({
   playerId: z.string(),
