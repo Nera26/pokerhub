@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  frontend:
+    image: node:18
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    environment:
+      - NEXT_PUBLIC_BASE_URL=http://localhost:3000
+      - NEXT_PUBLIC_SOCKET_URL=http://localhost:4000
+    command: sh -c "npm ci && npm run build && npm run start:test"
+    ports:
+      - '3001:3000'
+    depends_on:
+      backend:
+        condition: service_started
