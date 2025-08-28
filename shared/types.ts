@@ -31,6 +31,11 @@ export const ProviderCallbackSchema = z.object({
 });
 export type ProviderCallback = z.infer<typeof ProviderCallbackSchema>;
 
+export const WalletStatusResponseSchema = z.object({
+  kycVerified: z.boolean(),
+});
+export type WalletStatusResponse = z.infer<typeof WalletStatusResponseSchema>;
+
 const BaseAction = z.object({
   tableId: z.string(),
   playerId: z.string(),

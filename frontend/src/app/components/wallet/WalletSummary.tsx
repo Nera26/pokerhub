@@ -12,6 +12,8 @@ export interface WalletSummaryProps {
   realBalance: number;
   /** User's credit balance (in-game only) */
   creditBalance: number;
+  /** Whether the user has passed KYC verification */
+  kycVerified: boolean;
   /** Called when user clicks Deposit */
   onDeposit: () => void;
   /** Called when user clicks Withdraw */
@@ -21,6 +23,7 @@ export interface WalletSummaryProps {
 export default function WalletSummary({
   realBalance,
   creditBalance,
+  kycVerified,
   onDeposit,
   onWithdraw,
 }: WalletSummaryProps) {
@@ -33,6 +36,9 @@ export default function WalletSummary({
           <p className="text-text-secondary text-sm sm:text-base">Total Balance</p>
           <p className="text-3xl sm:text-4xl font-bold text-accent-yellow mb-1">
             ${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+          <p className="text-xs text-text-secondary mb-2">
+            KYC Status: {kycVerified ? 'Verified' : 'Pending'}
           </p>
           <p className="text-sm sm:text-base text-text-secondary">
             <span className="font-medium">• Real: ${realBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>

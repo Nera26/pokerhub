@@ -18,3 +18,9 @@ export const ProviderCallbackSchema = z.object({
 });
 
 export type ProviderCallback = z.infer<typeof ProviderCallbackSchema>;
+
+export const WalletStatusSchema = z.object({
+  kycVerified: z.boolean(),
+});
+
+export type WalletStatusResponse = z.infer<typeof WalletStatusSchema>;

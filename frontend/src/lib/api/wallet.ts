@@ -7,6 +7,8 @@ import {
   MessageResponseSchema,
   WithdrawRequestSchema,
   type MessageResponse,
+  WalletStatusResponseSchema,
+  type WalletStatusResponse,
 } from '@shared/types';
 
 /* istanbul ignore next */
@@ -51,4 +53,16 @@ export function withdraw(
     signal: opts.signal,
   });
   return handleResponse(res, MessageResponseSchema);
+}
+
+export function getStatus(
+  id: string,
+  opts: { signal?: AbortSignal } = {},
+): Promise<WalletStatusResponse> {
+  const baseUrl = getBaseUrl();
+  const res = serverFetch(`${baseUrl}/api/wallet/${id}/status`, {
+    credentials: 'include',
+    signal: opts.signal,
+  });
+  return handleResponse(res, WalletStatusResponseSchema);
 }

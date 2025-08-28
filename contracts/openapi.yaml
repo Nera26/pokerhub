@@ -117,6 +117,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+  /wallet/{id}/status:
+    get:
+      summary: Get wallet status
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Wallet status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletStatusResponse'
   /wallet/provider/callback:
     post:
       summary: Payment provider callback
@@ -339,6 +355,13 @@ components:
           type: string
       required:
         - idempotencyKey
+    WalletStatusResponse:
+      type: object
+      properties:
+        kycVerified:
+          type: boolean
+      required:
+        - kycVerified
     GameAction:
       oneOf:
         - $ref: '#/components/schemas/PostBlindAction'
