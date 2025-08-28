@@ -418,6 +418,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FlaggedSessionsResponse'
+  /admin/collusion/flags:
+    get:
+      summary: List collusion flagged sessions
+      responses:
+        '200':
+          description: Flagged sessions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlaggedSessionsResponse'
+  /admin/collusion/{sessionId}:
+    post:
+      summary: Apply collusion review action
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewActionRequest'
+      responses:
+        '200':
+          description: Action applied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /review/sessions/{id}/{action}:
     post:
       summary: Apply review action
@@ -953,6 +985,12 @@ components:
     ReviewAction:
       type: string
       enum: [warn, restrict, ban]
+    ReviewActionRequest:
+      type: object
+      properties:
+        action:
+          $ref: '#/components/schemas/ReviewAction'
+      required: [action]
     ReviewStatus:
       type: string
       enum: [flagged, warn, restrict, ban]

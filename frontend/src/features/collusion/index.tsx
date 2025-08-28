@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { listFlaggedSessions, applyReviewAction } from '@/lib/api/review';
+import { listFlaggedSessions, applyAction } from '@/lib/api/collusion';
 import type { FlaggedSession, ReviewAction } from '@shared/types';
 
 function nextAction(status: FlaggedSession['status']): ReviewAction | null {
@@ -17,7 +17,7 @@ function nextAction(status: FlaggedSession['status']): ReviewAction | null {
   }
 }
 
-export default function ReviewPage() {
+export default function CollusionReviewPage() {
   const [sessions, setSessions] = useState<FlaggedSession[]>([]);
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export default function ReviewPage() {
   const act = async (id: string, status: FlaggedSession['status']) => {
     const action = nextAction(status);
     if (!action) return;
-    await applyReviewAction(id, action);
+    await applyAction(id, action);
     setSessions((prev) =>
       prev.map((s) => (s.id === id ? { ...s, status: action } : s)),
     );

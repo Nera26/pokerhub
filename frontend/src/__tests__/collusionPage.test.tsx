@@ -1,22 +1,22 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import ReviewPage from '@/features/review';
-import { listFlaggedSessions, applyReviewAction } from '@/lib/api/review';
+import CollusionReviewPage from '@/features/collusion';
+import { listFlaggedSessions, applyAction } from '@/lib/api/collusion';
 
-jest.mock('@/lib/api/review', () => ({
+jest.mock('@/lib/api/collusion', () => ({
   listFlaggedSessions: jest.fn(),
-  applyReviewAction: jest.fn(),
+  applyAction: jest.fn(),
 }));
 
-describe('ReviewPage', () => {
+describe('CollusionReviewPage', () => {
   it('renders sessions and triggers next action', async () => {
     (listFlaggedSessions as jest.Mock).mockResolvedValue([
       { id: 's1', users: ['u1', 'u2'], status: 'flagged' },
     ]);
-    render(<ReviewPage />);
+    render(<CollusionReviewPage />);
     expect(await screen.findByText('s1')).toBeInTheDocument();
-    (applyReviewAction as jest.Mock).mockResolvedValue({ message: 'warn' });
+    (applyAction as jest.Mock).mockResolvedValue({ message: 'warn' });
     const btn = await screen.findByText('warn');
     fireEvent.click(btn);
-    expect(applyReviewAction).toHaveBeenCalledWith('s1', 'warn');
+    expect(applyAction).toHaveBeenCalledWith('s1', 'warn');
   });
 });
