@@ -209,12 +209,11 @@ export class WalletService {
     const accounts = await this.accounts.find();
     const report: ReconcileRow[] = [];
     for (const acc of accounts) {
-      const { sum } =
-        (await this.journals
-          .createQueryBuilder('j')
-          .where('j.accountId = :id', { id: acc.id })
-          .select('COALESCE(SUM(j.amount),0)', 'sum')
-          .getRawOne()) || { sum: 0 };
+      const { sum } = (await this.journals
+        .createQueryBuilder('j')
+        .where('j.accountId = :id', { id: acc.id })
+        .select('COALESCE(SUM(j.amount),0)', 'sum')
+        .getRawOne()) || { sum: 0 };
       const total = Number(sum);
       if (total !== Number(acc.balance)) {
         report.push({
@@ -227,11 +226,15 @@ export class WalletService {
     return report;
   }
 
-  private async checkRateLimit(deviceId: string, ip: string) {
+  private async checkVelocity(
+    op: 'deposit' | 'withdraw',
+    deviceId: string,
+    ip: string,
+  ) {
     const limit = 3;
     const ttl = 60 * 60;
-    const ipKey = `withdraw:ip:${ip}`;
-    const devKey = `withdraw:dev:${deviceId}`;
+    const ipKey = `${op}:ip:${ip}`;
+    const devKey = `${op}:dev:${deviceId}`;
     const ipCount = await this.redis.incr(ipKey);
     if (ipCount === 1) await this.redis.expire(ipKey, ttl);
     const devCount = await this.redis.incr(devKey);
@@ -260,7 +263,7 @@ export class WalletService {
           if (amount > 100000) {
             throw new Error('AML limit exceeded');
           }
-          await this.checkRateLimit(deviceId, ip);
+          await this.checkVelocity('withdraw', deviceId, ip);
           const house = await this.accounts.findOneByOrFail({ name: 'house' });
           const ref = randomUUID();
           await this.record('withdraw', ref, [
@@ -275,6 +278,41 @@ export class WalletService {
         } finally {
           WalletService.txnDuration.record(Date.now() - start, {
             operation: 'withdraw',
+          });
+          span.end();
+        }
+      },
+    );
+  }
+
+  async deposit(
+    accountId: string,
+    amount: number,
+    deviceId: string,
+    ip: string,
+  ): Promise<void> {
+    return WalletService.tracer.startActiveSpan(
+      'wallet.deposit',
+      async (span) => {
+        const start = Date.now();
+        WalletService.txnCounter.add(1, { operation: 'deposit' });
+        try {
+          await this.checkVelocity('deposit', deviceId, ip);
+          const user = await this.accounts.findOneByOrFail({ id: accountId });
+          const house = await this.accounts.findOneByOrFail({ name: 'house' });
+          const ref = randomUUID();
+          await this.record('deposit', ref, [
+            { account: house, amount: -amount },
+            { account: user, amount },
+          ]);
+          span.setStatus({ code: SpanStatusCode.OK });
+        } catch (err) {
+          span.recordException(err as Error);
+          span.setStatus({ code: SpanStatusCode.ERROR });
+          throw err;
+        } finally {
+          WalletService.txnDuration.record(Date.now() - start, {
+            operation: 'deposit',
           });
           span.end();
         }
