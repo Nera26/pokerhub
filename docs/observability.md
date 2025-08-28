@@ -39,3 +39,15 @@ Metrics can also be shipped via OTLP:
 ```sh
 k6 run --vus 50 --duration 1m --out otlp --otlp-endpoint http://localhost:4318 load/k6-table-actions.js
 ```
+
+## Production Dashboards & Alerts
+
+![SLO Dashboard](images/slo-dashboard.svg)
+
+The Grafana SLO dashboard tracks HTTP API p99 latency, WebSocket p95 latency,
+action ACK p95 latency, wallet transaction throughput, and service availability.
+Prometheus evaluates these objectives and sends violations to the
+`pokerhub-sre` PagerDuty service.
+
+![Alert Routing](images/alert-routing.svg)
+
