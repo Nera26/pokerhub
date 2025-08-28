@@ -1,0 +1,8 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-endpoints
+data:
+  PRIMARY_ENDPOINT: postgres-primary.example.com
+  REPLICA_ENDPOINT: postgres-replica.example.com

@@ -18,7 +18,9 @@ resource "aws_db_instance" "primary" {
   allocated_storage   = 20
   username            = var.db_username
   password            = var.db_password
-  skip_final_snapshot = true
+  backup_retention_period = var.backup_retention_period
+  copy_tags_to_snapshot   = true
+  skip_final_snapshot     = true
 }
 
 provider "aws" {
@@ -31,7 +33,14 @@ resource "aws_db_instance" "replica" {
   identifier          = "${var.db_name}-replica"
   engine              = "postgres"
   instance_class      = "db.m5.large"
-  replicate_source_db = aws_db_instance.primary.arn
+  replicate_source_db     = aws_db_instance.primary.arn
+  backup_retention_period = var.backup_retention_period
+  copy_tags_to_snapshot   = true
+}
+
+resource "aws_db_instance_automated_backups_replication" "primary" {
+  provider               = aws.replica
+  source_db_instance_arn = aws_db_instance.primary.arn
 }
 
 resource "aws_elasticache_replication_group" "redis_cluster" {

@@ -16,6 +16,19 @@ spec:
       containers:
         - name: api
           image: ghcr.io/pokerhub/api:latest
+          env:
+            - name: DB_PRIMARY_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: db-endpoints
+                  key: PRIMARY_ENDPOINT
+            - name: DB_REPLICA_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: db-endpoints
+                  key: REPLICA_ENDPOINT
+            - name: DB_FAILOVER_STRATEGY
+              value: promote-replica
           resources:
             requests:
               cpu: "1"

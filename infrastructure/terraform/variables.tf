@@ -27,6 +27,12 @@ variable "db_password" {
   sensitive   = true
 }
 
+variable "backup_retention_period" {
+  description = "Number of days to retain automated backups for PITR"
+  type        = number
+  default     = 7
+}
+
 variable "redis_node_type" {
   description = "Instance type for Redis nodes"
   type        = string
