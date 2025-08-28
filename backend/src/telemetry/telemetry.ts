@@ -20,6 +20,7 @@ export function setupTelemetry() {
     }),
     metricReader: new PrometheusExporter({
       port: Number(process.env.OTEL_PROMETHEUS_PORT) || 9464,
+      endpoint: '/metrics',
     }),
     instrumentations: [getNodeAutoInstrumentations()],
   });
