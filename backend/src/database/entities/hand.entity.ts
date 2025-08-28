@@ -17,6 +17,9 @@ export class Hand {
   @Column({ nullable: true })
   nonce!: string | null;
 
+  @Column({ default: false })
+  settled!: boolean;
+
   @CreateDateColumn()
   createdAt!: Date;
 }
