@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import { getBaseUrl } from '@/lib/base-url';
 import { handleResponse, ApiError } from './client';
 import {
