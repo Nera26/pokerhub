@@ -284,8 +284,26 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.flush(client);
   }
 
+  private getRateLimitKey(client: Socket): string {
+    const userId =
+      (client as any)?.data?.userId ??
+      ((client.handshake?.auth as any)?.userId as string | undefined);
+    if (userId) {
+      return `${this.actionCounterKey}:${userId}`;
+    }
+    const xff = client.handshake?.headers?.['x-forwarded-for'] as
+      | string
+      | undefined;
+    const ip =
+      xff?.split(',')[0].trim() ??
+      client.handshake?.address ??
+      (client as any)?.conn?.remoteAddress ??
+      client.id;
+    return `${this.actionCounterKey}:${ip}`;
+  }
+
   private async isRateLimited(client: Socket): Promise<boolean> {
-    const key = `${this.actionCounterKey}:${client.id}`;
+    const key = this.getRateLimitKey(client);
     const count = await this.redis.incr(key);
     if (count === 1) {
       await this.redis.expire(key, 10);
