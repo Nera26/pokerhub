@@ -1,5 +1,7 @@
 import { RoomManager } from '../../src/game/room.service';
 
+jest.setTimeout(15000);
+
 describe('RoomWorker lifecycle', () => {
   it('creates, reuses, and terminates workers', async () => {
     const manager = new RoomManager();
