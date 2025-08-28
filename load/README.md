@@ -7,8 +7,8 @@ This directory contains load test scripts for PokerHub.
 - `k6-ws-soak.js` – 24h k6 soak test emulating 80k sockets across 10k tables with 5% packet loss and 200 ms jitter. Deterministic runs are achieved via a seed and the script checks memory leak (<1%) and GC pause p95 (<50 ms) using a metrics endpoint.
 - `toxiproxy-soak.sh` – sets up a toxiproxy instance with 5% packet loss and 200 ms jitter for soak tests.
 - `collect-gc-heap.sh` – polls the metrics endpoint for GC pause and heap stats and can push them to Grafana.
-- `k6-10k-tables.js` – k6 HTTP test hitting `/tables/random` with 10 k virtual users while recording a latency histogram.
-- `artillery-10k-tables.yml` – Artillery equivalent to `k6-10k-tables.js` that captures per-endpoint latency histograms.
+ - `k6-10k-tables.js` – k6 WebSocket scenario driving ~80 k sockets across 10 k tables, injecting packet loss and jitter while recording ACK latency.
+ - `artillery-10k-tables.yml` – Artillery equivalent to `k6-10k-tables.js` that captures per-endpoint latency histograms.
 
 All scripts assume the server is reachable via `ws://localhost:3000` by default.
 Environment variables:
