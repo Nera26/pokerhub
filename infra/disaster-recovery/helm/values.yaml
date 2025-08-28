@@ -1,0 +1,8 @@
+postgres:
+  schedule: "0 3 * * *"
+  image: postgres:15-alpine
+  snapshotIdentifier: pg-dr-snapshot-copy
+redis:
+  schedule: "0 4 * * *"
+  image: redis:7-alpine
+  snapshotIdentifier: redis-dr-snapshot

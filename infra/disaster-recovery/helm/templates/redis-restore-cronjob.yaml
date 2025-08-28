@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: redis-restore-test
+spec:
+  schedule: {{ .Values.redis.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: redis-restore
+              image: {{ .Values.redis.image }}
+              env:
+                - name: SNAPSHOT_ID
+                  value: {{ .Values.redis.snapshotIdentifier | quote }}
+              command:
+                - /bin/sh
+                - -c
+                - >-
+                  echo "Testing Redis restore from $SNAPSHOT_ID";
+                  # Placeholder for actual restore test

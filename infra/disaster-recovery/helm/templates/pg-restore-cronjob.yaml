@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pg-restore-test
+spec:
+  schedule: {{ .Values.postgres.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: pg-restore
+              image: {{ .Values.postgres.image }}
+              env:
+                - name: SNAPSHOT_ID
+                  value: {{ .Values.postgres.snapshotIdentifier | quote }}
+              command:
+                - /bin/sh
+                - -c
+                - >-
+                  echo "Testing Postgres restore from $SNAPSHOT_ID";
+                  # Placeholder for actual restore test

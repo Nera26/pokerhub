@@ -1,0 +1,28 @@
+name: backup-verify
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify backups
+        run: bash infra/scripts/verify-backups.sh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          PG_SNAPSHOT_ID: ${{ vars.PG_SNAPSHOT_ID }}
+          REDIS_SNAPSHOT_ID: ${{ vars.REDIS_SNAPSHOT_ID }}
+          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            { "text": "Backup verification failed for ${GITHUB_REPOSITORY}@${GITHUB_SHA}" }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
