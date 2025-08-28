@@ -15,6 +15,7 @@ export class AnalyticsService {
   private readonly producer: Producer;
   private readonly ajv = new Ajv();
   private readonly validators: Record<EventName, ValidateFunction> = {};
+  private readonly topic = 'poker.events';
 
   constructor(
     config: ConfigService,
@@ -57,9 +58,12 @@ export class AnalyticsService {
       );
       return;
     }
-    const payload = { value: JSON.stringify(data) };
+    const payload = { event, data };
     await Promise.all([
-      this.producer.send({ topic: event, messages: [payload] }),
+      this.producer.send({
+        topic: this.topic,
+        messages: [{ value: JSON.stringify(payload) }],
+      }),
       this.ingest(event.replace('.', '_'), data as Record<string, any>),
     ]);
   }
@@ -71,10 +75,17 @@ export class AnalyticsService {
       'event',
       JSON.stringify(event),
     );
-    await this.producer.send({
-      topic: 'game.event',
-      messages: [{ value: JSON.stringify(event) }],
-    });
+    await Promise.all([
+      this.producer.send({
+        topic: this.topic,
+        messages: [
+          {
+            value: JSON.stringify({ event: 'game.event', data: event }),
+          },
+        ],
+      }),
+      this.ingest('game_event', event),
+    ]);
   }
 
   async recordTournamentEvent(event: Record<string, any>) {
@@ -84,10 +95,17 @@ export class AnalyticsService {
       'event',
       JSON.stringify(event),
     );
-    await this.producer.send({
-      topic: 'tournament.event',
-      messages: [{ value: JSON.stringify(event) }],
-    });
+    await Promise.all([
+      this.producer.send({
+        topic: this.topic,
+        messages: [
+          {
+            value: JSON.stringify({ event: 'tournament.event', data: event }),
+          },
+        ],
+      }),
+      this.ingest('tournament_event', event),
+    ]);
   }
 
   async rangeStream(
