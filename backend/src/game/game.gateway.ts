@@ -23,6 +23,7 @@ import {
   GameActionSchema,
   type GameAction as WireGameAction,
 } from '@shared/types';
+import { metrics } from '@opentelemetry/api';
 
 /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-redundant-type-constituents */
 
@@ -34,6 +35,14 @@ interface AckPayload {
 @WebSocketGateway({ namespace: 'game' })
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(GameGateway.name);
+  private static readonly meter = metrics.getMeter('game');
+  private static readonly ackLatency = GameGateway.meter.createHistogram(
+    'game_action_ack_latency_ms',
+    {
+      description: 'Latency from action frame receipt to ACK enqueue',
+      unit: 'ms',
+    },
+  );
 
   private readonly processedPrefix = 'game:processed';
   private readonly processedTtlSeconds = 60;
@@ -98,13 +107,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() action: WireGameAction & { actionId: string },
   ) {
     if (await this.isRateLimited(client)) return;
-
+    const start = Date.now();
     const { actionId, ...rest } = action;
+    let tableId = rest.tableId ?? 'unknown';
     let parsed: GameAction;
     try {
       parsed = GameActionSchema.parse(rest) as GameAction;
+      tableId = parsed.tableId;
     } catch (err) {
       this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+      this.recordAckLatency(start, tableId);
       throw err;
     }
 
@@ -114,6 +126,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         actionId,
         duplicate: true,
       } satisfies AckPayload);
+      this.recordAckLatency(start, tableId);
       return;
     }
 
@@ -123,7 +136,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (parsed.playerId) {
       this.clock.clearTimer(parsed.playerId);
     }
-    const { tableId, ...wire } = parsed;
+    const { tableId: parsedTableId, ...wire } = parsed;
+    tableId = parsedTableId;
     const gameAction = wire as GameAction;
 
     const room = this.rooms.get(tableId);
@@ -146,6 +160,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+    this.recordAckLatency(start, tableId);
 
     if (parsed.playerId) {
       this.clock.setTimer(
@@ -240,6 +255,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       actionId: payload.actionId,
     } as AckPayload);
     await this.redis.set(key, '1', 'EX', this.processedTtlSeconds);
+  }
+
+  private recordAckLatency(start: number, tableId: string) {
+    GameGateway.ackLatency.record(Date.now() - start, {
+      event: 'action',
+      tableId,
+    });
   }
 
   private enqueue(client: Socket, event: string, data: unknown) {

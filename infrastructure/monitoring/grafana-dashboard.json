@@ -61,6 +61,25 @@
             "expr": "rate(game_frames_dropped_total[5m])"
           }
         ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Action ACK Latency",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.5, sum(rate(game_action_ack_latency_ms_bucket{event=\"action\"}[5m])) by (le))",
+            "legendFormat": "p50"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(game_action_ack_latency_ms_bucket{event=\"action\"}[5m])) by (le))",
+            "legendFormat": "p95"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(game_action_ack_latency_ms_bucket{event=\"action\"}[5m])) by (le))",
+            "legendFormat": "p99"
+          }
+        ]
       }
     ]
   }
