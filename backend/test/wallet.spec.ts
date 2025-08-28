@@ -7,6 +7,7 @@ import { Disbursement } from '../src/wallet/disbursement.entity';
 import { WalletService } from '../src/wallet/wallet.service';
 import { EventPublisher } from '../src/events/events.service';
 import type Redis from 'ioredis';
+import { PaymentProviderService } from '../src/wallet/payment-provider.service';
 
 jest.setTimeout(20000);
 
@@ -49,12 +50,17 @@ describe('WalletService zero-sum property', () => {
       incr: (): Promise<number> => Promise.resolve(0),
       expire: (): Promise<void> => Promise.resolve(),
     } as unknown as Redis;
+    const provider = {
+      initiate3DS: jest.fn().mockResolvedValue({ id: 'tx' }),
+      getStatus: jest.fn().mockResolvedValue('approved'),
+    } as unknown as PaymentProviderService;
     const service = new WalletService(
       accountRepo,
       journalRepo,
       disbRepo,
       events,
       redis,
+      provider,
     );
     Object.assign(service, { enqueueDisbursement: jest.fn() });
     await accountRepo.save([

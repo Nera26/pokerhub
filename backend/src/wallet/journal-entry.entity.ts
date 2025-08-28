@@ -28,6 +28,12 @@ export class JournalEntry {
   @Column()
   refId: string;
 
+  @Column({ nullable: true })
+  providerTxnId?: string;
+
+  @Column({ nullable: true })
+  providerStatus?: string;
+
   @Column()
   @Index({ unique: true })
   hash: string;
