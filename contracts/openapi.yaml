@@ -797,6 +797,10 @@ components:
           type: number
         prizePool:
           type: number
+        pko:
+          $ref: '#/components/schemas/PkoOptions'
+        rebuys:
+          $ref: '#/components/schemas/RebuyOptions'
         players:
           type: object
           properties:
@@ -892,6 +896,13 @@ components:
           type: number
         satelliteSeatCost:
           type: number
+        method:
+          type: string
+          enum: [topN, icm]
+        stacks:
+          type: array
+          items:
+            type: number
       required:
         - prizePool
         - payouts
@@ -910,6 +921,22 @@ components:
         type: number
     required:
       - prizes
+  RebuyOptions:
+    type: object
+    properties:
+      cost:
+        type: number
+      chips:
+        type: number
+      threshold:
+        type: number
+    required: [cost, chips, threshold]
+  PkoOptions:
+    type: object
+    properties:
+      bountyPct:
+        type: number
+    required: [bountyPct]
   TournamentScheduleRequest:
     type: object
     properties:

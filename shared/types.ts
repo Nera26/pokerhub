@@ -213,11 +213,25 @@ export type HandProof = HandProofResponse;
 export const HandLogResponseSchema = z.string();
 export type HandLogResponse = z.infer<typeof HandLogResponseSchema>;
 
+export const RebuyOptionsSchema = z.object({
+  cost: z.number().int().positive(),
+  chips: z.number().int().positive(),
+  threshold: z.number().int().nonnegative(),
+});
+export type RebuyOptions = z.infer<typeof RebuyOptionsSchema>;
+
+export const PkoOptionsSchema = z.object({
+  bountyPct: z.number().min(0).max(1),
+});
+export type PkoOptions = z.infer<typeof PkoOptionsSchema>;
+
 export const CalculatePrizesRequestSchema = z.object({
   prizePool: z.number().int().nonnegative(),
   payouts: z.array(z.number()).nonempty(),
   bountyPct: z.number().min(0).max(1).optional(),
   satelliteSeatCost: z.number().int().positive().optional(),
+  method: z.enum(['topN', 'icm']).optional(),
+  stacks: z.array(z.number().int().nonnegative()).optional(),
 });
 
 export const CalculatePrizesResponseSchema = z.object({
