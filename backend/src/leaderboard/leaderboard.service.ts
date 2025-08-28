@@ -5,6 +5,8 @@ import { Repository } from 'typeorm';
 import { User } from '../database/entities/user.entity';
 import { AnalyticsService } from '../analytics/analytics.service';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 @Injectable()
 export class LeaderboardService {
   private readonly cacheKey = 'leaderboard:hot';
@@ -47,10 +49,16 @@ export class LeaderboardService {
     } = {},
   ): Promise<void> {
     const { days = 30, minSessions = 10, decay = 0.95 } = options;
-    const since = Date.now() - days * 24 * 60 * 60 * 1000;
+    const since = Date.now() - days * DAY_MS;
     const events = await this.analytics.rangeStream('analytics:game', since);
     const now = Date.now();
     const scores = new Map<string, { sessions: Set<string>; rating: number }>();
+
+    const minSessionsFn =
+      typeof minSessions === 'function' ? minSessions : () => minSessions;
+    const decayFn = typeof decay === 'function' ? decay : () => decay;
+    const minSessionsCache = new Map<string, number>();
+    const decayCache = new Map<string, number>();
 
     for (const ev of events) {
       const {
@@ -66,18 +74,25 @@ export class LeaderboardService {
       };
       const entry = scores.get(playerId) ?? { sessions: new Set(), rating: 0 };
       entry.sessions.add(sessionId);
-      const ageDays = (now - ts) / (24 * 60 * 60 * 1000);
-      const playerDecay =
-        typeof decay === 'function' ? decay(playerId) : decay;
+      const ageDays = (now - ts) / DAY_MS;
+      let playerDecay = decayCache.get(playerId);
+      if (playerDecay === undefined) {
+        playerDecay = decayFn(playerId);
+        decayCache.set(playerId, playerDecay);
+      }
       entry.rating += points * Math.pow(playerDecay, ageDays);
       scores.set(playerId, entry);
     }
 
     const leaders = [...scores.entries()]
-      .filter(([id, v]) =>
-        v.sessions.size >=
-        (typeof minSessions === 'function' ? minSessions(id) : minSessions),
-      )
+      .filter(([id, v]) => {
+        let min = minSessionsCache.get(id);
+        if (min === undefined) {
+          min = minSessionsFn(id);
+          minSessionsCache.set(id, min);
+        }
+        return v.sessions.size >= min;
+      })
       .sort((a, b) => {
         const diff = b[1].rating - a[1].rating;
         return diff !== 0 ? diff : a[0].localeCompare(b[0]);
