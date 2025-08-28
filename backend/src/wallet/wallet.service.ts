@@ -5,12 +5,19 @@ import { createHash, randomUUID } from 'crypto';
 import { Account } from './account.entity';
 import { JournalEntry } from './journal-entry.entity';
 import { Disbursement } from './disbursement.entity';
+import { SettlementJournal } from './settlement-journal.entity';
 import { EventPublisher } from '../events/events.service';
 import Redis from 'ioredis';
 import { metrics, trace, SpanStatusCode } from '@opentelemetry/api';
 import type { Queue } from 'bullmq';
 import { PaymentProviderService, ProviderStatus } from './payment-provider.service';
 import { KycService } from './kyc.service';
+=======
+import {
+  PaymentProviderService,
+  ProviderStatus,
+} from './payment-provider.service';
+
 
 interface Movement {
   account: Account;
@@ -44,7 +51,12 @@ export class WalletService {
     private readonly events: EventPublisher,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
     private readonly provider: PaymentProviderService,
+
     private readonly kyc: KycService,
+=======
+    @InjectRepository(SettlementJournal)
+    private readonly settlements?: Repository<SettlementJournal>,
+
   ) {}
 
   private payoutQueue?: Queue;
@@ -134,6 +146,7 @@ export class WalletService {
     accountId: string,
     amount: number,
     refId: string,
+    idempotencyKey?: string,
   ): Promise<void> {
     return WalletService.tracer.startActiveSpan(
       'wallet.reserve',
@@ -145,6 +158,18 @@ export class WalletService {
           const reserve = await this.accounts.findOneByOrFail({
             name: 'reserve',
           });
+          if (idempotencyKey && this.settlements) {
+            await this.settlements
+              .createQueryBuilder()
+              .insert()
+              .values({
+                id: randomUUID(),
+                idempotencyKey,
+                status: 'reserved',
+              })
+              .orIgnore()
+              .execute();
+          }
           await this.record('reserve', refId, [
             { account: user, amount: -amount },
             { account: reserve, amount },
@@ -164,7 +189,12 @@ export class WalletService {
     );
   }
 
-  async commit(refId: string, amount: number, rake: number): Promise<void> {
+  async commit(
+    refId: string,
+    amount: number,
+    rake: number,
+    idempotencyKey?: string,
+  ): Promise<void> {
     return WalletService.tracer.startActiveSpan(
       'wallet.commit',
       async (span) => {
@@ -181,6 +211,12 @@ export class WalletService {
             { account: prize, amount: amount - rake },
             { account: rakeAcc, amount: rake },
           ]);
+          if (idempotencyKey && this.settlements) {
+            await this.settlements.update(
+              { idempotencyKey },
+              { status: 'committed' },
+            );
+          }
           span.setStatus({ code: SpanStatusCode.OK });
         } catch (err) {
           span.recordException(err as Error);

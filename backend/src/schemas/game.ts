@@ -49,3 +49,6 @@ export const GameActionSchema = z.discriminatedUnion('type', [
 ]);
 
 export type GameAction = z.infer<typeof GameActionSchema>;
+
+export const HandLogResponse = z.string();
+export type HandLogResponse = z.infer<typeof HandLogResponse>;

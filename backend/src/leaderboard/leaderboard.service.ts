@@ -2,6 +2,8 @@ import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { promises as fs } from 'fs';
+import { join } from 'path';
 import { User } from '../database/entities/user.entity';
 import { AnalyticsService } from '../analytics/analytics.service';
 
@@ -48,9 +50,42 @@ export class LeaderboardService {
       decay?: number | ((playerId: string) => number);
     } = {},
   ): Promise<void> {
-    const { days = 30, minSessions = 10, decay = 0.95 } = options;
+    const { days = 30, minSessions, decay } = options;
     const since = Date.now() - days * DAY_MS;
     const events = await this.analytics.rangeStream('analytics:game', since);
+    await this.rebuildWithEvents(events, { minSessions, decay });
+  }
+
+  async rebuildFromEvents(days: number): Promise<void> {
+    const now = Date.now();
+    const base = join(process.cwd(), 'storage', 'events');
+    const events: unknown[] = [];
+    for (let i = 0; i < days; i++) {
+      const d = new Date(now - i * DAY_MS).toISOString().slice(0, 10);
+      const file = join(base, `${d}.jsonl`);
+      try {
+        const content = await fs.readFile(file, 'utf8');
+        for (const line of content.split('\n')) {
+          const trimmed = line.trim();
+          if (trimmed) {
+            try {
+              events.push(JSON.parse(trimmed));
+            } catch {}
+          }
+        }
+      } catch {}
+    }
+    await this.rebuildWithEvents(events);
+  }
+
+  private async rebuildWithEvents(
+    events: unknown[],
+    options: {
+      minSessions?: number | ((playerId: string) => number);
+      decay?: number | ((playerId: string) => number);
+    } = {},
+  ): Promise<void> {
+    const { minSessions = 10, decay = 0.95 } = options;
     const now = Date.now();
     const scores = new Map<string, { sessions: Set<string>; rating: number }>();
 

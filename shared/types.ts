@@ -110,6 +110,9 @@ export const HandProofResponseSchema = z.object({
 });
 export type HandProofResponse = z.infer<typeof HandProofResponseSchema>;
 
+export const HandLogResponseSchema = z.string();
+export type HandLogResponse = z.infer<typeof HandLogResponseSchema>;
+
 export const CalculatePrizesRequestSchema = z.object({
   prizePool: z.number().int().nonnegative(),
   payouts: z.array(z.number()).nonempty(),
