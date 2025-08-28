@@ -1,0 +1,37 @@
+name: load-regression
+
+on:
+  workflow_dispatch:
+
+jobs:
+  tables-10k:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run 10k table scenario
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: load/k6-10k-tables.js
+          flags: --summary-export=10k-summary.json
+      - name: Upload summary
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: tables-10k-summary
+          path: 10k-summary.json
+
+  packet-loss:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run packet loss scenario
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: load/k6-ws-packet-loss.js
+          flags: --summary-export=packet-summary.json
+      - name: Upload summary
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: packet-loss-summary
+          path: packet-summary.json
