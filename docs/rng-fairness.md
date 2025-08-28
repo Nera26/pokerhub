@@ -14,7 +14,13 @@ To ensure every deck is provably fair, PokerHub uses a commit–reveal scheme ba
 
 ## Verification
 
-Players or auditors can reproduce the deck:
+After each hand the table shows a **Hand Proof** dialog containing the seed, nonce and
+commitment. Clicking **Verify** runs the same algorithm in your browser and reveals the
+deterministic deck order.
+
+### Manual verification
+
+Players or auditors can reproduce the deck independently:
 
 1. Fetch the hand log and proof after the hand ends:
 
