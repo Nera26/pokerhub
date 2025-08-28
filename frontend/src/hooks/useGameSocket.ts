@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { Socket } from 'socket.io-client';
 import { getSocket, disconnectSocket } from '@/app/utils/socket';
+import { setServerTime } from '@/lib/server-time';
 
 interface AckPayload {
   actionId: string;
@@ -23,22 +24,35 @@ export default function useGameSocket() {
   useEffect(() => {
     const s = getSocket({ namespace: 'game' });
     setSocket(s);
+
     const handleState = (state: { tick?: number }) => {
       if (typeof state.tick === 'number') {
         lastTick.current = state.tick;
       }
     };
+
     const handleConnect = () => {
+      // Re-send pending action if we had one queued when we disconnected
       if (pending.current) {
         s.emit(pending.current.event, pending.current.payload);
       }
+      // Ask server to resume from the last known tick
       s.emit('resume', { tick: lastTick.current });
     };
+
+    const handleClock = (serverNow: number) => {
+      // Keep local timers synchronized with server time
+      setServerTime(serverNow);
+    };
+
     s.on('connect', handleConnect);
     s.on('state', handleState);
+    s.on('server:Clock', handleClock);
+
     return () => {
       s.off('connect', handleConnect);
       s.off('state', handleState);
+      s.off('server:Clock', handleClock);
       disconnectSocket('game');
     };
   }, []);
@@ -46,18 +60,22 @@ export default function useGameSocket() {
   const emitWithAck = useCallback(
     (event: string, payload: Record<string, unknown>, ackEvent: string) => {
       if (!socket) return Promise.reject(new Error('socket not connected'));
+
       const actionId =
         (payload.actionId as string | undefined) ??
         (typeof crypto !== 'undefined' && 'randomUUID' in crypto
           ? crypto.randomUUID()
           : Date.now().toString());
+
       const fullPayload = { ...payload, actionId };
+
       if (event === 'action') {
         pending.current = { event, payload: fullPayload, ackEvent };
       }
+
       return new Promise<void>((resolve) => {
         const handler = (ack: AckPayload) => {
-          if (ack.actionId === actionId) {
+          if (ack?.actionId === actionId) {
             socket.off(ackEvent, handler);
             if (pending.current?.payload.actionId === actionId) {
               pending.current = null;
@@ -78,7 +96,10 @@ export default function useGameSocket() {
     [emitWithAck],
   );
 
-  const join = useCallback(() => emitWithAck('join', {}, 'join:ack'), [emitWithAck]);
+  const join = useCallback(
+    () => emitWithAck('join', {}, 'join:ack'),
+    [emitWithAck],
+  );
   const buyIn = useCallback(
     () => emitWithAck('buy-in', {}, 'buy-in:ack'),
     [emitWithAck],
@@ -94,4 +115,3 @@ export default function useGameSocket() {
 
   return { socket, sendAction, join, buyIn, sitout, rebuy } as const;
 }
-
