@@ -112,6 +112,54 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
   }
 
+  @SubscribeMessage('join')
+  handleJoin(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: AckPayload,
+  ) {
+    if (this.isRateLimited(client)) return;
+    this.acknowledge(client, 'join', payload);
+  }
+
+  @SubscribeMessage('buy-in')
+  handleBuyIn(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: AckPayload,
+  ) {
+    if (this.isRateLimited(client)) return;
+    this.acknowledge(client, 'buy-in', payload);
+  }
+
+  @SubscribeMessage('sitout')
+  handleSitout(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: AckPayload,
+  ) {
+    if (this.isRateLimited(client)) return;
+    this.acknowledge(client, 'sitout', payload);
+  }
+
+  @SubscribeMessage('rebuy')
+  handleRebuy(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: AckPayload,
+  ) {
+    if (this.isRateLimited(client)) return;
+    this.acknowledge(client, 'rebuy', payload);
+  }
+
+  private acknowledge(client: Socket, event: string, payload: AckPayload) {
+    if (this.processed.has(payload.actionId)) {
+      this.enqueue(client, `${event}:ack`, {
+        actionId: payload.actionId,
+        duplicate: true,
+      } satisfies AckPayload);
+      return;
+    }
+    this.processed.add(payload.actionId);
+    this.enqueue(client, `${event}:ack`, { actionId: payload.actionId } as AckPayload);
+  }
+
   private enqueue(client: Socket, event: string, data: unknown) {
     const id = client.id;
     const queue = this.queues.get(id) ?? [];
