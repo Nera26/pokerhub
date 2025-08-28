@@ -1,6 +1,6 @@
 /** @jest-environment node */
 
-import { fetchHandProof, fetchHandLog } from '@/lib/api/hands';
+import { fetchHandProof, fetchHandLog, fetchHandState } from '@/lib/api/hands';
 import { serverFetch } from '@/lib/server-fetch';
 
 jest.mock('@/lib/server-fetch', () => ({
@@ -32,5 +32,28 @@ describe('hands api', () => {
     });
 
     await expect(fetchHandLog('1')).resolves.toBe('line\n');
+  });
+
+  it('fetches hand state', async () => {
+    (serverFetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => ({
+        street: 'preflop',
+        pot: 0,
+        sidePots: [],
+        currentBet: 0,
+        players: [],
+      }),
+    });
+
+    await expect(fetchHandState('1', 0)).resolves.toEqual({
+      street: 'preflop',
+      pot: 0,
+      sidePots: [],
+      currentBet: 0,
+      players: [],
+    });
   });
 });
