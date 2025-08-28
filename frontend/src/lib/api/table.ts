@@ -4,7 +4,7 @@ import { getBaseUrl } from '@/lib/base-url';
 import { handleResponse } from './client';
 import { serverFetch } from '@/lib/server-fetch';
 import { getSocket } from '@/app/utils/socket';
-import { GameActionSchema, type GameAction } from '@shared/types';
+import { GameActionSchema, type GameActionPayload } from '@shared/types';
 
 if (typeof window !== 'undefined') {
   const socket = getSocket();
@@ -106,11 +106,11 @@ async function emitWithAck(event: string, data: Record<string, unknown>) {
   });
 }
 
-async function sendAction(action: GameAction) {
-  GameActionSchema.parse(action);
+async function sendAction(action: GameActionPayload) {
   const socket = getSocket();
   const actionId = crypto.randomUUID();
-  const payload = { ...action, actionId };
+  const payload = { version: '1', ...action, actionId };
+  GameActionSchema.parse(payload);
   let attempt = 0;
   const maxAttempts = 5;
 

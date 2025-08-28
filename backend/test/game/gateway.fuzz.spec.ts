@@ -100,17 +100,22 @@ describe('GameGateway fuzz tests', () => {
       fc.asyncProperty(
         fc.array(fc.string(), { minLength: 2, maxLength: 5 }),
         async (ids) => {
-          const gateway = new GameGateway(
-            new RoomManager() as any,
-            new DummyAnalytics() as any,
-            new ClockService(),
-            new DummyRepo() as any,
-            new DummyRedis() as any,
-          );
-          const client: any = { id: 'c1', emit: jest.fn() };
-          const actions = ids.map(
-            (id) => ({ type: 'next', tableId: 'default', actionId: id } as any),
-          );
+        const gateway = new GameGateway(
+          new RoomManager() as any,
+          new DummyAnalytics() as any,
+          new ClockService(),
+          new DummyRepo() as any,
+          new DummyRedis() as any,
+        );
+        const client: any = { id: 'c1', emit: jest.fn() };
+        const actions = ids.map(
+          (id) => ({
+            version: '1',
+            type: 'next',
+            tableId: 'default',
+            actionId: id,
+          } as any),
+        );
           for (const action of actions.slice().reverse()) {
             await gateway.handleAction(client, action);
           }
@@ -134,7 +139,12 @@ describe('GameGateway fuzz tests', () => {
           new DummyRedis() as any,
         );
         const client: any = { id: 'c1', emit: jest.fn() };
-        const action = { type: 'next', tableId: 'default', actionId: id } as any;
+        const action = {
+          version: '1',
+          type: 'next',
+          tableId: 'default',
+          actionId: id,
+        } as any;
         await gateway.handleAction(client, action);
         await gateway.handleAction(client, action);
         const acks = client.emit.mock.calls

@@ -10,8 +10,8 @@ import { join } from 'path';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Hand } from '../database/entities/hand.entity';
-import type { HandProofResponse } from '../schemas/hands';
-import type { HandLogResponse } from '../schemas/hands';
+import { HandLog } from '../game/hand-log';
+import type { HandProofResponse, HandLogResponse } from '../schemas/hands';
 
 @Controller('hands')
 export class HandsController {
@@ -37,13 +37,44 @@ export class HandsController {
   async getLog(@Param('id') id: string): Promise<HandLogResponse> {
     const file = join(process.cwd(), '../storage/hand-logs', `${id}.jsonl`);
     try {
+      // Prefer the JSONL file if present
       return await readFile(file, 'utf8');
     } catch {
+      // Fallback to DB column if file missing
       const hand = await this.hands.findOne({ where: { id } });
       if (!hand) {
         throw new NotFoundException('log not found');
       }
       return hand.log;
     }
+  }
+
+  @Get(':id/state/:actionIndex')
+  async getState(
+    @Param('id') id: string,
+    @Param('actionIndex') actionIndex: string,
+  ): Promise<unknown> {
+    const file = join(process.cwd(), '../storage/hand-logs', `${id}.jsonl`);
+    let raw: string;
+    try {
+      raw = await readFile(file, 'utf8');
+    } catch {
+      throw new NotFoundException('log not found');
+    }
+
+    // Reconstruct HandLog from JSONL
+    const log = new HandLog();
+    for (const line of raw.trim().split('\n')) {
+      if (line) {
+        (log as any).entries.push(JSON.parse(line));
+      }
+    }
+
+    const idx = Number(actionIndex);
+    const state = log.reconstruct(idx);
+    if (!state) {
+      throw new NotFoundException('state not found');
+    }
+    return state; // If you have a HandStateResponse type, you can switch to that.
   }
 }

@@ -6,6 +6,8 @@ import {
   type HandProofResponse,
   HandLogResponseSchema,
   type HandLogResponse,
+  HandStateResponseSchema,
+  type HandStateResponse,
 } from '@shared/types';
 
 export async function fetchHandProof(
@@ -34,4 +36,20 @@ export async function fetchHandLog(
   }
   const text = await res.text();
   return HandLogResponseSchema.parse(text);
+}
+
+export async function fetchHandState(
+  id: string,
+  actionIndex: number,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<HandStateResponse> {
+  const baseUrl = getBaseUrl();
+  const res = serverFetch(
+    `${baseUrl}/api/hands/${id}/state/${actionIndex}`,
+    {
+      credentials: 'include',
+      signal,
+    },
+  );
+  return handleResponse(res, HandStateResponseSchema);
 }

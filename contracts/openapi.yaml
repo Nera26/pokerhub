@@ -279,15 +279,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HandProof'
+
   /hands/{id}/log:
     get:
       summary: Export hand log
+
+  /hands/{id}/state/{actionIndex}:
+    get:
+      summary: Reconstruct hand state at action index
+
       parameters:
         - in: path
           name: id
           required: true
           schema:
             type: string
+
       responses:
         '200':
           description: Hand log entries
@@ -295,6 +302,20 @@ paths:
             text/plain:
               schema:
                 type: string
+
+        - in: path
+          name: actionIndex
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Reconstructed hand state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HandState'
+
   /game/hand/{id}/log:
     get:
       summary: Export hand log
@@ -430,6 +451,9 @@ components:
     PostBlindAction:
       type: object
       properties:
+        version:
+          type: string
+          enum: ['1']
         type:
           type: string
           enum: [postBlind]
@@ -439,10 +463,13 @@ components:
           type: string
         amount:
           type: number
-      required: [type, tableId, playerId, amount]
+      required: [version, type, tableId, playerId, amount]
     BetAction:
       type: object
       properties:
+        version:
+          type: string
+          enum: ['1']
         type:
           type: string
           enum: [bet]
@@ -452,10 +479,13 @@ components:
           type: string
         amount:
           type: number
-      required: [type, tableId, playerId, amount]
+      required: [version, type, tableId, playerId, amount]
     RaiseAction:
       type: object
       properties:
+        version:
+          type: string
+          enum: ['1']
         type:
           type: string
           enum: [raise]
@@ -465,10 +495,13 @@ components:
           type: string
         amount:
           type: number
-      required: [type, tableId, playerId, amount]
+      required: [version, type, tableId, playerId, amount]
     CallAction:
       type: object
       properties:
+        version:
+          type: string
+          enum: ['1']
         type:
           type: string
           enum: [call]
@@ -478,10 +511,13 @@ components:
           type: string
         amount:
           type: number
-      required: [type, tableId, playerId]
+      required: [version, type, tableId, playerId]
     CheckAction:
       type: object
       properties:
+        version:
+          type: string
+          enum: ['1']
         type:
           type: string
           enum: [check]
@@ -489,10 +525,13 @@ components:
           type: string
         playerId:
           type: string
-      required: [type, tableId, playerId]
+      required: [version, type, tableId, playerId]
     FoldAction:
       type: object
       properties:
+        version:
+          type: string
+          enum: ['1']
         type:
           type: string
           enum: [fold]
@@ -500,16 +539,19 @@ components:
           type: string
         playerId:
           type: string
-      required: [type, tableId, playerId]
+      required: [version, type, tableId, playerId]
     NextAction:
       type: object
       properties:
+        version:
+          type: string
+          enum: ['1']
         type:
           type: string
           enum: [next]
         tableId:
           type: string
-      required: [type, tableId]
+      required: [version, type, tableId]
     Tournament:
       type: object
       properties:
@@ -713,3 +755,54 @@ components:
       - seed
       - nonce
       - commitment
+  HandState:
+    type: object
+    properties:
+      street:
+        type: string
+        enum: [preflop, flop, turn, river, showdown]
+      pot:
+        type: number
+      sidePots:
+        type: array
+        items:
+          type: object
+          properties:
+            amount:
+              type: number
+            players:
+              type: array
+              items:
+                type: string
+          required:
+            - amount
+            - players
+      currentBet:
+        type: number
+      players:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+            stack:
+              type: number
+            folded:
+              type: boolean
+            bet:
+              type: number
+            allIn:
+              type: boolean
+          required:
+            - id
+            - stack
+            - folded
+            - bet
+            - allIn
+    required:
+      - street
+      - pot
+      - sidePots
+      - currentBet
+      - players
