@@ -1,0 +1,11 @@
+replicaCount: 4
+image:
+  repository: pokerhub/app
+  tag: "latest"
+  port: 3000
+service:
+  name: pokerhub
+analysis:
+  successRateQuery: |
+    sum(rate(http_requests_total{status!~"5.."}[1m])) /
+    sum(rate(http_requests_total[1m]))

@@ -1,0 +1,4 @@
+apiVersion: v2
+name: canary-deployment
+version: 0.1.0
+description: Canary deployment using Argo Rollouts
