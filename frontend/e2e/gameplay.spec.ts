@@ -61,6 +61,13 @@ test.describe('play hand end-to-end', () => {
       .poll(() => events.end?.handId, { timeout: 60_000 })
       .not.toBeUndefined();
 
+    await expect(page.getByRole('heading', { name: 'Hand Proof' })).toBeVisible();
+    await expect(page.getByText('Seed:')).toBeVisible();
+    await expect(page.getByText('Nonce:')).toBeVisible();
+    await expect(page.getByText('Commitment:')).toBeVisible();
+    await page.getByRole('button', { name: 'Verify' }).click();
+    await expect(page.getByText('Commitment valid: yes')).toBeVisible();
+
     const res = await page.request.get(`http://localhost:3000/hands/${events.end.handId}/proof`);
     const proofJson = await res.json();
     const proof = HandProofResponseSchema.parse(proofJson);

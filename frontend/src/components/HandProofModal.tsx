@@ -1,7 +1,7 @@
 /* istanbul ignore file */
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Modal from '@/app/components/ui/Modal';
 import { useHandProof } from '@/hooks/useHandProof';
 import { verifyProof, revealDeck } from '@/lib/verify';
@@ -16,16 +16,27 @@ export default function HandProofModal({ handId, isOpen, onClose }: HandProofMod
   const { data, isLoading, error } = useHandProof(handId, isOpen);
   const [deck, setDeck] = useState<number[] | null>(null);
   const [valid, setValid] = useState<boolean | null>(null);
+  const [verifying, setVerifying] = useState(false);
 
-  useEffect(() => {
-    if (data) {
-      verifyProof(data).then(setValid).catch(() => setValid(null));
-      revealDeck(data).then(setDeck).catch(() => setDeck(null));
-    } else {
+  async function handleVerify() {
+    if (!data) return;
+    setVerifying(true);
+    try {
+      const ok = await verifyProof(data);
+      setValid(ok);
+      if (ok) {
+        const d = await revealDeck(data);
+        setDeck(d);
+      } else {
+        setDeck(null);
+      }
+    } catch {
       setValid(null);
       setDeck(null);
+    } finally {
+      setVerifying(false);
     }
-  }, [data]);
+  }
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
@@ -43,6 +54,13 @@ export default function HandProofModal({ handId, isOpen, onClose }: HandProofMod
           <div>
             <strong>Commitment:</strong> {data.commitment}
           </div>
+          <button
+            onClick={handleVerify}
+            disabled={verifying}
+            className="px-2 py-1 bg-accent-green text-white rounded"
+          >
+            {verifying ? 'Verifying...' : 'Verify'}
+          </button>
           {valid !== null && (
             <div>
               <strong>Commitment valid:</strong> {valid ? 'yes' : 'no'}
