@@ -10,6 +10,8 @@ import { Table } from '../database/entities/table.entity';
 import { TournamentScheduler } from './scheduler.service';
 import { calculateIcmPayouts as icmPayouts } from './structures/icm';
 import { RoomManager } from '../game/room.service';
+import { RebuyService } from './rebuy.service';
+import { PkoService } from './pko.service';
 
 @Injectable()
 export class TournamentService {
@@ -27,6 +29,8 @@ export class TournamentService {
     private readonly tables: Repository<Table>,
     private readonly scheduler: TournamentScheduler,
     private readonly rooms: RoomManager,
+    private readonly rebuys: RebuyService,
+    private readonly pko: PkoService,
   ) {}
 
   async list(): Promise<Tournament[]> {
@@ -102,6 +106,18 @@ export class TournamentService {
     }
     t.state = TournamentState.FINISHED;
     await this.tournaments.save(t);
+  }
+
+  canRebuy(stack: number, threshold: number): boolean {
+    return this.rebuys.canRebuy(stack, threshold);
+  }
+
+  applyRebuy(stack: number, chips: number, cost: number) {
+    return this.rebuys.apply(stack, chips, cost);
+  }
+
+  settleBounty(currentBounty: number) {
+    return this.pko.settleBounty(currentBounty);
   }
 
   private async get(id: string): Promise<Tournament> {
@@ -307,7 +323,12 @@ export class TournamentService {
   calculatePrizes(
     prizePool: number,
     payouts: number[],
-    opts?: { bountyPct?: number; satelliteSeatCost?: number },
+    opts?: {
+      bountyPct?: number;
+      satelliteSeatCost?: number;
+      method?: 'topN' | 'icm';
+      stacks?: number[];
+    },
   ): {
     prizes: number[];
     bountyPool?: number;
@@ -317,8 +338,9 @@ export class TournamentService {
     let pool = prizePool;
     let bountyPool: number | undefined;
     if (opts?.bountyPct) {
-      bountyPool = Math.floor(pool * opts.bountyPct);
-      pool -= bountyPool;
+      const split = this.pko.splitPrizePool(pool, opts.bountyPct);
+      pool = split.prizePool;
+      bountyPool = split.bountyPool;
     }
 
     let seats: number | undefined;
@@ -329,8 +351,14 @@ export class TournamentService {
       pool = remainder;
     }
 
-    const prizes = payouts.map((p) => Math.floor(pool * p));
-    remainder = pool - prizes.reduce((a, b) => a + b, 0);
+    let prizes: number[];
+    if (opts?.method === 'icm' && opts.stacks) {
+      prizes = this.calculateIcmPayouts(opts.stacks, payouts);
+      remainder = pool - prizes.reduce((a, b) => a + b, 0);
+    } else {
+      prizes = payouts.map((p) => Math.floor(pool * p));
+      remainder = pool - prizes.reduce((a, b) => a + b, 0);
+    }
     let i = 0;
     while (remainder > 0) {
       prizes[i % prizes.length] += 1;

@@ -1,6 +1,4 @@
-import {
-  TournamentService,
-} from '../../src/tournament/tournament.service';
+import { TournamentService } from '../../src/tournament/tournament.service';
 import {
   Tournament,
   TournamentState,
@@ -10,6 +8,8 @@ import { Table } from '../../src/database/entities/table.entity';
 import { Repository } from 'typeorm';
 import * as fc from 'fast-check';
 import { icmRaw } from '../../src/tournament/structures/icm';
+import { RebuyService } from '../../src/tournament/rebuy.service';
+import { PkoService } from '../../src/tournament/pko.service';
 
 describe('TournamentService algorithms', () => {
   let service: TournamentService;
@@ -57,6 +57,8 @@ describe('TournamentService algorithms', () => {
       tablesRepo as Repository<Table>,
       scheduler,
       rooms,
+      new RebuyService(),
+      new PkoService(),
     );
   });
 
