@@ -36,8 +36,8 @@ export interface ResponseLike {
 }
 
 export async function checkApiContractVersion(): Promise<void> {
+  const baseUrl = getBaseUrl();
   try {
-    const baseUrl = getBaseUrl();
     const res = serverFetch(`${baseUrl}/status`);
     const { contractVersion } = await handleResponse(
       res,
@@ -45,11 +45,17 @@ export async function checkApiContractVersion(): Promise<void> {
     );
     const [backendMajor] = contractVersion.split('.');
     const [frontendMajor] = API_CONTRACT_VERSION.split('.');
-    if (backendMajor !== frontendMajor && typeof window !== 'undefined') {
-      window.alert('Please upgrade your app.');
+    if (backendMajor !== frontendMajor) {
+      if (typeof window !== 'undefined') {
+        window.alert('Please upgrade your app.');
+      }
+      throw new Error('API contract version mismatch');
     }
-  } catch {
-    // ignore errors
+  } catch (err) {
+    if (err instanceof Error && err.message === 'API contract version mismatch') {
+      throw err;
+    }
+    // ignore other errors
   }
 }
 
