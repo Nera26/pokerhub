@@ -1,0 +1,28 @@
+{
+  "title": "Business KPIs",
+  "schemaVersion": 36,
+  "version": 1,
+  "panels": [
+    {
+      "type": "graph",
+      "title": "Daily Active Users",
+      "targets": [
+        {"expr": "sum(increase(dau[1d]))"}
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "Monthly Active Users",
+      "targets": [
+        {"expr": "sum(increase(mau[30d]))"}
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "Rake Curve",
+      "targets": [
+        {"expr": "sum(rate(rake_total[1d]))"}
+      ]
+    }
+  ]
+}

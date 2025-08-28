@@ -1,0 +1,33 @@
+alertmanager:
+  config: |
+    global: {}
+    route:
+      receiver: pagerduty
+    receivers:
+      - name: pagerduty
+        pagerduty_configs:
+          - routing_key: ${pagerduty_routing_key}
+serverFiles:
+  alerts:
+    slo-alerts.yaml: |
+      groups:
+      - name: uptime
+        rules:
+        - alert: ServiceUptimeSLO
+          expr: (sum(rate(http_requests_total{status!~"5.."}[5m])) / sum(rate(http_requests_total[5m]))) < 0.999
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Service uptime below SLO"
+            description: "Less than 99.9% of requests are succeeding."
+      - name: ack-latency
+        rules:
+        - alert: AckLatencySLO
+          expr: histogram_quantile(0.99, sum(rate(ack_latency_seconds_bucket[5m])) by (le)) > 0.25
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "ACK latency above SLO"
+            description: "99th percentile ACK latency > 250ms."
