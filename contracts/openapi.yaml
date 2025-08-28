@@ -414,6 +414,9 @@ components:
     PostBlindAction:
       type: object
       properties:
+        version:
+          type: string
+          enum: ['1']
         type:
           type: string
           enum: [postBlind]
@@ -423,10 +426,13 @@ components:
           type: string
         amount:
           type: number
-      required: [type, tableId, playerId, amount]
+      required: [version, type, tableId, playerId, amount]
     BetAction:
       type: object
       properties:
+        version:
+          type: string
+          enum: ['1']
         type:
           type: string
           enum: [bet]
@@ -436,10 +442,13 @@ components:
           type: string
         amount:
           type: number
-      required: [type, tableId, playerId, amount]
+      required: [version, type, tableId, playerId, amount]
     RaiseAction:
       type: object
       properties:
+        version:
+          type: string
+          enum: ['1']
         type:
           type: string
           enum: [raise]
@@ -449,10 +458,13 @@ components:
           type: string
         amount:
           type: number
-      required: [type, tableId, playerId, amount]
+      required: [version, type, tableId, playerId, amount]
     CallAction:
       type: object
       properties:
+        version:
+          type: string
+          enum: ['1']
         type:
           type: string
           enum: [call]
@@ -462,10 +474,13 @@ components:
           type: string
         amount:
           type: number
-      required: [type, tableId, playerId]
+      required: [version, type, tableId, playerId]
     CheckAction:
       type: object
       properties:
+        version:
+          type: string
+          enum: ['1']
         type:
           type: string
           enum: [check]
@@ -473,10 +488,13 @@ components:
           type: string
         playerId:
           type: string
-      required: [type, tableId, playerId]
+      required: [version, type, tableId, playerId]
     FoldAction:
       type: object
       properties:
+        version:
+          type: string
+          enum: ['1']
         type:
           type: string
           enum: [fold]
@@ -484,16 +502,19 @@ components:
           type: string
         playerId:
           type: string
-      required: [type, tableId, playerId]
+      required: [version, type, tableId, playerId]
     NextAction:
       type: object
       properties:
+        version:
+          type: string
+          enum: ['1']
         type:
           type: string
           enum: [next]
         tableId:
           type: string
-      required: [type, tableId]
+      required: [version, type, tableId]
     Tournament:
       type: object
       properties:

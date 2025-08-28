@@ -82,7 +82,7 @@ export const NextActionSchema = z.object({
   tableId: z.string(),
 });
 
-export const GameActionSchema = z.discriminatedUnion('type', [
+const GameActionPayloadSchema = z.discriminatedUnion('type', [
   PostBlindActionSchema,
   BetActionSchema,
   RaiseActionSchema,
@@ -92,7 +92,19 @@ export const GameActionSchema = z.discriminatedUnion('type', [
   NextActionSchema,
 ]);
 
+export type GameActionPayload = z.infer<typeof GameActionPayloadSchema>;
+
+export const GameActionSchema = z
+  .object({ version: z.literal('1') })
+  .and(GameActionPayloadSchema);
+
 export type GameAction = z.infer<typeof GameActionSchema>;
+
+export const GameStateSchema = z
+  .object({ version: z.literal('1'), tick: z.number() })
+  .passthrough();
+
+export type GameState = z.infer<typeof GameStateSchema>;
 
 export const TournamentSchema = z.object({
   id: z.string(),
