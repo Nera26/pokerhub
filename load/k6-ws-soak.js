@@ -3,12 +3,15 @@ import http from 'k6/http';
 import { Trend, Gauge } from 'k6/metrics';
 import { sleep } from 'k6';
 
+const cpuThreshold = Number(__ENV.CPU_THRESHOLD) || 80;
+
 export const options = {
   vus: Number(__ENV.SOCKETS) || 80000,
   duration: __ENV.DURATION || '24h',
   thresholds: {
     memory_leak: ['p(100)<1'], // <1% growth
     gc_pause: ['p(95)<50'], // <50ms p95
+    cpu_usage: [`p(100)<${cpuThreshold}`],
   },
 };
 
@@ -21,6 +24,7 @@ const metricsUrl = __ENV.METRICS_URL;
 const latency = new Trend('ws_latency');
 const memoryLeak = new Gauge('memory_leak');
 const gcPause = new Trend('gc_pause');
+const cpuUsage = new Gauge('cpu_usage');
 
 function mulberry32(a) {
   return function () {
@@ -77,6 +81,9 @@ export function teardown(data) {
     }
     if (end.gcPauseP95 !== undefined) {
       gcPause.add(end.gcPauseP95);
+    }
+    if (end.cpuPercent !== undefined) {
+      cpuUsage.add(end.cpuPercent);
     }
   } catch (e) {
     // ignore parsing errors
