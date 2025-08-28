@@ -1,5 +1,43 @@
 version: '3.8'
 services:
+  redis:
+    image: redis:7
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    command: npm run start:dev
+    environment:
+      - REDIS_HOST=redis
+    ports:
+      - '4000:3000'
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  load:
+    image: grafana/k6
+    working_dir: /scripts
+    volumes:
+      - ./load:/scripts
+    command: >
+      run --summary-export=ack-summary.json k6-game-actions.js
+    environment:
+      - WS_URL=ws://backend:3000/game
+      - SOCKETS=11000
+      - ACK_P95_MS=200
+      - ACK_P99_MS=400
+      - ACK_SUCCESS_RATE=0.99
+    depends_on:
+      backend:
+        condition: service_started
+
   frontend:
     image: node:18
     working_dir: /app

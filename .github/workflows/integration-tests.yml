@@ -26,6 +26,11 @@ jobs:
         run: npx playwright install --with-deps
       - name: Start services
         run: docker compose -f docker-compose.yml -f docker-compose.test.yml up -d --build
+      - name: Run WebSocket load
+        run: docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm load
+      - name: Report ACK latency stats
+        run: |
+          node -e "const s=require('./load/ack-summary.json'); const m=s.metrics; console.log('p95', m.ack_latency.values['p(95)']); console.log('p99', m.ack_latency.values['p(99)']); console.log('ack_success_rate', m.ack_success.values.rate);"
       - name: Run integration tests (lobby + gameplay)
         working-directory: frontend
         run: npm run test:e2e:integration
