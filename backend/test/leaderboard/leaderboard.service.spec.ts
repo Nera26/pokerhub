@@ -2,6 +2,8 @@ import { LeaderboardService } from '../../src/leaderboard/leaderboard.service';
 import type { Cache } from 'cache-manager';
 import { newDb } from 'pg-mem';
 import { DataSource, Repository } from 'typeorm';
+import { promises as fs } from 'fs';
+import { join } from 'path';
 import { User } from '../../src/database/entities/user.entity';
 import { Table } from '../../src/database/entities/table.entity';
 import { Tournament } from '../../src/database/entities/tournament.entity';
@@ -181,5 +183,40 @@ describe('LeaderboardService', () => {
     await service.rebuild({ days: 30, minSessions: 1, decay: 1 });
     const second = await service.getTopPlayers();
     expect(second).toEqual(first);
+  });
+
+  it('rebuildFromEvents consumes jsonl files', async () => {
+    const dir = join(process.cwd(), 'storage', 'events');
+    await fs.rm(dir, { recursive: true, force: true });
+    await fs.mkdir(dir, { recursive: true });
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const file = join(dir, `${dateStr}.jsonl`);
+    const lines: string[] = [];
+    const now = Date.now();
+    for (let i = 0; i < 10; i++) {
+      lines.push(
+        JSON.stringify({
+          playerId: 'alice',
+          sessionId: `a${i}`,
+          points: 10,
+          ts: now,
+        }),
+      );
+    }
+    for (let i = 0; i < 10; i++) {
+      lines.push(
+        JSON.stringify({
+          playerId: 'bob',
+          sessionId: `b${i}`,
+          points: 5,
+          ts: now,
+        }),
+      );
+    }
+    await fs.writeFile(file, lines.join('\n'));
+    await service.rebuildFromEvents(1);
+    const top = await service.getTopPlayers();
+    expect(top.slice(0, 2)).toEqual(['alice', 'bob']);
+    await fs.rm(dir, { recursive: true, force: true });
   });
 });
