@@ -1,14 +1,7 @@
 import fc from 'fast-check';
-import { TournamentService } from '../src/tournament/tournament.service';
+import { calculateIcmPayouts } from '../src/tournament/structures/icm';
 
 describe('calculateIcmPayouts property', () => {
-  const service = new TournamentService(
-    {} as any,
-    {} as any,
-    {} as any,
-    {} as any,
-  );
-
   it('payout totals stay within one chip of the prize pool', () => {
     fc.assert(
       fc.property(
@@ -22,7 +15,7 @@ describe('calculateIcmPayouts property', () => {
         }),
         (stacks: number[], prizes: number[]) => {
           const p = prizes.slice(0, stacks.length);
-          const payouts = service.calculateIcmPayouts(stacks, p);
+          const payouts = calculateIcmPayouts(stacks, p);
           const pool = p.reduce((a, b) => a + b, 0);
           const total = payouts.reduce((a, b) => a + b, 0);
           expect(Math.abs(pool - total)).toBeLessThan(1);

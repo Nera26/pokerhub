@@ -8,6 +8,7 @@ import {
 import { Seat } from '../database/entities/seat.entity';
 import { Table } from '../database/entities/table.entity';
 import { TournamentScheduler } from './scheduler.service';
+import { calculateIcmPayouts as icmPayouts } from './structures/icm';
 
 @Injectable()
 export class TournamentService {
@@ -362,39 +363,10 @@ export class TournamentService {
   }
 
   /**
-   * Calculate ICM payouts for remaining players. Uses a recursive
-   * implementation and rounds results so the total error is < 1 chip.
+   * Calculate ICM payouts for remaining players. Results are rounded so the
+   * total error is less than one chip.
    */
   calculateIcmPayouts(stacks: number[], prizes: number[]): number[] {
-    const raw = this.icmRecursive(stacks, prizes);
-    const floored = raw.map(Math.floor);
-    let remainder =
-      prizes.reduce((a, b) => a + b, 0) - floored.reduce((a, b) => a + b, 0);
-    const fractions = raw.map((v, i) => ({ i, frac: v - floored[i] }));
-    fractions.sort((a, b) => b.frac - a.frac);
-    for (let i = 0; i < remainder; i++) {
-      floored[fractions[i].i] += 1;
-    }
-    return floored;
-  }
-
-  private icmRecursive(stacks: number[], prizes: number[]): number[] {
-    const n = stacks.length;
-    if (prizes.length === 0) return Array(n).fill(0);
-    const total = stacks.reduce((a, b) => a + b, 0);
-    const res = Array(n).fill(0);
-    for (let i = 0; i < n; i++) {
-      const prob = stacks[i] / total;
-      res[i] += prizes[0] * prob;
-      if (prizes.length > 1) {
-        const remainingStacks = stacks.filter((_, idx) => idx !== i);
-        const sub = this.icmRecursive(remainingStacks, prizes.slice(1));
-        for (let j = 0; j < sub.length; j++) {
-          const idx = j >= i ? j + 1 : j;
-          res[idx] += sub[j] * prob;
-        }
-      }
-    }
-    return res;
+    return icmPayouts(stacks, prizes);
   }
 }
