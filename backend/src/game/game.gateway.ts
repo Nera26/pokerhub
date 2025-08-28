@@ -24,7 +24,6 @@ import {
   type GameAction as WireGameAction,
 } from '@shared/types';
 
-
 interface AckPayload {
   actionId: string;
   duplicate?: boolean;
@@ -40,7 +39,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly processed = new Set<string>();
 
 
+  private readonly queues = new Map<
+    string,
+    { event: string; data: unknown }[]
+  >();
+
+
   private readonly queues = new Map<string, { event: string; data: unknown }[]>();
+
 
 
   private readonly sending = new Set<string>();
@@ -88,32 +94,43 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     if (await this.isRateLimited(client)) return;
 
-    const key = this.processedKey(action.actionId);
+    const { actionId, ...rest } = action;
+    const key = this.processedKey(actionId);
     if ((await this.redis.exists(key)) === 1) {
       this.enqueue(client, 'action:ack', {
-        actionId: action.actionId,
+        actionId,
         duplicate: true,
       } satisfies AckPayload);
       return;
     }
 
+
+    this.processed.add(actionId);
+    await this.redis.set(key, '1', 'EX', this.processedTtlSeconds);
+
+    const result = GameActionSchema.safeParse(rest);
+    if (!result.success) {
+      this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+      return;
+    }
+    const parsed = result.data;
+
     const { actionId, ...rest } = action;
     const parsed = GameActionSchema.parse(rest);
 
-    this.processed.add(actionId);
+
     if (parsed.playerId) {
       this.clock.clearTimer(parsed.playerId);
     }
     const { tableId, ...wire } = parsed;
     const gameAction = wire as GameAction;
 
-
     const room = this.rooms.get(tableId);
     const state = await room.apply(gameAction);
 
     void this.analytics.recordGameEvent({
       clientId: client.id,
-      action,
+      action: { ...parsed, actionId },
     });
 
     const payload = { ...state, tick: ++this.tick };
@@ -128,8 +145,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
 
+
     this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
-    await this.redis.set(key, '1', 'EX', this.processedTtlSeconds);
 
     if (parsed.playerId) {
       this.clock.setTimer(
@@ -138,7 +155,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         () => void this.handleTimeout(parsed.playerId),
       );
     }
-
   }
 
   @SubscribeMessage('join')
