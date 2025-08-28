@@ -1,50 +1,44 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { randomUUID } from 'crypto';
-import {
-  CreateUserRequest,
-  UpdateUserRequest,
-  User,
-} from '../schemas/users';
+import { CreateUserRequest, UpdateUserRequest, User } from '../schemas/users';
+import { UserRepository } from './user.repository';
 
 @Injectable()
 export class UsersService {
-  private users = new Map<string, User>();
+  constructor(private readonly users: UserRepository) {}
 
-  create(data: CreateUserRequest): User {
-    const user: User = {
-      id: randomUUID(),
+  async create(data: CreateUserRequest): Promise<User> {
+    const user = this.users.create({
       username: data.username,
       avatarKey: data.avatarKey,
       banned: false,
       balance: 0,
-    };
-    this.users.set(user.id, user);
-    return user;
+    });
+    return this.users.save(user);
   }
 
-  update(id: string, data: UpdateUserRequest): User {
-    const user = this.users.get(id);
+  async update(id: string, data: UpdateUserRequest): Promise<User> {
+    const user = await this.users.findOne({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
     Object.assign(user, data);
-    return user;
+    return this.users.save(user);
   }
 
-  ban(id: string): User {
-    const user = this.users.get(id);
+  async ban(id: string): Promise<User> {
+    const user = await this.users.findOne({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
     user.banned = true;
-    return user;
+    return this.users.save(user);
   }
 
-  adjustBalance(id: string, amount: number): User {
-    const user = this.users.get(id);
+  async adjustBalance(id: string, amount: number): Promise<User> {
+    const user = await this.users.findOne({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
     user.balance += amount;
-    return user;
+    return this.users.save(user);
   }
 
-  reset() {
-    this.users.clear();
+  async reset() {
+    await this.users.createQueryBuilder().delete().from(this.users.metadata.target).execute();
   }
 }
 

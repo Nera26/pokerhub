@@ -7,8 +7,9 @@ import { Tournament } from './entities/tournament.entity';
 import { User } from './entities/user.entity';
 import { AntiCheatFlag } from './entities/antiCheatFlag.entity';
 import { KycVerification } from './entities/kycVerification.entity';
+import { Seat } from './entities/seat.entity';
 
-const entities = [User, Tournament, Table, AntiCheatFlag, KycVerification];
+const entities = [User, Tournament, Table, Seat, AntiCheatFlag, KycVerification];
 let dataSource: DataSource;
 
 @Module({

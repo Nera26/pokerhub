@@ -27,10 +27,10 @@ export class UsersController {
   constructor(private readonly users: UsersService) {}
 
   @Post()
-  create(@Body() body: CreateUserRequest): User {
+  async create(@Body() body: CreateUserRequest): Promise<User> {
     try {
       const parsed = CreateUserSchema.parse(body);
-      const user = this.users.create(parsed);
+      const user = await this.users.create(parsed);
       return UserSchema.parse(user);
     } catch (err) {
       if (err instanceof ZodError) {
@@ -41,13 +41,13 @@ export class UsersController {
   }
 
   @Put(':id')
-  update(
+  async update(
     @Param('id') id: string,
     @Body() body: UpdateUserRequest,
-  ): User {
+  ): Promise<User> {
     try {
       const parsed = UpdateUserSchema.parse(body);
-      const user = this.users.update(id, parsed);
+      const user = await this.users.update(id, parsed);
       return UserSchema.parse(user);
     } catch (err) {
       if (err instanceof ZodError) {
@@ -59,10 +59,13 @@ export class UsersController {
 
   @Post(':id/ban')
   @HttpCode(200)
-  ban(@Param('id') id: string, @Body() body: BanUserRequest): User {
+  async ban(
+    @Param('id') id: string,
+    @Body() body: BanUserRequest,
+  ): Promise<User> {
     try {
       BanUserSchema.parse(body);
-      const user = this.users.ban(id);
+      const user = await this.users.ban(id);
       return UserSchema.parse(user);
     } catch (err) {
       if (err instanceof ZodError) {
@@ -74,13 +77,13 @@ export class UsersController {
 
   @Post(':id/balance')
   @HttpCode(200)
-  adjustBalance(
+  async adjustBalance(
     @Param('id') id: string,
     @Body() body: BalanceAdjustmentRequest,
-  ): User {
+  ): Promise<User> {
     try {
       const parsed = BalanceAdjustmentSchema.parse(body);
-      const user = this.users.adjustBalance(id, parsed.amount);
+      const user = await this.users.adjustBalance(id, parsed.amount);
       return UserSchema.parse(user);
     } catch (err) {
       if (err instanceof ZodError) {
