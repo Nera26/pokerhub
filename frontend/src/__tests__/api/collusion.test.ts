@@ -1,13 +1,13 @@
 /** @jest-environment node */
 
-import { listFlaggedSessions, applyReviewAction } from '@/lib/api/review';
+import { listFlaggedSessions, applyAction } from '@/lib/api/collusion';
 import { serverFetch } from '@/lib/server-fetch';
 
 jest.mock('@/lib/server-fetch', () => ({
   serverFetch: jest.fn(),
 }));
 
-describe('review api', () => {
+describe('collusion api', () => {
   it('lists flagged sessions', async () => {
     (serverFetch as jest.Mock).mockResolvedValue({
       ok: true,
@@ -29,7 +29,7 @@ describe('review api', () => {
       headers: { get: () => 'application/json' },
       json: async () => ({ message: 'warn' }),
     });
-    await expect(applyReviewAction('s1', 'warn')).resolves.toEqual({
+    await expect(applyAction('s1', 'warn')).resolves.toEqual({
       message: 'warn',
     });
   });

@@ -277,6 +277,11 @@ export type LeaderboardResponse = z.infer<typeof LeaderboardResponseSchema>;
 export const ReviewActionSchema = z.enum(['warn', 'restrict', 'ban']);
 export type ReviewAction = z.infer<typeof ReviewActionSchema>;
 
+export const ReviewActionRequestSchema = z.object({
+  action: ReviewActionSchema,
+});
+export type ReviewActionRequest = z.infer<typeof ReviewActionRequestSchema>;
+
 export const ReviewStatusSchema = z.enum([
   'flagged',
   'warn',

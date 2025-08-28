@@ -12,21 +12,23 @@ import {
 
 export async function listFlaggedSessions(): Promise<FlaggedSessionsResponse> {
   return handleResponse(
-    serverFetch(`${getBaseUrl()}/api/review/sessions`, {
+    serverFetch(`${getBaseUrl()}/api/admin/collusion/flags`, {
       credentials: 'include',
     }),
     FlaggedSessionsResponseSchema,
   );
 }
 
-export async function applyReviewAction(
+export async function applyAction(
   id: string,
   action: ReviewAction,
 ): Promise<MessageResponse> {
   return handleResponse(
-    serverFetch(`${getBaseUrl()}/api/review/sessions/${id}/${action}`, {
+    serverFetch(`${getBaseUrl()}/api/admin/collusion/${id}`, {
       method: 'POST',
       credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action }),
     }),
     MessageResponseSchema,
   );

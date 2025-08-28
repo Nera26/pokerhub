@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useAuthToken } from '@/app/store/authStore';
 
-const ReviewPage = dynamic(() => import('@/features/review'), {
+const CollusionPage = dynamic(() => import('@/features/collusion'), {
   loading: () => <div>Loading...</div>,
 });
 
@@ -30,6 +30,6 @@ function useRequireAdmin() {
 
 export default function CollusionReviewPage() {
   useRequireAdmin();
-  return <ReviewPage />;
+  return <CollusionPage />;
 }
 
