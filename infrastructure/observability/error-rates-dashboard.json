@@ -1,0 +1,17 @@
+{
+  "dashboard": {
+    "title": "Error Rates",
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "Error Rate",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(app_errors_total[5m])"
+          }
+        ]
+      }
+    ]
+  }
+}
