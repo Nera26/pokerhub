@@ -194,6 +194,11 @@ export class WalletService {
     );
   }
 
+  async totalBalance(): Promise<number> {
+    const accounts = await this.accounts.find();
+    return accounts.reduce((sum, acc) => sum + acc.balance, 0);
+  }
+
   private async checkRateLimit(deviceId: string, ip: string) {
     const limit = 3;
     const ttl = 60 * 60;
