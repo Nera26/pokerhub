@@ -26,6 +26,9 @@ jobs:
       - name: Install backend deps
         run: npm ci
         working-directory: backend
+      - name: Leaderboard rebuild SLA test
+        run: npm test -- test/leaderboard.rebuild.property.spec.ts
+        working-directory: backend
       - name: Install frontend deps
         run: npm ci
         working-directory: frontend

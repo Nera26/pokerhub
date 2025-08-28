@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { promises as fs } from 'fs';
 import { join } from 'path';
+import { metrics } from '@opentelemetry/api';
 import { User } from '../database/entities/user.entity';
 import { AnalyticsService } from '../analytics/analytics.service';
 
@@ -13,6 +14,15 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export class LeaderboardService {
   private readonly cacheKey = 'leaderboard:hot';
   private readonly ttl = 30; // seconds
+  private static readonly meter = metrics.getMeter('leaderboard');
+  private static readonly rebuildEventsDuration =
+    LeaderboardService.meter.createHistogram(
+      'leaderboard_rebuild_from_events_duration_ms',
+      {
+        description: 'Time to rebuild leaderboard from jsonl events',
+        unit: 'ms',
+      },
+    );
 
   constructor(
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
@@ -57,7 +67,8 @@ export class LeaderboardService {
   }
 
   async rebuildFromEvents(days: number): Promise<void> {
-    const now = Date.now();
+    const start = Date.now();
+    const now = start;
     const base = join(process.cwd(), 'storage', 'events');
     const events: unknown[] = [];
     for (let i = 0; i < days; i++) {
@@ -76,6 +87,7 @@ export class LeaderboardService {
       } catch {}
     }
     await this.rebuildWithEvents(events);
+    LeaderboardService.rebuildEventsDuration.record(Date.now() - start);
   }
 
   private async rebuildWithEvents(
