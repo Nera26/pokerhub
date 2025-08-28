@@ -12,11 +12,11 @@ jobs:
     env:
       CANARY_TRAFFIC_PERCENT: 5
       CANARY_DURATION_MINUTES: 30
-      SLO_BURN_THRESHOLD: ${{ vars.SLO_BURN_THRESHOLD }}
       NAMESPACE: ${{ vars.K8S_NAMESPACE }}
       SERVICE: api
       STABLE: api
       CANARY: api-canary
+      CANARY_RELEASE: canary
       PROMETHEUS: ${{ vars.PROMETHEUS_URL }}
       SLO_QUERY: ${{ vars.SLO_QUERY }}
     steps:
@@ -29,6 +29,10 @@ jobs:
         uses: azure/setup-kubectl@v3
         with:
           version: v1.27.3
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.13.0
       - name: Validate observability configs
         run: |
           python -m pip install pyyaml >/dev/null
