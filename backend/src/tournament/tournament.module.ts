@@ -10,9 +10,10 @@ import { SatelliteService } from './satellite.service';
 import { Tournament } from '../database/entities/tournament.entity';
 import { Seat } from '../database/entities/seat.entity';
 import { Table } from '../database/entities/table.entity';
+import { GameModule } from '../game/game.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Tournament, Seat, Table])],
+  imports: [TypeOrmModule.forFeature([Tournament, Seat, Table]), GameModule],
   controllers: [TournamentController],
   providers: [
     TournamentService,

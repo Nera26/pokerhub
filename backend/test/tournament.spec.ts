@@ -102,11 +102,13 @@ describe('Tournament scheduling and balancing', () => {
       } as Tournament,
     ]);
     const scheduler: any = {};
+    const rooms: any = { get: jest.fn() };
     const service = new TournamentService(
       tournamentsRepo,
       seatsRepo,
       tablesRepo,
       scheduler,
+      rooms,
     );
     const balancer = new TableBalancerService(tablesRepo, service);
     const before = tables.map((t) => t.seats.length);

@@ -17,6 +17,7 @@ describe('TournamentService algorithms', () => {
   let tournamentsRepo: any;
   let seatsRepo: any;
   let tablesRepo: any;
+  let rooms: any;
 
   function createRepo<T extends { id: string }>(initial: T[] = []) {
     const items = new Map(initial.map((i) => [i.id, i]));
@@ -49,11 +50,13 @@ describe('TournamentService algorithms', () => {
     ]);
     seatsRepo = createRepo<Seat>();
     tablesRepo = { find: jest.fn() };
+    rooms = { get: jest.fn() };
     service = new TournamentService(
       tournamentsRepo as Repository<Tournament>,
       seatsRepo as Repository<Seat>,
       tablesRepo as Repository<Table>,
       scheduler,
+      rooms,
     );
   });
 
@@ -141,6 +144,35 @@ describe('TournamentService algorithms', () => {
         expect.any(Array),
         start,
       );
+    });
+  });
+
+  describe('autoFoldOnTimeout', () => {
+    it('applies a fold action for the timed-out seat', async () => {
+      const seat: Seat = {
+        id: 's1',
+        table: { id: 'tbl1', seats: [] } as Table,
+        user: { id: 'u1' } as any,
+        position: 0,
+        lastMovedHand: 0,
+      } as Seat;
+      seatsRepo = {
+        ...seatsRepo,
+        findOne: jest.fn(async () => seat),
+      };
+      const apply = jest.fn(async () => ({}));
+      rooms.get.mockReturnValue({ apply });
+      service = new TournamentService(
+        tournamentsRepo as Repository<Tournament>,
+        seatsRepo as Repository<Seat>,
+        tablesRepo as Repository<Table>,
+        scheduler,
+        rooms,
+      );
+
+      await service.autoFoldOnTimeout('s1');
+
+      expect(apply).toHaveBeenCalledWith({ type: 'fold', playerId: 'u1' });
     });
   });
 

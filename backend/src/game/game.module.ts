@@ -17,5 +17,6 @@ import { HandController } from './hand.controller';
   imports: [AnalyticsModule, EventsModule, TypeOrmModule.forFeature([Hand])],
   providers: [GameGateway, SpectatorGateway, RoomManager, ClockService, TablesService],
   controllers: [HandsController, GameController, TablesController, HandController],
+  exports: [RoomManager],
 })
 export class GameModule {}
