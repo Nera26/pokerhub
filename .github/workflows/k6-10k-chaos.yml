@@ -27,6 +27,7 @@ jobs:
           SOCKETS: 80000
           ACK_P95_MS: 120
           ACK_P99_MS: 200
+          GRAFANA_PUSH_URL: ${{ secrets.GRAFANA_PUSH_URL }}
         with:
           filename: load/k6-10k-tables.js
           flags: --address 0.0.0.0:5656 --summary-export=ack-summary.json --out json=ack-telemetry.json --out prometheus
@@ -39,6 +40,15 @@ jobs:
           kill $(cat gc_collector.pid) || true
       - name: Check thresholds
         run: ./load/check-thresholds.sh ack-summary.json
+      - name: Upload metrics to S3
+        if: always()
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          aws s3 cp ack-summary.json s3://${{ vars.K6_METRICS_BUCKET }}/10k-chaos/summary-${GITHUB_RUN_ID}.json
+          aws s3 cp ack-telemetry.json s3://${{ vars.K6_METRICS_BUCKET }}/10k-chaos/metrics-${GITHUB_RUN_ID}.json
+          aws s3 cp ack-histogram.json s3://${{ vars.K6_METRICS_BUCKET }}/10k-chaos/histogram-${GITHUB_RUN_ID}.json
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v3
@@ -47,6 +57,7 @@ jobs:
           path: |
             ack-summary.json
             ack-telemetry.json
+            ack-histogram.json
             gc-heap-metrics.log
             k6-prom-metrics.txt
             toxiproxy.log
