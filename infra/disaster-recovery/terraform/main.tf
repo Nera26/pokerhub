@@ -31,6 +31,11 @@ variable "redis_cluster_id" {
   type        = string
 }
 
+variable "redis_snapshot_bucket" {
+  description = "S3 bucket storing Redis snapshots"
+  type        = string
+}
+
 variable "clickhouse_backup_bucket" {
   description = "S3 bucket storing ClickHouse backups"
   type        = string
@@ -82,15 +87,11 @@ resource "aws_elasticache_snapshot" "redis" {
 }
 
 resource "aws_s3_bucket" "redis_snapshots" {
-  provider = aws.secondary
-  bucket   = "redis-dr-snapshots"
-}
+  bucket = var.redis_snapshot_bucket
 
-resource "aws_s3_bucket_object" "redis_copy" {
-  provider = aws.secondary
-  bucket   = aws_s3_bucket.redis_snapshots.id
-  key      = "${aws_elasticache_snapshot.redis.snapshot_name}.rdb"
-  source   = aws_elasticache_snapshot.redis.snapshot_name
+  versioning {
+    enabled = true
+  }
 }
 
 # Cross-region read replica for Postgres with PITR enabled

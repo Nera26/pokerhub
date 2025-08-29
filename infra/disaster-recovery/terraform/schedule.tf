@@ -8,6 +8,12 @@ variable "pg_backup_vault" {
   default     = "pg-dr-backup"
 }
 
+variable "redis_backup_vault" {
+  description = "Name of the primary Redis backup vault"
+  type        = string
+  default     = "redis-dr-backup"
+}
+
 variable "gcp_secondary_region" {
   description = "Secondary GCP region for backup copy"
   type        = string
@@ -70,6 +76,40 @@ resource "aws_backup_selection" "pg" {
   iam_role_arn = aws_iam_role.backup.arn
   plan_id      = aws_backup_plan.pg.id
   resources    = ["arn:aws:rds:${var.primary_region}:${data.aws_caller_identity.current.account_id}:db:${var.pg_instance_id}"]
+}
+
+resource "aws_backup_vault" "redis" {
+  name = var.redis_backup_vault
+}
+
+resource "aws_backup_vault" "redis_secondary" {
+  provider = aws.secondary
+  name     = "${var.redis_backup_vault}-secondary"
+}
+
+resource "aws_backup_plan" "redis" {
+  name = "redis-hourly"
+
+  rule {
+    rule_name         = "redis-hourly"
+    target_vault_name = aws_backup_vault.redis.name
+    schedule          = "cron(0 * * * ? *)"
+
+    copy_action {
+      destination_vault_arn = aws_backup_vault.redis_secondary.arn
+    }
+
+    lifecycle {
+      delete_after = 7
+    }
+  }
+}
+
+resource "aws_backup_selection" "redis" {
+  name         = "redis-selection"
+  iam_role_arn = aws_iam_role.backup.arn
+  plan_id      = aws_backup_plan.redis.id
+  resources    = ["arn:aws:elasticache:${var.primary_region}:${data.aws_caller_identity.current.account_id}:cluster:${var.redis_cluster_id}"]
 }
 
 # GCP Cloud Scheduler job to trigger snapshot and copy

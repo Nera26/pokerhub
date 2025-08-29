@@ -7,21 +7,25 @@
 ## Backup Strategy
 - AWS Backup schedules hourly Postgres snapshots and copies them to `${SECONDARY_REGION}`.
 - WAL segments are archived every 5 minutes to `s3://${WAL_ARCHIVE_BUCKET}` and replicated cross-region for PITR.
-- Nightly Redis snapshots are copied to `${SECONDARY_REGION}`.
+- Kubernetes CronJobs `pg-snapshot-replication` and `redis-snapshot-replication` copy Postgres and Redis snapshots to `${SECONDARY_REGION}`.
 - A GCP Cloud Scheduler job triggers cross-cloud snapshot copies to `${SECONDARY_REGION}`.
 - Cross-region read replicas continuously replicate changes.
 - Kubernetes CronJobs `postgres-backup` and `redis-backup` upload encrypted archives to `s3://${ARCHIVE_BUCKET}`.
 
 ## Recovery Steps
-1. If the primary region is unavailable, promote the read replica:
+1. If the primary region is unavailable, run the failover script to promote replicas and update DNS:
    ```bash
-   aws rds promote-read-replica \
-     --db-instance-identifier ${DB_REPLICA_ID} \
-     --region ${SECONDARY_REGION}
+   SECONDARY_REGION=${SECONDARY_REGION} \
+   PG_REPLICA_ID=${DB_REPLICA_ID} \
+   REDIS_REPLICA_ID=${REDIS_REPLICA_ID} \
+   ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID} \
+   DB_RECORD_NAME=db.example.com \
+   REDIS_RECORD_NAME=redis.example.com \
+   bash infra/disaster-recovery/failover.sh
    ```
 2. For data corruption, restore Postgres to a specific point in time:
    ```bash
- aws rds restore-db-instance-to-point-in-time \
+   aws rds restore-db-instance-to-point-in-time \
     --source-db-instance-identifier ${DB_PRIMARY_ID} \
     --target-db-instance-identifier pg-dr-restore \
     --use-latest-restorable-time \
