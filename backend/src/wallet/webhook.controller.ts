@@ -1,14 +1,11 @@
 import { Controller, Post, Body, Req, UnauthorizedException } from '@nestjs/common';
 import type { Request } from 'express';
-import { WalletService } from '../wallet/wallet.service';
-import { PaymentProviderService } from '../wallet/payment-provider.service';
-import {
-  ProviderCallbackSchema,
-  type ProviderCallback,
-} from '../schemas/wallet';
+import { WalletService } from './wallet.service';
+import { PaymentProviderService } from './payment-provider.service';
+import { ProviderCallbackSchema, type ProviderCallback } from '../schemas/wallet';
 
 @Controller('wallet/provider')
-export class ProviderController {
+export class WebhookController {
   constructor(
     private readonly wallet: WalletService,
     private readonly provider: PaymentProviderService,
@@ -22,7 +19,8 @@ export class ProviderController {
       throw new UnauthorizedException('invalid signature');
     }
     const parsed = ProviderCallbackSchema.parse(body);
-    await this.wallet.handleProviderCallback(
+    await this.wallet.processDisbursement(
+      parsed.eventId,
       parsed.idempotencyKey,
       parsed.providerTxnId,
       parsed.status,

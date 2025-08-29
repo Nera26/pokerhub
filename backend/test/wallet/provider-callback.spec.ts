@@ -7,7 +7,7 @@ import { SettlementJournal } from '../../src/wallet/settlement-journal.entity';
 import { WalletService } from '../../src/wallet/wallet.service';
 import { EventPublisher } from '../../src/events/events.service';
 import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
-import { ProviderController } from '../../src/routes/provider.controller';
+import { WebhookController } from '../../src/wallet/webhook.controller';
 import { KycService } from '../../src/wallet/kyc.service';
 import type Redis from 'ioredis';
 import { createHmac } from 'crypto';
@@ -16,15 +16,21 @@ import type { Request } from 'express';
 describe('Provider webhook', () => {
   let dataSource: DataSource;
   let service: WalletService;
-  let controller: ProviderController;
+  let controller: WebhookController;
   const events = { emit: jest.fn() } as unknown as EventPublisher;
-  let redisStore: Record<string, number> = {};
+  let redisStore: Record<string, string> = {};
   const redis = {
-    incr: (key: string): Promise<number> => {
-      redisStore[key] = (redisStore[key] ?? 0) + 1;
-      return Promise.resolve(redisStore[key]);
+    set: (
+      key: string,
+      value: string,
+      mode: string,
+      _ex: string,
+      _ttl: number,
+    ): Promise<string | null> => {
+      if (mode === 'NX' && redisStore[key]) return Promise.resolve(null);
+      redisStore[key] = value;
+      return Promise.resolve('OK');
     },
-    expire: (): Promise<void> => Promise.resolve(),
   } as unknown as Redis;
   const provider = new PaymentProviderService();
   const kyc = { validate: jest.fn().mockResolvedValue(undefined) } as unknown as KycService;
@@ -73,7 +79,7 @@ describe('Provider webhook', () => {
       kyc,
     );
     (service as any).enqueueDisbursement = jest.fn();
-    controller = new ProviderController(service, provider);
+    controller = new WebhookController(service, provider);
   });
 
   beforeEach(async () => {
@@ -103,6 +109,7 @@ describe('Provider webhook', () => {
 
   it('validates signature and updates journal exactly once', async () => {
     const body = {
+      eventId: 'evt1',
       idempotencyKey: 'idem1',
       providerTxnId: 'tx1',
       status: 'approved',
@@ -127,6 +134,7 @@ describe('Provider webhook', () => {
 
   it('rejects invalid signatures', async () => {
     const body = {
+      eventId: 'evt1',
       idempotencyKey: 'idem1',
       providerTxnId: 'tx1',
       status: 'approved',
