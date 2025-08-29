@@ -1,0 +1,96 @@
+name: nightly-soak-chaos
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  soak:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1440
+    env:
+      METRICS_URL: http://localhost:3000/metrics
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start GC/heap collector
+        run: |
+          load/collect-gc-heap.sh &
+          echo $! > collector.pid
+        env:
+          GRAFANA_PUSH_URL: ${{ secrets.GRAFANA_PUSH_URL }}
+          GC_THRESHOLD: 50
+      - name: Run soak test
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: load/soak.js
+          flags: >-
+            --summary-export=soak-summary.json
+            -o experimental-prometheus-rw=${{ secrets.GRAFANA_PROM_URL }}
+      - name: Stop collector
+        if: always()
+        run: kill $(cat collector.pid)
+      - name: Check thresholds
+        run: load/check-thresholds.sh soak-summary.json
+      - name: Check heap growth
+        run: |
+          start=$(grep -m1 heap_used gc-heap-metrics.log | awk -F'heap_used=' '{print $2}' | awk '{print $1}')
+          end=$(grep heap_used gc-heap-metrics.log | tail -1 | awk -F'heap_used=' '{print $2}' | awk '{print $1}')
+          python - "$start" "$end" <<'PY'
+import sys
+s=float(sys.argv[1]); e=float(sys.argv[2])
+growth=(e-s)*100/s
+print(f"heap growth: {growth}%")
+if growth > 1:
+    sys.exit("heap growth exceeded 1%")
+PY
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: soak-metrics
+          path: |
+            soak-summary.json
+            gc-heap-metrics.log
+
+  chaos:
+    runs-on: ubuntu-latest
+    needs: soak
+    env:
+      METRICS_URL: http://localhost:3000/metrics
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start GC/heap collector
+        run: |
+          load/collect-gc-heap.sh &
+          echo $! > collector.pid
+        env:
+          GRAFANA_PUSH_URL: ${{ secrets.GRAFANA_PUSH_URL }}
+          GC_THRESHOLD: 50
+      - name: Start toxiproxy with packet loss and jitter
+        run: |
+          docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 ghcr.io/shopify/toxiproxy
+          PACKET_LOSS=0.01 LATENCY_MS=80 JITTER_MS=20 ./load/chaos/toxiproxy-chaos.sh
+      - name: Run chaos test
+        uses: grafana/k6-action@v0.2.0
+        env:
+          SIO_URL: ws://localhost:3001/game
+        with:
+          filename: load/chaos/ws-chaos.js
+          flags: >-
+            --summary-export=chaos-summary.json
+            -o experimental-prometheus-rw=${{ secrets.GRAFANA_PROM_URL }}
+      - name: Stop toxiproxy
+        if: always()
+        run: docker rm -f toxiproxy
+      - name: Stop collector
+        if: always()
+        run: kill $(cat collector.pid)
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: chaos-metrics
+          path: |
+            chaos-summary.json
+            gc-heap-metrics.log
