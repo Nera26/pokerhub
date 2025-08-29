@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import LeaderboardPage from '@/features/site/leaderboard';
+import LeaderboardPage from '@/features/leaderboard';
 import { fetchLeaderboard } from '@/lib/api/leaderboard';
 
 jest.mock('@/lib/api/leaderboard');
