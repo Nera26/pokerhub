@@ -239,6 +239,7 @@ describe('WalletService withdraw', () => {
       expect.objectContaining({
         accountId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
         operation: 'withdraw',
+        currency: 'USD',
       }),
     );
     const key = Object.keys(redisStore).find((k) =>

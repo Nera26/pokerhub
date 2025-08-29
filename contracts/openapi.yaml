@@ -692,8 +692,11 @@ components:
       properties:
         amount:
           type: number
+        currency:
+          type: string
       required:
         - amount
+        - currency
     WithdrawRequest:
       type: object
       properties:
@@ -701,9 +704,12 @@ components:
           type: number
         deviceId:
           type: string
+        currency:
+          type: string
       required:
         - amount
         - deviceId
+        - currency
     ProviderCallback:
       type: object
       properties:

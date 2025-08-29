@@ -67,9 +67,9 @@ export class WalletService {
     return this.payoutQueue;
   }
 
-  protected async enqueueDisbursement(id: string): Promise<void> {
+  protected async enqueueDisbursement(id: string, currency: string): Promise<void> {
     const queue = await this.getQueue();
-    await queue.add('payout', { id });
+    await queue.add('payout', { id, currency });
   }
 
   private buildHash(
@@ -128,6 +128,7 @@ export class WalletService {
         amount: Math.abs(entry.amount),
         refType,
         refId,
+        currency: entry.account.currency,
       };
       if (entry.amount > 0) {
         await this.events.emit('wallet.credit', payload);
@@ -273,16 +274,18 @@ export class WalletService {
     );
   }
 
-  async requestDisbursement(id: string): Promise<void> {
+  async requestDisbursement(id: string, currency: string): Promise<void> {
     const disb = await this.disbursements.findOneByOrFail({ id });
     const account = await this.accounts.findOneByOrFail({
       id: disb.accountId,
+      currency,
     });
     await this.kyc.validate(account);
     await this.events.emit('wallet.disbursement.request', {
       id: disb.id,
       accountId: disb.accountId,
       amount: disb.amount,
+      currency,
       idempotencyKey: disb.idempotencyKey,
     });
   }
@@ -300,7 +303,8 @@ export class WalletService {
       where: { status: 'pending' },
     });
     for (const disb of pending) {
-      await this.enqueueDisbursement(disb.id);
+      const account = await this.accounts.findOneByOrFail({ id: disb.accountId });
+      await this.enqueueDisbursement(disb.id, account.currency);
     }
   }
 
@@ -336,7 +340,7 @@ export class WalletService {
       disb.providerRef = providerTxnId;
       await this.disbursements.save(disb);
     } else {
-      await this.enqueueDisbursement(disb.id);
+      await this.enqueueDisbursement(disb.id, user.currency);
     }
   }
 
@@ -388,6 +392,7 @@ export class WalletService {
     op: 'deposit' | 'withdraw',
     accountId: string,
     amount: number,
+    currency: string,
   ) {
     const limitEnv =
       op === 'deposit'
@@ -412,6 +417,7 @@ export class WalletService {
         amount,
         dailyTotal: total,
         limit,
+        currency,
       });
       throw new Error('Daily limit exceeded');
     }
@@ -438,7 +444,7 @@ export class WalletService {
             throw new Error('AML limit exceeded');
           }
           await this.checkVelocity('withdraw', deviceId, ip);
-          await this.enforceDailyLimit('withdraw', accountId, amount);
+          await this.enforceDailyLimit('withdraw', accountId, amount, currency);
           const house = await this.accounts.findOneByOrFail({ name: 'house', currency });
           const challenge = await this.provider.initiate3DS(accountId, amount);
           const status: ProviderStatus = await this.provider.getStatus(
@@ -475,7 +481,7 @@ export class WalletService {
               idempotencyKey: randomUUID(),
               status: 'pending',
             });
-            await this.enqueueDisbursement(disb.id);
+            await this.enqueueDisbursement(disb.id, currency);
           }
           span.setStatus({ code: SpanStatusCode.OK });
         } catch (err) {
@@ -510,7 +516,7 @@ export class WalletService {
           if (!user.kycVerified) {
             throw new Error('KYC required');
           }
-          await this.enforceDailyLimit('deposit', accountId, amount);
+          await this.enforceDailyLimit('deposit', accountId, amount, currency);
           const house = await this.accounts.findOneByOrFail({ name: 'house', currency });
           const challenge = await this.provider.initiate3DS(accountId, amount);
           const status: ProviderStatus = await this.provider.getStatus(

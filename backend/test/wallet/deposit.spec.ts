@@ -184,6 +184,7 @@ describe('WalletService deposit', () => {
       expect.objectContaining({
         accountId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
         operation: 'deposit',
+        currency: 'USD',
       }),
     );
     const key = Object.keys(redisStore).find((k) => k.startsWith('wallet:deposit'));

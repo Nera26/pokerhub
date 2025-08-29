@@ -48,13 +48,14 @@ Emitted when chips are credited to a wallet.
 ```json
 {
   "type": "object",
-  "required": ["accountId", "amount", "refType", "refId"],
+  "required": ["accountId", "amount", "refType", "refId", "currency"],
   "additionalProperties": false,
   "properties": {
     "accountId": { "type": "string", "format": "uuid" },
     "amount": { "type": "number" },
     "refType": { "type": "string" },
-    "refId": { "type": "string" }
+    "refId": { "type": "string" },
+    "currency": { "type": "string" }
   }
 }
 ```
@@ -173,16 +174,18 @@ Emitted when chips are reserved from a player's wallet.
 - `accountId` – Player account
 - `amount` – Chips reserved
 - `refId` – Reference identifier (e.g. hand ID)
+- `currency` – ISO currency code
 
 ```json
 {
   "type": "object",
-  "required": ["accountId", "amount", "refId"],
+  "required": ["accountId", "amount", "refId", "currency"],
   "additionalProperties": false,
   "properties": {
     "accountId": { "type": "string", "format": "uuid" },
     "amount": { "type": "number" },
-    "refId": { "type": "string" }
+    "refId": { "type": "string" },
+    "currency": { "type": "string" }
   }
 }
 ```
@@ -193,16 +196,18 @@ Emitted when reserved chips are committed to the pot.
 - `refId` – Reference identifier (e.g. hand ID)
 - `amount` – Total committed chips
 - `rake` – Rake deducted
+- `currency` – ISO currency code
 
 ```json
 {
   "type": "object",
-  "required": ["refId", "amount", "rake"],
+  "required": ["refId", "amount", "rake", "currency"],
   "additionalProperties": false,
   "properties": {
     "refId": { "type": "string" },
     "amount": { "type": "number" },
-    "rake": { "type": "number" }
+    "rake": { "type": "number" },
+    "currency": { "type": "string" }
   }
 }
 ```
