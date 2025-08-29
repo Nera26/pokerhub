@@ -97,6 +97,28 @@ describe('CollusionService', () => {
     expect(log).toHaveLength(3);
   });
 
+  it('creates reviewable entry for shared device and ip', async () => {
+    await service.record('u1', 'shared', '9.9.9.9', 1000);
+    await service.record('u2', 'shared', '9.9.9.9', 2000);
+    const features = await service.extractFeatures(
+      'u1',
+      'u2',
+      [1],
+      [1],
+      [0],
+      [1],
+    );
+    await service.flagSession('s-shared', ['u1', 'u2'], features);
+    const sessions = await service.listFlaggedSessions();
+    expect(sessions).toEqual([
+      expect.objectContaining({
+        id: 's-shared',
+        users: ['u1', 'u2'],
+        status: 'flagged',
+      }),
+    ]);
+  });
+
   it('paginates and filters sessions', async () => {
     await service.flagSession('s1', ['u1'], {});
     await service.flagSession('s2', ['u2'], {});
