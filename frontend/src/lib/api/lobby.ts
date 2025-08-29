@@ -8,6 +8,10 @@ import {
   TournamentSchema,
   type Table,
   type Tournament,
+  MessageResponseSchema,
+  type TournamentRegisterRequest,
+  type TournamentWithdrawRequest,
+  type MessageResponse,
 } from '@shared/types';
 
 export type { Table, Tournament };
@@ -90,4 +94,36 @@ export async function fetchTournaments({
     z.array(TournamentSchema),
     { signal },
   );
+}
+
+export async function registerTournament(
+  id: string,
+  body: TournamentRegisterRequest,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<MessageResponse> {
+  const baseUrl = getBaseUrl();
+  const res = await fetch(`${baseUrl}/api/tournaments/${id}/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    credentials: 'include',
+    signal,
+  });
+  return handleResponse(res, MessageResponseSchema);
+}
+
+export async function withdrawTournament(
+  id: string,
+  body: TournamentWithdrawRequest,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<MessageResponse> {
+  const baseUrl = getBaseUrl();
+  const res = await fetch(`${baseUrl}/api/tournaments/${id}/withdraw`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    credentials: 'include',
+    signal,
+  });
+  return handleResponse(res, MessageResponseSchema);
 }

@@ -194,6 +194,7 @@ export const TournamentSchema = z.object({
   id: z.string(),
   title: z.string(),
   buyIn: z.number(),
+  fee: z.number().optional(),
   prizePool: z.number(),
   players: z.object({ current: z.number(), max: z.number() }),
   registered: z.boolean(),
@@ -201,6 +202,17 @@ export const TournamentSchema = z.object({
 export const TournamentListSchema = z.array(TournamentSchema);
 export type Tournament = z.infer<typeof TournamentSchema>;
 export type TournamentList = z.infer<typeof TournamentListSchema>;
+
+export const TournamentRegisterRequestSchema = z.object({
+  userId: z.string(),
+});
+export type TournamentRegisterRequest = z.infer<
+  typeof TournamentRegisterRequestSchema
+>;
+
+export const TournamentWithdrawRequestSchema =
+  TournamentRegisterRequestSchema;
+export type TournamentWithdrawRequest = TournamentRegisterRequest;
 
 // --- Table / Game Types ---
 export const GameTypeSchema = z.enum([

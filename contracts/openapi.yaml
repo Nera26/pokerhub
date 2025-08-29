@@ -297,6 +297,50 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TournamentList'
+  /tournaments/{id}/register:
+    post:
+      summary: Register for tournament
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TournamentRegisterRequest'
+      responses:
+        '200':
+          description: Tournament registration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /tournaments/{id}/withdraw:
+    post:
+      summary: Withdraw from tournament
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TournamentRegisterRequest'
+      responses:
+        '200':
+          description: Tournament withdrawal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /tournaments/{id}/schedule:
     post:
       summary: Schedule tournament
@@ -1017,6 +1061,8 @@ components:
           type: string
         buyIn:
           type: number
+        fee:
+          type: number
         prizePool:
           type: number
         pko:
@@ -1046,6 +1092,13 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Tournament'
+    TournamentRegisterRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+      required:
+        - userId
     Table:
       type: object
       properties:
