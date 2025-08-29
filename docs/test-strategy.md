@@ -29,3 +29,18 @@ TABLES=10000 SOCKETS=80000 k6 run infra/tests/load/k6-table-actions.js \
 ```
 
 Latency histograms are stored under the `ack_latency` metric in ClickHouse for query and dashboarding.
+
+## Action Swarm Soak Test
+
+The `load/soak.js` script extends the action swarm to a 24 h soak run. Execute it via:
+
+```bash
+npm run soak:test -- -e METRICS_URL=http://staging.pokerhub:3000/metrics
+```
+
+Run with `--log-format json` to capture custom metrics:
+
+- `heap_used_bytes` – monitor for <1 % growth to detect leaks.
+- `gc_pause_ms` – p95 should stay below 50 ms.
+
+Breaching these thresholds indicates memory or GC regressions requiring investigation.
