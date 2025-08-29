@@ -10,7 +10,7 @@
 - Nightly Redis snapshots are copied to `${SECONDARY_REGION}`.
 - A GCP Cloud Scheduler job triggers cross-cloud snapshot copies to `${SECONDARY_REGION}`.
 - Cross-region read replicas continuously replicate changes.
-- Helm CronJobs run restore tests to validate snapshots and WAL archives.
+- Kubernetes CronJobs `postgres-backup` and `redis-backup` upload encrypted archives to `s3://${ARCHIVE_BUCKET}`.
 
 ## Recovery Steps
 1. If the primary region is unavailable, promote the read replica:
@@ -58,7 +58,7 @@ The script logs metrics and writes `failover.metrics` containing
 `RTO_SECONDS` and `RPO_SECONDS` for tracking.
 
 ## Verification
-- Run `infra/scripts/verify-backups.sh` to confirm snapshot availability.
+- Run `infrastructure/scripts/verify-restore.sh` to restore the latest snapshot and ensure it boots correctly.
 - Run `infra/disaster-recovery/tests/restore-wal.sh` to validate WAL archive restores and measure `RTO_SECONDS` and `RPO_SECONDS`.
 - Run `npx ts-node infra/disaster-recovery/tests/restore.test.ts` to spin up a snapshot in a sandbox and verify `RPO_SECONDS ≤ 300`.
 - Monitor GitHub nightly workflow `backup-verify` for automated checks.
