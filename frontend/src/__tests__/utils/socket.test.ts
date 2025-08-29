@@ -3,9 +3,14 @@ import { io as ioClient } from 'socket.io-client';
 
 const on = jest.fn();
 const disconnect = jest.fn();
+const ioOn = jest.fn();
 
 jest.mock('socket.io-client', () => ({
-  io: jest.fn(() => ({ on, disconnect })),
+  io: jest.fn(() => ({
+    on,
+    disconnect,
+    io: { on: ioOn, off: jest.fn() },
+  })),
 }));
 
 describe('socket utils', () => {
