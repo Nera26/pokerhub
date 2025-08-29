@@ -33,3 +33,19 @@ groups:
           pagerduty_service: pokerhub-sre
         annotations:
           summary: "WebSocket message latency p95 over 100ms"
+      - alert: ErrorBudgetBurnRateFast
+        expr: ((1 - avg_over_time(service_availability_ratio[5m])) / (1 - 0.9995)) > 14
+        for: 2m
+        labels:
+          severity: critical
+          pagerduty_service: pokerhub-sre
+        annotations:
+          summary: "Fast burn: error budget consumed >14x over 5m"
+      - alert: ErrorBudgetBurnRateSlow
+        expr: ((1 - avg_over_time(service_availability_ratio[1h])) / (1 - 0.9995)) > 7
+        for: 15m
+        labels:
+          severity: warning
+          pagerduty_service: pokerhub-sre
+        annotations:
+          summary: "Slow burn: error budget consumed >7x over 1h"
