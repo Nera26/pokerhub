@@ -29,6 +29,8 @@ spec:
                   key: REPLICA_ENDPOINT
             - name: DB_FAILOVER_STRATEGY
               value: promote-replica
+            - name: ALERTMANAGER_URL
+              value: http://alertmanager:9093
           resources:
             requests:
               cpu: "1"

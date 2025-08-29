@@ -1,3 +1,4 @@
+# SLO: 99% of game actions ACKed within 250ms
 groups:
   - name: game-action-ack-latency-slo
     rules:
