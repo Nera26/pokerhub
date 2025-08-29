@@ -1,8 +1,9 @@
-import { Controller, Get, Param, Post } from '@nestjs/common';
+import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { CollusionService } from './collusion.service';
 import { FlaggedSessionJob } from './flagged-session.job';
 import { ReviewActionSchema } from '../schemas/review';
-
+import { AuthGuard } from '../auth/auth.guard';
+@UseGuards(AuthGuard)
 @Controller('review')
 export class ReviewController {
   constructor(

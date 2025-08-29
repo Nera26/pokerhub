@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { listFlaggedSessions, applyAction } from '@/lib/api/collusion';
 import type { FlaggedSession, ReviewAction } from '@shared/types';
+import { useAuthToken } from '@/app/store/authStore';
 
 function nextAction(status: FlaggedSession['status']): ReviewAction | null {
   switch (status) {
@@ -19,17 +20,20 @@ function nextAction(status: FlaggedSession['status']): ReviewAction | null {
 
 export default function CollusionReviewPage() {
   const [sessions, setSessions] = useState<FlaggedSession[]>([]);
+  const token = useAuthToken();
 
   useEffect(() => {
-    listFlaggedSessions()
+    if (!token) return;
+    listFlaggedSessions(token)
       .then(setSessions)
       .catch(() => setSessions([]));
-  }, []);
+  }, [token]);
 
   const act = async (id: string, status: FlaggedSession['status']) => {
+    if (!token) return;
     const action = nextAction(status);
     if (!action) return;
-    await applyAction(id, action);
+    await applyAction(id, action, token);
     setSessions((prev) =>
       prev.map((s) => (s.id === id ? { ...s, status: action } : s)),
     );
