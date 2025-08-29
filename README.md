@@ -53,3 +53,9 @@ npm run push:backend    # git subtree push --prefix backend backend-remote main
 npm run push:all        # push both subtrees
 ```
 
+## Documentation
+
+- [Game Engine Overview](docs/game-engine.md) – state transitions, message schemas, and timers.
+- [RNG Fairness Protocol](docs/rng-fairness.md) – seed generation and commit–reveal verification.
+- [Runbooks](docs/runbooks/) – operational playbooks for stuck hands, orphaned reservations, and more.
+
