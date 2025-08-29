@@ -9,6 +9,10 @@ scrape_configs:
       - source_labels: [__name__]
         regex: 'game_action_ack_latency_ms.*|wallet_transactions_total|http_server_requests_duration_seconds.*|socket_action_ack_latency_ms.*|service_availability_ratio'
         action: keep
+  - job_name: dr-restore
+    static_configs:
+      - targets: ['pushgateway:9091']
+    honor_labels: true
 
 rule_files:
   - alerts.yml

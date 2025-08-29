@@ -38,3 +38,21 @@ variable "redis_node_type" {
   type        = string
   default     = "cache.t3.micro"
 }
+
+variable "restore_region" {
+  description = "AWS region for snapshot restore"
+  type        = string
+  default     = "us-east-2"
+}
+
+variable "restore_snapshot_id" {
+  description = "DB snapshot identifier to restore"
+  type        = string
+  default     = ""
+}
+
+variable "restore_instance_class" {
+  description = "Instance class for restored DB"
+  type        = string
+  default     = "db.t3.micro"
+}

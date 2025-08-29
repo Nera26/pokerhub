@@ -34,6 +34,20 @@
 4. Update application configuration to point to the promoted or restored endpoints.
 5. Verify application health before resuming traffic.
 
+## Failover Simulation
+
+Run the automated failover drill to measure restore time and data loss.
+
+```bash
+PG_SNAPSHOT_ID=<snapshot-id> \
+CLICKHOUSE_SNAPSHOT=<snapshot-file> \
+SECONDARY_REGION=<region> \
+bash infra/disaster-recovery/tests/failover.sh
+```
+
+The script logs metrics and writes `failover.metrics` containing
+`RTO_SECONDS` and `RPO_SECONDS` for tracking.
+
 ## Verification
 - Run `infra/scripts/verify-backups.sh` to confirm snapshot availability.
 - Monitor GitHub nightly workflow `backup-verify` for automated checks.
