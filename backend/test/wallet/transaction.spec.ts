@@ -71,15 +71,32 @@ describe('WalletService transactions', () => {
         id: '11111111-1111-1111-1111-111111111111',
         name: 'user',
         balance: 1000,
+        currency: 'USD',
       },
       {
         id: '00000000-0000-0000-0000-000000000001',
         name: 'reserve',
         balance: 0,
+        currency: 'USD',
       },
-      { id: '00000000-0000-0000-0000-000000000002', name: 'house', balance: 0 },
-      { id: '00000000-0000-0000-0000-000000000003', name: 'rake', balance: 0 },
-      { id: '00000000-0000-0000-0000-000000000004', name: 'prize', balance: 0 },
+      {
+        id: '00000000-0000-0000-0000-000000000002',
+        name: 'house',
+        balance: 0,
+        currency: 'USD',
+      },
+      {
+        id: '00000000-0000-0000-0000-000000000003',
+        name: 'rake',
+        balance: 0,
+        currency: 'USD',
+      },
+      {
+        id: '00000000-0000-0000-0000-000000000004',
+        name: 'prize',
+        balance: 0,
+        currency: 'USD',
+      },
     ]);
   });
 
@@ -89,10 +106,10 @@ describe('WalletService transactions', () => {
 
   it('reserves and commits funds with rake and idempotency', async () => {
     const tx = 'hand1#flop#1';
-    await service.reserve('11111111-1111-1111-1111-111111111111', 100, tx);
-    await service.commit(tx, 100, 5);
+    await service.reserve('11111111-1111-1111-1111-111111111111', 100, tx, 'USD');
+    await service.commit(tx, 100, 5, 'USD');
     // duplicate commit should be ignored
-    await service.commit(tx, 100, 5);
+    await service.commit(tx, 100, 5, 'USD');
     const accounts = await dataSource.getRepository(Account).find();
     const user = accounts.find(
       (a) => a.id === '11111111-1111-1111-1111-111111111111',
@@ -120,8 +137,8 @@ describe('WalletService transactions', () => {
 
   it('rolls back reservation', async () => {
     const tx = 'hand2#flop#1';
-    await service.reserve('11111111-1111-1111-1111-111111111111', 50, tx);
-    await service.rollback('11111111-1111-1111-1111-111111111111', 50, tx);
+    await service.reserve('11111111-1111-1111-1111-111111111111', 50, tx, 'USD');
+    await service.rollback('11111111-1111-1111-1111-111111111111', 50, tx, 'USD');
     const user = await dataSource
       .getRepository(Account)
       .findOneBy({ id: '11111111-1111-1111-1111-111111111111' });

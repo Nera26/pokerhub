@@ -72,30 +72,34 @@ describe('WalletService flows idempotency', () => {
     );
     (service as any).enqueueDisbursement = jest.fn();
     await accountRepo.save([
-      { id: userId, name: 'user', balance: 0, kycVerified: true },
+      { id: userId, name: 'user', balance: 0, kycVerified: true, currency: 'USD' },
       {
         id: '00000000-0000-0000-0000-000000000001',
         name: 'reserve',
         balance: 0,
         kycVerified: false,
+        currency: 'USD',
       },
       {
         id: '00000000-0000-0000-0000-000000000002',
         name: 'house',
         balance: 0,
         kycVerified: false,
+        currency: 'USD',
       },
       {
         id: '00000000-0000-0000-0000-000000000003',
         name: 'rake',
         balance: 0,
         kycVerified: false,
+        currency: 'USD',
       },
       {
         id: '00000000-0000-0000-0000-000000000004',
         name: 'prize',
         balance: 0,
         kycVerified: false,
+        currency: 'USD',
       },
     ]);
     const accounts = {
@@ -153,8 +157,8 @@ describe('WalletService flows idempotency', () => {
                   ]);
                   break;
                 case 'reserve':
-                  await service.reserve(userId, op.amount, op.ref, op.idempotencyKey);
-                  await service.commit(op.ref, op.amount, op.rake, op.idempotencyKey);
+                  await service.reserve(userId, op.amount, op.ref, 'USD', op.idempotencyKey);
+                  await service.commit(op.ref, op.amount, op.rake, 'USD', op.idempotencyKey);
                   break;
               }
             }

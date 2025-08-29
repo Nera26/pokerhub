@@ -9,6 +9,7 @@ export type Amount = z.infer<typeof AmountSchema>;
 export const WithdrawSchema = z.object({
   amount: z.number().int().positive(),
   deviceId: z.string(),
+  currency: z.string().length(3),
 });
 
 export type WithdrawRequest = z.infer<typeof WithdrawSchema>;

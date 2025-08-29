@@ -110,18 +110,21 @@ describe('WalletService deposit', () => {
         name: 'user',
         balance: 0,
         kycVerified: true,
+        currency: 'USD',
       },
       {
         id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
         name: 'house',
         balance: 1000,
         kycVerified: false,
+        currency: 'USD',
       },
       {
         id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
         name: 'unverified',
         balance: 0,
         kycVerified: false,
+        currency: 'USD',
       },
     ]);
   });
@@ -131,17 +134,17 @@ describe('WalletService deposit', () => {
   });
 
   it('enforces rate limits', async () => {
-    await service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 100, 'd1', '2.2.2.2');
-    await service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 100, 'd1', '2.2.2.2');
-    await service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 100, 'd1', '2.2.2.2');
+    await service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 100, 'd1', '2.2.2.2', 'USD');
+    await service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 100, 'd1', '2.2.2.2', 'USD');
+    await service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 100, 'd1', '2.2.2.2', 'USD');
     await expect(
-      service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 100, 'd1', '2.2.2.2'),
+      service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 100, 'd1', '2.2.2.2', 'USD'),
     ).rejects.toThrow('Rate limit exceeded');
   });
 
   it('rejects deposits for unverified accounts', async () => {
     await expect(
-      service.deposit('cccccccc-cccc-cccc-cccc-cccccccccccc', 100, 'd2', '3.3.3.3'),
+      service.deposit('cccccccc-cccc-cccc-cccc-cccccccccccc', 100, 'd2', '3.3.3.3', 'USD'),
     ).rejects.toThrow('KYC required');
   });
 
@@ -149,7 +152,7 @@ describe('WalletService deposit', () => {
     (provider.initiate3DS as jest.Mock).mockResolvedValueOnce({ id: 'risk' });
     (provider.getStatus as jest.Mock).mockResolvedValueOnce('risky');
     await expect(
-      service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 100, 'd3', '5.5.5.5'),
+      service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 100, 'd3', '5.5.5.5', 'USD'),
     ).rejects.toThrow('Transaction flagged as risky');
     const jRepo = dataSource.getRepository(JournalEntry);
     expect(await jRepo.count()).toBe(0);
@@ -158,7 +161,7 @@ describe('WalletService deposit', () => {
   it('reverses chargebacks', async () => {
     (provider.initiate3DS as jest.Mock).mockResolvedValueOnce({ id: 'cb' });
     (provider.getStatus as jest.Mock).mockResolvedValueOnce('chargeback');
-    await service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 100, 'd4', '6.6.6.6');
+    await service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 100, 'd4', '6.6.6.6', 'USD');
     const accountRepo = dataSource.getRepository(Account);
     const user = await accountRepo.findOneByOrFail({
       id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
@@ -171,10 +174,10 @@ describe('WalletService deposit', () => {
 
   it('flags and rejects deposits exceeding daily limits', async () => {
     process.env.WALLET_DAILY_DEPOSIT_LIMIT = '200';
-    await service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 150, 'd5', '7.7.7.7');
+    await service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 150, 'd5', '7.7.7.7', 'USD');
     (events.emit as jest.Mock).mockClear();
     await expect(
-      service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 60, 'd6', '7.7.7.7'),
+      service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 60, 'd6', '7.7.7.7', 'USD'),
     ).rejects.toThrow('Daily limit exceeded');
     expect(events.emit as jest.Mock).toHaveBeenCalledWith(
       'antiCheat.flag',

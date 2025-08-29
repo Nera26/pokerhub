@@ -22,6 +22,9 @@ export class JournalEntry {
   @Column({ type: 'int' })
   amount: number;
 
+  @Column({ length: 3 })
+  currency: string;
+
   @Column()
   refType: string;
 

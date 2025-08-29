@@ -21,7 +21,7 @@ describe('KycService', () => {
     process.env.KYC_BLOCKED_REGIONS = 'US';
     const svc = new KycService(accounts, cache);
     await expect(
-      svc.validate({ id: '1', name: 't', kycVerified: false, region: 'US' } as any),
+      svc.validate({ id: '1', name: 't', kycVerified: false, region: 'US', currency: 'USD' } as any),
     ).rejects.toThrow('region US blocked');
     await expect(svc.getDenialReason('1')).resolves.toBe('region US blocked');
   });
