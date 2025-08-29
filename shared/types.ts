@@ -73,6 +73,8 @@ export type ProviderCallback = z.infer<typeof ProviderCallbackSchema>;
 export const WalletStatusResponseSchema = z.object({
   kycVerified: z.boolean(),
   denialReason: z.string().optional(),
+  realBalance: z.number(),
+  creditBalance: z.number(),
 });
 export type WalletStatusResponse = z.infer<typeof WalletStatusResponseSchema>;
 
@@ -91,9 +93,11 @@ export const WalletTransactionSchema = z.object({
   createdAt: z.string().datetime(),
 });
 export type WalletTransaction = z.infer<typeof WalletTransactionSchema>;
-export const WalletTransactionsResponseSchema = z.array(
-  WalletTransactionSchema,
-);
+export const WalletTransactionsResponseSchema = z.object({
+  realBalance: z.number(),
+  creditBalance: z.number(),
+  transactions: z.array(WalletTransactionSchema),
+});
 export type WalletTransactionsResponse = z.infer<
   typeof WalletTransactionsResponseSchema
 >;
@@ -107,9 +111,11 @@ export const PendingTransactionSchema = z.object({
   createdAt: z.string().datetime(),
 });
 export type PendingTransaction = z.infer<typeof PendingTransactionSchema>;
-export const PendingTransactionsResponseSchema = z.array(
-  PendingTransactionSchema,
-);
+export const PendingTransactionsResponseSchema = z.object({
+  realBalance: z.number(),
+  creditBalance: z.number(),
+  transactions: z.array(PendingTransactionSchema),
+});
 export type PendingTransactionsResponse = z.infer<
   typeof PendingTransactionsResponseSchema
 >;

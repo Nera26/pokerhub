@@ -292,10 +292,15 @@ export class WalletService {
 
   async status(
     accountId: string,
-  ): Promise<{ kycVerified: boolean; denialReason?: string }> {
+  ): Promise<{ kycVerified: boolean; denialReason?: string; realBalance: number; creditBalance: number }> {
     const account = await this.accounts.findOneByOrFail({ id: accountId });
     const denialReason = await this.kyc.getDenialReason(accountId);
-    return { kycVerified: account.kycVerified, denialReason };
+    return {
+      kycVerified: account.kycVerified,
+      denialReason,
+      realBalance: account.balance,
+      creditBalance: 0,
+    };
   }
 
   async retryPendingPayouts(): Promise<void> {
@@ -575,14 +580,19 @@ export class WalletService {
       where: { accountId },
       order: { createdAt: 'DESC' },
     });
-    return entries.map((e) => ({
-      id: e.id,
-      type: e.refType,
-      amount: e.amount,
-      currency: e.currency,
-      status: e.providerStatus ?? 'completed',
-      createdAt: e.createdAt.toISOString(),
-    }));
+    const account = await this.accounts.findOneByOrFail({ id: accountId });
+    return {
+      realBalance: account.balance,
+      creditBalance: 0,
+      transactions: entries.map((e) => ({
+        id: e.id,
+        type: e.refType,
+        amount: e.amount,
+        currency: e.currency,
+        status: e.providerStatus ?? 'completed',
+        createdAt: e.createdAt.toISOString(),
+      })),
+    };
   }
 
   async pending(accountId: string) {
@@ -591,13 +601,17 @@ export class WalletService {
       order: { createdAt: 'DESC' },
     });
     const account = await this.accounts.findOneByOrFail({ id: accountId });
-    return disbs.map((d) => ({
-      id: d.id,
-      type: 'withdraw',
-      amount: d.amount,
-      currency: account.currency,
-      status: d.status,
-      createdAt: d.createdAt.toISOString(),
-    }));
+    return {
+      realBalance: account.balance,
+      creditBalance: 0,
+      transactions: disbs.map((d) => ({
+        id: d.id,
+        type: 'withdraw',
+        amount: d.amount,
+        currency: account.currency,
+        status: d.status,
+        createdAt: d.createdAt.toISOString(),
+      })),
+    };
   }
 }

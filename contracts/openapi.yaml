@@ -837,8 +837,14 @@ components:
           type: boolean
         denialReason:
           type: string
+        realBalance:
+          type: number
+        creditBalance:
+          type: number
       required:
         - kycVerified
+        - realBalance
+        - creditBalance
     KycDenialResponse:
       type: object
       properties:
@@ -867,9 +873,20 @@ components:
           format: date-time
       required: [id, type, amount, currency, status, createdAt]
     WalletTransactionsResponse:
-      type: array
-      items:
-        $ref: '#/components/schemas/WalletTransaction'
+      type: object
+      properties:
+        realBalance:
+          type: number
+        creditBalance:
+          type: number
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/WalletTransaction'
+      required:
+        - realBalance
+        - creditBalance
+        - transactions
     PendingTransaction:
       type: object
       properties:
@@ -888,9 +905,20 @@ components:
           format: date-time
       required: [id, type, amount, currency, status, createdAt]
     PendingTransactionsResponse:
-      type: array
-      items:
-        $ref: '#/components/schemas/PendingTransaction'
+      type: object
+      properties:
+        realBalance:
+          type: number
+        creditBalance:
+          type: number
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PendingTransaction'
+      required:
+        - realBalance
+        - creditBalance
+        - transactions
     CreateUserRequest:
       type: object
       properties:

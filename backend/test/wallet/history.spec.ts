@@ -100,8 +100,8 @@ describe('WalletService history', () => {
     const res = await service.transactions(
       '11111111-1111-1111-1111-111111111111',
     );
-    expect(res).toHaveLength(1);
-    expect(res[0]).toMatchObject({
+    expect(res.transactions).toHaveLength(1);
+    expect(res.transactions[0]).toMatchObject({
       id: '22222222-2222-2222-2222-222222222222',
       type: 'deposit',
       amount: 100,
@@ -113,8 +113,8 @@ describe('WalletService history', () => {
     const res = await service.pending(
       '11111111-1111-1111-1111-111111111111',
     );
-    expect(res).toHaveLength(1);
-    expect(res[0]).toMatchObject({
+    expect(res.transactions).toHaveLength(1);
+    expect(res.transactions[0]).toMatchObject({
       id: '33333333-3333-3333-3333-333333333333',
       amount: 50,
       status: 'pending',

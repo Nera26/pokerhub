@@ -16,11 +16,10 @@ import ToastNotification, {
 } from '@/app/components/ui/ToastNotification';
 import { getStatus, fetchTransactions, fetchPending } from '@/lib/api/wallet';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/context/AuthContext';
 
 export default function WalletPage() {
-  // Balances
-  const [realBalance] = useState<number>(1250.0);
-  const [creditBalance] = useState<number>(350.0);
+  const { playerId, realBalance, creditBalance, setBalances } = useAuth();
   const [kycVerified, setKycVerified] = useState(false);
 
   const {
@@ -29,7 +28,11 @@ export default function WalletPage() {
     error: pendingError,
   } = useQuery({
     queryKey: ['wallet', 'pending'],
-    queryFn: ({ signal }) => fetchPending('u1', { signal }),
+    queryFn: ({ signal }) =>
+      fetchPending(playerId, { signal }).then((res) => {
+        setBalances(res.realBalance, res.creditBalance);
+        return res.transactions;
+      }),
   });
 
   const pendingTransactions = useMemo(
@@ -50,7 +53,11 @@ export default function WalletPage() {
     error: historyError,
   } = useQuery({
     queryKey: ['wallet', 'transactions'],
-    queryFn: ({ signal }) => fetchTransactions('u1', { signal }),
+    queryFn: ({ signal }) =>
+      fetchTransactions(playerId, { signal }).then((res) => {
+        setBalances(res.realBalance, res.creditBalance);
+        return res.transactions;
+      }),
   });
 
   const transactionHistoryData: Transaction[] = useMemo(
@@ -100,10 +107,13 @@ export default function WalletPage() {
   // Update document title (optional)
   useEffect(() => {
     document.title = 'Wallet – PokerHub';
-    getStatus('u1')
-      .then((res) => setKycVerified(res.kycVerified))
+    getStatus(playerId)
+      .then((res) => {
+        setKycVerified(res.kycVerified);
+        setBalances(res.realBalance, res.creditBalance);
+      })
       .catch(() => setKycVerified(false));
-  }, []);
+  }, [playerId, setBalances]);
 
   return (
     <>
