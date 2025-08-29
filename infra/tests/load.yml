@@ -1,14 +1,16 @@
-name: k6-10k-table-action
+name: k6-load-tests
 
 on:
   workflow_dispatch:
   push:
     paths:
       - 'load/k6-10k-tables.js'
+      - 'load/k6-ws-soak.js'
       - 'infra/tests/load.yml'
   pull_request:
     paths:
       - 'load/k6-10k-tables.js'
+      - 'load/k6-ws-soak.js'
       - 'infra/tests/load.yml'
 
 jobs:
@@ -52,3 +54,33 @@ jobs:
           path: |
             summary.json
             latency.json
+
+  ws-soak:
+    runs-on: ubuntu-latest
+    env:
+      SOCKETS: 50
+      TABLES: 1000
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run WS soak test
+        id: run-ws-soak
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: load/k6-ws-soak.js
+          flags: --summary-export=ws-soak-summary.json --duration 1m
+        continue-on-error: true
+      - name: Fail on threshold violations
+        run: |
+          if [ "${{ steps.run-ws-soak.outcome }}" = "failure" ]; then
+            echo "k6 reported failure"; exit 1;
+          fi
+          fails=$(jq '[.metrics | to_entries[] | .value.thresholds // {} | to_entries[] | select(.value.ok==false)] | length' ws-soak-summary.json)
+          if [ "$fails" -gt 0 ]; then
+            echo "WS soak thresholds violated"; exit 1;
+          fi
+      - name: Upload soak summary
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: k6-ws-soak
+          path: ws-soak-summary.json
