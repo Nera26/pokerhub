@@ -1,0 +1,25 @@
+{
+  "dashboards": [
+    {
+      "name": "Player Analytics",
+      "cards": [
+        {
+          "name": "DAU",
+          "query": "SELECT countDistinct(playerId) AS dau FROM game_event WHERE ts >= today() - 1"
+        },
+        {
+          "name": "MAU",
+          "query": "SELECT countDistinct(playerId) AS mau FROM game_event WHERE ts >= addMonths(today(), -1)"
+        },
+        {
+          "name": "Rake Curve",
+          "query": "SELECT toDate(ts) AS day, sum(rake) AS rake FROM wallet_commit GROUP BY day ORDER BY day"
+        },
+        {
+          "name": "VPIP/PFR",
+          "query": "SELECT v.stake, v.vpip, p.pfr FROM stake_vpip v JOIN stake_pfr p USING (stake) ORDER BY v.stake"
+        }
+      ]
+    }
+  ]
+}
