@@ -1,0 +1,54 @@
+name: k6-10k-table-action
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'load/k6-10k-tables.js'
+      - 'infra/tests/load.yml'
+  pull_request:
+    paths:
+      - 'load/k6-10k-tables.js'
+      - 'infra/tests/load.yml'
+
+jobs:
+  tables-10k:
+    runs-on: ubuntu-latest
+    env:
+      TABLES: 10000
+      DURATION: 5m
+      SOCKETS: 80000
+      ACK_P95_MS: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run 10k table test
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: load/k6-10k-tables.js
+          flags: --summary-export=summary.json --out json=latency.json
+      - name: Evaluate latency and TPS
+        run: |
+          p95=$(jq '.metrics.ack_latency["p(95)"]' summary.json)
+          count=$(jq '.metrics.ack_latency.count' summary.json)
+          duration_ms=$(jq '.state.testRunDurationMs' summary.json)
+          duration_min=$(echo "$duration_ms / 1000 / 60" | bc -l)
+          tables=${TABLES}
+          tps=$(echo "$count / $duration_min / $tables" | bc -l)
+          echo "p95 latency: $p95 ms"
+          echo "per-table actions/min: $tps"
+          status=0
+          if (( $(echo "$p95 >= 120" | bc -l) )); then
+            echo "p95 latency $p95 ms exceeds 120ms"; status=1
+          fi
+          if (( $(echo "$tps < 150" | bc -l) )); then
+            echo "per-table TPS $tps is below 150 actions/min"; status=1
+          fi
+          exit $status
+      - name: Upload latency histograms
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: k6-10k-table-action
+          path: |
+            summary.json
+            latency.json
