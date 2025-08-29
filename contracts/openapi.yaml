@@ -648,8 +648,15 @@ components:
       properties:
         idempotencyKey:
           type: string
+        providerTxnId:
+          type: string
+        status:
+          type: string
+          enum: [approved, risky, chargeback]
       required:
         - idempotencyKey
+        - providerTxnId
+        - status
     WalletStatusResponse:
       type: object
       properties:

@@ -277,14 +277,35 @@ export class WalletService {
     return { kycVerified: account.kycVerified };
   }
 
-  async handleProviderCallback(idempotencyKey: string): Promise<void> {
+  async retryPendingPayouts(): Promise<void> {
+    const pending = await this.disbursements.find({ where: { status: 'pending' } });
+    for (const disb of pending) {
+      await this.enqueueDisbursement(disb.id);
+    }
+  }
+
+  async handleProviderCallback(
+    idempotencyKey: string,
+    providerTxnId: string,
+    status: ProviderStatus,
+  ): Promise<void> {
     const disb = await this.disbursements.findOne({
       where: { idempotencyKey },
     });
     if (!disb || disb.status === 'completed') return;
-    disb.status = 'completed';
-    disb.completedAt = new Date();
-    await this.disbursements.save(disb);
+    const house = await this.accounts.findOneByOrFail({ name: 'house' });
+    await this.record('payout', disb.id, [{ account: house, amount: 0 }], {
+      providerTxnId,
+      providerStatus: status,
+    });
+    if (status === 'approved') {
+      disb.status = 'completed';
+      disb.completedAt = new Date();
+      disb.providerRef = providerTxnId;
+      await this.disbursements.save(disb);
+    } else {
+      await this.enqueueDisbursement(disb.id);
+    }
   }
 
   async totalBalance(): Promise<number> {

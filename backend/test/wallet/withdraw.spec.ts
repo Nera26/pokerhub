@@ -163,8 +163,8 @@ describe('WalletService withdraw', () => {
     const disb = await disbRepo.findOneByOrFail({
       accountId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
     });
-    await service.handleProviderCallback(disb.idempotencyKey);
-    await service.handleProviderCallback(disb.idempotencyKey);
+    await service.handleProviderCallback(disb.idempotencyKey, 'payout', 'approved');
+    await service.handleProviderCallback(disb.idempotencyKey, 'payout', 'approved');
     const updated = await disbRepo.findOneByOrFail({ id: disb.id });
     expect(updated.status).toBe('completed');
     expect(updated.completedAt).toBeTruthy();
