@@ -522,7 +522,7 @@ export class WalletService {
         WalletService.txnCounter.add(1, { operation: 'withdraw' });
         try {
           const user = await this.accounts.findOneByOrFail({ id: accountId, currency });
-          if (!(await this.kyc.isVerified(accountId))) {
+          if (!(await this.kyc.isVerified(accountId, ip))) {
             throw new Error('KYC required');
           }
           if (amount > 100000) {
