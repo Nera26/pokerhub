@@ -19,8 +19,16 @@ describe('settlement', () => {
     state.players[1].cards = [card(11, 1), card(5, 2)]; // B
     state.players[2].cards = [card(12, 3), card(12, 2)]; // C
     state.sidePots = [
-      { amount: 150, players: ['A', 'B', 'C'] },
-      { amount: 100, players: ['A', 'B'] },
+      {
+        amount: 150,
+        players: ['A', 'B', 'C'],
+        contributions: { A: 50, B: 50, C: 50 },
+      },
+      {
+        amount: 100,
+        players: ['A', 'B'],
+        contributions: { A: 50, B: 50 },
+      },
     ];
     state.pot = 250;
     state.players.forEach((p: any) => (p.stack = 0));
@@ -39,7 +47,13 @@ describe('settlement', () => {
     state.board = [card(0, 0), card(7, 1), card(2, 2), card(6, 3), card(11, 3)];
     state.players[0].cards = [card(12, 2), card(10, 0)];
     state.players[1].cards = [card(12, 1), card(10, 1)];
-    state.sidePots = [{ amount: 100, players: ['A', 'B'] }];
+    state.sidePots = [
+      {
+        amount: 100,
+        players: ['A', 'B'],
+        contributions: { A: 50, B: 50 },
+      },
+    ];
     state.pot = 100;
     state.players.forEach((p: any) => (p.stack = 0));
     await (engine as any)['settle']();

@@ -31,7 +31,11 @@ export interface GameState {
   phase: HandPhase;
   street: Street;
   pot: number;
-  sidePots: { amount: number; players: string[] }[];
+  sidePots: {
+    amount: number;
+    players: string[];
+    contributions: Record<string, number>;
+  }[];
   currentBet: number;
   players: PlayerState[];
   deck: number[];
@@ -160,11 +164,34 @@ export class HandStateMachine {
   }
 
   private finishBettingRound() {
-    const active = this.activePlayers().map((p) => p.id);
-    const total = this.state.players.reduce((s, p) => s + p.bet, 0);
-    if (total > 0) {
-      this.state.sidePots.push({ amount: total, players: active });
+    const bettors = this.state.players.filter((p) => p.bet > 0);
+    if (bettors.length === 0) {
+      this.state.currentBet = 0;
+      return;
     }
+
+    const levels = Array.from(new Set(bettors.map((p) => p.bet))).sort(
+      (a, b) => a - b,
+    );
+    let previous = 0;
+    for (const level of levels) {
+      const contributors = bettors.filter((p) => p.bet >= level);
+      const contenders = contributors.filter((p) => !p.folded);
+      const potAmount = (level - previous) * contributors.length;
+      if (potAmount > 0) {
+        const contributions: Record<string, number> = {};
+        for (const player of contributors) {
+          contributions[player.id] = level - previous;
+        }
+        this.state.sidePots.push({
+          amount: potAmount,
+          players: contenders.map((c) => c.id),
+          contributions,
+        });
+      }
+      previous = level;
+    }
+
     for (const p of this.state.players) {
       p.bet = 0;
     }
