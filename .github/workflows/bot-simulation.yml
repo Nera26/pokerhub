@@ -1,0 +1,28 @@
+name: bot simulation
+
+on:
+  push:
+    paths:
+      - 'load/simulate-bots.js'
+      - 'docs/tournament-handbook.md'
+      - '.github/workflows/bot-simulation.yml'
+  pull_request:
+    paths:
+      - 'load/simulate-bots.js'
+      - 'docs/tournament-handbook.md'
+      - '.github/workflows/bot-simulation.yml'
+
+jobs:
+  simulate:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run bot simulation
+        env:
+          CLICKHOUSE_DSN: ${{ secrets.CLICKHOUSE_DSN }}
+        run: |
+          node load/simulate-bots.js --hands 1000 --players 9
