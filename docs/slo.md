@@ -7,6 +7,9 @@ See [KPI Benchmarks](./kpi-benchmarks.md) for target performance metrics.
 - **WebSocket messages**: p95 < 100ms
 - **Action ACK**: p95 < 120ms
 
+Burn rate alert thresholds:
+- Action ACK latency error budget burn rate > **14.4** (1h) or **6** (6h).
+
 Dashboards:
 - [Socket latency](https://grafana.pokerhub.example.com/d/socket-latency)
 - [Queue lag](https://grafana.pokerhub.example.com/d/queue-lag)
@@ -24,6 +27,12 @@ Status: [Status page](https://status.pokerhub.example.com)
 Prometheus recording rules for action ACK latency, socket connect success, and service uptime live under [infra/monitoring](../infra/monitoring).
 Alertmanager routes their alerts to the `pokerhub-ops` PagerDuty service.
 
+## Connectivity
+- **Socket connect success**: > 99%
+
+Burn rate alert thresholds:
+- Socket connect success error budget burn rate > **14.4** (1h) or **6** (6h).
+
 ## Backups
 - **Restore duration**: < 30m
 - **Snapshot age**: < 5m
@@ -33,6 +42,6 @@ Dashboards:
 
 ## Escalation Policy
 - Primary on-call via [PagerDuty](https://pagerduty.com/services/pokerhub-sre).
-- Latency and error-rate SLO burn-rate alerts trigger for 1h and 6h windows.
+- Latency, action ACK, and socket connect SLO burn-rate alerts trigger at 1h (14.4) and 6h (6) windows.
 - Escalate to SRE lead after 15m without acknowledgement.
 - Escalate to Engineering Director after 30m without acknowledgement.
