@@ -359,7 +359,7 @@ paths:
                 $ref: '#/components/schemas/StatusResponse'
   /hands/{id}/proof:
     get:
-      summary: Get RNG proof for a hand
+      summary: Get stored RNG proof for a hand
       parameters:
         - in: path
           name: id
@@ -368,7 +368,7 @@ paths:
             type: string
       responses:
         '200':
-          description: Hand commitment proof
+          description: Commitment, seed and nonce for the hand
           content:
             application/json:
               schema:

@@ -402,7 +402,7 @@ export interface paths {
     };
   };
   "/hands/{id}/proof": {
-    /** Get RNG proof for a hand */
+    /** Get stored RNG proof for a hand */
     get: {
       parameters: {
         path: {
@@ -410,7 +410,7 @@ export interface paths {
         };
       };
       responses: {
-        /** @description Hand commitment proof */
+        /** @description Commitment, seed and nonce for the hand */
         200: {
           content: {
             "application/json": components["schemas"]["HandProof"];

@@ -1,10 +1,19 @@
 /** @jest-environment node */
 
-import { fetchHandProof, fetchHandLog, fetchHandState } from '@/lib/api/hands';
+import {
+  fetchHandProof,
+  fetchHandLog,
+  fetchHandState,
+  fetchVerifiedHandProof,
+} from '@/lib/api/hands';
 import { serverFetch } from '@/lib/server-fetch';
+import { verifyProof } from '@/lib/verifyProof';
 
 jest.mock('@/lib/server-fetch', () => ({
   serverFetch: jest.fn(),
+}));
+jest.mock('@/lib/verifyProof', () => ({
+  verifyProof: jest.fn(),
 }));
 
 describe('hands api', () => {
@@ -20,6 +29,21 @@ describe('hands api', () => {
       seed: 'aa',
       nonce: 'bb',
       commitment: 'cc',
+    });
+  });
+
+  it('fetches and verifies hand proof', async () => {
+    (serverFetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => ({ seed: 'aa', nonce: 'bb', commitment: 'cc' }),
+    });
+    (verifyProof as jest.Mock).mockResolvedValue(true);
+
+    await expect(fetchVerifiedHandProof('1')).resolves.toEqual({
+      proof: { seed: 'aa', nonce: 'bb', commitment: 'cc' },
+      valid: true,
     });
   });
 
