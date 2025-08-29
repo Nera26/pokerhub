@@ -62,8 +62,7 @@ jobs:
           name: gc-heap-metrics
           path: gc-heap-metrics.log
 
-  handlog-replay:
-    if: github.event_name == 'workflow_dispatch'
+  handlog-soak:
     runs-on: ubuntu-latest
     timeout-minutes: 1440
     steps:
@@ -76,4 +75,4 @@ jobs:
         run: npm ci
       - name: Run hand log replay soak
         working-directory: backend
-        run: node --trace-gc -r ts-node/register test/soak/replay.ts
+        run: node --trace-gc -r ts-node/register test/soak/soak24h.ts
