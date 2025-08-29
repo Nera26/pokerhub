@@ -9,6 +9,7 @@ export const options = {
   vus: Number(__ENV.SOCKETS) || 80000,
   duration: __ENV.DURATION || '24h',
   thresholds: {
+    ws_latency: ['p(95)<120'], // <120ms p95
     memory_leak: ['p(100)<1'], // <1% growth
     gc_pause: ['p(95)<50'], // <50ms p95
     cpu_usage: [`p(100)<${cpuThreshold}`],
