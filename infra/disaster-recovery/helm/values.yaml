@@ -11,6 +11,11 @@ pgReplication:
   image: amazon/aws-cli:2.15.0
   instanceId: pg-primary
   secondaryRegion: us-east-2
+redisReplication:
+  schedule: "0 2 * * *"
+  image: amazon/aws-cli:2.15.0
+  clusterId: redis-primary
+  secondaryRegion: us-east-2
 clickhouseReplication:
   schedule: "30 1 * * *"
   image: amazon/aws-cli:2.15.0
