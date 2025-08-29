@@ -13,3 +13,9 @@ Prometheus evaluates SLO-based rules such as action ACK latency and socket conne
 - `backend/src/telemetry/telemetry.ts` sets up exporters.
 - Prometheus and Alertmanager are deployed via `infrastructure/observability/prometheus-grafana.yaml`.
 - Alert rules live under `infra/observability/`.
+
+## Metric Runbooks
+- [Action ACK Latency](./action-ack-latency.md)
+- [Room Worker CPU/Mem](./room-worker-resources.md)
+- [Queue Lag](./queue-lag.md)
+- [Error Rates](./error-rates.md)
