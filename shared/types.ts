@@ -311,16 +311,16 @@ export const HandStateResponseSchema = z.object({
 });
 export type HandStateResponse = z.infer<typeof HandStateResponseSchema>;
 
-export const HandProofResponseSchema = z.object({
+export const HandProofSchema = z.object({
   seed: z.string(),
   nonce: z.string(),
   commitment: z.string(),
 });
-export type HandProofResponse = z.infer<typeof HandProofResponseSchema>;
+export type HandProof = z.infer<typeof HandProofSchema>;
 
-// Alias matching OpenAPI schema name
-export const HandProofSchema = HandProofResponseSchema;
-export type HandProof = HandProofResponse;
+// Backwards-compat alias used by older code
+export const HandProofResponseSchema = HandProofSchema;
+export type HandProofResponse = HandProof;
 
 // Raw JSONL hand history
 export const HandLogResponseSchema = z.string();

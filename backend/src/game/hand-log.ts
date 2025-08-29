@@ -89,6 +89,13 @@ export class HandLog {
     return this.proof ? structuredClone(this.proof) : undefined;
   }
 
+  getCommitmentAndProof() {
+    return {
+      commitment: this.commitment,
+      proof: this.proof ? structuredClone(this.proof) : undefined,
+    };
+  }
+
   reconstruct(index: number): GameState | undefined {
     const entry = this.entries[index];
     return entry ? structuredClone(entry[3]) : undefined;
