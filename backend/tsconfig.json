@@ -22,7 +22,8 @@
   "strictBindCallApply": false,
   "noFallthroughCasesInSwitch": false,
   "paths": {
-    "@shared/*": ["../shared/*"]
+    "@shared/*": ["../shared/*"],
+    "@contracts/*": ["../contracts/types/*"]
   }
   }
 }

@@ -41,10 +41,10 @@ jobs:
         run: npx -y openapi-zod-client contracts/openapi.yaml -o shared/types.ts --export-schemas
       - name: Check generated types are committed
         run: git diff --exit-code shared/types.ts
-      - name: Generate frontend API types from OpenAPI
-        run: npm run generate:api-types
-      - name: Check generated frontend API types are committed
-        run: git diff --exit-code frontend/src/types/api.d.ts
+      - name: Generate contract API types from OpenAPI
+        run: npm run contracts:generate
+      - name: Check generated contract API types are committed
+        run: git diff --exit-code contracts/types/api.d.ts
       - name: Frontend typecheck
         run: npm run typecheck
         working-directory: frontend
@@ -87,3 +87,23 @@ jobs:
             if (!(feApproved && beApproved)) {
               core.setFailed('Contract changes require approvals from both frontend and backend teams.');
             }
+  contract-tests:
+    runs-on: ubuntu-latest
+    needs: contracts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install root deps
+        run: npm ci
+      - name: Install backend deps
+        run: npm ci
+        working-directory: backend
+      - name: Install frontend deps
+        run: npm ci
+        working-directory: frontend
+      - name: Generate contract API types
+        run: npm run contracts:generate
+      - name: Run contract tests
+        run: npm run test:contracts
