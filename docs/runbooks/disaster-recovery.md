@@ -57,6 +57,20 @@ bash infra/disaster-recovery/tests/failover.sh
 The script logs metrics and writes `failover.metrics` containing
 `RTO_SECONDS` and `RPO_SECONDS` for tracking.
 
+## Automated Drill
+
+The `dr-drill` GitHub Actions workflow runs weekly to spin up a standby
+cluster in `${SECONDARY_REGION}` and measure time to service readiness.
+It validates snapshot freshness and WAL shipping to ensure **RPO ≤ 5 min**
+and **RTO ≤ 30 min**. Failures trigger a PagerDuty alert to `pokerhub-eng`.
+
+### Recent Drill Results
+<!-- DR_DRILL_RESULTS -->
+
+## Escalation
+- PagerDuty: pokerhub-eng
+- Slack: #ops
+
 ## Verification
 - Run `infrastructure/scripts/verify-restore.sh` to restore the latest snapshot and ensure it boots correctly.
 - Run `infra/disaster-recovery/tests/restore-wal.sh` to validate WAL archive restores and measure `RTO_SECONDS` and `RPO_SECONDS`.

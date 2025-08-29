@@ -6,6 +6,7 @@ set -euo pipefail
 : "${PGUSER:?Must set PGUSER}"
 : "${PGPASSWORD:?Must set PGPASSWORD}"
 : "${PGDATABASE:=postgres}"
+: "${WAL_ARCHIVE_BUCKET:?Must set WAL_ARCHIVE_BUCKET}"
 
 log() {
   echo "[$(date --iso-8601=seconds)] $*"
@@ -34,23 +35,30 @@ snap_ts=$(aws rds describe-db-snapshots \
   --output text)
 
 snap_epoch=$(date -d "$snap_ts" +%s)
+rpo_snapshot=$((start_epoch - snap_epoch))
+log "Latest snapshot $latest_snapshot from $snap_ts (snapshot RPO ${rpo_snapshot}s)"
 
-rpo=$((start_epoch - snap_epoch))
-log "Latest snapshot $latest_snapshot from $snap_ts (RPO ${rpo}s)"
+latest_wal=$(aws s3 ls "s3://${WAL_ARCHIVE_BUCKET}/" | sort | tail -n1 | awk '{print $4}')
+wal_ts=$(aws s3api head-object --bucket "$WAL_ARCHIVE_BUCKET" --key "$latest_wal" --query 'LastModified' --output text)
+wal_epoch=$(date -d "$wal_ts" +%s)
+rpo_wal=$((start_epoch - wal_epoch))
+log "Latest WAL $latest_wal from $wal_ts (wal RPO ${rpo_wal}s)"
 
-echo "RPO_SECONDS=$rpo" >> "$metrics_file"
+echo "RPO_SNAPSHOT_SECONDS=$rpo_snapshot" >> "$metrics_file"
+echo "RPO_WAL_SECONDS=$rpo_wal" >> "$metrics_file"
+echo "RPO_SECONDS=$rpo_wal" >> "$metrics_file"
 
-db_identifier="drill-$(date +%s)"
-log "Restoring snapshot $latest_snapshot to $db_identifier..."
-aws rds restore-db-instance-from-db-snapshot \
-  --db-instance-identifier "$db_identifier" \
-  --db-snapshot-identifier "$latest_snapshot" \
-  --db-instance-class db.t3.micro \
-  --no-publicly-accessible \
-  --region "$SECONDARY_REGION"
-aws rds wait db-instance-available \
-  --db-instance-identifier "$db_identifier" \
-  --region "$SECONDARY_REGION"
+db_identifier="drill-$start_epoch"
+
+status=0
+if [ $rpo_snapshot -gt 300 ] || [ $rpo_wal -gt 300 ]; then
+  log "RPO exceeds threshold (snapshot ${rpo_snapshot}s, wal ${rpo_wal}s)"
+  status=1
+fi
+
+log "Restoring snapshot $latest_snapshot to $db_identifier via standby script..."
+PG_SNAPSHOT_ID="$latest_snapshot" STANDBY_IDENTIFIER="$db_identifier" PROMOTE=true \
+  bash "$(dirname "$0")/restore-standby.sh"
 
 endpoint=$(aws rds describe-db-instances \
   --db-instance-identifier "$db_identifier" \
@@ -72,9 +80,16 @@ log "Restore completed in ${rto}s"
 echo "END_TIME=$end_iso" >> "$metrics_file"
 echo "RTO_SECONDS=$rto" >> "$metrics_file"
 
+if [ $rto -gt 1800 ]; then
+  log "RTO exceeds threshold (${rto}s)"
+  status=1
+fi
+
 aws rds delete-db-instance \
   --db-instance-identifier "$db_identifier" \
   --skip-final-snapshot \
   --region "$SECONDARY_REGION" || true
 
-log "Disaster recovery drill finished: RTO ${rto}s, RPO ${rpo}s"
+log "Disaster recovery drill finished: RTO ${rto}s, snapshot RPO ${rpo_snapshot}s, wal RPO ${rpo_wal}s"
+
+exit $status
