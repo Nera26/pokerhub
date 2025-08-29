@@ -1,5 +1,9 @@
 # Test Strategy
 
+## CI Load Checks
+
+The `k6-swarm-ws` workflow in `.github/workflows/k6-swarm-ws.yml` runs `load/k6-swarm.js` and `load/k6-ws-packet-loss.js` against the staging cluster. It records `ack_latency` and `ws_latency` histograms and fails if p95 latency or error rates breach thresholds.
+
 ## Table Action Load Test
 
 The `infra/tests/load/k6-table-actions.js` script simulates action traffic across 10k tables. It records an `ack_latency` histogram for each action acknowledgement.
