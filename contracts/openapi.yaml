@@ -103,6 +103,22 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Table'
+  /tables/{id}:
+    get:
+      summary: Get table data
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Table data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableData'
   /game/action:
     post:
       summary: Perform a game action
@@ -1015,6 +1031,93 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Table'
+    Player:
+      type: object
+      properties:
+        id:
+          type: number
+        username:
+          type: string
+        avatar:
+          type: string
+        chips:
+          type: number
+        committed:
+          type: number
+        isActive:
+          type: boolean
+        isFolded:
+          type: boolean
+        sittingOut:
+          type: boolean
+        isAllIn:
+          type: boolean
+        isWinner:
+          type: boolean
+        timeLeft:
+          type: number
+        cards:
+          type: array
+          items:
+            type: string
+          minItems: 2
+          maxItems: 2
+        pos:
+          type: string
+        lastAction:
+          type: string
+      required:
+        - id
+        - username
+        - avatar
+        - chips
+    ChatMessage:
+      type: object
+      properties:
+        id:
+          type: number
+        username:
+          type: string
+        avatar:
+          type: string
+        text:
+          type: string
+        time:
+          type: string
+      required:
+        - id
+        - username
+        - avatar
+        - text
+        - time
+    TableData:
+      type: object
+      properties:
+        smallBlind:
+          type: number
+        bigBlind:
+          type: number
+        pot:
+          type: number
+        communityCards:
+          type: array
+          items:
+            type: string
+        players:
+          type: array
+          items:
+            $ref: '#/components/schemas/Player'
+        chatMessages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+      required:
+        - smallBlind
+        - bigBlind
+        - pot
+        - communityCards
+        - players
+        - chatMessages
     CalculatePrizesRequest:
       type: object
       properties:

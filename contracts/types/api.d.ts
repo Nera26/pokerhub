@@ -124,6 +124,24 @@ export interface paths {
       };
     };
   };
+  "/tables/{id}": {
+    /** Get table data */
+    get: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Table data */
+        200: {
+          content: {
+            "application/json": components["schemas"]["TableData"];
+          };
+        };
+      };
+    };
+  };
   "/game/action": {
     /** Perform a game action */
     post: {
@@ -859,6 +877,37 @@ export interface components {
       createdAgo: string;
     };
     TableList: components["schemas"]["Table"][];
+    Player: {
+      id: number;
+      username: string;
+      avatar: string;
+      chips: number;
+      committed?: number;
+      isActive?: boolean;
+      isFolded?: boolean;
+      sittingOut?: boolean;
+      isAllIn?: boolean;
+      isWinner?: boolean;
+      timeLeft?: number;
+      cards?: string[];
+      pos?: string;
+      lastAction?: string;
+    };
+    ChatMessage: {
+      id: number;
+      username: string;
+      avatar: string;
+      text: string;
+      time: string;
+    };
+    TableData: {
+      smallBlind: number;
+      bigBlind: number;
+      pot: number;
+      communityCards: string[];
+      players: components["schemas"]["Player"][];
+      chatMessages: components["schemas"]["ChatMessage"][];
+    };
     CalculatePrizesRequest: {
       prizePool: number;
       payouts: number[];
