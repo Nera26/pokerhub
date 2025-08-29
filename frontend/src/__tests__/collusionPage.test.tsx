@@ -7,6 +7,10 @@ jest.mock('@/lib/api/collusion', () => ({
   applyAction: jest.fn(),
 }));
 
+jest.mock('@/app/store/authStore', () => ({
+  useAuthToken: () => 'token',
+}));
+
 describe('CollusionReviewPage', () => {
   it('renders sessions and triggers next action', async () => {
     (listFlaggedSessions as jest.Mock).mockResolvedValue([
@@ -17,6 +21,6 @@ describe('CollusionReviewPage', () => {
     (applyAction as jest.Mock).mockResolvedValue({ message: 'warn' });
     const btn = await screen.findByText('warn');
     fireEvent.click(btn);
-    expect(applyAction).toHaveBeenCalledWith('s1', 'warn');
+    expect(applyAction).toHaveBeenCalledWith('s1', 'warn', 'token');
   });
 });

@@ -1,22 +1,20 @@
-import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { CollusionService } from './collusion.service';
-import { FlaggedSessionJob } from './flagged-session.job';
-import { ReviewActionSchema } from '../schemas/review';
-import { AuthGuard } from '../auth/auth.guard';
-@UseGuards(AuthGuard)
-@Controller('review')
-export class ReviewController {
-  constructor(
-    private readonly collusion: CollusionService,
-    private readonly job: FlaggedSessionJob,
-  ) {}
+import { ReviewActionSchema, FlaggedSessionsQuerySchema } from '../schemas/review';
+import { AdminGuard } from '../auth/admin.guard';
 
-  @Get('sessions')
-  async list() {
-    return this.job.getSessions();
+@UseGuards(AdminGuard)
+@Controller('analytics/collusion')
+export class ReviewController {
+  constructor(private readonly collusion: CollusionService) {}
+
+  @Get('flagged')
+  async list(@Query() query: unknown) {
+    const { page, status } = FlaggedSessionsQuerySchema.parse(query);
+    return this.collusion.listFlaggedSessions({ page, status });
   }
 
-  @Post('sessions/:id/:action')
+  @Post(':id/:action')
   async act(@Param('id') id: string, @Param('action') action: string) {
     const parsed = ReviewActionSchema.parse(action);
     await this.collusion.applyAction(id, parsed);

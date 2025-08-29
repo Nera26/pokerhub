@@ -468,9 +468,15 @@ export interface paths {
       };
     };
   };
-  "/admin/collusion/flags": {
+  "/analytics/collusion/flagged": {
     /** List collusion flagged sessions */
     get: {
+      parameters: {
+        query?: {
+          page?: number;
+          status?: components["schemas"]["ReviewStatus"];
+        };
+      };
       responses: {
         /** @description Flagged sessions */
         200: {
@@ -481,17 +487,13 @@ export interface paths {
       };
     };
   };
-  "/admin/collusion/{sessionId}": {
+  "/analytics/collusion/{sessionId}/{action}": {
     /** Apply collusion review action */
     post: {
       parameters: {
         path: {
           sessionId: string;
-        };
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["ReviewActionRequest"];
+          action: components["schemas"]["ReviewAction"];
         };
       };
       responses: {
@@ -715,10 +717,12 @@ export interface components {
     };
     Amount: {
       amount: number;
+      currency: string;
     };
     WithdrawRequest: {
       amount: number;
       deviceId: string;
+      currency: string;
     };
     ProviderCallback: {
       eventId: string;

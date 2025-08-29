@@ -17,7 +17,7 @@ describe('collusion api', () => {
         { id: 's1', users: ['a', 'b'], status: 'flagged' },
       ],
     });
-    await expect(listFlaggedSessions()).resolves.toEqual([
+    await expect(listFlaggedSessions('token')).resolves.toEqual([
       { id: 's1', users: ['a', 'b'], status: 'flagged' },
     ]);
   });
@@ -29,7 +29,7 @@ describe('collusion api', () => {
       headers: { get: () => 'application/json' },
       json: async () => ({ message: 'warn' }),
     });
-    await expect(applyAction('s1', 'warn')).resolves.toEqual({
+    await expect(applyAction('s1', 'warn', 'token')).resolves.toEqual({
       message: 'warn',
     });
   });
