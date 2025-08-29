@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: clickhouse-snapshot-replication
+spec:
+  schedule: {{ .Values.clickhouseReplication.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: clickhouse-replicate
+              image: {{ .Values.clickhouseReplication.image }}
+              env:
+                - name: BACKUP_BUCKET
+                  value: {{ .Values.clickhouseReplication.backupBucket | quote }}
+                - name: SECONDARY_REGION
+                  value: {{ .Values.clickhouseReplication.secondaryRegion | quote }}
+              command:
+                - /bin/sh
+                - -c
+                - >-
+                  echo "Replicating ClickHouse backups from $BACKUP_BUCKET to $SECONDARY_REGION";
+                  # Placeholder for aws s3 copy to secondary bucket

@@ -24,15 +24,21 @@
      --use-latest-restorable-time \
      --region ${SECONDARY_REGION}
    ```
-3. Restore the Redis snapshot:
+3. Restore ClickHouse from replicated backup:
+   ```bash
+   aws s3 sync s3://${CLICKHOUSE_BACKUP_BUCKET}-dr/ /var/lib/clickhouse/backup \
+     --region ${SECONDARY_REGION}
+   clickhouse-backup restore --config /etc/clickhouse-backup.yaml latest
+   ```
+4. Restore the Redis snapshot:
    ```bash
    aws elasticache restore-replication-group-from-snapshot \
      --replication-group-id redis-dr-restore \
      --snapshot-name redis-dr-snapshot \
      --region ${SECONDARY_REGION}
    ```
-4. Update application configuration to point to the promoted or restored endpoints.
-5. Verify application health before resuming traffic.
+5. Update application configuration to point to the promoted or restored endpoints.
+6. Verify application health before resuming traffic.
 
 ## Failover Simulation
 
@@ -51,3 +57,4 @@ The script logs metrics and writes `failover.metrics` containing
 ## Verification
 - Run `infra/scripts/verify-backups.sh` to confirm snapshot availability.
 - Monitor GitHub nightly workflow `backup-verify` for automated checks.
+- Monitor GitHub nightly workflow `pitr-nightly` for PITR backup results.
