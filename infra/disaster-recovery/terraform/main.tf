@@ -4,6 +4,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
   }
 }
 
@@ -37,6 +41,16 @@ variable "wal_archive_bucket" {
   type        = string
 }
 
+variable "gcp_project" {
+  description = "GCP project ID for scheduler"
+  type        = string
+}
+
+variable "gcp_primary_region" {
+  description = "Primary GCP region"
+  type        = string
+}
+
 provider "aws" {
   region = var.primary_region
 }
@@ -44,6 +58,11 @@ provider "aws" {
 provider "aws" {
   alias  = "secondary"
   region = var.secondary_region
+}
+
+provider "google" {
+  project = var.gcp_project
+  region  = var.gcp_primary_region
 }
 
 resource "aws_db_snapshot" "pg" {

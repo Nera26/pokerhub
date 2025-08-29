@@ -5,9 +5,10 @@
 - **Recovery Point Objective (RPO)**: 5 minutes
 
 ## Backup Strategy
-- Hourly snapshots of Postgres are copied to `${SECONDARY_REGION}` and retained for 7 days.
+- AWS Backup schedules hourly Postgres snapshots and copies them to `${SECONDARY_REGION}`.
 - WAL segments are archived every 5 minutes to `s3://${WAL_ARCHIVE_BUCKET}` and replicated cross-region for PITR.
 - Nightly Redis snapshots are copied to `${SECONDARY_REGION}`.
+- A GCP Cloud Scheduler job triggers cross-cloud snapshot copies to `${SECONDARY_REGION}`.
 - Cross-region read replicas continuously replicate changes.
 - Helm CronJobs run restore tests to validate snapshots and WAL archives.
 
@@ -59,5 +60,6 @@ The script logs metrics and writes `failover.metrics` containing
 ## Verification
 - Run `infra/scripts/verify-backups.sh` to confirm snapshot availability.
 - Run `infra/disaster-recovery/tests/restore-wal.sh` to validate WAL archive restores and measure `RTO_SECONDS` and `RPO_SECONDS`.
+- Run `npx ts-node infra/disaster-recovery/tests/restore.test.ts` to spin up a snapshot in a sandbox and verify `RPO_SECONDS ≤ 300`.
 - Monitor GitHub nightly workflow `backup-verify` for automated checks.
 - Monitor GitHub nightly workflow `pitr-nightly` for PITR backup results.
