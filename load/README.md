@@ -22,11 +22,14 @@ All scripts assume the server is reachable via `ws://localhost:3000` by default.
 - GC pause p95 < 50ms
 
 Environment variables:
-- `WS_URL` – override the WebSocket URL.
-- `SOCKETS` / `TABLES` – number of sockets (clients) and tables to simulate.
-- `DURATION` – k6 test duration (default `24h` for soak script).
-- `PACKET_LOSS` – probability (0-1) for dropping a packet.
-- `JITTER_MS` – max network jitter in milliseconds.
+- `WS_URL` – override the WebSocket URL (default `ws://localhost:3001`).
+- `SOCKETS` – number of concurrent clients (default `80000`, `100` in CI).
+- `TABLES` – number of tables to spread sockets across (default `10000`, `100` in CI).
+- `DURATION` – k6 test duration (default `5m`, `1m` in CI).
+- `PACKET_LOSS` – probability (0-1) for dropping a packet (default `0.05`).
+- `JITTER_MS` – max client-side jitter before sending in milliseconds (default `50`).
+- `ACK_P95_MS` – fail if ACK latency p95 exceeds this (default `120`).
+- `ACK_P99_MS` – fail if ACK latency p99 exceeds this (default `200`).
 - `RNG_SEED` – seed for deterministic replay.
 - `METRICS_URL` – HTTP endpoint returning `{ heapUsed, gcPauseP95 }` for leak/GC checks.
 

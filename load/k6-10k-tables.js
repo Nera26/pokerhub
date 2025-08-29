@@ -2,9 +2,15 @@ import ws from 'k6/ws';
 import { Trend } from 'k6/metrics';
 import { sleep } from 'k6';
 
+// In CI we default to a smaller scenario to avoid overwhelming runners.
+const ci = !!__ENV.CI;
+const defaultSockets = ci ? 100 : 80000;
+const defaultTables = ci ? 100 : 10000;
+const defaultDuration = ci ? '1m' : '5m';
+
 export const options = {
-  vus: Number(__ENV.SOCKETS) || 80000,
-  duration: __ENV.DURATION || '5m',
+  vus: Number(__ENV.SOCKETS) || defaultSockets,
+  duration: __ENV.DURATION || defaultDuration,
   thresholds: {
     ack_latency: [
       `p(95)<${__ENV.ACK_P95_MS || 120}`,
@@ -13,7 +19,7 @@ export const options = {
   },
 };
 
-const tables = Number(__ENV.TABLES) || 10000;
+const tables = Number(__ENV.TABLES) || defaultTables;
 const loss = Number(__ENV.PACKET_LOSS) || 0.05; // 5% packet loss
 const jitterMs = Number(__ENV.JITTER_MS) || 50; // jitter before sending
 
