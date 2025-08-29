@@ -19,11 +19,13 @@ export default function TablePageClient({ tableId }: { tableId: string }) {
   const errorMessage = useApiError(error);
   const { socket } = useGameSocket();
   const [proofHandId, setProofHandId] = useState<string | null>(null);
+  const [showProof, setShowProof] = useState(false);
 
   useEffect(() => {
     if (!socket) return;
     const handleEnd = (e: { handId: string }) => {
       setProofHandId(e.handId);
+      setShowProof(false);
     };
     socket.on('hand.end', handleEnd);
     return () => {
@@ -57,10 +59,19 @@ export default function TablePageClient({ tableId }: { tableId: string }) {
         heroId={data.players[0].id}
         chatMessages={data.chatMessages}
       />
+      {proofHandId && (
+        <button
+          type="button"
+          onClick={() => setShowProof(true)}
+          className="mt-2 text-sm underline text-accent-blue"
+        >
+          Verify Hand
+        </button>
+      )}
       <HandProofModal
         handId={proofHandId ?? ''}
-        isOpen={proofHandId !== null}
-        onClose={() => setProofHandId(null)}
+        isOpen={showProof}
+        onClose={() => setShowProof(false)}
       />
     </>
   );
