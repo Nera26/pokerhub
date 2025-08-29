@@ -2,38 +2,46 @@ import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import request from 'supertest';
-import { HandsController } from '../../src/routes/hands.controller';
+import jwt from 'jsonwebtoken';
+import { HandController } from '../../src/game/hand.controller';
 import { Hand } from '../../src/database/entities/hand.entity';
 import { existsSync, unlinkSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import { ConfigService } from '@nestjs/config';
 
-describe('HandsController log', () => {
+describe('HandController log', () => {
   let app: INestApplication;
   const store = new Map<string, Hand>();
   const repo = {
     findOne: ({ where: { id } }: any) => Promise.resolve(store.get(id) ?? null),
-    save: (h: Hand) => {
-      store.set(h.id, h);
-      return Promise.resolve(h);
-    },
   };
+  const config = new ConfigService({ auth: { jwtSecrets: ['secret'] } });
+
+  function auth(userId: string) {
+    const token = jwt.sign({ sub: userId }, 'secret');
+    return `Bearer ${token}`;
+  }
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      controllers: [HandsController],
-      providers: [{ provide: getRepositoryToken(Hand), useValue: repo }],
+      controllers: [HandController],
+      providers: [
+        { provide: getRepositoryToken(Hand), useValue: repo },
+        { provide: ConfigService, useValue: config },
+      ],
     }).compile();
 
     app = moduleRef.createNestApplication();
     await app.init();
 
-    await repo.save({
+    store.set('hand1', {
       id: 'hand1',
-      log: 'db log',
+      log: `${JSON.stringify([0, { type: 'start' }, { players: [{ id: 'u1' }] }, {}])}\n` + 'db log',
       commitment: 'c',
       seed: 's',
       nonce: 'n',
-    });
+      settled: true,
+    } as unknown as Hand);
   });
 
   afterAll(async () => {
@@ -45,17 +53,20 @@ describe('HandsController log', () => {
     if (existsSync(file)) unlinkSync(file);
     return request(app.getHttpServer())
       .get('/hands/hand1/log')
+      .set('Authorization', auth('u1'))
       .expect(200)
-      .expect('db log');
+      .expect(store.get('hand1')!.log);
   });
 
   it('prefers file log when present', async () => {
     const file = join(process.cwd(), '../storage/hand-logs', 'hand1.jsonl');
-    writeFileSync(file, 'file log');
+    const logEntry = [0, { type: 'start' }, { players: [{ id: 'u1' }] }, {}];
+    writeFileSync(file, `${JSON.stringify(logEntry)}\nfile log`);
     await request(app.getHttpServer())
       .get('/hands/hand1/log')
+      .set('Authorization', auth('u1'))
       .expect(200)
-      .expect('file log');
+      .expect(`${JSON.stringify(logEntry)}\nfile log`);
     if (existsSync(file)) unlinkSync(file);
   });
 });
