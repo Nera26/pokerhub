@@ -1,22 +1,35 @@
+#!/usr/bin/env ts-node
 import 'dotenv/config';
 import { AppDataSource } from '../database/data-source';
 import { Hand } from '../database/entities/hand.entity';
 
 async function main() {
+  const handId = process.argv[2];
+  if (!handId) {
+    console.error('Usage: export-proofs <handId>');
+    process.exit(1);
+  }
+
   await AppDataSource.initialize();
-  const repo = AppDataSource.getRepository(Hand);
-  const hands = await repo.find();
-  for (const h of hands) {
+  try {
+    const repo = AppDataSource.getRepository(Hand);
+    const hand = await repo.findOne({ where: { id: handId } });
+    if (!hand) {
+      console.error(`Hand ${handId} not found`);
+      process.exit(1);
+    }
+
     console.log(
       JSON.stringify({
-        id: h.id,
-        seed: h.seed,
-        nonce: h.nonce,
-        commitment: h.commitment,
+        id: hand.id,
+        seed: hand.seed,
+        nonce: hand.nonce,
+        commitment: hand.commitment,
       }),
     );
+  } finally {
+    await AppDataSource.destroy();
   }
-  await AppDataSource.destroy();
 }
 
 main().catch((err) => {
