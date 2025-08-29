@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
 import fc from 'fast-check';
+import { randomUUID } from 'crypto';
 import { Account } from '../src/wallet/account.entity';
 import { JournalEntry } from '../src/wallet/journal-entry.entity';
 import { Disbursement } from '../src/wallet/disbursement.entity';
@@ -122,6 +123,92 @@ describe('WalletService.reconcile property', () => {
           await dataSource.destroy();
         }
       }),
+        { numRuns: 25 },
+      );
+  });
+
+  it('sum of account deltas is zero after reconcile', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.array(
+          fc
+            .record({
+              from: fc.integer({ min: 0, max: 4 }),
+              to: fc.integer({ min: 0, max: 4 }),
+              amount: fc.integer({ min: 1, max: 100 }),
+            })
+            .filter((t) => t.from !== t.to),
+          { maxLength: 10 },
+        ),
+        fc
+          .tuple(
+            fc.integer({ min: -50, max: 50 }),
+            fc.integer({ min: -50, max: 50 }),
+            fc.integer({ min: -50, max: 50 }),
+            fc.integer({ min: -50, max: 50 }),
+          )
+          .map(([a, b, c, d]) => [a, b, c, d, -(a + b + c + d)]),
+        async (transfers, drifts) => {
+          const { dataSource, service } = await setup();
+          try {
+            const accountIds = [
+              userId,
+              '00000000-0000-0000-0000-000000000001',
+              '00000000-0000-0000-0000-000000000002',
+              '00000000-0000-0000-0000-000000000003',
+              '00000000-0000-0000-0000-000000000004',
+            ];
+            const journalRepo = dataSource.getRepository(JournalEntry);
+            const accountRepo = dataSource.getRepository(Account);
+            for (const t of transfers) {
+              const ref = randomUUID();
+              await journalRepo.insert({
+                id: randomUUID(),
+                accountId: accountIds[t.from],
+                amount: -t.amount,
+                refType: 'test',
+                refId: ref,
+                hash: randomUUID(),
+              });
+              await journalRepo.insert({
+                id: randomUUID(),
+                accountId: accountIds[t.to],
+                amount: t.amount,
+                refType: 'test',
+                refId: ref,
+                hash: randomUUID(),
+              });
+              await accountRepo.increment(
+                { id: accountIds[t.from] },
+                'balance',
+                -t.amount,
+              );
+              await accountRepo.increment(
+                { id: accountIds[t.to] },
+                'balance',
+                t.amount,
+              );
+            }
+            for (let i = 0; i < accountIds.length; i++) {
+              if (drifts[i] !== 0) {
+                await accountRepo.increment(
+                  { id: accountIds[i] },
+                  'balance',
+                  drifts[i],
+                );
+              }
+            }
+            const report = await service.reconcile();
+            const deltaSum = report.reduce(
+              (sum, row) => sum + (row.balance - row.journal),
+              0,
+            );
+            expect(deltaSum).toBe(0);
+          } finally {
+            await dataSource.destroy();
+          }
+        },
+      ),
       { numRuns: 25 },
     );
   });
