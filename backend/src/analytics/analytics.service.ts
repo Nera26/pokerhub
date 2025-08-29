@@ -140,6 +140,15 @@ export class AnalyticsService {
     ]);
   }
 
+  async emitAntiCheatFlag(data: Events['antiCheat.flag']) {
+    await this.redis.xadd(
+      'analytics:antiCheat.flag',
+      '*',
+      'event',
+      JSON.stringify(data),
+    );
+  }
+
   async rangeStream(
     stream: string,
     since: number,

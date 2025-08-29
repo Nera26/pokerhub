@@ -2,6 +2,9 @@ import { Injectable, Logger, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Kafka, Producer } from 'kafkajs';
 import Redis from 'ioredis';
+import Ajv, { ValidateFunction } from 'ajv';
+import { zodToJsonSchema } from 'zod-to-json-schema';
+import { EventSchemas, EventName } from '@shared/events';
 import { AnalyticsService } from './analytics.service';
 
 @Injectable()
@@ -12,7 +15,10 @@ export class EtlService {
   private readonly topicMap: Record<string, string> = {
     game: 'hand',
     tournament: 'tourney',
+    antiCheat: 'auth',
   };
+  private readonly ajv = new Ajv();
+  private readonly validators: Record<EventName, ValidateFunction> = {};
 
   constructor(
     config: ConfigService,
@@ -26,6 +32,12 @@ export class EtlService {
     this.kafka = new Kafka({ brokers });
     this.producer = this.kafka.producer();
     void this.producer.connect();
+
+    for (const [name, schema] of Object.entries(EventSchemas)) {
+      this.validators[name as EventName] = this.ajv.compile(
+        zodToJsonSchema(schema, name),
+      );
+    }
   }
 
   async run() {
@@ -49,20 +61,27 @@ export class EtlService {
       for (const [stream, entries] of res) {
         let last = lastIds.get(stream) ?? '0-0';
         const key = stream.split(':')[1];
-        const topic = this.topicMap[key] ?? key;
+        const event = key.includes('.') ? key : `${key}.event`;
+        const topic =
+          this.topicMap[event.split('.')[0]] ?? event.split('.')[0];
         for (const [id, fields] of entries) {
           last = id;
           try {
             const data = JSON.parse(fields[1] as string) as Record<string, unknown>;
+            const validate = this.validators[event as EventName];
+            if (validate && !validate(data)) {
+              this.logger.warn(
+                `Invalid event ${event}: ${this.ajv.errorsText(validate.errors)}`,
+              );
+              continue;
+            }
             await Promise.all([
               this.producer.send({
                 topic,
-                messages: [
-                  { value: JSON.stringify({ event: `${key}.event`, data }) },
-                ],
+                messages: [{ value: JSON.stringify({ event, data }) }],
               }),
-              this.analytics.ingest(`${key}_event`, data),
-              this.analytics.archive(`${key}.event`, data),
+              this.analytics.ingest(event.replace('.', '_'), data),
+              this.analytics.archive(event, data),
             ]);
           } catch (err) {
             this.logger.error(err);

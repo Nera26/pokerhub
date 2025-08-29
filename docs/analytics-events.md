@@ -219,3 +219,22 @@ Emitted when reserved chips are committed to the pot.
   }
 }
 ```
+
+## antiCheat.flag
+Emitted when the anti-cheat system flags a session for potential collusion.
+
+```json
+{
+  "type": "object",
+  "required": ["sessionId", "users", "features"],
+  "additionalProperties": false,
+  "properties": {
+    "sessionId": { "type": "string" },
+    "users": {
+      "type": "array",
+      "items": { "type": "string", "format": "uuid" }
+    },
+    "features": { "type": "object" }
+  }
+}
+```
