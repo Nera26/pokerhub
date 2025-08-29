@@ -22,7 +22,7 @@
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/database/data-source.ts src/database/migrations/$npm_config_name",
     "migration:create": "typeorm-ts-node-commonjs migration:create src/database/migrations/$npm_config_name",
     "export:proofs": "ts-node src/scripts/export-proofs.ts",
-    "rebuild:leaderboard": "ts-node src/leaderboard.rebuild.ts",
+    "rebuild:leaderboard": "ts-node src/leaderboard/rebuild.cli.ts",
     "analytics:consume": "ts-node src/analytics/consume.ts",
     "seed:test-credentials": "ts-node src/scripts/seed-test-credentials.ts"
   },

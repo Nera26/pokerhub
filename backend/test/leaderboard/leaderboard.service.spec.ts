@@ -28,6 +28,9 @@ class MockAnalytics {
   rangeStream(_stream: string, since: number): Promise<any[]> {
     return Promise.resolve(this.events.filter((e) => e.ts >= since));
   }
+  ingest(): Promise<void> {
+    return Promise.resolve();
+  }
 }
 
 describe('LeaderboardService', () => {
