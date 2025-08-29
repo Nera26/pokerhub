@@ -48,10 +48,11 @@ describe('leaderboard rebuild', () => {
             ts: now - r.daysAgo * DAY_MS,
           }));
           const cache = new MockCache();
+          const analytics = { ingest: jest.fn(), rangeStream: jest.fn() };
           const service = new LeaderboardService(
             cache as any,
             { find: jest.fn() } as any,
-            {} as any,
+            analytics as any,
           );
 
           const scores = new Map<
@@ -140,19 +141,21 @@ describe('leaderboard rebuild', () => {
           }));
 
           const cache1 = new MockCache();
+          const analytics1 = { ingest: jest.fn(), rangeStream: jest.fn() };
           const service1 = new LeaderboardService(
             cache1 as any,
             { find: jest.fn() } as any,
-            {} as any,
+            analytics1 as any,
           );
           await (service1 as any).rebuildWithEvents(events);
           const top1 = await service1.getTopPlayers();
 
           const cache2 = new MockCache();
+          const analytics2 = { ingest: jest.fn(), rangeStream: jest.fn() };
           const service2 = new LeaderboardService(
             cache2 as any,
             { find: jest.fn() } as any,
-            {} as any,
+            analytics2 as any,
           );
           await (service2 as any).rebuildWithEvents([...events].reverse());
           const top2 = await service2.getTopPlayers();
@@ -165,10 +168,11 @@ describe('leaderboard rebuild', () => {
 
   it('rebuildFromEvents completes within SLA for 30 days', async () => {
     const cache = new MockCache();
+    const analytics = { ingest: jest.fn(), rangeStream: jest.fn() };
     const service = new LeaderboardService(
       cache as any,
       { find: jest.fn() } as any,
-      {} as any,
+      analytics as any,
     );
 
     const dir = join(process.cwd(), 'storage', 'events');
@@ -193,10 +197,8 @@ describe('leaderboard rebuild', () => {
       await fs.writeFile(file, lines.join('\n'));
     }
 
-    const start = Date.now();
-    await service.rebuildFromEvents(30);
-    const duration = Date.now() - start;
-    expect(duration).toBeLessThan(5000);
+    const { durationMs } = await service.rebuildFromEvents(30);
+    expect(durationMs).toBeLessThan(5000);
 
     await fs.rm(dir, { recursive: true, force: true });
   });

@@ -2,7 +2,7 @@ import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { promises as fs } from 'fs';
+import { readFileSync } from 'fs';
 import { join } from 'path';
 import { metrics } from '@opentelemetry/api';
 import { User } from '../database/entities/user.entity';
@@ -85,32 +85,52 @@ export class LeaderboardService {
     await this.rebuildWithEvents(events, { minSessions, decay });
   }
 
-  async rebuildFromEvents(days: number): Promise<void> {
+  async rebuildFromEvents(
+    days: number,
+  ): Promise<{ durationMs: number; memoryMb: number }> {
     const start = Date.now();
     const now = start;
     const base = join(process.cwd(), 'storage', 'events');
-    const events: unknown[] = [];
-    for (let i = 0; i < days; i++) {
-      const d = new Date(now - i * DAY_MS).toISOString().slice(0, 10);
-      const file = join(base, `${d}.jsonl`);
-      try {
-        const content = await fs.readFile(file, 'utf8');
-        for (const line of content.split('\n')) {
-          const trimmed = line.trim();
-          if (trimmed) {
-            try {
-              events.push(JSON.parse(trimmed));
-            } catch {}
-          }
-        }
-      } catch {}
-    }
+    const events = this.loadEvents(days, base, now);
     await this.rebuildWithEvents(events);
-    LeaderboardService.rebuildEventsDuration.record(Date.now() - start);
+    const durationMs = Date.now() - start;
+    const memoryMb = process.memoryUsage().rss / 1024 / 1024;
+    LeaderboardService.rebuildEventsDuration.record(durationMs);
+    await this.analytics.ingest('leaderboard_rebuild', {
+      duration_ms: durationMs,
+      memory_mb: memoryMb,
+      ts: Date.now(),
+    });
+    return { durationMs, memoryMb };
+  }
+
+  private loadEvents(
+    days: number,
+    base: string,
+    now: number,
+  ): Iterable<unknown> {
+    function* generator() {
+      for (let i = 0; i < days; i++) {
+        const d = new Date(now - i * DAY_MS).toISOString().slice(0, 10);
+        const file = join(base, `${d}.jsonl`);
+        try {
+          const content = readFileSync(file, 'utf8');
+          for (const line of content.split('\n')) {
+            const trimmed = line.trim();
+            if (trimmed) {
+              try {
+                yield JSON.parse(trimmed);
+              } catch {}
+            }
+          }
+        } catch {}
+      }
+    }
+    return generator();
   }
 
   private async rebuildWithEvents(
-    events: unknown[],
+    events: Iterable<unknown>,
     options: {
       minSessions?: number | ((playerId: string) => number);
       decay?: number | ((playerId: string) => number);
