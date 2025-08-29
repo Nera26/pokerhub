@@ -19,11 +19,29 @@ jobs:
           PG_SNAPSHOT_ID: ${{ vars.PG_SNAPSHOT_ID }}
           CLICKHOUSE_SNAPSHOT: ${{ vars.CLICKHOUSE_SNAPSHOT }}
           SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+      - name: Check RTO/RPO
+        run: |
+          source failover.metrics
+          echo "Start: $START_TIME"
+          echo "End: $END_TIME"
+          echo "RTO: $RTO_SECONDS seconds"
+          echo "RPO: $RPO_SECONDS seconds"
+          if [ "$RTO_SECONDS" -gt 1800 ]; then
+            echo "RTO exceeds 30 minutes" >&2
+            exit 1
+          fi
+          if [ "$RPO_SECONDS" -gt 300 ]; then
+            echo "RPO exceeds 5 minutes" >&2
+            exit 1
+          fi
       - name: Upload logs
+        if: always()
         uses: actions/upload-artifact@v3
         with:
           name: failover-log
-          path: failover.log
+          path: |
+            failover.log
+            failover.metrics
       - name: Notify Slack on failure
         if: failure()
         uses: slackapi/slack-github-action@v1.24.0
