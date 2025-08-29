@@ -1,9 +1,15 @@
-import { Module } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  NestMiddleware,
+} from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { Request, Response, NextFunction } from 'express';
 
 import {
   databaseConfig,
@@ -39,6 +45,29 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { TournamentModule } from './tournament/tournament.module';
 import { WalletModule } from './wallet/wallet.module';
 import { AuthModule } from './auth/auth.module';
+
+class SecurityHeadersMiddleware implements NestMiddleware {
+  use(req: Request, res: Response, next: NextFunction) {
+    res.setHeader('Content-Security-Policy', "default-src 'self'");
+    res.setHeader(
+      'Strict-Transport-Security',
+      'max-age=31536000; includeSubDomains',
+    );
+    const current = res.getHeader('Set-Cookie');
+    const cookies = Array.isArray(current)
+      ? current
+      : current
+        ? [current as string]
+        : [];
+    res.setHeader(
+      'Set-Cookie',
+      cookies.map((c) =>
+        c.includes('SameSite') ? c : `${c}; SameSite=Strict`,
+      ),
+    );
+    next();
+  }
+}
 
 @Module({
   imports: [
@@ -107,4 +136,8 @@ import { AuthModule } from './auth/auth.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(SecurityHeadersMiddleware).forRoutes('*');
+  }
+}
