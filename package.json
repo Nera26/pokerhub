@@ -9,9 +9,12 @@
     "push:frontend": "git subtree push --prefix frontend frontend-remote main",
     "push:backend": "git subtree push --prefix backend backend-remote main",
     "push:all": "npm run push:frontend && npm run push:backend",
-    "load:swarm": "mkdir -p load/results && k6 run load/k6-swarm.js --summary-export=load/results/k6-swarm-summary.json"
+    "load:swarm": "mkdir -p load/results && k6 run load/k6-swarm.js --summary-export=load/results/k6-swarm-summary.json",
+    "generate:api-types": "openapi-typescript contracts/openapi.yaml --output frontend/src/types/api.d.ts"
   },
   "devDependencies": {
-    "typescript": "^5.7.3"
+    "openapi-typescript": "^6.7.0",
+    "typescript": "^5.7.3",
+    "zod": "^3.25.76"
   }
 }

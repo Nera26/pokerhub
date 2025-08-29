@@ -4,10 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "NEXT_INTL_CONFIG=next-intl.config.ts next dev",
+    "prebuild": "npm run generate:api-types --prefix ..",
     "build": "NEXT_INTL_CONFIG=next-intl.config.ts next build",
     "start": "NEXT_INTL_CONFIG=next-intl.config.ts next start",
     "start:test": "NEXT_INTL_CONFIG=next-intl.config.ts next start -p 3000",
     "lint": "eslint .",
+    "pretypecheck": "npm run generate:api-types --prefix ..",
     "typecheck": "tsc --noEmit",
     "pretest:e2e": "playwright install --with-deps",
     "pretest:a11y": "playwright install --with-deps",
