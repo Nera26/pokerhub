@@ -16,6 +16,10 @@ interface FlagResult {
   reason?: string;
 }
 
+interface GeoResult {
+  country?: string;
+}
+
 @Injectable()
 export class KycService {
   constructor(
@@ -89,12 +93,30 @@ export class KycService {
     return undefined;
   }
 
-  async validate(account: Account): Promise<void> {
+  private async checkGeoIp(ip: string): Promise<string | undefined> {
+    const url = process.env.GEOIP_PROVIDER_URL;
+    if (!url) return undefined;
+    try {
+      const res = await fetch(`${url}?ip=${encodeURIComponent(ip)}`);
+      if (!res.ok) {
+        return `geoip provider error ${res.status}`;
+      }
+      const data = (await res.json()) as GeoResult;
+      const regions =
+        process.env.KYC_BLOCKED_REGIONS?.split(',').map((r) => r.trim().toUpperCase()) ?? [];
+      const country = data.country?.toUpperCase();
+      if (country && regions.includes(country)) {
+        return `region ${country} blocked`;
+      }
+      return undefined;
+    } catch {
+      return 'geoip provider unreachable';
+    }
+  }
+
+  async validate(account: Account, ip?: string): Promise<void> {
     if (!account.name) {
       throw new Error('Account missing required fields');
-    }
-    if (account.kycVerified) {
-      return;
     }
 
     const denialKey = `kyc:denial:${account.id}`;
@@ -102,6 +124,16 @@ export class KycService {
     if (regionReason) {
       await this.cache.set(denialKey, regionReason, { ttl: 86400 });
       throw new Error(regionReason);
+    }
+    if (ip) {
+      const geoReason = await this.checkGeoIp(ip);
+      if (geoReason) {
+        await this.cache.set(denialKey, geoReason, { ttl: 86400 });
+        throw new Error(geoReason);
+      }
+    }
+    if (account.kycVerified) {
+      return;
     }
 
     const sanctionReason = await this.checkFlag(
@@ -143,16 +175,15 @@ export class KycService {
     }
   }
 
-  async verify(accountId: string): Promise<void> {
+  async verify(accountId: string, ip?: string): Promise<void> {
     const account = await this.accounts.findOneByOrFail({ id: accountId });
-    await this.validate(account);
+    await this.validate(account, ip);
   }
 
-  async isVerified(accountId: string): Promise<boolean> {
+  async isVerified(accountId: string, ip?: string): Promise<boolean> {
     const account = await this.accounts.findOneByOrFail({ id: accountId });
-    if (account.kycVerified) return true;
     try {
-      await this.validate(account);
+      await this.validate(account, ip);
       return true;
     } catch {
       return false;
