@@ -317,11 +317,9 @@ export class TournamentService {
           break;
         }
       }
-      if (!player) player = result[maxIdx].pop();
-      if (player) {
-        result[minIdx].push(player);
-        recentlyMoved.set(player, currentHand);
-      }
+      if (!player) break; // no eligible player without violating avoidWithin
+      result[minIdx].push(player);
+      recentlyMoved.set(player, currentHand);
     }
     return result;
   }
