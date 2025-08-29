@@ -135,14 +135,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.logger.debug(`Client connected: ${client.id}`);
     this.clock.setTimer(
       client.id,
+      'default',
       30_000,
-      () => void this.handleTimeout(client.id),
+      () => void this.handleTimeout(client.id, 'default'),
     );
   }
 
   handleDisconnect(client: Socket) {
     this.logger.debug(`Client disconnected: ${client.id}`);
-    this.clock.clearTimer(client.id);
+    this.clock.clearTimer(client.id, 'default');
 
     const frames = this.frameAcks.get(client.id);
     if (frames) {
@@ -189,7 +190,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     await this.redis.set(key, '1', 'EX', this.processedTtlSeconds);
 
     if (parsed.playerId) {
-      this.clock.clearTimer(parsed.playerId);
+      this.clock.clearTimer(parsed.playerId, tableId);
     }
     const { tableId: parsedTableId, version: _v, ...wire } = parsed;
     tableId = parsedTableId;
@@ -228,8 +229,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (parsed.playerId) {
       this.clock.setTimer(
         parsed.playerId,
+        tableId,
         30_000,
-        () => void this.handleTimeout(parsed.playerId),
+        () => void this.handleTimeout(parsed.playerId, tableId),
       );
     }
   }
@@ -504,13 +506,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  private async handleTimeout(playerId: string) {
-    const room = this.rooms.get('default');
+  private async handleTimeout(playerId: string, tableId: string) {
+    const room = this.rooms.get(tableId);
     const state = await room.apply({ type: 'fold', playerId } as GameAction);
     if (this.server) {
       const payload = { version: '1', ...state, tick: ++this.tick };
       GameStateSchema.parse(payload);
-      this.server.emit('state', payload);
+      this.server.to(tableId).emit('state', payload);
     }
   }
 }
