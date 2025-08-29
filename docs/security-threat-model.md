@@ -34,6 +34,7 @@ stateDiagram-v2
 
 ## Spoofing
 - Enforce strong authentication with short-lived JWTs and refresh token rotation using a Redis-backed revocation list to block replayed tokens.
+- JWT signing keys rotate regularly and the service accepts multiple active keys to allow seamless key rollover.
 - Same-site, HTTP-only cookies prevent credential reuse across sites.
 
 ## Tampering

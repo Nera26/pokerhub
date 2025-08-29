@@ -22,5 +22,11 @@ describe('status proxy route', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual(payload);
     expect(global.fetch).toHaveBeenCalled();
+    expect(res.headers['strict-transport-security']).toBe(
+      'max-age=31536000; includeSubDomains',
+    );
+    expect(res.headers['content-security-policy']).toBe(
+      "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+    );
   });
 });

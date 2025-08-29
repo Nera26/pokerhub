@@ -3,7 +3,6 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AuthController } from '../src/auth/auth.controller';
 import { AuthService } from '../src/auth/auth.service';
-import { RateLimitGuard } from '../src/auth/rate-limit.guard';
 import { SessionService } from '../src/session/session.service';
 import { LoginResponseSchema } from '@shared/types';
 import { ConfigService } from '@nestjs/config';
@@ -32,7 +31,7 @@ class MockRedis {
 class MockConfigService {
   get(key: string, def?: any) {
     const map: Record<string, any> = {
-      'auth.jwtSecret': 'test-secret',
+      'auth.jwtSecrets': ['test-secret'],
       'auth.accessTtl': 900,
       'auth.refreshTtl': 3600,
       'rateLimit.window': 60,
@@ -50,7 +49,6 @@ describe('AuthController', () => {
       controllers: [AuthController],
       providers: [
         AuthService,
-        RateLimitGuard,
         SessionService,
         { provide: 'REDIS_CLIENT', useClass: MockRedis },
         { provide: ConfigService, useClass: MockConfigService },

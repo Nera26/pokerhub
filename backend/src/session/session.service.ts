@@ -14,11 +14,13 @@ export class SessionService {
   ) {}
 
   async issueTokens(userId: string) {
-    const secret = this.config.get<string>('auth.jwtSecret');
+    const secrets = this.config.get<string[]>('auth.jwtSecrets');
+    const secret = secrets[0];
     const accessTtl = this.config.get<number>('auth.accessTtl', 900);
     const refreshTtl = this.config.get<number>('auth.refreshTtl', 604800);
     const accessToken = jwt.sign({ sub: userId }, secret, {
       expiresIn: accessTtl,
+      header: { kid: '0' },
     });
     const refreshToken = randomUUID();
     await this.redis.set(
@@ -31,13 +33,16 @@ export class SessionService {
   }
 
   verifyAccessToken(token: string): string | null {
-    const secret = this.config.get<string>('auth.jwtSecret');
-    try {
-      const payload = jwt.verify(token, secret) as any;
-      return payload.sub as string;
-    } catch {
-      return null;
+    const secrets = this.config.get<string[]>('auth.jwtSecrets', []);
+    for (const secret of secrets) {
+      try {
+        const payload = jwt.verify(token, secret) as any;
+        return payload.sub as string;
+      } catch {
+        continue;
+      }
     }
+    return null;
   }
 
   async rotate(refreshToken: string) {

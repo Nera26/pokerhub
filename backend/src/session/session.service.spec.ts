@@ -1,5 +1,6 @@
 import { SessionService } from './session.service';
 import type Redis from 'ioredis';
+import jwt from 'jsonwebtoken';
 
 class MockRedis {
   store = new Map<string, string>();
@@ -17,7 +18,7 @@ class MockRedis {
 class MockConfig {
   get(key: string, def?: any) {
     const map: Record<string, any> = {
-      'auth.jwtSecret': 'test-secret',
+      'auth.jwtSecrets': ['test-secret-new', 'test-secret-old'],
       'auth.accessTtl': 900,
       'auth.refreshTtl': 3600,
     };
@@ -45,5 +46,12 @@ describe('SessionService', () => {
       await service.revoke(rotated.refreshToken);
       expect(await client.get(`refresh:${rotated.refreshToken}`)).toBeNull();
     }
+  });
+
+  it('verifies tokens signed with an old secret', () => {
+    const token = jwt.sign({ sub: 'user1' }, 'test-secret-old', {
+      expiresIn: 900,
+    });
+    expect(service.verifyAccessToken(token)).toBe('user1');
   });
 });

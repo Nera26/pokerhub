@@ -13,19 +13,23 @@ export class AdminGuard implements CanActivate {
       throw new UnauthorizedException();
     }
     const token = header.slice(7);
-    const secret = this.config.get<string>('auth.jwtSecret');
-    try {
-      const payload = jwt.verify(token, secret) as any;
-      if (payload.role !== 'admin') {
-        throw new ForbiddenException();
+    const secrets = this.config.get<string[]>('auth.jwtSecrets', []);
+    let payload: any = null;
+    for (const secret of secrets) {
+      try {
+        payload = jwt.verify(token, secret) as any;
+        break;
+      } catch {
+        continue;
       }
-      req.userId = payload.sub;
-      return true;
-    } catch (err) {
-      if (err instanceof ForbiddenException) {
-        throw err;
-      }
+    }
+    if (!payload) {
       throw new UnauthorizedException();
     }
+    if (payload.role !== 'admin') {
+      throw new ForbiddenException();
+    }
+    req.userId = payload.sub;
+    return true;
   }
 }
