@@ -29,6 +29,7 @@
     "benchmark:leaderboard": "ts-node src/leaderboard/rebuild.ts --benchmark",
     "analytics:consume": "ts-node src/analytics/consume.ts",
     "load:socket": "ts-node test/load/socket-load.ts",
+    "test:soak": "node --trace-gc -r ts-node/register test/soak/soak24h.ts",
     "seed:test-credentials": "ts-node src/scripts/seed-test-credentials.ts"
   },
   "dependencies": {
