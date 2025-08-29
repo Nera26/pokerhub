@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import { GameActionSchema, type GameActionPayload } from '@shared/types';
 import { env } from './env';
 

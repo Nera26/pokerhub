@@ -13,7 +13,7 @@ export async function fetchLeaderboard({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<LeaderboardEntry[]> {
   const baseUrl = getBaseUrl();
-  const res = serverFetch(`${baseUrl}/api/leaderboard`, {
+  const res = serverFetch(`${baseUrl}/leaderboard`, {
     credentials: 'include',
     signal,
   });
