@@ -62,7 +62,7 @@ jobs:
           name: gc-heap-metrics
           path: gc-heap-metrics.log
 
-  handlog-soak:
+  gateway-soak:
     runs-on: ubuntu-latest
     timeout-minutes: 1440
     steps:
@@ -73,6 +73,6 @@ jobs:
       - name: Install backend deps
         working-directory: backend
         run: npm ci
-      - name: Run hand log replay soak
+      - name: Run GameGateway soak test
         working-directory: backend
         run: node --trace-gc -r ts-node/register test/soak/soak24h.ts
