@@ -22,7 +22,7 @@ const socket = {
   disconnect: jest.fn(),
 } as any;
 
-jest.mock('@/app/utils/socket', () => ({
+jest.mock('../app/utils/socket', () => ({
   getSocket: () => socket,
   disconnectSocket: jest.fn(),
 }));
@@ -31,7 +31,12 @@ describe('useGameSocket', () => {
   it('sends action and waits for ack', async () => {
     const { result } = renderHook(() => useGameSocket());
     await act(async () => {
-      await result.current.sendAction({ type: 'bet' });
+      await result.current.sendAction({
+        type: 'bet',
+        tableId: 't1',
+        playerId: 'p1',
+        amount: 1,
+      });
       await result.current.join();
       await result.current.buyIn();
       await result.current.sitout();
