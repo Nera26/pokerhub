@@ -3,6 +3,7 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Worker } from 'worker_threads';
 import { resolve } from 'path';
 import type { GameAction, GameState } from './engine';
+import { metrics } from '@opentelemetry/api';
 
 class WorkerHost extends EventEmitter {
   private readonly worker: Worker;
@@ -85,6 +86,16 @@ class RoomWorker extends EventEmitter {
   private follower?: WorkerHost;
   private heartbeat?: NodeJS.Timer;
   private lastConfirmed = 0;
+  private applied = 0;
+
+  private static readonly meter = metrics.getMeter('game');
+  private static readonly actionLag = RoomWorker.meter.createUpDownCounter(
+    'game_action_lag',
+    {
+      description:
+        'Number of actions applied but not yet confirmed by follower',
+    },
+  );
 
   constructor(private readonly tableId: string, playerIds?: string[]) {
     super();
@@ -115,13 +126,17 @@ class RoomWorker extends EventEmitter {
     }
     this.primary = follower;
     this.primary.on('state', (s) => this.emit('state', s));
+    this.lastConfirmed = this.applied;
   }
 
   async apply(action: GameAction): Promise<GameState> {
     const state = await this.primary.apply(action);
+    this.applied++;
     if (this.follower) {
+      RoomWorker.actionLag.add(1, { tableId: this.tableId });
       await this.follower.apply(action);
       this.lastConfirmed++;
+      RoomWorker.actionLag.add(-1, { tableId: this.tableId });
     }
     return state;
   }
