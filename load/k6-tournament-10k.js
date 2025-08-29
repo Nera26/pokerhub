@@ -2,9 +2,10 @@ import http from 'k6/http';
 import { sleep } from 'k6';
 import { Trend, Gauge } from 'k6/metrics';
 
+const ci = !!__ENV.CI;
 export const options = {
-  vus: 10000,
-  duration: '5m',
+  vus: Number(__ENV.VUS) || (ci ? 100 : 10000),
+  duration: __ENV.DURATION || (ci ? '1m' : '5m'),
   thresholds: {
     tournament_duration: ['p(95)<500'],
   },
