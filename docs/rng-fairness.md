@@ -66,10 +66,10 @@ npx ts-node backend/src/game/verify.ts <seed> <nonce> [commitment]
 
 ### CLI verification
 
-A convenience script fetches the proof and log and checks the deck order:
+A convenience script fetches the hand log, extracts the embedded proof and checks the deck order:
 
 ```sh
-node --loader ts-node/esm scripts/verify-hand.mjs <handId> [baseUrl]
+npx ts-node scripts/verify-hand.ts <handId> [baseUrl]
 ```
 
 It verifies the commitment and asserts that the recorded deck matches the
