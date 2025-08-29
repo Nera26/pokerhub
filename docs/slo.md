@@ -18,6 +18,13 @@ Dashboards:
 
 Status: [Status page](https://status.pokerhub.example.com)
 
+## Backups
+- **Restore duration**: < 30m
+- **Snapshot age**: < 5m
+
+Dashboards:
+- [DB restore](https://grafana.pokerhub.example.com/d/db-restore)
+
 ## Escalation Policy
 - Primary on-call via [PagerDuty](https://pagerduty.com/services/pokerhub-sre)
 - Escalate to SRE lead after 15m without acknowledgement.
