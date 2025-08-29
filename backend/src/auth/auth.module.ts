@@ -1,4 +1,11 @@
-import { Module, Injectable, OnModuleInit } from '@nestjs/common';
+import {
+  Module,
+  Injectable,
+  OnModuleInit,
+  NestModule,
+  MiddlewareConsumer,
+  RequestMethod,
+} from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { KycService } from './kyc.service';
@@ -9,11 +16,12 @@ import { KycVerification } from '../database/entities/kycVerification.entity';
 import { CountryProvider } from './providers/country-provider';
 import { startKycWorker } from './kyc.worker';
 import { AuthController } from './auth.controller';
-import { RateLimitGuard } from '../routes/rate-limit.guard';
 import { SessionModule } from '../session/session.module';
 import { AuthService } from './auth.service';
 import { AuthGuard } from './auth.guard';
 import { AdminGuard } from './admin.guard';
+import { AuthRateLimitMiddleware } from './rate-limit.middleware';
+import { SecurityHeadersMiddleware } from './security.middleware';
 
 @Injectable()
 class KycWorker implements OnModuleInit {
@@ -50,7 +58,6 @@ function providerFactory(config: ConfigService): CountryProvider {
     },
     KycService,
     KycWorker,
-    RateLimitGuard,
     AuthService,
     AuthGuard,
     AdminGuard,
@@ -58,4 +65,13 @@ function providerFactory(config: ConfigService): CountryProvider {
   controllers: [AuthController],
   exports: [KycService, AuthGuard, AdminGuard],
 })
-export class AuthModule {}
+export class AuthModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(SecurityHeadersMiddleware, AuthRateLimitMiddleware)
+      .forRoutes(
+        { path: 'auth/login', method: RequestMethod.POST },
+        { path: 'auth/refresh', method: RequestMethod.POST },
+      );
+  }
+}
