@@ -1,4 +1,5 @@
-import { Controller, Post, Body, HttpCode } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, UseGuards } from '@nestjs/common';
+import { RateLimitGuard } from './rate-limit.guard';
 import {
   LoginRequest,
   LoginRequestSchema,
@@ -12,6 +13,7 @@ import {
   ResetPasswordSchema,
 } from '../schemas/auth';
 
+@UseGuards(RateLimitGuard)
 @Controller('auth')
 export class AuthController {
   @Post('login')

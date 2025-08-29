@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { RateLimitGuard } from '../routes/rate-limit.guard';
 import { TournamentService } from './tournament.service';
 import type {
   CalculatePrizesRequest,
@@ -6,6 +7,7 @@ import type {
   HotPatchLevelRequest,
 } from '../schemas/tournament';
 
+@UseGuards(RateLimitGuard)
 @Controller('tournaments')
 export class TournamentController {
   constructor(private readonly service: TournamentService) {}

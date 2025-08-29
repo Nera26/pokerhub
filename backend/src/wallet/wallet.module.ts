@@ -7,6 +7,7 @@ import { SettlementJournal } from './settlement-journal.entity';
 import { WalletService } from './wallet.service';
 import { WalletController } from '../routes/wallet.controller';
 import { ProviderController } from '../routes/provider.controller';
+import { RateLimitGuard } from '../routes/rate-limit.guard';
 import { EventsModule } from '../events/events.module';
 import { RedisModule } from '../redis/redis.module';
 import { startPayoutWorker } from './payout.worker';
@@ -34,7 +35,13 @@ class PayoutWorker implements OnModuleInit {
     EventsModule,
     RedisModule,
   ],
-  providers: [WalletService, PayoutWorker, PaymentProviderService, KycService],
+  providers: [
+    WalletService,
+    PayoutWorker,
+    PaymentProviderService,
+    KycService,
+    RateLimitGuard,
+  ],
   controllers: [WalletController, ProviderController],
   exports: [WalletService],
 })
