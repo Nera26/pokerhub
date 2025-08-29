@@ -3,6 +3,7 @@ import { API_CONTRACT_VERSION } from '@shared/constants';
 import { ServiceStatusResponseSchema } from '@shared/types';
 import { getBaseUrl } from '@/lib/base-url';
 import { serverFetch } from '@/lib/server-fetch';
+import { useAuthStore } from '@/app/store/authStore';
 
 /**
  * Error thrown by API helpers when a request fails or returns an unexpected body.
@@ -57,6 +58,36 @@ export async function checkApiContractVersion(): Promise<void> {
     }
     // ignore other errors
   }
+}
+
+export async function apiClient<T>(
+  path: string,
+  schema: ZodSchema<T>,
+  opts: {
+    method?: string;
+    body?: unknown;
+    signal?: AbortSignal;
+  } = {},
+): Promise<T> {
+  const baseUrl = getBaseUrl();
+  const token = useAuthStore.getState().token;
+  const headers: Record<string, string> = {};
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  if (opts.body !== undefined) {
+    headers['content-type'] = 'application/json';
+  }
+
+  const res = serverFetch(`${baseUrl}${path}`, {
+    method: opts.method ?? 'GET',
+    credentials: 'include',
+    headers,
+    ...(opts.body !== undefined && { body: JSON.stringify(opts.body) }),
+    ...(opts.signal && { signal: opts.signal }),
+  });
+  return handleResponse(res, schema);
 }
 
 /**

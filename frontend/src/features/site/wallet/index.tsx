@@ -19,7 +19,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 
 export default function WalletPage() {
-  const { playerId, realBalance, creditBalance, setBalances } = useAuth();
+  const { realBalance, creditBalance } = useAuth();
   const [kycVerified, setKycVerified] = useState(false);
 
   const {
@@ -28,11 +28,7 @@ export default function WalletPage() {
     error: pendingError,
   } = useQuery({
     queryKey: ['wallet', 'pending'],
-    queryFn: ({ signal }) =>
-      fetchPending(playerId, { signal }).then((res) => {
-        setBalances(res.realBalance, res.creditBalance);
-        return res.transactions;
-      }),
+    queryFn: ({ signal }) => fetchPending({ signal }),
   });
 
   const pendingTransactions = useMemo(
@@ -53,11 +49,7 @@ export default function WalletPage() {
     error: historyError,
   } = useQuery({
     queryKey: ['wallet', 'transactions'],
-    queryFn: ({ signal }) =>
-      fetchTransactions(playerId, { signal }).then((res) => {
-        setBalances(res.realBalance, res.creditBalance);
-        return res.transactions;
-      }),
+    queryFn: ({ signal }) => fetchTransactions({ signal }),
   });
 
   const transactionHistoryData: Transaction[] = useMemo(
@@ -104,16 +96,13 @@ export default function WalletPage() {
     showToast(`Withdraw request of $${amount.toFixed(2)} sent`);
   };
 
-  // Update document title (optional)
+  // Title & KYC fetch
   useEffect(() => {
     document.title = 'Wallet – PokerHub';
-    getStatus(playerId)
-      .then((res) => {
-        setKycVerified(res.kycVerified);
-        setBalances(res.realBalance, res.creditBalance);
-      })
+    getStatus()
+      .then((res) => setKycVerified(res.kycVerified))
       .catch(() => setKycVerified(false));
-  }, [playerId, setBalances]);
+  }, []);
 
   return (
     <>

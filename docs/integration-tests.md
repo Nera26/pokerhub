@@ -25,6 +25,19 @@ If the API schema changes, Zod parsing fails and the tests fail,
 ensuring contract mismatches are caught. Proofs from each run are
 written to `frontend/test-results/` for audit.
 
+## Authenticated API helper
+
+Use the `apiClient` helper (`frontend/src/lib/api/client.ts`) for authenticated
+requests in tests. It automatically includes cookies and the current JWT from
+the auth store:
+
+```ts
+import { apiClient } from '@/lib/api/client';
+import { LeaderboardResponseSchema } from '@shared/types';
+
+await apiClient('/api/leaderboard', LeaderboardResponseSchema);
+```
+
 ## WebSocket load test
 
 A k6 scenario under `load/` drives more than 10k sockets against the `/game`

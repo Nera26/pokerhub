@@ -1,7 +1,5 @@
 /* istanbul ignore file */
-import { getBaseUrl } from '@/lib/base-url';
-import { serverFetch } from '@/lib/server-fetch';
-import { handleResponse } from './client';
+import { apiClient } from './client';
 import {
   LeaderboardEntry,
   LeaderboardResponseSchema,
@@ -9,24 +7,18 @@ import {
   type StatusResponse,
 } from '@shared/types';
 
-export async function fetchLeaderboard({
-  signal,
-}: { signal?: AbortSignal } = {}): Promise<LeaderboardEntry[]> {
-  const baseUrl = getBaseUrl();
-  const res = serverFetch(`${baseUrl}/leaderboard`, {
-    credentials: 'include',
+export async function fetchLeaderboard(
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<LeaderboardEntry[]> {
+  return await apiClient('/api/leaderboard', LeaderboardResponseSchema, {
     signal,
   });
-  return handleResponse(res, LeaderboardResponseSchema);
 }
 
-export async function rebuildLeaderboard(
-  days = 30,
-): Promise<StatusResponse> {
-  const baseUrl = getBaseUrl();
-  const res = serverFetch(`${baseUrl}/api/leaderboard/rebuild?days=${days}`, {
-    method: 'POST',
-    credentials: 'include',
-  });
-  return handleResponse(res, StatusResponseSchema);
+export async function rebuildLeaderboard(days = 30): Promise<StatusResponse> {
+  return await apiClient(
+    `/api/leaderboard/rebuild?days=${days}`,
+    StatusResponseSchema,
+    { method: 'POST' },
+  );
 }
