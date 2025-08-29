@@ -83,4 +83,47 @@ describe('GameEngine property tests', () => {
       }),
     );
   });
+
+  it('pot distribution matches player contributions', () => {
+    fc.assert(
+      fc.property(fc.array(actionArb, { maxLength: 20 }), (actions) => {
+        const engine = new GameEngine(players);
+        const contributions: Record<string, number> = Object.fromEntries(
+          players.map((p) => [p, 0]),
+        );
+        let prev = engine.getState();
+        actions.forEach((a) => {
+          const next = engine.applyAction(a);
+          next.players.forEach((p, idx) => {
+            const diff = prev.players[idx].stack - p.stack;
+            if (diff > 0) contributions[p.id] += diff;
+          });
+          prev = next;
+        });
+        while (engine.getState().street !== 'showdown') {
+          const next = engine.applyAction({ type: 'next' });
+          next.players.forEach((p, idx) => {
+            const diff = prev.players[idx].stack - p.stack;
+            if (diff > 0) contributions[p.id] += diff;
+          });
+          prev = next;
+        }
+        const totalContribution = Object.values(contributions).reduce(
+          (s, v) => s + v,
+          0,
+        );
+        const settlements = engine.getSettlements();
+        const distributed = settlements.reduce(
+          (s, e) => s + e.delta + contributions[e.playerId],
+          0,
+        );
+        settlements
+          .filter((e) => e.delta < 0)
+          .forEach((e) => {
+            expect(-e.delta).toBe(contributions[e.playerId]);
+          });
+        expect(distributed).toBe(totalContribution);
+      }),
+    );
+  });
 });
