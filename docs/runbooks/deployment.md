@@ -9,8 +9,8 @@ Use this runbook to roll out a new release using a guarded canary.
 
 ## Monitor
 
-1. The workflow polls Prometheus each minute for `action_ack_latency_ms` (p99) and error rate.
-2. If either metric exceeds its SLO, the workflow fails and automatically rolls back.
+1. The workflow polls Prometheus each minute for `game_action_ack_latency_ms` p95 and HTTP error rate.
+2. If latency rises above 120 ms or errors exceed 0.05 % (per [slo.md](../slo.md)), the script triggers `helm rollback` and the workflow fails.
 3. When both metrics stay within SLO for the full window, the canary is promoted to 100 %.
 
 ## Observability
