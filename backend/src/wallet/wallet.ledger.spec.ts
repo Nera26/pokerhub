@@ -95,6 +95,65 @@ describe('Wallet ledger invariants', () => {
   });
 
   it(
+    'ensures account deltas sum to zero for random batches',
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.array(
+            fc
+              .record({
+                reserve: fc.integer({ min: 1, max: 100 }),
+                commit: fc.integer({ min: 0, max: 100 }),
+                rake: fc.integer({ min: 0, max: 100 }),
+              })
+              .filter((t) => t.commit <= t.reserve && t.rake <= t.commit),
+            { maxLength: 10 },
+          ),
+          async (batch) => {
+            const accountRepo = dataSource.getRepository(Account);
+            const journalRepo = dataSource.getRepository(JournalEntry);
+
+            await journalRepo.clear();
+            const accounts = await accountRepo.find();
+            for (const acc of accounts) {
+              acc.balance = 0;
+            }
+            await accountRepo.save(accounts);
+            const start = new Map(accounts.map((a) => [a.id, a.balance]));
+
+            for (let i = 0; i < batch.length; i++) {
+              const t = batch[i];
+              const ref = `hand#${i}`;
+              await service.reserve(userId, t.reserve, ref, 'USD');
+              await service.commit(ref, t.commit, t.rake, 'USD');
+              const rollbackAmt = t.reserve - t.commit;
+              if (rollbackAmt > 0) {
+                await service.rollback(userId, rollbackAmt, ref, 'USD');
+              }
+            }
+
+            const end = await accountRepo.find();
+            const deltaSum = end.reduce(
+              (sum, acc) => sum + (acc.balance - (start.get(acc.id) ?? 0)),
+              0,
+            );
+            expect(deltaSum).toBe(0);
+          },
+        ),
+        { numRuns: 25 },
+      );
+
+      const accountRepo = dataSource.getRepository(Account);
+      const reset = await accountRepo.find();
+      for (const acc of reset) {
+        acc.balance = 0;
+      }
+      await accountRepo.save(reset);
+    },
+    30000,
+  );
+
+  it(
     'maintains zero-sum balances and detects reconciliation discrepancies',
     async () => {
       const runInTmp = async (fn: () => Promise<void>) => {
@@ -160,7 +219,7 @@ describe('Wallet ledger invariants', () => {
         { numRuns: 25 },
       );
     },
-    20000,
+    30000,
   );
 });
 
