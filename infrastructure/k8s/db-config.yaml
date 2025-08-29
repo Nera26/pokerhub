@@ -6,3 +6,5 @@ metadata:
 data:
   PRIMARY_ENDPOINT: postgres-primary.example.com
   REPLICA_ENDPOINT: postgres-replica.example.com
+  REDIS_PRIMARY_ENDPOINT: redis-primary.example.com
+  REDIS_REPLICA_ENDPOINT: redis-replica.example.com
