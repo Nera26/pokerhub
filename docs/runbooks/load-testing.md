@@ -61,3 +61,17 @@ This gate ensures that action acknowledgements remain below the 120 ms p95 SLO
    ```
 5. The k6 script enforces <1% heap growth, p95 GC pause <50 ms and CPU usage <80%.
 6. After the test, review `gc-heap-metrics.log` and roll back if thresholds were breached.
+
+### Interpreting soak summaries
+
+`k6-ws-soak.js` writes a JSON report (`soak-summary.json`) with a `metrics`
+object. The key fields are:
+
+- `ws_latency` – round-trip acknowledgement latency; check `p(95)` < 120 ms.
+- `rss_growth` – percentage increase in RSS; values above 1 % signal a leak.
+- `gc_pause` – garbage collection pause time; `p(95)` should remain under 50 ms.
+- `cpu_usage` – maximum CPU usage; must stay below the configured threshold
+  (80 % by default).
+
+Each metric has an associated `thresholds` array. Any entry with `"ok": false`
+indicates a failure and the CI gate will exit non‑zero.
