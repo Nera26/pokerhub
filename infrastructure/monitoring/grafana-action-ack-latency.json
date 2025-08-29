@@ -20,6 +20,21 @@
             "legendFormat": "p99"
           }
         ]
+      },
+      {
+        "type": "timeseries",
+        "title": "ACK Latency Burn Rate",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "action_ack_latency_error_budget_burn_rate_1h",
+            "legendFormat": "1h"
+          },
+          {
+            "expr": "action_ack_latency_error_budget_burn_rate_6h",
+            "legendFormat": "6h"
+          }
+        ]
       }
     ]
   }

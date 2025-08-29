@@ -80,6 +80,21 @@
             "legendFormat": "p99"
           }
         ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Socket Connect Burn Rate",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "socket_connect_error_budget_burn_rate_1h",
+            "legendFormat": "1h"
+          },
+          {
+            "expr": "socket_connect_error_budget_burn_rate_6h",
+            "legendFormat": "6h"
+          }
+        ]
       }
     ]
   }
