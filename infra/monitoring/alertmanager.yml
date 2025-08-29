@@ -1,11 +1,13 @@
 route:
-  receiver: pagerduty
   group_by: ['alertname']
+  receiver: 'null'
   routes:
     - matchers:
         - pagerduty_service="pokerhub-ops"
+        - severity="critical"
       receiver: pagerduty
 receivers:
+  - name: 'null'
   - name: pagerduty
     pagerduty_configs:
       - service_key: '${PAGERDUTY_SERVICE_KEY}'
