@@ -63,3 +63,4 @@ The script logs metrics and writes `failover.metrics` containing
 - Run `npx ts-node infra/disaster-recovery/tests/restore.test.ts` to spin up a snapshot in a sandbox and verify `RPO_SECONDS ≤ 300`.
 - Monitor GitHub nightly workflow `backup-verify` for automated checks.
 - Monitor GitHub nightly workflow `pitr-nightly` for PITR backup results.
+- Monitor GitHub nightly workflow `restore-nightly` for nightly snapshot restore tests. Review the `restore.log` and `restore-backup.metrics` artifacts to confirm `RTO_SECONDS ≤ 1800` and `RPO_SECONDS ≤ 300`.
