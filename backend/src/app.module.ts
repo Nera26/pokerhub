@@ -39,6 +39,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { TournamentModule } from './tournament/tournament.module';
 import { WalletModule } from './wallet/wallet.module';
 import { AuthModule } from './auth/auth.module';
+import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 
 @Module({
   imports: [
@@ -91,6 +92,7 @@ import { AuthModule } from './auth/auth.module';
     TournamentModule,
     WalletModule,
     AuthModule,
+    FeatureFlagsModule,
   ],
   controllers: [AppController, UsersController],
   providers: [
