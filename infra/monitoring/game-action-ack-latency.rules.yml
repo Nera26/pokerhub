@@ -19,28 +19,30 @@ groups:
       - record: game_action_ack_latency_ms:sli_latency:ratio_rate6h
         expr: sum(rate(game_action_ack_latency_ms_bucket{le="250"}[6h]))
           / sum(rate(game_action_ack_latency_ms_count[6h]))
-      - record: game_action_ack_latency_error_budget_burn_rate_1h
+      - record: game_action_ack_latency_error_budget:burn_rate1h
         expr: (1 - game_action_ack_latency_ms:sli_latency:ratio_rate1h) / (1 - 0.99)
-      - record: game_action_ack_latency_error_budget_burn_rate_6h
+      - record: game_action_ack_latency_error_budget:burn_rate6h
         expr: (1 - game_action_ack_latency_ms:sli_latency:ratio_rate6h) / (1 - 0.99)
   - name: game-action-ack-latency-alerts
     rules:
       - alert: GameActionAckLatencySLOBurnRate1h
-        expr: game_action_ack_latency_error_budget_burn_rate_1h > 14.4
+        expr: game_action_ack_latency_error_budget:burn_rate1h > 14.4
         for: 2m
         labels:
           severity: critical
           pagerduty_service: pokerhub-ops
         annotations:
           summary: "1h game action ACK latency burn rate too high"
+          runbook: https://github.com/Nera26/pokerhub/blob/main/docs/runbooks/action-ack-latency.md
       - alert: GameActionAckLatencySLOBurnRate6h
-        expr: game_action_ack_latency_error_budget_burn_rate_6h > 6
+        expr: game_action_ack_latency_error_budget:burn_rate6h > 6
         for: 15m
         labels:
           severity: critical
           pagerduty_service: pokerhub-ops
         annotations:
           summary: "6h game action ACK latency burn rate too high"
+          runbook: https://github.com/Nera26/pokerhub/blob/main/docs/runbooks/action-ack-latency.md
       - alert: GameActionAckLatencyP95High
         expr: game_action_ack_latency_ms:p95 > 120
         for: 5m
@@ -49,6 +51,7 @@ groups:
           pagerduty_service: pokerhub-ops
         annotations:
           summary: "Game action ACK latency p95 > 120ms"
+          runbook: https://github.com/Nera26/pokerhub/blob/main/docs/runbooks/action-ack-latency.md
       - alert: GameActionAckLatencyP99High
         expr: game_action_ack_latency_ms:p99 > 200
         for: 5m
@@ -57,3 +60,4 @@ groups:
           pagerduty_service: pokerhub-ops
         annotations:
           summary: "Game action ACK latency p99 > 200ms"
+          runbook: https://github.com/Nera26/pokerhub/blob/main/docs/runbooks/action-ack-latency.md
