@@ -28,3 +28,10 @@ export const WalletStatusSchema = z.object({
 });
 
 export type WalletStatusResponse = z.infer<typeof WalletStatusSchema>;
+
+export const KycDenialResponseSchema = z.object({
+  accountId: z.string(),
+  reason: z.string().nullable(),
+});
+
+export type KycDenialResponse = z.infer<typeof KycDenialResponseSchema>;

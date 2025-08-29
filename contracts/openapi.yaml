@@ -450,6 +450,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+  /admin/kyc/{id}/denial:
+    get:
+      summary: Get KYC denial reason
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Denial reason
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KycDenialResponse'
   /review/sessions/{id}/{action}:
     post:
       summary: Apply review action
@@ -714,6 +730,16 @@ components:
           type: string
       required:
         - kycVerified
+    KycDenialResponse:
+      type: object
+      properties:
+        accountId:
+          type: string
+        reason:
+          type: string
+          nullable: true
+      required:
+        - accountId
     CreateUserRequest:
       type: object
       properties:

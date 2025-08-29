@@ -43,6 +43,6 @@ class PayoutWorker implements OnModuleInit {
     RateLimitGuard,
   ],
   controllers: [WalletController, WebhookController],
-  exports: [WalletService],
+  exports: [WalletService, KycService],
 })
 export class WalletModule {}

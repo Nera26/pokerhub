@@ -7,9 +7,10 @@ import { CollusionService } from './collusion.service';
 import { ReviewController } from './review.controller';
 import { FlaggedSessionJob } from './flagged-session.job';
 import { AdminController } from '../routes/admin.controller';
+import { WalletModule } from '../wallet/wallet.module';
 
 @Module({
-  imports: [ConfigModule, RedisModule],
+  imports: [ConfigModule, RedisModule, WalletModule],
   providers: [
     AnalyticsService,
     EtlService,
