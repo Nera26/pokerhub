@@ -53,6 +53,30 @@
     },
     {
       "type": "timeseries",
+      "title": "Avg pot size by stake",
+      "targets": [
+        {
+          "query": "SELECT stake, pot FROM stake_pot",
+          "datasource": {
+            "type": "clickhouse",
+            "uid": "${DS_CLICKHOUSE}"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 100, "color": "red" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "timeseries",
       "title": "Avg action latency by stake",
       "targets": [
         {
