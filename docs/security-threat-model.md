@@ -33,11 +33,11 @@ stateDiagram-v2
 ```
 
 ## Spoofing
-- Enforce strong authentication with short-lived JWTs and refresh token rotation.
+- Enforce strong authentication with short-lived JWTs and refresh token rotation using a Redis-backed revocation list to block replayed tokens.
 - Same-site, HTTP-only cookies prevent credential reuse across sites.
 
 ## Tampering
-- Helmet sets Content-Security-Policy and HSTS headers to protect against script injection and downgrade attacks.
+- Global middleware sets Content-Security-Policy, HSTS and SameSite cookie headers to protect against script injection and downgrade attacks.
 - All wallet movements are recorded as immutable journal entries.
 
 ## Repudiation
