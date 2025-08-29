@@ -2,13 +2,16 @@ import { EventEmitter } from 'events';
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Worker } from 'worker_threads';
 import { resolve } from 'path';
+import { metrics, type ObservableResult } from '@opentelemetry/api';
 import type { GameAction, GameState } from './engine';
-import { metrics } from '@opentelemetry/api';
 
 class WorkerHost extends EventEmitter {
   private readonly worker: Worker;
   private seq = 0;
-  private readonly pending = new Map<number, [(s: unknown) => void, (e: unknown) => void]>();
+  private readonly pending = new Map<
+    number,
+    [(s: unknown) => void, (e: unknown) => void]
+  >();
 
   constructor(private readonly tableId: string, playerIds?: string[]) {
     super();
@@ -16,12 +19,13 @@ class WorkerHost extends EventEmitter {
       workerData: { tableId, playerIds },
       execArgv: ['-r', 'ts-node/register'],
     });
+
     this.worker.on('message', (msg: any) => {
-      if (msg.event === 'state') {
+      if (msg?.event === 'state') {
         this.emit('state', msg.state as GameState);
         return;
       }
-      const seq = msg.seq as number;
+      const seq = msg?.seq as number | undefined;
       if (typeof seq === 'number') {
         const handlers = this.pending.get(seq);
         if (handlers) {
@@ -30,6 +34,7 @@ class WorkerHost extends EventEmitter {
         }
       }
     });
+
     this.worker.on('exit', () => {
       for (const [, [, reject]] of this.pending) {
         reject(new Error('worker exited'));
@@ -42,14 +47,14 @@ class WorkerHost extends EventEmitter {
     type: string,
     payload?: Record<string, unknown>,
   ): Promise<T> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolvePromise, rejectPromise) => {
       const seq = ++this.seq;
-      this.pending.set(seq, [resolve, reject]);
+      this.pending.set(seq, [resolvePromise, rejectPromise]);
       try {
         this.worker.postMessage({ type, seq, ...(payload ?? {}) });
       } catch (err) {
         this.pending.delete(seq);
-        reject(err);
+        rejectPromise(err);
       }
     });
   }
@@ -82,26 +87,51 @@ class WorkerHost extends EventEmitter {
 }
 
 class RoomWorker extends EventEmitter {
+  private static readonly meter = metrics.getMeter('game');
+
+  // Observable gauge: follower lag (applied - confirmed)
+  private static readonly followerLag =
+    RoomWorker.meter.createObservableGauge?.('room_follower_lag', {
+      description: 'Number of actions the follower is behind the primary',
+      unit: 'actions',
+    }) ??
+    ({
+      addCallback() {},
+      removeCallback() {},
+    } as {
+      addCallback(cb: (r: ObservableResult) => void): void;
+      removeCallback(cb: (r: ObservableResult) => void): void;
+    });
+
+  // Up/Down counter: in-flight actions awaiting follower confirmation
+  private static readonly actionLag =
+    RoomWorker.meter.createUpDownCounter?.('game_action_lag', {
+      description:
+        'Number of actions applied but not yet confirmed by follower',
+    }) ??
+    ({
+      add() {},
+    } as { add(n: number, attrs?: Record<string, unknown>): void });
+
   private primary: WorkerHost;
   private follower?: WorkerHost;
-  private heartbeat?: NodeJS.Timer;
+  private heartbeat?: NodeJS.Timeout;
   private lastConfirmed = 0;
   private applied = 0;
 
-  private static readonly meter = metrics.getMeter('game');
-  private static readonly actionLag = RoomWorker.meter.createUpDownCounter(
-    'game_action_lag',
-    {
-      description:
-        'Number of actions applied but not yet confirmed by follower',
-    },
-  );
+  private readonly observeLag = (result: ObservableResult) => {
+    result.observe(this.applied - this.lastConfirmed, {
+      tableId: this.tableId,
+    } as any);
+  };
 
   constructor(private readonly tableId: string, playerIds?: string[]) {
     super();
     this.primary = new WorkerHost(tableId, playerIds);
     this.follower = new WorkerHost(tableId, playerIds);
     this.primary.on('state', (s) => this.emit('state', s));
+
+    RoomWorker.followerLag.addCallback(this.observeLag);
     this.startHeartbeat();
   }
 
@@ -118,25 +148,34 @@ class RoomWorker extends EventEmitter {
   private async promoteFollower() {
     const follower = this.follower;
     if (!follower) return;
+
     this.follower = undefined;
+
     try {
       await this.primary.terminate();
     } catch {
-      // ignore
+      // ignore termination errors
     }
+
     this.primary = follower;
     this.primary.on('state', (s) => this.emit('state', s));
+
+    // keep lag consistent across promotion
     this.lastConfirmed = this.applied;
   }
 
   async apply(action: GameAction): Promise<GameState> {
     const state = await this.primary.apply(action);
     this.applied++;
+
     if (this.follower) {
       RoomWorker.actionLag.add(1, { tableId: this.tableId });
       await this.follower.apply(action);
       this.lastConfirmed++;
       RoomWorker.actionLag.add(-1, { tableId: this.tableId });
+    } else {
+      // No follower => nothing pending
+      this.lastConfirmed = this.applied;
     }
     return state;
   }
@@ -161,6 +200,7 @@ class RoomWorker extends EventEmitter {
     if (this.heartbeat) clearInterval(this.heartbeat);
     await this.primary.terminate();
     if (this.follower) await this.follower.terminate();
+    RoomWorker.followerLag.removeCallback(this.observeLag);
     this.removeAllListeners();
   }
 }
@@ -189,4 +229,3 @@ export class RoomManager implements OnModuleDestroy {
     this.rooms.clear();
   }
 }
-
