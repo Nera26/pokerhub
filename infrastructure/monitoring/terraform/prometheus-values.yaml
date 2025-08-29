@@ -2,7 +2,11 @@ alertmanager:
   config: |
     global: {}
     route:
-      receiver: pagerduty
+      receiver: 'null'
+      routes:
+        - match_re:
+            pagerduty_service: .+
+          receiver: pagerduty
     receivers:
       - name: pagerduty
         pagerduty_configs:
@@ -31,3 +35,37 @@ serverFiles:
           annotations:
             summary: "ACK latency above SLO"
             description: "99th percentile ACK latency > 250ms."
+      - name: slo-burn-rate
+        rules:
+        - alert: LatencySLOBurnRate1h
+          expr: latency_error_budget_burn_rate_1h > 14.4
+          for: 2m
+          labels:
+            severity: critical
+            pagerduty_service: pokerhub-sre
+          annotations:
+            summary: "1h latency error budget burn rate too high"
+        - alert: LatencySLOBurnRate6h
+          expr: latency_error_budget_burn_rate_6h > 6
+          for: 15m
+          labels:
+            severity: critical
+            pagerduty_service: pokerhub-sre
+          annotations:
+            summary: "6h latency error budget burn rate too high"
+        - alert: ErrorRateSLOBurnRate1h
+          expr: request_error_budget_burn_rate_1h > 14.4
+          for: 2m
+          labels:
+            severity: critical
+            pagerduty_service: pokerhub-sre
+          annotations:
+            summary: "1h error rate budget burn rate too high"
+        - alert: ErrorRateSLOBurnRate6h
+          expr: request_error_budget_burn_rate_6h > 6
+          for: 15m
+          labels:
+            severity: critical
+            pagerduty_service: pokerhub-sre
+          annotations:
+            summary: "6h error rate budget burn rate too high"

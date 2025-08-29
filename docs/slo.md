@@ -28,5 +28,7 @@ Dashboards:
 - [DB restore](https://grafana.pokerhub.example.com/d/db-restore)
 
 ## Escalation Policy
-- Primary on-call via [PagerDuty](https://pagerduty.com/services/pokerhub-sre)
+- Primary on-call via [PagerDuty](https://pagerduty.com/services/pokerhub-sre).
+- Latency and error-rate SLO burn-rate alerts trigger for 1h and 6h windows.
 - Escalate to SRE lead after 15m without acknowledgement.
+- Escalate to Engineering Director after 30m without acknowledgement.
