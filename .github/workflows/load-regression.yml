@@ -13,6 +13,8 @@ jobs:
         with:
           filename: load/k6-10k-tables.js
           flags: --summary-export=10k-summary.json
+      - name: Check thresholds
+        run: ./load/check-thresholds.sh 10k-summary.json
       - name: Upload summary
         if: always()
         uses: actions/upload-artifact@v3
@@ -29,9 +31,41 @@ jobs:
         with:
           filename: load/k6-ws-packet-loss.js
           flags: --summary-export=packet-summary.json
+      - name: Check thresholds
+        run: ./load/check-thresholds.sh packet-summary.json
       - name: Upload summary
         if: always()
         uses: actions/upload-artifact@v3
         with:
           name: packet-loss-summary
           path: packet-summary.json
+
+  chaos-regression:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        scenario:
+          - network-latency.yaml
+          - pod-kill.yaml
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.8.0
+      - name: Apply chaos scenario
+        uses: chaos-mesh/chaos-mesh-action@master
+        env:
+          CFG_FILE: infra/tests/load/chaos/${{ matrix.scenario }}
+          CHAOS_MESH_VERSION: v2.6.0
+      - name: Run k6 chaos scenario
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: load/k6-10k-tables.js
+          flags: --summary-export=chaos-${{ matrix.scenario }}.json
+      - name: Check thresholds
+        run: ./load/check-thresholds.sh chaos-${{ matrix.scenario }}.json
+      - name: Upload summary
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: chaos-${{ matrix.scenario }}-summary
+          path: chaos-${{ matrix.scenario }}.json
