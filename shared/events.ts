@@ -65,7 +65,7 @@ export const WalletCommitEvent = z.object({
   currency: z.string(),
 });
 
-export const AntiCheatFlagEvent = z.object({
+export const AntiCheatWalletEvent = z.object({
   accountId: z.string().uuid(),
   operation: z.enum(["deposit", "withdraw"]),
   amount: z.number(),
@@ -73,6 +73,17 @@ export const AntiCheatFlagEvent = z.object({
   limit: z.number(),
   currency: z.string(),
 });
+
+export const AntiCheatCollusionEvent = z.object({
+  sessionId: z.string(),
+  users: z.array(z.string().uuid()),
+  features: z.record(z.unknown()),
+});
+
+export const AntiCheatFlagEvent = z.union([
+  AntiCheatWalletEvent,
+  AntiCheatCollusionEvent,
+]);
 
 export const WalletVelocityLimitEvent = z.object({
   accountId: z.string().uuid(),

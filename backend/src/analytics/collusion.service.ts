@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import Redis from 'ioredis';
 import {
   calculateVpipCorrelation,
@@ -6,10 +6,14 @@ import {
   calculateSeatProximity,
 } from './collusion.model';
 import { FlaggedSession, ReviewStatus } from '../schemas/review';
+import { AnalyticsService } from './analytics.service';
 
 @Injectable()
 export class CollusionService {
-  constructor(@Inject('REDIS_CLIENT') private readonly redis: Redis) {}
+  constructor(
+    @Inject('REDIS_CLIENT') private readonly redis: Redis,
+    @Optional() private readonly analytics?: AnalyticsService,
+  ) {}
 
   async record(
     userId: string,
@@ -95,6 +99,7 @@ export class CollusionService {
       features: JSON.stringify(features),
     });
     await this.redis.sadd('collusion:flagged', sessionId);
+    await this.analytics?.emitAntiCheatFlag({ sessionId, users, features });
   }
 
   async listFlaggedSessions(opts?: {
