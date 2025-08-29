@@ -12,6 +12,17 @@ To ensure every deck is provably fair, PokerHub uses a commit–reveal scheme ba
 3. Shuffle the deck with a Fisher–Yates algorithm seeded by `seed`.
 4. After showdown, reveal `seed` and append the proof to the hand log so anyone can verify the shuffle.
 
+## Fetching the Proof
+
+The server persists the trio `{ commitment, seed, nonce }` for each hand. After the hand ends it can be
+retrieved via the API:
+
+```http
+GET /hands/{id}/proof -> { seed, nonce, commitment }
+```
+
+Clients such as the Fairness modal call this endpoint and validate the response locally with `verifyProof`.
+
 ## Verification
 
 After showdown the table displays a **Verify Hand** link. Clicking it opens a modal

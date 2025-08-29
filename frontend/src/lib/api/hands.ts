@@ -1,6 +1,7 @@
 import { getBaseUrl } from '@/lib/base-url';
 import { serverFetch } from '@/lib/server-fetch';
 import { handleResponse } from './client';
+import { verifyProof } from '@/lib/verifyProof';
 import {
   HandProofSchema,
   type HandProof,
@@ -20,6 +21,15 @@ export async function fetchHandProof(
     signal,
   });
   return handleResponse(res, HandProofSchema);
+}
+
+export async function fetchVerifiedHandProof(
+  id: string,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<{ proof: HandProof; valid: boolean }> {
+  const proof = await fetchHandProof(id, { signal });
+  const valid = await verifyProof(proof);
+  return { proof, valid };
 }
 
 export async function fetchHandLog(
