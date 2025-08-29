@@ -32,3 +32,15 @@ non‑zero if the rebuild exceeds the target duration (30 minutes above).
 A 5‑vCPU / 10 GiB RAM VM (Intel Xeon Platinum 8370C) processed a synthetic dataset
 of ~3 000 events (100 per day for 30 days) in well under one second, leaving
 ample headroom for much larger inputs while staying below the 30‑minute goal.
+
+## Benchmark
+
+To generate a fresh 30‑day synthetic dataset and verify rebuild performance
+against the incremental model, run:
+
+```bash
+npm run --workspace backend benchmark:leaderboard
+```
+
+The script fails if rebuilding takes longer than 30 minutes or if the resulting
+leaderboard differs from the incremental calculation.
