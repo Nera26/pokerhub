@@ -3,6 +3,7 @@
 Investigates slow acknowledgements of game actions.
 
 - [Grafana Dashboard](../../infrastructure/monitoring/grafana-action-ack-latency.json)
+- See [SLO alert strategy](../SLOs.md) for burn-rate thresholds.
 
 ## Triage
 1. Check if latency spikes correlate with deployments or incidents.
