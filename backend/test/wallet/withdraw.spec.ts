@@ -13,6 +13,7 @@ import type Redis from 'ioredis';
 describe('WalletService withdraw', () => {
   let dataSource: DataSource;
   let service: WalletService;
+  let kyc: KycService;
   const events = { emit: jest.fn() } as unknown as EventPublisher;
   let redisStore: Record<string, number> = {};
   const redis = {
@@ -79,8 +80,9 @@ describe('WalletService withdraw', () => {
     const journalRepo = dataSource.getRepository(JournalEntry);
     const disbRepo = dataSource.getRepository(Disbursement);
     const settleRepo = dataSource.getRepository(SettlementJournal);
-    const kyc = {
+    kyc = {
       validate: jest.fn().mockResolvedValue(undefined),
+      isVerified: jest.fn().mockResolvedValue(true),
     } as unknown as KycService;
     service = new WalletService(
       accountRepo,
@@ -133,12 +135,7 @@ describe('WalletService withdraw', () => {
   });
 
   it('requires KYC verification', async () => {
-    const repo = dataSource.getRepository(Account);
-    const user = await repo.findOneByOrFail({
-      id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    });
-    user.kycVerified = false;
-    await repo.save(user);
+    (kyc.isVerified as jest.Mock).mockResolvedValueOnce(false);
     await expect(
       service.withdraw(
         'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
@@ -148,8 +145,6 @@ describe('WalletService withdraw', () => {
         'USD',
       ),
     ).rejects.toThrow('KYC required');
-    user.kycVerified = true;
-    await repo.save(user);
   });
 
   it('enforces rate limits', async () => {

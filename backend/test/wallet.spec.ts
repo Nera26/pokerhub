@@ -59,7 +59,10 @@ describe('WalletService zero-sum property', () => {
       initiate3DS: jest.fn().mockResolvedValue({ id: 'tx' }),
       getStatus: jest.fn().mockResolvedValue('approved'),
     } as unknown as PaymentProviderService;
-    const kyc = { validate: jest.fn().mockResolvedValue(undefined) } as unknown as KycService;
+    const kyc = {
+      validate: jest.fn().mockResolvedValue(undefined),
+      isVerified: jest.fn().mockResolvedValue(true),
+    } as unknown as KycService;
     const service = new WalletService(
       accountRepo,
       journalRepo,

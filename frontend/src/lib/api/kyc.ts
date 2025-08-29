@@ -4,6 +4,8 @@ import { handleResponse } from './client';
 import {
   KycDenialResponseSchema,
   type KycDenialResponse,
+  MessageResponseSchema,
+  type MessageResponse,
 } from '@shared/types';
 
 export function getKycDenial(
@@ -16,4 +18,17 @@ export function getKycDenial(
     signal: opts.signal,
   });
   return handleResponse(res, KycDenialResponseSchema);
+}
+
+export function startKyc(
+  id: string,
+  opts: { signal?: AbortSignal } = {},
+): Promise<MessageResponse> {
+  const baseUrl = getBaseUrl();
+  const res = serverFetch(`${baseUrl}/api/wallet/${id}/kyc`, {
+    method: 'POST',
+    credentials: 'include',
+    signal: opts.signal,
+  });
+  return handleResponse(res, MessageResponseSchema);
 }

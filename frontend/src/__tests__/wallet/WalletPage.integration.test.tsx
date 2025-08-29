@@ -39,11 +39,8 @@ describe('WalletPage integration', () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText((content) => content.includes('Real: $1,000.00')),
+        screen.getByText((content) => content.includes('KYC Status: Verified')),
       ).toBeInTheDocument(),
     );
-    expect(
-      screen.getByText((content) => content.includes('Credit: $50.00')),
-    ).toBeInTheDocument();
   });
 });

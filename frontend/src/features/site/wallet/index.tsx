@@ -15,11 +15,12 @@ import ToastNotification, {
   ToastType,
 } from '@/app/components/ui/ToastNotification';
 import { getStatus, fetchTransactions, fetchPending } from '@/lib/api/wallet';
+import { startKyc } from '@/lib/api/kyc';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 
 export default function WalletPage() {
-  const { realBalance, creditBalance } = useAuth();
+  const { realBalance, creditBalance, playerId, setBalances } = useAuth();
   const [kycVerified, setKycVerified] = useState(false);
 
   const {
@@ -33,7 +34,7 @@ export default function WalletPage() {
 
   const pendingTransactions = useMemo(
     () =>
-      (pendingData ?? []).map((tx) => ({
+      (pendingData?.transactions ?? []).map((tx) => ({
         id: tx.id,
         type: tx.type,
         amount: tx.amount,
@@ -54,7 +55,7 @@ export default function WalletPage() {
 
   const transactionHistoryData: Transaction[] = useMemo(
     () =>
-      (historyData ?? []).map((tx) => ({
+      (historyData?.transactions ?? []).map((tx) => ({
         id: tx.id,
         type: tx.type,
         amount: tx.amount,
@@ -96,11 +97,20 @@ export default function WalletPage() {
     showToast(`Withdraw request of $${amount.toFixed(2)} sent`);
   };
 
+  const handleVerify = () => {
+    startKyc(playerId)
+      .then(() => setKycVerified(true))
+      .catch(() => setKycVerified(false));
+  };
+
   // Title & KYC fetch
   useEffect(() => {
     document.title = 'Wallet – PokerHub';
     getStatus()
-      .then((res) => setKycVerified(res.kycVerified))
+      .then((res) => {
+        setKycVerified(res.kycVerified);
+        setBalances(res.realBalance, res.creditBalance);
+      })
       .catch(() => setKycVerified(false));
   }, []);
 
@@ -114,6 +124,7 @@ export default function WalletPage() {
           kycVerified={kycVerified}
           onDeposit={openDepositModal}
           onWithdraw={openWithdrawModal}
+          onVerify={handleVerify}
         />
 
         {/* 2. Pending Transactions */}

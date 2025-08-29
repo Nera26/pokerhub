@@ -14,6 +14,8 @@ export interface WalletSummaryProps {
   creditBalance: number;
   /** Whether the user has passed KYC verification */
   kycVerified: boolean;
+  /** Called when user clicks Verify KYC */
+  onVerify?: () => void;
   /** Called when user clicks Deposit */
   onDeposit: () => void;
   /** Called when user clicks Withdraw */
@@ -26,6 +28,7 @@ export default function WalletSummary({
   kycVerified,
   onDeposit,
   onWithdraw,
+  onVerify,
 }: WalletSummaryProps) {
   const totalBalance = realBalance + creditBalance;
 
@@ -50,6 +53,15 @@ export default function WalletSummary({
         </div>
 
         <div className="mt-6 md:mt-0 flex space-x-4">
+          {!kycVerified && onVerify && (
+            <Button
+              variant="outline"
+              onClick={onVerify}
+              className="text-sm sm:text-base uppercase flex items-center"
+            >
+              Verify
+            </Button>
+          )}
           <Button
             variant="primary"
             onClick={onDeposit}

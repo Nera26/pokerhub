@@ -252,6 +252,24 @@ export interface paths {
       };
     };
   };
+  "/wallet/{id}/kyc": {
+    /** Trigger KYC verification */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Verification result */
+        200: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
   "/wallet/{id}/status": {
     /** Get wallet status */
     get: {
