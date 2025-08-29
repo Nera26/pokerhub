@@ -8,7 +8,8 @@
     "pull:all": "npm run pull:frontend && npm run pull:backend",
     "push:frontend": "git subtree push --prefix frontend frontend-remote main",
     "push:backend": "git subtree push --prefix backend backend-remote main",
-    "push:all": "npm run push:frontend && npm run push:backend"
+    "push:all": "npm run push:frontend && npm run push:backend",
+    "load:swarm": "mkdir -p load/results && k6 run load/k6-swarm.js --summary-export=load/results/k6-swarm-summary.json"
   },
   "devDependencies": {
     "typescript": "^5.7.3"
