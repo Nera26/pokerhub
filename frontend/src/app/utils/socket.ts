@@ -25,6 +25,7 @@ interface SocketEntry {
 }
 
 const sockets: Record<string, SocketEntry> = {};
+const FRAME_ACK = Symbol('frameAck');
 
 interface SocketOptions {
   namespace?: string;
@@ -59,6 +60,18 @@ export function getSocket(options: SocketOptions = {}): Socket<EventMap> {
       }),
       listeners: [],
     };
+
+    const manager = (sockets[ns].socket.io as any);
+    if (!manager[FRAME_ACK]) {
+      const handler = (packet: any) => {
+        const frameId = packet?.data?.[1]?.frameId;
+        if (!frameId) return;
+        const nsp = packet.nsp && packet.nsp !== '/' ? packet.nsp.slice(1) : '';
+        sockets[nsp]?.socket.emit('frame:ack', { frameId });
+      };
+      manager.on('packet', handler);
+      manager[FRAME_ACK] = handler;
+    }
   }
 
   const entry = sockets[ns];
