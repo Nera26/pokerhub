@@ -26,6 +26,22 @@ Each step exports a JSON summary (`10k-summary.json` or `packet-summary.json`). 
    ```
 4. Inspect metrics for latency and error rates.
 
+## WebSocket ACK Latency Gate
+
+This gate ensures that action acknowledgements remain below the 120 ms p95 SLO under adverse network conditions.
+
+1. Start the Toxiproxy container (provides 5 % packet loss and 200 ms jitter):
+   ```bash
+   docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 ghcr.io/shopify/toxiproxy
+   ```
+2. Execute the k6 scenario:
+   ```bash
+   k6 run infra/tests/load/k6-table-actions.js \
+     --summary-export=ws-ack-summary.json
+   ```
+3. Metrics are inserted into ClickHouse (`ws_ack_latency` table) and visualised via `infra/tests/load/grafana-ws-ack.json`.
+4. The CI gate fails when `ack_latency` p95 exceeds **120 ms** or if dropped frames rise, indicating packet loss beyond 5 %.
+
 ## 24h Soak with CPU/GC Monitoring
 
 1. Deploy canary or test environment.
