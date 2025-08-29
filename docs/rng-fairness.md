@@ -38,3 +38,22 @@ npx ts-node backend/src/game/verify.ts <seed> <nonce> [commitment]
 3. Recompute `sha256(seed || nonce)` and confirm it matches the published `commitment`.
 4. Feed `seed` into the verifier to obtain the deterministic deck order.
 5. Parse the JSONL log to reconstruct deals and compare with observed cards to prove fairness.
+
+### Exporting proofs via CLI
+
+For convenience a CLI is available to dump the proof for a specific hand.
+
+1. Install the backend package dependencies:
+
+   ```sh
+   cd backend
+   npm install
+   ```
+
+2. Export the proof for a hand ID:
+
+   ```sh
+   npx export-proofs <handId>
+   ```
+
+   The command prints a JSON object containing the `seed`, `nonce` and `commitment` for the hand.
