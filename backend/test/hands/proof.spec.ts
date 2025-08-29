@@ -6,6 +6,7 @@ import { HandsController } from '../../src/routes/hands.controller';
 import { Hand } from '../../src/database/entities/hand.entity';
 import { HandLog } from '../../src/game/hand-log';
 import type { HandProof } from '../../src/game/rng';
+import type { GameState } from '../../src/game/state-machine';
 
 const repo = {
   findOne: () => Promise.resolve({} as Hand),
@@ -24,8 +25,17 @@ describe('HandsController proof', () => {
     app = moduleRef.createNestApplication();
     await app.init();
 
-    const log = new HandLog('hand1');
-    const s0 = { street: 'preflop', pot: 0, sidePots: [], currentBet: 0, players: [] } as any;
+    const log = new HandLog('hand1', 'c');
+    const s0: GameState = {
+      phase: 'BETTING_ROUND',
+      street: 'preflop',
+      pot: 0,
+      sidePots: [],
+      currentBet: 0,
+      players: [],
+      deck: [],
+      communityCards: [],
+    };
     log.record({ type: 'check', playerId: 'p1' }, s0, s0);
     log.recordProof(proof);
   });

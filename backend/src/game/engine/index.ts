@@ -35,15 +35,30 @@ export class GameEngine {
       allIn: false,
     }));
     this.initialStacks = new Map(players.map((p) => [p.id, p.stack]));
-    this.machine = new HandStateMachine({
-      phase: 'WAIT_BLINDS',
-      street: 'preflop',
-      pot: 0,
-      sidePots: [],
-      currentBet: 0,
-      players,
-    });
-    this.log = new HandLog(this.tableId);
+    this.machine = new HandStateMachine(
+      {
+        phase: 'WAIT_BLINDS',
+        street: 'preflop',
+        pot: 0,
+        sidePots: [],
+        currentBet: 0,
+        players,
+        deck: [],
+        communityCards: [],
+      },
+      this.rng,
+    );
+    this.log = new HandLog(this.tableId, this.rng.commitment);
+    if (this.handRepo) {
+      void this.handRepo.save({
+        id: this.handId,
+        log: JSON.stringify(this.getHandLog()),
+        commitment: this.rng.commitment,
+        seed: null,
+        nonce: null,
+        settled: false,
+      });
+    }
     if (this.wallet) {
       void this.reserveStacks();
     }
@@ -97,11 +112,16 @@ export class GameEngine {
       delete player.cards;
       delete player['holeCards'];
     }
+    delete (state as any).deck;
     return state;
   }
 
   getHandLog(): HandLogEntry[] {
     return this.log.getAll();
+  }
+
+  getHandProof() {
+    return this.log.getProof();
   }
 
   getSettlements() {

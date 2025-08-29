@@ -14,11 +14,14 @@ describe('HandLog', () => {
     ];
 
     const s0: GameState = {
+      phase: 'BETTING_ROUND',
       street: 'preflop',
       pot: 0,
       sidePots: [],
       currentBet: 0,
       players: structuredClone(basePlayers),
+      deck: [],
+      communityCards: [],
     };
 
     const a1: GameAction = { type: 'bet', playerId: 'A', amount: 5 };
@@ -45,22 +48,27 @@ describe('HandLog', () => {
     const tableId = 'spec-table';
     const path = join(process.cwd(), '../storage/hand-logs', `${tableId}.jsonl`);
     if (existsSync(path)) unlinkSync(path);
-    const log = new HandLog(tableId);
+    const log = new HandLog(tableId, 'c');
     const s0: GameState = {
+      phase: 'BETTING_ROUND',
       street: 'preflop',
       pot: 0,
       sidePots: [],
       currentBet: 0,
       players: [],
+      deck: [],
+      communityCards: [],
     };
     const action: GameAction = { type: 'check', playerId: 'A' };
     log.record(action, s0, s0);
     const proof: HandProof = { seed: 's', nonce: 'n', commitment: 'c' };
     log.recordProof(proof);
-    const data = readFileSync(path, 'utf8').trim();
-    expect(data).toBe(
-      JSON.stringify([0, action, s0, s0, proof]),
-    );
+    const lines = readFileSync(path, 'utf8').trim().split('\n');
+    expect(lines).toEqual([
+      JSON.stringify({ commitment: 'c' }),
+      JSON.stringify([0, action, s0, s0]),
+      JSON.stringify({ proof }),
+    ]);
     unlinkSync(path);
   });
 });
