@@ -34,6 +34,20 @@ The script spawns ~180 actions/min per table and exports the `ack_latency` metri
 - Prometheus UI: <http://localhost:9090>
 - Grafana UI: <http://localhost:3000> (import `load/grafana-ack-latency.json`)
 
+### Stake Level Metrics
+
+The nightly analytics job populates ClickHouse tables with stake-level VPIP,
+PFR, and average action latency. Example queries:
+
+```sql
+SELECT * FROM stake_vpip ORDER BY stake;
+SELECT * FROM stake_pfr ORDER BY stake;
+SELECT * FROM stake_action_latency ORDER BY stake;
+```
+
+Import `load/grafana-stake-metrics.json` into Grafana to visualize these
+aggregates and receive alerts when thresholds are crossed.
+
 ## OpenTelemetry
 Metrics can also be shipped via OTLP:
 ```sh

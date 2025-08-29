@@ -36,6 +36,8 @@ export class AnalyticsService {
         zodToJsonSchema(schema, name),
       );
     }
+
+    this.scheduleStakeAggregates();
   }
 
   async ingest(table: string, data: Record<string, any>) {
@@ -125,5 +127,64 @@ export class AnalyticsService {
       return;
     }
     await this.client.command({ query: sql });
+  }
+
+  private scheduleStakeAggregates() {
+    const oneDay = 24 * 60 * 60 * 1000;
+    const now = new Date();
+    const next = new Date(now);
+    next.setUTCDate(now.getUTCDate() + 1);
+    next.setUTCHours(0, 0, 0, 0);
+    const delay = next.getTime() - now.getTime();
+    setTimeout(() => {
+      void this.rebuildStakeAggregates();
+      setInterval(() => void this.rebuildStakeAggregates(), oneDay);
+    }, delay);
+  }
+
+  async rebuildStakeAggregates() {
+    if (!this.client) {
+      this.logger.warn('No ClickHouse client configured');
+      return;
+    }
+
+    const createTables = [
+      `CREATE TABLE IF NOT EXISTS stake_vpip (stake String, vpip Float64) ENGINE = MergeTree() ORDER BY stake`,
+      `CREATE TABLE IF NOT EXISTS stake_pfr (stake String, pfr Float64) ENGINE = MergeTree() ORDER BY stake`,
+      `CREATE TABLE IF NOT EXISTS stake_action_latency (stake String, latency_ms Float64) ENGINE = MergeTree() ORDER BY stake`,
+    ];
+    for (const sql of createTables) {
+      await this.query(sql);
+    }
+
+    await this.query('TRUNCATE TABLE stake_vpip');
+    await this.query('TRUNCATE TABLE stake_pfr');
+    await this.query('TRUNCATE TABLE stake_action_latency');
+
+    const vpipSql = `INSERT INTO stake_vpip SELECT stake, avg(vpip) FROM (
+      SELECT stake, playerId, handId,
+        max(if(action IN ('bet','call'),1,0)) AS vpip
+      FROM game_event
+      PREWHERE street = 'preflop'
+      GROUP BY stake, playerId, handId
+    ) GROUP BY stake`;
+
+    const pfrSql = `INSERT INTO stake_pfr SELECT stake, avg(pfr) FROM (
+      SELECT stake, playerId, handId,
+        max(if(action = 'bet',1,0)) AS pfr
+      FROM game_event
+      PREWHERE street = 'preflop'
+      GROUP BY stake, playerId, handId
+    ) GROUP BY stake`;
+
+    const latencySql = `INSERT INTO stake_action_latency
+      SELECT stake, avg(latency_ms) AS latency_ms
+      FROM game_event
+      GROUP BY stake`;
+
+    await this.query(vpipSql);
+    await this.query(pfrSql);
+    await this.query(latencySql);
+    this.logger.log('Rebuilt stake analytics aggregates');
   }
 }
