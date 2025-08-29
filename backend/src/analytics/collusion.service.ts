@@ -5,6 +5,7 @@ import {
   calculateTimingSimilarity,
   calculateSeatProximity,
 } from './collusion.model';
+import { FlaggedSession, ReviewStatus } from '../schemas/review';
 
 @Injectable()
 export class CollusionService {
@@ -96,18 +97,26 @@ export class CollusionService {
     await this.redis.sadd('collusion:flagged', sessionId);
   }
 
-  async listFlaggedSessions() {
+  async listFlaggedSessions(opts?: {
+    page?: number;
+    pageSize?: number;
+    status?: ReviewStatus;
+  }): Promise<FlaggedSession[]> {
+    const { page = 1, pageSize = 20, status } = opts ?? {};
     const ids = await this.redis.smembers('collusion:flagged');
-    const result = [];
+    const result: FlaggedSession[] = [];
     for (const id of ids) {
       const data = await this.redis.hgetall(`collusion:session:${id}`);
+      const sessionStatus = (data.status ?? 'flagged') as ReviewStatus;
+      if (status && sessionStatus !== status) continue;
       result.push({
         id,
         users: JSON.parse(data.users ?? '[]'),
-        status: data.status ?? 'flagged',
+        status: sessionStatus,
       });
     }
-    return result;
+    const start = (page - 1) * pageSize;
+    return result.slice(start, start + pageSize);
   }
 
   async applyAction(

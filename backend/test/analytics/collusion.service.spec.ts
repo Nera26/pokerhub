@@ -96,4 +96,16 @@ describe('CollusionService', () => {
     const log = await client.lrange('collusion:session:s1:log', 0, -1);
     expect(log).toHaveLength(3);
   });
+
+  it('paginates and filters sessions', async () => {
+    await service.flagSession('s1', ['u1'], {});
+    await service.flagSession('s2', ['u2'], {});
+    await service.applyAction('s1', 'warn');
+    const page1 = await service.listFlaggedSessions({ page: 1, pageSize: 1 });
+    expect(page1).toHaveLength(1);
+    const warned = await service.listFlaggedSessions({ status: 'warn' });
+    expect(warned).toEqual([
+      expect.objectContaining({ id: 's1', status: 'warn' }),
+    ]);
+  });
 });

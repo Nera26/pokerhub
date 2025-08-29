@@ -316,6 +316,12 @@ export const ReviewStatusSchema = z.enum([
 ]);
 export type ReviewStatus = z.infer<typeof ReviewStatusSchema>;
 
+export const FlaggedSessionsQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  status: ReviewStatusSchema.optional(),
+});
+export type FlaggedSessionsQuery = z.infer<typeof FlaggedSessionsQuerySchema>;
+
 export const FlaggedSessionSchema = z.object({
   id: z.string(),
   users: z.array(z.string()),
