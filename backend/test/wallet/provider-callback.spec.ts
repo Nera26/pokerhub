@@ -127,6 +127,7 @@ describe('Provider webhook', () => {
     expect(entries).toHaveLength(1);
     expect(entries[0].providerTxnId).toBe('tx1');
     expect(entries[0].providerStatus).toBe('approved');
+    expect(entries[0].currency).toBe('USD');
     await controller.callback(req, body);
     entries = await journalRepo.find();
     expect(entries).toHaveLength(1);

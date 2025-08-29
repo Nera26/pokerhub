@@ -121,8 +121,10 @@ describe('WalletService transactions', () => {
     expect(reserve?.balance).toBe(0);
     expect(prize?.balance).toBe(95);
     expect(rake?.balance).toBe(5);
-    const journalCount = await dataSource.getRepository(JournalEntry).count();
-    expect(journalCount).toBe(5); // reserve 2 entries + commit 3 entries
+    const journalRepo = dataSource.getRepository(JournalEntry);
+    const journals = await journalRepo.find();
+    expect(journals).toHaveLength(5); // reserve 2 entries + commit 3 entries
+    expect(journals.every((j) => j.currency === 'USD')).toBe(true);
     expect(
       (events.emit as any).mock.calls.some(
         (c: any[]) => c[0] === 'wallet.debit',
