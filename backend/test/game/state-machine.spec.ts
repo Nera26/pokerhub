@@ -1,8 +1,8 @@
 import { GameEngine, GameAction } from '../../src/game/engine';
 
 describe('Hand state machine', () => {
-  it('replays hand deterministically', () => {
-    const engine = new GameEngine(['A', 'B']);
+  it('replays hand deterministically', async () => {
+    const engine = await GameEngine.create(['A', 'B']);
     const actions: GameAction[] = [
       { type: 'postBlind', playerId: 'A', amount: 1 },
       { type: 'postBlind', playerId: 'B', amount: 2 },
@@ -29,8 +29,8 @@ describe('Hand state machine', () => {
     expect(replayed).toEqual(finalState);
   });
 
-  it('records settlement totals', () => {
-    const engine = new GameEngine(['A', 'B']);
+  it('records settlement totals', async () => {
+    const engine = await GameEngine.create(['A', 'B']);
     engine.applyAction({ type: 'postBlind', playerId: 'A', amount: 1 });
     engine.applyAction({ type: 'postBlind', playerId: 'B', amount: 2 });
     engine.applyAction({ type: 'next' });
@@ -42,8 +42,8 @@ describe('Hand state machine', () => {
     expect(settlements).toContainEqual({ playerId: 'B', delta: -11 });
   });
 
-  it('advances from blinds to betting', () => {
-    const engine = new GameEngine(['A', 'B']);
+  it('advances from blinds to betting', async () => {
+    const engine = await GameEngine.create(['A', 'B']);
     engine.applyAction({ type: 'postBlind', playerId: 'A', amount: 1 });
     const state = engine.applyAction({ type: 'postBlind', playerId: 'B', amount: 2 });
     expect(state.phase).toBe('DEAL');
@@ -52,8 +52,8 @@ describe('Hand state machine', () => {
     expect(betting.pot).toBe(3);
   });
 
-  it('deals hole and community cards', () => {
-    const engine = new GameEngine(['A', 'B']);
+  it('deals hole and community cards', async () => {
+    const engine = await GameEngine.create(['A', 'B']);
     engine.applyAction({ type: 'postBlind', playerId: 'A', amount: 1 });
     engine.applyAction({ type: 'postBlind', playerId: 'B', amount: 2 });
     engine.applyAction({ type: 'next' });
@@ -69,8 +69,8 @@ describe('Hand state machine', () => {
     expect(state.deck.length).toBe(52 - 4 - 3);
   });
 
-  it('handles multi-street betting', () => {
-    const engine = new GameEngine(['A', 'B']);
+  it('handles multi-street betting', async () => {
+    const engine = await GameEngine.create(['A', 'B']);
     engine.applyAction({ type: 'postBlind', playerId: 'A', amount: 1 });
     engine.applyAction({ type: 'postBlind', playerId: 'B', amount: 2 });
     engine.applyAction({ type: 'next' });
@@ -90,8 +90,8 @@ describe('Hand state machine', () => {
     expect(state.street).toBe('river');
   });
 
-  it('settles at showdown', () => {
-    const engine = new GameEngine(['A', 'B']);
+  it('settles at showdown', async () => {
+    const engine = await GameEngine.create(['A', 'B']);
     engine.applyAction({ type: 'postBlind', playerId: 'A', amount: 1 });
     engine.applyAction({ type: 'postBlind', playerId: 'B', amount: 2 });
     engine.applyAction({ type: 'next' });

@@ -26,10 +26,10 @@ function totalChips(state: GameState): number {
 }
 
 describe('GameEngine property tests', () => {
-  it('conserves chips across actions', () => {
-    fc.assert(
-      fc.property(fc.array(actionArb, { maxLength: 20 }), (actions) => {
-        const engine = new GameEngine(players);
+  it('conserves chips across actions', async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.array(actionArb, { maxLength: 20 }), async (actions) => {
+        const engine = await GameEngine.create(players);
         const initialTotal = totalChips(engine.getState());
         actions.forEach((a) => engine.applyAction(a));
         const finalTotal = totalChips(engine.getState());
@@ -38,10 +38,10 @@ describe('GameEngine property tests', () => {
     );
   });
 
-  it('settlement ledger balances to zero', () => {
-    fc.assert(
-      fc.property(fc.array(actionArb, { maxLength: 20 }), (actions) => {
-        const engine = new GameEngine(players);
+  it('settlement ledger balances to zero', async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.array(actionArb, { maxLength: 20 }), async (actions) => {
+        const engine = await GameEngine.create(players);
         actions.forEach((a) => engine.applyAction(a));
         while (engine.getState().street !== 'showdown') {
           engine.applyAction({ type: 'next' });
@@ -53,10 +53,10 @@ describe('GameEngine property tests', () => {
     );
   });
 
-  it('player stacks never go negative', () => {
-    fc.assert(
-      fc.property(fc.array(actionArb, { maxLength: 20 }), (actions) => {
-        const engine = new GameEngine(players);
+  it('player stacks never go negative', async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.array(actionArb, { maxLength: 20 }), async (actions) => {
+        const engine = await GameEngine.create(players);
         actions.forEach((a) => {
           engine.applyAction(a);
           engine.getState().players.forEach((p) => {
@@ -67,10 +67,10 @@ describe('GameEngine property tests', () => {
     );
   });
 
-  it('maintains double-entry and non-negative stacks at each step', () => {
-    fc.assert(
-      fc.property(fc.array(actionArb, { maxLength: 20 }), (actions) => {
-        const engine = new GameEngine(players);
+  it('maintains double-entry and non-negative stacks at each step', async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.array(actionArb, { maxLength: 20 }), async (actions) => {
+        const engine = await GameEngine.create(players);
         const initialTotal = totalChips(engine.getState());
         actions.forEach((a) => {
           engine.applyAction(a);
@@ -84,10 +84,10 @@ describe('GameEngine property tests', () => {
     );
   });
 
-  it('pot distribution matches player contributions', () => {
-    fc.assert(
-      fc.property(fc.array(actionArb, { maxLength: 20 }), (actions) => {
-        const engine = new GameEngine(players);
+  it('pot distribution matches player contributions', async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.array(actionArb, { maxLength: 20 }), async (actions) => {
+        const engine = await GameEngine.create(players);
         const contributions: Record<string, number> = Object.fromEntries(
           players.map((p) => [p, 0]),
         );

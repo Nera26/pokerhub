@@ -31,7 +31,7 @@ describe('SpectatorGateway privacy', () => {
   };
 
   it('omits hole cards from emitted states', async () => {
-    const engine = new GameEngine(['a', 'b']);
+    const engine = await GameEngine.create(['a', 'b']);
     const state = engine.getState();
     (state.players[0] as any).holeCards = ['As', 'Kd'];
     (state.players[1] as any).holeCards = ['Qc', 'Jh'];

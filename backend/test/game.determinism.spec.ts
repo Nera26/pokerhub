@@ -2,15 +2,15 @@ import crypto from 'crypto';
 import { GameEngine, GameAction } from '../src/game/engine';
 
 describe('GameEngine determinism', () => {
-  it('produces identical hand logs for same seed and actions', () => {
+  it('produces identical hand logs for same seed and actions', async () => {
     const spy = jest.spyOn(crypto, 'randomBytes').mockImplementation((size) => {
       if (size === 32) return Buffer.alloc(32, 1);
       if (size === 16) return Buffer.alloc(16, 2);
       throw new Error(`unexpected randomBytes size: ${size}`);
     });
 
-    const engineA = new GameEngine(['A', 'B']);
-    const engineB = new GameEngine(['A', 'B']);
+    const engineA = await GameEngine.create(['A', 'B']);
+    const engineB = await GameEngine.create(['A', 'B']);
 
     spy.mockRestore();
 
