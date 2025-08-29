@@ -270,6 +270,42 @@ export interface paths {
       };
     };
   };
+  "/wallet/{id}/transactions": {
+    /** List wallet transactions */
+    get: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Wallet transactions */
+        200: {
+          content: {
+            "application/json": components["schemas"]["WalletTransactionsResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/wallet/{id}/pending": {
+    /** List pending wallet transactions */
+    get: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Pending transactions */
+        200: {
+          content: {
+            "application/json": components["schemas"]["PendingTransactionsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/wallet/provider/callback": {
     /** Payment provider callback */
     post: {
@@ -798,10 +834,40 @@ export interface components {
     WalletStatusResponse: {
       kycVerified: boolean;
       denialReason?: string;
+      realBalance: number;
+      creditBalance: number;
     };
     KycDenialResponse: {
       accountId: string;
       reason?: string | null;
+    };
+    WalletTransaction: {
+      id: string;
+      type: string;
+      amount: number;
+      currency: string;
+      status: string;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    WalletTransactionsResponse: {
+      realBalance: number;
+      creditBalance: number;
+      transactions: components["schemas"]["WalletTransaction"][];
+    };
+    PendingTransaction: {
+      id: string;
+      type: string;
+      amount: number;
+      currency: string;
+      status: string;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    PendingTransactionsResponse: {
+      realBalance: number;
+      creditBalance: number;
+      transactions: components["schemas"]["PendingTransaction"][];
     };
     CreateUserRequest: {
       username: string;
