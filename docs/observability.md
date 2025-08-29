@@ -65,3 +65,20 @@ Prometheus evaluates these objectives and sends violations to the
 
 ![Alert Routing](images/alert-routing.svg)
 
+## Rate Limit Alerts
+
+The backend exports counters for `per_socket_limit_exceeded` and
+`global_limit_exceeded`.  Prometheus should alert when either limit is
+consistently above 5% of total actions over a 5‑minute window:
+
+```promql
+sum(rate(per_socket_limit_exceeded[5m])) / sum(rate(game_action_global_count[5m])) > 0.05
+```
+
+```promql
+sum(rate(global_limit_exceeded[5m])) / sum(rate(game_action_global_count[5m])) > 0.05
+```
+
+These rules detect sustained rate limiting and notify operators to
+investigate upstream load or misbehaving clients.
+
