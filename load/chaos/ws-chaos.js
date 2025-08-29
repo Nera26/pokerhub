@@ -1,13 +1,14 @@
 import { Trend, Rate } from 'k6/metrics';
 import { io } from 'k6/x/socket.io';
 
+// Chaos scenario targeting 80k sockets spread across 10k tables.
 const ACTIONS = JSON.parse(open('../../backend/src/game/engine/gateway.actions.json'));
 
 const LATENCY = new Trend('latency', true);
 const DROPPED_FRAMES = new Rate('dropped_frames');
 
 export const options = {
-  vus: Number(__ENV.SOCKETS) || 100000,
+  vus: Number(__ENV.SOCKETS) || 80000,
   duration: __ENV.DURATION || '1m',
   thresholds: {
     latency: [`p(95)<${__ENV.P95_MS || 120}`],

@@ -10,7 +10,7 @@ This directory contains load test scripts for PokerHub.
 - `k6-10k-tables.js` – k6 WebSocket scenario driving ~80 k sockets across 10 k tables, injecting packet loss and jitter while recording ACK latency.
 - `artillery-10k-tables.yml` – Artillery equivalent to `k6-10k-tables.js` that captures per-endpoint latency histograms.
 - `k6-10k-tables-clickhouse.js` – k6 scenario for 10k tables and 80 k sockets injecting 5% packet loss and 200 ms jitter, capturing latency histograms and error rates with metrics exported to ClickHouse.
-- `k6-chaos-swarm.js` – swarm 80 k sockets across 10 k tables; pair with `toxiproxy.sh` for 5 % loss and 200 ms latency.
+- `k6-chaos-swarm.js` – swarm 80 k sockets across 10 k tables; pair with `toxiproxy.sh` for 5 % loss and 200 ms jitter.
 
 All scripts assume the server is reachable via `ws://localhost:3000` by default.
 ## Thresholds
@@ -27,7 +27,7 @@ Environment variables:
 - `TABLES` – number of tables to spread sockets across (default `10000`, `100` in CI).
 - `DURATION` – k6 test duration (default `5m`, `1m` in CI).
 - `PACKET_LOSS` – probability (0-1) for dropping a packet (default `0.05`).
-- `JITTER_MS` – max client-side jitter before sending in milliseconds (default `50`).
+- `JITTER_MS` – max client-side jitter before sending in milliseconds (default `200`).
 - `ACK_P95_MS` – fail if ACK latency p95 exceeds this (default `120`).
 - `ACK_P99_MS` – fail if ACK latency p99 exceeds this (default `200`).
 - `RNG_SEED` – seed for deterministic replay.

@@ -2,6 +2,7 @@ import ws from 'k6/ws';
 import { Trend } from 'k6/metrics';
 import { sleep } from 'k6';
 
+// Drive 80k sockets across 10k tables while capturing ACK latency.
 // In CI we default to a smaller scenario to avoid overwhelming runners.
 const ci = !!__ENV.CI;
 const defaultSockets = ci ? 100 : 80000;
@@ -21,7 +22,7 @@ export const options = {
 
 const tables = Number(__ENV.TABLES) || defaultTables;
 const loss = Number(__ENV.PACKET_LOSS) || 0.05; // 5% packet loss
-const jitterMs = Number(__ENV.JITTER_MS) || 50; // jitter before sending
+const jitterMs = Number(__ENV.JITTER_MS) || 200; // client-side jitter before sending
 
 const ACK_LATENCY = new Trend('ack_latency', true);
 
