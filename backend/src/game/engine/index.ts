@@ -8,6 +8,7 @@ import { HandRNG } from '../rng';
 import { Repository } from 'typeorm';
 import { Hand } from '../../database/entities/hand.entity';
 import { EventPublisher } from '../../events/events.service';
+import { resolveRake } from '../rake';
 
 /**
  * GameEngine orchestrates the poker hand state machine, keeping
@@ -20,6 +21,7 @@ export class GameEngine {
   private readonly machine: HandStateMachine;
   private readonly handId = randomUUID();
   private readonly rng = new HandRNG();
+  private readonly stake: string;
 
   private constructor(
     playerIds: string[] = ['p1', 'p2'],
@@ -27,6 +29,7 @@ export class GameEngine {
     private readonly handRepo?: Repository<Hand>,
     private readonly events?: EventPublisher,
     private readonly tableId?: string,
+    stake: string = '1-2',
   ) {
     const players = playerIds.map((id) => ({
       id,
@@ -60,6 +63,7 @@ export class GameEngine {
         settled: false,
       });
     }
+    this.stake = stake;
   }
 
   static async create(
@@ -68,6 +72,7 @@ export class GameEngine {
     handRepo?: Repository<Hand>,
     events?: EventPublisher,
     tableId?: string,
+    stake: string = '1-2',
   ): Promise<GameEngine> {
     const engine = new GameEngine(
       playerIds,
@@ -75,6 +80,7 @@ export class GameEngine {
       handRepo,
       events,
       tableId,
+      stake,
     );
     if (wallet) {
       await engine.reserveStacks();
@@ -149,6 +155,11 @@ export class GameEngine {
   replayHand(): GameState {
     const replay = new GameEngine(
       this.machine.getState().players.map((p) => p.id),
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      this.stake,
     );
     for (const [, action] of this.getHandLog()) {
       replay.applyAction(action);
@@ -197,7 +208,7 @@ export class GameEngine {
     let totalPot = pots.reduce((s, p) => s + p.amount, 0);
     let rake = 0;
     if (this.wallet) {
-      rake = Math.floor(totalPot * 0.05);
+      rake = resolveRake(totalPot, this.stake);
       if (pots.length > 0) {
         pots[0].amount -= rake;
       } else {
