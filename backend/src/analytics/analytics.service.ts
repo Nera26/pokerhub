@@ -6,6 +6,7 @@ import { Kafka, Producer } from 'kafkajs';
 import Ajv, { ValidateFunction } from 'ajv';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { EventSchemas, Events, EventName } from '@shared/events';
+import { S3Service } from '../storage/s3.service';
 
 @Injectable()
 export class AnalyticsService {
@@ -27,6 +28,7 @@ export class AnalyticsService {
   constructor(
     config: ConfigService,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
+    private readonly s3: S3Service,
   ) {
     const url = config.get<string>('analytics.clickhouseUrl');
     this.client = url ? createClient({ url }) : null;
@@ -59,6 +61,19 @@ export class AnalyticsService {
     });
   }
 
+  async archive(event: string, data: Record<string, unknown>) {
+    const now = new Date();
+    const prefix = `analytics/${now.getUTCFullYear()}/${String(
+      now.getUTCMonth() + 1,
+    ).padStart(2, '0')}/${String(now.getUTCDate()).padStart(2, '0')}`;
+    const key = `${prefix}/${event}-${Date.now()}.json`;
+    try {
+      await this.s3.uploadObject(key, JSON.stringify({ event, data }));
+    } catch (err) {
+      this.logger.error(`Failed to upload event ${event} to S3`, err as Error);
+    }
+  }
+
   async emit<E extends EventName>(event: E, data: Events[E]) {
     const validate = this.validators[event];
     if (!validate(data)) {
@@ -79,6 +94,7 @@ export class AnalyticsService {
         messages: [{ value: JSON.stringify(payload) }],
       }),
       this.ingest(event.replace('.', '_'), data as Record<string, any>),
+      this.archive(event, data as Record<string, unknown>),
     ]);
   }
 
@@ -99,6 +115,7 @@ export class AnalyticsService {
         ],
       }),
       this.ingest('game_event', event),
+      this.archive('game.event', event),
     ]);
   }
 
@@ -119,6 +136,7 @@ export class AnalyticsService {
         ],
       }),
       this.ingest('tournament_event', event),
+      this.archive('tournament.event', event),
     ]);
   }
 

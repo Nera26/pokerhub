@@ -62,6 +62,7 @@ export class EtlService {
                 ],
               }),
               this.analytics.ingest(`${key}_event`, data),
+              this.analytics.archive(`${key}.event`, data),
             ]);
           } catch (err) {
             this.logger.error(err);
