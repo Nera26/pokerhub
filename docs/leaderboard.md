@@ -7,29 +7,32 @@ such files.
 
 The CLI `rebuild.cli.ts` measures its own runtime and RSS memory usage, logging
 both metrics when the rebuild completes. Use `--assert-duration=<ms>` to fail
-the run if it takes too long.
+the run if it takes too long. Passing `--benchmark` seeds synthetic events
+before rebuilding.
 
 ## Command
 
 ```bash
 npm --prefix backend install --legacy-peer-deps
-TS_NODE_PROJECT=backend/tsconfig.json \
-TS_NODE_TRANSPILE_ONLY=1 \
-DATABASE_URL=postgres://localhost/test \
-REDIS_URL=redis://localhost \
-RABBITMQ_URL=amqp://localhost \
-AWS_REGION=us-east-1 \
-AWS_S3_BUCKET=bucket \
-AWS_ACCESS_KEY_ID=key \
-AWS_SECRET_ACCESS_KEY=secret \
-JWT_SECRET=secret \
-node -r ./backend/node_modules/ts-node/register \
-     -r ./backend/node_modules/tsconfig-paths/register \
+TS_NODE_PROJECT=backend/tsconfig.json \\
+TS_NODE_TRANSPILE_ONLY=1 \\
+DATABASE_URL=postgres://localhost/test \\
+REDIS_URL=redis://localhost \\
+RABBITMQ_URL=amqp://localhost \\
+AWS_REGION=us-east-1 \\
+AWS_S3_BUCKET=bucket \\
+AWS_ACCESS_KEY_ID=key \\
+AWS_SECRET_ACCESS_KEY=secret \\
+JWT_SECRET=secret \\
+node -r ./backend/node_modules/ts-node/register \\
+     -r ./backend/node_modules/tsconfig-paths/register \\
      backend/src/leaderboard/rebuild.cli.ts --assert-duration=1800000
 ```
 
 The optional `--assert-duration` flag (milliseconds) causes the command to exit
-non‑zero if the rebuild exceeds the target duration (30 minutes above).
+non‑zero if the rebuild exceeds the target duration (30 minutes above). When
+`--benchmark` is provided and no threshold is supplied, the script defaults to
+30 minutes.
 
 ## Expected hardware
 
@@ -43,10 +46,14 @@ To generate a fresh month of synthetic events and verify rebuild performance
 against the incremental model, run:
 
 ```bash
-npm run --workspace backend benchmark:leaderboard
+npm run --workspace backend rebuild:leaderboard -- --benchmark
 ```
 
-This seeds 30 days of data (~6 000 sessions across 50 players) into
+This seeds 30 days of data (~6 000 sessions across 50 players) into
 `storage/events/`, triggers a leaderboard rebuild, and logs runtime and memory
-usage. The script fails if rebuilding takes longer than 30 minutes or if the
-resulting leaderboard differs from the incremental calculation.
+usage. The script fails if rebuilding takes longer than 30 minutes (configurable
+via `--assert-duration=<ms>`) or if the resulting leaderboard differs from the
+incremental calculation.
+
+The dataset size can be tuned with `--days`, `--players`, and `--sessions`
+arguments to reduce runtime when experimenting locally or in CI.
