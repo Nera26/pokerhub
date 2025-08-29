@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pg-snapshot-replication
+spec:
+  schedule: {{ .Values.pgReplication.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: pg-replicate
+              image: {{ .Values.pgReplication.image }}
+              env:
+                - name: PG_INSTANCE_ID
+                  value: {{ .Values.pgReplication.instanceId | quote }}
+                - name: SECONDARY_REGION
+                  value: {{ .Values.pgReplication.secondaryRegion | quote }}
+              command:
+                - /bin/sh
+                - -c
+                - >-
+                  echo "Replicating Postgres snapshot for $PG_INSTANCE_ID to $SECONDARY_REGION";
+                  # Placeholder for aws rds create-db-snapshot && copy-db-snapshot
