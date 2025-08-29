@@ -707,6 +707,8 @@ components:
       properties:
         kycVerified:
           type: boolean
+        denialReason:
+          type: string
       required:
         - kycVerified
     CreateUserRequest:

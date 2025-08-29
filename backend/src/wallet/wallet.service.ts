@@ -274,9 +274,12 @@ export class WalletService {
     });
   }
 
-  async status(accountId: string): Promise<{ kycVerified: boolean }> {
+  async status(
+    accountId: string,
+  ): Promise<{ kycVerified: boolean; denialReason?: string }> {
     const account = await this.accounts.findOneByOrFail({ id: accountId });
-    return { kycVerified: account.kycVerified };
+    const denialReason = await this.kyc.getDenialReason(accountId);
+    return { kycVerified: account.kycVerified, denialReason };
   }
 
   async retryPendingPayouts(): Promise<void> {
