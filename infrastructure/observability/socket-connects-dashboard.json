@@ -1,0 +1,23 @@
+{
+  "dashboard": {
+    "title": "Socket Connects",
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "Connect Rate",
+        "datasource": "Prometheus",
+        "targets": [
+          { "expr": "sum(rate(socket_connects_total[5m]))" }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Disconnect Rate",
+        "datasource": "Prometheus",
+        "targets": [
+          { "expr": "sum(rate(socket_disconnects_total[5m]))" }
+        ]
+      }
+    ]
+  }
+}
