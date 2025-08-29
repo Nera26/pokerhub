@@ -78,3 +78,4 @@ and **RTO ≤ 30 min**. Failures trigger a PagerDuty alert to `pokerhub-eng`.
 - Monitor GitHub nightly workflow `backup-verify` for automated checks.
 - Monitor GitHub nightly workflow `pitr-nightly` for PITR backup results.
 - Monitor GitHub nightly workflow `restore-nightly` for nightly snapshot restore tests. Review the `restore.log` and `restore-backup.metrics` artifacts to confirm `RTO_SECONDS ≤ 1800` and `RPO_SECONDS ≤ 300`.
+- Monitor GitHub nightly workflow `restore-latest` for automated restore drills of the most recent snapshot. Review the `restore-latest.log` and `restore-latest.metrics` artifacts to confirm `RTO_SECONDS ≤ 1800` and `RPO_SECONDS ≤ 300`.
