@@ -19,6 +19,7 @@ Document the steps to meet recovery objectives during regional outages.
 
 ## Verification
 - `infra/scripts/verify-backups.sh` shows latest snapshots in secondary region.
+- `npx ts-node infra/disaster-recovery/tests/restore.test.ts` proves the latest snapshot is within the 5 minute RPO.
 - Replication lag dashboards stay under 5 minutes after failover.
 
 ## Escalation
