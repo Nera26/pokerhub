@@ -1,5 +1,7 @@
 # Service Level Objectives
 
+See [KPI Benchmarks](./kpi-benchmarks.md) for target performance metrics.
+
 ## Latency
 - **HTTP API**: p99 < 200ms
 - **WebSocket messages**: p95 < 100ms
