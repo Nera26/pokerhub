@@ -18,9 +18,9 @@ jobs:
       - name: Run backend tests (unit + property)
         working-directory: backend
         run: npm test
-      - name: Assert leaderboard rebuild duration
+      - name: Run leaderboard benchmark
         working-directory: backend
-        run: npm run rebuild:leaderboard -- --assert-duration=5000
+        run: npm run rebuild:leaderboard -- --benchmark --days=2 --players=10 --sessions=20 --assert-duration=5000
       - name: Install frontend deps
         working-directory: frontend
         run: npm ci
