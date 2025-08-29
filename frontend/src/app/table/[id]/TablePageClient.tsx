@@ -6,6 +6,7 @@ import { useTableData } from '@/hooks/useTableData';
 import { useApiError } from '@/hooks/useApiError';
 import useGameSocket from '@/hooks/useGameSocket';
 import HandProofModal from '@/components/HandProofModal';
+import { EVENT_SCHEMA_VERSION } from '@shared/events';
 
 const PokerTableLayout = dynamic(
   () => import('../../components/tables/PokerTableLayout'),
@@ -23,7 +24,8 @@ export default function TablePageClient({ tableId }: { tableId: string }) {
 
   useEffect(() => {
     if (!socket) return;
-    const handleEnd = (e: { handId: string }) => {
+    const handleEnd = (e: { handId: string; version: string }) => {
+      if (e.version !== EVENT_SCHEMA_VERSION) return;
       setProofHandId(e.handId);
       setShowProof(false);
     };

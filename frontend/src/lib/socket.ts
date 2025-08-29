@@ -1,5 +1,6 @@
 import type { Socket } from 'socket.io-client';
 import { GameActionSchema, type GameActionPayload } from '@shared/types';
+import { EVENT_SCHEMA_VERSION } from '@shared/events';
 import { setServerTime } from './server-time';
 import { getSocket, disconnectSocket } from '../app/utils/socket';
 
@@ -18,7 +19,8 @@ function ensureSocket(): Socket {
   if (!socket) {
     socket = getSocket({ namespace: 'game' });
 
-    socket.on('state', (state: { tick?: number }) => {
+    socket.on('state', (state: { tick?: number; version?: string }) => {
+      if (state.version !== EVENT_SCHEMA_VERSION) return;
       if (typeof state.tick === 'number') {
         lastTick = state.tick;
       }
@@ -85,7 +87,7 @@ function emitWithAck(
 }
 
 export function sendAction(action: GameActionPayload) {
-  const payload = { version: '1', ...action };
+  const payload = { version: EVENT_SCHEMA_VERSION, ...action };
   GameActionSchema.parse(payload);
   return emitWithAck('action', payload, 'action:ack');
 }

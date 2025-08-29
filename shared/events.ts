@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+// Increment on breaking changes to websocket event frames
+export const EVENT_SCHEMA_VERSION = '1';
+
 export const HandStartEvent = z.object({
   handId: z.string().uuid(),
   tableId: z.string().uuid().optional(),
