@@ -14,9 +14,15 @@ To ensure every deck is provably fair, PokerHub uses a commit–reveal scheme ba
 
 ## Verification
 
-After each hand the table shows a **Hand Proof** dialog containing the seed, nonce and
-commitment. Clicking **Verify** runs the same algorithm in your browser and reveals the
-deterministic deck order.
+After showdown the table displays a **Verify Hand** link. Clicking it opens a modal
+with the hand's seed, nonce and commitment.
+
+![Hand proof modal](./images/hand-proof-modal.svg)
+
+1. After showdown, click **Verify Hand**.
+2. Review the seed, nonce and commitment in the dialog.
+3. Press **Verify** to recompute the deck locally and reveal the deterministic order.
+4. Use the "Open verifier" link for manual inspection in a new tab if desired.
 
 ### Manual verification
 
