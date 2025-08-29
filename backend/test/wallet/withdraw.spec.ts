@@ -8,19 +8,28 @@ import { EventPublisher } from '../../src/events/events.service';
 import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
 import { KycService } from '../../src/wallet/kyc.service';
 import { SettlementJournal } from '../../src/wallet/settlement-journal.entity';
+import type Redis from 'ioredis';
 
 describe('WalletService withdraw', () => {
   let dataSource: DataSource;
   let service: WalletService;
-  const events: EventPublisher = { emit: jest.fn() } as any;
-  const redis: any = {
-    store: {} as Record<string, number>,
-    async incr(key: string) {
-      this.store[key] = (this.store[key] ?? 0) + 1;
-      return this.store[key];
+  const events = { emit: jest.fn() } as unknown as EventPublisher;
+  let redisStore: Record<string, number> = {};
+  const redis = {
+    incr: (key: string): Promise<number> => {
+      redisStore[key] = (redisStore[key] ?? 0) + 1;
+      return Promise.resolve(redisStore[key]);
     },
-    async expire() {},
-  };
+    incrby: (key: string, value: number): Promise<number> => {
+      redisStore[key] = (redisStore[key] ?? 0) + value;
+      return Promise.resolve(redisStore[key]);
+    },
+    decrby: (key: string, value: number): Promise<number> => {
+      redisStore[key] = (redisStore[key] ?? 0) - value;
+      return Promise.resolve(redisStore[key]);
+    },
+    expire: (): Promise<void> => Promise.resolve(),
+  } as unknown as Redis;
   const provider = {
     initiate3DS: jest.fn().mockResolvedValue({ id: 'tx' }),
     getStatus: jest.fn().mockResolvedValue('approved'),
@@ -58,7 +67,9 @@ describe('WalletService withdraw', () => {
     const journalRepo = dataSource.getRepository(JournalEntry);
     const disbRepo = dataSource.getRepository(Disbursement);
     const settleRepo = dataSource.getRepository(SettlementJournal);
-    const kyc = { validate: jest.fn().mockResolvedValue(undefined) } as unknown as KycService;
+    const kyc = {
+      validate: jest.fn().mockResolvedValue(undefined),
+    } as unknown as KycService;
     service = new WalletService(
       accountRepo,
       journalRepo,
@@ -69,11 +80,14 @@ describe('WalletService withdraw', () => {
       provider,
       kyc,
     );
-    (service as any).enqueueDisbursement = jest.fn();
+    (
+      service as unknown as { enqueueDisbursement: jest.Mock }
+    ).enqueueDisbursement = jest.fn();
   });
 
   beforeEach(async () => {
-    redis.store = {};
+    redisStore = {};
+    (events.emit as jest.Mock).mockClear();
     (provider.initiate3DS as jest.Mock).mockResolvedValue({ id: 'tx' });
     (provider.getStatus as jest.Mock).mockResolvedValue('approved');
     const accountRepo = dataSource.getRepository(Account);
@@ -163,11 +177,51 @@ describe('WalletService withdraw', () => {
     const disb = await disbRepo.findOneByOrFail({
       accountId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
     });
-    await service.handleProviderCallback(disb.idempotencyKey, 'payout', 'approved');
-    await service.handleProviderCallback(disb.idempotencyKey, 'payout', 'approved');
+    await service.handleProviderCallback(
+      disb.idempotencyKey,
+      'payout',
+      'approved',
+    );
+    await service.handleProviderCallback(
+      disb.idempotencyKey,
+      'payout',
+      'approved',
+    );
     const updated = await disbRepo.findOneByOrFail({ id: disb.id });
     expect(updated.status).toBe('completed');
     expect(updated.completedAt).toBeTruthy();
+  });
+
+  it('flags and rejects withdrawals exceeding daily limits', async () => {
+    process.env.WALLET_DAILY_WITHDRAW_LIMIT = '200';
+    await service.withdraw(
+      'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      150,
+      'dev3',
+      '4.4.4.4',
+    );
+    (events.emit as jest.Mock).mockClear();
+    await expect(
+      service.withdraw(
+        'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        60,
+        'dev4',
+        '4.4.4.4',
+      ),
+    ).rejects.toThrow('Daily limit exceeded');
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(events.emit as jest.Mock).toHaveBeenCalledWith(
+      'antiCheat.flag',
+      expect.objectContaining({
+        accountId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        operation: 'withdraw',
+      }),
+    );
+    const key = Object.keys(redisStore).find((k) =>
+      k.startsWith('wallet:withdraw'),
+    );
+    expect(redisStore[key!]).toBe(150);
+    delete process.env.WALLET_DAILY_WITHDRAW_LIMIT;
   });
 
   it('aborts risky withdrawals', async () => {
