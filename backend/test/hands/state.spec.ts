@@ -13,6 +13,7 @@ const repo = {
 describe('HandsController state', () => {
   let app: INestApplication;
   const postState = {
+    phase: 'BETTING_ROUND',
     street: 'preflop',
     pot: 10,
     sidePots: [] as any[],
@@ -20,6 +21,8 @@ describe('HandsController state', () => {
     players: [
       { id: 'p1', stack: 90, folded: false, bet: 10, allIn: false },
     ],
+    deck: [],
+    communityCards: [],
   };
 
   beforeAll(async () => {
@@ -31,8 +34,9 @@ describe('HandsController state', () => {
     app = moduleRef.createNestApplication();
     await app.init();
 
-    const log = new HandLog('hand1');
+    const log = new HandLog('hand1', 'c');
     const pre = {
+      phase: 'BETTING_ROUND',
       street: 'preflop',
       pot: 0,
       sidePots: [] as any[],
@@ -40,6 +44,8 @@ describe('HandsController state', () => {
       players: [
         { id: 'p1', stack: 100, folded: false, bet: 0, allIn: false },
       ],
+      deck: [],
+      communityCards: [],
     };
     log.record({ type: 'postBlind', playerId: 'p1', amount: 10 }, pre, postState);
   });
@@ -49,10 +55,19 @@ describe('HandsController state', () => {
   });
 
   it('returns reconstructed state', () => {
+    const expected = {
+      street: 'preflop',
+      pot: 10,
+      sidePots: [] as any[],
+      currentBet: 10,
+      players: [
+        { id: 'p1', stack: 90, folded: false, bet: 10, allIn: false },
+      ],
+    };
     return request(app.getHttpServer())
       .get('/hands/hand1/state/0')
       .expect(200)
-      .expect(postState);
+      .expect(expected);
   });
 });
 

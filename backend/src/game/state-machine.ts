@@ -1,3 +1,5 @@
+import { HandRNG, standardDeck } from './rng';
+
 export type Street = 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
 
 export type HandPhase =
@@ -22,6 +24,7 @@ export interface PlayerState {
   folded: boolean;
   bet: number; // amount committed this betting round
   allIn: boolean;
+  holeCards?: number[];
 }
 
 export interface GameState {
@@ -31,12 +34,14 @@ export interface GameState {
   sidePots: { amount: number; players: string[] }[];
   currentBet: number;
   players: PlayerState[];
+  deck: number[];
+  communityCards: number[];
 }
 
 const ORDER: Street[] = ['preflop', 'flop', 'turn', 'river', 'showdown'];
 
 export class HandStateMachine {
-  constructor(private readonly state: GameState) {}
+  constructor(private readonly state: GameState, private readonly rng: HandRNG) {}
 
   private blindsPosted = new Set<string>();
 
@@ -48,6 +53,10 @@ export class HandStateMachine {
           this.placeBet(player, action.amount);
           this.blindsPosted.add(player.id);
           if (this.blindsPosted.size === this.state.players.length) {
+            this.state.deck = this.rng.shuffle(standardDeck());
+            for (const p of this.state.players) {
+              p.holeCards = [this.state.deck.pop()!, this.state.deck.pop()!];
+            }
             this.state.phase = 'DEAL';
           }
         }
@@ -55,6 +64,15 @@ export class HandStateMachine {
       }
       case 'DEAL': {
         if (action.type === 'next') {
+          switch (this.state.street) {
+            case 'flop':
+              this.dealCommunity(3);
+              break;
+            case 'turn':
+            case 'river':
+              this.dealCommunity(1);
+              break;
+          }
           this.state.phase = 'BETTING_ROUND';
         }
         break;
@@ -151,5 +169,13 @@ export class HandStateMachine {
       p.bet = 0;
     }
     this.state.currentBet = 0;
+  }
+
+  private dealCommunity(n: number) {
+    for (let i = 0; i < n; i++) {
+      const card = this.state.deck.pop();
+      if (card === undefined) throw new Error('deck exhausted');
+      this.state.communityCards.push(card);
+    }
   }
 }

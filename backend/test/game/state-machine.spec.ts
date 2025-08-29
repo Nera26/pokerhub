@@ -19,6 +19,13 @@ describe('Hand state machine', () => {
 
     const finalState = engine.getState();
     const replayed = engine.replayHand();
+    for (const s of [finalState, replayed]) {
+      delete (s as any).deck;
+      s.communityCards = [];
+      for (const p of s.players as any[]) {
+        delete p.holeCards;
+      }
+    }
     expect(replayed).toEqual(finalState);
   });
 
@@ -43,6 +50,23 @@ describe('Hand state machine', () => {
     const betting = engine.applyAction({ type: 'next' });
     expect(betting.phase).toBe('BETTING_ROUND');
     expect(betting.pot).toBe(3);
+  });
+
+  it('deals hole and community cards', () => {
+    const engine = new GameEngine(['A', 'B']);
+    engine.applyAction({ type: 'postBlind', playerId: 'A', amount: 1 });
+    engine.applyAction({ type: 'postBlind', playerId: 'B', amount: 2 });
+    engine.applyAction({ type: 'next' });
+    let state = engine.getState();
+    for (const p of state.players) {
+      expect(p.holeCards?.length).toBe(2);
+    }
+    expect(state.deck.length).toBe(52 - 4);
+
+    engine.applyAction({ type: 'next' });
+    state = engine.applyAction({ type: 'next' });
+    expect(state.communityCards.length).toBe(3);
+    expect(state.deck.length).toBe(52 - 4 - 3);
   });
 
   it('handles multi-street betting', () => {

@@ -1,4 +1,4 @@
-import { appendFileSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { appendFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { GameAction, GameState } from './state-machine';
 import type { HandProof } from './rng';
@@ -15,18 +15,21 @@ export type HandLogEntry = [
 export class HandLog {
   private readonly entries: HandLogEntry[] = [];
   private readonly filePath?: string;
+  private commitment?: string;
+  private proof?: HandProof;
 
-  constructor(tableId?: string) {
+  constructor(tableId?: string, commitment?: string) {
     if (tableId) {
       const dir = join(process.cwd(), '../storage/hand-logs');
       mkdirSync(dir, { recursive: true });
       this.filePath = join(dir, `${tableId}.jsonl`);
     }
+    if (commitment) this.recordCommitment(commitment);
   }
 
-  private append(entry: HandLogEntry) {
+  private appendLine(obj: unknown) {
     if (this.filePath) {
-      appendFileSync(this.filePath, `${JSON.stringify(entry)}\n`);
+      appendFileSync(this.filePath, `${JSON.stringify(obj)}\n`);
     }
   }
 
@@ -39,25 +42,29 @@ export class HandLog {
       structuredClone(postState),
     ];
     this.entries.push(entry);
-    this.append(entry);
+    this.appendLine(entry);
+  }
+
+  recordCommitment(commitment: string) {
+    this.commitment = commitment;
+    this.appendLine({ commitment });
   }
 
   recordProof(proof: HandProof) {
-    const last = this.entries[this.entries.length - 1];
-    if (last) {
-      last[4] = structuredClone(proof);
-      if (this.filePath) {
-        const lines = readFileSync(this.filePath, 'utf8')
-          .trimEnd()
-          .split('\n');
-        lines[lines.length - 1] = JSON.stringify(last);
-        writeFileSync(this.filePath, lines.join('\n') + '\n');
-      }
-    }
+    this.proof = structuredClone(proof);
+    this.appendLine({ proof: this.proof });
   }
 
   getAll(): HandLogEntry[] {
     return this.entries.map((e) => structuredClone(e));
+  }
+
+  getCommitment() {
+    return this.commitment;
+  }
+
+  getProof(): HandProof | undefined {
+    return this.proof ? structuredClone(this.proof) : undefined;
   }
 
   reconstruct(index: number): GameState | undefined {

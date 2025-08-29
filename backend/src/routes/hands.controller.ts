@@ -37,15 +37,13 @@ export class HandsController {
       throw new NotFoundException('log not found');
     }
     const lines = raw.trim().split('\n');
-    if (lines.length === 0) {
-      throw new NotFoundException('proof not found');
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const parsed = JSON.parse(lines[i]);
+      if (parsed.proof) {
+        return HandProofResponseSchema.parse(parsed.proof);
+      }
     }
-    const last = JSON.parse(lines[lines.length - 1]);
-    const proof = last[4];
-    if (!proof) {
-      throw new NotFoundException('proof not found');
-    }
-    return HandProofResponseSchema.parse(proof);
+    throw new NotFoundException('proof not found');
   }
 
   @Get(':id/log')
@@ -81,8 +79,14 @@ export class HandsController {
     // Reconstruct HandLog from JSONL
     const log = new HandLog();
     for (const line of raw.trim().split('\n')) {
-      if (line) {
-        (log as any).entries.push(JSON.parse(line));
+      if (!line) continue;
+      const parsed = JSON.parse(line);
+      if (Array.isArray(parsed)) {
+        (log as any).entries.push(parsed);
+      } else if (parsed.commitment) {
+        log.recordCommitment(parsed.commitment);
+      } else if (parsed.proof) {
+        log.recordProof(parsed.proof);
       }
     }
 
