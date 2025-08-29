@@ -1,0 +1,47 @@
+name: k6-load-chaos
+
+on:
+  workflow_dispatch:
+
+jobs:
+  load-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: run k6 load test
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: load/k6/load-test.js
+          flags: --summary-export=load-summary.json --out json=load-metrics.json
+      - name: upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: k6-load
+          path: |
+            load-summary.json
+            load-metrics.json
+
+  chaos-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: start toxiproxy with packet loss and jitter
+        run: |
+          docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 ghcr.io/shopify/toxiproxy
+          PACKET_LOSS=0.01 LATENCY_MS=80 JITTER_MS=20 ./load/chaos/toxiproxy-chaos.sh
+      - name: run k6 chaos test
+        uses: grafana/k6-action@v0.2.0
+        env:
+          SIO_URL: ws://localhost:3001/game
+        with:
+          filename: load/chaos/ws-chaos.js
+          flags: --summary-export=chaos-summary.json --out json=chaos-metrics.json
+      - name: upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: k6-chaos
+          path: |
+            chaos-summary.json
+            chaos-metrics.json
