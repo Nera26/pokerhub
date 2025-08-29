@@ -223,6 +223,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+  /wallet/{id}/kyc:
+    post:
+      summary: Trigger KYC verification
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /wallet/{id}/status:
     get:
       summary: Get wallet status

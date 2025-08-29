@@ -1,6 +1,6 @@
 /** @jest-environment node */
 
-import { getKycDenial } from '@/lib/api/kyc';
+import { getKycDenial, startKyc } from '@/lib/api/kyc';
 import { serverFetch } from '@/lib/server-fetch';
 
 jest.mock('@/lib/server-fetch', () => ({
@@ -19,5 +19,15 @@ describe('kyc api', () => {
       accountId: 'u1',
       reason: 'blocked',
     });
+  });
+
+  it('starts verification', async () => {
+    (serverFetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => ({ message: 'verified' }),
+    });
+    await expect(startKyc('u1')).resolves.toEqual({ message: 'verified' });
   });
 });

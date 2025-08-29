@@ -1,6 +1,7 @@
 import { Controller, Post, Param, Body, Req, Get, UseGuards } from '@nestjs/common';
 import { RateLimitGuard } from './rate-limit.guard';
 import { WalletService } from '../wallet/wallet.service';
+import { KycService } from '../wallet/kyc.service';
 import type { Request } from 'express';
 import {
   WithdrawSchema,
@@ -23,7 +24,10 @@ interface TxDto {
 @UseGuards(RateLimitGuard)
 @Controller('wallet')
 export class WalletController {
-  constructor(private readonly wallet: WalletService) {}
+  constructor(
+    private readonly wallet: WalletService,
+    private readonly kyc: KycService,
+  ) {}
 
   @Post(':id/reserve')
   async reserve(@Param('id') id: string, @Body() body: TxDto) {
@@ -52,6 +56,12 @@ export class WalletController {
     const parsed = WithdrawSchema.parse(body);
     await this.wallet.withdraw(id, parsed.amount, parsed.deviceId, req.ip, parsed.currency);
     return { message: 'withdrawn' };
+  }
+
+  @Post(':id/kyc')
+  async verify(@Param('id') id: string) {
+    await this.kyc.verify(id);
+    return { message: 'verified' };
   }
 
   @Get(':id/status')

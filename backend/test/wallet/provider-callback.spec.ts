@@ -33,7 +33,10 @@ describe('Provider webhook', () => {
     },
   } as unknown as Redis;
   const provider = new PaymentProviderService();
-  const kyc = { validate: jest.fn().mockResolvedValue(undefined) } as unknown as KycService;
+  const kyc = {
+    validate: jest.fn().mockResolvedValue(undefined),
+    isVerified: jest.fn().mockResolvedValue(true),
+  } as unknown as KycService;
 
   beforeAll(async () => {
     process.env.PROVIDER_WEBHOOK_SECRET = 'shhh';

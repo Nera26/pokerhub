@@ -53,7 +53,10 @@ describe('WalletService history', () => {
       expire: jest.fn(),
     };
     const provider = { initiate3DS: jest.fn(), getStatus: jest.fn() } as unknown as PaymentProviderService;
-    const kyc = { validate: jest.fn().mockResolvedValue(undefined) } as unknown as KycService;
+    const kyc = {
+      validate: jest.fn().mockResolvedValue(undefined),
+      isVerified: jest.fn().mockResolvedValue(true),
+    } as unknown as KycService;
     service = new WalletService(
       accountRepo,
       journalRepo,

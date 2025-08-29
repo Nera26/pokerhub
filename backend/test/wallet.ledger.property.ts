@@ -55,7 +55,10 @@ describe('wallet ledger commitBatch property', () => {
     const settleRepo = dataSource.getRepository(SettlementJournal);
     const redis: any = { incr: jest.fn().mockResolvedValue(0), expire: jest.fn() };
     const provider = { initiate3DS: jest.fn(), getStatus: jest.fn() } as unknown as PaymentProviderService;
-    const kyc = { validate: jest.fn().mockResolvedValue(undefined) } as unknown as KycService;
+    const kyc = {
+      validate: jest.fn().mockResolvedValue(undefined),
+      isVerified: jest.fn().mockResolvedValue(true),
+    } as unknown as KycService;
     const service = new WalletService(
       accountRepo,
       journalRepo,

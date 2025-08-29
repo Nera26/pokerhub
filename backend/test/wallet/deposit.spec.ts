@@ -74,6 +74,7 @@ describe('WalletService deposit', () => {
     const kyc = {
       validate: jest.fn().mockResolvedValue(undefined),
       getDenialReason: jest.fn().mockResolvedValue(undefined),
+      isVerified: jest.fn().mockResolvedValue(true),
     } as unknown as KycService;
 
     service = new WalletService(
@@ -195,6 +196,11 @@ describe('WalletService deposit', () => {
 
   it('returns KYC status', async () => {
     const status = await service.status('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
-    expect(status).toEqual({ kycVerified: true, denialReason: undefined });
+    expect(status).toEqual({
+      kycVerified: true,
+      denialReason: undefined,
+      realBalance: 0,
+      creditBalance: 0,
+    });
   });
 });

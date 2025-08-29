@@ -3,6 +3,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Onfido, Region } from 'onfido';
 import { Account } from './account.entity';
 
 interface ProviderResult {
@@ -23,6 +24,17 @@ export class KycService {
     @Inject(CACHE_MANAGER)
     private readonly cache: Cache,
   ) {}
+
+  private onfido?: Onfido;
+
+  private getClient(): Onfido | undefined {
+    const token = process.env.ONFIDO_API_TOKEN;
+    if (!token) return undefined;
+    if (!this.onfido) {
+      this.onfido = new Onfido({ apiToken: token, region: Region.EU });
+    }
+    return this.onfido;
+  }
 
   private async checkFlag(
     url: string,
@@ -48,19 +60,22 @@ export class KycService {
   }
 
   private async callProvider(account: Account): Promise<ProviderResult> {
-    const url = process.env.KYC_PROVIDER_URL;
-    if (!url) {
+    const client = this.getClient();
+    if (!client) {
       return { allowed: false, reason: 'KYC provider not configured' };
     }
     try {
-      const res = await fetch(`${url}?name=${encodeURIComponent(account.name)}`);
-      if (!res.ok) {
-        return { allowed: false, reason: `provider error ${res.status}` };
-      }
-      const data = (await res.json()) as ProviderResult;
-      return { allowed: !!data.allowed, reason: data.reason };
-    } catch {
-      return { allowed: false, reason: 'KYC provider unreachable' };
+      const applicant = await client.applicant.create({
+        firstName: account.name,
+        lastName: account.name,
+      });
+      const check = await client.check.create({
+        applicantId: applicant.id,
+        reportNames: ['document', 'facial_similarity'],
+      });
+      return { allowed: check.result === 'clear', reason: check.result };
+    } catch (err) {
+      return { allowed: false, reason: (err as Error).message };
     }
   }
 
@@ -125,6 +140,22 @@ export class KycService {
       const reason = result.reason ?? 'KYC verification failed';
       await this.cache.set(denialKey, reason, { ttl: 86400 });
       throw new Error(reason);
+    }
+  }
+
+  async verify(accountId: string): Promise<void> {
+    const account = await this.accounts.findOneByOrFail({ id: accountId });
+    await this.validate(account);
+  }
+
+  async isVerified(accountId: string): Promise<boolean> {
+    const account = await this.accounts.findOneByOrFail({ id: accountId });
+    if (account.kycVerified) return true;
+    try {
+      await this.validate(account);
+      return true;
+    } catch {
+      return false;
     }
   }
 
