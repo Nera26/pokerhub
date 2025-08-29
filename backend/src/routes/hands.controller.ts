@@ -11,14 +11,42 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Hand } from '../database/entities/hand.entity';
 import { HandLog } from '../game/hand-log';
-import { HandStateResponse as HandStateResponseSchema } from '../schemas/hands';
-import type { HandLogResponse, HandStateResponse } from '../schemas/hands';
+import {
+  HandStateResponse as HandStateResponseSchema,
+  HandProofResponse as HandProofResponseSchema,
+} from '../schemas/hands';
+import type {
+  HandLogResponse,
+  HandStateResponse,
+  HandProofResponse,
+} from '../schemas/hands';
 
 @Controller('hands')
 export class HandsController {
   constructor(
     @InjectRepository(Hand) private readonly hands: Repository<Hand>,
   ) {}
+
+  @Get(':id/proof')
+  async getProof(@Param('id') id: string): Promise<HandProofResponse> {
+    const file = join(process.cwd(), '../storage/hand-logs', `${id}.jsonl`);
+    let raw: string;
+    try {
+      raw = await readFile(file, 'utf8');
+    } catch {
+      throw new NotFoundException('log not found');
+    }
+    const lines = raw.trim().split('\n');
+    if (lines.length === 0) {
+      throw new NotFoundException('proof not found');
+    }
+    const last = JSON.parse(lines[lines.length - 1]);
+    const proof = last[4];
+    if (!proof) {
+      throw new NotFoundException('proof not found');
+    }
+    return HandProofResponseSchema.parse(proof);
+  }
 
   @Get(':id/log')
   @Header('Content-Type', 'text/plain')
