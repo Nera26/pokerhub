@@ -23,7 +23,7 @@ export function useTableState(tableId?: string) {
 
   return useQuery<TableState>({
     queryKey,
-    queryFn: async () => undefined,
+    queryFn: async () => undefined as unknown as TableState,
     enabled: false,
   });
 }

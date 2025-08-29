@@ -3,7 +3,14 @@ import { getBaseUrl } from '@/lib/base-url';
 import { handleResponse, ApiError } from './client';
 import { serverFetch } from '@/lib/server-fetch';
 import type { components } from '@/types/api';
-import { TableSchema, TournamentSchema } from '@shared/types';
+import {
+  TableSchema,
+  TournamentSchema,
+  type Table,
+  type Tournament,
+} from '@shared/types';
+
+export type { Table, Tournament };
 
 export async function fetchLobbyData<T>(
   endpoint: string,
