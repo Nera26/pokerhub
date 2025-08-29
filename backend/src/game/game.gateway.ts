@@ -73,6 +73,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       description: 'Total number of frames dropped after retries exhausted',
     },
   );
+  private static readonly perSocketLimitExceeded =
+    GameGateway.meter.createCounter('per_socket_limit_exceeded', {
+      description: 'Actions rejected due to per-socket limit',
+    });
+  private static readonly globalLimitExceeded =
+    GameGateway.meter.createCounter('global_limit_exceeded', {
+      description: 'Actions rejected due to global limit',
+    });
 
   private readonly processedPrefix = 'game:processed';
   private readonly processedTtlSeconds = 60;
@@ -464,10 +472,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     GameGateway.globalActionCount.record(global);
     if (global > this.globalLimit) {
+      GameGateway.globalLimitExceeded.add(1);
       this.enqueue(client, 'server:Error', 'rate limit exceeded');
       return true;
     }
     if (count > 30) {
+      GameGateway.perSocketLimitExceeded.add(1);
       client.emit('server:Error', 'rate limit exceeded');
       return true;
     }

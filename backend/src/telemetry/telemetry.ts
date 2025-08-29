@@ -30,9 +30,11 @@ export function setupTelemetry() {
   meterProvider = new MeterProvider({ resource });
   meterProvider.addMetricReader(prometheus);
 
-  const alertUrl = process.env.ALERTMANAGER_URL;
-  if (alertUrl) {
-    const otlpExporter = new OTLPMetricExporter({ url: alertUrl });
+  const metricsUrl =
+    process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT ??
+    process.env.ALERTMANAGER_URL;
+  if (metricsUrl) {
+    const otlpExporter = new OTLPMetricExporter({ url: metricsUrl });
     meterProvider.addMetricReader(
       new PeriodicExportingMetricReader({ exporter: otlpExporter }),
     );
