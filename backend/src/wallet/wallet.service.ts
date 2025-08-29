@@ -110,6 +110,7 @@ export class WalletService {
           accountId: entry.account.id,
           account: entry.account,
           amount: entry.amount,
+          currency: entry.account.currency,
           refType,
           refId,
           hash,
@@ -140,6 +141,7 @@ export class WalletService {
     accountId: string,
     amount: number,
     refId: string,
+    currency: string,
     idempotencyKey?: string,
   ): Promise<void> {
     return WalletService.tracer.startActiveSpan(
@@ -148,9 +150,10 @@ export class WalletService {
         const start = Date.now();
         WalletService.txnCounter.add(1, { operation: 'reserve' });
         try {
-          const user = await this.accounts.findOneByOrFail({ id: accountId });
+          const user = await this.accounts.findOneByOrFail({ id: accountId, currency });
           const reserve = await this.accounts.findOneByOrFail({
             name: 'reserve',
+            currency,
           });
           if (idempotencyKey && this.settlements) {
             await this.settlements
@@ -187,6 +190,7 @@ export class WalletService {
     refId: string,
     amount: number,
     rake: number,
+    currency: string,
     idempotencyKey?: string,
   ): Promise<void> {
     return WalletService.tracer.startActiveSpan(
@@ -197,9 +201,16 @@ export class WalletService {
         try {
           const reserve = await this.accounts.findOneByOrFail({
             name: 'reserve',
+            currency,
           });
-          const prize = await this.accounts.findOneByOrFail({ name: 'prize' });
-          const rakeAcc = await this.accounts.findOneByOrFail({ name: 'rake' });
+          const prize = await this.accounts.findOneByOrFail({
+            name: 'prize',
+            currency,
+          });
+          const rakeAcc = await this.accounts.findOneByOrFail({
+            name: 'rake',
+            currency,
+          });
           await this.record('commit', refId, [
             { account: reserve, amount: -amount },
             { account: prize, amount: amount - rake },
@@ -230,6 +241,7 @@ export class WalletService {
     accountId: string,
     amount: number,
     refId: string,
+    currency: string,
   ): Promise<void> {
     return WalletService.tracer.startActiveSpan(
       'wallet.rollback',
@@ -239,8 +251,9 @@ export class WalletService {
         try {
           const reserve = await this.accounts.findOneByOrFail({
             name: 'reserve',
+            currency,
           });
-          const user = await this.accounts.findOneByOrFail({ id: accountId });
+          const user = await this.accounts.findOneByOrFail({ id: accountId, currency });
           await this.record('rollback', refId, [
             { account: reserve, amount: -amount },
             { account: user, amount },
@@ -308,7 +321,11 @@ export class WalletService {
       where: { idempotencyKey },
     });
     if (!disb || disb.status === 'completed') return;
-    const house = await this.accounts.findOneByOrFail({ name: 'house' });
+    const user = await this.accounts.findOneByOrFail({ id: disb.accountId });
+    const house = await this.accounts.findOneByOrFail({
+      name: 'house',
+      currency: user.currency,
+    });
     await this.record('payout', disb.id, [{ account: house, amount: 0 }], {
       providerTxnId,
       providerStatus: status,
@@ -405,6 +422,7 @@ export class WalletService {
     amount: number,
     deviceId: string,
     ip: string,
+    currency: string,
   ): Promise<void> {
     return WalletService.tracer.startActiveSpan(
       'wallet.withdraw',
@@ -412,7 +430,7 @@ export class WalletService {
         const start = Date.now();
         WalletService.txnCounter.add(1, { operation: 'withdraw' });
         try {
-          const user = await this.accounts.findOneByOrFail({ id: accountId });
+          const user = await this.accounts.findOneByOrFail({ id: accountId, currency });
           if (!user.kycVerified) {
             throw new Error('KYC required');
           }
@@ -421,7 +439,7 @@ export class WalletService {
           }
           await this.checkVelocity('withdraw', deviceId, ip);
           await this.enforceDailyLimit('withdraw', accountId, amount);
-          const house = await this.accounts.findOneByOrFail({ name: 'house' });
+          const house = await this.accounts.findOneByOrFail({ name: 'house', currency });
           const challenge = await this.provider.initiate3DS(accountId, amount);
           const status: ProviderStatus = await this.provider.getStatus(
             challenge.id,
@@ -479,6 +497,7 @@ export class WalletService {
     amount: number,
     deviceId: string,
     ip: string,
+    currency: string,
   ): Promise<void> {
     return WalletService.tracer.startActiveSpan(
       'wallet.deposit',
@@ -487,12 +506,12 @@ export class WalletService {
         WalletService.txnCounter.add(1, { operation: 'deposit' });
         try {
           await this.checkVelocity('deposit', deviceId, ip);
-          const user = await this.accounts.findOneByOrFail({ id: accountId });
+          const user = await this.accounts.findOneByOrFail({ id: accountId, currency });
           if (!user.kycVerified) {
             throw new Error('KYC required');
           }
           await this.enforceDailyLimit('deposit', accountId, amount);
-          const house = await this.accounts.findOneByOrFail({ name: 'house' });
+          const house = await this.accounts.findOneByOrFail({ name: 'house', currency });
           const challenge = await this.provider.initiate3DS(accountId, amount);
           const status: ProviderStatus = await this.provider.getStatus(
             challenge.id,

@@ -17,7 +17,7 @@ export class JournalRefAndAccounts1700000002000 implements MigrationInterface {
       `CREATE UNIQUE INDEX "IDX_journal_entry_hash" ON "journal_entry" ("hash")`
     );
     await queryRunner.query(
-      `INSERT INTO "account"("id","name","balance") VALUES ('00000000-0000-0000-0000-000000000003','rake',0),('00000000-0000-0000-0000-000000000004','prize',0)`
+      `INSERT INTO "account"("id","name","currency","balance") VALUES ('00000000-0000-0000-0000-000000000003','rake','USD',0),('00000000-0000-0000-0000-000000000004','prize','USD',0)`
     );
   }
 

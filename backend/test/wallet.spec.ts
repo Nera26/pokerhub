@@ -70,33 +70,37 @@ describe('WalletService zero-sum property', () => {
     );
     Object.assign(service, { enqueueDisbursement: jest.fn() });
     await accountRepo.save([
-      { id: userId, name: 'user', balance: 0, kycVerified: true },
+      { id: userId, name: 'user', balance: 0, kycVerified: true, currency: 'USD' },
       {
         id: '00000000-0000-0000-0000-000000000001',
         name: 'reserve',
         balance: 0,
         kycVerified: true,
+        currency: 'USD',
       },
       {
         id: '00000000-0000-0000-0000-000000000002',
         name: 'house',
         balance: 0,
         kycVerified: true,
+        currency: 'USD',
       },
       {
         id: '00000000-0000-0000-0000-000000000003',
         name: 'rake',
         balance: 0,
         kycVerified: true,
+        currency: 'USD',
       },
       {
         id: '00000000-0000-0000-0000-000000000004',
         name: 'prize',
         balance: 0,
         kycVerified: true,
+        currency: 'USD',
       },
     ]);
-    await service.deposit(userId, 1000, 'dev', '127.0.0.1');
+    await service.deposit(userId, 1000, 'dev', '127.0.0.1', 'USD');
     return { dataSource, service, journalRepo };
   }
 
@@ -116,9 +120,9 @@ describe('WalletService zero-sum property', () => {
           for (let i = 0; i < txs.length; i++) {
             const tx = txs[i];
             const ref = `tx${i}`;
-            await service.reserve(userId, tx.amount, ref);
-            await service.commit(ref, tx.amount, tx.rake);
-            await service.rollback(userId, tx.amount, ref);
+            await service.reserve(userId, tx.amount, ref, 'USD');
+            await service.commit(ref, tx.amount, tx.rake, 'USD');
+            await service.rollback(userId, tx.amount, ref, 'USD');
             expectedEntries += 7; // 2 reserve + 3 commit + 2 rollback
             const total = await service.totalBalance();
             expect(total).toBe(0);

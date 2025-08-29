@@ -91,8 +91,8 @@ describe('Provider webhook', () => {
     await disbRepo.createQueryBuilder().delete().execute();
     await accountRepo.createQueryBuilder().delete().execute();
     await accountRepo.save([
-      { id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', name: 'house', balance: 0, kycVerified: false },
-      { id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', name: 'user', balance: 0, kycVerified: true },
+      { id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', name: 'house', balance: 0, kycVerified: false, currency: 'USD' },
+      { id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', name: 'user', balance: 0, kycVerified: true, currency: 'USD' },
     ]);
     await disbRepo.save({
       id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',

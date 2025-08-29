@@ -72,7 +72,7 @@ export class GameEngine {
   private async reserveStacks() {
     const state = this.machine.getState();
     for (const player of state.players) {
-      await this.wallet!.reserve(player.id, player.stack, this.handId);
+      await this.wallet!.reserve(player.id, player.stack, this.handId, 'USD');
     }
   }
 
@@ -204,13 +204,13 @@ export class GameEngine {
       const loss = Math.max(initial - player.stack, 0);
       const refund = initial - loss;
       if (this.wallet && refund > 0) {
-        await this.wallet.rollback(player.id, refund, this.handId);
+        await this.wallet.rollback(player.id, refund, this.handId, 'USD');
       }
       totalLoss += loss;
     }
 
     if (this.wallet && totalLoss > 0) {
-      await this.wallet.commit(this.handId, totalLoss, rake);
+      await this.wallet.commit(this.handId, totalLoss, rake, 'USD');
     }
 
     const proof = this.rng.reveal();

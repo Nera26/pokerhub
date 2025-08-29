@@ -13,6 +13,7 @@ interface TxDto {
   amount: number;
   tx: string;
   rake?: number;
+  currency: string;
 }
 
 @UseGuards(RateLimitGuard)
@@ -22,19 +23,19 @@ export class WalletController {
 
   @Post(':id/reserve')
   async reserve(@Param('id') id: string, @Body() body: TxDto) {
-    await this.wallet.reserve(id, body.amount, body.tx);
+    await this.wallet.reserve(id, body.amount, body.tx, body.currency);
     return { message: 'reserved' };
   }
 
   @Post(':id/commit')
   async commit(@Param('id') id: string, @Body() body: TxDto) {
-    await this.wallet.commit(body.tx, body.amount, body.rake ?? 0);
+    await this.wallet.commit(body.tx, body.amount, body.rake ?? 0, body.currency);
     return { message: 'committed' };
   }
 
   @Post(':id/rollback')
   async rollback(@Param('id') id: string, @Body() body: TxDto) {
-    await this.wallet.rollback(id, body.amount, body.tx);
+    await this.wallet.rollback(id, body.amount, body.tx, body.currency);
     return { message: 'rolled back' };
   }
 
@@ -45,7 +46,7 @@ export class WalletController {
     @Req() req: Request,
   ) {
     const parsed = WithdrawSchema.parse(body);
-    await this.wallet.withdraw(id, parsed.amount, parsed.deviceId, req.ip);
+    await this.wallet.withdraw(id, parsed.amount, parsed.deviceId, req.ip, parsed.currency);
     return { message: 'withdrawn' };
   }
 

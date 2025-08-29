@@ -116,12 +116,14 @@ describe('WalletService withdraw', () => {
         name: 'user',
         balance: 1000,
         kycVerified: true,
+        currency: 'USD',
       },
       {
         id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
         name: 'house',
         balance: 0,
         kycVerified: false,
+        currency: 'USD',
       },
     ]);
   });
@@ -143,6 +145,7 @@ describe('WalletService withdraw', () => {
         100,
         'dev1',
         '1.1.1.1',
+        'USD',
       ),
     ).rejects.toThrow('KYC required');
     user.kycVerified = true;
@@ -155,18 +158,21 @@ describe('WalletService withdraw', () => {
       100,
       'd1',
       '2.2.2.2',
+      'USD',
     );
     await service.withdraw(
       'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
       100,
       'd1',
       '2.2.2.2',
+      'USD',
     );
     await service.withdraw(
       'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
       100,
       'd1',
       '2.2.2.2',
+      'USD',
     );
     await expect(
       service.withdraw(
@@ -174,6 +180,7 @@ describe('WalletService withdraw', () => {
         100,
         'd1',
         '2.2.2.2',
+        'USD',
       ),
     ).rejects.toThrow('Rate limit exceeded');
   });
@@ -184,6 +191,7 @@ describe('WalletService withdraw', () => {
       100,
       'dev2',
       '3.3.3.3',
+      'USD',
     );
     const disbRepo = dataSource.getRepository(Disbursement);
     const disb = await disbRepo.findOneByOrFail({
@@ -213,6 +221,7 @@ describe('WalletService withdraw', () => {
       150,
       'dev3',
       '4.4.4.4',
+      'USD',
     );
     (events.emit as jest.Mock).mockClear();
     await expect(
@@ -221,6 +230,7 @@ describe('WalletService withdraw', () => {
         60,
         'dev4',
         '4.4.4.4',
+        'USD',
       ),
     ).rejects.toThrow('Daily limit exceeded');
     // eslint-disable-next-line @typescript-eslint/unbound-method
@@ -247,6 +257,7 @@ describe('WalletService withdraw', () => {
         100,
         'd9',
         '9.9.9.9',
+        'USD',
       ),
     ).rejects.toThrow('Transaction flagged as risky');
     const jRepo = dataSource.getRepository(JournalEntry);

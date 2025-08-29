@@ -67,16 +67,19 @@ describe('WalletService ledger zero-sum property', () => {
         id: '00000000-0000-0000-0000-000000000001',
         name: 'a',
         balance: 0,
+        currency: 'USD',
       },
       {
         id: '00000000-0000-0000-0000-000000000002',
         name: 'b',
         balance: 0,
+        currency: 'USD',
       },
       {
         id: '00000000-0000-0000-0000-000000000003',
         name: 'c',
         balance: 0,
+        currency: 'USD',
       },
     ]);
     return { dataSource, service, accounts };

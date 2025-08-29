@@ -19,10 +19,10 @@ export async function writeHandLedger(
     if (entry.delta < 0) {
       const amount = -entry.delta;
       total += amount;
-      await wallet.reserve(entry.playerId, amount, key, key);
+      await wallet.reserve(entry.playerId, amount, key, 'USD', key);
     }
   }
   if (total > 0) {
-    await wallet.commit(key, total, 0, key);
+    await wallet.commit(key, total, 0, 'USD', key);
   }
 }

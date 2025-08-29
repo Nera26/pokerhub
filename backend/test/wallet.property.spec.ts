@@ -110,11 +110,31 @@ describe('WalletService journal invariants', () => {
     );
     (service as any).enqueueDisbursement = jest.fn();
     await accountRepo.save([
-      { id: userId, name: 'user', balance: 0 },
-      { id: '00000000-0000-0000-0000-000000000001', name: 'reserve', balance: 0 },
-      { id: '00000000-0000-0000-0000-000000000002', name: 'house', balance: 0 },
-      { id: '00000000-0000-0000-0000-000000000003', name: 'rake', balance: 0 },
-      { id: '00000000-0000-0000-0000-000000000004', name: 'prize', balance: 0 },
+      { id: userId, name: 'user', balance: 0, currency: 'USD' },
+      {
+        id: '00000000-0000-0000-0000-000000000001',
+        name: 'reserve',
+        balance: 0,
+        currency: 'USD',
+      },
+      {
+        id: '00000000-0000-0000-0000-000000000002',
+        name: 'house',
+        balance: 0,
+        currency: 'USD',
+      },
+      {
+        id: '00000000-0000-0000-0000-000000000003',
+        name: 'rake',
+        balance: 0,
+        currency: 'USD',
+      },
+      {
+        id: '00000000-0000-0000-0000-000000000004',
+        name: 'prize',
+        balance: 0,
+        currency: 'USD',
+      },
     ]);
     return { dataSource, service };
   }
@@ -150,13 +170,13 @@ describe('WalletService journal invariants', () => {
           for (const op of ops) {
             switch (op.type) {
               case 'reserve':
-                await service.reserve(userId, op.amount, op.ref);
+                await service.reserve(userId, op.amount, op.ref, 'USD');
                 break;
               case 'commit':
-                await service.commit(op.ref, op.amount, op.rake);
+                await service.commit(op.ref, op.amount, op.rake, 'USD');
                 break;
               case 'rollback':
-                await service.rollback(userId, op.amount, op.ref);
+                await service.rollback(userId, op.amount, op.ref, 'USD');
                 break;
             }
             const report = await service.reconcile();
