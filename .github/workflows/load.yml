@@ -161,3 +161,29 @@ jobs:
       - name: Cleanup chaos
         if: always()
         run: kubectl delete -f infra/tests/load/chaos/network-latency.yaml || true
+
+  socket-io-chaos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start toxiproxy
+        run: |
+          docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 ghcr.io/shopify/toxiproxy
+          UPSTREAM=staging.pokerhub:80 PACKET_LOSS=0.05 LATENCY_MS=200 ./load/toxiproxy.sh
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          npm ci
+      - name: Run Socket.IO load test
+        env:
+          WS_URL: ws://localhost:3001
+          TABLES: 10000
+        run: |
+          cd backend
+          npm run load:socket
+      - name: Upload latency histogram
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: socket-io-latency
+          path: backend/latency-hist.json
