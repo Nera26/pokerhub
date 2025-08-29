@@ -10,7 +10,7 @@ describe('GameEngine RNG proof logging', () => {
       throw new Error(`unexpected randomBytes size: ${size}`);
     });
 
-    const engine = new GameEngine(['A', 'B']);
+    const engine = await GameEngine.create(['A', 'B']);
     spy.mockRestore();
 
     const actions: GameAction[] = [

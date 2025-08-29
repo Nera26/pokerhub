@@ -21,7 +21,7 @@ export class GameEngine {
   private readonly handId = randomUUID();
   private readonly rng = new HandRNG();
 
-  constructor(
+  private constructor(
     playerIds: string[] = ['p1', 'p2'],
     private readonly wallet?: WalletService,
     private readonly handRepo?: Repository<Hand>,
@@ -60,13 +60,30 @@ export class GameEngine {
         settled: false,
       });
     }
-    if (this.wallet) {
-      void this.reserveStacks();
+  }
+
+  static async create(
+    playerIds: string[] = ['p1', 'p2'],
+    wallet?: WalletService,
+    handRepo?: Repository<Hand>,
+    events?: EventPublisher,
+    tableId?: string,
+  ): Promise<GameEngine> {
+    const engine = new GameEngine(
+      playerIds,
+      wallet,
+      handRepo,
+      events,
+      tableId,
+    );
+    if (wallet) {
+      await engine.reserveStacks();
     }
-    this.events?.emit('hand.start', {
-      handId: this.handId,
+    events?.emit('hand.start', {
+      handId: engine.handId,
       players: playerIds,
     });
+    return engine;
   }
 
   private async reserveStacks() {

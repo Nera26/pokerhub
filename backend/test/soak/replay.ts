@@ -29,39 +29,43 @@ const origWrite = process.stderr.write.bind(process.stderr);
 const startHeap = process.memoryUsage().heapUsed;
 const endTime = Date.now() + 24 * 60 * 60 * 1000; // 24h
 
-while (Date.now() < endTime) {
-  for (const file of files) {
-    const lines = readFileSync(join(logsDir, file), 'utf8')
-      .trim()
-      .split('\n')
-      .filter(Boolean);
-    if (lines.length === 0) continue;
-    const first = JSON.parse(lines[0]);
-    const players = (first[2]?.players ?? []).map((p: any) => p.id);
-    const engine = new GameEngine(players);
-    for (const line of lines) {
-      const entry = JSON.parse(line);
-      const action = entry[1];
-      engine.applyAction(action);
+async function run() {
+  while (Date.now() < endTime) {
+    for (const file of files) {
+      const lines = readFileSync(join(logsDir, file), 'utf8')
+        .trim()
+        .split('\n')
+        .filter(Boolean);
+      if (lines.length === 0) continue;
+      const first = JSON.parse(lines[0]);
+      const players = (first[2]?.players ?? []).map((p: any) => p.id);
+      const engine = await GameEngine.create(players);
+      for (const line of lines) {
+        const entry = JSON.parse(line);
+        const action = entry[1];
+        engine.applyAction(action);
+      }
     }
   }
+
+  const endHeap = process.memoryUsage().heapUsed;
+  const growth = (endHeap - startHeap) / startHeap;
+
+  gcPauses.sort((a, b) => a - b);
+  const p95Index = Math.floor(gcPauses.length * 0.95);
+  const p95 = gcPauses[p95Index] || 0;
+
+  if (growth > 0.01) {
+    console.error(`Memory growth ${(growth * 100).toFixed(2)}% exceeds 1%`);
+    process.exit(1);
+  }
+
+  if (p95 > 50) {
+    console.error(`GC pause p95 ${p95.toFixed(2)}ms exceeds 50ms`);
+    process.exit(1);
+  }
+
+  console.log('Soak test passed: memory stable and GC pauses within limits');
 }
 
-const endHeap = process.memoryUsage().heapUsed;
-const growth = (endHeap - startHeap) / startHeap;
-
-gcPauses.sort((a, b) => a - b);
-const p95Index = Math.floor(gcPauses.length * 0.95);
-const p95 = gcPauses[p95Index] || 0;
-
-if (growth > 0.01) {
-  console.error(`Memory growth ${(growth * 100).toFixed(2)}% exceeds 1%`);
-  process.exit(1);
-}
-
-if (p95 > 50) {
-  console.error(`GC pause p95 ${p95.toFixed(2)}ms exceeds 50ms`);
-  process.exit(1);
-}
-
-console.log('Soak test passed: memory stable and GC pauses within limits');
+run();

@@ -1,8 +1,8 @@
 import { GameEngine } from '../../src/game/engine';
 
 describe('GameEngine.getPublicState', () => {
-  it('omits hole cards for each player', () => {
-    const engine = new GameEngine(['a', 'b']);
+  it('omits hole cards for each player', async () => {
+    const engine = await GameEngine.create(['a', 'b']);
     const state = engine.getState();
     (state.players[0] as any).holeCards = ['As', 'Kd'];
     (state.players[1] as any).cards = ['Qc', 'Jh'];
