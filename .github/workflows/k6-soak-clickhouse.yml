@@ -1,0 +1,30 @@
+name: k6-table-action-soak
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  soak:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1440
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run table action soak test exporting to ClickHouse
+        uses: grafana/k6-action@v0.2.0
+        env:
+          BASE_URL: https://staging.pokerhub
+          CLICKHOUSE_DSN: ${{ secrets.CLICKHOUSE_DSN }}
+        with:
+          filename: infra/tests/soak/k6-soak.js
+          flags: --summary-export=soak-summary.json --out json=soak-metrics.json --out xk6-clickhouse=$CLICKHOUSE_DSN
+          docker-image: ghcr.io/grafana/xk6-output-clickhouse:latest
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: table-action-soak
+          path: |
+            soak-summary.json
+            soak-metrics.json
