@@ -15,3 +15,14 @@
 - Property-based test (`backend/test/wallet/reconcile.sum.property.spec.ts`) generates random transaction batches.
 - For each batch `WalletService.reconcile()` must return no discrepancies and the totals must sum to zero.
 - Any failing case writes the offending batch and report to `storage/wallet-reconcile-failure.json` and fails CI, ensuring ledger integrity.
+
+## KYC Provider Configuration
+
+- External checks run against the URL defined by `KYC_PROVIDER_URL`.
+- Results are cached in Redis for one hour to avoid repetitive lookups.
+- When verification is denied the provider's message is returned via `/wallet/{id}/status`.
+
+### Failure Modes
+
+- **Provider not configured** – missing `KYC_PROVIDER_URL` causes all checks to fail.
+- **Provider unreachable or error response** – the denial reason is cached and exposed to the client.
