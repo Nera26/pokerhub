@@ -38,7 +38,11 @@ describe('wallet api', () => {
         ok: true,
         status: 200,
         headers: { get: () => 'application/json' },
-        json: async () => ({ kycVerified: true }),
+        json: async () => ({
+          kycVerified: true,
+          realBalance: 20,
+          creditBalance: 10,
+        }),
       });
 
     await expect(reserve(10, 'USD')).resolves.toEqual({ message: 'ok' });

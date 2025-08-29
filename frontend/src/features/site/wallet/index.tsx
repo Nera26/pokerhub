@@ -16,11 +16,10 @@ import ToastNotification, {
 } from '@/app/components/ui/ToastNotification';
 import { getStatus, fetchTransactions, fetchPending } from '@/lib/api/wallet';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/context/AuthContext';
 
 export default function WalletPage() {
-  // Balances
-  const [realBalance] = useState<number>(1250.0);
-  const [creditBalance] = useState<number>(350.0);
+  const { realBalance, creditBalance } = useAuth();
   const [kycVerified, setKycVerified] = useState(false);
 
   const {
@@ -97,12 +96,12 @@ export default function WalletPage() {
     showToast(`Withdraw request of $${amount.toFixed(2)} sent`);
   };
 
-  // Update document title (optional)
+  // Title & KYC fetch
   useEffect(() => {
     document.title = 'Wallet – PokerHub';
-      getStatus()
-        .then((res) => setKycVerified(res.kycVerified))
-        .catch(() => setKycVerified(false));
+    getStatus()
+      .then((res) => setKycVerified(res.kycVerified))
+      .catch(() => setKycVerified(false));
   }, []);
 
   return (
