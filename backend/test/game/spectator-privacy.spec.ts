@@ -22,7 +22,10 @@ async function waitFor(cond: () => boolean, timeout = 200) {
 }
 
 class DummyRoom extends EventEmitter {
-  private readonly engine = new GameEngine(['p1', 'p2']);
+  private readonly engine = new GameEngine(
+    ['p1', 'p2'],
+    { startingStack: 100, smallBlind: 1, bigBlind: 2 },
+  );
 
   async getPublicState() {
     return this.engine.getPublicState();

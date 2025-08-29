@@ -4,6 +4,7 @@ import { GameEngine, GameAction } from './engine';
 import { hashCommitment, verifyProof } from './rng';
 
 const players = ['p1', 'p2'];
+const config = { startingStack: 100, smallBlind: 1, bigBlind: 2 };
 const actionArb: fc.Arbitrary<GameAction> = fc.oneof(
   fc.record({
     type: fc.constant('bet'),
@@ -36,7 +37,7 @@ describe('GameEngine hand lifecycle', () => {
       rollback: jest.fn().mockResolvedValue(undefined),
     } as any;
 
-    const engine = await GameEngine.create(['A', 'B'], wallet);
+    const engine = await GameEngine.create(['A', 'B'], config, wallet);
     const handId = engine.getHandId();
 
     const actions: GameAction[] = [
@@ -93,10 +94,10 @@ itIfCI('replays identically for same seed and actions', async () => {
             throw new Error(`unexpected randomBytes size: ${size}`);
           });
 
-        const engine1 = await GameEngine.create(players);
+        const engine1 = await GameEngine.create(players, config);
         actions.forEach((a) => engine1.applyAction(a));
 
-        const engine2 = await GameEngine.create(players);
+        const engine2 = await GameEngine.create(players, config);
         actions.forEach((a) => engine2.applyAction(a));
 
         const log1 = Buffer.from(JSON.stringify(engine1.getHandLog()));

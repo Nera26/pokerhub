@@ -9,8 +9,9 @@ describe('GameEngine determinism', () => {
       throw new Error(`unexpected randomBytes size: ${size}`);
     });
 
-    const engineA = await GameEngine.create(['A', 'B']);
-    const engineB = await GameEngine.create(['A', 'B']);
+    const config = { startingStack: 100, smallBlind: 1, bigBlind: 2 };
+    const engineA = await GameEngine.create(['A', 'B'], config);
+    const engineB = await GameEngine.create(['A', 'B'], config);
 
     spy.mockRestore();
 

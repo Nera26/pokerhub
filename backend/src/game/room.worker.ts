@@ -22,6 +22,7 @@ async function getSettlement() {
 async function main() {
   const engine = await GameEngine.create(
     workerData.playerIds,
+    { startingStack: 100, smallBlind: 1, bigBlind: 2 },
     undefined,
     undefined,
     undefined,

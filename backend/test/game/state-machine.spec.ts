@@ -1,8 +1,10 @@
 import { GameEngine, GameAction } from '../../src/game/engine';
 
+const config = { startingStack: 100, smallBlind: 1, bigBlind: 2 };
+
 describe('Hand state machine', () => {
   it('replays hand deterministically', async () => {
-    const engine = await GameEngine.create(['A', 'B']);
+    const engine = await GameEngine.create(['A', 'B'], config);
     const actions: GameAction[] = [
       { type: 'postBlind', playerId: 'A', amount: 1 },
       { type: 'postBlind', playerId: 'B', amount: 2 },
@@ -30,7 +32,7 @@ describe('Hand state machine', () => {
   });
 
   it('records settlement totals', async () => {
-    const engine = await GameEngine.create(['A', 'B']);
+    const engine = await GameEngine.create(['A', 'B'], config);
     engine.applyAction({ type: 'postBlind', playerId: 'A', amount: 1 });
     engine.applyAction({ type: 'postBlind', playerId: 'B', amount: 2 });
     engine.applyAction({ type: 'next' });
@@ -43,7 +45,7 @@ describe('Hand state machine', () => {
   });
 
   it('advances from blinds to betting', async () => {
-    const engine = await GameEngine.create(['A', 'B']);
+    const engine = await GameEngine.create(['A', 'B'], config);
     engine.applyAction({ type: 'postBlind', playerId: 'A', amount: 1 });
     const state = engine.applyAction({ type: 'postBlind', playerId: 'B', amount: 2 });
     expect(state.phase).toBe('DEAL');
@@ -53,7 +55,7 @@ describe('Hand state machine', () => {
   });
 
   it('deals hole and community cards', async () => {
-    const engine = await GameEngine.create(['A', 'B']);
+    const engine = await GameEngine.create(['A', 'B'], config);
     engine.applyAction({ type: 'postBlind', playerId: 'A', amount: 1 });
     engine.applyAction({ type: 'postBlind', playerId: 'B', amount: 2 });
     engine.applyAction({ type: 'next' });
@@ -70,7 +72,7 @@ describe('Hand state machine', () => {
   });
 
   it('handles multi-street betting', async () => {
-    const engine = await GameEngine.create(['A', 'B']);
+    const engine = await GameEngine.create(['A', 'B'], config);
     engine.applyAction({ type: 'postBlind', playerId: 'A', amount: 1 });
     engine.applyAction({ type: 'postBlind', playerId: 'B', amount: 2 });
     engine.applyAction({ type: 'next' });
@@ -91,7 +93,7 @@ describe('Hand state machine', () => {
   });
 
   it('settles at showdown', async () => {
-    const engine = await GameEngine.create(['A', 'B']);
+    const engine = await GameEngine.create(['A', 'B'], config);
     engine.applyAction({ type: 'postBlind', playerId: 'A', amount: 1 });
     engine.applyAction({ type: 'postBlind', playerId: 'B', amount: 2 });
     engine.applyAction({ type: 'next' });
@@ -112,7 +114,7 @@ describe('Hand state machine', () => {
   });
 
   it('rejects invalid bet amounts', async () => {
-    const engine = await GameEngine.create(['A', 'B']);
+    const engine = await GameEngine.create(['A', 'B'], config);
     engine.applyAction({ type: 'postBlind', playerId: 'A', amount: 1 });
     engine.applyAction({ type: 'postBlind', playerId: 'B', amount: 2 });
     engine.applyAction({ type: 'next' });
