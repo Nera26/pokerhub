@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { GameState } from '@shared/types';
+import { EVENT_SCHEMA_VERSION } from '@shared/events';
 import useGameSocket from '@/hooks/useGameSocket';
 import Seats from './Seats';
 import Board from './Board';
@@ -26,8 +27,20 @@ export default function TablePage({ params }: PageProps) {
       .then(() => setStatus('Joined table'))
       .catch((err) => setStatus(`Error: ${err.message}`));
 
-    const handleState = (s: GameState) => setState(s);
-    const handleAck = (ack: { actionId: string; duplicate?: boolean }) => {
+    const handleState = (s: GameState & { version: string }) => {
+      if (s.version !== EVENT_SCHEMA_VERSION) {
+        setStatus('Protocol version mismatch');
+        return;
+      }
+      setState(s);
+    };
+    const handleAck = (
+      ack: { actionId: string; duplicate?: boolean; version: string },
+    ) => {
+      if (ack.version !== EVENT_SCHEMA_VERSION) {
+        setStatus('Protocol version mismatch');
+        return;
+      }
       if (ack.actionId === lastActionId) {
         setStatus(
           ack.duplicate

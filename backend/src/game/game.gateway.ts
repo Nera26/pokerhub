@@ -28,6 +28,7 @@ import {
   type GameAction as WireGameAction,
   type GameActionPayload,
 } from '@shared/types';
+import { EVENT_SCHEMA_VERSION } from '@shared/events';
 import { metrics } from '@opentelemetry/api';
 import PQueue from 'p-queue';
 
@@ -388,15 +389,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
     void queue.add(() => {
-      let payload = data;
-      if (critical) {
+      let payload: unknown = data;
+      if (typeof payload === 'object' && payload !== null) {
         payload = {
-          ...(data as Record<string, unknown>),
-          frameId: randomUUID(),
+          ...(payload as Record<string, unknown>),
+          version: EVENT_SCHEMA_VERSION,
         };
+        if (critical) {
+          (payload as Record<string, unknown>).frameId = randomUUID();
+        }
       }
       client.emit(event, payload);
-      if (critical) {
+      if (critical && typeof payload === 'object' && payload !== null) {
         this.trackFrame(client, event, payload as Record<string, unknown>);
       }
     });
