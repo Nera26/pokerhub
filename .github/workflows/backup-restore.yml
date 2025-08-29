@@ -1,0 +1,43 @@
+name: backup-restore
+
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run backup restore test
+        run: bash infra/disaster-recovery/tests/restore-backup.sh | tee restore.log
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          PG_SNAPSHOT_ID: ${{ vars.PG_SNAPSHOT_ID }}
+          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+      - name: Publish metrics
+        run: |
+          source restore-backup.metrics
+          cat <<METRICS | curl --data-binary @- ${{ vars.PUSHGATEWAY_URL }}/metrics/job/backup-restore
+          dr_backup_restore_rto_seconds $RTO_SECONDS
+          dr_backup_restore_rpo_seconds $RPO_SECONDS
+          METRICS
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: backup-restore
+          path: |
+            restore.log
+            restore-backup.metrics
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            { "text": "Backup restore test failed for ${GITHUB_REPOSITORY}@${GITHUB_SHA}" }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
