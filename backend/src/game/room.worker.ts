@@ -17,7 +17,9 @@ async function main() {
 
   port.on(
     'message',
-    (msg: { type: string; seq: number; action?: GameAction; from?: number }) => {
+    (
+      msg: { type: string; seq: number; action?: GameAction; from?: number },
+    ) => {
       let state: GameState;
       switch (msg.type) {
         case 'apply':
@@ -44,6 +46,9 @@ async function main() {
             .filter(([index]) => index >= from)
             .map(([index, , , post]) => [index, post] as [number, GameState]);
           port.postMessage({ seq: msg.seq, states: log });
+          break;
+        case 'ping':
+          port.postMessage({ seq: msg.seq, ok: true });
           break;
       }
     },
