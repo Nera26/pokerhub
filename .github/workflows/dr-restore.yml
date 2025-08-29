@@ -1,0 +1,40 @@
+name: dr-restore
+
+on:
+  workflow_dispatch:
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+      - name: Fetch latest snapshot
+        id: snap
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          SNAP_ID=$(aws rds describe-db-snapshots \
+            --db-instance-identifier ${{ vars.DB_PRIMARY_ID }} \
+            --snapshot-type automated \
+            --region ${{ vars.PRIMARY_REGION }} \
+            --query 'reverse(sort_by(DBSnapshots, &SnapshotCreateTime))[0].DBSnapshotIdentifier' \
+            --output text)
+          echo "snapshot_id=$SNAP_ID" >> "$GITHUB_OUTPUT"
+      - name: Restore snapshot with Terraform
+        working-directory: infrastructure/terraform
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          start=$(date +%s)
+          terraform init
+          terraform apply -auto-approve \
+            -var "restore_snapshot_id=${{ steps.snap.outputs.snapshot_id }}" \
+            -var "restore_region=${{ vars.SECONDARY_REGION }}"
+          end=$(date +%s)
+          duration=$((end-start))
+          echo "dr_restore_duration_seconds $duration" | \
+            curl --data-binary @- ${{ vars.PUSHGATEWAY_URL }}/metrics/job/dr-restore
