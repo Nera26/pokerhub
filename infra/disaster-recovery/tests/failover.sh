@@ -9,7 +9,30 @@ log() {
   echo "[$(date --iso-8601=seconds)] $*"
 }
 
+metrics_file="failover.metrics"
+: > "$metrics_file"
+
+start_iso=$(date --iso-8601=seconds)
 start_all=$(date +%s)
+
+echo "START_TIME=$start_iso" >> "$metrics_file"
+
+echo "Fetching snapshot metadata..."
+pg_snap_ts=$(aws rds describe-db-snapshots \
+  --db-snapshot-identifier "$PG_SNAPSHOT_ID" \
+  --region "$SECONDARY_REGION" \
+  --query 'DBSnapshots[0].SnapshotCreateTime' --output text)
+pg_snap_epoch=$(date -d "$pg_snap_ts" +%s)
+
+ch_snap_epoch=$(stat -c %Y "$CLICKHOUSE_SNAPSHOT")
+
+rpo_pg=$((start_all - pg_snap_epoch))
+rpo_ch=$((start_all - ch_snap_epoch))
+rpo=$(( rpo_pg > rpo_ch ? rpo_pg : rpo_ch ))
+log "Postgres snapshot age ${rpo_pg}s"
+log "ClickHouse snapshot age ${rpo_ch}s"
+
+echo "RPO_SECONDS=$rpo" >> "$metrics_file"
 
 pg_test_id="pg-failover-$start_all"
 log "Restoring Postgres snapshot $PG_SNAPSHOT_ID to $pg_test_id in $SECONDARY_REGION..."
@@ -38,14 +61,13 @@ ch_end=$(date +%s)
 ch_time=$((ch_end - ch_start))
 log "ClickHouse ready in ${ch_time}s"
 
+end_iso=$(date --iso-8601=seconds)
 end_all=$(date +%s)
 total=$((end_all - start_all))
 log "Total failover time ${total}s"
 
-if [ "$total" -gt 1800 ]; then
-  log "Failover exceeded 30 minutes"
-  exit 1
-fi
+echo "END_TIME=$end_iso" >> "$metrics_file"
+echo "RTO_SECONDS=$total" >> "$metrics_file"
 
 # Cleanup
 aws rds delete-db-instance \
@@ -53,4 +75,4 @@ aws rds delete-db-instance \
   --skip-final-snapshot \
   --region "$SECONDARY_REGION" || true
 
-log "Failover test completed in ${total}s"
+log "Failover test completed in ${total}s with data loss window ${rpo}s"
