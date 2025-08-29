@@ -14,3 +14,4 @@ test('shows leaderboard players', async ({ page }) => {
   await page.goto('/leaderboard');
   await expect(page.getByText('alice')).toBeVisible();
 });
+

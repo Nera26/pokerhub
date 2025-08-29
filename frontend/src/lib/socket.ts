@@ -1,124 +1,109 @@
-/* istanbul ignore file */
+import type { Socket } from 'socket.io-client';
 import { GameActionSchema, type GameActionPayload } from '@shared/types';
-import { env } from './env';
+import { setServerTime } from './server-time';
+import { getSocket, disconnectSocket } from '../app/utils/socket';
 
-let socket: WebSocket | null = null;
+let socket: Socket | null = null;
+let lastTick = 0;
 
-interface Pending {
-  resolve: () => void;
-  reject: (err: Error) => void;
+interface PendingAction {
   event: string;
-  attempts: number;
-  timeout: ReturnType<typeof setTimeout>;
-  message: Record<string, unknown>;
+  payload: Record<string, unknown>;
+  ackEvent: string;
 }
 
-const pendingAcks = new Map<string, Pending>();
-const MAX_ATTEMPTS = 5;
+let pending: PendingAction | null = null;
 
-function getWsUrl(): string {
-  const base = env.NEXT_PUBLIC_SOCKET_URL ?? 'http://localhost:4000';
-  const url = base.replace(/^http/, 'ws');
-  return `${url}/game`;
-}
+function ensureSocket(): Socket {
+  if (!socket) {
+    socket = getSocket({ namespace: 'game' });
 
-async function getSocket(): Promise<WebSocket> {
-  if (typeof window === 'undefined') {
-    throw new Error('WebSocket is not available on the server');
-  }
-  if (socket && socket.readyState === WebSocket.OPEN) return socket;
-  if (!socket || socket.readyState === WebSocket.CLOSED) {
-    socket = new WebSocket(getWsUrl());
-    socket.addEventListener('message', handleMessage);
-  }
-  if (socket.readyState === WebSocket.CONNECTING) {
-    await new Promise<void>((resolve) => {
-      socket?.addEventListener('open', () => resolve(), { once: true });
+    socket.on('state', (state: { tick?: number }) => {
+      if (typeof state.tick === 'number') {
+        lastTick = state.tick;
+      }
     });
-    return socket!;
+
+    socket.on('server:Clock', (serverNow: number) => {
+      setServerTime(serverNow);
+    });
+
+    socket.on('connect', () => {
+      if (pending) {
+        socket!.emit(pending.event, pending.payload);
+      }
+      socket!.emit('resume', { tick: lastTick });
+    });
   }
-  return new Promise<WebSocket>((resolve) => {
-    socket!.addEventListener('open', () => resolve(socket!), { once: true });
-  });
+  return socket;
 }
 
-function handleMessage(ev: MessageEvent) {
-  let data: any;
-  try {
-    data = JSON.parse(ev.data);
-  } catch {
-    return;
-  }
-  const { type, actionId } = data ?? {};
-  if (typeof type !== 'string' || typeof actionId !== 'string') return;
-  const pending = pendingAcks.get(actionId);
-  if (pending && `${pending.event}:ack` === type) {
-    clearTimeout(pending.timeout);
-    pending.resolve();
-    pendingAcks.delete(actionId);
+export function getGameSocket(): Socket {
+  return ensureSocket();
+}
+
+export function disconnectGameSocket(): void {
+  if (socket) {
+    socket.off('state');
+    socket.off('server:Clock');
+    socket.off('connect');
+    disconnectSocket('game');
+    socket = null;
   }
 }
 
-async function sendWithAck(event: string, payload: Record<string, unknown>): Promise<void> {
-  if (typeof window === 'undefined') return;
-  const ws = await getSocket();
-  const actionId = crypto.randomUUID();
-  const message = { ...payload, type: event, actionId };
+function emitWithAck(
+  event: string,
+  payload: Record<string, unknown>,
+  ackEvent: string,
+): Promise<void> {
+  const s = ensureSocket();
+  const actionId =
+    (payload.actionId as string | undefined) ??
+    (typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : Date.now().toString());
+  const fullPayload = { ...payload, actionId };
 
-  return new Promise<void>((resolve, reject) => {
-    const pending: Pending = {
-      resolve,
-      reject,
-      event,
-      attempts: 0,
-      timeout: setTimeout(() => {}, 0),
-      message,
-    };
-    pendingAcks.set(actionId, pending);
+  if (event === 'action') {
+    pending = { event, payload: fullPayload, ackEvent };
+  }
 
-    const send = () => {
-      pending.attempts += 1;
-      ws.send(JSON.stringify(message));
-      pending.timeout = setTimeout(() => {
-        if (pending.attempts >= MAX_ATTEMPTS) {
-          pendingAcks.delete(actionId);
-          reject(new Error('ACK timeout'));
-          return;
+  return new Promise<void>((resolve) => {
+    const handler = (ack: { actionId: string }) => {
+      if (ack?.actionId === actionId) {
+        s.off(ackEvent, handler);
+        if (pending?.payload.actionId === actionId) {
+          pending = null;
         }
-        send();
-      }, Math.pow(2, pending.attempts) * 100);
+        resolve();
+      }
     };
-
-    send();
+    s.on(ackEvent, handler);
+    s.emit(event, fullPayload);
   });
-}
-
-export function joinTable(tableId: string) {
-  return sendWithAck('join', { tableId });
-}
-
-export function buyIn(tableId: string, amount: number) {
-  return sendWithAck('buy-in', { tableId, amount });
-}
-
-export function sitOut(tableId: string) {
-  return sendWithAck('sitout', { tableId });
-}
-
-export function rebuy(tableId: string, amount: number) {
-  return sendWithAck('rebuy', { tableId, amount });
 }
 
 export function sendAction(action: GameActionPayload) {
   const payload = { version: '1', ...action };
   GameActionSchema.parse(payload);
-  return sendWithAck('action', payload);
+  return emitWithAck('action', payload, 'action:ack');
 }
 
-export function bet(tableId: string, playerId: string, amount: number) {
-  return sendAction({ type: 'bet', tableId, playerId, amount });
-}
+export const join = () => emitWithAck('join', {}, 'join:ack');
+export const buyIn = () => emitWithAck('buy-in', {}, 'buy-in:ack');
+export const sitOut = () => emitWithAck('sitout', {}, 'sitout:ack');
+export const rebuy = () => emitWithAck('rebuy', {}, 'rebuy:ack');
 
-export function raise(tableId: string, playerId: string, amount: number) {
-  return sendAction({ type: 'raise', tableId, playerId, amount });
-}
+export const bet = (
+  tableId: string,
+  playerId: string,
+  amount: number,
+) => sendAction({ type: 'bet', tableId, playerId, amount });
+
+export const raise = (
+  tableId: string,
+  playerId: string,
+  amount: number,
+) => sendAction({ type: 'raise', tableId, playerId, amount });
+

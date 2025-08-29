@@ -2,7 +2,7 @@
 import { getBaseUrl } from '@/lib/base-url';
 import { handleResponse } from './client';
 import { serverFetch } from '@/lib/server-fetch';
-export { joinTable, bet, buyIn, sitOut, rebuy } from '@/lib/socket';
+export { join, bet, buyIn, sitOut, rebuy } from '@/lib/socket';
 import {
   PlayerSchema,
   ChatMessageSchema,
