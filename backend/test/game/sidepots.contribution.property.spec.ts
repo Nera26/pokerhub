@@ -26,7 +26,11 @@ describe('side pot contributions', () => {
             deck: [],
             communityCards: [],
           };
-          const machine = new HandStateMachine(state, new HandRNG());
+          const machine = new HandStateMachine(
+            state,
+            new HandRNG(),
+            { smallBlind: 1, bigBlind: 2 },
+          );
           machine.apply({ type: 'next' });
           const pots = state.sidePots;
           const potSum = pots.reduce((s, p) => s + p.amount, 0);

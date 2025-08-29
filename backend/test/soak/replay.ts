@@ -39,7 +39,10 @@ async function run() {
       if (lines.length === 0) continue;
       const first = JSON.parse(lines[0]);
       const players = (first[2]?.players ?? []).map((p: any) => p.id);
-      const engine = await GameEngine.create(players);
+      const engine = await GameEngine.create(
+        players,
+        { startingStack: 100, smallBlind: 1, bigBlind: 2 },
+      );
       for (const line of lines) {
         const entry = JSON.parse(line);
         const action = entry[1];

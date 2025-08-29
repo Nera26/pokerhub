@@ -2,6 +2,7 @@ import fc from 'fast-check';
 import { GameEngine, GameAction, GameState } from '../../src/game/engine';
 
 const players = ['p1', 'p2'];
+const config = { startingStack: 100, smallBlind: 1, bigBlind: 2 };
 
 const actionArb: fc.Arbitrary<GameAction> = fc.oneof(
   fc.record({
@@ -29,7 +30,7 @@ describe('GameEngine property tests', () => {
   it('conserves chips across actions', async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(actionArb, { maxLength: 20 }), async (actions) => {
-        const engine = await GameEngine.create(players);
+        const engine = await GameEngine.create(players, config);
         const initialTotal = totalChips(engine.getState());
         actions.forEach((a) => engine.applyAction(a));
         const finalTotal = totalChips(engine.getState());
@@ -41,7 +42,7 @@ describe('GameEngine property tests', () => {
   it('settlement ledger balances to zero', async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(actionArb, { maxLength: 20 }), async (actions) => {
-        const engine = await GameEngine.create(players);
+        const engine = await GameEngine.create(players, config);
         actions.forEach((a) => engine.applyAction(a));
         while (engine.getState().street !== 'showdown') {
           engine.applyAction({ type: 'next' });
@@ -56,7 +57,7 @@ describe('GameEngine property tests', () => {
   it('player stacks never go negative', async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(actionArb, { maxLength: 20 }), async (actions) => {
-        const engine = await GameEngine.create(players);
+        const engine = await GameEngine.create(players, config);
         actions.forEach((a) => {
           engine.applyAction(a);
           engine.getState().players.forEach((p) => {
@@ -70,7 +71,7 @@ describe('GameEngine property tests', () => {
   it('maintains double-entry and non-negative stacks at each step', async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(actionArb, { maxLength: 20 }), async (actions) => {
-        const engine = await GameEngine.create(players);
+        const engine = await GameEngine.create(players, config);
         const initialTotal = totalChips(engine.getState());
         actions.forEach((a) => {
           engine.applyAction(a);
@@ -87,7 +88,7 @@ describe('GameEngine property tests', () => {
   it('pot distribution matches player contributions', async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(actionArb, { maxLength: 20 }), async (actions) => {
-        const engine = await GameEngine.create(players);
+        const engine = await GameEngine.create(players, config);
         const contributions: Record<string, number> = Object.fromEntries(
           players.map((p) => [p, 0]),
         );

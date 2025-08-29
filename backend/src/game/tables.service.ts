@@ -1,7 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import type { Table } from '@shared/types';
 
-interface TableInternal extends Omit<Table, 'createdAgo'> {
+type TableMeta = Table & {
+  startingStack: number;
+  smallBlind: number;
+  bigBlind: number;
+};
+
+interface TableInternal extends Omit<TableMeta, 'createdAgo'> {
   createdAt: Date;
 }
 
@@ -13,6 +19,9 @@ export class TablesService {
       tableName: 'Test Table',
       gameType: 'texas',
       stakes: { small: 1, big: 2 },
+      startingStack: 100,
+      smallBlind: 1,
+      bigBlind: 2,
       players: { current: 0, max: 6 },
       buyIn: { min: 40, max: 200 },
       stats: { handsPerHour: 0, avgPot: 0, rake: 0 },
@@ -20,7 +29,7 @@ export class TablesService {
     },
   ];
 
-  getTables(): Table[] {
+  getTables(): TableMeta[] {
     const now = Date.now();
     return this.tables.map((t) => ({
       ...t,

@@ -45,7 +45,11 @@ export interface GameState {
 const ORDER: Street[] = ['preflop', 'flop', 'turn', 'river', 'showdown'];
 
 export class HandStateMachine {
-  constructor(private readonly state: GameState, private readonly rng: HandRNG) {}
+  constructor(
+    private readonly state: GameState,
+    private readonly rng: HandRNG,
+    private readonly config: { smallBlind: number; bigBlind: number },
+  ) {}
 
   private blindsPosted = new Set<string>();
 

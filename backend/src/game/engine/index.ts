@@ -23,6 +23,11 @@ export class GameEngine {
 
   private constructor(
     playerIds: string[] = ['p1', 'p2'],
+    private readonly config: {
+      startingStack: number;
+      smallBlind: number;
+      bigBlind: number;
+    },
     private readonly wallet?: WalletService,
     private readonly handRepo?: Repository<Hand>,
     private readonly events?: EventPublisher,
@@ -30,7 +35,7 @@ export class GameEngine {
   ) {
     const players = playerIds.map((id) => ({
       id,
-      stack: 100,
+      stack: config.startingStack,
       folded: false,
       bet: 0,
       allIn: false,
@@ -48,6 +53,7 @@ export class GameEngine {
         communityCards: [],
       },
       this.rng,
+      { smallBlind: config.smallBlind, bigBlind: config.bigBlind },
     );
     this.log = new HandLog(this.handId, this.rng.commitment);
     if (this.handRepo) {
@@ -64,6 +70,11 @@ export class GameEngine {
 
   static async create(
     playerIds: string[] = ['p1', 'p2'],
+    config: { startingStack: number; smallBlind: number; bigBlind: number } = {
+      startingStack: 100,
+      smallBlind: 1,
+      bigBlind: 2,
+    },
     wallet?: WalletService,
     handRepo?: Repository<Hand>,
     events?: EventPublisher,
@@ -71,6 +82,7 @@ export class GameEngine {
   ): Promise<GameEngine> {
     const engine = new GameEngine(
       playerIds,
+      config,
       wallet,
       handRepo,
       events,
@@ -149,6 +161,7 @@ export class GameEngine {
   replayHand(): GameState {
     const replay = new GameEngine(
       this.machine.getState().players.map((p) => p.id),
+      this.config,
     );
     for (const [, action] of this.getHandLog()) {
       replay.applyAction(action);

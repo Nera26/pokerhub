@@ -1,12 +1,14 @@
 import { GameEngine } from '../../src/game/engine';
 
+const config = { startingStack: 100, smallBlind: 1, bigBlind: 2 };
+
 function card(rank: number, suit: number) {
   return rank * 4 + suit;
 }
 
 describe('settlement', () => {
   it('distributes side pots correctly', async () => {
-    const engine = (await GameEngine.create(['A', 'B', 'C'])) as any;
+    const engine = (await GameEngine.create(['A', 'B', 'C'], config)) as any;
     // Adjust initial stacks for scenario
     engine.initialStacks = new Map([
       ['A', 100],
@@ -42,7 +44,7 @@ describe('settlement', () => {
   });
 
   it('splits pots on ties', async () => {
-    const engine = await GameEngine.create(['A', 'B']);
+    const engine = await GameEngine.create(['A', 'B'], config);
     const state: any = engine.getState();
     state.board = [card(0, 0), card(7, 1), card(2, 2), card(6, 3), card(11, 3)];
     state.players[0].cards = [card(12, 2), card(10, 0)];
