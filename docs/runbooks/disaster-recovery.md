@@ -5,9 +5,11 @@
 - **Recovery Point Objective (RPO)**: 5 minutes
 
 ## Backup Strategy
-- Nightly snapshots of Postgres and Redis are copied to `${SECONDARY_REGION}` and retained for 7 days to enable point-in-time recovery (PITR).
+- Hourly snapshots of Postgres are copied to `${SECONDARY_REGION}` and retained for 7 days.
+- WAL segments are archived every 5 minutes to `s3://${WAL_ARCHIVE_BUCKET}` and replicated cross-region for PITR.
+- Nightly Redis snapshots are copied to `${SECONDARY_REGION}`.
 - Cross-region read replicas continuously replicate changes.
-- Helm CronJobs run restore tests to validate snapshots.
+- Helm CronJobs run restore tests to validate snapshots and WAL archives.
 
 ## Recovery Steps
 1. If the primary region is unavailable, promote the read replica:
@@ -18,11 +20,11 @@
    ```
 2. For data corruption, restore Postgres to a specific point in time:
    ```bash
-   aws rds restore-db-instance-to-point-in-time \
-     --source-db-instance-identifier ${DB_PRIMARY_ID} \
-     --target-db-instance-identifier pg-dr-restore \
-     --use-latest-restorable-time \
-     --region ${SECONDARY_REGION}
+ aws rds restore-db-instance-to-point-in-time \
+    --source-db-instance-identifier ${DB_PRIMARY_ID} \
+    --target-db-instance-identifier pg-dr-restore \
+    --use-latest-restorable-time \
+    --region ${SECONDARY_REGION}
    ```
 3. Restore ClickHouse from replicated backup:
    ```bash
@@ -56,5 +58,6 @@ The script logs metrics and writes `failover.metrics` containing
 
 ## Verification
 - Run `infra/scripts/verify-backups.sh` to confirm snapshot availability.
+- Run `infra/disaster-recovery/tests/restore-wal.sh` to validate WAL archive restores and measure `RTO_SECONDS` and `RPO_SECONDS`.
 - Monitor GitHub nightly workflow `backup-verify` for automated checks.
 - Monitor GitHub nightly workflow `pitr-nightly` for PITR backup results.
