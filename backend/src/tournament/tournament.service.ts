@@ -8,7 +8,10 @@ import {
 import { Seat } from '../database/entities/seat.entity';
 import { Table } from '../database/entities/table.entity';
 import { TournamentScheduler } from './scheduler.service';
-import { calculateIcmPayouts as icmPayouts } from './structures/icm';
+import {
+  calculateIcmPayouts as icmPayouts,
+  icmRaw,
+} from './structures/icm';
 import { RoomManager } from '../game/room.service';
 import { RebuyService } from './rebuy.service';
 import { PkoService } from './pko.service';
@@ -413,5 +416,12 @@ export class TournamentService {
    */
   calculateIcmPayouts(stacks: number[], prizes: number[]): number[] {
     return icmPayouts(stacks, prizes);
+  }
+
+  /**
+   * Compute raw ICM expectations without rounding. Useful for validation.
+   */
+  icmExpectedPayouts(stacks: number[], prizes: number[]): number[] {
+    return icmRaw(stacks, prizes);
   }
 }
