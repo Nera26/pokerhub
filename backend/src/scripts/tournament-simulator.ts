@@ -20,14 +20,6 @@ const profiles: BotProfile[] = [
   { name: 'aggressive', proportion: 0.2, bustMultiplier: 1.05 },
 ];
 
-const structures: Record<string, BlindLevel[]> = {
-  standard: Array.from({ length: 100 }, (_, i) => ({
-    level: i + 1,
-    durationMinutes: 5,
-    blindMultiplier: 1 + i * 0.05,
-  })),
-};
-
 function rand(seed: { value: number }) {
   seed.value = (seed.value * 1664525 + 1013904223) % 0xffffffff;
   return seed.value / 0xffffffff;
@@ -67,26 +59,7 @@ function simulate(
     if (remaining <= 1) break;
   }
 
-  // payout structure (top 3 only for simplicity)
-  const prizePool = entrants * 100;
-  const prizePcts = [0.5, 0.3, 0.2];
-  const prizeShares: Record<string, number> = {
-    tight: 0,
-    loose: 0,
-    aggressive: 0,
-  };
-  const finalists: string[] = [];
-  for (const p of profiles) {
-    finalists.push(...Array(counts[p.name]).fill(p.name));
-  }
-  for (const pct of prizePcts) {
-    if (finalists.length === 0) break;
-    const idx = Math.floor(rand(seed) * finalists.length);
-    const winner = finalists.splice(idx, 1)[0];
-    prizeShares[winner] += prizePool * pct;
-  }
-
-  return { duration: minutes, prizeShares };
+  return { duration: minutes };
 }
 
 function mean(values: number[]) {
@@ -98,33 +71,44 @@ function variance(values: number[]) {
   return mean(values.map((v) => (v - m) ** 2));
 }
 
+function parseArgs() {
+  const args = process.argv.slice(2);
+  const opts: Record<string, number> = {};
+  for (let i = 0; i < args.length; i += 2) {
+    const key = args[i].replace(/^--/, '');
+    const val = Number(args[i + 1]);
+    opts[key] = val;
+  }
+  return opts;
+}
+
 async function main() {
-  const entrants = 10000;
-  const structure = structures.standard;
-  const runs = 100;
+  const opts = parseArgs();
+  const levels = opts.levels ?? 100;
+  const levelMinutes = opts.levelMinutes ?? 5;
+  const increment = opts.increment ?? 0.05;
+  const entrants = opts.entrants ?? 10000;
+  const runs = opts.runs ?? 100;
   const seedBase = 42;
 
+  const structure: BlindLevel[] = Array.from({ length: levels }, (_, i) => ({
+    level: i + 1,
+    durationMinutes: levelMinutes,
+    blindMultiplier: 1 + i * increment,
+  }));
+
   const durations: number[] = [];
-  const prizeSamples: Record<string, number[]> = {
-    tight: [],
-    loose: [],
-    aggressive: [],
-  };
 
   for (let i = 0; i < runs; i++) {
     const result = simulate(structure, entrants, { value: seedBase + i });
     durations.push(result.duration);
-    for (const p of profiles) {
-      prizeSamples[p.name].push(result.prizeShares[p.name]);
-    }
   }
 
-  console.log(`Average duration: ${mean(durations).toFixed(2)} minutes`);
-  for (const p of profiles) {
-    console.log(
-      `${p.name} prize variance: ${variance(prizeSamples[p.name]).toFixed(2)}`,
-    );
-  }
+  const avg = mean(durations);
+  const varDur = variance(durations);
+  console.log(
+    JSON.stringify({ averageDuration: avg, durationVariance: varDur }),
+  );
 }
 
 main().catch((e) => {
