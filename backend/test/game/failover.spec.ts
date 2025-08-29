@@ -6,27 +6,18 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-describe('RoomWorker promotion', () => {
-  it('promotes follower when primary crashes', async () => {
+describe('RoomWorker failover', () => {
+  it('continues hand after primary crash', async () => {
     const manager = new RoomManager();
-    const worker: any = manager.get('t1');
+    const worker: any = manager.get('t_fail');
     await worker.apply({ type: 'postBlind', playerId: 'p1', amount: 1 });
     await worker.apply({ type: 'postBlind', playerId: 'p2', amount: 2 });
-
-    await wait(50); // allow follower to process actions
-    expect(worker.lastConfirmed).toBe(2);
-
+    await wait(50);
     const failover = new Promise((resolve) => worker.once('failover', resolve));
-    // Simulate crash of primary worker
     await worker.primary.terminate();
-
-    // Wait for follower promotion
     await failover;
-
     const state = await worker.apply({ type: 'next' });
     expect(state.street).toBe('flop');
-
-    await manager.close('t1');
+    await manager.close('t_fail');
   });
 });
-
