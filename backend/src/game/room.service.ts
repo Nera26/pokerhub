@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Worker } from 'worker_threads';
 import { resolve } from 'path';
+import { metrics, type ObservableResult } from '@opentelemetry/api';
 import type { GameAction, GameState } from './engine';
 
 class WorkerHost extends EventEmitter {
@@ -81,16 +82,37 @@ class WorkerHost extends EventEmitter {
 }
 
 class RoomWorker extends EventEmitter {
+  private static readonly meter = metrics.getMeter('game');
+  private static readonly followerLag =
+    RoomWorker.meter.createObservableGauge?.(
+      'room_follower_lag',
+      {
+        description: 'Number of actions the follower is behind the primary',
+        unit: 'actions',
+      },
+    ) ?? ({
+      addCallback() {},
+      removeCallback() {},
+    } as {
+      addCallback(cb: (r: ObservableResult) => void): void;
+      removeCallback(cb: (r: ObservableResult) => void): void;
+    });
+
   private primary: WorkerHost;
   private follower?: WorkerHost;
   private heartbeat?: NodeJS.Timer;
   private lastConfirmed = 0;
+  private applied = 0;
+  private readonly observeLag = (result: ObservableResult) => {
+    result.observe(this.applied - this.lastConfirmed, { tableId: this.tableId });
+  };
 
   constructor(private readonly tableId: string, playerIds?: string[]) {
     super();
     this.primary = new WorkerHost(tableId, playerIds);
     this.follower = new WorkerHost(tableId, playerIds);
     this.primary.on('state', (s) => this.emit('state', s));
+    RoomWorker.followerLag.addCallback(this.observeLag);
     this.startHeartbeat();
   }
 
@@ -115,13 +137,18 @@ class RoomWorker extends EventEmitter {
     }
     this.primary = follower;
     this.primary.on('state', (s) => this.emit('state', s));
+    this.applied = 0;
+    this.lastConfirmed = 0;
   }
 
   async apply(action: GameAction): Promise<GameState> {
     const state = await this.primary.apply(action);
+    this.applied++;
     if (this.follower) {
       await this.follower.apply(action);
       this.lastConfirmed++;
+    } else {
+      this.lastConfirmed = this.applied;
     }
     return state;
   }
@@ -146,6 +173,7 @@ class RoomWorker extends EventEmitter {
     if (this.heartbeat) clearInterval(this.heartbeat);
     await this.primary.terminate();
     if (this.follower) await this.follower.terminate();
+    RoomWorker.followerLag.removeCallback(this.observeLag);
     this.removeAllListeners();
   }
 }

@@ -44,6 +44,14 @@
       "targets": [
         { "expr": "sum(socket_connections_total) by (region)", "legendFormat": "{{region}}" }
       ]
+    },
+    {
+      "type": "graph",
+      "title": "Room Follower Lag",
+      "targets": [
+        { "expr": "room_follower_lag", "legendFormat": "{{tableId}}" }
+      ],
+      "alert": { "expr": "max(room_follower_lag) > 5" }
     }
   ]
 }
