@@ -4,8 +4,6 @@ import type { Request } from 'express';
 import {
   WithdrawSchema,
   type WithdrawRequest,
-  ProviderCallbackSchema,
-  type ProviderCallback,
   WalletStatusSchema,
   type WalletStatusResponse,
 } from '../schemas/wallet';
@@ -47,13 +45,6 @@ export class WalletController {
     const parsed = WithdrawSchema.parse(body);
     await this.wallet.withdraw(id, parsed.amount, parsed.deviceId, req.ip);
     return { message: 'withdrawn' };
-  }
-
-  @Post('provider/callback')
-  async providerCallback(@Body() body: ProviderCallback) {
-    const parsed = ProviderCallbackSchema.parse(body);
-    await this.wallet.handleProviderCallback(parsed.idempotencyKey);
-    return { message: 'acknowledged' };
   }
 
   @Get(':id/status')
