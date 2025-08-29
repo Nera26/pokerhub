@@ -1,5 +1,6 @@
 import ws from 'k6/ws';
-import { Trend } from 'k6/metrics';
+import http from 'k6/http';
+import { Trend, Rate } from 'k6/metrics';
 import { sleep } from 'k6';
 
 // Drive 80k sockets across 10k tables while capturing ACK latency.
@@ -17,6 +18,7 @@ export const options = {
       `p(95)<${__ENV.ACK_P95_MS || 120}`,
       `p(99)<${__ENV.ACK_P99_MS || 200}`,
     ],
+    error_rate: [`rate<${__ENV.ERROR_RATE_MAX || 0.01}`],
   },
 };
 
@@ -24,7 +26,9 @@ const tables = Number(__ENV.TABLES) || defaultTables;
 const loss = Number(__ENV.PACKET_LOSS) || 0.05; // 5% packet loss
 const jitterMs = Number(__ENV.JITTER_MS) || 200; // client-side jitter before sending
 
+const grafanaPushUrl = __ENV.GRAFANA_PUSH_URL;
 const ACK_LATENCY = new Trend('ack_latency', true);
+const ERROR_RATE = new Rate('error_rate');
 
 export default function () {
   const tableId = __VU % tables;
@@ -32,6 +36,7 @@ export default function () {
 
   ws.connect(url, function (socket) {
     let start = 0;
+    let acked = false;
 
     socket.on('open', function () {
       // inject client side jitter
@@ -43,17 +48,42 @@ export default function () {
     });
 
     socket.on('message', function () {
+      acked = true;
       ACK_LATENCY.add(Date.now() - start);
+      ERROR_RATE.add(0);
       socket.close();
     });
 
     socket.on('error', function (e) {
+      if (!acked) {
+        ERROR_RATE.add(1);
+        acked = true;
+      }
       console.error('socket error', e);
     });
 
     socket.setTimeout(function () {
       // close if no ack
+      if (!acked) {
+        ERROR_RATE.add(1);
+        acked = true;
+      }
       socket.close();
     }, 1000);
   });
+}
+
+export function handleSummary(data) {
+  const hist = data.metrics.ack_latency?.histogram || data.metrics.ack_latency?.bins || {};
+  const p95 = data.metrics.ack_latency?.values?.['p(95)'] || 0;
+  const drop = data.metrics.error_rate?.rate || 0;
+  if (grafanaPushUrl) {
+    const body = `ack_latency_p95_ms ${p95}\nerror_rate ${drop}\n`;
+    http.post(`${grafanaPushUrl}/metrics/job/k6-10k-tables`, body, {
+      headers: { 'Content-Type': 'text/plain' },
+    });
+  }
+  return {
+    'ack-histogram.json': JSON.stringify(hist, null, 2),
+  };
 }
