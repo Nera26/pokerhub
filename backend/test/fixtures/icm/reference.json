@@ -1,0 +1,69 @@
+[
+  {
+    "name": "four_player_three_prizes",
+    "stacks": [
+      5000,
+      3000,
+      2000,
+      1000
+    ],
+    "payouts": [
+      100,
+      60,
+      40
+    ],
+    "expected": [
+      71,
+      57,
+      46,
+      26
+    ]
+  },
+  {
+    "name": "five_player_three_prizes",
+    "stacks": [
+      6000,
+      4000,
+      3000,
+      2000,
+      1000
+    ],
+    "payouts": [
+      120,
+      80,
+      40
+    ],
+    "expected": [
+      76,
+      61,
+      49,
+      35,
+      19
+    ]
+  },
+  {
+    "name": "six_player_four_prizes",
+    "stacks": [
+      7000,
+      6000,
+      5000,
+      4000,
+      3000,
+      2000
+    ],
+    "payouts": [
+      150,
+      100,
+      60,
+      40
+    ],
+    "expected": [
+      80,
+      73,
+      65,
+      56,
+      45,
+      31
+    ]
+  }
+]

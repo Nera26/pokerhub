@@ -1,5 +1,25 @@
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { calculatePrizes } from './pko.service';
-import { icmRaw } from './structures/icm';
+
+const icmFixturePath = join(
+  __dirname,
+  '..',
+  '..',
+  'test',
+  'fixtures',
+  'icm',
+  'reference.json',
+);
+interface IcmScenario {
+  name: string;
+  stacks: number[];
+  payouts: number[];
+  expected: number[];
+}
+const icmFixtures: IcmScenario[] = JSON.parse(
+  readFileSync(icmFixturePath, 'utf8'),
+);
 
 describe('calculatePrizes', () => {
   it('matches top-N payout formula', () => {
@@ -7,19 +27,17 @@ describe('calculatePrizes', () => {
     expect(result.prizes).toEqual([100, 60, 40]);
   });
 
-  it('matches ICM expectations within one chip', () => {
-    const prizePool = 200;
-    const payouts = [100, 60, 40];
-    const stacks = [5000, 3000, 2000, 1000];
-    const result = calculatePrizes(prizePool, payouts, {
-      method: 'icm',
-      stacks,
-    });
-    const raw = icmRaw(stacks, payouts);
-    const total = result.prizes.reduce((a, b) => a + b, 0);
-    expect(Math.abs(prizePool - total)).toBeLessThan(1);
-    raw.forEach((v, i) => {
-      expect(Math.abs(v - result.prizes[i])).toBeLessThan(1);
+  icmFixtures.forEach(({ name, stacks, payouts, expected }) => {
+    it(`matches ICM reference ${name}`, () => {
+      const prizePool = payouts.reduce((a, b) => a + b, 0);
+      const result = calculatePrizes(prizePool, payouts, {
+        method: 'icm',
+        stacks,
+      });
+      expected.forEach((v, i) => {
+        expect(Math.abs(result.prizes[i] - v)).toBeLessThanOrEqual(1);
+      });
     });
   });
 });
+
