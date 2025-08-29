@@ -5,7 +5,7 @@ export async function startPayoutWorker(wallet: WalletService) {
   new bull.Worker(
     'payout',
     async (job) => {
-      await wallet.processDisbursement(job.data.id);
+      await wallet.requestDisbursement(job.data.id);
     },
     {
       connection: {

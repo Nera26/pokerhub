@@ -691,6 +691,8 @@ components:
     ProviderCallback:
       type: object
       properties:
+        eventId:
+          type: string
         idempotencyKey:
           type: string
         providerTxnId:
@@ -699,6 +701,7 @@ components:
           type: string
           enum: [approved, risky, chargeback]
       required:
+        - eventId
         - idempotencyKey
         - providerTxnId
         - status

@@ -14,6 +14,7 @@ export const WithdrawSchema = z.object({
 export type WithdrawRequest = z.infer<typeof WithdrawSchema>;
 
 export const ProviderCallbackSchema = z.object({
+  eventId: z.string(),
   idempotencyKey: z.string(),
   providerTxnId: z.string(),
   status: z.enum(['approved', 'risky', 'chargeback']),

@@ -260,7 +260,7 @@ export class WalletService {
     );
   }
 
-  async processDisbursement(id: string): Promise<void> {
+  async requestDisbursement(id: string): Promise<void> {
     const disb = await this.disbursements.findOneByOrFail({ id });
     const account = await this.accounts.findOneByOrFail({
       id: disb.accountId,
@@ -291,11 +291,19 @@ export class WalletService {
     }
   }
 
-  async handleProviderCallback(
+  private async isDuplicateWebhook(eventId: string): Promise<boolean> {
+    const key = `wallet:webhook:${eventId}`;
+    const res = await this.redis.set(key, '1', 'NX', 'EX', 60 * 60 * 24);
+    return res === null;
+  }
+
+  async processDisbursement(
+    eventId: string,
     idempotencyKey: string,
     providerTxnId: string,
     status: ProviderStatus,
   ): Promise<void> {
+    if (await this.isDuplicateWebhook(eventId)) return;
     const disb = await this.disbursements.findOne({
       where: { idempotencyKey },
     });

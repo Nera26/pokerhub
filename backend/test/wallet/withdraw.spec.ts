@@ -29,6 +29,18 @@ describe('WalletService withdraw', () => {
       return Promise.resolve(redisStore[key]);
     },
     expire: (): Promise<void> => Promise.resolve(),
+    set: (
+      key: string,
+      value: string,
+      mode: string,
+      _ex: string,
+      _ttl: number,
+    ): Promise<string | null> => {
+      if (mode === 'NX' && redisStore[key] !== undefined)
+        return Promise.resolve(null);
+      redisStore[key] = Number(value);
+      return Promise.resolve('OK');
+    },
   } as unknown as Redis;
   const provider = {
     initiate3DS: jest.fn().mockResolvedValue({ id: 'tx' }),
@@ -177,12 +189,14 @@ describe('WalletService withdraw', () => {
     const disb = await disbRepo.findOneByOrFail({
       accountId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
     });
-    await service.handleProviderCallback(
+    await service.processDisbursement(
+      'evt1',
       disb.idempotencyKey,
       'payout',
       'approved',
     );
-    await service.handleProviderCallback(
+    await service.processDisbursement(
+      'evt1',
       disb.idempotencyKey,
       'payout',
       'approved',

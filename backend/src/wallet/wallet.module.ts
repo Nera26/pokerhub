@@ -6,7 +6,7 @@ import { Disbursement } from './disbursement.entity';
 import { SettlementJournal } from './settlement-journal.entity';
 import { WalletService } from './wallet.service';
 import { WalletController } from '../routes/wallet.controller';
-import { ProviderController } from '../routes/provider.controller';
+import { WebhookController } from './webhook.controller';
 import { RateLimitGuard } from '../routes/rate-limit.guard';
 import { EventsModule } from '../events/events.module';
 import { RedisModule } from '../redis/redis.module';
@@ -42,7 +42,7 @@ class PayoutWorker implements OnModuleInit {
     KycService,
     RateLimitGuard,
   ],
-  controllers: [WalletController, ProviderController],
+  controllers: [WalletController, WebhookController],
   exports: [WalletService],
 })
 export class WalletModule {}
