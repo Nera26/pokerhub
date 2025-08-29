@@ -6,3 +6,4 @@ alerts:
   - window: 6h
     burn_rate_threshold: 6
 pagerduty_service: pokerhub-ops
+pagerduty_service_key: ${PAGERDUTY_POKERHUB_OPS_KEY}
