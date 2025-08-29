@@ -1,0 +1,12 @@
+route:
+  receiver: pagerduty
+  group_by: ['alertname']
+  routes:
+    - matchers:
+        - pagerduty_service="pokerhub-ops"
+      receiver: pagerduty
+receivers:
+  - name: pagerduty
+    pagerduty_configs:
+      - service_key: '${PAGERDUTY_SERVICE_KEY}'
+        severity: '{{ .CommonLabels.severity }}'
