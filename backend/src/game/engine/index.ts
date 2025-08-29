@@ -49,7 +49,7 @@ export class GameEngine {
       },
       this.rng,
     );
-    this.log = new HandLog(this.tableId, this.rng.commitment);
+    this.log = new HandLog(this.handId, this.rng.commitment);
     if (this.handRepo) {
       void this.handRepo.save({
         id: this.handId,
