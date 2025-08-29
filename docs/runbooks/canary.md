@@ -6,6 +6,7 @@ Use this runbook to release a canary and watch its SLO health.
 
 1. Go to **Actions → Canary Deploy** in GitHub.
 2. Click **Run workflow**. It sends 5 % of traffic to `api-canary` for 30 minutes.
+3. A Helm hook runs `infra/canary/rollback.sh` after each upgrade. The script queries 1 h and 6 h burn‑rate metrics and fails the release if either exceeds its threshold.
 
 ## Monitor
 
@@ -35,3 +36,4 @@ Automated rollback uses `helm rollback` when the burn rate breaches the SLO defi
    kubectl -n "$NAMESPACE" edit virtualservice api
    ```
 4. Each rollout is annotated with `pokerhub.io/release: <release>-<revision>` for traceability.
+5. To bypass the burn‑rate gate, set `burnRate.skip=true` on the Helm command or export `SKIP_BURN_CHECK=true` when running the hook.

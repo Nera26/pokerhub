@@ -9,3 +9,9 @@ analysis:
   successRateQuery: |
     sum(rate(http_requests_total{status!~"5.."}[1m])) /
     sum(rate(http_requests_total[1m]))
+burnRate:
+  oneHourQuery: slo_error_budget_burn_rate{window="1h"}
+  sixHourQuery: slo_error_budget_burn_rate{window="6h"}
+  oneHourThreshold: 2
+  sixHourThreshold: 1
+  skip: false
