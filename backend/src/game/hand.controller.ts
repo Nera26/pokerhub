@@ -12,7 +12,6 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { createReadStream } from 'fs';
 import { readFile } from 'fs/promises';
-import { createInterface } from 'readline';
 import { Readable } from 'stream';
 import { join } from 'path';
 import { Repository } from 'typeorm';
@@ -22,6 +21,7 @@ import type { Request } from 'express';
 import { Hand } from '../database/entities/hand.entity';
 import { HandProofResponse as HandProofResponseSchema } from '../schemas/hands';
 import type { HandProofResponse } from '../schemas/hands';
+import { HandLog } from './hand-log';
 
 @Controller('hands')
 export class HandController {
@@ -96,18 +96,26 @@ export class HandController {
 
     const file = join(process.cwd(), '../storage/hand-logs', `${id}.jsonl`);
     try {
-      const stream = createReadStream(file, { encoding: 'utf8' });
-      const rl = createInterface({ input: stream, crlfDelay: Infinity });
-      for await (const line of rl) {
+      const raw = await readFile(file, 'utf8');
+      const log = new HandLog();
+      for (const line of raw.trim().split('\n')) {
         if (!line) continue;
         try {
           const parsed = JSON.parse(line);
-          if (parsed.proof) {
-            return HandProofResponseSchema.parse(parsed.proof);
+          if (Array.isArray(parsed)) {
+            (log as any).entries.push(parsed);
+          } else if (parsed.commitment) {
+            log.recordCommitment(parsed.commitment);
+          } else if (parsed.proof) {
+            log.recordProof(parsed.proof);
           }
         } catch {
           continue;
         }
+      }
+      const { proof } = log.getCommitmentAndProof();
+      if (proof) {
+        return HandProofResponseSchema.parse(proof);
       }
     } catch {
       // ignore missing file, fall back to database

@@ -1435,6 +1435,7 @@ components:
       - hours
   HandProof:
     type: object
+    description: Commitment, seed and nonce proving deck fairness for a hand.
     properties:
       seed:
         type: string
