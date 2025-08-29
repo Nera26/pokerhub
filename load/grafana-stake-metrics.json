@@ -1,0 +1,79 @@
+{
+  "title": "Stake Level Metrics",
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "VPIP by stake",
+      "targets": [
+        {
+          "query": "SELECT stake, vpip FROM stake_vpip",
+          "datasource": {
+            "type": "clickhouse",
+            "uid": "${DS_CLICKHOUSE}"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 50, "color": "red" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "PFR by stake",
+      "targets": [
+        {
+          "query": "SELECT stake, pfr FROM stake_pfr",
+          "datasource": {
+            "type": "clickhouse",
+            "uid": "${DS_CLICKHOUSE}"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 30, "color": "red" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Avg action latency by stake",
+      "targets": [
+        {
+          "query": "SELECT stake, latency_ms FROM stake_action_latency",
+          "datasource": {
+            "type": "clickhouse",
+            "uid": "${DS_CLICKHOUSE}"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 500, "color": "red" }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
