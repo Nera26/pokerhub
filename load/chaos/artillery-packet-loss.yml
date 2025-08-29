@@ -1,0 +1,12 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 60
+      arrivalRate: 20
+  processor: "./packet-loss-processor.js"
+scenarios:
+  - name: http-packet-loss
+    beforeRequest: injectChaos
+    flow:
+      - get:
+          url: "/health"
