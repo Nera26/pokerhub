@@ -41,10 +41,10 @@ describe('wallet api', () => {
         json: async () => ({ kycVerified: true }),
       });
 
-    await expect(reserve('u1', 10, 'USD')).resolves.toEqual({ message: 'ok' });
-    await expect(commit('u1', 10, 'USD')).resolves.toEqual({ message: 'ok' });
-    await expect(rollback('u1', 10, 'USD')).resolves.toEqual({ message: 'ok' });
-    await expect(withdraw('u1', 10, 'd1', 'USD')).resolves.toEqual({ message: 'ok' });
-    await expect(getStatus('u1')).resolves.toEqual({ kycVerified: true });
+    await expect(reserve(10, 'USD')).resolves.toEqual({ message: 'ok' });
+    await expect(commit(10, 'USD')).resolves.toEqual({ message: 'ok' });
+    await expect(rollback(10, 'USD')).resolves.toEqual({ message: 'ok' });
+    await expect(withdraw(10, 'd1', 'USD')).resolves.toEqual({ message: 'ok' });
+    await expect(getStatus()).resolves.toEqual({ kycVerified: true });
   });
 });

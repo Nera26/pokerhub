@@ -29,7 +29,7 @@ export default function WalletPage() {
     error: pendingError,
   } = useQuery({
     queryKey: ['wallet', 'pending'],
-    queryFn: ({ signal }) => fetchPending('u1', { signal }),
+    queryFn: ({ signal }) => fetchPending({ signal }),
   });
 
   const pendingTransactions = useMemo(
@@ -50,7 +50,7 @@ export default function WalletPage() {
     error: historyError,
   } = useQuery({
     queryKey: ['wallet', 'transactions'],
-    queryFn: ({ signal }) => fetchTransactions('u1', { signal }),
+    queryFn: ({ signal }) => fetchTransactions({ signal }),
   });
 
   const transactionHistoryData: Transaction[] = useMemo(
@@ -100,9 +100,9 @@ export default function WalletPage() {
   // Update document title (optional)
   useEffect(() => {
     document.title = 'Wallet – PokerHub';
-    getStatus('u1')
-      .then((res) => setKycVerified(res.kycVerified))
-      .catch(() => setKycVerified(false));
+      getStatus()
+        .then((res) => setKycVerified(res.kycVerified))
+        .catch(() => setKycVerified(false));
   }, []);
 
   return (
