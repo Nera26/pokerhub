@@ -24,6 +24,14 @@ export class LeaderboardService {
         unit: 'ms',
       },
     );
+  private static readonly rebuildEventsMemory =
+    LeaderboardService.meter.createHistogram(
+      'leaderboard_rebuild_from_events_memory_mb',
+      {
+        description: 'RSS memory usage after leaderboard rebuild',
+        unit: 'mb',
+      },
+    );
 
   constructor(
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
@@ -96,6 +104,7 @@ export class LeaderboardService {
     const durationMs = Date.now() - start;
     const memoryMb = process.memoryUsage().rss / 1024 / 1024;
     LeaderboardService.rebuildEventsDuration.record(durationMs);
+    LeaderboardService.rebuildEventsMemory.record(memoryMb);
     await this.analytics.ingest('leaderboard_rebuild', {
       duration_ms: durationMs,
       memory_mb: memoryMb,
