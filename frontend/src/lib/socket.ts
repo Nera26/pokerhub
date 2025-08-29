@@ -58,6 +58,7 @@ function emitWithAck(
   event: string,
   payload: Record<string, unknown>,
   ackEvent: string,
+  retries = 1,
 ): Promise<void> {
   const s = ensureSocket();
   const actionId =
@@ -71,18 +72,46 @@ function emitWithAck(
     pending = { event, payload: fullPayload, ackEvent };
   }
 
-  return new Promise<void>((resolve) => {
+  return new Promise<void>((resolve, reject) => {
+    let attempts = 0;
+    let timer: ReturnType<typeof setTimeout>;
+
+    const cleanup = () => {
+      clearTimeout(timer);
+      s.off(ackEvent, handler);
+      if (pending?.payload.actionId === actionId) {
+        pending = null;
+      }
+    };
+
+    const fail = () => {
+      cleanup();
+      // eslint-disable-next-line no-alert
+      alert('Failed to send request. Please try again.');
+      reject(new Error('No ACK received'));
+    };
+
     const handler = (ack: { actionId: string }) => {
       if (ack?.actionId === actionId) {
-        s.off(ackEvent, handler);
-        if (pending?.payload.actionId === actionId) {
-          pending = null;
-        }
+        cleanup();
         resolve();
       }
     };
+
+    const send = () => {
+      s.emit(event, fullPayload);
+      timer = setTimeout(() => {
+        if (attempts < retries) {
+          attempts++;
+          send();
+        } else {
+          fail();
+        }
+      }, 2000);
+    };
+
     s.on(ackEvent, handler);
-    s.emit(event, fullPayload);
+    send();
   });
 }
 
