@@ -14,6 +14,10 @@ Use this runbook to release a canary and watch its SLO health.
 2. If burn rate exceeds `SLO_BURN_THRESHOLD` it rolls back automatically and the job fails.
 3. When the burn rate stays below the threshold for 30 minutes the canary is promoted to 100 %.
 
+## Alert-driven rollback
+
+A Prometheus rule (`canary-burn-rate`) triggers when `game_action_ack_latency_error_budget` or overall error budget burn rate exceeds thresholds. Alertmanager sends a `repository_dispatch` webhook (`canary-burn`) to GitHub, kicking off the `canary-rollback` workflow. The workflow runs `infra/canary/rollback.sh` and rolls back the `canary` release if the script reports a breach.
+
 ## Observability
 
 - Watch the workflow logs and Prometheus/Grafana dashboards for errors or latency.

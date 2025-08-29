@@ -1,0 +1,28 @@
+name: canary-rollback
+
+on:
+  repository_dispatch:
+    types: [canary-burn]
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: v1.27.3
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.13.0
+      - name: Run rollback
+        env:
+          PROM_URL: ${{ vars.PROMETHEUS_URL }}
+          NAMESPACE: ${{ vars.K8S_NAMESPACE }}
+        run: |
+          if ! bash infra/canary/rollback.sh; then
+            helm rollback canary --namespace "$NAMESPACE"
+          fi

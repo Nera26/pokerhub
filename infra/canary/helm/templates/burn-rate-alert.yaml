@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: canary-burn-rate
+spec:
+  groups:
+    - name: canary-burn-rate
+      rules:
+        - alert: CanaryActionAckLatencyBurnRate
+          expr: |
+            game_action_ack_latency_error_budget:burn_rate1h > {{ .Values.burnRate.oneHourThreshold }} and
+            game_action_ack_latency_error_budget:burn_rate6h > {{ .Values.burnRate.sixHourThreshold }}
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Canary action ACK latency burn rate too high"
+            runbook: https://github.com/Nera26/pokerhub/blob/main/docs/runbooks/canary.md
+        - alert: CanaryErrorBudgetBurnRate
+          expr: |
+            {{ .Values.burnRate.oneHourQuery }} > {{ .Values.burnRate.oneHourThreshold }} and
+            {{ .Values.burnRate.sixHourQuery }} > {{ .Values.burnRate.sixHourThreshold }}
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Canary error budget burn rate too high"
+            runbook: https://github.com/Nera26/pokerhub/blob/main/docs/runbooks/canary.md
