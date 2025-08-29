@@ -5,6 +5,7 @@ This runbook outlines how administrators review flagged sessions for potential c
 ## Access Requirements
 - Only users with the `admin` role can access `/admin/collusion`.
 - Log in with an admin account before proceeding.
+- Include the `Authorization: Bearer <token>` header on review API requests.
 
 ## Workflow
 1. Navigate to `/admin/collusion`.

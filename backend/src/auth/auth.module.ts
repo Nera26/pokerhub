@@ -12,6 +12,7 @@ import { AuthController } from './auth.controller';
 import { RateLimitGuard } from '../routes/rate-limit.guard';
 import { SessionModule } from '../session/session.module';
 import { AuthService } from './auth.service';
+import { AuthGuard } from './auth.guard';
 
 @Injectable()
 class KycWorker implements OnModuleInit {
@@ -50,8 +51,9 @@ function providerFactory(config: ConfigService): CountryProvider {
     KycWorker,
     RateLimitGuard,
     AuthService,
+    AuthGuard,
   ],
   controllers: [AuthController],
-  exports: [KycService],
+  exports: [KycService, AuthGuard],
 })
 export class AuthModule {}

@@ -8,9 +8,10 @@ import { ReviewController } from './review.controller';
 import { FlaggedSessionJob } from './flagged-session.job';
 import { AdminController } from '../routes/admin.controller';
 import { WalletModule } from '../wallet/wallet.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [ConfigModule, RedisModule, WalletModule],
+  imports: [ConfigModule, RedisModule, WalletModule, AuthModule],
   providers: [
     AnalyticsService,
     EtlService,
