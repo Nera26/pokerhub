@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: canary-burn-rate
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: burn-rate
+          image: alpine:3.18
+          env:
+            - name: ONE_HOUR_QUERY
+              value: {{ .Values.burnRate.oneHourQuery | quote }}
+            - name: SIX_HOUR_QUERY
+              value: {{ .Values.burnRate.sixHourQuery | quote }}
+            - name: ONE_HOUR_THRESHOLD
+              value: "{{ .Values.burnRate.oneHourThreshold }}"
+            - name: SIX_HOUR_THRESHOLD
+              value: "{{ .Values.burnRate.sixHourThreshold }}"
+            - name: SKIP_BURN_CHECK
+              value: "{{ .Values.burnRate.skip }}"
+          command:
+            - /bin/sh
+            - -c
+            - |
+              apk add --no-cache curl jq bc >/dev/null
+              {{ .Files.Get "../rollback.sh" | indent 14 }}
