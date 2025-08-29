@@ -37,6 +37,13 @@
       "targets": [
         { "expr": "process_resident_memory_bytes", "legendFormat": "rss" }
       ]
+    },
+    {
+      "type": "graph",
+      "title": "Connections by Region",
+      "targets": [
+        { "expr": "sum(socket_connections_total) by (region)", "legendFormat": "{{region}}" }
+      ]
     }
   ]
 }
