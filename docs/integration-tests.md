@@ -25,6 +25,13 @@ If the API schema changes, Zod parsing fails and the tests fail,
 ensuring contract mismatches are caught. Proofs from each run are
 written to `frontend/test-results/` for audit.
 
+## Contract version guard
+
+During `prebuild`, the frontend imports `API_CONTRACT_VERSION` from
+`@shared/constants` and queries the backend's `/status` endpoint. If
+the advertised major versions differ, the build exits with an error so
+integration tests never run against an incompatible API.
+
 ## Authenticated API helper
 
 Use the `apiClient` helper (`frontend/src/lib/api/client.ts`) for authenticated
