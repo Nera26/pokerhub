@@ -60,13 +60,22 @@ export default function TablePageClient({ tableId }: { tableId: string }) {
         chatMessages={data.chatMessages}
       />
       {proofHandId && (
-        <button
-          type="button"
-          onClick={() => setShowProof(true)}
-          className="mt-2 text-sm underline text-accent-blue"
-        >
-          Verify Hand
-        </button>
+        <div className="mt-2 flex gap-4 text-sm">
+          <button
+            type="button"
+            onClick={() => setShowProof(true)}
+            className="underline text-accent-blue"
+          >
+            Verify Hand
+          </button>
+          <a
+            href={`/api/hands/${proofHandId}/proof`}
+            download={`hand-${proofHandId}-proof.json`}
+            className="underline text-accent-blue"
+          >
+            Download Proof
+          </a>
+        </div>
       )}
       <HandProofModal
         handId={proofHandId ?? ''}

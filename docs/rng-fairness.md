@@ -32,8 +32,9 @@ To validate a hand, clients repeat the server's steps:
 3. Shuffle a fresh deck with the same Fisher–Yates algorithm seeded by `seed`.
 4. Replay the hand log against this deck to prove cards were dealt deterministically.
 
-After showdown the table displays a **Verify Hand** link. Clicking it opens a modal
-with the hand's seed, nonce and commitment.
+After showdown the table displays **Verify Hand** and **Download Proof** links. The
+first opens a modal with the hand's seed, nonce and commitment, while the latter
+lets players save the proof JSON for offline checks.
 
 ![Hand proof modal](./images/hand-proof-modal.svg)
 
@@ -62,6 +63,17 @@ npx ts-node backend/src/game/verify.ts <seed> <nonce> [commitment]
 3. Recompute `sha256(seed || nonce)` and confirm it matches the published `commitment`.
 4. Feed `seed` into the verifier to obtain the deterministic deck order.
 5. Parse the JSONL log to reconstruct deals and compare with observed cards to prove fairness.
+
+### CLI verification
+
+A convenience script fetches the proof and log and checks the deck order:
+
+```sh
+node --loader ts-node/esm scripts/verify-hand.mjs <handId> [baseUrl]
+```
+
+It verifies the commitment and asserts that the recorded deck matches the
+shuffle derived from the revealed seed.
 
 ### Exporting proofs via CLI
 
