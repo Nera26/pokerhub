@@ -74,6 +74,12 @@ export const WalletStatusResponseSchema = z.object({
 });
 export type WalletStatusResponse = z.infer<typeof WalletStatusResponseSchema>;
 
+export const KycDenialResponseSchema = z.object({
+  accountId: z.string(),
+  reason: z.string().nullable(),
+});
+export type KycDenialResponse = z.infer<typeof KycDenialResponseSchema>;
+
 export const FeatureFlagRequestSchema = z.object({
   value: z.boolean(),
 });
