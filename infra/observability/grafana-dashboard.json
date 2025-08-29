@@ -10,18 +10,49 @@
 { "expr": "rate(socket_success_total[5m]) / rate(socket_requests_total[5m])", "legendFormat": "success" }
 ]
 },
-{
-"type": "graph",
-"title": "ACK Latency p95",
-"targets": [
-{ "expr": "histogram_quantile(0.95, sum(rate(socket_ack_latency_seconds_bucket[5m])) by (le))", "legendFormat": "p95" }
-]
-},
-{
-"type": "graph",
-"title": "Socket Error Rate",
-"targets": [
-{ "expr": "rate(socket_errors_total[5m])", "legendFormat": "errors" }
+  {
+    "type": "graph",
+    "title": "ACK Latency p95",
+    "targets": [
+      { "expr": "histogram_quantile(0.95, sum(rate(socket_ack_latency_seconds_bucket[5m])) by (le))", "legendFormat": "p95" }
+    ]
+  },
+  {
+    "type": "graph",
+    "title": "Game Action ACK Latency",
+    "targets": [
+      { "expr": "histogram_quantile(0.5, sum(rate(game_action_ack_latency_ms_bucket[5m])) by (le))", "legendFormat": "p50" },
+      { "expr": "histogram_quantile(0.95, sum(rate(game_action_ack_latency_ms_bucket[5m])) by (le))", "legendFormat": "p95" },
+      { "expr": "histogram_quantile(0.99, sum(rate(game_action_ack_latency_ms_bucket[5m])) by (le))", "legendFormat": "p99" }
+    ],
+    "alert": {
+      "conditions": [
+        {
+          "evaluator": { "type": "gt", "params": [120] },
+          "operator": { "type": "or" },
+          "query": { "params": ["B", "5m", "now"] },
+          "reducer": { "type": "max", "params": [] },
+          "type": "query"
+        },
+        {
+          "evaluator": { "type": "gt", "params": [200] },
+          "operator": { "type": "and" },
+          "query": { "params": ["C", "5m", "now"] },
+          "reducer": { "type": "max", "params": [] },
+          "type": "query"
+        }
+      ],
+      "for": "5m",
+      "name": "GameActionAckLatencyHigh",
+      "noDataState": "no_data",
+      "execErrState": "error"
+    }
+  },
+  {
+    "type": "graph",
+    "title": "Socket Error Rate",
+    "targets": [
+      { "expr": "rate(socket_errors_total[5m])", "legendFormat": "errors" }
 ]
 },
 {

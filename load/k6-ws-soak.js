@@ -4,6 +4,7 @@ import { Trend, Gauge } from 'k6/metrics';
 import { sleep } from 'k6';
 
 const cpuThreshold = Number(__ENV.CPU_THRESHOLD) || 80;
+const grafanaPushUrl = __ENV.GRAFANA_PUSH_URL;
 
 export const options = {
   vus: Number(__ENV.SOCKETS) || 80000,
@@ -89,4 +90,19 @@ export function teardown(data) {
   } catch (e) {
     // ignore parsing errors
   }
+}
+
+export function handleSummary(data) {
+  if (!grafanaPushUrl) {
+    return {};
+  }
+  const latencyMetrics = data.metrics.ws_latency?.values || {};
+  const p50 = latencyMetrics['p(50)'] || 0;
+  const p95 = latencyMetrics['p(95)'] || 0;
+  const p99 = latencyMetrics['p(99)'] || 0;
+  const body = `ws_latency_p50_ms ${p50}\nws_latency_p95_ms ${p95}\nws_latency_p99_ms ${p99}\n`;
+  http.post(`${grafanaPushUrl}/metrics/job/ws-soak`, body, {
+    headers: { 'Content-Type': 'text/plain' },
+  });
+  return {};
 }

@@ -1,5 +1,16 @@
 # SLO: 99% of game actions ACKed within 250ms
 groups:
+  - name: game-action-ack-latency-quantiles
+    rules:
+      - record: game_action_ack_latency_ms:p50
+        expr: histogram_quantile(0.5,
+          sum(rate(game_action_ack_latency_ms_bucket[5m])) by (le))
+      - record: game_action_ack_latency_ms:p95
+        expr: histogram_quantile(0.95,
+          sum(rate(game_action_ack_latency_ms_bucket[5m])) by (le))
+      - record: game_action_ack_latency_ms:p99
+        expr: histogram_quantile(0.99,
+          sum(rate(game_action_ack_latency_ms_bucket[5m])) by (le))
   - name: game-action-ack-latency-slo
     rules:
       - record: game_action_ack_latency_ms:sli_latency:ratio_rate1h
@@ -30,3 +41,19 @@ groups:
           pagerduty_service: pokerhub-ops
         annotations:
           summary: "6h game action ACK latency burn rate too high"
+      - alert: GameActionAckLatencyP95High
+        expr: game_action_ack_latency_ms:p95 > 120
+        for: 5m
+        labels:
+          severity: warning
+          pagerduty_service: pokerhub-ops
+        annotations:
+          summary: "Game action ACK latency p95 > 120ms"
+      - alert: GameActionAckLatencyP99High
+        expr: game_action_ack_latency_ms:p99 > 200
+        for: 5m
+        labels:
+          severity: critical
+          pagerduty_service: pokerhub-ops
+        annotations:
+          summary: "Game action ACK latency p99 > 200ms"
