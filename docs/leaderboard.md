@@ -5,10 +5,11 @@ Each file is named `YYYY-MM-DD.jsonl` and contains newline-delimited JSON
 objects describing sessions. Generating a 30‑day dataset therefore requires 30
 such files.
 
-The CLI `rebuild.cli.ts` measures its own runtime and RSS memory usage, logging
-both metrics when the rebuild completes. Use `--assert-duration=<ms>` to fail
-the run if it takes too long. Passing `--benchmark` seeds synthetic events
-before rebuilding.
+The CLI `rebuild.ts` streams events from disk and rebuilds the read model while
+recording total runtime and RSS memory usage. A warning is logged when a
+30‑day rebuild exceeds 30 minutes. Use `--assert-duration=<ms>` to fail the run
+if it takes too long. Passing `--benchmark` seeds synthetic events before
+rebuilding.
 
 ## Command
 
@@ -26,7 +27,7 @@ AWS_SECRET_ACCESS_KEY=secret \\
 JWT_SECRET=secret \\
 node -r ./backend/node_modules/ts-node/register \\
      -r ./backend/node_modules/tsconfig-paths/register \\
-     backend/src/leaderboard/rebuild.cli.ts --assert-duration=1800000
+     backend/src/leaderboard/rebuild.ts --assert-duration=1800000
 ```
 
 The optional `--assert-duration` flag (milliseconds) causes the command to exit
