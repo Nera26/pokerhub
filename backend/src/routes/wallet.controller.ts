@@ -1,4 +1,5 @@
-import { Controller, Post, Param, Body, Req, Get } from '@nestjs/common';
+import { Controller, Post, Param, Body, Req, Get, UseGuards } from '@nestjs/common';
+import { RateLimitGuard } from './rate-limit.guard';
 import { WalletService } from '../wallet/wallet.service';
 import type { Request } from 'express';
 import {
@@ -14,6 +15,7 @@ interface TxDto {
   rake?: number;
 }
 
+@UseGuards(RateLimitGuard)
 @Controller('wallet')
 export class WalletController {
   constructor(private readonly wallet: WalletService) {}
