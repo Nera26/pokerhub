@@ -2,46 +2,42 @@ import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import request from 'supertest';
-import { HandController } from '../../src/game/hand.controller';
+import { HandsController } from '../../src/routes/hands.controller';
 import { Hand } from '../../src/database/entities/hand.entity';
+import { HandLog } from '../../src/game/hand-log';
+import type { HandProof } from '../../src/game/rng';
 
-describe('HandController', () => {
+const repo = {
+  findOne: () => Promise.resolve({} as Hand),
+};
+
+describe('HandsController proof', () => {
   let app: INestApplication;
-  const store = new Map<string, Hand>();
-  const repo = {
-    findOne: ({ where: { id } }: any) => Promise.resolve(store.get(id) ?? null),
-    save: (h: Hand) => {
-      store.set(h.id, h);
-      return Promise.resolve(h);
-    },
-  };
+  const proof: HandProof = { seed: 's', nonce: 'n', commitment: 'c' };
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      controllers: [HandController],
+      controllers: [HandsController],
       providers: [{ provide: getRepositoryToken(Hand), useValue: repo }],
     }).compile();
 
     app = moduleRef.createNestApplication();
     await app.init();
 
-    await repo.save({
-      id: 'hand1',
-      log: '[]',
-      commitment: 'c',
-      seed: 's',
-      nonce: 'n',
-    });
+    const log = new HandLog('hand1');
+    const s0 = { street: 'preflop', pot: 0, sidePots: [], currentBet: 0, players: [] } as any;
+    log.record({ type: 'check', playerId: 'p1' }, s0, s0);
+    log.recordProof(proof);
   });
 
   afterAll(async () => {
     await app.close();
   });
 
-  it('returns proof', () => {
+  it('returns proof from hand log', () => {
     return request(app.getHttpServer())
       .get('/hands/hand1/proof')
       .expect(200)
-      .expect({ seed: 's', nonce: 'n', commitment: 'c' });
+      .expect(proof);
   });
 });

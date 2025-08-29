@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import Modal from '@/app/components/ui/Modal';
 import { useHandProof } from '@/hooks/useHandProof';
 import { verifyProof, revealDeck } from '@/lib/verify';
@@ -54,6 +55,14 @@ export default function HandProofModal({ handId, isOpen, onClose }: HandProofMod
           <div>
             <strong>Commitment:</strong> {data.commitment}
           </div>
+          <Link
+            href={`/table/verify?seed=${encodeURIComponent(data.seed)}&nonce=${encodeURIComponent(data.nonce)}&commitment=${encodeURIComponent(data.commitment)}`}
+            className="underline text-accent-blue"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open verifier
+          </Link>
           <button
             onClick={handleVerify}
             disabled={verifying}
