@@ -12,6 +12,7 @@ import { calculateIcmPayouts as icmPayouts } from './structures/icm';
 import { RoomManager } from '../game/room.service';
 import { RebuyService } from './rebuy.service';
 import { PkoService } from './pko.service';
+import { FeatureFlagsService } from '../feature-flags/feature-flags.service';
 
 @Injectable()
 export class TournamentService {
@@ -31,6 +32,7 @@ export class TournamentService {
     private readonly rooms: RoomManager,
     private readonly rebuys: RebuyService,
     private readonly pko: PkoService,
+    private readonly flags: FeatureFlagsService,
   ) {}
 
   async list(): Promise<Tournament[]> {
@@ -108,7 +110,10 @@ export class TournamentService {
     await this.tournaments.save(t);
   }
 
-  canRebuy(stack: number, threshold: number): boolean {
+  async canRebuy(stack: number, threshold: number): Promise<boolean> {
+    if ((await this.flags.get('rebuy')) === false) {
+      return false;
+    }
     return this.rebuys.canRebuy(stack, threshold);
   }
 
@@ -116,7 +121,10 @@ export class TournamentService {
     return this.rebuys.apply(stack, chips, cost);
   }
 
-  settleBounty(currentBounty: number) {
+  async settleBounty(currentBounty: number) {
+    if ((await this.flags.get('settlement')) === false) {
+      return { playerAward: 0, newBounty: currentBounty };
+    }
     return this.pko.settleBounty(currentBounty);
   }
 

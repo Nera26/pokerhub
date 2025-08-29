@@ -11,9 +11,14 @@ import { Tournament } from '../database/entities/tournament.entity';
 import { Seat } from '../database/entities/seat.entity';
 import { Table } from '../database/entities/table.entity';
 import { GameModule } from '../game/game.module';
+import { FeatureFlagsModule } from '../feature-flags/feature-flags.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Tournament, Seat, Table]), GameModule],
+  imports: [
+    TypeOrmModule.forFeature([Tournament, Seat, Table]),
+    GameModule,
+    FeatureFlagsModule,
+  ],
   controllers: [TournamentController],
   providers: [
     TournamentService,

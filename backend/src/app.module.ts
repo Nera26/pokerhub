@@ -45,6 +45,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { TournamentModule } from './tournament/tournament.module';
 import { WalletModule } from './wallet/wallet.module';
 import { AuthModule } from './auth/auth.module';
+import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 
 class SecurityHeadersMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
@@ -120,6 +121,7 @@ class SecurityHeadersMiddleware implements NestMiddleware {
     TournamentModule,
     WalletModule,
     AuthModule,
+    FeatureFlagsModule,
   ],
   controllers: [AppController, UsersController],
   providers: [

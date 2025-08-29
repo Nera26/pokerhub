@@ -552,7 +552,52 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+              $ref: '#/components/schemas/User'
+
+  /feature-flags:
+    get:
+      summary: List feature flags
+      responses:
+        '200':
+          description: Feature flags
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureFlagsResponse'
+
+  /feature-flags/{key}:
+    put:
+      summary: Set feature flag
+      parameters:
+        - in: path
+          name: key
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeatureFlagRequest'
+      responses:
+        '200':
+          description: Flag set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureFlag'
+    delete:
+      summary: Delete feature flag
+      parameters:
+        - in: path
+          name: key
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Flag deleted
 components:
   schemas:
     StatusResponse:
@@ -1121,3 +1166,25 @@ components:
       - sidePots
       - currentBet
       - players
+    
+    FeatureFlagRequest:
+      type: object
+      properties:
+        value:
+          type: boolean
+      required:
+        - value
+    FeatureFlag:
+      type: object
+      properties:
+        key:
+          type: string
+        value:
+          type: boolean
+      required:
+        - key
+        - value
+    FeatureFlagsResponse:
+      type: object
+      additionalProperties:
+        type: boolean

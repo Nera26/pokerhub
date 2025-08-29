@@ -42,6 +42,24 @@ class DummyRedis {
     this.store.set(key, value);
     return 'OK';
   }
+  multi() {
+    const self = this;
+    return {
+      incr(key: string) {
+        return {
+          incr(key2: string) {
+            return {
+              exec: async () => {
+                const a = await self.incr(key);
+                const b = await self.incr(key2);
+                return [[null, a], [null, b]] as unknown;
+              },
+            };
+          },
+        };
+      },
+    } as any;
+  }
 }
 
 class DummyRepo {

@@ -1,0 +1,36 @@
+import { Inject, Injectable } from '@nestjs/common';
+import Redis from 'ioredis';
+
+@Injectable()
+export class FeatureFlagsService {
+  private readonly prefix = 'feature-flag:';
+
+  constructor(@Inject('REDIS_CLIENT') private readonly redis: Redis) {}
+
+  async getAll(): Promise<Record<string, boolean>> {
+    const keys = await this.redis.keys(`${this.prefix}*`);
+    if (keys.length === 0) return {};
+    const values = await this.redis.mget(keys);
+    const result: Record<string, boolean> = {};
+    keys.forEach((k, i) => {
+      const short = k.slice(this.prefix.length);
+      result[short] = values[i] === '1' || values[i] === 'true';
+    });
+    return result;
+  }
+
+  async get(key: string): Promise<boolean | undefined> {
+    const val = await this.redis.get(this.prefix + key);
+    if (val === null) return undefined;
+    return val === '1' || val === 'true';
+  }
+
+  async set(key: string, value: boolean): Promise<{ key: string; value: boolean }> {
+    await this.redis.set(this.prefix + key, value ? '1' : '0');
+    return { key, value };
+  }
+
+  async delete(key: string): Promise<void> {
+    await this.redis.del(this.prefix + key);
+  }
+}

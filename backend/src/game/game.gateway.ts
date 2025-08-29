@@ -16,6 +16,7 @@ import { RoomManager } from './room.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { CollusionService } from '../analytics/collusion.service';
 import { ClockService } from './clock.service';
+import { FeatureFlagsService } from '../feature-flags/feature-flags.service';
 
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -115,6 +116,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly hands: Repository<Hand>,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
     @Optional() private readonly collusion?: CollusionService,
+    @Optional() private readonly flags?: FeatureFlagsService,
   ) {
     this.clock.onTick((now) => {
       if (this.server) {
@@ -470,6 +472,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('replay')
   async handleReplay(@ConnectedSocket() client: Socket) {
+    if ((await this.flags?.get('dealing')) === false) {
+      this.enqueue(client, 'server:Error', 'dealing disabled');
+      return;
+    }
     const room = this.rooms.get('default');
     const state = await room.replay();
     const payload = { version: '1', ...state, tick: this.tick };
@@ -483,6 +489,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() body: { tick: number },
   ) {
     const from = body?.tick ?? 0;
+    if ((await this.flags?.get('dealing')) === false) {
+      this.enqueue(client, 'server:Error', 'dealing disabled');
+      return;
+    }
     const room = this.rooms.get('default');
     const states = await room.resume(from);
     for (const [index, state] of states) {
