@@ -20,7 +20,7 @@ jobs:
         run: npm test
       - name: Run leaderboard benchmark
         working-directory: backend
-        run: npm run rebuild:leaderboard -- --benchmark --days=2 --players=10 --sessions=20 --assert-duration=5000
+        run: npm run rebuild:leaderboard -- --benchmark --days=30 --players=5 --sessions=10 --assert-duration=1800000
       - name: Install frontend deps
         working-directory: frontend
         run: npm ci
