@@ -7,6 +7,10 @@ import {
   type WithdrawRequest,
   WalletStatusSchema,
   type WalletStatusResponse,
+  WalletTransactionsResponseSchema,
+  PendingTransactionsResponseSchema,
+  type WalletTransactionsResponse,
+  type PendingTransactionsResponse,
 } from '../schemas/wallet';
 
 interface TxDto {
@@ -54,5 +58,19 @@ export class WalletController {
   async status(@Param('id') id: string): Promise<WalletStatusResponse> {
     const res = await this.wallet.status(id);
     return WalletStatusSchema.parse(res);
+  }
+
+  @Get(':id/transactions')
+  async transactions(
+    @Param('id') id: string,
+  ): Promise<WalletTransactionsResponse> {
+    const res = await this.wallet.transactions(id);
+    return WalletTransactionsResponseSchema.parse(res);
+  }
+
+  @Get(':id/pending')
+  async pending(@Param('id') id: string): Promise<PendingTransactionsResponse> {
+    const res = await this.wallet.pending(id);
+    return PendingTransactionsResponseSchema.parse(res);
   }
 }

@@ -239,6 +239,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WalletStatusResponse'
+  /wallet/{id}/transactions:
+    get:
+      summary: List wallet transactions
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Wallet transactions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletTransactionsResponse'
+  /wallet/{id}/pending:
+    get:
+      summary: List pending wallet transactions
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Pending transactions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingTransactionsResponse'
   /wallet/provider/callback:
     post:
       summary: Payment provider callback
@@ -773,6 +805,48 @@ components:
           nullable: true
       required:
         - accountId
+    WalletTransaction:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, type, amount, currency, status, createdAt]
+    WalletTransactionsResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/WalletTransaction'
+    PendingTransaction:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, type, amount, currency, status, createdAt]
+    PendingTransactionsResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/PendingTransaction'
     CreateUserRequest:
       type: object
       properties:

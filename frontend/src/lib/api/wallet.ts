@@ -9,6 +9,10 @@ import {
   type MessageResponse,
   WalletStatusResponseSchema,
   type WalletStatusResponse,
+  WalletTransactionsResponseSchema,
+  PendingTransactionsResponseSchema,
+  type WalletTransactionsResponse,
+  type PendingTransactionsResponse,
 } from '@shared/types';
 
 /* istanbul ignore next */
@@ -86,4 +90,28 @@ export function getStatus(
     signal: opts.signal,
   });
   return handleResponse(res, WalletStatusResponseSchema);
+}
+
+export function fetchTransactions(
+  id: string,
+  opts: { signal?: AbortSignal } = {},
+): Promise<WalletTransactionsResponse> {
+  const baseUrl = getBaseUrl();
+  const res = serverFetch(`${baseUrl}/api/wallet/${id}/transactions`, {
+    credentials: 'include',
+    signal: opts.signal,
+  });
+  return handleResponse(res, WalletTransactionsResponseSchema);
+}
+
+export function fetchPending(
+  id: string,
+  opts: { signal?: AbortSignal } = {},
+): Promise<PendingTransactionsResponse> {
+  const baseUrl = getBaseUrl();
+  const res = serverFetch(`${baseUrl}/api/wallet/${id}/pending`, {
+    credentials: 'include',
+    signal: opts.signal,
+  });
+  return handleResponse(res, PendingTransactionsResponseSchema);
 }

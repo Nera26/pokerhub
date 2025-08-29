@@ -569,4 +569,35 @@ export class WalletService {
       },
     );
   }
+
+  async transactions(accountId: string) {
+    const entries = await this.journals.find({
+      where: { accountId },
+      order: { createdAt: 'DESC' },
+    });
+    return entries.map((e) => ({
+      id: e.id,
+      type: e.refType,
+      amount: e.amount,
+      currency: e.currency,
+      status: e.providerStatus ?? 'completed',
+      createdAt: e.createdAt.toISOString(),
+    }));
+  }
+
+  async pending(accountId: string) {
+    const disbs = await this.disbursements.find({
+      where: { accountId, status: 'pending' },
+      order: { createdAt: 'DESC' },
+    });
+    const account = await this.accounts.findOneByOrFail({ id: accountId });
+    return disbs.map((d) => ({
+      id: d.id,
+      type: 'withdraw',
+      amount: d.amount,
+      currency: account.currency,
+      status: d.status,
+      createdAt: d.createdAt.toISOString(),
+    }));
+  }
 }
