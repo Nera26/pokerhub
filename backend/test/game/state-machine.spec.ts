@@ -110,4 +110,17 @@ describe('Hand state machine', () => {
     expect(settlements).toContainEqual({ playerId: 'A', delta: 0 });
     expect(settlements).toContainEqual({ playerId: 'B', delta: 0 });
   });
+
+  it('rejects invalid bet amounts', async () => {
+    const engine = await GameEngine.create(['A', 'B']);
+    engine.applyAction({ type: 'postBlind', playerId: 'A', amount: 1 });
+    engine.applyAction({ type: 'postBlind', playerId: 'B', amount: 2 });
+    engine.applyAction({ type: 'next' });
+    expect(() =>
+      engine.applyAction({ type: 'bet', playerId: 'A', amount: 0 }),
+    ).toThrow();
+    expect(() =>
+      engine.applyAction({ type: 'bet', playerId: 'A', amount: 1000 }),
+    ).toThrow();
+  });
 });

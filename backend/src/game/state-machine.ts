@@ -151,10 +151,16 @@ export class HandStateMachine {
   }
 
   private placeBet(player: PlayerState, amount: number) {
-    const wager = Math.min(player.stack, amount);
-    player.stack -= wager;
-    player.bet += wager;
-    this.state.pot += wager;
+    if (amount <= 0) {
+      throw new Error('amount must be positive');
+    }
+    if (amount > player.stack) {
+      throw new Error('bet exceeds stack');
+    }
+
+    player.stack -= amount;
+    player.bet += amount;
+    this.state.pot += amount;
     if (player.bet > this.state.currentBet) {
       this.state.currentBet = player.bet;
     }
