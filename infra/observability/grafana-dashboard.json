@@ -44,6 +44,28 @@
       "targets": [
         { "expr": "sum(socket_connections_total) by (region)", "legendFormat": "{{region}}" }
       ]
+    },
+    {
+      "type": "graph",
+      "title": "Follower Action Lag",
+      "targets": [
+        { "expr": "game_action_lag", "legendFormat": "lag" }
+      ],
+      "alert": {
+        "conditions": [
+          {
+            "evaluator": { "type": "gt", "params": [5] },
+            "operator": { "type": "and" },
+            "query": { "params": ["A", "5m", "now"] },
+            "reducer": { "type": "avg", "params": [] },
+            "type": "query"
+          }
+        ],
+        "for": "5m",
+        "name": "GameActionLagHigh",
+        "noDataState": "no_data",
+        "execErrState": "error"
+      }
     }
   ]
 }
