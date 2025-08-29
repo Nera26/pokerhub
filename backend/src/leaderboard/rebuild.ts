@@ -40,8 +40,8 @@ async function run(options: RebuildOptions = {}): Promise<{
     );
 
     if (days === 30 && durationMs > 30 * 60 * 1000) {
-      console.warn(
-        `Warning: 30-day rebuild exceeded 30min (took ${durationMs}ms)`,
+      throw new Error(
+        `30-day rebuild exceeded 30min (took ${durationMs}ms)`,
       );
     }
 
