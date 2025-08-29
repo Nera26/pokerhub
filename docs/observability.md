@@ -82,3 +82,43 @@ sum(rate(global_limit_exceeded[5m])) / sum(rate(game_action_global_count[5m])) >
 These rules detect sustained rate limiting and notify operators to
 investigate upstream load or misbehaving clients.
 
+## Prometheus Metrics
+
+The backend's telemetry module exposes Prometheus metrics on
+`http://localhost:9464/metrics`. A scrape job similar to the one below feeds
+those metrics into Prometheus:
+
+```yaml
+scrape_configs:
+  - job_name: pokerhub-backend
+    static_configs:
+      - targets: ['backend:9464']
+```
+
+## Burn Rate Alerts
+
+Alertmanager evaluates latency and request error SLOs using fast (1 h) and
+slow (6 h) burn rate windows. These rules live under
+`infrastructure/prometheus/alerts.yml`:
+
+```yaml
+groups:
+  - name: pokerhub-slo-burn
+    rules:
+      - alert: LatencySLOBurnRate1h
+        expr: latency_error_budget_burn_rate_1h > 14.4
+        for: 2m
+      - alert: LatencySLOBurnRate6h
+        expr: latency_error_budget_burn_rate_6h > 6
+        for: 15m
+      - alert: ErrorRateSLOBurnRate1h
+        expr: request_error_budget_burn_rate_1h > 14.4
+        for: 2m
+      - alert: ErrorRateSLOBurnRate6h
+        expr: request_error_budget_burn_rate_6h > 6
+        for: 15m
+```
+
+Each rule routes to the `pokerhub-sre` PagerDuty service when the error budget
+is consumed too quickly.
+
