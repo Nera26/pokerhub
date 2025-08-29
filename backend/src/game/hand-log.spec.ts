@@ -1,6 +1,6 @@
-import { HandLog } from '../../src/game/hand-log';
-import { GameAction, GameState } from '../../src/game/state-machine';
-import type { HandProof } from '../../src/game/rng';
+import { HandLog } from './hand-log';
+import { GameAction, GameState } from './state-machine';
+import type { HandProof } from './rng';
 import { existsSync, readFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 
@@ -44,7 +44,7 @@ describe('HandLog', () => {
     expect(log.reconstruct(1)).toEqual(s2);
   });
 
-  it('persists entries and proofs to jsonl file', () => {
+  it('writes entries asynchronously to jsonl file', async () => {
     const handId = 'spec-hand';
     const path = join(process.cwd(), '../storage/hand-logs', `${handId}.jsonl`);
     if (existsSync(path)) unlinkSync(path);
@@ -63,6 +63,8 @@ describe('HandLog', () => {
     log.record(action, s0, s0);
     const proof: HandProof = { seed: 's', nonce: 'n', commitment: 'c' };
     log.recordProof(proof);
+    expect(existsSync(path)).toBe(false);
+    await log.flush();
     const lines = readFileSync(path, 'utf8').trim().split('\n');
     expect(lines).toEqual([
       JSON.stringify({ commitment: 'c' }),
