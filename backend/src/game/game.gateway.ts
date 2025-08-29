@@ -9,7 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Inject, Logger, Optional } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
-import { randomUUID } from 'crypto';
+import { randomUUID, createHash } from 'crypto';
 import Redis from 'ioredis';
 import { GameAction } from './engine';
 import { RoomManager } from './room.service';
@@ -82,10 +82,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       description: 'Actions rejected due to global limit',
     });
 
-  private readonly processedPrefix = 'game:processed';
-  private readonly processedTtlSeconds = 60;
+  private readonly actionHashKey = 'game:action';
+  private readonly actionRetentionMs = 24 * 60 * 60 * 1000; // 24h
 
-  private readonly processed = new Set<string>();
+  private readonly processed = new Map<string, number>();
 
   private readonly queues = new Map<string, PQueue>();
   private readonly queueLimit = Number(
@@ -133,10 +133,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         this.server.emit('server:Clock', Number(now / 1_000_000n));
       }
     });
+
+    setInterval(() => void this.trimActionHashes(), 60 * 60 * 1000);
   }
 
-  private processedKey(id: string) {
-    return `${this.processedPrefix}:${id}`;
+  private hashAction(id: string) {
+    return createHash('sha256').update(id).digest('hex');
   }
 
   handleConnection(client: Socket) {
@@ -184,8 +186,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       throw err;
     }
 
-    const key = this.processedKey(actionId);
-    if ((await this.redis.exists(key)) === 1) {
+    if (this.processed.has(actionId)) {
       this.enqueue(client, 'action:ack', {
         actionId,
         duplicate: true,
@@ -194,8 +195,20 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    this.processed.add(actionId);
-    await this.redis.set(key, '1', 'EX', this.processedTtlSeconds);
+    const hash = this.hashAction(actionId);
+    const existing = await this.redis.hget(this.actionHashKey, hash);
+    if (existing && Date.now() - Number(existing) < this.actionRetentionMs) {
+      this.enqueue(client, 'action:ack', {
+        actionId,
+        duplicate: true,
+      } satisfies AckPayload);
+      this.recordAckLatency(start, tableId);
+      return;
+    }
+
+    const now = Date.now();
+    this.processed.set(actionId, now);
+    await this.redis.hset(this.actionHashKey, hash, now.toString());
 
     if (parsed.playerId) {
       this.clock.clearTimer(parsed.playerId, tableId);
@@ -333,8 +346,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    const key = this.processedKey(payload.actionId);
-    if ((await this.redis.exists(key)) === 1) {
+    const hash = this.hashAction(payload.actionId);
+    const existing = await this.redis.hget(this.actionHashKey, hash);
+    if (existing && Date.now() - Number(existing) < this.actionRetentionMs) {
       this.enqueue(client, `${event}:ack`, {
         actionId: payload.actionId,
         duplicate: true,
@@ -345,7 +359,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.enqueue(client, `${event}:ack`, {
       actionId: payload.actionId,
     } as AckPayload);
-    await this.redis.set(key, '1', 'EX', this.processedTtlSeconds);
+    const now = Date.now();
+    this.processed.set(payload.actionId, now);
+    await this.redis.hset(this.actionHashKey, hash, now.toString());
   }
 
   private recordAckLatency(start: number, tableId: string) {
@@ -419,6 +435,25 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }, delay);
     };
     retry();
+  }
+
+  private async trimActionHashes() {
+    const threshold = Date.now() - this.actionRetentionMs;
+
+    const entries = await this.redis.hgetall(this.actionHashKey);
+    if (Object.keys(entries).length) {
+      const pipe = this.redis.pipeline();
+      for (const [field, ts] of Object.entries(entries)) {
+        if (Number(ts) < threshold) {
+          pipe.hdel(this.actionHashKey, field);
+        }
+      }
+      await pipe.exec();
+    }
+
+    for (const [id, ts] of this.processed) {
+      if (ts < threshold) this.processed.delete(id);
+    }
   }
 
   private getRateLimitKey(client: Socket): string {
