@@ -14,7 +14,11 @@ import {
 } from './structures/icm';
 import { RoomManager } from '../game/room.service';
 import { RebuyService } from './rebuy.service';
-import { PkoService } from './pko.service';
+import {
+  PkoService,
+  calculatePrizes as calculatePrizesFn,
+  CalculatePrizeOptions,
+} from './pko.service';
 import { FeatureFlagsService } from '../feature-flags/feature-flags.service';
 
 @Injectable()
@@ -325,68 +329,21 @@ export class TournamentService {
   }
 
   /**
-   * Distribute prize pool according to payout percentages. Supports
-   * optional bounty/PKO pools and satellite seat calculation. Remainders
-   * are distributed starting from the first place.
+   * Distribute prize pool according to payout percentages. Supports optional
+   * bounty/PKO pools and satellite seat calculation. Remainders are
+   * distributed starting from the first place.
    */
   calculatePrizes(
     prizePool: number,
     payouts: number[],
-    opts?: {
-      bountyPct?: number;
-      satelliteSeatCost?: number;
-      method?: 'topN' | 'icm';
-      stacks?: number[];
-    },
+    opts?: CalculatePrizeOptions,
   ): {
     prizes: number[];
     bountyPool?: number;
     seats?: number;
     remainder?: number;
   } {
-    let pool = prizePool;
-    let bountyPool: number | undefined;
-    if (opts?.bountyPct) {
-      const split = this.pko.splitPrizePool(pool, opts.bountyPct);
-      pool = split.prizePool;
-      bountyPool = split.bountyPool;
-    }
-
-    let seats: number | undefined;
-    let remainder: number | undefined;
-    if (opts?.satelliteSeatCost) {
-      seats = Math.floor(pool / opts.satelliteSeatCost);
-      remainder = pool - seats * opts.satelliteSeatCost;
-      pool = remainder;
-    }
-
-    let prizes: number[];
-    if (opts?.method === 'icm' && opts.stacks) {
-      prizes = this.calculateIcmPayouts(opts.stacks, payouts);
-      remainder = pool - prizes.reduce((a, b) => a + b, 0);
-    } else {
-      prizes = payouts.map((p) => Math.floor(pool * p));
-      remainder = pool - prizes.reduce((a, b) => a + b, 0);
-    }
-    let i = 0;
-    while (remainder > 0) {
-      prizes[i % prizes.length] += 1;
-      remainder--;
-      i++;
-    }
-
-    const response: {
-      prizes: number[];
-      bountyPool?: number;
-      seats?: number;
-      remainder?: number;
-    } = { prizes };
-
-    if (bountyPool !== undefined) response.bountyPool = bountyPool;
-    if (seats !== undefined) response.seats = seats;
-    if (remainder !== undefined) response.remainder = remainder;
-
-    return response;
+    return calculatePrizesFn(prizePool, payouts, opts);
   }
 
   /**
