@@ -1,7 +1,17 @@
 _format_version: "3.0"
+upstreams:
+  - name: backend-upstream
+    hash_on: cookie
+    hash_on_cookie: table_affinity
+    hash_on_cookie_path: /
+    targets:
+      - target: backend-us:3000
+      - target: backend-eu:3000
 services:
   - name: backend
-    url: http://backend:3000
+    host: backend-upstream
+    port: 3000
+    protocol: http
     routes:
       - name: backend-http
         paths:
