@@ -20,6 +20,6 @@ export const validationSchema = Joi.object({
   JWT_SECRET: Joi.string().required(),
   JWT_ACCESS_TTL: Joi.number().integer().optional(),
   JWT_REFRESH_TTL: Joi.number().integer().optional(),
-  AUTH_RATE_LIMIT_WINDOW: Joi.number().integer().optional(),
-  AUTH_RATE_LIMIT_MAX: Joi.number().integer().optional(),
+  RATE_LIMIT_WINDOW: Joi.number().integer().optional(),
+  RATE_LIMIT_MAX: Joi.number().integer().optional(),
 });

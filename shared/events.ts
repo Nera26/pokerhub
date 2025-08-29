@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const HandStartEvent = z.object({
   handId: z.string().uuid(),
@@ -59,33 +59,42 @@ export const WalletCommitEvent = z.object({
   rake: z.number(),
 });
 
+export const AntiCheatFlagEvent = z.object({
+  accountId: z.string().uuid(),
+  operation: z.enum(["deposit", "withdraw"]),
+  amount: z.number(),
+  dailyTotal: z.number(),
+  limit: z.number(),
+});
+
 export const EventSchemas = {
-  'hand.start': HandStartEvent,
-  'hand.end': HandEndEvent,
-  'wallet.credit': WalletMovementEvent,
-  'wallet.debit': WalletMovementEvent,
-  'action.bet': ActionBetEvent,
-  'action.call': ActionCallEvent,
-  'action.fold': ActionFoldEvent,
-  'tournament.register': TournamentRegisterEvent,
-  'tournament.eliminate': TournamentEliminateEvent,
-  'wallet.reserve': WalletReserveEvent,
-  'wallet.commit': WalletCommitEvent,
+  "hand.start": HandStartEvent,
+  "hand.end": HandEndEvent,
+  "wallet.credit": WalletMovementEvent,
+  "wallet.debit": WalletMovementEvent,
+  "action.bet": ActionBetEvent,
+  "action.call": ActionCallEvent,
+  "action.fold": ActionFoldEvent,
+  "tournament.register": TournamentRegisterEvent,
+  "tournament.eliminate": TournamentEliminateEvent,
+  "wallet.reserve": WalletReserveEvent,
+  "wallet.commit": WalletCommitEvent,
+  "antiCheat.flag": AntiCheatFlagEvent,
 } as const;
 
 export type Events = {
-  'hand.start': z.infer<typeof HandStartEvent>;
-  'hand.end': z.infer<typeof HandEndEvent>;
-  'wallet.credit': z.infer<typeof WalletMovementEvent>;
-  'wallet.debit': z.infer<typeof WalletMovementEvent>;
-  'action.bet': z.infer<typeof ActionBetEvent>;
-  'action.call': z.infer<typeof ActionCallEvent>;
-  'action.fold': z.infer<typeof ActionFoldEvent>;
-  'tournament.register': z.infer<typeof TournamentRegisterEvent>;
-  'tournament.eliminate': z.infer<typeof TournamentEliminateEvent>;
-  'wallet.reserve': z.infer<typeof WalletReserveEvent>;
-  'wallet.commit': z.infer<typeof WalletCommitEvent>;
+  "hand.start": z.infer<typeof HandStartEvent>;
+  "hand.end": z.infer<typeof HandEndEvent>;
+  "wallet.credit": z.infer<typeof WalletMovementEvent>;
+  "wallet.debit": z.infer<typeof WalletMovementEvent>;
+  "action.bet": z.infer<typeof ActionBetEvent>;
+  "action.call": z.infer<typeof ActionCallEvent>;
+  "action.fold": z.infer<typeof ActionFoldEvent>;
+  "tournament.register": z.infer<typeof TournamentRegisterEvent>;
+  "tournament.eliminate": z.infer<typeof TournamentEliminateEvent>;
+  "wallet.reserve": z.infer<typeof WalletReserveEvent>;
+  "wallet.commit": z.infer<typeof WalletCommitEvent>;
+  "antiCheat.flag": z.infer<typeof AntiCheatFlagEvent>;
 };
 
 export type EventName = keyof Events;
-

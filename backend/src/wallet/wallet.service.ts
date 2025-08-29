@@ -10,9 +10,11 @@ import { EventPublisher } from '../events/events.service';
 import Redis from 'ioredis';
 import { metrics, trace, SpanStatusCode } from '@opentelemetry/api';
 import type { Queue } from 'bullmq';
-import { PaymentProviderService, ProviderStatus } from './payment-provider.service';
+import {
+  PaymentProviderService,
+  ProviderStatus,
+} from './payment-provider.service';
 import { KycService } from './kyc.service';
-
 
 interface Movement {
   account: Account;
@@ -281,7 +283,9 @@ export class WalletService {
   }
 
   async retryPendingPayouts(): Promise<void> {
-    const pending = await this.disbursements.find({ where: { status: 'pending' } });
+    const pending = await this.disbursements.find({
+      where: { status: 'pending' },
+    });
     for (const disb of pending) {
       await this.enqueueDisbursement(disb.id);
     }
@@ -355,6 +359,39 @@ export class WalletService {
     }
   }
 
+  private async enforceDailyLimit(
+    op: 'deposit' | 'withdraw',
+    accountId: string,
+    amount: number,
+  ) {
+    const limitEnv =
+      op === 'deposit'
+        ? process.env.WALLET_DAILY_DEPOSIT_LIMIT
+        : process.env.WALLET_DAILY_WITHDRAW_LIMIT;
+    const limit = limitEnv ? Number(limitEnv) : Infinity;
+    const today = new Date();
+    const dateKey = today.toISOString().slice(0, 10);
+    const key = `wallet:${op}:${accountId}:${dateKey}`;
+    const total = await this.redis.incrby(key, amount);
+    if (total === amount) {
+      const tomorrow = new Date(today);
+      tomorrow.setUTCHours(24, 0, 0, 0);
+      const ttl = Math.ceil((tomorrow.getTime() - today.getTime()) / 1000);
+      await this.redis.expire(key, ttl);
+    }
+    if (total > limit) {
+      await this.redis.decrby(key, amount);
+      await this.events.emit('antiCheat.flag', {
+        accountId,
+        operation: op,
+        amount,
+        dailyTotal: total,
+        limit,
+      });
+      throw new Error('Daily limit exceeded');
+    }
+  }
+
   async withdraw(
     accountId: string,
     amount: number,
@@ -375,6 +412,7 @@ export class WalletService {
             throw new Error('AML limit exceeded');
           }
           await this.checkVelocity('withdraw', deviceId, ip);
+          await this.enforceDailyLimit('withdraw', accountId, amount);
           const house = await this.accounts.findOneByOrFail({ name: 'house' });
           const challenge = await this.provider.initiate3DS(accountId, amount);
           const status: ProviderStatus = await this.provider.getStatus(
@@ -445,6 +483,7 @@ export class WalletService {
           if (!user.kycVerified) {
             throw new Error('KYC required');
           }
+          await this.enforceDailyLimit('deposit', accountId, amount);
           const house = await this.accounts.findOneByOrFail({ name: 'house' });
           const challenge = await this.provider.initiate3DS(accountId, amount);
           const status: ProviderStatus = await this.provider.getStatus(

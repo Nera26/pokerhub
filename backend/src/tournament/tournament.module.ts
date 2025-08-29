@@ -12,6 +12,7 @@ import { Seat } from '../database/entities/seat.entity';
 import { Table } from '../database/entities/table.entity';
 import { GameModule } from '../game/game.module';
 import { FeatureFlagsModule } from '../feature-flags/feature-flags.module';
+import { RateLimitGuard } from '../routes/rate-limit.guard';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { FeatureFlagsModule } from '../feature-flags/feature-flags.module';
     PkoService,
     RebuyService,
     SatelliteService,
+    RateLimitGuard,
   ],
   exports: [
     TournamentService,

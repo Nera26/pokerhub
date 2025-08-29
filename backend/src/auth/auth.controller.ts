@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { ZodError } from 'zod';
 import { LoginRequest, LoginRequestSchema, type LoginResponse } from '../schemas/auth';
-import { RateLimitGuard } from './rate-limit.guard';
+import { RateLimitGuard } from '../routes/rate-limit.guard';
 import { AuthService } from './auth.service';
 
 @UseGuards(RateLimitGuard)

@@ -20,8 +20,17 @@ describe('WalletService deposit', () => {
       redisStore[key] = (redisStore[key] ?? 0) + 1;
       return Promise.resolve(redisStore[key]);
     },
+    incrby: (key: string, value: number): Promise<number> => {
+      redisStore[key] = (redisStore[key] ?? 0) + value;
+      return Promise.resolve(redisStore[key]);
+    },
+    decrby: (key: string, value: number): Promise<number> => {
+      redisStore[key] = (redisStore[key] ?? 0) - value;
+      return Promise.resolve(redisStore[key]);
+    },
     expire: (): Promise<void> => Promise.resolve(),
   } as unknown as Redis;
+
   const provider = {
     initiate3DS: jest.fn().mockResolvedValue({ id: 'tx' }),
     getStatus: jest.fn().mockResolvedValue('approved'),
@@ -49,20 +58,24 @@ describe('WalletService deposit', () => {
         return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(16, 20)}-${id.slice(20)}`;
       },
     });
+
     dataSource = db.adapters.createTypeormDataSource({
       type: 'postgres',
       entities: [Account, JournalEntry, Disbursement, SettlementJournal],
       synchronize: true,
     }) as DataSource;
     await dataSource.initialize();
+
     const accountRepo = dataSource.getRepository(Account);
     const journalRepo = dataSource.getRepository(JournalEntry);
     const disbRepo = dataSource.getRepository(Disbursement);
     const settleRepo = dataSource.getRepository(SettlementJournal);
+
     const kyc = {
       validate: jest.fn().mockResolvedValue(undefined),
       getDenialReason: jest.fn().mockResolvedValue(undefined),
     } as unknown as KycService;
+
     service = new WalletService(
       accountRepo,
       journalRepo,
@@ -73,12 +86,14 @@ describe('WalletService deposit', () => {
       provider,
       kyc,
     );
-    (service as unknown as { enqueueDisbursement: jest.Mock })
-      .enqueueDisbursement = jest.fn();
+
+    // stub disbursement queue
+    (service as unknown as { enqueueDisbursement: jest.Mock }).enqueueDisbursement = jest.fn();
   });
 
   beforeEach(async () => {
     redisStore = {};
+    (events.emit as jest.Mock).mockClear();
     (provider.initiate3DS as jest.Mock).mockResolvedValue({ id: 'tx' });
     (provider.getStatus as jest.Mock).mockResolvedValue('approved');
     const accountRepo = dataSource.getRepository(Account);
@@ -116,42 +131,17 @@ describe('WalletService deposit', () => {
   });
 
   it('enforces rate limits', async () => {
-    await service.deposit(
-      'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-      100,
-      'd1',
-      '2.2.2.2',
-    );
-    await service.deposit(
-      'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-      100,
-      'd1',
-      '2.2.2.2',
-    );
-    await service.deposit(
-      'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-      100,
-      'd1',
-      '2.2.2.2',
-    );
+    await service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 100, 'd1', '2.2.2.2');
+    await service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 100, 'd1', '2.2.2.2');
+    await service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 100, 'd1', '2.2.2.2');
     await expect(
-      service.deposit(
-        'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-        100,
-        'd1',
-        '2.2.2.2',
-      ),
+      service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 100, 'd1', '2.2.2.2'),
     ).rejects.toThrow('Rate limit exceeded');
   });
 
   it('rejects deposits for unverified accounts', async () => {
     await expect(
-      service.deposit(
-        'cccccccc-cccc-cccc-cccc-cccccccccccc',
-        100,
-        'd2',
-        '3.3.3.3',
-      ),
+      service.deposit('cccccccc-cccc-cccc-cccc-cccccccccccc', 100, 'd2', '3.3.3.3'),
     ).rejects.toThrow('KYC required');
   });
 
@@ -159,12 +149,7 @@ describe('WalletService deposit', () => {
     (provider.initiate3DS as jest.Mock).mockResolvedValueOnce({ id: 'risk' });
     (provider.getStatus as jest.Mock).mockResolvedValueOnce('risky');
     await expect(
-      service.deposit(
-        'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-        100,
-        'd3',
-        '5.5.5.5',
-      ),
+      service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 100, 'd3', '5.5.5.5'),
     ).rejects.toThrow('Transaction flagged as risky');
     const jRepo = dataSource.getRepository(JournalEntry);
     expect(await jRepo.count()).toBe(0);
@@ -173,12 +158,7 @@ describe('WalletService deposit', () => {
   it('reverses chargebacks', async () => {
     (provider.initiate3DS as jest.Mock).mockResolvedValueOnce({ id: 'cb' });
     (provider.getStatus as jest.Mock).mockResolvedValueOnce('chargeback');
-    await service.deposit(
-      'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-      100,
-      'd4',
-      '6.6.6.6',
-    );
+    await service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 100, 'd4', '6.6.6.6');
     const accountRepo = dataSource.getRepository(Account);
     const user = await accountRepo.findOneByOrFail({
       id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
@@ -187,6 +167,25 @@ describe('WalletService deposit', () => {
     const jRepo = dataSource.getRepository(JournalEntry);
     const entries = await jRepo.find();
     expect(entries.filter((e) => e.providerStatus === 'chargeback').length).toBe(4);
+  });
+
+  it('flags and rejects deposits exceeding daily limits', async () => {
+    process.env.WALLET_DAILY_DEPOSIT_LIMIT = '200';
+    await service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 150, 'd5', '7.7.7.7');
+    (events.emit as jest.Mock).mockClear();
+    await expect(
+      service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 60, 'd6', '7.7.7.7'),
+    ).rejects.toThrow('Daily limit exceeded');
+    expect(events.emit as jest.Mock).toHaveBeenCalledWith(
+      'antiCheat.flag',
+      expect.objectContaining({
+        accountId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        operation: 'deposit',
+      }),
+    );
+    const key = Object.keys(redisStore).find((k) => k.startsWith('wallet:deposit'));
+    expect(redisStore[key!]).toBe(150);
+    delete process.env.WALLET_DAILY_DEPOSIT_LIMIT;
   });
 
   it('returns KYC status', async () => {

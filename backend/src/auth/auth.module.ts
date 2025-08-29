@@ -9,7 +9,7 @@ import { KycVerification } from '../database/entities/kycVerification.entity';
 import { CountryProvider } from './providers/country-provider';
 import { startKycWorker } from './kyc.worker';
 import { AuthController } from './auth.controller';
-import { RateLimitGuard } from './rate-limit.guard';
+import { RateLimitGuard } from '../routes/rate-limit.guard';
 import { SessionModule } from '../session/session.module';
 import { AuthService } from './auth.service';
 
