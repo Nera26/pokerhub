@@ -18,11 +18,11 @@ export class HandLog {
   private commitment?: string;
   private proof?: HandProof;
 
-  constructor(tableId?: string, commitment?: string) {
-    if (tableId) {
+  constructor(handId?: string, commitment?: string) {
+    if (handId) {
       const dir = join(process.cwd(), '../storage/hand-logs');
       mkdirSync(dir, { recursive: true });
-      this.filePath = join(dir, `${tableId}.jsonl`);
+      this.filePath = join(dir, `${handId}.jsonl`);
     }
     if (commitment) this.recordCommitment(commitment);
   }

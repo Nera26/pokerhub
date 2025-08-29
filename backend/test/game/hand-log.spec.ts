@@ -45,10 +45,10 @@ describe('HandLog', () => {
   });
 
   it('persists entries and proofs to jsonl file', () => {
-    const tableId = 'spec-table';
-    const path = join(process.cwd(), '../storage/hand-logs', `${tableId}.jsonl`);
+    const handId = 'spec-hand';
+    const path = join(process.cwd(), '../storage/hand-logs', `${handId}.jsonl`);
     if (existsSync(path)) unlinkSync(path);
-    const log = new HandLog(tableId, 'c');
+    const log = new HandLog(handId, 'c');
     const s0: GameState = {
       phase: 'BETTING_ROUND',
       street: 'preflop',
