@@ -5,10 +5,24 @@
   "panels": [
     {
       "type": "timeseries",
-      "title": "ACK latency p95",
+      "title": "ACK latency p50/p95/p99",
       "targets": [
         {
+          "expr": "histogram_quantile(0.50, sum(rate(ack_latency_bucket[1m])) by (le))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        },
+        {
           "expr": "histogram_quantile(0.95, sum(rate(ack_latency_bucket[1m])) by (le))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(ack_latency_bucket[1m])) by (le))",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
