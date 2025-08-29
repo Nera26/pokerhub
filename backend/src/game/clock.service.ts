@@ -32,17 +32,21 @@ export class ClockService extends EventEmitter implements OnModuleDestroy {
   }
 
   /**
-   * Start or replace an action timer for a player. When the deadline is
-   * reached the provided callback is executed.
+   * Start or replace an action timer for a player at a specific table. When
+   * the deadline is reached the provided callback is executed.
    */
-  setTimer(playerId: string, ms: number, action: () => void): void {
+  setTimer(playerId: string, tableId: string, ms: number, action: () => void): void {
     const deadline = this.now() + BigInt(ms) * 1_000_000n;
-    this.timers.set(playerId, { deadline, action });
+    this.timers.set(this.key(playerId, tableId), { deadline, action });
   }
 
-  /** Clear an active timer for the given player. */
-  clearTimer(playerId: string): void {
-    this.timers.delete(playerId);
+  /** Clear an active timer for the given player at the specified table. */
+  clearTimer(playerId: string, tableId: string): void {
+    this.timers.delete(this.key(playerId, tableId));
+  }
+
+  private key(playerId: string, tableId: string): string {
+    return `${tableId}:${playerId}`;
   }
 
   private tick(): void {

@@ -12,7 +12,7 @@ describe('ClockService', () => {
   it('fires timer callback only once', () => {
     const clock = new ClockService();
     const cb = jest.fn();
-    clock.setTimer('p1', 10, cb);
+    clock.setTimer('p1', 't1', 10, cb);
 
     jest.advanceTimersByTime(1000);
     jest.advanceTimersByTime(1000);
@@ -25,8 +25,8 @@ describe('ClockService', () => {
   it('clearTimer cancels callbacks', () => {
     const clock = new ClockService();
     const cb = jest.fn();
-    clock.setTimer('p1', 10, cb);
-    clock.clearTimer('p1');
+    clock.setTimer('p1', 't1', 10, cb);
+    clock.clearTimer('p1', 't1');
 
     jest.advanceTimersByTime(2000);
 
