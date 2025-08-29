@@ -4,6 +4,8 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { setupTelemetry, shutdownTelemetry } from './telemetry/telemetry';
+import { WalletService } from './wallet/wallet.service';
+import { scheduleReconcileJob } from './wallet/reconcile.job';
 
 async function bootstrap() {
   setupTelemetry();
@@ -37,6 +39,7 @@ async function bootstrap() {
   );
 
   await app.listen(process.env.PORT ?? 3000);
+  scheduleReconcileJob(app.get(WalletService), app.get(Logger));
 
   const shutdown = async () => {
     await app.close();

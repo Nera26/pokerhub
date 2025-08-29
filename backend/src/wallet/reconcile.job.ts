@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync } from 'fs';
 import path from 'path';
+import { Logger } from 'nestjs-pino';
 import { WalletService } from './wallet.service';
 
 export async function runReconcile(wallet: WalletService) {
@@ -16,23 +17,20 @@ export async function runReconcile(wallet: WalletService) {
   }
 }
 
-export function scheduleReconcileJob(wallet: WalletService) {
+export function scheduleReconcileJob(wallet: WalletService, logger: Logger) {
   const oneDay = 24 * 60 * 60 * 1000;
   const now = new Date();
   const next = new Date(now);
   next.setDate(now.getDate() + 1);
   next.setHours(0, 0, 0, 0);
   const delay = next.getTime() - now.getTime();
-  setTimeout(() => {
+  const run = () =>
     runReconcile(wallet).catch((err) => {
-      console.error(err);
+      logger.error({ err }, 'wallet reconciliation failed');
       process.exit(1);
     });
-    setInterval(() => {
-      runReconcile(wallet).catch((err) => {
-        console.error(err);
-        process.exit(1);
-      });
-    }, oneDay);
+  setTimeout(() => {
+    run();
+    setInterval(run, oneDay);
   }, delay);
 }
