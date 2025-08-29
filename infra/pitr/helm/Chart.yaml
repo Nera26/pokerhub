@@ -1,0 +1,4 @@
+apiVersion: v2
+name: postgres-pitr
+version: 0.1.0
+description: CronJob for automated Postgres restore testing

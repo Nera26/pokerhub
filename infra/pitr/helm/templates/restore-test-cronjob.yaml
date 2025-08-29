@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pg-restore-test
+spec:
+  schedule: {{ .Values.restore.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: restore-test
+              image: {{ .Values.restore.image }}
+              env:
+                - name: PG_SNAPSHOT_ID
+                  value: {{ .Values.restore.snapshotId | quote }}
+                - name: SECONDARY_REGION
+                  value: {{ .Values.restore.region | quote }}
+              command:
+                - /bin/bash
+                - -c
+                - infra/disaster-recovery/tests/restore-backup.sh

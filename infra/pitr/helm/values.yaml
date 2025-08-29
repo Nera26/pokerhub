@@ -1,0 +1,5 @@
+restore:
+  image: ghcr.io/pokerhub/dr-tools:latest
+  schedule: "0 5 * * *"
+  snapshotId: pg-dr-snapshot
+  region: us-west-2
