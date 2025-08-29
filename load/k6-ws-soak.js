@@ -8,10 +8,10 @@ const grafanaPushUrl = __ENV.GRAFANA_PUSH_URL;
 
 export const options = {
   vus: Number(__ENV.SOCKETS) || 80000,
-  duration: __ENV.DURATION || '24h',
+  duration: '24h',
   thresholds: {
     ws_latency: ['p(95)<120'], // <120ms p95
-    memory_leak: ['p(100)<1'], // <1% growth
+    rss_growth: ['p(100)<1'], // <1% RSS growth
     gc_pause: ['p(95)<50'], // <50ms p95
     cpu_usage: [`p(100)<${cpuThreshold}`],
   },
@@ -24,7 +24,7 @@ const rngSeed = Number(__ENV.RNG_SEED) || 1;
 const metricsUrl = __ENV.METRICS_URL;
 
 const latency = new Trend('ws_latency');
-const memoryLeak = new Gauge('memory_leak');
+const rssGrowth = new Gauge('rss_growth');
 const gcPause = new Trend('gc_pause');
 const cpuUsage = new Gauge('cpu_usage');
 
@@ -42,7 +42,10 @@ export function setup() {
   const res = http.get(metricsUrl);
   try {
     const data = res.json();
-    return { startHeap: data.heapUsed, startGc: data.gcPauseP95 };
+    return {
+      startRss: data.rssBytes,
+      startGc: data.gcPauseP95,
+    };
   } catch (e) {
     return {};
   }
@@ -77,9 +80,9 @@ export function teardown(data) {
   const res = http.get(metricsUrl);
   try {
     const end = res.json();
-    if (data.startHeap) {
-      const growth = ((end.heapUsed - data.startHeap) / data.startHeap) * 100;
-      memoryLeak.add(growth);
+    if (data.startRss && end.rssBytes !== undefined) {
+      const growth = ((end.rssBytes - data.startRss) / data.startRss) * 100;
+      rssGrowth.add(growth);
     }
     if (end.gcPauseP95 !== undefined) {
       gcPause.add(end.gcPauseP95);

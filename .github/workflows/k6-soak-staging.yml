@@ -1,0 +1,30 @@
+name: k6-soak-staging
+
+on:
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+jobs:
+  http-soak:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1440
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run HTTP soak test
+        uses: grafana/k6-action@v0.2.0
+        env:
+          BASE_URL: https://staging.pokerhub
+          GRAFANA_PUSH_URL: ${{ secrets.GRAFANA_PUSH_URL }}
+        with:
+          filename: infra/tests/load/k6-soak.js
+          flags: >-
+            --summary-export=soak-summary.json
+            -o experimental-prometheus-rw=${{ secrets.GRAFANA_PROM_URL }}
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: k6-soak-staging
+          path: soak-summary.json
+
