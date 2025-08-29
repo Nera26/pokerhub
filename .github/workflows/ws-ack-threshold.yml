@@ -1,0 +1,39 @@
+name: ws-ack-threshold
+
+on:
+  push:
+    paths:
+      - 'infra/tests/load/k6-table-actions.js'
+      - '.github/workflows/ws-ack-threshold.yml'
+  pull_request:
+    paths:
+      - 'infra/tests/load/k6-table-actions.js'
+      - '.github/workflows/ws-ack-threshold.yml'
+
+jobs:
+  ack-latency:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run WS ack latency test
+        uses: grafana/k6-action@v0.2.0
+        env:
+          WS_URL: ws://localhost:3001
+          TABLES: 10000
+          SOCKETS: 80000
+          PACKET_LOSS: 0.05
+          JITTER_MS: 200
+          ACK_P95_MS: 120
+          CLICKHOUSE_URL: ${{ secrets.CLICKHOUSE_URL }}
+        with:
+          filename: infra/tests/load/k6-table-actions.js
+          flags: --summary-export=ws-ack-summary.json
+      - name: Check thresholds
+        run: ./load/check-thresholds.sh ws-ack-summary.json
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: ws-ack-latency
+          path: |
+            ws-ack-summary.json

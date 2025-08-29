@@ -1,0 +1,33 @@
+{
+  "title": "WS ACK Latency",
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "ACK latency p50/p95/p99",
+      "targets": [
+        {
+          "query": "SELECT ts, p50, p95, p99 FROM ws_ack_latency ORDER BY ts",
+          "datasource": {
+            "type": "clickhouse",
+            "uid": "${DS_CLICKHOUSE}"
+          }
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Dropped frames",
+      "targets": [
+        {
+          "query": "SELECT ts, dropped_frames FROM ws_ack_latency ORDER BY ts",
+          "datasource": {
+            "type": "clickhouse",
+            "uid": "${DS_CLICKHOUSE}"
+          }
+        }
+      ]
+    }
+  ]
+}
