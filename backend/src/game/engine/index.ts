@@ -184,7 +184,15 @@ export class GameEngine {
     const pots =
       state.sidePots.length > 0
         ? [...state.sidePots]
-        : [{ amount: state.pot, players: active.map((p) => p.id) }];
+        : [
+            {
+              amount: state.pot,
+              players: active.map((p) => p.id),
+              contributions: Object.fromEntries(
+                active.map((p) => [p.id, 0]),
+              ),
+            },
+          ];
 
     let totalPot = pots.reduce((s, p) => s + p.amount, 0);
     let rake = 0;
