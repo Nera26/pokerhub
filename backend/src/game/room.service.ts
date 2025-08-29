@@ -1,9 +1,38 @@
 import { EventEmitter } from 'events';
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  OnModuleDestroy,
+  Optional,
+} from '@nestjs/common';
 import { Worker } from 'worker_threads';
 import { resolve } from 'path';
 import { metrics, type ObservableResult } from '@opentelemetry/api';
 import type { GameAction, GameState } from './engine';
+import type Redis from 'ioredis';
+
+class InMemoryPub {
+  constructor(private readonly bus: EventEmitter) {}
+  publish(channel: string, msg: string) {
+    this.bus.emit(channel, msg);
+    return Promise.resolve(1);
+  }
+}
+
+class InMemorySub extends EventEmitter {
+  constructor(private readonly bus: EventEmitter) {
+    super();
+  }
+  subscribe(channel: string) {
+    this.bus.on(channel, (msg) => this.emit('message', channel, msg));
+    return Promise.resolve(1);
+  }
+}
+
+function createInMemoryPubSub() {
+  const bus = new EventEmitter();
+  return { pub: new InMemoryPub(bus), sub: new InMemorySub(bus) };
+}
 
 class WorkerHost extends EventEmitter {
   private readonly worker: Worker;
@@ -125,11 +154,37 @@ class RoomWorker extends EventEmitter {
     } as any);
   };
 
-  constructor(private readonly tableId: string, playerIds?: string[]) {
+  private readonly channel: string;
+  private readonly pub: any;
+  private readonly sub: any;
+
+  constructor(
+    private readonly tableId: string,
+    redis?: Redis,
+    playerIds?: string[],
+  ) {
     super();
     this.primary = new WorkerHost(tableId, playerIds);
     this.follower = new WorkerHost(tableId, playerIds);
     this.primary.on('state', (s) => this.emit('state', s));
+
+    const ps = redis
+      ? { pub: redis, sub: redis.duplicate() }
+      : createInMemoryPubSub();
+    this.pub = ps.pub;
+    this.sub = ps.sub;
+    this.channel = `room:${tableId}:actions`;
+    void this.sub.subscribe(this.channel);
+    this.sub.on('message', async (_: string, msg: string) => {
+      if (!this.follower) return;
+      try {
+        await this.follower.apply(JSON.parse(msg) as GameAction);
+        this.lastConfirmed++;
+        RoomWorker.actionLag.add(-1, { tableId: this.tableId });
+      } catch {
+        // ignore follower apply errors
+      }
+    });
 
     RoomWorker.followerLag.addCallback(this.observeLag);
     this.startHeartbeat();
@@ -162,6 +217,7 @@ class RoomWorker extends EventEmitter {
 
     // keep lag consistent across promotion
     this.lastConfirmed = this.applied;
+    this.emit('failover', this.tableId);
   }
 
   async apply(action: GameAction): Promise<GameState> {
@@ -170,13 +226,11 @@ class RoomWorker extends EventEmitter {
 
     if (this.follower) {
       RoomWorker.actionLag.add(1, { tableId: this.tableId });
-      await this.follower.apply(action);
-      this.lastConfirmed++;
-      RoomWorker.actionLag.add(-1, { tableId: this.tableId });
     } else {
-      // No follower => nothing pending
       this.lastConfirmed = this.applied;
     }
+
+    await this.pub.publish(this.channel, JSON.stringify(action));
     return state;
   }
 
@@ -200,6 +254,7 @@ class RoomWorker extends EventEmitter {
     if (this.heartbeat) clearInterval(this.heartbeat);
     await this.primary.terminate();
     if (this.follower) await this.follower.terminate();
+    this.sub?.removeAllListeners?.();
     RoomWorker.followerLag.removeCallback(this.observeLag);
     this.removeAllListeners();
   }
@@ -209,9 +264,13 @@ class RoomWorker extends EventEmitter {
 export class RoomManager implements OnModuleDestroy {
   private readonly rooms = new Map<string, RoomWorker>();
 
+  constructor(
+    @Optional() @Inject('REDIS_CLIENT') private readonly redis?: Redis,
+  ) {}
+
   get(tableId: string): RoomWorker {
     if (!this.rooms.has(tableId)) {
-      this.rooms.set(tableId, new RoomWorker(tableId));
+      this.rooms.set(tableId, new RoomWorker(tableId, this.redis));
     }
     return this.rooms.get(tableId)!;
   }
