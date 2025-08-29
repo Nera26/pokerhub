@@ -37,11 +37,12 @@ The script spawns ~180 actions/min per table and exports the `ack_latency` metri
 ### Stake Level Metrics
 
 The nightly analytics job populates ClickHouse tables with stake-level VPIP,
-PFR, and average action latency. Example queries:
+PFR, average pot size, and average action latency. Example queries:
 
 ```sql
 SELECT * FROM stake_vpip ORDER BY stake;
 SELECT * FROM stake_pfr ORDER BY stake;
+SELECT * FROM stake_pot ORDER BY stake;
 SELECT * FROM stake_action_latency ORDER BY stake;
 ```
 
@@ -51,8 +52,8 @@ aggregates and receive alerts when thresholds are crossed.
 ### Player Analytics
 
 Import `infrastructure/observability/player-analytics-dashboard.json` into
-Grafana for DAU/MAU trends, rake curves, and stake-level VPIP/PFR visualizations.
-Metabase cards for the same metrics live in
+Grafana for DAU/MAU trends, rake curves, and stake-level VPIP/PFR/Pot
+visualizations. Metabase cards for the same metrics live in
 `infrastructure/observability/metabase-dashboard.json`.
 
 ## OpenTelemetry

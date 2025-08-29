@@ -182,6 +182,7 @@ export class AnalyticsService {
       `CREATE TABLE IF NOT EXISTS stake_vpip (stake String, vpip Float64) ENGINE = MergeTree() ORDER BY stake`,
       `CREATE TABLE IF NOT EXISTS stake_pfr (stake String, pfr Float64) ENGINE = MergeTree() ORDER BY stake`,
       `CREATE TABLE IF NOT EXISTS stake_action_latency (stake String, latency_ms Float64) ENGINE = MergeTree() ORDER BY stake`,
+      `CREATE TABLE IF NOT EXISTS stake_pot (stake String, pot Float64) ENGINE = MergeTree() ORDER BY stake`,
     ];
     for (const sql of createTables) {
       await this.query(sql);
@@ -190,6 +191,7 @@ export class AnalyticsService {
     await this.query('TRUNCATE TABLE stake_vpip');
     await this.query('TRUNCATE TABLE stake_pfr');
     await this.query('TRUNCATE TABLE stake_action_latency');
+    await this.query('TRUNCATE TABLE stake_pot');
 
     const vpipSql = `INSERT INTO stake_vpip SELECT stake, avg(vpip) FROM (
       SELECT stake, playerId, handId,
@@ -212,9 +214,16 @@ export class AnalyticsService {
       FROM game_event
       GROUP BY stake`;
 
+    const potSql = `INSERT INTO stake_pot SELECT stake, avg(pot) AS pot FROM (
+      SELECT stake, handId, max(pot) AS pot
+      FROM game_event
+      GROUP BY stake, handId
+    ) GROUP BY stake`;
+
     await this.query(vpipSql);
     await this.query(pfrSql);
     await this.query(latencySql);
+    await this.query(potSql);
     this.logger.log('Rebuilt stake analytics aggregates');
   }
 }

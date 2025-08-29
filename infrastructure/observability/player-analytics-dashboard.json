@@ -34,11 +34,11 @@
       },
       {
         "type": "table",
-        "title": "Stake VPIP/PFR",
+        "title": "Stake VPIP/PFR/Pot",
         "datasource": "ClickHouse",
         "targets": [
           {
-            "query": "SELECT v.stake, v.vpip, p.pfr FROM stake_vpip v JOIN stake_pfr p USING (stake) ORDER BY v.stake"
+            "query": "SELECT v.stake, v.vpip, p.pfr, s.pot FROM stake_vpip v JOIN stake_pfr p USING (stake) JOIN stake_pot s USING (stake) ORDER BY v.stake"
           }
         ]
       }
