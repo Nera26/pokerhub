@@ -7,6 +7,7 @@ import { join } from 'path';
 import { metrics } from '@opentelemetry/api';
 import { User } from '../database/entities/user.entity';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { updateRating } from './rating';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -85,12 +86,13 @@ export class LeaderboardService {
       days?: number;
       minSessions?: number | ((playerId: string) => number);
       decay?: number | ((playerId: string) => number);
+      kFactor?: number | ((playerId: string) => number);
     } = {},
   ): Promise<void> {
-    const { days = 30, minSessions, decay } = options;
+    const { days = 30, minSessions, decay, kFactor } = options;
     const since = Date.now() - days * DAY_MS;
     const events = await this.analytics.rangeStream('analytics:game', since);
-    await this.rebuildWithEvents(events, { minSessions, decay });
+    await this.rebuildWithEvents(events, { minSessions, decay, kFactor });
   }
 
   async rebuildFromEvents(
@@ -143,9 +145,10 @@ export class LeaderboardService {
     options: {
       minSessions?: number | ((playerId: string) => number);
       decay?: number | ((playerId: string) => number);
+      kFactor?: number | ((playerId: string) => number);
     } = {},
   ): Promise<void> {
-    const { minSessions = 10, decay = 0.95 } = options;
+    const { minSessions = 10, decay = 0.95, kFactor = 0.5 } = options;
     const now = Date.now();
     const scores = new Map<
       string,
@@ -162,8 +165,10 @@ export class LeaderboardService {
     const minSessionsFn =
       typeof minSessions === 'function' ? minSessions : () => minSessions;
     const decayFn = typeof decay === 'function' ? decay : () => decay;
+    const kFactorFn = typeof kFactor === 'function' ? kFactor : () => kFactor;
     const minSessionsCache = new Map<string, number>();
     const decayCache = new Map<string, number>();
+    const kFactorCache = new Map<string, number>();
 
     for (const ev of events) {
       const {
@@ -202,7 +207,15 @@ export class LeaderboardService {
         playerDecay = decayFn(playerId);
         decayCache.set(playerId, playerDecay);
       }
-      entry.rating += points * Math.pow(playerDecay, ageDays);
+      let playerK = kFactorCache.get(playerId);
+      if (playerK === undefined) {
+        playerK = kFactorFn(playerId);
+        kFactorCache.set(playerId, playerK);
+      }
+      entry.rating = updateRating(entry.rating, points, ageDays, {
+        kFactor: playerK,
+        decay: playerDecay,
+      });
       entry.net += net;
       entry.bb += bb;
       entry.hands += hands;

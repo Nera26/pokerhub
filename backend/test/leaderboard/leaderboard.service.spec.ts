@@ -72,14 +72,14 @@ describe('LeaderboardService', () => {
         ts: now,
       },
     ];
-    await service.rebuild({ days: 30, minSessions: 1, decay: 1 });
+    await service.rebuild({ days: 30, minSessions: 1, decay: 1, kFactor: 0.5 });
     await cache.del('leaderboard:hot');
     const top = await service.getTopPlayers();
     expect(top).toEqual([
       {
         playerId: 'alice',
         rank: 1,
-        points: 20,
+        points: 10,
         net: 100,
         bb100: 50,
         hours: 2,
@@ -87,7 +87,7 @@ describe('LeaderboardService', () => {
       {
         playerId: 'bob',
         rank: 2,
-        points: 10,
+        points: 5,
         net: -50,
         bb100: -50,
         hours: 1,
@@ -130,6 +130,26 @@ describe('LeaderboardService', () => {
     await service.rebuild({ days: 30, minSessions: 1, decay: 0.9 });
     const top = await service.getTopPlayers();
     expect(top[0].playerId).toBe('alice');
+  });
+
+  it('rewards consistent high scores over many small sessions', async () => {
+    const now = Date.now();
+    analytics.events = [
+      ...Array.from({ length: 20 }, (_, i) => ({
+        playerId: 'grinder',
+        sessionId: `g${i}`,
+        points: 1,
+        ts: now,
+      })),
+      { playerId: 'shark', sessionId: 's1', points: 5, ts: now },
+      { playerId: 'shark', sessionId: 's2', points: 5, ts: now },
+    ];
+    await service.rebuild({ days: 30, minSessions: 1, decay: 1 });
+    const top = await service.getTopPlayers();
+    expect(top[0].playerId).toBe('shark');
+    const grinder = top.find((p) => p.playerId === 'grinder');
+    const shark = top.find((p) => p.playerId === 'shark');
+    expect(grinder && shark && grinder.points < shark.points).toBe(true);
   });
 
   it('supports player specific session minimums and decay', async () => {
