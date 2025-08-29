@@ -3,19 +3,7 @@ import { z } from 'zod';
 import { getBaseUrl } from '@/lib/base-url';
 import { handleResponse } from './client';
 import { serverFetch } from '@/lib/server-fetch';
-import { getSocket } from '@/app/utils/socket';
-import { GameActionSchema, type GameActionPayload } from '@shared/types';
-
-if (typeof window !== 'undefined') {
-  const socket = getSocket();
-  const sendAck = (payload: { frameId?: string }) => {
-    if (payload?.frameId) {
-      socket.emit('frame:ack', { frameId: payload.frameId });
-    }
-  };
-  socket.on('state', sendAck);
-  socket.on('proof', sendAck);
-}
+export { joinTable, bet, buyIn, sitOut, rebuy } from '@/lib/socket';
 
 const PlayerSchema = z.object({
   id: z.number(),
@@ -63,102 +51,4 @@ export async function fetchTable(
     cache: 'no-store',
   });
   return handleResponse(res, TableDataSchema);
-}
-
-interface ActionAck {
-  actionId: string;
-  duplicate?: boolean;
-}
-
-async function emitWithAck(event: string, data: Record<string, unknown>) {
-  const socket = getSocket();
-  const actionId = crypto.randomUUID();
-  const payload = { ...data, actionId };
-  let attempt = 0;
-  const maxAttempts = 5;
-
-  return new Promise<void>((resolve, reject) => {
-    function handleAck(ack: ActionAck) {
-      if (ack.actionId === actionId) {
-        socket.off(`${event}:ack`, handleAck);
-        clearTimeout(timeoutId);
-        resolve();
-      }
-    }
-
-    function send() {
-      attempt++;
-      socket.emit(event, payload);
-      const delay = Math.pow(2, attempt) * 100;
-      timeoutId = setTimeout(() => {
-        if (attempt >= maxAttempts) {
-          socket.off(`${event}:ack`, handleAck);
-          reject(new Error('ACK timeout'));
-          return;
-        }
-        send();
-      }, delay);
-    }
-
-    let timeoutId: ReturnType<typeof setTimeout>;
-    socket.on(`${event}:ack`, handleAck);
-    send();
-  });
-}
-
-async function sendAction(action: GameActionPayload) {
-  const socket = getSocket();
-  const actionId = crypto.randomUUID();
-  const payload = { version: '1', ...action, actionId };
-  GameActionSchema.parse(payload);
-  let attempt = 0;
-  const maxAttempts = 5;
-
-  return new Promise<void>((resolve, reject) => {
-    function handleAck(ack: ActionAck) {
-      if (ack.actionId === actionId) {
-        socket.off('action:ack', handleAck);
-        clearTimeout(timeoutId);
-        resolve();
-      }
-    }
-
-    function send() {
-      attempt++;
-      socket.emit('action', payload);
-      const delay = Math.pow(2, attempt) * 100;
-      timeoutId = setTimeout(() => {
-        if (attempt >= maxAttempts) {
-          socket.off('action:ack', handleAck);
-          reject(new Error('ACK timeout'));
-          return;
-        }
-        send();
-      }, delay);
-    }
-
-    let timeoutId: ReturnType<typeof setTimeout>;
-    socket.on('action:ack', handleAck);
-    send();
-  });
-}
-
-export function joinTable(tableId: string) {
-  return emitWithAck('join', { tableId });
-}
-
-export function bet(tableId: string, playerId: string, amount: number) {
-  return sendAction({ type: 'bet', tableId, playerId, amount });
-}
-
-export function buyIn(tableId: string, amount: number) {
-  return emitWithAck('buy-in', { tableId, amount });
-}
-
-export function sitOut(tableId: string) {
-  return emitWithAck('sitout', { tableId });
-}
-
-export function rebuy(tableId: string, amount: number) {
-  return emitWithAck('rebuy', { tableId, amount });
 }
