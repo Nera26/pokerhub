@@ -1,6 +1,7 @@
 // components/user/HistoryList.tsx
 'use client';
 import React, { memo } from 'react';
+import Link from 'next/link';
 import Tooltip from '../ui/Tooltip';
 
 interface Entry {
@@ -86,6 +87,12 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
                 >
                   Watch Replay
                 </button>
+                <Link
+                  href={`/hands/${e.id}/proof`}
+                  className="text-accent-yellow text-sm mt-2 hover:text-accent-blue cursor-pointer block"
+                >
+                  View Proof
+                </Link>
               </div>
             </div>
           ))}
