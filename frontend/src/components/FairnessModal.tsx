@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import Modal from '@/app/components/ui/Modal';
 import { fetchHandProof } from '@/lib/api/hands';
 import { verifyProof } from '@/lib/verifyProof';
@@ -62,6 +63,14 @@ export default function FairnessModal({
           <div>
             <strong>Commitment:</strong> {proof.commitment}
           </div>
+          <Link
+            href={`/hands/${handId}/proof`}
+            className="underline text-accent-blue"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View proof page
+          </Link>
           {valid !== null && (
             <div>
               <strong>Verification:</strong> {valid ? 'valid' : 'invalid'}

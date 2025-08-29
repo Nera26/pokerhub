@@ -56,6 +56,14 @@ export default function HandProofModal({ handId, isOpen, onClose }: HandProofMod
             <strong>Commitment:</strong> {data.commitment}
           </div>
           <Link
+            href={`/hands/${handId}/proof`}
+            className="underline text-accent-blue"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View proof page
+          </Link>
+          <Link
             href={`/table/verify?seed=${encodeURIComponent(data.seed)}&nonce=${encodeURIComponent(data.nonce)}&commitment=${encodeURIComponent(data.commitment)}`}
             className="underline text-accent-blue"
             target="_blank"
