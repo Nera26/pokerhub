@@ -1,0 +1,38 @@
+name: restore-latest
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  restore-latest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore latest snapshot
+        run: bash infra/disaster-recovery/restore-latest.sh | tee restore-latest.log
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          PG_PRIMARY_ID: ${{ vars.PG_PRIMARY_ID }}
+          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+          PGUSER: ${{ vars.PGUSER }}
+          PGPASSWORD: ${{ secrets.PGPASSWORD }}
+          PGDATABASE: postgres
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: restore-latest
+          path: |
+            restore-latest.log
+            infra/disaster-recovery/restore-latest.metrics
+      - name: PagerDuty alert on failure
+        if: failure()
+        env:
+          ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+        run: |
+          curl -X POST https://events.pagerduty.com/v2/enqueue \
+            -H 'Content-Type: application/json' \
+            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Latest backup restore failed","source":"github-actions","severity":"error","custom_details":{"runbook":"https://github.com/Nera26/pokerhub/blob/main/docs/runbooks/disaster-recovery.md"}}}'
