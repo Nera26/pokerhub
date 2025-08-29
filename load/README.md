@@ -13,6 +13,14 @@ This directory contains load test scripts for PokerHub.
 - `k6-chaos-swarm.js` – swarm 80 k sockets across 10 k tables; pair with `toxiproxy.sh` for 5 % loss and 200 ms latency.
 
 All scripts assume the server is reachable via `ws://localhost:3000` by default.
+## Thresholds
+
+- ack latency p95 < 120ms
+- ack latency p99 < 200ms
+- error rate < 1%
+- CPU < 80%
+- GC pause p95 < 50ms
+
 Environment variables:
 - `WS_URL` – override the WebSocket URL.
 - `SOCKETS` / `TABLES` – number of sockets (clients) and tables to simulate.

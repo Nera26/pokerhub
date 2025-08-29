@@ -1,0 +1,35 @@
+name: k6-latency-thresholds
+
+on:
+  push:
+    paths:
+      - 'load/**'
+      - '.github/workflows/k6-latency-threshold.yml'
+  pull_request:
+    paths:
+      - 'load/**'
+      - '.github/workflows/k6-latency-threshold.yml'
+
+jobs:
+  tables-10k:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run 10k table latency test
+        uses: grafana/k6-action@v0.2.0
+        env:
+          ACK_P95_MS: 120
+          ACK_P99_MS: 200
+        with:
+          filename: load/k6-10k-tables.js
+          flags: --summary-export=10k-summary.json --summary-trend-stats="avg,med,min,max,p(95),p(99)" --out json=10k-metrics.json
+      - name: Check thresholds
+        run: ./load/check-thresholds.sh 10k-summary.json
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: k6-10k-latency
+          path: |
+            10k-summary.json
+            10k-metrics.json
