@@ -1,17 +1,42 @@
-name: Leaderboard Rebuild
+name: leaderboard-rebuild
 
 on:
   schedule:
-    - cron: '0 3 * * *'
+    - cron: '0 6 * * *'
   workflow_dispatch:
 
 jobs:
   rebuild:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-      - run: npm ci --prefix backend
-      - run: npm run rebuild:leaderboard --prefix backend
+          node-version: 18
+      - name: Install backend deps
+        working-directory: backend
+        run: npm ci
+      - name: Rebuild leaderboard
+        working-directory: backend
+        run: npm run rebuild:leaderboard -- --assert-duration=1800000 | tee leaderboard-rebuild.log
+      - name: Extract metrics
+        working-directory: backend
+        run: |
+          node -e "const fs=require('fs');const line=fs.readFileSync('leaderboard-rebuild.log','utf8').split('\n').find(l=>l.includes('Rebuild complete'));const m=line&&line.match(/Rebuild complete in ([0-9.]+)s \(\u0394RSS ([0-9.]+)MB\)/);if(!m)process.exit(1);fs.writeFileSync('leaderboard-rebuild.metrics',`DURATION_MS=${Number(m[1])*1000}\nMEMORY_MB=${m[2]}\n`);"
+      - name: Publish metrics
+        working-directory: backend
+        run: |
+          source leaderboard-rebuild.metrics
+          cat <<METRICS | curl --data-binary @- ${{ vars.PUSHGATEWAY_URL }}/metrics/job/leaderboard-rebuild
+          leaderboard_rebuild_duration_ms $DURATION_MS
+          leaderboard_rebuild_memory_mb $MEMORY_MB
+          METRICS
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: leaderboard-rebuild
+          path: |
+            leaderboard-rebuild.log
+            leaderboard-rebuild.metrics

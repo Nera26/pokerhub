@@ -1,0 +1,23 @@
+{
+  "dashboard": {
+    "title": "Leaderboard Rebuild",
+    "panels": [
+      {
+        "type": "stat",
+        "title": "Duration (ms)",
+        "datasource": "Prometheus",
+        "targets": [
+          { "expr": "leaderboard_rebuild_duration_ms" }
+        ]
+      },
+      {
+        "type": "stat",
+        "title": "RSS Memory (MB)",
+        "datasource": "Prometheus",
+        "targets": [
+          { "expr": "leaderboard_rebuild_memory_mb" }
+        ]
+      }
+    ]
+  }
+}
