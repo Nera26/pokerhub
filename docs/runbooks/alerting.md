@@ -2,7 +2,7 @@
 
 PokerHub uses OpenTelemetry to expose metrics which are scraped by Prometheus. The backend also pushes metrics to an Alertmanager endpoint when `ALERTMANAGER_URL` is configured.
 
-Prometheus evaluates SLO-based rules such as action ACK latency and socket connect success. Alerts fire when the error budget burn rate exceeds **14.4** over 1 hour or **6** over 6 hours, and Alertmanager routes notifications to PagerDuty.
+Prometheus evaluates SLO-based rules such as action ACK latency and socket connect success using multi-window burn rates. Alerts fire when the 5 m/1 h burn rate exceeds **14.4** or the 30 m/6 h burn rate exceeds **6**. Alertmanager routes notifications to PagerDuty. See [SLO alert strategy](../SLOs.md) for details.
 
 ## PagerDuty Escalation
 - Alertmanager posts events to PagerDuty using the configured routing key.

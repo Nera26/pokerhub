@@ -3,6 +3,7 @@
 Investigates failed WebSocket connection attempts.
 
 - [Grafana Dashboard](../../infrastructure/observability/socket-connects-dashboard.json)
+- See [SLO alert strategy](../SLOs.md) for burn-rate thresholds.
 
 ## Triage
 1. Check if failures correlate with recent deployments or network changes.

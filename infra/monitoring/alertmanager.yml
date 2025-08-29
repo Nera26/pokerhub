@@ -3,8 +3,7 @@ route:
   receiver: 'null'
   routes:
     - matchers:
-        - pagerduty_service="pokerhub-ops"
-        - severity="critical"
+        - pagerduty_service=~".+"
       receiver: pagerduty
 receivers:
   - name: 'null'
@@ -12,3 +11,4 @@ receivers:
     pagerduty_configs:
       - service_key: '${PAGERDUTY_SERVICE_KEY}'
         severity: '{{ .CommonLabels.severity }}'
+        component: '{{ .CommonLabels.pagerduty_service }}'

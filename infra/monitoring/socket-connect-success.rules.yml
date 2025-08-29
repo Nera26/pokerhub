@@ -3,31 +3,39 @@
 groups:
   - name: socket-connect-success-slo
     rules:
+      - record: socket_connect_success_ratio_rate5m
+        expr: sum(rate(socket_success_total[5m])) / sum(rate(socket_requests_total[5m]))
+      - record: socket_connect_success_ratio_rate30m
+        expr: sum(rate(socket_success_total[30m])) / sum(rate(socket_requests_total[30m]))
       - record: socket_connect_success_ratio_rate1h
         expr: sum(rate(socket_success_total[1h])) / sum(rate(socket_requests_total[1h]))
       - record: socket_connect_success_ratio_rate6h
         expr: sum(rate(socket_success_total[6h])) / sum(rate(socket_requests_total[6h]))
+      - record: socket_connect_error_budget:burn_rate5m
+        expr: (1 - socket_connect_success_ratio_rate5m) / (1 - 0.99)
+      - record: socket_connect_error_budget:burn_rate30m
+        expr: (1 - socket_connect_success_ratio_rate30m) / (1 - 0.99)
       - record: socket_connect_error_budget:burn_rate1h
         expr: (1 - socket_connect_success_ratio_rate1h) / (1 - 0.99)
       - record: socket_connect_error_budget:burn_rate6h
         expr: (1 - socket_connect_success_ratio_rate6h) / (1 - 0.99)
   - name: socket-connect-success-alerts
     rules:
-      - alert: SocketConnectSuccessSLOBurnRate1h
-        expr: socket_connect_error_budget:burn_rate1h > 14.4
+      - alert: SocketConnectSuccessSLOBurnRateFast
+        expr: socket_connect_error_budget:burn_rate5m > 14.4 and socket_connect_error_budget:burn_rate1h > 14.4
         for: 2m
         labels:
           severity: critical
           pagerduty_service: pokerhub-ops
         annotations:
-          summary: "1h socket connect success burn rate too high"
+          summary: "Short-window socket connect success burn rate too high"
           runbook: https://github.com/Nera26/pokerhub/blob/main/docs/runbooks/socket-connect-success.md
-      - alert: SocketConnectSuccessSLOBurnRate6h
-        expr: socket_connect_error_budget:burn_rate6h > 6
+      - alert: SocketConnectSuccessSLOBurnRateSlow
+        expr: socket_connect_error_budget:burn_rate30m > 6 and socket_connect_error_budget:burn_rate6h > 6
         for: 15m
         labels:
           severity: critical
           pagerduty_service: pokerhub-ops
         annotations:
-          summary: "6h socket connect success burn rate too high"
+          summary: "Long-window socket connect success burn rate too high"
           runbook: https://github.com/Nera26/pokerhub/blob/main/docs/runbooks/socket-connect-success.md

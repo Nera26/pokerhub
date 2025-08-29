@@ -13,35 +13,45 @@ groups:
           sum(rate(game_action_ack_latency_ms_bucket[5m])) by (le))
   - name: game-action-ack-latency-slo
     rules:
+      - record: game_action_ack_latency_ms:sli_latency:ratio_rate5m
+        expr: sum(rate(game_action_ack_latency_ms_bucket{le="250"}[5m]))
+          / sum(rate(game_action_ack_latency_ms_count[5m]))
+      - record: game_action_ack_latency_ms:sli_latency:ratio_rate30m
+        expr: sum(rate(game_action_ack_latency_ms_bucket{le="250"}[30m]))
+          / sum(rate(game_action_ack_latency_ms_count[30m]))
       - record: game_action_ack_latency_ms:sli_latency:ratio_rate1h
         expr: sum(rate(game_action_ack_latency_ms_bucket{le="250"}[1h]))
           / sum(rate(game_action_ack_latency_ms_count[1h]))
       - record: game_action_ack_latency_ms:sli_latency:ratio_rate6h
         expr: sum(rate(game_action_ack_latency_ms_bucket{le="250"}[6h]))
           / sum(rate(game_action_ack_latency_ms_count[6h]))
+      - record: game_action_ack_latency_error_budget:burn_rate5m
+        expr: (1 - game_action_ack_latency_ms:sli_latency:ratio_rate5m) / (1 - 0.99)
+      - record: game_action_ack_latency_error_budget:burn_rate30m
+        expr: (1 - game_action_ack_latency_ms:sli_latency:ratio_rate30m) / (1 - 0.99)
       - record: game_action_ack_latency_error_budget:burn_rate1h
         expr: (1 - game_action_ack_latency_ms:sli_latency:ratio_rate1h) / (1 - 0.99)
       - record: game_action_ack_latency_error_budget:burn_rate6h
         expr: (1 - game_action_ack_latency_ms:sli_latency:ratio_rate6h) / (1 - 0.99)
   - name: game-action-ack-latency-alerts
     rules:
-      - alert: GameActionAckLatencySLOBurnRate1h
-        expr: game_action_ack_latency_error_budget:burn_rate1h > 14.4
+      - alert: GameActionAckLatencySLOBurnRateFast
+        expr: game_action_ack_latency_error_budget:burn_rate5m > 14.4 and game_action_ack_latency_error_budget:burn_rate1h > 14.4
         for: 2m
         labels:
           severity: critical
           pagerduty_service: pokerhub-ops
         annotations:
-          summary: "1h game action ACK latency burn rate too high"
+          summary: "Short-window game action ACK latency burn rate too high"
           runbook: https://github.com/Nera26/pokerhub/blob/main/docs/runbooks/action-ack-latency.md
-      - alert: GameActionAckLatencySLOBurnRate6h
-        expr: game_action_ack_latency_error_budget:burn_rate6h > 6
+      - alert: GameActionAckLatencySLOBurnRateSlow
+        expr: game_action_ack_latency_error_budget:burn_rate30m > 6 and game_action_ack_latency_error_budget:burn_rate6h > 6
         for: 15m
         labels:
           severity: critical
           pagerduty_service: pokerhub-ops
         annotations:
-          summary: "6h game action ACK latency burn rate too high"
+          summary: "Long-window game action ACK latency burn rate too high"
           runbook: https://github.com/Nera26/pokerhub/blob/main/docs/runbooks/action-ack-latency.md
       - alert: GameActionAckLatencyP95High
         expr: game_action_ack_latency_ms:p95 > 120
