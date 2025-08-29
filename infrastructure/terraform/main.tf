@@ -38,11 +38,6 @@ resource "aws_db_instance" "replica" {
   copy_tags_to_snapshot   = true
 }
 
-resource "aws_db_instance_automated_backups_replication" "primary" {
-  provider               = aws.replica
-  source_db_instance_arn = aws_db_instance.primary.arn
-}
-
 resource "aws_elasticache_replication_group" "redis_cluster" {
   replication_group_id       = "pokerhub-redis"
   engine                     = "redis"

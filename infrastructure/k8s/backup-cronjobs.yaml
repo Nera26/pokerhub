@@ -1,0 +1,50 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+spec:
+  schedule: "0 2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: postgres-backup
+              image: postgres:15
+              envFrom:
+                - secretRef:
+                    name: backup-env
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  pg_dumpall -h "$POSTGRES_HOST" -U "$POSTGRES_USER" | gzip | \
+                  openssl enc -aes-256-cbc -salt -pass env:BACKUP_PASSPHRASE | \
+                  aws s3 cp - "s3://$BACKUP_BUCKET/postgres/$(date +%F-%H%M%S).sql.gz.enc"
+          restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: redis-backup
+spec:
+  schedule: "30 2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: redis-backup
+              image: redis:7
+              envFrom:
+                - secretRef:
+                    name: backup-env
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  redis-cli -h "$REDIS_HOST" --rdb /tmp/dump.rdb && \
+                  openssl enc -aes-256-cbc -salt -pass env:BACKUP_PASSPHRASE -in /tmp/dump.rdb | \
+                  aws s3 cp - "s3://$BACKUP_BUCKET/redis/dump-$(date +%F-%H%M%S).rdb.enc"
+          restartPolicy: OnFailure
