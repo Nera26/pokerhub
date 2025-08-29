@@ -12,6 +12,9 @@ describe('event schemas', () => {
       EventSchemas['wallet.credit'].parse({
         accountId: 'no-uuid',
         amount: '5',
+        currency: 'USD',
+        refType: 'test',
+        refId: 'ref',
       }),
     ).toThrow();
   });

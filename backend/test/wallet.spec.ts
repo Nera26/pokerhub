@@ -51,6 +51,8 @@ describe('WalletService zero-sum property', () => {
     const settleRepo = dataSource.getRepository(SettlementJournal);
     const redis = {
       incr: (): Promise<number> => Promise.resolve(0),
+      incrby: (): Promise<number> => Promise.resolve(0),
+      decrby: (): Promise<number> => Promise.resolve(0),
       expire: (): Promise<void> => Promise.resolve(),
     } as unknown as Redis;
     const provider = {

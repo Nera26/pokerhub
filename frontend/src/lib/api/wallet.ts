@@ -12,38 +12,59 @@ import {
 } from '@shared/types';
 
 /* istanbul ignore next */
-async function postAmount(path: string, amount: number, signal?: AbortSignal): Promise<MessageResponse> {
-  AmountSchema.parse({ amount });
+async function postAmount(
+  path: string,
+  amount: number,
+  currency: string,
+  signal?: AbortSignal,
+): Promise<MessageResponse> {
+  AmountSchema.parse({ amount, currency });
   const baseUrl = getBaseUrl();
   const res = serverFetch(`${baseUrl}${path}`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ amount }),
+    body: JSON.stringify({ amount, currency }),
     signal,
   });
   return handleResponse(res, MessageResponseSchema);
 }
 
-export function reserve(id: string, amount: number, opts: { signal?: AbortSignal } = {}) {
-  return postAmount(`/api/wallet/${id}/reserve`, amount, opts.signal);
+export function reserve(
+  id: string,
+  amount: number,
+  currency: string,
+  opts: { signal?: AbortSignal } = {},
+) {
+  return postAmount(`/api/wallet/${id}/reserve`, amount, currency, opts.signal);
 }
 
-export function commit(id: string, amount: number, opts: { signal?: AbortSignal } = {}) {
-  return postAmount(`/api/wallet/${id}/commit`, amount, opts.signal);
+export function commit(
+  id: string,
+  amount: number,
+  currency: string,
+  opts: { signal?: AbortSignal } = {},
+) {
+  return postAmount(`/api/wallet/${id}/commit`, amount, currency, opts.signal);
 }
 
-export function rollback(id: string, amount: number, opts: { signal?: AbortSignal } = {}) {
-  return postAmount(`/api/wallet/${id}/rollback`, amount, opts.signal);
+export function rollback(
+  id: string,
+  amount: number,
+  currency: string,
+  opts: { signal?: AbortSignal } = {},
+) {
+  return postAmount(`/api/wallet/${id}/rollback`, amount, currency, opts.signal);
 }
 
 export function withdraw(
   id: string,
   amount: number,
   deviceId: string,
+  currency: string,
   opts: { signal?: AbortSignal } = {},
 ) {
-  const payload = WithdrawRequestSchema.parse({ amount, deviceId });
+  const payload = WithdrawRequestSchema.parse({ amount, deviceId, currency });
   const baseUrl = getBaseUrl();
   const res = serverFetch(`${baseUrl}/api/wallet/${id}/withdraw`, {
     method: 'POST',

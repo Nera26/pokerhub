@@ -17,6 +17,7 @@ export const WalletMovementEvent = z.object({
   amount: z.number(),
   refType: z.string(),
   refId: z.string(),
+  currency: z.string(),
 });
 
 const ActionBase = z.object({
@@ -51,12 +52,14 @@ export const WalletReserveEvent = z.object({
   accountId: z.string().uuid(),
   amount: z.number(),
   refId: z.string(),
+  currency: z.string(),
 });
 
 export const WalletCommitEvent = z.object({
   refId: z.string(),
   amount: z.number(),
   rake: z.number(),
+  currency: z.string(),
 });
 
 export const AntiCheatFlagEvent = z.object({
@@ -65,6 +68,7 @@ export const AntiCheatFlagEvent = z.object({
   amount: z.number(),
   dailyTotal: z.number(),
   limit: z.number(),
+  currency: z.string(),
 });
 
 export const EventSchemas = {
