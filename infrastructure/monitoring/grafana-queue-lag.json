@@ -1,0 +1,17 @@
+{
+  "dashboard": {
+    "title": "Queue Lag",
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "Queue Lag Seconds",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "max(queue_lag_seconds)"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "dashboard": {
+    "title": "Error Rates",
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "HTTP Error Rate",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(http_server_requests_errors_total[5m])"
+          }
+        ]
+      }
+    ]
+  }
+}
