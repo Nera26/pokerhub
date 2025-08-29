@@ -1,4 +1,5 @@
 import { parentPort, workerData } from 'worker_threads';
+import Redis from 'ioredis';
 import { GameAction, GameEngine, GameState } from './engine';
 import { AppDataSource } from '../database/data-source';
 import { SettlementService } from '../wallet/settlement.service';
@@ -8,6 +9,18 @@ if (!parentPort) {
   throw new Error('Worker must be run as a worker thread');
 }
 const port = parentPort;
+
+const opts = (workerData as any).redisOptions as any;
+const pub: Redis | undefined = opts ? new Redis(opts) : undefined;
+const sub: Redis | undefined = opts ? new Redis(opts) : undefined;
+const diffChannel = `room:${workerData.tableId}:diffs`;
+const ackChannel = `room:${workerData.tableId}:snapshotAck`;
+sub?.subscribe(ackChannel);
+sub?.on('message', (channel, msg) => {
+  if (channel === ackChannel) {
+    port.postMessage({ event: 'snapshotAck', index: Number(msg) });
+  }
+});
 
 let settlement: SettlementService;
 
@@ -47,6 +60,7 @@ async function main() {
             await svc.reserve(engine.getHandId(), state.street, idx);
             port.postMessage({ event: 'state', state });
             await svc.commit(engine.getHandId(), state.street, idx);
+            await pub?.publish(diffChannel, JSON.stringify([idx, state]));
           }
           port.postMessage({ seq: msg.seq, state });
           break;
@@ -66,6 +80,12 @@ async function main() {
             .filter(([index]) => index >= from)
             .map(([index, , , post]) => [index, post] as [number, GameState]);
           port.postMessage({ seq: msg.seq, states: log });
+          break;
+        case 'snapshot':
+          const snap = engine
+            .getHandLog()
+            .map(([index, , , post]) => [index, post] as [number, GameState]);
+          port.postMessage({ seq: msg.seq, states: snap });
           break;
         case 'ping':
           port.postMessage({ seq: msg.seq, ok: true });

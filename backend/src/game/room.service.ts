@@ -11,29 +11,6 @@ import { metrics, type ObservableResult } from '@opentelemetry/api';
 import type { GameAction, GameState } from './engine';
 import type Redis from 'ioredis';
 
-class InMemoryPub {
-  constructor(private readonly bus: EventEmitter) {}
-  publish(channel: string, msg: string) {
-    this.bus.emit(channel, msg);
-    return Promise.resolve(1);
-  }
-}
-
-class InMemorySub extends EventEmitter {
-  constructor(private readonly bus: EventEmitter) {
-    super();
-  }
-  subscribe(channel: string) {
-    this.bus.on(channel, (msg) => this.emit('message', channel, msg));
-    return Promise.resolve(1);
-  }
-}
-
-function createInMemoryPubSub() {
-  const bus = new EventEmitter();
-  return { pub: new InMemoryPub(bus), sub: new InMemorySub(bus) };
-}
-
 class WorkerHost extends EventEmitter {
   private readonly worker: Worker;
   private seq = 0;
@@ -42,10 +19,15 @@ class WorkerHost extends EventEmitter {
     [(s: unknown) => void, (e: unknown) => void]
   >();
 
-  constructor(private readonly tableId: string, playerIds?: string[]) {
+  constructor(
+    private readonly tableId: string,
+    file: string,
+    playerIds?: string[],
+    extraData: Record<string, unknown> = {},
+  ) {
     super();
-    this.worker = new Worker(resolve(__dirname, './room.worker.ts'), {
-      workerData: { tableId, playerIds },
+    this.worker = new Worker(resolve(__dirname, file), {
+      workerData: { tableId, playerIds, ...extraData },
       execArgv: ['-r', 'ts-node/register'],
     });
 
@@ -64,11 +46,12 @@ class WorkerHost extends EventEmitter {
       }
     });
 
-    this.worker.on('exit', () => {
+    this.worker.on('exit', (code) => {
       for (const [, [, reject]] of this.pending) {
         reject(new Error('worker exited'));
       }
       this.pending.clear();
+      this.emit('exit', code);
     });
   }
 
@@ -102,6 +85,10 @@ class WorkerHost extends EventEmitter {
 
   resume(from: number): Promise<Array<[number, GameState]>> {
     return this.call('resume', { from });
+  }
+
+  snapshot(states: Array<[number, GameState]>): Promise<void> {
+    return this.call('snapshot', { states });
   }
 
   ping(): Promise<void> {
@@ -154,40 +141,27 @@ class RoomWorker extends EventEmitter {
     } as any);
   };
 
-  private readonly channel: string;
-  private readonly pub: any;
-  private readonly sub: any;
-
   constructor(
     private readonly tableId: string,
     redis?: Redis,
     playerIds?: string[],
   ) {
     super();
-    this.primary = new WorkerHost(tableId, playerIds);
-    this.follower = new WorkerHost(tableId, playerIds);
+    const extra = redis ? { redisOptions: redis.options } : {};
+    this.primary = new WorkerHost(tableId, './room.worker.ts', playerIds, extra);
+    this.follower = new WorkerHost(tableId, './room.follower.ts', playerIds, extra);
     this.primary.on('state', (s) => this.emit('state', s));
-
-    const ps = redis
-      ? { pub: redis, sub: redis.duplicate() }
-      : createInMemoryPubSub();
-    this.pub = ps.pub;
-    this.sub = ps.sub;
-    this.channel = `room:${tableId}:actions`;
-    void this.sub.subscribe(this.channel);
-    this.sub.on('message', async (_: string, msg: string) => {
-      if (!this.follower) return;
-      try {
-        await this.follower.apply(JSON.parse(msg) as GameAction);
-        this.lastConfirmed++;
-        RoomWorker.actionLag.add(-1, { tableId: this.tableId });
-      } catch {
-        // ignore follower apply errors
-      }
-    });
-
+    this.primary.on('exit', () => void this.promoteFollower());
     RoomWorker.followerLag.addCallback(this.observeLag);
+    void this.syncFollower();
     this.startHeartbeat();
+  }
+
+  private async syncFollower() {
+    if (!this.follower) return;
+    const states = await this.primary.resume(0);
+    await this.follower.snapshot(states);
+    this.lastConfirmed = states.length;
   }
 
   private startHeartbeat() {
@@ -223,14 +197,7 @@ class RoomWorker extends EventEmitter {
   async apply(action: GameAction): Promise<GameState> {
     const state = await this.primary.apply(action);
     this.applied++;
-
-    if (this.follower) {
-      RoomWorker.actionLag.add(1, { tableId: this.tableId });
-    } else {
-      this.lastConfirmed = this.applied;
-    }
-
-    await this.pub.publish(this.channel, JSON.stringify(action));
+    this.lastConfirmed = this.applied;
     return state;
   }
 
@@ -254,7 +221,6 @@ class RoomWorker extends EventEmitter {
     if (this.heartbeat) clearInterval(this.heartbeat);
     await this.primary.terminate();
     if (this.follower) await this.follower.terminate();
-    this.sub?.removeAllListeners?.();
     RoomWorker.followerLag.removeCallback(this.observeLag);
     this.removeAllListeners();
   }
