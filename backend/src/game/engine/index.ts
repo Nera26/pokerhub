@@ -2,6 +2,7 @@ import { HandLog, HandLogEntry } from '../hand-log';
 import { HandStateMachine, GameAction, GameState } from '../state-machine';
 import { SettlementJournal } from '../settlement';
 import { WalletService } from '../../wallet/wallet.service';
+import { evaluateHand } from '../hand-evaluator';
 import { randomUUID } from 'crypto';
 import { HandRNG } from '../rng';
 import { Repository } from 'typeorm';
@@ -120,8 +121,8 @@ export class GameEngine {
 
   private async settle() {
     const state = this.machine.getState();
-    const winners = state.players.filter((p) => !p.folded);
-    if (winners.length === 0) return;
+    const active = state.players.filter((p) => !p.folded);
+    if (active.length === 0) return;
 
     if (this.handRepo) {
       const existing = await this.handRepo.findOne({
@@ -130,10 +131,49 @@ export class GameEngine {
       if (existing?.settled) return;
     }
 
-    const share = Math.floor(state.pot / winners.length);
-    winners.forEach((p) => (p.stack += share));
-    const remainder = state.pot - share * winners.length;
-    if (remainder > 0) winners[0].stack += remainder;
+    const board: number[] = (state as any).board ?? [];
+    const scores = new Map<string, number>();
+    for (const p of active) {
+      const hole: number[] = (p as any).cards ?? (p as any).holeCards ?? [];
+      let score = 0;
+      try {
+        score = evaluateHand([...hole, ...board]);
+      } catch {
+        score = 0;
+      }
+      scores.set(p.id, score);
+    }
+
+    const pots =
+      state.sidePots.length > 0
+        ? [...state.sidePots]
+        : [{ amount: state.pot, players: active.map((p) => p.id) }];
+
+    let totalPot = pots.reduce((s, p) => s + p.amount, 0);
+    let rake = 0;
+    if (this.wallet) {
+      rake = Math.floor(totalPot * 0.05);
+      if (pots.length > 0) {
+        pots[0].amount -= rake;
+      } else {
+        totalPot -= rake;
+      }
+    }
+
+    for (const pot of pots) {
+      const contenders = active.filter((p) => pot.players.includes(p.id));
+      if (contenders.length === 0) continue;
+      const best = Math.max(...contenders.map((p) => scores.get(p.id)!));
+      const winners = contenders.filter((p) => scores.get(p.id) === best);
+      const share = Math.floor(pot.amount / winners.length);
+      for (const w of winners) {
+        w.stack += share;
+      }
+      const remainder = pot.amount - share * winners.length;
+      if (remainder > 0) {
+        winners[0].stack += remainder;
+      }
+    }
     state.pot = 0;
 
     let totalLoss = 0;
@@ -150,7 +190,7 @@ export class GameEngine {
     }
 
     if (this.wallet && totalLoss > 0) {
-      await this.wallet.commit(this.handId, totalLoss, 0);
+      await this.wallet.commit(this.handId, totalLoss, rake);
     }
 
     const proof = this.rng.reveal();
@@ -166,9 +206,16 @@ export class GameEngine {
       });
     }
 
+    const mainPotPlayers = pots[0]?.players ?? active.map((p) => p.id);
+    const bestMain = Math.max(
+      ...mainPotPlayers.map((id) => scores.get(id) ?? 0),
+    );
+    const mainWinners = mainPotPlayers.filter(
+      (id) => (scores.get(id) ?? 0) === bestMain,
+    );
     this.events?.emit('hand.end', {
       handId: this.handId,
-      winners: winners.map((w) => w.id),
+      winners: mainWinners,
     });
   }
 }
