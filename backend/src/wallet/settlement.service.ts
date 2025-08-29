@@ -32,6 +32,9 @@ export class SettlementService {
 
   async commit(handId: string, street: Street, idx: number): Promise<void> {
     const idempotencyKey = this.buildKey(handId, street, idx);
-    await this.repo.update({ idempotencyKey }, { status: 'committed' });
+    await this.repo.update(
+      { idempotencyKey, status: 'reserved' },
+      { status: 'committed' },
+    );
   }
 }
