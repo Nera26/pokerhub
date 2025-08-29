@@ -15,7 +15,14 @@ export class AnalyticsService {
   private readonly producer: Producer;
   private readonly ajv = new Ajv();
   private readonly validators: Record<EventName, ValidateFunction> = {};
-  private readonly topic = 'poker.events';
+  private readonly topicMap: Record<string, string> = {
+    hand: 'hand',
+    action: 'hand',
+    tournament: 'tourney',
+    wallet: 'wallet',
+    auth: 'auth',
+    antiCheat: 'auth',
+  };
 
   constructor(
     config: ConfigService,
@@ -61,9 +68,14 @@ export class AnalyticsService {
       return;
     }
     const payload = { event, data };
+    const topic = this.topicMap[event.split('.')[0]];
+    if (!topic) {
+      this.logger.warn(`No topic mapping for event ${event}`);
+      return;
+    }
     await Promise.all([
       this.producer.send({
-        topic: this.topic,
+        topic,
         messages: [{ value: JSON.stringify(payload) }],
       }),
       this.ingest(event.replace('.', '_'), data as Record<string, any>),
@@ -79,7 +91,7 @@ export class AnalyticsService {
     );
     await Promise.all([
       this.producer.send({
-        topic: this.topic,
+        topic: this.topicMap.hand,
         messages: [
           {
             value: JSON.stringify({ event: 'game.event', data: event }),
@@ -99,7 +111,7 @@ export class AnalyticsService {
     );
     await Promise.all([
       this.producer.send({
-        topic: this.topic,
+        topic: this.topicMap.tournament,
         messages: [
           {
             value: JSON.stringify({ event: 'tournament.event', data: event }),
