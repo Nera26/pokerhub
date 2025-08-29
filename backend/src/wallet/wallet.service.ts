@@ -349,6 +349,15 @@ export class WalletService {
     return accounts.reduce((sum, acc) => sum + acc.balance, 0);
   }
 
+  async totalJournal(): Promise<number> {
+    const { sum } =
+      ((await this.journals
+        .createQueryBuilder('j')
+        .select('COALESCE(SUM(j.amount),0)', 'sum')
+        .getRawOne()) as { sum: number } | null) ?? { sum: 0 };
+    return Number(sum);
+  }
+
   async reconcile(): Promise<ReconcileRow[]> {
     const accounts = await this.accounts.find();
     const report: ReconcileRow[] = [];
