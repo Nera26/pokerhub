@@ -48,6 +48,13 @@ SELECT * FROM stake_action_latency ORDER BY stake;
 Import `load/grafana-stake-metrics.json` into Grafana to visualize these
 aggregates and receive alerts when thresholds are crossed.
 
+### Player Analytics
+
+Import `infrastructure/observability/player-analytics-dashboard.json` into
+Grafana for DAU/MAU trends, rake curves, and stake-level VPIP/PFR visualizations.
+Metabase cards for the same metrics live in
+`infrastructure/observability/metabase-dashboard.json`.
+
 ## OpenTelemetry
 Metrics can also be shipped via OTLP:
 ```sh
