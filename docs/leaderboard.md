@@ -5,6 +5,10 @@ Each file is named `YYYY-MM-DD.jsonl` and contains newline-delimited JSON
 objects describing sessions. Generating a 30‑day dataset therefore requires 30
 such files.
 
+The CLI `rebuild.cli.ts` measures its own runtime and RSS memory usage, logging
+both metrics when the rebuild completes. Use `--assert-duration=<ms>` to fail
+the run if it takes too long.
+
 ## Command
 
 ```bash
@@ -30,17 +34,19 @@ non‑zero if the rebuild exceeds the target duration (30 minutes above).
 ## Expected hardware
 
 A 5‑vCPU / 10 GiB RAM VM (Intel Xeon Platinum 8370C) processed a synthetic dataset
-of ~3 000 events (100 per day for 30 days) in well under one second, leaving
+of ~6 000 events (200 per day for 30 days) in well under one second, leaving
 ample headroom for much larger inputs while staying below the 30‑minute goal.
 
 ## Benchmark
 
-To generate a fresh 30‑day synthetic dataset and verify rebuild performance
+To generate a fresh month of synthetic events and verify rebuild performance
 against the incremental model, run:
 
 ```bash
 npm run --workspace backend benchmark:leaderboard
 ```
 
-The script fails if rebuilding takes longer than 30 minutes or if the resulting
-leaderboard differs from the incremental calculation.
+This seeds 30 days of data (~6 000 sessions across 50 players) into
+`storage/events/`, triggers a leaderboard rebuild, and logs runtime and memory
+usage. The script fails if rebuilding takes longer than 30 minutes or if the
+resulting leaderboard differs from the incremental calculation.

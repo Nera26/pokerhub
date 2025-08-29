@@ -1,40 +1,49 @@
 import { NestFactory } from '@nestjs/core';
 import { promises as fs } from 'fs';
 import { join } from 'path';
+import { randomInt } from 'crypto';
 import { AppModule } from '../app.module';
 import { LeaderboardService } from './leaderboard.service';
 import { updateRating } from './rating';
 
 async function bootstrap() {
   const DAY_MS = 24 * 60 * 60 * 1000;
+  const DAYS = 30; // seed one month of data
+  const PLAYERS = 50;
+  const SESSIONS_PER_DAY = 200;
+
   const dir = join(process.cwd(), 'storage', 'events');
   await fs.rm(dir, { recursive: true, force: true });
   await fs.mkdir(dir, { recursive: true });
 
   const now = Date.now();
-  const players = Array.from({ length: 10 }, (_, i) => `p${i}`);
+  const players = Array.from({ length: PLAYERS }, (_, i) => `p${i}`);
   const events: {
     playerId: string;
     sessionId: string;
     points: number;
     ts: number;
   }[] = [];
-  for (let d = 0; d < 30; d++) {
+  for (let d = 0; d < DAYS; d++) {
     const dateStr = new Date(now - d * DAY_MS).toISOString().slice(0, 10);
     const file = join(dir, `${dateStr}.jsonl`);
     const lines: string[] = [];
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < SESSIONS_PER_DAY; i++) {
+      const playerId = players[randomInt(players.length)];
       const ev = {
-        playerId: players[i % players.length],
-        sessionId: `${dateStr}-s${i}`,
-        points: 10,
-        ts: now - d * DAY_MS,
+        playerId,
+        sessionId: `${dateStr}-${playerId}-s${i}`,
+        points: randomInt(1, 21),
+        ts: now - d * DAY_MS + randomInt(DAY_MS),
       };
       events.push(ev);
       lines.push(JSON.stringify(ev));
     }
     await fs.writeFile(file, lines.join('\n'));
   }
+  console.log(
+    `Seeded ${DAYS} days with ${PLAYERS} players (${DAYS * SESSIONS_PER_DAY} sessions)`,
+  );
 
   // incremental model
   const scores = new Map<
