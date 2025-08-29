@@ -93,3 +93,16 @@ For convenience a CLI is available to dump the proof for a specific hand.
    ```
 
    The command prints a JSON object containing the `seed`, `nonce` and `commitment` for the hand.
+
+### Exporting proof with deck
+
+Auditors can also export the fully reconstructed deck for a hand. The helper
+script reads the hand from the database, verifies the commitment and writes a
+JSON file under `storage/proofs/<handId>.json` containing the commitment, seed,
+nonce and deterministic deck order:
+
+```sh
+npx ts-node scripts/export-hand-proof.ts <handId>
+```
+
+The script also prints the same object to stdout for quick inspection.
