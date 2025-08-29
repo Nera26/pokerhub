@@ -10,12 +10,13 @@ interface Histogram {
 }
 
 const WS_URL = process.env.WS_URL || "ws://localhost:3001";
-const TABLES = Number(process.env.TABLES || 10000);
-const PLAYERS_PER_TABLE = Number(process.env.PLAYERS_PER_TABLE || 2);
+const TABLES = Math.min(Number(process.env.TABLES || 10000), 10000);
+const SOCKETS = Math.min(Number(process.env.SOCKETS || 80000), 80000);
 const ACTION_INTERVAL_MS = Number(process.env.ACTION_INTERVAL_MS || 3000); // realistic ~3s action
 const ACTIONS_PER_CLIENT = Number(process.env.ACTIONS_PER_CLIENT || 20);
+const P95_THRESHOLD_MS = Number(process.env.P95_THRESHOLD_MS || 120);
 
-const TOTAL_CLIENTS = TABLES * PLAYERS_PER_TABLE;
+const TOTAL_CLIENTS = SOCKETS;
 
 function percentile(sorted: number[], p: number): number {
   if (sorted.length === 0) return 0;
@@ -30,6 +31,48 @@ function recordHistogram(latencies: number[]): Histogram {
     p95: percentile(sorted, 95),
     p99: percentile(sorted, 99),
   };
+}
+
+async function setupToxiproxy() {
+  const fetchFn: typeof fetch = (globalThis as any).fetch;
+  const host = process.env.TOXIPROXY_URL || "http://localhost:8474";
+  const name = process.env.TOXIPROXY_NAME || "pokerhub_ws";
+  const listen = `0.0.0.0:${process.env.PROXY_PORT || "3001"}`;
+  const upstream = process.env.UPSTREAM || "localhost:3000";
+
+  // ensure clean slate
+  await fetchFn(`${host}/proxies/${name}`, { method: "DELETE" }).catch(() => {});
+  await fetchFn(`${host}/proxies`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, listen, upstream }),
+  });
+
+  // remove existing toxics
+  await fetchFn(`${host}/proxies/${name}/toxics/all`, { method: "DELETE" }).catch(() => {});
+
+  // latency + jitter
+  await fetchFn(`${host}/proxies/${name}/toxics`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: "latency",
+      type: "latency",
+      attributes: { latency: 200, jitter: 200 },
+    }),
+  });
+
+  // packet loss
+  await fetchFn(`${host}/proxies/${name}/toxics`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: "packet_loss",
+      type: "timeout",
+      attributes: { timeout: 1 },
+      toxicity: 0.05,
+    }),
+  });
 }
 
 async function simulateClient(tableId: number, latencies: number[]): Promise<void> {
@@ -75,6 +118,7 @@ async function workerMain() {
 }
 
 async function primaryMain() {
+  await setupToxiproxy();
   const workers = os.cpus().length;
   const clientsPerWorker = Math.ceil(TOTAL_CLIENTS / workers);
   const allLatencies: number[] = [];
@@ -102,6 +146,11 @@ async function primaryMain() {
       const hist = recordHistogram(allLatencies);
       fs.writeFileSync("latency-hist.json", JSON.stringify(hist, null, 2));
       console.log("Latency ms", hist);
+      if (hist.p95 > P95_THRESHOLD_MS) {
+        console.error(`p95 ${hist.p95}ms exceeds ${P95_THRESHOLD_MS}ms`);
+        process.exit(1);
+      }
+      process.exit(0);
     }
   });
 }

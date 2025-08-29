@@ -11,7 +11,8 @@
     "push:all": "npm run push:frontend && npm run push:backend",
     "load:swarm": "mkdir -p load/results && k6 run load/k6-swarm.js --summary-export=load/results/k6-swarm-summary.json",
     "contracts:generate": "node contracts/generate-types.mjs",
-    "test:contracts": "npm test --prefix backend -- test/contracts/status.service.contract.spec.ts"
+    "test:contracts": "npm test --prefix backend -- test/contracts/status.service.contract.spec.ts",
+    "test:load": "npm run load:socket --prefix backend"
   },
   "devDependencies": {
     "openapi-typescript": "^6.7.0",
