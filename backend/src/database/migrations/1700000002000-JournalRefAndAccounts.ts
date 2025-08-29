@@ -14,7 +14,7 @@ export class JournalRefAndAccounts1700000002000 implements MigrationInterface {
       `ALTER TABLE "journal_entry" ADD "hash" character varying NOT NULL`
     );
     await queryRunner.query(
-      `CREATE UNIQUE INDEX "IDX_journal_entry_hash" ON "journal_entry" ("hash")`
+      `ALTER TABLE "journal_entry" ADD CONSTRAINT "UQ_journal_entry_hash" UNIQUE ("hash")`
     );
     await queryRunner.query(
       `INSERT INTO "account"("id","name","currency","balance") VALUES ('00000000-0000-0000-0000-000000000003','rake','USD',0),('00000000-0000-0000-0000-000000000004','prize','USD',0)`
@@ -26,7 +26,7 @@ export class JournalRefAndAccounts1700000002000 implements MigrationInterface {
       `DELETE FROM "account" WHERE "name" IN ('rake','prize')`
     );
     await queryRunner.query(
-      `DROP INDEX "public"."IDX_journal_entry_hash"`
+      `ALTER TABLE "journal_entry" DROP CONSTRAINT "UQ_journal_entry_hash"`
     );
     await queryRunner.query(
       `ALTER TABLE "journal_entry" DROP COLUMN "hash"`

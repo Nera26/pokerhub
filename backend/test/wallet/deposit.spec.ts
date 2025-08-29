@@ -170,6 +170,7 @@ describe('WalletService deposit', () => {
     const jRepo = dataSource.getRepository(JournalEntry);
     const entries = await jRepo.find();
     expect(entries.filter((e) => e.providerStatus === 'chargeback').length).toBe(4);
+    expect(entries.every((e) => e.currency === 'USD')).toBe(true);
   });
 
   it('flags and rejects deposits exceeding daily limits', async () => {

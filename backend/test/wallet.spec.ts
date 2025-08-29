@@ -128,6 +128,8 @@ describe('WalletService zero-sum property', () => {
             expect(total).toBe(0);
             const count = await journalRepo.count();
             expect(count).toBe(expectedEntries);
+            const entries = await journalRepo.find();
+            expect(entries.every((e) => e.currency === 'USD')).toBe(true);
             const report = await service.reconcile();
             expect(report).toHaveLength(0);
           }
