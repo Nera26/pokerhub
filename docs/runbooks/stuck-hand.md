@@ -21,3 +21,6 @@ When a hand fails to advance to the next state, use this guide to restore normal
 ## Escalation
 - PagerDuty: pokerhub-eng
 - Slack: #ops
+
+## Drill
+- Covered by monthly chaos drill (`load/chaos/k6-latency.js`).

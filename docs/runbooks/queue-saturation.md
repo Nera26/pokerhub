@@ -20,3 +20,6 @@ Handle situations where message queues accumulate a backlog faster than consumer
 ## Escalation
 - PagerDuty: pokerhub-eng
 - Slack: #ops
+
+## Drill
+- Simulated monthly with `load/chaos/artillery-packet-loss.yml`.
