@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pokerhub-global
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    kubernetes.io/ingress.global-static-ip-name: "pokerhub-anycast-ip"
+    nginx.ingress.kubernetes.io/enable-websocket: "true"
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/session-cookie-name: "pokerhub-affinity"
+    nginx.ingress.kubernetes.io/upstream-hash-by: "$arg_tableId$cookie_userId"
+spec:
+  rules:
+  - host: pokerhub.example.com
+    http:
+      paths:
+      - path: /(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: pokerhub-backend
+            port:
+              number: 80
