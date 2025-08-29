@@ -2,7 +2,8 @@ import { z, type ZodType } from 'zod';
 import { getBaseUrl } from '@/lib/base-url';
 import { handleResponse, ApiError } from './client';
 import { serverFetch } from '@/lib/server-fetch';
-import { TableSchema, type Table, TournamentSchema, type Tournament } from '@shared/types';
+import type { components } from '@/types/api';
+import { TableSchema, TournamentSchema } from '@shared/types';
 
 export async function fetchLobbyData<T>(
   endpoint: string,
@@ -38,7 +39,7 @@ export async function getTables({
   signal,
 }: {
   signal?: AbortSignal;
-} = {}): Promise<Table[]> {
+  } = {}): Promise<components['schemas']['Table'][]> {
   const baseUrl = getBaseUrl();
   try {
     const res = await serverFetch(`${baseUrl}/api/tables`, {
@@ -65,9 +66,10 @@ export async function getTables({
 
 export async function fetchTables({
   signal,
-}: {
-  signal?: AbortSignal;
-}): Promise<Table[]> {
+  }:
+    {
+      signal?: AbortSignal;
+    }): Promise<components['schemas']['Table'][]> {
   return getTables({ signal });
 }
 
@@ -75,8 +77,8 @@ export async function fetchTournaments({
   signal,
 }: {
   signal?: AbortSignal;
-}): Promise<Tournament[]> {
-  return fetchLobbyData<Tournament[]>(
+  }): Promise<components['schemas']['Tournament'][]> {
+  return fetchLobbyData<components['schemas']['Tournament'][]>(
     'tournaments',
     z.array(TournamentSchema),
     { signal },
