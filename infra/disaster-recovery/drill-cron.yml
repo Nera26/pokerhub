@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pg-drill
+spec:
+  schedule: "0 2 1 * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: drill
+              image: ghcr.io/pokerhub/infra-tools:latest
+              command: ["/bin/bash", "/scripts/drill.sh"]
+              env:
+                - name: PG_INSTANCE_ID
+                  value: primary-pg
+                - name: SECONDARY_REGION
+                  value: us-east-1
+                - name: PGUSER
+                  valueFrom:
+                    secretKeyRef:
+                      name: dr-postgres
+                      key: username
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: dr-postgres
+                      key: password
+                - name: PGDATABASE
+                  value: postgres
