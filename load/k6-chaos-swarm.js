@@ -1,4 +1,4 @@
-// Chaos swarm: 80k sockets across 10k tables. Assumes toxiproxy adds 5% packet loss and 200ms latency.
+// Chaos swarm: 80k sockets across 10k tables. Assumes toxiproxy adds 5% packet loss and 200ms jitter.
 
 import { Trend, Rate } from 'k6/metrics';
 import { io } from 'k6/x/socket.io';

@@ -4,9 +4,9 @@ set -euo pipefail
 PROXY_NAME=${PROXY_NAME:-pokerhub_ws}
 PROXY_PORT=${PROXY_PORT:-3001}
 UPSTREAM=${UPSTREAM:-localhost:3000}
-LOSS=${PACKET_LOSS:-0.01}
-LATENCY=${LATENCY_MS:-80}
-JITTER=${JITTER_MS:-20}
+LOSS=${PACKET_LOSS:-0.05}
+LATENCY=${LATENCY_MS:-0}
+JITTER=${JITTER_MS:-200}
 
 if ! toxiproxy-cli list | grep -q "$PROXY_NAME"; then
   toxiproxy-cli create $PROXY_NAME -l 0.0.0.0:$PROXY_PORT -u $UPSTREAM

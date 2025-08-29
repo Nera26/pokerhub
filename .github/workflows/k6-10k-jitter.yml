@@ -1,0 +1,34 @@
+name: k6-10k-jitter
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ack-latency:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start toxiproxy
+        run: |
+          docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 ghcr.io/shopify/toxiproxy
+          PACKET_LOSS=0.05 LATENCY_MS=0 JITTER_MS=200 ./load/chaos/toxiproxy-chaos.sh
+      - name: Run k6 10k tables jitter scenario
+        uses: grafana/k6-action@v0.2.0
+        env:
+          WS_URL: ws://localhost:3001
+          TABLES: 10000
+          SOCKETS: 80000
+          ACK_P95_MS: 120
+        with:
+          filename: load/k6-10k-tables.js
+          flags: --summary-export=ack-summary.json --out json=ack-telemetry.json
+      - name: Check thresholds
+        run: ./load/check-thresholds.sh ack-summary.json
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: k6-10k-jitter
+          path: |
+            ack-summary.json
+            ack-telemetry.json
