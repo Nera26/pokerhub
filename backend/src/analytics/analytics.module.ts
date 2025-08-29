@@ -9,9 +9,10 @@ import { FlaggedSessionJob } from './flagged-session.job';
 import { AdminController } from '../routes/admin.controller';
 import { WalletModule } from '../wallet/wallet.module';
 import { AuthModule } from '../auth/auth.module';
+import { StorageModule } from '../storage/storage.module';
 
 @Module({
-  imports: [ConfigModule, RedisModule, WalletModule, AuthModule],
+  imports: [ConfigModule, RedisModule, WalletModule, AuthModule, StorageModule],
   providers: [
     AnalyticsService,
     EtlService,
