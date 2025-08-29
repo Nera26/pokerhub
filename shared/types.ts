@@ -82,6 +82,38 @@ export const KycDenialResponseSchema = z.object({
 });
 export type KycDenialResponse = z.infer<typeof KycDenialResponseSchema>;
 
+export const WalletTransactionSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  amount: z.number().int(),
+  currency: z.string().length(3),
+  status: z.string(),
+  createdAt: z.string().datetime(),
+});
+export type WalletTransaction = z.infer<typeof WalletTransactionSchema>;
+export const WalletTransactionsResponseSchema = z.array(
+  WalletTransactionSchema,
+);
+export type WalletTransactionsResponse = z.infer<
+  typeof WalletTransactionsResponseSchema
+>;
+
+export const PendingTransactionSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  amount: z.number().int(),
+  currency: z.string().length(3),
+  status: z.string(),
+  createdAt: z.string().datetime(),
+});
+export type PendingTransaction = z.infer<typeof PendingTransactionSchema>;
+export const PendingTransactionsResponseSchema = z.array(
+  PendingTransactionSchema,
+);
+export type PendingTransactionsResponse = z.infer<
+  typeof PendingTransactionsResponseSchema
+>;
+
 export const FeatureFlagRequestSchema = z.object({
   value: z.boolean(),
 });
