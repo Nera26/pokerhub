@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  NotFoundException,
-  Header,
-} from '@nestjs/common';
+import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -12,30 +6,13 @@ import { Repository } from 'typeorm';
 import { Hand } from '../database/entities/hand.entity';
 import { HandLog } from '../game/hand-log';
 import { HandStateResponse as HandStateResponseSchema } from '../schemas/hands';
-import type { HandLogResponse, HandStateResponse } from '../schemas/hands';
+import type { HandStateResponse } from '../schemas/hands';
 
 @Controller('hands')
 export class HandsController {
   constructor(
     @InjectRepository(Hand) private readonly hands: Repository<Hand>,
   ) {}
-
-  @Get(':id/log')
-  @Header('Content-Type', 'text/plain')
-  async getLog(@Param('id') id: string): Promise<HandLogResponse> {
-    const file = join(process.cwd(), '../storage/hand-logs', `${id}.jsonl`);
-    try {
-      // Prefer the JSONL file if present
-      return await readFile(file, 'utf8');
-    } catch {
-      // Fallback to DB column if file missing
-      const hand = await this.hands.findOne({ where: { id } });
-      if (!hand) {
-        throw new NotFoundException('log not found');
-      }
-      return hand.log;
-    }
-  }
 
   @Get(':id/state/:actionIndex')
   async getState(

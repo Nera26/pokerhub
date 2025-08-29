@@ -452,6 +452,8 @@ paths:
   /hands/{id}/proof:
     get:
       summary: Get stored RNG proof for a hand
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -471,6 +473,8 @@ paths:
   /hands/{id}/log:
     get:
       summary: Export hand log
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -734,6 +738,11 @@ paths:
         '204':
           description: Flag deleted
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     StatusResponse:
       type: object
