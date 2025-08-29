@@ -190,7 +190,7 @@ export class WalletService {
   async commit(
     refId: string,
     amount: number,
-    rake: number,
+    rakeAmount: number,
     currency: string,
     idempotencyKey?: string,
   ): Promise<void> {
@@ -214,8 +214,8 @@ export class WalletService {
           });
           await this.record('commit', refId, [
             { account: reserve, amount: -amount },
-            { account: prize, amount: amount - rake },
-            { account: rakeAcc, amount: rake },
+            { account: prize, amount: amount - rakeAmount },
+            { account: rakeAcc, amount: rakeAmount },
           ]);
           if (idempotencyKey && this.settlements) {
             await this.settlements.update(

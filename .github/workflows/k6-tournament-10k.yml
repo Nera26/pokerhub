@@ -1,0 +1,31 @@
+name: k6 tournament 10k
+
+on:
+  push:
+    paths:
+      - 'load/k6/k6-tournament-10k.js'
+      - '.github/workflows/k6-tournament-10k.yml'
+  pull_request:
+    paths:
+      - 'load/k6/k6-tournament-10k.js'
+      - '.github/workflows/k6-tournament-10k.yml'
+
+jobs:
+  tournament:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: run tournament 10k
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: load/k6/k6-tournament-10k.js
+          flags: --summary-export=tournament-summary.json --out json=tournament-metrics.json
+      - name: upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: k6-tournament-10k
+          path: |
+            tournament-summary.json
+            tournament-metrics.json

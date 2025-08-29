@@ -8,6 +8,7 @@ import { HandRNG } from '../rng';
 import { Repository } from 'typeorm';
 import { Hand } from '../../database/entities/hand.entity';
 import { EventPublisher } from '../../events/events.service';
+import { resolveRake } from '../rake';
 
 /**
  * GameEngine orchestrates the poker hand state machine, keeping
@@ -20,6 +21,7 @@ export class GameEngine {
   private readonly machine: HandStateMachine;
   private readonly handId = randomUUID();
   private readonly rng = new HandRNG();
+  private readonly stake: string;
 
   private constructor(
     playerIds: string[] = ['p1', 'p2'],
@@ -32,6 +34,7 @@ export class GameEngine {
     private readonly handRepo?: Repository<Hand>,
     private readonly events?: EventPublisher,
     private readonly tableId?: string,
+    stake: string = '1-2',
   ) {
     const players = playerIds.map((id) => ({
       id,
@@ -40,7 +43,9 @@ export class GameEngine {
       bet: 0,
       allIn: false,
     }));
+
     this.initialStacks = new Map(players.map((p) => [p.id, p.stack]));
+
     this.machine = new HandStateMachine(
       {
         phase: 'WAIT_BLINDS',
@@ -55,7 +60,10 @@ export class GameEngine {
       this.rng,
       { smallBlind: config.smallBlind, bigBlind: config.bigBlind },
     );
+
     this.log = new HandLog(this.handId, this.rng.commitment);
+
+    // Persist initial hand shell if a repo is provided (non-blocking)
     if (this.handRepo) {
       void this.handRepo.save({
         id: this.handId,
@@ -64,8 +72,12 @@ export class GameEngine {
         seed: null,
         nonce: null,
         settled: false,
-      });
+        tableId: this.tableId ?? null,
+        stake,
+      } as any);
     }
+
+    this.stake = stake;
   }
 
   static async create(
@@ -79,6 +91,7 @@ export class GameEngine {
     handRepo?: Repository<Hand>,
     events?: EventPublisher,
     tableId?: string,
+    stake: string = '1-2',
   ): Promise<GameEngine> {
     const engine = new GameEngine(
       playerIds,
@@ -87,14 +100,20 @@ export class GameEngine {
       handRepo,
       events,
       tableId,
+      stake,
     );
+
     if (wallet) {
       await engine.reserveStacks();
     }
+
     events?.emit('hand.start', {
       handId: engine.handId,
       players: playerIds,
+      tableId,
+      stake,
     });
+
     return engine;
   }
 
@@ -110,6 +129,7 @@ export class GameEngine {
   }
 
   applyAction(action: GameAction): GameState {
+    // Use a safe deep clone (structuredClone is available in modern runtimes)
     const preState = structuredClone(this.machine.getState());
     let state = this.machine.apply(action);
 
@@ -122,6 +142,7 @@ export class GameEngine {
     }
 
     if (state.phase === 'SHOWDOWN') {
+      // Advance to reveal / settle stage
       state = this.machine.apply({ type: 'next' });
       void this.settle();
     }
@@ -138,9 +159,10 @@ export class GameEngine {
 
   getPublicState(): GameState {
     const state = structuredClone(this.machine.getState());
+    // Strip private info (hole cards, deck)
     for (const player of state.players as unknown as Array<Record<string, unknown>>) {
       delete player.cards;
-      delete player['holeCards'];
+      delete (player as any)['holeCards'];
     }
     delete (state as any).deck;
     return state;
@@ -158,14 +180,26 @@ export class GameEngine {
     return this.settlement.getAll();
   }
 
+  /**
+   * Replays the hand in-memory without touching wallet/DB/events.
+   * We preserve blinds/stack config and stake, but intentionally
+   * do NOT pass wallet/handRepo/events/tableId to avoid side effects.
+   */
   replayHand(): GameState {
     const replay = new GameEngine(
       this.machine.getState().players.map((p) => p.id),
       this.config,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      this.stake,
     );
+
     for (const [, action] of this.getHandLog()) {
       replay.applyAction(action);
     }
+
     return replay.getState();
   }
 
@@ -174,14 +208,19 @@ export class GameEngine {
     const active = state.players.filter((p) => !p.folded);
     if (active.length === 0) return;
 
+    // Guard against double settlement from persistence races
     if (this.handRepo) {
-      const existing = await this.handRepo.findOne({
-        where: { id: this.handId },
-      });
+      const existing = await this.handRepo.findOne({ where: { id: this.handId } });
       if (existing?.settled) return;
     }
 
-    const board: number[] = (state as any).board ?? [];
+    // Prefer communityCards but accept legacy 'board'
+    const board: number[] =
+      (state as any).communityCards ??
+      (state as any).board ??
+      [];
+
+    // Score hands (robust to evaluation errors)
     const scores = new Map<string, number>();
     for (const p of active) {
       const hole: number[] = (p as any).cards ?? (p as any).holeCards ?? [];
@@ -194,6 +233,7 @@ export class GameEngine {
       scores.set(p.id, score);
     }
 
+    // Build pots (supporting side pots)
     const pots =
       state.sidePots.length > 0
         ? [...state.sidePots]
@@ -201,49 +241,54 @@ export class GameEngine {
             {
               amount: state.pot,
               players: active.map((p) => p.id),
-              contributions: Object.fromEntries(
-                active.map((p) => [p.id, 0]),
-              ),
+              contributions: Object.fromEntries(active.map((p) => [p.id, 0])),
             },
           ];
 
+    // Apply rake to the main pot only (standard room behavior)
     let totalPot = pots.reduce((s, p) => s + p.amount, 0);
     let rake = 0;
     if (this.wallet) {
-      rake = Math.floor(totalPot * 0.05);
+      rake = resolveRake(totalPot, this.stake);
       if (pots.length > 0) {
-        pots[0].amount -= rake;
+        pots[0].amount = Math.max(0, pots[0].amount - rake);
       } else {
-        totalPot -= rake;
+        totalPot = Math.max(0, totalPot - rake);
       }
     }
 
+    // Distribute pots to winners
     for (const pot of pots) {
       const contenders = active.filter((p) => pot.players.includes(p.id));
       if (contenders.length === 0) continue;
+
       const best = Math.max(...contenders.map((p) => scores.get(p.id)!));
       const winners = contenders.filter((p) => scores.get(p.id) === best);
       const share = Math.floor(pot.amount / winners.length);
-      for (const w of winners) {
-        w.stack += share;
-      }
+
+      for (const w of winners) w.stack += share;
+
       const remainder = pot.amount - share * winners.length;
-      if (remainder > 0) {
-        winners[0].stack += remainder;
-      }
+      if (remainder > 0) winners[0].stack += remainder;
     }
+
     state.pot = 0;
 
+    // Compute deltas vs initial stacks; settle wallet reservations
     let totalLoss = 0;
     for (const player of state.players) {
       const initial = this.initialStacks.get(player.id) ?? 0;
       const delta = player.stack - initial;
+
       this.settlement.record({ playerId: player.id, delta });
+
       const loss = Math.max(initial - player.stack, 0);
-      const refund = initial - loss;
+      const refund = initial - loss; // amount to roll back from reservation
+
       if (this.wallet && refund > 0) {
         await this.wallet.rollback(player.id, refund, this.handId, 'USD');
       }
+
       totalLoss += loss;
     }
 
@@ -251,8 +296,10 @@ export class GameEngine {
       await this.wallet.commit(this.handId, totalLoss, rake, 'USD');
     }
 
+    // Finalize proof and persist final hand log
     const proof = this.rng.reveal();
     this.log.recordProof(proof);
+
     if (this.handRepo) {
       await this.handRepo.save({
         id: this.handId,
@@ -261,19 +308,23 @@ export class GameEngine {
         seed: proof.seed,
         nonce: proof.nonce,
         settled: true,
-      });
+        tableId: this.tableId ?? null,
+        stake: this.stake,
+      } as any);
     }
 
+    // Emit end event for primary pot winners (if any listeners)
     const mainPotPlayers = pots[0]?.players ?? active.map((p) => p.id);
-    const bestMain = Math.max(
-      ...mainPotPlayers.map((id) => scores.get(id) ?? 0),
-    );
+    const bestMain = Math.max(...mainPotPlayers.map((id) => scores.get(id) ?? 0));
     const mainWinners = mainPotPlayers.filter(
       (id) => (scores.get(id) ?? 0) === bestMain,
     );
+
     this.events?.emit('hand.end', {
       handId: this.handId,
       winners: mainWinners,
+      tableId: this.tableId,
+      stake: this.stake,
     });
   }
 }
