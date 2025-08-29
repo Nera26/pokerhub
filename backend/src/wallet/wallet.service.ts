@@ -437,6 +437,77 @@ export class WalletService {
     }
   }
 
+  private async enforceVelocity(
+    op: 'deposit' | 'withdraw',
+    accountId: string,
+    amount: number,
+  ) {
+    const upper = op.toUpperCase();
+    const hourlyCountLimit = Number(
+      process.env[`WALLET_VELOCITY_${upper}_HOURLY_COUNT`] ?? Infinity,
+    );
+    const hourlyAmountLimit = Number(
+      process.env[`WALLET_VELOCITY_${upper}_HOURLY_AMOUNT`] ?? Infinity,
+    );
+    const dailyCountLimit = Number(
+      process.env[`WALLET_VELOCITY_${upper}_DAILY_COUNT`] ?? Infinity,
+    );
+
+    if (hourlyCountLimit < Infinity) {
+      const key = `wallet:${op}:${accountId}:h:count`;
+      const count = await this.redis.incr(key);
+      if (count === 1) await this.redis.expire(key, 60 * 60);
+      if (count > hourlyCountLimit) {
+        await this.redis.decr(key);
+        await this.events.emit('wallet.velocity.limit', {
+          accountId,
+          operation: op,
+          type: 'count',
+          window: 'hour',
+          limit: hourlyCountLimit,
+          value: count,
+        });
+        throw new Error('Velocity limit exceeded');
+      }
+    }
+
+    if (hourlyAmountLimit < Infinity) {
+      const key = `wallet:${op}:${accountId}:h:amount`;
+      const total = await this.redis.incrby(key, amount);
+      if (total === amount) await this.redis.expire(key, 60 * 60);
+      if (total > hourlyAmountLimit) {
+        await this.redis.decrby(key, amount);
+        await this.events.emit('wallet.velocity.limit', {
+          accountId,
+          operation: op,
+          type: 'amount',
+          window: 'hour',
+          limit: hourlyAmountLimit,
+          value: total,
+        });
+        throw new Error('Velocity limit exceeded');
+      }
+    }
+
+    if (dailyCountLimit < Infinity) {
+      const key = `wallet:${op}:${accountId}:d:count`;
+      const count = await this.redis.incr(key);
+      if (count === 1) await this.redis.expire(key, 24 * 60 * 60);
+      if (count > dailyCountLimit) {
+        await this.redis.decr(key);
+        await this.events.emit('wallet.velocity.limit', {
+          accountId,
+          operation: op,
+          type: 'count',
+          window: 'day',
+          limit: dailyCountLimit,
+          value: count,
+        });
+        throw new Error('Velocity limit exceeded');
+      }
+    }
+  }
+
   async withdraw(
     accountId: string,
     amount: number,
@@ -458,6 +529,7 @@ export class WalletService {
             throw new Error('AML limit exceeded');
           }
           await this.checkVelocity('withdraw', deviceId, ip);
+          await this.enforceVelocity('withdraw', accountId, amount);
           await this.enforceDailyLimit('withdraw', accountId, amount, currency);
           const house = await this.accounts.findOneByOrFail({ name: 'house', currency });
           const challenge = await this.provider.initiate3DS(accountId, amount);
@@ -526,6 +598,7 @@ export class WalletService {
         WalletService.txnCounter.add(1, { operation: 'deposit' });
         try {
           await this.checkVelocity('deposit', deviceId, ip);
+          await this.enforceVelocity('deposit', accountId, amount);
           const user = await this.accounts.findOneByOrFail({ id: accountId, currency });
           if (!user.kycVerified) {
             throw new Error('KYC required');

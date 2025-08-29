@@ -71,6 +71,15 @@ export const AntiCheatFlagEvent = z.object({
   currency: z.string(),
 });
 
+export const WalletVelocityLimitEvent = z.object({
+  accountId: z.string().uuid(),
+  operation: z.enum(["deposit", "withdraw"]),
+  type: z.enum(["count", "amount"]),
+  window: z.enum(["hour", "day"]),
+  limit: z.number(),
+  value: z.number(),
+});
+
 export const EventSchemas = {
   "hand.start": HandStartEvent,
   "hand.end": HandEndEvent,
@@ -84,6 +93,7 @@ export const EventSchemas = {
   "wallet.reserve": WalletReserveEvent,
   "wallet.commit": WalletCommitEvent,
   "antiCheat.flag": AntiCheatFlagEvent,
+  "wallet.velocity.limit": WalletVelocityLimitEvent,
 } as const;
 
 export type Events = {
@@ -99,6 +109,7 @@ export type Events = {
   "wallet.reserve": z.infer<typeof WalletReserveEvent>;
   "wallet.commit": z.infer<typeof WalletCommitEvent>;
   "antiCheat.flag": z.infer<typeof AntiCheatFlagEvent>;
+  "wallet.velocity.limit": z.infer<typeof WalletVelocityLimitEvent>;
 };
 
 export type EventName = keyof Events;
