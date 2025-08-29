@@ -1,0 +1,66 @@
+name: dr-throwaway
+
+on:
+  workflow_dispatch:
+
+jobs:
+  dr-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run failover test
+        run: bash infra/disaster-recovery/tests/failover.sh | tee failover.log
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          PG_SNAPSHOT_ID: ${{ vars.PG_SNAPSHOT_ID }}
+          CLICKHOUSE_SNAPSHOT: ${{ vars.CLICKHOUSE_SNAPSHOT }}
+          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+      - name: Check failover RTO/RPO
+        run: |
+          source failover.metrics
+          echo "Failover start: $START_TIME"
+          echo "Failover end: $END_TIME"
+          echo "Failover RTO: $RTO_SECONDS seconds"
+          echo "Failover RPO: $RPO_SECONDS seconds"
+          if [ "$RTO_SECONDS" -gt 1800 ]; then
+            echo "Failover RTO exceeds 30 minutes" >&2
+            exit 1
+          fi
+          if [ "$RPO_SECONDS" -gt 300 ]; then
+            echo "Failover RPO exceeds 5 minutes" >&2
+            exit 1
+          fi
+      - name: Run backup restore test
+        run: bash infra/disaster-recovery/tests/restore-backup.sh | tee restore.log
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          PG_SNAPSHOT_ID: ${{ vars.PG_SNAPSHOT_ID }}
+          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+      - name: Check restore RTO/RPO
+        run: |
+          source restore-backup.metrics
+          echo "Restore start: $START_TIME"
+          echo "Restore end: $END_TIME"
+          echo "Restore RTO: $RTO_SECONDS seconds"
+          echo "Restore RPO: $RPO_SECONDS seconds"
+          if [ "$RTO_SECONDS" -gt 1800 ]; then
+            echo "Restore RTO exceeds 30 minutes" >&2
+            exit 1
+          fi
+          if [ "$RPO_SECONDS" -gt 300 ]; then
+            echo "Restore RPO exceeds 5 minutes" >&2
+            exit 1
+          fi
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: dr-throwaway
+          path: |
+            failover.log
+            failover.metrics
+            restore.log
+            restore-backup.metrics
