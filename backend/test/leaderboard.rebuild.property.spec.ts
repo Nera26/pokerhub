@@ -1,5 +1,6 @@
 import fc from 'fast-check';
 import { LeaderboardService } from '../src/leaderboard/leaderboard.service';
+import { updateRating } from '../src/leaderboard/rating';
 import { promises as fs } from 'fs';
 import { join } from 'path';
 
@@ -79,7 +80,10 @@ describe('leaderboard rebuild', () => {
               };
             entry.sessions.add(ev.sessionId);
             const ageDays = (now - ev.ts) / DAY_MS;
-            entry.rating += ev.points * Math.pow(0.95, ageDays);
+            entry.rating = updateRating(entry.rating, ev.points, ageDays, {
+              kFactor: 0.5,
+              decay: 0.95,
+            });
             entry.net += ev.net;
             entry.bb += ev.bb;
             entry.hands += ev.hands;
@@ -102,7 +106,7 @@ describe('leaderboard rebuild', () => {
             }))
             .slice(0, 100);
 
-          await (service as any).rebuildWithEvents(events);
+          await (service as any).rebuildWithEvents(events, { kFactor: 0.5 });
           const top = await service.getTopPlayers();
           expect(top).toEqual(expected);
         },
@@ -157,7 +161,9 @@ describe('leaderboard rebuild', () => {
             { find: jest.fn() } as any,
             analytics2 as any,
           );
-          await (service2 as any).rebuildWithEvents([...events].reverse());
+          await (service2 as any).rebuildWithEvents([...events].reverse(), {
+            kFactor: 0.5,
+          });
           const top2 = await service2.getTopPlayers();
           expect(top1).toEqual(top2);
         },
