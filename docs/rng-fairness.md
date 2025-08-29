@@ -2,9 +2,9 @@
 
 To ensure every deck is provably fair, PokerHub uses a commit–reveal scheme backed by deterministic shuffling.
 
-## Seed Generation
-- Before a hand starts the server creates a 32‑byte `seed` and 16‑byte `nonce` via `crypto.randomBytes`.
-- The pair is stored in memory and never sent to clients during the hand.
+## Seed and Nonce Generation
+- Before a hand starts the server draws a 32‑byte `seed` and 16‑byte `nonce` using Node's `crypto.randomBytes`.
+- Both values live only in server memory until reveal and are never sent to clients mid-hand.
 
 ## Commit–Reveal
 1. Compute `commitment = sha256(seed || nonce)`.
@@ -24,6 +24,13 @@ GET /hands/{id}/proof -> { seed, nonce, commitment }
 Clients such as the Fairness modal call this endpoint and validate the response locally with `verifyProof`.
 
 ## Verification
+
+To validate a hand, clients repeat the server's steps:
+
+1. Fetch `{ seed, nonce, commitment }` from `/hands/{id}/proof`.
+2. Recompute `sha256(seed || nonce)` and ensure it equals `commitment`.
+3. Shuffle a fresh deck with the same Fisher–Yates algorithm seeded by `seed`.
+4. Replay the hand log against this deck to prove cards were dealt deterministically.
 
 After showdown the table displays a **Verify Hand** link. Clicking it opens a modal
 with the hand's seed, nonce and commitment.
