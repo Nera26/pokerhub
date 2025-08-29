@@ -14,6 +14,12 @@ When a hand fails to advance to the next state, use this guide to restore normal
 4. Refund affected players and append a note in the incident tracker.
 5. Document the hand ID and outcome in the postmortem tracker.
 
+## Regional Failover Test
+1. Launch two Redis instances to simulate primary and follower regions.
+2. Bridge the `room:*:actions` channel from the primary Redis to the follower.
+3. Run `npm test --prefix backend test/game/failover.spec.ts` to crash the primary worker.
+4. Ensure the follower emits `failover` and advances the hand within the 30 m RTO. Escalate if promotion exceeds the target.
+
 ## Verification
 - Confirm the worker resumes processing new hands.
 - Monitor the table for one full orbit to ensure timers fire correctly.
