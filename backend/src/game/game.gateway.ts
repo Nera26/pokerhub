@@ -42,12 +42,14 @@ interface FrameAckPayload {
   frameId: string;
 }
 
+export const GAME_ACTION_ACK_LATENCY_MS = 'game_action_ack_latency_ms';
+
 @WebSocketGateway({ namespace: 'game' })
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(GameGateway.name);
   private static readonly meter = metrics.getMeter('game');
   private static readonly ackLatency = GameGateway.meter.createHistogram(
-    'game_action_ack_latency_ms',
+    GAME_ACTION_ACK_LATENCY_MS,
     {
       description: 'Latency from action frame receipt to ACK enqueue',
       unit: 'ms',
