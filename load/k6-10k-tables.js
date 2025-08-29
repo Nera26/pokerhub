@@ -6,7 +6,10 @@ export const options = {
   vus: Number(__ENV.SOCKETS) || 80000,
   duration: __ENV.DURATION || '5m',
   thresholds: {
-    ack_latency: [`p(95)<${__ENV.ACK_P95_MS || 120}`],
+    ack_latency: [
+      `p(95)<${__ENV.ACK_P95_MS || 120}`,
+      `p(99)<${__ENV.ACK_P99_MS || 200}`,
+    ],
   },
 };
 
