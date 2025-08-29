@@ -1,0 +1,31 @@
+# SLO: 99% of socket connection attempts succeed
+---
+groups:
+  - name: socket-connect-success-slo
+    rules:
+      - record: socket_connect_success_ratio_rate1h
+        expr: sum(rate(socket_success_total[1h])) / sum(rate(socket_requests_total[1h]))
+      - record: socket_connect_success_ratio_rate6h
+        expr: sum(rate(socket_success_total[6h])) / sum(rate(socket_requests_total[6h]))
+      - record: socket_connect_error_budget_burn_rate_1h
+        expr: (1 - socket_connect_success_ratio_rate1h) / (1 - 0.99)
+      - record: socket_connect_error_budget_burn_rate_6h
+        expr: (1 - socket_connect_success_ratio_rate6h) / (1 - 0.99)
+  - name: socket-connect-success-alerts
+    rules:
+      - alert: SocketConnectSuccessSLOBurnRate1h
+        expr: socket_connect_error_budget_burn_rate_1h > 14.4
+        for: 2m
+        labels:
+          severity: critical
+          pagerduty_service: pokerhub-ops
+        annotations:
+          summary: "1h socket connect success burn rate too high"
+      - alert: SocketConnectSuccessSLOBurnRate6h
+        expr: socket_connect_error_budget_burn_rate_6h > 6
+        for: 15m
+        labels:
+          severity: critical
+          pagerduty_service: pokerhub-ops
+        annotations:
+          summary: "6h socket connect success burn rate too high"

@@ -20,6 +20,10 @@ Dashboards:
 
 Status: [Status page](https://status.pokerhub.example.com)
 
+## Monitoring
+Prometheus recording rules for action ACK latency, socket connect success, and service uptime live under [infra/monitoring](../infra/monitoring).
+Alertmanager routes their alerts to the `pokerhub-ops` PagerDuty service.
+
 ## Backups
 - **Restore duration**: < 30m
 - **Snapshot age**: < 5m
