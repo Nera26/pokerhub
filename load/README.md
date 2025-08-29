@@ -10,6 +10,7 @@ This directory contains load test scripts for PokerHub.
 - `k6-10k-tables.js` – k6 WebSocket scenario driving ~80 k sockets across 10 k tables, injecting packet loss and jitter while recording ACK latency.
 - `artillery-10k-tables.yml` – Artillery equivalent to `k6-10k-tables.js` that captures per-endpoint latency histograms.
 - `k6-10k-tables-clickhouse.js` – k6 scenario for 10k tables and 80 k sockets injecting 5% packet loss and 200 ms jitter, capturing latency histograms and error rates with metrics exported to ClickHouse.
+- `k6-chaos-swarm.js` – swarm 80 k sockets across 10 k tables; pair with `toxiproxy.sh` for 5 % loss and 200 ms latency.
 
 All scripts assume the server is reachable via `ws://localhost:3000` by default.
 Environment variables:
@@ -20,6 +21,17 @@ Environment variables:
 - `JITTER_MS` – max network jitter in milliseconds.
 - `RNG_SEED` – seed for deterministic replay.
 - `METRICS_URL` – HTTP endpoint returning `{ heapUsed, gcPauseP95 }` for leak/GC checks.
+
+## Chaos swarm run/stop
+
+```sh
+# run
+./load/toxiproxy.sh
+k6 run load/k6-chaos-swarm.js
+
+# stop
+toxiproxy-cli delete pokerhub_ws
+```
 
 Smoke tests can be run with reduced users and duration, e.g.:
 
