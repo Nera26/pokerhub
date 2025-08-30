@@ -36,6 +36,8 @@ sequenceDiagram
   distributed.
 
 ## Reconciliation Procedure
+
+See the [Reconciliation Guide](./reconciliation-guide.md) for the end-to-end process and failure scenarios.
 1. `WalletService.reconcile()` aggregates journal totals per account and compares them with stored balances.
 2. The reconciliation job (`backend/src/wallet/reconcile.job.ts`) runs daily at midnight UTC.
 3. Each run writes a JSON report under `storage/` named `reconcile-YYYY-MM-DD.json`.

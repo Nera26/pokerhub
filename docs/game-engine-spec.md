@@ -1,7 +1,9 @@
 # Game Engine Specification
 
-**Version:** 1.1.0  
+**Version:** 1.1.0
 **Last Updated:** 2025-08-30
+
+For upcoming milestones, see the [milestone plan](./milestone-plan.md).
 
 ## State Machine
 ```mermaid
@@ -112,10 +114,6 @@ sequenceDiagram
 - Commit-reveal RNG proves deck fairness.
 - Collusion tracking records user, device and IP on every action.
 
-## Revision History
-- 3df9bd4: document hand log and state endpoints
-- 78a2130: expose hand state reconstruction
-- 5b99d21: align security and engine specs
-- 4eb5561: add game engine spec and SLO definitions
-- 2025-01-04: finalize spec and add revision history
-- 2025-08-30: add version metadata and message flow diagram
+## Changelog
+- **1.1.0** – 2025-08-30 – Added version metadata and message flow diagram.
+- **1.0.0** – 2025-01-04 – Initial publication with hand log/state endpoints and SLO definitions.
