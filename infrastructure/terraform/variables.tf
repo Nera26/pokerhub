@@ -1,58 +1,52 @@
-variable "primary_region" {
-  description = "AWS region for primary database"
+variable "project_id" {
+  description = "GCP project ID"
   type        = string
-  default     = "us-east-1"
+}
+
+variable "primary_region" {
+  description = "GCP region for primary Cloud SQL instance"
+  type        = string
+  default     = "us-central1"
 }
 
 variable "replica_region" {
-  description = "AWS region for cross-region replica"
+  description = "GCP region for cross-region replica"
   type        = string
-  default     = "us-west-2"
+  default     = "us-west1"
 }
 
 variable "db_name" {
-  description = "Postgres database name prefix"
+  description = "Cloud SQL instance name prefix"
   type        = string
   default     = "pokerhub"
 }
 
-variable "db_username" {
-  description = "Master username for Postgres"
-  type        = string
-}
-
 variable "db_password" {
-  description = "Master password for Postgres"
+  description = "Root password for Cloud SQL"
   type        = string
   sensitive   = true
 }
 
+variable "db_tier" {
+  description = "Machine tier for Cloud SQL instances"
+  type        = string
+  default     = "db-custom-1-3840"
+}
+
 variable "backup_retention_period" {
-  description = "Number of days to retain automated backups for PITR"
+  description = "Number of days to retain automated backups"
   type        = number
   default     = 7
 }
 
-variable "redis_node_type" {
-  description = "Instance type for Redis nodes"
+variable "redis_tier" {
+  description = "Service tier for Memorystore Redis"
   type        = string
-  default     = "cache.t3.micro"
+  default     = "STANDARD_HA"
 }
 
-variable "restore_region" {
-  description = "AWS region for snapshot restore"
-  type        = string
-  default     = "us-east-2"
-}
-
-variable "restore_snapshot_id" {
-  description = "DB snapshot identifier to restore"
-  type        = string
-  default     = ""
-}
-
-variable "restore_instance_class" {
-  description = "Instance class for restored DB"
-  type        = string
-  default     = "db.t3.micro"
+variable "redis_memory_size_gb" {
+  description = "Memory size for Redis in GB"
+  type        = number
+  default     = 1
 }
