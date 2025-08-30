@@ -47,6 +47,8 @@ are exported under the [`load/metrics`](../load/metrics) directory:
 
 - [10k table chaos metrics](../load/metrics/10k-chaos-sample)
 - [100k socket chaos metrics](../load/metrics/100k-chaos-sample)
+- Grafana dashboards for these runs are versioned under [`load/metrics`](../load/metrics):
+  - [100k replay dashboard](../load/metrics/grafana-100k-replay.json)
 
 ## 100k socket harness
 

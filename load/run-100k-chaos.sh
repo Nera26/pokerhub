@@ -4,26 +4,71 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
-RUN_ID="$(date +%Y%m%d-%H%M%S)"
-METRICS_ROOT="$SCRIPT_DIR/metrics"
-METRICS_DIR="$METRICS_ROOT/$RUN_ID"
-mkdir -p "$METRICS_DIR"
-ln -sfn "$METRICS_DIR" "$METRICS_ROOT/latest"
+REPLAY_DIR=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --replay)
+      REPLAY_DIR="$2"
+      shift 2
+      ;;
+    --sockets)
+      SOCKETS="$2"
+      shift 2
+      ;;
+    *)
+      echo "Usage: $0 [--sockets N] [--replay DIR]" >&2
+      exit 1
+      ;;
+  esac
+done
 
 PACKET_LOSS=${PACKET_LOSS:-0}
 LATENCY_MS=${LATENCY_MS:-200}
 JITTER_MS=${JITTER_MS:-0}
 RNG_SEED=${RNG_SEED:-1}
 PROXY_PORT=${PROXY_PORT:-3001}
-echo "$PACKET_LOSS" > "$METRICS_DIR/packet-loss.txt"
-echo "$JITTER_MS" > "$METRICS_DIR/jitter-ms.txt"
-echo "$RNG_SEED" > "$METRICS_DIR/seed.txt"
 
-# start toxiproxy for packet loss/latency/jitter
+if [[ -n "$REPLAY_DIR" ]]; then
+  BASE_DIR="$REPLAY_DIR"
+  RNG_SEED="$(cat "$BASE_DIR/seed.txt")"
+  PACKET_LOSS="$(cat "$BASE_DIR/packet-loss.txt" 2>/dev/null || echo 0)"
+  JITTER_MS="$(cat "$BASE_DIR/jitter-ms.txt" 2>/dev/null || echo 0)"
+  METRICS_DIR="$BASE_DIR/replay"
+  mkdir -p "$METRICS_DIR"
+else
+  RUN_ID="$(date +%Y%m%d-%H%M%S)"
+  METRICS_ROOT="$SCRIPT_DIR/metrics"
+  METRICS_DIR="$METRICS_ROOT/$RUN_ID"
+  mkdir -p "$METRICS_DIR"
+  ln -sfn "$METRICS_DIR" "$METRICS_ROOT/latest"
+  echo "$PACKET_LOSS" > "$METRICS_DIR/packet-loss.txt"
+  echo "$JITTER_MS" > "$METRICS_DIR/jitter-ms.txt"
+  echo "$RNG_SEED" > "$METRICS_DIR/seed.txt"
+fi
+
+ # start toxiproxy for packet loss/latency/jitter
 PACKET_LOSS="$PACKET_LOSS" LATENCY_MS="$LATENCY_MS" JITTER_MS="$JITTER_MS" \
   PROXY_PORT="$PROXY_PORT" "$SCRIPT_DIR/toxiproxy.sh"
 trap 'toxiproxy-cli delete pokerhub_ws >/dev/null 2>&1 || true' EXIT
 WS_URL="ws://localhost:${PROXY_PORT}/game"
+
+if [[ -n "$REPLAY_DIR" ]]; then
+  SOCKETS=${SOCKETS:-100000}
+  HAND_HISTORY_FILE=${HAND_HISTORY_FILE:-}
+  if [[ -n "$HAND_HISTORY_FILE" ]]; then
+    HAND_HISTORY_FILE="$HAND_HISTORY_FILE" SOCKETS="$SOCKETS" RNG_SEED="$RNG_SEED" WS_URL="$WS_URL" \
+      k6 run "$SCRIPT_DIR/k6-100k-sockets-replay.js" \
+      --summary-export="$METRICS_DIR/k6-summary.json" \
+      --out json="$METRICS_DIR/k6-metrics.json"
+  else
+    SOCKETS="$SOCKETS" RNG_SEED="$RNG_SEED" WS_URL="$WS_URL" k6 run "$SCRIPT_DIR/k6-100k-sockets-replay.js" \
+      --summary-export="$METRICS_DIR/k6-summary.json" \
+      --out json="$METRICS_DIR/k6-metrics.json"
+  fi
+  mv "$SCRIPT_DIR/metrics/ack-histogram.json" "$METRICS_DIR/ack-histogram.json" 2>/dev/null || true
+  echo "Replay metrics written to $METRICS_DIR"
+  exit 0
+fi
 
 # start GC/heap collector
 METRICS_URL=${METRICS_URL:-http://localhost:4000/metrics}

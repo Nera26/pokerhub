@@ -46,3 +46,27 @@ jobs:
       - name: Artifact info
         if: always()
         run: echo "Metrics artifact: k6-100k-chaos-${{ github.run_id }}" >> "$GITHUB_STEP_SUMMARY"
+  replay:
+    needs: chaos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install k6
+        run: npm install -g k6
+      - name: Download chaos metrics
+        uses: actions/download-artifact@v4
+        with:
+          name: k6-100k-chaos-${{ github.run_id }}
+          path: load/metrics/base
+      - name: Run deterministic replay
+        run: ./load/run-100k-chaos.sh --replay load/metrics/base
+      - name: Upload replay metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-100k-replay-${{ github.run_id }}
+          path: load/metrics/base/replay
+          retention-days: 7

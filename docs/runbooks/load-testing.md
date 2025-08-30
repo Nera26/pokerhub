@@ -42,6 +42,22 @@ comparison.
    ```
    This regenerates metrics under a new timestamped directory.
 
+### 100k socket replay
+
+1. Download the `k6-100k-chaos` artifact from CI and extract it under
+   `load/metrics/<run-id>`.
+2. Run the deterministic replay with the captured seed and network impairments:
+   ```bash
+   ./load/run-100k-chaos.sh --replay load/metrics/<run-id>
+   ```
+3. Inspect `replay/ack-histogram.json`, `replay/heap-histogram.json` and
+   `replay/gc-histogram.json`.
+4. Thresholds:
+   - ACK latency p95 **<120 ms**
+   - Error rate **<1 %**
+   - GC pause p95 **<50 ms**
+   - Heap usage p95 **<512 MB**
+
 ## Metrics Output
 
 Each chaos harness run produces a timestamped directory under
