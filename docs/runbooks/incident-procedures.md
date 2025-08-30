@@ -32,6 +32,11 @@ See [error-budget-policy.md](error-budget-policy.md) for detailed freeze and rol
 - `UptimeSLOViolation` firing on the [Alerts Overview dashboard](../../infrastructure/observability/alerts-overview-grafana.json) → page `pokerhub-sre`
 - `Queue saturation` alert on the same dashboard → page `pokerhub-eng`
 
+### On-Call Escalation Examples
+- Primary does not acknowledge within 15 minutes → PagerDuty auto-escalates to the engineering manager.
+- Continued paging for 30 minutes or a declared P1 incident → escalate to the CTO and begin incident bridge.
+- Security breach indicators → notify the security officer and follow [security-breach.md](security-breach.md).
+
 ## Security References
 
 - [../security/stride-summary.md](../security/stride-summary.md)

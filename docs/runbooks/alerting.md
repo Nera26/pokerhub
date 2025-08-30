@@ -37,8 +37,9 @@ groups:
 ```
 
 ## Dashboards
-- Grafana: [Service SLOs](../../infrastructure/observability/slo-dashboard.json)
-- Additional dashboards live under `../../infrastructure/observability/` and include `pagerduty_service` labels mapping each panel to the owning PagerDuty service.
+- Grafana: <https://grafana.pokerhub.example/d/slo/service-slos>
+- Metabase: <https://metabase.pokerhub.example/dashboard/42-alerts>
+- JSON definitions live under `../../infrastructure/observability/` and include `pagerduty_service` labels mapping each panel to the owning PagerDuty service.
 
 ## PagerDuty Services
 
@@ -71,6 +72,12 @@ Redis, Postgres and WebSocket metrics from OpenTelemetry are routed to
 | `pokerhub-sre` | Primary SRE (5 m) → secondary SRE (15 m) → engineering manager (30 m) → CTO (1 h) |
 | `pokerhub-eng` | Primary engineer → SRE on-call (30 m) → engineering manager (1 h) |
 | `pokerhub-ops` | Primary ops on-call (15 m) → product manager (15 m) → engineering manager (30 m) → CTO (1 h) |
+
+PagerDuty escalation policy URLs:
+
+- SRE: <https://pokerhub.pagerduty.com/escalation_policies/PABC123>
+- Engineering: <https://pokerhub.pagerduty.com/escalation_policies/PDEF456>
+- Ops: <https://pokerhub.pagerduty.com/escalation_policies/PGHI789>
 
 ## Relevant Components
 - `backend/src/telemetry/telemetry.ts` sets up exporters.
