@@ -27,6 +27,19 @@ flowchart TD
   F -->|No| H[Archive]
 ```
 
+### Example Reconciliation Run
+
+| entryId | account        | debit | credit | runningBalance |
+|--------:|---------------|------:|-------:|---------------:|
+| 10      | player:alice   | 100   | 0      | 100 |
+| 11      | cash:house     | 0     | 100    |   0 |
+| 12      | player:alice   | 0     | 50     |  50 |
+| 13      | cash:house     | 50    | 0      |  50 |
+
+From these entries the computed balance for `player:alice` is `$50`. If the
+`accounts.balance` column stores `$60`, the reconciliation report records a `$10`
+delta and flags the account for investigation.
+
 ## Failure Scenarios
 
 | Scenario | Detection | Resolution |
@@ -50,8 +63,22 @@ Deposit provider reports $50, but journal shows $40 credit. Create a $10 correct
 ## Audit Trail
 
 - All reconciliation runs and dispute outcomes are archived under `storage/` with immutable timestamps.
+- Reports include the job run identifier and a SHA-256 checksum for tamper evidence.
+- A typical record in `storage/reconcile-2025-08-30.json`:
+
+```json
+{
+  "accountId": "player:alice",
+  "expected": 60,
+  "computed": 50,
+  "delta": -10,
+  "checksum": "9d2c...",
+  "runId": "2025-08-30T00:00:00Z"
+}
+```
+
 - Reports older than one year move to cold storage but remain retrievable for regulators.
 
 ## Revision History
-- 2025-08-30: add reconciliation flow diagram, example mismatch, and version metadata
+- 2025-08-30: add reconciliation run example, audit trail details, flow diagram, example mismatch, and version metadata
 
