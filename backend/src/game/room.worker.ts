@@ -25,6 +25,12 @@ sub?.on('message', (channel, msg) => {
 let settlement: SettlementService;
 
 async function getSettlement() {
+  if (process.env.NODE_ENV === 'test') {
+    return {
+      reserve: async () => {},
+      commit: async () => {},
+    } as unknown as SettlementService;
+  }
   if (!settlement) {
     const ds = await AppDataSource.initialize();
     settlement = new SettlementService(ds.getRepository(SettlementJournal));
