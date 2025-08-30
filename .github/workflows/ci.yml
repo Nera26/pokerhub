@@ -20,7 +20,7 @@ jobs:
       - run: npm test --prefix frontend
       - run: npm run test:contracts
 
-  property-test:
+  game-state-invariants:
     needs: unit
     runs-on: ubuntu-latest
     steps:
@@ -30,12 +30,12 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm run test:property
+      - run: npm test --prefix backend -- test/game/.*\.property\.spec\.ts
         env:
           FC_SEED: 1
 
   e2e:
-    needs: property-test
+    needs: game-state-invariants
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

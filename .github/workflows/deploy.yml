@@ -12,6 +12,8 @@ jobs:
     env:
       DEPLOY_ENV: production
       HEALTH_CHECK_URL: ${{ vars.HEALTH_CHECK_URL }}
+      METRICS_URL: ${{ vars.METRICS_URL }}
+      ERROR_RATE_THRESHOLD: ${{ vars.ERROR_RATE_THRESHOLD }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Node
@@ -36,8 +38,20 @@ jobs:
         id: check
         run: scripts/check-canary.sh
         continue-on-error: true
-      - name: Rollback on failure
+      - name: Rollback on health failure
         if: steps.check.outcome != 'success'
         run: |
           scripts/rollback.sh
           exit 1
+      - name: Check real-time metrics
+        id: metrics
+        run: scripts/check-metrics.sh
+        continue-on-error: true
+      - name: Rollback on metrics failure
+        if: steps.metrics.outcome != 'success'
+        run: |
+          scripts/rollback.sh
+          exit 1
+      - name: Promote canary
+        if: steps.metrics.outcome == 'success'
+        run: scripts/promote.sh
