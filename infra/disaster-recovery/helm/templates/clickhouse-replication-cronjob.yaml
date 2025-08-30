@@ -22,4 +22,4 @@ spec:
                 - -c
                 - >-
                   echo "Replicating ClickHouse backups from $BACKUP_BUCKET to $SECONDARY_REGION";
-                  # Placeholder for aws s3 copy to secondary bucket
+                  # Placeholder for GCS copy to secondary bucket
