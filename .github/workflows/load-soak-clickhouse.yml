@@ -1,0 +1,58 @@
+name: load-soak-clickhouse
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  soak:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1440
+    env:
+      METRICS_URL: http://localhost:3000/metrics
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start GC/heap collector
+        run: |
+          load/collect-gc-heap.sh &
+          echo $! > collector.pid
+      - name: Run soak test exporting to ClickHouse
+        uses: grafana/k6-action@v0.2.0
+        env:
+          CLICKHOUSE_DSN: ${{ secrets.CLICKHOUSE_DSN }}
+        with:
+          filename: load/soak.js
+          flags: --summary-export=soak-summary.json --out json=soak-metrics.json --out xk6-clickhouse=$CLICKHOUSE_DSN
+          docker-image: ghcr.io/grafana/xk6-output-clickhouse:latest
+      - name: Stop collector
+        if: always()
+        run: kill $(cat collector.pid)
+      - name: Check GC pause p95
+        run: |
+          gc_p95=$(jq -r '.metrics.gc_pause_ms["p(95)"] // 0' soak-summary.json)
+          if (( $(echo "$gc_p95 > 50" | bc -l) )); then
+            echo "GC pause p95 $gc_p95 ms exceeds 50ms"
+            exit 1
+          fi
+      - name: Check heap growth
+        run: |
+          start=$(grep -m1 heap_used gc-heap-metrics.log | awk -F'heap_used=' '{print $2}' | awk '{print $1}')
+          end=$(grep heap_used gc-heap-metrics.log | tail -1 | awk -F'heap_used=' '{print $2}' | awk '{print $1}')
+          python - "$start" "$end" <<'PY'
+import sys
+s=float(sys.argv[1]); e=float(sys.argv[2])
+growth=(e-s)*100/s
+print(f"heap growth: {growth}%")
+if growth > 1:
+    sys.exit("heap growth exceeded 1%")
+PY
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: soak-metrics
+          path: |
+            soak-summary.json
+            soak-metrics.json
+            gc-heap-metrics.log
