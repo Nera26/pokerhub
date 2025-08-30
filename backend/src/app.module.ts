@@ -13,7 +13,7 @@ import { Request, Response, NextFunction } from 'express';
 import {
   databaseConfig,
   redisConfig,
-  s3Config,
+  gcsConfig,
   loggingConfig,
   analyticsConfig,
   telemetryConfig,
@@ -78,7 +78,7 @@ class SecurityHeadersMiddleware implements NestMiddleware {
       load: [
         databaseConfig,
         redisConfig,
-        s3Config,
+        gcsConfig,
         loggingConfig,
         analyticsConfig,
         telemetryConfig,

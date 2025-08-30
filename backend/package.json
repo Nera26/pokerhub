@@ -34,8 +34,7 @@
     "seed:test-credentials": "ts-node src/scripts/seed-test-credentials.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.876.0",
-    "@aws-sdk/s3-request-presigner": "^3.876.0",
+    "@google-cloud/storage": "^7.12.1",
     "@clickhouse/client": "^1.12.1",
     "@elastic/elasticsearch": "^8.19.0",
     "@nestjs/cache-manager": "^3.0.1",

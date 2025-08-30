@@ -1,10 +1,9 @@
 process.env.DATABASE_URL = '';
 process.env.REDIS_URL = 'redis://localhost';
 process.env.RABBITMQ_URL = 'amqp://localhost';
-process.env.AWS_REGION = 'us-east-1';
-process.env.AWS_S3_BUCKET = 'bucket';
-process.env.AWS_ACCESS_KEY_ID = 'key';
-process.env.AWS_SECRET_ACCESS_KEY = 'secret';
+process.env.GCS_PROJECT_ID = 'test-project';
+process.env.GCS_BUCKET = 'bucket';
+process.env.GCS_KEY_FILENAME = 'keyfile';
 process.env.JWT_SECRET = 'secret';
 
 import { Test, TestingModule } from '@nestjs/testing';
