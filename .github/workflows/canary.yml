@@ -37,10 +37,26 @@ jobs:
         run: |
           python -m pip install pyyaml >/dev/null
           python infra/observability/validate.py
-      - name: Run canary release with auto rollback
-        run: scripts/canary-release.sh
+      - name: Deploy canary
+        run: scripts/canary-rollback.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_SHA: ${{ github.sha }}
+
+      - name: Monitor ACK latency
+        run: |
+          npm install --no-save k6 >/dev/null
+          npx k6 run load/k6-ws-packet-loss.js --summary-export=summary.json
+          p95=$(jq '.metrics.ws_latency["p(95)"]' summary.json)
+          slo=250
+          echo "p95 ACK latency: ${p95} ms (SLO ${slo} ms)"
+          if (( $(echo "$p95 > $slo" | bc -l) )); then
+            echo "ACK latency SLO breach; rolling back" >&2
+            scripts/canary-rollback.sh
+            exit 1
+          fi
+        env:
+          WS_URL: ${{ vars.CANARY_WS_URL }}
+          PACKET_LOSS: 0.05
