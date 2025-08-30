@@ -21,33 +21,27 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
       - name: Run 100k chaos load
-        run: ./load/run-10k-chaos.sh --sockets 100000 --packet-loss 0.05 --jitter 200
+        run: ./load/run-100k-chaos.sh
         env:
+          PACKET_LOSS: 0.05
+          JITTER_MS: 200
           TABLES: 10000
           RNG_SEED: ${{ github.run_id }}
-      - name: Find metrics dir
-        run: echo "METRICS_DIR=$(ls -td load/metrics/*/ | head -n 1)" >> $GITHUB_ENV
-      - name: Check thresholds
-        run: ./load/check-thresholds.sh "$METRICS_DIR/k6-summary.json" | tee -a "$GITHUB_STEP_SUMMARY"
-      - name: Replay run
-        run: ./load/run-10k-chaos.sh --replay "$METRICS_DIR"
-        env:
-          TABLES: 10000
-      - name: Compare histograms
-        run: npx ts-node scripts/compare-histograms.ts "$METRICS_DIR" "$METRICS_DIR/replay" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Resolve metrics dir
+        run: echo "METRICS_DIR=$(readlink -f load/metrics/latest)" >> $GITHUB_ENV
       - name: Analyze chaos trends
         run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-chaos-trends.ts "$METRICS_DIR"
         env:
           CHAOS_TRENDS_BUCKET: ${{ secrets.CHAOS_TRENDS_BUCKET }}
-      - name: Upload metrics to S3
+      - name: Sync metrics to S3
         if: always()
-        run: aws s3 cp --recursive "$METRICS_DIR" "s3://${{ secrets.CHAOS_TRENDS_BUCKET }}/$(basename \"$METRICS_DIR\")/"
+        run: aws s3 sync "$METRICS_DIR" "s3://${{ secrets.CHAOS_TRENDS_BUCKET }}/$(basename \"$METRICS_DIR\")/"
       - name: Upload metrics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: k6-100k-chaos-${{ github.run_id }}
-          path: ${{ env.METRICS_DIR }}
+          path: load/metrics/latest
           retention-days: 7
       - name: Artifact info
         if: always()

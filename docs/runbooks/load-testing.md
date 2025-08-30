@@ -34,8 +34,30 @@ Chaos runs record their random seed and metrics under a timestamped directory in
    ```bash
    ./load/run-10k-chaos.sh --replay load/metrics/<timestamp>
    ```
-   Replay metrics are written to `load/metrics/<timestamp>/replay/` for
-   comparison.
+Replay metrics are written to `load/metrics/<timestamp>/replay/` for
+comparison.
+3. Or rerun deterministically via `RNG_SEED`:
+   ```bash
+   RNG_SEED=$(cat load/metrics/<timestamp>/seed.txt) ./load/run-10k-chaos.sh
+   ```
+   This regenerates metrics under a new timestamped directory.
+
+## Metrics Output
+
+Each chaos harness run produces a timestamped directory under
+`load/metrics/` containing:
+
+- `k6-summary.json` / `k6-metrics.json` – raw k6 results and threshold data.
+- `ack-histogram.json` – acknowledgement latency distribution.
+- `gc-histogram.json` and `heap-histogram.json` – bucketed GC pause and heap
+  usage.
+- `gc-stats.json` and `heap-stats.json` – p95, p99 and max values derived from
+  the collector log.
+- `seed.txt`, `packet-loss.txt`, `jitter-ms.txt` – parameters for replay.
+
+The latest run is available via the `load/metrics/latest` symlink and the
+GitHub workflow publishes this directory as an artifact and syncs it to the
+`CHAOS_TRENDS_BUCKET` for historical trend analysis.
 
 ## 10k Table Load
 

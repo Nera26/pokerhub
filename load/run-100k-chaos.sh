@@ -13,9 +13,11 @@ ln -sfn "$METRICS_DIR" "$METRICS_ROOT/latest"
 PACKET_LOSS=${PACKET_LOSS:-0}
 LATENCY_MS=${LATENCY_MS:-200}
 JITTER_MS=${JITTER_MS:-0}
+RNG_SEED=${RNG_SEED:-1}
 PROXY_PORT=${PROXY_PORT:-3001}
 echo "$PACKET_LOSS" > "$METRICS_DIR/packet-loss.txt"
 echo "$JITTER_MS" > "$METRICS_DIR/jitter-ms.txt"
+echo "$RNG_SEED" > "$METRICS_DIR/seed.txt"
 
 # start toxiproxy for packet loss/latency/jitter
 PACKET_LOSS="$PACKET_LOSS" LATENCY_MS="$LATENCY_MS" JITTER_MS="$JITTER_MS" \
@@ -39,12 +41,12 @@ trap 'kill $GC_PID >/dev/null 2>&1 || true' EXIT
 SOCKETS=${SOCKETS:-100000}
 HAND_HISTORY_FILE=${HAND_HISTORY_FILE:-}
 if [[ -n "$HAND_HISTORY_FILE" ]]; then
-  HAND_HISTORY_FILE="$HAND_HISTORY_FILE" SOCKETS="$SOCKETS" WS_URL="$WS_URL" \
+  HAND_HISTORY_FILE="$HAND_HISTORY_FILE" SOCKETS="$SOCKETS" RNG_SEED="$RNG_SEED" WS_URL="$WS_URL" \
     k6 run "$SCRIPT_DIR/k6-100k-sockets-replay.js" \
     --summary-export="$METRICS_DIR/k6-summary.json" \
     --out json="$METRICS_DIR/k6-metrics.json"
 else
-  SOCKETS="$SOCKETS" WS_URL="$WS_URL" k6 run "$SCRIPT_DIR/k6-100k-sockets-replay.js" \
+  SOCKETS="$SOCKETS" RNG_SEED="$RNG_SEED" WS_URL="$WS_URL" k6 run "$SCRIPT_DIR/k6-100k-sockets-replay.js" \
     --summary-export="$METRICS_DIR/k6-summary.json" \
     --out json="$METRICS_DIR/k6-metrics.json"
 fi
@@ -52,6 +54,37 @@ mv "$SCRIPT_DIR/metrics/ack-histogram.json" "$METRICS_DIR/ack-histogram.json" 2>
 
 kill $GC_PID >/dev/null 2>&1 || true
 wait $GC_PID 2>/dev/null || true
+
+# summarise GC/heap stats
+node - "$OUT_FILE" "$METRICS_DIR/gc-stats.json" "$METRICS_DIR/heap-stats.json" <<'NODE'
+const fs = require('fs');
+const [input, gcOut, heapOut] = process.argv.slice(1);
+try {
+  const lines = fs.readFileSync(input, 'utf-8').trim().split('\n');
+  const gcVals = [];
+  const heapVals = [];
+  for (const line of lines) {
+    const [, ...pairs] = line.trim().split(' ');
+    for (const kv of pairs) {
+      const [k, v] = kv.split('=');
+      if (k === 'gc_avg_ms') gcVals.push(Number(v));
+      if (k === 'heap_used') heapVals.push(Number(v));
+    }
+  }
+  const pct = (arr, p) => {
+    if (!arr.length) return 0;
+    const sorted = [...arr].sort((a, b) => a - b);
+    const idx = Math.min(sorted.length - 1, Math.floor(sorted.length * p));
+    return sorted[idx];
+  };
+  const gcStats = { p95: pct(gcVals, 0.95), p99: pct(gcVals, 0.99), max: Math.max(0, ...gcVals) };
+  const heapStats = { p95: pct(heapVals, 0.95), p99: pct(heapVals, 0.99), max: Math.max(0, ...heapVals) };
+  fs.writeFileSync(gcOut, JSON.stringify(gcStats, null, 2));
+  fs.writeFileSync(heapOut, JSON.stringify(heapStats, null, 2));
+} catch (e) {
+  // ignore if log missing
+}
+NODE
 
 # check thresholds
 "$SCRIPT_DIR/check-thresholds.sh" "$METRICS_DIR/k6-summary.json" "$GC_HIST_FILE" "$HEAP_HIST_FILE"

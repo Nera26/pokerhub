@@ -147,21 +147,31 @@ fi
 # stop GC collector and summarise stats
 kill $GC_PID >/dev/null 2>&1 || true
 wait $GC_PID 2>/dev/null || true
-node - "$OUT_FILE" "$METRICS_DIR/gc-stats.json" <<'NODE'
+node - "$OUT_FILE" "$METRICS_DIR/gc-stats.json" "$METRICS_DIR/heap-stats.json" <<'NODE'
 const fs = require('fs');
-const [input, output] = process.argv.slice(1);
+const [input, gcOut, heapOut] = process.argv.slice(1);
 try {
   const lines = fs.readFileSync(input, 'utf-8').trim().split('\n');
-  const stats = lines.map((l) => {
-    const [timestamp, ...pairs] = l.trim().split(' ');
-    const obj = { timestamp };
+  const gcVals = [];
+  const heapVals = [];
+  for (const line of lines) {
+    const [, ...pairs] = line.trim().split(' ');
     for (const kv of pairs) {
       const [k, v] = kv.split('=');
-      obj[k] = Number(v);
+      if (k === 'gc_avg_ms') gcVals.push(Number(v));
+      if (k === 'heap_used') heapVals.push(Number(v));
     }
-    return obj;
-  });
-  fs.writeFileSync(output, JSON.stringify(stats, null, 2));
+  }
+  const pct = (arr, p) => {
+    if (!arr.length) return 0;
+    const sorted = [...arr].sort((a, b) => a - b);
+    const idx = Math.min(sorted.length - 1, Math.floor(sorted.length * p));
+    return sorted[idx];
+  };
+  const gcStats = { p95: pct(gcVals, 0.95), p99: pct(gcVals, 0.99), max: Math.max(0, ...gcVals) };
+  const heapStats = { p95: pct(heapVals, 0.95), p99: pct(heapVals, 0.99), max: Math.max(0, ...heapVals) };
+  fs.writeFileSync(gcOut, JSON.stringify(gcStats, null, 2));
+  fs.writeFileSync(heapOut, JSON.stringify(heapStats, null, 2));
 } catch (e) {
   // ignore if log missing
 }
