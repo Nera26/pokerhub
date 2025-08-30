@@ -2,6 +2,26 @@
 
 This document describes how PokerHub records wallet movements and keeps balances consistent.
 
+## Bankroll Management
+
+Player funds live in individual **Account** rows.  The sum of all player
+accounts plus the house account represents total bankroll under custody.  Any
+movement between accounts must net to zero to preserve bankroll integrity.
+
+## Rake Policy
+
+Cash games and tournaments charge a percentage fee that credits the house
+account.  Rake is deducted from the pot before payouts and is capped per game
+according to regulatory limits.
+
+## Payout Logic
+
+When a hand or tournament concludes:
+
+1. Compute gross winnings per player.
+2. Deduct rake and credit the house.
+3. Credit each winner's account with their net amount.
+
 ## Ledger Schema
 
 Two primary tables make up the ledger:
@@ -30,3 +50,4 @@ Every business action writes equal and opposite `JournalEntry` rows so that the 
 Deposits and withdrawals initiate a 3‑D Secure challenge with the payment provider before any journal entry is recorded. The resulting provider transaction id and final status are persisted on each `JournalEntry`.
 
 Transactions flagged as `risky` are aborted. If the provider reports a `chargeback` after recording, the service writes reversing entries so that balances remain accurate.
+
