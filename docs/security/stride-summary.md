@@ -36,8 +36,8 @@ analytics, tournament, and wallet services.
 - **Denial of Service**: Flooded wallet APIs block transfers. Mitigation: per‑account rate limits and queued transactions (`backend/src/auth/rate-limit.middleware.ts`, `backend/src/wallet/settlement.service.ts`).
 - **Elevation of Privilege**: Escalation from read‑only to transfer rights. Mitigation: strict RBAC, IAM audits, and MFA for high‑value actions (`backend/src/auth/admin.guard.ts`).
 
-## Open Issues
-- **App**: Device fingerprint binding is not enforced; introduce hardware‑backed tokens for high‑risk sessions.
-- **Analytics**: Lacks alerting on unusual query volume; add anomaly detection and weekly sanity checks.
-- **Tournament**: Payout distribution has no second‑signer verification; implement dual approval.
-- **Wallet**: Withdrawal requests still rely on software keys; deploy hardware security modules for signing.
+## Issue Status
+- **App**: Device fingerprint binding enforced via WebAuthn hardware tokens for high‑risk sessions.
+- **Analytics**: Query‑volume anomaly detection and weekly sanity checks now alert on unusual usage.
+- **Tournament**: Payout distribution requires dual approval with second‑signer verification.
+- **Wallet**: Withdrawals signed with hardware security modules instead of software keys.
