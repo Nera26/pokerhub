@@ -77,7 +77,7 @@
     "kafkajs": "^2.2.4",
     "nestjs-pino": "^4.4.0",
     "onfido": "^4.3.0",
-    "p-queue": "^6.6.2",
+    "p-queue": "^8.1.0",
     "parquetjs-lite": "^0.8.1",
     "pg": "^8.16.3",
     "pino-http": "^8.6.1",
