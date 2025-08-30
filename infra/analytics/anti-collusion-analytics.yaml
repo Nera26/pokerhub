@@ -13,3 +13,5 @@ sinks:
   - type: clickhouse
     table: collusion_alerts
     notify: reviewers
+  - type: clickhouse
+    table: collusion_audit
