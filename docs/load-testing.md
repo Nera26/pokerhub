@@ -36,3 +36,11 @@ RNG_SEED=$(cat load/metrics/seed.txt) ./load/run-10k-chaos.sh
 The workflow `.github/workflows/k6-10k-chaos.yml` runs nightly with
 `SOCKETS=80000`, `TABLES=10000` and a deterministic `RNG_SEED`. Metrics from
 nightly runs are uploaded as build artifacts for inspection.
+
+## Sample metrics
+
+Latency histograms and memory/GC statistics from packet loss and jitter scenarios
+are exported under the [`load/metrics`](../load/metrics) directory:
+
+- [10k table chaos metrics](../load/metrics/10k-chaos-sample)
+- [100k socket chaos metrics](../load/metrics/100k-chaos-sample)
