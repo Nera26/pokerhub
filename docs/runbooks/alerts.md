@@ -11,3 +11,9 @@ PokerHub uses PagerDuty to guard the SLO error budgets defined in [../SLOs.md](.
 | Socket connect success | `pokerhub-socket` | 1% failed connects |
 
 Alert rules live under `infra/observability/` and include `slo` and `pagerduty_service` labels so Grafana burn-rate panels and PagerDuty routes stay in sync.
+
+## Dashboard
+- Grafana: [SLO Overview](../analytics-dashboards.md)
+
+## PagerDuty Escalation
+- Services: `pokerhub-sre`, `pokerhub-game`, `pokerhub-socket`

@@ -2,6 +2,12 @@
 
 This runbook describes how to execute large scale load tests and long running soak tests for PokerHub.
 
+## Dashboard
+- Grafana: [Load Testing](../analytics-dashboards.md#action-ack-latency)
+
+## PagerDuty Escalation
+- Service: `pokerhub-sre`
+
 ## GitHub Actions Pipeline
 
 The `load-regression` workflow in `.github/workflows/load-regression.yml` runs our k6 regression tests using the [grafana/k6-action](https://github.com/grafana/k6-action). It executes two scenarios:

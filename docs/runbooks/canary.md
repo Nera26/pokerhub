@@ -2,6 +2,13 @@
 
 Use this runbook to release a canary and watch its SLO health.
 
+## Dashboard
+- Grafana: [Action ACK Latency](../analytics-dashboards.md#action-ack-latency)
+- Grafana: [Error Rate](../analytics-dashboards.md#error-rate)
+
+## PagerDuty Escalation
+- Service: `pokerhub-sre`
+
 ## Trigger
 
 1. Go to **Actions → Canary Deploy** in GitHub.

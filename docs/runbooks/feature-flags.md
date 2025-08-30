@@ -2,6 +2,12 @@
 
 This runbook covers operational procedures for managing feature flags in PokerHub.
 
+## Dashboard
+- Metabase: [Feature Flags](../analytics-dashboards.md)
+
+## PagerDuty Escalation
+- Service: `pokerhub-eng`
+
 ## Listing Flags
 
 ```bash

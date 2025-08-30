@@ -1,9 +1,15 @@
 # Socket Connect Success
 
 Investigates failed WebSocket connection attempts.
+ 
+## Dashboard
+- Grafana: [Socket Connects](../../infrastructure/observability/socket-connects-dashboard.json)
+- Metabase: [Socket Connect Success](../analytics-dashboards.md#socket-connect-success-1)
 
-- [Grafana Dashboard](../../infrastructure/observability/socket-connects-dashboard.json)
-- See [SLO alert strategy](../SLOs.md) for burn-rate thresholds.
+## PagerDuty Escalation
+- Service: `pokerhub-sre`
+
+See [SLO alert strategy](../SLOs.md) for burn-rate thresholds.
 
 ## When to page
 Page when burn rates threaten the [SLO error budget](../SLOs.md#error-budget-handling).

@@ -4,6 +4,9 @@ PokerHub uses OpenTelemetry to expose metrics which are scraped by Prometheus. T
 
 Prometheus evaluates SLO-based rules such as action ACK latency and socket connect success using multi-window burn rates. Alerts fire when the 5 m/1 h burn rate exceeds **14.4** or the 30 m/6 h burn rate exceeds **6**. Alertmanager routes notifications to PagerDuty and, for canary deployments, emits a `repository_dispatch` event that runs `infra/canary/rollback.sh`. See [SLO alert strategy](../SLOs.md) for details.
 
+## Dashboard
+- Grafana: [SLO Overview](../analytics-dashboards.md)
+
 ## Severity Tiers
 
 | Tier | Example Impact | PagerDuty Service | Slack Channel |

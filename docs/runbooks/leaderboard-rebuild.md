@@ -2,6 +2,12 @@
 
 The leaderboard is rebuilt automatically every 24h but can also be triggered manually.
 
+## Dashboard
+- Metabase: [Leaderboard](../analytics-dashboards.md)
+
+## PagerDuty Escalation
+- Service: `pokerhub-eng`
+
 ## CLI
 
 Run the rebuild script from the backend package:

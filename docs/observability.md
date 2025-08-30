@@ -97,6 +97,8 @@ action ACK p95 latency, wallet transaction throughput, and service availability.
 Prometheus evaluates these objectives and sends violations to the
 `pokerhub-sre` PagerDuty service.
 
+See [SLOs](SLOs.md) for targets and [error-budget procedures](error-budget-procedures.md) for freeze and rollback rules. Individual metric runbooks under [runbooks/](runbooks/) provide dashboard and PagerDuty escalation details.
+
 ![Alert Routing](images/alert-routing.svg)
 
 ## Rate Limit Alerts

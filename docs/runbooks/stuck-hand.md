@@ -2,6 +2,9 @@
 
 When a hand fails to advance to the next state, use this guide to restore normal play.
 
+## Dashboard
+- Grafana: [Stuck Hand](../analytics-dashboards.md)
+
 ## Detection
 - Hand timer exceeds expected duration.
 - Players report a frozen or unresponsive table.
@@ -26,8 +29,8 @@ When a hand fails to advance to the next state, use this guide to restore normal
 - Monitor the table for one full orbit to ensure timers fire correctly.
 - Check `handAdvanceDuration` metric returns to baseline in Grafana.
 
-## Escalation
-- PagerDuty: pokerhub-eng
+## PagerDuty Escalation
+- Service: `pokerhub-eng`
 - Slack: #ops
 
 ## Drill

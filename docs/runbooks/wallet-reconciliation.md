@@ -4,6 +4,12 @@ The wallet service runs a daily reconciliation that compares the sum of journal
 entries with the persisted account balances. Any mismatch is logged so that
 operators can investigate.
 
+## Dashboard
+- Metabase: [Wallet Reconciliation](../analytics-dashboards.md)
+
+## PagerDuty Escalation
+- Service: `pokerhub-eng`
+
 ## Reviewing logs
 
 Reconciliation executes at midnight UTC. Discrepancies are reported with a log
