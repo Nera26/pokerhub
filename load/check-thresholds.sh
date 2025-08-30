@@ -3,12 +3,13 @@ set -euo pipefail
 summary="$1"
 gc_hist="${2:-$(dirname "$summary")/gc-histogram.json}"
 heap_hist="${3:-$(dirname "$summary")/heap-histogram.json}"
+cpu_hist="${4:-$(dirname "$summary")/cpu-histogram.json}"
 
 # Extract metrics from summary
-latency_p95=$(jq -r '.metrics.ack_latency["p(95)"] // 0' "$summary")
-latency_p99=$(jq -r '.metrics.ack_latency["p(99)"] // 0' "$summary" 2>/dev/null || echo 0)
+latency_p95=$(jq -r '.metrics.ack_latency["p(95)"] // .metrics.ws_latency["p(95)"] // 0' "$summary")
+latency_p99=$(jq -r '.metrics.ack_latency["p(99)"] // .metrics.ws_latency["p(99)"] // 0' "$summary" 2>/dev/null || echo 0)
 error_rate=$(jq -r '.metrics.error_rate.rate // 0' "$summary" 2>/dev/null || echo 0)
-cpu=$(jq -r '.metrics.cpu_usage.avg // 0' "$summary" 2>/dev/null || echo 0)
+cpu_p95=$(node -e "try{const h=require('$cpu_hist');const k=Object.keys(h).map(Number).sort((a,b)=>a-b);const tot=k.reduce((s,i)=>s+h[i],0);let c=0,p=0;for(const i of k){c+=h[i];if(!p && c/tot>=0.95){p=i;}}console.log(p);}catch(e){console.log(0)}")
 gc_p95=$(node -e "try{const h=require('$gc_hist');const k=Object.keys(h).map(Number).sort((a,b)=>a-b);const tot=k.reduce((s,i)=>s+h[i],0);let c=0,p=0;for(const i of k){c+=h[i];if(!p && c/tot>=0.95){p=i;}}console.log(p);}catch(e){console.log(0)}")
 heap_p95=$(node -e "try{const h=require('$heap_hist');const k=Object.keys(h).map(Number).sort((a,b)=>a-b);const tot=k.reduce((s,i)=>s+h[i],0);let c=0,p=0;for(const i of k){c+=h[i];if(!p && c/tot>=0.95){p=i;}}console.log(p);}catch(e){console.log(0)}")
 
@@ -33,7 +34,7 @@ if (( $(bc_check "$latency_p95 > $latency_p95_thresh") )); then echo "Latency p9
 if (( $(bc_check "$latency_p99 > $latency_p99_thresh") )); then echo "Latency p99 $latency_p99 exceeds $latency_p99_thresh"; fail=1; fi
 error_thresh_rate=$(bc <<< "$error_thresh/100")
 if (( $(bc_check "$error_rate > $error_thresh_rate") )); then echo "Error rate $error_rate exceeds $error_thresh_rate"; fail=1; fi
-if (( $(bc_check "$cpu > $cpu_thresh") )); then echo "CPU $cpu exceeds $cpu_thresh"; fail=1; fi
+if (( $(bc_check "$cpu_p95 > $cpu_thresh") )); then echo "CPU p95 $cpu_p95 exceeds $cpu_thresh"; fail=1; fi
 if (( $(bc_check "$gc_p95 > $gc_thresh") )); then echo "GC pause p95 $gc_p95 exceeds $gc_thresh"; fail=1; fi
 if (( $(bc_check "$heap_p95 > $heap_thresh") )); then echo "Heap usage p95 $heap_p95 exceeds $heap_thresh"; fail=1; fi
 
