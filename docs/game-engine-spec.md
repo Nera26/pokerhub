@@ -1,5 +1,8 @@
 # Game Engine Specification
 
+**Version:** 1.1.0  
+**Last Updated:** 2025-08-30
+
 ## State Machine
 ```mermaid
 stateDiagram-v2
@@ -91,6 +94,17 @@ curl /api/hands/hand1/state/3 | jq
 - Clients retry failed submissions up to three times with exponential backoff.
 - State fetch endpoints are idempotent and may be retried without side effects.
 
+## Message Flow Example
+
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant S as Server
+  C->>S: PlayerAction(actionId)
+  S-->>C: Ack
+  S->>C: GameState update
+```
+
 ## Mitigation Strategies
 
 - Duplicate action protection via Redis idempotency keys.
@@ -104,3 +118,4 @@ curl /api/hands/hand1/state/3 | jq
 - 5b99d21: align security and engine specs
 - 4eb5561: add game engine spec and SLO definitions
 - 2025-01-04: finalize spec and add revision history
+- 2025-08-30: add version metadata and message flow diagram

@@ -1,6 +1,16 @@
 # Tournament Handbook
 
+**Version:** 1.0.0  
+**Last Updated:** 2025-08-30
+
 This handbook standardizes how PokerHub hosts competitive events.
+
+## Lifecycle
+
+```mermaid
+flowchart LR
+  Register --> "Late Reg Ends" --> Play --> "Final Table" --> Payouts
+```
 
 ## Formats
 
@@ -55,4 +65,8 @@ This handbook standardizes how PokerHub hosts competitive events.
 ## Reconciliation
 
 Tournament ledger entries must be verified daily. Follow the [reconciliation procedure](./accounting-book.md#reconciliation-procedure) to confirm balances.
+
+## Revision History
+- 2025-01-04: initial tournament policies
+- 2025-08-30: add lifecycle diagram and version metadata
 
