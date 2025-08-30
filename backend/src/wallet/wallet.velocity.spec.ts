@@ -35,7 +35,7 @@ describe('WalletService velocity limits', () => {
       redisStore.set(key, val);
       return val;
     }),
-    expire: jest.fn(async () => true),
+    expire: jest.fn(async () => 1),
   };
   const provider: any = {
     initiate3DS: jest.fn().mockResolvedValue({ id: 'tx' }),
@@ -134,6 +134,9 @@ describe('WalletService velocity limits', () => {
       'wallet.velocity.limit',
       expect.objectContaining({ accountId: userId, operation: 'deposit' }),
     );
+    expect(
+      redisStore.get(`wallet:deposit:${userId}:h:count`),
+    ).toBe(2);
     delete process.env.WALLET_VELOCITY_DEPOSIT_HOURLY_COUNT;
   });
 
@@ -147,6 +150,43 @@ describe('WalletService velocity limits', () => {
       'wallet.velocity.limit',
       expect.objectContaining({ accountId: userId, operation: 'withdraw' }),
     );
+    expect(
+      redisStore.get(`wallet:withdraw:${userId}:h:amount`),
+    ).toBe(70);
+    delete process.env.WALLET_VELOCITY_WITHDRAW_HOURLY_AMOUNT;
+  });
+
+  it('rolls back hourly count on redis error', async () => {
+    process.env.WALLET_VELOCITY_DEPOSIT_HOURLY_COUNT = '2';
+    const originalCheck = (service as any).checkVelocity;
+    (service as any).checkVelocity = jest.fn();
+    redis.incr.mockImplementationOnce(async (key: string) => {
+      const val = (redisStore.get(key) ?? 0) + 1;
+      redisStore.set(key, val);
+      throw new Error('boom');
+    });
+    await expect(
+      service.deposit(userId, 10, 'dev', '1.1.1.1', 'USD'),
+    ).rejects.toThrow('boom');
+    expect(redisStore.get(`wallet:deposit:${userId}:h:count`)).toBe(0);
+    (service as any).checkVelocity = originalCheck;
+    delete process.env.WALLET_VELOCITY_DEPOSIT_HOURLY_COUNT;
+  });
+
+  it('rolls back hourly amount on redis error', async () => {
+    process.env.WALLET_VELOCITY_WITHDRAW_HOURLY_AMOUNT = '100';
+    const originalCheck = (service as any).checkVelocity;
+    (service as any).checkVelocity = jest.fn();
+    redis.incrby.mockImplementationOnce(async (key: string, amt: number) => {
+      const val = (redisStore.get(key) ?? 0) + amt;
+      redisStore.set(key, val);
+      throw new Error('boom');
+    });
+    await expect(
+      service.withdraw(userId, 10, 'dev', '1.1.1.1', 'USD'),
+    ).rejects.toThrow('boom');
+    expect(redisStore.get(`wallet:withdraw:${userId}:h:amount`)).toBe(0);
+    (service as any).checkVelocity = originalCheck;
     delete process.env.WALLET_VELOCITY_WITHDRAW_HOURLY_AMOUNT;
   });
 });
