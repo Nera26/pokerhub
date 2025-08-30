@@ -49,11 +49,7 @@ export function setupTelemetry() {
     traceExporter: new OTLPTraceExporter({
       url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
     }),
-    instrumentations: [
-      getNodeAutoInstrumentations({
-        '@opentelemetry/instrumentation-aws-sdk': { enabled: false },
-      }),
-    ],
+    instrumentations: [getNodeAutoInstrumentations()],
   });
 
   sdk.start();
