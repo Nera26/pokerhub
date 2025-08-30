@@ -25,6 +25,12 @@ flowchart TD
   I -->|Suspicious| F[Account Locked]
 ```
 
+## Backend Flow
+The wallet layer's [KycService](../../backend/src/wallet/kyc.service.ts) coordinates identity checks:
+1. Region and Geo-IP checks reject blocked jurisdictions.
+2. Sanctions and PEP APIs flag high-risk names before provider verification.
+3. Results are cached; approved accounts are marked `kycVerified`, while denials are stored for review.
+
 ## Data Retention Policy
 - **Identity Documents**: Stored encrypted for **7 years** after account closure.
 - **KYC Provider Responses**: Retained for **7 years** in immutable logs.
