@@ -2,6 +2,21 @@
 
 When service level objectives burn their monthly error budget, operators follow these escalation rules.
 
+PagerDuty routes SLO burn alerts based on the metric:
+
+- `pokerhub-sre` – service uptime, action ACK latency, socket connect success, and request error rate.
+- `pokerhub-eng` – queue saturation.
+
+On-call engineers escalate to the engineering manager if burn rates stay high for more than an hour and involve the CTO once the full monthly budget is exhausted.
+
+Refer to these runbooks for mitigation steps:
+
+- [Action ACK Latency](runbooks/action-ack-latency.md)
+- [Socket Connect Success](runbooks/socket-connect-success.md)
+- [Error Rates](runbooks/error-rates.md)
+- [Service Uptime](runbooks/service-uptime.md)
+- [Queue Saturation](runbooks/queue-saturation.md)
+
 ## 50% Budget Consumed
 - Freeze feature deployments; only reliability fixes may ship.
 - Review active incidents and prioritize mitigation work.

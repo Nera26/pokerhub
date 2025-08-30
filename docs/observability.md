@@ -97,7 +97,17 @@ action ACK p95 latency, wallet transaction throughput, and service availability.
 Prometheus evaluates these objectives and sends violations to the
 `pokerhub-sre` PagerDuty service.
 
-See [SLOs](SLOs.md) for targets and [error-budget procedures](error-budget-procedures.md) for freeze and rollback rules. Individual metric runbooks under [runbooks/](runbooks/) provide dashboard and PagerDuty escalation details.
+See [SLOs](SLOs.md) for targets and [error-budget procedures](error-budget-procedures.md) for freeze and rollback rules. Import `infrastructure/observability/alerts-overview-grafana.json` for a Grafana summary of active burn rates, or `infrastructure/observability/alerts-overview-metabase.json` for a Metabase view of the same data.
+
+### Runbooks
+
+Individual metric runbooks provide dashboard links and PagerDuty escalation details:
+
+- [Action ACK Latency](runbooks/action-ack-latency.md)
+- [Socket Connect Success](runbooks/socket-connect-success.md)
+- [Error Rates](runbooks/error-rates.md)
+- [Service Uptime](runbooks/service-uptime.md)
+- [Queue Saturation](runbooks/queue-saturation.md)
 
 ![Alert Routing](images/alert-routing.svg)
 
