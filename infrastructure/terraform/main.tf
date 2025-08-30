@@ -1,64 +1,68 @@
 terraform {
   required_providers {
-    aws = {
-      source  = "hashicorp/aws"
+    google = {
+      source  = "hashicorp/google"
       version = ">= 5.0"
     }
   }
 }
 
-provider "aws" {
-  region = var.primary_region
+provider "google" {
+  project = var.project_id
+  region  = var.primary_region
 }
 
-resource "aws_db_instance" "primary" {
-  identifier          = "${var.db_name}-primary"
-  engine              = "postgres"
-  instance_class      = "db.m5.large"
-  allocated_storage   = 20
-  username            = var.db_username
-  password            = var.db_password
-  backup_retention_period = var.backup_retention_period
-  copy_tags_to_snapshot   = true
-  skip_final_snapshot     = true
+resource "google_sql_database_instance" "primary" {
+  name             = "${var.db_name}-primary"
+  database_version = "POSTGRES_14"
+  region           = var.primary_region
+
+  settings {
+    tier = var.db_tier
+    backup_configuration {
+      enabled = true
+      retained_backups = var.backup_retention_period
+    }
+  }
+
+  root_password = var.db_password
 }
 
-provider "aws" {
-  alias  = "replica"
-  region = var.replica_region
+provider "google" {
+  alias   = "replica"
+  project = var.project_id
+  region  = var.replica_region
 }
 
-resource "aws_db_instance" "replica" {
-  provider            = aws.replica
-  identifier          = "${var.db_name}-replica"
-  engine              = "postgres"
-  instance_class      = "db.m5.large"
-  replicate_source_db     = aws_db_instance.primary.arn
-  backup_retention_period = var.backup_retention_period
-  copy_tags_to_snapshot   = true
+resource "google_sql_database_instance" "replica" {
+  provider            = google.replica
+  name                = "${var.db_name}-replica"
+  database_version    = google_sql_database_instance.primary.database_version
+  region              = var.replica_region
+  master_instance_name = google_sql_database_instance.primary.name
+
+  settings {
+    tier = var.db_tier
+  }
 }
 
-resource "aws_elasticache_replication_group" "redis_cluster" {
-  replication_group_id       = "pokerhub-redis"
-  engine                     = "redis"
-  engine_version             = "7.0"
-  node_type                  = var.redis_node_type
-  number_cache_clusters      = 3
-  automatic_failover_enabled = true
+resource "google_redis_instance" "redis_primary" {
+  name           = "pokerhub-redis"
+  tier           = var.redis_tier
+  memory_size_gb = var.redis_memory_size_gb
+  region         = var.primary_region
 }
 
-resource "aws_elasticache_global_replication_group" "redis_global" {
-  global_replication_group_id_suffix = "pokerhub-redis-global"
-  primary_replication_group_id       = aws_elasticache_replication_group.redis_cluster.id
+provider "google" {
+  alias   = "redis_replica"
+  project = var.project_id
+  region  = var.replica_region
 }
 
-resource "aws_elasticache_replication_group" "redis_replica" {
-  provider                   = aws.replica
-  replication_group_id       = "pokerhub-redis-replica"
-  global_replication_group_id = aws_elasticache_global_replication_group.redis_global.global_replication_group_id
-  engine                     = "redis"
-  engine_version             = "7.0"
-  node_type                  = var.redis_node_type
-  number_cache_clusters      = 3
-  automatic_failover_enabled = true
+resource "google_redis_instance" "redis_replica" {
+  provider       = google.redis_replica
+  name           = "pokerhub-redis-replica"
+  tier           = var.redis_tier
+  memory_size_gb = var.redis_memory_size_gb
+  region         = var.replica_region
 }
