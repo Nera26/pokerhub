@@ -34,7 +34,7 @@ jobs:
           python -m pip install pyyaml >/dev/null
           python infra/observability/validate.py
       - name: Run canary deploy
-        run: scripts/canary-deploy.sh
+        run: ./deploy/canary.sh ${{ github.sha }}
       - name: Verify SLO metrics
         id: metrics
         run: scripts/check-metrics.sh
@@ -42,7 +42,7 @@ jobs:
       - name: Canary rollback on SLO violation
         if: steps.metrics.outcome != 'success'
         run: |
-          scripts/canary-rollback.sh
+          ./deploy/rollback.sh
           exit 1
       - name: Promote canary
         if: steps.metrics.outcome == 'success'
