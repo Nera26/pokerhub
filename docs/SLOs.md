@@ -18,10 +18,15 @@ We use a multi‑window burn‑rate policy: a fast 5 m/1 h window at **14.4�
 Each SLO allocates a monthly error budget equal to `1 - target`. If more than **50%** of the monthly budget is burned in a week, freeze feature deploys and focus on reliability. Exhausting **100%** of the budget triggers an incident review and requires engineering manager approval for any production changes until the burn rate drops below [Alerting thresholds](runbooks/alerting.md#severity-tiers). Detailed freeze and rollback rules live in [error-budget-procedures.md](error-budget-procedures.md).
 
 ## Dashboards
+- [Alerts Overview](../infrastructure/observability/alerts-overview-grafana.json)
+- [Service SLOs](../infrastructure/observability/slo-dashboard.json)
 - [Room CPU/Memory](../infrastructure/observability/room-cpu-memory-dashboard.json)
+- [GC Pauses](../infrastructure/observability/gc-pauses-dashboard.json)
 - [Queue Lag](../infrastructure/observability/queue-lag-dashboard.json)
-- [Dropped Frames](../infrastructure/observability/socket-latency-dashboard.json)
+- [Socket Latency](../infrastructure/observability/socket-latency-dashboard.json)
+- [Socket Connects](../infrastructure/observability/socket-connects-dashboard.json)
 - [Error Rates](../infrastructure/observability/error-rates-dashboard.json)
+- [Player Analytics](../infrastructure/observability/player-analytics-dashboard.json)
 
 All dashboard JSON files include a `pagerduty_service` label that drives the escalation policy documented in [runbooks/alerting.md](runbooks/alerting.md#pagerduty-escalation).
 
