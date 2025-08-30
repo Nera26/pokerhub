@@ -30,7 +30,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm run test:property --prefix backend
+      - run: npm run test:property
 
   e2e:
     needs: property
@@ -44,14 +44,13 @@ jobs:
       - run: npm ci
       - run: npm run test:e2e
 
-  load:
+  load-smoke:
     needs: e2e
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Run k6 smoke test
+        uses: grafana/k6-action@v0.2.0
         with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run test:load
+          filename: load/k6-ws-packet-loss.js
+          arguments: --vus 10 --duration 10s
