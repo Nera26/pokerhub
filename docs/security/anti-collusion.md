@@ -8,6 +8,8 @@ PokerHub uses behavioral analysis and auditing to detect players collaborating u
 - **Chip Dumping**: Monitor rapid transfers of chips between the same accounts.
 - **Unusual Win Rates**: Identify players with statistically improbable results against specific opponents.
 - **Table Selection**: Track groups entering and leaving tables together.
+- **Multi-Table Coordination**: Look for the same cohort appearing at several tables simultaneously.
+- **Latency Correlation**: Compare action timestamps to spot microsecond-level coordination.
 
 ## Analytics Pipeline
 Raw game and session events stream into an analytics warehouse where scheduled queries surface
@@ -38,6 +40,16 @@ HAVING stddev(action_time_ms) < 200;
 - **Hourly**: Queries populate `collusion_alerts` table.
 - **Daily**: Compliance reviews new alerts and tags false positives.
 - **Weekly**: Security team audits alert quality and query thresholds.
+
+## Alert Handling and Enforcement
+- Alerts trigger Slack notifications and create Jira tickets for tracking.
+- Confirmed cases result in immediate bankroll freeze pending investigation.
+- Repeat offenders are blacklisted and their devices added to the fraud watchlist.
+
+## Privacy and Data Retention
+- Only metadata necessary for detection (IP, device ID, bet timing) is stored.
+- Collusion logs are retained for **5 years** and encrypted at rest.
+- Data access requires security approval and is logged for auditing.
 
 ## Audit Procedures
 1. **Daily Review**: Compliance team reviews heuristic alerts and cross‑checks game logs.

@@ -31,10 +31,21 @@ PokerHub uses a commit–reveal protocol to prove every shuffle was fair and unm
 - Observers can archive proofs for independent audits.
 - Any mismatch between the commitment and revealed seed proves tampering.
 
+## Audit Proofs
+- Every hand stores `{seed, nonce, commitment}` in an append-only log that is hashed into a nightly Merkle root.
+- The root is timestamped and signed with the server's Ed25519 key so regulators can verify provenance.
+- An open-source verifier script reproduces the shuffle and validates the signed Merkle proof against the public key.
+
+## Seed Management Policy
+- Seeds originate from a hardware RNG and are kept only in process memory until reveal.
+- After a hand concludes the seed is persisted for **30 days** in encrypted storage for dispute resolution and then shredded.
+- Access to historical seeds requires two-person approval and is audited by the security team.
+
 ## See Also
 - [RNG Fairness Spec](../rng-fairness.md)
 - [Collusion Review Runbook](../runbooks/collusion-review.md)
 
 ## Revision History
+- 2025-10-04: document audit proofs and seed retention policy
 - 2025-08-30: add commit–reveal diagram and flow summary
 - 2025-01-04: initial public release
