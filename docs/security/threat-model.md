@@ -13,6 +13,8 @@ graph TD
 This diagram highlights representative threats across PokerHub. The sections
 below enumerate STRIDE threats and mitigations across all backend modules.
 
+See [Incident Response Runbook](incident-response.md) for detection sources and escalation procedures.
+
 ## analytics
 - **Spoofing**: Injecting fake telemetry events to skew metrics.
   - *Mitigation*: Sign analytics payloads and accept events only from authenticated services.
