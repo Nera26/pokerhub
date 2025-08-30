@@ -67,3 +67,13 @@ stateDiagram-v2
 - Apply rate limits or temporary table locks to contain live attacks.
 - Update analytics rules and monitoring thresholds based on post-mortem lessons.
 
+
+## Security Scan Remediation
+- Nightly OWASP ZAP baseline scans run against the dev deployment.
+- The CI job fails on any ASVS L2 or high/critical alerts.
+- Remediation workflow:
+  1. Review the `zap-report.json` artifact to pinpoint the offending alert.
+  2. Fix the vulnerability in code or configuration.
+  3. Re-run the security scan to verify the issue is resolved.
+  4. Document the incident and mitigation in the security backlog.
+
