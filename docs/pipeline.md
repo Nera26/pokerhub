@@ -23,8 +23,9 @@ frontend/backed approvals for contract changes.
 
 `deploy.yml` performs a canary rollout via `scripts/canary-deploy.sh`, routing a small
 percentage of traffic to the canary. Health checks poll `$HEALTH_CHECK_URL` and Prometheus
-metrics; failures trigger `scripts/rollback.sh` to restore the previous release. Successful
-runs promote the canary to 100 % traffic.
+metrics. If p95 `game_action_ack_latency_ms` exceeds 120 ms or the HTTP error rate rises
+above **0.05 %** (configurable via `$ERROR_RATE_THRESHOLD`), `scripts/rollback.sh`
+reverts the deployment. Successful runs promote the canary to 100 % traffic.
 
 [`canary.yml`](../.github/workflows/canary.yml) deploys with [`scripts/canary-rollback.sh`](../scripts/canary-rollback.sh)
 and watches WebSocket ACK latency using `load/k6-ws-packet-loss.js`. If the p95 ACK latency

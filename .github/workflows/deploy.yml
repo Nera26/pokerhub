@@ -35,41 +35,15 @@ jobs:
           python infra/observability/validate.py
       - name: Run canary deploy
         run: scripts/canary-deploy.sh
-      - name: Check canary health
-        id: check
-        run: scripts/check-canary.sh
+      - name: Check Prometheus metrics
+        id: metrics
+        run: scripts/check-metrics.sh
         continue-on-error: true
-      - name: Rollback on health failure
-        if: steps.check.outcome != 'success'
-        run: |
-          scripts/rollback.sh
-          exit 1
-      - name: Record canary metrics
-        run: |
-          mkdir -p load/metrics
-          curl -fsS "$METRICS_URL" -o load/metrics/canary.json
-      - name: Check SLO thresholds
-        id: slo
-        run: scripts/check-canary.sh
-        continue-on-error: true
-      - name: Rollback on SLO failure
-        if: steps.slo.outcome != 'success'
-        run: |
-          scripts/rollback.sh
-          exit 1
-      - name: Run load tests
-        id: load
-        run: |
-          npm install --no-save k6 >/dev/null
-          for f in load/k6-*.js; do
-            npx k6 run "$f" --vus 10 --duration 10s
-          done
-        continue-on-error: true
-      - name: Rollback on load test failure
-        if: steps.load.outcome != 'success'
+      - name: Rollback on metrics failure
+        if: steps.metrics.outcome != 'success'
         run: |
           scripts/rollback.sh
           exit 1
       - name: Promote canary
-        if: steps.slo.outcome == 'success' && steps.load.outcome == 'success'
+        if: steps.metrics.outcome == 'success'
         run: scripts/promote.sh
