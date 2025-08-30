@@ -128,11 +128,14 @@ Production deployments expose these views at:
 
 - Grafana SLO overview: <https://grafana.pokerhub.example/d/slo/slo-overview>
 - Metabase Alerts Overview: <https://metabase.pokerhub.example/dashboard/42-alerts>
-- PagerDuty escalation policy: <https://pokerhub.pagerduty.com/escalation_policies/PABC123>
+- PagerDuty escalation policies:
+  - SRE: <https://pokerhub.pagerduty.com/escalation_policies/PABC123>
+  - Engineering: <https://pokerhub.pagerduty.com/escalation_policies/PDEF456>
+  - Ops: <https://pokerhub.pagerduty.com/escalation_policies/PGHI789>
 
 ### Runbooks
 
-Individual metric runbooks provide dashboard links and PagerDuty escalation details:
+Individual metric runbooks provide dashboard links and PagerDuty escalation details. See the [runbook index](runbooks/index.md) for the full list:
 
 - [Action ACK Latency](runbooks/action-ack-latency.md) ([Grafana JSON](../infrastructure/observability/socket-latency-dashboard.json))
 - [Socket Connect Success](runbooks/socket-connect-success.md) ([Grafana JSON](../infrastructure/observability/socket-connects-dashboard.json))

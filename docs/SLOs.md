@@ -20,15 +20,15 @@ ALERTMANAGER_URL=http://localhost:9093 ./infrastructure/observability/provision-
 | `pokerhub-ops` | Operations |
 
 ## SLO Targets
-| SLO | Target | Burn‑rate alerts | Grafana | Metabase | PagerDuty Service |
-| --- | --- | --- | --- | --- | --- |
-| Service uptime | 99.95% monthly availability | 14.4× (1h) / 6× (6h) | [Room CPU/Memory](../infrastructure/observability/room-cpu-memory-dashboard.json) | [Ops overview](analytics-dashboards.md) | `pokerhub-sre` |
-| Game action ACK latency | 99% of ACKs < 250 ms | 14.4× (1h) / 6× (6h) | [Socket Latency](../infrastructure/observability/socket-latency-dashboard.json) | [Action ACK Latency](analytics-dashboards.md#action-ack-latency-1) | `pokerhub-sre` |
-| Socket connect success | 99% successful connects | 14.4× (1h) / 6× (6h) | [Socket Connects](../infrastructure/observability/socket-connects-dashboard.json) | [Socket Connect Success](analytics-dashboards.md#socket-connect-success-1) | `pokerhub-sre` |
-| Request error rate | <1% of requests error | 14.4× (1h) / 6× (6h) | [Error Rates](../infrastructure/observability/error-rates-dashboard.json) | [Error Rate](analytics-dashboards.md#error-rate-1) | `pokerhub-sre` |
-| Queue saturation | 99% of queue lag < 2 s | 14.4× (1h) / 6× (6h) | [Queue Lag](../infrastructure/observability/queue-lag-dashboard.json) | [Queue Saturation](analytics-dashboards.md#queue-saturation-1) | `pokerhub-eng` |
-| Telemetry pipeline uptime | 99.9% collector availability | 14.4× (1h) / 6× (6h) | [Telemetry Pipeline](../infra/observability/otel-dashboard.json) | [Telemetry Overview](analytics-dashboards.md#telemetry-overview) | `pokerhub-observability` |
-| Frontend route latency | 95% of routes < 500 ms | 14.4× (1h) / 6× (6h) | [Frontend Route Latency](analytics-dashboards.md#frontend-route-latency) | — | `pokerhub-eng` |
+| SLO | Target | Monthly error budget | Burn‑rate alerts | Grafana | Metabase | PagerDuty Service |
+| --- | --- | --- | --- | --- | --- | --- |
+| Service uptime | 99.95% monthly availability | 21.6 m downtime | 14.4× (1h) / 6× (6h) | [Room CPU/Memory](../infrastructure/observability/room-cpu-memory-dashboard.json) | [Ops overview](analytics-dashboards.md) | `pokerhub-sre` |
+| Game action ACK latency | 99% of ACKs < 250 ms | 1% slow ACKs | 14.4× (1h) / 6× (6h) | [Socket Latency](../infrastructure/observability/socket-latency-dashboard.json) | [Action ACK Latency](analytics-dashboards.md#action-ack-latency-1) | `pokerhub-sre` |
+| Socket connect success | 99% successful connects | 1% failed connects | 14.4× (1h) / 6× (6h) | [Socket Connects](../infrastructure/observability/socket-connects-dashboard.json) | [Socket Connect Success](analytics-dashboards.md#socket-connect-success-1) | `pokerhub-sre` |
+| Request error rate | <1% of requests error | 1% error responses | 14.4× (1h) / 6× (6h) | [Error Rates](../infrastructure/observability/error-rates-dashboard.json) | [Error Rate](analytics-dashboards.md#error-rate-1) | `pokerhub-sre` |
+| Queue saturation | 99% of queue lag < 2 s | 1% >2 s lag | 14.4× (1h) / 6× (6h) | [Queue Lag](../infrastructure/observability/queue-lag-dashboard.json) | [Queue Saturation](analytics-dashboards.md#queue-saturation-1) | `pokerhub-eng` |
+| Telemetry pipeline uptime | 99.9% collector availability | 43.2 m downtime | 14.4× (1h) / 6× (6h) | [Telemetry Pipeline](../infra/observability/otel-dashboard.json) | [Telemetry Overview](analytics-dashboards.md#telemetry-overview) | `pokerhub-observability` |
+| Frontend route latency | 95% of routes < 500 ms | 5% slow routes | 14.4× (1h) / 6× (6h) | [Frontend Route Latency](analytics-dashboards.md#frontend-route-latency) | — | `pokerhub-eng` |
 
 We use a multi‑window burn‑rate policy: a fast 5 m/1 h window at **14.4×** and a slow 30 m/6 h window at **6×**. Alerts are routed to PagerDuty via `pagerduty_service` labels in the rule definitions.
 

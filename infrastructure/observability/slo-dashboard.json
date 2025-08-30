@@ -2,7 +2,8 @@
   "dashboard": {
     "title": "Service SLOs",
     "labels": {
-      "pagerduty_service": "pokerhub-sre"
+      "pagerduty_service": "pokerhub-sre",
+      "runbook": "docs/runbooks/error-budget-policy.md"
     },
     "panels": [
       {

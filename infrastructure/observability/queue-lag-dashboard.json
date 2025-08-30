@@ -2,7 +2,8 @@
   "dashboard": {
     "title": "Queue Lag",
     "labels": {
-      "pagerduty_service": "pokerhub-eng"
+      "pagerduty_service": "pokerhub-eng",
+      "runbook": "docs/runbooks/queue-lag.md"
     },
     "panels": [
       {

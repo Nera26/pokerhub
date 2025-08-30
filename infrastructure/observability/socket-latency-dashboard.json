@@ -2,7 +2,8 @@
   "dashboard": {
     "title": "Socket Latency",
     "labels": {
-      "pagerduty_service": "pokerhub-sre"
+      "pagerduty_service": "pokerhub-sre",
+      "runbook": "docs/runbooks/action-ack-latency.md"
     },
     "panels": [
       {

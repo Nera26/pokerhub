@@ -2,7 +2,8 @@
   "dashboard": {
     "title": "Room CPU and Memory",
     "labels": {
-      "pagerduty_service": "pokerhub-sre"
+      "pagerduty_service": "pokerhub-sre",
+      "runbook": "docs/runbooks/room-worker-resources.md"
     },
     "panels": [
       {

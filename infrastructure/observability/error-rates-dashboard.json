@@ -2,7 +2,8 @@
   "dashboard": {
     "title": "Error Rates",
     "labels": {
-      "pagerduty_service": "pokerhub-sre"
+      "pagerduty_service": "pokerhub-sre",
+      "runbook": "docs/runbooks/error-rates.md"
     },
     "panels": [
       {
