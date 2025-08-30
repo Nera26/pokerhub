@@ -33,3 +33,7 @@ Refer to [../security/anti-collusion.md](../security/anti-collusion.md) for deta
 ## Notes
 - Actions use the `ReviewAction` type defined in `shared/types.ts`.
 - If you encounter authorization errors, verify your admin role and authentication token.
+
+## See Also
+- [RNG Whitepaper](../player/rng-whitepaper.md)
+- [RNG Fairness Spec](../rng-fairness.md)
