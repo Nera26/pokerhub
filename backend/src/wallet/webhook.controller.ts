@@ -19,11 +19,13 @@ export class WebhookController {
       throw new UnauthorizedException('invalid signature');
     }
     const parsed = ProviderCallbackSchema.parse(body);
-    await this.wallet.processDisbursement(
-      parsed.eventId,
-      parsed.idempotencyKey,
-      parsed.providerTxnId,
-      parsed.status,
+    await this.provider.handleWebhook(parsed, () =>
+      this.wallet.processDisbursement(
+        parsed.eventId,
+        parsed.idempotencyKey,
+        parsed.providerTxnId,
+        parsed.status,
+      ),
     );
     return { message: 'acknowledged' };
   }
