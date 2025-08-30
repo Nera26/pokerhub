@@ -37,4 +37,9 @@ export class SettlementService {
       { status: 'committed' },
     );
   }
+
+  async cancel(handId: string, street: Street, idx: number): Promise<void> {
+    const idempotencyKey = this.buildKey(handId, street, idx);
+    await this.repo.delete({ idempotencyKey, status: 'reserved' });
+  }
 }
