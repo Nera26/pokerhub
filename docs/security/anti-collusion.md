@@ -10,6 +10,9 @@ PokerHub uses behavioral analysis and auditing to detect players collaborating u
 - **Table Selection**: Track groups entering and leaving tables together.
 - **Multi-Table Coordination**: Look for the same cohort appearing at several tables simultaneously.
 - **Latency Correlation**: Compare action timestamps to spot microsecond-level coordination.
+- **Chat Signaling**: Scan table chat for shared keywords or timing used to coordinate plays.
+- **Unbalanced Pot Contributions**: Flag repeated small bets where players fold to each other to shift chips.
+- **Device or Geolocation Swaps**: Detect accounts that change devices or regions in tandem.
 
 ## Analytics Pipeline
 Raw game and session events stream into an analytics warehouse where scheduled queries surface
