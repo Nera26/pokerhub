@@ -3,12 +3,10 @@ import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
-import { setupTelemetry, shutdownTelemetry } from './telemetry/telemetry';
 import { WalletService } from './wallet/wallet.service';
 import { scheduleReconcileJob } from './wallet/reconcile.job';
 
 async function bootstrap() {
-  setupTelemetry();
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
 
@@ -43,7 +41,6 @@ async function bootstrap() {
 
   const shutdown = async () => {
     await app.close();
-    await shutdownTelemetry();
     process.exit(0);
   };
 

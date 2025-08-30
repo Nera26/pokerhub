@@ -29,7 +29,7 @@ import {
   type GameActionPayload,
 } from '@shared/types';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
-import { metrics } from '@opentelemetry/api';
+import { metrics, trace } from '@opentelemetry/api';
 import PQueue from 'p-queue';
 
 /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-redundant-type-constituents */
@@ -117,6 +117,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   server!: Server;
 
   private tick = 0;
+  private static readonly tracer = trace.getTracer('game-gateway');
 
   constructor(
     private readonly rooms: RoomManager,
@@ -526,15 +527,20 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('replay')
   async handleReplay(@ConnectedSocket() client: Socket) {
-    if ((await this.flags?.get('dealing')) === false) {
-      this.enqueue(client, 'server:Error', 'dealing disabled');
-      return;
-    }
-    const room = this.rooms.get('default');
-    const state = await room.replay();
-    const payload = { version: '1', ...state, tick: this.tick };
-    GameStateSchema.parse(payload);
-    this.enqueue(client, 'state', payload);
+    return GameGateway.tracer.startActiveSpan('ws.replay', async (span) => {
+      span.setAttribute('socket.id', client.id);
+      if ((await this.flags?.get('dealing')) === false) {
+        this.enqueue(client, 'server:Error', 'dealing disabled');
+        span.end();
+        return;
+      }
+      const room = this.rooms.get('default');
+      const state = await room.replay();
+      const payload = { version: '1', ...state, tick: this.tick };
+      GameStateSchema.parse(payload);
+      this.enqueue(client, 'state', payload);
+      span.end();
+    });
   }
 
   @SubscribeMessage('resume')
@@ -542,18 +548,23 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() body: { tick: number },
   ) {
-    const from = body?.tick ?? 0;
-    if ((await this.flags?.get('dealing')) === false) {
-      this.enqueue(client, 'server:Error', 'dealing disabled');
-      return;
-    }
-    const room = this.rooms.get('default');
-    const states = await room.resume(from);
-    for (const [index, state] of states) {
-      const payload = { version: '1', ...state, tick: index + 1 };
-      GameStateSchema.parse(payload);
-      this.enqueue(client, 'state', payload);
-    }
+    return GameGateway.tracer.startActiveSpan('ws.resume', async (span) => {
+      span.setAttribute('socket.id', client.id);
+      const from = body?.tick ?? 0;
+      if ((await this.flags?.get('dealing')) === false) {
+        this.enqueue(client, 'server:Error', 'dealing disabled');
+        span.end();
+        return;
+      }
+      const room = this.rooms.get('default');
+      const states = await room.resume(from);
+      for (const [index, state] of states) {
+        const payload = { version: '1', ...state, tick: index + 1 };
+        GameStateSchema.parse(payload);
+        this.enqueue(client, 'state', payload);
+      }
+      span.end();
+    });
   }
 
   private async handleTimeout(playerId: string, tableId: string) {

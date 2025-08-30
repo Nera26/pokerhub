@@ -62,6 +62,25 @@ Metrics can also be shipped via OTLP:
 k6 run --vus 50 --duration 1m --out otlp --otlp-endpoint http://localhost:4318 load/k6-table-actions.js
 ```
 
+## Backend Telemetry
+
+The backend `LoggingModule` boots OpenTelemetry through an `OtelProvider` that
+configures the NodeSDK with OTLP trace and metric exporters as well as a
+Prometheus scrape endpoint.  Instrumentations for Redis, Postgres and Socket.IO
+are enabled so traces span cache calls, database queries and WebSocket message
+handlers.
+
+Exporter endpoints are driven by environment variables:
+
+```
+OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4318/v1/traces
+OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=http://collector:4318/v1/metrics
+OTEL_EXPORTER_PROMETHEUS_PORT=9464
+```
+
+Shutting down the Nest application triggers the provider to gracefully flush
+and stop the SDK.
+
 ### Example Trace Diagrams
 
 ```mermaid
