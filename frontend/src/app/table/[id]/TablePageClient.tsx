@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { useTableData } from '@/hooks/useTableData';
 import { useApiError } from '@/hooks/useApiError';
 import useGameSocket from '@/hooks/useGameSocket';
-import HandProofModal from '@/components/HandProofModal';
+import FairnessModal from '@/components/FairnessModal';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
 
 const PokerTableLayout = dynamic(
@@ -79,7 +79,7 @@ export default function TablePageClient({ tableId }: { tableId: string }) {
           </a>
         </div>
       )}
-      <HandProofModal
+      <FairnessModal
         handId={proofHandId ?? ''}
         isOpen={showProof}
         onClose={() => setShowProof(false)}
