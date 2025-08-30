@@ -8,6 +8,7 @@ This directory contains load test scripts for PokerHub.
 - `toxiproxy.sh` – configures a Toxiproxy instance injecting packet loss, latency and jitter between clients and the server.
 - `toxiproxy-soak.sh` – wrapper around `toxiproxy.sh` with 5% packet loss and 200 ms jitter for soak tests.
 - `collect-gc-heap.sh` – polls the metrics endpoint for GC pause and heap stats and can push them to Grafana.
+- `run-10k-chaos.sh` – orchestrates k6 and Artillery runs, capturing ACK latency, GC/heap metrics and RNG seeds under `load/metrics/`.
 - `k6-10k-tables.js` – k6 WebSocket scenario driving ~80 k sockets across 10 k tables, injecting packet loss and jitter while recording ACK latency. Supports deterministic replays via `RNG_SEED` and outputs histograms under `load/metrics/`.
 - `artillery-10k-tables.yml` – Artillery equivalent to `k6-10k-tables.js` that captures per-endpoint latency histograms.
 - `k6-10k-tables-clickhouse.js` – k6 scenario for 10k tables and 80 k sockets injecting 5% packet loss and 200 ms jitter, capturing latency histograms and error rates with metrics exported to ClickHouse and deterministic seeds.
@@ -15,6 +16,9 @@ This directory contains load test scripts for PokerHub.
 - `k6-ws-reconnect.js` – k6 scenario validating reconnect success and ACK latency under Toxiproxy impairments.
 
 All scripts assume the server is reachable via `ws://localhost:4000/game` by default.
+
+The `k6-100k-chaos` GitHub Actions workflow runs this scenario nightly and
+uploads the `load/metrics/latest` contents as artifacts for analysis.
 
 ## Local endpoints
 
@@ -34,7 +38,7 @@ Ensure the following services are running (see `docker-compose.test.yml`):
 
 Environment variables:
 - `WS_URL` – override the WebSocket URL (default `ws://localhost:4000/game`).
-- `SOCKETS` – number of concurrent clients (default `80000`, `100` in CI).
+- `SOCKETS` – number of concurrent clients (default `10 × TABLES` → `100000` for 10k tables, `100` in CI).
 - `TABLES` – number of tables to spread sockets across (default `10000`, `100` in CI).
 - `DURATION` – k6 test duration (default `5m`, `1m` in CI).
 - `PACKET_LOSS` – probability (0-1) for dropping a packet (default `0.05`).
@@ -46,12 +50,13 @@ Environment variables:
 
 ## Deterministic replay
 
-Each chaos run records its seed to `load/metrics/seed.txt` along with latency
-histograms and GC statistics. Re-run with the same seed to deterministically
-replay a scenario:
+Each chaos run writes metrics to a timestamped directory under `load/metrics/`
+and updates a `load/metrics/latest` symlink. The RNG seed is stored in
+`seed.txt` alongside latency histograms and GC statistics. Re-run with the same
+seed to deterministically replay a scenario:
 
 ```sh
-RNG_SEED=$(cat load/metrics/seed.txt) ./load/run-10k-chaos.sh
+RNG_SEED=$(cat load/metrics/latest/seed.txt) ./load/run-10k-chaos.sh
 ```
 
 Artifacts written under `load/metrics/` include:
@@ -60,6 +65,7 @@ Artifacts written under `load/metrics/` include:
 - `ack-histogram.json` – aggregate ACK latency histogram from k6.
 - `artillery-latency.json` – HTTP latency histogram from Artillery.
 - `gc-heap.log` and `gc-stats.json` – raw and parsed GC/heap metrics.
+- `seed.txt` – RNG seed for deterministic replays.
 
 ## Chaos swarm run/stop
 
