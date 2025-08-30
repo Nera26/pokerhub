@@ -132,6 +132,18 @@ describe('LeaderboardService', () => {
     expect(top[0].playerId).toBe('alice');
   });
 
+  it('excludes players below session minimum', async () => {
+    const now = Date.now();
+    analytics.events = [
+      { playerId: 'alice', sessionId: 'a1', points: 5, ts: now },
+      { playerId: 'alice', sessionId: 'a2', points: 5, ts: now },
+      { playerId: 'bob', sessionId: 'b1', points: 20, ts: now },
+    ];
+    await service.rebuild({ days: 30, minSessions: 2, decay: 1 });
+    const top = await service.getTopPlayers();
+    expect(top.map((p) => p.playerId)).toEqual(['alice']);
+  });
+
   it('rewards consistent high scores over many small sessions', async () => {
     const now = Date.now();
     analytics.events = [
