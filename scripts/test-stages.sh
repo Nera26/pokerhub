@@ -26,7 +26,6 @@ run_integration() {
   npm ci
   npm run test:e2e --prefix backend
   npm run test:e2e:integration --prefix frontend
-  npm run test:e2e --prefix frontend
 }
 
 run_load() {
@@ -36,6 +35,20 @@ run_load() {
     exit 1
   fi
   k6 run load/k6-ws-packet-loss.js --vus 10 --duration 10s
+}
+
+run_e2e() {
+  npm ci
+  npm run test:e2e --prefix frontend
+}
+
+run_chaos() {
+  npm ci
+  if ! command -v k6 >/dev/null 2>&1; then
+    echo "k6 is required for chaos tests" >&2
+    exit 1
+  fi
+  k6 run load/chaos/ws-chaos.js --vus 10 --duration 10s
 }
 
 case "${1:-}" in
@@ -48,11 +61,17 @@ case "${1:-}" in
   integration)
     run_integration
     ;;
+  e2e)
+    run_e2e
+    ;;
   load)
     run_load
     ;;
+  chaos)
+    run_chaos
+    ;;
   *)
-    echo "Usage: $0 {unit|property|integration|load}" >&2
+    echo "Usage: $0 {unit|property|integration|e2e|load|chaos}" >&2
     exit 1
     ;;
 esac

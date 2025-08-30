@@ -48,12 +48,12 @@ jobs:
         run: |
           mkdir -p load/metrics
           curl -fsS "$METRICS_URL" -o load/metrics/canary.json
-      - name: Check real-time metrics
-        id: metrics
-        run: scripts/check-metrics.sh
+      - name: Check SLO thresholds
+        id: slo
+        run: scripts/check-canary.sh
         continue-on-error: true
-      - name: Rollback on metrics failure
-        if: steps.metrics.outcome != 'success'
+      - name: Rollback on SLO failure
+        if: steps.slo.outcome != 'success'
         run: |
           scripts/rollback.sh
           exit 1
@@ -71,5 +71,5 @@ jobs:
           scripts/rollback.sh
           exit 1
       - name: Promote canary
-        if: steps.metrics.outcome == 'success' && steps.load.outcome == 'success'
+        if: steps.slo.outcome == 'success' && steps.load.outcome == 'success'
         run: scripts/promote.sh

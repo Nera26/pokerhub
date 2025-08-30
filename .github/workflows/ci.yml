@@ -54,8 +54,24 @@ jobs:
           name: integration-${{ github.sha }}
           path: integration.log
 
-  load:
+  e2e:
     needs: integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: ./scripts/test-stages.sh e2e | tee e2e.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-${{ github.sha }}
+          path: e2e.log
+
+  load:
+    needs: e2e
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -80,13 +96,8 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
-      - name: Run chaos test
-        uses: grafana/k6-action@v0.2.0
-        with:
-          filename: load/chaos/ws-chaos.js
-          arguments: --vus 10 --duration 10s
-      - run: echo 'See workflow log for chaos results' > chaos.log
+      - uses: grafana/setup-k6@v1
+      - run: ./scripts/test-stages.sh chaos | tee chaos.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
