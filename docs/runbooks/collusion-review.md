@@ -17,7 +17,17 @@ This runbook outlines how administrators review flagged sessions for potential c
 5. Clicking the button issues `POST /review/sessions/:id/:action` using the next action.
 6. Confirm the session status updates in the table.
 
+## Investigation
+1. Gather the flagged session ID and list of involved users.
+2. Review shared devices, IP addresses, chip transfers, and timing patterns.
+3. Compare VPIP correlations and seat proximity for suspicious alignment.
+4. Document findings and evidence in the incident tracker.
+
+## Remediation
+- Escalate the session via `warn`, `restrict`, or `ban` actions once collusion is confirmed.
+- Reverse illegitimate chip transfers and notify affected players.
+- Log remediation details and follow-up tasks before closing the incident.
+
 ## Notes
 - Actions use the `ReviewAction` type defined in `shared/types.ts`.
 - If you encounter authorization errors, verify your admin role and authentication token.
-
