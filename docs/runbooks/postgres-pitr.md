@@ -5,15 +5,15 @@
 - **RPO**: 5 minutes of acceptable data loss.
 
 ## Preconditions
-- WAL archives replicated to the `${SECONDARY_REGION}` bucket.
-- Hourly automated snapshots available in the secondary region.
+- WAL archives replicated to the `${SECONDARY_REGION}` Cloud Storage bucket.
+- Hourly automated Cloud SQL backups available in the secondary region.
 - Last nightly restore drill from `infra/pitr/helm` succeeded.
 
 ## Recovery Steps
 1. Declare the incident and halt writes to the primary.
 2. Promote the read replica or restore the latest snapshot:
    ```bash
-   aws rds promote-read-replica --db-instance-identifier ${DB_REPLICA_ID} --region ${SECONDARY_REGION}
+   gcloud sql instances promote-replica ${SQL_REPLICA_INSTANCE} --project ${PROJECT_ID}
    ```
 3. For corruption or lost writes, restore from snapshot and replay WAL:
    ```bash

@@ -16,8 +16,8 @@ PokerHub is fronted by a global external load balancer with an Anycast IP. Clien
 
 PokerHub's primary Postgres cluster is configured for point‑in‑time recovery (PITR) and cross‑region durability.
 
-- `archive_mode` ships WAL segments every five minutes to an S3 bucket with versioning enabled.
-- S3 replication copies WAL archives and hourly automated snapshots to `${SECONDARY_REGION}`.
+- `archive_mode` ships WAL segments every five minutes to a Cloud Storage bucket with versioning enabled.
+- Cloud Storage replication copies WAL archives and hourly automated snapshots to `${SECONDARY_REGION}`.
 - A read replica in the secondary region provides warm stand‑by capacity and a rapid promotion path.
 - Nightly restore drills are executed via the Helm CronJob under `infra/pitr/helm`, running
   `infra/disaster-recovery/tests/restore-backup.sh` against the latest snapshot.
