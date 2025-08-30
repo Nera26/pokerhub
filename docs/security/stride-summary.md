@@ -1,6 +1,8 @@
 # STRIDE Summary
 
-This document consolidates threat modeling across key PokerHub components.
+This document consolidates threat modeling across key PokerHub components.  
+It merges prior service‑specific STRIDE analyses into a single reference for the app,
+analytics, tournament, and wallet services.
 
 ## App
 - **Spoofing**: Attackers forge session tokens to impersonate users. Mitigation: signed short‑lived JWTs and TLS everywhere.

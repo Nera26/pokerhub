@@ -15,3 +15,10 @@ This runbook defines how PokerHub handles production incidents and documents the
 5. **Post‑mortem**: create an incident report within 5 business days.
 
 Error budgets from [../SLOs.md](../SLOs.md) drive page urgency; exhausting 50% of a monthly budget triggers a feature freeze, while 100% requires CTO approval for production changes.
+
+## Security References
+Consult these documents for guidance during security incidents:
+
+- [../security/stride-summary.md](../security/stride-summary.md)
+- [../security/kyc-aml-flow.md](../security/kyc-aml-flow.md)
+- [../security/anti-collusion.md](../security/anti-collusion.md)
