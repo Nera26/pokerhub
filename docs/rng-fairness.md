@@ -137,3 +137,11 @@ Every release of the RNG library undergoes automated test batteries including:
 
 Results are stored alongside build artifacts and reviewed for regressions. Any
 anomalies trigger an engineering investigation before deployment.
+
+## Incident Response
+
+If RNG manipulation or bias is suspected:
+
+1. Pause affected tables and snapshot current `seed` and `nonce` values.
+2. Export hand logs and proofs for external verification.
+3. Initiate the [Suspected Fraud](./security/incident-response.md#suspected-fraud) workflow.

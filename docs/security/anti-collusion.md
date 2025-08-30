@@ -62,6 +62,11 @@ HAVING stddev(action_time_ms) < 200;
 5. **Enforcement**: Suspend accounts, confiscate funds, and notify regulators if collusion is confirmed.
 6. **Record Keeping**: Retain investigation records for **5 years** in secure storage.
 
+## Periodic Review
+- **Monthly**: Analytics and Security jointly evaluate alert precision and adjust query thresholds.
+- **Quarterly**: External auditors sample flagged sessions to measure false‑negative rates and recommend new heuristics.
+- Outcomes are logged in `collusion_reviews/<date>.md` and feed back into training data and detection logic.
+
 
 ## References
 - [Collusion Review Runbook](../runbooks/collusion-review.md) – triage and escalation workflow.
