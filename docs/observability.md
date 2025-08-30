@@ -118,6 +118,12 @@ Prometheus evaluates these objectives and sends violations to the
 
 See [SLOs](SLOs.md) for targets and [error-budget procedures](error-budget-procedures.md) for freeze and rollback thresholds. Import `infrastructure/observability/alerts-overview-grafana.json` for a Grafana summary of active burn rates, or `infrastructure/observability/alerts-overview-metabase.json` for a Metabase view of the same data.
 
+Production deployments expose these views at:
+
+- Grafana SLO overview: <https://grafana.pokerhub.example/d/slo/slo-overview>
+- Metabase Alerts Overview: <https://metabase.pokerhub.example/dashboard/42-alerts>
+- PagerDuty escalation policy: <https://pokerhub.pagerduty.com/escalation_policies/PABC123>
+
 ### Runbooks
 
 Individual metric runbooks provide dashboard links and PagerDuty escalation details:
