@@ -1,7 +1,7 @@
 // app/wallet/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHourglassHalf } from '@fortawesome/free-solid-svg-icons/faHourglassHalf';
 import WalletSummary from '@/app/components/wallet/WalletSummary';
@@ -14,68 +14,56 @@ import WithdrawModalContent from '@/app/components/wallet/WithdrawModalContent';
 import ToastNotification, {
   ToastType,
 } from '@/app/components/ui/ToastNotification';
+import { getStatus, fetchTransactions, fetchPending } from '@/lib/api/wallet';
+import { startKyc } from '@/lib/api/kyc';
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/context/AuthContext';
 
 export default function WalletPage() {
-  // Balances
-  const [realBalance] = useState<number>(1250.0);
-  const [creditBalance] = useState<number>(350.0);
+  const { realBalance, creditBalance, playerId, setBalances } = useAuth();
+  const [kycVerified, setKycVerified] = useState(false);
 
-  // Pending transactions (static example data)
-  const [pendingTransactions] = useState([
-    {
-      id: 'pending-tx-1',
-      type: 'Withdrawal - Crypto (USDT)',
-      amount: 100.0,
-      status: 'Pending Confirmation',
-      date: 'June 15, 2024, 10:30 AM',
-    },
-    {
-      id: 'pending-tx-2',
-      type: 'Deposit - QPay',
-      amount: 50.0,
-      status: 'Processing',
-      date: 'June 14, 2024, 02:17 PM',
-    },
-  ]);
+  const {
+    data: pendingData,
+    isLoading: pendingLoading,
+    error: pendingError,
+  } = useQuery({
+    queryKey: ['wallet', 'pending'],
+    queryFn: ({ signal }) => fetchPending({ signal }),
+  });
 
-  // Transaction history data
-  const transactionHistoryData: Transaction[] = [
-    {
-      id: 'tx-history-1',
-      type: 'Deposit (Credit Card)',
-      amount: 200.0,
-      date: 'June 12, 2024, 09:15 AM',
-      status: 'Completed',
-    },
-    {
-      id: 'tx-history-2',
-      type: 'Withdrawal (Crypto)',
-      amount: -50.0,
-      date: 'June 10, 2024, 03:45 PM',
-      status: 'Completed',
-    },
-    {
-      id: 'tx-history-3',
-      type: 'Deposit (QPay)',
-      amount: 150.0,
-      date: 'June 08, 2024, 11:00 AM',
-      status: 'Failed',
-    },
-    {
-      id: 'tx-history-4',
-      type: 'Game Winnings',
-      amount: 75.5,
-      date: 'June 07, 2024, 08:22 PM',
-      status: 'Completed',
-    },
-    {
-      id: 'tx-history-5',
-      type: 'Claimed Bonus',
-      amount: 100.0,
-      date: 'June 12, 2024, 02:30 PM',
-      status: 'Completed',
-    },
-  ];
+  const pendingTransactions = useMemo(
+    () =>
+      (pendingData?.transactions ?? []).map((tx) => ({
+        id: tx.id,
+        type: tx.type,
+        amount: tx.amount,
+        status: tx.status,
+        date: new Date(tx.createdAt).toLocaleString(),
+      })),
+    [pendingData],
+  );
+
+  const {
+    data: historyData,
+    isLoading: historyLoading,
+    error: historyError,
+  } = useQuery({
+    queryKey: ['wallet', 'transactions'],
+    queryFn: ({ signal }) => fetchTransactions({ signal }),
+  });
+
+  const transactionHistoryData: Transaction[] = useMemo(
+    () =>
+      (historyData?.transactions ?? []).map((tx) => ({
+        id: tx.id,
+        type: tx.type,
+        amount: tx.amount,
+        date: new Date(tx.createdAt).toLocaleString(),
+        status: tx.status,
+      })),
+    [historyData],
+  );
 
   // Modal state
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
@@ -109,9 +97,21 @@ export default function WalletPage() {
     showToast(`Withdraw request of $${amount.toFixed(2)} sent`);
   };
 
-  // Update document title (optional)
+  const handleVerify = () => {
+    startKyc(playerId)
+      .then(() => setKycVerified(true))
+      .catch(() => setKycVerified(false));
+  };
+
+  // Title & KYC fetch
   useEffect(() => {
     document.title = 'Wallet – PokerHub';
+    getStatus()
+      .then((res) => {
+        setKycVerified(res.kycVerified);
+        setBalances(res.realBalance, res.creditBalance);
+      })
+      .catch(() => setKycVerified(false));
   }, []);
 
   return (
@@ -121,8 +121,10 @@ export default function WalletPage() {
         <WalletSummary
           realBalance={realBalance}
           creditBalance={creditBalance}
+          kycVerified={kycVerified}
           onDeposit={openDepositModal}
           onWithdraw={openWithdrawModal}
+          onVerify={handleVerify}
         />
 
         {/* 2. Pending Transactions */}
@@ -131,7 +133,15 @@ export default function WalletPage() {
             Pending Transactions
           </h2>
           <div className="space-y-3">
-            {pendingTransactions.length > 0 ? (
+            {pendingLoading ? (
+              <div className="bg-card-bg p-5 rounded-xl text-center text-text-secondary">
+                Loading...
+              </div>
+            ) : pendingError ? (
+              <div className="bg-card-bg p-5 rounded-xl text-center text-danger-red">
+                Failed to load pending transactions
+              </div>
+            ) : pendingTransactions.length > 0 ? (
               pendingTransactions.map((tx) => (
                 <div
                   key={tx.id}
@@ -165,7 +175,15 @@ export default function WalletPage() {
         </section>
 
         {/* 3. Transaction History */}
-        <TransactionHistory transactions={transactionHistoryData} />
+        {historyLoading ? (
+          <div className="p-5 text-center text-text-secondary">Loading...</div>
+        ) : historyError ? (
+          <div className="p-5 text-center text-danger-red">
+            Failed to load transactions
+          </div>
+        ) : (
+          <TransactionHistory transactions={transactionHistoryData} />
+        )}
       </div>
 
       {/* Deposit Modal */}

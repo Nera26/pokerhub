@@ -3,9 +3,14 @@ import { io as ioClient } from 'socket.io-client';
 
 const on = jest.fn();
 const disconnect = jest.fn();
+const ioOn = jest.fn();
 
 jest.mock('socket.io-client', () => ({
-  io: jest.fn(() => ({ on, disconnect })),
+  io: jest.fn(() => ({
+    on,
+    disconnect,
+    io: { on: ioOn, off: jest.fn() },
+  })),
 }));
 
 describe('socket utils', () => {
@@ -23,5 +28,12 @@ describe('socket utils', () => {
     // io should be called twice: once for first getSocket, once after disconnect
     expect(ioClient).toHaveBeenCalledTimes(2);
     expect(second).not.toBe(first);
+  });
+
+  it('creates namespaced socket', () => {
+    const gameSocket = getSocket({ namespace: 'game' });
+    expect(gameSocket).toBeDefined();
+    expect((ioClient as jest.Mock).mock.calls[0][0]).toContain('/game');
+    disconnectSocket('game');
   });
 });

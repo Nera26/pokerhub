@@ -1,4 +1,9 @@
 import { ZodError, ZodSchema } from 'zod';
+import { API_CONTRACT_VERSION } from '@shared/constants';
+import { ServiceStatusResponseSchema } from '@shared/types';
+import { getBaseUrl } from '@/lib/base-url';
+import { serverFetch } from '@/lib/server-fetch';
+import { useAuthStore } from '@/app/store/authStore';
 
 /**
  * Error thrown by API helpers when a request fails or returns an unexpected body.
@@ -29,6 +34,60 @@ export interface ResponseLike {
   };
   json?: () => Promise<unknown>;
   text?: () => Promise<string>;
+}
+
+export async function checkApiContractVersion(): Promise<void> {
+  const baseUrl = getBaseUrl();
+  try {
+    const res = serverFetch(`${baseUrl}/status`);
+    const { contractVersion } = await handleResponse(
+      res,
+      ServiceStatusResponseSchema,
+    );
+    const [backendMajor] = contractVersion.split('.');
+    const [frontendMajor] = API_CONTRACT_VERSION.split('.');
+    if (backendMajor !== frontendMajor) {
+      if (typeof window !== 'undefined') {
+        window.alert('Please upgrade your app.');
+      }
+      throw new Error('API contract version mismatch');
+    }
+  } catch (err) {
+    if (err instanceof Error && err.message === 'API contract version mismatch') {
+      throw err;
+    }
+    // ignore other errors
+  }
+}
+
+export async function apiClient<T>(
+  path: string,
+  schema: ZodSchema<T>,
+  opts: {
+    method?: string;
+    body?: unknown;
+    signal?: AbortSignal;
+  } = {},
+): Promise<T> {
+  const baseUrl = getBaseUrl();
+  const token = useAuthStore.getState().token;
+  const headers: Record<string, string> = {};
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  if (opts.body !== undefined) {
+    headers['content-type'] = 'application/json';
+  }
+
+  const res = serverFetch(`${baseUrl}${path}`, {
+    method: opts.method ?? 'GET',
+    credentials: 'include',
+    headers,
+    ...(opts.body !== undefined && { body: JSON.stringify(opts.body) }),
+    ...(opts.signal && { signal: opts.signal }),
+  });
+  return handleResponse(res, schema);
 }
 
 /**

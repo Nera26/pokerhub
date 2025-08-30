@@ -8,7 +8,7 @@ import { useApiError } from '@/hooks/useApiError';
 import InlineError from '../components/ui/InlineError';
 import { GameType } from '@/types/game-type';
 import type { CashGameListProps } from '../components/home/CashGameList';
-import type { TournamentListProps } from '../components/home/TournamentList';
+import type { TournamentListProps } from '@/features/site/tournament/TournamentList';
 
 const ChatPlaceholder = () => (
   <div className="fixed bottom-4 right-4 h-12 w-12 rounded-full bg-card-bg animate-pulse" />
@@ -39,7 +39,7 @@ if (CashGameList.displayName === 'DynamicMock') {
 
 let TournamentList: React.ComponentType<TournamentListProps> =
   dynamic<TournamentListProps>(
-    () => import('../components/home/TournamentList'),
+    () => import('@/features/site/tournament/TournamentList'),
     {
       loading: () => (
         <section
@@ -57,7 +57,7 @@ let TournamentList: React.ComponentType<TournamentListProps> =
   );
 
 if (TournamentList.displayName === 'DynamicMock') {
-  TournamentList = require('../components/home/TournamentList').default;
+  TournamentList = require('@/features/site/tournament/TournamentList').default;
 }
 
 export default function HomePageClient() {

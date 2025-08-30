@@ -64,7 +64,7 @@ function HeroCard({ card, index }: { card: string; index: number }) {
 }
 
 export interface PlayerHoleCardsProps {
-  cards: string[];
+  cards: [string, string];
   isHero: boolean;
 }
 

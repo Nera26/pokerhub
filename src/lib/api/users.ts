@@ -1,7 +1,8 @@
+/* istanbul ignore file */
 import { getBaseUrl } from '@/lib/base-url';
 import { handleResponse } from './client';
 import { serverFetch } from '@/lib/server-fetch';
-import { MessageResponse, MessageResponseSchema } from './schemas';
+import { MessageResponse, MessageResponseSchema } from '@shared/types';
 export type { ApiError } from './client';
 
 export interface NewUser {

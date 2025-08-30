@@ -10,7 +10,9 @@ const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^@shared/(.*)$': '<rootDir>/../shared/$1',
   },
+  modulePaths: ['<rootDir>/node_modules'],
   testPathIgnorePatterns: ['<rootDir>/e2e/'],
   transformIgnorePatterns: ['node_modules/(?!(next-intl|intl-messageformat)/)'],
   collectCoverage: true,

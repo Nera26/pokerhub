@@ -2,38 +2,19 @@ import { z, type ZodType } from 'zod';
 import { getBaseUrl } from '@/lib/base-url';
 import { handleResponse, ApiError } from './client';
 import { serverFetch } from '@/lib/server-fetch';
-import type { GameType } from '@/types/game-type';
+import type { components } from '@/types/api';
+import {
+  TableSchema,
+  TournamentSchema,
+  type Table,
+  type Tournament,
+  MessageResponseSchema,
+  type TournamentRegisterRequest,
+  type TournamentWithdrawRequest,
+  type MessageResponse,
+} from '@shared/types';
 
-const gameTypeEnum = z.enum(['texas', 'omaha', 'allin', 'tournaments']);
-
-const TableSchema = z.object({
-  id: z.string(),
-  tableName: z.string(),
-  gameType: gameTypeEnum,
-  stakes: z.object({ small: z.number(), big: z.number() }),
-  players: z.object({ current: z.number(), max: z.number() }),
-  buyIn: z.object({ min: z.number(), max: z.number() }),
-  stats: z.object({
-    handsPerHour: z.number(),
-    avgPot: z.number(),
-    rake: z.number(),
-  }),
-  createdAgo: z.string(),
-});
-export type Table = Omit<z.infer<typeof TableSchema>, 'gameType'> & {
-  gameType: GameType;
-};
-
-const TournamentSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  buyIn: z.number(),
-  fee: z.number().optional(),
-  prizePool: z.union([z.number(), z.string()]),
-  players: z.object({ current: z.number(), max: z.number() }),
-  registered: z.boolean(),
-});
-export type Tournament = z.infer<typeof TournamentSchema>;
+export type { Table, Tournament };
 
 export async function fetchLobbyData<T>(
   endpoint: string,
@@ -69,7 +50,7 @@ export async function getTables({
   signal,
 }: {
   signal?: AbortSignal;
-} = {}): Promise<Table[]> {
+  } = {}): Promise<components['schemas']['Table'][]> {
   const baseUrl = getBaseUrl();
   try {
     const res = await serverFetch(`${baseUrl}/api/tables`, {
@@ -96,9 +77,10 @@ export async function getTables({
 
 export async function fetchTables({
   signal,
-}: {
-  signal?: AbortSignal;
-}): Promise<Table[]> {
+  }:
+    {
+      signal?: AbortSignal;
+    }): Promise<components['schemas']['Table'][]> {
   return getTables({ signal });
 }
 
@@ -106,10 +88,42 @@ export async function fetchTournaments({
   signal,
 }: {
   signal?: AbortSignal;
-}): Promise<Tournament[]> {
-  return fetchLobbyData<Tournament[]>(
+  }): Promise<components['schemas']['Tournament'][]> {
+  return fetchLobbyData<components['schemas']['Tournament'][]>(
     'tournaments',
     z.array(TournamentSchema),
     { signal },
   );
+}
+
+export async function registerTournament(
+  id: string,
+  body: TournamentRegisterRequest,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<MessageResponse> {
+  const baseUrl = getBaseUrl();
+  const res = await fetch(`${baseUrl}/api/tournaments/${id}/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    credentials: 'include',
+    signal,
+  });
+  return handleResponse(res, MessageResponseSchema);
+}
+
+export async function withdrawTournament(
+  id: string,
+  body: TournamentWithdrawRequest,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<MessageResponse> {
+  const baseUrl = getBaseUrl();
+  const res = await fetch(`${baseUrl}/api/tournaments/${id}/withdraw`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    credentials: 'include',
+    signal,
+  });
+  return handleResponse(res, MessageResponseSchema);
 }

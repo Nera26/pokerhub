@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import TournamentCard from '@/app/components/tournaments/TournamentCard';
-import Page from '@/app/tournament/page';
+import Page from '@/app/tournaments/page';
 import { fetchTournaments } from '@/lib/api/lobby';
 
 jest.mock('@/lib/api/lobby', () => ({
@@ -38,7 +38,7 @@ const replace = jest.fn();
 const searchParams = new URLSearchParams();
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ replace }),
-  usePathname: () => '/tournament',
+  usePathname: () => '/tournaments',
   useSearchParams: () => searchParams,
 }));
 

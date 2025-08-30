@@ -4,6 +4,7 @@ import React from 'react';
 import { POSITION_RING } from './colorTokens';
 import PlayerAvatar from './PlayerAvatar';
 import type { Player } from './types';
+import { getServerTime } from '@/lib/server-time';
 
 interface TimerRingProps {
   player: Player;
@@ -26,14 +27,15 @@ export default function TimerRing({
 
   React.useEffect(() => {
     if (!player.isActive || (player.timeLeft ?? 0) <= 0) return;
-    let start: number | null = null;
+    const start = getServerTime();
+    const deadline = start + (player.timeLeft ?? 0);
     let raf: number;
-    const tick = (ts: number) => {
-      if (start === null) start = ts;
-      const elapsed = ts - start;
-      const remaining = Math.max(totalTimeRef.current - elapsed, 0);
+    const tick = () => {
+      const remaining = Math.max(deadline - getServerTime(), 0);
       setTimeLeft(remaining);
-      if (remaining > 0) raf = requestAnimationFrame(tick);
+      if (remaining > 0) {
+        raf = requestAnimationFrame(tick);
+      }
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);

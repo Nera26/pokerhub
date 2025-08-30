@@ -14,16 +14,21 @@ interface EventMap {
   connect_error: (err: Error) => void;
 }
 
-let socket: Socket<EventMap> | null = null;
-
 interface Listener<E extends keyof EventMap> {
   event: E;
   handler: EventMap[E];
 }
 
-const listeners: Listener<keyof EventMap>[] = [];
+interface SocketEntry {
+  socket: Socket<EventMap>;
+  listeners: Listener<keyof EventMap>[];
+}
+
+const sockets: Record<string, SocketEntry> = {};
+const FRAME_ACK = Symbol('frameAck');
 
 interface SocketOptions {
+  namespace?: string;
   onConnect?: EventMap['connect'];
   onDisconnect?: EventMap['disconnect'];
   onError?: EventMap['error'];
@@ -43,14 +48,34 @@ export function getSocket(options: SocketOptions = {}): Socket<EventMap> {
     } as unknown as Socket<EventMap>;
   }
 
-  if (!socket) {
-    socket = io(SOCKET_URL, {
-      transports: ['websocket'],
-      reconnection: true,
-      reconnectionAttempts: options.reconnectionAttempts,
-      reconnectionDelay: options.reconnectionDelay,
-    });
+  const ns = options.namespace ?? '';
+  if (!sockets[ns]) {
+    const url = ns ? `${SOCKET_URL}/${ns}` : SOCKET_URL;
+    sockets[ns] = {
+      socket: io(url, {
+        transports: ['websocket'],
+        reconnection: true,
+        reconnectionAttempts: options.reconnectionAttempts,
+        reconnectionDelay: options.reconnectionDelay,
+      }),
+      listeners: [],
+    };
+
+    const manager = (sockets[ns].socket.io as any);
+    if (!manager[FRAME_ACK]) {
+      const handler = (packet: any) => {
+        const frameId = packet?.data?.[1]?.frameId;
+        if (!frameId) return;
+        const nsp = packet.nsp && packet.nsp !== '/' ? packet.nsp.slice(1) : '';
+        sockets[nsp]?.socket.emit('frame:ack', { frameId });
+      };
+      manager.on('packet', handler);
+      manager[FRAME_ACK] = handler;
+    }
   }
+
+  const entry = sockets[ns];
+  const { socket, listeners } = entry;
 
   const addListener = <E extends keyof EventMap>(
     event: E,
@@ -65,13 +90,13 @@ export function getSocket(options: SocketOptions = {}): Socket<EventMap> {
         return;
       }
 
-      socket!.off(event as any, existing.handler as any);
-      socket!.on(event as any, handler as any);
+      socket.off(event as any, existing.handler as any);
+      socket.on(event as any, handler as any);
       listeners[existingIndex] = { event, handler };
       return;
     }
 
-    socket!.on(event as any, handler as any);
+    socket.on(event as any, handler as any);
     listeners.push({ event, handler });
   };
 
@@ -91,13 +116,15 @@ export function getSocket(options: SocketOptions = {}): Socket<EventMap> {
   return socket;
 }
 
-export function disconnectSocket(): void {
-  if (socket) {
-    listeners.forEach(({ event, handler }) => {
-      socket!.off(event, handler);
+export function disconnectSocket(namespace?: string): void {
+  const ns = namespace ?? '';
+  const entry = sockets[ns];
+  if (entry) {
+    entry.listeners.forEach(({ event, handler }) => {
+      entry.socket.off(event, handler);
     });
-    listeners.length = 0;
-    socket.disconnect();
-    socket = null;
+    entry.listeners.length = 0;
+    entry.socket.disconnect();
+    delete sockets[ns];
   }
 }
