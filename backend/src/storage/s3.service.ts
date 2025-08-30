@@ -1,44 +1,34 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  S3Client,
-  PutObjectCommand,
-  GetObjectCommand,
-  CreateBucketCommand,
-} from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { Bucket, Storage } from '@google-cloud/storage';
 
 @Injectable()
 export class S3Service {
-  private readonly client: S3Client;
-  private readonly bucket: string;
+  private readonly storage: Storage;
+  private readonly bucket: Bucket;
   private readonly logger = new Logger(S3Service.name);
 
   constructor(private readonly config: ConfigService) {
-    this.client = new S3Client({
-      region: this.config.get<string>('s3.region'),
-      endpoint: this.config.get<string>('s3.endpoint'),
-      forcePathStyle: true,
+    this.storage = new Storage({
+      projectId: this.config.get<string>('gcp.projectId'),
+      apiEndpoint: this.config.get<string>('gcp.endpoint'),
       credentials: {
-        accessKeyId: this.config.get<string>('s3.accessKeyId') || 'test',
-        secretAccessKey:
-          this.config.get<string>('s3.secretAccessKey') || 'test',
+        client_email: this.config.get<string>('gcp.clientEmail') || 'test',
+        private_key: this.config.get<string>('gcp.privateKey') || 'test',
       },
     });
-    this.bucket = this.config.get<string>('s3.bucket') || 'default-bucket';
+    const bucketName = this.config.get<string>('gcp.bucket') || 'default-bucket';
+    this.bucket = this.storage.bucket(bucketName);
   }
 
   async ensureBucket(): Promise<void> {
     try {
-      await this.client.send(new CreateBucketCommand({ Bucket: this.bucket }));
+      await this.storage.createBucket(this.bucket.name);
     } catch (err: unknown) {
-      const { name } = err as { name?: string };
-      if (
-        name !== 'BucketAlreadyOwnedByYou' &&
-        name !== 'BucketAlreadyExists'
-      ) {
+      const { code } = err as { code?: number };
+      if (code !== 409) {
         this.logger.error(
-          `Failed to create bucket ${this.bucket}`,
+          `Failed to create bucket ${this.bucket.name}`,
           err as Error,
         );
       }
@@ -49,42 +39,26 @@ export class S3Service {
     key: string,
     body: Buffer | Uint8Array | string,
   ): Promise<string> {
-    await this.client.send(
-      new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: body }),
-    );
+    await this.bucket.file(key).save(body as any);
     return key;
   }
 
   async downloadObject(key: string): Promise<Buffer> {
-    let body: any;
     try {
-      ({ Body: body } = await this.client.send(
-        new GetObjectCommand({ Bucket: this.bucket, Key: key }),
-      ));
+      const [contents] = await this.bucket.file(key).download();
+      return contents;
     } catch (err: unknown) {
       const message = (err as Error).message ?? err;
       throw new Error(`Failed to retrieve object ${key}: ${message}`);
     }
-    if (!body) {
-      throw new Error('Object body is empty');
-    }
-    const chunks: Uint8Array[] = [];
-    try {
-      for await (const chunk of body as AsyncIterable<Uint8Array>) {
-        chunks.push(chunk);
-      }
-    } catch (err: unknown) {
-      const message = (err as Error).message ?? err;
-      throw new Error(`Error streaming object ${key}: ${message}`);
-    }
-    return Buffer.concat(chunks);
   }
 
   async getSignedUrl(key: string, expiresIn = 3600): Promise<string> {
-    return getSignedUrl(
-      this.client,
-      new GetObjectCommand({ Bucket: this.bucket, Key: key }),
-      { expiresIn },
-    );
+    const [url] = await this.bucket.file(key).getSignedUrl({
+      version: 'v4',
+      action: 'read',
+      expires: Date.now() + expiresIn * 1000,
+    });
+    return url;
   }
 }
