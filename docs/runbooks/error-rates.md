@@ -4,6 +4,9 @@ Responding to elevated application error rates.
 
 - [Grafana Dashboard](../../infrastructure/monitoring/grafana-error-rates.json)
 
+## When to page
+Page when sustained error budget burn exceeds limits described in [SLO error-budget handling](../SLOs.md#error-budget-handling).
+
 ## Triage
 1. Confirm which services are returning errors.
 2. Review recent deploys and logs for stack traces.
