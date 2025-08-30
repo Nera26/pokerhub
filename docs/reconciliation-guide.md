@@ -1,7 +1,7 @@
 # Reconciliation Guide
 
-**Version:** 1.0.0  
-**Last Updated:** 2025-08-30
+**Version:** 1.1.0
+**Last Updated:** 2025-10-05
 
 This guide explains how wallet ledgers stay consistent and how disputes are resolved.
 
@@ -47,6 +47,18 @@ From these entries the computed balance for `player:alice` is `$50`. If the
 `accounts.balance` column stores `$60`, the reconciliation report records a `$10`
 delta and flags the account for investigation.
 
+### CLI Walkthrough
+
+```bash
+# v1.1.0
+node backend/src/wallet/reconcile.job.ts 2025-08-30
+cat storage/reconcile-2025-08-30.json | jq '.[] | select(.delta != 0)'
+```
+
+1. Run the reconciliation job for a given date.
+2. Inspect the generated report and filter for non‑zero deltas.
+3. Investigate each flagged account and insert corrective entries before releasing funds.
+
 ## Failure Scenarios
 
 | Scenario | Detection | Resolution |
@@ -87,6 +99,7 @@ Deposit provider reports $50, but journal shows $40 credit. Create a $10 correct
 - Reports older than one year move to cold storage but remain retrievable for regulators.
 
 ## Revision History
+- 2025-10-05: add CLI walkthrough, version metadata 1.1.0
 - 2025-08-30: add reconciliation run example, audit trail details, flow diagram, example mismatch, and version metadata
 - 2025-08-30: cover buy-ins and payouts reconciliation
 
