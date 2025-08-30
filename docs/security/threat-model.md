@@ -1,6 +1,17 @@
 # Backend STRIDE Threat Model
 
-This document enumerates STRIDE threats and mitigations across all backend modules.
+```mermaid
+graph TD
+  S[Spoofing] -->|Fake player sessions| Auth
+  T[Tampering] -->|Alter game events| Game
+  R[Repudiation] -->|Dispute chip transfers| Ledger
+  I[Information Disclosure] -->|Expose PII| Database
+  D[Denial of Service] -->|Flood APIs| Gateway
+  E[Elevation of Privilege] -->|Gain admin access| Admin
+```
+
+This diagram highlights representative threats across PokerHub. The sections
+below enumerate STRIDE threats and mitigations across all backend modules.
 
 ## analytics
 - **Spoofing**: Injecting fake telemetry events to skew metrics.

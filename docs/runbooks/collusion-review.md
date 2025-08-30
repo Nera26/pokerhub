@@ -11,21 +11,23 @@ This runbook outlines how administrators review flagged sessions for potential c
 
 Refer to [../security/anti-collusion.md](../security/anti-collusion.md) for details on detection heuristics and analytics queries.
 
+## Background Job
+- `CollusionDetectionJob` scans game analytics every 10 minutes and populates the flagged session list.
+- If no new sessions appear for more than an hour, inspect analytics worker logs and Redis connectivity.
 
 ## Access Requirements
 - Only users with the `admin` role can access `/admin/collusion`.
 - Log in with an admin account before proceeding.
 - Include the `Authorization: Bearer <token>` header on review API requests.
 
-## Workflow
-1. Navigate to `/admin/collusion`.
-2. The page fetches flagged sessions via `GET /review/sessions`.
-3. Each session lists the involved users and current review status.
-4. To escalate a session, select the action button. Available actions progress as:
+## Review Procedure
+1. Confirm the latest job run timestamp on the dashboard; investigate if older than 15 minutes.
+2. Navigate to `/admin/collusion` and load flagged sessions via `GET /review/sessions`.
+3. For deeper context, request `GET /review/sessions/:id/details` to inspect feature payloads.
+4. Select the action button to escalate the session. Actions progress as:
    - `warn` → `restrict`
    - `restrict` → `ban`
-5. Clicking the button issues `POST /review/sessions/:id/:action` using the next action.
-6. Confirm the session status updates in the table.
+5. Clicking the button issues `POST /review/sessions/:id/:action` using the next action and updates the table.
 
 ## Investigation
 1. Gather the flagged session ID and list of involved users.
