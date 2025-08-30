@@ -1,0 +1,11 @@
+{
+  "name": "PokerHub Observability",
+  "cards": [
+    {
+      "name": "Log Severity Count",
+      "query": {
+        "prometheus": "sum(rate(log_records_total[5m])) by (severity)"
+      }
+    }
+  ]
+}

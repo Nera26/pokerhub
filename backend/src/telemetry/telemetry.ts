@@ -10,6 +10,7 @@ import { KafkajsInstrumentation } from '@opentelemetry/instrumentation-kafkajs';
 import { SocketIoInstrumentation } from '@opentelemetry/instrumentation-socket.io';
 import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
 import { NestInstrumentation } from '@opentelemetry/instrumentation-nestjs-core';
+import { RuntimeNodeInstrumentation } from '@opentelemetry/instrumentation-runtime-node';
 import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { metrics } from '@opentelemetry/api';
@@ -108,6 +109,7 @@ export function setupTelemetry() {
       new SocketIoInstrumentation(),
       new PinoInstrumentation(),
       new NestInstrumentation(),
+      new RuntimeNodeInstrumentation(),
     ],
   });
 

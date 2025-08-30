@@ -1,0 +1,8 @@
+service: pokerhub-api
+metric: log_records_total
+alerts:
+  - window: 5m
+    severity: error
+    threshold: 100
+pagerduty_service: pokerhub-ops
+pagerduty_service_key: ${PAGERDUTY_POKERHUB_OPS_KEY}

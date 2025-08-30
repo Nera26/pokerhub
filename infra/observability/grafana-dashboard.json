@@ -98,27 +98,37 @@
 "execErrState": "error"
 }
 },
-{
-"type": "graph",
-"title": "Follower Action Lag",
-"targets": [
-{ "expr": "game_action_lag", "legendFormat": "{{tableId}}" }
-],
-"alert": {
-"conditions": [
-{
-"evaluator": { "type": "gt", "params": [5] },
-"operator": { "type": "and" },
-"query": { "params": ["A", "5m", "now"] },
-"reducer": { "type": "avg", "params": [] },
-"type": "query"
-}
-],
-"for": "5m",
-"name": "GameActionLagHigh",
-"noDataState": "no_data",
-"execErrState": "error"
-}
-}
+  {
+    "type": "graph",
+    "title": "Follower Action Lag",
+    "targets": [
+      { "expr": "game_action_lag", "legendFormat": "{{tableId}}" }
+    ],
+    "alert": {
+      "conditions": [
+        {
+          "evaluator": { "type": "gt", "params": [5] },
+          "operator": { "type": "and" },
+          "query": { "params": ["A", "5m", "now"] },
+          "reducer": { "type": "avg", "params": [] },
+          "type": "query"
+        }
+      ],
+      "for": "5m",
+      "name": "GameActionLagHigh",
+      "noDataState": "no_data",
+      "execErrState": "error"
+    }
+  },
+  {
+    "type": "graph",
+    "title": "Log Records by Severity",
+    "targets": [
+      {
+        "expr": "sum(rate(log_records_total[5m])) by (severity)",
+        "legendFormat": "{{severity}}"
+      }
+    ]
+  }
 ]
 }

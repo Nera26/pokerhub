@@ -40,6 +40,15 @@ Burn rate alert thresholds:
 Dashboards:
 - [DB restore](https://grafana.pokerhub.example.com/d/db-restore)
 
+## Error Budget Policy
+- Error budgets are tracked monthly. When 25% of the budget is consumed, new feature deployments pause until the burn rate drops below 1.
+- At 50% consumption, the SRE lead reviews mitigation plans with service owners.
+- Exceeding 100% of the monthly budget triggers a postmortem and executive review.
+
+## SLO Review Process
+- The SRE team reviews error-budget burn down and SLO trends every Monday.
+- Action items from the review are recorded in the incident tracker and tracked to completion.
+
 ## Escalation Policy
 - Primary on-call via [PagerDuty](https://pagerduty.com/services/pokerhub-sre).
 - `GAME_ACTION_ACK_LATENCY_MS` burn-rate alerts page the `pokerhub-ops` service.
