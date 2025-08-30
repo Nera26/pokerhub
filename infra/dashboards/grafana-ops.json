@@ -1,6 +1,16 @@
 {
   "title": "Ops Overview",
-  "panels": [],
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Game action ACK latency p95/p99",
+      "targets": [
+        { "expr": "game_action_ack_latency_ms:p95", "legendFormat": "p95" },
+        { "expr": "game_action_ack_latency_ms:p99", "legendFormat": "p99" }
+      ]
+    }
+  ],
   "schemaVersion": 39,
   "version": 1
 }

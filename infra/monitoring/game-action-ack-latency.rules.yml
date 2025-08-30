@@ -1,9 +1,13 @@
 # SLO: 99% of game actions ACKed within 250ms
+# Source metric: GAME_ACTION_ACK_LATENCY_MS histogram
 groups:
   - name: game-action-ack-latency-quantiles
     rules:
       - record: game_action_ack_latency_ms:p50
         expr: histogram_quantile(0.5,
+          sum(rate(game_action_ack_latency_ms_bucket[5m])) by (le))
+      - record: game_action_ack_latency_ms:p90
+        expr: histogram_quantile(0.90,
           sum(rate(game_action_ack_latency_ms_bucket[5m])) by (le))
       - record: game_action_ack_latency_ms:p95
         expr: histogram_quantile(0.95,
@@ -36,7 +40,9 @@ groups:
   - name: game-action-ack-latency-alerts
     rules:
       - alert: GameActionAckLatencySLOBurnRateFast
-        expr: game_action_ack_latency_error_budget:burn_rate5m > 14.4 and game_action_ack_latency_error_budget:burn_rate1h > 14.4
+        expr: |
+          game_action_ack_latency_error_budget:burn_rate5m > 14.4 and
+          game_action_ack_latency_error_budget:burn_rate1h > 14.4
         for: 2m
         labels:
           severity: critical
@@ -45,7 +51,9 @@ groups:
           summary: "Short-window game action ACK latency burn rate too high"
           runbook: https://github.com/Nera26/pokerhub/blob/main/docs/runbooks/action-ack-latency.md
       - alert: GameActionAckLatencySLOBurnRateSlow
-        expr: game_action_ack_latency_error_budget:burn_rate30m > 6 and game_action_ack_latency_error_budget:burn_rate6h > 6
+        expr: |
+          game_action_ack_latency_error_budget:burn_rate30m > 6 and
+          game_action_ack_latency_error_budget:burn_rate6h > 6
         for: 15m
         labels:
           severity: critical
