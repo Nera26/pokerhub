@@ -3,7 +3,7 @@ import { Trend, Rate } from 'k6/metrics';
 import { sleep } from 'k6';
 
 // Drive 80k sockets across 10k tables and track reconnect success.
-// Toxiproxy is expected to inject 5% packet loss and 200ms latency on ws://localhost:3001.
+// Toxiproxy can inject 5% packet loss and 200ms latency; override WS_URL to point to the proxy when needed.
 const ci = !!__ENV.CI;
 const defaultSockets = ci ? 100 : 80000;
 const defaultTables = ci ? 100 : 10000;
@@ -24,7 +24,7 @@ const RECONNECT_SUCCESS = new Rate('reconnect_success');
 
 export default function () {
   const tableId = (__VU - 1) % tables;
-  const url = `${__ENV.WS_URL || 'ws://localhost:3001'}?table=${tableId}`;
+  const url = `${__ENV.WS_URL || 'ws://localhost:4000/game'}?table=${tableId}`;
 
   let attempts = 0;
   let acked = false;

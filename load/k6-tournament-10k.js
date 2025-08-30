@@ -11,7 +11,7 @@ export const options = {
   },
 };
 
-const BASE_URL = __ENV.BASE_URL || 'https://staging.pokerhub';
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:4000';
 
 const DURATION = new Trend('tournament_duration', true);
 const MEMORY = new Gauge('tournament_memory');

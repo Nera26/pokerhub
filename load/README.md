@@ -13,7 +13,16 @@ This directory contains load test scripts for PokerHub.
 - `k6-chaos-swarm.js` – swarm 80 k sockets across 10 k tables; pair with `toxiproxy.sh` for 5 % loss and 200 ms jitter.
 - `k6-ws-reconnect.js` – k6 scenario validating reconnect success and ACK latency under Toxiproxy impairments.
 
-All scripts assume the server is reachable via `ws://localhost:3000` by default.
+All scripts assume the server is reachable via `ws://localhost:4000/game` by default.
+
+## Local endpoints
+
+Ensure the following services are running (see `docker-compose.test.yml`):
+
+- Redis: `localhost:6379`
+- Backend API: `http://localhost:4000`
+- Game gateway: `ws://localhost:4000/game`
+- Test user credentials: `user@example.com / secret` (seed with `npm run seed:test-credentials --prefix backend`)
 ## Thresholds
 
 - ack latency p95 < 120ms
@@ -23,7 +32,7 @@ All scripts assume the server is reachable via `ws://localhost:3000` by default.
 - GC pause p95 < 50ms
 
 Environment variables:
-- `WS_URL` – override the WebSocket URL (default `ws://localhost:3001`).
+- `WS_URL` – override the WebSocket URL (default `ws://localhost:4000/game`).
 - `SOCKETS` – number of concurrent clients (default `80000`, `100` in CI).
 - `TABLES` – number of tables to spread sockets across (default `10000`, `100` in CI).
 - `DURATION` – k6 test duration (default `5m`, `1m` in CI).

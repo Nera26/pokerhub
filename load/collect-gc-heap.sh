@@ -4,7 +4,7 @@ set -euo pipefail
 # Poll the metrics endpoint for CPU, GC pause and heap usage.
 # When optional thresholds are breached the script exits non‑zero so the
 # surrounding soak test fails fast.
-METRICS_URL=${METRICS_URL:-http://localhost:3000/metrics}
+METRICS_URL=${METRICS_URL:-http://localhost:4000/metrics}
 OUT_FILE=${OUT_FILE:-gc-heap-metrics.log}
 INTERVAL=${INTERVAL:-60}
 GRAFANA_PUSH_URL=${GRAFANA_PUSH_URL:-}

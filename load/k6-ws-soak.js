@@ -54,7 +54,7 @@ export function setup() {
 export default function (data) {
   const rng = mulberry32(rngSeed + __VU);
   const tableId = Math.floor(rng() * tables);
-  const url = `${__ENV.WS_URL || 'ws://localhost:3000'}?table=${tableId}`;
+  const url = `${__ENV.WS_URL || 'ws://localhost:4000/game'}?table=${tableId}`;
 
   ws.connect(url, function (socket) {
     let start = 0;
