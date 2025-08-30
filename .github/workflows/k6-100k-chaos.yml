@@ -24,6 +24,12 @@ jobs:
         run: echo "METRICS_DIR=$(ls -td load/metrics/*/ | head -n 1)" >> $GITHUB_ENV
       - name: Check thresholds
         run: ./load/check-thresholds.sh "$METRICS_DIR/k6-summary.json" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Replay run
+        run: ./load/run-10k-chaos.sh --replay "$METRICS_DIR"
+        env:
+          TABLES: 10000
+      - name: Compare histograms
+        run: npx ts-node scripts/compare-histograms.ts "$METRICS_DIR" "$METRICS_DIR/replay" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Upload metrics
         if: always()
         uses: actions/upload-artifact@v4
