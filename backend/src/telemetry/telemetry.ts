@@ -2,7 +2,15 @@ import traceAgent from '@google-cloud/trace-agent';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
-import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
+import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
+import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
+import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
+import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
+import { AmqplibInstrumentation } from '@opentelemetry/instrumentation-amqplib';
+import { KafkajsInstrumentation } from '@opentelemetry/instrumentation-kafkajs';
+import { SocketIoInstrumentation } from '@opentelemetry/instrumentation-socket.io';
+import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
+import { NestInstrumentation } from '@opentelemetry/instrumentation-nestjs-core';
 import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { metrics } from '@opentelemetry/api';
@@ -49,7 +57,17 @@ export function setupTelemetry() {
     traceExporter: new OTLPTraceExporter({
       url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
     }),
-    instrumentations: [getNodeAutoInstrumentations()],
+    instrumentations: [
+      new HttpInstrumentation(),
+      new ExpressInstrumentation(),
+      new IORedisInstrumentation(),
+      new PgInstrumentation(),
+      new AmqplibInstrumentation(),
+      new KafkajsInstrumentation(),
+      new SocketIoInstrumentation(),
+      new PinoInstrumentation(),
+      new NestInstrumentation(),
+    ],
   });
 
   sdk.start();
