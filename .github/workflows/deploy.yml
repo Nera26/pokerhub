@@ -11,6 +11,7 @@ jobs:
     environment: production
     env:
       DEPLOY_ENV: production
+      K8S_NAMESPACE: ${{ vars.K8S_NAMESPACE }}
       HEALTH_CHECK_URL: ${{ vars.HEALTH_CHECK_URL }}
       METRICS_URL: ${{ vars.METRICS_URL }}
       ERROR_RATE_THRESHOLD: ${{ vars.ERROR_RATE_THRESHOLD }}

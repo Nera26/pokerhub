@@ -7,18 +7,16 @@ if [[ "$ENV" != "staging" && "$ENV" != "production" ]]; then
   exit 1
 fi
 
-METRICS_URL=${METRICS_URL:-}
-ERROR_RATE_THRESHOLD=${ERROR_RATE_THRESHOLD:-}
-if [[ -z "$METRICS_URL" || -z "$ERROR_RATE_THRESHOLD" ]]; then
-  echo "METRICS_URL and ERROR_RATE_THRESHOLD must be set"
-  exit 1
-fi
+# Map standard variables to those expected by infra/scripts/canary-deploy.sh
+export NAMESPACE=${K8S_NAMESPACE:-$ENV}
+export SERVICE=${SERVICE:-api}
+export STABLE=${STABLE:-api}
+export CANARY=${CANARY:-api-canary}
+export CANARY_RELEASE=${CANARY_RELEASE:-canary}
+export CANARY_TRAFFIC_PERCENT=${CANARY_TRAFFIC_PERCENT:-5}
+export CANARY_DURATION_MINUTES=${CANARY_DURATION_MINUTES:-30}
+# Use METRICS_URL as Prometheus endpoint if provided
+export PROMETHEUS=${PROMETHEUS:-${METRICS_URL:-}}
 
-echo "Starting canary deployment to $ENV..."
-# placeholder for deployment logic
-# e.g., kubectl apply -f k8s/
-
-echo "Checking metrics before promotion..."
-"$(dirname "$0")/check-metrics.sh"
-
-echo "Canary deployment triggered for $ENV"
+# Run canary deployment with built-in health checks and automatic rollback
+bash infra/scripts/canary-deploy.sh

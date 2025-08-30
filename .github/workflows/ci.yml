@@ -16,8 +16,13 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: npm ci --prefix backend
+      - run: npm ci --prefix frontend
+      - run: npm run lint --prefix backend
       - run: npm test --prefix backend
+      - run: npm run lint --prefix frontend
       - run: npm test --prefix frontend
+      - run: npm run test:contracts
       - run: ./contracts/verify-contract.sh
       - run: ./scripts/check-contract-drift.sh
 
@@ -74,9 +79,24 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm run test:property --prefix load
       - name: Run k6 smoke test
         uses: grafana/k6-action@v0.2.0
         with:
           filename: load/k6-ws-packet-loss.js
+          arguments: --vus 10 --duration 10s
+
+  chaos:
+    needs: load
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Run chaos test
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: load/chaos/ws-chaos.js
           arguments: --vus 10 --duration 10s
