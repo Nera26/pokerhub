@@ -6,6 +6,9 @@ export async function serverFetch(
   init?: RequestInit,
 ): Promise<Response> {
   if (env.IS_E2E) {
+    if (url.includes('/api/hands')) {
+      return fetch(url, init);
+    }
     if (url.includes('/api/leaderboard')) {
       return new Response(
         JSON.stringify({ players: [{ id: 1, name: 'Neo', chips: 42000 }] }),

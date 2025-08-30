@@ -3,7 +3,7 @@ import { io } from 'socket.io-client';
 import { execSync } from 'child_process';
 import path from 'path';
 import { z } from 'zod';
-import { verifyProof } from '../src/lib/verify';
+import { verifyProof } from '../src/lib/verifyProof';
 
 const HandProofResponseSchema = z.object({
   seed: z.string(),
@@ -60,12 +60,11 @@ test.describe('hand proof fairness', () => {
       .poll(() => events.end?.handId, { timeout: 60_000 })
       .not.toBeUndefined();
 
-    await expect(page.getByRole('heading', { name: 'Hand Proof' })).toBeVisible();
     const handId = events.end.handId;
 
     const [resp] = await Promise.all([
       page.waitForResponse((r) => r.url().includes(`/hands/${handId}/proof`)),
-      page.click('text=View proof page'),
+      page.click('text=Verify Hand'),
     ]);
     expect(resp.ok()).toBeTruthy();
 
@@ -73,6 +72,11 @@ test.describe('hand proof fairness', () => {
     const proof = HandProofResponseSchema.parse(proofJson);
 
     await expect(await verifyProof(proof)).toBe(true);
+
+    await expect(
+      page.getByRole('heading', { name: 'Fairness Proof' }),
+    ).toBeVisible();
+    await expect(page.getByText('Verification: valid')).toBeVisible();
 
     socket.disconnect();
   });
