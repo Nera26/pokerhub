@@ -20,7 +20,7 @@ jobs:
       - run: npm test --prefix frontend
       - run: npm run test:contracts
 
-  property:
+  property-test:
     needs: unit
     runs-on: ubuntu-latest
     steps:
@@ -31,9 +31,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:property
+        env:
+          FC_SEED: 1
 
   e2e:
-    needs: property
+    needs: property-test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

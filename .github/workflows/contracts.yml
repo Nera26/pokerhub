@@ -2,11 +2,6 @@ name: Contract Validation
 
 on:
   pull_request:
-    paths:
-      - 'contracts/**'
-      - 'backend/**'
-      - 'frontend/**'
-      - 'shared/**'
   push:
     branches: [main]
     paths:

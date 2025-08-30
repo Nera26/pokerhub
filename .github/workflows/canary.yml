@@ -49,3 +49,14 @@ jobs:
         with:
           name: k6-summary
           path: summary.json
+
+  rollback:
+    needs: canary
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Auto rollback canary
+        run: bash scripts/canary-rollback.sh
+        env:
+          DEPLOY_ENV: production
