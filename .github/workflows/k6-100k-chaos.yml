@@ -15,6 +15,11 @@ jobs:
           node-version: 20
       - name: Install k6 and Artillery
         run: npm install -g k6 artillery
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
       - name: Run 100k chaos load
         run: ./load/run-10k-chaos.sh --sockets 100000 --packet-loss 0.05 --jitter 200
         env:
@@ -30,6 +35,13 @@ jobs:
           TABLES: 10000
       - name: Compare histograms
         run: npx ts-node scripts/compare-histograms.ts "$METRICS_DIR" "$METRICS_DIR/replay" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Analyze chaos trends
+        run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-chaos-trends.ts "$METRICS_DIR"
+        env:
+          CHAOS_TRENDS_BUCKET: ${{ secrets.CHAOS_TRENDS_BUCKET }}
+      - name: Upload metrics to S3
+        if: always()
+        run: aws s3 cp --recursive "$METRICS_DIR" "s3://${{ secrets.CHAOS_TRENDS_BUCKET }}/$(basename \"$METRICS_DIR\")/"
       - name: Upload metrics
         if: always()
         uses: actions/upload-artifact@v4
