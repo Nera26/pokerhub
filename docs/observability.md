@@ -113,10 +113,10 @@ graph TD
 
 The Grafana SLO dashboard tracks:
 
-- [HTTP API p99 latency](../infrastructure/observability/slo-dashboard.json)
-- [WebSocket p95 latency](../infrastructure/observability/slo-dashboard.json)
+- [HTTP API p99 latency](../infrastructure/observability/http-api-latency-dashboard.json)
+- [WebSocket p95 latency](../infrastructure/observability/websocket-latency-dashboard.json)
 - [Action ACK p95 latency](../infrastructure/observability/socket-latency-dashboard.json)
-- [Wallet transaction throughput](../infrastructure/observability/slo-dashboard.json)
+- [Wallet transaction throughput](../infrastructure/observability/wallet-throughput-dashboard.json)
 - [Service availability](../infrastructure/observability/service-uptime-dashboard.json)
 
 Prometheus evaluates these objectives and sends violations to the
@@ -137,7 +137,10 @@ Production deployments expose these views at:
 
 Individual metric runbooks provide dashboard links and PagerDuty escalation details. See the [runbook index](runbooks/index.md) for the full list:
 
+- [HTTP API Latency](runbooks/http-api-latency.md) ([Grafana JSON](../infrastructure/observability/http-api-latency-dashboard.json))
+- [WebSocket Latency](runbooks/websocket-latency.md) ([Grafana JSON](../infrastructure/observability/websocket-latency-dashboard.json))
 - [Action ACK Latency](runbooks/action-ack-latency.md) ([Grafana JSON](../infrastructure/observability/socket-latency-dashboard.json))
+- [Wallet Throughput](runbooks/wallet-throughput.md) ([Grafana JSON](../infrastructure/observability/wallet-throughput-dashboard.json))
 - [Socket Connect Success](runbooks/socket-connect-success.md) ([Grafana JSON](../infrastructure/observability/socket-connects-dashboard.json))
 - [Error Rates](runbooks/error-rates.md) ([Grafana JSON](../infrastructure/observability/error-rates-dashboard.json))
 - [Service Uptime](runbooks/service-uptime.md) ([Grafana JSON](../infrastructure/observability/service-uptime-dashboard.json))

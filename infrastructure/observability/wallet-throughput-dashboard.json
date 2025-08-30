@@ -1,0 +1,19 @@
+{
+  "dashboard": {
+    "title": "Wallet Throughput",
+    "labels": {
+      "pagerduty_service": "pokerhub-sre",
+      "runbook": "docs/runbooks/wallet-throughput.md"
+    },
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "Transactions per second",
+        "datasource": "Prometheus",
+        "targets": [
+          { "expr": "sum(rate(wallet_transactions_total[5m]))" }
+        ]
+      }
+    ]
+  }
+}

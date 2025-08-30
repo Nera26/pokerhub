@@ -3,16 +3,17 @@
 Investigates delays in processing queued actions.
  
 ## Dashboard
-- Grafana: [Queue Lag](../../infrastructure/monitoring/grafana-queue-lag.json)
+- Grafana: [Queue Lag](../../infrastructure/observability/queue-lag-dashboard.json)
 - Metabase: [Queue Lag](../analytics-dashboards.md#queue-saturation-1)
 
-## PagerDuty Escalation
-- Service: `pokerhub-eng`
+## PagerDuty
+- Service: `pokerhub-eng` (ID: PENG456)
+- Escalation: [Engineering](https://pokerhub.pagerduty.com/escalation_policies/PDEF456)
 
-## Triage
+## Playbook
 1. Identify which queues show sustained lag.
 2. Check room worker logs for consumer errors.
+3. Scale consumers for the affected queue.
+4. Purge dead-lettered messages if backlog persists.
 
-## Mitigation
-- Scale consumers for the affected queue.
-- Purge dead-lettered messages if backlog persists.
+Refer to [Error Budget Procedures](../error-budget-procedures.md) for escalation guidance.

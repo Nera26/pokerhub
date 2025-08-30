@@ -6,19 +6,15 @@ Investigates failed WebSocket connection attempts.
 - Grafana: [Socket Connects](../../infrastructure/observability/socket-connects-dashboard.json)
 - Metabase: [Socket Connect Success](../analytics-dashboards.md#socket-connect-success-1)
 
-## PagerDuty Escalation
-- Service: `pokerhub-sre`
+## PagerDuty
+- Service: `pokerhub-sre` (ID: PSRE123)
+- Escalation: [SRE](https://pokerhub.pagerduty.com/escalation_policies/PABC123)
 
-See [SLO alert strategy](../SLOs.md) for burn-rate thresholds.
-
-## When to page
-Page when burn rates threaten the [SLO error budget](../SLOs.md#error-budget-handling).
-
-## Triage
+## Playbook
 1. Check if failures correlate with recent deployments or network changes.
 2. Inspect load balancer and backend logs for connection or handshake errors.
+3. Roll back recent deployments if failures spiked after a release.
+4. Scale out gateway or backend instances if resource limits are reached.
+5. Verify TLS certificates and network ACLs.
 
-## Mitigation
-- Roll back recent deployments if failures spiked after a release.
-- Scale out gateway or backend instances if resource limits are reached.
-- Verify TLS certificates and network ACLs.
+Refer to [Error Budget Procedures](../error-budget-procedures.md) for burn handling.

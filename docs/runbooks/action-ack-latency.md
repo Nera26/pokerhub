@@ -3,21 +3,17 @@
 Investigates slow acknowledgements of game actions.
 
 ## Dashboard
-- Grafana: [Action ACK Latency](../../infrastructure/monitoring/grafana-action-ack-latency.json)
+- Grafana: [Action ACK Latency](../../infrastructure/observability/socket-latency-dashboard.json)
 - Metabase: [Action ACK Latency](../analytics-dashboards.md#action-ack-latency-1)
 
-## PagerDuty Escalation
-- Service: `pokerhub-sre`
+## PagerDuty
+- Service: `pokerhub-sre` (ID: PSRE123)
+- Escalation: [SRE](https://pokerhub.pagerduty.com/escalation_policies/PABC123)
 
-See [SLO alert strategy](../SLOs.md) for burn-rate thresholds.
-
-## When to page
-Page the on-call when burn-rate alerts consume more than the allowed [SLO error budget](../SLOs.md#error-budget-handling).
-
-## Triage
+## Playbook
 1. Check if latency spikes correlate with deployments or incidents.
 2. Inspect room worker logs for timeouts or backpressure.
+3. Restart affected room workers.
+4. Scale room worker deployment if saturation persists.
 
-## Mitigation
-- Restart affected room workers.
-- Scale room worker deployment if saturation persists.
+Consult [Error Budget Procedures](../error-budget-procedures.md) when burn alerts trigger.

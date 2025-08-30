@@ -3,7 +3,7 @@
 Handle situations where message queues accumulate a backlog faster than consumers can process.
 
 ## Dashboard
-- Grafana: [Queue Lag](../../infrastructure/monitoring/grafana-queue-lag.json)
+- Grafana: [Queue Lag](../../infrastructure/observability/queue-lag-dashboard.json)
 - Metabase: [Queue Saturation](../analytics-dashboards.md#queue-saturation-1)
 
 ## Detection
@@ -15,20 +15,22 @@ Handle situations where message queues accumulate a backlog faster than consumer
 ## When to page
 Page according to the [SLO error-budget policy](../SLOs.md#error-budget-handling) when queue lag burns budget faster than thresholds.
 
-## Mitigation Steps
+## Playbook
 1. Inspect worker logs for processing errors.
 2. Scale up consumers or purge poisoned messages.
 3. Verify upstream services (database, cache) are healthy.
 4. If backlog persists, run `scripts/queue-drain.sh <queue>` and enable rate limiting on producers.
+
+Refer to [Error Budget Procedures](../error-budget-procedures.md) when saturation burns budget quickly.
 
 ## Verification
 - Queue depth returns to normal operating levels.
 - No new saturation alerts for 15 m.
 - `queueLag` metric falls below 2 s.
 
-## PagerDuty Escalation
-- Service: `pokerhub-eng`
-- Slack: #ops
+## PagerDuty
+- Service: `pokerhub-eng` (ID: PENG456)
+- Escalation: [Engineering](https://pokerhub.pagerduty.com/escalation_policies/PDEF456)
 
 ## Drill
 - Simulated monthly with `load/chaos/artillery-packet-loss.yml`.
