@@ -5,31 +5,16 @@ import { JournalEntry } from '../../src/wallet/journal-entry.entity';
 import { Disbursement } from '../../src/wallet/disbursement.entity';
 import { WalletService } from '../../src/wallet/wallet.service';
 import { EventPublisher } from '../../src/events/events.service';
-import type Redis from 'ioredis';
 import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
 import { KycService } from '../../src/wallet/kyc.service';
 import { SettlementJournal } from '../../src/wallet/settlement-journal.entity';
+import { MockRedis } from '../utils/mock-redis';
 
 describe('WalletService deposit', () => {
   let dataSource: DataSource;
   let service: WalletService;
   const events = { emit: jest.fn() } as unknown as EventPublisher;
-  let redisStore: Record<string, number> = {};
-  const redis = {
-    incr: (key: string): Promise<number> => {
-      redisStore[key] = (redisStore[key] ?? 0) + 1;
-      return Promise.resolve(redisStore[key]);
-    },
-    incrby: (key: string, value: number): Promise<number> => {
-      redisStore[key] = (redisStore[key] ?? 0) + value;
-      return Promise.resolve(redisStore[key]);
-    },
-    decrby: (key: string, value: number): Promise<number> => {
-      redisStore[key] = (redisStore[key] ?? 0) - value;
-      return Promise.resolve(redisStore[key]);
-    },
-    expire: (): Promise<void> => Promise.resolve(),
-  } as unknown as Redis;
+  let redis: MockRedis;
 
   const provider = {
     initiate3DS: jest.fn().mockResolvedValue({ id: 'tx' }),
@@ -93,7 +78,7 @@ describe('WalletService deposit', () => {
   });
 
   beforeEach(async () => {
-    redisStore = {};
+    redis = new MockRedis();
     (events.emit as jest.Mock).mockClear();
     (provider.initiate3DS as jest.Mock).mockResolvedValue({ id: 'tx' });
     (provider.getStatus as jest.Mock).mockResolvedValue('approved');
@@ -189,8 +174,8 @@ describe('WalletService deposit', () => {
         currency: 'USD',
       }),
     );
-    const key = Object.keys(redisStore).find((k) => k.startsWith('wallet:deposit'));
-    expect(redisStore[key!]).toBe(150);
+    const [key] = await redis.keys('wallet:deposit*');
+    expect(parseInt((await redis.get(key)) ?? '0', 10)).toBe(150);
     delete process.env.WALLET_DAILY_DEPOSIT_LIMIT;
   });
 

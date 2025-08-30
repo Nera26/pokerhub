@@ -9,29 +9,16 @@ import { EventPublisher } from '../../src/events/events.service';
 import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
 import { WebhookController } from '../../src/wallet/webhook.controller';
 import { KycService } from '../../src/wallet/kyc.service';
-import type Redis from 'ioredis';
 import { createHmac } from 'crypto';
 import type { Request } from 'express';
+import { MockRedis } from '../utils/mock-redis';
 
 describe('Provider webhook', () => {
   let dataSource: DataSource;
   let service: WalletService;
   let controller: WebhookController;
   const events = { emit: jest.fn() } as unknown as EventPublisher;
-  let redisStore: Record<string, string> = {};
-  const redis = {
-    set: (
-      key: string,
-      value: string,
-      mode: string,
-      _ex: string,
-      _ttl: number,
-    ): Promise<string | null> => {
-      if (mode === 'NX' && redisStore[key]) return Promise.resolve(null);
-      redisStore[key] = value;
-      return Promise.resolve('OK');
-    },
-  } as unknown as Redis;
+  const redis = new MockRedis();
   const provider = new PaymentProviderService();
   const kyc = {
     validate: jest.fn().mockResolvedValue(undefined),
@@ -86,7 +73,6 @@ describe('Provider webhook', () => {
   });
 
   beforeEach(async () => {
-    redisStore = {};
     const accountRepo = dataSource.getRepository(Account);
     const journalRepo = dataSource.getRepository(JournalEntry);
     const disbRepo = dataSource.getRepository(Disbursement);

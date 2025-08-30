@@ -6,10 +6,10 @@ import { JournalEntry } from '../src/wallet/journal-entry.entity';
 import { Disbursement } from '../src/wallet/disbursement.entity';
 import { WalletService } from '../src/wallet/wallet.service';
 import { EventPublisher } from '../src/events/events.service';
-import type Redis from 'ioredis';
 import { PaymentProviderService } from '../src/wallet/payment-provider.service';
 import { KycService } from '../src/wallet/kyc.service';
 import { SettlementJournal } from '../src/wallet/settlement-journal.entity';
+import { MockRedis } from './utils/mock-redis';
 
 jest.setTimeout(20000);
 
@@ -49,12 +49,7 @@ describe('WalletService zero-sum property', () => {
     const journalRepo = dataSource.getRepository(JournalEntry);
     const disbRepo = dataSource.getRepository(Disbursement);
     const settleRepo = dataSource.getRepository(SettlementJournal);
-    const redis = {
-      incr: (): Promise<number> => Promise.resolve(0),
-      incrby: (): Promise<number> => Promise.resolve(0),
-      decrby: (): Promise<number> => Promise.resolve(0),
-      expire: (): Promise<void> => Promise.resolve(),
-    } as unknown as Redis;
+    const redis = new MockRedis();
     const provider = {
       initiate3DS: jest.fn().mockResolvedValue({ id: 'tx' }),
       getStatus: jest.fn().mockResolvedValue('approved'),

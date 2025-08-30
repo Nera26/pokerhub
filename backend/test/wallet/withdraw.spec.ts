@@ -8,41 +8,14 @@ import { EventPublisher } from '../../src/events/events.service';
 import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
 import { KycService } from '../../src/wallet/kyc.service';
 import { SettlementJournal } from '../../src/wallet/settlement-journal.entity';
-import type Redis from 'ioredis';
+import { MockRedis } from '../utils/mock-redis';
 
 describe('WalletService withdraw', () => {
   let dataSource: DataSource;
   let service: WalletService;
   let kyc: KycService;
   const events = { emit: jest.fn() } as unknown as EventPublisher;
-  let redisStore: Record<string, number> = {};
-  const redis = {
-    incr: (key: string): Promise<number> => {
-      redisStore[key] = (redisStore[key] ?? 0) + 1;
-      return Promise.resolve(redisStore[key]);
-    },
-    incrby: (key: string, value: number): Promise<number> => {
-      redisStore[key] = (redisStore[key] ?? 0) + value;
-      return Promise.resolve(redisStore[key]);
-    },
-    decrby: (key: string, value: number): Promise<number> => {
-      redisStore[key] = (redisStore[key] ?? 0) - value;
-      return Promise.resolve(redisStore[key]);
-    },
-    expire: (): Promise<void> => Promise.resolve(),
-    set: (
-      key: string,
-      value: string,
-      mode: string,
-      _ex: string,
-      _ttl: number,
-    ): Promise<string | null> => {
-      if (mode === 'NX' && redisStore[key] !== undefined)
-        return Promise.resolve(null);
-      redisStore[key] = Number(value);
-      return Promise.resolve('OK');
-    },
-  } as unknown as Redis;
+  let redis: MockRedis;
   const provider = {
     initiate3DS: jest.fn().mockResolvedValue({ id: 'tx' }),
     getStatus: jest.fn().mockResolvedValue('approved'),
@@ -100,7 +73,7 @@ describe('WalletService withdraw', () => {
   });
 
   beforeEach(async () => {
-    redisStore = {};
+    redis = new MockRedis();
     (events.emit as jest.Mock).mockClear();
     (provider.initiate3DS as jest.Mock).mockResolvedValue({ id: 'tx' });
     (provider.getStatus as jest.Mock).mockResolvedValue('approved');
@@ -237,10 +210,8 @@ describe('WalletService withdraw', () => {
         currency: 'USD',
       }),
     );
-    const key = Object.keys(redisStore).find((k) =>
-      k.startsWith('wallet:withdraw'),
-    );
-    expect(redisStore[key!]).toBe(150);
+    const [key] = await redis.keys('wallet:withdraw*');
+    expect(parseInt((await redis.get(key)) ?? '0', 10)).toBe(150);
     delete process.env.WALLET_DAILY_WITHDRAW_LIMIT;
   });
 

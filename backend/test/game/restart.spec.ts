@@ -6,6 +6,7 @@ import { RoomManager } from '../../src/game/room.service';
 import { ClockService } from '../../src/game/clock.service';
 import { AnalyticsService } from '../../src/analytics/analytics.service';
 import { EventPublisher } from '../../src/events/events.service';
+import { MockRedis } from '../utils/mock-redis';
 
 function waitForConnect(socket: Socket): Promise<void> {
   return new Promise((resolve) => socket.on('connect', () => resolve()));
@@ -22,57 +23,10 @@ async function waitFor(cond: () => boolean, timeout = 200) {
   }
 }
 
-class FakeRedis {
-  private store = new Map<string, number | string>();
-  private hashes = new Map<string, Map<string, string>>();
-
-  async incr(key: string) {
-    const current = Number(this.store.get(key) ?? 0);
-    const next = current + 1;
-    this.store.set(key, next);
-    return next;
-  }
-
-  async expire() {
-    return 1;
-  }
-
-  async exists(key: string) {
-    return this.store.has(key) ? 1 : 0;
-  }
-
-  async set(key: string, value: string, _mode: string, _ttl: number) {
-    this.store.set(key, value);
-    return 'OK';
-  }
-
-  async hget(key: string, field: string) {
-    return this.hashes.get(key)?.get(field) ?? null;
-  }
-
-  async hset(key: string, field: string, value: string) {
-    if (!this.hashes.has(key)) this.hashes.set(key, new Map());
-    this.hashes.get(key)!.set(field, value);
-    return 1;
-  }
-
-  multi() {
-    const keys: string[] = [];
-    const self = this;
-    return {
-      incr(key: string) {
-        keys.push(key);
-        return this;
-      },
-      async exec() {
-        return Promise.all(keys.map(async (k) => [null, await self.incr(k)]));
-      },
-    };
-  }
-}
+// Redis client mock shared across tests
 
 describe('GameGateway restart', () => {
-  let redis: FakeRedis;
+  let redis: MockRedis;
 
   jest.setTimeout(15000);
 
@@ -102,7 +56,7 @@ describe('GameGateway restart', () => {
   }
 
   it('ignores duplicate action after server restart', async () => {
-    redis = new FakeRedis();
+    redis = new MockRedis();
     const { app, url } = await createApp();
     const action = {
       type: 'postBlind',
