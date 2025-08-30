@@ -22,4 +22,6 @@ export const validationSchema = Joi.object({
   JWT_REFRESH_TTL: Joi.number().integer().optional(),
   RATE_LIMIT_WINDOW: Joi.number().integer().optional(),
   RATE_LIMIT_MAX: Joi.number().integer().optional(),
+  KYC_API_URL: Joi.string().uri().optional(),
+  KYC_API_KEY: Joi.string().optional(),
 });
