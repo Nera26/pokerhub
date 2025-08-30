@@ -1,8 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { listFlaggedSessions, applyAction } from '@/lib/api/collusion';
-import type { FlaggedSession, ReviewAction } from '@shared/types';
+import {
+  listFlaggedSessions,
+  applyAction,
+  getActionHistory,
+} from '@/lib/api/collusion';
+import type {
+  FlaggedSession,
+  ReviewAction,
+  ReviewActionLog,
+} from '@shared/types';
 import { useAuthToken } from '@/app/store/authStore';
 
 function nextAction(status: FlaggedSession['status']): ReviewAction | null {
@@ -20,13 +28,27 @@ function nextAction(status: FlaggedSession['status']): ReviewAction | null {
 
 export default function CollusionReviewPage() {
   const [sessions, setSessions] = useState<FlaggedSession[]>([]);
+  const [history, setHistory] = useState<Record<string, ReviewActionLog[]>>({});
   const token = useAuthToken();
 
   useEffect(() => {
     if (!token) return;
     listFlaggedSessions(token)
-      .then(setSessions)
-      .catch(() => setSessions([]));
+      .then(async (s) => {
+        setSessions(s);
+        const entries = await Promise.all(
+          s.map((sess) => getActionHistory(sess.id, token)),
+        );
+        const map: Record<string, ReviewActionLog[]> = {};
+        s.forEach((sess, i) => {
+          map[sess.id] = entries[i];
+        });
+        setHistory(map);
+      })
+      .catch(() => {
+        setSessions([]);
+        setHistory({});
+      });
   }, [token]);
 
   const act = async (id: string, status: FlaggedSession['status']) => {
@@ -37,6 +59,13 @@ export default function CollusionReviewPage() {
     setSessions((prev) =>
       prev.map((s) => (s.id === id ? { ...s, status: action } : s)),
     );
+    setHistory((prev) => ({
+      ...prev,
+      [id]: [
+        ...(prev[id] ?? []),
+        { action, timestamp: Date.now(), reviewerId: 'you' },
+      ],
+    }));
   };
 
   return (
@@ -49,6 +78,7 @@ export default function CollusionReviewPage() {
             <th className="p-2">Users</th>
             <th className="p-2">Status</th>
             <th className="p-2"></th>
+            <th className="p-2">History</th>
           </tr>
         </thead>
         <tbody>
@@ -68,6 +98,15 @@ export default function CollusionReviewPage() {
                       {action}
                     </button>
                   )}
+                </td>
+                <td className="p-2">
+                  <ul>
+                    {(history[s.id] ?? []).map((h, idx) => (
+                      <li key={idx}>
+                        {h.action} by {h.reviewerId}
+                      </li>
+                    ))}
+                  </ul>
                 </td>
               </tr>
             );

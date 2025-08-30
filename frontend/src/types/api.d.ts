@@ -624,6 +624,24 @@ export interface paths {
       };
     };
   };
+  "/analytics/collusion/{sessionId}/audit": {
+    /** Get collusion review action history */
+    get: {
+      parameters: {
+        path: {
+          sessionId: string;
+        };
+      };
+      responses: {
+        /** @description Review action history */
+        200: {
+          content: {
+            "application/json": components["schemas"]["ReviewActionLogsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/admin/kyc/{id}/denial": {
     /** Get KYC denial reason */
     get: {
@@ -1051,6 +1069,13 @@ export interface components {
       method?: "topN" | "icm";
       stacks?: number[];
     };
+    ReviewAction: "warn" | "restrict" | "ban";
+    ReviewActionLog: {
+      action: components["schemas"]["ReviewAction"];
+      timestamp: number;
+      reviewerId: string;
+    };
+    ReviewActionLogsResponse: components["schemas"]["ReviewActionLog"][];
   };
   responses: never;
   parameters: never;

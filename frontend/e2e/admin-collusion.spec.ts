@@ -28,6 +28,16 @@ test('admin reviews collusion flags', async ({ page }) => {
     });
   });
 
+  await page.route('**/api/analytics/collusion/*/audit', (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([
+        { action: 'warn', timestamp: 1, reviewerId: 'admin1' },
+      ]),
+    });
+  });
+
   await page.route('**/api/analytics/collusion/*/*', (route) => {
     route.fulfill({
       status: 200,

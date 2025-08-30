@@ -127,6 +127,7 @@ export class CollusionService {
   async applyAction(
     sessionId: string,
     action: 'warn' | 'restrict' | 'ban',
+    reviewerId: string,
   ) {
     const key = `collusion:session:${sessionId}`;
     const current = await this.redis.hget(key, 'status');
@@ -144,7 +145,17 @@ export class CollusionService {
     await this.redis.hset(key, { status: action });
     await this.redis.rpush(
       `${key}:log`,
-      JSON.stringify({ action, timestamp: Date.now() }),
+      JSON.stringify({ action, timestamp: Date.now(), reviewerId }),
     );
+  }
+
+  async getActionHistory(sessionId: string) {
+    const key = `collusion:session:${sessionId}:log`;
+    const entries = await this.redis.lrange(key, 0, -1);
+    return entries.map((e) => JSON.parse(e) as {
+      action: 'warn' | 'restrict' | 'ban';
+      timestamp: number;
+      reviewerId: string;
+    });
   }
 }

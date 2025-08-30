@@ -1,4 +1,12 @@
-import { Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { CollusionService } from './collusion.service';
 import { ReviewActionSchema, FlaggedSessionsQuerySchema } from '../schemas/review';
 import { AdminGuard } from '../auth/admin.guard';
@@ -15,9 +23,18 @@ export class ReviewController {
   }
 
   @Post(':id/:action')
-  async act(@Param('id') id: string, @Param('action') action: string) {
+  async act(
+    @Param('id') id: string,
+    @Param('action') action: string,
+    @Req() req: any,
+  ) {
     const parsed = ReviewActionSchema.parse(action);
-    await this.collusion.applyAction(id, parsed);
+    await this.collusion.applyAction(id, parsed, req.userId);
     return { message: parsed };
+  }
+
+  @Get(':id/audit')
+  async audit(@Param('id') id: string) {
+    return this.collusion.getActionHistory(id);
   }
 }

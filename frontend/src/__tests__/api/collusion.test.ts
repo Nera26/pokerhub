@@ -1,6 +1,10 @@
 /** @jest-environment node */
 
-import { listFlaggedSessions, applyAction } from '@/lib/api/collusion';
+import {
+  listFlaggedSessions,
+  applyAction,
+  getActionHistory,
+} from '@/lib/api/collusion';
 import { serverFetch } from '@/lib/server-fetch';
 
 jest.mock('@/lib/server-fetch', () => ({
@@ -32,5 +36,19 @@ describe('collusion api', () => {
     await expect(applyAction('s1', 'warn', 'token')).resolves.toEqual({
       message: 'warn',
     });
+  });
+
+  it('gets action history', async () => {
+    (serverFetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => [
+        { action: 'warn', timestamp: 1, reviewerId: 'admin1' },
+      ],
+    });
+    await expect(getActionHistory('s1', 'token')).resolves.toEqual([
+      { action: 'warn', timestamp: 1, reviewerId: 'admin1' },
+    ]);
   });
 });

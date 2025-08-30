@@ -32,3 +32,14 @@ export const FlaggedSessionsResponseSchema = z.array(FlaggedSessionSchema);
 export type FlaggedSessionsResponse = z.infer<
   typeof FlaggedSessionsResponseSchema
 >;
+
+export const ReviewActionLogSchema = z.object({
+  action: ReviewActionSchema,
+  timestamp: z.number().int(),
+  reviewerId: z.string(),
+});
+export type ReviewActionLog = z.infer<typeof ReviewActionLogSchema>;
+export const ReviewActionLogsResponseSchema = z.array(ReviewActionLogSchema);
+export type ReviewActionLogsResponse = z.infer<
+  typeof ReviewActionLogsResponseSchema
+>;

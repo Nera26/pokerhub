@@ -9,6 +9,8 @@ import {
   MessageResponseSchema,
   ReviewAction,
   ReviewStatus,
+  ReviewActionLogsResponse,
+  ReviewActionLogsResponseSchema,
 } from '@shared/types';
 
 export async function listFlaggedSessions(
@@ -27,6 +29,19 @@ export async function listFlaggedSessions(
       },
     ),
     FlaggedSessionsResponseSchema,
+  );
+}
+
+export async function getActionHistory(
+  id: string,
+  token: string,
+): Promise<ReviewActionLogsResponse> {
+  return handleResponse(
+    serverFetch(`${getBaseUrl()}/api/analytics/collusion/${id}/audit`, {
+      credentials: 'include',
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+    ReviewActionLogsResponseSchema,
   );
 }
 
