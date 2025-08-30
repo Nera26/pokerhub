@@ -2,6 +2,8 @@
 
 This runbook outlines how administrators review flagged sessions for potential collusion.
 
+Refer to [../security/anti-collusion.md](../security/anti-collusion.md) for details on detection heuristics and analytics queries.
+
 ## Access Requirements
 - Only users with the `admin` role can access `/admin/collusion`.
 - Log in with an admin account before proceeding.
