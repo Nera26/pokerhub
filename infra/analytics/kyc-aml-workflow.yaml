@@ -1,0 +1,17 @@
+version: 1
+stages:
+  - name: collect_identity
+    action: verify identity documents
+    outputs: kyc_request
+  - name: sanctions_screening
+    action: check against sanctions lists
+    inputs: kyc_request
+    outputs: screening_result
+  - name: aml_rules
+    action: score cash in/out transactions
+    outputs: risk_score
+sinks:
+  - type: gcs
+    path: compliance/kyc-events
+  - type: clickhouse
+    table: kyc_events

@@ -1,0 +1,31 @@
+version: 1
+sources:
+  - name: game_events
+    table: events.games
+  - name: session_events
+    table: events.sessions
+jobs:
+  - name: ip_cluster
+    sql: >-
+      SELECT ip, groupArrayDistinct(player_id) AS players
+      FROM session_events
+      GROUP BY ip
+      HAVING length(players) > 1
+    schedule: hourly
+  - name: chip_dumping
+    sql: >-
+      SELECT from_player, to_player, SUM(amount) AS total
+      FROM chip_transfers
+      GROUP BY from_player, to_player
+      HAVING total > 100000
+    schedule: hourly
+  - name: bet_sync
+    sql: >-
+      SELECT hand_id, groupArray(player_id) AS actors
+      FROM betting_events
+      GROUP BY hand_id
+      HAVING stddevPop(action_ts) < 200
+    schedule: daily
+sinks:
+  - type: clickhouse
+    table: collusion_alerts

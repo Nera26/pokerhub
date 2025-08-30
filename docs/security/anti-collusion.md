@@ -2,6 +2,8 @@
 
 PokerHub uses behavioral analysis and auditing to detect players collaborating unfairly.
 
+Pipeline config: see [`../../infra/analytics/anti-collusion-analytics.yaml`](../../infra/analytics/anti-collusion-analytics.yaml).
+
 ## Heuristics
 - **Shared IP or Device Fingerprints**: Flag players repeatedly joining tables from the same network or hardware.
 - **Synchronized Betting Patterns**: Detect coordinated timing or identical wager sequences.
