@@ -18,7 +18,7 @@ run_property() {
   npm ci
   npm install --no-save fast-check >/dev/null 2>&1 || true
   npm test --prefix backend -- test/game/.*\.property\.spec\.ts
-  node -r ts-node/register shared/test/verify.property.ts
+  npx ts-node --esm shared/test/verify.property.ts
 }
 
 run_integration() {
@@ -33,7 +33,7 @@ run_load() {
     echo "k6 is required for load tests" >&2
     exit 1
   fi
-  k6 run load/k6-ws-packet-loss.js --vus 10 --duration 10s
+  k6 run load/k6-swarm.js --vus 10 --duration 10s
 }
 
 run_e2e() {
