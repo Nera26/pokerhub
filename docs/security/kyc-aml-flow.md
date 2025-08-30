@@ -50,16 +50,20 @@ sequenceDiagram
   participant P as Player
   participant A as App
   participant K as KYC Provider
+  participant R as Risk Engine
   participant C as Compliance
 
   P->>A: Submit signup data
   A->>K: Send KYC request
-  K-->>A: Return result
-  alt Verified
+  K-->>A: Return doc result
+  A->>R: Evaluate risk score
+  alt Score low
     A-->>P: Activate account
+    A-->>A: Log to kyc_audit
   else Needs review
     A->>C: Escalate case
     C-->>P: Request additional docs
+    C-->>A: Record decision
   end
 ```
 
@@ -70,16 +74,19 @@ sequenceDiagram
   participant P as Player
   participant W as Wallet
   participant M as AML Engine
+  participant L as Ledger
   participant C as Compliance
 
   P->>W: Cash in/out
   W->>M: Run AML checks
   M-->>W: Risk score
+  W->>L: Append transaction
   alt Low risk
     W-->>P: Approve transaction
   else High risk
     W->>C: Hold for review
     C-->>P: Notify pending status
+    C->>L: Tag transaction
   end
 ```
 
@@ -90,12 +97,19 @@ sequenceDiagram
   participant A as App
   participant C as Compliance
   participant S as Security
+  participant L as AuditLog
   participant R as Regulator
 
   A->>C: Flag suspicious activity
+  C->>L: Record case
   C->>S: Request investigation
+  S->>L: Attach evidence
   alt Confirmed issue
     S->>R: Report as required
     S->>A: Apply sanctions
+    S->>L: Close case
+  else Cleared
+    S->>C: Dismiss alert
+    C->>L: Note outcome
   end
 ```
