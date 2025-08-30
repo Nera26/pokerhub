@@ -16,6 +16,16 @@ This roadmap links major features to their performance and compliance objectives
 | 7 | Observability | 2025-12-15 | SRE Team | 99.95% service uptime | SOC 2 monitoring controls |
 | 8 | Scale & Chaos | 2026-01-15 | SRE Team | 99.95% service uptime | Resilience evidence for licensing |
 
+## Implementation Links
+- **Milestone 1:** [`backend/src/game`](../backend/src/game)
+- **Milestone 2:** [`backend/src/game/game.gateway.ts`](../backend/src/game/game.gateway.ts) and [`load/k6-ws-packet-loss.js`](../load/k6-ws-packet-loss.js)
+- **Milestone 3:** [`backend/src/game/rng.ts`](../backend/src/game/rng.ts)
+- **Milestone 4:** [`backend/src/wallet`](../backend/src/wallet)
+- **Milestone 5:** [`backend/src/tournament`](../backend/src/tournament)
+- **Milestone 6:** [`backend/src/leaderboard`](../backend/src/leaderboard)
+- **Milestone 7:** [`infrastructure/monitoring`](../infrastructure/monitoring)
+- **Milestone 8:** [`load`](../load) and [`docs/runbooks/disaster-recovery.md`](./runbooks/disaster-recovery.md)
+
 ## Linked Documents
 - [Game Engine Specification](./game-engine-spec.md) – state machine reference for Milestone 1.
 - [RNG & RTP Fairness](./rng-fairness.md) – commit–reveal and RTP policies for Milestone 3.
