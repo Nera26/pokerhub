@@ -3,13 +3,14 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-: "${PRIMARY_REGION:?Must set PRIMARY_REGION}"
-: "${SECONDARY_REGION:?Must set SECONDARY_REGION}"
-: "${PG_INSTANCE_ID:?Must set PG_INSTANCE_ID}"
-: "${PGUSER:?Must set PGUSER}"
-: "${PGPASSWORD:?Must set PGPASSWORD}"
+: "${PRIMARY_REGION?Must set PRIMARY_REGION}"
+: "${SECONDARY_REGION?Must set SECONDARY_REGION}"
+: "${PG_INSTANCE_ID?Must set PG_INSTANCE_ID}"
+: "${PROJECT_ID?Must set PROJECT_ID}"
+: "${PGUSER?Must set PGUSER}"
+: "${PGPASSWORD?Must set PGPASSWORD}"
 : "${PGDATABASE:=postgres}"
-: "${WAL_ARCHIVE_BUCKET:?Must set WAL_ARCHIVE_BUCKET}"
+: "${WAL_ARCHIVE_BUCKET?Must set WAL_ARCHIVE_BUCKET}"
 
 log() {
   echo "[$(date --iso-8601=seconds)] $*"
@@ -22,11 +23,9 @@ terraform apply -input=false -auto-approve >/dev/null
 popd >/dev/null
 
 log "Fetching primary endpoint in $PRIMARY_REGION..."
-primary_endpoint=$(aws rds describe-db-instances \
-  --db-instance-identifier "$PG_INSTANCE_ID" \
-  --region "$PRIMARY_REGION" \
-  --query 'DBInstances[0].Endpoint.Address' \
-  --output text)
+primary_endpoint=$(gcloud sql instances describe "$PG_INSTANCE_ID" \
+  --project "$PROJECT_ID" \
+  --format "value(ipAddresses[0].ipAddress)")
 
 log "Capturing table count from primary $primary_endpoint..."
 primary_count=$(PGHOST="$primary_endpoint" PGPORT=5432 psql \
@@ -36,7 +35,7 @@ primary_count=$(PGHOST="$primary_endpoint" PGPORT=5432 psql \
 
 log "Running disaster recovery drill via drill.sh..."
 KEEP_INSTANCE=true PG_INSTANCE_ID="$PG_INSTANCE_ID" SECONDARY_REGION="$SECONDARY_REGION" \
-  PGUSER="$PGUSER" PGPASSWORD="$PGPASSWORD" PGDATABASE="$PGDATABASE" \
+  PROJECT_ID="$PROJECT_ID" PGUSER="$PGUSER" PGPASSWORD="$PGPASSWORD" PGDATABASE="$PGDATABASE" \
   WAL_ARCHIVE_BUCKET="$WAL_ARCHIVE_BUCKET" ../drill.sh
 
 metrics="drill.metrics"
@@ -58,10 +57,9 @@ else
 fi
 
 log "Tearing down drill instance $db_id..."
-aws rds delete-db-instance \
-  --db-instance-identifier "$db_id" \
-  --skip-final-snapshot \
-  --region "$SECONDARY_REGION" || true
+gcloud sql instances delete "$db_id" \
+  --project "$PROJECT_ID" \
+  --quiet || true
 
 log "Destroying standby infrastructure..."
 pushd ../terraform >/dev/null

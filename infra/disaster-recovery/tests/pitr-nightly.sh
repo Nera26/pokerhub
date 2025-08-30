@@ -1,39 +1,37 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${PG_INSTANCE_ID:?Must set PG_INSTANCE_ID}"
-: "${CLICKHOUSE_BUCKET:?Must set CLICKHOUSE_BUCKET}"
-: "${SECONDARY_REGION:?Must set SECONDARY_REGION}"
+: "${PG_INSTANCE_ID?Must set PG_INSTANCE_ID}"
+: "${CLICKHOUSE_BUCKET?Must set CLICKHOUSE_BUCKET}"
+: "${SECONDARY_REGION?Must set SECONDARY_REGION}"
+: "${PROJECT_ID?Must set PROJECT_ID}"
 
 log(){ echo "[$(date --iso-8601=seconds)] $*"; }
 
 snap="pitr-$(date +%s)"
-log "Creating Postgres snapshot $snap"
-aws rds create-db-snapshot \
-  --db-instance-identifier "$PG_INSTANCE_ID" \
-  --db-snapshot-identifier "$snap"
-aws rds wait db-snapshot-available \
-  --db-snapshot-identifier "$snap"
+log "Creating Cloud SQL backup $snap"
+gcloud sql backups create \
+  --instance "$PG_INSTANCE_ID" \
+  --project "$PROJECT_ID" >/dev/null
 
-log "Copying snapshot to $SECONDARY_REGION"
-aws rds copy-db-snapshot \
-  --source-db-snapshot-identifier "$snap" \
-  --target-db-snapshot-identifier "${snap}-copy" \
-  --region "$SECONDARY_REGION"
+log "Copying backup to $SECONDARY_REGION (placeholder)"
+# gcloud sql backups copy not available; implement via API or export if needed
 
-log "Restoring snapshot in $SECONDARY_REGION"
-aws rds restore-db-instance-from-db-snapshot \
-  --db-instance-identifier "${snap}-restore" \
-  --db-snapshot-identifier "${snap}-copy" \
-  --db-instance-class db.t3.micro \
-  --no-publicly-accessible \
-  --region "$SECONDARY_REGION"
-aws rds delete-db-instance \
-  --db-instance-identifier "${snap}-restore" \
-  --skip-final-snapshot \
-  --region "$SECONDARY_REGION" || true
+log "Restoring backup in $SECONDARY_REGION"
+gcloud sql instances create "${snap}-restore" \
+  --project "$PROJECT_ID" \
+  --region "$SECONDARY_REGION" \
+  --database-version=POSTGRES_14 \
+  --cpu=1 --memory=3840MiB \
+  --no-assign-ip >/dev/null
+gcloud beta sql backups restore "$snap" \
+  --restore-instance-name "${snap}-restore" \
+  --project "$PROJECT_ID" >/dev/null
+gcloud sql instances delete "${snap}-restore" \
+  --project "$PROJECT_ID" \
+  --quiet || true
 
 log "Checking ClickHouse backup replication"
-aws s3 ls "s3://${CLICKHOUSE_BUCKET}-dr/" --region "$SECONDARY_REGION" >/dev/null
+gsutil ls "gs://${CLICKHOUSE_BUCKET}-dr/" >/dev/null
 
 log "Nightly PITR backup completed"

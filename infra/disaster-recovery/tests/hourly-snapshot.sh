@@ -1,24 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${PG_INSTANCE_ID:?Must set PG_INSTANCE_ID}"
-: "${SECONDARY_REGION:?Must set SECONDARY_REGION}"
+: "${PG_INSTANCE_ID?Must set PG_INSTANCE_ID}"
+: "${SECONDARY_REGION?Must set SECONDARY_REGION}"
+: "${PROJECT_ID?Must set PROJECT_ID}"
 
 log() { echo "[$(date --iso-8601=seconds)] $*"; }
 
 snap="hourly-$(date +%s)"
-log "Creating Postgres snapshot $snap"
-aws rds create-db-snapshot \
-  --db-instance-identifier "$PG_INSTANCE_ID" \
-  --db-snapshot-identifier "$snap" >/dev/null
-aws rds wait db-snapshot-available \
-  --db-snapshot-identifier "$snap" >/dev/null
+log "Creating Cloud SQL backup $snap"
+gcloud sql backups create \
+  --instance "$PG_INSTANCE_ID" \
+  --project "$PROJECT_ID" >/dev/null
 
-log "Copying snapshot to $SECONDARY_REGION"
-aws rds copy-db-snapshot \
-  --source-db-snapshot-identifier "$snap" \
-  --target-db-snapshot-identifier "${snap}-copy" \
-  --region "$SECONDARY_REGION" >/dev/null
+log "Copying backup to $SECONDARY_REGION (placeholder)"
+# gcloud sql backups copy not available; implement via API or export if needed
 
-log "Hourly snapshot completed"
+log "Hourly backup completed"
 

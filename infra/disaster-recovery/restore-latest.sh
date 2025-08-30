@@ -24,11 +24,11 @@ echo "START_TIME=$start_iso" >> "$metrics_file"
 
 log "Finding latest backup for $PG_PRIMARY_ID in $SECONDARY_REGION..."
 read latest_backup backup_ts < <(gcloud sql backups list \
-  --instance="$PG_PRIMARY_ID" \
-  --project="$PROJECT_ID" \
-  --order-by="-endTime" \
-  --limit=1 \
-  --format="value(id,endTime)")
+  --instance "$PG_PRIMARY_ID" \
+  --project "$PROJECT_ID" \
+  --sort-by "~endTime" \
+  --limit 1 \
+  --format "value(id,endTime)")
 
 snap_epoch=$(date -d "$backup_ts" +%s)
 rpo=$((start_epoch - snap_epoch))

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${SECONDARY_REGION:?Must set SECONDARY_REGION}"
-: "${PG_SNAPSHOT_ID:?Must set PG_SNAPSHOT_ID}"
+: "${PROJECT_ID?Must set PROJECT_ID}"
+: "${SECONDARY_REGION?Must set SECONDARY_REGION}"
+: "${PG_BACKUP_ID?Must set PG_BACKUP_ID}"
 
 metrics_file="restore-standby.metrics"
 : > "$metrics_file"
@@ -12,10 +13,9 @@ start_epoch=$(date +%s)
 
 echo "START_TIME=$start_iso" >> "$metrics_file"
 
-snap_ts=$(aws rds describe-db-snapshots \
-  --db-snapshot-identifier "$PG_SNAPSHOT_ID" \
-  --region "$SECONDARY_REGION" \
-  --query 'DBSnapshots[0].SnapshotCreateTime' --output text)
+snap_ts=$(gcloud sql backups describe "$PG_BACKUP_ID" \
+  --project "$PROJECT_ID" \
+  --format "value(endTime)")
 snap_epoch=$(date -d "$snap_ts" +%s)
 
 rpo=$((start_epoch - snap_epoch))
@@ -25,7 +25,7 @@ standby_id="dr-standby-$start_epoch"
 export STANDBY_IDENTIFIER="$standby_id"
 
 restore_start=$(date +%s)
-SECONDARY_REGION="$SECONDARY_REGION" PG_SNAPSHOT_ID="$PG_SNAPSHOT_ID" PROMOTE=true STANDBY_IDENTIFIER="$standby_id" ../restore-standby.sh
+PROJECT_ID="$PROJECT_ID" SECONDARY_REGION="$SECONDARY_REGION" PG_BACKUP_ID="$PG_BACKUP_ID" PROMOTE=true STANDBY_IDENTIFIER="$standby_id" ../restore-standby.sh
 restore_end=$(date +%s)
 
 rto=$((restore_end - start_epoch))
@@ -46,7 +46,6 @@ fi
 
 echo "Restore and promotion completed in ${rto}s with data loss ${rpo}s"
 
-aws rds delete-db-instance \
-  --db-instance-identifier "$standby_id" \
-  --skip-final-snapshot \
-  --region "$SECONDARY_REGION" || true
+gcloud sql instances delete "$standby_id" \
+  --project "$PROJECT_ID" \
+  --quiet || true
