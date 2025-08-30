@@ -1,3 +1,4 @@
+import traceAgent from '@google-cloud/trace-agent';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
@@ -16,6 +17,8 @@ let meterProvider: MeterProvider | undefined;
 
 export function setupTelemetry() {
   if (sdk) return sdk;
+
+  traceAgent.start();
 
   const resource = new Resource({
     [SemanticResourceAttributes.SERVICE_NAME]:
@@ -46,7 +49,11 @@ export function setupTelemetry() {
     traceExporter: new OTLPTraceExporter({
       url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
     }),
-    instrumentations: [getNodeAutoInstrumentations()],
+    instrumentations: [
+      getNodeAutoInstrumentations({
+        '@opentelemetry/instrumentation-aws-sdk': { enabled: false },
+      }),
+    ],
   });
 
   sdk.start();
