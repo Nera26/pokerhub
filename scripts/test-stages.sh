@@ -22,7 +22,7 @@ run_property() {
   node -r ts-node/register shared/test/verify.property.ts
 }
 
-run_e2e() {
+run_integration() {
   npm ci
   npm run test:e2e --prefix backend
   npm run test:e2e:integration --prefix frontend
@@ -45,14 +45,14 @@ case "${1:-}" in
   property)
     run_property
     ;;
-  e2e)
-    run_e2e
+  integration)
+    run_integration
     ;;
   load)
     run_load
     ;;
   *)
-    echo "Usage: $0 {unit|property|e2e|load}" >&2
+    echo "Usage: $0 {unit|property|integration|load}" >&2
     exit 1
     ;;
 esac
