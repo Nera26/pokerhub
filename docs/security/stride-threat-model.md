@@ -20,7 +20,14 @@ Rate limiting and traffic scrubbing protect against volumetric attacks.
 ## Elevation of Privilege
 Role-based access control and regular reviews prevent unauthorized privilege gains.
 
-For implementation details, see the workflow configs under `../../infra/analytics/`.
+For implementation details, see the workflow configs and queries under `../../infrastructure/analytics/`.
+
+## Issue Status
+The gaps noted in earlier STRIDE reviews have been closed:
+- Device fingerprint binding enforced with hardware-backed tokens.
+- Analytics pipeline alerts on unusual query volume.
+- Tournament payouts require dual approval.
+- Wallet withdrawals use HSM-backed signing.
 
 ## Threats to Mitigation Mapping
 

@@ -58,6 +58,7 @@ POST /api/aml/check
 ## Audit Logging
 - Record all verification requests and provider responses with timestamps and reviewer IDs.
 - Each step writes to a `kyc_audit` table capturing user ID, request ID, source IP and decision metadata for traceability.
+- Hash document numbers and redact sensitive fields before persistence.
 - Retain logs for seven years in immutable storage for regulatory audits.
 
 ### Audit Table Schema
@@ -85,12 +86,13 @@ CREATE TABLE aml_audit (
 );
 ```
 
-## Compliance Check Steps
+## Verification Steps
 1. Validate document authenticity and match to provided identity data.
-2. Run sanctions and PEP screening and record reference IDs.
-3. Evaluate selfie/liveness checks when triggered by risk scoring.
-4. Perform AML transaction monitoring for deposits and withdrawals.
-5. Capture reviewer decision with timestamp and reasoning.
+2. Cross-check applicants against sanctions and PEP lists and record reference IDs.
+3. Run duplicate account and geolocation risk checks.
+4. Evaluate selfie/liveness checks when triggered by risk scoring.
+5. Perform AML transaction monitoring for deposits and withdrawals.
+6. Capture reviewer decision with timestamp, source IP, and reasoning.
 
 ## Data Retention
 | Artifact | Retention | Storage |
@@ -108,7 +110,7 @@ CREATE TABLE aml_audit (
 ## Escalation Steps
 1. Flagged signups or transactions enter a manual review queue within 24 hours.
 2. Compliance reviews evidence and either approves, requests additional documents, or marks the account high risk.
-3. High-risk cases escalate to the security team for deeper investigation.
+3. High-risk cases escalate to the security team via the PagerDuty `SECURITY-INCIDENT` policy for deeper investigation.
 4. Confirmed suspicious activity triggers a Suspicious Activity Report to regulators and immediate account freeze.
 
 ## Sequence Diagrams

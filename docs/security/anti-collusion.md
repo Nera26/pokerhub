@@ -33,7 +33,8 @@ Raw game and session events stream into an analytics warehouse where scheduled q
 potential collusion for review.
 
 The scheduled SQL lives in [`CollusionQueryService`](../../backend/src/analytics/collusion.queries.ts)
-and populates a `collusion_alerts` table used by reviewers.
+and populates a `collusion_alerts` table used by reviewers. Supporting warehouse queries are
+defined under [`../../infrastructure/analytics/`](../../infrastructure/analytics/).
 
 ### Example Queries
 ```sql
