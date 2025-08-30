@@ -42,6 +42,7 @@ Dashboards:
 
 ## Escalation Policy
 - Primary on-call via [PagerDuty](https://pagerduty.com/services/pokerhub-sre).
+- `GAME_ACTION_ACK_LATENCY_MS` burn-rate alerts page the `pokerhub-ops` service.
 - Latency, action ACK, and socket connect SLO burn-rate alerts trigger at 1h (14.4) and 6h (6) windows.
 - Escalate to SRE lead after 15m without acknowledgement.
 - Escalate to Engineering Director after 30m without acknowledgement.
