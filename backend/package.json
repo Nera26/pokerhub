@@ -35,10 +35,10 @@
     "seed:test-credentials": "ts-node src/scripts/seed-test-credentials.ts"
   },
   "dependencies": {
-    "@google-cloud/storage": "^7.17.0",
-    "@google-cloud/trace-agent": "^8.0.0",
     "@clickhouse/client": "^1.12.1",
     "@elastic/elasticsearch": "^8.19.0",
+    "@google-cloud/storage": "^7.17.0",
+    "@google-cloud/trace-agent": "^8.0.0",
     "@nestjs/cache-manager": "^3.0.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
@@ -50,6 +50,7 @@
     "@nestjs/typeorm": "^11.0.0",
     "@nestjs/websockets": "^11.1.6",
     "@opentelemetry/api": "^1.8.0",
+    "@opentelemetry/exporter-logs-otlp-http": "^0.203.0",
     "@opentelemetry/exporter-metrics-otlp-http": "^0.203.0",
     "@opentelemetry/exporter-prometheus": "^0.50.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.203.0",

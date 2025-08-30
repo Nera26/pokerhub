@@ -127,6 +127,7 @@ Individual metric runbooks provide dashboard links and PagerDuty escalation deta
 - [Error Rates](runbooks/error-rates.md)
 - [Service Uptime](runbooks/service-uptime.md)
 - [Queue Saturation](runbooks/queue-saturation.md)
+- [Telemetry Pipeline](runbooks/telemetry-pipeline.md)
 - [Security Incident Response](security/incident-response.md)
 
 ![Alert Routing](images/alert-routing.svg)

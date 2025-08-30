@@ -1,0 +1,33 @@
+{
+  "title": "Latency & Error Overview",
+  "panels": [
+    {
+      "title": "HTTP p95 Latency",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95,sum(rate(http_server_duration_seconds_bucket[5m])) by (le))"
+        }
+      ]
+    },
+    {
+      "title": "Request Error Rate",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(rate(http_request_errors_total[5m])) / sum(rate(http_requests_total[5m]))"
+        }
+      ]
+    },
+    {
+      "title": "CPU Usage",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "avg(rate(process_cpu_seconds_total[5m]))"
+        }
+      ]
+    }
+  ]
+}
+
