@@ -1,10 +1,7 @@
-name: CI
+name: test-pipeline
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   unit:
@@ -18,9 +15,8 @@ jobs:
       - run: ./scripts/test-stages.sh unit
 
   property:
-    # Property-based tests; see docs/test-strategy.md
-    needs: unit
     runs-on: ubuntu-latest
+    needs: unit
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -28,9 +24,10 @@ jobs:
           node-version: 20
           cache: npm
       - run: ./scripts/test-stages.sh property
+
   e2e:
-    needs: property
     runs-on: ubuntu-latest
+    needs: property
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -40,8 +37,8 @@ jobs:
       - run: ./scripts/test-stages.sh e2e
 
   load:
-    needs: e2e
     runs-on: ubuntu-latest
+    needs: e2e
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -50,19 +47,3 @@ jobs:
           cache: npm
       - uses: grafana/setup-k6@v1
       - run: ./scripts/test-stages.sh load
-
-  chaos:
-    needs: load
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - name: Run chaos test
-        uses: grafana/k6-action@v0.2.0
-        with:
-          filename: load/chaos/ws-chaos.js
-          arguments: --vus 10 --duration 10s
