@@ -6,10 +6,11 @@ Use this guide when seat reservations are not released after players disconnect.
 - Seats remain reserved after players disconnect.
 - Reservation TTL metrics exceed thresholds in Grafana.
 - Support tickets from users unable to join tables.
+- Redis keys show `ttl=-1` for `reservation:*` entries.
 
 ## Mitigation Steps
 1. Locate the reservation in Redis with `scripts/reservation-find.sh <playerId>`.
-2. Manually release or expire the reservation using `redis-cli`.
+2. Manually release or expire the reservation using `redis-cli` or `scripts/reservation-release.sh <playerId>`.
 3. Ask the player to reconnect and confirm the seat status.
 4. If several reservations are affected, restart the reservation service with `pm2 restart reservation`.
 5. Log the incident and follow up with impacted players.
@@ -17,7 +18,11 @@ Use this guide when seat reservations are not released after players disconnect.
 ## Verification
 - Ensure the seat appears free in the lobby.
 - Monitor for reoccurrence over the next hour.
+- Confirm `reservationTTL` metrics return to baseline.
 
 ## Escalation
 - PagerDuty: pokerhub-eng
 - Slack: #ops
+
+## Drill
+- Simulated quarterly with `load/chaos/reservation-stall.js`.

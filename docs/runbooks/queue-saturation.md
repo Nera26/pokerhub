@@ -6,16 +6,18 @@ Handle situations where message queues accumulate a backlog faster than consumer
 - Rising queue depth metrics or alerts.
 - Consumers lagging or timing out.
 - Dashboard shows message age exceeding 30 s.
+- `queueLag` metric remains above 10 s for 5 m.
 
 ## Mitigation Steps
 1. Inspect worker logs for processing errors.
 2. Scale up consumers or purge poisoned messages.
 3. Verify upstream services (database, cache) are healthy.
-4. If backlog persists, enable rate limiting on producers.
+4. If backlog persists, run `scripts/queue-drain.sh <queue>` and enable rate limiting on producers.
 
 ## Verification
 - Queue depth returns to normal operating levels.
 - No new saturation alerts for 15 m.
+- `queueLag` metric falls below 2 s.
 
 ## Escalation
 - PagerDuty: pokerhub-eng
