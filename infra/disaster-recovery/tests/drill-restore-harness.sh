@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${PG_INSTANCE_ID:?Must set PG_INSTANCE_ID}"
-: "${PG_PRIMARY_ID:?Must set PG_PRIMARY_ID}"
-: "${SECONDARY_REGION:?Must set SECONDARY_REGION}"
-: "${PGUSER:?Must set PGUSER}"
-: "${PGPASSWORD:?Must set PGPASSWORD}"
+: "${PG_INSTANCE_ID?Must set PG_INSTANCE_ID}"
+: "${PG_PRIMARY_ID?Must set PG_PRIMARY_ID}"
+: "${SECONDARY_REGION?Must set SECONDARY_REGION}"
+: "${PROJECT_ID?Must set PROJECT_ID}"
+: "${PGUSER?Must set PGUSER}"
+: "${PGPASSWORD?Must set PGPASSWORD}"
 : "${PGDATABASE:=postgres}"
-: "${WAL_ARCHIVE_BUCKET:?Must set WAL_ARCHIVE_BUCKET}"
+: "${WAL_ARCHIVE_BUCKET?Must set WAL_ARCHIVE_BUCKET}"
 
 log() {
   echo "[$(date --iso-8601=seconds)] $*"
@@ -31,30 +32,27 @@ if ! bash "$dr_dir/restore-latest.sh"; then
   status=1
 fi
 
-log "Restoring standby from latest snapshot..."
-latest_snapshot=$(aws rds describe-db-snapshots \
-  --db-instance-identifier "$PG_PRIMARY_ID" \
-  --snapshot-type automated \
-  --region "$SECONDARY_REGION" \
-  --query 'reverse(sort_by(DBSnapshots, &SnapshotCreateTime))[:1].DBSnapshotIdentifier' \
-  --output text)
+log "Restoring standby from latest backup..."
+read latest_backup _ < <(gcloud sql backups list \
+  --instance "$PG_PRIMARY_ID" \
+  --project "$PROJECT_ID" \
+  --sort-by "~endTime" \
+  --limit 1 \
+  --format "value(id,endTime)")
 standby_id="dr-harness-$start_epoch"
 cleanup() {
   log "Cleaning up $standby_id..."
-  aws rds delete-db-instance \
-    --db-instance-identifier "$standby_id" \
-    --skip-final-snapshot \
-    --region "$SECONDARY_REGION" >/dev/null 2>&1 || true
+  gcloud sql instances delete "$standby_id" \
+    --project "$PROJECT_ID" \
+    --quiet >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
-PG_SNAPSHOT_ID="$latest_snapshot" STANDBY_IDENTIFIER="$standby_id" bash "$dr_dir/restore-standby.sh"
+PG_BACKUP_ID="$latest_backup" STANDBY_IDENTIFIER="$standby_id" PROJECT_ID="$PROJECT_ID" SECONDARY_REGION="$SECONDARY_REGION" bash "$dr_dir/restore-standby.sh"
 
-endpoint=$(aws rds describe-db-instances \
-  --db-instance-identifier "$standby_id" \
-  --region "$SECONDARY_REGION" \
-  --query 'DBInstances[0].Endpoint.Address' \
-  --output text)
+endpoint=$(gcloud sql instances describe "$standby_id" \
+  --project "$PROJECT_ID" \
+  --format "value(ipAddresses[0].ipAddress)")
 
 log "Running smoke queries on $endpoint..."
 hand_count=$(PGPASSWORD="$PGPASSWORD" psql -h "$endpoint" -U "$PGUSER" -d "$PGDATABASE" -t -c 'SELECT COUNT(*) FROM hand_logs;' | tr -d '[:space:]')

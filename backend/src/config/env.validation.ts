@@ -6,6 +6,7 @@ export const validationSchema = Joi.object({
   RABBITMQ_URL: Joi.string().uri().required(),
   GCP_PROJECT: Joi.string().required(),
   GCS_BUCKET: Joi.string().required(),
+  GOOGLE_APPLICATION_CREDENTIALS: Joi.string().required(),
   GCS_EMULATOR_HOST: Joi.string().uri().optional(),
   CLICKHOUSE_URL: Joi.string().uri().optional(),
   KAFKA_BROKERS: Joi.string().optional(),

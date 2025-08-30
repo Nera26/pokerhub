@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${PG_INSTANCE_ID:?Must set PG_INSTANCE_ID}"
-: "${SECONDARY_REGION:?Must set SECONDARY_REGION}"
-: "${PGUSER:?Must set PGUSER}"
-: "${PGPASSWORD:?Must set PGPASSWORD}"
+: "${PG_INSTANCE_ID?Must set PG_INSTANCE_ID}"
+: "${SECONDARY_REGION?Must set SECONDARY_REGION}"
+: "${PROJECT_ID?Must set PROJECT_ID}"
+: "${PGUSER?Must set PGUSER}"
+: "${PGPASSWORD?Must set PGPASSWORD}"
 : "${PGDATABASE:=postgres}"
-: "${WAL_ARCHIVE_BUCKET:?Must set WAL_ARCHIVE_BUCKET}"
+: "${WAL_ARCHIVE_BUCKET?Must set WAL_ARCHIVE_BUCKET}"
 
 log() {
   echo "[$(date --iso-8601=seconds)] $*"
@@ -20,29 +21,23 @@ start_epoch=$(date +%s)
 
 echo "START_TIME=$start_iso" >> "$metrics_file"
 
-log "Finding latest snapshot for $PG_INSTANCE_ID in $SECONDARY_REGION..."
-latest_snapshot=$(aws rds describe-db-snapshots \
-  --db-instance-identifier "$PG_INSTANCE_ID" \
-  --snapshot-type automated \
-  --region "$SECONDARY_REGION" \
-  --query 'reverse(sort_by(DBSnapshots, &SnapshotCreateTime))[:1].DBSnapshotIdentifier' \
-  --output text)
-
-snap_ts=$(aws rds describe-db-snapshots \
-  --db-snapshot-identifier "$latest_snapshot" \
-  --region "$SECONDARY_REGION" \
-  --query 'DBSnapshots[0].SnapshotCreateTime' \
-  --output text)
+log "Finding latest backup for $PG_INSTANCE_ID in $SECONDARY_REGION..."
+read latest_backup snap_ts < <(gcloud sql backups list \
+  --instance "$PG_INSTANCE_ID" \
+  --project "$PROJECT_ID" \
+  --sort-by "~endTime" \
+  --limit 1 \
+  --format "value(id,endTime)")
 
 snap_epoch=$(date -d "$snap_ts" +%s)
 rpo_snapshot=$((start_epoch - snap_epoch))
-log "Latest snapshot $latest_snapshot from $snap_ts (snapshot RPO ${rpo_snapshot}s)"
+log "Latest backup $latest_backup from $snap_ts (snapshot RPO ${rpo_snapshot}s)"
 
-latest_wal=$(aws s3 ls "s3://${WAL_ARCHIVE_BUCKET}/" | sort | tail -n1 | awk '{print $4}')
-wal_ts=$(aws s3api head-object --bucket "$WAL_ARCHIVE_BUCKET" --key "$latest_wal" --query 'LastModified' --output text)
+latest_wal=$(gsutil ls "gs://${WAL_ARCHIVE_BUCKET}/" | sort | tail -n1)
+wal_ts=$(gsutil stat "$latest_wal" | awk -F': +' '/Creation time/ {print $2}')
 wal_epoch=$(date -d "$wal_ts" +%s)
 rpo_wal=$((start_epoch - wal_epoch))
-log "Latest WAL $latest_wal from $wal_ts (wal RPO ${rpo_wal}s)"
+log "Latest WAL $(basename "$latest_wal") from $wal_ts (wal RPO ${rpo_wal}s)"
 
 echo "RPO_SNAPSHOT_SECONDS=$rpo_snapshot" >> "$metrics_file"
 echo "RPO_WAL_SECONDS=$rpo_wal" >> "$metrics_file"
@@ -57,15 +52,13 @@ if [ $rpo_snapshot -gt 300 ] || [ $rpo_wal -gt 300 ]; then
   status=1
 fi
 
-log "Restoring snapshot $latest_snapshot to $db_identifier via standby script..."
-PG_SNAPSHOT_ID="$latest_snapshot" STANDBY_IDENTIFIER="$db_identifier" PROMOTE=true \
+log "Restoring backup $latest_backup to $db_identifier via standby script..."
+PG_BACKUP_ID="$latest_backup" STANDBY_IDENTIFIER="$db_identifier" PROMOTE=true \
   bash "$(dirname "$0")/restore-standby.sh"
 
-endpoint=$(aws rds describe-db-instances \
-  --db-instance-identifier "$db_identifier" \
-  --region "$SECONDARY_REGION" \
-  --query 'DBInstances[0].Endpoint.Address' \
-  --output text)
+endpoint=$(gcloud sql instances describe "$db_identifier" \
+  --project "$PROJECT_ID" \
+  --format "value(ipAddresses[0].ipAddress)")
 echo "DB_ENDPOINT=$endpoint" >> "$metrics_file"
 
 log "Running smoke query on $endpoint..."
@@ -87,10 +80,9 @@ if [ $rto -gt 1800 ]; then
   status=1
 fi
 if [ "${KEEP_INSTANCE:-false}" != "true" ]; then
-  aws rds delete-db-instance \
-    --db-instance-identifier "$db_identifier" \
-    --skip-final-snapshot \
-    --region "$SECONDARY_REGION" || true
+  gcloud sql instances delete "$db_identifier" \
+    --project "$PROJECT_ID" \
+    --quiet || true
 fi
 
 log "Disaster recovery drill finished: RTO ${rto}s, snapshot RPO ${rpo_snapshot}s, wal RPO ${rpo_wal}s"

@@ -3,39 +3,41 @@
 set -euo pipefail
 
 : "${DB_INSTANCE?DB_INSTANCE must be set}"
-: "${RESTORE_REGION?RESTORE_REGION must be set}"
+: "${PROJECT_ID?PROJECT_ID must be set}"
 : "${DB_USER?DB_USER must be set}"
 : "${DB_PASSWORD?DB_PASSWORD must be set}"
 
-SNAPSHOT_ID=$(aws rds describe-db-snapshots \
-  --db-instance-identifier "$DB_INSTANCE" \
-  --query 'DBSnapshots[-1].DBSnapshotIdentifier' \
-  --output text)
+BACKUP_ID=$(gcloud sql backups list \
+  --instance "$DB_INSTANCE" \
+  --project "$PROJECT_ID" \
+  --sort-by "~endTime" \
+  --limit 1 \
+  --format "value(id)")
 
 RESTORE_ID="${DB_INSTANCE}-verify-$(date +%s)"
 
-echo "Restoring snapshot $SNAPSHOT_ID to $RESTORE_ID in $RESTORE_REGION..."
-aws rds restore-db-instance-from-db-snapshot \
-  --db-instance-identifier "$RESTORE_ID" \
-  --db-snapshot-identifier "$SNAPSHOT_ID" \
-  --region "$RESTORE_REGION" >/dev/null
+echo "Restoring backup $BACKUP_ID to $RESTORE_ID..."
+gcloud beta sql backups restore "$BACKUP_ID" \
+  --backup-instance "$DB_INSTANCE" \
+  --restore-instance-name "$RESTORE_ID" \
+  --project "$PROJECT_ID" >/dev/null
 
-aws rds wait db-instance-available \
-  --db-instance-identifier "$RESTORE_ID" \
-  --region "$RESTORE_REGION"
+gcloud sql operations wait $(gcloud sql operations list \
+  --instance "$RESTORE_ID" \
+  --project "$PROJECT_ID" \
+  --limit 1 \
+  --format "value(name)") \
+  --project "$PROJECT_ID" >/dev/null
 
-ENDPOINT=$(aws rds describe-db-instances \
-  --db-instance-identifier "$RESTORE_ID" \
-  --region "$RESTORE_REGION" \
-  --query 'DBInstances[0].Endpoint.Address' \
-  --output text)
+ENDPOINT=$(gcloud sql instances describe "$RESTORE_ID" \
+  --project "$PROJECT_ID" \
+  --format "value(ipAddresses[0].ipAddress)")
 
 PGPASSWORD="$DB_PASSWORD" psql -h "$ENDPOINT" -U "$DB_USER" -d postgres -c 'SELECT 1;' >/dev/null
 
 echo "Cleaning up $RESTORE_ID..."
-aws rds delete-db-instance \
-  --db-instance-identifier "$RESTORE_ID" \
-  --skip-final-snapshot \
-  --region "$RESTORE_REGION" >/dev/null
+gcloud sql instances delete "$RESTORE_ID" \
+  --project "$PROJECT_ID" \
+  --quiet >/dev/null
 
-echo "Restore verification succeeded for snapshot $SNAPSHOT_ID" 
+echo "Restore verification succeeded for backup $BACKUP_ID"
