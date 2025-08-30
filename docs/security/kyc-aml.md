@@ -2,6 +2,8 @@
 
 PokerHub integrates automated and manual checks to verify player identity and prevent money laundering.
 
+Infrastructure workflow: see [`../../infra/analytics/kyc-aml-workflow.yaml`](../../infra/analytics/kyc-aml-workflow.yaml).
+
 ## Onboarding Workflow
 ```mermaid
 flowchart TD
