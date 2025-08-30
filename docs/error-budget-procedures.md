@@ -9,6 +9,8 @@ PagerDuty routes SLO burn alerts based on the metric:
 
 On-call engineers escalate to the engineering manager if burn rates stay high for more than an hour and involve the CTO once the full monthly budget is exhausted.
 
+An example Prometheus burn-rate rule lives at [../infrastructure/observability/error-budgets.rules.yml](../infrastructure/observability/error-budgets.rules.yml) to illustrate alert configuration.
+
 Refer to these runbooks for mitigation steps:
 
 - [Action ACK Latency](runbooks/action-ack-latency.md)

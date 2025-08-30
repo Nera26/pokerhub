@@ -28,6 +28,14 @@ Prometheus evaluates SLO-based rules such as action ACK latency and socket conne
 3. After 30 minutes, notify the **engineering manager** via the PagerDuty escalation policy and Slack `#pokerhub-incident` channel.
 4. Incidents lasting more than 1 hour are escalated directly to the **CTO** for coordination and customer communication.
 
+### Service Escalation Paths
+
+| `pagerduty_service` | Escalation path |
+| --- | --- |
+| `pokerhub-sre` | Primary SRE → secondary SRE (15 m) → engineering manager (30 m) → CTO (1 h) |
+| `pokerhub-eng` | Primary engineer → SRE on-call (30 m) → engineering manager (1 h) |
+| `pokerhub-ops` | Primary ops on-call → product manager (15 m) → engineering manager (30 m) → CTO (1 h) |
+
 ## Relevant Components
 - `backend/src/telemetry/telemetry.ts` sets up exporters.
 - Prometheus and Alertmanager configuration lives under `infrastructure/monitoring/`.

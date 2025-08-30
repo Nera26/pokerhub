@@ -1,0 +1,25 @@
+# Example burn-rate alerts for an SLO
+# Replace `example_sli_latency_ratio_rate*` with real SLI metrics.
+groups:
+  - name: example-error-budget
+    rules:
+      - record: example_slo_error_budget_burn_rate_1h
+        expr: (1 - example_sli_latency_ratio_rate1h) / (1 - 0.99)
+      - record: example_slo_error_budget_burn_rate_6h
+        expr: (1 - example_sli_latency_ratio_rate6h) / (1 - 0.99)
+      - alert: ExampleSLOBurnRate1h
+        expr: example_slo_error_budget_burn_rate_1h > 14.4
+        for: 2m
+        labels:
+          severity: critical
+          pagerduty_service: pokerhub-sre
+        annotations:
+          summary: "Example SLO 1h burn rate too high"
+      - alert: ExampleSLOBurnRate6h
+        expr: example_slo_error_budget_burn_rate_6h > 6
+        for: 15m
+        labels:
+          severity: critical
+          pagerduty_service: pokerhub-sre
+        annotations:
+          summary: "Example SLO 6h burn rate too high"
