@@ -16,16 +16,17 @@ jobs:
       - name: Install k6 and Artillery
         run: npm install -g k6 artillery
       - name: Run 10k chaos load
-        run: ./load/run-10k-chaos.sh
+        run: ./load/run-10k-chaos.sh --sockets 80000 --packet-loss 0.05 --jitter 200
         env:
-          SOCKETS: 80000
           TABLES: 10000
           RNG_SEED: ${{ github.run_id }}
+      - name: Find metrics dir
+        run: echo "METRICS_DIR=$(ls -td load/metrics/*/ | head -n 1)" >> $GITHUB_ENV
       - name: Check thresholds
-        run: ./load/check-thresholds.sh load/metrics/k6-summary.json | tee -a "$GITHUB_STEP_SUMMARY"
+        run: ./load/check-thresholds.sh "$METRICS_DIR/k6-summary.json" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Upload metrics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: k6-10k-chaos
-          path: load/metrics
+          name: k6-10k-chaos-${{ github.run_id }}
+          path: ${{ env.METRICS_DIR }}
