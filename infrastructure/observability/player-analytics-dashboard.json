@@ -1,6 +1,9 @@
 {
   "dashboard": {
     "title": "Player Analytics",
+    "labels": {
+      "pagerduty_service": "pokerhub-eng"
+    },
     "panels": [
       {
         "type": "timeseries",

@@ -1,6 +1,9 @@
 {
   "dashboard": {
     "title": "Service SLOs",
+    "labels": {
+      "pagerduty_service": "pokerhub-sre"
+    },
     "panels": [
       {
         "type": "timeseries",

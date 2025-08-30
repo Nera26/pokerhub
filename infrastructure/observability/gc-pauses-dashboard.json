@@ -1,6 +1,9 @@
 {
   "dashboard": {
     "title": "GC Pauses",
+    "labels": {
+      "pagerduty_service": "pokerhub-eng"
+    },
     "panels": [
       {
         "type": "timeseries",

@@ -1,6 +1,9 @@
 {
   "dashboard": {
     "title": "Socket Connects",
+    "labels": {
+      "pagerduty_service": "pokerhub-sre"
+    },
     "panels": [
       {
         "type": "timeseries",

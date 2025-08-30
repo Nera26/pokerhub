@@ -2,6 +2,7 @@
   "dashboards": [
     {
       "name": "Player Analytics",
+      "pagerduty_service": "pokerhub-eng",
       "cards": [
         {
           "name": "DAU",

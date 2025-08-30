@@ -1,6 +1,9 @@
 {
   "dashboard": {
     "title": "Socket Latency",
+    "labels": {
+      "pagerduty_service": "pokerhub-sre"
+    },
     "panels": [
       {
         "type": "timeseries",

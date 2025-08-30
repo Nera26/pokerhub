@@ -1,6 +1,9 @@
 {
   "dashboard": {
     "title": "Error Rates",
+    "labels": {
+      "pagerduty_service": "pokerhub-sre"
+    },
     "panels": [
       {
         "type": "timeseries",
