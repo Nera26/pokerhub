@@ -1,0 +1,13 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  name: clickhouse-sink
+spec:
+  class: com.clickhouse.kafka.ConnectSinkConnector
+  tasksMax: 1
+  config:
+    topics: hand,wallet,tourney,auth
+    clickhouse.url: http://clickhouse:8123
+    clickhouse.database: default
+    key.converter: org.apache.kafka.connect.storage.StringConverter
+    value.converter: org.apache.kafka.connect.storage.StringConverter

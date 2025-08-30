@@ -14,6 +14,8 @@ export class EtlService {
   private readonly producer: Producer;
   private readonly topicMap: Record<string, string> = {
     game: 'hand',
+    action: 'hand',
+    wallet: 'wallet',
     tournament: 'tourney',
     antiCheat: 'auth',
   };
@@ -33,10 +35,49 @@ export class EtlService {
     this.producer = this.kafka.producer();
     void this.producer.connect();
 
+    this.ajv.addFormat(
+      'uuid',
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
     for (const [name, schema] of Object.entries(EventSchemas)) {
       this.validators[name as EventName] = this.ajv.compile(
         zodToJsonSchema(schema, name),
       );
+    }
+  }
+
+  async drainOnce() {
+    const streams = await this.redis.keys('analytics:*');
+    if (streams.length === 0) return;
+    const ids = new Array(streams.length).fill('0-0');
+    const res = await this.redis.xread('STREAMS', ...streams, ...ids);
+    if (!res) return;
+    for (const [stream, entries] of res) {
+      const key = stream.split(':')[1];
+      const event = key.includes('.') ? key : `${key}.event`;
+      const topic = this.topicMap[event.split('.')[0]] ?? event.split('.')[0];
+      for (const [, fields] of entries) {
+        try {
+          const data = JSON.parse(fields[1] as string) as Record<string, unknown>;
+          const validate = this.validators[event as EventName];
+          if (validate && !validate(data)) {
+            this.logger.warn(
+              `Invalid event ${event}: ${this.ajv.errorsText(validate.errors)}`,
+            );
+            continue;
+          }
+          await Promise.all([
+            this.producer.send({
+              topic,
+              messages: [{ value: JSON.stringify({ event, data }) }],
+            }),
+            this.analytics.ingest(event.replace('.', '_'), data),
+            this.analytics.archive(event, data),
+          ]);
+        } catch (err) {
+          this.logger.error(err);
+        }
+      }
     }
   }
 
