@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
 import type { ProviderCallback } from '../schemas/wallet';
+import { metrics } from '@opentelemetry/api';
 
 export type ProviderStatus = 'approved' | 'risky' | 'chargeback';
 
@@ -15,6 +16,19 @@ export class PaymentProviderService {
 
   private readonly webhookEvents = new Map<string, ProviderCallback>();
   private retryQueue: Array<() => Promise<void>> = [];
+
+  private static readonly meter = metrics.getMeter('wallet');
+  private static readonly retriesExhausted =
+    PaymentProviderService.meter.createCounter(
+      'payment_provider_retry_exhausted_total',
+      {
+        description:
+          'Number of payment provider API calls that exhausted retries',
+      },
+    );
+
+  private failures = 0;
+  private circuitOpenUntil = 0;
 
   constructor() {
     // Periodically attempt to drain the retry queue. Using unref so tests can exit.
@@ -66,6 +80,9 @@ export class PaymentProviderService {
     timeoutMs = 5_000,
     backoffMs = 100,
   ): Promise<Response> {
+    if (Date.now() < this.circuitOpenUntil) {
+      throw new Error('Payment provider circuit breaker open');
+    }
     let lastError: unknown;
     for (let attempt = 1; attempt <= retries; attempt++) {
       const controller = new AbortController();
@@ -76,6 +93,7 @@ export class PaymentProviderService {
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
+        this.failures = 0;
         return res;
       } catch (err) {
         clearTimeout(timeout);
@@ -85,9 +103,17 @@ export class PaymentProviderService {
         await new Promise((r) => setTimeout(r, delay));
       }
     }
+    this.failures += 1;
+    if (this.failures >= 5) {
+      this.circuitOpenUntil = Date.now() + 30_000;
+      this.failures = 0;
+    }
+    PaymentProviderService.retriesExhausted.add(1);
     const message =
       lastError instanceof Error ? lastError.message : String(lastError);
-    throw new Error(`Request to ${url} failed after ${retries} attempts: ${message}`);
+    throw new Error(
+      `Request to ${url} failed after ${retries} attempts: ${message}`,
+    );
   }
 
   async initiate3DS(

@@ -116,10 +116,73 @@ describe('KycService', () => {
         name: 'user',
         ip: '1.1.1.1',
       }),
-    ).rejects.toThrow('provider 500');
+    ).rejects.toThrow(
+      'Request to https://kyc failed after 3 attempts: HTTP 500',
+    );
     expect(verifications.save).toHaveBeenCalledWith(
       expect.objectContaining({ status: 'failed' }),
     );
     expect(record.retries).toBe(1);
+  });
+
+  it('trips circuit breaker after repeated provider failures', async () => {
+    const provider: CountryProvider = {
+      getCountry: () => Promise.resolve('GB'),
+    };
+    const record: any = {
+      id: 'v1',
+      accountId: 'a1',
+      status: 'pending',
+      retries: 0,
+    };
+    const verifications: Partial<Repository<KycVerification>> = {
+      findOneByOrFail: jest.fn().mockResolvedValue(record),
+      save: jest.fn().mockResolvedValue(record),
+    };
+    const accounts: Partial<Repository<Account>> = {
+      update: jest.fn(),
+    };
+    const config: Partial<ConfigService> = {
+      get: (key: string) =>
+        key === 'kyc.apiUrl'
+          ? 'https://kyc'
+          : key === 'kyc.apiKey'
+            ? 'key'
+            : undefined,
+    };
+    const service = new KycService(
+      provider,
+      verifications as Repository<KycVerification>,
+      accounts as Repository<Account>,
+      config as ConfigService,
+    );
+    jest
+      .spyOn(service, 'runChecks')
+      .mockResolvedValue({ country: 'GB' });
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 500 }) as any;
+
+    for (let i = 0; i < 5; i++) {
+      await expect(
+        service.process({
+          verificationId: 'v1',
+          accountId: 'a1',
+          name: 'user',
+          ip: '1.1.1.1',
+        }),
+      ).rejects.toThrow(
+        'Request to https://kyc failed after 3 attempts: HTTP 500',
+      );
+    }
+
+    await expect(
+      service.process({
+        verificationId: 'v1',
+        accountId: 'a1',
+        name: 'user',
+        ip: '1.1.1.1',
+      }),
+    ).rejects.toThrow('KYC provider circuit breaker open');
+
+    expect((global.fetch as jest.Mock).mock.calls.length).toBe(5 * 3);
   });
 });
