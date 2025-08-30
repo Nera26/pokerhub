@@ -104,7 +104,7 @@
     "husky": "^9.0.0",
     "jest": "^29.7.0",
     "jest-openapi": "^0.14.2",
-    "lighthouse": "^12.8.1",
+    "lighthouse": "^12.8.2",
     "lint-staged": "^15.5.2",
     "msw": "^2.10.5",
     "postcss": "^8.5.5",
