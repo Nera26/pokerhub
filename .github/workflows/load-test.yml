@@ -4,12 +4,16 @@ on:
   push:
     paths:
       - 'load/k6-10k-tables.js'
-      - 'load/k6-ws-packet-loss.js'
+      - 'load/k6-chaos-swarm.js'
+      - 'load/toxiproxy.sh'
+      - 'load/collect-gc-heap.sh'
       - '.github/workflows/load-test.yml'
   pull_request:
     paths:
       - 'load/k6-10k-tables.js'
-      - 'load/k6-ws-packet-loss.js'
+      - 'load/k6-chaos-swarm.js'
+      - 'load/toxiproxy.sh'
+      - 'load/collect-gc-heap.sh'
       - '.github/workflows/load-test.yml'
 
 jobs:
@@ -17,23 +21,50 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Run k6 10k tables scenario
-        run: node load/k6-10k-tables.js --summary-export=summary-tables.json --summary-trend-stats="avg,med,min,max,p(95),p(99)" --out json=metrics-tables.json
-      - name: Run k6 ws packet loss scenario
-        run: node load/k6-ws-packet-loss.js --summary-export=summary-ws.json --summary-trend-stats="avg,med,min,max,p(95),p(99)" --out json=metrics-ws.json
-      - name: Check latency thresholds
+
+      - name: Start toxiproxy
         run: |
-          p95_tables=$(jq '.metrics.ack_latency["p(95)"]' summary-tables.json)
-          p95_ws=$(jq '.metrics.ws_latency["p(95)"]' summary-ws.json)
-          status=0
-          if (( $(echo "$p95_tables > 120" | bc -l) )); then
-            echo "10k tables p95 $p95_tables ms exceeds 120ms"; status=1
-          fi
-          if (( $(echo "$p95_ws > 120" | bc -l) )); then
-            echo "ws packet loss p95 $p95_ws ms exceeds 120ms"; status=1
-          fi
-          exit $status
-      - name: Upload k6 artifacts
+          docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 ghcr.io/shopify/toxiproxy
+          PACKET_LOSS=0.05 LATENCY_MS=200 ./load/toxiproxy.sh
+
+      - name: Start GC collector
+        run: |
+          METRICS_URL=http://localhost:3000/metrics INTERVAL=5 OUT_FILE=gc-heap-metrics.log HEAP_THRESHOLD=100000000 ./load/collect-gc-heap.sh &
+          echo $! > gc_collector.pid
+
+      - name: Run k6 10k tables scenario
+        env:
+          WS_URL: ws://localhost:3001
+          ACK_P95_MS: 120
+          ACK_P99_MS: 200
+        run: node load/k6-10k-tables.js --summary-export=summary-tables.json --summary-trend-stats="avg,med,min,max,p(95),p(99)" --out json=metrics-tables.json
+
+      - name: Run k6 chaos swarm scenario
+        env:
+          SIO_URL: ws://localhost:3001/game
+          TABLES: 100
+          SOCKETS: 100
+          DURATION: 1m
+          ACK_P95_MS: 120
+          ACK_P99_MS: 200
+        run: node load/k6-chaos-swarm.js --summary-export=summary-chaos.json --summary-trend-stats="avg,med,min,max,p(95),p(99)" --out json=metrics-chaos.json
+
+      - name: Stop GC collector
+        if: always()
+        run: |
+          kill $(cat gc_collector.pid) || true
+          wait $(cat gc_collector.pid)
+
+      - name: Check thresholds
+        run: |
+          ./load/check-thresholds.sh summary-tables.json
+          ./load/check-thresholds.sh summary-chaos.json
+
+      - name: Collect logs
+        if: always()
+        run: docker logs toxiproxy > toxiproxy.log || true
+
+      - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v3
         with:
@@ -41,5 +72,7 @@ jobs:
           path: |
             summary-tables.json
             metrics-tables.json
-            summary-ws.json
-            metrics-ws.json
+            summary-chaos.json
+            metrics-chaos.json
+            gc-heap-metrics.log
+            toxiproxy.log
