@@ -11,7 +11,8 @@ PokerHub uses a multi‑stage GitHub Actions pipeline to gate changes before rel
 5. **Load** – smoke runs a websocket load scenario with k6.
 6. **Chaos** – runs `load/chaos/ws-chaos.js` to inject packet loss and jitter during a short k6 run.
 
-All stages execute on every pull request and must pass before merge.
+All stages run on every pull request. `property` and `chaos` are non‑blocking on branches
+but are required gates on the `main` branch.
 
 ## Contract & Code Quality Gates
 
