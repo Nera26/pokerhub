@@ -21,8 +21,7 @@ spec:
                 - |
                   pg_basebackup -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -D - -F tar | gzip | \
                   openssl enc -aes-256-cbc -salt -pass env:BACKUP_PASSPHRASE | \
-                    aws s3 cp - "s3://$BACKUP_BUCKET/postgres/base-$(date +%F-%H%M%S).tar.gz.enc" \
-                      --region "$BACKUP_REGION"
+                    gsutil cp - "gs://$BACKUP_BUCKET/postgres/base-$(date +%F-%H%M%S).tar.gz.enc"
           restartPolicy: OnFailure
 ---
 apiVersion: batch/v1
@@ -47,5 +46,5 @@ spec:
                 - |
                   redis-cli -h "$REDIS_HOST" --rdb /tmp/dump.rdb && \
                   openssl enc -aes-256-cbc -salt -pass env:BACKUP_PASSPHRASE -in /tmp/dump.rdb | \
-                  aws s3 cp - "s3://$BACKUP_BUCKET/redis/dump-$(date +%F-%H%M%S).rdb.enc" --region "$BACKUP_REGION"
+                  gsutil cp - "gs://$BACKUP_BUCKET/redis/dump-$(date +%F-%H%M%S).rdb.enc"
           restartPolicy: OnFailure
