@@ -1,117 +1,29 @@
 name: k6-10k-chaos
 
 on:
+  schedule:
+    - cron: '0 3 * * *'
   workflow_dispatch:
 
 jobs:
-  tables-chaos:
+  chaos:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Start toxiproxy and metrics stack
-        run: |
-          docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 ghcr.io/shopify/toxiproxy
-          PACKET_LOSS=0.05 LATENCY_MS=200 JITTER_MS=50 ./load/chaos/toxiproxy-chaos.sh
-          cp load/prometheus.yml ./prometheus.yml
-          sed -i 's/host.docker.internal/localhost/' prometheus.yml
-          docker run -d --name prom -p 9090:9090 -v $PWD/prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus
-      - name: Start GC collector
-        run: |
-          METRICS_URL=http://localhost:3000/metrics INTERVAL=5 OUT_FILE=gc-heap-metrics.log CPU_THRESHOLD=80 GC_THRESHOLD=50 ./load/collect-gc-heap.sh &
-          echo $! > gc_collector.pid
-      - name: Run k6 10k tables scenario with chaos
-        uses: grafana/k6-action@v0.2.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install k6 and Artillery
+        run: npm install -g k6 artillery
+      - name: Run 10k chaos load
+        run: ./load/run-10k-chaos.sh
         env:
-          WS_URL: ws://localhost:3001
-          TABLES: 10000
           SOCKETS: 80000
-          ACK_P95_MS: 120
-          ACK_P99_MS: 200
-          GRAFANA_PUSH_URL: ${{ secrets.GRAFANA_PUSH_URL }}
-        with:
-          filename: load/k6-10k-tables.js
-          flags: --address 0.0.0.0:5656 --summary-export=ack-summary.json --out json=ack-telemetry.json --out prometheus
-      - name: Capture metrics
-        if: always()
-        run: |
-          curl -s http://localhost:5656/metrics > k6-prom-metrics.txt || true
-          docker logs toxiproxy > toxiproxy.log || true
-          docker logs prom > prom.log || true
-          kill $(cat gc_collector.pid) || true
-      - name: Check thresholds
-        run: ./load/check-thresholds.sh ack-summary.json
-      - uses: google-github-actions/auth@v2
-        with:
-          credentials_json: '${{ secrets.GCP_SA_KEY }}'
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ vars.GCP_PROJECT_ID }}
-      - name: Upload metrics to GCS
-        if: always()
-        run: |
-          gsutil cp ack-summary.json gs://${{ vars.K6_METRICS_BUCKET }}/10k-chaos/summary-${GITHUB_RUN_ID}.json
-          gsutil cp ack-telemetry.json gs://${{ vars.K6_METRICS_BUCKET }}/10k-chaos/metrics-${GITHUB_RUN_ID}.json
-          gsutil cp ack-histogram.json gs://${{ vars.K6_METRICS_BUCKET }}/10k-chaos/histogram-${GITHUB_RUN_ID}.json
-      - name: Upload artifacts
+          TABLES: 10000
+          RNG_SEED: ${{ github.run_id }}
+      - name: Upload metrics
         if: always()
         uses: actions/upload-artifact@v3
         with:
           name: k6-10k-chaos
-          path: |
-            ack-summary.json
-            ack-telemetry.json
-            ack-histogram.json
-            gc-heap-metrics.log
-            k6-prom-metrics.txt
-            toxiproxy.log
-            prom.log
-            load/grafana-ack-latency.json
-  socket-chaos:
-    runs-on: ubuntu-latest
-    needs: tables-chaos
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install backend deps
-        run: npm ci --prefix backend
-      - name: Start GC collector
-        run: |
-          METRICS_URL=http://localhost:3000/metrics INTERVAL=5 OUT_FILE=gc-heap-metrics.log ./load/collect-gc-heap.sh &
-          echo $! > gc_collector.pid
-      - name: Run seeded socket harness
-        run: npx ts-node backend/test/load/socket-load.ts
-        env:
-          WS_URL: ws://localhost:3001
-          TABLES: 10000
-          SOCKETS: 100000
-          CLICKHOUSE_URL: ${{ secrets.CLICKHOUSE_URL }}
-      - name: Publish GC metrics to ClickHouse
-        if: always()
-        env:
-          CLICKHOUSE_URL: ${{ secrets.CLICKHOUSE_URL }}
-          CLICKHOUSE_TABLE: ws_gc_stats
-        run: |
-          node - <<'NODE'
-          const fs = require('fs');
-          const { createClient } = require('@clickhouse/client');
-          const url = process.env.CLICKHOUSE_URL;
-          const table = process.env.CLICKHOUSE_TABLE;
-          const lines = fs.readFileSync('gc-heap-metrics.log','utf8').trim().split('\n');
-          const client = createClient({ url });
-          (async () => {
-            for (const line of lines) {
-              const [ts, rest] = line.split(' ');
-              const parts = Object.fromEntries(rest.split(' ').map(p => p.split('=')));
-              await client.insert({ table, values:[{ ts, heap_used: Number(parts.heap_used), gc_avg_ms: Number(parts.gc_avg_ms), cpu_total: Number(parts.cpu_total) }], format:'JSONEachRow' });
-            }
-            await client.close();
-          })().catch(e=>{ console.error(e); process.exit(1); });
-          NODE
-      - name: Upload harness artifacts
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: socket-chaos
-          path: |
-            latency-hist.json
-            seeds.json
-            gc-heap-metrics.log
+          path: load/metrics
