@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
+import type { ProviderCallback } from '../schemas/wallet';
 
 export type ProviderStatus = 'approved' | 'risky' | 'chargeback';
 
@@ -12,11 +13,50 @@ export class PaymentProviderService {
   private readonly apiKey = process.env.STRIPE_API_KEY ?? '';
   private readonly baseUrl = 'https://api.stripe.com/v1';
 
+  private readonly webhookEvents = new Map<string, ProviderCallback>();
+  private retryQueue: Array<() => Promise<void>> = [];
+
+  constructor() {
+    // Periodically attempt to drain the retry queue. Using unref so tests can exit.
+    setInterval(() => this.processRetryQueue(), 1_000).unref?.();
+  }
+
   private authHeaders() {
     return {
       Authorization: `Bearer ${this.apiKey}`,
       'Content-Type': 'application/x-www-form-urlencoded',
     };
+  }
+
+  /**
+   * Persist a webhook event by its idempotency key and execute the handler.
+   * If the handler fails, the callback is queued for retry.
+   */
+  async handleWebhook(
+    event: ProviderCallback,
+    handler: () => Promise<void>,
+  ): Promise<void> {
+    if (this.webhookEvents.has(event.idempotencyKey)) return;
+    this.webhookEvents.set(event.idempotencyKey, event);
+    try {
+      await handler();
+      this.webhookEvents.delete(event.idempotencyKey);
+    } catch {
+      this.retryQueue.push(handler);
+    }
+  }
+
+  private async processRetryQueue(): Promise<void> {
+    if (this.retryQueue.length === 0) return;
+    const queue = this.retryQueue;
+    this.retryQueue = [];
+    for (const job of queue) {
+      try {
+        await job();
+      } catch {
+        this.retryQueue.push(job);
+      }
+    }
   }
 
   private async fetchWithRetry(
