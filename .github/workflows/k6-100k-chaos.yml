@@ -1,0 +1,32 @@
+name: k6-100k-chaos
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  chaos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install k6 and Artillery
+        run: npm install -g k6 artillery
+      - name: Run 100k chaos load
+        run: ./load/run-10k-chaos.sh --sockets 100000 --packet-loss 0.05 --jitter 200
+        env:
+          TABLES: 10000
+          RNG_SEED: ${{ github.run_id }}
+      - name: Find metrics dir
+        run: echo "METRICS_DIR=$(ls -td load/metrics/*/ | head -n 1)" >> $GITHUB_ENV
+      - name: Check thresholds
+        run: ./load/check-thresholds.sh "$METRICS_DIR/k6-summary.json" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Upload metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-100k-chaos-${{ github.run_id }}
+          path: ${{ env.METRICS_DIR }}

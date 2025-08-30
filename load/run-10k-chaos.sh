@@ -8,10 +8,11 @@ cd "$SCRIPT_DIR"
 RUN_ID="$(date +%Y%m%d-%H%M%S)"
 METRICS_DIR="$SCRIPT_DIR/metrics/$RUN_ID"
 mkdir -p "$METRICS_DIR"
+ln -sfn "$METRICS_DIR" "$SCRIPT_DIR/metrics/latest"
 
 # defaults (overridable via env/flags)
-SOCKETS=${SOCKETS:-100000}
 TABLES=${TABLES:-10000}
+SOCKETS=${SOCKETS:-$((TABLES * 10))}
 RNG_SEED=${RNG_SEED:-1}
 PACKET_LOSS=${PACKET_LOSS:-0}
 JITTER_MS=${JITTER_MS:-0}
