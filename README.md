@@ -1,5 +1,11 @@
 # PokerHub (root)
 
+## Core Documentation
+
+- [Game Engine Specification](docs/game-engine-spec.md)
+- [Tournament Handbook](docs/tournament-handbook.md)
+- [Reconciliation Guide](docs/reconciliation-guide.md)
+
 ## Development Environment
 
 The project provides a Docker setup for the full stack:
@@ -76,12 +82,9 @@ This single command executes the backend and frontend unit tests, contract tests
 ## Documentation
 
 - [Game Engine Overview](docs/game-engine.md) – state transitions, message schemas, and timers.
-- [Game Engine Specification](docs/game-engine-spec.md) – edge cases and retry semantics.
 - [RNG Fairness Whitepaper](docs/rng-fairness.md) – seed generation and commit–reveal verification.
 - [Runbooks](docs/runbooks/) – operational playbooks for stuck hands, orphaned reservations, and more.
 - [Accounting Book](docs/accounting-book.md) – ledger schema and reconciliation jobs.
-- [Tournament Handbook](docs/tournament-handbook.md) – formats, blind structure, and payout rules.
-- [Reconciliation Guide](docs/reconciliation-guide.md) – stepwise ledger checks and failure scenarios.
 - [Wallet Reconciliation Guide](docs/player/wallet-reconciliation.md) – verify wallet balances against the ledger.
 - [RNG Commit–Reveal Whitepaper](docs/player/rng-whitepaper.md) – public audit proofs and seed retention policies.
 

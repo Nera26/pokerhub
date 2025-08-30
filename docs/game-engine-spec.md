@@ -1,12 +1,14 @@
 # Game Engine Specification
 
-**Version:** 1.1.0
+**Version:** 1.2.0
 **Last Updated:** 2025-08-30
 
 For upcoming milestones, see the [milestone plan](./milestone-plan.md).
 
 Implementation lives under [`backend/src/game`](../backend/src/game) where the
-state machine and engine workers are defined.
+state machine and engine workers are defined. Tournament operations are
+documented in the [Tournament Handbook](./tournament-handbook.md), and ledger
+procedures are covered in the [Reconciliation Guide](./reconciliation-guide.md).
 
 ## State Machine
 ```mermaid
@@ -118,5 +120,6 @@ sequenceDiagram
 - Collusion tracking records user, device and IP on every action.
 
 ## Changelog
+- **1.2.0** – 2025-08-30 – Cross-referenced tournament and reconciliation guides.
 - **1.1.0** – 2025-08-30 – Added version metadata and message flow diagram.
 - **1.0.0** – 2025-01-04 – Initial publication with hand log/state endpoints and SLO definitions.

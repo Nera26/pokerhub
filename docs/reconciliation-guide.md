@@ -1,9 +1,9 @@
 # Reconciliation Guide
 
-**Version:** 1.1.0
+**Version:** 1.2.0
 **Last Updated:** 2025-10-05
 
-This guide explains how wallet ledgers stay consistent and how disputes are resolved.
+This guide explains how wallet ledgers stay consistent and how disputes are resolved. Tournament flows are covered in the [Tournament Handbook](./tournament-handbook.md) and engine behavior in the [Game Engine Specification](./game-engine-spec.md).
 
 ## Ledger Reconciliation
 
@@ -98,8 +98,8 @@ Deposit provider reports $50, but journal shows $40 credit. Create a $10 correct
 
 - Reports older than one year move to cold storage but remain retrievable for regulators.
 
-## Revision History
-- 2025-10-05: add CLI walkthrough, version metadata 1.1.0
-- 2025-08-30: add reconciliation run example, audit trail details, flow diagram, example mismatch, and version metadata
-- 2025-08-30: cover buy-ins and payouts reconciliation
+## Changelog
+- **1.2.0** – 2025-10-05 – Cross-referenced engine spec and tournament handbook; converted revision history to changelog.
+- **1.1.0** – 2025-10-05 – Added CLI walkthrough and version metadata.
+- **1.0.0** – 2025-08-30 – Initial coverage with buy-ins/payouts reconciliation, flow diagram, and audit trail details.
 
