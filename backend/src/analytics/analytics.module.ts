@@ -6,6 +6,7 @@ import { RedisModule } from '../redis/redis.module';
 import { CollusionService } from './collusion.service';
 import { CollusionQueryService } from './collusion.queries';
 import { ReviewController } from './review.controller';
+import { CollusionController } from './collusion.controller';
 import { FlaggedSessionJob } from './flagged-session.job';
 import { AdminController } from '../routes/admin.controller';
 import { WalletModule } from '../wallet/wallet.module';
@@ -28,6 +29,6 @@ import { StorageModule } from '../storage/storage.module';
     CollusionQueryService,
     FlaggedSessionJob,
   ],
-  controllers: [ReviewController, AdminController],
+  controllers: [ReviewController, CollusionController, AdminController],
 })
 export class AnalyticsModule {}

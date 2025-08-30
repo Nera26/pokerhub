@@ -63,6 +63,16 @@ Refer to [../security/anti-collusion.md](../security/anti-collusion.md) for deta
 - Actions use the `ReviewAction` type defined in `shared/types.ts`.
 - If you encounter authorization errors, verify your admin role and authentication token.
 
+## Appendix: Audit Queries and Retention
+
+### Sample Queries
+- `SELECT * FROM collusion_audit WHERE session_id = '{sessionId}' ORDER BY timestamp DESC;`
+- `SELECT reviewer_id, count(*) FROM collusion_audit WHERE action = 'ban' AND timestamp >= now() - INTERVAL 30 DAY GROUP BY reviewer_id;`
+
+### Retention Policy
+- Records in `collusion_audit` are kept for **5 years** to satisfy regulatory requirements.
+- A daily job purges data older than the retention window after exporting to cold storage.
+
 ## See Also
 - [RNG Whitepaper](../player/rng-whitepaper.md)
 - [RNG Fairness Spec](../rng-fairness.md)
