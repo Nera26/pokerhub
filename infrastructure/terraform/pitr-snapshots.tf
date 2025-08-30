@@ -1,4 +1,4 @@
-resource "aws_db_instance_automated_backups_replication" "pitr" {
-  provider               = aws.replica
-  source_db_instance_arn = aws_db_instance.primary.arn
+resource "google_sql_backup_run" "pitr" {
+  instance = google_sql_database_instance.primary.name
 }
+

@@ -1,9 +1,5 @@
 terraform {
   required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
     google = {
       source  = "hashicorp/google"
       version = "~> 5.0"
@@ -11,246 +7,200 @@ terraform {
   }
 }
 
+variable "project_id" {
+  description = "GCP project ID"
+  type        = string
+}
+
 variable "primary_region" {
-  description = "Primary AWS region"
-  type        = string
-}
-
-variable "secondary_region" {
-  description = "Region to copy snapshots to"
-  type        = string
-}
-
-variable "pg_instance_id" {
-  description = "Primary Postgres instance identifier"
-  type        = string
-}
-
-variable "redis_cluster_id" {
-  description = "Primary Redis cluster identifier"
-  type        = string
-}
-
-variable "redis_snapshot_bucket" {
-  description = "S3 bucket storing Redis snapshots"
-  type        = string
-}
-
-variable "clickhouse_backup_bucket" {
-  description = "S3 bucket storing ClickHouse backups"
-  type        = string
-}
-
-variable "wal_archive_bucket" {
-  description = "S3 bucket for Postgres WAL archive"
-  type        = string
-}
-
-variable "gcp_project" {
-  description = "GCP project ID for scheduler"
-  type        = string
-}
-
-variable "gcp_primary_region" {
   description = "Primary GCP region"
   type        = string
 }
 
-provider "aws" {
-  region = var.primary_region
+variable "secondary_region" {
+  description = "Secondary GCP region for DR"
+  type        = string
 }
 
-provider "aws" {
-  alias  = "secondary"
-  region = var.secondary_region
+variable "pg_instance_name" {
+  description = "Primary Cloud SQL instance name"
+  type        = string
+}
+
+variable "redis_instance_name" {
+  description = "Primary Memorystore Redis instance name"
+  type        = string
+}
+
+variable "redis_snapshot_bucket_name" {
+  description = "GCS bucket storing Redis snapshots"
+  type        = string
+}
+
+variable "clickhouse_backup_bucket_name" {
+  description = "GCS bucket storing ClickHouse backups"
+  type        = string
+}
+
+variable "wal_archive_bucket_name" {
+  description = "GCS bucket for Postgres WAL archive"
+  type        = string
 }
 
 provider "google" {
-  project = var.gcp_project
-  region  = var.gcp_primary_region
+  project = var.project_id
+  region  = var.primary_region
 }
 
-resource "aws_db_snapshot" "pg" {
-  db_instance_identifier = var.pg_instance_id
-  db_snapshot_identifier = "pg-dr-snapshot"
+provider "google" {
+  alias   = "secondary"
+  project = var.project_id
+  region  = var.secondary_region
 }
 
-resource "aws_db_snapshot_copy" "pg_copy" {
-  provider                      = aws.secondary
-  source_db_snapshot_identifier = aws_db_snapshot.pg.arn
-  target_db_snapshot_identifier = "pg-dr-snapshot-copy"
-}
-
-resource "aws_elasticache_snapshot" "redis" {
-  replication_group_id = var.redis_cluster_id
-  snapshot_name        = "redis-dr-snapshot"
-}
-
-resource "aws_s3_bucket" "redis_snapshots" {
-  bucket = var.redis_snapshot_bucket
-
-  versioning {
-    enabled = true
-  }
+# Create a manual backup of the primary Cloud SQL instance
+resource "google_sql_backup_run" "pg" {
+  instance = var.pg_instance_name
 }
 
 # Cross-region read replica for Postgres with PITR enabled
-resource "aws_db_instance" "pg_replica" {
-  provider                = aws.secondary
-  identifier              = "pg-dr-replica"
-  replicate_source_db     = var.pg_instance_id
-  instance_class          = "db.t3.micro"
-  publicly_accessible     = false
-  backup_retention_period = 7
-  parameter_group_name    = aws_db_parameter_group.pg_wal.name
+resource "google_sql_database_instance" "pg_replica" {
+  provider             = google.secondary
+  name                 = "${var.pg_instance_name}-dr"
+  database_version     = "POSTGRES_15"
+  region               = var.secondary_region
+  master_instance_name = var.pg_instance_name
+
+  settings {
+    tier = "db-custom-1-3840"
+  }
+}
+
+# Memorystore Redis primary instance
+resource "google_redis_instance" "redis" {
+  name           = var.redis_instance_name
+  tier           = "STANDARD_HA"
+  memory_size_gb = 1
+  region         = var.primary_region
+}
+
+# Buckets for Redis snapshots with versioning
+resource "google_storage_bucket" "redis_snapshots" {
+  name     = var.redis_snapshot_bucket_name
+  location = var.primary_region
+
+  versioning { enabled = true }
+}
+
+resource "google_storage_bucket" "redis_snapshots_dr" {
+  provider = google.secondary
+  name     = "${var.redis_snapshot_bucket_name}-dr"
+  location = var.secondary_region
+
+  versioning { enabled = true }
 }
 
 # ClickHouse backup bucket replica with versioning for PITR
-resource "aws_s3_bucket" "clickhouse_replica" {
-  provider = aws.secondary
-  bucket   = "${var.clickhouse_backup_bucket}-dr"
+resource "google_storage_bucket" "clickhouse_replica" {
+  provider = google.secondary
+  name     = "${var.clickhouse_backup_bucket_name}-dr"
+  location = var.secondary_region
 
-  versioning {
-    enabled = true
-  }
-}
-
-resource "aws_iam_role" "clickhouse_replication" {
-  name = "clickhouse-replication-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Effect    = "Allow",
-      Principal = { Service = "s3.amazonaws.com" },
-      Action    = "sts:AssumeRole"
-    }]
-  })
-}
-
-resource "aws_iam_role_policy" "clickhouse_replication" {
-  role = aws_iam_role.clickhouse_replication.id
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Effect = "Allow",
-      Action = ["s3:*"],
-      Resource = [
-        "arn:aws:s3:::${var.clickhouse_backup_bucket}",
-        "arn:aws:s3:::${var.clickhouse_backup_bucket}/*",
-        aws_s3_bucket.clickhouse_replica.arn,
-        "${aws_s3_bucket.clickhouse_replica.arn}/*"
-      ]
-    }]
-  })
+  versioning { enabled = true }
 }
 
 # Postgres WAL archive bucket with replication to secondary region
-resource "aws_s3_bucket" "pg_wal_archive" {
-  bucket = var.wal_archive_bucket
+resource "google_storage_bucket" "pg_wal_archive" {
+  name     = var.wal_archive_bucket_name
+  location = var.primary_region
 
-  versioning {
-    enabled = true
-  }
+  versioning { enabled = true }
 
   lifecycle_rule {
-    id      = "expire-wals"
-    enabled = true
+    action { type = "Delete" }
+    condition { age = 7 }
+  }
+}
 
-    expiration {
-      days = 7
+resource "google_storage_bucket" "pg_wal_archive_dr" {
+  provider = google.secondary
+  name     = "${var.wal_archive_bucket_name}-dr"
+  location = var.secondary_region
+
+  versioning { enabled = true }
+}
+
+# Transfer jobs to replicate data between buckets
+resource "google_storage_transfer_job" "redis_replication" {
+  project     = var.project_id
+  description = "Replicate Redis snapshots to DR"
+
+  transfer_spec {
+    gcs_data_source { bucket_name = google_storage_bucket.redis_snapshots.name }
+    gcs_data_sink { bucket_name = google_storage_bucket.redis_snapshots_dr.name }
+  }
+
+  schedule {
+    schedule_start_date {
+      year  = 2024
+      month = 1
+      day   = 1
+    }
+    start_time_of_day {
+      hours   = 1
+      minutes = 0
+      seconds = 0
+      nanos   = 0
     }
   }
 }
 
-resource "aws_s3_bucket" "pg_wal_archive_dr" {
-  provider = aws.secondary
-  bucket   = "${var.wal_archive_bucket}-dr"
+resource "google_storage_transfer_job" "pg_wal_replication" {
+  project     = var.project_id
+  description = "Replicate Postgres WAL to DR"
 
-  versioning {
-    enabled = true
+  transfer_spec {
+    gcs_data_source { bucket_name = google_storage_bucket.pg_wal_archive.name }
+    gcs_data_sink { bucket_name = google_storage_bucket.pg_wal_archive_dr.name }
   }
-}
 
-resource "aws_iam_role" "pg_wal_replication" {
-  name = "pg-wal-replication-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Effect    = "Allow",
-      Principal = { Service = "s3.amazonaws.com" },
-      Action    = "sts:AssumeRole"
-    }]
-  })
-}
-
-resource "aws_iam_role_policy" "pg_wal_replication" {
-  role = aws_iam_role.pg_wal_replication.id
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Effect = "Allow",
-      Action = ["s3:*"],
-      Resource = [
-        aws_s3_bucket.pg_wal_archive.arn,
-        "${aws_s3_bucket.pg_wal_archive.arn}/*",
-        aws_s3_bucket.pg_wal_archive_dr.arn,
-        "${aws_s3_bucket.pg_wal_archive_dr.arn}/*"
-      ]
-    }]
-  })
-}
-
-resource "aws_s3_bucket_replication_configuration" "pg_wal" {
-  bucket = aws_s3_bucket.pg_wal_archive.id
-  role   = aws_iam_role.pg_wal_replication.arn
-
-  rule {
-    id     = "wal-dr-replica"
-    status = "Enabled"
-
-    destination {
-      bucket        = aws_s3_bucket.pg_wal_archive_dr.arn
-      storage_class = "STANDARD"
+  schedule {
+    schedule_start_date {
+      year  = 2024
+      month = 1
+      day   = 1
+    }
+    start_time_of_day {
+      hours   = 1
+      minutes = 0
+      seconds = 0
+      nanos   = 0
     }
   }
 }
 
-resource "aws_db_parameter_group" "pg_wal" {
-  name   = "pg-wal-archive"
-  family = "postgres15"
+# Transfer job to replicate ClickHouse backups
+resource "google_storage_transfer_job" "clickhouse_replication" {
+  project     = var.project_id
+  description = "Replicate ClickHouse backups to DR"
 
-  parameter {
-    name  = "archive_mode"
-    value = "on"
+  transfer_spec {
+    gcs_data_source { bucket_name = var.clickhouse_backup_bucket_name }
+    gcs_data_sink { bucket_name = google_storage_bucket.clickhouse_replica.name }
   }
 
-  parameter {
-    name  = "archive_command"
-    value = "aws s3 cp %p s3://${var.wal_archive_bucket}/%f"
-  }
-}
-
-resource "aws_s3_bucket_replication_configuration" "clickhouse" {
-  bucket = var.clickhouse_backup_bucket
-  role   = aws_iam_role.clickhouse_replication.arn
-
-  rule {
-    id     = "dr-replica"
-    status = "Enabled"
-
-    destination {
-      bucket        = aws_s3_bucket.clickhouse_replica.arn
-      storage_class = "STANDARD"
+  schedule {
+    schedule_start_date {
+      year  = 2024
+      month = 1
+      day   = 1
+    }
+    start_time_of_day {
+      hours   = 1
+      minutes = 0
+      seconds = 0
+      nanos   = 0
     }
   }
 }
 
-# CloudWatch rule to trigger nightly restore tests (executed via CronJobs in k8s)
-resource "aws_cloudwatch_event_rule" "nightly_restore" {
-  name                = "nightly-restore-check"
-  schedule_expression = "cron(0 5 * * ? *)"
-}
