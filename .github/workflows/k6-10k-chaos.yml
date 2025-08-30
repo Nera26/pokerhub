@@ -66,3 +66,52 @@ jobs:
             toxiproxy.log
             prom.log
             load/grafana-ack-latency.json
+  socket-chaos:
+    runs-on: ubuntu-latest
+    needs: tables-chaos
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install backend deps
+        run: npm ci --prefix backend
+      - name: Start GC collector
+        run: |
+          METRICS_URL=http://localhost:3000/metrics INTERVAL=5 OUT_FILE=gc-heap-metrics.log ./load/collect-gc-heap.sh &
+          echo $! > gc_collector.pid
+      - name: Run seeded socket harness
+        run: npx ts-node backend/test/load/socket-load.ts
+        env:
+          WS_URL: ws://localhost:3001
+          TABLES: 10000
+          SOCKETS: 100000
+          CLICKHOUSE_URL: ${{ secrets.CLICKHOUSE_URL }}
+      - name: Publish GC metrics to ClickHouse
+        if: always()
+        env:
+          CLICKHOUSE_URL: ${{ secrets.CLICKHOUSE_URL }}
+          CLICKHOUSE_TABLE: ws_gc_stats
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const { createClient } = require('@clickhouse/client');
+          const url = process.env.CLICKHOUSE_URL;
+          const table = process.env.CLICKHOUSE_TABLE;
+          const lines = fs.readFileSync('gc-heap-metrics.log','utf8').trim().split('\n');
+          const client = createClient({ url });
+          (async () => {
+            for (const line of lines) {
+              const [ts, rest] = line.split(' ');
+              const parts = Object.fromEntries(rest.split(' ').map(p => p.split('=')));
+              await client.insert({ table, values:[{ ts, heap_used: Number(parts.heap_used), gc_avg_ms: Number(parts.gc_avg_ms), cpu_total: Number(parts.cpu_total) }], format:'JSONEachRow' });
+            }
+            await client.close();
+          })().catch(e=>{ console.error(e); process.exit(1); });
+          NODE
+      - name: Upload harness artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: socket-chaos
+          path: |
+            latency-hist.json
+            seeds.json
+            gc-heap-metrics.log

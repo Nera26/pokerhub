@@ -42,6 +42,33 @@ This gate ensures that action acknowledgements remain below the 120 ms p95 SLO
 3. Metrics are inserted into ClickHouse (`ws_ack_latency` table) and visualised via `infra/tests/load/grafana-ws-ack.json`.
 4. The CI gate fails when `ack_latency` p95 exceeds **120 ms** or if dropped frames rise, indicating packet loss beyond 5 %.
 
+## Seeded Socket Chaos Harness
+
+This harness (`backend/test/load/socket-load.ts`) drives up to **10k** tables and
+**100k** sockets while injecting network faults. Each run emits a deterministic
+seed file (`seeds.json`) and a latency histogram (`latency-hist.json`).
+
+1. Start the collector and run the harness:
+
+   ```bash
+   METRICS_URL=http://localhost:3000/metrics \
+   CLICKHOUSE_URL=$CH_URL TABLES=10000 SOCKETS=100000 \
+   npx ts-node backend/test/load/socket-load.ts
+   ```
+2. Inspect `latency-hist.json`; p95 must remain **≤120 ms** and dropped frames
+   should stay below 5 %.
+3. `seeds.json` can be replayed via `backend/test/soak/seed-replay.ts` to
+   validate engine determinism.
+4. GC statistics from `gc-heap-metrics.log` and latency histograms are pushed to
+   ClickHouse by the `k6-10k-chaos` workflow.
+
+### Failure triage
+
+- **p95 exceeded** – check Toxiproxy logs for packet loss or elevated latency.
+- **Dropped frames** – verify websocket server health and network stability.
+- **Seed replay mismatch** – run `ts-node backend/test/soak/seed-replay.ts` to
+  isolate non-deterministic behaviour.
+
 ## 24h Soak with CPU/GC Monitoring
 
 1. Deploy canary or test environment.
