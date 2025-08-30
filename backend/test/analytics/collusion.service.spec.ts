@@ -85,16 +85,19 @@ describe('CollusionService', () => {
     expect(features.timingSimilarity).toBeCloseTo(1);
     expect(features.seatProximity).toBeCloseTo(0.5);
     await service.flagSession('s1', ['u1', 'u2'], features);
-    await expect(service.applyAction('s1', 'restrict')).rejects.toThrow(
+    await expect(service.applyAction('s1', 'restrict', 'r1')).rejects.toThrow(
       'Invalid review action',
     );
-    await service.applyAction('s1', 'warn');
-    await service.applyAction('s1', 'restrict');
-    await service.applyAction('s1', 'ban');
+    await service.applyAction('s1', 'warn', 'r1');
+    await service.applyAction('s1', 'restrict', 'r1');
+    await service.applyAction('s1', 'ban', 'r1');
     const flagged = await service.listFlaggedSessions();
     expect(flagged[0]).toMatchObject({ id: 's1', status: 'ban' });
     const log = await client.lrange('collusion:session:s1:log', 0, -1);
     expect(log).toHaveLength(3);
+    expect(JSON.parse(log[0])).toHaveProperty('reviewerId', 'r1');
+    const history = await service.getActionHistory('s1');
+    expect(history[0]).toMatchObject({ reviewerId: 'r1' });
   });
 
   it('creates reviewable entry for shared device and ip', async () => {
@@ -122,7 +125,7 @@ describe('CollusionService', () => {
   it('paginates and filters sessions', async () => {
     await service.flagSession('s1', ['u1'], {});
     await service.flagSession('s2', ['u2'], {});
-    await service.applyAction('s1', 'warn');
+    await service.applyAction('s1', 'warn', 'r1');
     const page1 = await service.listFlaggedSessions({ page: 1, pageSize: 1 });
     expect(page1).toHaveLength(1);
     const warned = await service.listFlaggedSessions({ status: 'warn' });

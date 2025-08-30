@@ -30,6 +30,11 @@ class MockRedis {
     if (!this.lists.has(key)) this.lists.set(key, []);
     this.lists.get(key)!.push(value);
   }
+  async lrange(key: string, start: number, stop: number) {
+    const arr = this.lists.get(key) ?? [];
+    if (stop === -1) return arr.slice(start);
+    return arr.slice(start, stop + 1);
+  }
 }
 
 describe('ReviewController', () => {
@@ -45,7 +50,12 @@ describe('ReviewController', () => {
       ],
     })
       .overrideGuard(AdminGuard)
-      .useValue({ canActivate: () => true })
+      .useValue({
+        canActivate: (ctx: any) => {
+          ctx.switchToHttp().getRequest().userId = 'admin1';
+          return true;
+        },
+      })
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -89,6 +99,11 @@ describe('ReviewController', () => {
     expect(res.body).toEqual([
       expect.objectContaining({ id: 's1', status: 'ban' }),
     ]);
+
+    const audit = await request(app.getHttpServer())
+      .get('/analytics/collusion/s1/audit')
+      .expect(200);
+    expect(audit.body[0]).toMatchObject({ reviewerId: 'admin1' });
   });
 });
 

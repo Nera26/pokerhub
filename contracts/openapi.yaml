@@ -573,6 +573,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+  /analytics/collusion/{sessionId}/audit:
+    get:
+      summary: Get collusion review action history
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Review action history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewActionLogsResponse'
   /admin/kyc/{id}/denial:
     get:
       summary: Get KYC denial reason
@@ -1393,6 +1409,20 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/FlaggedSession'
+    ReviewActionLog:
+      type: object
+      properties:
+        action:
+          $ref: '#/components/schemas/ReviewAction'
+        timestamp:
+          type: integer
+        reviewerId:
+          type: string
+      required: [action, timestamp, reviewerId]
+    ReviewActionLogsResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/ReviewActionLog'
   HotPatchLevelRequest:
     type: object
     properties:

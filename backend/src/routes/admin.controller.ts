@@ -5,6 +5,7 @@ import {
   Param,
   Body,
   BadRequestException,
+  Req,
 } from '@nestjs/common';
 import { FlaggedSessionJob } from '../analytics/flagged-session.job';
 import { CollusionService } from '../analytics/collusion.service';
@@ -45,10 +46,11 @@ export class AdminController {
   async applyCollusionAction(
     @Param('id') id: string,
     @Body() body: ReviewActionRequest,
+    @Req() req: any,
   ): Promise<MessageResponse> {
     try {
       const parsed = ReviewActionRequestSchema.parse(body);
-      await this.collusion.applyAction(id, parsed.action);
+      await this.collusion.applyAction(id, parsed.action, req.userId);
       return MessageResponseSchema.parse({ message: parsed.action });
     } catch (err) {
       if (err instanceof ZodError) {
