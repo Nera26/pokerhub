@@ -6,6 +6,7 @@ import {
   Body,
   BadRequestException,
   HttpCode,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import {
@@ -42,7 +43,7 @@ export class UsersController {
 
   @Put(':id')
   async update(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: UpdateUserRequest,
   ): Promise<User> {
     try {
@@ -60,7 +61,7 @@ export class UsersController {
   @Post(':id/ban')
   @HttpCode(200)
   async ban(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: BanUserRequest,
   ): Promise<User> {
     try {
@@ -78,7 +79,7 @@ export class UsersController {
   @Post(':id/balance')
   @HttpCode(200)
   async adjustBalance(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: BalanceAdjustmentRequest,
   ): Promise<User> {
     try {
