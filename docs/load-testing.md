@@ -93,3 +93,7 @@ npx ts-node scripts/compare-histograms.ts load/metrics/100k-chaos-sample <metric
 
 The script prints p95/p99 deviations and exits non‑zero if the difference exceeds
 5 %. Review `memory-gc.json` for unexpected garbage collection or RSS growth.
+
+## Nightly chaos run summaries
+
+<!-- CHAOS_SUMMARY -->
