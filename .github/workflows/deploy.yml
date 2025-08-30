@@ -35,14 +35,14 @@ jobs:
           python infra/observability/validate.py
       - name: Run canary deploy
         run: scripts/canary-deploy.sh
-      - name: Check Prometheus metrics
+      - name: Verify SLO metrics
         id: metrics
         run: scripts/check-metrics.sh
         continue-on-error: true
-      - name: Rollback on metrics failure
+      - name: Canary rollback on SLO violation
         if: steps.metrics.outcome != 'success'
         run: |
-          scripts/rollback.sh
+          scripts/canary-rollback.sh
           exit 1
       - name: Promote canary
         if: steps.metrics.outcome == 'success'
