@@ -2,6 +2,23 @@
 
 This page documents how PokerHub alerts on key Service Level Objectives and links the dashboards and runbooks for each metric.
 
+## Setup
+
+Provision Grafana dashboards and alert rules via the helper scripts:
+
+```bash
+GRAFANA_URL=http://localhost:3000 GRAFANA_API_KEY=<key> ./infrastructure/observability/provision-grafana.sh
+ALERTMANAGER_URL=http://localhost:9093 ./infrastructure/observability/provision-alertmanager.sh
+```
+
+### PagerDuty service mapping
+
+| `pagerduty_service` | PagerDuty service |
+| --- | --- |
+| `pokerhub-sre` | Core platform SRE |
+| `pokerhub-eng` | Feature engineering |
+| `pokerhub-ops` | Operations |
+
 ## SLO Targets
 | SLO | Target | Burn‑rate alerts | Grafana | Metabase | PagerDuty Service |
 | --- | --- | --- | --- | --- | --- |
