@@ -26,5 +26,10 @@ percentage of traffic to the canary. Health checks poll `$HEALTH_CHECK_URL` and 
 metrics; failures trigger `scripts/rollback.sh` to restore the previous release. Successful
 runs promote the canary to 100 % traffic.
 
+[`canary.yml`](../.github/workflows/canary.yml) deploys with [`scripts/canary-rollback.sh`](../scripts/canary-rollback.sh)
+and watches WebSocket ACK latency using `load/k6-ws-packet-loss.js`. If the p95 ACK latency
+breaches the [250 ms SLO](SLOs.md#slo-targets), the workflow aborts and the rollback script
+reverts the release.
+
 For detailed rollback and canary procedures see `docs/runbooks/deployment.md` and
 `docs/runbooks/canary.md`.
