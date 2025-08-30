@@ -6,7 +6,7 @@ import { Kafka, Producer } from 'kafkajs';
 import Ajv, { ValidateFunction } from 'ajv';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { EventSchemas, Events, EventName } from '@shared/events';
-import { S3Service } from '../storage/s3.service';
+import { GcsService } from '../storage/gcs.service';
 
 @Injectable()
 export class AnalyticsService {
@@ -29,7 +29,7 @@ export class AnalyticsService {
   constructor(
     config: ConfigService,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
-    private readonly s3: S3Service,
+    private readonly gcs: GcsService,
   ) {
     const url = config.get<string>('analytics.clickhouseUrl');
     this.client = url ? createClient({ url }) : null;
@@ -69,9 +69,9 @@ export class AnalyticsService {
     ).padStart(2, '0')}/${String(now.getUTCDate()).padStart(2, '0')}`;
     const key = `${prefix}/${event}-${Date.now()}.json`;
     try {
-      await this.s3.uploadObject(key, JSON.stringify({ event, data }));
+      await this.gcs.uploadObject(key, JSON.stringify({ event, data }));
     } catch (err) {
-      this.logger.error(`Failed to upload event ${event} to S3`, err as Error);
+      this.logger.error(`Failed to upload event ${event} to GCS`, err as Error);
     }
   }
 
