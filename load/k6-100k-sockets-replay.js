@@ -1,4 +1,5 @@
 import ws from 'k6/ws';
+import http from 'k6/http';
 import { Trend, Rate } from 'k6/metrics';
 import { sleep } from 'k6';
 import { Random } from 'https://jslib.k6.io/random/1.0.0/index.js';
@@ -27,8 +28,11 @@ const loss = Number(__ENV.PACKET_LOSS) || 0.05;
 const jitterMs = Number(__ENV.JITTER_MS) || 200;
 const seed = Number(__ENV.RNG_SEED) || 1;
 
+const metricsUrl = __ENV.METRICS_URL;
 const ACK_LATENCY = new Trend('ack_latency', true);
 const ERROR_RATE = new Rate('error_rate');
+const HEAP_USED = new Trend('heap_used');
+const GC_PAUSE = new Trend('gc_pause_ms', true);
 
 export default function () {
   const rng = new Random(seed + __VU);
@@ -82,9 +86,33 @@ export default function () {
       socket.close();
     }, 1000);
   });
+
+  if (metricsUrl) {
+    try {
+      const res = http.get(metricsUrl);
+      const body = res.body;
+      const heapMatch = body.match(/nodejs_heap_size_used_bytes\s+(\d+)/);
+      const gcSum = body.match(/nodejs_gc_duration_seconds_sum\s+([0-9.]+)/);
+      const gcCount = body.match(/nodejs_gc_duration_seconds_count\s+([0-9.]+)/);
+      if (heapMatch) {
+        HEAP_USED.add(Number(heapMatch[1]));
+      }
+      if (gcSum && gcCount && Number(gcCount[1]) > 0) {
+        GC_PAUSE.add((Number(gcSum[1]) / Number(gcCount[1])) * 1000);
+      }
+    } catch (e) {
+      // ignore metrics errors
+    }
+  }
 }
 
 export function handleSummary(data) {
-  const hist = data.metrics.ack_latency?.histogram || data.metrics.ack_latency?.bins || {};
-  return { 'metrics/ack-histogram.json': JSON.stringify(hist, null, 2) };
+  const ackHist = data.metrics.ack_latency?.histogram || data.metrics.ack_latency?.bins || {};
+  const heapHist = data.metrics.heap_used?.histogram || data.metrics.heap_used?.bins || {};
+  const gcHist = data.metrics.gc_pause_ms?.histogram || data.metrics.gc_pause_ms?.bins || {};
+  return {
+    'metrics/ack-histogram.json': JSON.stringify(ackHist, null, 2),
+    'metrics/heap-histogram.json': JSON.stringify(heapHist, null, 2),
+    'metrics/gc-histogram.json': JSON.stringify(gcHist, null, 2),
+  };
 }
