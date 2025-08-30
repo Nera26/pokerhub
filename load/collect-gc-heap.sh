@@ -12,6 +12,36 @@ GRAFANA_PUSH_URL=${GRAFANA_PUSH_URL:-}
 CPU_THRESHOLD=${CPU_THRESHOLD:-}
 HEAP_THRESHOLD=${HEAP_THRESHOLD:-}
 GC_THRESHOLD=${GC_THRESHOLD:-}
+HEAP_HIST_FILE=${HEAP_HIST_FILE:-$SCRIPT_DIR/metrics/heap-histogram.json}
+GC_HIST_FILE=${GC_HIST_FILE:-$SCRIPT_DIR/metrics/gc-histogram.json}
+
+declare -A heap_hist=()
+declare -A gc_hist=()
+
+# shellcheck disable=SC2154
+trap 'mkdir -p "$(dirname "$HEAP_HIST_FILE")"; \
+  {
+    echo "{";
+    first=1;
+    for bucket in "${!heap_hist[@]}"; do
+      [[ $first -eq 0 ]] && echo ",";
+      first=0;
+      printf "  \"%s\": %s" "$bucket" "${heap_hist[$bucket]}";
+    done;
+    echo "";
+    echo "}";
+  } > "$HEAP_HIST_FILE"; \
+  {
+    echo "{";
+    first=1;
+    for bucket in "${!gc_hist[@]}"; do
+      [[ $first -eq 0 ]] && echo ",";
+      first=0;
+      printf "  \"%s\": %s" "$bucket" "${gc_hist[$bucket]}";
+    done;
+    echo "";
+    echo "}";
+  } > "$GC_HIST_FILE"' EXIT
 
 last_cpu=""
 
@@ -35,6 +65,10 @@ while true; do
 
   timestamp=$(date --iso-8601=seconds)
   echo "$timestamp heap_used=$heap_used gc_avg_ms=$avg_gc cpu_total=$cpu_total" >> "$OUT_FILE"
+  heap_bucket=$(( heap_used / (1024 * 1024) / 10 * 10 ))
+  gc_bucket=$(awk -v g="$avg_gc" 'BEGIN{printf "%d", int(g/10)*10}')
+  heap_hist[$heap_bucket]=$(( ${heap_hist[$heap_bucket]:-0} + 1 ))
+  gc_hist[$gc_bucket]=$(( ${gc_hist[$gc_bucket]:-0} + 1 ))
   if [[ -n "$GRAFANA_PUSH_URL" ]]; then
     echo "nodejs_gc_avg_ms $avg_gc" | curl -sf --data-binary @- "$GRAFANA_PUSH_URL/metrics/job/soak" || true
   fi
