@@ -15,7 +15,8 @@ export class AnalyticsService {
   private readonly kafka: Kafka;
   private readonly producer: Producer;
   private readonly ajv = new Ajv();
-  private readonly validators: Record<EventName, ValidateFunction> = {};
+  private readonly validators: Record<EventName, ValidateFunction> =
+    {} as Record<EventName, ValidateFunction>;
   private readonly topicMap: Record<string, string> = {
     hand: 'hand',
     action: 'hand',
