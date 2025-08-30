@@ -49,6 +49,7 @@ echo "RPO_WAL_SECONDS=$rpo_wal" >> "$metrics_file"
 echo "RPO_SECONDS=$rpo_wal" >> "$metrics_file"
 
 db_identifier="drill-$start_epoch"
+echo "DB_IDENTIFIER=$db_identifier" >> "$metrics_file"
 
 status=0
 if [ $rpo_snapshot -gt 300 ] || [ $rpo_wal -gt 300 ]; then
@@ -65,6 +66,7 @@ endpoint=$(aws rds describe-db-instances \
   --region "$SECONDARY_REGION" \
   --query 'DBInstances[0].Endpoint.Address' \
   --output text)
+echo "DB_ENDPOINT=$endpoint" >> "$metrics_file"
 
 log "Running smoke query on $endpoint..."
 PGHOST="$endpoint" PGPORT=5432 psql \
@@ -84,11 +86,12 @@ if [ $rto -gt 1800 ]; then
   log "RTO exceeds threshold (${rto}s)"
   status=1
 fi
-
-aws rds delete-db-instance \
-  --db-instance-identifier "$db_identifier" \
-  --skip-final-snapshot \
-  --region "$SECONDARY_REGION" || true
+if [ "${KEEP_INSTANCE:-false}" != "true" ]; then
+  aws rds delete-db-instance \
+    --db-instance-identifier "$db_identifier" \
+    --skip-final-snapshot \
+    --region "$SECONDARY_REGION" || true
+fi
 
 log "Disaster recovery drill finished: RTO ${rto}s, snapshot RPO ${rpo_snapshot}s, wal RPO ${rpo_wal}s"
 

@@ -12,10 +12,12 @@ spec:
           containers:
             - name: drill
               image: ghcr.io/pokerhub/infra-tools:latest
-              command: ["/bin/bash", "/scripts/drill.sh"]
+              command: ["/bin/bash", "/scripts/tests/drill-failover.sh"]
               env:
                 - name: PG_INSTANCE_ID
                   value: primary-pg
+                - name: PRIMARY_REGION
+                  value: us-west-2
                 - name: SECONDARY_REGION
                   value: us-east-1
                 - name: PGUSER
@@ -30,3 +32,5 @@ spec:
                       key: password
                 - name: PGDATABASE
                   value: postgres
+                - name: WAL_ARCHIVE_BUCKET
+                  value: pg-wal-archive
