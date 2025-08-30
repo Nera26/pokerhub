@@ -49,27 +49,10 @@ describe('WalletService withdraw', () => {
       synchronize: true,
     }) as DataSource;
     await dataSource.initialize();
-    const accountRepo = dataSource.getRepository(Account);
-    const journalRepo = dataSource.getRepository(JournalEntry);
-    const disbRepo = dataSource.getRepository(Disbursement);
-    const settleRepo = dataSource.getRepository(SettlementJournal);
     kyc = {
       validate: jest.fn().mockResolvedValue(undefined),
       isVerified: jest.fn().mockResolvedValue(true),
     } as unknown as KycService;
-    service = new WalletService(
-      accountRepo,
-      journalRepo,
-      disbRepo,
-      settleRepo,
-      events,
-      redis,
-      provider,
-      kyc,
-    );
-    (
-      service as unknown as { enqueueDisbursement: jest.Mock }
-    ).enqueueDisbursement = jest.fn();
   });
 
   beforeEach(async () => {
@@ -101,6 +84,19 @@ describe('WalletService withdraw', () => {
         currency: 'USD',
       },
     ]);
+    service = new WalletService(
+      accountRepo,
+      journalRepo,
+      disbRepo,
+      settleRepo,
+      events,
+      redis,
+      provider,
+      kyc,
+    );
+    (
+      service as unknown as { enqueueDisbursement: jest.Mock }
+    ).enqueueDisbursement = jest.fn();
   });
 
   afterAll(async () => {
