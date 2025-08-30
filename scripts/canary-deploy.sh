@@ -18,5 +18,13 @@ export CANARY_DURATION_MINUTES=${CANARY_DURATION_MINUTES:-30}
 # Use METRICS_URL as Prometheus endpoint if provided
 export PROMETHEUS=${PROMETHEUS:-${METRICS_URL:-}}
 
+# Require a health check endpoint for rollout validation
+HEALTH=${HEALTH_CHECK_URL:-}
+if [[ -z "$HEALTH" ]]; then
+  echo "HEALTH_CHECK_URL must be set"
+  exit 1
+fi
+export HEALTH_CHECK_URL="$HEALTH"
+
 # Run canary deployment with built-in health checks and automatic rollback
 bash infra/scripts/canary-deploy.sh
