@@ -50,6 +50,35 @@ export class CollusionService {
     return false;
   }
 
+  private async clusterByIp(users: string[]): Promise<Record<string, string[]>> {
+    const groups: Record<string, string[]> = {};
+    for (const u of users) {
+      const ips = await this.redis.smembers(`collusion:user:ips:${u}`);
+      for (const ip of ips) {
+        groups[ip] ??= [];
+        groups[ip].push(u);
+      }
+    }
+    return Object.fromEntries(
+      Object.entries(groups).filter(([, us]) => us.length > 1),
+    );
+  }
+
+  private timeCorrelatedBetting(
+    timesA: number[],
+    timesB: number[],
+    windowMs = 1000,
+  ): number {
+    if (!timesA.length || !timesB.length) return 0;
+    let matches = 0;
+    for (const tA of timesA) {
+      if (timesB.some((tB) => Math.abs(tA - tB) <= windowMs)) {
+        matches++;
+      }
+    }
+    return matches / Math.max(timesA.length, timesB.length);
+  }
+
   private async shared(
     keyA: string,
     keyB: string,
@@ -79,11 +108,16 @@ export class CollusionService {
         .zrange(`collusion:times:${userB}`, 0, -1)
         .then((t) => t.map(Number)),
     ]);
+    const ipClusterSizes = await Promise.all(
+      sharedIps.map((ip) => this.redis.scard(`collusion:ip:${ip}`)),
+    );
     return {
       sharedDevices,
       sharedIps,
+      ipClusterScore: Math.max(0, ...ipClusterSizes),
       vpipCorrelation: calculateVpipCorrelation(vpipA, vpipB),
       timingSimilarity: calculateTimingSimilarity(timesA, timesB),
+      betCorrelation: this.timeCorrelatedBetting(timesA, timesB),
       seatProximity: calculateSeatProximity(seatsA, seatsB),
     };
   }
@@ -93,13 +127,24 @@ export class CollusionService {
     users: string[],
     features: Record<string, unknown>,
   ) {
+    const ipClusters = await this.clusterByIp(users);
+    const enriched = { ...features, ipClusters };
     await this.redis.hset(`collusion:session:${sessionId}`, {
       users: JSON.stringify(users),
       status: 'flagged',
-      features: JSON.stringify(features),
+      features: JSON.stringify(enriched),
     });
     await this.redis.sadd('collusion:flagged', sessionId);
-    await this.analytics?.emitAntiCheatFlag({ sessionId, users, features });
+    await this.analytics?.ingest('collusion_evidence', {
+      session_id: sessionId,
+      users,
+      ...enriched,
+    });
+    await this.analytics?.emitAntiCheatFlag({
+      sessionId,
+      users,
+      features: enriched,
+    });
   }
 
   async listFlaggedSessions(opts?: {

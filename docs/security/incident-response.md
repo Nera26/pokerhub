@@ -29,3 +29,21 @@ This runbook outlines how PokerHub handles security incidents from detection to 
 - Further escalation to **CTO** after 30 minutes
 
 During drills, prefix the PagerDuty page with `[DRILL]` to avoid confusion with real incidents.
+
+## Collusion Investigations
+
+1. **Gather Evidence**: Pull Redis records, ClickHouse logs, and session
+   features from the analytics service.
+2. **Analyze Patterns**: Review shared IP clusters, timing correlations, and
+   flagged hand histories.
+3. **Player Contact**: Notify affected players and freeze suspicious accounts
+   pending review.
+4. **Document Findings**: Store all artifacts under `incident/<id>` in secure
+   storage for auditability.
+
+## Regulatory Reporting
+
+- Notify relevant gaming regulators within 24 hours of confirming collusion.
+- Provide summary of evidence, impacted accounts, and remediation steps.
+- Retain investigation records for at least 5 years and make them available to
+  authorities on request.
