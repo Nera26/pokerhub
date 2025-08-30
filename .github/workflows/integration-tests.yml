@@ -5,7 +5,51 @@ on:
   workflow_dispatch:
 
 jobs:
+  property-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install backend deps
+        working-directory: backend
+        run: npm ci
+      - name: Run backend property tests
+        working-directory: backend
+        run: npm run test:property
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+      - name: Run frontend property tests
+        working-directory: frontend
+        run: npm run test:property
+
+  contract-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Generate OpenAPI diff
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          git diff origin/${{ github.base_ref }} -- contracts/openapi.yaml > openapi.diff
+      - name: Upload OpenAPI diff
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v3
+        with:
+          name: openapi-diff
+          path: openapi.diff
+      - name: Verify shared types
+        run: |
+          npx -y openapi-zod-client contracts/openapi.yaml -o shared/types.ts --export-schemas
+          git diff --exit-code shared/types.ts
+
   e2e:
+    needs: [property-tests, contract-check]
     runs-on: ubuntu-latest
     env:
       PLAYWRIGHT_BROWSERS_PATH: ~/.cache/ms-playwright
@@ -24,7 +68,7 @@ jobs:
       - name: Install backend deps
         working-directory: backend
         run: npm ci
-      - name: Run backend tests (unit + property)
+      - name: Run backend tests
         working-directory: backend
         run: npm test
       - name: Run leaderboard benchmark
