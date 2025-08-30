@@ -1,5 +1,15 @@
 # Test Strategy
 
+## Property-Based Tests
+
+Property-based tests leverage [`fast-check`](https://github.com/dubzzz/fast-check) to exercise game logic across a large range of generated inputs. They run in the dedicated **property** stage of the CI pipeline (see `.github/workflows/ci.yml`) and help surface edge-case bugs early.
+
+### Running locally
+
+```bash
+npm test --prefix backend -- test/game/.*\.property\.spec\.ts
+```
+
 ## CI Load Checks
 
 The `k6-swarm-ws` workflow in `.github/workflows/k6-swarm-ws.yml` runs `load/k6-swarm.js` and `load/k6-ws-packet-loss.js` against the staging cluster. It records `ack_latency` and `ws_latency` histograms and fails if p95 latency or error rates breach thresholds.

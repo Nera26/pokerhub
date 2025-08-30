@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     env:
+      DEPLOY_ENV: production
       CANARY_TRAFFIC_PERCENT: 5
       CANARY_DURATION_MINUTES: 30
       NAMESPACE: ${{ vars.K8S_NAMESPACE }}
@@ -36,27 +37,10 @@ jobs:
         run: |
           python -m pip install pyyaml >/dev/null
           python infra/observability/validate.py
-      - name: Deploy canary and monitor metrics
-        run: bash infra/scripts/canary-deploy.sh
+      - name: Run canary release with auto rollback
+        run: scripts/canary-release.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_SHA: ${{ github.sha }}
-      - name: Upload summary
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: k6-summary
-          path: summary.json
-
-  rollback:
-    needs: canary
-    if: failure()
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Auto rollback canary
-        run: bash scripts/canary-rollback.sh
-        env:
-          DEPLOY_ENV: production

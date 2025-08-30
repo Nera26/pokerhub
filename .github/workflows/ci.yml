@@ -22,11 +22,13 @@ jobs:
       - run: npm test --prefix backend
       - run: npm run lint --prefix frontend
       - run: npm test --prefix frontend
+      - run: npx -y @redocly/openapi-cli@latest lint contracts/openapi.yaml
       - run: npm run test:contracts
       - run: ./contracts/verify-contract.sh
       - run: ./scripts/check-contract-drift.sh
 
   property:
+    # Property-based tests; see docs/test-strategy.md
     needs: unit
     runs-on: ubuntu-latest
     steps:
