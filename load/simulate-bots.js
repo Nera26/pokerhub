@@ -24,7 +24,7 @@ function parseArgs() {
 
 function loadStructure() {
   try {
-    const md = fs.readFileSync('docs/tournament-handbook.md', 'utf8');
+    const md = fs.readFileSync('docs/player/tournament-handbook.md', 'utf8');
     const match = md.match(/```json\n([\s\S]*?)```/);
     if (!match) return null;
     return JSON.parse(match[1]);

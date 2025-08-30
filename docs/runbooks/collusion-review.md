@@ -31,3 +31,7 @@ This runbook outlines how administrators review flagged sessions for potential c
 ## Notes
 - Actions use the `ReviewAction` type defined in `shared/types.ts`.
 - If you encounter authorization errors, verify your admin role and authentication token.
+
+## See Also
+- [RNG Whitepaper](../player/rng-whitepaper.md)
+- [RNG Fairness Spec](../rng-fairness.md)
