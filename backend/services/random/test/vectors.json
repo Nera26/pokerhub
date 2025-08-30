@@ -1,0 +1,10 @@
+[
+  {
+    "seed": "00000000000000000000000000000001",
+    "expected": ["6b14a1cd", "82ef1bbf", "9135726d", "d7e2c8a0", "4f3b98c2"]
+  },
+  {
+    "seed": "ffffffffffffffffffffffffffffffff",
+    "expected": ["8a1d55b4", "b91826ed", "703a2f6e", "3c0d71c9", "fae49122"]
+  }
+]
