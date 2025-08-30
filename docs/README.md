@@ -2,6 +2,7 @@
 
 ## Whitepapers
 - [Game Engine Specification](./game-engine-spec.md)
+- [RNG & RTP Fairness](./rng-fairness.md)
 - [Tournament Handbook](./tournament-handbook.md)
 - [Accounting Book](./accounting-book.md)
 - [Reconciliation Guide](./reconciliation-guide.md)

@@ -1,6 +1,6 @@
 # Accounting Book
 
-**Version:** 1.0.0  
+**Version:** 1.1.0
 **Last Updated:** 2025-08-30
 
 ## Ledger Schema
@@ -27,6 +27,14 @@ sequenceDiagram
 | 1       | player:alice   | 100   | 0      | deposit | dep1  |
 | 2       | cash:house     | 0     | 100    | deposit | dep1  |
 
+## Buy-ins and Payouts
+
+- **Buy-in** – debits the player's account and credits the tournament or cash
+  table pot.
+- **Payout** – debits the pot and credits each qualifying player's account.
+- **Rake** – credits the house account as a fee from the pot before payouts are
+  distributed.
+
 ## Reconciliation Procedure
 1. `WalletService.reconcile()` aggregates journal totals per account and compares them with stored balances.
 2. The reconciliation job (`backend/src/wallet/reconcile.job.ts`) runs daily at midnight UTC.
@@ -49,9 +57,18 @@ sequenceDiagram
 - **Provider not configured** – missing `KYC_PROVIDER_URL` causes all checks to fail.
 - **Provider unreachable or error response** – the denial reason is cached and exposed to the client.
 
+## Audit Controls
+
+- Daily reconciliation reports are archived under `storage/` with immutable
+  timestamps and SHA‑256 checksums.
+- Quarterly external audits review journal entries, provider statements and
+  reconciliation results.
+- Findings and corrective actions are logged for regulatory inspection.
+
 ## Revision History
 - cac8e82: add external KYC provider with denial reasons
 - 36ba907: add reconcile zero-sum property test
 - 3ab6709: add wallet reconciliation job and tests
 - 2025-01-04: document revision history
 - 2025-08-30: add version metadata, ledger flow diagram, and example
+- 2025-08-30: cover buy-ins, payouts, and audit controls
