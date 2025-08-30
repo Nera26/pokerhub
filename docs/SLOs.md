@@ -10,7 +10,7 @@ This page documents how PokerHub alerts on key Service Level Objectives and link
 | Socket connect success | 99% successful connects | 14.4× (1h) / 6× (6h) | [Socket Connects](../infrastructure/observability/socket-connects-dashboard.json) | [Socket Connect Success](analytics-dashboards.md#socket-connect-success-1) | `pokerhub-sre` |
 | Request error rate | <1% of requests error | 14.4× (1h) / 6× (6h) | [Error Rates](../infrastructure/observability/error-rates-dashboard.json) | [Error Rate](analytics-dashboards.md#error-rate-1) | `pokerhub-sre` |
 | Queue saturation | 99% of queue lag < 2 s | 14.4× (1h) / 6× (6h) | [Queue Lag](../infrastructure/observability/queue-lag-dashboard.json) | [Queue Saturation](analytics-dashboards.md#queue-saturation-1) | `pokerhub-eng` |
-| Telemetry pipeline uptime | 99.9% collector availability | 14.4× (1h) / 6× (6h) | [Latency & Error Overview](../infrastructure/observability/latency-error-resource-dashboard.json) | [Telemetry Overview](analytics-dashboards.md#telemetry-overview) | `pokerhub-sre` |
+| Telemetry pipeline uptime | 99.9% collector availability | 14.4× (1h) / 6× (6h) | [Telemetry Pipeline](../infra/observability/otel-dashboard.json) | [Telemetry Overview](analytics-dashboards.md#telemetry-overview) | `pokerhub-observability` |
 | Frontend route latency | 95% of routes < 500 ms | 14.4× (1h) / 6× (6h) | [Frontend Route Latency](analytics-dashboards.md#frontend-route-latency) | — | `pokerhub-eng` |
 
 We use a multi‑window burn‑rate policy: a fast 5 m/1 h window at **14.4×** and a slow 30 m/6 h window at **6×**. Alerts are routed to PagerDuty via `pagerduty_service` labels in the rule definitions.
@@ -29,6 +29,7 @@ Each SLO allocates a monthly error budget equal to `1 - target`. If more than **
 - [Socket Connects](../infrastructure/observability/socket-connects-dashboard.json)
 - [Error Rates](../infrastructure/observability/error-rates-dashboard.json)
 - [Player Analytics](../infrastructure/observability/player-analytics-dashboard.json)
+- [Telemetry Pipeline](../infra/observability/otel-dashboard.json)
 - [Frontend Route Latency](analytics-dashboards.md#frontend-route-latency)
 
 All dashboard JSON files include a `pagerduty_service` label that drives the escalation policy documented in [runbooks/alerting.md](runbooks/alerting.md#pagerduty-escalation).

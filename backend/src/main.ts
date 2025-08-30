@@ -5,8 +5,10 @@ import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { WalletService } from './wallet/wallet.service';
 import { scheduleReconcileJob } from './wallet/reconcile.job';
+import { setupTelemetry, shutdownTelemetry } from './telemetry/telemetry';
 
 async function bootstrap() {
+  setupTelemetry();
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
 
@@ -41,6 +43,7 @@ async function bootstrap() {
 
   const shutdown = async () => {
     await app.close();
+    await shutdownTelemetry();
     process.exit(0);
   };
 
