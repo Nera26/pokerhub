@@ -1,5 +1,8 @@
 # Wallet Reconciliation Guide
 
+**Version:** 1.0.0
+**Last Updated:** 2025-08-30
+
 This guide shows how to verify wallet balances against the immutable ledger.
 
 ## Ledger Overview
@@ -45,5 +48,5 @@ If the report shows `{ accountId: 42, expected: 5000, actual: 4500 }`, query the
 - [Wallet Reconciliation Runbook](../runbooks/wallet-reconciliation.md)
 
 ## Revision History
-- 2025-08-30: add step-by-step procedure and example
+- 2025-08-30: add step-by-step procedure, example, and version metadata
 - 2025-01-04: initial version

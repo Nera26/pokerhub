@@ -1,5 +1,8 @@
 # Milestone Plan
 
+**Version:** 1.0.0
+**Last Updated:** 2025-08-30
+
 This roadmap links major features to their performance and compliance objectives.
 
 | # | Feature | Release Date | Owner | SLO Target | Compliance Goal |
@@ -22,4 +25,4 @@ This roadmap links major features to their performance and compliance objectives
 ## Revision History
 - 4c23e7c: initial roadmap
 - 2025-01-04: link milestones to SLO and compliance goals
-- 2025-08-30: add release dates and owners
+- 2025-08-30: add release dates, owners, and version metadata

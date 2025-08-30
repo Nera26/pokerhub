@@ -8,3 +8,5 @@ Use this checklist to ensure feature work includes appropriate documentation upd
 - [ ] Was the revision history updated with date and summary?
 - [ ] Are diagrams and examples updated and valid?
 - [ ] Have all required tests and linters been executed?
+- [ ] Is "Version" and "Last Updated" metadata present and accurate?
+- [ ] Are spelling, grammar, and style consistent?
