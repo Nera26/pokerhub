@@ -15,6 +15,9 @@ PokerHub uses behavioral analysis and auditing to detect players collaborating u
 Raw game and session events stream into an analytics warehouse where scheduled queries surface
 potential collusion for review.
 
+The scheduled SQL lives in [`CollusionQueryService`](../../backend/src/analytics/collusion.queries.ts)
+and populates a `collusion_alerts` table used by reviewers.
+
 ### Example Queries
 ```sql
 -- Players sharing an IP

@@ -169,6 +169,18 @@ export class AnalyticsService {
     await this.client.command({ query: sql });
   }
 
+  async select<T = Record<string, unknown>>(sql: string): Promise<T[]> {
+    if (!this.client) {
+      this.logger.warn('No ClickHouse client configured');
+      return [];
+    }
+    const result = await this.client.query({
+      query: sql,
+      format: 'JSONEachRow',
+    });
+    return (await result.json()) as T[];
+  }
+
   private scheduleStakeAggregates() {
     const oneDay = 24 * 60 * 60 * 1000;
     const now = new Date();

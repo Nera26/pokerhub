@@ -19,6 +19,21 @@ PokerHub requires identity verification and anti-money-laundering checks during 
 - Record all verification requests and provider responses with timestamps and reviewer IDs.
 - Retain logs for seven years in immutable storage for regulatory audits.
 
+## Compliance Check Steps
+1. Validate document authenticity and match to provided identity data.
+2. Run sanctions and PEP screening and record reference IDs.
+3. Evaluate selfie/liveness checks when triggered by risk scoring.
+4. Perform AML transaction monitoring for deposits and withdrawals.
+5. Capture reviewer decision with timestamp and reasoning.
+
+## Audit Retention
+| Artifact | Retention | Storage |
+| --- | --- | --- |
+| KYC requests & responses | 7 years | Immutable object store |
+| Sanctions screening results | 7 years | Immutable object store |
+| Reviewer notes & decisions | 7 years | Encrypted database |
+| Suspicious Activity Reports | 5 years | Encrypted archive |
+
 ## Escalation Steps
 1. Flagged signups or transactions enter a manual review queue within 24 hours.
 2. Compliance reviews evidence and either approves, requests additional documents, or marks the account high risk.
