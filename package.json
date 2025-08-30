@@ -13,7 +13,8 @@
     "soak:test": "mkdir -p load/results && k6 run load/soak.js --log-format json --summary-export=load/results/soak-summary.json",
     "contracts:generate": "node contracts/generate-types.mjs",
     "test:contracts": "npm test --prefix backend -- test/contracts/status.service.contract.spec.ts",
-    "test:load": "npm run load:socket --prefix backend"
+    "test:load": "npm run load:socket --prefix backend",
+    "test:e2e": "npm run test:e2e --prefix frontend"
   },
   "devDependencies": {
     "openapi-typescript": "^6.7.0",
