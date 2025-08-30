@@ -92,8 +92,12 @@ fi
 # start GC/heap collector
 METRICS_URL=${METRICS_URL:-http://localhost:4000/metrics}
 OUT_FILE="$METRICS_DIR/gc-heap.log"
+HEAP_HIST_FILE="$METRICS_DIR/heap-histogram.json"
+GC_HIST_FILE="$METRICS_DIR/gc-histogram.json"
 INTERVAL=${INTERVAL:-5}
-METRICS_URL="$METRICS_URL" OUT_FILE="$OUT_FILE" INTERVAL="$INTERVAL" "$SCRIPT_DIR/collect-gc-heap.sh" &
+METRICS_URL="$METRICS_URL" OUT_FILE="$OUT_FILE" INTERVAL="$INTERVAL" \
+HEAP_HIST_FILE="$HEAP_HIST_FILE" GC_HIST_FILE="$GC_HIST_FILE" \
+  "$SCRIPT_DIR/collect-gc-heap.sh" &
 GC_PID=$!
 trap 'kill $GC_PID >/dev/null 2>&1 || true' EXIT
 
@@ -160,31 +164,6 @@ try {
   fs.writeFileSync(output, JSON.stringify(stats, null, 2));
 } catch (e) {
   // ignore if log missing
-}
-NODE
-
-# build memory and GC histograms (10MB and 10ms buckets)
-node - "$METRICS_DIR/gc-stats.json" "$METRICS_DIR/heap-histogram.json" "$METRICS_DIR/gc-histogram.json" <<'NODE'
-const fs = require('fs');
-const [input, heapOut, gcOut] = process.argv.slice(1);
-try {
-  const stats = JSON.parse(fs.readFileSync(input, 'utf-8'));
-  const heapHist = {};
-  const gcHist = {};
-  for (const row of stats) {
-    if (typeof row.heap_used === 'number') {
-      const bucket = Math.floor(row.heap_used / (10 * 1024 * 1024)) * 10; // MB
-      heapHist[bucket] = (heapHist[bucket] || 0) + 1;
-    }
-    if (typeof row.gc_avg_ms === 'number') {
-      const bucket = Math.floor(row.gc_avg_ms / 10) * 10; // ms
-      gcHist[bucket] = (gcHist[bucket] || 0) + 1;
-    }
-  }
-  fs.writeFileSync(heapOut, JSON.stringify(heapHist, null, 2));
-  fs.writeFileSync(gcOut, JSON.stringify(gcHist, null, 2));
-} catch (e) {
-  // ignore if stats missing
 }
 NODE
 
