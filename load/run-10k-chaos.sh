@@ -3,12 +3,45 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
-METRICS_DIR="$SCRIPT_DIR/metrics"
+
+# create versioned metrics directory
+RUN_ID="$(date +%Y%m%d-%H%M%S)"
+METRICS_DIR="$SCRIPT_DIR/metrics/$RUN_ID"
 mkdir -p "$METRICS_DIR"
 
-SOCKETS=${SOCKETS:-80000}
+# defaults (overridable via env/flags)
+SOCKETS=${SOCKETS:-100000}
 TABLES=${TABLES:-10000}
 RNG_SEED=${RNG_SEED:-1}
+PACKET_LOSS=${PACKET_LOSS:-0}
+JITTER_MS=${JITTER_MS:-0}
+
+# parse flags
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --sockets)
+      SOCKETS="$2"
+      shift 2
+      ;;
+    --packet-loss)
+      PACKET_LOSS="$2"
+      shift 2
+      ;;
+    --jitter)
+      JITTER_MS="$2"
+      shift 2
+      ;;
+    *)
+      echo "Usage: $0 [--sockets N] [--packet-loss P] [--jitter MS]" >&2
+      exit 1
+      ;;
+  esac
+done
+
+if (( SOCKETS > 100000 )); then
+  echo "SOCKETS capped at 100000" >&2
+  SOCKETS=100000
+fi
 
 # record seed for replay
 echo "$RNG_SEED" > "$METRICS_DIR/seed.txt"
@@ -23,6 +56,7 @@ trap 'kill $GC_PID >/dev/null 2>&1 || true' EXIT
 
 # run k6 scenario
 SOCKETS="$SOCKETS" TABLES="$TABLES" RNG_SEED="$RNG_SEED" \
+PACKET_LOSS="$PACKET_LOSS" JITTER_MS="$JITTER_MS" \
   k6 run "$SCRIPT_DIR/k6-10k-tables.js" \
   --summary-export="$METRICS_DIR/k6-summary.json" \
   --out json="$METRICS_DIR/k6-metrics.json"
