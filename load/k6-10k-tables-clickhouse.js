@@ -16,12 +16,12 @@ const tables = Number(__ENV.TABLES) || 10000;
 const loss = Number(__ENV.PACKET_LOSS) || 0.05; // 5% packet loss
 const jitterMs = Number(__ENV.JITTER_MS) || 200; // 200ms jitter
 const seed = Number(__ENV.RNG_SEED) || 1;
-const rng = new Random(seed);
 
 const ACK_LATENCY = new Trend('ws_ack_latency', true);
 const ERR_RATE = new Rate('ws_errors');
 
 export default function () {
+  const rng = new Random(seed + __VU);
   const tableId = __VU % tables;
   const url = `${__ENV.WS_URL || 'ws://localhost:4000/game'}?table=${tableId}`;
 

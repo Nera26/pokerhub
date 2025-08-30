@@ -27,13 +27,13 @@ const tables = Number(__ENV.TABLES) || defaultTables;
 const loss = Number(__ENV.PACKET_LOSS) || 0.05; // 5% packet loss
 const jitterMs = Number(__ENV.JITTER_MS) || 200; // client-side jitter before sending
 const seed = Number(__ENV.RNG_SEED) || 1;
-const rng = new Random(seed);
 
 const grafanaPushUrl = __ENV.GRAFANA_PUSH_URL;
 const ACK_LATENCY = new Trend('ack_latency', true);
 const ERROR_RATE = new Rate('error_rate');
 
 export default function () {
+  const rng = new Random(seed + __VU);
   const tableId = __VU % tables;
   const url = `${__ENV.WS_URL || 'ws://localhost:4000/game'}?table=${tableId}`;
 
