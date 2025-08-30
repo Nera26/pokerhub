@@ -8,6 +8,9 @@ Handle situations where message queues accumulate a backlog faster than consumer
 - Dashboard shows message age exceeding 30 s.
 - `queueLag` metric remains above 10 s for 5 m.
 
+## When to page
+Page according to the [SLO error-budget policy](../SLOs.md#error-budget-handling) when queue lag burns budget faster than thresholds.
+
 ## Mitigation Steps
 1. Inspect worker logs for processing errors.
 2. Scale up consumers or purge poisoned messages.

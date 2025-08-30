@@ -62,6 +62,32 @@ Metrics can also be shipped via OTLP:
 k6 run --vus 50 --duration 1m --out otlp --otlp-endpoint http://localhost:4318 load/k6-table-actions.js
 ```
 
+### Example Trace Diagrams
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant G as API Gateway
+    participant B as Game Service
+    participant D as Database
+    C->>G: POST /action
+    G->>B: span(action.request)
+    B->>D: span(db.query)
+    D-->>B: rows
+    B-->>G: span(action.response)
+    G-->>C: 200 OK
+```
+
+```mermaid
+graph TD
+    subgraph RoomWorker
+        A[HandleAction] --> B[PersistEvent]
+        B --> C[PublishQueue]
+    end
+    C -->|async| Q[QueueConsumer]
+    Q --> D[UpdateState]
+```
+
 ## Production Dashboards & Alerts
 
 ![SLO Dashboard](images/slo-dashboard.svg)

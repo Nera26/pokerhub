@@ -4,6 +4,14 @@ PokerHub uses OpenTelemetry to expose metrics which are scraped by Prometheus. T
 
 Prometheus evaluates SLO-based rules such as action ACK latency and socket connect success using multi-window burn rates. Alerts fire when the 5 m/1 h burn rate exceeds **14.4** or the 30 m/6 h burn rate exceeds **6**. Alertmanager routes notifications to PagerDuty and, for canary deployments, emits a `repository_dispatch` event that runs `infra/canary/rollback.sh`. See [SLO alert strategy](../SLOs.md) for details.
 
+## Severity Tiers
+
+| Tier | Example Impact | PagerDuty Service | Slack Channel |
+| ---- | -------------- | ----------------- | ------------- |
+| **P1** | Major outage or data loss | `pokerhub-sre` | `#pokerhub-incident` |
+| **P2** | Degraded functionality | `pokerhub-eng` | `#pokerhub-ops` |
+| **P3** | Minor issues or follow ups | — | `#pokerhub-dev` |
+
 ## PagerDuty Escalation
 - Alertmanager posts events to PagerDuty using the configured routing key.
 - The on-call engineer receives a page and triages using the dashboards in Grafana.
@@ -13,10 +21,8 @@ Prometheus evaluates SLO-based rules such as action ACK latency and socket conne
 1. **Primary on-call** (`pokerhub-sre`) acknowledges the alert within 5 minutes.
 2. If unacknowledged or unresolved after 15 minutes, PagerDuty escalates to the
    **secondary on-call**.
-3. After 30 minutes, notify the **engineering manager** via the PagerDuty
-   escalation policy and Slack `#pokerhub-incident` channel.
-4. Incidents lasting more than 1 hour are escalated directly to the **CTO** for
-   coordination and customer communication.
+3. After 30 minutes, notify the **engineering manager** via the PagerDuty escalation policy and Slack `#pokerhub-incident` channel.
+4. Incidents lasting more than 1 hour are escalated directly to the **CTO** for coordination and customer communication.
 
 ## Relevant Components
 - `backend/src/telemetry/telemetry.ts` sets up exporters.
