@@ -157,7 +157,7 @@ async function primaryMain() {
   }, 10000);
 
   let exited = 0;
-  cluster.on("exit", () => {
+  cluster.on("exit", async () => {
     exited++;
     if (exited === workers) {
       const hist = recordHistogram(allLatencies);
