@@ -4,6 +4,11 @@
 **Last Updated:** 2025-08-30
 
 ## Ledger Schema
+
+Ledger code lives under [`backend/src/wallet`](../backend/src/wallet). The
+daily reconciliation job is implemented in
+[`backend/src/wallet/reconcile.job.ts`](../backend/src/wallet/reconcile.job.ts).
+
 - **Account**: tracks the running balance for a wallet participant.
 - **JournalEntry**: immutable rows recording debits and credits with a `refType` and `refId`.
 - Every transaction writes equal and opposite entries so the sum of amounts per ref is zero.

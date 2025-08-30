@@ -5,6 +5,9 @@
 
 For upcoming milestones, see the [milestone plan](./milestone-plan.md).
 
+Implementation lives under [`backend/src/game`](../backend/src/game) where the
+state machine and engine workers are defined.
+
 ## State Machine
 ```mermaid
 stateDiagram-v2

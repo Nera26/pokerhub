@@ -5,6 +5,9 @@
 
 This handbook standardizes how PokerHub hosts competitive events.
 
+Tournament logic is implemented in [`backend/src/tournament`](../backend/src/tournament)
+with event ingestion defined in [`infrastructure/analytics/ingest-tournament.sql`](../infrastructure/analytics/ingest-tournament.sql).
+
 ## Lifecycle
 
 ```mermaid
