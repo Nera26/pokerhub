@@ -38,7 +38,6 @@
     "@clickhouse/client": "^1.12.1",
     "@elastic/elasticsearch": "^8.19.0",
     "@google-cloud/storage": "^7.17.0",
-    "@google-cloud/trace-agent": "^8.0.0",
     "@nestjs/cache-manager": "^3.0.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",

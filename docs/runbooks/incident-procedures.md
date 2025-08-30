@@ -21,7 +21,8 @@ Error budgets from [../SLOs.md](../SLOs.md) drive page urgency; exhausting 50% o
 
 
 ## PagerDuty Escalation
-- Service: `pokerhub-sre`
+- Service: `pokerhub-sre` for platform issues
+- Service: `pokerhub-eng` for frontend route latency and error alerts
 
 ## Security References
 

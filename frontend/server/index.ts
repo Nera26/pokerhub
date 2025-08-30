@@ -1,12 +1,19 @@
-import traceAgent from '@google-cloud/trace-agent';
 import express from 'express';
 import next from 'next';
 import routes from './routes';
 import { securityHeaders } from './securityHeaders';
 import { getGcsClient } from './gcs';
+import { setupTelemetry, shutdownTelemetry } from './telemetry';
 
-traceAgent.start();
 getGcsClient();
+setupTelemetry();
+
+process.on('SIGTERM', () => {
+  shutdownTelemetry().catch(() => undefined);
+});
+process.on('SIGINT', () => {
+  shutdownTelemetry().catch(() => undefined);
+});
 
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
