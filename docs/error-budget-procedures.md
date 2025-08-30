@@ -2,6 +2,8 @@
 
 When service level objectives burn their monthly error budget, operators follow these escalation rules.
 
+If **50%** of the budget is consumed, feature deployments freeze until stability returns. Consuming **100%** requires rolling back risky releases and mandates engineering manager and CTO approval for any production change.
+
 PagerDuty routes SLO burn alerts based on the metric:
 
 - `pokerhub-sre` – service uptime, action ACK latency, socket connect success, and request error rate.
