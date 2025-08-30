@@ -7,7 +7,7 @@
 ## Backup Strategy
 - Cloud SQL schedules hourly Postgres snapshots and copies them to `${SECONDARY_REGION}`.
 - WAL segments are archived every 5 minutes to `gs://${WAL_ARCHIVE_BUCKET}` and replicated cross-region for PITR.
-- Kubernetes CronJobs `pg-snapshot-replication` and `redis-snapshot-replication` copy Postgres and Redis snapshots to `${SECONDARY_REGION}`.
+- Kubernetes CronJobs `pg-snapshot-replication`, `redis-snapshot-replication`, and `clickhouse-snapshot-replication` use `gcloud`/`gsutil` to copy Cloud SQL, Memorystore, and Cloud Storage backups to `${SECONDARY_REGION}`. Set `PG_INSTANCE_ID`, `REDIS_INSTANCE_ID`, and `BACKUP_BUCKET` accordingly.
 - A Cloud Scheduler job triggers cross-cloud snapshot copies to `${SECONDARY_REGION}`.
 - Cross-region read replicas continuously replicate changes.
 - Kubernetes CronJobs `postgres-backup` and `redis-backup` upload encrypted archives to `gs://${ARCHIVE_BUCKET}`.

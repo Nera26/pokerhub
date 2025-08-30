@@ -21,5 +21,6 @@ spec:
                 - /bin/sh
                 - -c
                 - >-
-                  echo "Replicating ClickHouse backups from $BACKUP_BUCKET to $SECONDARY_REGION";
-                  # Placeholder for aws s3 copy to secondary bucket
+                  set -euo pipefail;
+                  echo "Syncing ClickHouse backups from $BACKUP_BUCKET to $SECONDARY_REGION";
+                  gsutil -m rsync -r gs://$BACKUP_BUCKET gs://$BACKUP_BUCKET-$SECONDARY_REGION;

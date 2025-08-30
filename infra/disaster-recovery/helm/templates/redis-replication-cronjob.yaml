@@ -13,13 +13,17 @@ spec:
             - name: redis-replicate
               image: {{ .Values.redisReplication.image }}
               env:
-                - name: REDIS_CLUSTER_ID
-                  value: {{ .Values.redisReplication.clusterId | quote }}
+                - name: REDIS_INSTANCE_ID
+                  value: {{ .Values.redisReplication.instanceId | quote }}
                 - name: SECONDARY_REGION
                   value: {{ .Values.redisReplication.secondaryRegion | quote }}
               command:
                 - /bin/sh
                 - -c
                 - >-
-                  echo "Replicating Redis snapshot for $REDIS_CLUSTER_ID to $SECONDARY_REGION";
-                  # Placeholder for aws elasticache create-snapshot && copy-snapshot
+                  set -euo pipefail;
+                  TS=$(date +%Y%m%d%H%M%S);
+                  EXPORT_URI=gs://$REDIS_INSTANCE_ID-backups/$REDIS_INSTANCE_ID-$TS.rdb;
+                  echo "Exporting snapshot for $REDIS_INSTANCE_ID to $EXPORT_URI";
+                  gcloud redis instances export $REDIS_INSTANCE_ID $EXPORT_URI;
+                  gsutil cp $EXPORT_URI gs://$REDIS_INSTANCE_ID-backups-$SECONDARY_REGION/;

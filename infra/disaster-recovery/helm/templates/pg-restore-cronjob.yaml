@@ -15,9 +15,12 @@ spec:
               env:
                 - name: SNAPSHOT_ID
                   value: {{ .Values.postgres.snapshotIdentifier | quote }}
+                - name: PG_INSTANCE_ID
+                  value: {{ .Values.postgres.instanceId | quote }}
               command:
                 - /bin/sh
                 - -c
                 - >-
-                  echo "Testing Postgres restore from $SNAPSHOT_ID";
-                  # Placeholder for actual restore test
+                  set -euo pipefail;
+                  echo "Restoring Postgres backup $SNAPSHOT_ID to temporary instance";
+                  gcloud sql backups restore $SNAPSHOT_ID --restore-instance=${PG_INSTANCE_ID}-dr-test;

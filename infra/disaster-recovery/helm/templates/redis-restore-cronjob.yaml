@@ -15,9 +15,12 @@ spec:
               env:
                 - name: SNAPSHOT_ID
                   value: {{ .Values.redis.snapshotIdentifier | quote }}
+                - name: REDIS_INSTANCE_ID
+                  value: {{ .Values.redis.instanceId | quote }}
               command:
                 - /bin/sh
                 - -c
                 - >-
-                  echo "Testing Redis restore from $SNAPSHOT_ID";
-                  # Placeholder for actual restore test
+                  set -euo pipefail;
+                  echo "Restoring Redis snapshot $SNAPSHOT_ID";
+                  gcloud redis instances import ${REDIS_INSTANCE_ID}-dr-test --input-uri=gs://$SNAPSHOT_ID;
