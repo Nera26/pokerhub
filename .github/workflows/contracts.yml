@@ -24,6 +24,10 @@ jobs:
         run: npm ci
       - name: Lint OpenAPI spec
         run: npx -y @redocly/openapi-cli@latest lint contracts/openapi.yaml
+      - name: Check API backward compatibility
+        run: |
+          git fetch origin main
+          npx -y @redocly/openapi-cli@latest diff origin/main:contracts/openapi.yaml contracts/openapi.yaml --fail-on breaking
       - name: Install backend deps
         run: npm ci
         working-directory: backend

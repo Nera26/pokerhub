@@ -15,7 +15,12 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: ./scripts/test-stages.sh unit
+      - run: ./scripts/test-stages.sh unit | tee unit.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-${{ github.sha }}
+          path: unit.log
 
   property:
     # Property-based tests; see docs/test-strategy.md
@@ -27,8 +32,13 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: ./scripts/test-stages.sh property
-  e2e:
+      - run: ./scripts/test-stages.sh property | tee property.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: property-${{ github.sha }}
+          path: property.log
+  integration:
     needs: property
     runs-on: ubuntu-latest
     steps:
@@ -37,10 +47,15 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: ./scripts/test-stages.sh e2e
+      - run: ./scripts/test-stages.sh integration | tee integration.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-${{ github.sha }}
+          path: integration.log
 
   load:
-    needs: e2e
+    needs: integration
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -49,7 +64,12 @@ jobs:
           node-version: 20
           cache: npm
       - uses: grafana/setup-k6@v1
-      - run: ./scripts/test-stages.sh load
+      - run: ./scripts/test-stages.sh load | tee load.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: load-${{ github.sha }}
+          path: load.log
 
   chaos:
     needs: load
@@ -66,3 +86,9 @@ jobs:
         with:
           filename: load/chaos/ws-chaos.js
           arguments: --vus 10 --duration 10s
+      - run: echo 'See workflow log for chaos results' > chaos.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chaos-${{ github.sha }}
+          path: chaos.log
