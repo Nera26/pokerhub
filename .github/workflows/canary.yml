@@ -19,6 +19,8 @@ jobs:
       CANARY: api-canary
       CANARY_RELEASE: canary
       PROMETHEUS: ${{ vars.PROMETHEUS_URL }}
+      METRICS_URL: ${{ vars.METRICS_URL }}
+      ERROR_RATE_THRESHOLD: ${{ vars.ERROR_RATE_THRESHOLD }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Node
@@ -60,3 +62,10 @@ jobs:
         env:
           WS_URL: ${{ vars.CANARY_WS_URL }}
           PACKET_LOSS: 0.05
+      - name: Verify SLO metrics
+        id: metrics
+        run: scripts/check-metrics.sh
+        continue-on-error: true
+      - name: Canary rollback on SLO violation
+        if: steps.metrics.outcome != 'success'
+        run: scripts/canary-rollback.sh

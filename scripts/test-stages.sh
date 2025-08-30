@@ -10,7 +10,6 @@ run_unit() {
   npm run lint --prefix frontend
   npm test --prefix frontend
   npx -y @redocly/openapi-cli@latest lint contracts/openapi.yaml
-  npm run test:contracts
   ./contracts/verify-contract.sh
   ./scripts/check-contract-drift.sh
 }

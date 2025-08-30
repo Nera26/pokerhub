@@ -18,9 +18,26 @@ jobs:
       - run: npm ci
       - run: npm run docs:lint
 
-  unit:
+  contracts:
     needs: docs
     runs-on: ubuntu-latest
+    continue-on-error: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix backend
+      - run: npm ci --prefix frontend
+      - run: npm run test:contracts --prefix backend
+      - run: npm run test:contracts --prefix frontend
+
+  unit:
+    needs: contracts
+    runs-on: ubuntu-latest
+    continue-on-error: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -38,6 +55,7 @@ jobs:
     # Property-based tests; see docs/test-strategy.md
     needs: unit
     runs-on: ubuntu-latest
+    continue-on-error: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -58,6 +76,7 @@ jobs:
   integration:
     needs: property
     runs-on: ubuntu-latest
+    continue-on-error: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -74,6 +93,7 @@ jobs:
   e2e:
     needs: integration
     runs-on: ubuntu-latest
+    continue-on-error: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -90,6 +110,7 @@ jobs:
   load:
     needs: e2e
     runs-on: ubuntu-latest
+    continue-on-error: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -107,6 +128,7 @@ jobs:
   chaos:
     needs: load
     runs-on: ubuntu-latest
+    continue-on-error: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
