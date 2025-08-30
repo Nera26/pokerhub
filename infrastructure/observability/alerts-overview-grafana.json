@@ -1,5 +1,48 @@
 {
   "title": "Alerts Overview",
   "tags": ["sre"],
-  "panels": []
+  "panels": [
+    {
+      "title": "Uptime SLO Violation",
+      "type": "stat",
+      "targets": [
+        { "expr": "ALERTS{alertname=\"UptimeSLOViolation\",alertstate=\"firing\"}" }
+      ]
+    },
+    {
+      "title": "Action ACK Latency SLO Violation",
+      "type": "stat",
+      "targets": [
+        { "expr": "ALERTS{alertname=\"ActionAckLatencySLOViolation\",alertstate=\"firing\"}" }
+      ]
+    },
+    {
+      "title": "HTTP API Latency SLO Violation",
+      "type": "stat",
+      "targets": [
+        { "expr": "ALERTS{alertname=\"HttpApiLatencySLOViolation\",alertstate=\"firing\"}" }
+      ]
+    },
+    {
+      "title": "WebSocket Latency SLO Violation",
+      "type": "stat",
+      "targets": [
+        { "expr": "ALERTS{alertname=\"WebSocketLatencySLOViolation\",alertstate=\"firing\"}" }
+      ]
+    },
+    {
+      "title": "Fast Error Budget Burn",
+      "type": "stat",
+      "targets": [
+        { "expr": "ALERTS{alertname=\"ErrorBudgetBurnRateFast\",alertstate=\"firing\"}" }
+      ]
+    },
+    {
+      "title": "Slow Error Budget Burn",
+      "type": "stat",
+      "targets": [
+        { "expr": "ALERTS{alertname=\"ErrorBudgetBurnRateSlow\",alertstate=\"firing\"}" }
+      ]
+    }
+  ]
 }

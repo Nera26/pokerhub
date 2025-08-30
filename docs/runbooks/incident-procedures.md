@@ -2,8 +2,10 @@
 
 This runbook defines how PokerHub handles production incidents and documents the on‑call rotation.
 
-## Dashboard
-- Grafana: [SLO Overview](../analytics-dashboards.md)
+## Dashboards
+- [SLO Overview](../analytics-dashboards.md)
+- [Alerts Overview (Grafana)](../../infrastructure/observability/alerts-overview-grafana.json)
+- [Alerts Overview (Metabase)](../../infrastructure/observability/alerts-overview-metabase.json)
 
 ## On‑Call Rotation
 - **Primary**: rotates weekly across the SRE team and receives pages on the `pokerhub-sre` PagerDuty service.
@@ -23,6 +25,10 @@ Error budgets from [../SLOs.md](../SLOs.md) drive page urgency; exhausting 50% o
 ## PagerDuty Escalation
 - Service: `pokerhub-sre` for platform issues
 - Service: `pokerhub-eng` for frontend route latency and error alerts
+
+### Examples
+- `UptimeSLOViolation` firing on the [Alerts Overview dashboard](../../infrastructure/observability/alerts-overview-grafana.json) → page `pokerhub-sre`
+- `Queue saturation` alert on the same dashboard → page `pokerhub-eng`
 
 ## Security References
 
