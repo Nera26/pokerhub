@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { Queue } from 'bullmq';
 import { Repository } from 'typeorm';
@@ -28,6 +29,7 @@ export class KycService {
     private readonly verifications: Repository<KycVerification>,
     @InjectRepository(Account)
     private readonly accounts: Repository<Account>,
+    private readonly config: ConfigService,
   ) {}
 
   private async getQueue(): Promise<Queue> {
@@ -80,10 +82,48 @@ export class KycService {
     });
     try {
       const { country } = await this.runChecks(job.name, job.ip);
-      record.status = 'verified';
-      record.result = { country };
-      await this.verifications.save(record);
-      await this.accounts.update(job.accountId, { kycVerified: true });
+      const apiUrl = this.config.get<string>('kyc.apiUrl');
+      const apiKey = this.config.get<string>('kyc.apiKey');
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          id: record.id,
+          accountId: job.accountId,
+          name: job.name,
+          ip: job.ip,
+          country,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`provider ${response.status}`);
+      }
+
+      const providerData = (await response.json()) as {
+        status: string;
+        [key: string]: unknown;
+      };
+
+      record.result = providerData;
+
+      if (providerData.status === 'approved') {
+        record.status = 'verified';
+        await this.verifications.save(record);
+        await this.accounts.update(job.accountId, { kycVerified: true });
+      } else if (providerData.status === 'pending') {
+        record.status = 'pending';
+        await this.verifications.save(record);
+        const queue = await this.getQueue();
+        await queue.add('verify', job, { delay: 30000 });
+      } else {
+        record.status = 'failed';
+        await this.verifications.save(record);
+      }
     } catch (err) {
       record.status = 'failed';
       record.result = { error: (err as Error).message };
@@ -91,5 +131,20 @@ export class KycService {
       await this.verifications.save(record);
       throw err;
     }
+  }
+
+  async handleProviderUpdate(
+    verificationId: string,
+    result: { status: string; [key: string]: unknown },
+  ): Promise<void> {
+    const record = await this.verifications.findOneByOrFail({ id: verificationId });
+    record.result = result;
+    if (result.status === 'approved') {
+      record.status = 'verified';
+      await this.accounts.update(record.accountId, { kycVerified: true });
+    } else {
+      record.status = 'failed';
+    }
+    await this.verifications.save(record);
   }
 }

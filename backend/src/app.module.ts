@@ -20,6 +20,7 @@ import {
   rabbitmqConfig,
   authConfig,
   rateLimitConfig,
+  kycConfig,
 } from './config';
 import { validationSchema } from './config/env.validation';
 
@@ -84,6 +85,7 @@ class SecurityHeadersMiddleware implements NestMiddleware {
         rabbitmqConfig,
         authConfig,
         rateLimitConfig,
+        kycConfig,
       ],
     }),
 
