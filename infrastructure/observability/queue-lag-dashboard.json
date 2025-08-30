@@ -1,6 +1,9 @@
 {
   "dashboard": {
     "title": "Queue Lag",
+    "labels": {
+      "pagerduty_service": "pokerhub-eng"
+    },
     "panels": [
       {
         "type": "timeseries",

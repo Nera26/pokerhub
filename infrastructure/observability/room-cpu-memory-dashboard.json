@@ -1,6 +1,9 @@
 {
   "dashboard": {
     "title": "Room CPU and Memory",
+    "labels": {
+      "pagerduty_service": "pokerhub-sre"
+    },
     "panels": [
       {
         "type": "timeseries",

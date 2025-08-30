@@ -4,8 +4,9 @@ PokerHub uses OpenTelemetry to expose metrics which are scraped by Prometheus. T
 
 Prometheus evaluates SLO-based rules such as action ACK latency and socket connect success using multi-window burn rates. Alerts fire when the 5 m/1 h burn rate exceeds **14.4** or the 30 m/6 h burn rate exceeds **6**. Alertmanager routes notifications to PagerDuty and, for canary deployments, emits a `repository_dispatch` event that runs `infra/canary/rollback.sh`. See [SLO alert strategy](../SLOs.md) for details.
 
-## Dashboard
-- Grafana: [SLO Overview](../analytics-dashboards.md)
+## Dashboards
+- Grafana: [Service SLOs](../../infrastructure/observability/slo-dashboard.json)
+- Additional dashboards live under `../../infrastructure/observability/` and include `pagerduty_service` labels mapping each panel to the owning PagerDuty service.
 
 ## Severity Tiers
 
@@ -17,7 +18,7 @@ Prometheus evaluates SLO-based rules such as action ACK latency and socket conne
 
 ## PagerDuty Escalation
 - Alertmanager posts events to PagerDuty using the configured routing key.
-- The on-call engineer receives a page and triages using the dashboards in Grafana.
+- The on-call engineer triages using the dashboards above; each JSON file exposes a `pagerduty_service` label to identify the owning service.
 - After mitigation, acknowledge and resolve the alert in PagerDuty to close the loop.
 
 ### Escalation Path
@@ -30,7 +31,7 @@ Prometheus evaluates SLO-based rules such as action ACK latency and socket conne
 ## Relevant Components
 - `backend/src/telemetry/telemetry.ts` sets up exporters.
 - Prometheus and Alertmanager configuration lives under `infrastructure/monitoring/`.
-- Alert rules and dashboards also live under `infrastructure/monitoring/`.
+- Alert rules and dashboard definitions live under `infrastructure/observability/`.
 
 ## Metric Runbooks
 - [Action ACK Latency](./action-ack-latency.md)
