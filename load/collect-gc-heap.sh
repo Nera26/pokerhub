@@ -5,7 +5,8 @@ set -euo pipefail
 # When optional thresholds are breached the script exits non‑zero so the
 # surrounding soak test fails fast.
 METRICS_URL=${METRICS_URL:-http://localhost:4000/metrics}
-OUT_FILE=${OUT_FILE:-gc-heap-metrics.log}
+SCRIPT_DIR="$(dirname "$0")"
+OUT_FILE=${OUT_FILE:-$SCRIPT_DIR/metrics/gc-heap.log}
 INTERVAL=${INTERVAL:-60}
 GRAFANA_PUSH_URL=${GRAFANA_PUSH_URL:-}
 CPU_THRESHOLD=${CPU_THRESHOLD:-}
@@ -13,6 +14,8 @@ HEAP_THRESHOLD=${HEAP_THRESHOLD:-}
 GC_THRESHOLD=${GC_THRESHOLD:-}
 
 last_cpu=""
+
+mkdir -p "$(dirname "$OUT_FILE")"
 
 while true; do
   if ! metrics=$(curl -sf "$METRICS_URL"); then

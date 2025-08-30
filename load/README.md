@@ -5,11 +5,12 @@ This directory contains load test scripts for PokerHub.
 - `k6-ws-packet-loss.js` – k6 scenario establishing 10k sockets and simulating packet loss.
 - `artillery-ws-packet-loss.yml` – Artillery scenario with equivalent behavior via a processor.
 - `k6-ws-soak.js` – 24h k6 soak test emulating 80k sockets across 10k tables with 5% packet loss and 200 ms jitter. Deterministic runs are achieved via a seed and the script checks memory leak (<1%) and GC pause p95 (<50 ms) using a metrics endpoint.
-- `toxiproxy-soak.sh` – sets up a toxiproxy instance with 5% packet loss and 200 ms jitter for soak tests.
+- `toxiproxy.sh` – configures a Toxiproxy instance injecting packet loss, latency and jitter between clients and the server.
+- `toxiproxy-soak.sh` – wrapper around `toxiproxy.sh` with 5% packet loss and 200 ms jitter for soak tests.
 - `collect-gc-heap.sh` – polls the metrics endpoint for GC pause and heap stats and can push them to Grafana.
-- `k6-10k-tables.js` – k6 WebSocket scenario driving ~80 k sockets across 10 k tables, injecting packet loss and jitter while recording ACK latency.
+- `k6-10k-tables.js` – k6 WebSocket scenario driving ~80 k sockets across 10 k tables, injecting packet loss and jitter while recording ACK latency. Supports deterministic replays via `RNG_SEED` and outputs histograms under `load/metrics/`.
 - `artillery-10k-tables.yml` – Artillery equivalent to `k6-10k-tables.js` that captures per-endpoint latency histograms.
-- `k6-10k-tables-clickhouse.js` – k6 scenario for 10k tables and 80 k sockets injecting 5% packet loss and 200 ms jitter, capturing latency histograms and error rates with metrics exported to ClickHouse.
+- `k6-10k-tables-clickhouse.js` – k6 scenario for 10k tables and 80 k sockets injecting 5% packet loss and 200 ms jitter, capturing latency histograms and error rates with metrics exported to ClickHouse and deterministic seeds.
 - `k6-chaos-swarm.js` – swarm 80 k sockets across 10 k tables; pair with `toxiproxy.sh` for 5 % loss and 200 ms jitter.
 - `k6-ws-reconnect.js` – k6 scenario validating reconnect success and ACK latency under Toxiproxy impairments.
 
