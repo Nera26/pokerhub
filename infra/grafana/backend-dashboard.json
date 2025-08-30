@@ -1,0 +1,27 @@
+{
+  "title": "Backend Metrics",
+  "schemaVersion": 16,
+  "version": 1,
+  "panels": [
+    {
+      "type": "graph",
+      "title": "Game Action ACK Latency p95",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(game_action_ack_latency_ms_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "Process CPU",
+      "targets": [
+        {
+          "expr": "rate(process_cpu_seconds_total[1m])",
+          "legendFormat": "cpu"
+        }
+      ]
+    }
+  ]
+}

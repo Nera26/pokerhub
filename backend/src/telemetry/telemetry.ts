@@ -34,18 +34,17 @@ export function setupTelemetry() {
   });
 
   const prometheus = new PrometheusExporter({
-    port: Number(process.env.OTEL_PROMETHEUS_PORT) || 9464,
-    endpoint: '/metrics',
+    port: Number(process.env.OTEL_EXPORTER_PROMETHEUS_PORT) || 9464,
+    host: process.env.OTEL_EXPORTER_PROMETHEUS_HOST ?? '0.0.0.0',
+    endpoint: process.env.OTEL_EXPORTER_PROMETHEUS_ENDPOINT ?? '/metrics',
   });
 
   meterProvider = new MeterProvider({ resource });
   meterProvider.addMetricReader(prometheus);
 
-  const metricsUrl =
-    process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT ??
-    process.env.ALERTMANAGER_URL;
-  if (metricsUrl) {
-    const otlpExporter = new OTLPMetricExporter({ url: metricsUrl });
+  const otlpMetricsEndpoint = process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT;
+  if (otlpMetricsEndpoint) {
+    const otlpExporter = new OTLPMetricExporter({ url: otlpMetricsEndpoint });
     meterProvider.addMetricReader(
       new PeriodicExportingMetricReader({ exporter: otlpExporter }),
     );
