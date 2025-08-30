@@ -44,6 +44,23 @@ Environment variables:
 - `RNG_SEED` – seed for deterministic replay.
 - `METRICS_URL` – HTTP endpoint returning `{ heapUsed, gcPauseP95 }` for leak/GC checks.
 
+## Deterministic replay
+
+Each chaos run records its seed to `load/metrics/seed.txt` along with latency
+histograms and GC statistics. Re-run with the same seed to deterministically
+replay a scenario:
+
+```sh
+RNG_SEED=$(cat load/metrics/seed.txt) ./load/run-10k-chaos.sh
+```
+
+Artifacts written under `load/metrics/` include:
+
+- `ack-per-table.json` – per-table ACK latency histograms (10 ms buckets).
+- `ack-histogram.json` – aggregate ACK latency histogram from k6.
+- `artillery-latency.json` – HTTP latency histogram from Artillery.
+- `gc-heap.log` and `gc-stats.json` – raw and parsed GC/heap metrics.
+
 ## Chaos swarm run/stop
 
 ```sh

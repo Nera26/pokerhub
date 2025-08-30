@@ -21,9 +21,11 @@ jobs:
           SOCKETS: 80000
           TABLES: 10000
           RNG_SEED: ${{ github.run_id }}
+      - name: Check thresholds
+        run: ./load/check-thresholds.sh load/metrics/k6-summary.json | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Upload metrics
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: k6-10k-chaos
           path: load/metrics
