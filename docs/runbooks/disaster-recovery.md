@@ -65,6 +65,24 @@ with `SELECT 1`, and writes `RPO_SECONDS` and `RTO_SECONDS` to
 `infra/disaster-recovery/restore-latest.metrics`. Review the metrics to ensure
 **RPO ≤ 5 min** and **RTO ≤ 30 min** before promoting the instance.
 
+## Region Loss Drill
+
+Run the region failover drill to restore the latest snapshot in the secondary
+region and validate RTO/RPO.
+
+```bash
+PG_INSTANCE_ID=<db-instance-id> \
+SECONDARY_REGION=<aws-region> \
+PGUSER=<db-user> \
+PGPASSWORD=<db-pass> \
+WAL_ARCHIVE_BUCKET=<wal-archive-bucket> \
+bash infra/disaster-recovery/drill.sh
+```
+
+The script writes `drill.metrics` containing `RTO_SECONDS` and `RPO_SECONDS`.
+Confirm **RPO ≤ 300s** and **RTO ≤ 1800s**. Set `KEEP_INSTANCE=true` to retain
+the restored instance for inspection.
+
 ## Failover Simulation
 
 Run the automated failover drill to measure restore time and data loss.
@@ -87,7 +105,7 @@ It validates snapshot freshness and WAL shipping to ensure **RPO ≤ 5 min**
 and **RTO ≤ 30 min**. Failures trigger a PagerDuty alert to `pokerhub-eng`.
 
 ### Recent Drill Results
-- 2025-08-30: `drill.sh` and `restore-latest.sh` failed due to missing AWS credentials; RTO/RPO metrics were not captured. Configure credentials with `aws configure` before rerunning.
+- 2025-08-30: `drill.sh` failed locally because `aws` CLI was not available; RTO/RPO metrics were not captured. Install AWS CLI and configure credentials with `aws configure` before rerunning.
 
 ## Escalation
 - PagerDuty: pokerhub-eng
