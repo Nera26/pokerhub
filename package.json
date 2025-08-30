@@ -12,7 +12,7 @@
     "load:swarm": "mkdir -p load/results && k6 run load/k6-swarm.js --summary-export=load/results/k6-swarm-summary.json",
     "soak:test": "mkdir -p load/results && k6 run load/soak.js --log-format json --summary-export=load/results/soak-summary.json",
     "contracts:generate": "node contracts/generate-types.mjs",
-    "test:contracts": "npm test --prefix backend -- test/contracts/status.service.contract.spec.ts",
+    "test:contracts": "npm test --prefix backend -- \"test/contracts/.*\\.contract\\.spec\\.ts\"",
     "test:load": "npm run load:socket --prefix backend",
     "test:e2e": "npm run test:e2e --prefix frontend",
     "test": "npm test --prefix backend && npm test --prefix frontend && npm run test:contracts && npm run test:e2e --prefix frontend"
