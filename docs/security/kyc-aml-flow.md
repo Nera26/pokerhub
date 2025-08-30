@@ -2,6 +2,10 @@
 
 PokerHub requires identity verification and anti-money-laundering checks during player onboarding.
 
+## Overview
+
+![KYC Flow](../images/kyc-flow.svg)
+
 ## Onboarding Checks
 1. Collect legal name, date of birth, and address.
 2. Verify identity documents through the provider API.
