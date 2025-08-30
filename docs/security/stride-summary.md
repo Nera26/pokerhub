@@ -35,3 +35,9 @@ analytics, tournament, and wallet services.
 - **Information Disclosure**: Exposure of balances or PII. Mitigation: encrypt fields and restrict queries.
 - **Denial of Service**: Flooded wallet APIs block transfers. Mitigation: per‑account rate limits and queued transactions.
 - **Elevation of Privilege**: Escalation from read‑only to transfer rights. Mitigation: strict RBAC, IAM audits, and MFA for high‑value actions.
+
+## Open Issues
+- **App**: Device fingerprint binding is not enforced; introduce hardware‑backed tokens for high‑risk sessions.
+- **Analytics**: Lacks alerting on unusual query volume; add anomaly detection and weekly sanity checks.
+- **Tournament**: Payout distribution has no second‑signer verification; implement dual approval.
+- **Wallet**: Withdrawal requests still rely on software keys; deploy hardware security modules for signing.

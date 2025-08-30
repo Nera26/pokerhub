@@ -41,6 +41,14 @@ During drills, prefix the PagerDuty page with `[DRILL]` to avoid confusion with 
 4. **Document Findings**: Store all artifacts under `incident/<id>` in secure
    storage for auditability.
 
+## Suspected Fraud
+
+1. Freeze affected tables or wallet transactions and snapshot related logs.
+2. Export RNG proofs and hand histories for offline verification.
+3. Run anti-collusion and AML queries to gauge scope and linked accounts.
+4. Engage compliance to determine if a Suspicious Activity Report is required.
+5. Follow the [RNG Fairness Whitepaper](../rng-fairness.md) for shuffle verification and document all steps.
+
 ## Regulatory Reporting
 
 - Notify relevant gaming regulators within 24 hours of confirming collusion.

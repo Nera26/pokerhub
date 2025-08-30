@@ -17,6 +17,7 @@ PokerHub requires identity verification and anti-money-laundering checks during 
 
 ## Audit Logging
 - Record all verification requests and provider responses with timestamps and reviewer IDs.
+- Each step writes to a `kyc_audit` table capturing user ID, request ID, source IP and decision metadata for traceability.
 - Retain logs for seven years in immutable storage for regulatory audits.
 
 ## Compliance Check Steps
@@ -26,7 +27,7 @@ PokerHub requires identity verification and anti-money-laundering checks during 
 4. Perform AML transaction monitoring for deposits and withdrawals.
 5. Capture reviewer decision with timestamp and reasoning.
 
-## Audit Retention
+## Data Retention
 | Artifact | Retention | Storage |
 | --- | --- | --- |
 | KYC requests & responses | 7 years | Immutable object store |
