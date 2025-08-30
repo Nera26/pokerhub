@@ -37,3 +37,75 @@ groups:
         annotations:
           summary: "6h error rate budget burn rate too high"
           runbook: docs/runbooks/error-rates.md
+      - alert: ActionAckLatencySLOBurnRate1h
+        expr: action_ack_latency_error_budget_burn_rate_1h > 14.4
+        for: 2m
+        labels:
+          severity: critical
+          pagerduty_service: pokerhub-sre
+        annotations:
+          summary: "1h action ACK latency burn rate too high"
+          runbook: docs/runbooks/action-ack-latency.md
+      - alert: ActionAckLatencySLOBurnRate6h
+        expr: action_ack_latency_error_budget_burn_rate_6h > 6
+        for: 15m
+        labels:
+          severity: critical
+          pagerduty_service: pokerhub-sre
+        annotations:
+          summary: "6h action ACK latency burn rate too high"
+          runbook: docs/runbooks/action-ack-latency.md
+      - alert: SocketConnectSuccessSLOBurnRate1h
+        expr: socket_connect_error_budget_burn_rate_1h > 14.4
+        for: 2m
+        labels:
+          severity: critical
+          pagerduty_service: pokerhub-sre
+        annotations:
+          summary: "1h socket connect success burn rate too high"
+          runbook: docs/runbooks/socket-connect-success.md
+      - alert: SocketConnectSuccessSLOBurnRate6h
+        expr: socket_connect_error_budget_burn_rate_6h > 6
+        for: 15m
+        labels:
+          severity: critical
+          pagerduty_service: pokerhub-sre
+        annotations:
+          summary: "6h socket connect success burn rate too high"
+          runbook: docs/runbooks/socket-connect-success.md
+      - alert: ServiceUptimeSLOBurnRate1h
+        expr: service_uptime_error_budget_burn_rate_1h > 14.4
+        for: 2m
+        labels:
+          severity: critical
+          pagerduty_service: pokerhub-sre
+        annotations:
+          summary: "1h service uptime burn rate too high"
+          runbook: docs/runbooks/service-uptime.md
+      - alert: ServiceUptimeSLOBurnRate6h
+        expr: service_uptime_error_budget_burn_rate_6h > 6
+        for: 15m
+        labels:
+          severity: critical
+          pagerduty_service: pokerhub-sre
+        annotations:
+          summary: "6h service uptime burn rate too high"
+          runbook: docs/runbooks/service-uptime.md
+      - alert: QueueSaturationSLOBurnRate1h
+        expr: queue_saturation_error_budget_burn_rate_1h > 14.4
+        for: 2m
+        labels:
+          severity: critical
+          pagerduty_service: pokerhub-eng
+        annotations:
+          summary: "1h queue saturation burn rate too high"
+          runbook: docs/runbooks/queue-saturation.md
+      - alert: QueueSaturationSLOBurnRate6h
+        expr: queue_saturation_error_budget_burn_rate_6h > 6
+        for: 15m
+        labels:
+          severity: critical
+          pagerduty_service: pokerhub-eng
+        annotations:
+          summary: "6h queue saturation burn rate too high"
+          runbook: docs/runbooks/queue-saturation.md

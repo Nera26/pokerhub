@@ -1,0 +1,5 @@
+{
+  "name": "Alerts Overview",
+  "description": "Metabase cards summarizing active alerts.",
+  "parameters": []
+}
