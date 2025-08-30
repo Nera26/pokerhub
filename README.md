@@ -4,7 +4,10 @@
 
 - [Game Engine Specification](docs/game-engine-spec.md)
 - [Tournament Handbook](docs/tournament-handbook.md)
+- [Accounting Book](docs/accounting-book.md)
+- [Milestone Roadmap](docs/roadmap.md)
 - [Reconciliation Guide](docs/reconciliation-guide.md)
+- [Documentation Index](docs/index.md)
 
 ## Development Environment
 

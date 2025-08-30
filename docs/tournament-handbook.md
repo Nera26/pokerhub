@@ -1,7 +1,7 @@
 # Tournament Handbook
 
 **Version:** 1.1.1
-**Last Updated:** 2025-09-05
+**Last Updated:** 2025-08-30
 **Changelog:** [CHANGELOG](./handbook/CHANGELOG.md)
 
 This handbook standardizes how PokerHub hosts competitive events. Engine
@@ -73,6 +73,7 @@ flowchart LR
 Tournament ledger entries must be verified daily. Follow the [reconciliation procedure](./accounting-book.md#reconciliation-procedure) to confirm balances.
 
 ## Changelog
+- **1.1.1** – 2025-08-30 – Introduced changelog and added checklist review.
 - **1.1.0** – 2025-08-30 – Added cross-references to engine spec and reconciliation guide; converted revision history to changelog.
 - **1.0.1** – 2025-08-30 – Added lifecycle diagram and version metadata.
 - **1.0.0** – 2025-01-04 – Initial tournament policies.

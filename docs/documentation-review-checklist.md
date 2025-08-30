@@ -1,7 +1,7 @@
 # Documentation Review Checklist
 
-**Version:** 1.0.1
-**Last Updated:** 2025-09-05
+**Version:** 1.1.0
+**Last Updated:** 2025-08-30
 
 Use this checklist to ensure feature work includes appropriate documentation updates.
 
@@ -14,5 +14,9 @@ Use this checklist to ensure feature work includes appropriate documentation upd
 - [ ] Have all required tests and linters been executed?
 - [ ] Is "Version" and "Last Updated" metadata present and accurate?
 - [ ] Are spelling, grammar, and style consistent?
+
+## Review Schedule
+- Reviews occur during the first week of each quarter.
+- This checklist is also executed after each major release.
 
 For test stages and commands, see the [CI/CD Pipeline](./pipeline.md).
