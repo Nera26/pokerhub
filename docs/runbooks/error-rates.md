@@ -2,7 +2,12 @@
 
 Responding to elevated application error rates.
 
-- [Grafana Dashboard](../../infrastructure/monitoring/grafana-error-rates.json)
+## Dashboard
+- Grafana: [Error Rates](../../infrastructure/monitoring/grafana-error-rates.json)
+- Metabase: [Error Rate](../analytics-dashboards.md#error-rate-1)
+
+## PagerDuty Escalation
+- Service: `pokerhub-sre`
 
 ## When to page
 Page when sustained error budget burn exceeds limits described in [SLO error-budget handling](../SLOs.md#error-budget-handling).

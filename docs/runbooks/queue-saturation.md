@@ -2,6 +2,10 @@
 
 Handle situations where message queues accumulate a backlog faster than consumers can process.
 
+## Dashboard
+- Grafana: [Queue Lag](../../infrastructure/monitoring/grafana-queue-lag.json)
+- Metabase: [Queue Saturation](../analytics-dashboards.md#queue-saturation-1)
+
 ## Detection
 - Rising queue depth metrics or alerts.
 - Consumers lagging or timing out.
@@ -22,8 +26,8 @@ Page according to the [SLO error-budget policy](../SLOs.md#error-budget-handling
 - No new saturation alerts for 15 m.
 - `queueLag` metric falls below 2 s.
 
-## Escalation
-- PagerDuty: pokerhub-eng
+## PagerDuty Escalation
+- Service: `pokerhub-eng`
 - Slack: #ops
 
 ## Drill

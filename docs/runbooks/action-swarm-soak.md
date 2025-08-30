@@ -2,6 +2,12 @@
 
 Runs the WebSocket action swarm for 24 h to uncover memory leaks or GC regressions.
 
+## Dashboard
+- Grafana: [Room CPU/Memory](../../infrastructure/monitoring/grafana-room-cpu-mem.json)
+
+## PagerDuty Escalation
+- Service: `pokerhub-sre`
+
 ## Triage
 1. Start metrics polling:
    ```bash

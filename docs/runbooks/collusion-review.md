@@ -2,7 +2,15 @@
 
 This runbook outlines how administrators review flagged sessions for potential collusion.
 
+
+## Dashboard
+- Metabase: [Collusion Review](../analytics-dashboards.md)
+
+## PagerDuty Escalation
+- Service: `pokerhub-eng`
+
 Refer to [../security/anti-collusion.md](../security/anti-collusion.md) for details on detection heuristics and analytics queries.
+
 
 ## Access Requirements
 - Only users with the `admin` role can access `/admin/collusion`.

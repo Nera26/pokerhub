@@ -1,5 +1,8 @@
 # Postgres PITR Recovery
 
+## Dashboard
+- Grafana: [Postgres PITR](../analytics-dashboards.md)
+
 ## Objectives
 - **RTO**: 30 minutes to resume service.
 - **RPO**: 5 minutes of acceptable data loss.
@@ -27,6 +30,6 @@
 - `restore-backup.metrics` reports `RTO_SECONDS <= 1800` and `RPO_SECONDS <= 300`.
 - Replication lag dashboards stay under five minutes after promotion.
 
-## Escalation
-- PagerDuty: pokerhub-eng
+## PagerDuty Escalation
+- Service: `pokerhub-eng`
 - Slack: #ops

@@ -1,8 +1,13 @@
 # Queue Lag
 
 Investigates delays in processing queued actions.
+ 
+## Dashboard
+- Grafana: [Queue Lag](../../infrastructure/monitoring/grafana-queue-lag.json)
+- Metabase: [Queue Lag](../analytics-dashboards.md#queue-saturation-1)
 
-- [Grafana Dashboard](../../infrastructure/monitoring/grafana-queue-lag.json)
+## PagerDuty Escalation
+- Service: `pokerhub-eng`
 
 ## Triage
 1. Identify which queues show sustained lag.

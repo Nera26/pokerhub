@@ -2,6 +2,9 @@
 
 Resolve backlogs in the tournament balancer to keep seating timely and fair.
 
+## Dashboard
+- Grafana: [Tourney Balancer](../analytics-dashboards.md)
+
 ## Detection
 - `tourneyBalanceLag` metric exceeds 30 s.
 - Balancer dashboard shows >100 pending seats.
@@ -20,8 +23,8 @@ Resolve backlogs in the tournament balancer to keep seating timely and fair.
 - Players seated within 10 s over the next 5 m.
 - `tourneyBalanceLag` metric drops below 5 s.
 
-## Escalation
-- PagerDuty: pokerhub-eng
+## PagerDuty Escalation
+- Service: `pokerhub-eng`
 - Slack: #ops
 
 ## Drill

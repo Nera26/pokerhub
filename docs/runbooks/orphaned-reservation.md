@@ -2,6 +2,9 @@
 
 Use this guide when seat reservations are not released after players disconnect.
 
+## Dashboard
+- Grafana: [Reservations](../analytics-dashboards.md)
+
 ## Detection
 - Seats remain reserved after players disconnect.
 - Reservation TTL metrics exceed thresholds in Grafana.
@@ -20,8 +23,8 @@ Use this guide when seat reservations are not released after players disconnect.
 - Monitor for reoccurrence over the next hour.
 - Confirm `reservationTTL` metrics return to baseline.
 
-## Escalation
-- PagerDuty: pokerhub-eng
+## PagerDuty Escalation
+- Service: `pokerhub-eng`
 - Slack: #ops
 
 ## Drill

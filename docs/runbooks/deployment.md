@@ -2,6 +2,13 @@
 
 Use this runbook to roll out a new release using a guarded canary.
 
+## Dashboard
+- Grafana: [Action ACK Latency](../analytics-dashboards.md#action-ack-latency)
+- Grafana: [Error Rate](../analytics-dashboards.md#error-rate)
+
+## PagerDuty Escalation
+- Service: `pokerhub-sre`
+
 ## Trigger
 
 1. Go to **Actions → Deploy** in GitHub.

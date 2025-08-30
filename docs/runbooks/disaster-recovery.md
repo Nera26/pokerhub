@@ -1,5 +1,8 @@
 # Disaster Recovery Runbook
 
+## Dashboard
+- Grafana: [Disaster Recovery](../analytics-dashboards.md)
+
 ## Objectives
 - **Recovery Time Objective (RTO)**: 30 minutes
 - **Recovery Point Objective (RPO)**: 5 minutes
@@ -105,8 +108,8 @@ and **RTO ≤ 30 min**. Failures trigger a PagerDuty alert to `pokerhub-eng`.
 ### Recent Drill Results
 - 2025-08-30: `drill.sh` failed locally because `gcloud` CLI was not available; RTO/RPO metrics were not captured. Install the Google Cloud CLI and configure credentials before rerunning.
 
-## Escalation
-- PagerDuty: pokerhub-eng
+## PagerDuty Escalation
+- Service: `pokerhub-eng`
 - Slack: #ops
 
 ## Verification

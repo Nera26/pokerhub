@@ -1,8 +1,12 @@
 # Room Worker CPU/Mem
 
 Handles situations where room workers consume excessive CPU or memory.
+ 
+## Dashboard
+- Grafana: [Room Worker Resources](../../infrastructure/monitoring/grafana-room-worker.json)
 
-- [Grafana Dashboard](../../infrastructure/monitoring/grafana-room-worker.json)
+## PagerDuty Escalation
+- Service: `pokerhub-sre`
 
 ## Triage
 1. Determine which room worker pods are exceeding thresholds.
