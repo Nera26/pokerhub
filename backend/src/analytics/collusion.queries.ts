@@ -1,16 +1,56 @@
 import { Injectable } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
 
+interface SharedIpRow {
+  ip: string;
+  players: string[];
+}
+
+interface ChipDumpRow {
+  from_player: string;
+  to_player: string;
+  total_transferred: number;
+}
+
+interface SyncBetRow {
+  hand_id: string;
+  actors: string[];
+}
+
 @Injectable()
 export class CollusionQueryService {
   constructor(private readonly analytics: AnalyticsService) {}
+
+  private async persist(
+    kind: string,
+    payload: Record<string, any>,
+    users: string[],
+  ) {
+    await this.analytics.ingest('collusion_alerts', {
+      kind,
+      ...payload,
+      created_at: Date.now(),
+    });
+    await this.analytics.emitAntiCheatFlag({
+      sessionId:
+        (payload as any).hand_id ??
+        (payload as any).ip ??
+        `${(payload as any).from_player}-${(payload as any).to_player}`,
+      users,
+      features: { kind, ...payload },
+    });
+  }
 
   async sharedIpFlags() {
     const sql = `SELECT ip, array_agg(player_id) AS players
 FROM session_logs
 GROUP BY ip
 HAVING COUNT(DISTINCT player_id) > 1`;
-    return this.analytics.select(sql);
+    const rows = await this.analytics.select<SharedIpRow>(sql);
+    for (const row of rows) {
+      await this.persist('shared_ip', row, row.players);
+    }
+    return rows;
   }
 
   async chipDumpingFlags() {
@@ -18,7 +58,15 @@ HAVING COUNT(DISTINCT player_id) > 1`;
 FROM chip_transfers
 GROUP BY from_player, to_player
 HAVING total_transferred > 100000`;
-    return this.analytics.select(sql);
+    const rows = await this.analytics.select<ChipDumpRow>(sql);
+    for (const row of rows) {
+      await this.persist(
+        'chip_dumping',
+        row,
+        [row.from_player, row.to_player],
+      );
+    }
+    return rows;
   }
 
   async synchronizedBetFlags() {
@@ -26,6 +74,10 @@ HAVING total_transferred > 100000`;
 FROM betting_events
 GROUP BY hand_id
 HAVING stddev(action_time_ms) < 200`;
-    return this.analytics.select(sql);
+    const rows = await this.analytics.select<SyncBetRow>(sql);
+    for (const row of rows) {
+      await this.persist('synchronized_bets', row, row.actors);
+    }
+    return rows;
   }
 }
