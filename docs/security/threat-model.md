@@ -15,6 +15,17 @@ below enumerate STRIDE threats and mitigations across all backend modules.
 
 See [Incident Response Runbook](incident-response.md) for detection sources and escalation procedures.
 
+## STRIDE Summary
+
+| Category | Outcome | Runbook |
+| --- | --- | --- |
+| Spoofing | Fake player sessions | [Collusion Review](../runbooks/collusion-review.md) |
+| Tampering | Altered data or configs | [Incident Procedures](../runbooks/incident-procedures.md) |
+| Repudiation | Disputed transactions | [Wallet Reconciliation](../runbooks/wallet-reconciliation.md) |
+| Information Disclosure | Exposed PII or secrets | [Incident Response](incident-response.md) |
+| Denial of Service | Flooded APIs or resources | [Service Uptime](../runbooks/service-uptime.md) |
+| Elevation of Privilege | Unauthorized admin access | [Incident Response](incident-response.md) |
+
 ## analytics
 - **Spoofing**: Injecting fake telemetry events to skew metrics.
   - *Mitigation*: Sign analytics payloads and accept events only from authenticated services.

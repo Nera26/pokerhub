@@ -59,3 +59,6 @@ HAVING stddev(action_time_ms) < 200;
 5. **Enforcement**: Suspend accounts, confiscate funds, and notify regulators if collusion is confirmed.
 6. **Record Keeping**: Retain investigation records for **5 years** in secure storage.
 
+
+## References
+- [Collusion Review Runbook](../runbooks/collusion-review.md) – triage and escalation workflow.
