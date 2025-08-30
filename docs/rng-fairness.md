@@ -1,10 +1,24 @@
-# RNG Fairness Protocol
+# RNG Fairness Whitepaper
 
-To ensure every deck is provably fair, PokerHub uses a commit–reveal scheme backed by deterministic shuffling.
+This whitepaper documents the random number generation approach used by PokerHub
+and the controls that keep card dealing verifiably fair. The RNG is seeded with
+high‑entropy sources, audited by independent firms, and subjected to continuous
+statistical testing.
+
+## Seeding Strategy
+
+- The backend combines `crypto.randomBytes` output with entropy from OS sources
+  such as `/dev/urandom` and hardware RNGs where available.
+- Seeds are rotated for every hand and mixed with a 16‑byte nonce to prevent
+  reuse or prediction.
+- A server master seed is refreshed on startup and periodically reseeded to
+  guard against entropy pool exhaustion.
 
 ## Seed and Nonce Generation
-- Before a hand starts the server draws a 32‑byte `seed` and 16‑byte `nonce` using Node's `crypto.randomBytes`.
-- Both values live only in server memory until reveal and are never sent to clients mid-hand.
+- Before a hand starts the server draws a 32‑byte `seed` and 16‑byte `nonce`
+  using Node's `crypto.randomBytes`.
+- Both values live only in server memory until reveal and are never sent to
+  clients mid-hand.
 
 ## Commit–Reveal
 1. Compute `commitment = sha256(seed || nonce)`.
@@ -106,3 +120,20 @@ npx ts-node scripts/export-hand-proof.ts <handId>
 ```
 
 The script also prints the same object to stdout for quick inspection.
+
+## Independent Audits
+
+PokerHub engages external security firms annually to review the RNG
+implementation and reproduce the shuffling process. Audit reports are published
+to regulators and summarized for players in transparency reports.
+
+## Statistical Testing
+
+Every release of the RNG library undergoes automated test batteries including:
+
+- Chi‑squared frequency tests
+- Runs and serial correlation tests
+- Dieharder and NIST SP 800‑22 suites
+
+Results are stored alongside build artifacts and reviewed for regressions. Any
+anomalies trigger an engineering investigation before deployment.
