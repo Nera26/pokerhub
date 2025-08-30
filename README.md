@@ -63,6 +63,16 @@ npm run push:backend    # git subtree push --prefix backend backend-remote main
 npm run push:all        # push both subtrees
 ```
 
+## Testing
+
+Run all backend, frontend, contract, and end-to-end tests with:
+
+```bash
+npm test
+```
+
+This single command executes the backend and frontend unit tests, contract tests, and frontend E2E suite.
+
 ## Documentation
 
 - [Game Engine Overview](docs/game-engine.md) – state transitions, message schemas, and timers.

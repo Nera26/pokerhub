@@ -14,7 +14,8 @@
     "contracts:generate": "node contracts/generate-types.mjs",
     "test:contracts": "npm test --prefix backend -- test/contracts/status.service.contract.spec.ts",
     "test:load": "npm run load:socket --prefix backend",
-    "test:e2e": "npm run test:e2e --prefix frontend"
+    "test:e2e": "npm run test:e2e --prefix frontend",
+    "test": "npm test --prefix backend && npm test --prefix frontend && npm run test:contracts && npm run test:e2e --prefix frontend"
   },
   "devDependencies": {
     "openapi-typescript": "^6.7.0",
