@@ -10,6 +10,7 @@ import { EventPublisher } from '../src/events/events.service';
 import { PaymentProviderService } from '../src/wallet/payment-provider.service';
 import { KycService } from '../src/wallet/kyc.service';
 import { SettlementJournal } from '../src/wallet/settlement-journal.entity';
+import { MockRedis } from './utils/mock-redis';
 
 jest.setTimeout(20000);
 
@@ -95,7 +96,7 @@ describe('WalletService journal invariants', () => {
     const journalRepo = dataSource.getRepository(JournalEntry);
     const disbRepo = dataSource.getRepository(Disbursement);
     const settleRepo = dataSource.getRepository(SettlementJournal);
-    const redis: any = { incr: jest.fn().mockResolvedValue(0), expire: jest.fn() };
+    const redis = new MockRedis();
     const provider = { initiate3DS: jest.fn(), getStatus: jest.fn() } as unknown as PaymentProviderService;
     const kyc = {
       validate: jest.fn().mockResolvedValue(undefined),

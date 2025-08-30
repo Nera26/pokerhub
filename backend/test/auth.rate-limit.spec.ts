@@ -1,19 +1,9 @@
 import { ConfigService } from '@nestjs/config';
-import { RateLimitGuard } from '../src/auth/rate-limit.guard';
+import { RateLimitGuard } from '../src/routes/rate-limit.guard';
 import { HttpException } from '@nestjs/common';
+import { MockRedis } from './utils/mock-redis';
 
 describe('RateLimitGuard', () => {
-  class MockRedis {
-    private counts = new Map<string, number>();
-    async incr(key: string) {
-      const val = (this.counts.get(key) ?? 0) + 1;
-      this.counts.set(key, val);
-      return val;
-    }
-    async expire() {
-      return 1;
-    }
-  }
 
   function createContext(ip = '127.0.0.1', device = 'a') {
     return {

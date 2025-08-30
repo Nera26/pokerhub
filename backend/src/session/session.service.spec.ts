@@ -1,19 +1,7 @@
 import { SessionService } from './session.service';
 import type Redis from 'ioredis';
 import jwt from 'jsonwebtoken';
-
-class MockRedis {
-  store = new Map<string, string>();
-  set(key: string, value: string, mode: string, ttl: number) {
-    this.store.set(key, value);
-  }
-  get(key: string) {
-    return this.store.get(key) ?? null;
-  }
-  del(key: string) {
-    this.store.delete(key);
-  }
-}
+import { MockRedis } from '../../test/utils/mock-redis';
 
 class MockConfig {
   get(key: string, def?: any) {

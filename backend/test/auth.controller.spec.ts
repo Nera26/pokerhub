@@ -6,27 +6,7 @@ import { AuthService } from '../src/auth/auth.service';
 import { SessionService } from '../src/session/session.service';
 import { LoginResponseSchema } from '@shared/types';
 import { ConfigService } from '@nestjs/config';
-
-class MockRedis {
-  store = new Map<string, any>();
-  incr(key: string) {
-    const val = (this.store.get(key) ?? 0) + 1;
-    this.store.set(key, val);
-    return val;
-  }
-  expire(key: string, _ttl: number) {
-    return 0;
-  }
-  set(key: string, value: string) {
-    this.store.set(key, value);
-  }
-  get(key: string) {
-    return this.store.get(key) ?? null;
-  }
-  del(key: string) {
-    this.store.delete(key);
-  }
-}
+import { MockRedis } from './utils/mock-redis';
 
 class MockConfigService {
   get(key: string, def?: any) {

@@ -2,6 +2,7 @@ import { EtlService } from '../../src/analytics/etl.service';
 import { EventName } from '@shared/events';
 import type { ConfigService } from '@nestjs/config';
 import type Redis from 'ioredis';
+import { MockRedis } from '../utils/mock-redis';
 
 class MockProducer {
   send = jest.fn(async () => undefined);
@@ -29,36 +30,6 @@ class MockAnalyticsService {
   }
 }
 
-class MockRedis {
-  streams = new Map<string, [string, string][]>();
-  seq = 0;
-  async xadd(stream: string, id: string, field: string, value: string) {
-    const entries = this.streams.get(stream) ?? [];
-    const entryId = `${++this.seq}-0`;
-    entries.push([entryId, value]);
-    this.streams.set(stream, entries);
-    return entryId;
-  }
-  async keys(pattern: string) {
-    if (pattern === 'analytics:*') return Array.from(this.streams.keys());
-    return [];
-  }
-  async xread(...args: any[]) {
-    const streamsIndex = args.indexOf('STREAMS');
-    const streams = args.slice(streamsIndex + 1, streamsIndex + 1 + (args.length - streamsIndex - 1) / 2);
-    const ids = args.slice(streamsIndex + 1 + streams.length);
-    const result: any[] = [];
-    streams.forEach((s: string, i: number) => {
-      const entries = this.streams.get(s) ?? [];
-      const lastId = ids[i];
-      const newEntries = entries.filter(([id]) => id > lastId);
-      if (newEntries.length) {
-        result.push([s, newEntries.map(([id, val]) => [id, ['event', val]])]);
-      }
-    });
-    return result.length ? result : null;
-  }
-}
 
 describe('EtlService round-trip', () => {
   const events: Record<EventName, any> = {
