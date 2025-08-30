@@ -2,11 +2,11 @@
 
 ## Core Documentation
 
-- [Game Engine Specification](docs/game-engine-spec.md)
-- [Tournament Handbook](docs/tournament-handbook.md)
+- [Game Engine Specification](docs/game-engine-spec.md) – state machine, message schemas, and timers.
+- [Tournament Handbook](docs/tournament-handbook.md) – event formats, blinds, and payout rules.
 - [Accounting Book](docs/accounting-book.md)
-- [Milestone Roadmap](docs/roadmap.md)
-- [Reconciliation Guide](docs/reconciliation-guide.md)
+- [Milestone Roadmap](docs/roadmap.md) – release schedule and planned features.
+- [Reconciliation Guide](docs/reconciliation-guide.md) – ledger verification and dispute workflow.
 - [Documentation Index](docs/index.md)
 
 ## Development Environment

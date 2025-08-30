@@ -1,13 +1,14 @@
 # Milestone Roadmap
 
-**Version:** 1.0.0
-**Last Updated:** 2025-08-30
+**Version:** 1.1.0
+**Last Updated:** 2025-10-05
 
 | Release | Target Date  | Highlights |
 |--------|--------------|------------|
 | v1.0.0 | 2025-09-30   | Initial public beta with cash games and manual payouts. |
 | v1.1.0 | 2025-12-15   | Tournament support and automated reconciliation. |
 | v1.2.0 | 2026-03-01   | Mobile clients and expanded payment providers. |
+| v1.3.0 | 2026-06-15   | Real-time analytics and compliance automation. |
 
 ## Updating the Roadmap
 1. Propose the new milestone in an issue describing scope and target date.
@@ -17,5 +18,6 @@
 This roadmap is updated at the end of each release cycle.
 
 ## Revision History
+- 2025-10-05: added v1.3.0 milestone and updated version metadata
 - 2025-08-30: initial publication with version metadata and update procedure
 
