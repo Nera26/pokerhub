@@ -28,10 +28,12 @@ import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 
 import type { Counter } from '@opentelemetry/api';
 import { LogRecordProcessor, LogRecord } from '@opentelemetry/sdk-logs';
+import type { Request, Response, NextFunction } from 'express';
 
 let sdk: NodeSDK | undefined;
 let meterProvider: MeterProvider | undefined;
 let loggerProvider: LoggerProvider | undefined;
+let requestCounter: Counter | undefined;
 
 export function setupTelemetry() {
   if (sdk) return sdk;
@@ -74,6 +76,9 @@ export function setupTelemetry() {
   const logCounter = meter.createCounter('log_records_total', {
     description: 'Total log records by severity',
   });
+  requestCounter = meter.createCounter('http_requests_total', {
+    description: 'Total HTTP requests received',
+  });
 
   class LogCounterProcessor implements LogRecordProcessor {
     constructor(private counter: Counter) {}
@@ -115,6 +120,21 @@ export function setupTelemetry() {
 
   sdk.start();
   return sdk;
+}
+
+export function telemetryMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  res.on('finish', () => {
+    requestCounter?.add(1, {
+      method: req.method,
+      route: req.route?.path ?? req.path,
+      status: res.statusCode,
+    });
+  });
+  next();
 }
 
 export async function shutdownTelemetry() {

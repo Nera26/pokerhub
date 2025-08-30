@@ -5,7 +5,11 @@ import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { WalletService } from './wallet/wallet.service';
 import { scheduleReconcileJob } from './wallet/reconcile.job';
-import { setupTelemetry, shutdownTelemetry } from './telemetry/telemetry';
+import {
+  setupTelemetry,
+  shutdownTelemetry,
+  telemetryMiddleware,
+} from './telemetry/telemetry';
 
 async function bootstrap() {
   setupTelemetry();
@@ -13,6 +17,7 @@ async function bootstrap() {
   app.useLogger(app.get(Logger));
 
   app.use(cookieParser());
+  app.use(telemetryMiddleware);
   app.use((req, res, next) => {
     const original = res.cookie.bind(res);
     res.cookie = (name: string, value: any, options: any = {}) =>
