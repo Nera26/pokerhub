@@ -1,5 +1,8 @@
 # RNG Whitepaper
 
+**Version:** 1.0.0
+**Last Updated:** 2025-10-04
+
 PokerHub uses a commit–reveal protocol to prove every shuffle was fair and unmanipulated.
 
 ## Commit–Reveal Flow
@@ -46,6 +49,6 @@ PokerHub uses a commit–reveal protocol to prove every shuffle was fair and unm
 - [Collusion Review Runbook](../runbooks/collusion-review.md)
 
 ## Revision History
-- 2025-10-04: document audit proofs and seed retention policy
+- 2025-10-04: document audit proofs, seed retention policy, and version metadata
 - 2025-08-30: add commit–reveal diagram and flow summary
 - 2025-01-04: initial public release

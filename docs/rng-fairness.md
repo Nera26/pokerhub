@@ -1,5 +1,8 @@
 # RNG Fairness Whitepaper
 
+**Version:** 1.0.0
+**Last Updated:** 2025-08-30
+
 This whitepaper documents the random number generation approach used by PokerHub
 and the controls that keep card dealing verifiably fair. The RNG is seeded with
 high‑entropy sources, audited by independent firms, and subjected to continuous
@@ -162,4 +165,7 @@ determine results.
 
 Operations reviews RTP reports monthly to confirm that effective returns align
 with advertised structures and regulatory expectations.
+
+## Revision History
+- 2025-08-30: initial version with commit–reveal protocol and RTP details
 
