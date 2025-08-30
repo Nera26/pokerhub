@@ -2,7 +2,8 @@
   "dashboard": {
     "title": "Socket Connects",
     "labels": {
-      "pagerduty_service": "pokerhub-sre"
+      "pagerduty_service": "pokerhub-sre",
+      "runbook": "docs/runbooks/socket-connect-success.md"
     },
     "panels": [
       {
@@ -10,7 +11,9 @@
         "title": "Connect Rate",
         "datasource": "Prometheus",
         "targets": [
-          { "expr": "sum(rate(socket_connects_total[5m]))" }
+          {
+            "expr": "sum(rate(socket_connects_total[5m]))"
+          }
         ]
       },
       {
@@ -18,7 +21,9 @@
         "title": "Disconnect Rate",
         "datasource": "Prometheus",
         "targets": [
-          { "expr": "sum(rate(socket_disconnects_total[5m]))" }
+          {
+            "expr": "sum(rate(socket_disconnects_total[5m]))"
+          }
         ]
       }
     ]

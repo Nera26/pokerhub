@@ -1,8 +1,8 @@
 # Error Budget Procedures
 
-When service level objectives burn their monthly error budget, operators follow these escalation rules.
+When service level objectives burn their monthly error budget, operators follow these escalation rules. Monthly budgets are derived from `1 - target` for each SLO (e.g. 99.95% availability leaves **21.6 minutes** per month).
 
-If **50%** of the budget is consumed, feature deployments freeze until stability returns. Consuming **100%** requires rolling back risky releases and mandates engineering manager and CTO approval for any production change.
+If burn rates exceed **14.4×** over 1 h or **6×** over 6 h, PagerDuty pages the owning team. Consuming **50%** of the monthly budget freezes feature deployments until stability returns. Exhausting **100%** requires rolling back risky releases and mandates engineering manager and CTO approval for any production change.
 
 PagerDuty routes SLO burn alerts based on the metric:
 

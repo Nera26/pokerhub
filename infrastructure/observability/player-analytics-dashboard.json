@@ -2,7 +2,8 @@
   "dashboard": {
     "title": "Player Analytics",
     "labels": {
-      "pagerduty_service": "pokerhub-eng"
+      "pagerduty_service": "pokerhub-eng",
+      "runbook": "docs/runbooks/player-analytics.md"
     },
     "panels": [
       {

@@ -2,7 +2,8 @@
   "dashboard": {
     "title": "Service Uptime",
     "labels": {
-      "pagerduty_service": "pokerhub-sre"
+      "pagerduty_service": "pokerhub-sre",
+      "runbook": "docs/runbooks/service-uptime.md"
     },
     "panels": [
       {

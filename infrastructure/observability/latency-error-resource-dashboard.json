@@ -1,6 +1,9 @@
 {
   "title": "Latency & Error Overview",
-  "labels": { "pagerduty_service": "pokerhub-sre" },
+  "labels": {
+    "pagerduty_service": "pokerhub-sre",
+    "runbook": "docs/runbooks/telemetry-pipeline.md"
+  },
   "panels": [
     {
       "title": "HTTP p95 Latency",
@@ -31,4 +34,3 @@
     }
   ]
 }
-
