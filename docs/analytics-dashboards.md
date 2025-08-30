@@ -114,6 +114,43 @@ JSON exports for core operational metrics. Import these into Grafana or Metabase
 }
 ```
 
+### Frontend Route Latency
+```json
+{
+  "title": "Frontend Route Latency",
+  "panels": [
+    {
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(frontend_route_duration_seconds_bucket[5m])) by (le,route))"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    }
+  ],
+  "tags": { "pagerduty_service": "pokerhub-eng" }
+}
+```
+
+### Frontend Error Rate
+```json
+{
+  "title": "Frontend Error Rate",
+  "panels": [
+    {
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(rate(frontend_errors_total[5m])) / sum(rate(frontend_requests_total[5m]))"
+        }
+      ]
+    }
+  ],
+  "tags": { "pagerduty_service": "pokerhub-eng" }
+}
+```
+
 ### Telemetry Overview
 ```json
 {

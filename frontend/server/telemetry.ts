@@ -3,13 +3,6 @@ import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
-import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
-import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
-import { AmqplibInstrumentation } from '@opentelemetry/instrumentation-amqplib';
-import { KafkajsInstrumentation } from '@opentelemetry/instrumentation-kafkajs';
-import { SocketIoInstrumentation } from '@opentelemetry/instrumentation-socket.io';
-import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
-import { NestInstrumentation } from '@opentelemetry/instrumentation-nestjs-core';
 import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { metrics } from '@opentelemetry/api';
@@ -22,22 +15,35 @@ import { logs } from '@opentelemetry/api-logs';
 import {
   LoggerProvider,
   BatchLogRecordProcessor,
+  LogRecordProcessor,
+  LogRecord,
 } from '@opentelemetry/sdk-logs';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
-
 import type { Counter } from '@opentelemetry/api';
-import { LogRecordProcessor, LogRecord } from '@opentelemetry/sdk-logs';
 
 let sdk: NodeSDK | undefined;
 let meterProvider: MeterProvider | undefined;
 let loggerProvider: LoggerProvider | undefined;
+
+class LogCounterProcessor implements LogRecordProcessor {
+  constructor(private counter: Counter) {}
+  onEmit(record: LogRecord) {
+    this.counter.add(1, { severity: record.severityText });
+  }
+  forceFlush() {
+    return Promise.resolve();
+  }
+  shutdown() {
+    return Promise.resolve();
+  }
+}
 
 export function setupTelemetry() {
   if (sdk) return sdk;
 
   const resource = new Resource({
     [SemanticResourceAttributes.SERVICE_NAME]:
-      process.env.OTEL_SERVICE_NAME ?? 'pokerhub-api',
+      process.env.OTEL_SERVICE_NAME ?? 'pokerhub-frontend',
   });
 
   const prometheus = new PrometheusExporter({
@@ -57,6 +63,10 @@ export function setupTelemetry() {
     );
   }
   metrics.setGlobalMeterProvider(meterProvider);
+  const meter = meterProvider.getMeter('frontend');
+  const logCounter = meter.createCounter('log_records_total', {
+    description: 'Total log records by severity',
+  });
 
   loggerProvider = new LoggerProvider({ resource });
   const otlpLogsEndpoint =
@@ -68,28 +78,6 @@ export function setupTelemetry() {
       new BatchLogRecordProcessor(logExporter),
     );
   }
-
-  const meter = meterProvider.getMeter('backend');
-  const logCounter = meter.createCounter('log_records_total', {
-    description: 'Total log records by severity',
-  });
-
-  class LogCounterProcessor implements LogRecordProcessor {
-    constructor(private counter: Counter) {}
-
-    onEmit(record: LogRecord) {
-      this.counter.add(1, { severity: record.severityText });
-    }
-
-    forceFlush() {
-      return Promise.resolve();
-    }
-
-    shutdown() {
-      return Promise.resolve();
-    }
-  }
-
   loggerProvider.addLogRecordProcessor(new LogCounterProcessor(logCounter));
   logs.setGlobalLoggerProvider(loggerProvider);
 
@@ -98,17 +86,7 @@ export function setupTelemetry() {
     traceExporter: new OTLPTraceExporter({
       url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
     }),
-    instrumentations: [
-      new HttpInstrumentation(),
-      new ExpressInstrumentation(),
-      new IORedisInstrumentation(),
-      new PgInstrumentation(),
-      new AmqplibInstrumentation(),
-      new KafkajsInstrumentation(),
-      new SocketIoInstrumentation(),
-      new PinoInstrumentation(),
-      new NestInstrumentation(),
-    ],
+    instrumentations: [new HttpInstrumentation(), new ExpressInstrumentation()],
   });
 
   sdk.start();
