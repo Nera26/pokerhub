@@ -1,0 +1,25 @@
+{
+  "title": "Backend Overview",
+  "schemaVersion": 30,
+  "version": 1,
+  "panels": [
+    {
+      "id": 1,
+      "type": "graph",
+      "title": "HTTP Requests",
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(rate(http_requests_total[5m])) by (status)" }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "graph",
+      "title": "Log Records",
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(rate(log_records_total[5m])) by (severity)" }
+      ]
+    }
+  ]
+}
