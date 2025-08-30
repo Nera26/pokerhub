@@ -1,49 +1,37 @@
-import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
 import { User } from '../../src/database/entities/user.entity';
 import { Table } from '../../src/database/entities/table.entity';
 import { Tournament } from '../../src/database/entities/tournament.entity';
+import { Seat } from '../../src/database/entities/seat.entity';
+import testDataSource from '../utils/test-datasource';
 
 describe('Entity relations', () => {
-  let dataSource: DataSource;
-
   beforeAll(async () => {
-    const db = newDb();
-    db.public.registerFunction({
-      name: 'version',
-      returns: 'text',
-      implementation: () => 'pg-mem',
-    });
-    db.public.registerFunction({
-      name: 'current_database',
-      returns: 'text',
-      implementation: () => 'test',
-    });
-    db.public.registerFunction({
-      name: 'uuid_generate_v4',
-      returns: 'text',
-      implementation: () => '00000000-0000-0000-0000-000000000000',
-    });
-    dataSource = db.adapters.createTypeormDataSource({
-      type: 'postgres',
-      entities: [User, Table, Tournament],
+    testDataSource.setOptions({
+      entities: [User, Table, Seat, Tournament],
       synchronize: true,
-    }) as DataSource;
-    await dataSource.initialize();
+    });
+    if (!testDataSource.isInitialized) {
+      await testDataSource.initialize();
+    }
   });
 
   afterAll(async () => {
-    await dataSource.destroy();
+    if (testDataSource.isInitialized) {
+      await testDataSource.destroy();
+    }
   });
 
   it('relates tables, tournaments and users', async () => {
-    const tournamentRepo = dataSource.getRepository(Tournament);
-    const tableRepo = dataSource.getRepository(Table);
-    const userRepo = dataSource.getRepository(User);
+    const tournamentRepo = testDataSource.getRepository(Tournament);
+    const tableRepo = testDataSource.getRepository(Table);
+    const userRepo = testDataSource.getRepository(User);
 
     const tournament = tournamentRepo.create({
       id: '11111111-1111-1111-1111-111111111111',
       title: 'Main Event',
+      buyIn: 0,
+      prizePool: 0,
+      maxPlayers: 0,
     });
     await tournamentRepo.save(tournament);
 
