@@ -31,7 +31,11 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: npm install --no-save fast-check
       - run: npm test --prefix backend -- test/game/.*\.property\.spec\.ts
+        env:
+          FC_SEED: 1
+      - run: node -r ts-node/register shared/test/verify.property.ts
         env:
           FC_SEED: 1
 

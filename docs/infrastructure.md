@@ -22,3 +22,23 @@ PokerHub's primary Postgres cluster is configured for point‑in‑time recovery
 - Nightly restore drills are executed via the Helm CronJob under `infra/pitr/helm`, running
   `infra/disaster-recovery/tests/restore-backup.sh` against the latest snapshot.
 - Metrics from the drill ensure **RTO ≤ 30 minutes** and **RPO ≤ 5 minutes**.
+
+## Deployment Pipeline
+
+The CI/CD pipeline promotes builds through several gated stages:
+
+1. **Unit** – basic correctness checks for backend and frontend.
+2. **Property** – fast-check suites in `backend/` and `shared/` exercise invariants.
+3. **Integration** – service level tests across modules.
+4. **E2E** – user flows validated end to end.
+5. **Load** – post-deploy k6 scripts (`load/k6-*.js`) stress critical paths before promotion.
+
+Canary releases run via `scripts/canary-deploy.sh`, which verifies service metrics with
+`scripts/check-metrics.sh` prior to promotion.  A failed health check, metric threshold,
+or load test triggers `scripts/canary-rollback.sh` to restore the previous version.
+
+### Rollback Triggers
+
+- Health checks fail to meet SLOs.
+- Error rates exceed `ERROR_RATE_THRESHOLD` in `check-metrics.sh`.
+- Post-deploy load tests report failures.
