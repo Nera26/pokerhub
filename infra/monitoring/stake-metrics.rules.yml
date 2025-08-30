@@ -1,0 +1,42 @@
+# SLOs for stake-level gameplay metrics
+# VPIP target: 25%-40%
+# PFR target: 15%-30%
+# Avg pot size target: >=50 chips
+# Action latency p95 target: <500ms
+---
+groups:
+  - name: stake-metrics-alerts
+    rules:
+      - alert: VPIPOutOfRange
+        expr: avg_over_time(stake_vpip[5m]) < 0.25 or avg_over_time(stake_vpip[5m]) > 0.40
+        for: 15m
+        labels:
+          severity: warning
+          pagerduty_service: pokerhub-ops
+        annotations:
+          summary: "VPIP deviates from SLO range"
+      - alert: PFROutOfRange
+        expr: avg_over_time(stake_pfr[5m]) < 0.15 or avg_over_time(stake_pfr[5m]) > 0.30
+        for: 15m
+        labels:
+          severity: warning
+          pagerduty_service: pokerhub-ops
+        annotations:
+          summary: "PFR deviates from SLO range"
+      - alert: AvgPotTooLow
+        expr: avg_over_time(stake_pot[5m]) < 50
+        for: 15m
+        labels:
+          severity: warning
+          pagerduty_service: pokerhub-ops
+        annotations:
+          summary: "Average pot size below target"
+      - alert: ActionLatencyHigh
+        expr: histogram_quantile(0.95, sum(rate(stake_action_latency_ms_bucket[5m])) by (le)) > 500
+        for: 5m
+        labels:
+          severity: critical
+          pagerduty_service: pokerhub-ops
+        annotations:
+          summary: "Stake action latency p95 above 500ms"
+          runbook: https://github.com/Nera26/pokerhub/blob/main/docs/runbooks/action-ack-latency.md
