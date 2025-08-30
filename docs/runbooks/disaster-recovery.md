@@ -87,7 +87,7 @@ It validates snapshot freshness and WAL shipping to ensure **RPO ≤ 5 min**
 and **RTO ≤ 30 min**. Failures trigger a PagerDuty alert to `pokerhub-eng`.
 
 ### Recent Drill Results
-<!-- DR_DRILL_RESULTS -->
+- 2025-08-30: `drill.sh` and `restore-latest.sh` failed due to missing AWS credentials; RTO/RPO metrics were not captured. Configure credentials with `aws configure` before rerunning.
 
 ## Escalation
 - PagerDuty: pokerhub-eng
