@@ -20,7 +20,7 @@ resource "google_sql_database_instance" "primary" {
   settings {
     tier = var.db_tier
     backup_configuration {
-      enabled = true
+      enabled          = true
       retained_backups = var.backup_retention_period
     }
   }
@@ -35,10 +35,10 @@ provider "google" {
 }
 
 resource "google_sql_database_instance" "replica" {
-  provider            = google.replica
-  name                = "${var.db_name}-replica"
-  database_version    = google_sql_database_instance.primary.database_version
-  region              = var.replica_region
+  provider             = google.replica
+  name                 = "${var.db_name}-replica"
+  database_version     = google_sql_database_instance.primary.database_version
+  region               = var.replica_region
   master_instance_name = google_sql_database_instance.primary.name
 
   settings {
