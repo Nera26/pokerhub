@@ -137,3 +137,19 @@ Every release of the RNG library undergoes automated test batteries including:
 
 Results are stored alongside build artifacts and reviewed for regressions. Any
 anomalies trigger an engineering investigation before deployment.
+
+## Return to Player (RTP)
+
+*Return to Player* measures the proportion of wagered funds that players win
+back over time. Because PokerHub offers peer‑to‑peer poker, the theoretical RTP
+is close to 100% minus the house rake. The RNG does not manipulate outcomes; it
+simply provides an unpredictable deck so that skill and bankroll management
+determine results.
+
+- **Cash Games** – RTP = `(total returns to players − rake) / total wagers`.
+- **Tournaments** – RTP = `(prize pool / total buy‑ins)` where the prize pool is
+  buy‑ins minus fees. Published structures ensure transparency before play
+  begins.
+
+Operations reviews RTP reports monthly to confirm that effective returns align
+with advertised structures and regulatory expectations.

@@ -14,6 +14,13 @@ This guide explains how wallet ledgers stay consistent and how disputes are reso
 5. Generate a daily report highlighting any deltas and archive it.
 6. Investigate mismatches immediately; no gambling funds are released until resolved.
 
+## Buy-ins and Payouts
+
+Tournament buy-ins debit the player's account and credit the event pool. When a
+game completes, payouts reverse the flow, debiting the pool and crediting each
+winner. Reconciliation confirms that the sum of payouts plus rake equals the
+total buy-ins for the event.
+
 ### Flow
 
 ```mermaid
@@ -81,4 +88,5 @@ Deposit provider reports $50, but journal shows $40 credit. Create a $10 correct
 
 ## Revision History
 - 2025-08-30: add reconciliation run example, audit trail details, flow diagram, example mismatch, and version metadata
+- 2025-08-30: cover buy-ins and payouts reconciliation
 
