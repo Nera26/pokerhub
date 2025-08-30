@@ -211,7 +211,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.processed.set(actionId, now);
     await this.redis.hset(this.actionHashKey, hash, now.toString());
 
-    if (parsed.playerId) {
+    if ('playerId' in parsed && parsed.playerId) {
       this.clock.clearTimer(parsed.playerId, tableId);
     }
     const { tableId: parsedTableId, version: _v, ...wire } = parsed;
@@ -248,12 +248,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
     this.recordAckLatency(start, tableId);
 
-    if (parsed.playerId) {
+    if ('playerId' in parsed && parsed.playerId) {
+      const { playerId } = parsed;
       this.clock.setTimer(
-        parsed.playerId,
+        playerId,
         tableId,
         30_000,
-        () => void this.handleTimeout(parsed.playerId, tableId),
+        () => void this.handleTimeout(playerId, tableId),
       );
     }
   }
