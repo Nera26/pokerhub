@@ -11,6 +11,17 @@ On-call engineers escalate to the engineering manager if burn rates stay high fo
 
 An example Prometheus burn-rate rule lives at [../infrastructure/observability/error-budgets.rules.yml](../infrastructure/observability/error-budgets.rules.yml) to illustrate alert configuration.
 
+## Dashboards & Alert Thresholds
+All SLOs use multi-window burn rates of **14.4×** (5 m/1 h) and **6×** (30 m/6 h). Dashboards live under `../infrastructure/observability/`:
+
+| Metric | Grafana dashboard | PagerDuty service |
+| --- | --- | --- |
+| Service uptime | [Service Uptime](../infrastructure/observability/service-uptime-dashboard.json) | `pokerhub-sre` |
+| Action ACK latency | [Socket Latency](../infrastructure/observability/socket-latency-dashboard.json) | `pokerhub-sre` |
+| Socket connect success | [Socket Connects](../infrastructure/observability/socket-connects-dashboard.json) | `pokerhub-sre` |
+| Request error rate | [Error Rates](../infrastructure/observability/error-rates-dashboard.json) | `pokerhub-sre` |
+| Queue saturation | [Queue Lag](../infrastructure/observability/queue-lag-dashboard.json) | `pokerhub-eng` |
+
 Refer to these runbooks for mitigation steps:
 
 - [Action ACK Latency](runbooks/action-ack-latency.md)
