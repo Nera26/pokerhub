@@ -465,55 +465,103 @@ export class WalletService {
 
     if (hourlyCountLimit < Infinity) {
       const key = `wallet:${op}:${accountId}:h:count`;
-      const count = await this.redis.incr(key);
-      if (count === 1) await this.redis.expire(key, 60 * 60);
-      if (count > hourlyCountLimit) {
-        await this.redis.decr(key);
-        await this.events.emit('wallet.velocity.limit', {
-          accountId,
-          operation: op,
-          type: 'count',
-          window: 'hour',
-          limit: hourlyCountLimit,
-          value: count,
-        });
-        throw new Error('Velocity limit exceeded');
+      let rolledBack = false;
+      try {
+        const count = await this.redis.incr(key);
+        if (count === 1) {
+          const ok = await this.redis.expire(key, 60 * 60);
+          if (ok !== 1) {
+            rolledBack = true;
+            await this.redis.decr(key);
+            throw new Error('Failed to set expiry');
+          }
+        }
+        if (count > hourlyCountLimit) {
+          rolledBack = true;
+          await this.redis.decr(key);
+          await this.events.emit('wallet.velocity.limit', {
+            accountId,
+            operation: op,
+            type: 'count',
+            window: 'hour',
+            limit: hourlyCountLimit,
+            value: count,
+          });
+          throw new Error('Velocity limit exceeded');
+        }
+      } catch (err) {
+        if (!rolledBack) {
+          await this.redis.decr(key);
+        }
+        throw err;
       }
     }
 
     if (hourlyAmountLimit < Infinity) {
       const key = `wallet:${op}:${accountId}:h:amount`;
-      const total = await this.redis.incrby(key, amount);
-      if (total === amount) await this.redis.expire(key, 60 * 60);
-      if (total > hourlyAmountLimit) {
-        await this.redis.decrby(key, amount);
-        await this.events.emit('wallet.velocity.limit', {
-          accountId,
-          operation: op,
-          type: 'amount',
-          window: 'hour',
-          limit: hourlyAmountLimit,
-          value: total,
-        });
-        throw new Error('Velocity limit exceeded');
+      let rolledBack = false;
+      try {
+        const total = await this.redis.incrby(key, amount);
+        if (total === amount) {
+          const ok = await this.redis.expire(key, 60 * 60);
+          if (ok !== 1) {
+            rolledBack = true;
+            await this.redis.decrby(key, amount);
+            throw new Error('Failed to set expiry');
+          }
+        }
+        if (total > hourlyAmountLimit) {
+          rolledBack = true;
+          await this.redis.decrby(key, amount);
+          await this.events.emit('wallet.velocity.limit', {
+            accountId,
+            operation: op,
+            type: 'amount',
+            window: 'hour',
+            limit: hourlyAmountLimit,
+            value: total,
+          });
+          throw new Error('Velocity limit exceeded');
+        }
+      } catch (err) {
+        if (!rolledBack) {
+          await this.redis.decrby(key, amount);
+        }
+        throw err;
       }
     }
 
     if (dailyCountLimit < Infinity) {
       const key = `wallet:${op}:${accountId}:d:count`;
-      const count = await this.redis.incr(key);
-      if (count === 1) await this.redis.expire(key, 24 * 60 * 60);
-      if (count > dailyCountLimit) {
-        await this.redis.decr(key);
-        await this.events.emit('wallet.velocity.limit', {
-          accountId,
-          operation: op,
-          type: 'count',
-          window: 'day',
-          limit: dailyCountLimit,
-          value: count,
-        });
-        throw new Error('Velocity limit exceeded');
+      let rolledBack = false;
+      try {
+        const count = await this.redis.incr(key);
+        if (count === 1) {
+          const ok = await this.redis.expire(key, 24 * 60 * 60);
+          if (ok !== 1) {
+            rolledBack = true;
+            await this.redis.decr(key);
+            throw new Error('Failed to set expiry');
+          }
+        }
+        if (count > dailyCountLimit) {
+          rolledBack = true;
+          await this.redis.decr(key);
+          await this.events.emit('wallet.velocity.limit', {
+            accountId,
+            operation: op,
+            type: 'count',
+            window: 'day',
+            limit: dailyCountLimit,
+            value: count,
+          });
+          throw new Error('Velocity limit exceeded');
+        }
+      } catch (err) {
+        if (!rolledBack) {
+          await this.redis.decr(key);
+        }
+        throw err;
       }
     }
   }
