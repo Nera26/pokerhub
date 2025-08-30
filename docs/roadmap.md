@@ -1,7 +1,7 @@
 # Milestone Roadmap
 
 **Version:** 1.0.0
-**Last Updated:** 2025-10-05
+**Last Updated:** 2025-08-30
 
 | Release | Target Date  | Highlights |
 |--------|--------------|------------|
@@ -17,5 +17,5 @@
 This roadmap is updated at the end of each release cycle.
 
 ## Revision History
-- 2025-10-05: document update procedure and add version metadata
+- 2025-08-30: initial publication with version metadata and update procedure
 
