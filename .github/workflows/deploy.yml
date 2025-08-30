@@ -56,6 +56,19 @@ jobs:
         run: |
           scripts/rollback.sh
           exit 1
+      - name: Run load tests
+        id: load
+        run: |
+          npm install --no-save k6 >/dev/null
+          for f in load/k6-*.js; do
+            npx k6 run "$f" --vus 10 --duration 10s
+          done
+        continue-on-error: true
+      - name: Rollback on load test failure
+        if: steps.load.outcome != 'success'
+        run: |
+          scripts/rollback.sh
+          exit 1
       - name: Promote canary
-        if: steps.metrics.outcome == 'success'
+        if: steps.metrics.outcome == 'success' && steps.load.outcome == 'success'
         run: scripts/promote.sh
