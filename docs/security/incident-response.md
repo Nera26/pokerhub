@@ -23,6 +23,16 @@ This runbook outlines how PokerHub handles security incidents from detection to 
 5. **Eradicate & Recover**: patch, deploy fixes, and restore services.
 6. **Post-mortem** within 5 business days.
 
+## Security Breach Runbook
+
+1. **Isolate** affected systems by disabling network access and revoking credentials.
+2. **Preserve Evidence**: snapshot disks, export logs, and capture memory dumps.
+3. **Analyze Scope** to determine data exposure and entry vectors.
+4. **Eradicate** malicious artifacts and patch vulnerabilities.
+5. **Recover** services from known-good images and verify integrity before re-enabling traffic.
+6. **Notify** regulators and impacted users as required.
+7. **Review** controls and update threat models and playbooks.
+
 ## PagerDuty Routes
 - Primary: `pokerhub-security` service
 - Escalates to `pokerhub-sre` after 15 minutes
