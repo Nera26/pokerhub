@@ -32,7 +32,7 @@ Each SLO allocates a monthly error budget equal to `1 - target`. If more than **
 - [Telemetry Pipeline](../infra/observability/otel-dashboard.json)
 - [Frontend Route Latency](analytics-dashboards.md#frontend-route-latency)
 
-All dashboard JSON files include a `pagerduty_service` label that drives the escalation policy documented in [runbooks/alerting.md](runbooks/alerting.md#pagerduty-escalation).
+All dashboard JSON files include a `pagerduty_service` label that drives the escalation policy documented in [runbooks/alerting.md](runbooks/alerting.md#escalation-policies).
 
 ## Runbooks
 - [Action ACK Latency](runbooks/action-ack-latency.md)

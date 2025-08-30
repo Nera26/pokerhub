@@ -3,9 +3,14 @@
 ## Whitepapers
 - [Game Engine Specification](./game-engine-spec.md)
 - [RNG & RTP Fairness](./rng-fairness.md)
+- [Reconciliation Guide](./reconciliation-guide.md)
+
+## Handbooks
 - [Tournament Handbook](./tournament-handbook.md)
 - [Accounting Book](./accounting-book.md)
-- [Reconciliation Guide](./reconciliation-guide.md)
+
+## Planning
+- [Roadmap](./roadmap.md)
 - [Milestone Plan](./milestone-plan.md)
 
 ## Runbooks
