@@ -37,7 +37,7 @@ describe('ICM payout accuracy', () => {
 
       expect(result.prizes).toHaveLength(entrants);
       for (let i = 0; i < entrants; i++) {
-        expect(Math.abs(result.prizes[i] - expected[i])).toBeLessThanOrEqual(1);
+        expect(Math.abs(result.prizes[i] - expected[i])).toBeLessThan(1);
       }
     });
   }
