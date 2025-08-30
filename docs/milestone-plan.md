@@ -13,6 +13,10 @@ This roadmap links major features to their performance and compliance objectives
 | 7 | Observability | 99.95% service uptime | SOC 2 monitoring controls |
 | 8 | Scale & Chaos | 99.95% service uptime | Resilience evidence for licensing |
 
+## Linked Documents
+- [Tournament Handbook](./tournament-handbook.md) – formats, payouts, and examples for Milestone 5.
+- [Reconciliation Guide](./reconciliation-guide.md) – ledger checks and dispute workflow for Milestone 4.
+
 ## Revision History
 - 4c23e7c: initial roadmap
 - 2025-01-04: link milestones to SLO and compliance goals
