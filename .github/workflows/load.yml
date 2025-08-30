@@ -2,6 +2,31 @@ name: load-tests
 
 on:
   workflow_dispatch:
+    inputs:
+      tables:
+        description: Number of tables
+        default: '10000'
+      sockets:
+        description: Number of sockets
+        default: '80000'
+      ack_p95_ms:
+        description: Ack latency p95 threshold
+        default: '120'
+      error_rate_max:
+        description: Max error rate
+        default: '0.01'
+      rng_seed:
+        description: RNG seed for deterministic runs
+        default: '1'
+      packet_loss:
+        description: Packet loss probability
+        default: '0.05'
+      latency_ms:
+        description: Base latency for toxiproxy
+        default: '200'
+      jitter_ms:
+        description: Jitter for toxiproxy
+        default: '0'
 
 jobs:
   staging-ack-latency:
@@ -11,39 +36,42 @@ jobs:
       - name: Start proxy and metrics stack
         run: |
           docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 ghcr.io/shopify/toxiproxy
-          UPSTREAM=staging.pokerhub:80 ./load/toxiproxy-soak.sh
+          PACKET_LOSS=${{ inputs.packet_loss }} LATENCY_MS=${{ inputs.latency_ms }} JITTER_MS=${{ inputs.jitter_ms }} UPSTREAM=staging.pokerhub:80 ./load/toxiproxy.sh
           cp load/prometheus.yml ./prometheus.yml
           sed -i 's/host.docker.internal/localhost/' prometheus.yml
           docker run -d --name prom -p 9090:9090 -v $PWD/prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus
+      - name: Prepare metrics dir
+        run: mkdir -p load/metrics
       - name: Run 10k table scenario with faults
         uses: grafana/k6-action@v0.2.0
         env:
           WS_URL: ws://localhost:3001
-          TABLES: 10000
-          SOCKETS: 80000
-          ACK_P95_MS: 120
+          TABLES: ${{ inputs.tables }}
+          SOCKETS: ${{ inputs.sockets }}
+          ACK_P95_MS: ${{ inputs.ack_p95_ms }}
+          ERROR_RATE_MAX: ${{ inputs.error_rate_max }}
+          RNG_SEED: ${{ inputs.rng_seed }}
         with:
           filename: load/k6-10k-tables.js
-          flags: --address 0.0.0.0:5656 --summary-export=ack-summary.json --out json=ack-telemetry.json --out prometheus
+          flags: --address 0.0.0.0:5656 --summary-export=load/metrics/summary.json --out json=load/metrics/telemetry.json --out prometheus
       - name: Capture metrics
         if: always()
-        run: curl -s http://localhost:5656/metrics > k6-prom-metrics.txt || true
+        run: curl -s http://localhost:5656/metrics > load/metrics/k6-prom-metrics.txt || true
+      - name: Collect memory profile
+        if: always()
+        run: |
+          timeout 5 ./load/collect-gc-heap.sh METRICS_URL=http://localhost:5656/metrics OUT_FILE=load/metrics/gc-heap.log INTERVAL=1 || true
       - name: Collect logs
         if: always()
         run: |
-          docker logs toxiproxy > toxiproxy.log || true
-          docker logs prom > prom.log || true
+          docker logs toxiproxy > load/metrics/toxiproxy.log || true
+          docker logs prom > load/metrics/prom.log || true
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v3
         with:
           name: staging-ack-latency
-          path: |
-            ack-summary.json
-            ack-telemetry.json
-            k6-prom-metrics.txt
-            toxiproxy.log
-            prom.log
+          path: load/metrics
 
   staging-ws-soak:
     runs-on: ubuntu-latest

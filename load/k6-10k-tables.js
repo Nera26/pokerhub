@@ -2,6 +2,7 @@ import ws from 'k6/ws';
 import http from 'k6/http';
 import { Trend, Rate } from 'k6/metrics';
 import { sleep } from 'k6';
+import { Random } from 'https://jslib.k6.io/random/1.0.0/index.js';
 
 // Drive 80k sockets across 10k tables while capturing ACK latency.
 // In CI we default to a smaller scenario to avoid overwhelming runners.
@@ -25,6 +26,8 @@ export const options = {
 const tables = Number(__ENV.TABLES) || defaultTables;
 const loss = Number(__ENV.PACKET_LOSS) || 0.05; // 5% packet loss
 const jitterMs = Number(__ENV.JITTER_MS) || 200; // client-side jitter before sending
+const seed = Number(__ENV.RNG_SEED) || 1;
+const rng = new Random(seed);
 
 const grafanaPushUrl = __ENV.GRAFANA_PUSH_URL;
 const ACK_LATENCY = new Trend('ack_latency', true);
@@ -40,9 +43,9 @@ export default function () {
 
     socket.on('open', function () {
       // inject client side jitter
-      sleep(Math.random() * jitterMs / 1000);
+      sleep(rng.nextFloat() * jitterMs / 1000);
       start = Date.now();
-      if (Math.random() > loss) {
+      if (rng.nextFloat() > loss) {
         socket.send('action');
       }
     });
@@ -84,6 +87,6 @@ export function handleSummary(data) {
     });
   }
   return {
-    'ack-histogram.json': JSON.stringify(hist, null, 2),
+    'metrics/ack-histogram.json': JSON.stringify(hist, null, 2),
   };
 }
