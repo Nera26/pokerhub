@@ -76,3 +76,20 @@ latency: { "p50": 35, "p95": 112, "p99": 180 }
 memory:  { "rss": 520000000, "heapUsed": 210000000 }
 gc:      { "before": {"heapUsed": 210000000}, "after": {"heapUsed": 180000000} }
 ```
+
+## Regression reports
+
+The [`high-scale-regression` workflow](../.github/workflows/high-scale-regression.yml)
+executes `tests/performance/socket-load.ts` with 10k tables and 100k sockets.
+Each run uploads `latency-hist.json` and `memory-gc.json` under the `metrics`
+directory.
+
+To check for latency regressions, download the artifact and compare it with the
+baseline histogram:
+
+```bash
+npx ts-node scripts/compare-histograms.ts load/metrics/100k-chaos-sample <metrics-dir>
+```
+
+The script prints p95/p99 deviations and exits non‑zero if the difference exceeds
+5 %. Review `memory-gc.json` for unexpected garbage collection or RSS growth.
