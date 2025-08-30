@@ -66,16 +66,20 @@ const curAckP99 = percentile(curAck, 0.99);
 const baseAckP99 = percentile(baseAck, 0.99);
 const curGcP95 = percentile(curGc, 0.95);
 const baseGcP95 = percentile(baseGc, 0.95);
+const curGcP99 = percentile(curGc, 0.99);
+const baseGcP99 = percentile(baseGc, 0.99);
 
 const devAck95 = deviation(baseAckP95, curAckP95);
 const devAck99 = deviation(baseAckP99, curAckP99);
 const devGc95 = deviation(baseGcP95, curGcP95);
+const devGc99 = deviation(baseGcP99, curGcP99);
 
 console.log(`ack p95 baseline=${baseAckP95}ms current=${curAckP95}ms deviation=${(devAck95 * 100).toFixed(2)}%`);
 console.log(`ack p99 baseline=${baseAckP99}ms current=${curAckP99}ms deviation=${(devAck99 * 100).toFixed(2)}%`);
 console.log(`gc pause p95 baseline=${baseGcP95}ms current=${curGcP95}ms deviation=${(devGc95 * 100).toFixed(2)}%`);
+console.log(`gc pause p99 baseline=${baseGcP99}ms current=${curGcP99}ms deviation=${(devGc99 * 100).toFixed(2)}%`);
 
-if (devAck95 > 0.05 || devAck99 > 0.05 || devGc95 > 0.10) {
+if (devAck95 > 0.05 || devAck99 > 0.05 || devGc95 > 0.10 || devGc99 > 0.10) {
   console.error('Chaos trends regression detected');
   process.exit(1);
 }
