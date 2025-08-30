@@ -4,17 +4,32 @@ This handbook standardizes how PokerHub hosts competitive events.
 
 ## Formats
 
-- **Freezeout** – Each player gets one entry; elimination ends participation.
-- **Rebuy/Add‑On** – Players may repurchase chips during a defined window or add more at break.
-- **Progressive Knockout** – Buy‑in split between prize pool and bounty that grows when a player is eliminated.
-- **Satellite** – Awards seats or tickets to higher buy‑in events instead of cash.
+- **Freezeout** – One life per player; re‑entries are not permitted.
+- **Rebuy/Add‑On** – Chips can be repurchased until a fixed level; an optional add‑on is offered at the first break.
+- **Progressive Knockout** – Half the buy‑in funds a bounty that increases as players collect others' bounties.
+- **Satellite** – Payouts are tickets to target events; extra chips above the bubble are paid as cash.
+- **Shootout** – Tables play down to one winner who advances to the next round or final table.
+
+## Blinds
+
+- Starting stacks target 100 big blinds unless noted.
+- Levels increase on a schedule (e.g., every 10 minutes for standard, 5 minutes for turbo).
+- Antes are introduced when blinds reach 200/400.
+
+| Level | Blinds | Duration |
+|------:|-------:|---------:|
+| 1 | 100/200 | 10m |
+| 2 | 200/400 | 10m |
+| 3 | 300/600 | 10m |
+| 4 | 400/800 | 10m |
 
 ## Payout Rules
 
 - Prize pool equals `(entries × buy‑in) − rake` unless a guarantee exceeds it.
 - Payout tables are published before start and locked once registration closes.
-- Standard tables pay ~15% of the field using a top‑heavy distribution.
+- Standard tables pay ~15% of the field using a top‑heavy distribution and round to the nearest chip.
 - Bounty events return half of the buy‑in as knock‑out rewards.
+- Guarantees short on entries are made whole by the house.
 
 ## Examples
 

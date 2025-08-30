@@ -16,6 +16,7 @@ stateDiagram-v2
 ### `PlayerAction`
 ```json
 {
+  "actionId": "uuid",
   "type": "postBlind | bet | raise | call | check | fold | next",
   "tableId": "uuid",
   "playerId": "uuid",
@@ -73,10 +74,20 @@ curl /api/hands/hand1/state/3 | jq
 
 ## Edge Cases
 
-- Simultaneous timeouts are resolved by seat order.
-- If all but one player disconnect, the remaining player wins the pot.
-- Side pots are created when a player is all-in with fewer chips.
-- Ties are split equally among winning players.
+| Scenario | Resolution |
+|---------|-----------|
+| Simultaneous timeouts | Seat order determines who acts first. |
+| All but one player disconnects | Remaining player wins the pot. |
+| Player all-in with fewer chips | Side pots track excess bets. |
+| Tie at showdown | Pot split equally among winners. |
+| Out-of-turn action | Server rejects and prompts correct player. |
+
+## Retry Semantics
+
+- Each `PlayerAction` carries a unique `actionId` generated client-side.
+- The server de-duplicates actions by `actionId`; resubmitting the same id is safe.
+- Clients retry failed submissions up to three times with exponential backoff.
+- State fetch endpoints are idempotent and may be retried without side effects.
 
 ## Mitigation Strategies
 
