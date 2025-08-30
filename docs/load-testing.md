@@ -47,3 +47,32 @@ are exported under the [`load/metrics`](../load/metrics) directory:
 
 - [10k table chaos metrics](../load/metrics/10k-chaos-sample)
 - [100k socket chaos metrics](../load/metrics/100k-chaos-sample)
+
+## 100k socket harness
+
+`backend/tests/high-scale-harness.ts` drives 100k WebSocket clients across
+10k tables while [Toxiproxy](https://github.com/Shopify/toxiproxy) injects
+200 ms latency, 200 ms jitter and 5 % packet loss. The run records
+`latency-hist.json`, `memory-usage.json`, `gc-usage.json` and `seeds.json` for
+deterministic replay:
+
+```bash
+ts-node backend/tests/high-scale-harness.ts
+ts-node backend/tests/replay.ts       # replay using seeds.json
+```
+
+Platform level load is exercised with `infra/tests/load/k6-100k-chaos.js` which
+simulates 100k sockets and exports the same latency histogram and memory/GC
+snapshots. Re-run a scenario with:
+
+```bash
+node infra/tests/load/replay.js seed.txt
+```
+
+### Example histogram and memory footprint
+
+```
+latency: { "p50": 35, "p95": 112, "p99": 180 }
+memory:  { "rss": 520000000, "heapUsed": 210000000 }
+gc:      { "before": {"heapUsed": 210000000}, "after": {"heapUsed": 180000000} }
+```
