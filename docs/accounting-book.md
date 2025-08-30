@@ -26,3 +26,9 @@
 
 - **Provider not configured** – missing `KYC_PROVIDER_URL` causes all checks to fail.
 - **Provider unreachable or error response** – the denial reason is cached and exposed to the client.
+
+## Revision History
+- cac8e82: add external KYC provider with denial reasons
+- 36ba907: add reconcile zero-sum property test
+- 3ab6709: add wallet reconciliation job and tests
+- 2025-01-04: document revision history
