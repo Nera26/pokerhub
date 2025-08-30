@@ -43,6 +43,10 @@ jobs:
         run: |
           scripts/rollback.sh
           exit 1
+      - name: Record canary metrics
+        run: |
+          mkdir -p load/metrics
+          curl -fsS "$METRICS_URL" -o load/metrics/canary.json
       - name: Check real-time metrics
         id: metrics
         run: scripts/check-metrics.sh
