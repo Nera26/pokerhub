@@ -1,4 +1,5 @@
 import { HandRNG, standardDeck } from './rng';
+import { settlePots } from './settlement';
 
 export type Street = 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
 
@@ -124,6 +125,7 @@ export class HandStateMachine {
       }
       case 'SHOWDOWN': {
         if (action.type === 'next') {
+          settlePots(this.state);
           this.state.phase = 'SETTLE';
         }
         break;
