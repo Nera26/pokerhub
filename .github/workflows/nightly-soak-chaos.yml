@@ -6,7 +6,55 @@ on:
   workflow_dispatch:
 
 jobs:
+  tables:
+    runs-on: ubuntu-latest
+    env:
+      METRICS_URL: http://localhost:3000/metrics
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start GC/heap collector
+        run: |
+          load/collect-gc-heap.sh &
+          echo $! > collector.pid
+        env:
+          GRAFANA_PUSH_URL: ${{ secrets.GRAFANA_PUSH_URL }}
+          GC_THRESHOLD: 50
+      - name: Run 10k table scenario
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: load/k6-10k-tables.js
+          flags: >-
+            --summary-export=10k-summary.json
+            -o experimental-prometheus-rw=${{ secrets.GRAFANA_PROM_URL }}
+      - name: Stop collector
+        if: always()
+        run: kill $(cat collector.pid)
+      - name: Check thresholds
+        run: load/check-thresholds.sh 10k-summary.json
+      - name: Check heap growth
+        run: |
+          start=$(grep -m1 heap_used gc-heap-metrics.log | awk -F'heap_used=' '{print $2}' | awk '{print $1}')
+          end=$(grep heap_used gc-heap-metrics.log | tail -1 | awk -F'heap_used=' '{print $2}' | awk '{print $1}')
+          python - "$start" "$end" <<'PY'
+import sys
+s=float(sys.argv[1]); e=float(sys.argv[2])
+growth=(e-s)*100/s
+print(f"heap growth: {growth}%")
+if growth > 1:
+    sys.exit("heap growth exceeded 1%")
+PY
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: tables-metrics
+          path: |
+            10k-summary.json
+            ack-histogram.json
+            gc-heap-metrics.log
+
   soak:
+    needs: tables
     runs-on: ubuntu-latest
     timeout-minutes: 1440
     env:
