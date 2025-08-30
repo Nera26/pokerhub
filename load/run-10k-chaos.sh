@@ -66,10 +66,21 @@ else
   echo "$PACKET_LOSS" > "$METRICS_DIR/packet-loss.txt"
   echo "$JITTER_MS" > "$METRICS_DIR/jitter-ms.txt"
 fi
+PROXY_PORT=${PROXY_PORT:-3001}
+if [[ "$PACKET_LOSS" != "0" || "$JITTER_MS" != "0" ]]; then
+  LATENCY_MS=${LATENCY_MS:-200}
+  PACKET_LOSS="$PACKET_LOSS" LATENCY_MS="$LATENCY_MS" JITTER_MS="$JITTER_MS" \
+    PROXY_PORT="$PROXY_PORT" "$SCRIPT_DIR/toxiproxy.sh"
+  trap 'toxiproxy-cli delete pokerhub_ws >/dev/null 2>&1 || true' EXIT
+  WS_URL="ws://localhost:${PROXY_PORT}/game"
+else
+  WS_URL="ws://localhost:4000/game"
+fi
+
 if [[ -n "$REPLAY_DIR" ]]; then
   # replay only runs k6
   SOCKETS="$SOCKETS" TABLES="$TABLES" RNG_SEED="$RNG_SEED" \
-  PACKET_LOSS="$PACKET_LOSS" JITTER_MS="$JITTER_MS" \
+  PACKET_LOSS="$PACKET_LOSS" JITTER_MS="$JITTER_MS" WS_URL="$WS_URL" \
     k6 run "$SCRIPT_DIR/k6-10k-tables.js" \
     --summary-export="$METRICS_DIR/k6-summary.json" \
     --out json="$METRICS_DIR/k6-metrics.json"
@@ -88,7 +99,7 @@ trap 'kill $GC_PID >/dev/null 2>&1 || true' EXIT
 
 # run k6 scenario
 SOCKETS="$SOCKETS" TABLES="$TABLES" RNG_SEED="$RNG_SEED" \
-PACKET_LOSS="$PACKET_LOSS" JITTER_MS="$JITTER_MS" \
+PACKET_LOSS="$PACKET_LOSS" JITTER_MS="$JITTER_MS" WS_URL="$WS_URL" \
   k6 run "$SCRIPT_DIR/k6-10k-tables.js" \
   --summary-export="$METRICS_DIR/k6-summary.json" \
   --out json="$METRICS_DIR/k6-metrics.json"
