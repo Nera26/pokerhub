@@ -17,9 +17,13 @@ services:
     command: npm run start:dev
     env_file: .env
     environment:
-      - AWS_REGION=${AWS_REGION}
-      - AWS_ENDPOINT=http://${LOCALSTACK_HOST}:${LOCALSTACK_PORT}
+      - GCP_PROJECT=${GCP_PROJECT}
+      - GCS_BUCKET=${GCS_BUCKET}
+      - GOOGLE_APPLICATION_CREDENTIALS=/secrets/gcp-service-account.json
+      - GCS_EMULATOR_HOST=${GCS_EMULATOR_HOST}
       - DB_SYNC=${DB_SYNC}
+    volumes:
+      - ${GOOGLE_APPLICATION_CREDENTIALS}:/secrets/gcp-service-account.json:ro
     depends_on:
       db:
         condition: service_healthy
@@ -27,7 +31,7 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-      localstack:
+      storage:
         condition: service_healthy
 
   db:
@@ -60,15 +64,13 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
-  localstack:
-    image: localstack/localstack
-    environment:
-      - SERVICES=${LOCALSTACK_SERVICES}
-      - DEFAULT_REGION=${AWS_REGION}
-      - EDGE_PORT=${LOCALSTACK_PORT}
+  storage:
+    image: fsouza/fake-gcs-server:latest
+    command: -scheme http -backend memory
+    ports:
+      - '4443:4443'
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:${LOCALSTACK_PORT}/health']
+      test: ['CMD', 'curl', '-f', 'http://localhost:4443/storage/v1/b']
       interval: 5s
       timeout: 5s
       retries: 5

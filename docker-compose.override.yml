@@ -9,9 +9,10 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=${REDIS_URL}
       - RABBITMQ_URL=${RABBITMQ_URL}
-      - AWS_S3_BUCKET=${AWS_S3_BUCKET}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - GCP_PROJECT=${GCP_PROJECT}
+      - GCS_BUCKET=${GCS_BUCKET}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
+      - GCS_EMULATOR_HOST=${GCS_EMULATOR_HOST}
 
   db:
     ports:
@@ -28,6 +29,6 @@ services:
       - "5672:5672"
       - "15672:15672"
 
-  localstack:
+  storage:
     ports:
-      - "${LOCALSTACK_PORT}:4566"
+      - "4443:4443"
