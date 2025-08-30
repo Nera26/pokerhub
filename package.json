@@ -19,7 +19,8 @@
     "test": "npm test --prefix backend && npm test --prefix frontend && npm run test:contracts && npm run test:e2e --prefix frontend",
     "perf:socket-load": "ts-node tests/performance/socket-load.ts",
     "perf:replay": "ts-node tests/performance/replay.ts",
-    "docs:lint": "remark docs --frail"
+    "docs:lint": "remark docs --frail",
+    "docs:check": "node scripts/check-docs-meta.js"
   },
   "devDependencies": {
     "openapi-typescript": "^6.7.0",

@@ -3,7 +3,7 @@
 **Version:** 1.2.0
 **Last Updated:** 2025-10-05
 
-This guide explains how wallet ledgers stay consistent and how disputes are resolved. Tournament flows are covered in the [Tournament Handbook](./tournament-handbook.md) and engine behavior in the [Game Engine Specification](./game-engine-spec.md).
+This guide explains how wallet ledgers stay consistent and how disputes are resolved. Tournament flows are covered in the [Tournament Handbook](./tournament-handbook.md) and engine behavior in the [Game Engine Specification](./game-engine-spec.md). Operational steps are detailed in the [Wallet Reconciliation Runbook](./runbooks/wallet-reconciliation.md).
 
 ## Ledger Reconciliation
 

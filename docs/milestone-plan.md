@@ -1,7 +1,7 @@
 # Milestone Plan
 
-**Version:** 1.0.0
-**Last Updated:** 2025-08-30
+**Version:** 1.1.0
+**Last Updated:** 2025-10-05
 
 This roadmap links major features to their performance and compliance objectives.
 
@@ -15,6 +15,22 @@ This roadmap links major features to their performance and compliance objectives
 | 6 | Leaderboards | 2025-12-01 | Growth Team | 99.95% service uptime | GDPR data export readiness |
 | 7 | Observability | 2025-12-15 | SRE Team | 99.95% service uptime | SOC 2 monitoring controls |
 | 8 | Scale & Chaos | 2026-01-15 | SRE Team | 99.95% service uptime | Resilience evidence for licensing |
+
+## Timeline
+```mermaid
+gantt
+  dateFormat  YYYY-MM-DD
+  title  PokerHub Milestones
+  section Features
+  Hand_Engine_v1      :2025-09-15, 1d
+  Socket_Reliability  :2025-10-01, 1d
+  RNG_Commit-Reveal   :2025-10-15, 1d
+  Wallet_&_Rake       :2025-11-01, 1d
+  Tournament_Core     :2025-11-15, 1d
+  Leaderboards        :2025-12-01, 1d
+  Observability       :2025-12-15, 1d
+  Scale_&_Chaos       :2026-01-15, 1d
+```
 
 ## Implementation Links
 - **Milestone 1:** [`backend/src/game`](../backend/src/game)
@@ -33,6 +49,7 @@ This roadmap links major features to their performance and compliance objectives
 - [Reconciliation Guide](./reconciliation-guide.md) – ledger checks and dispute workflow for Milestone 4.
 
 ## Revision History
+- 2025-10-05: add timeline diagram and bump version
 - 4c23e7c: initial roadmap
 - 2025-01-04: link milestones to SLO and compliance goals
 - 2025-08-30: add release dates, owners, and version metadata
