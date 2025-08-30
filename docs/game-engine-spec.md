@@ -8,8 +8,10 @@ stateDiagram-v2
     Flop --> Turn: bets settled
     Turn --> River: bets settled
     River --> Showdown: bets settled
-    Showdown --> [*]: hand settled
+Showdown --> [*]: hand settled
 ```
+
+![Betting round state diagram](./images/betting-rounds.svg)
 
 ## Message Schemas
 

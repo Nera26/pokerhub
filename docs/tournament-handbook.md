@@ -52,3 +52,7 @@ This handbook standardizes how PokerHub hosts competitive events.
 | 2     | $120  | accumulates remaining bounties |
 | 3     | $80   | -- |
 
+## Reconciliation
+
+Tournament ledger entries must be verified daily. Follow the [reconciliation procedure](./accounting-book.md#reconciliation-procedure) to confirm balances.
+
