@@ -49,6 +49,12 @@ HAVING stddev(action_time_ms) < 200;
 - **Daily**: Compliance reviews new alerts and tags false positives.
 - **Weekly**: Security team audits alert quality and query thresholds.
 
+### Operational Review Procedures
+1. Reviewers monitor Slack and Jira notifications for new alerts.
+2. Open the alert in `/admin/collusion` to inspect session details.
+3. Correlate evidence with game logs and document findings in the ticket.
+4. Mark false positives or escalate per the [Collusion Review Runbook](../runbooks/collusion-review.md).
+
 ## Alert Handling and Enforcement
 - Alerts trigger Slack notifications and create Jira tickets for tracking.
 - Confirmed cases result in immediate bankroll freeze pending investigation.
