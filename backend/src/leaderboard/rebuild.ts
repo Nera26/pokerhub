@@ -32,7 +32,10 @@ async function run(options: RebuildOptions = {}): Promise<{
       await writeSyntheticEvents(days, players, sessions);
     }
 
-    const { durationMs, memoryMb } = await service.rebuildFromEvents(days);
+    const memStart = process.memoryUsage().rss / 1024 / 1024;
+    const { durationMs, memoryMb: finalMemMb } =
+      await service.rebuildFromEvents(days);
+    const memoryMb = finalMemMb - memStart;
     console.log(
       `Rebuild complete in ${(durationMs / 1000).toFixed(1)}s (\u0394RSS ${memoryMb.toFixed(
         1,
