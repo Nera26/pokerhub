@@ -1,0 +1,41 @@
+{
+  "name": "Engagement Metrics",
+  "cards": [
+    {
+      "name": "Daily Active Users",
+      "dataset_query": {
+        "type": "native",
+        "native": {
+          "query": "SELECT COUNT(DISTINCT user_id) FROM sessions WHERE event_date = today()"
+        }
+      }
+    },
+    {
+      "name": "Monthly Active Users",
+      "dataset_query": {
+        "type": "native",
+        "native": {
+          "query": "SELECT COUNT(DISTINCT user_id) FROM sessions WHERE event_date >= date_trunc('month', today())"
+        }
+      }
+    },
+    {
+      "name": "Rake Curve",
+      "dataset_query": {
+        "type": "native",
+        "native": {
+          "query": "SELECT stake, SUM(rake) FROM hands GROUP BY stake ORDER BY stake"
+        }
+      }
+    },
+    {
+      "name": "Cohort Retention",
+      "dataset_query": {
+        "type": "native",
+        "native": {
+          "query": "SELECT cohort_month, month_number, retention_rate FROM cohort_retention"
+        }
+      }
+    }
+  ]
+}

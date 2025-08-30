@@ -1,0 +1,17 @@
+{
+  "dashboard": {
+    "title": "Dropped Frames",
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "Dropped Frames per Room",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(game_frames_dropped_total[5m]) by (room)"
+          }
+        ]
+      }
+    ]
+  }
+}
