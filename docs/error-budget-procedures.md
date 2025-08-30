@@ -30,6 +30,16 @@ Refer to these runbooks for mitigation steps:
 - [Service Uptime](runbooks/service-uptime.md)
 - [Queue Saturation](runbooks/queue-saturation.md)
 
+## Breach Handling Workflow
+1. **Observe** – An Alertmanager page for burn rate or SLO breach arrives via
+   PagerDuty. Open the relevant Grafana dashboard from the table above.
+2. **Mitigate** – Follow the linked runbook to stabilize the service. Record
+   actions in the incident channel.
+3. **Verify** – Ensure burn rate drops below thresholds on the dashboard. If it
+   remains high for more than an hour, escalate to the engineering manager.
+4. **Postmortem** – After resolution, document the incident and reference the
+   dashboard snapshot in the report.
+
 ## 50% Budget Consumed
 - Freeze feature deployments; only reliability fixes may ship.
 - Review active incidents and prioritize mitigation work.

@@ -12,6 +12,8 @@ Prometheus evaluates SLO-based rules such as action ACK latency and socket conne
 - `pokerhub-sre` – Core platform and SLO alerts (availability, latency, error rate).
 - `pokerhub-eng` – Feature engineering queues and saturation metrics.
 - `pokerhub-ops` – Deployment and operations notifications.
+- Redis, Postgres and WebSocket metrics from OpenTelemetry are routed to
+  `pokerhub-sre` using the `pagerduty_service` tag embedded in Grafana panels.
 
 ## Severity Tiers
 

@@ -64,6 +64,56 @@ JSON exports for core operational metrics. Import these into Grafana or Metabase
 }
 ```
 
+### Redis Command Latency
+```json
+{
+  "title": "Redis Command Latency",
+  "panels": [
+    {
+      "type": "timeseries",
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(redis_client_cmd_duration_seconds_bucket[5m])) by (le))" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    }
+  ],
+  "tags": { "pagerduty_service": "pokerhub-sre" }
+}
+```
+
+### Postgres Query Duration
+```json
+{
+  "title": "Postgres Query Duration",
+  "panels": [
+    {
+      "type": "timeseries",
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(db_query_duration_seconds_bucket[5m])) by (le))" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    }
+  ],
+  "tags": { "pagerduty_service": "pokerhub-sre" }
+}
+```
+
+### WebSocket Message Rate
+```json
+{
+  "title": "WebSocket Message Rate",
+  "panels": [
+    {
+      "type": "stat",
+      "targets": [
+        { "expr": "sum(rate(game_action_global_count[1m]))" }
+      ]
+    }
+  ],
+  "tags": { "pagerduty_service": "pokerhub-sre" }
+}
+```
+
 ## Metabase
 
 ### Action ACK Latency
