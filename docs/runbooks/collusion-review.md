@@ -44,6 +44,15 @@ Refer to [../security/anti-collusion.md](../security/anti-collusion.md) for deta
 3. Compare VPIP correlations and seat proximity for suspicious alignment.
 4. Document findings and evidence in the incident tracker and link to the Jira ticket.
 
+## Worked Example
+
+1. **Retrieve evidence**: `GET /review/sessions/abc123/details` returns `sharedIps: ["10.0.0.5"]`, `betCorrelation: 0.82`, and `timingSimilarity: 0.91`.
+2. **Map to threats**: Cross-reference the [collusion service threat model](../security/threat-model.md#collusionservice) to align features with STRIDE categories.
+   - `sharedIps` addresses **Spoofing**.
+   - `betCorrelation` and `timingSimilarity` mitigate **Tampering** and **Repudiation**.
+3. **Validate mitigations**: Ensure evidence hashes and reviewer actions match the expectations in the threat model and [Anti-Collusion Monitoring](../security/anti-collusion.md).
+4. **Record conclusion**: Summarize which STRIDE threats were confirmed or ruled out and attach the analysis to the Jira ticket.
+
 ## Remediation
 - Escalate the session via `warn`, `restrict`, or `ban` actions once collusion is confirmed.
 - Reverse illegitimate chip transfers and notify affected players.

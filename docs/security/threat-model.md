@@ -38,6 +38,19 @@ See [Incident Response Runbook](incident-response.md) for detection sources and 
 | Denial of Service | Flooding analytics endpoint with high-volume noise | Rate-limit event ingestion and buffer through message queues |
 | Elevation of Privilege | Gaining write access to analytics configuration | Restrict config endpoints to ops role and audit changes |
 
+### collusion.service
+
+Mitigations are detailed in [Anti-Collusion Monitoring](anti-collusion.md). See the [STRIDE Summary](stride-summary.md) for a consolidated view.
+
+| Threat | Example | Mitigation |
+| --- | --- | --- |
+| Spoofing | Attackers submit fabricated sessions to hide real collusion | Require authenticated writes and verify session origins |
+| Tampering | Manipulating evidence stored in Redis | Hash evidence and persist append-only logs |
+| Repudiation | Players deny flagged behavior | Link feature payloads to session IDs and retain reviewer signatures |
+| Information Disclosure | Evidence reveals relationships between users | Restrict access and scrub PII in analytics exports |
+| Denial of Service | Flooding the service with bogus flags | Rate-limit APIs and bound Redis structures |
+| Elevation of Privilege | Reviewers escalate states without audit | Enforce RBAC and audit trails on `applyAction` |
+
 ### auth
 | Threat | Example | Mitigation |
 | --- | --- | --- |
