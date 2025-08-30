@@ -22,6 +22,12 @@ Document the steps to meet recovery objectives during regional outages.
 - `npx ts-node infra/disaster-recovery/tests/restore.test.ts` proves the latest snapshot is within the 5 minute RPO.
 - Replication lag dashboards stay under 5 minutes after failover.
 
+## Monthly Failover Drill
+1. Run `infra/disaster-recovery/drill.sh` with appropriate environment variables to restore the latest snapshot in the secondary region.
+2. Use `restore-latest.sh` if snapshot validation is required.
+3. Review `drill.metrics` for `RTO_SECONDS` and `RPO_SECONDS`; target **RTO ≤ 1800s** and **RPO ≤ 300s**.
+4. Raise a PagerDuty incident if thresholds are exceeded or scripts fail.
+
 ## Escalation
 - PagerDuty: pokerhub-eng
 - Slack: #ops
