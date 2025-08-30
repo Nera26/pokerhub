@@ -1,5 +1,6 @@
 {
   "title": "Alerts Overview",
+  "labels": { "pagerduty_service": "pokerhub-sre" },
   "tags": ["sre"],
   "panels": [
     {
