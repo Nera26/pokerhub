@@ -8,30 +8,18 @@ set -euo pipefail
 log(){ echo "[$(date --iso-8601=seconds)] $*"; }
 
 snap="pitr-$(date +%s)"
-log "Creating Postgres snapshot $snap"
-aws rds create-db-snapshot \
-  --db-instance-identifier "$PG_INSTANCE_ID" \
-  --db-snapshot-identifier "$snap"
-aws rds wait db-snapshot-available \
-  --db-snapshot-identifier "$snap"
+log "Creating Postgres backup $snap"
+gcloud sql backups create --instance "$PG_INSTANCE_ID" --description "$snap"
 
-log "Copying snapshot to $SECONDARY_REGION"
-aws rds copy-db-snapshot \
-  --source-db-snapshot-identifier "$snap" \
-  --target-db-snapshot-identifier "${snap}-copy" \
-  --region "$SECONDARY_REGION"
+log "Copying backup to $SECONDARY_REGION"
+gcloud sql backups copy "$snap" --instance "$PG_INSTANCE_ID" --destination-region "$SECONDARY_REGION" --target-backup "${snap}-copy"
 
-log "Restoring snapshot in $SECONDARY_REGION"
-aws rds restore-db-instance-from-db-snapshot \
-  --db-instance-identifier "${snap}-restore" \
-  --db-snapshot-identifier "${snap}-copy" \
-  --db-instance-class db.t3.micro \
-  --no-publicly-accessible \
-  --region "$SECONDARY_REGION"
-aws rds delete-db-instance \
-  --db-instance-identifier "${snap}-restore" \
-  --skip-final-snapshot \
-  --region "$SECONDARY_REGION" || true
+log "Restoring backup in $SECONDARY_REGION"
+gcloud sql backups restore "${snap}-copy" \
+  --restore-instance "${snap}-restore" \
+  --region "$SECONDARY_REGION" \
+  --quiet
+gcloud sql instances delete "${snap}-restore" --quiet || true
 
 log "Checking ClickHouse backup replication"
 aws s3 ls "s3://${CLICKHOUSE_BUCKET}-dr/" --region "$SECONDARY_REGION" >/dev/null

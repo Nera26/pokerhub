@@ -2,9 +2,9 @@
 set -euo pipefail
 
 : "${SECONDARY_REGION:?Must set SECONDARY_REGION}"
-: "${PG_REPLICA_ID:?Must set PG_REPLICA_ID}"
-: "${REDIS_REPLICA_ID:?Must set REDIS_REPLICA_ID}"
-: "${ROUTE53_ZONE_ID:?Must set ROUTE53_ZONE_ID}"
+: "${SQL_REPLICA_INSTANCE:?Must set SQL_REPLICA_INSTANCE}"
+: "${REDIS_INSTANCE_ID:?Must set REDIS_INSTANCE_ID}"
+: "${DNS_ZONE:?Must set DNS_ZONE}"
 : "${DB_RECORD_NAME:?Must set DB_RECORD_NAME}"
 : "${REDIS_RECORD_NAME:?Must set REDIS_RECORD_NAME}"
 
@@ -12,26 +12,19 @@ log() {
   echo "[$(date --iso-8601=seconds)] $*"
 }
 
-log "Promoting Postgres replica $PG_REPLICA_ID in $SECONDARY_REGION..."
-aws rds promote-read-replica \
-  --db-instance-identifier "$PG_REPLICA_ID" \
+log "Promoting Postgres replica $SQL_REPLICA_INSTANCE in $SECONDARY_REGION..."
+gcloud sql instances promote-replica "$SQL_REPLICA_INSTANCE"
+
+log "Promoting Redis replica $REDIS_INSTANCE_ID in $SECONDARY_REGION..."
+gcloud redis instances failover "$REDIS_INSTANCE_ID" \
   --region "$SECONDARY_REGION"
 
-log "Promoting Redis replica $REDIS_REPLICA_ID in $SECONDARY_REGION..."
-aws elasticache test-failover \
-  --replication-group-id "$REDIS_REPLICA_ID" \
-  --node-group-id 0001 \
-  --region "$SECONDARY_REGION"
+pg_endpoint=$(gcloud sql instances describe "$SQL_REPLICA_INSTANCE" \
+  --format='value(ipAddresses[0].ipAddress)')
 
-pg_endpoint=$(aws rds describe-db-instances \
-  --db-instance-identifier "$PG_REPLICA_ID" \
+redis_endpoint=$(gcloud redis instances describe "$REDIS_INSTANCE_ID" \
   --region "$SECONDARY_REGION" \
-  --query 'DBInstances[0].Endpoint.Address' --output text)
-
-redis_endpoint=$(aws elasticache describe-replication-groups \
-  --replication-group-id "$REDIS_REPLICA_ID" \
-  --region "$SECONDARY_REGION" \
-  --query 'ReplicationGroups[0].ConfigurationEndpoint.Address' --output text)
+  --format='value(host)')
 
 change_batch=$(cat <<JSON
 {
@@ -59,9 +52,10 @@ change_batch=$(cat <<JSON
 JSON
 )
 
-log "Updating DNS records in zone $ROUTE53_ZONE_ID..."
-aws route53 change-resource-record-sets \
-  --hosted-zone-id "$ROUTE53_ZONE_ID" \
-  --change-batch "$change_batch"
+log "Updating DNS records in zone $DNS_ZONE..."
+gcloud dns record-sets transaction start --zone="$DNS_ZONE"
+gcloud dns record-sets transaction add "$pg_endpoint" --name="$DB_RECORD_NAME" --ttl=60 --type=CNAME --zone="$DNS_ZONE"
+gcloud dns record-sets transaction add "$redis_endpoint" --name="$REDIS_RECORD_NAME" --ttl=60 --type=CNAME --zone="$DNS_ZONE"
+gcloud dns record-sets transaction execute --zone="$DNS_ZONE"
 
 log "Failover complete."

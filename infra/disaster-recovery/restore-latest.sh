@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Restores the latest Postgres snapshot into a temporary instance and checks RTO/RPO.
+# Restores the latest Postgres backup into a temporary Cloud SQL instance and checks RTO/RPO.
 set -euo pipefail
 
 : "${PG_PRIMARY_ID:?Must set PG_PRIMARY_ID}"
@@ -21,19 +21,18 @@ start_epoch=$(date +%s)
 
 echo "START_TIME=$start_iso" >> "$metrics_file"
 
-log "Finding latest snapshot for $PG_PRIMARY_ID in $SECONDARY_REGION..."
-latest_snapshot=$(aws rds describe-db-snapshots \
-  --db-instance-identifier "$PG_PRIMARY_ID" \
-  --snapshot-type automated \
+log "Finding latest backup for $PG_PRIMARY_ID in $SECONDARY_REGION..."
+latest_snapshot=$(gcloud sql backups list \
+  --instance "$PG_PRIMARY_ID" \
   --region "$SECONDARY_REGION" \
-  --query 'reverse(sort_by(DBSnapshots, &SnapshotCreateTime))[:1].DBSnapshotIdentifier' \
-  --output text)
+  --sort-by~'endTime' \
+  --limit 1 \
+  --format 'value(id)')
 
-snap_ts=$(aws rds describe-db-snapshots \
-  --db-snapshot-identifier "$latest_snapshot" \
+snap_ts=$(gcloud sql backups describe "$latest_snapshot" \
+  --instance "$PG_PRIMARY_ID" \
   --region "$SECONDARY_REGION" \
-  --query 'DBSnapshots[0].SnapshotCreateTime' \
-  --output text)
+  --format 'value(endTime)')
 
 snap_epoch=$(date -d "$snap_ts" +%s)
 rpo=$((start_epoch - snap_epoch))
@@ -45,30 +44,18 @@ restore_id="restore-latest-$start_epoch"
 
 cleanup() {
   log "Cleaning up $restore_id..."
-  aws rds delete-db-instance \
-    --db-instance-identifier "$restore_id" \
-    --skip-final-snapshot \
-    --region "$SECONDARY_REGION" >/dev/null 2>&1 || true
+  gcloud sql instances delete "$restore_id" --quiet >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
-log "Restoring snapshot $latest_snapshot to $restore_id..."
-aws rds restore-db-instance-from-db-snapshot \
-  --db-instance-identifier "$restore_id" \
-  --db-snapshot-identifier "$latest_snapshot" \
-  --db-instance-class db.t3.micro \
-  --no-publicly-accessible \
-  --region "$SECONDARY_REGION" >/dev/null
-
-aws rds wait db-instance-available \
-  --db-instance-identifier "$restore_id" \
-  --region "$SECONDARY_REGION" >/dev/null
-
-endpoint=$(aws rds describe-db-instances \
-  --db-instance-identifier "$restore_id" \
+log "Restoring backup $latest_snapshot to $restore_id..."
+gcloud sql backups restore "$latest_snapshot" \
+  --restore-instance="$restore_id" \
   --region "$SECONDARY_REGION" \
-  --query 'DBInstances[0].Endpoint.Address' \
-  --output text)
+  --quiet
+
+endpoint=$(gcloud sql instances describe "$restore_id" \
+  --format='value(ipAddresses[0].ipAddress)')
 
 PGPASSWORD="$PGPASSWORD" psql -h "$endpoint" -U "$PGUSER" -d "$PGDATABASE" -c 'SELECT 1;' >/dev/null
 

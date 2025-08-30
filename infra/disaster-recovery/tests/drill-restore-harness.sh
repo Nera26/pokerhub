@@ -31,30 +31,24 @@ if ! bash "$dr_dir/restore-latest.sh"; then
   status=1
 fi
 
-log "Restoring standby from latest snapshot..."
-latest_snapshot=$(aws rds describe-db-snapshots \
-  --db-instance-identifier "$PG_PRIMARY_ID" \
-  --snapshot-type automated \
+log "Restoring standby from latest backup..."
+latest_snapshot=$(gcloud sql backups list \
+  --instance "$PG_PRIMARY_ID" \
   --region "$SECONDARY_REGION" \
-  --query 'reverse(sort_by(DBSnapshots, &SnapshotCreateTime))[:1].DBSnapshotIdentifier' \
-  --output text)
+  --sort-by~'endTime' \
+  --limit 1 \
+  --format 'value(id)')
 standby_id="dr-harness-$start_epoch"
 cleanup() {
   log "Cleaning up $standby_id..."
-  aws rds delete-db-instance \
-    --db-instance-identifier "$standby_id" \
-    --skip-final-snapshot \
-    --region "$SECONDARY_REGION" >/dev/null 2>&1 || true
+  gcloud sql instances delete "$standby_id" --quiet >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
-PG_SNAPSHOT_ID="$latest_snapshot" STANDBY_IDENTIFIER="$standby_id" bash "$dr_dir/restore-standby.sh"
+PG_BACKUP_ID="$latest_snapshot" STANDBY_IDENTIFIER="$standby_id" bash "$dr_dir/restore-standby.sh"
 
-endpoint=$(aws rds describe-db-instances \
-  --db-instance-identifier "$standby_id" \
-  --region "$SECONDARY_REGION" \
-  --query 'DBInstances[0].Endpoint.Address' \
-  --output text)
+endpoint=$(gcloud sql instances describe "$standby_id" \
+  --format='value(ipAddresses[0].ipAddress)')
 
 log "Running smoke queries on $endpoint..."
 hand_count=$(PGPASSWORD="$PGPASSWORD" psql -h "$endpoint" -U "$PGUSER" -d "$PGDATABASE" -t -c 'SELECT COUNT(*) FROM hand_logs;' | tr -d '[:space:]')

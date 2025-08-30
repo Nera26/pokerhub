@@ -2,7 +2,7 @@
 set -euo pipefail
 
 : "${SECONDARY_REGION:?Must set SECONDARY_REGION}"
-: "${PG_SNAPSHOT_ID:?Must set PG_SNAPSHOT_ID}"
+: "${PG_BACKUP_ID:?Must set PG_BACKUP_ID}"
 : "${CLICKHOUSE_SNAPSHOT:?Must set CLICKHOUSE_SNAPSHOT}"
 
 log() {
@@ -17,11 +17,11 @@ start_all=$(date +%s)
 
 echo "START_TIME=$start_iso" >> "$metrics_file"
 
-echo "Fetching snapshot metadata..."
-pg_snap_ts=$(aws rds describe-db-snapshots \
-  --db-snapshot-identifier "$PG_SNAPSHOT_ID" \
+echo "Fetching backup metadata..."
+pg_snap_ts=$(gcloud sql backups describe "$PG_BACKUP_ID" \
+  --instance "$PG_BACKUP_ID" \
   --region "$SECONDARY_REGION" \
-  --query 'DBSnapshots[0].SnapshotCreateTime' --output text)
+  --format 'value(endTime)')
 pg_snap_epoch=$(date -d "$pg_snap_ts" +%s)
 
 ch_snap_epoch=$(stat -c %Y "$CLICKHOUSE_SNAPSHOT")
@@ -35,17 +35,12 @@ log "ClickHouse snapshot age ${rpo_ch}s"
 echo "RPO_SECONDS=$rpo" >> "$metrics_file"
 
 pg_test_id="pg-failover-$start_all"
-log "Restoring Postgres snapshot $PG_SNAPSHOT_ID to $pg_test_id in $SECONDARY_REGION..."
+log "Restoring Postgres backup $PG_BACKUP_ID to $pg_test_id in $SECONDARY_REGION..."
 pg_start=$(date +%s)
-aws rds restore-db-instance-from-db-snapshot \
-  --db-instance-identifier "$pg_test_id" \
-  --db-snapshot-identifier "$PG_SNAPSHOT_ID" \
-  --db-instance-class db.t3.micro \
-  --no-publicly-accessible \
-  --region "$SECONDARY_REGION"
-aws rds wait db-instance-available \
-  --db-instance-identifier "$pg_test_id" \
-  --region "$SECONDARY_REGION"
+gcloud sql backups restore "$PG_BACKUP_ID" \
+  --restore-instance "$pg_test_id" \
+  --region "$SECONDARY_REGION" \
+  --quiet
 pg_end=$(date +%s)
 pg_time=$((pg_end - pg_start))
 log "Postgres ready in ${pg_time}s"
@@ -70,9 +65,6 @@ echo "END_TIME=$end_iso" >> "$metrics_file"
 echo "RTO_SECONDS=$total" >> "$metrics_file"
 
 # Cleanup
-aws rds delete-db-instance \
-  --db-instance-identifier "$pg_test_id" \
-  --skip-final-snapshot \
-  --region "$SECONDARY_REGION" || true
+gcloud sql instances delete "$pg_test_id" --quiet || true
 
 log "Failover test completed in ${total}s with data loss window ${rpo}s"

@@ -22,11 +22,8 @@ terraform apply -input=false -auto-approve >/dev/null
 popd >/dev/null
 
 log "Fetching primary endpoint in $PRIMARY_REGION..."
-primary_endpoint=$(aws rds describe-db-instances \
-  --db-instance-identifier "$PG_INSTANCE_ID" \
-  --region "$PRIMARY_REGION" \
-  --query 'DBInstances[0].Endpoint.Address' \
-  --output text)
+primary_endpoint=$(gcloud sql instances describe "$PG_INSTANCE_ID" \
+  --format='value(ipAddresses[0].ipAddress)')
 
 log "Capturing table count from primary $primary_endpoint..."
 primary_count=$(PGHOST="$primary_endpoint" PGPORT=5432 psql \
@@ -58,10 +55,7 @@ else
 fi
 
 log "Tearing down drill instance $db_id..."
-aws rds delete-db-instance \
-  --db-instance-identifier "$db_id" \
-  --skip-final-snapshot \
-  --region "$SECONDARY_REGION" || true
+gcloud sql instances delete "$db_id" --quiet || true
 
 log "Destroying standby infrastructure..."
 pushd ../terraform >/dev/null

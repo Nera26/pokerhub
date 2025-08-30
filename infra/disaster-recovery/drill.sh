@@ -20,19 +20,18 @@ start_epoch=$(date +%s)
 
 echo "START_TIME=$start_iso" >> "$metrics_file"
 
-log "Finding latest snapshot for $PG_INSTANCE_ID in $SECONDARY_REGION..."
-latest_snapshot=$(aws rds describe-db-snapshots \
-  --db-instance-identifier "$PG_INSTANCE_ID" \
-  --snapshot-type automated \
+log "Finding latest backup for $PG_INSTANCE_ID in $SECONDARY_REGION..."
+latest_snapshot=$(gcloud sql backups list \
+  --instance "$PG_INSTANCE_ID" \
   --region "$SECONDARY_REGION" \
-  --query 'reverse(sort_by(DBSnapshots, &SnapshotCreateTime))[:1].DBSnapshotIdentifier' \
-  --output text)
+  --sort-by~'endTime' \
+  --limit 1 \
+  --format 'value(id)')
 
-snap_ts=$(aws rds describe-db-snapshots \
-  --db-snapshot-identifier "$latest_snapshot" \
+snap_ts=$(gcloud sql backups describe "$latest_snapshot" \
+  --instance "$PG_INSTANCE_ID" \
   --region "$SECONDARY_REGION" \
-  --query 'DBSnapshots[0].SnapshotCreateTime' \
-  --output text)
+  --format 'value(endTime)')
 
 snap_epoch=$(date -d "$snap_ts" +%s)
 rpo_snapshot=$((start_epoch - snap_epoch))
@@ -57,15 +56,12 @@ if [ $rpo_snapshot -gt 300 ] || [ $rpo_wal -gt 300 ]; then
   status=1
 fi
 
-log "Restoring snapshot $latest_snapshot to $db_identifier via standby script..."
-PG_SNAPSHOT_ID="$latest_snapshot" STANDBY_IDENTIFIER="$db_identifier" PROMOTE=true \
+log "Restoring backup $latest_snapshot to $db_identifier via standby script..."
+PG_BACKUP_ID="$latest_snapshot" STANDBY_IDENTIFIER="$db_identifier" PROMOTE=true \
   bash "$(dirname "$0")/restore-standby.sh"
 
-endpoint=$(aws rds describe-db-instances \
-  --db-instance-identifier "$db_identifier" \
-  --region "$SECONDARY_REGION" \
-  --query 'DBInstances[0].Endpoint.Address' \
-  --output text)
+endpoint=$(gcloud sql instances describe "$db_identifier" \
+  --format='value(ipAddresses[0].ipAddress)')
 echo "DB_ENDPOINT=$endpoint" >> "$metrics_file"
 
 log "Running smoke query on $endpoint..."
@@ -87,10 +83,7 @@ if [ $rto -gt 1800 ]; then
   status=1
 fi
 if [ "${KEEP_INSTANCE:-false}" != "true" ]; then
-  aws rds delete-db-instance \
-    --db-instance-identifier "$db_identifier" \
-    --skip-final-snapshot \
-    --region "$SECONDARY_REGION" || true
+  gcloud sql instances delete "$db_identifier" --quiet || true
 fi
 
 log "Disaster recovery drill finished: RTO ${rto}s, snapshot RPO ${rpo_snapshot}s, wal RPO ${rpo_wal}s"

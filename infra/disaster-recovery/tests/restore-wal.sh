@@ -22,25 +22,16 @@ echo "RPO_SECONDS=$rpo" >> "$metrics_file"
 
 restore_id="wal-restore-$start_epoch"
 log "Restoring $PG_PRIMARY_ID to $restore_id using latest WAL..."
-aws rds restore-db-instance-to-point-in-time \
-  --source-db-instance-identifier "$PG_PRIMARY_ID" \
-  --target-db-instance-identifier "$restore_id" \
-  --use-latest-restorable-time \
-  --db-instance-class db.t3.micro \
-  --no-publicly-accessible \
-  --region "$SECONDARY_REGION"
-aws rds wait db-instance-available \
-  --db-instance-identifier "$restore_id" \
-  --region "$SECONDARY_REGION"
+gcloud sql instances clone "$PG_PRIMARY_ID" "$restore_id" \
+  --point-in-time "$wal_ts" \
+  --region "$SECONDARY_REGION" \
+  --quiet
 end_epoch=$(date +%s)
 rto=$((end_epoch - start_epoch))
 echo "END_TIME=$(date --iso-8601=seconds)" >> "$metrics_file"
 echo "RTO_SECONDS=$rto" >> "$metrics_file"
 
-aws rds delete-db-instance \
-  --db-instance-identifier "$restore_id" \
-  --skip-final-snapshot \
-  --region "$SECONDARY_REGION" || true
+gcloud sql instances delete "$restore_id" --quiet || true
 
 log "PITR restore finished in ${rto}s with data loss window ${rpo}s"
 
