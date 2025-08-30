@@ -11,7 +11,12 @@ export class GcsService {
   constructor(private readonly config: ConfigService) {
     const projectId = this.config.get<string>('gcs.projectId');
     const endpoint = this.config.get<string>('gcs.endpoint');
-    this.storage = new Storage({ projectId, ...(endpoint ? { apiEndpoint: endpoint } : {}) });
+    const keyFilename = this.config.get<string>('gcs.keyFilename');
+    this.storage = new Storage({
+      projectId,
+      ...(endpoint ? { apiEndpoint: endpoint } : {}),
+      ...(keyFilename ? { keyFilename } : {}),
+    });
     this.bucket = this.config.get<string>('gcs.bucket') || 'default-bucket';
   }
 
