@@ -1,6 +1,11 @@
-import { sendAction, disconnectGameSocket } from '@/lib/socket';
-
 const handlers: Record<string, ((payload?: any) => void)[]> = {};
+
+jest.mock('@/hooks/useApiError', () => ({
+  dispatchGlobalError: jest.fn(),
+}));
+
+import { dispatchGlobalError } from '@/hooks/useApiError';
+import { sendAction, disconnectGameSocket } from '@/lib/socket';
 
 const mockSocket = {
   on: jest.fn((event: string, handler: (payload?: any) => void) => {
@@ -29,6 +34,7 @@ describe('emitWithAck', () => {
     mockSocket.emit.mockClear();
     mockSocket.on.mockClear();
     mockSocket.off.mockClear();
+    (dispatchGlobalError as jest.Mock).mockClear();
     Object.keys(handlers).forEach((k) => delete handlers[k]);
   });
 
@@ -57,8 +63,6 @@ describe('emitWithAck', () => {
   });
 
   it('rejects after retries and clears pending', async () => {
-    const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
-
     const promise = sendAction({
       type: 'bet',
       tableId: 't',
@@ -69,14 +73,14 @@ describe('emitWithAck', () => {
     jest.advanceTimersByTime(4000);
 
     await expect(promise).rejects.toThrow('No ACK received');
-    expect(alertSpy).toHaveBeenCalled();
+    expect(dispatchGlobalError).toHaveBeenCalledWith(
+      'Failed to send request. Please try again.',
+    );
 
     const before = mockSocket.emit.mock.calls.length;
     handlers['connect'][0]();
     expect(mockSocket.emit).toHaveBeenCalledTimes(before + 1);
     expect(mockSocket.emit.mock.calls[before][0]).toBe('resume');
-
-    alertSpy.mockRestore();
   });
 });
 

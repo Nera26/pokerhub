@@ -19,6 +19,16 @@ const ApiErrorContext = createContext<ApiErrorContextValue | undefined>(
   undefined,
 );
 
+const GLOBAL_ERROR_EVENT = 'global-error';
+
+export function dispatchGlobalError(message: string) {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent(GLOBAL_ERROR_EVENT, { detail: message }),
+    );
+  }
+}
+
 export function ApiErrorProvider({ children }: { children: ReactNode }) {
   const { toasts, pushToast } = useToasts();
   const pushError = useCallback(
@@ -26,6 +36,15 @@ export function ApiErrorProvider({ children }: { children: ReactNode }) {
       pushToast(message, { variant: 'error', duration: 5000 }),
     [pushToast],
   );
+
+  useEffect(() => {
+    const handler = (e: Event) =>
+      pushError((e as CustomEvent<string>).detail);
+    window.addEventListener(GLOBAL_ERROR_EVENT, handler as EventListener);
+    return () => {
+      window.removeEventListener(GLOBAL_ERROR_EVENT, handler as EventListener);
+    };
+  }, [pushError]);
 
   return (
     <ApiErrorContext.Provider value={{ pushError }}>

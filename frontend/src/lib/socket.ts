@@ -1,6 +1,7 @@
 import type { Socket } from 'socket.io-client';
 import { GameActionSchema, type GameActionPayload } from '@shared/types';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
+import { dispatchGlobalError } from '@/hooks/useApiError';
 import { setServerTime } from './server-time';
 import { getSocket, disconnectSocket } from '../app/utils/socket';
 
@@ -86,8 +87,7 @@ function emitWithAck(
 
     const fail = () => {
       cleanup();
-      // eslint-disable-next-line no-alert
-      alert('Failed to send request. Please try again.');
+      dispatchGlobalError('Failed to send request. Please try again.');
       reject(new Error('No ACK received'));
     };
 
