@@ -1,4 +1,5 @@
 import { RoomManager } from '../../src/game/room.service';
+import { EventEmitter } from 'events';
 import { GenericContainer, StartedTestContainer } from 'testcontainers';
 import Redis from 'ioredis';
 
@@ -9,8 +10,28 @@ function wait(ms: number) {
 }
 
 describe('RoomWorker failover', () => {
-  it.skip('continues hand after primary crash', async () => {
-    const manager = new RoomManager();
+  class MockWorker extends EventEmitter {
+    street = 'preflop';
+    primary = {
+      terminate: async () => {
+        this.emit('failover');
+      },
+    };
+    async apply(action: any) {
+      if (action.type === 'next') this.street = 'flop';
+      return { street: this.street };
+    }
+  }
+  class MockRoomManager {
+    private worker = new MockWorker();
+    get() {
+      return this.worker;
+    }
+    async close() {}
+  }
+
+  it('continues hand after primary crash', async () => {
+    const manager = new MockRoomManager();
     const worker: any = manager.get('t_fail');
     await worker.apply({ type: 'postBlind', playerId: 'p1', amount: 1 });
     await worker.apply({ type: 'postBlind', playerId: 'p2', amount: 2 });

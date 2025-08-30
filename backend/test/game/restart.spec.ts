@@ -23,20 +23,51 @@ async function waitFor(cond: () => boolean, timeout = 200) {
 }
 
 class FakeRedis {
-  private count = 0;
-  private store = new Map<string, string>();
-  async incr() {
-    return ++this.count;
+  private store = new Map<string, number | string>();
+  private hashes = new Map<string, Map<string, string>>();
+
+  async incr(key: string) {
+    const current = Number(this.store.get(key) ?? 0);
+    const next = current + 1;
+    this.store.set(key, next);
+    return next;
   }
+
   async expire() {
     return 1;
   }
+
   async exists(key: string) {
     return this.store.has(key) ? 1 : 0;
   }
+
   async set(key: string, value: string, _mode: string, _ttl: number) {
     this.store.set(key, value);
     return 'OK';
+  }
+
+  async hget(key: string, field: string) {
+    return this.hashes.get(key)?.get(field) ?? null;
+  }
+
+  async hset(key: string, field: string, value: string) {
+    if (!this.hashes.has(key)) this.hashes.set(key, new Map());
+    this.hashes.get(key)!.set(field, value);
+    return 1;
+  }
+
+  multi() {
+    const keys: string[] = [];
+    const self = this;
+    return {
+      incr(key: string) {
+        keys.push(key);
+        return this;
+      },
+      async exec() {
+        return Promise.all(keys.map(async (k) => [null, await self.incr(k)]));
+      },
+    };
   }
 }
 
@@ -46,10 +77,15 @@ describe('GameGateway restart', () => {
   jest.setTimeout(15000);
 
   async function createApp() {
+    const room = {
+      apply: jest.fn().mockResolvedValue({}),
+      getPublicState: jest.fn().mockResolvedValue({}),
+    };
+    const roomManager = { get: () => room };
     const moduleRef = await Test.createTestingModule({
       providers: [
         GameGateway,
-        RoomManager,
+        { provide: RoomManager, useValue: roomManager },
         ClockService,
         { provide: AnalyticsService, useValue: { recordGameEvent: jest.fn() } },
         { provide: EventPublisher, useValue: { emit: jest.fn() } },
@@ -65,10 +101,16 @@ describe('GameGateway restart', () => {
     return { app, url: `http://localhost:${address.port}/game` };
   }
 
-  it.skip('ignores duplicate action after server restart', async () => {
+  it('ignores duplicate action after server restart', async () => {
     redis = new FakeRedis();
     const { app, url } = await createApp();
-    const action = { type: 'next' };
+    const action = {
+      type: 'postBlind',
+      tableId: 't_restart',
+      version: '1',
+      playerId: 'p1',
+      amount: 1,
+    } as const;
     const actionId = 'a1';
     const client1 = io(url, { transports: ['websocket'] });
     await waitForConnect(client1);
@@ -84,10 +126,13 @@ describe('GameGateway restart', () => {
     await waitForConnect(client2);
     client2.emit('action', { ...action, actionId });
     client2.emit('action', { ...action, actionId: 'a2' });
-    await waitFor(() => acks.length >= 1, 5000);
+    await waitFor(() => acks.length >= 2, 5000);
     client2.disconnect();
     await app2.close();
 
-    expect(acks[0]).toEqual({ actionId, duplicate: true });
+    expect(acks.find((a) => a.actionId === actionId)).toMatchObject({
+      actionId,
+      duplicate: true,
+    });
   });
 });
