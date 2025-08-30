@@ -1,5 +1,14 @@
 # Tournament Handbook
 
+**Version:** 1.1.0
+**Last Updated:** 2025-10-05
+
+## Tournament Lifecycle
+```mermaid
+flowchart LR
+  Register --> LateReg --> Play --> FinalTable --> Payouts
+```
+
 ## Tournament Formats
 
 - **Freezeout** – players are eliminated when their chips reach zero.
@@ -67,6 +76,7 @@ A Monte Carlo simulation with 10,000 entrants tested a standard blind structure 
 - [Tournament Balancing Backlog Runbook](../runbooks/tourney-balancing-backlog.md)
 
 ## Revision History
+- 2025-10-05: add version metadata and lifecycle diagram
 - 7cbff0e: parameterize tournament simulator and validate structures
 - c643a4f: add bot profiles to tournament simulator
 - 8bfce13: add tournament simulator and handbook
