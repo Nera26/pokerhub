@@ -14,11 +14,27 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
+const runInTmp = async (fn: () => Promise<void>) => {
+  const cwd = process.cwd();
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'wallet-'));
+  const backendDir = path.join(tmpRoot, 'backend');
+  fs.mkdirSync(backendDir);
+  process.chdir(backendDir);
+  try {
+    await fn();
+  } finally {
+    process.chdir(cwd);
+  }
+};
+
 describe('Wallet ledger invariants', () => {
   let dataSource: DataSource;
   let service: WalletService;
   const events: EventPublisher = { emit: jest.fn() } as any;
   const userId = '11111111-1111-1111-1111-111111111111';
+  const reserveId = '00000000-0000-0000-0000-000000000001';
+  const rakeId = '00000000-0000-0000-0000-000000000002';
+  const prizeId = '00000000-0000-0000-0000-000000000003';
 
   beforeAll(async () => {
     const db = newDb();
@@ -69,24 +85,9 @@ describe('Wallet ledger invariants', () => {
 
     await accountRepo.save([
       { id: userId, name: 'user', balance: 0, currency: 'USD' },
-      {
-        id: '00000000-0000-0000-0000-000000000001',
-        name: 'reserve',
-        balance: 0,
-        currency: 'USD',
-      },
-      {
-        id: '00000000-0000-0000-0000-000000000002',
-        name: 'rake',
-        balance: 0,
-        currency: 'USD',
-      },
-      {
-        id: '00000000-0000-0000-0000-000000000003',
-        name: 'prize',
-        balance: 0,
-        currency: 'USD',
-      },
+      { id: reserveId, name: 'reserve', balance: 0, currency: 'USD' },
+      { id: rakeId, name: 'rake', balance: 0, currency: 'USD' },
+      { id: prizeId, name: 'prize', balance: 0, currency: 'USD' },
     ]);
   });
 
@@ -156,19 +157,6 @@ describe('Wallet ledger invariants', () => {
   it(
     'maintains zero-sum balances and detects reconciliation discrepancies',
     async () => {
-      const runInTmp = async (fn: () => Promise<void>) => {
-        const cwd = process.cwd();
-        const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'wallet-'));
-        const backendDir = path.join(tmpRoot, 'backend');
-        fs.mkdirSync(backendDir);
-        process.chdir(backendDir);
-        try {
-          await fn();
-        } finally {
-          process.chdir(cwd);
-        }
-      };
-
       await fc.assert(
         fc.asyncProperty(
           fc.array(
@@ -214,6 +202,94 @@ describe('Wallet ledger invariants', () => {
             await expect(
               runInTmp(() => runReconcile(service)),
             ).rejects.toThrow('wallet reconciliation discrepancies');
+          },
+        ),
+      { numRuns: 25 },
+    );
+  },
+  30000,
+  );
+
+  it(
+    'journal entries net to zero and reconcile matches aggregated logs',
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.array(
+            fc
+              .record({
+                kind: fc.constantFrom('hand', 'tournament'),
+                reserve: fc.integer({ min: 1, max: 100 }),
+                commit: fc.integer({ min: 0, max: 100 }),
+                rake: fc.integer({ min: 0, max: 100 }),
+              })
+              .filter((t) => t.commit <= t.reserve && t.rake <= t.commit),
+            { maxLength: 10 },
+          ),
+          async (batch) => {
+            const accountRepo = dataSource.getRepository(Account);
+            const journalRepo = dataSource.getRepository(JournalEntry);
+
+            await journalRepo.clear();
+            const accounts = await accountRepo.find();
+            for (const acc of accounts) {
+              acc.balance = 0;
+            }
+            await accountRepo.save(accounts);
+
+            const expected = new Map<string, number>([
+              [userId, 0],
+              [reserveId, 0],
+              [rakeId, 0],
+              [prizeId, 0],
+            ]);
+
+            const add = (id: string, amt: number) => {
+              expected.set(id, (expected.get(id) ?? 0) + amt);
+            };
+
+            for (let i = 0; i < batch.length; i++) {
+              const t = batch[i];
+              const ref = `${t.kind}#${i}`;
+              await service.reserve(userId, t.reserve, ref, 'USD');
+              add(userId, -t.reserve);
+              add(reserveId, t.reserve);
+
+              if (t.commit > 0) {
+                await service.commit(ref, t.commit, t.rake, 'USD');
+                add(reserveId, -t.commit);
+                add(prizeId, t.commit - t.rake);
+                add(rakeId, t.rake);
+              }
+
+              const rollbackAmt = t.reserve - t.commit;
+              if (rollbackAmt > 0) {
+                await service.rollback(userId, rollbackAmt, ref, 'USD');
+                add(reserveId, -rollbackAmt);
+                add(userId, rollbackAmt);
+              }
+
+              const entries = await journalRepo.find({ where: { refId: ref } });
+              const total = entries.reduce((s, e) => s + Number(e.amount), 0);
+              expect(total).toBe(0);
+            }
+
+            const allEntries = await journalRepo.find();
+            const sum = allEntries.reduce((s, e) => s + Number(e.amount), 0);
+            expect(sum).toBe(0);
+
+            await runInTmp(() => runReconcile(service));
+
+            const accs = await accountRepo.find();
+            for (const acc of accs) {
+              expect(acc.balance).toBe(expected.get(acc.id));
+            }
+
+            const totalExpected = Array.from(expected.values()).reduce(
+              (a, b) => a + b,
+              0,
+            );
+            expect(totalExpected).toBe(0);
           },
         ),
         { numRuns: 25 },
