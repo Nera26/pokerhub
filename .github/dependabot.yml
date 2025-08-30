@@ -1,0 +1,16 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "Nera26"
+      - "BackendTeam"
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "Nera26"
+      - "FrontendTeam"
