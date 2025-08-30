@@ -29,6 +29,16 @@ PokerHub uses a commit–reveal protocol to prove every shuffle was fair and unm
 3. Shuffle a new deck with the seed and compare against the public hand log.
 4. Optional: run `npx ts-node scripts/verify-hand.ts <handId>` to automate steps 1–3.
 
+### Sample Verification Proof
+
+For hand `h1` the server published:
+
+```json
+{ "seed": "0x7e3", "nonce": "0xa9", "commitment": "0x5b2f..." }
+```
+
+Recomputing `sha256(seed || nonce)` yields `0x5b2f...`, matching the commitment and proving the shuffle was bound to that seed.
+
 ## Security Guarantees
 - Players know the deck order could not be altered post‑deal.
 - Observers can archive proofs for independent audits.
@@ -38,6 +48,10 @@ PokerHub uses a commit–reveal protocol to prove every shuffle was fair and unm
 - Every hand stores `{seed, nonce, commitment}` in an append-only log that is hashed into a nightly Merkle root.
 - The root is timestamped and signed with the server's Ed25519 key so regulators can verify provenance.
 - An open-source verifier script reproduces the shuffle and validates the signed Merkle proof against the public key.
+
+## Audit Methodology
+
+Our RNG undergoes yearly reviews using the NIST SP 800‑22 battery and dieharder suites.  Methodology and tooling are detailed in [Security RNG Fairness](../security/rng-fairness.md).
 
 ## Seed Management Policy
 - Seeds originate from a hardware RNG and are kept only in process memory until reveal.
