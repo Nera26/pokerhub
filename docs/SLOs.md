@@ -10,6 +10,7 @@ This page documents how PokerHub alerts on key Service Level Objectives and link
 | Socket connect success | 99% successful connects | 14.4× (1h) / 6× (6h) | [Socket Connects](../infrastructure/observability/socket-connects-dashboard.json) | [Socket Connect Success](analytics-dashboards.md#socket-connect-success-1) | `pokerhub-sre` |
 | Request error rate | <1% of requests error | 14.4× (1h) / 6× (6h) | [Error Rates](../infrastructure/observability/error-rates-dashboard.json) | [Error Rate](analytics-dashboards.md#error-rate-1) | `pokerhub-sre` |
 | Queue saturation | 99% of queue lag < 2 s | 14.4× (1h) / 6× (6h) | [Queue Lag](../infrastructure/observability/queue-lag-dashboard.json) | [Queue Saturation](analytics-dashboards.md#queue-saturation-1) | `pokerhub-eng` |
+| Telemetry pipeline uptime | 99.9% collector availability | 14.4× (1h) / 6× (6h) | [Latency & Error Overview](../infrastructure/observability/latency-error-resource-dashboard.json) | [Telemetry Overview](analytics-dashboards.md#telemetry-overview) | `pokerhub-sre` |
 
 We use a multi‑window burn‑rate policy: a fast 5 m/1 h window at **14.4×** and a slow 30 m/6 h window at **6×**. Alerts are routed to PagerDuty via `pagerduty_service` labels in the rule definitions.
 

@@ -114,6 +114,18 @@ JSON exports for core operational metrics. Import these into Grafana or Metabase
 }
 ```
 
+### Telemetry Overview
+```json
+{
+  "title": "Latency & Error Overview",
+  "panels": [
+    { "title": "HTTP p95 Latency" },
+    { "title": "Request Error Rate" },
+    { "title": "CPU Usage" }
+  ]
+}
+```
+
 ## Metabase
 
 ### Action ACK Latency
@@ -164,6 +176,17 @@ JSON exports for core operational metrics. Import these into Grafana or Metabase
     "native": {
       "query": "SELECT avg(queue_lag_seconds) FROM queue_metrics WHERE created_at > now() - interval '1 hour'"
     }
+  }
+}
+```
+
+### Telemetry Overview
+```json
+{
+  "name": "Latency & Error Overview",
+  "dataset_query": {
+    "type": "native",
+    "native": { "query": "SELECT 1" }
   }
 }
 ```

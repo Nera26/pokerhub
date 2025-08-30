@@ -19,9 +19,16 @@ import {
   PeriodicExportingMetricReader,
 } from '@opentelemetry/sdk-metrics';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
+import { logs } from '@opentelemetry/api-logs';
+import {
+  LoggerProvider,
+  BatchLogRecordProcessor,
+} from '@opentelemetry/sdk-logs';
+import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 
 let sdk: NodeSDK | undefined;
 let meterProvider: MeterProvider | undefined;
+let loggerProvider: LoggerProvider | undefined;
 
 export function setupTelemetry() {
   if (sdk) return sdk;
@@ -51,6 +58,18 @@ export function setupTelemetry() {
   }
   metrics.setGlobalMeterProvider(meterProvider);
 
+  loggerProvider = new LoggerProvider({ resource });
+  const otlpLogsEndpoint =
+    process.env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT ??
+    process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
+  if (otlpLogsEndpoint) {
+    const logExporter = new OTLPLogExporter({ url: otlpLogsEndpoint });
+    loggerProvider.addLogRecordProcessor(
+      new BatchLogRecordProcessor(logExporter),
+    );
+  }
+  logs.setGlobalLoggerProvider(loggerProvider);
+
   sdk = new NodeSDK({
     resource,
     traceExporter: new OTLPTraceExporter({
@@ -78,6 +97,8 @@ export async function shutdownTelemetry() {
 
   await sdk.shutdown();
   await meterProvider?.shutdown();
+  await loggerProvider?.shutdown();
   sdk = undefined;
   meterProvider = undefined;
+  loggerProvider = undefined;
 }
