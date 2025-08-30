@@ -1,7 +1,8 @@
 # Tournament Handbook
 
-**Version:** 1.1.0
-**Last Updated:** 2025-08-30
+**Version:** 1.1.1
+**Last Updated:** 2025-09-05
+**Changelog:** [CHANGELOG](./handbook/CHANGELOG.md)
 
 This handbook standardizes how PokerHub hosts competitive events. Engine
 behavior is detailed in the [Game Engine Specification](./game-engine-spec.md),
