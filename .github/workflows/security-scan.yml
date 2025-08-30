@@ -24,3 +24,18 @@ jobs:
           else
             echo 'No ASVS L2 or high findings'
           fi
+
+  trivy-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend image
+        run: docker build -t backend ./backend
+      - name: Scan backend image
+        uses: aquasecurity/trivy-action@0.33.0
+        with:
+          image-ref: backend
+          format: table
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL
