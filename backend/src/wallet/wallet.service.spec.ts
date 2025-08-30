@@ -8,6 +8,7 @@ import { WalletService } from './wallet.service';
 import { EventPublisher } from '../events/events.service';
 import { PaymentProviderService } from './payment-provider.service';
 import { KycService } from './kyc.service';
+import { SettlementService } from './settlement.service';
 import * as fc from 'fast-check';
 
 describe('WalletService reserve/commit/rollback flow', () => {
@@ -52,6 +53,7 @@ describe('WalletService reserve/commit/rollback flow', () => {
     const settleRepo = dataSource.getRepository(SettlementJournal);
     const provider = {} as unknown as PaymentProviderService;
     const kyc = { validate: jest.fn() } as unknown as KycService;
+    const settleSvc = new SettlementService(settleRepo);
     service = new WalletService(
       accountRepo,
       journalRepo,
@@ -61,6 +63,7 @@ describe('WalletService reserve/commit/rollback flow', () => {
       redis,
       provider,
       kyc,
+      settleSvc,
     );
 
     await accountRepo.save([
@@ -110,6 +113,23 @@ describe('WalletService reserve/commit/rollback flow', () => {
     expect(reserve.balance).toBe(0);
     expect(prize.balance).toBe(55);
     expect(rake.balance).toBe(5);
+  });
+
+  it('cancels reservation when rolled back before commit', async () => {
+    const ref = 'hand#2';
+    const key = 'hand#flop#0';
+    const accountRepo = dataSource.getRepository(Account);
+    const userBefore = await accountRepo.findOneByOrFail({ id: userId });
+    const reserveBefore = await accountRepo.findOneByOrFail({ name: 'reserve' });
+    await service.reserve(userId, 50, ref, 'USD', key);
+    await service.rollback(userId, 50, ref, 'USD', key);
+    const userAfter = await accountRepo.findOneByOrFail({ id: userId });
+    const reserveAfter = await accountRepo.findOneByOrFail({ name: 'reserve' });
+    expect(userAfter.balance).toBe(userBefore.balance);
+    expect(reserveAfter.balance).toBe(reserveBefore.balance);
+    const settleRepo = dataSource.getRepository(SettlementJournal);
+    const entry = await settleRepo.findOne({ where: { idempotencyKey: key } });
+    expect(entry).toBeNull();
   });
 
   it(

@@ -15,6 +15,8 @@ import {
   ProviderStatus,
 } from './payment-provider.service';
 import { KycService } from './kyc.service';
+import { SettlementService } from './settlement.service';
+import type { Street } from '../game/state-machine';
 
 interface Movement {
   account: Account;
@@ -51,6 +53,7 @@ export class WalletService {
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
     private readonly provider: PaymentProviderService,
     private readonly kyc: KycService,
+    private readonly settlementSvc: SettlementService,
   ) {}
 
   private payoutQueue?: Queue;
@@ -243,6 +246,7 @@ export class WalletService {
     amount: number,
     refId: string,
     currency: string,
+    idempotencyKey?: string,
   ): Promise<void> {
     return WalletService.tracer.startActiveSpan(
       'wallet.rollback',
@@ -259,6 +263,12 @@ export class WalletService {
             { account: reserve, amount: -amount },
             { account: user, amount },
           ]);
+          if (idempotencyKey) {
+            const [handId, street, idx] = idempotencyKey.split('#');
+            if (handId && street && idx) {
+              await this.settlementSvc.cancel(handId, street as Street, Number(idx));
+            }
+          }
           span.setStatus({ code: SpanStatusCode.OK });
         } catch (err) {
           span.recordException(err as Error);
