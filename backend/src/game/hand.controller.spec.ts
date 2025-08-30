@@ -45,20 +45,25 @@ describe('HandController', () => {
     const file = join(process.cwd(), '../storage/hand-logs', 'hand-spec.jsonl');
     const logEntry = [0, { type: 'start' }, { players: [{ id: 'u1' }] }, {}];
     writeFileSync(file, `${JSON.stringify(logEntry)}\n${JSON.stringify({ proof })}\n`);
-    store.set('hand-spec', {
-      id: 'hand-spec',
-      log: '',
-      commitment: 'c',
-      seed: 's',
-      nonce: 'n',
-      settled: true,
-    } as unknown as Hand);
 
     await request(app.getHttpServer())
       .get('/hands/hand-spec/proof')
       .set('Authorization', auth('u1'))
       .expect(200)
       .expect(proof);
+
+    if (existsSync(file)) unlinkSync(file);
+  });
+
+  it('returns 404 when proof is missing', async () => {
+    const file = join(process.cwd(), '../storage/hand-logs', 'hand-missing.jsonl');
+    const logEntry = [0, { type: 'start' }, { players: [{ id: 'u1' }] }, {}];
+    writeFileSync(file, `${JSON.stringify(logEntry)}\n`);
+
+    await request(app.getHttpServer())
+      .get('/hands/hand-missing/proof')
+      .set('Authorization', auth('u1'))
+      .expect(404);
 
     if (existsSync(file)) unlinkSync(file);
   });

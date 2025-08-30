@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Modal from '@/app/components/ui/Modal';
-import { fetchHandProof } from '@/lib/api/hands';
+import { fetchHandProof, downloadHandProof } from '@/lib/api/hands';
 import { verifyProof } from '@/lib/verifyProof';
 import type { HandProof } from '@shared/types';
 
@@ -71,6 +71,12 @@ export default function FairnessModal({
           >
             View proof page
           </Link>
+          <button
+            onClick={() => downloadHandProof(handId)}
+            className="underline text-accent-blue"
+          >
+            Download proof JSON
+          </button>
           {valid !== null && (
             <div>
               <strong>Verification:</strong> {valid ? 'valid' : 'invalid'}
