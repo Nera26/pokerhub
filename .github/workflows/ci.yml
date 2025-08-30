@@ -19,8 +19,9 @@ jobs:
       - run: npm test --prefix backend
       - run: npm test --prefix frontend
       - run: ./contracts/verify-contract.sh
+      - run: ./scripts/check-contract-drift.sh
 
-  game-state-invariants:
+  property:
     needs: unit
     runs-on: ubuntu-latest
     steps:
@@ -34,8 +35,21 @@ jobs:
         env:
           FC_SEED: 1
 
+  integration:
+    needs: property
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run test:e2e --prefix backend
+      - run: npm run test:e2e:integration --prefix frontend
+
   e2e:
-    needs: game-state-invariants
+    needs: integration
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -46,7 +60,7 @@ jobs:
       - run: npm ci
       - run: npm run test:e2e
 
-  load-property:
+  load:
     needs: e2e
     runs-on: ubuntu-latest
     steps:
@@ -57,12 +71,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:property --prefix load
-
-  load-smoke:
-    needs: load-property
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
       - name: Run k6 smoke test
         uses: grafana/k6-action@v0.2.0
         with:
