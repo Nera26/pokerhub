@@ -2,6 +2,13 @@
 
 These end-to-end tests exercise the full stack using real services.
 
+## CI pipeline
+
+```mermaid
+flowchart LR
+  unit --> property --> e2e --> load --> canary
+```
+
 ## Running locally
 
 ```bash

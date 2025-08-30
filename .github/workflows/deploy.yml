@@ -43,3 +43,18 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_SHA: ${{ github.sha }}
+      - name: 5m staging canary with rollback
+        run: bash infra/scripts/canary-deploy.sh
+        env:
+          CANARY_TRAFFIC_PERCENT: 100
+          CANARY_DURATION_MINUTES: 5
+          NAMESPACE: ${{ vars.K8S_NAMESPACE_STAGING }}
+          SERVICE: api
+          STABLE: api
+          CANARY: api-canary
+          CANARY_RELEASE: canary-staging
+          PROMETHEUS: ${{ vars.PROMETHEUS_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
