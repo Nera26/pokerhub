@@ -45,6 +45,11 @@ jobs:
           node-version: 20
           cache: npm
       - run: ./scripts/test-stages.sh property | tee property.log
+      - name: Run repository property tests
+        run: |
+          if [ -d tests/property ]; then
+            npx ts-node tests/property/**/*.ts | tee -a property.log
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
