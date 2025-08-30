@@ -1,0 +1,46 @@
+name: dr-failover
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  failover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run DR failover script
+        run: bash scripts/dr-failover.sh | tee dr-failover.log
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      - name: Check RTO/RPO
+        run: |
+          source dr-failover.metrics
+          echo "RTO: $RTO_SECONDS seconds"
+          echo "RPO: $RPO_SECONDS seconds"
+          if [ "$RTO_SECONDS" -gt 1800 ]; then
+            echo "RTO exceeds 30 minutes" >&2
+            exit 1
+          fi
+          if [ "$RPO_SECONDS" -gt 300 ]; then
+            echo "RPO exceeds 5 minutes" >&2
+            exit 1
+          fi
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: dr-failover
+          path: |
+            dr-failover.log
+            dr-failover.metrics
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            { "text": "DR failover exceeded RTO/RPO for ${GITHUB_REPOSITORY}@${GITHUB_SHA}" }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
