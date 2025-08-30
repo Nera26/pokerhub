@@ -1,9 +1,31 @@
 # Accounting Book
 
+**Version:** 1.0.0  
+**Last Updated:** 2025-08-30
+
 ## Ledger Schema
 - **Account**: tracks the running balance for a wallet participant.
 - **JournalEntry**: immutable rows recording debits and credits with a `refType` and `refId`.
 - Every transaction writes equal and opposite entries so the sum of amounts per ref is zero.
+
+### Ledger Flow
+
+```mermaid
+sequenceDiagram
+  participant P as Player
+  participant W as WalletService
+  participant L as Ledger
+  P->>W: deposit $100
+  W->>L: debit player 100
+  W->>L: credit cash 100
+```
+
+### Example Journal Entry
+
+| entryId | account        | debit | credit | refType | refId |
+|--------:|---------------|------:|-------:|---------|-------|
+| 1       | player:alice   | 100   | 0      | deposit | dep1  |
+| 2       | cash:house     | 0     | 100    | deposit | dep1  |
 
 ## Reconciliation Procedure
 1. `WalletService.reconcile()` aggregates journal totals per account and compares them with stored balances.
@@ -32,3 +54,4 @@
 - 36ba907: add reconcile zero-sum property test
 - 3ab6709: add wallet reconciliation job and tests
 - 2025-01-04: document revision history
+- 2025-08-30: add version metadata, ledger flow diagram, and example

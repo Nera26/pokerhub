@@ -79,6 +79,7 @@ This single command executes the backend and frontend unit tests, contract tests
 - [Game Engine Specification](docs/game-engine-spec.md) – edge cases and retry semantics.
 - [RNG Fairness Protocol](docs/rng-fairness.md) – seed generation and commit–reveal verification.
 - [Runbooks](docs/runbooks/) – operational playbooks for stuck hands, orphaned reservations, and more.
+- [Accounting Book](docs/accounting-book.md) – ledger schema and reconciliation jobs.
 - [Tournament Handbook](docs/tournament-handbook.md) – formats, blind structure, and payout rules.
 - [Reconciliation Guide](docs/reconciliation-guide.md) – stepwise ledger checks and failure scenarios.
 
