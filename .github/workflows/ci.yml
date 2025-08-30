@@ -18,7 +18,7 @@ jobs:
       - run: npm ci
       - run: npm test --prefix backend
       - run: npm test --prefix frontend
-      - run: npm run test:contracts
+      - run: ./contracts/verify-contract.sh
 
   game-state-invariants:
     needs: unit
@@ -46,8 +46,20 @@ jobs:
       - run: npm ci
       - run: npm run test:e2e
 
-  load-smoke:
+  load-property:
     needs: e2e
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run test:property --prefix load
+
+  load-smoke:
+    needs: load-property
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
