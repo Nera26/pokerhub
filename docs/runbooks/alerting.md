@@ -2,6 +2,15 @@
 
 PokerHub uses OpenTelemetry to expose metrics which are scraped by Prometheus. The backend also pushes metrics to an Alertmanager endpoint when `ALERTMANAGER_URL` is configured.
 
+## Setup
+
+Provision dashboards and alert rules with the helper scripts:
+
+```bash
+GRAFANA_URL=http://localhost:3000 GRAFANA_API_KEY=<key> ./infrastructure/observability/provision-grafana.sh
+ALERTMANAGER_URL=http://localhost:9093 ./infrastructure/observability/provision-alertmanager.sh
+```
+
 Prometheus evaluates SLO-based rules such as action ACK latency and socket connect success using multi-window burn rates. Alerts fire when the 5 m/1 h burn rate exceeds **14.4** or the 30 m/6 h burn rate exceeds **6**. Alertmanager routes notifications to PagerDuty and, for canary deployments, emits a `repository_dispatch` event that runs `infra/canary/rollback.sh`. See [SLO alert strategy](../SLOs.md) for details.
 
 ## Prometheus Alert Rules
@@ -32,11 +41,15 @@ groups:
 - Additional dashboards live under `../../infrastructure/observability/` and include `pagerduty_service` labels mapping each panel to the owning PagerDuty service.
 
 ## PagerDuty Services
-- `pokerhub-sre` – Core platform and SLO alerts (availability, latency, error rate).
-- `pokerhub-eng` – Feature engineering queues and saturation metrics.
-- `pokerhub-ops` – Deployment and operations notifications.
-- Redis, Postgres and WebSocket metrics from OpenTelemetry are routed to
-  `pokerhub-sre` using the `pagerduty_service` tag embedded in Grafana panels.
+
+| `pagerduty_service` | PagerDuty service |
+| --- | --- |
+| `pokerhub-sre` | Core platform and SLO alerts (availability, latency, error rate) |
+| `pokerhub-eng` | Feature engineering queues and saturation metrics |
+| `pokerhub-ops` | Deployment and operations notifications |
+
+Redis, Postgres and WebSocket metrics from OpenTelemetry are routed to
+`pokerhub-sre` using the `pagerduty_service` tag embedded in Grafana panels.
 
 ## Severity Tiers
 
