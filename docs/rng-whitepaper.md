@@ -2,6 +2,14 @@
 
 PokerHub uses a commit–reveal protocol to prove every shuffle was fair and unmanipulated.
 
+## Commit–Reveal Flow
+
+![Commit–reveal flow diagram](images/rng-commit-reveal.svg)
+
+1. The server draws a random seed and nonce and commits to their hash.
+2. The commitment and nonce are broadcast before cards are dealt.
+3. After the hand, the seed is revealed so anyone can reproduce the shuffle.
+
 ## Commit Phase
 - Server draws a 32‑byte seed and 16‑byte nonce with `crypto.randomBytes`.
 - It computes `commitment = sha256(seed || nonce)`.
@@ -24,4 +32,5 @@ PokerHub uses a commit–reveal protocol to prove every shuffle was fair and unm
 - Any mismatch between the commitment and revealed seed proves tampering.
 
 ## Revision History
+- 2025-08-30: add commit–reveal diagram and flow summary
 - 2025-01-04: initial public release

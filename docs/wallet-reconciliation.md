@@ -28,5 +28,18 @@ The report contains an array of discrepancies; an empty array proves all account
 - `[ { accountId, expected, actual } ]` – a mismatch exists and requires investigation.
 - Reports are retained under `storage/` for audit trails.
 
+## Reconciliation Procedure
+
+1. Export all `JournalEntry` rows for the period under review.
+2. Run the reconciliation job to rebuild balances from those entries.
+3. For each mismatch, trace the offending `refType`/`refId` to the originating system.
+4. Post adjusting journal entries if a debit or credit was missed.
+5. Rerun the job to confirm the discrepancy is cleared.
+
+### Example
+
+If the report shows `{ accountId: 42, expected: 5000, actual: 4500 }`, query the journal for account 42. Suppose a `DEPOSIT` entry for 500 chips was never written. Inserting the missing entry brings the balance back to 5000 and the reconciliation job returns an empty array.
+
 ## Revision History
+- 2025-08-30: add step-by-step procedure and example
 - 2025-01-04: initial version
