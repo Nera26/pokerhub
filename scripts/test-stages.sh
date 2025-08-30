@@ -48,7 +48,25 @@ run_chaos() {
     echo "k6 is required for chaos tests" >&2
     exit 1
   fi
-  k6 run load/chaos/ws-chaos.js --vus 10 --duration 10s
+  summary="chaos-summary.json"
+  k6 run load/chaos/ws-chaos.js --vus 10 --duration 10s --summary-export="$summary"
+  if [[ -f "$summary" ]]; then
+    echo "Chaos summary written to $summary"
+    if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+      {
+        echo "### Chaos summary"
+        echo
+        echo '```json'
+        cat "$summary"
+        echo '```'
+      } >> "$GITHUB_STEP_SUMMARY"
+    fi
+    fails=$(jq '.metrics.checks.fails' "$summary" 2>/dev/null || echo 0)
+    if [[ "$fails" -gt 0 ]]; then
+      echo "Chaos checks failed: $fails" >&2
+      exit 1
+    fi
+  fi
 }
 
 case "${1:-}" in
