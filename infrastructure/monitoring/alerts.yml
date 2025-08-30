@@ -13,6 +13,10 @@ groups:
       - record: socket_connect_error_budget_burn_rate_6h
         expr: (1 - sum(rate(socket_success_total[6h])) / sum(rate(socket_requests_total[6h])))
           / (1 - 0.99)
+      - record: service_uptime_error_budget_burn_rate_1h
+        expr: (1 - avg_over_time(up[1h])) / (1 - 0.9995)
+      - record: service_uptime_error_budget_burn_rate_6h
+        expr: (1 - avg_over_time(up[6h])) / (1 - 0.9995)
   - name: pokerhub-alerts
     rules:
       - alert: HighErrorRate
@@ -115,3 +119,21 @@ groups:
         annotations:
           summary: "6h socket connect success burn rate too high"
           runbook: docs/runbooks/socket-connect-success.md
+      - alert: ServiceUptimeSLOBurnRate1h
+        expr: service_uptime_error_budget_burn_rate_1h > 14.4
+        for: 2m
+        labels:
+          severity: critical
+          pagerduty_service: pokerhub-sre
+        annotations:
+          summary: "1h service uptime burn rate too high"
+          runbook: docs/runbooks/service-uptime.md
+      - alert: ServiceUptimeSLOBurnRate6h
+        expr: service_uptime_error_budget_burn_rate_6h > 6
+        for: 15m
+        labels:
+          severity: critical
+          pagerduty_service: pokerhub-sre
+        annotations:
+          summary: "6h service uptime burn rate too high"
+          runbook: docs/runbooks/service-uptime.md

@@ -1,0 +1,27 @@
+{
+  "dashboard": {
+    "title": "Room CPU/Memory",
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "CPU Seconds",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "sum(rate(container_cpu_usage_seconds_total{pod=~\"room-.*\"}[5m])) by (pod)"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Memory Usage",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "sum(container_memory_usage_bytes{pod=~\"room-.*\"}) by (pod)"
+          }
+        ]
+      }
+    ]
+  }
+}

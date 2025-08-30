@@ -1,0 +1,17 @@
+{
+  "name": "Engagement Metrics",
+  "queries": [
+    {
+      "name": "DAU vs MAU",
+      "query": "SELECT date, dau, mau FROM daily_active_users"
+    },
+    {
+      "name": "Rake Curve",
+      "query": "SELECT stake, rake FROM rake_curve"
+    },
+    {
+      "name": "Cohort Retention",
+      "query": "SELECT cohort, month, retention FROM cohort_retention"
+    }
+  ]
+}
