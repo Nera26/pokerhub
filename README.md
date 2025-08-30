@@ -7,7 +7,7 @@ The project provides a Docker setup for the full stack:
 - **PostgreSQL** for persistence
 - **Redis** for caching
 - **RabbitMQ** for messaging
-- **LocalStack** to emulate AWS services
+- **GCS emulator** for object storage
 - **backend** service (NestJS API)
 
 ### Quick Start
@@ -26,7 +26,13 @@ The project provides a Docker setup for the full stack:
    RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
    ```
 
-   Adjust the URLs as needed for your local environment.
+   Adjust the URLs as needed for your local environment. Configure Google Cloud credentials as well:
+
+   ```
+   GCP_PROJECT=pokerhub-dev
+   GCS_BUCKET=pokerhub-dev
+   GOOGLE_APPLICATION_CREDENTIALS=/path/to/credentials.json
+   ```
 
 2. Start all services:
 
@@ -36,8 +42,7 @@ The project provides a Docker setup for the full stack:
 
    Override values in `.env` or extend `docker-compose.override.yml` for local tweaks.
 
-The compose configuration uses health checks so the backend only starts once PostgreSQL, Redis, RabbitMQ, and LocalStack are
- ready. TypeORM's `synchronize` option is controlled by the `DB_SYNC` flag (defaults to `true` in this compose setup).
+The compose configuration uses health checks so the backend only starts once PostgreSQL, Redis, RabbitMQ, and the storage emulator are ready. TypeORM's `synchronize` option is controlled by the `DB_SYNC` flag (defaults to `true` in this compose setup).
 
 ### Subtree Sync Scripts
 

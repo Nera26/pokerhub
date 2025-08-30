@@ -20,10 +20,9 @@ TS_NODE_TRANSPILE_ONLY=1 \\
 DATABASE_URL=postgres://localhost/test \\
 REDIS_URL=redis://localhost \\
 RABBITMQ_URL=amqp://localhost \\
-AWS_REGION=us-east-1 \\
-AWS_S3_BUCKET=bucket \\
-AWS_ACCESS_KEY_ID=key \\
-AWS_SECRET_ACCESS_KEY=secret \\
+GCP_PROJECT=my-project \\
+GCS_BUCKET=bucket \\
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/creds.json \\
 JWT_SECRET=secret \\
 node -r ./backend/node_modules/ts-node/register \\
      -r ./backend/node_modules/tsconfig-paths/register \\
