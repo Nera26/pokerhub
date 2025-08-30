@@ -76,6 +76,9 @@ This single command executes the backend and frontend unit tests, contract tests
 ## Documentation
 
 - [Game Engine Overview](docs/game-engine.md) – state transitions, message schemas, and timers.
+- [Game Engine Specification](docs/game-engine-spec.md) – edge cases and retry semantics.
 - [RNG Fairness Protocol](docs/rng-fairness.md) – seed generation and commit–reveal verification.
 - [Runbooks](docs/runbooks/) – operational playbooks for stuck hands, orphaned reservations, and more.
+- [Tournament Handbook](docs/tournament-handbook.md) – formats, blind structure, and payout rules.
+- [Reconciliation Guide](docs/reconciliation-guide.md) – stepwise ledger checks and failure scenarios.
 

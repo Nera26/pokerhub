@@ -4,10 +4,21 @@ This guide explains how wallet ledgers stay consistent and how disputes are reso
 
 ## Ledger Reconciliation
 
-1. Aggregate `JournalEntry` rows by account.
-2. Compare the sum with the stored `balance` column.
-3. Generate a daily report highlighting any deltas.
-4. Investigate mismatches immediately; no gambling funds are released until resolved.
+1. Export all `JournalEntry` rows for the period and sort by account and timestamp.
+2. Compute a running balance per account using debits and credits.
+3. Compare the computed balance with the `accounts.balance` column.
+4. Cross‑check totals against payment provider statements.
+5. Generate a daily report highlighting any deltas and archive it.
+6. Investigate mismatches immediately; no gambling funds are released until resolved.
+
+## Failure Scenarios
+
+| Scenario | Detection | Resolution |
+|---------|-----------|------------|
+| Missing journal entry | Running balance differs from provider report | Insert corrective entry and document root cause. |
+| Double debit/credit | Duplicate reference IDs in `JournalEntry` | Reverse duplicate and alert engineering. |
+| Provider outage | API reconciliation fails | Pause withdrawals and retry reconciliation when service restores. |
+| Crash mid‑reconciliation | Report generation incomplete | Rerun reconciliation from last successful checkpoint. |
 
 ## Dispute Workflow
 
