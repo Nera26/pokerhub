@@ -15,6 +15,12 @@ PokerHub requires identity verification and anti-money-laundering checks during 
 - Record all verification requests and provider responses with timestamps and reviewer IDs.
 - Retain logs for seven years in immutable storage for regulatory audits.
 
+## Escalation Steps
+1. Flagged signups or transactions enter a manual review queue within 24 hours.
+2. Compliance reviews evidence and either approves, requests additional documents, or marks the account high risk.
+3. High-risk cases escalate to the security team for deeper investigation.
+4. Confirmed suspicious activity triggers a Suspicious Activity Report to regulators and immediate account freeze.
+
 ## Sequence Diagrams
 
 ### Onboarding
