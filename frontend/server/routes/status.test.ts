@@ -3,9 +3,12 @@ import express from 'express';
 import request from 'supertest';
 import routes from './index';
 
+const originalFetch = global.fetch;
+
 describe('status proxy route', () => {
   afterEach(() => {
-    (global.fetch as any)?.mockReset?.();
+    (global.fetch as jest.Mock)?.mockRestore?.();
+    global.fetch = originalFetch;
   });
 
   it('returns backend status response', async () => {
