@@ -32,6 +32,21 @@ export async function fetchVerifiedHandProof(
   return { proof, valid };
 }
 
+export async function downloadHandProof(id: string): Promise<void> {
+  const proof = await fetchHandProof(id);
+  const blob = new Blob([JSON.stringify(proof, null, 2)], {
+    type: 'application/json',
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${id}-proof.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export async function fetchHandLog(
   id: string,
   { signal }: { signal?: AbortSignal } = {},

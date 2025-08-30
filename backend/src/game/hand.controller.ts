@@ -95,41 +95,36 @@ export class HandController {
     }
 
     const file = join(process.cwd(), '../storage/hand-logs', `${id}.jsonl`);
+    let raw: string;
     try {
-      const raw = await readFile(file, 'utf8');
-      const log = new HandLog();
-      for (const line of raw.trim().split('\n')) {
-        if (!line) continue;
-        try {
-          const parsed = JSON.parse(line);
-          if (Array.isArray(parsed)) {
-            (log as any).entries.push(parsed);
-          } else if (parsed.commitment) {
-            log.recordCommitment(parsed.commitment);
-          } else if (parsed.proof) {
-            log.recordProof(parsed.proof);
-          }
-        } catch {
-          continue;
-        }
-      }
-      const { proof } = log.getCommitmentAndProof();
-      if (proof) {
-        return HandProofResponseSchema.parse(proof);
-      }
+      raw = await readFile(file, 'utf8');
     } catch {
-      // ignore missing file, fall back to database
-    }
-
-    const hand = await this.hands.findOne({ where: { id } });
-    if (!hand || !hand.seed || !hand.nonce) {
       throw new NotFoundException('proof not found');
     }
-    return HandProofResponseSchema.parse({
-      commitment: hand.commitment,
-      seed: hand.seed,
-      nonce: hand.nonce,
-    });
+
+    const log = new HandLog();
+    for (const line of raw.trim().split('\n')) {
+      if (!line) continue;
+      try {
+        const parsed = JSON.parse(line);
+        if (Array.isArray(parsed)) {
+          (log as any).entries.push(parsed);
+        } else if (parsed.commitment) {
+          log.recordCommitment(parsed.commitment);
+        } else if (parsed.proof) {
+          log.recordProof(parsed.proof);
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    const { proof } = log.getCommitmentAndProof();
+    if (!proof) {
+      throw new NotFoundException('proof not found');
+    }
+
+    return HandProofResponseSchema.parse(proof);
   }
 
   @Get(':id/log')

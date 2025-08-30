@@ -1,5 +1,6 @@
 import { fetchHandProof } from '@/lib/api/hands';
 import { verifyProof } from '@/lib/verifyProof';
+import ProofDownloadButton from './ProofDownloadButton';
 
 export default async function Proof({ handId }: { handId: string }) {
   const proof = await fetchHandProof(handId);
@@ -18,6 +19,7 @@ export default async function Proof({ handId }: { handId: string }) {
       <div>
         <strong>Verification:</strong> {valid ? 'valid' : 'invalid'}
       </div>
+      <ProofDownloadButton handId={handId} />
     </div>
   );
 }
