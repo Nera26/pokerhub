@@ -1,5 +1,6 @@
 {
   "title": "Latency & Error Overview",
+  "labels": { "pagerduty_service": "pokerhub-sre" },
   "panels": [
     {
       "title": "HTTP p95 Latency",

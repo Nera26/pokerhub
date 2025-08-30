@@ -27,21 +27,13 @@ A 99.9% availability SLO allows 0.1% errors (43.2 minutes per month). If the obs
 ## Dashboards & Alert Thresholds
 All SLOs use multi-window burn rates of **14.4×** (5 m/1 h) and **6×** (30 m/6 h). Dashboards live under `../infrastructure/observability/`:
 
-| Metric | Grafana dashboard | PagerDuty service |
-| --- | --- | --- |
-| Service uptime | [Service Uptime](../infrastructure/observability/service-uptime-dashboard.json) | `pokerhub-sre` |
-| Action ACK latency | [Socket Latency](../infrastructure/observability/socket-latency-dashboard.json) | `pokerhub-sre` |
-| Socket connect success | [Socket Connects](../infrastructure/observability/socket-connects-dashboard.json) | `pokerhub-sre` |
-| Request error rate | [Error Rates](../infrastructure/observability/error-rates-dashboard.json) | `pokerhub-sre` |
-| Queue saturation | [Queue Lag](../infrastructure/observability/queue-lag-dashboard.json) | `pokerhub-eng` |
-
-Refer to these runbooks for mitigation steps:
-
-- [Action ACK Latency](runbooks/action-ack-latency.md)
-- [Socket Connect Success](runbooks/socket-connect-success.md)
-- [Error Rates](runbooks/error-rates.md)
-- [Service Uptime](runbooks/service-uptime.md)
-- [Queue Saturation](runbooks/queue-saturation.md)
+| Metric | Grafana dashboard | PagerDuty service | Runbook |
+| --- | --- | --- | --- |
+| Service uptime | [Service Uptime](../infrastructure/observability/service-uptime-dashboard.json) | `pokerhub-sre` | [Service Uptime](runbooks/service-uptime.md) |
+| Action ACK latency | [Socket Latency](../infrastructure/observability/socket-latency-dashboard.json) | `pokerhub-sre` | [Action ACK Latency](runbooks/action-ack-latency.md) |
+| Socket connect success | [Socket Connects](../infrastructure/observability/socket-connects-dashboard.json) | `pokerhub-sre` | [Socket Connect Success](runbooks/socket-connect-success.md) |
+| Request error rate | [Error Rates](../infrastructure/observability/error-rates-dashboard.json) | `pokerhub-sre` | [Error Rates](runbooks/error-rates.md) |
+| Queue saturation | [Queue Lag](../infrastructure/observability/queue-lag-dashboard.json) | `pokerhub-eng` | [Queue Saturation](runbooks/queue-saturation.md) |
 
 ## Breach Handling Workflow
 1. **Observe** – An Alertmanager page for burn rate or SLO breach arrives via

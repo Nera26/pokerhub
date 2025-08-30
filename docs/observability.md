@@ -111,8 +111,14 @@ graph TD
 
 ![SLO Dashboard](images/slo-dashboard.svg)
 
-The Grafana SLO dashboard tracks HTTP API p99 latency, WebSocket p95 latency,
-action ACK p95 latency, wallet transaction throughput, and service availability.
+The Grafana SLO dashboard tracks:
+
+- [HTTP API p99 latency](../infrastructure/observability/slo-dashboard.json)
+- [WebSocket p95 latency](../infrastructure/observability/slo-dashboard.json)
+- [Action ACK p95 latency](../infrastructure/observability/socket-latency-dashboard.json)
+- [Wallet transaction throughput](../infrastructure/observability/slo-dashboard.json)
+- [Service availability](../infrastructure/observability/service-uptime-dashboard.json)
+
 Prometheus evaluates these objectives and sends violations to the
 `pokerhub-sre` PagerDuty service.
 
@@ -128,12 +134,12 @@ Production deployments expose these views at:
 
 Individual metric runbooks provide dashboard links and PagerDuty escalation details:
 
-- [Action ACK Latency](runbooks/action-ack-latency.md)
-- [Socket Connect Success](runbooks/socket-connect-success.md)
-- [Error Rates](runbooks/error-rates.md)
-- [Service Uptime](runbooks/service-uptime.md)
-- [Queue Saturation](runbooks/queue-saturation.md)
-- [Telemetry Pipeline](runbooks/telemetry-pipeline.md)
+- [Action ACK Latency](runbooks/action-ack-latency.md) ([Grafana JSON](../infrastructure/observability/socket-latency-dashboard.json))
+- [Socket Connect Success](runbooks/socket-connect-success.md) ([Grafana JSON](../infrastructure/observability/socket-connects-dashboard.json))
+- [Error Rates](runbooks/error-rates.md) ([Grafana JSON](../infrastructure/observability/error-rates-dashboard.json))
+- [Service Uptime](runbooks/service-uptime.md) ([Grafana JSON](../infrastructure/observability/service-uptime-dashboard.json))
+- [Queue Saturation](runbooks/queue-saturation.md) ([Grafana JSON](../infrastructure/observability/queue-lag-dashboard.json))
+- [Telemetry Pipeline](runbooks/telemetry-pipeline.md) ([Grafana JSON](../infrastructure/observability/latency-error-resource-dashboard.json))
 - [Security Incident Response](security/incident-response.md)
 
 ![Alert Routing](images/alert-routing.svg)
