@@ -19,6 +19,24 @@ Both scripts embed thresholds aligned with our SLOs. `k6-10k-tables.js` fails if
 
 Each step exports a JSON summary (`10k-summary.json` or `packet-summary.json`). Review the `thresholds` section – entries with `"passed": false` indicate a regression.
 
+## Example Replay
+
+Chaos runs record their random seed and metrics under a timestamped directory in
+`load/metrics/`.
+
+1. Run the chaos harness:
+   ```bash
+   ./load/run-10k-chaos.sh
+   ```
+   This creates `load/metrics/<timestamp>/` containing `seed.txt`, latency
+   histograms and GC/heap statistics.
+2. Replay the run using the stored seed and settings:
+   ```bash
+   ./load/run-10k-chaos.sh --replay load/metrics/<timestamp>
+   ```
+   Replay metrics are written to `load/metrics/<timestamp>/replay/` for
+   comparison.
+
 ## 10k Table Load
 
 1. Ensure the target environment is running.

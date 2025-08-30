@@ -36,3 +36,7 @@ jobs:
         with:
           name: k6-100k-chaos-${{ github.run_id }}
           path: ${{ env.METRICS_DIR }}
+          retention-days: 7
+      - name: Artifact info
+        if: always()
+        run: echo "Metrics artifact: k6-100k-chaos-${{ github.run_id }}" >> "$GITHUB_STEP_SUMMARY"
