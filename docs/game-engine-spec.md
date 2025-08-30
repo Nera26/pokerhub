@@ -84,3 +84,10 @@ curl /api/hands/hand1/state/3 | jq
 - Rate limiting blocks clients after 30 actions in 10 seconds.
 - Commit-reveal RNG proves deck fairness.
 - Collusion tracking records user, device and IP on every action.
+
+## Revision History
+- 3df9bd4: document hand log and state endpoints
+- 78a2130: expose hand state reconstruction
+- 5b99d21: align security and engine specs
+- 4eb5561: add game engine spec and SLO definitions
+- 2025-01-04: finalize spec and add revision history

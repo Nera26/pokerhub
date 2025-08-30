@@ -43,3 +43,9 @@ A Monte Carlo simulation with 10,000 entrants tested a standard blind structure 
   "expectedDuration": 130
 }
 ```
+
+## Revision History
+- 7cbff0e: parameterize tournament simulator and validate structures
+- c643a4f: add bot profiles to tournament simulator
+- 8bfce13: add tournament simulator and handbook
+- 2025-01-04: append revision history

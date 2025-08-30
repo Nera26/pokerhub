@@ -1,13 +1,18 @@
 # Milestone Plan
 
-This roadmap outlines eight major steps for PokerHub's development.
+This roadmap links major features to their performance and compliance objectives.
 
-1. **Hand Engine v1** – implement the initial version of the engine that deals cards, evaluates hands, and resolves pots.
-2. **Socket Reliability** – harden WebSocket connections with reconnection logic, heartbeats, and message ordering.
-3. **RNG Commit–Reveal** – ensure fair randomness with a cryptographic commit–reveal scheme for shuffles.
-4. **Wallet & Rake** – integrate on-chain/off-chain wallets, handle deposits/withdrawals, and apply rake policies.
-5. **Tournament Core** – build tournament structures, table balancing, and progression logic.
-6. **Leaderboards** – surface player rankings across cash games and tournaments.
-7. **Observability** – add metrics, tracing, and alerting to monitor system health.
-8. **Scale & Chaos** – stress test the platform and introduce chaos engineering to validate resilience.
+| # | Feature | SLO Target | Compliance Goal |
+|---|---------|------------|----------------|
+| 1 | Hand Engine v1 | 99% action ACKs < 250 ms | Fair dealing via RNG proofs |
+| 2 | Socket Reliability | 99% successful connects | Availability reporting for regulators |
+| 3 | RNG Commit–Reveal | 99.95% service uptime | Auditable shuffle integrity |
+| 4 | Wallet & Rake | 99.95% service uptime | KYC/AML adherence |
+| 5 | Tournament Core | 99% action ACKs < 250 ms | Transparent payout structures |
+| 6 | Leaderboards | 99.95% service uptime | GDPR data export readiness |
+| 7 | Observability | 99.95% service uptime | SOC 2 monitoring controls |
+| 8 | Scale & Chaos | 99.95% service uptime | Resilience evidence for licensing |
 
+## Revision History
+- 4c23e7c: initial roadmap
+- 2025-01-04: link milestones to SLO and compliance goals
