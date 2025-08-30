@@ -37,7 +37,7 @@ describe('calculatePrizes', () => {
       const total = result.prizes.reduce((a, b) => a + b, 0);
       expect(Math.abs(total - prizePool)).toBeLessThan(1);
       expected.forEach((v, i) => {
-        expect(Math.abs(result.prizes[i] - v)).toBeLessThanOrEqual(1);
+        expect(Math.abs(result.prizes[i] - v)).toBeLessThan(1);
       });
     });
   });
@@ -53,7 +53,7 @@ describe('calculatePrizes', () => {
     const total = result.prizes.reduce((a, b) => a + b, 0);
     expect(Math.abs(total - prizePool)).toBeLessThan(1);
     icmFixtures[0].expected.forEach((v, i) => {
-      expect(Math.abs(result.prizes[i] - v)).toBeLessThanOrEqual(1);
+      expect(Math.abs(result.prizes[i] - v)).toBeLessThan(1);
     });
   });
 

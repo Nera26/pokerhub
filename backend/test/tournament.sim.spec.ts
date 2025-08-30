@@ -8,7 +8,7 @@ import { PkoService } from '../src/tournament/pko.service';
 import { icmRaw } from '../src/tournament/structures/icm';
 
 describe('tournament simulation', () => {
-  it('balances 10k entrants and matches ICM payouts', async () => {
+  it('simulates 10k entrants with late registration and bubble payouts', async () => {
     const tables: Table[] = Array.from({ length: 100 }, (_, i) => ({
       id: `tbl${i}`,
       seats: [],
@@ -17,8 +17,9 @@ describe('tournament simulation', () => {
 
     const allSeats: Seat[] = [];
     let seatId = 0;
+    // initial 8k entrants
     for (const tbl of tables) {
-      for (let i = 0; i < 100; i++) {
+      for (let i = 0; i < 80; i++) {
         const seat: Seat = {
           id: `s${seatId}`,
           table: tbl,
@@ -30,6 +31,21 @@ describe('tournament simulation', () => {
         allSeats.push(seat);
         seatId++;
       }
+    }
+
+    // 2k late registration entrants join first 20 tables
+    for (let i = 0; i < 2000; i++) {
+      const tbl = tables[i % 20];
+      const seat: Seat = {
+        id: `s${seatId}`,
+        table: tbl,
+        user: { id: `late${seatId}` } as any,
+        position: tbl.seats.length,
+        lastMovedHand: 0,
+      } as Seat;
+      tbl.seats.push(seat);
+      allSeats.push(seat);
+      seatId++;
     }
 
     const seatsRepo = {
@@ -66,6 +82,27 @@ describe('tournament simulation', () => {
     );
     const balancer = new TableBalancerService(tablesRepo, service);
 
+    // balance after late registration
+    await balancer.rebalanceIfNeeded('t1');
+    const countsAfterLate = tables.map((t) => t.seats.length);
+    expect(Math.max(...countsAfterLate) - Math.min(...countsAfterLate)).toBeLessThanOrEqual(1);
+
+    // example bubble payout split among three busts for last paid spot
+    const bubble = service.resolveBubbleElimination(
+      [
+        { id: 'b1', stack: 5000 },
+        { id: 'b2', stack: 3000 },
+        { id: 'b3', stack: 2000 },
+      ],
+      [30001, 0, 0],
+    );
+    expect(bubble).toEqual([
+      { id: 'b1', prize: 10001 },
+      { id: 'b2', prize: 10000 },
+      { id: 'b3', prize: 10000 },
+    ]);
+
+    // play down to final table
     while (allSeats.length > 9) {
       const idx = Math.floor(Math.random() * allSeats.length);
       const seat = allSeats.splice(idx, 1)[0];
@@ -95,7 +132,7 @@ describe('tournament simulation', () => {
     });
     const expected = icmRaw(stacks, payouts);
     for (let i = 0; i < stacks.length; i++) {
-      expect(Math.abs(prizes[i] - expected[i])).toBeLessThanOrEqual(1);
+      expect(Math.abs(prizes[i] - expected[i])).toBeLessThan(1);
     }
   });
 });
