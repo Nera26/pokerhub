@@ -9,6 +9,11 @@ set -euo pipefail
 : "${PGDATABASE:=postgres}"
 : "${WAL_ARCHIVE_BUCKET?Must set WAL_ARCHIVE_BUCKET}"
 
+if ! command -v gcloud >/dev/null 2>&1; then
+  echo "gcloud CLI not found. Install the Google Cloud SDK and authenticate before running this drill." >&2
+  exit 1
+fi
+
 log() {
   echo "[$(date --iso-8601=seconds)] $*"
 }
