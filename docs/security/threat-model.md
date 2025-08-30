@@ -114,422 +114,142 @@ Mitigations are detailed in [Anti-Collusion Monitoring](anti-collusion.md). See 
 ### gateway
 | Threat | Example | Mitigation |
 | --- | --- | --- |
-| Spoofing | mTLS bypass between services and gateway | mTLS between services and gateway authentication |
-| Tampering | Modifying route handlers at runtime | Immutable deployments and integrity checks |
-| Repudiation | Services deny invoking certain endpoints | Trace IDs and request logging |
-| Information Disclosure | Exposing hidden admin routes | Require auth and hide behind firewall rules |
-| Denial of Service | Route enumeration or heavy payloads | Rate limiting and payload size caps |
-| Elevation of Privilege | Accessing privileged routes without proper auth | Centralized authorization middleware |
+| Spoofing | mTLS bypass between services and gateway | Enforce mTLS in [infrastructure/api-gateway/kong.yml](../../infrastructure/api-gateway/kong.yml) |
+| Tampering | Modifying route handlers at runtime | Immutable deployments under [backend/src/routes](../../backend/src/routes) |
+| Repudiation | Services deny invoking certain endpoints | Trace IDs in [backend/src/logging/providers/otel.provider.ts](../../backend/src/logging/providers/otel.provider.ts) |
+| Information Disclosure | Exposing hidden admin routes | Require auth via [backend/src/routes/admin.controller.ts](../../backend/src/routes/admin.controller.ts) |
+| Denial of Service | Route enumeration or heavy payloads | Rate limiting in [backend/src/auth/rate-limit.middleware.ts](../../backend/src/auth/rate-limit.middleware.ts) |
+| Elevation of Privilege | Accessing privileged routes without proper auth | Centralized checks in [backend/src/auth/security.middleware.ts](../../backend/src/auth/security.middleware.ts) |
 
 ### schemas
 | Threat | Example | Mitigation |
 | --- | --- | --- |
-| Spoofing | Using malicious schema definitions | Validate schema sources and sign packages |
-| Tampering | Changing schema validation rules | Version control and code reviews |
-| Repudiation | Developers deny schema changes | Commit history and CI approvals |
-| Information Disclosure | Schemas reveal internal fields | Separate internal vs public schemas |
-| Denial of Service | Complex schemas causing validation overhead | Benchmark validators and set timeouts |
-| Elevation of Privilege | Relaxed schemas allowing privilege escalation | Strict validation and authorization checks |
+| Spoofing | Using malicious schema definitions | Pin sources in [backend/src/schemas](../../backend/src/schemas) |
+| Tampering | Changing schema validation rules | Code review in [backend/src/schemas](../../backend/src/schemas) |
+| Repudiation | Developers deny schema changes | Commit history for [backend/src/schemas](../../backend/src/schemas) |
+| Information Disclosure | Schemas reveal internal fields | Separate public files under [backend/src/schemas](../../backend/src/schemas) |
+| Denial of Service | Complex schemas causing validation overhead | Benchmarks in [backend/src/schemas](../../backend/src/schemas) |
+| Elevation of Privilege | Relaxed schemas allowing privilege escalation | Strict checks in [backend/src/schemas](../../backend/src/schemas) |
 
 ### scripts
 | Threat | Example | Mitigation |
 | --- | --- | --- |
-| Spoofing | Running unauthorized maintenance scripts | Sign scripts and restrict execution permissions |
-| Tampering | Modifying deployment scripts | Use CI pipelines with checksums |
-| Repudiation | Operators deny running scripts | Log executions with user IDs and timestamps |
-| Information Disclosure | Scripts outputting secrets | Redact sensitive values and store logs securely |
-| Denial of Service | Faulty scripts consuming resources | Review and test scripts in staging |
-| Elevation of Privilege | Script misuse to escalate rights | Run with least privileges and peer review |
+| Spoofing | Running unauthorized maintenance scripts | Run signed utilities in [backend/src/scripts](../../backend/src/scripts) |
+| Tampering | Modifying deployment scripts | Checksums enforced in [backend/src/scripts](../../backend/src/scripts) CI |
+| Repudiation | Operators deny running scripts | Execution logs in [backend/src/scripts](../../backend/src/scripts) |
+| Information Disclosure | Scripts outputting secrets | Redact output in [backend/src/scripts](../../backend/src/scripts) |
+| Denial of Service | Faulty scripts consuming resources | Staged testing of [backend/src/scripts](../../backend/src/scripts) |
+| Elevation of Privilege | Script misuse to escalate rights | Least‑privilege runners in [backend/src/scripts](../../backend/src/scripts) |
 
 ### session
 | Threat | Example | Mitigation |
 | --- | --- | --- |
-| Spoofing | Hijacking session IDs | Rotate IDs and bind sessions to device fingerprints |
-| Tampering | Altering session state | Store session data server-side and sign tokens |
-| Repudiation | Users deny actions within a session | Log actions with session IDs and timestamps |
-| Information Disclosure | Session storage leaks | Encrypt session stores and enforce idle timeouts |
-| Denial of Service | Session fixation or exhaustion | Limit concurrent sessions and invalidate old ones |
-| Elevation of Privilege | Session fixation leading to privilege gain | Regenerate tokens after privilege change |
+| Spoofing | Hijacking session IDs | Rotate IDs in [backend/src/session/session.service.ts](../../backend/src/session/session.service.ts) bound to devices |
+| Tampering | Altering session state | Server‑side storage in [backend/src/session/session.service.ts](../../backend/src/session/session.service.ts) |
+| Repudiation | Users deny actions within a session | Audit logs via [backend/src/logging/providers/otel.provider.ts](../../backend/src/logging/providers/otel.provider.ts) |
+| Information Disclosure | Session storage leaks | Encrypted store in [backend/src/session/session.service.ts](../../backend/src/session/session.service.ts) |
+| Denial of Service | Session fixation or exhaustion | Limits in [backend/src/auth/rate-limit.middleware.ts](../../backend/src/auth/rate-limit.middleware.ts) |
+| Elevation of Privilege | Session fixation leading to privilege gain | Token regeneration in [backend/src/session/session.service.ts](../../backend/src/session/session.service.ts) |
 
 ### storage
 | Threat | Example | Mitigation |
 | --- | --- | --- |
-| Spoofing | Fake storage nodes supply data | Verify node certificates and checksums |
-| Tampering | Modifying stored files | Use immutable object storage and versioning |
-| Repudiation | Operators deny file uploads or deletions | Keep audit trails with object IDs and actors |
-| Information Disclosure | Public exposure of private assets | Bucket policies and signed URLs |
-| Denial of Service | Excessive storage requests or large files | Quotas and size limits |
-| Elevation of Privilege | Gaining write access to protected buckets | IAM policies with least privilege |
+| Spoofing | Fake storage nodes supply data | Verify nodes in [backend/src/storage/gcs.service.ts](../../backend/src/storage/gcs.service.ts) |
+| Tampering | Modifying stored files | Versioning in [backend/src/storage/gcs.service.ts](../../backend/src/storage/gcs.service.ts) |
+| Repudiation | Operators deny file uploads or deletions | Audit trails from [backend/src/storage/gcs.service.ts](../../backend/src/storage/gcs.service.ts) |
+| Information Disclosure | Public exposure of private assets | Signed URLs via [backend/src/storage/gcs.service.ts](../../backend/src/storage/gcs.service.ts) |
+| Denial of Service | Excessive storage requests or large files | Quotas enforced in [backend/src/storage/gcs.service.ts](../../backend/src/storage/gcs.service.ts) |
+| Elevation of Privilege | Gaining write access to protected buckets | IAM policies in [backend/src/storage/gcs.service.ts](../../backend/src/storage/gcs.service.ts) |
 
 ### telemetry
 | Threat | Example | Mitigation |
 | --- | --- | --- |
-| Spoofing | Sending fake traces or metrics | Authenticate agents and sign data |
-| Tampering | Altering telemetry payloads | TLS and integrity checks |
-| Repudiation | Services deny emitting traces | Link spans to service identity and persist |
-| Information Disclosure | Telemetry leaks internal data | Scrub sensitive fields before export |
-| Denial of Service | High-volume telemetry saturates collectors | Sampling and rate limits |
-| Elevation of Privilege | Using telemetry channels to execute code | Accept only data formats and sanitize inputs |
+| Spoofing | Sending fake traces or metrics | Authenticated agents in [backend/src/telemetry/telemetry.ts](../../backend/src/telemetry/telemetry.ts) |
+| Tampering | Altering telemetry payloads | TLS and checks in [backend/src/telemetry/telemetry.ts](../../backend/src/telemetry/telemetry.ts) |
+| Repudiation | Services deny emitting traces | Service IDs persisted via [backend/src/telemetry/telemetry.ts](../../backend/src/telemetry/telemetry.ts) |
+| Information Disclosure | Telemetry leaks internal data | Scrub fields in [backend/src/telemetry/telemetry.ts](../../backend/src/telemetry/telemetry.ts) |
+| Denial of Service | High-volume telemetry saturates collectors | Sampling logic in [backend/src/telemetry/telemetry.ts](../../backend/src/telemetry/telemetry.ts) |
+| Elevation of Privilege | Using telemetry channels to execute code | Input sanitization in [backend/src/telemetry/telemetry.ts](../../backend/src/telemetry/telemetry.ts) |
 
 ### tournament
 | Threat | Example | Mitigation |
 | --- | --- | --- |
-| Spoofing | Fake tournament registrations | Require authenticated API calls and server-side checks |
-| Tampering | Altering blind structures or payouts | Store configs in signed records and require admin approvals |
-| Repudiation | Players dispute tournament outcomes | Maintain audit logs of brackets and results |
-| Information Disclosure | Leaking competitor strategies or schedules | Role-based access and masked exports |
-| Denial of Service | Mass registrations or update floods | Rate limits and capacity checks |
-| Elevation of Privilege | Unauthorized access to director tools | RBAC with multi-factor authentication |
+| Spoofing | Fake tournament registrations | Authenticated calls in [backend/src/tournament/tournament.controller.ts](../../backend/src/tournament/tournament.controller.ts) |
+| Tampering | Altering blind structures or payouts | Signed configs in [backend/src/tournament/tournament.service.ts](../../backend/src/tournament/tournament.service.ts) |
+| Repudiation | Players dispute tournament outcomes | Audit logs from [backend/src/tournament/tournament.service.ts](../../backend/src/tournament/tournament.service.ts) |
+| Information Disclosure | Leaking competitor strategies or schedules | RBAC in [backend/src/tournament/tournament.module.ts](../../backend/src/tournament/tournament.module.ts) |
+| Denial of Service | Mass registrations or update floods | Limits in [backend/src/auth/rate-limit.middleware.ts](../../backend/src/auth/rate-limit.middleware.ts) |
+| Elevation of Privilege | Unauthorized access to director tools | MFA enforced in [backend/src/auth/security.middleware.ts](../../backend/src/auth/security.middleware.ts) |
 
 ### users
 | Threat | Example | Mitigation |
 | --- | --- | --- |
-| Spoofing | Creating accounts with stolen identities | Enforce KYC and email/phone verification |
-| Tampering | Modifying user profiles or balances | Role checks and server-side validation |
-| Repudiation | Users deny account changes | Immutable audit logs and versioned profiles |
-| Information Disclosure | Exposing personal information | Field-level encryption and GDPR compliance |
-| Denial of Service | Signup or profile update floods | Captchas and rate limiting |
-| Elevation of Privilege | Escalating to admin accounts | Two-factor auth and privilege separation |
+| Spoofing | Creating accounts with stolen identities | KYC checks in [backend/src/auth/kyc.service.ts](../../backend/src/auth/kyc.service.ts) |
+| Tampering | Modifying user profiles or balances | Validation in [backend/src/users/users.service.ts](../../backend/src/users/users.service.ts) |
+| Repudiation | Users deny account changes | Versioned profiles in [backend/src/users/users.service.ts](../../backend/src/users/users.service.ts) |
+| Information Disclosure | Exposing personal information | Field encryption in [backend/src/users/users.service.ts](../../backend/src/users/users.service.ts) |
+| Denial of Service | Signup or profile update floods | Captchas in [backend/src/auth/rate-limit.middleware.ts](../../backend/src/auth/rate-limit.middleware.ts) |
+| Elevation of Privilege | Escalating to admin accounts | Two-factor and RBAC in [backend/src/auth/security.middleware.ts](../../backend/src/auth/security.middleware.ts) |
 
 ### wallet
 | Threat | Example | Mitigation |
 | --- | --- | --- |
-| Spoofing | Impersonating wallet services | Mutual TLS and signed transactions |
-| Tampering | Altering transaction amounts or addresses | Double-entry accounting and checksum verification |
-| Repudiation | Users deny deposits or withdrawals | Ledger with transaction hashes and confirmations |
-| Information Disclosure | Revealing balances or keys | Encrypt sensitive data and restrict API responses |
-| Denial of Service | Flooding wallet with micro-transactions | Minimum transaction limits and batching |
-| Elevation of Privilege | Unauthorized fund transfers | Multi-sig approval and hardware key storage |
+| Spoofing | Impersonating wallet services | mTLS in [backend/src/wallet/payment-provider.service.ts](../../backend/src/wallet/payment-provider.service.ts) |
+| Tampering | Altering transaction amounts or addresses | Checksums in [backend/src/wallet/wallet.service.ts](../../backend/src/wallet/wallet.service.ts) |
+| Repudiation | Users deny deposits or withdrawals | Ledger hashes in [backend/src/wallet/hand-ledger.ts](../../backend/src/wallet/hand-ledger.ts) |
+| Information Disclosure | Revealing balances or keys | Encryption in [backend/src/wallet/account.entity.ts](../../backend/src/wallet/account.entity.ts) |
+| Denial of Service | Flooding wallet with micro-transactions | Limits in [backend/src/wallet/settlement.service.ts](../../backend/src/wallet/settlement.service.ts) |
+| Elevation of Privilege | Unauthorized fund transfers | Multi-sig in [backend/src/wallet/settlement.service.ts](../../backend/src/wallet/settlement.service.ts) |
 
 ### Third-party integrations
 
 #### Redis
 | Threat | Example | Mitigation |
 | --- | --- | --- |
-| Spoofing | Rogue cache node intercepts requests | Enable TLS and authenticate nodes |
-| Tampering | Manipulating cached session data | Use data signing and short TTLs |
-| Repudiation | Node denies serving keys | Log operations and monitor replication |
-| Information Disclosure | Cache snooping reveals PII | Avoid storing secrets and restrict access |
-| Denial of Service | Cache exhaustion via large keys | Quotas and eviction policies |
-| Elevation of Privilege | Gaining admin access to Redis | ACLs and isolated network segments |
+| Spoofing | Rogue cache node intercepts requests | Authenticate nodes in [backend/src/redis](../../backend/src/redis) |
+| Tampering | Manipulating cached session data | Signed values in [backend/src/redis](../../backend/src/redis) |
+| Repudiation | Node denies serving keys | Replication logs in [backend/src/redis](../../backend/src/redis) |
+| Information Disclosure | Cache snooping reveals PII | Restricted keys in [backend/src/redis](../../backend/src/redis) |
+| Denial of Service | Cache exhaustion via large keys | Quotas in [backend/src/redis](../../backend/src/redis) |
+| Elevation of Privilege | Gaining admin access to Redis | ACLs in [backend/src/redis](../../backend/src/redis) |
 
 #### Kafka
 | Threat | Example | Mitigation |
 | --- | --- | --- |
-| Spoofing | Fake brokers or clients | TLS with client certificates |
-| Tampering | Modifying messages in transit | Sign payloads and enable authorization |
-| Repudiation | Producers deny sending messages | Broker logs with producer IDs |
-| Information Disclosure | Reading unauthorized topics | Topic ACLs and encryption |
-| Denial of Service | Topic flooding or slow consumers | Quotas and consumer lag monitoring |
-| Elevation of Privilege | Unauthorized topic administration | RBAC and audited configuration changes |
+| Spoofing | Fake brokers or clients | mTLS in [backend/src/events](../../backend/src/events) |
+| Tampering | Modifying messages in transit | Signed payloads in [backend/src/events](../../backend/src/events) |
+| Repudiation | Producers deny sending messages | Producer IDs logged in [backend/src/events](../../backend/src/events) |
+| Information Disclosure | Reading unauthorized topics | ACLs defined in [backend/src/events](../../backend/src/events) |
+| Denial of Service | Topic flooding or slow consumers | Quotas monitored in [backend/src/events](../../backend/src/events) |
+| Elevation of Privilege | Unauthorized topic administration | RBAC in [backend/src/events](../../backend/src/events) |
 
 #### ClickHouse
 | Threat | Example | Mitigation |
 | --- | --- | --- |
-| Spoofing | Imitating analytics cluster | TLS and host whitelisting |
-| Tampering | Altering stored analytics data | Append-only tables and checksums |
-| Repudiation | Nodes deny executing queries | Query logging and trace IDs |
-| Information Disclosure | Exposing player analytics externally | View-level permissions and redaction |
-| Denial of Service | Heavy analytical queries | Resource quotas and query limits |
-| Elevation of Privilege | Escalating to admin user | Separate credentials and least privilege |
+| Spoofing | Imitating analytics cluster | TLS configured in [infrastructure/analytics](../../infrastructure/analytics) |
+| Tampering | Altering stored analytics data | Append-only tables in [infrastructure/analytics](../../infrastructure/analytics) |
+| Repudiation | Nodes deny executing queries | Query logs in [infrastructure/analytics](../../infrastructure/analytics) |
+| Information Disclosure | Exposing player analytics externally | View permissions in [infrastructure/analytics](../../infrastructure/analytics) |
+| Denial of Service | Heavy analytical queries | Resource quotas in [infrastructure/analytics](../../infrastructure/analytics) |
+| Elevation of Privilege | Escalating to admin user | Separate creds in [infrastructure/analytics](../../infrastructure/analytics) |
 
 #### Google Cloud Storage
 | Threat | Example | Mitigation |
 | --- | --- | --- |
-| Spoofing | Fake GCS endpoints | Signed URLs and HTTPS |
-| Tampering | Altering stored objects | Object versioning and integrity checks |
-| Repudiation | Providers deny object access | Access logs and object lifecycles |
-| Information Disclosure | Publicly exposed buckets | Private buckets with IAM policies |
-| Denial of Service | Excessive requests or large uploads | Quotas and lifecycle rules |
-| Elevation of Privilege | Misconfigured service accounts | Scoped service accounts and rotation |
+| Spoofing | Fake GCS endpoints | Signed URLs in [backend/src/storage/gcs.service.ts](../../backend/src/storage/gcs.service.ts) |
+| Tampering | Altering stored objects | Versioning in [backend/src/storage/gcs.service.ts](../../backend/src/storage/gcs.service.ts) |
+| Repudiation | Providers deny object access | Access logs via [backend/src/storage/gcs.service.ts](../../backend/src/storage/gcs.service.ts) |
+| Information Disclosure | Publicly exposed buckets | IAM policies in [backend/src/storage/gcs.service.ts](../../backend/src/storage/gcs.service.ts) |
+| Denial of Service | Excessive requests or large uploads | Quotas in [backend/src/storage/gcs.service.ts](../../backend/src/storage/gcs.service.ts) |
+| Elevation of Privilege | Misconfigured service accounts | Scoped accounts in [backend/src/storage/gcs.service.ts](../../backend/src/storage/gcs.service.ts) |
 
 #### Onfido
 | Threat | Example | Mitigation |
 | --- | --- | --- |
-| Spoofing | Fake KYC callbacks | Verify signatures and callback IP ranges |
-| Tampering | Altered identity documents | Hash validation and secure uploads |
-| Repudiation | Applicant denies verification results | Store signed responses and timestamps |
-| Information Disclosure | Leakage of identity data | Encrypt transmissions and limit retention |
-| Denial of Service | Automated verification spam | Rate limits and captcha for uploads |
-| Elevation of Privilege | Unauthorized access to KYC dashboard | SSO with MFA and role-based access |
-
-## analytics
-- **Spoofing**: Injecting fake telemetry events to skew metrics.
-  - *Mitigation*: Sign analytics payloads and accept events only from authenticated services.
-- **Tampering**: Altering event metadata in transit.
-  - *Mitigation*: Use TLS and verify checksums before ingestion.
-- **Repudiation**: Producers deny emitting certain metrics.
-  - *Mitigation*: Persist source service IDs and request hashes in immutable logs.
-- **Information Disclosure**: Leaking sensitive player identifiers through analytics exports.
-  - *Mitigation*: Strip PII and apply access controls on dashboards.
-- **Denial of Service**: Flooding analytics endpoint with high‑volume noise.
-  - *Mitigation*: Rate‑limit event ingestion and buffer through message queues.
-- **Elevation of Privilege**: Gaining write access to analytics configuration.
-  - *Mitigation*: Restrict config endpoints to ops role and audit changes.
-
-## auth
-- **Spoofing**: Forging JWTs or session cookies.
-  - *Mitigation*: Use signed tokens with short TTLs and verify against JWKS.
-- **Tampering**: Manipulating auth headers or callback parameters.
-  - *Mitigation*: Validate all inputs with shared schemas and enforce HTTPS.
-- **Repudiation**: Users deny logins or privilege grants.
-  - *Mitigation*: Record login attempts with IP and device fingerprinting.
-- **Information Disclosure**: Exposing password reset tokens or user secrets.
-  - *Mitigation*: Encrypt secrets at rest and mask tokens in logs.
-- **Denial of Service**: Credential stuffing or login brute‑force.
-  - *Mitigation*: Implement rate limits, CAPTCHA, and account lockouts.
-- **Elevation of Privilege**: Bypassing RBAC to gain admin access.
-  - *Mitigation*: Server‑side role checks and principle of least privilege.
-
-## config
-- **Spoofing**: Loading untrusted configuration sources.
-  - *Mitigation*: Only accept configs from signed bundles and verified paths.
-- **Tampering**: Editing configuration files or environment variables.
-  - *Mitigation*: Store configs in read‑only secrets manager and hash on load.
-- **Repudiation**: Operators deny changing configuration.
-  - *Mitigation*: Track config versioning with commit history and audit logs.
-- **Information Disclosure**: Leaking secrets through misconfigured files.
-  - *Mitigation*: Separate secrets from configs and restrict file access.
-- **Denial of Service**: Pushing malformed configs causing crashes.
-  - *Mitigation*: Validate config schema before applying and support rollbacks.
-- **Elevation of Privilege**: Changing feature flags to enable admin endpoints.
-  - *Mitigation*: Require signed approvals and review for privileged flags.
-
-## database
-- **Spoofing**: Impersonating database servers.
-  - *Mitigation*: Enforce TLS with certificate pinning.
-- **Tampering**: Unauthorized modifications to records.
-  - *Mitigation*: Use role‑based access and row‑level permissions.
-- **Repudiation**: Users dispute stored actions or balances.
-  - *Mitigation*: Append‑only ledgers and transaction signatures.
-- **Information Disclosure**: Dumping player data or credentials.
-  - *Mitigation*: Encrypt data at rest and restrict admin queries.
-- **Denial of Service**: Expensive queries exhausting resources.
-  - *Mitigation*: Query timeouts, connection pooling, and throttling.
-- **Elevation of Privilege**: Escalating to superuser via SQL injection.
-  - *Mitigation*: Parameterized queries and least‑privileged DB roles.
-
-## events
-- **Spoofing**: Publishing forged domain events.
-  - *Mitigation*: Authenticate producers and sign messages.
-- **Tampering**: Modifying events in the bus.
-  - *Mitigation*: Employ immutable logs and checksum verification.
-- **Repudiation**: Producers deny sending critical events.
-  - *Mitigation*: Persist event provenance and timestamps.
-- **Information Disclosure**: Exposing sensitive payloads to subscribers.
-  - *Mitigation*: Encrypt confidential fields and implement ACLs.
-- **Denial of Service**: Event storms overwhelming consumers.
-  - *Mitigation*: Back‑pressure and consumer quotas.
-- **Elevation of Privilege**: Subscribing to unauthorized topics.
-  - *Mitigation*: Broker‑level ACLs and service identity checks.
-
-## feature-flags
-- **Spoofing**: Fake flag service alters feature states.
-  - *Mitigation*: Require mTLS between flag service and clients.
-- **Tampering**: Unauthorized flag toggles.
-  - *Mitigation*: Gate updates behind admin UI with audit logs.
-- **Repudiation**: Operators deny changing a flag.
-  - *Mitigation*: Maintain versioned change history.
-- **Information Disclosure**: Revealing upcoming features.
-  - *Mitigation*: Limit flag visibility by role and environment.
-- **Denial of Service**: Flag service outage halts app startup.
-  - *Mitigation*: Cache flag states and provide sane defaults.
-- **Elevation of Privilege**: Enabling hidden admin paths.
-  - *Mitigation*: Separate security‑sensitive flags and require peer review.
-
-## game
-- **Spoofing**: Players forge game actions or state updates.
-  - *Mitigation*: Validate actions server‑side and sign state transitions.
-- **Tampering**: Manipulating game rules or RNG seeds.
-  - *Mitigation*: Store rules in code, hash RNG seeds, and verify integrity.
-- **Repudiation**: Players dispute game outcomes.
-  - *Mitigation*: Record hand histories and RNG proofs.
-- **Information Disclosure**: Revealing hidden cards or strategies.
-  - *Mitigation*: Encrypt in‑transit data and segregate spectator views.
-- **Denial of Service**: Flooding game engine with actions.
-  - *Mitigation*: Per‑player rate limits and turn timers.
-- **Elevation of Privilege**: Gaining dealer or admin controls.
-  - *Mitigation*: Strict role validation and monitoring.
-
-## leaderboard
-- **Spoofing**: Faking scores to appear in rankings.
-  - *Mitigation*: Accept updates only from trusted services with signed tokens.
-- **Tampering**: Altering leaderboard entries.
-  - *Mitigation*: Store scores in append‑only tables with checksums.
-- **Repudiation**: Players deny score submissions.
-  - *Mitigation*: Keep submission logs with user IDs and timestamps.
-- **Information Disclosure**: Exposing private stats.
-  - *Mitigation*: Mask non‑public metrics and honor privacy settings.
-- **Denial of Service**: Massive queries or sort operations.
-  - *Mitigation*: Cache results and paginate requests.
-- **Elevation of Privilege**: Unauthorized access to admin editing tools.
-  - *Mitigation*: RBAC and least‑privileged service accounts.
-
-## logging
-- **Spoofing**: Fake log entries to mislead auditors.
-  - *Mitigation*: Sign log batches and require service authentication.
-- **Tampering**: Editing or deleting logs.
-  - *Mitigation*: Ship logs to append‑only storage with WORM policies.
-- **Repudiation**: Services deny logged actions.
-  - *Mitigation*: Include request hashes and actor IDs.
-- **Information Disclosure**: Logs containing sensitive data.
-  - *Mitigation*: Scrub secrets and enforce log access controls.
-- **Denial of Service**: Log volume overwhelms storage.
-  - *Mitigation*: Rate limits, sampling, and archival pipelines.
-- **Elevation of Privilege**: Writing to logs to trigger exploits.
-  - *Mitigation*: Sanitize log inputs and restrict log viewers.
-
-## messaging
-- **Spoofing**: Sending forged chat or notification messages.
-  - *Mitigation*: Authenticate senders and sign payloads.
-- **Tampering**: Altering message contents in transit.
-  - *Mitigation*: Use end‑to‑end encryption where applicable.
-- **Repudiation**: Users deny sending messages.
-  - *Mitigation*: Timestamp and store sender IDs with audit trails.
-- **Information Disclosure**: Message leakage between players.
-  - *Mitigation*: Isolate channels and encrypt at rest.
-- **Denial of Service**: Spamming message queues.
-  - *Mitigation*: Throttle per user and apply spam filters.
-- **Elevation of Privilege**: Gaining moderator abilities.
-  - *Mitigation*: Strict auth checks and admin approval workflow.
-
-## redis
-- **Spoofing**: Rogue clients impersonate cache nodes.
-  - *Mitigation*: Enable AUTH and network‑level ACLs.
-- **Tampering**: Overwriting cached data to manipulate state.
-  - *Mitigation*: Namespaced keys and TTL validation.
-- **Repudiation**: Clients deny cache invalidations.
-  - *Mitigation*: Log mutations with client IDs.
-- **Information Disclosure**: Reading sensitive cache entries.
-  - *Mitigation*: Avoid caching secrets and restrict access.
-- **Denial of Service**: Cache flooding or eviction storms.
-  - *Mitigation*: Eviction policies and request throttling.
-- **Elevation of Privilege**: Executing dangerous Redis commands.
-  - *Mitigation*: Disable unsafe commands and use user roles.
-
-## routes
-- **Spoofing**: Pretending to be internal service routes.
-  - *Mitigation*: mTLS between services and gateway authentication.
-- **Tampering**: Modifying route handlers at runtime.
-  - *Mitigation*: Immutable deployments and integrity checks.
-- **Repudiation**: Services deny invoking certain endpoints.
-  - *Mitigation*: Trace IDs and request logging.
-- **Information Disclosure**: Exposing hidden admin routes.
-  - *Mitigation*: Require auth and hide behind firewall rules.
-- **Denial of Service**: Route enumeration or heavy payloads.
-  - *Mitigation*: Rate limiting and payload size caps.
-- **Elevation of Privilege**: Accessing privileged routes without proper auth.
-  - *Mitigation*: Centralized authorization middleware.
-
-## schemas
-- **Spoofing**: Using malicious schema definitions.
-  - *Mitigation*: Validate schema sources and sign packages.
-- **Tampering**: Changing schema validation rules.
-  - *Mitigation*: Version control and code reviews.
-- **Repudiation**: Developers deny schema changes.
-  - *Mitigation*: Commit history and CI approvals.
-- **Information Disclosure**: Schemas reveal internal fields.
-  - *Mitigation*: Separate internal vs public schemas.
-- **Denial of Service**: Complex schemas causing validation overhead.
-  - *Mitigation*: Benchmark validators and set timeouts.
-- **Elevation of Privilege**: Relaxed schemas allowing privilege escalation.
-  - *Mitigation*: Strict validation and authorization checks.
-
-## scripts
-- **Spoofing**: Running unauthorized maintenance scripts.
-  - *Mitigation*: Sign scripts and restrict execution permissions.
-- **Tampering**: Modifying deployment scripts.
-  - *Mitigation*: Use CI pipelines with checksums.
-- **Repudiation**: Operators deny running scripts.
-  - *Mitigation*: Log executions with user IDs and timestamps.
-- **Information Disclosure**: Scripts outputting secrets.
-  - *Mitigation*: Redact sensitive values and store logs securely.
-- **Denial of Service**: Faulty scripts consuming resources.
-  - *Mitigation*: Review and test scripts in staging.
-- **Elevation of Privilege**: Script misuse to escalate rights.
-  - *Mitigation*: Run with least privileges and peer review.
-
-## session
-- **Spoofing**: Hijacking session IDs.
-  - *Mitigation*: Rotate IDs and bind sessions to device fingerprints.
-- **Tampering**: Altering session state.
-  - *Mitigation*: Store session data server‑side and sign tokens.
-- **Repudiation**: Users deny actions within a session.
-  - *Mitigation*: Log actions with session IDs and timestamps.
-- **Information Disclosure**: Session storage leaks.
-  - *Mitigation*: Encrypt session stores and enforce idle timeouts.
-- **Denial of Service**: Session fixation or exhaustion.
-  - *Mitigation*: Limit concurrent sessions and invalidate old ones.
-- **Elevation of Privilege**: Session fixation leading to privilege gain.
-  - *Mitigation*: Regenerate tokens after privilege change.
-
-## storage
-- **Spoofing**: Fake storage nodes supply data.
-  - *Mitigation*: Verify node certificates and checksums.
-- **Tampering**: Modifying stored files.
-  - *Mitigation*: Use immutable object storage and versioning.
-- **Repudiation**: Operators deny file uploads or deletions.
-  - *Mitigation*: Keep audit trails with object IDs and actors.
-- **Information Disclosure**: Public exposure of private assets.
-  - *Mitigation*: Bucket policies and signed URLs.
-- **Denial of Service**: Excessive storage requests or large files.
-  - *Mitigation*: Quotas and size limits.
-- **Elevation of Privilege**: Gaining write access to protected buckets.
-  - *Mitigation*: IAM policies with least privilege.
-
-## telemetry
-- **Spoofing**: Sending fake traces or metrics.
-  - *Mitigation*: Authenticate agents and sign data.
-- **Tampering**: Altering telemetry payloads.
-  - *Mitigation*: TLS and integrity checks.
-- **Repudiation**: Services deny emitting traces.
-  - *Mitigation*: Link spans to service identity and persist.
-- **Information Disclosure**: Telemetry leaks internal data.
-  - *Mitigation*: Scrub sensitive fields before export.
-- **Denial of Service**: High‑volume telemetry saturates collectors.
-  - *Mitigation*: Sampling and rate limits.
-- **Elevation of Privilege**: Using telemetry channels to execute code.
-  - *Mitigation*: Accept only data formats and sanitize inputs.
-
-## tournament
-- **Spoofing**: Fake tournament registrations.
-  - *Mitigation*: Require authenticated API calls and server‑side checks.
-- **Tampering**: Altering blind structures or payouts.
-  - *Mitigation*: Store configs in signed records and require admin approvals.
-- **Repudiation**: Players dispute tournament outcomes.
-  - *Mitigation*: Maintain audit logs of brackets and results.
-- **Information Disclosure**: Leaking competitor strategies or schedules.
-  - *Mitigation*: Role‑based access and masked exports.
-- **Denial of Service**: Mass registrations or update floods.
-  - *Mitigation*: Rate limits and capacity checks.
-- **Elevation of Privilege**: Unauthorized access to director tools.
-  - *Mitigation*: RBAC with multi‑factor authentication.
-
-## users
-- **Spoofing**: Creating accounts with stolen identities.
-  - *Mitigation*: Enforce KYC and email/phone verification.
-- **Tampering**: Modifying user profiles or balances.
-  - *Mitigation*: Role checks and server‑side validation.
-- **Repudiation**: Users deny account changes.
-  - *Mitigation*: Immutable audit logs and versioned profiles.
-- **Information Disclosure**: Exposing personal information.
-  - *Mitigation*: Field‑level encryption and GDPR compliance.
-- **Denial of Service**: Signup or profile update floods.
-  - *Mitigation*: Captchas and rate limiting.
-- **Elevation of Privilege**: Escalating to admin accounts.
-  - *Mitigation*: Two‑factor auth and privilege separation.
-
-## wallet
-- **Spoofing**: Impersonating wallet services.
-  - *Mitigation*: Mutual TLS and signed transactions.
-- **Tampering**: Altering transaction amounts or addresses.
-  - *Mitigation*: Double‑entry accounting and checksum verification.
-- **Repudiation**: Users deny deposits or withdrawals.
-  - *Mitigation*: Ledger with transaction hashes and confirmations.
-- **Information Disclosure**: Revealing balances or keys.
-  - *Mitigation*: Encrypt sensitive data and restrict API responses.
-- **Denial of Service**: Flooding wallet with micro‑transactions.
-  - *Mitigation*: Minimum transaction limits and batching.
-- **Elevation of Privilege**: Unauthorized fund transfers.
-  - *Mitigation*: Multi‑sig approval and hardware key storage.
+| Spoofing | Fake KYC callbacks | Signature checks in [backend/src/auth/kyc.service.ts](../../backend/src/auth/kyc.service.ts) |
+| Tampering | Altered identity documents | Hash validation in [backend/src/auth/kyc.service.ts](../../backend/src/auth/kyc.service.ts) |
+| Repudiation | Applicant denies verification results | Signed responses stored in [backend/src/auth/kyc.service.ts](../../backend/src/auth/kyc.service.ts) |
+| Information Disclosure | Leakage of identity data | Encrypted transfers in [backend/src/auth/kyc.service.ts](../../backend/src/auth/kyc.service.ts) |
+| Denial of Service | Automated verification spam | Rate limits in [backend/src/auth/kyc.service.ts](../../backend/src/auth/kyc.service.ts) |
+| Elevation of Privilege | Unauthorized access to KYC dashboard | SSO with MFA via [backend/src/auth/kyc.service.ts](../../backend/src/auth/kyc.service.ts) |
 

@@ -11,6 +11,46 @@ PokerHub requires identity verification and anti-money-laundering checks during 
 2. Verify identity documents through the provider API.
 3. Require selfie match when risk score exceeds threshold.
 
+## Example API Payloads
+
+### KYC Request
+
+```json
+POST /api/kyc/verify
+{
+  "userId": "u123",
+  "name": "Ada Lovelace",
+  "dob": "1990-12-10",
+  "address": {
+    "line1": "1 Blockchain Way",
+    "city": "Valletta",
+    "country": "MT"
+  }
+}
+```
+
+### Provider Callback
+
+```json
+{
+  "requestId": "req-9c2",
+  "status": "approved",
+  "reference": "OF-88122"
+}
+```
+
+### AML Transaction Check
+
+```json
+POST /api/aml/check
+{
+  "userId": "u123",
+  "txId": "t42",
+  "amount": 2500,
+  "direction": "deposit"
+}
+```
+
 ## Sanctions Screening
 - Screen players against global sanctions and politically exposed person lists on every signup.
 - Re-run screening nightly for existing accounts and lock matches pending review.
@@ -19,6 +59,31 @@ PokerHub requires identity verification and anti-money-laundering checks during 
 - Record all verification requests and provider responses with timestamps and reviewer IDs.
 - Each step writes to a `kyc_audit` table capturing user ID, request ID, source IP and decision metadata for traceability.
 - Retain logs for seven years in immutable storage for regulatory audits.
+
+### Audit Table Schema
+
+```sql
+CREATE TABLE kyc_audit (
+  id SERIAL PRIMARY KEY,
+  user_id UUID NOT NULL,
+  request_id TEXT NOT NULL,
+  source_ip INET NOT NULL,
+  decision TEXT NOT NULL,
+  reviewer_id UUID,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+```sql
+CREATE TABLE aml_audit (
+  id SERIAL PRIMARY KEY,
+  user_id UUID NOT NULL,
+  tx_id TEXT NOT NULL,
+  score NUMERIC NOT NULL,
+  reviewer_id UUID,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+```
 
 ## Compliance Check Steps
 1. Validate document authenticity and match to provided identity data.
@@ -34,6 +99,11 @@ PokerHub requires identity verification and anti-money-laundering checks during 
 | Sanctions screening results | 7 years | Immutable object store |
 | Reviewer notes & decisions | 7 years | Encrypted database |
 | Suspicious Activity Reports | 5 years | Encrypted archive |
+
+### Retention Policies
+
+- Logs are purged after retention windows via scheduled jobs in `backend/src/auth/kyc.service.ts`.
+- Immutable artifacts live in `storage/kyc/` with versioned buckets.
 
 ## Escalation Steps
 1. Flagged signups or transactions enter a manual review queue within 24 hours.

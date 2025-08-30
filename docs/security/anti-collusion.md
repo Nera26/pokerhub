@@ -16,6 +16,18 @@ Pipeline config: see [`../../infra/analytics/anti-collusion-analytics.yaml`](../
 - **Unbalanced Pot Contributions**: Flag repeated small bets where players fold to each other to shift chips.
 - **Device or Geolocation Swaps**: Detect accounts that change devices or regions in tandem.
 
+## Statistical Detection Thresholds
+
+- IP overlap: flag cohorts when >3 accounts share an IP within 24 hours.
+- Win rate anomaly: z-score ≥ 3 over 100 hands against same opponents.
+- Chip transfers: single-direction transfers exceeding 100k chips per day.
+- Action timing: stddev of bet timing <200 ms across a hand.
+
+## Replay Tools
+
+- Deterministic hand replays via [tests/performance/replay.ts](../../tests/performance/replay.ts).
+- Histogram comparison with [scripts/compare-histograms.ts](../../scripts/compare-histograms.ts).
+
 ## Analytics Pipeline
 Raw game and session events stream into an analytics warehouse where scheduled queries surface
 potential collusion for review.
@@ -54,6 +66,10 @@ HAVING stddev(action_time_ms) < 200;
 2. Open the alert in `/admin/collusion` to inspect session details.
 3. Correlate evidence with game logs and document findings in the ticket.
 4. Mark false positives or escalate per the [Collusion Review Runbook](../runbooks/collusion-review.md).
+
+## Reviewer Workflow Example
+
+See [Collusion Review Runbook procedure](../runbooks/collusion-review.md#review-procedure) for step-by-step reviewer actions.
 
 ## Alert Handling and Enforcement
 - Alerts trigger Slack notifications and create Jira tickets for tracking.
