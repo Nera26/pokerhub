@@ -15,6 +15,10 @@ Refer to [../security/anti-collusion.md](../security/anti-collusion.md) for deta
 - `CollusionDetectionJob` scans game analytics every 10 minutes and populates the flagged session list.
 - If no new sessions appear for more than an hour, inspect analytics worker logs and Redis connectivity.
 
+## Scheduled Queries
+- [`CollusionQueryService`](../../backend/src/analytics/collusion.queries.ts) runs hourly ClickHouse queries for shared IP use, chip dumping and synchronized betting patterns.
+- Query results are stored in `collusion_alerts` and surfaced on the dashboard.
+
 ## Alerts
 - Each new entry in `collusion_alerts` emits a Slack notification and opens a Jira ticket.
 - If alert volume exceeds 20 per hour, page `pokerhub-eng` to check for runaway heuristics.

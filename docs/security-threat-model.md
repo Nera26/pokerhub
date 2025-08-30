@@ -39,6 +39,28 @@ stateDiagram-v2
 - Replayed session tokens let adversaries hijack active games.
 - Social engineering could trick support staff into granting elevated access.
 
+## System Modules
+
+### Backend
+- **Auth Service** – issues and validates player sessions.
+- **Game Engine** – runs tables, enforces rules and records actions.
+- **Wallet/Payments** – processes deposits, withdrawals and balance updates.
+- **Analytics** – ingests game events and executes collusion queries.
+- **Admin API** – exposes review and enforcement endpoints.
+
+### Frontend
+- **Auth Pages** – collect credentials and store tokens.
+- **Lobby** – lists tables and tournaments fetched from the API.
+- **Table Client** – sends actions to the game engine and renders results.
+- **Account & Wallet** – manage profile details and transactions.
+- **Admin Dashboard** – surfaces collusion alerts and allows actions.
+
+## Data Flows
+- **Login**: Auth Page → Auth Service → session token → stored in browser.
+- **Gameplay**: Table Client → Game Engine → updates → Table Client; events → Analytics.
+- **Payments**: Wallet UI → Wallet Service → payment processor → Wallet Service → UI update.
+- **Collusion Review**: Admin Dashboard → Admin API → Analytics/Collusion services → dashboard updates.
+
 ### Mitigations
 - Enforce strong authentication with short-lived JWTs and refresh token rotation using a Redis-backed revocation list to block replayed tokens.
 - JWT signing keys rotate regularly and the service accepts multiple active keys to allow seamless key rollover.
