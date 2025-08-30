@@ -64,7 +64,7 @@ describe('RoomWorker cross-region failover', () => {
     await Promise.all([regionA.stop(), regionB.stop()]);
   });
 
-  it('promotes follower across regions within RTO', async () => {
+  it('promotes follower across regions within 30s RTO', async () => {
     if (!canRun) {
       expect(true).toBe(true);
       return;
@@ -89,7 +89,7 @@ describe('RoomWorker cross-region failover', () => {
     await worker.primary.terminate();
     await failover;
     const elapsed = Date.now() - start;
-    expect(elapsed).toBeLessThan(30 * 60 * 1000);
+    expect(elapsed).toBeLessThan(30 * 1000); // failover should occur within 30s
 
     const state = await worker.apply({ type: 'next' });
     expect(state.street).toBe('flop');
