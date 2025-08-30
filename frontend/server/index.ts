@@ -1,7 +1,12 @@
+import traceAgent from '@google-cloud/trace-agent';
 import express from 'express';
 import next from 'next';
 import routes from './routes';
 import { securityHeaders } from './securityHeaders';
+import { getGcsClient } from './gcs';
+
+traceAgent.start();
+getGcsClient();
 
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
