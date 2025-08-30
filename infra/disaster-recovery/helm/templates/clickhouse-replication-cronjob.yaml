@@ -21,5 +21,15 @@ spec:
                 - /bin/sh
                 - -c
                 - >-
-                  echo "Replicating ClickHouse backups from $BACKUP_BUCKET to $SECONDARY_REGION";
-                  # Placeholder for GCS copy to secondary bucket
+                  set -euo pipefail;
+                  echo "Replicating ClickHouse backups from gs://$BACKUP_BUCKET to region $SECONDARY_REGION...";
+                  SECONDARY_BUCKET="${BACKUP_BUCKET}-${SECONDARY_REGION}";
+                  if gsutil ls -b "gs://${SECONDARY_BUCKET}" >/dev/null 2>&1; then
+                    echo "Secondary bucket gs://${SECONDARY_BUCKET} exists.";
+                  else
+                    echo "Creating secondary bucket gs://${SECONDARY_BUCKET} in region ${SECONDARY_REGION}...";
+                    gsutil mb -l "${SECONDARY_REGION}" -b on "gs://${SECONDARY_BUCKET}";
+                  fi;
+                  echo "Starting rsync...";
+                  gsutil -m rsync -r "gs://${BACKUP_BUCKET}" "gs://${SECONDARY_BUCKET}";
+                  echo "Rsync completed successfully.";
