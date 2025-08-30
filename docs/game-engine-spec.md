@@ -3,7 +3,7 @@
 **Version:** 1.2.0
 **Last Updated:** 2025-08-30
 
-For upcoming milestones, see the [milestone plan](./milestone-plan.md).
+For upcoming milestones, see the [Milestone Roadmap](./roadmap.md).
 
 Implementation lives under [`backend/src/game`](../backend/src/game) where the
 state machine and engine workers are defined. Tournament operations are

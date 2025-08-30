@@ -7,6 +7,7 @@
 This handbook standardizes how PokerHub hosts competitive events. Engine
 behavior is detailed in the [Game Engine Specification](./game-engine-spec.md),
 and ledger procedures reside in the [Reconciliation Guide](./reconciliation-guide.md).
+Upcoming tournament features are tracked in the [Milestone Roadmap](./roadmap.md).
 
 Tournament logic is implemented in [`backend/src/tournament`](../backend/src/tournament)
 with event ingestion defined in [`infrastructure/analytics/ingest-tournament.sql`](../infrastructure/analytics/ingest-tournament.sql).
