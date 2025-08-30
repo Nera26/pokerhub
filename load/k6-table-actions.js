@@ -15,7 +15,7 @@ export const options = {
 export default function () {
   const tables = Number(__ENV.TABLES || 10);
   const actionsPerMin = Number(__ENV.ACTIONS_PER_MIN || 6000);
-  const url = __ENV.WS_URL || 'ws://localhost:3001';
+  const url = __ENV.WS_URL || 'ws://localhost:4000/game';
 
   ws.connect(`${url}?table=${__VU % tables}`, function (socket) {
     const intervalMs = 60000 / actionsPerMin;

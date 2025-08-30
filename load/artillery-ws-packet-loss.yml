@@ -1,5 +1,5 @@
 config:
-  target: "ws://localhost:3000"
+  target: "ws://localhost:4000/game"
   phases:
     - duration: 60
       arrivalRate: 10000

@@ -32,7 +32,7 @@ const ERROR_RATE = new Rate('error_rate');
 
 export default function () {
   const tableId = __VU % tables;
-  const url = `${__ENV.WS_URL || 'ws://localhost:3001'}?table=${tableId}`;
+  const url = `${__ENV.WS_URL || 'ws://localhost:4000/game'}?table=${tableId}`;
 
   ws.connect(url, function (socket) {
     let start = 0;

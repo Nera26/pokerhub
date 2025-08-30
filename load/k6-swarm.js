@@ -31,7 +31,7 @@ export const options = {
 
 export default function () {
   const tableId = (__VU - 1) % TABLES;
-  const url = __ENV.SIO_URL || 'ws://localhost:3000/game';
+  const url = __ENV.SIO_URL || 'ws://localhost:4000/game';
 
   const socket = io(url, {
     query: { table: tableId },

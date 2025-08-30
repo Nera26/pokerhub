@@ -12,7 +12,7 @@ export const options = {
 const latency = new Trend('ws_latency', true);
 
 export default function () {
-  const url = __ENV.WS_URL || 'ws://localhost:3000';
+  const url = __ENV.WS_URL || 'ws://localhost:4000/game';
   const loss = Number(__ENV.PACKET_LOSS) || 0.05; // 5% packet loss by default
 
   ws.connect(url, function (socket) {
