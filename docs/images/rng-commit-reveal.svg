@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="240" font-family="Arial" font-size="14">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,5 L0,10 z" fill="#333" />
+    </marker>
+  </defs>
+  <rect x="10" y="20" width="160" height="40" fill="#e8e8e8" stroke="#333" />
+  <text x="90" y="45" text-anchor="middle">Server draws seed &amp; nonce</text>
+  <rect x="220" y="20" width="160" height="40" fill="#e8e8e8" stroke="#333" />
+  <text x="300" y="45" text-anchor="middle">Compute commitment</text>
+  <rect x="430" y="20" width="160" height="40" fill="#e8e8e8" stroke="#333" />
+  <text x="510" y="45" text-anchor="middle">Broadcast commitment &amp; nonce</text>
+  <rect x="220" y="100" width="160" height="40" fill="#e8e8e8" stroke="#333" />
+  <text x="300" y="125" text-anchor="middle">Deal cards</text>
+  <rect x="10" y="180" width="160" height="40" fill="#e8e8e8" stroke="#333" />
+  <text x="90" y="205" text-anchor="middle">Reveal seed</text>
+  <rect x="220" y="180" width="160" height="40" fill="#e8e8e8" stroke="#333" />
+  <text x="300" y="205" text-anchor="middle">Players verify hash</text>
+  <rect x="430" y="180" width="160" height="40" fill="#e8e8e8" stroke="#333" />
+  <text x="510" y="205" text-anchor="middle">Shuffle &amp; compare deck</text>
+  <line x1="170" y1="40" x2="220" y2="40" stroke="#333" marker-end="url(#arrow)" />
+  <line x1="380" y1="40" x2="430" y2="40" stroke="#333" marker-end="url(#arrow)" />
+  <line x1="510" y1="60" x2="510" y2="100" stroke="#333" marker-end="url(#arrow)" />
+  <line x1="300" y1="140" x2="300" y2="180" stroke="#333" marker-end="url(#arrow)" />
+  <line x1="170" y1="200" x2="220" y2="200" stroke="#333" marker-end="url(#arrow)" />
+  <line x1="380" y1="200" x2="430" y2="200" stroke="#333" marker-end="url(#arrow)" />
+</svg>
