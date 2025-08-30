@@ -1,0 +1,30 @@
+# CI/CD Pipeline
+
+PokerHub uses a multi‑stage GitHub Actions pipeline to gate changes before release.
+
+## Test Stages
+
+1. **Unit** – installs dependencies for backend and frontend, runs eslint, unit tests, contract tests and verifies OpenAPI drift.
+2. **Property** – executes fast‑check powered property tests and shared type checks.
+3. **Integration** – runs backend API e2e tests and frontend integration tests.
+4. **E2E** – exercises full end‑to‑end flows with Playwright.
+5. **Load** – smoke runs a websocket load scenario with k6.
+6. **Chaos** – runs `load/chaos/ws-chaos.js` to inject packet loss and jitter during a short k6 run.
+
+All stages execute on every pull request and must pass before merge.
+
+## Contract & Code Quality Gates
+
+`ci.yml` runs `npm run test:contracts` along with eslint for both apps. The separate
+`contracts.yml` workflow validates OpenAPI ↔ Zod alignment and enforces
+frontend/backed approvals for contract changes.
+
+## Deployment
+
+`deploy.yml` performs a canary rollout via `scripts/canary-deploy.sh`, routing a small
+percentage of traffic to the canary. Health checks poll `$HEALTH_CHECK_URL` and Prometheus
+metrics; failures trigger `scripts/rollback.sh` to restore the previous release. Successful
+runs promote the canary to 100 % traffic.
+
+For detailed rollback and canary procedures see `docs/runbooks/deployment.md` and
+`docs/runbooks/canary.md`.

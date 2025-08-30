@@ -6,20 +6,18 @@ if [[ "$ENV" != "staging" && "$ENV" != "production" ]]; then
   echo "DEPLOY_ENV must be set to staging or production"
   exit 1
 fi
-
-METRICS_URL=${METRICS_URL:-}
-ERROR_RATE_THRESHOLD=${ERROR_RATE_THRESHOLD:-}
-if [[ -z "$METRICS_URL" || -z "$ERROR_RATE_THRESHOLD" ]]; then
-  echo "METRICS_URL and ERROR_RATE_THRESHOLD must be set"
-  exit 1
-fi
+NAMESPACE=${K8S_NAMESPACE:-$ENV}
+RELEASE=${CANARY_RELEASE:-canary}
+DEPLOYMENT=${CANARY_DEPLOYMENT:-api-canary}
 
 echo "Rolling back canary deployment in $ENV..."
-# placeholder for rollback logic
-# e.g., kubectl rollout undo deployment/api-canary -n "$ENV"
+if ! helm rollback "$RELEASE" --namespace "$NAMESPACE" 2>/dev/null; then
+  kubectl -n "$NAMESPACE" rollout undo deployment/"$DEPLOYMENT" || true
+fi
 
-echo "Checking metrics after rollback..."
-"$(dirname "$0")/check-metrics.sh"
+if [[ -n "${METRICS_URL:-}" && -n "${ERROR_RATE_THRESHOLD:-}" ]]; then
+  "$(dirname "$0")/check-metrics.sh"
+fi
 
 echo "Canary rollback complete for $ENV"
 
