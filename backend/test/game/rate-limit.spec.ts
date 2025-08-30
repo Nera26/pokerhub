@@ -34,27 +34,36 @@ class DummyRepo {
 
 describe('GameGateway rate limits', () => {
   it("doesn't throttle other clients", async () => {
+    const rooms = new RoomManager();
     const gateway = new GameGateway(
-      new RoomManager(),
+      rooms,
       new DummyAnalytics() as any,
       new ClockService(),
       new DummyRepo() as any,
       new DummyRedis() as any,
     );
 
-    const fast: any = { id: 'c1', emit: jest.fn() };
-    const slow: any = { id: 'c2', emit: jest.fn() };
+    try {
+      const fast: any = { id: 'c1', emit: jest.fn() };
+      const slow: any = { id: 'c2', emit: jest.fn() };
 
-    for (let i = 0; i < 31; i++) {
-      await gateway.handleJoin(fast, { actionId: `a${i}` });
+      for (let i = 0; i < 31; i++) {
+        await gateway.handleJoin(fast, { actionId: `a${i}` });
+      }
+      await gateway.handleJoin(slow, { actionId: 'b1' });
+
+      const fastErrors = fast.emit.mock.calls.filter(
+        ([ev]: any[]) => ev === 'server:Error',
+      );
+      const slowErrors = slow.emit.mock.calls.filter(
+        ([ev]: any[]) => ev === 'server:Error',
+      );
+
+      expect(fastErrors.length).toBe(1);
+      expect(slowErrors.length).toBe(0);
+    } finally {
+      await rooms.onModuleDestroy();
     }
-    await gateway.handleJoin(slow, { actionId: 'b1' });
-
-    const fastErrors = fast.emit.mock.calls.filter(([ev]: any[]) => ev === 'server:Error');
-    const slowErrors = slow.emit.mock.calls.filter(([ev]: any[]) => ev === 'server:Error');
-
-    expect(fastErrors.length).toBe(1);
-    expect(slowErrors.length).toBe(0);
   });
 });
 

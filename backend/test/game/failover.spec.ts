@@ -98,23 +98,25 @@ describe('RoomWorker cross-region failover', () => {
 
     const redis = Object.assign(pub, { duplicate: () => sub });
     const manager = new RoomManager(redis as any);
-    const tableId = 't_region_fail';
-    const worker: any = manager.get(tableId);
-    await wait(50); // allow subscription setup
-    await worker.apply({ type: 'postBlind', playerId: 'p1', amount: 1 });
-    await worker.apply({ type: 'postBlind', playerId: 'p2', amount: 2 });
-    await wait(50); // allow follower to catch up
+    try {
+      const tableId = 't_region_fail';
+      const worker: any = manager.get(tableId);
+      await wait(50); // allow subscription setup
+      await worker.apply({ type: 'postBlind', playerId: 'p1', amount: 1 });
+      await worker.apply({ type: 'postBlind', playerId: 'p2', amount: 2 });
+      await wait(50); // allow follower to catch up
 
-    const failover = new Promise((resolve) => worker.once('failover', resolve));
-    const start = Date.now();
-    await worker.primary.terminate();
-    await failover;
-    const elapsed = Date.now() - start;
-    expect(elapsed).toBeLessThan(30 * 1000); // failover should occur within 30s
+      const failover = new Promise((resolve) => worker.once('failover', resolve));
+      const start = Date.now();
+      await worker.primary.terminate();
+      await failover;
+      const elapsed = Date.now() - start;
+      expect(elapsed).toBeLessThan(30 * 1000); // failover should occur within 30s
 
-    const state = await worker.apply({ type: 'next' });
-    expect(state.street).toBe('flop');
-
-    await manager.close(tableId);
+      const state = await worker.apply({ type: 'next' });
+      expect(state.street).toBe('flop');
+    } finally {
+      await manager.onModuleDestroy();
+    }
   });
 });

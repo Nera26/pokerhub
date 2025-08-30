@@ -46,6 +46,17 @@ class WorkerHost extends EventEmitter {
       }
     });
 
+    this.worker.on('error', (err) => {
+      const error = new Error(
+        `worker error: ${(err as Error)?.message ?? String(err)}`,
+      );
+      for (const [, [, reject]] of this.pending) {
+        reject(error);
+      }
+      this.pending.clear();
+      this.emit('error', err);
+    });
+
     this.worker.on('exit', (code) => {
       for (const [, [, reject]] of this.pending) {
         reject(new Error('worker exited'));
