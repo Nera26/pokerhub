@@ -29,3 +29,7 @@ Resolve backlogs in the tournament balancer to keep seating timely and fair.
 
 ## Drill
 - Exercised via monthly chaos drill (`.github/workflows/chaos-drill.yml`).
+
+## See Also
+- [Tournament Handbook](../player/tournament-handbook.md)
+- [Game Engine Spec](../game-engine-spec.md)

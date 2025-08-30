@@ -13,12 +13,10 @@ if [[ -z "$HEALTH" ]]; then
   exit 1
 fi
 
-echo "Checking canary health on $ENV..."
-if ! curl -fsS "$HEALTH" > /dev/null; then
-  echo "Health check failed, rolling back deployment in $ENV"
-  # placeholder rollback logic
-  # e.g., kubectl rollout undo deployment/my-app
+echo "Checking canary deployment on $ENV via $HEALTH..."
+if curl -fsS "$HEALTH" >/dev/null; then
+  echo "Canary is healthy"
+else
+  echo "Canary health check failed"
   exit 1
 fi
-
-echo "Canary healthy, no rollback required"

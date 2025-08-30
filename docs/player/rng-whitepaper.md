@@ -4,7 +4,7 @@ PokerHub uses a commit–reveal protocol to prove every shuffle was fair and unm
 
 ## Commit–Reveal Flow
 
-![Commit–reveal flow diagram](images/rng-commit-reveal.svg)
+![Commit–reveal flow diagram](../images/rng-commit-reveal.svg)
 
 1. The server draws a random seed and nonce and commits to their hash.
 2. The commitment and nonce are broadcast before cards are dealt.
@@ -30,6 +30,10 @@ PokerHub uses a commit–reveal protocol to prove every shuffle was fair and unm
 - Players know the deck order could not be altered post‑deal.
 - Observers can archive proofs for independent audits.
 - Any mismatch between the commitment and revealed seed proves tampering.
+
+## See Also
+- [RNG Fairness Spec](../rng-fairness.md)
+- [Collusion Review Runbook](../runbooks/collusion-review.md)
 
 ## Revision History
 - 2025-08-30: add commit–reveal diagram and flow summary

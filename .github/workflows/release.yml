@@ -1,0 +1,19 @@
+name: release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inject release tag
+        run: |
+          sed -i "s/{{RELEASE_TAG}}/${{ github.ref_name }}/" docs/player/README.md
+      - name: Upload player docs
+        uses: actions/upload-artifact@v4
+        with:
+          name: player-docs-${{ github.ref_name }}
+          path: docs/player

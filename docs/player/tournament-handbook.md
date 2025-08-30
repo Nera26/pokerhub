@@ -62,6 +62,10 @@ A Monte Carlo simulation with 10,000 entrants tested a standard blind structure 
 3. A ruling is announced to the table and recorded for the event log.
 4. Appeals can be filed with operations within 24 hours for post‑event review.
 
+## See Also
+- [Game Engine Spec](../game-engine-spec.md)
+- [Tournament Balancing Backlog Runbook](../runbooks/tourney-balancing-backlog.md)
+
 ## Revision History
 - 7cbff0e: parameterize tournament simulator and validate structures
 - c643a4f: add bot profiles to tournament simulator

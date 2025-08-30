@@ -19,5 +19,13 @@ This runbook defines how PokerHub handles production incidents and documents the
 
 Error budgets from [../SLOs.md](../SLOs.md) drive page urgency; exhausting 50% of a monthly budget triggers a feature freeze, while 100% requires CTO approval for production changes.
 
+
 ## PagerDuty Escalation
 - Service: `pokerhub-sre`
+
+## Security References
+
+- [../security/stride-summary.md](../security/stride-summary.md)
+- [../security/kyc-aml-flow.md](../security/kyc-aml-flow.md)
+- [../security/anti-collusion.md](../security/anti-collusion.md)
+

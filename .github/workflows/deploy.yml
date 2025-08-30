@@ -10,14 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     env:
-      CANARY_TRAFFIC_PERCENT: 5
-      CANARY_DURATION_MINUTES: 30
-      NAMESPACE: ${{ vars.K8S_NAMESPACE }}
-      SERVICE: api
-      STABLE: api
-      CANARY: api-canary
-      CANARY_RELEASE: canary
-      PROMETHEUS: ${{ vars.PROMETHEUS_URL }}
+      DEPLOY_ENV: production
+      HEALTH_CHECK_URL: ${{ vars.HEALTH_CHECK_URL }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Node
@@ -36,25 +30,14 @@ jobs:
         run: |
           python -m pip install pyyaml >/dev/null
           python infra/observability/validate.py
-      - name: Canary deploy with rollback guard
-        run: bash infra/scripts/canary-deploy.sh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_SHA: ${{ github.sha }}
-      - name: 5m staging canary with rollback
-        run: bash infra/scripts/canary-deploy.sh
-        env:
-          CANARY_TRAFFIC_PERCENT: 100
-          CANARY_DURATION_MINUTES: 5
-          NAMESPACE: ${{ vars.K8S_NAMESPACE_STAGING }}
-          SERVICE: api
-          STABLE: api
-          CANARY: api-canary
-          CANARY_RELEASE: canary-staging
-          PROMETHEUS: ${{ vars.PROMETHEUS_URL }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_SHA: ${{ github.sha }}
+      - name: Run canary deploy
+        run: scripts/canary-deploy.sh
+      - name: Check canary health
+        id: check
+        run: scripts/check-canary.sh
+        continue-on-error: true
+      - name: Rollback on failure
+        if: steps.check.outcome != 'success'
+        run: |
+          scripts/rollback.sh
+          exit 1
