@@ -21,7 +21,7 @@
    ```
 3. For corruption or lost writes, restore from snapshot and replay WAL:
    ```bash
-   PG_SNAPSHOT_ID=<snapshot-id> SECONDARY_REGION=<region> \
+   PG_BACKUP_ID=<backup-id> SECONDARY_REGION=<region> PROJECT_ID=<project-id> \
    bash infra/disaster-recovery/tests/restore-backup.sh
    ```
 4. Update application configuration to point to the restored endpoint.
