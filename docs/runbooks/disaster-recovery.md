@@ -105,6 +105,13 @@ The `dr-drill` GitHub Actions workflow runs weekly to spin up a standby
 cluster in `${SECONDARY_REGION}` and measure time to service readiness.
 It validates snapshot freshness and WAL shipping to ensure **RPO ≤ 5 min**
 and **RTO ≤ 30 min**. Failures trigger a PagerDuty alert to `pokerhub-eng` (ID: PENG012).
+If the workflow fails, an issue is automatically created with the contents of
+`drill.metrics`. Resolve the issue by:
+
+1. Reviewing the metrics to see which objective was exceeded.
+2. Rerunning `infra/disaster-recovery/drill.sh` to reproduce and isolate the fault.
+3. Fixing any underlying infrastructure or configuration problems.
+4. Closing the issue once the drill succeeds within targets.
 
 ### Recent Drill Results
 - 2025-08-30: `drill.sh` failed locally because `gcloud` CLI was not available; RTO/RPO metrics were not captured. Install the Google Cloud CLI and configure credentials before rerunning.
