@@ -8,7 +8,7 @@ metrics, and logs.
 - [Alerts Overview](../../infrastructure/observability/alerts-overview-grafana.json)
 
 ## PagerDuty
-- Service: `pokerhub-sre` (ID: PSRE123)
+- Service: `pokerhub-sre` (ID: PSRE789) <!-- Update ID if PagerDuty service changes -->
 - Escalation: [SRE](https://pokerhub.pagerduty.com/escalation_policies/PABC123)
 
 ## Playbook

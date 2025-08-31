@@ -1,4 +1,5 @@
 # Canary Deployment Runbook
+<!-- Update service IDs in this file if PagerDuty services change -->
 
 Use this runbook to release a canary and watch its SLO health.
 
@@ -7,7 +8,7 @@ Use this runbook to release a canary and watch its SLO health.
 - Grafana: [Error Rate](../analytics-dashboards.md#error-rate)
 
 ## PagerDuty Escalation
-- Service: `pokerhub-sre`
+- Service: `pokerhub-sre` (ID: PSRE789)
 
 ## Trigger
 

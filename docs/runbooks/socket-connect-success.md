@@ -7,7 +7,7 @@ Investigates failed WebSocket connection attempts.
 - Metabase: [Socket Connect Success](../analytics-dashboards.md#socket-connect-success-1)
 
 ## PagerDuty
-- Service: `pokerhub-sre` (ID: PSRE123)
+- Service: `pokerhub-sre` (ID: PSRE789) <!-- Update ID if PagerDuty service changes -->
 - Escalation: [SRE](https://pokerhub.pagerduty.com/escalation_policies/PABC123)
 
 ## Playbook

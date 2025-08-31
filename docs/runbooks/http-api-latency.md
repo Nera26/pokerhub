@@ -6,7 +6,7 @@ Investigates high HTTP API response times affecting players.
 - Grafana: [HTTP API Latency](../../infrastructure/observability/http-api-latency-dashboard.json)
 
 ## PagerDuty
-- Service: `pokerhub-sre` (ID: PSRE123)
+- Service: `pokerhub-sre` (ID: PSRE789) <!-- Update ID if PagerDuty service changes -->
 - Escalation: [SRE](https://pokerhub.pagerduty.com/escalation_policies/PABC123)
 
 ## Playbook

@@ -1,4 +1,5 @@
 # Collusion Review Runbook
+<!-- Update service IDs in this file if PagerDuty services change -->
 
 This runbook outlines how administrators review flagged sessions for potential collusion.
 
@@ -7,7 +8,7 @@ This runbook outlines how administrators review flagged sessions for potential c
 - Metabase: [Collusion Review](../analytics-dashboards.md)
 
 ## PagerDuty Escalation
-- Service: `pokerhub-eng`
+- Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->
 
 Refer to [../security/anti-collusion.md](../security/anti-collusion.md) for details on detection heuristics and analytics queries.
 
@@ -21,7 +22,7 @@ Refer to [../security/anti-collusion.md](../security/anti-collusion.md) for deta
 
 ## Alerts
 - Each new entry in `collusion_alerts` emits a Slack notification and opens a Jira ticket.
-- If alert volume exceeds 20 per hour, page `pokerhub-eng` to check for runaway heuristics.
+- If alert volume exceeds 20 per hour, page `pokerhub-eng` (ID: PENG012) to check for runaway heuristics.
 
 ## Access Requirements
 - Only users with the `admin` role can access `/admin/collusion`.

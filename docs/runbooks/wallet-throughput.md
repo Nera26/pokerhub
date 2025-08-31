@@ -6,7 +6,7 @@ Investigates drops in wallet transaction throughput.
 - Grafana: [Wallet Throughput](../../infrastructure/observability/wallet-throughput-dashboard.json)
 
 ## PagerDuty
-- Service: `pokerhub-sre` (ID: PSRE123)
+- Service: `pokerhub-sre` (ID: PSRE789) <!-- Update ID if PagerDuty service changes -->
 - Escalation: [SRE](https://pokerhub.pagerduty.com/escalation_policies/PABC123)
 
 ## Playbook

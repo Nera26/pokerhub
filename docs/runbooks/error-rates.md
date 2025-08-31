@@ -7,7 +7,7 @@ Responding to elevated application error rates.
 - Metabase: [Error Rate](../analytics-dashboards.md#error-rate-1)
 
 ## PagerDuty
-- Service: `pokerhub-sre` (ID: PSRE123)
+- Service: `pokerhub-sre` (ID: PSRE789) <!-- Update ID if PagerDuty service changes -->
 - Escalation: [SRE](https://pokerhub.pagerduty.com/escalation_policies/PABC123)
 
 ## Playbook

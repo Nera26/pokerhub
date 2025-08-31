@@ -7,7 +7,7 @@ Investigates slow acknowledgements of game actions.
 - Metabase: [Action ACK Latency](../analytics-dashboards.md#action-ack-latency-1)
 
 ## PagerDuty
-- Service: `pokerhub-sre` (ID: PSRE123)
+- Service: `pokerhub-sre` (ID: PSRE789) <!-- Update ID if PagerDuty service changes -->
 - Escalation: [SRE](https://pokerhub.pagerduty.com/escalation_policies/PABC123)
 
 ## Playbook

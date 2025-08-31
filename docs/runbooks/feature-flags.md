@@ -1,4 +1,5 @@
 # Feature Flags Runbook
+<!-- Update service IDs in this file if PagerDuty services change -->
 
 This runbook covers operational procedures for managing feature flags in PokerHub.
 
@@ -6,7 +7,7 @@ This runbook covers operational procedures for managing feature flags in PokerHu
 - Metabase: [Feature Flags](../analytics-dashboards.md)
 
 ## PagerDuty Escalation
-- Service: `pokerhub-eng`
+- Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->
 
 ## Listing Flags
 

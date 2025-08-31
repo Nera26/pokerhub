@@ -1,4 +1,5 @@
 # RTO and RPO Procedures
+<!-- Update service IDs in this file if PagerDuty services change -->
 
 Document the steps to meet recovery objectives during regional outages.
 
@@ -32,5 +33,5 @@ Document the steps to meet recovery objectives during regional outages.
 4. Raise a PagerDuty incident if thresholds are exceeded or scripts fail.
 
 ## PagerDuty Escalation
-- Service: `pokerhub-eng`
+- Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->
 - Slack: #ops

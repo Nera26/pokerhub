@@ -1,4 +1,5 @@
 # Postgres PITR Recovery
+<!-- Update service IDs in this file if PagerDuty services change -->
 
 ## Dashboard
 - Grafana: [Postgres PITR](../analytics-dashboards.md)
@@ -31,5 +32,5 @@
 - Replication lag dashboards stay under five minutes after promotion.
 
 ## PagerDuty Escalation
-- Service: `pokerhub-eng`
+- Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->
 - Slack: #ops

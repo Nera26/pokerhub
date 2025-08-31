@@ -1,4 +1,5 @@
 # Wallet Reconciliation
+<!-- Update service IDs in this file if PagerDuty services change -->
 
 The wallet service runs a daily reconciliation that compares the sum of journal
 entries with the persisted account balances. Any mismatch is logged so that
@@ -8,7 +9,7 @@ operators can investigate.
 - Metabase: [Wallet Reconciliation](../analytics-dashboards.md)
 
 ## PagerDuty Escalation
-- Service: `pokerhub-eng`
+- Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->
 
 ## Reviewing logs
 
