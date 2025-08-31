@@ -18,6 +18,29 @@ jobs:
       ERROR_RATE_THRESHOLD: 0.0005
     steps:
       - uses: actions/checkout@v4
+      - name: Ensure proof-archive recent success
+        id: proof_archive
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          run=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+            https://api.github.com/repos/${{ github.repository }}/actions/workflows/proof-archive.yml/runs?per_page=1)
+          conclusion=$(echo "$run" | jq -r '.workflow_runs[0].conclusion')
+          started=$(echo "$run" | jq -r '.workflow_runs[0].run_started_at')
+          start_ts=$(date -d "$started" +%s)
+          now=$(date -u +%s)
+          if [ "$conclusion" != "success" ] || [ $((now - start_ts)) -gt 86400 ]; then
+            echo "Latest proof-archive workflow run did not succeed within 24 hours"
+            exit 1
+          fi
+      - name: Notify on-call on stale proof-archive
+        if: steps.proof_archive.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            { "text": "Deployment blocked: proof-archive workflow failed or stale for ${GITHUB_REPOSITORY}@${GITHUB_SHA}" }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
