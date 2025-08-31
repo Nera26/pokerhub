@@ -130,6 +130,14 @@ jobs:
       - name: Run spectator privacy tests
         run: npm test --prefix backend test/game/spectator-privacy.spec.ts
 
+      - name: Set up Node for frontend tests
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Run frontend spectator privacy tests
+        run: npm test --prefix frontend spectator/privacy.test.tsx
+
       # --- Canary, SLO check, promote/rollback ---
       - name: Run canary deploy
         run: bash deploy/canary.sh ${{ github.sha }}
