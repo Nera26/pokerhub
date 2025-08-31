@@ -22,6 +22,7 @@ jobs:
       ERROR_RATE_THRESHOLD: 0.0005
       DR_DRILL_SLA_DAYS: 7
       DR_FAILOVER_SLA_DAYS: 30
+      DR_RESTORE_SLA_DAYS: 30
       SOAK_SLA_HOURS: 24
       PG_RESTORE_SLA_MINUTES: 60
     steps:
@@ -95,6 +96,40 @@ jobs:
         with:
           payload: |
             { "text": "🚫 Deployment blocked: dr-failover workflow failed or stale for ${{ github.repository }}@${{ github.sha }}" }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Ensure dr-restore recent success
+        id: drrestore
+        env:
+          SLA_DAYS: ${{ env.DR_RESTORE_SLA_DAYS }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          resp=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/dr-restore.yml/runs?per_page=1")
+          ts=$(echo "$resp" | jq -r '.workflow_runs[0].updated_at')
+          conclusion=$(echo "$resp" | jq -r '.workflow_runs[0].conclusion')
+          echo "timestamp=$ts" >> "$GITHUB_OUTPUT"
+          now=$(date -u +%s)
+          run_ts=$(date -d "$ts" -u +%s)
+          max_age=$((SLA_DAYS * 86400))
+          age=$((now - run_ts))
+          if [ "$conclusion" != "success" ]; then
+            echo "Latest dr-restore run concluded with $conclusion" >&2
+            exit 1
+          fi
+          if [ "$age" -gt "$max_age" ]; then
+            echo "Latest dr-restore run is older than ${SLA_DAYS}d" >&2
+            exit 1
+          fi
+
+      - name: Notify on-call on stale DR restore
+        if: failure() && steps.drrestore.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            { "text": "🚫 Deployment blocked: dr-restore workflow failed or stale for ${{ github.repository }}@${{ github.sha }}" }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
@@ -309,6 +344,7 @@ jobs:
             echo "### Deployment Audit"
             echo "- DR drill last run: ${{ steps.drdrill.outputs.timestamp }}"
             echo "- DR failover last run: ${{ steps.drfailover.outputs.timestamp }}"
+            echo "- DR restore last run: ${{ steps.drrestore.outputs.timestamp }}"
             echo "- game_action_ack_p95_ms: ${{ steps.metrics.outputs.ack_p95_ms }}"
             echo "- http_error_rate: ${{ steps.metrics.outputs.http_error_rate }}"
           } >> "$GITHUB_STEP_SUMMARY"
