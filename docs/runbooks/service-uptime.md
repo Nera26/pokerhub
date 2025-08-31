@@ -2,15 +2,14 @@
 
 Investigates downtime or availability dips.
 
-## Dashboard
-- Grafana: [Service Uptime](../../infrastructure/observability/service-uptime-dashboard.json)
+## Monitoring
+- Grafana: [Service Uptime](https://grafana.pokerhub.example/d/service-uptime) (UID `service-uptime`)
+- Metabase: [Alerts Overview](https://metabase.pokerhub.example/dashboard/alerts-overview)
 
-## Alert Rule
-- `UptimeSLOViolation` in [alerts.yml](../../infrastructure/observability/alerts.yml)
-
-## PagerDuty
-- Service: `pokerhub-sre` (ID: PSRE789) <!-- Update ID if PagerDuty service changes -->
+## Alerting
+- Route: [`pokerhub-sre`](../../metrics/alert-routes.md#pokerhub-sre) (PagerDuty ID: PSRE789)
 - Escalation: [SRE](https://pokerhub.pagerduty.com/escalation_policies/PABC123)
+- Rule: `UptimeSLOViolation` in [alerts.yml](../../infrastructure/observability/alerts.yml)
 
 ## Playbook
 1. Check [status page](https://status.pokerhub.example.com).

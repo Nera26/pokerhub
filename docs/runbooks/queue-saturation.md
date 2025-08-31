@@ -1,10 +1,10 @@
-# Queue Saturation Runbook
+# Queue Saturation
 
 Handle situations where message queues accumulate a backlog faster than consumers can process.
 
-## Dashboard
-- Grafana: [Queue Saturation](../../infrastructure/observability/queue-lag-dashboard.json)
-- Metabase: [Queue Saturation](../analytics-dashboards.md#queue-saturation-1)
+## Monitoring
+- Grafana: [Queue Saturation](https://grafana.pokerhub.example/d/queue-saturation) (UID `queue-saturation`)
+- Metabase: [Latency & Error Overview](https://metabase.pokerhub.example/dashboard/latency-error-overview)
 
 ## Detection
 - Rising queue depth metrics or alerts.
@@ -28,8 +28,8 @@ Refer to [Error Budget Procedures](../error-budget-procedures.md) when saturatio
 - No new saturation alerts for 15 m.
 - `queueLag` metric falls below 2 s.
 
-## PagerDuty
-- Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->
+## Alerting
+- Route: [`pokerhub-eng`](../../metrics/alert-routes.md#pokerhub-eng) (PagerDuty ID: PENG012)
 - Escalation: [Engineering](https://pokerhub.pagerduty.com/escalation_policies/PDEF456)
 
 ## Drill
