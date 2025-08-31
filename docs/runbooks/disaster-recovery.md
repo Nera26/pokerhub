@@ -98,7 +98,7 @@ bash infra/disaster-recovery/tests/failover.sh
 ```
 
 The script logs metrics and writes `failover.metrics` containing
-`RTO_SECONDS` and `RPO_SECONDS` for tracking. Metrics are archived to `gs://dr-metrics/{run_id}/dr-failover.metrics` and linked below.
+`RTO_SECONDS` and `RPO_SECONDS` for tracking. The `failover-drill` workflow uploads both `failover.log` and `failover.metrics` to `gs://dr-metrics/failover/<timestamp>/` for auditing and links the archive in Slack.
 
 ## Automated Drill
 

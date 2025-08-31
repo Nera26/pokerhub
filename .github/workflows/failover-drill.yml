@@ -38,15 +38,17 @@ jobs:
             echo "RPO exceeds 5 minutes" >&2
             exit 1
           fi
-      - name: Upload metrics to GCS
-        id: upload_metrics
-        if: success()
+      - name: Archive failover artifacts to GCS
+        id: archive
+        if: always()
         env:
           BUCKET: ${{ vars.DR_METRICS_BUCKET }}
         run: |
-          uri="gs://$BUCKET/${GITHUB_RUN_ID}/dr-failover.metrics"
-          gcloud storage cp failover.metrics "$uri"
-          url="https://storage.googleapis.com/$BUCKET/${GITHUB_RUN_ID}/dr-failover.metrics"
+          ts="$(date -u +"%Y%m%dT%H%M%SZ")"
+          prefix="failover/$ts"
+          gcloud storage cp failover.log "gs://$BUCKET/$prefix/failover.log"
+          gcloud storage cp failover.metrics "gs://$BUCKET/$prefix/failover.metrics"
+          url="https://storage.googleapis.com/$BUCKET/$prefix"
           echo "url=$url" >> "$GITHUB_OUTPUT"
       - name: Upload logs
         if: always()
@@ -56,11 +58,12 @@ jobs:
           path: |
             failover.log
             failover.metrics
-      - name: Notify Slack on failure
-        if: failure()
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          payload: |
-            { "text": "Failover drill failed for ${GITHUB_REPOSITORY}@${GITHUB_SHA}" }
+      - name: Notify Slack
+        if: always()
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          LOG_URL: ${{ steps.archive.outputs.url }}
+        run: |
+          source failover.metrics
+          payload=$(jq -n --arg rto "$RTO_SECONDS" --arg rpo "$RPO_SECONDS" --arg url "$LOG_URL" --arg status "${{ job.status }}" '{text: "Failover drill \($status)\nRTO: \($rto)s\nRPO: \($rpo)s\nLogs: \($url)"}')
+          curl -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK_URL" --fail
