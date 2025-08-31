@@ -42,7 +42,18 @@ jobs:
             exit 1
           fi
           echo "RUN_ID=$RUN_ID" >> "$GITHUB_OUTPUT"
-      - name: Verify ops artifacts
-        env:
-          RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
-        run: npx ts-node scripts/verify-ops-artifacts.ts
+        - name: Verify ops artifacts
+          env:
+            RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
+          run: |
+            set +e
+            out=$(npx ts-node scripts/verify-ops-artifacts.ts 2>&1)
+            status=$?
+            set -e
+            echo "$out"
+            printf "%s\n" "$out" > verify-ops.log
+            printf "%s" "$out" | sha256sum >> verify-ops.log
+            gcloud storage cp verify-ops.log gs://$DR_METRICS_BUCKET/verify/$GITHUB_RUN_ID/
+            url="https://storage.googleapis.com/$DR_METRICS_BUCKET/verify/$GITHUB_RUN_ID/verify-ops.log"
+            echo "$url" >> "$GITHUB_STEP_SUMMARY"
+            exit $status

@@ -349,17 +349,27 @@ jobs:
             --jq '.workflow_runs[0].id')
           echo "RUN_ID=$RUN_ID" >> "$GITHUB_OUTPUT"
 
-      - name: Verify ops artifacts
-        id: verify_ops_artifacts
-        env:
-          PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
-          SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
-          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
-          RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
-          DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
-        run: |
-          npm ci --legacy-peer-deps
-          npx ts-node scripts/verify-ops-artifacts.ts
+        - name: Verify ops artifacts
+          id: verify_ops_artifacts
+          env:
+            PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+            SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
+            SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+            RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
+            DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
+          run: |
+            npm ci --legacy-peer-deps
+            set +e
+            out=$(npx ts-node scripts/verify-ops-artifacts.ts 2>&1)
+            status=$?
+            set -e
+            echo "$out"
+            printf "%s\n" "$out" > verify-ops.log
+            printf "%s" "$out" | sha256sum >> verify-ops.log
+            gcloud storage cp verify-ops.log gs://$DR_METRICS_BUCKET/verify/$GITHUB_RUN_ID/
+            url="https://storage.googleapis.com/$DR_METRICS_BUCKET/verify/$GITHUB_RUN_ID/verify-ops.log"
+            echo "$url" >> "$GITHUB_STEP_SUMMARY"
+            exit $status
 
       - name: Notify on-call on ops artifact failure
         if: failure() && steps.verify_ops_artifacts.outcome == 'failure'
