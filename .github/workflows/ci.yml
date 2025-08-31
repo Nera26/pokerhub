@@ -70,10 +70,24 @@ jobs:
       - name: Validate proof archive
         run: npx -y ts-node scripts/validate-proof-archive.ts
 
+  proof-archive-integration:
+    needs: proof-archive
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm ci --legacy-peer-deps --prefix backend
+      - name: Test proof archive migrations
+        run: npx -y ts-node scripts/test-proof-archive-migrations.ts
+
   unit:
     needs:
       - contracts
-      - proof-archive
+      - proof-archive-integration
     runs-on: ubuntu-latest
     continue-on-error: false
     steps:
