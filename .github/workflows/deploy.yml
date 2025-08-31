@@ -234,6 +234,43 @@ jobs:
         if: steps.metrics.outcome == 'success'
         run: scripts/promote.sh
 
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Verify ops artifacts
+        id: verify_ops_artifacts
+        env:
+          PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+          SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
+          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          npm ci --legacy-peer-deps
+          npx ts-node scripts/verify-ops-artifacts.ts
+
+      - name: Notify on-call on ops artifact failure
+        if: failure() && steps.verify_ops_artifacts.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            { "text": "\uD83D\uDEAB Deployment failed: ops artifacts missing for ${{ github.repository }}@${{ github.sha }}" }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: PagerDuty alert on ops artifact failure
+        if: failure() && steps.verify_ops_artifacts.outcome == 'failure'
+        env:
+          ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+        run: |
+          curl -X POST https://events.pagerduty.com/v2/enqueue \
+            -H 'Content-Type: application/json' \
+            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Ops artifacts missing during deployment","source":"github-actions","severity":"error"}}'
+
       # --- Artifacts & summary ---
       - name: Upload deployment metrics
         if: always()
