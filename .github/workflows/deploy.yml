@@ -23,6 +23,7 @@ jobs:
       DR_DRILL_SLA_DAYS: 7
       DR_FAILOVER_SLA_DAYS: 30
       SOAK_SLA_HOURS: 24
+      PG_RESTORE_SLA_MINUTES: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -137,6 +138,34 @@ jobs:
         with:
           payload: |
             { "text": "🚫 Deployment blocked: soak workflow failed or stale for ${{ github.repository }}@${{ github.sha }}" }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Ensure pg-restore-smoke recent success
+        id: pg_restore_smoke
+        env:
+          SLA_MINUTES: ${{ env.PG_RESTORE_SLA_MINUTES }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          run=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/pg-restore-smoke.yml/runs?per_page=1")
+          conclusion=$(echo "$run" | jq -r '.workflow_runs[0].conclusion')
+          started=$(echo "$run" | jq -r '.workflow_runs[0].run_started_at')
+          start_ts=$(date -d "$started" +%s)
+          now=$(date -u +%s)
+          max_age=$((SLA_MINUTES * 60))
+          if [ "$conclusion" != "success" ] || [ $((now - start_ts)) -gt "$max_age" ]; then
+            echo "Latest pg-restore-smoke workflow run did not succeed within ${SLA_MINUTES} minutes"
+            exit 1
+          fi
+
+      - name: Notify on-call on stale pg-restore-smoke
+        if: failure() && steps.pg_restore_smoke.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            { "text": "🚫 Deployment blocked: pg-restore-smoke workflow failed or stale for ${{ github.repository }}@${{ github.sha }}" }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
