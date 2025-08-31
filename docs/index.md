@@ -2,12 +2,12 @@
 
 ## User Guides
 - [Game Engine Specification](./game-engine-spec.md)
-- [Tournament Handbook](./tournament-handbook.md)
+- [Tournament Handbook](./handbook/tournament-handbook.md)
 - [Accounting Book](./accounting-book.md)
 - [Milestone Roadmap](./roadmap.md)
 
 ## Auditors
-- [Reconciliation Guide](./reconciliation-guide.md)
+- [Reconciliation Guide](./handbook/reconciliation-guide.md)
 - [Handbook Changelog](./handbook/CHANGELOG.md)
 - [Documentation Review Checklist](./documentation-review-checklist.md)
 
@@ -18,7 +18,7 @@
 
 ## Runbooks
 - [Runbooks Index](./runbooks/index.md)
-- [Reconciliation Guide](./reconciliation-guide.md)
+- [Reconciliation Guide](./handbook/reconciliation-guide.md)
 
 ## Observability & SLOs
 - [SLO Guidelines](./SLOs.md)

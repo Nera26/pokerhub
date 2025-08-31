@@ -45,8 +45,8 @@ gantt
 ## Linked Documents
 - [Game Engine Specification](./game-engine-spec.md) – state machine reference for Milestone 1.
 - [RNG & RTP Fairness](./rng-fairness.md) – commit–reveal and RTP policies for Milestone 3.
-- [Tournament Handbook](./tournament-handbook.md) – formats, payouts, and examples for Milestone 5.
-- [Reconciliation Guide](./reconciliation-guide.md) – ledger checks and dispute workflow for Milestone 4.
+- [Tournament Handbook](./handbook/tournament-handbook.md) – formats, payouts, and examples for Milestone 5.
+- [Reconciliation Guide](./handbook/reconciliation-guide.md) – ledger checks and dispute workflow for Milestone 4.
 
 ## Revision History
 - 2025-10-05: add timeline diagram and bump version

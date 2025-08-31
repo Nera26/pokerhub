@@ -2,8 +2,8 @@
 
 ## Core Guides
 - [Game Engine Specification](./game-engine-spec.md) – state machine and message flows.
-- [Tournament Handbook](./player/tournament-handbook.md) – formats, payouts and lifecycle.
-- [Reconciliation Guide](./reconciliation-guide.md) – wallet ledger checks and dispute workflow.
+- [Tournament Handbook](./handbook/tournament-handbook.md) – formats, payouts and lifecycle.
+- [Reconciliation Guide](./handbook/reconciliation-guide.md) – wallet ledger checks and dispute workflow.
 - [Milestone Plan](./milestone-plan.md) – feature timeline with SLO and compliance targets.
 
 ## How to Contribute
@@ -14,10 +14,10 @@
 ## Whitepapers
 - [Game Engine Specification](./game-engine-spec.md)
 - [RNG & RTP Fairness](./rng-fairness.md)
-- [Reconciliation Guide](./reconciliation-guide.md)
+- [Reconciliation Guide](./handbook/reconciliation-guide.md)
 
 ## Handbooks
-- [Tournament Handbook](./player/tournament-handbook.md)
+- [Tournament Handbook](./handbook/tournament-handbook.md)
 - [Accounting Book](./accounting-book.md)
 
 ## Planning
@@ -36,5 +36,5 @@ Additional runbooks are available in the [runbooks/](./runbooks/) directory.
 ## Documentation Roadmap
 
 - **Whitepapers** outline core systems such as the [Game Engine Specification](./game-engine-spec.md) and [RNG & RTP Fairness](./rng-fairness.md).
-- **Handbooks** provide operational guidance like the [Tournament Handbook](./player/tournament-handbook.md) and player guides under [player/](./player/).
+- **Handbooks** provide operational guidance like the [Tournament Handbook](./handbook/tournament-handbook.md) and player guides under [player/](./player/).
 - **Future milestones** for features and docs are tracked in the [Milestone Plan](./milestone-plan.md).

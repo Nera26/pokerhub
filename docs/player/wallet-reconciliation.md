@@ -46,7 +46,7 @@ If the report shows `{ accountId: 42, expected: 5000, actual: 4500 }`, query the
 ## See Also
 - [Accounting Spec](../accounting.md)
 - [Wallet Reconciliation Runbook](../runbooks/wallet-reconciliation.md)
-- [Reconciliation Guide](../reconciliation-guide.md)
+- [Reconciliation Guide](../handbook/reconciliation-guide.md)
 
 ## Revision History
 - 2025-08-30: add step-by-step procedure, example, and version metadata

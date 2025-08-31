@@ -1,8 +1,8 @@
 const fs = require('fs');
 const files = [
   'docs/game-engine-spec.md',
-  'docs/player/tournament-handbook.md',
-  'docs/reconciliation-guide.md',
+  'docs/handbook/tournament-handbook.md',
+  'docs/handbook/reconciliation-guide.md',
   'docs/milestone-plan.md'
 ];
 let missing = false;
