@@ -723,6 +723,11 @@ jobs:
             echo "spectator-privacy workflow missing for commit $SHA" >&2
             exit 1
           fi
+          conclusion=$(echo "$resp" | jq -r '.workflow_runs[0].conclusion // empty')
+          if [ "$conclusion" != "success" ]; then
+            echo "spectator-privacy workflow conclusion: ${conclusion:-none}" >&2
+            exit 1
+          fi
           run_ts=$(date -d "$updated" +%s)
           now=$(date -u +%s)
           if [ $((now - run_ts)) -gt $((24*3600)) ]; then
