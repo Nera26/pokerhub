@@ -36,6 +36,36 @@ test('checkSoakMetrics fails when metrics are stale', () => {
   mock.restoreAll();
 });
 
+test('checkSoakSummary enforces latency threshold', () => {
+  const summary = JSON.stringify({
+    metrics: { ws_latency: { 'p(95)': 150, count: 100 } },
+    state: { testRunDurationMs: 1000 },
+  });
+  mock.method(verify.gcloud, 'run', () => summary);
+  assert.throws(() => verify.checkSoakSummary('bucket', 120, 50), /Latency p95 150ms exceeds 120ms/);
+  mock.restoreAll();
+});
+
+test('checkSoakSummary enforces throughput threshold', () => {
+  const summary = JSON.stringify({
+    metrics: { ws_latency: { 'p(95)': 100, count: 10 } },
+    state: { testRunDurationMs: 1000 },
+  });
+  mock.method(verify.gcloud, 'run', () => summary);
+  assert.throws(() => verify.checkSoakSummary('bucket', 120, 20), /Throughput 10 < 20/);
+  mock.restoreAll();
+});
+
+test('checkSoakSummary passes within thresholds', () => {
+  const summary = JSON.stringify({
+    metrics: { ws_latency: { 'p(95)': 100, count: 200 } },
+    state: { testRunDurationMs: 1000 },
+  });
+  mock.method(verify.gcloud, 'run', () => summary);
+  assert.doesNotThrow(() => verify.checkSoakSummary('bucket', 120, 100));
+  mock.restoreAll();
+});
+
 test('checkDrMetrics enforces RTO threshold', () => {
   const listing = JSON.stringify([
     { name: 'gs://dr/run1/drill.metrics', timeCreated: nowIso },
