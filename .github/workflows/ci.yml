@@ -438,6 +438,7 @@ jobs:
           SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
           RUN_ID: ${{ steps.spectator-privacy-nightly.outputs.run_id }}
           SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+          DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
         run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/verify-ops-artifacts.ts
 
   soak-metrics:

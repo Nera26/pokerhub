@@ -75,15 +75,40 @@ function checkSoakMetrics(bucket: string) {
   }
 }
 
+function checkDrMetrics(bucket: string) {
+  let listing: string;
+  try {
+    listing = runGcloud(`ls --format=json gs://${bucket}/`) as string;
+  } catch {
+    throw new Error(`Missing DR metrics in gs://${bucket}/`);
+  }
+  let items: Array<{ name?: string; timeCreated?: string; updated?: string }> = [];
+  try {
+    items = JSON.parse(listing);
+  } catch {
+    throw new Error(`Unable to parse listing for gs://${bucket}/`);
+  }
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  const recent = items.some((obj) => {
+    const t = Date.parse(obj.timeCreated || obj.updated || '');
+    return !isNaN(t) && t >= cutoff;
+  });
+  if (!recent) {
+    throw new Error(`No recent DR metrics in gs://${bucket}/`);
+  }
+}
+
 function main() {
   const proofBucket = requireEnv('PROOF_ARCHIVE_BUCKET');
   const spectatorBucket = requireEnv('SPECTATOR_PRIVACY_BUCKET');
   const runId = requireEnv('RUN_ID');
   const soakBucket = requireEnv('SOAK_TRENDS_BUCKET');
+  const drMetricsBucket = requireEnv('DR_METRICS_BUCKET');
 
   checkProofArchive(proofBucket);
   checkSpectatorLogs(spectatorBucket, runId);
   checkSoakMetrics(soakBucket);
+  checkDrMetrics(drMetricsBucket);
 
   console.log('All ops artifacts verified');
 }
