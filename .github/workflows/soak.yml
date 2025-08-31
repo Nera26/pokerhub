@@ -12,6 +12,8 @@ jobs:
     timeout-minutes: 1440
     env:
       METRICS_URL: http://localhost:3000/metrics
+      SOAK_LATENCY_P95_MS: 120
+      SOAK_THROUGHPUT_MIN: 100
     steps:
       - uses: actions/checkout@v4
       - name: Install toxiproxy CLI
