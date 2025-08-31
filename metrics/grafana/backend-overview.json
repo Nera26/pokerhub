@@ -7,18 +7,22 @@
       "id": 1,
       "type": "graph",
       "title": "HTTP Requests",
-      "datasource": "Prometheus",
+      "datasource": "Cloud Monitoring",
       "targets": [
-        { "expr": "sum(rate(http_requests_total[5m])) by (status)" }
+        {
+          "query": "fetch custom.googleapis.com/backend/http_requests | align rate(1m) | group_by [metric.status], [value_http_requests: sum(value.http_requests)]"
+        }
       ]
     },
     {
       "id": 2,
       "type": "graph",
       "title": "Log Records",
-      "datasource": "Prometheus",
+      "datasource": "Cloud Monitoring",
       "targets": [
-        { "expr": "sum(rate(log_records_total[5m])) by (severity)" }
+        {
+          "query": "fetch custom.googleapis.com/backend/log_records | align rate(1m) | group_by [metric.severity], [value_log_records: sum(value.log_records)]"
+        }
       ]
     }
   ]

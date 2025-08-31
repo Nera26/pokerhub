@@ -7,10 +7,10 @@
       "id": 1,
       "type": "stat",
       "title": "Request Duration p95",
-      "datasource": "Prometheus",
+      "datasource": "Cloud Monitoring",
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(http_server_duration_seconds_bucket[5m])) by (le))"
+          "query": "fetch custom.googleapis.com/soak/latency | group_by [], [p95_latency: percentile(value.latency,95)]"
         }
       ]
     }

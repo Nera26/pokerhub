@@ -53,6 +53,14 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT }}
+      - name: Write soak metrics to Cloud Monitoring
+        run: |
+          p95=$(jq -r '.metrics.ws_latency["p(95)"] // .metrics.ack_latency["p(95)"] // 0' soak-summary.json)
+          throughput=$(jq -r '.metrics.ws_msgs_sent.rate // 0' soak-summary.json)
+          gcloud monitoring metrics write custom.googleapis.com/soak/latency "${p95}" \
+            --labels build_sha=${{ github.sha }},run_id=${{ github.run_id }}
+          gcloud monitoring metrics write custom.googleapis.com/soak/throughput "${throughput}" \
+            --labels build_sha=${{ github.sha }},run_id=${{ github.run_id }}
       - name: Analyze soak trends
         run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-soak-trends.ts metrics
         env:
