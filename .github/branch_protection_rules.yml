@@ -5,4 +5,4 @@
     - deploy
     - proof-archive
     - soak
-    - spectator-privacy
+    - spectator-privacy # require spectator privacy workflow
