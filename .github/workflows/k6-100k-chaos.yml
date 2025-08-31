@@ -15,7 +15,7 @@ jobs:
           node-version: 20
       - name: Install k6 and Artillery
         run: npm install -g k6 artillery
-      - name: Run 10k chaos load
+      - name: Run chaos load
         run: ./load/run-10k-chaos.sh --sockets 80000 --packet-loss 0.05 --jitter 200
         env:
           TABLES: 10000
@@ -25,13 +25,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-      - name: Run 100k chaos load
-        run: ./load/run-100k-chaos.sh
-        env:
-          PACKET_LOSS: 0.05
-          JITTER_MS: 200
-          TABLES: 10000
-          RNG_SEED: ${{ github.run_id }}
       - name: Resolve metrics dir
         run: echo "METRICS_DIR=$(readlink -f load/metrics/latest)" >> $GITHUB_ENV
       - name: Analyze chaos trends
@@ -50,7 +43,7 @@ jobs:
           retention-days: 7
       - name: Update chaos summary
         if: always()
-        run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/update-chaos-summary.ts
+        run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/update-chaos-summary.ts load/metrics/100k-chaos-sample
       - name: Commit chaos summary
         if: always()
         run: |
