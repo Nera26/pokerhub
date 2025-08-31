@@ -1,51 +1,33 @@
 #!/usr/bin/env ts-node
-import * as https from 'https';
+import { execSync } from 'child_process';
 import { createHash } from 'crypto';
 
-function fetchBuffer(url: string): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    https
-      .get(url, (res) => {
-        const status = res.statusCode || 0;
-        if (status >= 400) {
-          reject(new Error(`Request failed with status ${status}`));
-          res.resume();
-          return;
-        }
-        const chunks: Buffer[] = [];
-        res.on('data', (c) => chunks.push(c as Buffer));
-        res.on('end', () => resolve(Buffer.concat(chunks)));
-      })
-      .on('error', reject);
-  });
+function runGcloud(cmd: string, encoding: BufferEncoding | undefined = 'utf-8'): string | Buffer {
+  return execSync(`gcloud storage ${cmd}`, { encoding: encoding as any });
 }
 
-async function listPrefixes(bucket: string): Promise<string[]> {
-  const url = `https://${bucket}.s3.amazonaws.com/?list-type=2&delimiter=/`;
-  const xml = (await fetchBuffer(url)).toString('utf-8');
-  const prefixes: string[] = [];
-  const re = /<Prefix>([^<]+)<\/Prefix>/g;
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(xml)) !== null) {
-    const p = match[1].replace(/\/$/, '');
-    if (p) prefixes.push(p);
-  }
-  return prefixes;
+function listPrefixes(bucket: string): string[] {
+  const out = runGcloud(`ls gs://${bucket}/`) as string;
+  return out
+    .trim()
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.endsWith('/'))
+    .map((l) => l.replace(`gs://${bucket}/`, '').replace(/\/$/, ''));
 }
 
-async function download(bucket: string, key: string): Promise<Buffer> {
-  const url = `https://${bucket}.s3.amazonaws.com/${key}`;
-  return fetchBuffer(url);
+function download(bucket: string, key: string): Buffer {
+  return runGcloud(`cat gs://${bucket}/${key}`, undefined) as Buffer;
 }
 
-async function main() {
+function main() {
   const bucket = process.env.PROOF_ARCHIVE_BUCKET;
   if (!bucket) {
     console.error('PROOF_ARCHIVE_BUCKET not set');
     process.exit(1);
   }
 
-  const prefixes = await listPrefixes(bucket);
+  const prefixes = listPrefixes(bucket);
   if (prefixes.length === 0) {
     console.error('No archives found in bucket');
     process.exit(1);
@@ -53,7 +35,7 @@ async function main() {
   prefixes.sort();
   const latest = prefixes[prefixes.length - 1];
 
-  const manifestBuf = await download(bucket, `${latest}/manifest.txt`);
+  const manifestBuf = download(bucket, `${latest}/manifest.txt`);
   const lines = manifestBuf
     .toString('utf-8')
     .split('\n')
@@ -65,7 +47,7 @@ async function main() {
     const [hash, file] = line.split(/\s+/);
     if (!hash || !file) continue;
     try {
-      const buf = await download(bucket, `${latest}/${file}`);
+      const buf = download(bucket, `${latest}/${file}`);
       const checksum = createHash('sha256').update(buf).digest('hex');
       if (checksum !== hash) {
         console.error(`${file}: checksum mismatch`);
@@ -73,7 +55,7 @@ async function main() {
       } else {
         console.log(`${file}: ok`);
       }
-    } catch (err) {
+    } catch {
       console.error(`${file}: missing or unreadable`);
       allValid = false;
     }
@@ -82,7 +64,10 @@ async function main() {
   if (!allValid) process.exit(1);
 }
 
-main().catch((err) => {
+try {
+  main();
+} catch (err) {
   console.error(err);
   process.exit(1);
-});
+}
+

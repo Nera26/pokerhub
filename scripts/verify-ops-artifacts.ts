@@ -10,15 +10,15 @@ function requireEnv(name: string): string {
   return val;
 }
 
-function runAws(cmd: string, encoding: BufferEncoding | undefined = 'utf-8'): string | Buffer {
-  return execSync(`aws ${cmd}`, { encoding: encoding as any });
+function runGcloud(cmd: string, encoding: BufferEncoding | undefined = 'utf-8'): string | Buffer {
+  return execSync(`gcloud storage ${cmd}`, { encoding: encoding as any });
 }
 
 function checkProofArchive(bucket: string) {
-  const base = `s3://${bucket}/latest`;
+  const base = `gs://${bucket}/latest`;
   let manifest: string;
   try {
-    manifest = runAws(`s3 cp ${base}/manifest.txt -`) as string;
+    manifest = runGcloud(`cat ${base}/manifest.txt`) as string;
   } catch {
     throw new Error(`Missing manifest at ${base}/manifest.txt`);
   }
@@ -32,7 +32,7 @@ function checkProofArchive(bucket: string) {
     const [hash, file] = line.split(/\s+/);
     if (!hash || !file) continue;
     try {
-      const data = runAws(`s3 cp ${base}/${file} -`, undefined) as Buffer;
+      const data = runGcloud(`cat ${base}/${file}`, undefined) as Buffer;
       const digest = createHash('sha256').update(data).digest('hex');
       if (digest !== hash) {
         console.error(`${file}: checksum mismatch`);
@@ -50,23 +50,23 @@ function checkProofArchive(bucket: string) {
 
 function checkSpectatorLogs(bucket: string, runId: string) {
   try {
-    const listing = runAws(`s3 ls s3://${bucket}/${runId}/`) as string;
+    const listing = runGcloud(`ls gs://${bucket}/${runId}/`) as string;
     if (!listing.trim()) {
       throw new Error();
     }
   } catch {
-    throw new Error(`Missing spectator privacy logs in s3://${bucket}/${runId}/`);
+    throw new Error(`Missing spectator privacy logs in gs://${bucket}/${runId}/`);
   }
 }
 
 function checkSoakMetrics(bucket: string) {
   try {
-    const listing = runAws(`s3 ls s3://${bucket}/soak/latest/`) as string;
+    const listing = runGcloud(`ls gs://${bucket}/soak/latest/`) as string;
     if (!listing.trim()) {
       throw new Error();
     }
   } catch {
-    throw new Error(`Missing soak metrics in s3://${bucket}/soak/latest/`);
+    throw new Error(`Missing soak metrics in gs://${bucket}/soak/latest/`);
   }
 }
 
