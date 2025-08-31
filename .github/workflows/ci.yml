@@ -101,6 +101,24 @@ jobs:
           fi
           npx ts-node --compiler-options '{"module":"commonjs"}' scripts/check-soak-metrics.ts
 
+      - name: Ensure pg-restore-smoke recent success
+        env:
+          SLA_MINUTES: 60
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          run=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/pg-restore-smoke.yml/runs?per_page=1")
+          conclusion=$(echo "$run" | jq -r '.workflow_runs[0].conclusion')
+          started=$(echo "$run" | jq -r '.workflow_runs[0].run_started_at')
+          start_ts=$(date -d "$started" +%s)
+          now=$(date -u +%s)
+          max_age=$((SLA_MINUTES * 60))
+          if [ "$conclusion" != "success" ] || [ $((now - start_ts)) -gt "$max_age" ]; then
+            echo "Latest pg-restore-smoke workflow run did not succeed within ${SLA_MINUTES} minutes" >&2
+            exit 1
+          fi
+
       - name: Ensure spectator-privacy nightly recent success
         env:
           GITHUB_TOKEN: ${{ github.token }}
