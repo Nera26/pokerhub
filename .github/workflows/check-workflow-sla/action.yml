@@ -65,6 +65,22 @@ runs:
           echo "Latest $WORKFLOW run is older than ${SLA}$UNIT" >&2
           exit 1
         fi
+    - name: Checkout repo for drill check
+      if: ${{ inputs.workflow == 'dr-drill.yml' && success() }}
+      uses: actions/checkout@v4
+    - name: Auth GCP for drill check
+      if: ${{ inputs.workflow == 'dr-drill.yml' && success() }}
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+    - name: Setup gcloud for drill check
+      if: ${{ inputs.workflow == 'dr-drill.yml' && success() }}
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ vars.GCP_PROJECT_ID }}
+    - name: Ensure recent DR drill metrics
+      if: ${{ inputs.workflow == 'dr-drill.yml' && success() }}
+      run: npx -y ts-node scripts/check-dr-drill.ts
     - name: Prepare SLA alert
       if: failure()
       shell: bash

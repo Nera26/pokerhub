@@ -186,34 +186,6 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
-      - name: Ensure soak test recent success
-        id: soak
-        env:
-          SLA_HOURS: ${{ env.SOAK_SLA_HOURS }}
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          run=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/soak.yml/runs?per_page=1")
-          conclusion=$(echo "$run" | jq -r '.workflow_runs[0].conclusion')
-          started=$(echo "$run" | jq -r '.workflow_runs[0].run_started_at')
-          start_ts=$(date -d "$started" +%s)
-          now=$(date -u +%s)
-          max_age=$((SLA_HOURS * 3600))
-          if [ "$conclusion" != "success" ] || [ $((now - start_ts)) -gt "$max_age" ]; then
-            echo "Latest soak workflow run did not succeed within ${SLA_HOURS} hours"
-            exit 1
-          fi
-
-      - name: Notify on-call on stale soak test
-        if: failure() && steps.soak.outcome == 'failure'
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          payload: |
-            { "text": "🚫 Deployment blocked: soak workflow failed or stale for ${{ github.repository }}@${{ github.sha }}" }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
       - name: Ensure pg-restore-smoke recent success
         id: pg_restore_smoke
         env:
@@ -341,6 +313,38 @@ jobs:
         if: steps.metrics.outcome == 'success'
         run: scripts/promote.sh
 
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Run spectator privacy tests on production
+        uses: ./.github/actions/spectator-privacy-check
+        with:
+          node-version: 18
+
+      - name: Sanitize logs
+        if: always()
+        run: npx ts-node scripts/sanitize-spectator-logs.ts backend-tests.log frontend-tests.log
+
+      - name: DLP scan logs
+        if: always()
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        run: npx ts-node scripts/dlp-scan.ts backend-tests.log frontend-tests.log
+
+      - name: Verify sanitized logs
+        if: always()
+        run: |
+          if rg -i "userId|tableSecret|sessionToken|email|ipAddress" backend-tests.log frontend-tests.log; then
+            echo "PII found in logs" >&2
+            exit 1
+          fi
+
       - name: Get spectator privacy run ID
         id: get_run_id
         env:
@@ -466,3 +470,8 @@ jobs:
       PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       PAGERDUTY_ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+
+  soak:
+    needs: deploy
+    uses: ./.github/workflows/soak.yml
+    secrets: inherit

@@ -2,9 +2,10 @@
   required_status_checks:
     - ci
     - "ci / dr-runbook"
+    - "ci / workflow-sla"
     - contracts
-    - deploy
-    - "deploy / proof-archive"
+    - "deploy / deploy"
+    - proof-archive
     - check-proof-archive
     - ops-artifacts-verify
     - "ci / ops-artifacts"
