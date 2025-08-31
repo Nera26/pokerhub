@@ -1,6 +1,7 @@
 #!/usr/bin/env ts-node
 import { execSync } from 'child_process';
 import { createHash } from 'crypto';
+import { appendFileSync } from 'fs';
 
 function runGcloud(cmd: string, encoding: BufferEncoding | undefined = 'utf-8'): string | Buffer {
   return execSync(`gcloud storage ${cmd}`, { encoding: encoding as any });
@@ -27,6 +28,17 @@ function main() {
     process.exit(1);
   }
 
+  const expectedStr = process.env.PROOF_ARCHIVE_EXPECTED_DAILY_COUNT;
+  if (!expectedStr) {
+    console.error('PROOF_ARCHIVE_EXPECTED_DAILY_COUNT not set');
+    process.exit(1);
+  }
+  const expected = parseInt(expectedStr, 10);
+  if (isNaN(expected) || expected <= 0) {
+    console.error('Invalid PROOF_ARCHIVE_EXPECTED_DAILY_COUNT');
+    process.exit(1);
+  }
+
   const prefixes = listPrefixes(bucket);
   if (prefixes.length === 0) {
     console.error('No archives found in bucket');
@@ -41,6 +53,12 @@ function main() {
     .split('\n')
     .map((l) => l.trim())
     .filter(Boolean);
+
+  const count = lines.length;
+  if (process.env.GITHUB_OUTPUT) {
+    appendFileSync(process.env.GITHUB_OUTPUT, `count=${count}\n`);
+    appendFileSync(process.env.GITHUB_OUTPUT, `expected=${expected}\n`);
+  }
 
   let allValid = true;
   for (const line of lines) {
@@ -61,7 +79,12 @@ function main() {
     }
   }
 
+  console.log(`COUNT=${count}`);
   if (!allValid) process.exit(1);
+  if (count < expected) {
+    console.error(`Expected at least ${expected} proofs, found ${count}`);
+    process.exit(1);
+  }
 }
 
 try {
