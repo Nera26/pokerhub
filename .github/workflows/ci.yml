@@ -242,26 +242,29 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-      - name: Analyze soak trends
-        run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-soak-trends.ts metrics
-        env:
-          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
-      - name: Upload baseline metrics
-        if: github.ref == 'refs/heads/main'
-        run: aws s3 cp metrics/baseline.json "s3://${{ secrets.SOAK_TRENDS_BUCKET }}/baseline/"
+      - name: Download latest baseline
+        run: aws s3 sync "s3://${{ secrets.SOAK_TRENDS_BUCKET }}/soak/latest/" baseline || true
+      - name: Threshold check against baseline
+        id: threshold
+        run: |
+          if [ -f baseline/baseline.json ]; then
+            npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-soak-trends.ts metrics baseline
+          else
+            echo "No baseline to compare against"
+          fi
       - name: Open soak regression issue
-        if: failure()
+        if: failure() && steps.threshold.outcome == 'failure'
         uses: peter-evans/create-issue-from-file@v4
         with:
           title: Soak trends regression detected
           content-filepath: metrics/baseline.json
       - name: Prepare soak regression Slack payload
-        if: failure()
+        if: failure() && steps.threshold.outcome == 'failure'
         run: jq -Rs '{channel: env.SLACK_CHANNEL_ID, text: .}' metrics/baseline.json > slack-payload.json
         env:
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
       - name: Slack soak regression alert
-        if: failure()
+        if: failure() && steps.threshold.outcome == 'failure'
         uses: slackapi/slack-github-action@v1
         with:
           method: chat.postMessage
@@ -270,7 +273,9 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
       - name: Sync soak metrics
         if: always()
-        run: aws s3 sync metrics "s3://${{ secrets.SOAK_TRENDS_BUCKET }}/soak-${{ github.run_id }}/"
+        run: |
+          aws s3 sync metrics "s3://${{ secrets.SOAK_TRENDS_BUCKET }}/soak-${{ github.run_id }}/"
+          aws s3 sync metrics "s3://${{ secrets.SOAK_TRENDS_BUCKET }}/soak/latest/"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
