@@ -8,19 +8,46 @@ on:
 jobs:
   spectator-privacy:
     runs-on: ubuntu-latest
+    env:
+      SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
       - run: npm ci
       - run: npm ci --prefix backend
       - run: npm ci --prefix frontend
       - name: Backend spectator privacy tests
-        run: npm test --prefix backend -- "test/game/spectator.*spec.ts"
+        run: |
+          set -o pipefail
+          npm test --prefix backend -- "test/game/spectator.*spec.ts" 2>&1 | tee backend-tests.log
       - name: Frontend spectator privacy tests
-        run: npm test --prefix frontend -- "spectator/privacy.test.tsx"
+        run: |
+          set -o pipefail
+          npm test --prefix frontend -- "spectator/privacy.test.tsx" 2>&1 | tee frontend-tests.log
+      - name: Upload logs to S3
+        if: always()
+        env:
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          aws s3 cp backend-tests.log s3://$SPECTATOR_PRIVACY_BUCKET/$RUN_ID/backend-tests.log
+          aws s3 cp frontend-tests.log s3://$SPECTATOR_PRIVACY_BUCKET/$RUN_ID/frontend-tests.log
+      - name: Upload logs as artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spectator-privacy-logs
+          path: |
+            backend-tests.log
+            frontend-tests.log
+          retention-days: 14
       - name: Notify Slack on failure
         if: failure()
         uses: slackapi/slack-github-action@v1.24.0
