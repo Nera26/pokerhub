@@ -47,6 +47,16 @@ jobs:
             -o experimental-prometheus-rw=${{ secrets.GRAFANA_PROM_URL }}
       - name: Check soak thresholds
         run: ./load/check-thresholds.sh soak-summary.json
+      - name: Convert soak summary to CSV
+        run: |
+          echo "metric,p95,rate,count,value" > soak-summary.csv
+          jq -r '.metrics | to_entries[] | [
+            .key,
+            (.value["p(95)"] // ""),
+            (.value.rate // ""),
+            (.value.count // ""),
+            (.value.value // "")
+          ] | @csv' soak-summary.json >> soak-summary.csv
       - uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
@@ -73,7 +83,18 @@ jobs:
           content-filepath: metrics/baseline.json
       - name: Sync soak metrics
         if: always()
-        run: gcloud storage rsync -r metrics "gs://${{ secrets.SOAK_TRENDS_BUCKET }}/soak-${{ github.run_id }}/"
+        run: |
+          run_uri="gs://${{ secrets.SOAK_TRENDS_BUCKET }}/soak-${{ github.run_id }}/"
+          gcloud storage rsync -r metrics "$run_uri"
+          latest_uri="gs://${{ secrets.SOAK_TRENDS_BUCKET }}/soak/latest/"
+          gcloud storage cp \
+            soak-summary.json \
+            soak-summary.csv \
+            metrics/baseline.json \
+            metrics/latency-histogram.json \
+            metrics/gc-histogram.json \
+            metrics/heap-histogram.json \
+            "$latest_uri"
       - name: Check soak metrics
         id: check-metrics
         if: always()
