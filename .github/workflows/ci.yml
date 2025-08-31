@@ -11,6 +11,18 @@ permissions:
   actions: read
 
 jobs:
+  dr-runbook:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check DR runbook entry
+        run: |
+          set -euo pipefail
+          npx -y ts-node scripts/check-dr-runbook.ts
+
   workflow-sla:
     runs-on: ubuntu-latest
     steps:
@@ -71,8 +83,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Check DR runbook entry
-        run: npx -y ts-node scripts/check-dr-runbook.ts
 
       - name: Check proof-archive SLA
         id: proof-archive
@@ -92,7 +102,7 @@ jobs:
           unit: hours
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
-      # Resolved conflict: keep the soak SLA here; spectator-privacy SLA appears later below.
+      # Keep the soak SLA here; spectator-privacy SLA appears later.
       - name: Check soak workflow SLA
         id: soak
         uses: ./.github/workflows/check-workflow-sla
@@ -146,7 +156,6 @@ jobs:
 
       - name: Check soak metrics
         env:
-          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
           GITHUB_TOKEN: ${{ github.token }} # ensure curl auth works
         run: |
           set -euo pipefail
@@ -164,7 +173,6 @@ jobs:
             echo "Latest soak workflow run did not succeed within 24 hours" >&2
             exit 1
           fi
-          npx ts-node --compiler-options '{"module":"commonjs"}' scripts/check-soak-metrics.ts
 
       - name: Prepare soak SLA alert
         if: failure() && steps.soak.outcome == 'failure'
@@ -246,42 +254,18 @@ jobs:
       SOAK_LATENCY_P95_MS: 120
       SOAK_THROUGHPUT_MIN: 100
     steps:
-      - name: Check soak run SLA
-        id: soak-run
-        uses: ./.github/workflows/check-workflow-sla
-        with:
-          workflow: soak.yml
-          sla: 24
-          unit: hours
-          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-
       - uses: actions/checkout@v4
-        if: steps.soak-run.outcome == 'success'
       - uses: google-github-actions/auth@v2
-        if: steps.soak-run.outcome == 'success'
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
       - uses: google-github-actions/setup-gcloud@v2
-        if: steps.soak-run.outcome == 'success'
         with:
           project_id: ${{ secrets.GCP_PROJECT }}
-
       - name: Check soak metrics
         id: check-metrics
-        if: steps.soak-run.outcome == 'success'
         run: npx ts-node scripts/check-soak-metrics.ts
         env:
           SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
-
-      - name: Analyze soak trends
-        id: analyze-trends
-        if: steps.soak-run.outcome == 'success'
-        run: |
-          gcloud storage cp -r "gs://${{ secrets.SOAK_TRENDS_BUCKET }}/soak/latest/**" metrics || true
-          npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-soak-trends.ts metrics
-        env:
-          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
-
       - name: Prepare soak metrics alert
         if: failure() && steps.check-metrics.outcome == 'failure'
         env:
@@ -293,7 +277,6 @@ jobs:
           jq -n --arg channel "$SLACK_CHANNEL_ID" \
             --arg text "Soak metrics check failed." \
             '{channel: $channel, text: $text}' > soak-metrics-slack.json
-
       - name: Slack soak metrics alert
         if: failure() && steps.check-metrics.outcome == 'failure'
         uses: slackapi/slack-github-action@v1
@@ -302,35 +285,12 @@ jobs:
           payload-file-path: soak-metrics-slack.json
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-
       - name: Create issue for soak metrics
         if: failure() && steps.check-metrics.outcome == 'failure'
         uses: peter-evans/create-issue-from-file@v4
         with:
           title: "SLA breached: soak metrics"
           content-filepath: soak-metrics.md
-
-      - name: Prepare soak regression Slack payload
-        if: failure() && steps.analyze-trends.outcome == 'failure'
-        run: jq -Rs '{channel: env.SLACK_CHANNEL_ID, text: .}' metrics/baseline.json > soak-regression-slack.json
-        env:
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-
-      - name: Slack soak regression alert
-        if: failure() && steps.analyze-trends.outcome == 'failure'
-        uses: slackapi/slack-github-action@v1
-        with:
-          method: chat.postMessage
-          payload-file-path: soak-regression-slack.json
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-
-      - name: Open soak regression issue
-        if: failure() && steps.analyze-trends.outcome == 'failure'
-        uses: peter-evans/create-issue-from-file@v4
-        with:
-          title: Soak trends regression detected
-          content-filepath: metrics/baseline.json
 
   docs:
     needs: workflow-sla
@@ -673,82 +633,82 @@ jobs:
             metrics/cpu-histogram.json
             metrics/baseline.json
 
-  dr-trends:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - uses: google-github-actions/auth@v2
-        with:
-          credentials_json: '${{ secrets.GCP_SA_KEY }}'
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ vars.GCP_PROJECT_ID }}
-      - name: Check DR RTO/RPO trends
-        id: dr-trends
-        env:
-          DR_METRICS_BUCKET: ${{ vars.DR_METRICS_BUCKET }}
-          RTO_THRESHOLD: ${{ vars.DR_RTO_TARGET || 1800 }}
-          RPO_THRESHOLD: ${{ vars.DR_RPO_TARGET || 300 }}
-        run: |
-          set -e
-          result=$(npx ts-node infra/disaster-recovery/check-dr-trends.ts)
-          echo "$result" | tee dr-trends.json
-          echo "$result" | jq -r '[
-            "Latest RTO: \(.latest.rto)s",
-            "Latest RPO snapshot: \(.latest.rpoSnap)s",
-            "Latest RPO WAL: \(.latest.rpoWal)s",
-            "Average RTO: \(.average.rto)s",
-            "Average RPO snapshot: \(.average.rpoSnap)s",
-            "Average RPO WAL: \(.average.rpoWal)s",
-            "Δ RTO: \(.trend.rto)s",
-            "Δ RPO snapshot: \(.trend.rpoSnap)s",
-            "Δ RPO WAL: \(.trend.rpoWal)s"
-          ] | join("\n")' >> "$GITHUB_STEP_SUMMARY"
-      - name: Prepare DR trend Slack payload
-        if: always()
-        env:
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-        run: |
-          node -e "const fs=require('fs');const d=JSON.parse(fs.readFileSync('dr-trends.json','utf8'));const msg=`DR drill trends: latest RTO ${d.latest.rto}s avg ${d.average.rto.toFixed(1)}s, latest RPO WAL ${d.latest.rpoWal}s avg ${d.average.rpoWal.toFixed(1)}s`;fs.writeFileSync('dr-trends-slack.json',JSON.stringify({channel:process.env.SLACK_CHANNEL_ID,text:msg}));"
-      - name: Publish DR trend summary
-        if: always()
-        uses: slackapi/slack-github-action@v1
-        with:
-          method: chat.postMessage
-          payload-file-path: dr-trends-slack.json
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+ dr-trends:
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+    - uses: google-github-actions/auth@v2
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+    - uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ vars.GCP_PROJECT_ID }}
+    - name: Check DR RTO/RPO trends
+      id: dr-trends
+      env:
+        DR_METRICS_BUCKET: ${{ vars.DR_METRICS_BUCKET }}
+        RTO_THRESHOLD: ${{ vars.DR_RTO_TARGET || 1800 }}
+        RPO_THRESHOLD: ${{ vars.DR_RPO_TARGET || 300 }}
+      run: |
+        set -e
+        result=$(npx ts-node infra/disaster-recovery/check-dr-trends.ts)
+        echo "$result" | tee dr-trends.json
+        echo "$result" | jq -r '[
+          "Latest RTO: \(.latest.rto)s",
+          "Latest RPO snapshot: \(.latest.rpoSnap)s",
+          "Latest RPO WAL: \(.latest.rpoWal)s",
+          "Average RTO: \(.average.rto)s",
+          "Average RPO snapshot: \(.average.rpoSnap)s",
+          "Average RPO WAL: \(.average.rpoWal)s",
+          "Δ RTO: \(.trend.rto)s",
+          "Δ RPO snapshot: \(.trend.rpoSnap)s",
+          "Δ RPO WAL: \(.trend.rpoWal)s"
+        ] | join("\n")' >> "$GITHUB_STEP_SUMMARY"
+    - name: Prepare DR trend Slack payload
+      if: always()
+      env:
+        SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+      run: |
+        node -e "const fs=require('fs');const d=JSON.parse(fs.readFileSync('dr-trends.json','utf8'));const msg=`DR drill trends: latest RTO ${d.latest.rto}s avg ${d.average.rto.toFixed(1)}s, latest RPO WAL ${d.latest.rpoWal}s avg ${d.average.rpoWal.toFixed(1)}s`;fs.writeFileSync('dr-trends-slack.json',JSON.stringify({channel:process.env.SLACK_CHANNEL_ID,text:msg}));"
+    - name: Publish DR trend summary
+      if: always()
+      uses: slackapi/slack-github-action@v1
+      with:
+        method: chat.postMessage
+        payload-file-path: dr-trends-slack.json
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
-  spectator-privacy:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Wait for spectator-privacy workflow
-        uses: lewagon/wait-on-check-action@v1.3.3
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          check-name: spectator-privacy
-          repo-token: ${{ github.token }}
-          wait-interval: 10
-      - name: Verify spectator-privacy freshness
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -euo pipefail
-          resp=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/spectator-privacy.yml/runs?per_page=1&head_sha=$SHA")
-          updated=$(echo "$resp" | jq -r '.workflow_runs[0].updated_at // empty')
-          if [ -z "$updated" ]; then
-            echo "spectator-privacy workflow missing for commit $SHA" >&2
-            exit 1
-          fi
-          run_ts=$(date -d "$updated" +%s)
-          now=$(date -u +%s)
-          if [ $((now - run_ts)) -gt $((24*3600)) ]; then
-            echo "spectator-privacy workflow run is stale: $updated" >&2
-            exit 1
-          fi
+spectator-privacy:
+  if: github.event_name == 'pull_request'
+  runs-on: ubuntu-latest
+  steps:
+    - name: Wait for spectator-privacy workflow
+      uses: lewagon/wait-on-check-action@v1.3.3
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+        check-name: spectator-privacy
+        repo-token: ${{ github.token }}
+        wait-interval: 10
+    - name: Verify spectator-privacy freshness
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        SHA: ${{ github.event.pull_request.head.sha }}
+      run: |
+        set -euo pipefail
+        resp=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
+          "https://api.github.com/repos/${{ github.repository }}/actions/workflows/spectator-privacy.yml/runs?per_page=1&head_sha=$SHA")
+        updated=$(echo "$resp" | jq -r '.workflow_runs[0].updated_at // empty')
+        if [ -z "$updated" ]; then
+          echo "spectator-privacy workflow missing for commit $SHA" >&2
+          exit 1
+        fi
+        run_ts=$(date -d "$updated" +%s)
+        now=$(date -u +%s)
+        if [ $((now - run_ts)) -gt $((24*3600)) ]; then
+          echo "spectator-privacy workflow run is stale: $updated" >&2
+          exit 1
+        fi

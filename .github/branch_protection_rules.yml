@@ -1,8 +1,10 @@
 - pattern: main
   required_status_checks:
     - ci
+    - "ci / dr-runbook"
     - contracts
     - deploy
     - proof-archive
+    - check-proof-archive
     - soak
     - spectator-privacy # require spectator privacy workflow

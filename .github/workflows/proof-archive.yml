@@ -52,6 +52,24 @@ jobs:
         run: |
           set -o pipefail
           npx -y ts-node scripts/validate-proof-archive.ts 2>&1 | tee proof-validation.log
+      - name: Proof archive summary
+        if: success()
+        run: |
+          count=$(wc -l < storage/proofs/manifest.txt)
+          manifest_sha=$(sha256sum storage/proofs/manifest.txt | awk '{print $1}')
+          echo "{\"count\":$count,\"manifestSha\":\"$manifest_sha\"}" > proof-summary.json
+          {
+            echo "### Proof Archive"
+            echo "- proofs: $count"
+            echo "- manifest sha256: \`$manifest_sha\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload proof summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proof-summary-${{ github.run_id }}
+          path: proof-summary.json
+          retention-days: 30
       - name: Upload validation logs
         if: always()
         uses: actions/upload-artifact@v4

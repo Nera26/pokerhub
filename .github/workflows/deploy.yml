@@ -27,6 +27,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Set GKE cluster context
+        run: gcloud container clusters get-credentials ${{ vars.GKE_CLUSTER_NAME }} --zone ${{ vars.GKE_CLUSTER_ZONE }} --project ${{ vars.GCP_PROJECT_ID }}
+
       # --- Pre-deploy gates (both checks must pass) ---
       - name: Verify recent DR drill
         id: drdrill
@@ -240,14 +251,6 @@ jobs:
       - name: Promote canary
         if: steps.metrics.outcome == 'success'
         run: scripts/promote.sh
-
-      - uses: google-github-actions/auth@v2
-        with:
-          credentials_json: '${{ secrets.GCP_SA_KEY }}'
-
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ vars.GCP_PROJECT_ID }}
 
       - name: Get spectator privacy run ID
         id: get_run_id
