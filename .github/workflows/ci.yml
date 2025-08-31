@@ -11,6 +11,18 @@ permissions:
   actions: read
 
 jobs:
+  dr-runbook:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check DR runbook entry
+        run: |
+          set -euo pipefail
+          npx -y ts-node scripts/check-dr-runbook.ts
+
   workflow-sla:
     runs-on: ubuntu-latest
     steps:
@@ -71,8 +83,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Check DR runbook entry
-        run: npx -y ts-node scripts/check-dr-runbook.ts
 
       - name: Check proof-archive SLA
         id: proof-archive
@@ -92,7 +102,7 @@ jobs:
           unit: hours
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
-      # Resolved conflict: keep the soak SLA here; spectator-privacy SLA appears later below.
+      # Keep the soak SLA here; spectator-privacy SLA appears later.
       - name: Check soak workflow SLA
         id: soak
         uses: ./.github/workflows/check-workflow-sla
@@ -144,8 +154,7 @@ jobs:
           title: "Proof archive integrity check failed"
           content-filepath: proof-archive-integrity.md
 
-      - name: Check soak workflow SLA
-        id: soak
+      - name: Check soak metrics
         env:
           GITHUB_TOKEN: ${{ github.token }} # ensure curl auth works
         run: |
@@ -672,3 +681,31 @@ jobs:
           payload-file-path: dr-trends-slack.json
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+  check-proof-archive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+      - name: Verify proof archive integrity
+        id: verify
+        env:
+          PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+          PROOF_ARCHIVE_EXPECTED_DAILY_COUNT: ${{ vars.PROOF_ARCHIVE_EXPECTED_DAILY_COUNT || 1 }}
+        run: npx -y ts-node scripts/check-proof-archive.ts
+      - name: Proof archive summary
+        if: always()
+        run: |
+          {
+            echo "### Proof Archive"
+            echo "- expected: ${{ steps.verify.outputs.expected }}"
+            echo "- count: ${{ steps.verify.outputs.count }}"
+          } >> "$GITHUB_STEP_SUMMARY"
