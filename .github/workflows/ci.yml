@@ -180,6 +180,12 @@ jobs:
         run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-soak-trends.ts metrics
         env:
           SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+      - name: Open soak regression issue
+        if: failure()
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: Soak trends regression detected
+          content-filepath: metrics/baseline.json
       - name: Sync soak metrics
         if: always()
         run: aws s3 sync metrics "s3://${{ secrets.SOAK_TRENDS_BUCKET }}/soak-${{ github.run_id }}/"
