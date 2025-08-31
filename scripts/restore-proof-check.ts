@@ -45,13 +45,28 @@ async function verifyFile(proofPath: string, manifest: Record<string, string>): 
 
 async function main() {
   const args = process.argv.slice(2);
-  if (args.length < 2) {
-    console.error('usage: restore-proof-check <proof...> <manifest>');
+  const proofPaths: string[] = [];
+  let manifestPath: string;
+  let summaryPath: string | undefined;
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--summary') {
+      summaryPath = args[++i];
+    } else {
+      proofPaths.push(arg);
+    }
+  }
+
+  if (proofPaths.length < 2) {
+    console.error(
+      'usage: restore-proof-check <proof...> <manifest> [--summary <file>]'
+    );
     process.exit(1);
   }
 
-  const manifestPath = args[args.length - 1];
-  const proofPaths = args.slice(0, -1);
+  manifestPath = proofPaths[proofPaths.length - 1];
+  const proofFiles = proofPaths.slice(0, -1);
   const manifestRaw = await fs.readFile(manifestPath, 'utf-8');
 
   const manifest: Record<string, string> = {};
@@ -64,7 +79,7 @@ async function main() {
 
   let okCount = 0;
   let failCount = 0;
-  for (const proofPath of proofPaths) {
+  for (const proofPath of proofFiles) {
     const valid = await verifyFile(proofPath, manifest);
     if (valid) {
       okCount++;
@@ -74,6 +89,12 @@ async function main() {
   }
 
   console.log(`Summary: ${okCount} passed, ${failCount} failed`);
+  if (summaryPath) {
+    await fs.writeFile(
+      summaryPath,
+      JSON.stringify({ passed: okCount, failed: failCount })
+    );
+  }
   if (failCount > 0) {
     process.exit(1);
   }
