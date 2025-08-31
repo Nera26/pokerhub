@@ -66,3 +66,28 @@ jobs:
           url="https://storage.googleapis.com/$DR_METRICS_BUCKET/verify/$GITHUB_RUN_ID/verify-ops.log"
           echo "$url" >> "$GITHUB_STEP_SUMMARY"
           exit $status
+      - name: Prepare ops artifacts alert
+        if: failure()
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          cat <<'EOF' > ops-artifacts-alert.md
+          Ops artifacts verification failed: proofs, soak metrics, or DR logs missing.
+          EOF
+          jq -n --arg channel "$SLACK_CHANNEL_ID" \
+            --arg text "Ops artifacts verification failed: proofs, soak metrics, or DR logs missing." \
+            '{channel: $channel, text: $text}' > ops-artifacts-slack.json
+      - name: Slack ops artifacts alert
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: ops-artifacts-slack.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: Create issue for ops artifacts
+        if: failure()
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "SLA breached: ops artifacts"
+          content-filepath: ops-artifacts-alert.md
