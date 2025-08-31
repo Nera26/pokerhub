@@ -14,7 +14,7 @@ PokerHub uses a commit–reveal protocol to prove every shuffle was fair and unm
 3. After the hand, the seed is revealed so anyone can reproduce the shuffle.
 
 ## Commit Phase
-- Server draws a 32‑byte seed and 16‑byte nonce with `crypto.randomBytes`.
+- Server draws a 32‑byte seed and 16‑byte nonce using Google Cloud's Cloud RNG exposed through `crypto.randomBytes`.
 - It computes `commitment = sha256(seed || nonce)`.
 - The commitment and nonce are broadcast to all seats and logged before any cards are dealt.
 
@@ -28,6 +28,24 @@ PokerHub uses a commit–reveal protocol to prove every shuffle was fair and unm
 2. Verify the hash equality.
 3. Shuffle a new deck with the seed and compare against the public hand log.
 4. Optional: run `npx ts-node scripts/verify-hand.ts <handId>` to automate steps 1–3.
+
+### Verifying Proofs via GCS
+Players can independently validate a hand using the public Google Cloud Storage bucket:
+
+1. Download the proof JSON:
+
+   ```sh
+   gsutil cp gs://pokerhub-proofs/<handId>.json proof.json
+   ```
+
+2. Run the verifier with the downloaded values:
+
+   ```sh
+   npx ts-node backend/src/game/verify.ts $(jq -r '.seed' proof.json) \
+     $(jq -r '.nonce' proof.json) $(jq -r '.commitment' proof.json)
+   ```
+
+The verifier recomputes the commitment and deterministic deck to confirm fairness.
 
 ### Sample Verification Proof
 
@@ -48,6 +66,7 @@ Recomputing `sha256(seed || nonce)` yields `0x5b2f...`, matching the commitment 
 - Every hand stores `{seed, nonce, commitment}` in an append-only log that is hashed into a nightly Merkle root.
 - The root is timestamped and signed with the server's Ed25519 key so regulators can verify provenance.
 - An open-source verifier script reproduces the shuffle and validates the signed Merkle proof against the public key.
+- Proofs are published to a public GCS bucket (`gs://pokerhub-proofs/`) for long-term archival and community audits.
 
 ## Audit Methodology
 
