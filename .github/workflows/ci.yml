@@ -32,6 +32,42 @@ jobs:
           unit: days
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
+      - name: Check DR failover SLA
+        id: dr-failover
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: dr-failover.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
+      - name: Check DR restore SLA
+        id: dr-restore
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: dr-restore.yml
+          sla: 30
+          unit: days
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
+      - name: Check DR throwaway SLA
+        id: dr-throwaway
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: dr-throwaway.yml
+          sla: 30
+          unit: days
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
+      - name: Check DR runbook workflow SLA
+        id: check-dr-runbook
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: check-dr-runbook.yml
+          sla: 7
+          unit: days
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
