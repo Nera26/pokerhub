@@ -103,17 +103,21 @@ jobs:
         id: proof-archive-integrity
         env:
           PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+          PROOF_ARCHIVE_EXPECTED_DAILY_COUNT: ${{ vars.PROOF_ARCHIVE_EXPECTED_DAILY_COUNT }}
         run: npx ts-node scripts/check-proof-archive.ts
+      - name: Summarize proof archive count
+        if: always()
+        run: echo "Archived proofs: ${{ steps.proof-archive-integrity.outputs.count }} (expected ≥ ${{ steps.proof-archive-integrity.outputs.expected }})" >> $GITHUB_STEP_SUMMARY
       - name: Prepare proof archive integrity alert
         if: failure() && steps.proof-archive-integrity.outcome == 'failure'
         env:
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
         run: |
           cat <<'EOF' > proof-archive-integrity.md
-          Proof archive integrity check failed.
+          Proof archive check failed. Archived proofs: ${{ steps.proof-archive-integrity.outputs.count }} (expected ≥ ${{ steps.proof-archive-integrity.outputs.expected }}).
           EOF
           jq -n --arg channel "$SLACK_CHANNEL_ID" \
-            --arg text "Proof archive integrity check failed." \
+            --arg text "Proof archive check failed. Archived proofs: ${{ steps.proof-archive-integrity.outputs.count }} (expected ≥ ${{ steps.proof-archive-integrity.outputs.expected }})." \
             '{channel: $channel, text: $text}' > proof-archive-integrity-slack.json
       - name: Slack alert (proof archive integrity)
         if: failure() && steps.proof-archive-integrity.outcome == 'failure'
