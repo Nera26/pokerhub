@@ -82,6 +82,19 @@ npm test
 
 This single command executes the backend and frontend unit tests, contract tests, and frontend E2E suite.
 
+## Release
+
+The release workflow publishes player documentation only after the following
+checks succeed:
+
+- `.github/workflows/spectator-privacy.yml`
+- `.github/workflows/soak.yml`
+- `.github/workflows/failover-drill.yml`
+- `.github/workflows/proof-archive.yml`
+
+If any of these workflows fail, the release job will fail and docs will not be
+uploaded.
+
 ## Documentation
 
 - [Game Engine Overview](docs/game-engine.md) – state transitions, message schemas, and timers.

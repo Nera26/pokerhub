@@ -5,9 +5,40 @@ on:
     types: [published]
 
 jobs:
+  spectator-privacy:
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+
+  soak:
+    uses: ./.github/workflows/soak.yml
+    secrets: inherit
+
+  failover-drill:
+    uses: ./.github/workflows/failover-drill.yml
+    secrets: inherit
+
+  proof-archive:
+    uses: ./.github/workflows/proof-archive.yml
+    secrets: inherit
+
   publish-docs:
+    needs:
+      - spectator-privacy
+      - soak
+      - failover-drill
+      - proof-archive
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
+      - name: Verify prerequisite workflows
+        run: |
+          if [ "${{ needs.spectator-privacy.result }}" != "success" ] || \
+             [ "${{ needs.soak.result }}" != "success" ] || \
+             [ "${{ needs.failover-drill.result }}" != "success" ] || \
+             [ "${{ needs.proof-archive.result }}" != "success" ]; then
+            echo "One or more prerequisite workflows failed." >&2
+            exit 1
+          fi
       - uses: actions/checkout@v4
       - name: Inject release tag
         run: |
