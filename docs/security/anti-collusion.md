@@ -11,7 +11,7 @@ Pipeline config: see [`../../infra/analytics/anti-collusion-analytics.yaml`](../
 - **Unusual Win Rates**: Identify players with statistically improbable results against specific opponents.
 - **Table Selection**: Track groups entering and leaving tables together.
 - **Multi-Table Coordination**: Look for the same cohort appearing at several tables simultaneously.
-- **Latency Correlation**: Compare action timestamps to spot microsecond-level coordination.
+- **Latency Correlation**: Compare action timestamps; corr ≥0.95 over ≥20 shared hands indicates synchronized play.
 - **Chat Signaling**: Scan table chat for shared keywords or timing used to coordinate plays.
 - **Unbalanced Pot Contributions**: Flag repeated small bets where players fold to each other to shift chips.
 - **Device or Geolocation Swaps**: Detect accounts that change devices or regions in tandem.
@@ -26,6 +26,7 @@ Pipeline config: see [`../../infra/analytics/anti-collusion-analytics.yaml`](../
 - Action timing: stddev of bet timing <200 ms across a hand.
 - Correlated betting: Pearson correlation ≥0.9 over ≥3 shared hands.
 - Network proximity: distance <50 km between accounts.
+- Latency correlation: corr(action_time_ms) ≥0.95 over ≥20 shared hands.
 
 ## Replay Tools
 
@@ -59,6 +60,14 @@ SELECT hand_id, array_agg(player_id) AS actors
 FROM betting_events
 GROUP BY hand_id
 HAVING stddev(action_time_ms) < 200;
+
+-- Latency correlation
+SELECT a.player_id AS player_a, b.player_id AS player_b,
+       corr(a.action_time_ms, b.action_time_ms) AS latency_corr
+FROM betting_events a
+JOIN betting_events b ON a.hand_id = b.hand_id AND a.player_id < b.player_id
+GROUP BY player_a, player_b
+HAVING COUNT(*) >= 20 AND corr(a.action_time_ms, b.action_time_ms) > 0.95;
 ```
 
 ### Review Cadence

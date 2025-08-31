@@ -17,6 +17,12 @@ interface SyncBetRow {
   actors: string[];
 }
 
+interface LatencyCorrRow {
+  player_a: string;
+  player_b: string;
+  latency_corr: number;
+}
+
 @Injectable()
 export class CollusionQueryService {
   constructor(private readonly analytics: AnalyticsService) {}
@@ -77,6 +83,18 @@ HAVING stddev(action_time_ms) < 200`;
     const rows = await this.analytics.select<SyncBetRow>(sql);
     for (const row of rows) {
       await this.persist('synchronized_bets', row, row.actors);
+    }
+    return rows;
+  }
+
+  async latencyCorrelationFlags() {
+    const sql = `SELECT a.player_id AS player_a, b.player_id AS player_b,\n            corr(a.action_time_ms, b.action_time_ms) AS latency_corr\nFROM betting_events a\nJOIN betting_events b ON a.hand_id = b.hand_id AND a.player_id < b.player_id\nGROUP BY player_a, player_b\nHAVING COUNT(*) >= 20 AND corr(a.action_time_ms, b.action_time_ms) > 0.95`;
+    const rows = await this.analytics.select<LatencyCorrRow>(sql);
+    for (const row of rows) {
+      await this.persist('latency_correlation', row, [
+        row.player_a,
+        row.player_b,
+      ]);
     }
     return rows;
   }

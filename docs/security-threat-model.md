@@ -66,6 +66,7 @@ stateDiagram-v2
 - JWT signing keys rotate regularly and the service accepts multiple active keys to allow seamless key rollover.
 - Same-site, HTTP-only cookies prevent credential reuse across sites.
 - Admin actions require MFA and hardware-backed keys to resist phishing.
+**Risk Rating:** High
 
 ## Tampering
 
@@ -77,6 +78,7 @@ stateDiagram-v2
 - Global middleware sets Content-Security-Policy, HSTS and SameSite cookie headers to protect against script injection and downgrade attacks.
 - All wallet movements are recorded as immutable journal entries.
 - Git commits are signed and CI verifies checksums on static assets.
+**Risk Rating:** Medium
 
 ## Repudiation
 
@@ -87,6 +89,7 @@ stateDiagram-v2
 ### Mitigations
 - Transaction logs and span tracing provide non-repudiation for wallet operations.
 - Audit trails include user IDs, timestamps and request hashes for every sensitive operation.
+**Risk Rating:** Medium
 
 ## Information Disclosure
 
@@ -98,6 +101,7 @@ stateDiagram-v2
 - Strict CSP reduces risk of data exfiltration.
 - Geo-fencing and sanctions checks block access from high-risk regions.
 - TLS 1.3 with perfect forward secrecy protects data in transit and ALB access logs are redacted of PII.
+**Risk Rating:** High
 
 ## Denial of Service
 
@@ -109,6 +113,7 @@ stateDiagram-v2
 - Velocity limits on deposits and withdrawals throttle abusive clients.
 - Redis-backed rate limiting on authentication endpoints blocks brute-force attempts.
 - Circuit breakers shed load and auto-scale policies add capacity during bursts.
+**Risk Rating:** Medium
 
 ## Elevation of Privilege
 
@@ -119,6 +124,7 @@ stateDiagram-v2
 ### Mitigations
 - KYC verification and sanctions screening prevent prohibited users from accessing funds.
 - Role-based access control validates tokens on every request and sensitive services run in least-privilege containers.
+**Risk Rating:** High
 
 ## Incident Triage Workflow
 1. Automated detectors flag anomalies and collusion signals.
