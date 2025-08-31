@@ -22,8 +22,6 @@ jobs:
         run: bash infra/disaster-recovery/drill.sh
         env:
           PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           PG_INSTANCE_ID: ${{ vars.PG_INSTANCE_ID }}
           SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
           PGUSER: ${{ vars.PGUSER }}
@@ -39,8 +37,6 @@ jobs:
         run: npx -y ts-node infra/disaster-recovery/tests/restore.test.ts
         env:
           PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           PG_SNAPSHOT_ID: ${{ vars.PG_SNAPSHOT_ID }}
           PG_BACKUP_ID: ${{ vars.PG_SNAPSHOT_ID }}
           SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
@@ -72,17 +68,15 @@ jobs:
             exit 1
           fi
 
-      - name: Upload metrics to S3
+      - name: Upload metrics to GCS
         id: upload_metrics
         if: success()
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           BUCKET: ${{ vars.DR_METRICS_BUCKET }}
         run: |
-          uri="s3://$BUCKET/${GITHUB_RUN_ID}/drill.metrics"
-          aws s3 cp drill.metrics "$uri"
-          url="https://$BUCKET.s3.amazonaws.com/${GITHUB_RUN_ID}/drill.metrics"
+          uri="gs://$BUCKET/${GITHUB_RUN_ID}/drill.metrics"
+          gcloud storage cp drill.metrics "$uri"
+          url="https://storage.googleapis.com/$BUCKET/${GITHUB_RUN_ID}/drill.metrics"
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: Publish drill results

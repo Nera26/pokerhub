@@ -11,11 +11,15 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
       - name: Run failover drill
         run: bash infra/disaster-recovery/tests/failover.sh | tee failover.log
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           PG_SNAPSHOT_ID: ${{ vars.PG_SNAPSHOT_ID }}
           CLICKHOUSE_SNAPSHOT: ${{ vars.CLICKHOUSE_SNAPSHOT }}
           SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
@@ -34,6 +38,16 @@ jobs:
             echo "RPO exceeds 5 minutes" >&2
             exit 1
           fi
+      - name: Upload metrics to GCS
+        id: upload_metrics
+        if: success()
+        env:
+          BUCKET: ${{ vars.DR_METRICS_BUCKET }}
+        run: |
+          uri="gs://$BUCKET/${GITHUB_RUN_ID}/dr-failover.metrics"
+          gcloud storage cp failover.metrics "$uri"
+          url="https://storage.googleapis.com/$BUCKET/${GITHUB_RUN_ID}/dr-failover.metrics"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v3

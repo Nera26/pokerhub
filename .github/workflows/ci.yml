@@ -124,6 +124,12 @@ jobs:
           title: "SLA breached: failover-drill"
           content-filepath: failover-drill-sla.md
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check DR runbook entry
+        run: npx -y ts-node scripts/check-dr-runbook.ts
+
       - name: Ensure proof-archive recent success
         id: proof-archive
         env:

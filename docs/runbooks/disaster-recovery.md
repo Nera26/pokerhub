@@ -81,7 +81,7 @@ WAL_ARCHIVE_BUCKET=<wal-archive-bucket> \
 bash infra/disaster-recovery/drill.sh
 ```
 
-The script writes `drill.metrics` containing `RTO_SECONDS` and `RPO_SECONDS`. Metrics are archived to `s3://dr-metrics/{run_id}/drill.metrics` and linked below.
+The script writes `drill.metrics` containing `RTO_SECONDS` and `RPO_SECONDS`. Metrics are archived to `gs://dr-metrics/{run_id}/drill.metrics` and linked below.
 Confirm **RPO ≤ 300s** and **RTO ≤ 1800s**. Set `KEEP_INSTANCE=true` to retain
 the restored instance for inspection.
 
@@ -97,7 +97,7 @@ bash infra/disaster-recovery/tests/failover.sh
 ```
 
 The script logs metrics and writes `failover.metrics` containing
-`RTO_SECONDS` and `RPO_SECONDS` for tracking. Metrics are archived to `s3://dr-metrics/{run_id}/dr-failover.metrics` and linked below.
+`RTO_SECONDS` and `RPO_SECONDS` for tracking. Metrics are archived to `gs://dr-metrics/{run_id}/dr-failover.metrics` and linked below.
 
 ## Automated Drill
 
