@@ -77,6 +77,67 @@ npm run push:all        # push both subtrees
 Infrastructure manifests, dashboards, and operational scripts live under
 `/infra` (replacing the former `/infrastructure` directory).
 
+## Google Cloud Deployment
+
+1. **Enable APIs**
+
+   ```bash
+   gcloud services enable container.googleapis.com \
+     artifactregistry.googleapis.com \
+     iamcredentials.googleapis.com \
+     sts.googleapis.com
+   ```
+
+2. **Create a service account** with permissions to manage GKE and pull from
+   Artifact Registry:
+
+   ```bash
+   gcloud iam service-accounts create deployer
+   gcloud projects add-iam-policy-binding "$PROJECT" \
+     --member="serviceAccount:deployer@$PROJECT.iam.gserviceaccount.com" \
+     --role="roles/container.admin"
+   gcloud projects add-iam-policy-binding "$PROJECT" \
+     --member="serviceAccount:deployer@$PROJECT.iam.gserviceaccount.com" \
+     --role="roles/iam.serviceAccountTokenCreator"
+   ```
+
+3. **Set up Workload Identity Federation** so GitHub Actions can assume the
+   service account:
+
+   ```bash
+   gcloud iam workload-identity-pools create github-pool --project="$PROJECT" --location="global"
+   gcloud iam workload-identity-pools providers create-oidc github-provider \
+     --project="$PROJECT" --location="global" --workload-identity-pool="github-pool" \
+     --issuer-uri="https://token.actions.githubusercontent.com" \
+     --attribute-mapping="google.subject=assertion.sub"
+   gcloud iam service-accounts add-iam-policy-binding \
+     deployer@$PROJECT.iam.gserviceaccount.com \
+     --project="$PROJECT" --role="roles/iam.workloadIdentityUser" \
+     --member="principalSet://iam.googleapis.com/projects/$PROJECT/locations/global/workloadIdentityPools/github-pool/attribute.repository/OWNER/REPO"
+   ```
+
+4. **Run the deployment workflow**. Set the following repository variables
+   (Settings → Secrets and variables → Actions):
+
+   - `GCP_PROJECT_ID`
+   - `GCP_SERVICE_ACCOUNT`
+   - `GCP_WORKLOAD_IDENTITY_PROVIDER`
+   - `GKE_CLUSTER_NAME`
+   - `GKE_CLUSTER_ZONE`
+   - `K8S_NAMESPACE`
+   - `HEALTH_CHECK_URL`
+   - `PROMETHEUS_URL`
+
+   Then trigger the workflow:
+
+   ```bash
+   gh workflow run deploy.yml
+   ```
+
+   See [deploy.yml](.github/workflows/deploy.yml) and the Terraform configs
+   under [infra/terraform](infra/terraform/) (e.g.,
+   [main.tf](infra/terraform/main.tf)) for full details.
+
 ## Testing
 
 Run all backend, frontend, contract, and end-to-end tests with:
