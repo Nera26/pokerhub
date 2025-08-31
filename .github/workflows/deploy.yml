@@ -13,8 +13,9 @@ jobs:
       DEPLOY_ENV: production
       K8S_NAMESPACE: ${{ vars.K8S_NAMESPACE }}
       HEALTH_CHECK_URL: ${{ vars.HEALTH_CHECK_URL }}
-      METRICS_URL: ${{ vars.METRICS_URL }}
-      ERROR_RATE_THRESHOLD: ${{ vars.ERROR_RATE_THRESHOLD }}
+      PROMETHEUS_URL: ${{ vars.PROMETHEUS_URL }}
+      ACK_LATENCY_THRESHOLD_MS: 120
+      ERROR_RATE_THRESHOLD: 0.0005
     steps:
       - uses: actions/checkout@v4
       - name: Set up Node
@@ -35,15 +36,37 @@ jobs:
           python infra/observability/validate.py
       - name: Run canary deploy
         run: ./deploy/canary.sh ${{ github.sha }}
-      - name: Verify SLO metrics
+      - name: Query Prometheus metrics
         id: metrics
-        run: scripts/check-metrics.sh
         continue-on-error: true
+        run: |
+          ACK_QUERY='histogram_quantile(0.95, rate(game_action_ack_latency_ms_bucket[5m]))'
+          ERR_QUERY='sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))'
+          ack=$(curl -sG "$PROMETHEUS_URL/api/v1/query" --data-urlencode "query=$ACK_QUERY" | jq -r '.data.result[0].value[1]')
+          err=$(curl -sG "$PROMETHEUS_URL/api/v1/query" --data-urlencode "query=$ERR_QUERY" | jq -r '.data.result[0].value[1]')
+          jq -n --arg ack "$ack" --arg err "$err" '{game_action_ack_p95_ms: ($ack|tonumber), http_error_rate: ($err|tonumber)}' > metrics.json
+          echo "ack_p95_ms=$ack" >> $GITHUB_OUTPUT
+          echo "http_error_rate=$err" >> $GITHUB_OUTPUT
+          if (( $(echo "$ack > $ACK_LATENCY_THRESHOLD_MS" | bc -l) )) || (( $(echo "$err > $ERROR_RATE_THRESHOLD" | bc -l) )); then
+            exit 1
+          fi
       - name: Canary rollback on SLO violation
         if: steps.metrics.outcome != 'success'
         run: |
           ./deploy/rollback.sh
+          echo "outcome=rollback" > outcome.txt
           exit 1
+      - name: Record successful deployment
+        if: steps.metrics.outcome == 'success'
+        run: echo "outcome=success" > outcome.txt
       - name: Promote canary
         if: steps.metrics.outcome == 'success'
         run: scripts/promote.sh
+      - name: Upload deployment metrics
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-metrics
+          path: |
+            metrics.json
+            outcome.txt
