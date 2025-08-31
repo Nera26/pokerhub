@@ -26,9 +26,9 @@ spec:
                 - name: PG_INSTANCE_ID
                   value: primary-pg
                 - name: PRIMARY_REGION
-                  value: us-west-2
+                  value: us-west2
                 - name: SECONDARY_REGION
-                  value: us-east-1
+                  value: us-east1
                 - name: PGUSER
                   valueFrom:
                     secretKeyRef:
