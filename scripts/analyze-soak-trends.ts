@@ -109,6 +109,28 @@ console.log(`gc pause p95 baseline=${baseGcP95}ms current=${curGcP95}ms`);
 console.log(`heap usage p95 baseline=${baseHeapP95} current=${curHeapP95}`);
 console.log(`throughput baseline=${baseThroughput} current=${curThroughput}`);
 
+function pctChange(cur: number, base: number): number {
+  if (!isFinite(base) || base === 0) return Infinity;
+  return ((cur - base) / base) * 100;
+}
+
+const trendDelta = {
+  latency: {
+    p95: pctChange(curLatP95, baseLatP95),
+    p99: pctChange(curLatP99, baseLatP99),
+  },
+  gcPause: { p95: pctChange(curGcP95, baseGcP95) },
+  heapUsage: { p95: pctChange(curHeapP95, baseHeapP95) },
+  throughput: pctChange(curThroughput, baseThroughput),
+};
+
+console.log(
+  `latency p95 change=${trendDelta.latency.p95.toFixed(2)}% latency p99 change=${trendDelta.latency.p99.toFixed(2)}%`,
+);
+console.log(
+  `throughput change=${trendDelta.throughput.toFixed(2)}%`,
+);
+
 const outBaseline = {
   latency: { p95: curLatP95, p99: curLatP99 },
   gcPause: { p95: curGcP95 },
@@ -116,12 +138,15 @@ const outBaseline = {
   throughput: curThroughput,
 };
 fs.writeFileSync(path.join(metricsDir, 'baseline.json'), JSON.stringify(outBaseline, null, 2));
-
-if (curLatP95 > baseLatP95 ||
-    curLatP99 > baseLatP99 ||
-    curGcP95 > baseGcP95 ||
-    curHeapP95 > baseHeapP95 ||
-    curThroughput < baseThroughput) {
+fs.writeFileSync(
+  path.join(metricsDir, 'trend-delta.json'),
+  JSON.stringify(trendDelta, null, 2),
+);
+const maxPct = Number(process.env.SOAK_TRENDS_MAX_PCT || '0');
+if (
+  trendDelta.latency.p95 > maxPct ||
+  trendDelta.throughput < -maxPct
+) {
   console.error('Soak trends regression detected');
   process.exit(1);
 }

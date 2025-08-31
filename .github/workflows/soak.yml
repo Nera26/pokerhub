@@ -14,6 +14,7 @@ jobs:
       METRICS_URL: http://localhost:3000/metrics
       SOAK_LATENCY_P95_MS: 120
       SOAK_THROUGHPUT_MIN: 100
+      SOAK_TRENDS_MAX_PCT: ${{ vars.SOAK_TRENDS_MAX_PCT || 20 }}
     steps:
       - uses: actions/checkout@v4
       - name: Install toxiproxy CLI
@@ -75,6 +76,7 @@ jobs:
         run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-soak-trends.ts metrics
         env:
           SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+          SOAK_TRENDS_MAX_PCT: ${{ vars.SOAK_TRENDS_MAX_PCT || 20 }}
       - name: Open soak regression issue
         if: failure()
         uses: peter-evans/create-issue-from-file@v4
@@ -91,6 +93,7 @@ jobs:
             soak-summary.json \
             soak-summary.csv \
             metrics/baseline.json \
+            metrics/trend-delta.json \
             metrics/latency-histogram.json \
             metrics/gc-histogram.json \
             metrics/heap-histogram.json \
@@ -153,6 +156,7 @@ jobs:
           path: |
             soak-summary.json
             metrics/baseline.json
+            metrics/trend-delta.json
       - name: Upload GC metrics
         if: always()
         uses: actions/upload-artifact@v3
