@@ -1,5 +1,6 @@
 {
   "dashboard": {
+    "uid": "socket-connects",
     "title": "Socket Connects",
     "labels": {
       "pagerduty_service": "pokerhub-sre",

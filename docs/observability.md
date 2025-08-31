@@ -113,11 +113,14 @@ graph TD
 
 The Grafana SLO dashboard tracks:
 
-- [HTTP API p99 latency](../infrastructure/observability/http-api-latency-dashboard.json)
-- [WebSocket p95 latency](../infrastructure/observability/websocket-latency-dashboard.json)
-- [Action ACK p95 latency](../infrastructure/observability/socket-latency-dashboard.json)
-- [Wallet transaction throughput](../infrastructure/observability/wallet-throughput-dashboard.json)
-- [Service availability](../infrastructure/observability/service-uptime-dashboard.json)
+- HTTP API p99 latency – <https://grafana.pokerhub.example/d/http-api-latency> (`pokerhub-sre`)
+- WebSocket p95 latency – <https://grafana.pokerhub.example/d/websocket-latency> (`pokerhub-sre`)
+- Action ACK p95 latency – <https://grafana.pokerhub.example/d/socket-latency> (`pokerhub-sre`)
+- Socket connect success – <https://grafana.pokerhub.example/d/socket-connects> (`pokerhub-sre`)
+- Request error rate – <https://grafana.pokerhub.example/d/error-rates> (`pokerhub-sre`)
+- Queue saturation – <https://grafana.pokerhub.example/d/queue-saturation> (`pokerhub-eng`)
+- Frontend route latency – <https://grafana.pokerhub.example/d/frontend-route-latency> (`pokerhub-eng`)
+- Service availability – <https://grafana.pokerhub.example/d/service-uptime> (`pokerhub-sre`)
 
 Prometheus evaluates these objectives and sends violations to the
 `pokerhub-sre` PagerDuty service.

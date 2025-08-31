@@ -1,5 +1,6 @@
 {
   "dashboard": {
+    "uid": "service-slos",
     "title": "Service SLOs",
     "labels": {
       "pagerduty_service": "pokerhub-sre",

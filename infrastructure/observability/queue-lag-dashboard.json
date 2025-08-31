@@ -1,9 +1,10 @@
 {
   "dashboard": {
-    "title": "Queue Lag",
+    "uid": "queue-saturation",
+    "title": "Queue Saturation",
     "labels": {
       "pagerduty_service": "pokerhub-eng",
-      "runbook": "docs/runbooks/queue-lag.md"
+      "runbook": "docs/runbooks/queue-saturation.md"
     },
     "panels": [
       {

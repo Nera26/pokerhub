@@ -1,5 +1,6 @@
 {
   "dashboard": {
+    "uid": "error-rates",
     "title": "Error Rates",
     "labels": {
       "pagerduty_service": "pokerhub-sre",
