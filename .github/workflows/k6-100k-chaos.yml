@@ -41,6 +41,13 @@ jobs:
           name: k6-100k-chaos-${{ github.run_id }}
           path: load/metrics/latest
           retention-days: 7
+      - name: Upload baseline
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chaos-baseline-${{ github.run_id }}
+          path: load/metrics/latest/baseline.json
+          retention-days: 7
       - name: Update chaos summary
         if: always()
         run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/update-chaos-summary.ts load/metrics/100k-chaos-sample

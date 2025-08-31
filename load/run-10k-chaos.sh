@@ -187,6 +187,32 @@ try {
 }
 NODE
 
+node - "$METRICS_DIR/ack-histogram.json" "$METRICS_DIR/gc-stats.json" "$METRICS_DIR/baseline.json" <<'NODE'
+const fs = require('fs');
+const [ackFile, gcFile, outFile] = process.argv.slice(1);
+try {
+  const hist = JSON.parse(fs.readFileSync(ackFile, 'utf-8'));
+  const entries = Object.entries(hist).map(([k, v]) => [Number(k), Number(v)]).sort((a, b) => a[0] - b[0]);
+  const total = entries.reduce((s, [, c]) => s + c, 0);
+  const pct = (p) => {
+    let cumulative = 0;
+    for (const [bucket, count] of entries) {
+      cumulative += count;
+      if (cumulative / total >= p) return bucket;
+    }
+    return entries.length ? entries[entries.length - 1][0] : 0;
+  };
+  const gc = JSON.parse(fs.readFileSync(gcFile, 'utf-8'));
+  const baseline = {
+    ackLatency: { p95: pct(0.95), p99: pct(0.99) },
+    gcPause: { p95: gc.p95 || 0, p99: gc.p99 || 0 }
+  };
+  fs.writeFileSync(outFile, JSON.stringify(baseline, null, 2));
+} catch (e) {
+  // ignore if histograms missing
+}
+NODE
+
 "$SCRIPT_DIR/check-thresholds.sh" "$METRICS_DIR/k6-summary.json" "$GC_HIST_FILE" "$HEAP_HIST_FILE"
 
 echo "Metrics written to $METRICS_DIR"
