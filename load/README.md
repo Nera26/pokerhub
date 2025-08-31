@@ -60,6 +60,14 @@ seed to deterministically replay a scenario:
 RNG_SEED=$(cat load/metrics/latest/seed.txt) ./load/run-10k-chaos.sh
 ```
 
+To replay a specific recorded run, pass its metrics directory via `--replay`:
+
+```sh
+./load/run-10k-chaos.sh --replay load/metrics/20240101-000000
+# or
+./load/run-100k-chaos.sh --replay load/metrics/20240101-000000
+```
+
 Artifacts written under `load/metrics/` include:
 
 - `ack-per-table.json` – per-table ACK latency histograms (10 ms buckets).
