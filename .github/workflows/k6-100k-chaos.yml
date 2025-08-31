@@ -15,6 +15,11 @@ jobs:
           node-version: 20
       - name: Install k6 and Artillery
         run: npm install -g k6 artillery
+      - name: Run 10k chaos load
+        run: ./load/run-10k-chaos.sh --sockets 80000 --packet-loss 0.05 --jitter 200
+        env:
+          TABLES: 10000
+          RNG_SEED: ${{ github.run_id }}
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
