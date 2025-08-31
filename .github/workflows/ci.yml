@@ -37,8 +37,43 @@ jobs:
       - name: Frontend contract tests
         run: npm run test:contracts --prefix frontend
 
-  unit:
+  proof-archive:
     needs: contracts
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: proof
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready" --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/proof
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm ci --legacy-peer-deps --prefix backend
+      - name: Seed proof fixture
+        run: psql "$DATABASE_URL" -f backend/test/fixtures/proof-hand.sql
+      - name: Export proof
+        run: npx -y ts-node scripts/export-hand-proof.ts 11111111-1111-1111-1111-111111111111
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+      - name: Validate proof archive
+        run: npx -y ts-node scripts/validate-proof-archive.ts
+
+  unit:
+    needs:
+      - contracts
+      - proof-archive
     runs-on: ubuntu-latest
     continue-on-error: false
     steps:
