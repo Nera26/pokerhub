@@ -614,6 +614,37 @@ jobs:
         run: |
           aws s3 sync metrics "s3://${{ secrets.SOAK_TRENDS_BUCKET }}/soak-${{ github.run_id }}/"
           aws s3 sync metrics "s3://${{ secrets.SOAK_TRENDS_BUCKET }}/soak/latest/"
+      - name: Check soak metrics
+        id: check-metrics
+        if: always()
+        run: npx ts-node scripts/check-soak-metrics.ts
+        env:
+          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+      - name: Prepare soak metrics alert
+        if: failure() && steps.check-metrics.outcome == 'failure'
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          cat <<'EOF' > soak-metrics.md
+          Soak metrics check failed.
+          EOF
+          jq -n --arg channel "$SLACK_CHANNEL_ID" \
+            --arg text "Soak metrics check failed." \
+            '{channel: $channel, text: $text}' > soak-metrics-slack.json
+      - name: Slack soak metrics alert
+        if: failure() && steps.check-metrics.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: soak-metrics-slack.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: Create issue for soak metrics
+        if: failure() && steps.check-metrics.outcome == 'failure'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "SLA breached: soak metrics"
+          content-filepath: soak-metrics.md
       - uses: actions/upload-artifact@v4
         if: always()
         with:
