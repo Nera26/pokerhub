@@ -81,7 +81,7 @@ WAL_ARCHIVE_BUCKET=<wal-archive-bucket> \
 bash infra/disaster-recovery/drill.sh
 ```
 
-The script writes `drill.metrics` containing `RTO_SECONDS` and `RPO_SECONDS`.
+The script writes `drill.metrics` containing `RTO_SECONDS` and `RPO_SECONDS`. Metrics are archived to `s3://dr-metrics/{run_id}/drill.metrics` and linked below.
 Confirm **RPO ≤ 300s** and **RTO ≤ 1800s**. Set `KEEP_INSTANCE=true` to retain
 the restored instance for inspection.
 
@@ -97,7 +97,7 @@ bash infra/disaster-recovery/tests/failover.sh
 ```
 
 The script logs metrics and writes `failover.metrics` containing
-`RTO_SECONDS` and `RPO_SECONDS` for tracking.
+`RTO_SECONDS` and `RPO_SECONDS` for tracking. Metrics are archived to `s3://dr-metrics/{run_id}/dr-failover.metrics` and linked below.
 
 ## Automated Drill
 
@@ -116,6 +116,9 @@ If the workflow fails, an issue is automatically created with the contents of
 ### Recent Drill Results
 <!-- DR_DRILL_RESULTS -->
 - 2025-08-30: `drill.sh` failed locally because `gcloud` CLI was not available; RTO/RPO metrics were not captured. Install the Google Cloud CLI and configure credentials before rerunning.
+
+### Recent Failover Results
+<!-- DR_FAILOVER_RESULTS -->
 
 ## PagerDuty Escalation
 - Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->
