@@ -20,6 +20,12 @@ export function checkBucketRetention(bucket: string, minDays: number) {
     );
   }
 
+  const uniformAccess =
+    meta?.iamConfiguration?.uniformBucketLevelAccess?.enabled;
+  if (!uniformAccess) {
+    throw new Error('Uniform bucket-level access is disabled');
+  }
+
   const kms =
     meta?.encryption?.defaultKmsKey || meta?.encryption?.defaultKmsKeyName;
   if (!kms) {
