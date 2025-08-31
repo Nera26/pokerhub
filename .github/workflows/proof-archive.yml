@@ -35,8 +35,19 @@ jobs:
           fi
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      - name: Sync proofs to S3
+      - name: Validate exported proofs
+        run: |
+          set -o pipefail
+          npx -y ts-node scripts/validate-proof-archive.ts 2>&1 | tee proof-validation.log
+      - name: Upload validation logs
         if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proof-validation-${{ github.run_id }}
+          path: proof-validation.log
+          retention-days: 30
+      - name: Sync proofs to S3
+        if: success()
         run: aws s3 sync storage/proofs "s3://${{ secrets.PROOF_ARCHIVE_BUCKET }}/$(date +%Y-%m-%d)/"
       - name: Upload proofs artifact
         if: always()
