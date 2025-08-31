@@ -119,6 +119,26 @@ If the workflow fails, an issue is automatically created with the contents of
 3. Fixing any underlying infrastructure or configuration problems.
 4. Closing the issue once the drill succeeds within targets.
 
+### DR Trend Metrics
+
+- The `dr-trends` job in `ci.yml` aggregates RTO/RPO results from recent drills
+  and uploads a `dr-trends.json` artifact on every PR.
+- `dr-trends.json` contains `latest`, `average`, and `trend` sections for
+  `rto`, `rpoSnap`, and `rpoWal` (all in seconds).
+- The job fails if any value exceeds **RTO > 1800s** or **RPO > 300s**, blocking
+  merges until metrics are within objectives.
+
+To inspect the metrics:
+
+1. Open the PR's **dr-trends** workflow job and download the `dr-trends` artifact.
+2. Review `dr-trends.json`:
+   - `latest` shows the most recent drill's measurements.
+   - `average` is the mean across all recorded drills.
+   - `trend` is the difference between the latest values and the previous average.
+3. If `latest` or `average` values exceed objectives, run
+   `infra/disaster-recovery/drill.sh` to reproduce and address the regression
+   before merging.
+
 ### Recent Drill Results
 <!-- DR_DRILL_RESULTS -->
 - 2025-08-30: `drill.sh` failed locally because `gcloud` CLI was not available; RTO/RPO metrics were not captured. Install the Google Cloud CLI and configure credentials before rerunning.
