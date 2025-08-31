@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Authenticate to GKE before running. For local development run:
+#   gcloud auth login
+# or rely on Workload Identity in CI. Ensure the kube-context is set via:
+#   gcloud container clusters get-credentials CLUSTER_NAME --zone ZONE --project PROJECT_ID
+
 APP_NAME=${1:-pokerhub}
 NAMESPACE=${NAMESPACE:-default}
 HEALTH_CHECK_URL=${HEALTH_CHECK_URL:-}
