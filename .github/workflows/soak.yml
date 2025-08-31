@@ -45,11 +45,12 @@ jobs:
             -o experimental-prometheus-rw=${{ secrets.GRAFANA_PROM_URL }}
       - name: Check soak thresholds
         run: ./load/check-thresholds.sh soak-summary.json
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: google-github-actions/auth@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT }}
       - name: Analyze soak trends
         run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-soak-trends.ts metrics
         env:
@@ -62,7 +63,7 @@ jobs:
           content-filepath: metrics/baseline.json
       - name: Sync soak metrics
         if: always()
-        run: aws s3 sync metrics "s3://${{ secrets.SOAK_TRENDS_BUCKET }}/soak-${{ github.run_id }}/"
+        run: gcloud storage rsync -r metrics "gs://${{ secrets.SOAK_TRENDS_BUCKET }}/soak-${{ github.run_id }}/"
       - name: Check soak metrics
         id: check-metrics
         if: always()

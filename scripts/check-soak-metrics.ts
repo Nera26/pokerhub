@@ -9,9 +9,12 @@ if (!bucket) {
 
 let listing: string;
 try {
-  listing = execSync(`aws s3 ls s3://${bucket}/`, { encoding: 'utf-8' });
+  listing = execSync(
+    `gcloud storage ls --recursive --long gs://${bucket}/`,
+    { encoding: 'utf-8' }
+  );
 } catch (err) {
-  console.error(`Failed to list s3://${bucket}/`);
+  console.error(`Failed to list gs://${bucket}/`);
   process.exit(1);
 }
 
@@ -19,16 +22,16 @@ const lines = listing
   .trim()
   .split('\n')
   .map((l) => l.trim())
-  .filter((l) => l.endsWith('/'));
+  .filter(Boolean);
 
 const now = Date.now();
 const dayMs = 24 * 60 * 60 * 1000;
 let fresh = false;
 for (const line of lines) {
   const parts = line.split(/\s+/);
-  if (parts.length < 3) continue;
-  const dateStr = `${parts[0]}T${parts[1]}Z`;
-  const ts = Date.parse(dateStr);
+  const datePart = parts.find((p) => /\d{4}-\d{2}-\d{2}T/.test(p));
+  if (!datePart) continue;
+  const ts = Date.parse(datePart);
   if (!isNaN(ts) && now - ts <= dayMs) {
     fresh = true;
     break;
@@ -36,8 +39,8 @@ for (const line of lines) {
 }
 
 if (!fresh) {
-  console.error(`No metrics in s3://${bucket} within last 24h`);
+  console.error(`No metrics in gs://${bucket} within last 24h`);
   process.exit(1);
 }
 
-console.log(`Recent metrics found in s3://${bucket}`);
+console.log(`Recent metrics found in gs://${bucket}`);
