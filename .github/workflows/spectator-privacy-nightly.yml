@@ -45,6 +45,12 @@ jobs:
           gcloud storage ls gs://$SPECTATOR_PRIVACY_BUCKET/$RUN_ID/ | tee gcs-logs.txt
           grep backend-tests.log gcs-logs.txt
           grep frontend-tests.log gcs-logs.txt
+      - name: Verify spectator bucket retention
+        if: always()
+        env:
+          SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
+          SPECTATOR_PRIVACY_MIN_RETENTION_DAYS: 30
+        run: npx ts-node scripts/check-spectator-retention.ts
       - name: Upload logs as artifacts
         if: always()
         uses: actions/upload-artifact@v4
