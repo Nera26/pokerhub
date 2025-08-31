@@ -745,3 +745,42 @@ spectator-privacy:
           echo "spectator-privacy workflow run is stale: $updated" >&2
           exit 1
         fi
+
+ops-artifacts:
+  needs: [dr-runbook, workflow-sla, dr-trends, spectator-privacy]
+  runs-on: ubuntu-latest
+  env:
+    PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+    SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
+    SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+    DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
+  steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+    - run: npm ci --legacy-peer-deps
+    - uses: google-github-actions/auth@v2
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+    - uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ vars.GCP_PROJECT_ID }}
+    - name: Get spectator privacy run ID
+      id: get_run_id
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -e
+        RUN_ID=$(gh api \
+          repos/${{ github.repository }}/actions/workflows/spectator-privacy-nightly.yml/runs \
+          --jq '.workflow_runs[0].id // empty')
+        if [ -z "$RUN_ID" ]; then
+          echo "No spectator-privacy-nightly run found" >&2
+          exit 1
+        fi
+        echo "RUN_ID=$RUN_ID" >> "$GITHUB_OUTPUT"
+    - name: Verify ops artifacts
+      env:
+        RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
+      run: npx ts-node scripts/verify-ops-artifacts.ts
