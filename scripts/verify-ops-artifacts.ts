@@ -14,6 +14,10 @@ function runAws(cmd: string, encoding: BufferEncoding | undefined = 'utf-8'): st
   return execSync(`aws ${cmd}`, { encoding: encoding as any });
 }
 
+function runGcloud(cmd: string, encoding: BufferEncoding | undefined = 'utf-8'): string | Buffer {
+  return execSync(`gcloud storage ${cmd}`, { encoding: encoding as any });
+}
+
 function checkProofArchive(bucket: string) {
   const base = `s3://${bucket}/latest`;
   let manifest: string;
@@ -50,12 +54,12 @@ function checkProofArchive(bucket: string) {
 
 function checkSpectatorLogs(bucket: string, runId: string) {
   try {
-    const listing = runAws(`s3 ls s3://${bucket}/${runId}/`) as string;
+    const listing = runGcloud(`ls gs://${bucket}/${runId}/`) as string;
     if (!listing.trim()) {
       throw new Error();
     }
   } catch {
-    throw new Error(`Missing spectator privacy logs in s3://${bucket}/${runId}/`);
+    throw new Error(`Missing spectator privacy logs in gs://${bucket}/${runId}/`);
   }
 }
 
