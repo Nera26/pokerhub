@@ -71,6 +71,13 @@ HAVING stddev(action_time_ms) < 200;
 2. Open the alert in `/admin/collusion` to inspect session details.
 3. Correlate evidence with game logs and document findings in the ticket.
 4. Mark false positives or escalate per the [Collusion Review Runbook](../runbooks/collusion-review.md).
+5. If collusion is confirmed, follow the regulator notification procedure.
+
+### Regulator Notification Procedure
+1. Compliance compiles evidence and determines impacted jurisdictions.
+2. Notify regulators via the licensed portal or email within **24 hours** of confirmation.
+3. Record confirmation numbers and attach them to the investigation ticket.
+4. Archive the report and communications in secure storage for **5 years**.
 
 ## Reviewer Workflow Example
 
@@ -91,7 +98,7 @@ See [Collusion Review Runbook procedure](../runbooks/collusion-review.md#review-
 2. **Hand History Analysis**: Use automated tools to replay flagged hands and confirm collusion.
 3. **Account Linking**: Investigate IP logs, device IDs, and payment methods for shared attributes.
 4. **Player Interviews**: Reach out to involved accounts for explanations when evidence is inconclusive.
-5. **Enforcement**: Suspend accounts, confiscate funds, and notify regulators if collusion is confirmed.
+5. **Enforcement**: Suspend accounts, confiscate funds, and notify regulators per the notification procedure above.
 6. **Record Keeping**: Retain investigation records for **5 years** in secure storage.
 
 ## Periodic Review

@@ -15,6 +15,12 @@ This runbook outlines how PokerHub handles security incidents from detection to 
 | **P2** | Suspicious activity with potential impact | `pokerhub-security` |
 | **P3** | Low-risk vulnerability or informational report | — |
 
+## Alert Review Procedure
+1. Security on-call reviews alerts from monitoring systems and the `collusion_alerts` table.
+2. Cross-check logs and heuristics to filter false positives.
+3. For confirmed alerts, open a Jira ticket and assign the appropriate severity level.
+4. Escalate to compliance if regulatory notification may be required.
+
 ## Escalation Steps
 1. **Acknowledge** the page in PagerDuty and create an incident channel (`#pokerhub-incident`).
 2. **Triage** using logs, dashboards, and [threat models](threat-model.md).
@@ -61,7 +67,7 @@ During drills, prefix the PagerDuty page with `[DRILL]` to avoid confusion with 
 
 ## Regulatory Reporting
 
-- Notify relevant gaming regulators within 24 hours of confirming collusion.
+- Notify relevant gaming regulators within 24 hours of confirming collusion or a data breach.
+- Compliance prepares the report, attaches evidence, and submits it via the regulator portal or registered email.
 - Provide summary of evidence, impacted accounts, and remediation steps.
-- Retain investigation records for at least 5 years and make them available to
-  authorities on request.
+- Retain investigation records for at least 5 years and make them available to authorities on request.
