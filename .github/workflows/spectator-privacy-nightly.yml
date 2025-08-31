@@ -19,6 +19,16 @@ jobs:
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
       - uses: ./.github/actions/spectator-privacy-check
+      - name: Sanitize logs
+        if: always()
+        run: npx ts-node scripts/sanitize-spectator-logs.ts backend-tests.log frontend-tests.log
+      - name: Verify sanitized logs
+        if: always()
+        run: |
+          if rg -i "userId|tableSecret" backend-tests.log frontend-tests.log; then
+            echo "PII found in logs" >&2
+            exit 1
+          fi
       - name: Upload logs to GCS
         if: always()
         env:

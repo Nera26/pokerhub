@@ -27,3 +27,5 @@ runs:
       run: |
         set -o pipefail
         npm test --prefix frontend -- "spectator/privacy.test.tsx" 2>&1 | tee frontend-tests.log
+    - name: Sanitize logs
+      run: npx ts-node scripts/sanitize-spectator-logs.ts backend-tests.log frontend-tests.log
