@@ -10,20 +10,43 @@ function requireEnv(name: string): string {
   return val;
 }
 
-function runGcloud(
-  cmd: string,
-  encoding: BufferEncoding | undefined = 'utf-8',
-): string | Buffer {
-  return execSync(`gcloud storage ${cmd}`, {
-    encoding: encoding as any,
-  });
+export const gcloud = {
+  run(cmd: string, encoding: BufferEncoding | undefined = 'utf-8'): string | Buffer {
+    return execSync(`gcloud storage ${cmd}`, {
+      encoding: encoding as any,
+    });
+  },
+};
+
+function assertFresh(uri: string, label: string) {
+  let metaRaw: string;
+  try {
+    metaRaw = gcloud.run(`ls --format=json ${uri}`) as string;
+  } catch {
+    throw new Error(`Missing ${label} at ${uri}`);
+  }
+  let meta: Array<{ timeCreated?: string; updated?: string }> = [];
+  try {
+    meta = JSON.parse(metaRaw);
+  } catch {
+    throw new Error(`Unable to parse metadata for ${label} at ${uri}`);
+  }
+  const ts = Date.parse(meta[0]?.timeCreated || meta[0]?.updated || '');
+  if (isNaN(ts)) {
+    throw new Error(`No timestamp for ${label} at ${uri}`);
+  }
+  const age = Date.now() - ts;
+  const limit = 24 * 60 * 60 * 1000;
+  if (age > limit) {
+    throw new Error(`${label} at ${uri} is older than 24h`);
+  }
 }
 
 function checkProofArchive(bucket: string) {
   const base = `gs://${bucket}/latest`;
   let manifest: string;
   try {
-    manifest = runGcloud(`cat ${base}/manifest.txt`) as string;
+    manifest = gcloud.run(`cat ${base}/manifest.txt`) as string;
   } catch {
     throw new Error(`Missing manifest at ${base}/manifest.txt`);
   }
@@ -37,17 +60,19 @@ function checkProofArchive(bucket: string) {
     const [hash, file] = line.split(/\s+/);
     if (!hash || !file) continue;
     try {
-      const data = runGcloud(`cat ${base}/${file}`, undefined) as Buffer;
+      const data = gcloud.run(`cat ${base}/${file}`, undefined) as Buffer;
       const digest = createHash('sha256').update(data).digest('hex');
       if (digest !== hash) {
         console.error(`${file}: checksum mismatch`);
         ok = false;
       }
-    } catch {
-      console.error(`${file}: missing`);
+      assertFresh(`${base}/${file}`, `proof archive file ${file}`);
+    } catch (err) {
+      console.error(`${file}: ${(err as Error).message}`);
       ok = false;
     }
   }
+  assertFresh(`${base}/manifest.txt`, 'proof archive manifest');
   if (!ok) {
     throw new Error('Proof archive validation failed');
   }
@@ -55,39 +80,21 @@ function checkProofArchive(bucket: string) {
 
 function checkSpectatorLogs(bucket: string, runId: string) {
   console.log(`Fetching spectator privacy logs for run ${runId}`);
+  let listing: string;
   try {
-    const listing = runGcloud(`ls gs://${bucket}/${runId}/`) as string;
-    if (!listing.trim()) {
-      throw new Error();
-    }
+    listing = gcloud.run(
+      `ls --format=json gs://${bucket}/${runId}/**`,
+    ) as string;
   } catch {
     throw new Error(`Missing spectator privacy logs in gs://${bucket}/${runId}/`);
   }
-}
-
-function checkSoakMetrics(bucket: string) {
-  try {
-    const listing = runGcloud(`ls gs://${bucket}/soak/latest/`) as string;
-    if (!listing.trim()) {
-      throw new Error();
-    }
-  } catch {
-    throw new Error(`Missing soak metrics in gs://${bucket}/soak/latest/`);
-  }
-}
-
-function checkDrMetrics(bucket: string) {
-  let listing: string;
-  try {
-    listing = runGcloud(`ls --format=json gs://${bucket}/`) as string;
-  } catch {
-    throw new Error(`Missing DR metrics in gs://${bucket}/`);
-  }
-  let items: Array<{ name?: string; timeCreated?: string; updated?: string }> = [];
+  let items: Array<{ timeCreated?: string; updated?: string }> = [];
   try {
     items = JSON.parse(listing);
   } catch {
-    throw new Error(`Unable to parse listing for gs://${bucket}/`);
+    throw new Error(
+      `Unable to parse listing for gs://${bucket}/${runId}/`,
+    );
   }
   const cutoff = Date.now() - 24 * 60 * 60 * 1000;
   const recent = items.some((obj) => {
@@ -95,7 +102,92 @@ function checkDrMetrics(bucket: string) {
     return !isNaN(t) && t >= cutoff;
   });
   if (!recent) {
-    throw new Error(`No recent DR metrics in gs://${bucket}/`);
+    throw new Error(
+      `Spectator privacy logs in gs://${bucket}/${runId}/ are older than 24h`,
+    );
+  }
+}
+
+function checkSoakMetrics(bucket: string) {
+  let listing: string;
+  try {
+    listing = gcloud.run(
+      `ls --format=json gs://${bucket}/soak/latest/**`,
+    ) as string;
+  } catch {
+    throw new Error(
+      `Missing soak metrics in gs://${bucket}/soak/latest/`,
+    );
+  }
+  let items: Array<{ timeCreated?: string; updated?: string }> = [];
+  try {
+    items = JSON.parse(listing);
+  } catch {
+    throw new Error(
+      `Unable to parse listing for gs://${bucket}/soak/latest/`,
+    );
+  }
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  const recent = items.some((obj) => {
+    const t = Date.parse(obj.timeCreated || obj.updated || '');
+    return !isNaN(t) && t >= cutoff;
+  });
+  if (!recent) {
+    throw new Error(
+      `Soak metrics in gs://${bucket}/soak/latest/ are older than 24h`,
+    );
+  }
+}
+
+function checkDrMetrics(bucket: string) {
+  let listing: string;
+  try {
+    listing = gcloud.run(
+      `ls --format=json gs://${bucket}/**/drill.metrics`,
+    ) as string;
+  } catch {
+    throw new Error(`Missing DR metrics in gs://${bucket}/`);
+  }
+  let items: Array<{ name: string; timeCreated?: string; updated?: string }> = [];
+  try {
+    items = JSON.parse(listing);
+  } catch {
+    throw new Error(`Unable to parse listing for gs://${bucket}/`);
+  }
+  if (items.length === 0) {
+    throw new Error(`Missing DR metrics in gs://${bucket}/`);
+  }
+  const latest = items.reduce((a, b) => {
+    const at = Date.parse(a.timeCreated || a.updated || '');
+    const bt = Date.parse(b.timeCreated || b.updated || '');
+    return at > bt ? a : b;
+  });
+  const t = Date.parse(latest.timeCreated || latest.updated || '');
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  if (isNaN(t) || t < cutoff) {
+    throw new Error(`DR metrics in gs://${bucket}/ are older than 24h`);
+  }
+  let metrics: string;
+  try {
+    metrics = gcloud.run(`cat ${latest.name}`) as string;
+  } catch {
+    throw new Error(`Unable to read ${latest.name}`);
+  }
+  const rto = Number(/RTO_SECONDS=(\d+)/.exec(metrics)?.[1]);
+  const rpo =
+    Number(/RPO_SECONDS=(\d+)/.exec(metrics)?.[1]) ||
+    Math.max(
+      Number(/RPO_SNAPSHOT_SECONDS=(\d+)/.exec(metrics)?.[1] || NaN),
+      Number(/RPO_WAL_SECONDS=(\d+)/.exec(metrics)?.[1] || NaN),
+    );
+  if (isNaN(rto) || isNaN(rpo)) {
+    throw new Error(`Unable to parse RTO/RPO from ${latest.name}`);
+  }
+  if (rto > 1800) {
+    throw new Error(`RTO ${rto}s exceeds 1800s threshold`);
+  }
+  if (rpo > 300) {
+    throw new Error(`RPO ${rpo}s exceeds 300s threshold`);
   }
 }
 
@@ -114,9 +206,18 @@ function main() {
   console.log('All ops artifacts verified');
 }
 
-try {
-  main();
-} catch (err) {
-  console.error((err as Error).message);
-  process.exit(1);
+if (typeof require !== 'undefined' && require.main === module) {
+  try {
+    main();
+  } catch (err) {
+    console.error((err as Error).message);
+    process.exit(1);
+  }
 }
+
+export {
+  checkProofArchive,
+  checkSpectatorLogs,
+  checkSoakMetrics,
+  checkDrMetrics,
+};

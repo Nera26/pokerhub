@@ -39,7 +39,7 @@ jobs:
       - name: Set GKE cluster context
         run: gcloud container clusters get-credentials ${{ vars.GKE_CLUSTER_NAME }} --zone ${{ vars.GKE_CLUSTER_ZONE }} --project ${{ vars.GCP_PROJECT_ID }}
 
-      # --- Pre-deploy gates (both checks must pass) ---
+      # --- Pre-deploy gates (all must pass) ---
       - name: Verify recent DR drill
         id: drdrill
         env:
@@ -136,7 +136,7 @@ jobs:
       - name: Ensure proof-archive recent success
         id: proof_archive
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           run=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" \
@@ -162,7 +162,7 @@ jobs:
       - name: Ensure ops-artifacts-verify recent success
         id: ops_artifacts_verify
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           run=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" \
@@ -189,7 +189,7 @@ jobs:
         id: soak
         env:
           SLA_HOURS: ${{ env.SOAK_SLA_HOURS }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           run=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" \
@@ -217,7 +217,7 @@ jobs:
         id: pg_restore_smoke
         env:
           SLA_MINUTES: ${{ env.PG_RESTORE_SLA_MINUTES }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           run=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" \
@@ -244,7 +244,7 @@ jobs:
       - name: Ensure spectator-privacy recent success
         id: spectator_privacy
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           run=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" \
@@ -288,6 +288,7 @@ jobs:
         run: |
           python -m pip install pyyaml >/dev/null
           python infra/observability/validate.py
+
       - name: Run spectator privacy tests
         uses: ./.github/actions/spectator-privacy-check
         with:
@@ -298,7 +299,7 @@ jobs:
         env:
           SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
         run: |
-          gcloud storage cp backend-tests.log frontend-tests.log gs://${SPECTATOR_PRIVACY_BUCKET}/${{ github.run_id }}/
+          gcloud storage cp backend-tests.log frontend-tests.log gs://$SPECTATOR_PRIVACY_BUCKET/${{ github.run_id }}/
 
       # --- Canary, SLO check, promote/rollback ---
       - name: Run canary deploy
@@ -318,8 +319,8 @@ jobs:
           ack=$(curl -sG "$PROMETHEUS_URL/api/v1/query" --data-urlencode "query=$ACK_QUERY" | jq -r '.data.result[0].value[1] // "0"')
           err=$(curl -sG "$PROMETHEUS_URL/api/v1/query" --data-urlencode "query=$ERR_QUERY" | jq -r '.data.result[0].value[1] // "0"')
           jq -n --arg ack "$ack" --arg err "$err" '{game_action_ack_p95_ms: ($ack|tonumber), http_error_rate: ($err|tonumber)}' > metrics.json
-          echo "ack_p95_ms=$ack" >> "$GITHUB_OUTPUT
-          echo "http_error_rate=$err" >> "$GITHUB_OUTPUT
+          echo "ack_p95_ms=$ack" >> "$GITHUB_OUTPUT"
+          echo "http_error_rate=$err" >> "$GITHUB_OUTPUT"
           if (( $(echo "$ack > $ACK_LATENCY_THRESHOLD_MS" | bc -l) )) || (( $(echo "$err > $ERROR_RATE_THRESHOLD" | bc -l) )); then
             exit 1
           fi
@@ -379,7 +380,7 @@ jobs:
         uses: slackapi/slack-github-action@v1.24.0
         with:
           payload: |
-            { "text": "\uD83D\uDEAB Deployment blocked: spectator-privacy-nightly workflow failed or stale for ${{ github.repository }}@${{ github.sha }}" }
+            { "text": "🚫 Deployment blocked: spectator-privacy-nightly workflow failed or stale for ${{ github.repository }}@${{ github.sha }}" }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
@@ -402,14 +403,24 @@ jobs:
           DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
         run: |
           npm ci --legacy-peer-deps
-          npx ts-node scripts/verify-ops-artifacts.ts
+          set +e
+          out=$(npx ts-node scripts/verify-ops-artifacts.ts 2>&1)
+          status=$?
+          set -e
+          echo "$out"
+          printf "%s\n" "$out" > verify-ops.log
+          printf "%s" "$out" | sha256sum >> verify-ops.log
+          gcloud storage cp verify-ops.log gs://$DR_METRICS_BUCKET/verify/$GITHUB_RUN_ID/
+          url="https://storage.googleapis.com/$DR_METRICS_BUCKET/verify/$GITHUB_RUN_ID/verify-ops.log"
+          echo "$url" >> "$GITHUB_STEP_SUMMARY"
+          exit $status
 
       - name: Notify on-call on ops artifact failure
         if: failure() && steps.verify_ops_artifacts.outcome == 'failure'
         uses: slackapi/slack-github-action@v1.24.0
         with:
           payload: |
-            { "text": "\uD83D\uDEAB Deployment failed: ops artifacts missing for ${{ github.repository }}@${{ github.sha }}" }
+            { "text": "🚫 Deployment failed: ops artifacts missing for ${{ github.repository }}@${{ github.sha }}" }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
@@ -425,7 +436,7 @@ jobs:
       # --- Artifacts & summary ---
       - name: Upload deployment metrics
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: deployment-metrics
           path: |
