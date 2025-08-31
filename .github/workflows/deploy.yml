@@ -457,3 +457,12 @@ jobs:
             echo "- game_action_ack_p95_ms: ${{ steps.metrics.outputs.ack_p95_ms }}"
             echo "- http_error_rate: ${{ steps.metrics.outputs.http_error_rate }}"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  proof-archive:
+    needs: deploy
+    uses: ./.github/workflows/proof-archive.yml
+    secrets:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      PAGERDUTY_ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
