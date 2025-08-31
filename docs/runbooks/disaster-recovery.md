@@ -114,6 +114,7 @@ If the workflow fails, an issue is automatically created with the contents of
 4. Closing the issue once the drill succeeds within targets.
 
 ### Recent Drill Results
+<!-- DR_DRILL_RESULTS -->
 - 2025-08-30: `drill.sh` failed locally because `gcloud` CLI was not available; RTO/RPO metrics were not captured. Install the Google Cloud CLI and configure credentials before rerunning.
 
 ## PagerDuty Escalation
