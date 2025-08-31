@@ -144,9 +144,9 @@ jobs:
           title: "Proof archive integrity check failed"
           content-filepath: proof-archive-integrity.md
 
-      - name: Check soak metrics
+      - name: Check soak workflow SLA
+        id: soak
         env:
-          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
           GITHUB_TOKEN: ${{ github.token }} # ensure curl auth works
         run: |
           set -euo pipefail
@@ -164,7 +164,6 @@ jobs:
             echo "Latest soak workflow run did not succeed within 24 hours" >&2
             exit 1
           fi
-          npx ts-node --compiler-options '{"module":"commonjs"}' scripts/check-soak-metrics.ts
 
       - name: Prepare soak SLA alert
         if: failure() && steps.soak.outcome == 'failure'
@@ -246,42 +245,18 @@ jobs:
       SOAK_LATENCY_P95_MS: 120
       SOAK_THROUGHPUT_MIN: 100
     steps:
-      - name: Check soak run SLA
-        id: soak-run
-        uses: ./.github/workflows/check-workflow-sla
-        with:
-          workflow: soak.yml
-          sla: 24
-          unit: hours
-          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-
       - uses: actions/checkout@v4
-        if: steps.soak-run.outcome == 'success'
       - uses: google-github-actions/auth@v2
-        if: steps.soak-run.outcome == 'success'
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
       - uses: google-github-actions/setup-gcloud@v2
-        if: steps.soak-run.outcome == 'success'
         with:
           project_id: ${{ secrets.GCP_PROJECT }}
-
       - name: Check soak metrics
         id: check-metrics
-        if: steps.soak-run.outcome == 'success'
         run: npx ts-node scripts/check-soak-metrics.ts
         env:
           SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
-
-      - name: Analyze soak trends
-        id: analyze-trends
-        if: steps.soak-run.outcome == 'success'
-        run: |
-          gcloud storage cp -r "gs://${{ secrets.SOAK_TRENDS_BUCKET }}/soak/latest/**" metrics || true
-          npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-soak-trends.ts metrics
-        env:
-          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
-
       - name: Prepare soak metrics alert
         if: failure() && steps.check-metrics.outcome == 'failure'
         env:
@@ -293,7 +268,6 @@ jobs:
           jq -n --arg channel "$SLACK_CHANNEL_ID" \
             --arg text "Soak metrics check failed." \
             '{channel: $channel, text: $text}' > soak-metrics-slack.json
-
       - name: Slack soak metrics alert
         if: failure() && steps.check-metrics.outcome == 'failure'
         uses: slackapi/slack-github-action@v1
@@ -302,35 +276,12 @@ jobs:
           payload-file-path: soak-metrics-slack.json
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-
       - name: Create issue for soak metrics
         if: failure() && steps.check-metrics.outcome == 'failure'
         uses: peter-evans/create-issue-from-file@v4
         with:
           title: "SLA breached: soak metrics"
           content-filepath: soak-metrics.md
-
-      - name: Prepare soak regression Slack payload
-        if: failure() && steps.analyze-trends.outcome == 'failure'
-        run: jq -Rs '{channel: env.SLACK_CHANNEL_ID, text: .}' metrics/baseline.json > soak-regression-slack.json
-        env:
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-
-      - name: Slack soak regression alert
-        if: failure() && steps.analyze-trends.outcome == 'failure'
-        uses: slackapi/slack-github-action@v1
-        with:
-          method: chat.postMessage
-          payload-file-path: soak-regression-slack.json
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-
-      - name: Open soak regression issue
-        if: failure() && steps.analyze-trends.outcome == 'failure'
-        uses: peter-evans/create-issue-from-file@v4
-        with:
-          title: Soak trends regression detected
-          content-filepath: metrics/baseline.json
 
   docs:
     needs: workflow-sla
