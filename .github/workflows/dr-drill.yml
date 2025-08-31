@@ -87,3 +87,10 @@ jobs:
           curl -X POST https://events.pagerduty.com/v2/enqueue \
             -H 'Content-Type: application/json' \
             -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"DR drill failed","source":"github-actions","severity":"error"}}'
+
+      - name: Create GitHub issue on failure
+        if: failure()
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: DR drill failure
+          content-filepath: drill.metrics
