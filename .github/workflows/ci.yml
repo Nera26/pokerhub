@@ -93,6 +93,7 @@ jobs:
           unit: hours
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
+      # Mirror proof-archive SLA check
       - name: Check ops-artifacts-verify SLA
         id: ops-artifacts-verify
         uses: ./.github/workflows/check-workflow-sla
