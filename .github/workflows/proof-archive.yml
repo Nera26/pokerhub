@@ -74,6 +74,13 @@ jobs:
             echo "- proofs: $count"
             echo "- manifest sha256: \`$manifest_sha\`"
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Record proof metrics
+        if: success()
+        run: |
+          count=$(jq '.count' proof-summary.json)
+          manifest_sha=$(jq -r '.manifestSha' proof-summary.json)
+          gcloud monitoring metrics write custom.googleapis.com/proof/archive_count "$count" --project=${{ vars.GCP_PROJECT_ID }}
+          gcloud monitoring metrics write custom.googleapis.com/proof/manifest_hash 1 --project=${{ vars.GCP_PROJECT_ID }} --labels=hash="$manifest_sha"
       - name: Upload proof summary
         if: always()
         uses: actions/upload-artifact@v4

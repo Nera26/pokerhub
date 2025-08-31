@@ -6,6 +6,10 @@ Exports recent hand proofs to Google Cloud Storage each night.
 - Bucket: configured via the `PROOF_ARCHIVE_BUCKET` secret (e.g. `gs://pokerhub-proof-archive`).
 - Retention: bucket lifecycle must retain proofs for at least 365 days.
 
+## Metrics
+- `custom.googleapis.com/proof/archive_count` – number of proofs exported each run.
+- `custom.googleapis.com/proof/manifest_hash` – manifest SHA256 recorded as the `hash` label.
+
 ## Alerts
 - Fails if no hand proofs are found in the last 24 hours.
 - Sends notifications to Slack and PagerDuty on failure.

@@ -79,6 +79,45 @@ function checkProofArchive(bucket: string) {
   }
 }
 
+function checkProofArchiveMetrics(projectId: string) {
+  const end = new Date();
+  const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+  const metrics = [
+    'custom.googleapis.com/proof/archive_count',
+    'custom.googleapis.com/proof/manifest_hash',
+  ];
+  for (const metric of metrics) {
+    let raw: string;
+    try {
+      raw = execSync(
+        `gcloud monitoring time-series list --project=${projectId} ` +
+          `--filter="metric.type='${metric}'" ` +
+          `--interval-start=${start.toISOString()} ` +
+          `--interval-end=${end.toISOString()} ` +
+          `--limit=1 --format=json`,
+        { encoding: 'utf-8' },
+      );
+    } catch {
+      throw new Error(`Missing metric ${metric}`);
+    }
+    let series: Array<{ metric: { labels?: Record<string, string> }; points?: any[] }> = [];
+    try {
+      series = JSON.parse(raw);
+    } catch {
+      throw new Error(`Unable to parse metric ${metric}`);
+    }
+    if (series.length === 0 || !series[0].points?.length) {
+      throw new Error(`No recent data points for ${metric}`);
+    }
+    if (
+      metric === 'custom.googleapis.com/proof/manifest_hash' &&
+      !series[0].metric?.labels?.hash
+    ) {
+      throw new Error('manifest_hash metric missing hash label');
+    }
+  }
+}
+
 function checkSpectatorLogs(bucket: string, runId: string) {
   console.log(`Fetching spectator privacy logs for run ${runId}`);
   let listing: string;
@@ -295,6 +334,7 @@ function main() {
   const runId = requireEnv('RUN_ID');
   const soakBucket = requireEnv('SOAK_TRENDS_BUCKET');
   const drMetricsBucket = requireEnv('DR_METRICS_BUCKET');
+  const projectId = requireEnv('GCP_PROJECT_ID');
   const maxLatencyP95 = Number(requireEnv('SOAK_LATENCY_P95_MS'));
   const minThroughput = Number(requireEnv('SOAK_THROUGHPUT_MIN'));
   const maxTrendPct = Number(requireEnv('SOAK_TRENDS_MAX_PCT'));
@@ -316,6 +356,7 @@ function main() {
   checkBucketRetention(spectatorBucket, spectatorRetention);
 
   checkProofArchive(proofBucket);
+  checkProofArchiveMetrics(projectId);
   checkSpectatorLogs(spectatorBucket, runId);
   checkSoakMetrics(soakBucket);
   checkSoakSummary(soakBucket, maxLatencyP95, minThroughput);
@@ -336,6 +377,7 @@ if (typeof require !== 'undefined' && require.main === module) {
 
 export {
   checkProofArchive,
+  checkProofArchiveMetrics,
   checkSpectatorLogs,
   checkSoakMetrics,
   checkSoakSummary,
