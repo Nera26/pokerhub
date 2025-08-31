@@ -16,9 +16,8 @@ PokerHub requires identity verification and anti-money-laundering checks during 
 ### KYC Request
 
 ```json
-POST /api/kyc/verify
+POST /wallet/u123/kyc
 {
-  "userId": "u123",
   "name": "Ada Lovelace",
   "dob": "1990-12-10",
   "address": {
@@ -41,13 +40,14 @@ POST /api/kyc/verify
 
 ### AML Transaction Check
 
+Triggered during withdrawals:
+
 ```json
-POST /api/aml/check
+POST /wallet/u123/withdraw
 {
-  "userId": "u123",
-  "txId": "t42",
   "amount": 2500,
-  "direction": "deposit"
+  "deviceId": "dev-9c2",
+  "currency": "USD"
 }
 ```
 
@@ -85,6 +85,18 @@ CREATE TABLE aml_audit (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 ```
+
+## Provider Error Handling
+
+- Network failures or non-2xx responses from the verification provider are retried with exponential backoff. After three failed attempts the circuit breaker in [kyc.service.ts](../../backend/src/auth/kyc.service.ts) opens and the request is marked failed.
+- Provider callbacks with `rejected` or `error` statuses transition the verification to `failed` and notify compliance.
+- AML provider errors during `POST /wallet/:id/withdraw` result in the transaction being held and logged for manual review in [wallet.service.ts](../../backend/src/wallet/wallet.service.ts).
+
+## Backend Endpoints
+
+- `POST /wallet/:id/kyc` – initiates verification ([wallet.controller.ts](../../backend/src/routes/wallet.controller.ts)).
+- `POST /wallet/:id/withdraw` – runs AML checks before committing funds ([wallet.controller.ts](../../backend/src/routes/wallet.controller.ts)).
+- `GET /wallet/:id/status` – fetches wallet, KYC and AML state ([wallet.controller.ts](../../backend/src/routes/wallet.controller.ts)).
 
 ## Verification Steps
 1. Validate document authenticity and match to provided identity data.
