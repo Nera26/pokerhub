@@ -320,9 +320,11 @@ jobs:
             "https://api.github.com/repos/${{ github.repository }}/actions/workflows/spectator-privacy-nightly.yml/runs?per_page=1")
           ts=$(echo "$resp" | jq -r '.workflow_runs[0].updated_at')
           conclusion=$(echo "$resp" | jq -r '.workflow_runs[0].conclusion')
+          run_id=$(echo "$resp" | jq -r '.workflow_runs[0].id')
           echo "workflow=spectator-privacy-nightly.yml" >> $GITHUB_OUTPUT
           echo "timestamp=$ts" >> $GITHUB_OUTPUT
           echo "conclusion=$conclusion" >> $GITHUB_OUTPUT
+          echo "run_id=$run_id" >> $GITHUB_OUTPUT
           now=$(date -u +%s)
           run_ts=$(date -d "$ts" -u +%s)
           max_age=$((SLA_HOURS * 3600))
@@ -364,11 +366,17 @@ jobs:
           title: "SLA breached: spectator-privacy-nightly"
           content-filepath: spectator-privacy-sla.md
 
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
       - name: Verify ops artifacts
         env:
           PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
           SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
-          RUN_ID: ${{ github.run_id }}
+          RUN_ID: ${{ steps.spectator-privacy-nightly.outputs.run_id }}
           SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
