@@ -18,6 +18,16 @@ function loadHist(dir: string, file: string): Record<string, number> {
   return JSON.parse(fs.readFileSync(path.join(dir, file), 'utf-8')) as Record<string, number>;
 }
 
+function deviation(base: number, cur: number): number {
+  return base === 0 ? Infinity : (cur - base) / base;
+}
+
+const baselineDir = process.argv[2];
+if (!baselineDir) {
+  console.error('Usage: update-chaos-summary.ts <baseline_dir>');
+  process.exit(1);
+}
+
 const repoRoot = path.join(__dirname, '..');
 const metricsRoot = path.join(repoRoot, 'load', 'metrics');
 const runDirs = fs
@@ -43,12 +53,41 @@ const ack = loadHist(latestDir, 'ack-histogram.json');
 const gc = loadHist(latestDir, 'gc-histogram.json');
 const heap = loadHist(latestDir, 'heap-histogram.json');
 
+const baseAck = loadHist(baselineDir, 'ack-histogram.json');
+const baseGc = loadHist(baselineDir, 'gc-histogram.json');
+const baseHeap = loadHist(baselineDir, 'heap-histogram.json');
+
 const ackP95 = percentile(ack, 0.95);
 const ackP99 = percentile(ack, 0.99);
+const baseAckP95 = percentile(baseAck, 0.95);
+const baseAckP99 = percentile(baseAck, 0.99);
+
 const gcP95 = percentile(gc, 0.95);
 const gcP99 = percentile(gc, 0.99);
+const baseGcP95 = percentile(baseGc, 0.95);
+const baseGcP99 = percentile(baseGc, 0.99);
+
 const heapP95 = percentile(heap, 0.95);
 const heapP99 = percentile(heap, 0.99);
+const baseHeapP95 = percentile(baseHeap, 0.95);
+const baseHeapP99 = percentile(baseHeap, 0.99);
+
+const regressions: string[] = [];
+const fmtDev = (d: number) => (d * 100).toFixed(2);
+if (deviation(baseAckP95, ackP95) > 0.05 || deviation(baseAckP99, ackP99) > 0.05) {
+  regressions.push(`ack latency regression p95 dev ${fmtDev(deviation(baseAckP95, ackP95))}% p99 dev ${fmtDev(deviation(baseAckP99, ackP99))}%`);
+}
+if (deviation(baseGcP95, gcP95) > 0.05 || deviation(baseGcP99, gcP99) > 0.05) {
+  regressions.push(`gc pause regression p95 dev ${fmtDev(deviation(baseGcP95, gcP95))}% p99 dev ${fmtDev(deviation(baseGcP99, gcP99))}%`);
+}
+if (deviation(baseHeapP95, heapP95) > 0.05 || deviation(baseHeapP99, heapP99) > 0.05) {
+  regressions.push(`heap used regression p95 dev ${fmtDev(deviation(baseHeapP95, heapP95))}% p99 dev ${fmtDev(deviation(baseHeapP99, heapP99))}%`);
+}
+
+if (regressions.length) {
+  console.error(regressions.join('\n'));
+  process.exit(1);
+}
 const toMB = (v: number) => Math.round(v / (1024 * 1024));
 
 const summary = [

@@ -144,6 +144,16 @@ if command -v jq >/dev/null 2>&1; then
   jq '.aggregate.latency' "$METRICS_DIR/artillery-report.json" > "$METRICS_DIR/artillery-latency.json" || true
 fi
 
+# run 100k socket replay scenario and capture histograms
+SOCKETS="$SOCKETS" TABLES="$TABLES" RNG_SEED="$RNG_SEED" \
+PACKET_LOSS="$PACKET_LOSS" JITTER_MS="$JITTER_MS" WS_URL="$WS_URL" \
+  k6 run "$SCRIPT_DIR/k6-100k-sockets-replay.js" \
+  --summary-export="$METRICS_DIR/k6-summary.json" \
+  --out json="$METRICS_DIR/k6-metrics.json"
+mv "$SCRIPT_DIR/metrics/ack-histogram.json" "$METRICS_DIR/ack-histogram.json" 2>/dev/null || true
+mv "$SCRIPT_DIR/metrics/gc-histogram.json" "$METRICS_DIR/gc-histogram.json" 2>/dev/null || true
+mv "$SCRIPT_DIR/metrics/heap-histogram.json" "$METRICS_DIR/heap-histogram.json" 2>/dev/null || true
+
 # stop GC collector and summarise stats
 kill $GC_PID >/dev/null 2>&1 || true
 wait $GC_PID 2>/dev/null || true
