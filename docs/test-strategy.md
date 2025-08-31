@@ -12,7 +12,7 @@ npm test --prefix backend -- test/game/.*\.property\.spec\.ts
 
 ## CI Load Checks
 
-The `k6-swarm-ws` workflow in `.github/workflows/k6-swarm-ws.yml` runs `load/k6-swarm.js` and `load/k6-ws-packet-loss.js` against the staging cluster. It records `ack_latency` and `ws_latency` histograms and fails if p95 latency or error rates breach thresholds.
+The `load` stage of `.github/workflows/ci.yml` runs `load/k6-swarm.js` against the staging cluster. `load/check-thresholds.sh` fails the build if p95 acknowledgement latency or error rates breach thresholds. A scheduled soak test is handled separately by `.github/workflows/soak.yml`.
 
 ## Table Action Load Test
 

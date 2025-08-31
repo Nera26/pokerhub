@@ -9,8 +9,9 @@ PokerHub uses a multi‑stage GitHub Actions pipeline to gate changes before rel
 3. **Property** – `scripts/test-stages.sh property` installs all workspaces and runs backend, frontend, analytics, shared, and repo‑level property tests, generating coverage for analytics and shared modules.
 4. **Integration** – `scripts/test-stages.sh integration` executes backend API e2e tests and frontend integration tests.
 5. **E2E** – exercises full end‑to‑end flows with Playwright via `scripts/test-stages.sh e2e`.
-6. **Load** – `scripts/test-stages.sh load` smoke runs a websocket load scenario with k6.
+6. **Load** – `scripts/test-stages.sh load` smoke runs a websocket load scenario with k6 and enforces latency thresholds via `load/check-thresholds.sh`.
 7. **Chaos** – `scripts/test-stages.sh chaos` injects packet loss and jitter during a short k6 run and fails if chaos checks trip.
+8. **Soak** – runs `load/k6-ws-soak.js` with `load/check-thresholds.sh` and analyzes trends. For long‑running soak runs see `.github/workflows/soak.yml`.
 
 All stages run on every pull request and failures block merging.
 

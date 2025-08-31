@@ -166,12 +166,17 @@ jobs:
           node-version: 20
           cache: npm
       - uses: grafana/setup-k6@v1
-      - run: ./scripts/test-stages.sh load | tee load.log
+      - run: |
+          mkdir -p load/results
+          k6 run load/k6-swarm.js --vus 10 --duration 10s --summary-export=load/results/summary.json | tee load/results/k6.log
+      - run: load/check-thresholds.sh load/results/summary.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: load-${{ github.sha }}
-          path: load.log
+          path: |
+            load/results/summary.json
+            load/results/k6.log
 
   chaos:
     needs: load
