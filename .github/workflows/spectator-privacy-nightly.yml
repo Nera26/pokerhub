@@ -26,7 +26,7 @@ jobs:
       - name: Verify sanitized logs
         if: always()
         run: |
-          if rg -i "userId|tableSecret" backend-tests.log frontend-tests.log; then
+          if rg -i "userId|tableSecret|sessionToken|email|ipAddress" backend-tests.log frontend-tests.log; then
             echo "PII found in logs" >&2
             exit 1
           fi
