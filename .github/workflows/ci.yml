@@ -223,6 +223,36 @@ jobs:
           unit: hours
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
+      - name: Prepare spectator-privacy-nightly SLA alert
+        if: failure() && steps.spectator-privacy-nightly.outcome == 'failure'
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          cat <<'EOF' > spectator-privacy-nightly-sla.md
+          Workflow: ${{ steps.spectator-privacy-nightly.outputs.workflow }}
+          Last Run: ${{ steps.spectator-privacy-nightly.outputs.timestamp }}
+          Conclusion: ${{ steps.spectator-privacy-nightly.outputs.conclusion }}
+          EOF
+          jq -n --arg channel "$SLACK_CHANNEL_ID" \
+            --arg text "spectator-privacy-nightly.yml SLA check failed. Last run: ${{ steps.spectator-privacy-nightly.outputs.timestamp }} (conclusion: ${{ steps.spectator-privacy-nightly.outputs.conclusion }})." \
+            '{channel: $channel, text: $text}' > spectator-privacy-nightly-slack.json
+
+      - name: Slack alert (spectator-privacy-nightly SLA)
+        if: failure() && steps.spectator-privacy-nightly.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: spectator-privacy-nightly-slack.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+      - name: Create issue for spectator-privacy-nightly SLA
+        if: failure() && steps.spectator-privacy-nightly.outcome == 'failure'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "SLA breached: spectator-privacy-nightly"
+          content-filepath: spectator-privacy-nightly-sla.md
+
       - name: Get spectator privacy run ID
         id: get_run_id
         env:
