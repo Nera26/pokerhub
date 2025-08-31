@@ -31,6 +31,20 @@ jobs:
           PGDATABASE: postgres
           WAL_ARCHIVE_BUCKET: ${{ vars.WAL_ARCHIVE_BUCKET }}
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Run restore health check
+        run: npx -y ts-node infra/disaster-recovery/tests/restore.test.ts
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          PG_SNAPSHOT_ID: ${{ vars.PG_SNAPSHOT_ID }}
+          PG_BACKUP_ID: ${{ vars.PG_SNAPSHOT_ID }}
+          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+
       - name: Parse metrics
         id: metrics
         run: |
