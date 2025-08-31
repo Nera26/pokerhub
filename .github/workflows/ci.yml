@@ -688,20 +688,24 @@ jobs:
           RTO_THRESHOLD: ${{ vars.DR_RTO_TARGET || 1800 }}
           RPO_THRESHOLD: ${{ vars.DR_RPO_TARGET || 300 }}
         run: |
-          set -e
-          result=$(npx ts-node infra/disaster-recovery/check-dr-trends.ts)
-          echo "$result" | tee dr-trends.json
+          set -euo pipefail
+          npx ts-node infra/disaster-recovery/check-dr-trends.ts | tee dr-trends.json
+          result=$(cat dr-trends.json)
+          echo "| Metric | Latest | Average | Δ |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| --- | --- | --- | --- |" >> "$GITHUB_STEP_SUMMARY"
           echo "$result" | jq -r '[
-            "Latest RTO: \(.latest.rto)s",
-            "Latest RPO snapshot: \(.latest.rpoSnap)s",
-            "Latest RPO WAL: \(.latest.rpoWal)s",
-            "Average RTO: \(.average.rto)s",
-            "Average RPO snapshot: \(.average.rpoSnap)s",
-            "Average RPO WAL: \(.average.rpoWal)s",
-            "Δ RTO: \(.trend.rto)s",
-            "Δ RPO snapshot: \(.trend.rpoSnap)s",
-            "Δ RPO WAL: \(.trend.rpoWal)s"
-          ] | join("\n")' >> "$GITHUB_STEP_SUMMARY"
+            ["RTO (s)", .latest.rto, (.average.rto | round), (.trend.rto | round)],
+            ["RPO snapshot (s)", .latest.rpoSnap, (.average.rpoSnap | round), (.trend.rpoSnap | round)],
+            ["RPO WAL (s)", .latest.rpoWal, (.average.rpoWal | round), (.trend.rpoWal | round)]
+          ] | .[] | "| \(.0) | \(.1) | \(.2) | \(.3) |"' >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Runs: $(echo "$result" | jq '.runs')" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload DR trends artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dr-trends
+          path: dr-trends.json
       - name: Prepare DR trend Slack payload
         if: always()
         env:
