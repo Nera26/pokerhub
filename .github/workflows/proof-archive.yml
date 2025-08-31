@@ -1,0 +1,55 @@
+name: proof-archive
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install backend dependencies
+        run: npm ci --legacy-peer-deps --prefix backend
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Export recent hand proofs
+        run: |
+          ids=$(psql "$DATABASE_URL" -Atc "SELECT id FROM hand WHERE seed IS NOT NULL AND nonce IS NOT NULL AND created_at >= NOW() - INTERVAL '1 day'")
+          mkdir -p storage/proofs
+          failed=0
+          for id in $ids; do
+            if ! npx -y ts-node scripts/export-hand-proof.ts "$id"; then
+              failed=1
+            fi
+          done
+          if [ "$failed" -ne 0 ]; then
+            exit 1
+          fi
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - name: Sync proofs to S3
+        if: always()
+        run: aws s3 sync storage/proofs "s3://${{ secrets.PROOF_ARCHIVE_BUCKET }}/$(date +%Y-%m-%d)/"
+      - name: Upload proofs artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hand-proofs-${{ github.run_id }}
+          path: storage/proofs
+          retention-days: 30
+      - name: PagerDuty alert on failure
+        if: failure()
+        env:
+          ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+        run: |
+          curl -X POST https://events.pagerduty.com/v2/enqueue \
+            -H 'Content-Type: application/json' \
+            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Hand proof export failed","source":"github-actions","severity":"error"}}'
