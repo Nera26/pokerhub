@@ -52,7 +52,7 @@ jobs:
           grep backend-tests.log gcs-logs.txt
           grep frontend-tests.log gcs-logs.txt
           grep dlp-scan.json gcs-logs.txt
-      - name: Verify spectator bucket retention
+      - name: Verify spectator bucket retention, uniform access, and encryption
         if: always()
         env:
           SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}

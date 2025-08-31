@@ -26,7 +26,9 @@ function main() {
     process.exit(1);
   }
 
-  console.log('Spectator privacy bucket retention and encryption policies verified');
+  console.log(
+    'Spectator privacy bucket retention, uniform access, and encryption policies verified',
+  );
 }
 
 try {
