@@ -139,6 +139,53 @@ function checkSoakMetrics(bucket: string) {
   }
 }
 
+function checkSoakSummary(
+  bucket: string,
+  maxLatencyP95: number,
+  minThroughput: number,
+) {
+  const uri = `gs://${bucket}/soak/latest/soak-summary.json`;
+  let raw: string;
+  try {
+    raw = gcloud.run(`cat ${uri}`) as string;
+  } catch {
+    throw new Error(`Missing soak summary at ${uri}`);
+  }
+  let summary: any;
+  try {
+    summary = JSON.parse(raw);
+  } catch {
+    throw new Error(`Unable to parse soak summary at ${uri}`);
+  }
+  const latP95 = Number(
+    summary?.metrics?.ack_latency?.['p(95)'] ??
+      summary?.metrics?.ws_latency?.['p(95)'],
+  );
+  const count = Number(
+    summary?.metrics?.ack_latency?.count ??
+      summary?.metrics?.ws_latency?.count,
+  );
+  const durationMs = Number(summary?.state?.testRunDurationMs);
+  const throughput =
+    durationMs > 0 ? count / (durationMs / 1000) : Number.NaN;
+  if (!isFinite(latP95)) {
+    throw new Error(`Missing latency p95 in soak summary at ${uri}`);
+  }
+  if (!isFinite(throughput)) {
+    throw new Error(`Missing throughput in soak summary at ${uri}`);
+  }
+  if (latP95 > maxLatencyP95) {
+    throw new Error(
+      `Latency p95 ${latP95}ms exceeds ${maxLatencyP95}ms threshold`,
+    );
+  }
+  if (throughput < minThroughput) {
+    throw new Error(
+      `Throughput ${throughput} < ${minThroughput} threshold`,
+    );
+  }
+}
+
 function checkDrMetrics(bucket: string) {
   let listing: string;
   try {
@@ -197,10 +244,13 @@ function main() {
   const runId = requireEnv('RUN_ID');
   const soakBucket = requireEnv('SOAK_TRENDS_BUCKET');
   const drMetricsBucket = requireEnv('DR_METRICS_BUCKET');
+  const maxLatencyP95 = Number(requireEnv('SOAK_LATENCY_P95_MS'));
+  const minThroughput = Number(requireEnv('SOAK_THROUGHPUT_MIN'));
 
   checkProofArchive(proofBucket);
   checkSpectatorLogs(spectatorBucket, runId);
   checkSoakMetrics(soakBucket);
+  checkSoakSummary(soakBucket, maxLatencyP95, minThroughput);
   checkDrMetrics(drMetricsBucket);
 
   console.log('All ops artifacts verified');
@@ -219,5 +269,6 @@ export {
   checkProofArchive,
   checkSpectatorLogs,
   checkSoakMetrics,
+  checkSoakSummary,
   checkDrMetrics,
 };
