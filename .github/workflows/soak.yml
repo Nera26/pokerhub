@@ -43,6 +43,21 @@ jobs:
           flags: >-
             --summary-export=soak-summary.json
             -o experimental-prometheus-rw=${{ secrets.GRAFANA_PROM_URL }}
+      - name: Check soak thresholds
+        run: ./load/check-thresholds.sh soak-summary.json
+      - name: Publish soak metrics
+        if: always()
+        run: |
+          p95=$(jq -r '.metrics.ws_latency["p(95)"] // .metrics.ack_latency["p(95)"] // 0' soak-summary.json)
+          p99=$(jq -r '.metrics.ws_latency["p(99)"] // .metrics.ack_latency["p(99)"] // 0' soak-summary.json)
+          err=$(jq -r '.metrics.error_rate.rate * 100' soak-summary.json)
+          {
+            echo "### Soak Test Metrics"
+            echo ""
+            echo "- Latency p95: ${p95} ms"
+            echo "- Latency p99: ${p99} ms"
+            printf '- Error rate: %.2f%%\n' "${err}"
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Stop GC/heap collector
         if: always()
         run: kill $(cat collector.pid)
