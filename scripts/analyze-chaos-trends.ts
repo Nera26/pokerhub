@@ -21,18 +21,18 @@ function loadHist(dir: string, file: string): Record<string, number> {
 }
 
 function fetchBaseline(bucket: string): string {
-  const list = execSync(`aws s3 ls s3://${bucket}/`, { encoding: 'utf-8' })
+  const list = execSync(`gcloud storage ls gs://${bucket}/`, { encoding: 'utf-8' })
     .trim()
     .split('\n')
-    .map((l) => l.trim().split(/\s+/).pop()!)
+    .map((l) => l.trim())
     .filter((n) => n.endsWith('/'))
     .sort();
   if (list.length === 0) {
-    throw new Error(`No baseline runs found in s3://${bucket}/`);
+    throw new Error(`No baseline runs found in gs://${bucket}/`);
   }
   const latest = list[list.length - 1];
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'chaos-baseline-'));
-  execSync(`aws s3 sync s3://${bucket}/${latest} ${tmp}`);
+  execSync(`gcloud storage cp -r ${latest} ${tmp}`);
   return tmp;
 }
 
