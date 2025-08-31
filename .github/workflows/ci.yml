@@ -80,10 +80,6 @@ jobs:
           unit: days
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
       - name: Check proof-archive SLA
         id: proof-archive
         uses: ./.github/workflows/check-workflow-sla
@@ -92,6 +88,10 @@ jobs:
           sla: 24
           unit: hours
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
       # Mirror proof-archive SLA check
       - name: Check ops-artifacts-verify SLA
