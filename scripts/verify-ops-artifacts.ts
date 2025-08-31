@@ -187,6 +187,40 @@ function checkSoakSummary(
   }
 }
 
+function checkSoakTrendDelta(bucket: string, maxPct: number) {
+  const uri = `gs://${bucket}/soak/latest/trend-delta.json`;
+  let raw: string;
+  try {
+    raw = gcloud.run(`cat ${uri}`) as string;
+  } catch {
+    throw new Error(`Missing soak trend delta at ${uri}`);
+  }
+  let trend: any;
+  try {
+    trend = JSON.parse(raw);
+  } catch {
+    throw new Error(`Unable to parse soak trend delta at ${uri}`);
+  }
+  const latP95 = Number(trend?.latency?.p95);
+  const throughput = Number(trend?.throughput);
+  if (!isFinite(latP95)) {
+    throw new Error(`Missing latency.p95 in soak trend delta at ${uri}`);
+  }
+  if (!isFinite(throughput)) {
+    throw new Error(`Missing throughput in soak trend delta at ${uri}`);
+  }
+  if (latP95 > maxPct) {
+    throw new Error(
+      `Latency p95 regression ${latP95}% exceeds ${maxPct}% threshold`,
+    );
+  }
+  if (throughput < -maxPct) {
+    throw new Error(
+      `Throughput regression ${Math.abs(throughput)}% exceeds ${maxPct}% threshold`,
+    );
+  }
+}
+
 function checkDrMetrics(bucket: string) {
   let listing: string;
   try {
@@ -247,6 +281,7 @@ function main() {
   const drMetricsBucket = requireEnv('DR_METRICS_BUCKET');
   const maxLatencyP95 = Number(requireEnv('SOAK_LATENCY_P95_MS'));
   const minThroughput = Number(requireEnv('SOAK_THROUGHPUT_MIN'));
+  const maxTrendPct = Number(requireEnv('SOAK_TRENDS_MAX_PCT'));
 
   const proofRetention = Number(
     process.env.PROOF_ARCHIVE_MIN_RETENTION_DAYS || '365',
@@ -268,6 +303,7 @@ function main() {
   checkSpectatorLogs(spectatorBucket, runId);
   checkSoakMetrics(soakBucket);
   checkSoakSummary(soakBucket, maxLatencyP95, minThroughput);
+  checkSoakTrendDelta(soakBucket, maxTrendPct);
   checkDrMetrics(drMetricsBucket);
 
   console.log('All ops artifacts verified');
@@ -287,5 +323,6 @@ export {
   checkSpectatorLogs,
   checkSoakMetrics,
   checkSoakSummary,
+  checkSoakTrendDelta,
   checkDrMetrics,
 };
