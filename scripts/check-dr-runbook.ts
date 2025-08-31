@@ -36,3 +36,23 @@ if (diffDays > 30) {
 }
 
 console.log(`Latest drill ${latestStr} is ${Math.floor(diffDays)} days old`);
+
+if (process.env.APPEND_RUN_ID === 'true') {
+  const runId = process.env.GITHUB_RUN_ID;
+  if (runId) {
+    const repo = process.env.GITHUB_REPOSITORY;
+    const runUrl = repo ? `https://github.com/${repo}/actions/runs/${runId}` : runId;
+    const lines = content.split('\n');
+    const markerIndex = lines.findIndex(line => line.includes(marker));
+    if (markerIndex !== -1) {
+      const relIndex = lines.slice(markerIndex + 1).findIndex(line => line.includes(latestStr));
+      if (relIndex !== -1) {
+        const entryIndex = markerIndex + 1 + relIndex;
+        if (!lines[entryIndex].includes(runId)) {
+          lines[entryIndex] += ` ([run ${runId}](${runUrl}))`;
+          fs.writeFileSync(runbookPath, lines.join('\n'));
+        }
+      }
+    }
+  }
+}

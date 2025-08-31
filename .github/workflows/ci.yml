@@ -11,6 +11,18 @@ permissions:
   actions: read
 
 jobs:
+  dr-runbook:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check DR runbook entry
+        run: |
+          set -euo pipefail
+          npx -y ts-node scripts/check-dr-runbook.ts
+
   workflow-sla:
     runs-on: ubuntu-latest
     steps:
@@ -71,8 +83,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Check DR runbook entry
-        run: npx -y ts-node scripts/check-dr-runbook.ts
 
       - name: Check proof-archive SLA
         id: proof-archive
