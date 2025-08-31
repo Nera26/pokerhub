@@ -1,6 +1,7 @@
 #!/usr/bin/env ts-node
 import { execSync } from 'child_process';
 import { createHash } from 'crypto';
+import { checkBucketRetention } from './bucket-retention';
 
 function requireEnv(name: string): string {
   const val = process.env[name];
@@ -246,6 +247,22 @@ function main() {
   const drMetricsBucket = requireEnv('DR_METRICS_BUCKET');
   const maxLatencyP95 = Number(requireEnv('SOAK_LATENCY_P95_MS'));
   const minThroughput = Number(requireEnv('SOAK_THROUGHPUT_MIN'));
+
+  const proofRetention = Number(
+    process.env.PROOF_ARCHIVE_MIN_RETENTION_DAYS || '365',
+  );
+  if (!Number.isFinite(proofRetention) || proofRetention <= 0) {
+    throw new Error('Invalid PROOF_ARCHIVE_MIN_RETENTION_DAYS');
+  }
+  const spectatorRetention = Number(
+    process.env.SPECTATOR_PRIVACY_MIN_RETENTION_DAYS || '30',
+  );
+  if (!Number.isFinite(spectatorRetention) || spectatorRetention <= 0) {
+    throw new Error('Invalid SPECTATOR_PRIVACY_MIN_RETENTION_DAYS');
+  }
+
+  checkBucketRetention(proofBucket, proofRetention);
+  checkBucketRetention(spectatorBucket, spectatorRetention);
 
   checkProofArchive(proofBucket);
   checkSpectatorLogs(spectatorBucket, runId);
