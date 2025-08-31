@@ -77,9 +77,31 @@ jobs:
           name: proof-validation-${{ github.run_id }}
           path: proof-validation.log
           retention-days: 30
-      - name: Sync proofs to GCS
+      - name: Upload proofs to GCS
         if: success()
-        run: gcloud storage cp storage/proofs/* "gs://${{ secrets.PROOF_ARCHIVE_BUCKET }}/$(date +%Y-%m-%d)/"
+        run: |
+          set -e
+          dest="gs://${{ secrets.PROOF_ARCHIVE_BUCKET }}/$(date +%Y-%m-%d)/"
+          gcloud storage cp storage/proofs/* "$dest"
+      - name: Verify GCS upload
+        if: success()
+        run: |
+          set -e
+          dest="gs://${{ secrets.PROOF_ARCHIVE_BUCKET }}/$(date +%Y-%m-%d)/"
+          echo "Uploaded files:"
+          gcloud storage ls "$dest"
+          local_count=$(find storage/proofs -name '*.json' | wc -l)
+          remote_count=$(gcloud storage ls "$dest" | grep -c '.json$')
+          if [ "$local_count" -ne "$remote_count" ]; then
+            echo "Proof count mismatch: local $local_count vs remote $remote_count" >&2
+            exit 1
+          fi
+          local_hash=$(sha256sum storage/proofs/manifest.txt | awk '{print $1}')
+          remote_hash=$(gcloud storage cat "${dest}manifest.txt" | sha256sum | awk '{print $1}')
+          if [ "$local_hash" != "$remote_hash" ]; then
+            echo "Manifest hash mismatch: local $local_hash vs remote $remote_hash" >&2
+            exit 1
+          fi
       - name: Restore and validate archived proofs
         if: success()
         run: |
