@@ -3,7 +3,7 @@
 This document outlines security threats across PokerHub using the STRIDE framework.
 
 ## Spoofing
-Impersonation of users or services is mitigated by strong authentication and [KYC checks](kyc-aml.md).
+Impersonation of users or services is mitigated by strong authentication and [KYC checks](kyc-aml-flow.md).
 
 ## Tampering
 Data integrity is protected via signed transactions and monitored pipelines.
