@@ -174,9 +174,35 @@ jobs:
 
       - uses: actions/checkout@v4
       - name: Verify proof archive integrity
+        id: proof-archive-integrity
         env:
           PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
-        run: npx -y ts-node scripts/check-proof-archive.ts
+        run: npx ts-node scripts/check-proof-archive.ts
+      - name: Prepare proof archive integrity alert
+        if: failure() && steps.proof-archive-integrity.outcome == 'failure'
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          cat <<'EOF' > proof-archive-integrity.md
+          Proof archive integrity check failed.
+          EOF
+          jq -n --arg channel "$SLACK_CHANNEL_ID" \
+            --arg text "Proof archive integrity check failed." \
+            '{channel: $channel, text: $text}' > proof-archive-integrity-slack.json
+      - name: Slack alert (proof archive integrity)
+        if: failure() && steps.proof-archive-integrity.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: proof-archive-integrity-slack.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: Create issue for proof archive integrity
+        if: failure() && steps.proof-archive-integrity.outcome == 'failure'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "Proof archive integrity check failed"
+          content-filepath: proof-archive-integrity.md
 
       - name: Ensure soak test recent success
         id: soak
