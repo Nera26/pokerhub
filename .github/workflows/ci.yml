@@ -220,6 +220,9 @@ jobs:
         run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-soak-trends.ts metrics
         env:
           SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+      - name: Upload baseline metrics
+        if: github.ref == 'refs/heads/main'
+        run: aws s3 cp metrics/baseline.json "s3://${{ secrets.SOAK_TRENDS_BUCKET }}/baseline/"
       - name: Open soak regression issue
         if: failure()
         uses: peter-evans/create-issue-from-file@v4
