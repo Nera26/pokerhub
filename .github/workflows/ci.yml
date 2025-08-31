@@ -380,9 +380,32 @@ jobs:
     needs: property
     runs-on: ubuntu-latest
     continue-on-error: false
+    env:
+      SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
     steps:
       - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
       - uses: ./.github/actions/spectator-privacy-check
+      - name: Upload logs to GCS
+        if: always()
+        env:
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          gcloud storage cp backend-tests.log gs://$SPECTATOR_PRIVACY_BUCKET/$RUN_ID/backend-tests.log
+          gcloud storage cp frontend-tests.log gs://$SPECTATOR_PRIVACY_BUCKET/$RUN_ID/frontend-tests.log
+      - name: Verify logs in GCS
+        if: always()
+        env:
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          gcloud storage ls gs://$SPECTATOR_PRIVACY_BUCKET/$RUN_ID/ | tee gcs-logs.txt
+          grep backend-tests.log gcs-logs.txt
+          grep frontend-tests.log gcs-logs.txt
       - name: Upload spectator privacy logs
         if: always()
         uses: actions/upload-artifact@v4
