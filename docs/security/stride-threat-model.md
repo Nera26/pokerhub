@@ -1,9 +1,12 @@
 # STRIDE Threat Model
 
-This document outlines security threats across PokerHub using the STRIDE framework.
+This document outlines security threats across PokerHub using the STRIDE framework. For process
+details and monitoring flows, see the [KYC/AML flow](../compliance/kyc-aml-flow.md) and
+[anti-collusion controls](anti-collusion.md).
 
 ## Spoofing
-Impersonation of users or services is mitigated by strong authentication and [KYC checks](kyc-aml-flow.md).
+Impersonation of users or services is mitigated by strong authentication and
+[KYC/AML checks](../compliance/kyc-aml-flow.md).
 
 ## Tampering
 Data integrity is protected via signed transactions and monitored pipelines.
@@ -39,3 +42,8 @@ The gaps noted in earlier STRIDE reviews have been closed:
 | Information Disclosure | Sanctions and country checks restrict access from high-risk regions | [backend/src/auth/kyc.service.ts](../../backend/src/auth/kyc.service.ts) |
 | Denial of Service | Per-socket and global rate limits throttle abusive clients | [backend/src/game/game.gateway.ts](../../backend/src/game/game.gateway.ts) |
 | Elevation of Privilege | Collusion detection and KYC workflows enforce fair play and verified access | [backend/src/analytics/collusion.ts](../../backend/src/analytics/collusion.ts), [backend/src/auth/kyc.service.ts](../../backend/src/auth/kyc.service.ts) |
+
+## Related Documents
+
+- [KYC/AML flow](../compliance/kyc-aml-flow.md)
+- [Anti-collusion controls](anti-collusion.md)
