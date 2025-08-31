@@ -764,6 +764,8 @@ ops-artifacts:
     DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
     SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS || 120 }}
     SOAK_THROUGHPUT_MIN: ${{ vars.SOAK_THROUGHPUT_MIN || 100 }}
+    PROOF_ARCHIVE_MIN_RETENTION_DAYS: ${{ vars.PROOF_ARCHIVE_MIN_RETENTION_DAYS || 365 }}
+    SPECTATOR_PRIVACY_MIN_RETENTION_DAYS: ${{ vars.SPECTATOR_PRIVACY_MIN_RETENTION_DAYS || 30 }}
   steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
