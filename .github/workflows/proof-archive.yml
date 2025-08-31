@@ -30,6 +30,10 @@ jobs:
               failed=1
             fi
           done
+          if [ -z "$ids" ]; then
+            echo "No hand proofs found to export" >&2
+            exit 1
+          fi
           if [ "$failed" -ne 0 ]; then
             exit 1
           fi
@@ -64,6 +68,14 @@ jobs:
           name: hand-proofs-${{ github.run_id }}
           path: storage/proofs
           retention-days: 30
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            { "text": "Hand proof export failed for ${GITHUB_REPOSITORY}@${GITHUB_SHA}" }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       - name: PagerDuty alert on failure
         if: failure()
         env:
