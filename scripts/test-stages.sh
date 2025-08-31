@@ -16,9 +16,15 @@ run_unit() {
 
 run_property() {
   npm ci
-  npm install --no-save fast-check >/dev/null 2>&1 || true
-  npm test --prefix backend -- test/game/.*\.property\.spec\.ts
-  npx ts-node --esm shared/test/verify.property.ts
+  npm ci --prefix backend
+  npm ci --prefix frontend
+  npm ci --prefix analytics
+  npm run test:property --prefix backend
+  npm test --prefix frontend -- --testPathPattern=.property.spec.ts$ --passWithNoTests
+  npm run test:property --prefix analytics
+  if [ -d tests/property ]; then
+    npx ts-node tests/property/**/*.ts
+  fi
 }
 
 run_integration() {

@@ -55,7 +55,6 @@ jobs:
           path: unit.log
 
   property:
-    # Property-based tests for backend and frontend
     needs: unit
     runs-on: ubuntu-latest
     continue-on-error: false
@@ -65,21 +64,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
-      - run: npm ci --prefix backend
-      - run: npm ci --prefix frontend
-      - run: npm ci --prefix analytics
-      - name: Backend property tests
-        run: npm run test:property --prefix backend | tee property.log
-      - name: Frontend property tests
-        run: npm test --prefix frontend -- --testPathPattern=.property.spec.ts$ --passWithNoTests | tee -a property.log
-      - name: Analytics property tests
-        run: npm run test:property --prefix analytics | tee -a property.log
-      - name: Run repository property tests
-        run: |
-          if [ -d tests/property ]; then
-            npx ts-node tests/property/**/*.ts | tee -a property.log
-          fi
+      - run: ./scripts/test-stages.sh property | tee property.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
