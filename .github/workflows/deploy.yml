@@ -21,6 +21,7 @@ jobs:
       ACK_LATENCY_THRESHOLD_MS: 120
       ERROR_RATE_THRESHOLD: 0.0005
       DR_DRILL_SLA_DAYS: 7
+      SOAK_SLA_HOURS: 24
     steps:
       - uses: actions/checkout@v4
 
@@ -73,6 +74,34 @@ jobs:
         with:
           payload: |
             { "text": "🚫 Deployment blocked: proof-archive workflow failed or stale for ${{ github.repository }}@${{ github.sha }}" }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Ensure soak test recent success
+        id: soak
+        env:
+          SLA_HOURS: ${{ env.SOAK_SLA_HOURS }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          run=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/soak.yml/runs?per_page=1")
+          conclusion=$(echo "$run" | jq -r '.workflow_runs[0].conclusion')
+          started=$(echo "$run" | jq -r '.workflow_runs[0].run_started_at')
+          start_ts=$(date -d "$started" +%s)
+          now=$(date -u +%s)
+          max_age=$((SLA_HOURS * 3600))
+          if [ "$conclusion" != "success" ] || [ $((now - start_ts)) -gt "$max_age" ]; then
+            echo "Latest soak workflow run did not succeed within ${SLA_HOURS} hours"
+            exit 1
+          fi
+
+      - name: Notify on-call on stale soak test
+        if: failure() && steps.soak.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            { "text": "🚫 Deployment blocked: soak workflow failed or stale for ${{ github.repository }}@${{ github.sha }}" }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
