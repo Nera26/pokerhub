@@ -255,6 +255,19 @@ jobs:
         with:
           title: Soak trends regression detected
           content-filepath: metrics/baseline.json
+      - name: Prepare soak regression Slack payload
+        if: failure()
+        run: jq -Rs '{channel: env.SLACK_CHANNEL_ID, text: .}' metrics/baseline.json > slack-payload.json
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+      - name: Slack soak regression alert
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: slack-payload.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
       - name: Sync soak metrics
         if: always()
         run: aws s3 sync metrics "s3://${{ secrets.SOAK_TRENDS_BUCKET }}/soak-${{ github.run_id }}/"
