@@ -41,14 +41,14 @@ groups:
 - Metabase: <https://metabase.pokerhub.example/dashboard/42-alerts>
 - JSON definitions live under `../../infrastructure/observability/` and include `pagerduty_service` labels mapping each panel to the owning PagerDuty service.
 
-## PagerDuty Services
-<!-- Update service IDs in this file if PagerDuty services change -->
+## PagerDuty Services and Escalation Paths
+<!-- Update service IDs or escalation details if PagerDuty services change -->
 
-| `pagerduty_service` | PagerDuty service | Service ID |
-| --- | --- | --- |
-| `pokerhub-sre` | Core platform and SLO alerts (availability, latency, error rate) | PSRE789 |
-| `pokerhub-eng` | Feature engineering queues and saturation metrics | PENG012 |
-| `pokerhub-ops` | Deployment and operations notifications | — |
+| `pagerduty_service` | PagerDuty service | Service ID | Escalation path |
+| --- | --- | --- | --- |
+| `pokerhub-sre` | Core platform and SLO alerts (availability, latency, error rate) | PSRE789 | Primary SRE (5 m) → secondary SRE (15 m) → engineering manager (30 m) → CTO (1 h) |
+| `pokerhub-eng` | Feature engineering queues and saturation metrics | PENG012 | Primary engineer → SRE on-call (30 m) → engineering manager (1 h) |
+| `pokerhub-ops` | Deployment and operations notifications | — | Primary ops on-call (15 m) → product manager (15 m) → engineering manager (30 m) → CTO (1 h) |
 
 Redis, Postgres and WebSocket metrics from OpenTelemetry are routed to
 `pokerhub-sre` (ID: PSRE789) using the `pagerduty_service` tag embedded in Grafana panels.
@@ -65,14 +65,6 @@ Redis, Postgres and WebSocket metrics from OpenTelemetry are routed to
 - Alertmanager posts events to PagerDuty using the configured routing key.
 - The on-call engineer triages using the dashboards above; each JSON file exposes a `pagerduty_service` label to identify the owning service.
 - After mitigation, acknowledge and resolve the alert in PagerDuty to close the loop.
-
-### Service Escalation Paths
-
-| `pagerduty_service` | Escalation path |
-| --- | --- |
-| `pokerhub-sre` (PSRE789) | Primary SRE (5 m) → secondary SRE (15 m) → engineering manager (30 m) → CTO (1 h) |
-| `pokerhub-eng` (PENG012) | Primary engineer → SRE on-call (30 m) → engineering manager (1 h) |
-| `pokerhub-ops` | Primary ops on-call (15 m) → product manager (15 m) → engineering manager (30 m) → CTO (1 h) |
 
 PagerDuty escalation policy URLs:
 

@@ -1,0 +1,18 @@
+{
+  "dashboard": {
+    "title": "Frontend Route Latency",
+    "labels": {
+      "pagerduty_service": "pokerhub-eng",
+      "runbook": "docs/runbooks/http-api-latency.md"
+    },
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "Route p95",
+        "targets": [
+          {"expr": "histogram_quantile(0.95, sum(rate(frontend_route_duration_seconds_bucket[5m])) by (le))"}
+        ]
+      }
+    ]
+  }
+}

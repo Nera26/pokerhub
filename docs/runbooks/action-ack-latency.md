@@ -6,6 +6,9 @@ Investigates slow acknowledgements of game actions.
 - Grafana: [Action ACK Latency](../../infrastructure/observability/socket-latency-dashboard.json)
 - Metabase: [Action ACK Latency](../analytics-dashboards.md#action-ack-latency-1)
 
+## Alert Rule
+- `ActionAckLatencySLOViolation` in [alerts.yml](../../infrastructure/observability/alerts.yml)
+
 ## PagerDuty
 - Service: `pokerhub-sre` (ID: PSRE789) <!-- Update ID if PagerDuty service changes -->
 - Escalation: [SRE](https://pokerhub.pagerduty.com/escalation_policies/PABC123)
