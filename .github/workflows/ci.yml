@@ -153,3 +153,28 @@ jobs:
         with:
           name: chaos-${{ github.sha }}
           path: chaos.log
+
+  soak:
+    needs: chaos
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: grafana/setup-k6@v1
+      - run: |
+          mkdir -p load/results
+          k6 run load/k6-ws-soak.js --vus 10 --duration 30s --summary-export=load/results/ws-soak-summary.json
+      - run: load/check-thresholds.sh load/results/ws-soak-summary.json metrics/gc-histogram.json metrics/heap-histogram.json metrics/cpu-histogram.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: soak-${{ github.sha }}
+          path: |
+            load/results/ws-soak-summary.json
+            metrics/gc-histogram.json
+            metrics/heap-histogram.json
+            metrics/cpu-histogram.json
