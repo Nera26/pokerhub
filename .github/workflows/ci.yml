@@ -110,40 +110,6 @@ jobs:
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
 
-      - name: Verify proof archive integrity
-        id: proof-archive-integrity
-        env:
-          PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
-        run: npx ts-node scripts/check-proof-archive.ts
-
-      - name: Prepare proof archive integrity alert
-        if: failure() && steps.proof-archive-integrity.outcome == 'failure'
-        env:
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-        run: |
-          cat <<'EOF' > proof-archive-integrity.md
-          Proof archive integrity check failed.
-          EOF
-          jq -n --arg channel "$SLACK_CHANNEL_ID" \
-            --arg text "Proof archive integrity check failed." \
-            '{channel: $channel, text: $text}' > proof-archive-integrity-slack.json
-
-      - name: Slack alert (proof archive integrity)
-        if: failure() && steps.proof-archive-integrity.outcome == 'failure'
-        uses: slackapi/slack-github-action@v1
-        with:
-          method: chat.postMessage
-          payload-file-path: proof-archive-integrity-slack.json
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-
-      - name: Create issue for proof archive integrity
-        if: failure() && steps.proof-archive-integrity.outcome == 'failure'
-        uses: peter-evans/create-issue-from-file@v4
-        with:
-          title: "Proof archive integrity check failed"
-          content-filepath: proof-archive-integrity.md
-
       - name: Check soak metrics
         env:
           SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
@@ -721,3 +687,31 @@ jobs:
           payload-file-path: dr-trends-slack.json
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+  check-proof-archive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+      - name: Verify proof archive integrity
+        id: verify
+        env:
+          PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+          PROOF_ARCHIVE_EXPECTED_DAILY_COUNT: ${{ vars.PROOF_ARCHIVE_EXPECTED_DAILY_COUNT || 1 }}
+        run: npx -y ts-node scripts/check-proof-archive.ts
+      - name: Proof archive summary
+        if: always()
+        run: |
+          {
+            echo "### Proof Archive"
+            echo "- expected: ${{ steps.verify.outputs.expected }}"
+            echo "- count: ${{ steps.verify.outputs.count }}"
+          } >> "$GITHUB_STEP_SUMMARY"

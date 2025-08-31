@@ -4,5 +4,6 @@
     - contracts
     - deploy
     - proof-archive
+    - check-proof-archive
     - soak
     - spectator-privacy
