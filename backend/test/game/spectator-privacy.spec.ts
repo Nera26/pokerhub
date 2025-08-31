@@ -64,7 +64,7 @@ describe('SpectatorGateway privacy over WebSocket', () => {
     await app.close();
   });
 
-  it('omits hole cards from emitted states', async () => {
+  it('omits private cards from emitted states', async () => {
     const client = io(url, { transports: ['websocket'], query: { tableId: 't1' } });
     const states: any[] = [];
     client.on('state', (s) => states.push(s));
@@ -79,6 +79,7 @@ describe('SpectatorGateway privacy over WebSocket', () => {
     for (const s of states) {
       for (const player of s.players as Array<Record<string, unknown>>) {
         expect(player.holeCards).toBeUndefined();
+        expect(player.cards).toBeUndefined();
       }
     }
   });
