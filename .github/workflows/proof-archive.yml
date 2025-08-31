@@ -61,6 +61,26 @@ jobs:
       - name: Sync proofs to S3
         if: success()
         run: aws s3 sync storage/proofs "s3://${{ secrets.PROOF_ARCHIVE_BUCKET }}/$(date +%Y-%m-%d)/"
+      - name: Restore and validate archived proof
+        if: success()
+        run: |
+          tmpdir=$(mktemp -d)
+          prefix="s3://${{ secrets.PROOF_ARCHIVE_BUCKET }}/$(date +%Y-%m-%d)/"
+          file=$(aws s3 ls "$prefix" | awk '{print $4}' | grep '.json$' | head -n 1)
+          if [ -z "$file" ]; then
+            echo "No proof files found in archive" >&2
+            exit 1
+          fi
+          aws s3 cp "${prefix}${file}" "$tmpdir/$file"
+          aws s3 cp "${prefix}manifest.txt" "$tmpdir/manifest.txt"
+          npx -y ts-node scripts/restore-proof-check.ts "$tmpdir/$file" "$tmpdir/manifest.txt" 2>&1 | tee restore-validation.log
+      - name: Upload restore validation logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: restore-proof-validation-${{ github.run_id }}
+          path: restore-validation.log
+          retention-days: 30
       - name: Upload proofs artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -73,7 +93,7 @@ jobs:
         uses: slackapi/slack-github-action@v1.24.0
         with:
           payload: |
-            { "text": "Hand proof export failed for ${GITHUB_REPOSITORY}@${GITHUB_SHA}" }
+            { "text": "Hand proof archive failed for ${GITHUB_REPOSITORY}@${GITHUB_SHA}" }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       - name: PagerDuty alert on failure
@@ -83,4 +103,4 @@ jobs:
         run: |
           curl -X POST https://events.pagerduty.com/v2/enqueue \
             -H 'Content-Type: application/json' \
-            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Hand proof export failed","source":"github-actions","severity":"error"}}'
+            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Hand proof archive failed","source":"github-actions","severity":"error"}}'
