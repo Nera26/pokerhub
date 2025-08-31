@@ -45,6 +45,18 @@ jobs:
             -o experimental-prometheus-rw=${{ secrets.GRAFANA_PROM_URL }}
       - name: Check soak thresholds
         run: ./load/check-thresholds.sh soak-summary.json
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Analyze soak trends
+        run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-soak-trends.ts metrics
+        env:
+          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+      - name: Sync soak metrics
+        if: always()
+        run: aws s3 sync metrics "s3://${{ secrets.SOAK_TRENDS_BUCKET }}/soak-${{ github.run_id }}/"
       - name: Publish soak metrics
         if: always()
         run: |
@@ -69,7 +81,9 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: soak-summary
-          path: soak-summary.json
+          path: |
+            soak-summary.json
+            metrics/baseline.json
       - name: Upload GC metrics
         if: always()
         uses: actions/upload-artifact@v3
