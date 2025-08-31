@@ -6,5 +6,6 @@
     - deploy
     - proof-archive
     - check-proof-archive
+    - ops-artifacts-verify
     - soak
     - spectator-privacy # require spectator privacy workflow
