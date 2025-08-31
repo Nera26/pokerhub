@@ -43,6 +43,40 @@ print(f"heap growth: {growth}%")
 if growth > 1:
     sys.exit("heap growth exceeded 1%")
 PY
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Analyze soak trends
+        id: analyze_tables
+        run: |
+          set -o pipefail
+          npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-soak-trends.ts metrics 2>&1 | tee comparison.log
+        env:
+          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+      - name: Open soak regression issue
+        if: failure() && steps.analyze_tables.outcome == 'failure'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: Tables soak trends regression detected
+          content-filepath: comparison.log
+      - name: Prepare soak regression Slack payload
+        if: failure() && steps.analyze_tables.outcome == 'failure'
+        run: jq -Rs '{channel: env.SLACK_CHANNEL_ID, text: .}' comparison.log > slack-payload.json
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+      - name: Slack soak regression alert
+        if: failure() && steps.analyze_tables.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: slack-payload.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: Sync soak metrics
+        if: always()
+        run: aws s3 sync metrics "s3://${{ secrets.SOAK_TRENDS_BUCKET }}/tables-${{ github.run_id }}/"
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v3
@@ -92,6 +126,40 @@ print(f"heap growth: {growth}%")
 if growth > 1:
     sys.exit("heap growth exceeded 1%")
 PY
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Analyze soak trends
+        id: analyze_soak
+        run: |
+          set -o pipefail
+          npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-soak-trends.ts metrics 2>&1 | tee comparison.log
+        env:
+          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+      - name: Open soak regression issue
+        if: failure() && steps.analyze_soak.outcome == 'failure'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: Soak trends regression detected
+          content-filepath: comparison.log
+      - name: Prepare soak regression Slack payload
+        if: failure() && steps.analyze_soak.outcome == 'failure'
+        run: jq -Rs '{channel: env.SLACK_CHANNEL_ID, text: .}' comparison.log > slack-payload.json
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+      - name: Slack soak regression alert
+        if: failure() && steps.analyze_soak.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: slack-payload.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: Sync soak metrics
+        if: always()
+        run: aws s3 sync metrics "s3://${{ secrets.SOAK_TRENDS_BUCKET }}/soak-${{ github.run_id }}/"
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v3
@@ -134,6 +202,40 @@ PY
       - name: Stop collector
         if: always()
         run: kill $(cat collector.pid)
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Analyze soak trends
+        id: analyze_chaos
+        run: |
+          set -o pipefail
+          npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-soak-trends.ts metrics 2>&1 | tee comparison.log
+        env:
+          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+      - name: Open soak regression issue
+        if: failure() && steps.analyze_chaos.outcome == 'failure'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: Chaos trends regression detected
+          content-filepath: comparison.log
+      - name: Prepare soak regression Slack payload
+        if: failure() && steps.analyze_chaos.outcome == 'failure'
+        run: jq -Rs '{channel: env.SLACK_CHANNEL_ID, text: .}' comparison.log > slack-payload.json
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+      - name: Slack soak regression alert
+        if: failure() && steps.analyze_chaos.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: slack-payload.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: Sync soak metrics
+        if: always()
+        run: aws s3 sync metrics "s3://${{ secrets.SOAK_TRENDS_BUCKET }}/chaos-${{ github.run_id }}/"
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v3
