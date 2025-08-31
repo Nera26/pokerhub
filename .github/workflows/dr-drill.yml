@@ -48,12 +48,16 @@ jobs:
           echo "rto=$RTO_SECONDS" >> "$GITHUB_OUTPUT"
           echo "rpo_snap=$RPO_SNAPSHOT_SECONDS" >> "$GITHUB_OUTPUT"
           echo "rpo_wal=$RPO_WAL_SECONDS" >> "$GITHUB_OUTPUT"
+          echo "failover=$FAILOVER_SECONDS" >> "$GITHUB_OUTPUT"
+          echo "primary_restore=$PRIMARY_RESTORE_SECONDS" >> "$GITHUB_OUTPUT"
 
       - name: Check RTO/RPO objectives
         env:
           RTO: ${{ steps.metrics.outputs.rto }}
           RPO_SNAP: ${{ steps.metrics.outputs.rpo_snap }}
           RPO_WAL: ${{ steps.metrics.outputs.rpo_wal }}
+          FAILOVER: ${{ steps.metrics.outputs.failover }}
+          PRIMARY_RESTORE: ${{ steps.metrics.outputs.primary_restore }}
           RTO_TARGET: 1800
           RPO_TARGET: 300
         run: |
@@ -62,6 +66,8 @@ jobs:
             echo "- RTO: ${RTO}s (target ≤ ${RTO_TARGET}s)"
             echo "- RPO (snapshot): ${RPO_SNAP}s (target ≤ ${RPO_TARGET}s)"
             echo "- RPO (WAL): ${RPO_WAL}s (target ≤ ${RPO_TARGET}s)"
+            echo "- Failover: ${FAILOVER}s"
+            echo "- Primary restore: ${PRIMARY_RESTORE}s"
           } >> "$GITHUB_STEP_SUMMARY"
           if [ "$RTO" -gt "$RTO_TARGET" ] || [ "$RPO_SNAP" -gt "$RPO_TARGET" ] || [ "$RPO_WAL" -gt "$RPO_TARGET" ]; then
             echo "RTO/RPO objectives exceeded" >&2
@@ -85,11 +91,13 @@ jobs:
           RTO: ${{ steps.metrics.outputs.rto }}
           RPO_SNAP: ${{ steps.metrics.outputs.rpo_snap }}
           RPO_WAL: ${{ steps.metrics.outputs.rpo_wal }}
+          FAILOVER: ${{ steps.metrics.outputs.failover }}
+          PRIMARY_RESTORE: ${{ steps.metrics.outputs.primary_restore }}
           METRICS_URL: ${{ steps.upload_metrics.outputs.url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ts=$(date --iso-8601=seconds)
-          perl -0 -i -pe "s/<!-- DR_DRILL_RESULTS -->/<!-- DR_DRILL_RESULTS -->\n- $ts: [metrics]($METRICS_URL) – RTO ${RTO}s, snapshot RPO ${RPO_SNAP}s, WAL RPO ${RPO_WAL}s/" docs/runbooks/disaster-recovery.md
+          perl -0 -i -pe "s/<!-- DR_DRILL_RESULTS -->/<!-- DR_DRILL_RESULTS -->\n- $ts: [metrics]($METRICS_URL) – RTO ${RTO}s, snapshot RPO ${RPO_SNAP}s, WAL RPO ${RPO_WAL}s, failover ${FAILOVER}s, primary restore ${PRIMARY_RESTORE}s/" docs/runbooks/disaster-recovery.md
           git config user.name github-actions
           git config user.email actions@github.com
           git commit -am "chore(dr): record drill results" && git push
@@ -107,10 +115,14 @@ jobs:
           RTO: ${{ steps.metrics.outputs.rto }}
           RPO_SNAP: ${{ steps.metrics.outputs.rpo_snap }}
           RPO_WAL: ${{ steps.metrics.outputs.rpo_wal }}
+          FAILOVER: ${{ steps.metrics.outputs.failover }}
+          PRIMARY_RESTORE: ${{ steps.metrics.outputs.primary_restore }}
         run: |
           gcloud monitoring metrics write custom.googleapis.com/dr/rto "$RTO"
           gcloud monitoring metrics write custom.googleapis.com/dr/rpo_snapshot "$RPO_SNAP"
           gcloud monitoring metrics write custom.googleapis.com/dr/rpo_wal "$RPO_WAL"
+          gcloud monitoring metrics write custom.googleapis.com/dr/failover "$FAILOVER"
+          gcloud monitoring metrics write custom.googleapis.com/dr/primary_restore "$PRIMARY_RESTORE"
 
       - name: PagerDuty alert on failure
         if: failure()
