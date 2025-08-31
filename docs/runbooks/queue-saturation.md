@@ -29,7 +29,7 @@ Refer to [Error Budget Procedures](../error-budget-procedures.md) when saturatio
 - `queueLag` metric falls below 2 s.
 
 ## PagerDuty
-- Service: `pokerhub-eng` (ID: PENG456)
+- Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->
 - Escalation: [Engineering](https://pokerhub.pagerduty.com/escalation_policies/PDEF456)
 
 ## Drill

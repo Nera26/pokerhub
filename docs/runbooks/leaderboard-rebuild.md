@@ -1,4 +1,5 @@
 # Leaderboard Rebuild
+<!-- Update service IDs in this file if PagerDuty services change -->
 
 The leaderboard is rebuilt automatically every 24h but can also be triggered manually.
 
@@ -6,7 +7,7 @@ The leaderboard is rebuilt automatically every 24h but can also be triggered man
 - Metabase: [Leaderboard](../analytics-dashboards.md)
 
 ## PagerDuty Escalation
-- Service: `pokerhub-eng`
+- Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->
 
 ## CLI
 

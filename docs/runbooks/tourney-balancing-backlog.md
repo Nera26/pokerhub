@@ -1,4 +1,5 @@
 # Tourney Balancing Backlog Runbook
+<!-- Update service IDs in this file if PagerDuty services change -->
 
 Resolve backlogs in the tournament balancer to keep seating timely and fair.
 
@@ -24,7 +25,7 @@ Resolve backlogs in the tournament balancer to keep seating timely and fair.
 - `tourneyBalanceLag` metric drops below 5 s.
 
 ## PagerDuty Escalation
-- Service: `pokerhub-eng`
+- Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->
 - Slack: #ops
 
 ## Drill

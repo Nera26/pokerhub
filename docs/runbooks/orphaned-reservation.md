@@ -1,4 +1,5 @@
 # Orphaned Reservation Runbook
+<!-- Update service IDs in this file if PagerDuty services change -->
 
 Use this guide when seat reservations are not released after players disconnect.
 
@@ -24,7 +25,7 @@ Use this guide when seat reservations are not released after players disconnect.
 - Confirm `reservationTTL` metrics return to baseline.
 
 ## PagerDuty Escalation
-- Service: `pokerhub-eng`
+- Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->
 - Slack: #ops
 
 ## Drill

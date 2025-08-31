@@ -7,7 +7,7 @@ Investigates delays in processing queued actions.
 - Metabase: [Queue Lag](../analytics-dashboards.md#queue-saturation-1)
 
 ## PagerDuty
-- Service: `pokerhub-eng` (ID: PENG456)
+- Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->
 - Escalation: [Engineering](https://pokerhub.pagerduty.com/escalation_policies/PDEF456)
 
 ## Playbook

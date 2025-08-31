@@ -1,4 +1,5 @@
 # Incident Response & On‑Call
+<!-- Update service IDs in this file if PagerDuty services change -->
 
 This runbook defines how PokerHub handles production incidents and documents the on‑call rotation.
 
@@ -8,7 +9,7 @@ This runbook defines how PokerHub handles production incidents and documents the
 - [Alerts Overview (Metabase)](../../infrastructure/observability/alerts-overview-metabase.json)
 
 ## On‑Call Rotation
-- **Primary**: rotates weekly across the SRE team and receives pages on the `pokerhub-sre` PagerDuty service.
+- **Primary**: rotates weekly across the SRE team and receives pages on the `pokerhub-sre` (ID: PSRE789) PagerDuty service.
 - **Secondary**: engineering manager, notified if the primary does not acknowledge within 15 minutes.
 - **Tertiary**: CTO, paged after 30 minutes or for P1 incidents.
 
@@ -25,12 +26,12 @@ See [error-budget-policy.md](error-budget-policy.md) for detailed freeze and rol
 
 
 ## PagerDuty Escalation
-- Service: `pokerhub-sre` for platform issues
-- Service: `pokerhub-eng` for frontend route latency and error alerts
+- Service: `pokerhub-sre` (ID: PSRE789) for platform issues
+- Service: `pokerhub-eng` (ID: PENG012) for frontend route latency and error alerts
 
 ### Examples
-- `UptimeSLOViolation` firing on the [Alerts Overview dashboard](../../infrastructure/observability/alerts-overview-grafana.json) → page `pokerhub-sre`
-- `Queue saturation` alert on the same dashboard → page `pokerhub-eng`
+- `UptimeSLOViolation` firing on the [Alerts Overview dashboard](../../infrastructure/observability/alerts-overview-grafana.json) → page `pokerhub-sre` (ID: PSRE789)
+- `Queue saturation` alert on the same dashboard → page `pokerhub-eng` (ID: PENG012)
 
 ### On-Call Escalation Examples
 - Primary does not acknowledge within 15 minutes → PagerDuty auto-escalates to the engineering manager.

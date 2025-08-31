@@ -1,4 +1,5 @@
 # Stuck Hand Runbook
+<!-- Update service IDs in this file if PagerDuty services change -->
 
 When a hand fails to advance to the next state, use this guide to restore normal play.
 
@@ -30,7 +31,7 @@ When a hand fails to advance to the next state, use this guide to restore normal
 - Check `handAdvanceDuration` metric returns to baseline in Grafana.
 
 ## PagerDuty Escalation
-- Service: `pokerhub-eng`
+- Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->
 - Slack: #ops
 
 ## Drill

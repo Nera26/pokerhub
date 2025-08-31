@@ -1,4 +1,5 @@
 # Action Swarm Soak
+<!-- Update service IDs in this file if PagerDuty services change -->
 
 Runs the WebSocket action swarm for 24 h to uncover memory leaks or GC regressions.
 
@@ -6,7 +7,7 @@ Runs the WebSocket action swarm for 24 h to uncover memory leaks or GC regress
 - Grafana: [Room CPU/Memory](../../infrastructure/monitoring/grafana-room-cpu-mem.json)
 
 ## PagerDuty Escalation
-- Service: `pokerhub-sre`
+- Service: `pokerhub-sre` (ID: PSRE789)
 
 ## Triage
 1. Start metrics polling:

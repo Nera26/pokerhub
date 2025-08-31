@@ -1,4 +1,5 @@
 # Disaster Recovery Runbook
+<!-- Update service IDs in this file if PagerDuty services change -->
 
 ## Dashboard
 - Grafana: [Disaster Recovery](../analytics-dashboards.md)
@@ -103,13 +104,13 @@ The script logs metrics and writes `failover.metrics` containing
 The `dr-drill` GitHub Actions workflow runs weekly to spin up a standby
 cluster in `${SECONDARY_REGION}` and measure time to service readiness.
 It validates snapshot freshness and WAL shipping to ensure **RPO ≤ 5 min**
-and **RTO ≤ 30 min**. Failures trigger a PagerDuty alert to `pokerhub-eng`.
+and **RTO ≤ 30 min**. Failures trigger a PagerDuty alert to `pokerhub-eng` (ID: PENG012).
 
 ### Recent Drill Results
 - 2025-08-30: `drill.sh` failed locally because `gcloud` CLI was not available; RTO/RPO metrics were not captured. Install the Google Cloud CLI and configure credentials before rerunning.
 
 ## PagerDuty Escalation
-- Service: `pokerhub-eng`
+- Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->
 - Slack: #ops
 
 ## Verification

@@ -1,4 +1,5 @@
 # Deployment Runbook
+<!-- Update service IDs in this file if PagerDuty services change -->
 
 Use this runbook to roll out a new release using a guarded canary.
 
@@ -7,7 +8,7 @@ Use this runbook to roll out a new release using a guarded canary.
 - Grafana: [Error Rate](../analytics-dashboards.md#error-rate)
 
 ## PagerDuty Escalation
-- Service: `pokerhub-sre`
+- Service: `pokerhub-sre` (ID: PSRE789)
 
 ## Trigger
 

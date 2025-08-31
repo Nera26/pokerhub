@@ -1,4 +1,5 @@
 # Load Testing Runbook
+<!-- Update service IDs in this file if PagerDuty services change -->
 
 This runbook describes how to execute large scale load tests and long running soak tests for PokerHub.
 
@@ -6,7 +7,7 @@ This runbook describes how to execute large scale load tests and long running so
 - Grafana: [Load Testing](../analytics-dashboards.md#action-ack-latency)
 
 ## PagerDuty Escalation
-- Service: `pokerhub-sre`
+- Service: `pokerhub-sre` (ID: PSRE789)
 
 ## GitHub Actions Pipeline
 
