@@ -8,6 +8,11 @@
 - **Recovery Time Objective (RTO)**: 30 minutes
 - **Recovery Point Objective (RPO)**: 5 minutes
 
+## Metrics & Alerts
+- `custom.googleapis.com/dr/rto` – Recovery time in seconds (alert if > 1800)
+- `custom.googleapis.com/dr/rpo_snapshot` – Snapshot RPO in seconds (alert if > 300)
+- `custom.googleapis.com/dr/rpo_wal` – WAL RPO in seconds (alert if > 300)
+
 ## Backup Strategy
 - Cloud SQL schedules hourly Postgres snapshots and copies them to `${SECONDARY_REGION}`.
 - WAL segments are archived every 5 minutes to `gs://${WAL_ARCHIVE_BUCKET}` and replicated cross-region for PITR.

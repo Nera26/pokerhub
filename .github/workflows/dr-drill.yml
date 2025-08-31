@@ -101,6 +101,17 @@ jobs:
           name: dr-drill
           path: drill.metrics
 
+      - name: Publish metrics to Cloud Monitoring
+        if: success()
+        env:
+          RTO: ${{ steps.metrics.outputs.rto }}
+          RPO_SNAP: ${{ steps.metrics.outputs.rpo_snap }}
+          RPO_WAL: ${{ steps.metrics.outputs.rpo_wal }}
+        run: |
+          gcloud monitoring metrics write custom.googleapis.com/dr/rto "$RTO"
+          gcloud monitoring metrics write custom.googleapis.com/dr/rpo_snapshot "$RPO_SNAP"
+          gcloud monitoring metrics write custom.googleapis.com/dr/rpo_wal "$RPO_WAL"
+
       - name: PagerDuty alert on failure
         if: failure()
         env:
