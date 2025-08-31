@@ -39,7 +39,7 @@ gantt
 - **Milestone 4:** [`backend/src/wallet`](../backend/src/wallet)
 - **Milestone 5:** [`backend/src/tournament`](../backend/src/tournament)
 - **Milestone 6:** [`backend/src/leaderboard`](../backend/src/leaderboard)
-- **Milestone 7:** [`infrastructure/monitoring`](../infrastructure/monitoring)
+- **Milestone 7:** [`infra/monitoring`](../infra/monitoring)
 - **Milestone 8:** [`load`](../load) and [`docs/runbooks/disaster-recovery.md`](./runbooks/disaster-recovery.md)
 
 ## Linked Documents

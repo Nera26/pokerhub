@@ -9,7 +9,7 @@ Investigates slow acknowledgements of game actions.
 ## Alerting
 - Route: [`pokerhub-sre`](../../metrics/alert-routes.md#pokerhub-sre) (PagerDuty ID: PSRE789)
 - Escalation: [SRE](https://pokerhub.pagerduty.com/escalation_policies/PABC123)
-- Rule: `ActionAckLatencySLOViolation` in [alerts.yml](../../infrastructure/observability/alerts.yml)
+- Rule: `ActionAckLatencySLOViolation` in [alerts.yml](../../infra/observability/alerts.yml)
 
 ## Playbook
 1. Check if latency spikes correlate with deployments or incidents.

@@ -47,7 +47,7 @@ Mitigations:
 - [`backend/src/auth/admin.guard.ts`](../../backend/src/auth/admin.guard.ts) restricts administrative routes to vetted staff.
 - [`backend/src/analytics/collusion.service.ts`](../../backend/src/analytics/collusion.service.ts) blocks flagged accounts from privileged actions.
 
-For implementation details, see the workflow configs and queries under `../../infrastructure/analytics/`.
+For implementation details, see the workflow configs and queries under `../../infra/analytics/`.
 
 ## Issue Status
 The gaps noted in earlier STRIDE reviews have been closed:

@@ -72,6 +72,11 @@ npm run push:backend    # git subtree push --prefix backend backend-remote main
 npm run push:all        # push both subtrees
 ```
 
+## Infrastructure
+
+Infrastructure manifests, dashboards, and operational scripts live under
+`/infra` (replacing the former `/infrastructure` directory).
+
 ## Testing
 
 Run all backend, frontend, contract, and end-to-end tests with:

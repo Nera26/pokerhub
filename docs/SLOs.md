@@ -7,8 +7,8 @@ This page documents how PokerHub alerts on key Service Level Objectives and link
 Provision Grafana dashboards and alert rules via the helper scripts:
 
 ```bash
-GRAFANA_URL=http://localhost:3000 GRAFANA_API_KEY=<key> ./infrastructure/observability/provision-grafana.sh
-ALERTMANAGER_URL=http://localhost:9093 ./infrastructure/observability/provision-alertmanager.sh
+GRAFANA_URL=http://localhost:3000 GRAFANA_API_KEY=<key> ./infra/observability/provision-grafana.sh
+ALERTMANAGER_URL=http://localhost:9093 ./infra/observability/provision-alertmanager.sh
 ```
 
 ### PagerDuty service mapping
@@ -37,17 +37,17 @@ We use a multi‑window burn‑rate policy: a fast 5 m/1 h window at **14.4�
 Each SLO allocates a monthly error budget equal to `1 - target`. If more than **50%** of the monthly budget is burned in a week, freeze feature deploys and focus on reliability. Exhausting **100%** of the budget triggers an incident review and requires engineering manager approval for any production changes until the burn rate drops below [Alerting thresholds](runbooks/alerting.md#severity-tiers). Detailed freeze and rollback rules live in [error-budget-procedures.md](error-budget-procedures.md).
 
 ## Dashboards
-- [Alerts Overview](../infrastructure/observability/alerts-overview-grafana.json)
-- [Service SLOs](../infrastructure/observability/slo-dashboard.json)
-- [Room CPU/Memory](../infrastructure/observability/room-cpu-memory-dashboard.json)
-- [GC Pauses](../infrastructure/observability/gc-pauses-dashboard.json)
-- [Queue Saturation](../infrastructure/observability/queue-lag-dashboard.json)
-- [Socket Latency](../infrastructure/observability/socket-latency-dashboard.json)
-- [Socket Connects](../infrastructure/observability/socket-connects-dashboard.json)
-- [Error Rates](../infrastructure/observability/error-rates-dashboard.json)
-- [Player Analytics](../infrastructure/observability/player-analytics-dashboard.json)
-- [Telemetry Pipeline](../infrastructure/observability/otel-dashboard.json)
-- [Frontend Route Latency](../infrastructure/observability/frontend-route-latency-dashboard.json)
+- [Alerts Overview](../infra/observability/alerts-overview-grafana.json)
+- [Service SLOs](../infra/observability/slo-dashboard.json)
+- [Room CPU/Memory](../infra/observability/room-cpu-memory-dashboard.json)
+- [GC Pauses](../infra/observability/gc-pauses-dashboard.json)
+- [Queue Saturation](../infra/observability/queue-lag-dashboard.json)
+- [Socket Latency](../infra/observability/socket-latency-dashboard.json)
+- [Socket Connects](../infra/observability/socket-connects-dashboard.json)
+- [Error Rates](../infra/observability/error-rates-dashboard.json)
+- [Player Analytics](../infra/observability/player-analytics-dashboard.json)
+- [Telemetry Pipeline](../infra/observability/otel-dashboard.json)
+- [Frontend Route Latency](../infra/observability/frontend-route-latency-dashboard.json)
 
 All dashboard JSON files include a `pagerduty_service` label that drives the escalation policy documented in [runbooks/alerting.md](runbooks/alerting.md#escalation-policies).
 

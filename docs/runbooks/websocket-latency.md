@@ -3,10 +3,10 @@
 Investigates slow WebSocket message delivery or ACKs.
 
 ## Dashboard
-- Grafana: [WebSocket Latency](../../infrastructure/observability/websocket-latency-dashboard.json)
+- Grafana: [WebSocket Latency](../../infra/observability/websocket-latency-dashboard.json)
 
 ## Alert Rule
-- `WebSocketLatencySLOViolation` in [alerts.yml](../../infrastructure/observability/alerts.yml)
+- `WebSocketLatencySLOViolation` in [alerts.yml](../../infra/observability/alerts.yml)
 
 ## PagerDuty
 - Service: `pokerhub-sre` (ID: PSRE789) <!-- Update ID if PagerDuty service changes -->

@@ -3,7 +3,7 @@
 Investigates delays in processing queued actions.
  
 ## Dashboard
-- Grafana: [Queue Lag](../../infrastructure/observability/queue-lag-dashboard.json)
+- Grafana: [Queue Lag](../../infra/observability/queue-lag-dashboard.json)
 - Metabase: [Queue Lag](../analytics-dashboards.md#queue-saturation-1)
 
 ## PagerDuty

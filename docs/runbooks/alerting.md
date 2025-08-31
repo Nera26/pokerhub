@@ -7,8 +7,8 @@ PokerHub uses OpenTelemetry to expose metrics which are scraped by Prometheus. T
 Provision dashboards and alert rules with the helper scripts:
 
 ```bash
-GRAFANA_URL=http://localhost:3000 GRAFANA_API_KEY=<key> ./infrastructure/observability/provision-grafana.sh
-ALERTMANAGER_URL=http://localhost:9093 ./infrastructure/observability/provision-alertmanager.sh
+GRAFANA_URL=http://localhost:3000 GRAFANA_API_KEY=<key> ./infra/observability/provision-grafana.sh
+ALERTMANAGER_URL=http://localhost:9093 ./infra/observability/provision-alertmanager.sh
 ```
 
 Prometheus evaluates SLO-based rules such as action ACK latency and socket connect success using multi-window burn rates. Alerts fire when the 5 m/1 h burn rate exceeds **14.4** or the 30 m/6 h burn rate exceeds **6**. Alertmanager routes notifications to PagerDuty and, for canary deployments, emits a `repository_dispatch` event that runs `infra/canary/rollback.sh`. See [SLO alert strategy](../SLOs.md) for details.
@@ -39,7 +39,7 @@ groups:
 ## Dashboards
 - Grafana: <https://grafana.pokerhub.example/d/slo/service-slos>
 - Metabase: <https://metabase.pokerhub.example/dashboard/42-alerts>
-- JSON definitions live under `../../infrastructure/observability/` and include `pagerduty_service` labels mapping each panel to the owning PagerDuty service.
+- JSON definitions live under `../../infra/observability/` and include `pagerduty_service` labels mapping each panel to the owning PagerDuty service.
 Key SLO dashboards:
 - Service uptime – <https://grafana.pokerhub.example/d/service-uptime> (`pokerhub-sre`)
 - Action ACK latency – <https://grafana.pokerhub.example/d/socket-latency> (`pokerhub-sre`)
@@ -82,8 +82,8 @@ PagerDuty escalation policy URLs:
 
 ## Relevant Components
 - `backend/src/telemetry/telemetry.ts` sets up exporters.
-- Prometheus and Alertmanager configuration lives under `infrastructure/monitoring/`.
-- Alert rules and dashboard definitions live under `infrastructure/observability/`.
+- Prometheus and Alertmanager configuration lives under `infra/monitoring/`.
+- Alert rules and dashboard definitions live under `infra/observability/`.
 
 ## Metric Runbooks
 - [Action ACK Latency](./action-ack-latency.md)

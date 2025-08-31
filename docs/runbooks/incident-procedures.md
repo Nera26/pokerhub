@@ -5,8 +5,8 @@ This runbook defines how PokerHub handles production incidents and documents the
 
 ## Dashboards
 - [SLO Overview](../analytics-dashboards.md)
-- [Alerts Overview (Grafana)](../../infrastructure/observability/alerts-overview-grafana.json)
-- [Alerts Overview (Metabase)](../../infrastructure/observability/alerts-overview-metabase.json)
+- [Alerts Overview (Grafana)](../../infra/observability/alerts-overview-grafana.json)
+- [Alerts Overview (Metabase)](../../infra/observability/alerts-overview-metabase.json)
 
 ## On‑Call Rotation
 - **Primary**: rotates weekly across the SRE team and receives pages on the `pokerhub-sre` (ID: PSRE789) PagerDuty service.
@@ -30,7 +30,7 @@ See [error-budget-policy.md](error-budget-policy.md) for detailed freeze and rol
 - Service: `pokerhub-eng` (ID: PENG012) for frontend route latency and error alerts
 
 ### Examples
-- `UptimeSLOViolation` firing on the [Alerts Overview dashboard](../../infrastructure/observability/alerts-overview-grafana.json) → page `pokerhub-sre` (ID: PSRE789)
+- `UptimeSLOViolation` firing on the [Alerts Overview dashboard](../../infra/observability/alerts-overview-grafana.json) → page `pokerhub-sre` (ID: PSRE789)
 - `Queue saturation` alert on the same dashboard → page `pokerhub-eng` (ID: PENG012)
 
 ### On-Call Escalation Examples
