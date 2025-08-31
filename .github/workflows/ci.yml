@@ -169,6 +169,18 @@ jobs:
           mkdir -p load/results
           k6 run load/k6-ws-soak.js --vus 10 --duration 30s --summary-export=load/results/ws-soak-summary.json
       - run: load/check-thresholds.sh load/results/ws-soak-summary.json metrics/gc-histogram.json metrics/heap-histogram.json metrics/cpu-histogram.json
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Analyze soak trends
+        run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-soak-trends.ts metrics
+        env:
+          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+      - name: Sync soak metrics
+        if: always()
+        run: aws s3 sync metrics "s3://${{ secrets.SOAK_TRENDS_BUCKET }}/soak-${{ github.run_id }}/"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -178,3 +190,4 @@ jobs:
             metrics/gc-histogram.json
             metrics/heap-histogram.json
             metrics/cpu-histogram.json
+            metrics/baseline.json
