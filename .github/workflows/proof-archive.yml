@@ -35,7 +35,15 @@ jobs:
           fi
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      - name: Validate exported proofs
+      - name: Generate checksum manifest
+        run: |
+          cd storage/proofs
+          if ls *.json >/dev/null 2>&1; then
+            sha256sum *.json > manifest.txt
+          else
+            : > manifest.txt
+          fi
+      - name: Validate exported proofs and manifest
         run: |
           set -o pipefail
           npx -y ts-node scripts/validate-proof-archive.ts 2>&1 | tee proof-validation.log
