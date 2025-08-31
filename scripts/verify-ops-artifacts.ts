@@ -107,6 +107,22 @@ function checkSpectatorLogs(bucket: string, runId: string) {
       `Spectator privacy logs in gs://${bucket}/${runId}/ are older than 24h`,
     );
   }
+  const dlpUri = `gs://${bucket}/${runId}/dlp-scan.json`;
+  let dlpRaw: string;
+  try {
+    dlpRaw = gcloud.run(`cat ${dlpUri}`) as string;
+  } catch {
+    throw new Error(`Missing DLP scan at ${dlpUri}`);
+  }
+  let dlpStatus: string | undefined;
+  try {
+    dlpStatus = JSON.parse(dlpRaw).status;
+  } catch {
+    throw new Error(`Unable to parse DLP scan at ${dlpUri}`);
+  }
+  if (dlpStatus !== 'clean') {
+    throw new Error(`DLP scan at ${dlpUri} not clean`);
+  }
 }
 
 function checkSoakMetrics(bucket: string) {
