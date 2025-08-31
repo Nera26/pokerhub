@@ -39,6 +39,25 @@ jobs:
           echo "rpo_snap=$RPO_SNAPSHOT_SECONDS" >> "$GITHUB_OUTPUT"
           echo "rpo_wal=$RPO_WAL_SECONDS" >> "$GITHUB_OUTPUT"
 
+      - name: Check RTO/RPO objectives
+        env:
+          RTO: ${{ steps.metrics.outputs.rto }}
+          RPO_SNAP: ${{ steps.metrics.outputs.rpo_snap }}
+          RPO_WAL: ${{ steps.metrics.outputs.rpo_wal }}
+          RTO_TARGET: 1800
+          RPO_TARGET: 300
+        run: |
+          {
+            echo "### DR Drill Metrics"
+            echo "- RTO: ${RTO}s (target ≤ ${RTO_TARGET}s)"
+            echo "- RPO (snapshot): ${RPO_SNAP}s (target ≤ ${RPO_TARGET}s)"
+            echo "- RPO (WAL): ${RPO_WAL}s (target ≤ ${RPO_TARGET}s)"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$RTO" -gt "$RTO_TARGET" ] || [ "$RPO_SNAP" -gt "$RPO_TARGET" ] || [ "$RPO_WAL" -gt "$RPO_TARGET" ]; then
+            echo "RTO/RPO objectives exceeded" >&2
+            exit 1
+          fi
+
       - name: Publish drill results
         if: success()
         env:
