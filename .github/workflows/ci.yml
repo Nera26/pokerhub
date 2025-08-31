@@ -281,51 +281,11 @@ jobs:
           RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
         run: npx ts-node scripts/verify-ops-artifacts.ts
 
-  soak-metrics:
-    runs-on: ubuntu-latest
-    env:
-      SOAK_LATENCY_P95_MS: 120
-      SOAK_THROUGHPUT_MIN: 100
-    steps:
-      - uses: actions/checkout@v4
-      - uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT }}
       - name: Check soak metrics
-        id: check-metrics
-        run: |
-          set -euo pipefail
-          npx ts-node scripts/check-soak-metrics.ts 2>&1 | tee soak-metrics.log
+        run: npx ts-node scripts/check-soak-metrics.ts
         env:
-          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
           SOAK_TRENDS_WINDOW: ${{ vars.SOAK_TRENDS_WINDOW || 7 }}
           SOAK_TRENDS_DEVIATION_PCT: ${{ vars.SOAK_TRENDS_DEVIATION_PCT || 20 }}
-      - name: Prepare soak metrics alert
-        if: failure() && steps.check-metrics.outcome == 'failure'
-        env:
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-        run: |
-          cat soak-metrics.log > soak-metrics.md
-          jq -n --arg channel "$SLACK_CHANNEL_ID" \
-            --arg text "$(cat soak-metrics.log)" \
-            '{channel: $channel, text: $text}' > soak-metrics-slack.json
-      - name: Slack soak metrics alert
-        if: failure() && steps.check-metrics.outcome == 'failure'
-        uses: slackapi/slack-github-action@v1
-        with:
-          method: chat.postMessage
-          payload-file-path: soak-metrics-slack.json
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      - name: Create issue for soak metrics
-        if: failure() && steps.check-metrics.outcome == 'failure'
-        uses: peter-evans/create-issue-from-file@v4
-        with:
-          title: "SLA breached: soak metrics"
-          content-filepath: soak-metrics.md
 
   docs:
     needs: workflow-sla

@@ -16,34 +16,25 @@ const durationSec = Number(process.env.SOAK_DURATION_SEC || 24 * 60 * 60);
 const windowSize = Number(process.env.SOAK_TRENDS_WINDOW || 7);
 const deviationPct = Number(process.env.SOAK_TRENDS_DEVIATION_PCT || 20);
 
-let listing: string;
+type RunMetric = { ts: number; dir: string };
+let objects: { name: string; updated: string }[];
 try {
-  listing = execSync(
-    `gcloud storage ls --recursive --long gs://${bucket}/`,
+  const out = execSync(
+    `gcloud storage ls --recursive --format=json gs://${bucket}/`,
     { encoding: 'utf-8' }
   );
-} catch (err) {
+  objects = JSON.parse(out);
+} catch {
   console.error(`Failed to list gs://${bucket}/`);
   process.exit(1);
 }
 
-const lines = listing
-  .trim()
-  .split('\n')
-  .map((l) => l.trim())
-  .filter(Boolean);
-
-type RunMetric = { ts: number; dir: string };
 const runs: RunMetric[] = [];
-for (const line of lines) {
-  const parts = line.split(/\s+/);
-  const datePart = parts.find((p) => /\d{4}-\d{2}-\d{2}T/.test(p));
-  if (!datePart) continue;
-  const ts = Date.parse(datePart);
-  const obj = parts[parts.length - 1];
-  if (obj.endsWith('/baseline.json') && !isNaN(ts)) {
-    runs.push({ ts, dir: obj.replace(/\/baseline\.json$/, '') });
-  }
+for (const obj of objects) {
+  if (!obj.name.endsWith('/baseline.json')) continue;
+  const ts = Date.parse(obj.updated);
+  if (isNaN(ts)) continue;
+  runs.push({ ts, dir: obj.name.replace(/\/baseline\.json$/, '') });
 }
 
 runs.sort((a, b) => a.ts - b.ts);

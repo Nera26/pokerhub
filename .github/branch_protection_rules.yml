@@ -7,5 +7,6 @@
     - proof-archive
     - check-proof-archive
     - ops-artifacts-verify
+    - "ci / ops-artifacts"
     - soak
     - spectator-privacy # require spectator privacy workflow
