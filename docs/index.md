@@ -23,3 +23,9 @@
 ## Observability & SLOs
 - [SLO Guidelines](./SLOs.md)
 - [Observability Guide](./observability.md)
+
+## Documentation Checklist
+
+- Bump **Version** and **Last Updated** whenever behavior changes.
+- Record modifications in the appropriate changelog.
+- Update cross-references to include new version numbers.
