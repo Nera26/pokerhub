@@ -12,6 +12,10 @@ jobs:
       PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
       SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
       SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+
+      RUN_ID: ${{ github.run_id }}
+      DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
