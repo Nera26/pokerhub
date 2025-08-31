@@ -10,12 +10,13 @@ function requireEnv(name: string): string {
   return val;
 }
 
-function runGcloud(cmd: string, encoding: BufferEncoding | undefined = 'utf-8'): string | Buffer {
-  return execSync(`gcloud storage ${cmd}`, { encoding: encoding as any });
-}
-
-function runGcloud(cmd: string, encoding: BufferEncoding | undefined = 'utf-8'): string | Buffer {
-  return execSync(`gcloud storage ${cmd}`, { encoding: encoding as any });
+function runGcloud(
+  cmd: string,
+  encoding: BufferEncoding | undefined = 'utf-8',
+): string | Buffer {
+  return execSync(`gcloud storage ${cmd}`, {
+    encoding: encoding as any,
+  });
 }
 
 function checkProofArchive(bucket: string) {
