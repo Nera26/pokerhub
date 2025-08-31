@@ -21,12 +21,17 @@ jobs:
     uses: ./.github/workflows/proof-archive.yml
     secrets: inherit
 
+  ops-artifacts-verify:
+    uses: ./.github/workflows/ops-artifacts-verify.yml
+    secrets: inherit
+
   publish-docs:
     needs:
       - spectator-privacy
       - soak
       - failover-drill
       - proof-archive
+      - ops-artifacts-verify
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
@@ -35,7 +40,8 @@ jobs:
           if [ "${{ needs.spectator-privacy.result }}" != "success" ] || \
              [ "${{ needs.soak.result }}" != "success" ] || \
              [ "${{ needs.failover-drill.result }}" != "success" ] || \
-             [ "${{ needs.proof-archive.result }}" != "success" ]; then
+             [ "${{ needs.proof-archive.result }}" != "success" ] || \
+             [ "${{ needs.ops-artifacts-verify.result }}" != "success" ]; then
             echo "One or more prerequisite workflows failed." >&2
             exit 1
           fi
