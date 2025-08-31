@@ -2,13 +2,7 @@ name: spectator-privacy
 
 on:
   pull_request:
-    paths:
-      - 'backend/src/game/**'
-      - 'backend/test/game/**'
-      - 'frontend/src/lib/spectator-socket.ts'
-      - 'frontend/src/features/table/spectator/**'
-      - 'frontend/src/app/table/**/spectate/**'
-      - 'frontend/test/spectator/**'
+    # Run spectator privacy checks on every pull request
 
 jobs:
   spectator-privacy:

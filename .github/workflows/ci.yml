@@ -92,6 +92,15 @@ jobs:
           unit: hours
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
+      - name: Check spectator privacy nightly SLA
+        id: spectator-privacy-nightly
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: spectator-privacy-nightly.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
       - uses: actions/checkout@v4
       - uses: google-github-actions/auth@v2
         with:
