@@ -250,6 +250,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/spectator-privacy-check
+      - name: Upload spectator privacy logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spectator-privacy-logs-${{ github.sha }}
+          path: |
+            backend-tests.log
+            frontend-tests.log
   integration:
     needs: spectator-privacy
     runs-on: ubuntu-latest
