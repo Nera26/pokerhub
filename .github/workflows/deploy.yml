@@ -35,7 +35,7 @@ jobs:
           python -m pip install pyyaml >/dev/null
           python infra/observability/validate.py
       - name: Run canary deploy
-        run: ./deploy/canary.sh ${{ github.sha }}
+        run: bash deploy/canary.sh ${{ github.sha }}
       - name: Query Prometheus metrics
         id: metrics
         continue-on-error: true
@@ -53,7 +53,7 @@ jobs:
       - name: Canary rollback on SLO violation
         if: steps.metrics.outcome != 'success'
         run: |
-          ./deploy/rollback.sh
+          bash deploy/rollback.sh
           echo "outcome=rollback" > outcome.txt
           exit 1
       - name: Record successful deployment
