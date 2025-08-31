@@ -106,9 +106,57 @@ jobs:
         run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/check-soak-metrics.ts
         env:
           SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
+
+        run: |
+          set -euo pipefail
+          run=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/soak.yml/runs?per_page=1")
+          conclusion=$(echo "$run" | jq -r '.workflow_runs[0].conclusion')
+          started=$(echo "$run" | jq -r '.workflow_runs[0].run_started_at')
+          echo "workflow=soak.yml" >> $GITHUB_OUTPUT
+          echo "timestamp=$started" >> $GITHUB_OUTPUT
+          echo "conclusion=$conclusion" >> $GITHUB_OUTPUT
+          start_ts=$(date -d "$started" +%s)
+          now=$(date -u +%s)
+          max_age=$((SLA_HOURS * 3600))
+          if [ "$conclusion" != "success" ] || [ $((now - start_ts)) -gt "$max_age" ]; then
+            echo "Latest soak workflow run did not succeed within ${SLA_HOURS} hours" >&2
+            exit 1
+          fi
+          npx ts-node --compiler-options '{"module":"commonjs"}' scripts/check-soak-metrics.ts
+
+      - name: Prepare soak SLA alert
+        if: failure() && steps.soak.outcome == 'failure'
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          cat <<'EOF' > soak-sla.md
+          Workflow: ${{ steps.soak.outputs.workflow }}
+          Last Run: ${{ steps.soak.outputs.timestamp }}
+          Conclusion: ${{ steps.soak.outputs.conclusion }}
+          EOF
+          jq -n --arg channel "$SLACK_CHANNEL_ID" \
+            --arg text "soak.yml SLA check failed. Last run: ${{ steps.soak.outputs.timestamp }} (conclusion: ${{ steps.soak.outputs.conclusion }})." \
+            '{channel: $channel, text: $text}' > soak-slack.json
+      - name: Slack alert (soak SLA)
+        if: failure() && steps.soak.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: soak-slack.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: Create issue for soak SLA
+        if: failure() && steps.soak.outcome == 'failure'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "SLA breached: soak"
+          content-filepath: soak-sla.md
+
 
       - name: Check pg-restore-smoke SLA
         id: pg-restore-smoke
