@@ -72,6 +72,12 @@ jobs:
             exit 1
           fi
 
+      - uses: actions/checkout@v4
+      - name: Verify proof archive integrity
+        env:
+          PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+        run: npx -y ts-node scripts/check-proof-archive.ts
+
       - name: Ensure soak test recent success
         env:
           SLA_HOURS: 24
