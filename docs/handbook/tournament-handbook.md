@@ -2,15 +2,15 @@
 
 **Version:** 1.1.1
 **Last Updated:** 2025-08-30
-**Changelog:** [CHANGELOG](./handbook/CHANGELOG.md)
+**Changelog:** [CHANGELOG](./CHANGELOG.md)
 
 This handbook standardizes how PokerHub hosts competitive events. Engine
-behavior is detailed in the [Game Engine Specification](./game-engine-spec.md),
+behavior is detailed in the [Game Engine Specification](../game-engine-spec.md),
 and ledger procedures reside in the [Reconciliation Guide](./reconciliation-guide.md).
-Upcoming tournament features are tracked in the [Milestone Roadmap](./roadmap.md).
+Upcoming tournament features are tracked in the [Milestone Roadmap](../roadmap.md).
 
-Tournament logic is implemented in [`backend/src/tournament`](../backend/src/tournament)
-with event ingestion defined in [`infrastructure/analytics/ingest-tournament.sql`](../infrastructure/analytics/ingest-tournament.sql).
+Tournament logic is implemented in [`backend/src/tournament`](../../backend/src/tournament)
+with event ingestion defined in [`infrastructure/analytics/ingest-tournament.sql`](../../infrastructure/analytics/ingest-tournament.sql).
 
 ## Lifecycle
 
@@ -71,7 +71,7 @@ flowchart LR
 
 ## Reconciliation
 
-Tournament ledger entries must be verified daily. Follow the [reconciliation procedure](./accounting-book.md#reconciliation-procedure) to confirm balances.
+Tournament ledger entries must be verified daily. Follow the [reconciliation procedure](../accounting-book.md#reconciliation-procedure) to confirm balances.
 
 ## Changelog
 - **1.1.1** – 2025-08-30 – Introduced changelog and added checklist review.

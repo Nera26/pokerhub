@@ -7,8 +7,8 @@ For upcoming milestones, see the [Milestone Roadmap](./roadmap.md).
 
 Implementation lives under [`backend/src/game`](../backend/src/game) where the
 state machine and engine workers are defined. Tournament operations are
-documented in the [Tournament Handbook](./tournament-handbook.md), and ledger
-procedures are covered in the [Reconciliation Guide](./reconciliation-guide.md).
+documented in the [Tournament Handbook](./handbook/tournament-handbook.md), and ledger
+procedures are covered in the [Reconciliation Guide](./handbook/reconciliation-guide.md).
 Operational remediation steps are outlined in the [Stuck Hand Runbook](./runbooks/stuck-hand.md).
 
 ## State Machine
