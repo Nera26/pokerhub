@@ -92,11 +92,12 @@ jobs:
           unit: hours
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
-      - name: Check spectator privacy nightly SLA
-        id: spectator-privacy-nightly
+      # Resolved conflict: keep the soak SLA here; spectator-privacy SLA appears later below.
+      - name: Check soak workflow SLA
+        id: soak
         uses: ./.github/workflows/check-workflow-sla
         with:
-          workflow: spectator-privacy-nightly.yml
+          workflow: soak.yml
           sla: 24
           unit: hours
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
@@ -108,26 +109,25 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
+
       - name: Verify proof archive integrity
         id: proof-archive-integrity
         env:
           PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
-          PROOF_ARCHIVE_EXPECTED_DAILY_COUNT: ${{ vars.PROOF_ARCHIVE_EXPECTED_DAILY_COUNT }}
         run: npx ts-node scripts/check-proof-archive.ts
-      - name: Summarize proof archive count
-        if: always()
-        run: echo "Archived proofs: ${{ steps.proof-archive-integrity.outputs.count }} (expected ≥ ${{ steps.proof-archive-integrity.outputs.expected }})" >> $GITHUB_STEP_SUMMARY
+
       - name: Prepare proof archive integrity alert
         if: failure() && steps.proof-archive-integrity.outcome == 'failure'
         env:
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
         run: |
           cat <<'EOF' > proof-archive-integrity.md
-          Proof archive check failed. Archived proofs: ${{ steps.proof-archive-integrity.outputs.count }} (expected ≥ ${{ steps.proof-archive-integrity.outputs.expected }}).
+          Proof archive integrity check failed.
           EOF
           jq -n --arg channel "$SLACK_CHANNEL_ID" \
-            --arg text "Proof archive check failed. Archived proofs: ${{ steps.proof-archive-integrity.outputs.count }} (expected ≥ ${{ steps.proof-archive-integrity.outputs.expected }})." \
+            --arg text "Proof archive integrity check failed." \
             '{channel: $channel, text: $text}' > proof-archive-integrity-slack.json
+
       - name: Slack alert (proof archive integrity)
         if: failure() && steps.proof-archive-integrity.outcome == 'failure'
         uses: slackapi/slack-github-action@v1
@@ -136,6 +136,7 @@ jobs:
           payload-file-path: proof-archive-integrity-slack.json
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
       - name: Create issue for proof archive integrity
         if: failure() && steps.proof-archive-integrity.outcome == 'failure'
         uses: peter-evans/create-issue-from-file@v4
@@ -143,17 +144,10 @@ jobs:
           title: "Proof archive integrity check failed"
           content-filepath: proof-archive-integrity.md
 
-      - name: Check soak SLA
-        id: soak
-        uses: ./.github/workflows/check-workflow-sla
-        with:
-          workflow: soak.yml
-          sla: 24
-          unit: hours
-          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
       - name: Check soak metrics
         env:
           SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+          GITHUB_TOKEN: ${{ github.token }} # ensure curl auth works
         run: |
           set -euo pipefail
           run=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" \
@@ -165,9 +159,9 @@ jobs:
           echo "conclusion=$conclusion" >> $GITHUB_OUTPUT
           start_ts=$(date -d "$started" +%s)
           now=$(date -u +%s)
-          max_age=$((SLA_HOURS * 3600))
+          max_age=$((24 * 3600))
           if [ "$conclusion" != "success" ] || [ $((now - start_ts)) -gt "$max_age" ]; then
-            echo "Latest soak workflow run did not succeed within ${SLA_HOURS} hours" >&2
+            echo "Latest soak workflow run did not succeed within 24 hours" >&2
             exit 1
           fi
           npx ts-node --compiler-options '{"module":"commonjs"}' scripts/check-soak-metrics.ts
@@ -185,6 +179,7 @@ jobs:
           jq -n --arg channel "$SLACK_CHANNEL_ID" \
             --arg text "soak.yml SLA check failed. Last run: ${{ steps.soak.outputs.timestamp }} (conclusion: ${{ steps.soak.outputs.conclusion }})." \
             '{channel: $channel, text: $text}' > soak-slack.json
+
       - name: Slack alert (soak SLA)
         if: failure() && steps.soak.outcome == 'failure'
         uses: slackapi/slack-github-action@v1
@@ -193,13 +188,13 @@ jobs:
           payload-file-path: soak-slack.json
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
       - name: Create issue for soak SLA
         if: failure() && steps.soak.outcome == 'failure'
         uses: peter-evans/create-issue-from-file@v4
         with:
           title: "SLA breached: soak"
           content-filepath: soak-sla.md
-
 
       - name: Check pg-restore-smoke SLA
         id: pg-restore-smoke
@@ -235,6 +230,7 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
+
       - name: Verify ops artifacts
         env:
           PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
@@ -258,6 +254,7 @@ jobs:
           sla: 24
           unit: hours
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
       - uses: actions/checkout@v4
         if: steps.soak-run.outcome == 'success'
       - uses: google-github-actions/auth@v2
@@ -268,12 +265,14 @@ jobs:
         if: steps.soak-run.outcome == 'success'
         with:
           project_id: ${{ secrets.GCP_PROJECT }}
+
       - name: Check soak metrics
         id: check-metrics
         if: steps.soak-run.outcome == 'success'
         run: npx ts-node scripts/check-soak-metrics.ts
         env:
           SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+
       - name: Analyze soak trends
         id: analyze-trends
         if: steps.soak-run.outcome == 'success'
@@ -282,6 +281,7 @@ jobs:
           npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-soak-trends.ts metrics
         env:
           SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+
       - name: Prepare soak metrics alert
         if: failure() && steps.check-metrics.outcome == 'failure'
         env:
@@ -293,6 +293,7 @@ jobs:
           jq -n --arg channel "$SLACK_CHANNEL_ID" \
             --arg text "Soak metrics check failed." \
             '{channel: $channel, text: $text}' > soak-metrics-slack.json
+
       - name: Slack soak metrics alert
         if: failure() && steps.check-metrics.outcome == 'failure'
         uses: slackapi/slack-github-action@v1
@@ -301,17 +302,20 @@ jobs:
           payload-file-path: soak-metrics-slack.json
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
       - name: Create issue for soak metrics
         if: failure() && steps.check-metrics.outcome == 'failure'
         uses: peter-evans/create-issue-from-file@v4
         with:
           title: "SLA breached: soak metrics"
           content-filepath: soak-metrics.md
+
       - name: Prepare soak regression Slack payload
         if: failure() && steps.analyze-trends.outcome == 'failure'
         run: jq -Rs '{channel: env.SLACK_CHANNEL_ID, text: .}' metrics/baseline.json > soak-regression-slack.json
         env:
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+
       - name: Slack soak regression alert
         if: failure() && steps.analyze-trends.outcome == 'failure'
         uses: slackapi/slack-github-action@v1
@@ -320,6 +324,7 @@ jobs:
           payload-file-path: soak-regression-slack.json
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
       - name: Open soak regression issue
         if: failure() && steps.analyze-trends.outcome == 'failure'
         uses: peter-evans/create-issue-from-file@v4
@@ -598,7 +603,7 @@ jobs:
         id: threshold
         run: |
           if [ -f baseline/baseline.json ]; then
-            npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-soak-trends.ts metrics baseline
+            npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-soak-trends.ts metrics baseline load/results/ws-soak-summary.json
           else
             echo "No baseline to compare against"
           fi
@@ -688,24 +693,20 @@ jobs:
           RTO_THRESHOLD: ${{ vars.DR_RTO_TARGET || 1800 }}
           RPO_THRESHOLD: ${{ vars.DR_RPO_TARGET || 300 }}
         run: |
-          set -euo pipefail
-          npx ts-node infra/disaster-recovery/check-dr-trends.ts | tee dr-trends.json
-          result=$(cat dr-trends.json)
-          echo "| Metric | Latest | Average | Δ |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| --- | --- | --- | --- |" >> "$GITHUB_STEP_SUMMARY"
+          set -e
+          result=$(npx ts-node infra/disaster-recovery/check-dr-trends.ts)
+          echo "$result" | tee dr-trends.json
           echo "$result" | jq -r '[
-            ["RTO (s)", .latest.rto, (.average.rto | round), (.trend.rto | round)],
-            ["RPO snapshot (s)", .latest.rpoSnap, (.average.rpoSnap | round), (.trend.rpoSnap | round)],
-            ["RPO WAL (s)", .latest.rpoWal, (.average.rpoWal | round), (.trend.rpoWal | round)]
-          ] | .[] | "| \(.0) | \(.1) | \(.2) | \(.3) |"' >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Runs: $(echo "$result" | jq '.runs')" >> "$GITHUB_STEP_SUMMARY"
-      - name: Upload DR trends artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dr-trends
-          path: dr-trends.json
+            "Latest RTO: \(.latest.rto)s",
+            "Latest RPO snapshot: \(.latest.rpoSnap)s",
+            "Latest RPO WAL: \(.latest.rpoWal)s",
+            "Average RTO: \(.average.rto)s",
+            "Average RPO snapshot: \(.average.rpoSnap)s",
+            "Average RPO WAL: \(.average.rpoWal)s",
+            "Δ RTO: \(.trend.rto)s",
+            "Δ RPO snapshot: \(.trend.rpoSnap)s",
+            "Δ RPO WAL: \(.trend.rpoWal)s"
+          ] | join("\n")' >> "$GITHUB_STEP_SUMMARY"
       - name: Prepare DR trend Slack payload
         if: always()
         env:

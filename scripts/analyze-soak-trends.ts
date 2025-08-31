@@ -38,10 +38,11 @@ function fetchBaseline(bucket: string): string {
 
 const metricsDir = process.argv[2];
 if (!metricsDir) {
-  console.error('Usage: ts-node scripts/analyze-soak-trends.ts <metrics_dir> [baseline_dir]');
+  console.error('Usage: ts-node scripts/analyze-soak-trends.ts <metrics_dir> [baseline_dir] [summary_json]');
   process.exit(1);
 }
 let baselinePath = process.argv[3];
+const summaryArg = process.argv[4];
 if (!baselinePath) {
   const bucket = process.env.SOAK_TRENDS_BUCKET;
   if (!bucket) {
@@ -56,6 +57,7 @@ const baseline = JSON.parse(fs.readFileSync(baselineFile, 'utf-8')) as {
   latency?: { p95: number; p99: number };
   gcPause?: { p95: number };
   heapUsage?: { p95: number };
+  throughput?: number;
 };
 
 const curLatency = loadHist(metricsDir, 'latency-histogram.json');
@@ -67,27 +69,59 @@ const curLatP99 = percentile(curLatency, 0.99);
 const curGcP95 = percentile(curGc, 0.95);
 const curHeapP95 = percentile(curHeap, 0.95);
 
+let durationSec = Number(process.env.SOAK_DURATION_SEC || 24 * 60 * 60);
+const candidates = [
+  summaryArg,
+  path.join(metricsDir, '..', 'load/results/ws-soak-summary.json'),
+  path.join(metricsDir, '..', 'soak-summary.json'),
+  'load/results/ws-soak-summary.json',
+  'soak-summary.json',
+].filter((p): p is string => !!p);
+let summaryPath: string | undefined;
+for (const p of candidates) {
+  if (fs.existsSync(p)) {
+    summaryPath = p;
+    break;
+  }
+}
+if (summaryPath) {
+  try {
+    const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf-8')) as any;
+    const runMs = summary?.state?.testRunDurationMs;
+    if (runMs && runMs > 0) {
+      durationSec = runMs / 1000;
+    }
+  } catch {}
+}
+
+const totalCount = Object.values(curLatency).reduce((sum, c) => sum + c, 0);
+const curThroughput = durationSec > 0 ? totalCount / durationSec : totalCount;
+
 const baseLatP95 = baseline.latency?.p95 ?? Infinity;
 const baseLatP99 = baseline.latency?.p99 ?? Infinity;
 const baseGcP95 = baseline.gcPause?.p95 ?? Infinity;
 const baseHeapP95 = baseline.heapUsage?.p95 ?? Infinity;
+const baseThroughput = baseline.throughput ?? 0;
 
 console.log(`latency p95 baseline=${baseLatP95}ms current=${curLatP95}ms`);
 console.log(`latency p99 baseline=${baseLatP99}ms current=${curLatP99}ms`);
 console.log(`gc pause p95 baseline=${baseGcP95}ms current=${curGcP95}ms`);
 console.log(`heap usage p95 baseline=${baseHeapP95} current=${curHeapP95}`);
+console.log(`throughput baseline=${baseThroughput} current=${curThroughput}`);
 
 const outBaseline = {
   latency: { p95: curLatP95, p99: curLatP99 },
   gcPause: { p95: curGcP95 },
   heapUsage: { p95: curHeapP95 },
+  throughput: curThroughput,
 };
 fs.writeFileSync(path.join(metricsDir, 'baseline.json'), JSON.stringify(outBaseline, null, 2));
 
 if (curLatP95 > baseLatP95 ||
     curLatP99 > baseLatP99 ||
     curGcP95 > baseGcP95 ||
-    curHeapP95 > baseHeapP95) {
+    curHeapP95 > baseHeapP95 ||
+    curThroughput < baseThroughput) {
   console.error('Soak trends regression detected');
   process.exit(1);
 }
