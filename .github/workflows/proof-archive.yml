@@ -77,6 +77,11 @@ jobs:
           name: proof-validation-${{ github.run_id }}
           path: proof-validation.log
           retention-days: 30
+      - name: Check proof archive bucket policies
+        run: npx -y ts-node scripts/check-proof-archive-retention.ts
+        env:
+          PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+          PROOF_ARCHIVE_MIN_RETENTION_DAYS: 365
       - name: Upload proofs to GCS
         if: success()
         run: |

@@ -28,6 +28,11 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
+      - name: Check proof archive bucket policies
+        run: npx -y ts-node scripts/check-proof-archive-retention.ts
+        env:
+          PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+          PROOF_ARCHIVE_MIN_RETENTION_DAYS: 365
       - name: Get spectator privacy run ID
         id: get_run_id
         env:
@@ -42,18 +47,18 @@ jobs:
             exit 1
           fi
           echo "RUN_ID=$RUN_ID" >> "$GITHUB_OUTPUT"
-        - name: Verify ops artifacts
-          env:
-            RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
-          run: |
-            set +e
-            out=$(npx ts-node scripts/verify-ops-artifacts.ts 2>&1)
-            status=$?
-            set -e
-            echo "$out"
-            printf "%s\n" "$out" > verify-ops.log
-            printf "%s" "$out" | sha256sum >> verify-ops.log
-            gcloud storage cp verify-ops.log gs://$DR_METRICS_BUCKET/verify/$GITHUB_RUN_ID/
-            url="https://storage.googleapis.com/$DR_METRICS_BUCKET/verify/$GITHUB_RUN_ID/verify-ops.log"
-            echo "$url" >> "$GITHUB_STEP_SUMMARY"
-            exit $status
+      - name: Verify ops artifacts
+        env:
+          RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
+        run: |
+          set +e
+          out=$(npx ts-node scripts/verify-ops-artifacts.ts 2>&1)
+          status=$?
+          set -e
+          echo "$out"
+          printf "%s\n" "$out" > verify-ops.log
+          printf "%s" "$out" | sha256sum >> verify-ops.log
+          gcloud storage cp verify-ops.log gs://$DR_METRICS_BUCKET/verify/$GITHUB_RUN_ID/
+          url="https://storage.googleapis.com/$DR_METRICS_BUCKET/verify/$GITHUB_RUN_ID/verify-ops.log"
+          echo "$url" >> "$GITHUB_STEP_SUMMARY"
+          exit $status
