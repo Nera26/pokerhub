@@ -26,6 +26,14 @@ jobs:
         run: |
           gcloud storage cp backend-tests.log gs://$SPECTATOR_PRIVACY_BUCKET/$RUN_ID/backend-tests.log
           gcloud storage cp frontend-tests.log gs://$SPECTATOR_PRIVACY_BUCKET/$RUN_ID/frontend-tests.log
+      - name: Verify logs in GCS
+        if: always()
+        env:
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          gcloud storage ls gs://$SPECTATOR_PRIVACY_BUCKET/$RUN_ID/ | tee gcs-logs.txt
+          grep backend-tests.log gcs-logs.txt
+          grep frontend-tests.log gcs-logs.txt
       - name: Upload logs as artifacts
         if: always()
         uses: actions/upload-artifact@v4
