@@ -165,3 +165,10 @@ object. The key fields are:
 
 Each metric has an associated `thresholds` array. Any entry with `"ok": false`
 indicates a failure and the CI gate will exit non‑zero.
+
+### Alerting on soak regressions
+
+The CI soak workflows include an `Analyze soak trends` step that compares the
+latest metrics against historical baselines. When this analysis fails, a GitHub
+issue is automatically opened from `metrics/baseline.json` using
+`peter-evans/create-issue-from-file` to surface the regression.
