@@ -54,6 +54,7 @@ function checkProofArchive(bucket: string) {
 }
 
 function checkSpectatorLogs(bucket: string, runId: string) {
+  console.log(`Fetching spectator privacy logs for run ${runId}`);
   try {
     const listing = runGcloud(`ls gs://${bucket}/${runId}/`) as string;
     if (!listing.trim()) {
