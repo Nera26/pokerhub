@@ -1,12 +1,12 @@
 # Tournament Handbook
 
-**Version:** 1.1.3
-**Last Updated:** 2025-10-05
+**Version:** 1.2.0
+**Last Updated:** 2025-10-10
 **Changelog:** [CHANGELOG](./CHANGELOG.md)
 
 This handbook standardizes how PokerHub hosts competitive events. Engine
-behavior is detailed in the [Game Engine Specification](../game-engine-spec.md),
-and ledger procedures reside in the [Reconciliation Guide](./reconciliation-guide.md).
+behavior is detailed in the [Game Engine Specification v1.3.0](../game-engine-spec.md),
+and ledger procedures reside in the [Reconciliation Guide v1.3.0](./reconciliation-guide.md).
 Deck fairness is explained in the [RNG Whitepaper](../player/rng-whitepaper.md),
 and the ledger schema is documented in the [Accounting Book](../accounting-book.md).
 Upcoming tournament features are tracked in the [Milestone Roadmap](../roadmap.md).
@@ -52,6 +52,17 @@ flowchart LR
 - Bounty events return half of the buy‑in as knock‑out rewards.
 - Guarantees short on entries are made whole by the house.
 
+## Operational Controls
+
+- Tournament endpoints are protected by a configurable rate limit guard.
+- Table balancing skips players moved within the last few hands to reduce
+  churn.
+- Blind levels may be hot patched during play with director approval.
+
+## ICM Payouts
+
+ICM calculations round expectations so the total error is less than one chip.
+
 ## Examples
 
 ### 10‑Player Freezeout
@@ -78,6 +89,8 @@ flowchart LR
 Tournament ledger entries must be verified daily. Follow the [reconciliation procedure](../accounting-book.md#reconciliation-procedure) to confirm balances.
 
 ## Changelog
+- **1.2.0** – 2025-10-10 – Document rate limit guard, churn-aware table
+  balancing, hot patching, and ICM rounding.
 - **1.1.3** – 2025-10-05 – Linked RNG Whitepaper and Accounting Book.
 - **1.1.2** – 2025-08-31 – Added runbook and SLO references; added review footer.
 - **1.1.1** – 2025-08-30 – Introduced changelog and added checklist review.
@@ -87,5 +100,5 @@ Tournament ledger entries must be verified daily. Follow the [reconciliation pro
 
 
 ---
-_Last reviewed: 2025-10-05 by Nera26_
+_Last reviewed: 2025-10-10 by Nera26_
 

@@ -1,9 +1,24 @@
 # Reconciliation Guide
 
-**Version:** 1.2.1
-**Last Updated:** 2025-10-05
+**Version:** 1.3.0
+**Last Updated:** 2025-10-10
 
-This guide explains how wallet ledgers stay consistent and how disputes are resolved. Tournament flows are covered in the [Tournament Handbook](./tournament-handbook.md) and engine behavior in the [Game Engine Specification](../game-engine-spec.md). Operational steps are detailed in the [Wallet Reconciliation Runbook](../runbooks/wallet-reconciliation.md). The ledger schema is documented in the [Accounting Book](../accounting-book.md), and deck randomness is verified in the [RNG Whitepaper](../player/rng-whitepaper.md). Upcoming ledger enhancements are listed in the [Milestone Roadmap](../roadmap.md).
+This guide explains how wallet ledgers stay consistent and how disputes are resolved. Tournament flows are covered in the [Tournament Handbook v1.2.0](./tournament-handbook.md) and engine behavior in the [Game Engine Specification v1.3.0](../game-engine-spec.md). Operational steps are detailed in the [Wallet Reconciliation Runbook](../runbooks/wallet-reconciliation.md). The ledger schema is documented in the [Accounting Book](../accounting-book.md), and deck randomness is verified in the [RNG Whitepaper](../player/rng-whitepaper.md). Upcoming ledger enhancements are listed in the [Milestone Roadmap](../roadmap.md).
+
+## Ledger Schema
+
+`JournalEntry` rows are immutable and contain:
+
+| field | description |
+|-------|-------------|
+| `id` | UUID primary key |
+| `accountId` | ledger account identifier |
+| `amount` | signed integer in minor units |
+| `currency` | ISO 4217 code |
+| `refType` / `refId` | business context and identifier |
+| `providerTxnId` / `providerStatus` | optional payment provider references |
+| `hash` | unique SHA-256 of core fields |
+| `createdAt` | immutable timestamp |
 
 ## Ledger Reconciliation
 
@@ -50,7 +65,7 @@ delta and flags the account for investigation.
 ### CLI Walkthrough
 
 ```bash
-# v1.1.0
+# v1.3.0
 node backend/src/wallet/reconcile.job.ts 2025-08-30
 cat storage/reconcile-2025-08-30.json | jq '.[] | select(.delta != 0)'
 ```
@@ -75,7 +90,8 @@ Deposit provider reports $50, but journal shows $40 credit. Create a $10 correct
 ## Dispute Workflow
 
 1. **Intake** – Support logs a ticket with account id, timeframe, and evidence.
-2. **Triaging** – Operations replays journal entries and verifies provider transactions.
+2. **Triaging** – Operations replays journal entries, verifies provider transactions,
+   and confirms each entry's `hash` matches persisted values.
 3. **Resolution** – If ledger is correct, communicate findings; otherwise write correcting entries.
 4. **Escalation** – Unresolved cases escalate to compliance for regulatory reporting.
 
@@ -99,9 +115,11 @@ Deposit provider reports $50, but journal shows $40 credit. Create a $10 correct
 - Reports older than one year move to cold storage but remain retrievable for regulators.
 
 ## Changelog
+- **1.3.0** – 2025-10-10 – Document currency and hash fields; clarify dispute
+  workflow.
 - **1.2.1** – 2025-10-05 – Linked RNG Whitepaper and Accounting Book.
 - **1.2.0** – 2025-10-05 – Cross-referenced engine spec and tournament handbook; converted revision history to changelog.
 - **1.1.0** – 2025-10-05 – Added CLI walkthrough and version metadata.
 - **1.0.0** – 2025-08-30 – Initial coverage with buy-ins/payouts reconciliation, flow diagram, and audit trail details.
 ---
-_Last reviewed: 2025-10-05 by Nera26_
+_Last reviewed: 2025-10-10 by Nera26_
