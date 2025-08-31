@@ -15,11 +15,12 @@ jobs:
           node-version: 20
       - name: Install backend dependencies
         run: npm ci --legacy-peer-deps --prefix backend
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: google-github-actions/auth@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
       - name: Export recent hand proofs
         run: |
           ids=$(psql "$DATABASE_URL" -Atc "SELECT id FROM hand WHERE seed IS NOT NULL AND nonce IS NOT NULL AND created_at >= NOW() - INTERVAL '1 day'")
@@ -58,21 +59,21 @@ jobs:
           name: proof-validation-${{ github.run_id }}
           path: proof-validation.log
           retention-days: 30
-      - name: Sync proofs to S3
+      - name: Sync proofs to GCS
         if: success()
-        run: aws s3 sync storage/proofs "s3://${{ secrets.PROOF_ARCHIVE_BUCKET }}/$(date +%Y-%m-%d)/"
+        run: gcloud storage cp storage/proofs/* "gs://${{ secrets.PROOF_ARCHIVE_BUCKET }}/$(date +%Y-%m-%d)/"
       - name: Restore and validate archived proof
         if: success()
         run: |
           tmpdir=$(mktemp -d)
-          prefix="s3://${{ secrets.PROOF_ARCHIVE_BUCKET }}/$(date +%Y-%m-%d)/"
-          file=$(aws s3 ls "$prefix" | awk '{print $4}' | grep '.json$' | head -n 1)
+          prefix="gs://${{ secrets.PROOF_ARCHIVE_BUCKET }}/$(date +%Y-%m-%d)/"
+          file=$(gcloud storage ls "$prefix" | awk -F/ '{print $NF}' | grep '.json$' | head -n 1)
           if [ -z "$file" ]; then
             echo "No proof files found in archive" >&2
             exit 1
           fi
-          aws s3 cp "${prefix}${file}" "$tmpdir/$file"
-          aws s3 cp "${prefix}manifest.txt" "$tmpdir/manifest.txt"
+          gcloud storage cp "${prefix}${file}" "$tmpdir/$file"
+          gcloud storage cp "${prefix}manifest.txt" "$tmpdir/manifest.txt"
           npx -y ts-node scripts/restore-proof-check.ts "$tmpdir/$file" "$tmpdir/manifest.txt" 2>&1 | tee restore-validation.log
       - name: Upload restore validation logs
         if: always()

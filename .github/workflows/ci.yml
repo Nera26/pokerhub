@@ -179,6 +179,12 @@ jobs:
           content-filepath: proof-archive-sla.md
 
       - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
       - name: Verify proof archive integrity
         id: proof-archive-integrity
         env:
@@ -384,9 +390,6 @@ jobs:
           SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
           RUN_ID: ${{ steps.spectator-privacy-nightly.outputs.run_id }}
           SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
         run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/verify-ops-artifacts.ts
 
   soak-metrics:
