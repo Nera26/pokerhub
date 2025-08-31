@@ -11,19 +11,21 @@ function fail(msg: string): never {
 }
 
 const content = fs.readFileSync(runbookPath, 'utf-8');
-const idx = content.indexOf(marker);
-if (idx === -1) {
+const lines = content.split('\n');
+const markerIndex = lines.findIndex(l => l.includes(marker));
+if (markerIndex === -1) {
   fail('DR_DRILL_RESULTS marker not found');
 }
 
-const after = content.slice(idx + marker.length);
-const matches = [...after.matchAll(/\d{4}-\d{2}-\d{2}/g)].map(m => m[0]);
+const afterLines = lines.slice(markerIndex + 1);
+const matches = [...afterLines.join('\n').matchAll(/\d{4}-\d{2}-\d{2}/g)].map(m => m[0]);
 if (matches.length === 0) {
   fail('No drill timestamps found');
 }
 
 matches.sort();
 const latestStr = matches[matches.length - 1];
+const entryIdx = afterLines.findIndex(l => l.includes(latestStr));
 const latest = new Date(latestStr);
 if (isNaN(latest.getTime())) {
   fail(`Invalid date parsed: ${latestStr}`);
@@ -37,22 +39,25 @@ if (diffDays > 30) {
 
 console.log(`Latest drill ${latestStr} is ${Math.floor(diffDays)} days old`);
 
-if (process.env.APPEND_RUN_ID === 'true') {
+if (entryIdx !== -1) {
+  const entryLine = afterLines[entryIdx];
+  const m = entryLine.match(/RTO (\d+)s, snapshot RPO (\d+)s, WAL RPO (\d+)s(?:, failover (\d+)s, primary restore (\d+)s)?/);
+  if (m) {
+    const extra = m[4] ? `, failover ${m[4]}s, primary restore ${m[5]}s` : '';
+    console.log(`Latest metrics – RTO ${m[1]}s, snapshot RPO ${m[2]}s, WAL RPO ${m[3]}s${extra}`);
+  }
+}
+
+if (process.env.APPEND_RUN_ID === 'true' && entryIdx !== -1) {
   const runId = process.env.GITHUB_RUN_ID;
   if (runId) {
     const repo = process.env.GITHUB_REPOSITORY;
     const runUrl = repo ? `https://github.com/${repo}/actions/runs/${runId}` : runId;
-    const lines = content.split('\n');
-    const markerIndex = lines.findIndex(line => line.includes(marker));
-    if (markerIndex !== -1) {
-      const relIndex = lines.slice(markerIndex + 1).findIndex(line => line.includes(latestStr));
-      if (relIndex !== -1) {
-        const entryIndex = markerIndex + 1 + relIndex;
-        if (!lines[entryIndex].includes(runId)) {
-          lines[entryIndex] += ` ([run ${runId}](${runUrl}))`;
-          fs.writeFileSync(runbookPath, lines.join('\n'));
-        }
-      }
+    const globalIndex = markerIndex + 1 + entryIdx;
+    if (!lines[globalIndex].includes(runId)) {
+      lines[globalIndex] += ` ([run ${runId}](${runUrl}))`;
+      fs.writeFileSync(runbookPath, lines.join('\n'));
     }
   }
 }
+

@@ -48,6 +48,26 @@ echo "RPO_SNAPSHOT_SECONDS=$rpo_snapshot" >> "$metrics_file"
 echo "RPO_WAL_SECONDS=$rpo_wal" >> "$metrics_file"
 echo "RPO_SECONDS=$rpo_wal" >> "$metrics_file"
 
+log "Disabling primary instance $PG_INSTANCE_ID..."
+failover_start=$(date +%s)
+gcloud sql instances patch "$PG_INSTANCE_ID" --activation-policy=NEVER --quiet
+
+restore_primary() {
+  log "Re-enabling original primary $PG_INSTANCE_ID..."
+  local start="$(date +%s)"
+  gcloud sql instances patch "$PG_INSTANCE_ID" --activation-policy=ALWAYS --quiet || true
+  until [ "$(gcloud sql instances describe "$PG_INSTANCE_ID" --project "$PROJECT_ID" --format 'value(state)')" = "RUNNABLE" ]; do
+    sleep 5
+  done
+  local end="$(date +%s)"
+  local dur=$((end - start))
+  primary_restore=$dur
+  echo "PRIMARY_RESTORE_SECONDS=$dur" >> "$metrics_file"
+  log "Primary restored in ${dur}s"
+}
+
+trap restore_primary EXIT
+
 db_identifier="drill-$start_epoch"
 echo "DB_IDENTIFIER=$db_identifier" >> "$metrics_file"
 
@@ -74,22 +94,26 @@ PGHOST="$endpoint" PGPORT=5432 psql \
 
 end_iso=$(date --iso-8601=seconds)
 end_epoch=$(date +%s)
+failover=$((end_epoch - failover_start))
 rto=$((end_epoch - start_epoch))
-log "Restore completed in ${rto}s"
+log "Restore completed in ${rto}s (failover ${failover}s)"
 
 echo "END_TIME=$end_iso" >> "$metrics_file"
 echo "RTO_SECONDS=$rto" >> "$metrics_file"
+echo "FAILOVER_SECONDS=$failover" >> "$metrics_file"
 
 if [ $rto -gt 1800 ]; then
   log "RTO exceeds threshold (${rto}s)"
   status=1
 fi
+restore_primary
+trap - EXIT
 if [ "${KEEP_INSTANCE:-false}" != "true" ]; then
   gcloud sql instances delete "$db_identifier" \
     --project "$PROJECT_ID" \
     --quiet || true
 fi
 
-log "Disaster recovery drill finished: RTO ${rto}s, snapshot RPO ${rpo_snapshot}s, wal RPO ${rpo_wal}s"
+log "Disaster recovery drill finished: RTO ${rto}s, snapshot RPO ${rpo_snapshot}s, wal RPO ${rpo_wal}s, failover ${failover}s, primary restore ${primary_restore:-0}s"
 
 exit $status
