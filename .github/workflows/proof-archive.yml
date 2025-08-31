@@ -155,3 +155,52 @@ jobs:
           curl -X POST https://events.pagerduty.com/v2/enqueue \
             -H 'Content-Type: application/json' \
             -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Hand proof archive failed","source":"github-actions","severity":"error"}}'
+
+  historical-sample:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+      - name: Validate historical proof samples
+        run: |
+          set -eo pipefail
+          bucket="gs://${{ secrets.PROOF_ARCHIVE_BUCKET }}"
+          cutoff=$(date -d '30 days ago' +%Y-%m-%d)
+          mapfile -t dirs < <(gcloud storage ls "$bucket/" | awk -F/ '{print $NF}' | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}/$' | sed 's/\/$//' | awk -v c="$cutoff" '$1 < c' | shuf -n 1)
+          if [ ${#dirs[@]} -eq 0 ]; then
+            echo "No historical proof batches older than 30 days" >&2
+            exit 1
+          fi
+          dir=${dirs[0]}
+          prefix="$bucket/$dir/"
+          tmpdir=$(mktemp -d)
+          gcloud storage cp "${prefix}manifest.txt" "$tmpdir/manifest.txt"
+          mapfile -t files < <(gcloud storage ls "$prefix" | awk -F/ '{print $NF}' | grep '.json$' | shuf -n 5)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No proof files found in batch $dir" >&2
+            exit 1
+          fi
+          for f in "${files[@]}"; do
+            gcloud storage cp "${prefix}${f}" "$tmpdir/$f"
+          done
+          set +e
+          npx -y ts-node scripts/restore-proof-check.ts "${files[@]/#/$tmpdir/}" "$tmpdir/manifest.txt" --summary "$tmpdir/summary.json"
+          status=$?
+          set -e
+          passed=$(jq '.passed' "$tmpdir/summary.json")
+          failed=$(jq '.failed' "$tmpdir/summary.json")
+          gcloud monitoring metrics write custom.googleapis.com/proof/historical_pass "$passed"
+          gcloud monitoring metrics write custom.googleapis.com/proof/historical_fail "$failed"
+          { echo "### Historical Proof Sample"; echo "- batch: $dir"; cat "$tmpdir/summary.json"; } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$status" -ne 0 ]; then
+            exit "$status"
+          fi
