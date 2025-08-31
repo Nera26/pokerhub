@@ -23,6 +23,11 @@ jobs:
       - name: Sanitize logs
         if: always()
         run: npx ts-node scripts/sanitize-spectator-logs.ts backend-tests.log frontend-tests.log
+      - name: DLP scan logs
+        if: always()
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        run: npx ts-node scripts/dlp-scan.ts backend-tests.log frontend-tests.log
       - name: Verify sanitized logs
         if: always()
         run: |
@@ -37,6 +42,7 @@ jobs:
         run: |
           gcloud storage cp backend-tests.log gs://$SPECTATOR_PRIVACY_BUCKET/$RUN_ID/backend-tests.log
           gcloud storage cp frontend-tests.log gs://$SPECTATOR_PRIVACY_BUCKET/$RUN_ID/frontend-tests.log
+          gcloud storage cp dlp-scan.json gs://$SPECTATOR_PRIVACY_BUCKET/$RUN_ID/dlp-scan.json
       - name: Verify logs in GCS
         if: always()
         env:
@@ -45,6 +51,7 @@ jobs:
           gcloud storage ls gs://$SPECTATOR_PRIVACY_BUCKET/$RUN_ID/ | tee gcs-logs.txt
           grep backend-tests.log gcs-logs.txt
           grep frontend-tests.log gcs-logs.txt
+          grep dlp-scan.json gcs-logs.txt
       - name: Verify spectator bucket retention
         if: always()
         env:
@@ -59,6 +66,7 @@ jobs:
           path: |
             backend-tests.log
             frontend-tests.log
+            dlp-scan.json
           retention-days: 14
       - name: Notify Slack on failure
         if: failure()
