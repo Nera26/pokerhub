@@ -1,0 +1,43 @@
+name: chaos-baseline
+
+on:
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install k6 and Artillery
+        run: npm install -g k6 artillery
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Run 10k chaos baseline
+        run: ./load/run-10k-chaos.sh
+        env:
+          TABLES: 10000
+          RNG_SEED: ${{ github.run_id }}
+      - name: Resolve metrics dir
+        run: echo "METRICS_DIR=$(readlink -f load/metrics/latest)" >> $GITHUB_ENV
+      - name: Analyze chaos trends
+        run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-chaos-trends.ts "$METRICS_DIR"
+        env:
+          CHAOS_TRENDS_BUCKET: ${{ secrets.CHAOS_TRENDS_BUCKET }}
+      - name: Sync metrics to S3
+        if: always()
+        run: aws s3 sync "$METRICS_DIR" "s3://${{ secrets.CHAOS_TRENDS_BUCKET }}/$(basename \"$METRICS_DIR\")/"
+      - name: Upload metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chaos-baseline-${{ github.run_id }}
+          path: ${{ env.METRICS_DIR }}
+          retention-days: 7
