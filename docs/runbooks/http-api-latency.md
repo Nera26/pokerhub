@@ -1,16 +1,15 @@
-# HTTP API Latency
+# Frontend Route Latency
 
-Investigates high HTTP API response times affecting players.
+Investigates slow Next.js route responses affecting players.
 
-## Dashboard
-- Grafana: [HTTP API Latency](../../infrastructure/observability/http-api-latency-dashboard.json)
+## Monitoring
+- Grafana: [Frontend Route Latency](https://grafana.pokerhub.example/d/frontend-route-latency) (UID `frontend-route-latency`)
+- Metabase: [Latency & Error Overview](https://metabase.pokerhub.example/dashboard/latency-error-overview)
 
-## Alert Rule
-- `HttpApiLatencySLOViolation` in [alerts.yml](../../infrastructure/observability/alerts.yml)
-
-## PagerDuty
-- Service: `pokerhub-sre` (ID: PSRE789) <!-- Update ID if PagerDuty service changes -->
-- Escalation: [SRE](https://pokerhub.pagerduty.com/escalation_policies/PABC123)
+## Alerting
+- Route: [`pokerhub-eng`](../../metrics/alert-routes.md#pokerhub-eng) (PagerDuty ID: PENG012)
+- Escalation: [Engineering](https://pokerhub.pagerduty.com/escalation_policies/PDEF456)
+- Rule: `HttpApiLatencySLOViolation` in [alerts.yml](../../infrastructure/observability/alerts.yml)
 
 ## Playbook
 1. Compare latency spikes with recent deployments.

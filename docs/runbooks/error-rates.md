@@ -2,12 +2,12 @@
 
 Responding to elevated application error rates.
 
-## Dashboard
-- Grafana: [Error Rates](../../infrastructure/observability/error-rates-dashboard.json)
-- Metabase: [Error Rate](../analytics-dashboards.md#error-rate-1)
+## Monitoring
+- Grafana: [Error Rates](https://grafana.pokerhub.example/d/error-rates) (UID `error-rates`)
+- Metabase: [Latency & Error Overview](https://metabase.pokerhub.example/dashboard/latency-error-overview)
 
-## PagerDuty
-- Service: `pokerhub-sre` (ID: PSRE789) <!-- Update ID if PagerDuty service changes -->
+## Alerting
+- Route: [`pokerhub-sre`](../../metrics/alert-routes.md#pokerhub-sre) (PagerDuty ID: PSRE789)
 - Escalation: [SRE](https://pokerhub.pagerduty.com/escalation_policies/PABC123)
 
 ## Playbook

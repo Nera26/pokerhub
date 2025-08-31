@@ -2,12 +2,12 @@
 
 Investigates failed WebSocket connection attempts.
  
-## Dashboard
-- Grafana: [Socket Connects](../../infrastructure/observability/socket-connects-dashboard.json)
-- Metabase: [Socket Connect Success](../analytics-dashboards.md#socket-connect-success-1)
+## Monitoring
+- Grafana: [Socket Connects](https://grafana.pokerhub.example/d/socket-connects) (UID `socket-connects`)
+- Metabase: [Alerts Overview](https://metabase.pokerhub.example/dashboard/alerts-overview)
 
-## PagerDuty
-- Service: `pokerhub-sre` (ID: PSRE789) <!-- Update ID if PagerDuty service changes -->
+## Alerting
+- Route: [`pokerhub-sre`](../../metrics/alert-routes.md#pokerhub-sre) (PagerDuty ID: PSRE789)
 - Escalation: [SRE](https://pokerhub.pagerduty.com/escalation_policies/PABC123)
 
 ## Playbook
