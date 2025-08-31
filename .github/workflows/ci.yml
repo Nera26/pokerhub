@@ -178,6 +178,54 @@ jobs:
           title: "SLA breached: proof-archive"
           content-filepath: proof-archive-sla.md
 
+      - name: Ensure ops-artifacts-verify recent success
+        id: ops-artifacts-verify
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          run=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/ops-artifacts-verify.yml/runs?per_page=1")
+          conclusion=$(echo "$run" | jq -r '.workflow_runs[0].conclusion')
+          started=$(echo "$run" | jq -r '.workflow_runs[0].run_started_at')
+          echo "workflow=ops-artifacts-verify.yml" >> $GITHUB_OUTPUT
+          echo "timestamp=$started" >> $GITHUB_OUTPUT
+          echo "conclusion=$conclusion" >> $GITHUB_OUTPUT
+          start_ts=$(date -d "$started" +%s)
+          now=$(date -u +%s)
+          if [ "$conclusion" != "success" ] || [ $((now - start_ts)) -gt 86400 ]; then
+            echo "Latest ops-artifacts-verify workflow run did not succeed within 24 hours" >&2
+            exit 1
+          fi
+
+      - name: Prepare ops-artifacts-verify SLA alert
+        if: failure() && steps.ops-artifacts-verify.outcome == 'failure'
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          cat <<'EOF' > ops-artifacts-verify-sla.md
+          Workflow: ${{ steps.ops-artifacts-verify.outputs.workflow }}
+          Last Run: ${{ steps.ops-artifacts-verify.outputs.timestamp }}
+          Conclusion: ${{ steps.ops-artifacts-verify.outputs.conclusion }}
+          EOF
+          jq -n --arg channel "$SLACK_CHANNEL_ID" \
+            --arg text "ops-artifacts-verify.yml SLA check failed. Last run: ${{ steps.ops-artifacts-verify.outputs.timestamp }} (conclusion: ${{ steps.ops-artifacts-verify.outputs.conclusion }})." \
+            '{channel: $channel, text: $text}' > ops-artifacts-verify-slack.json
+      - name: Slack alert (ops-artifacts-verify SLA)
+        if: failure() && steps.ops-artifacts-verify.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: ops-artifacts-verify-slack.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: Create issue for ops-artifacts-verify SLA
+        if: failure() && steps.ops-artifacts-verify.outcome == 'failure'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "SLA breached: ops-artifacts-verify"
+          content-filepath: ops-artifacts-verify-sla.md
+
       - uses: actions/checkout@v4
       - uses: google-github-actions/auth@v2
         with:
