@@ -1,6 +1,10 @@
 # Proof Archive
 
-Exports recent hand proofs to S3 each night.
+Exports recent hand proofs to Google Cloud Storage each night.
+
+## Storage
+- Bucket: configured via the `PROOF_ARCHIVE_BUCKET` secret (e.g. `gs://pokerhub-proof-archive`).
+- Retention: bucket lifecycle must retain proofs for at least 365 days.
 
 ## Alerts
 - Fails if no hand proofs are found in the last 24 hours.
