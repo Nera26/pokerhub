@@ -177,4 +177,6 @@ try {
 }
 NODE
 
+"$SCRIPT_DIR/check-thresholds.sh" "$METRICS_DIR/k6-summary.json" "$GC_HIST_FILE" "$HEAP_HIST_FILE"
+
 echo "Metrics written to $METRICS_DIR"
