@@ -1,0 +1,27 @@
+name: spectator-privacy
+
+on:
+  pull_request:
+    paths:
+      - 'backend/src/game/**'
+      - 'backend/test/game/**'
+      - 'frontend/src/lib/spectator-socket.ts'
+      - 'frontend/src/features/table/spectator/**'
+      - 'frontend/src/app/table/**/spectate/**'
+      - 'frontend/test/spectator/**'
+
+jobs:
+  spectator-privacy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/spectator-privacy-check
+      - name: Upload logs as artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spectator-privacy-logs
+          path: |
+            backend-tests.log
+            frontend-tests.log
+          retention-days: 14
