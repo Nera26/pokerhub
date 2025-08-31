@@ -349,6 +349,49 @@ jobs:
             --jq '.workflow_runs[0].id')
           echo "RUN_ID=$RUN_ID" >> "$GITHUB_OUTPUT"
 
+      - name: Validate spectator privacy nightly run
+        id: spectator_privacy_nightly
+        env:
+          SLA_HOURS: 24
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          resp=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/spectator-privacy-nightly.yml/runs?per_page=1")
+          ts=$(echo "$resp" | jq -r '.workflow_runs[0].updated_at')
+          conclusion=$(echo "$resp" | jq -r '.workflow_runs[0].conclusion')
+          echo "timestamp=$ts" >> "$GITHUB_OUTPUT"
+          now=$(date -u +%s)
+          run_ts=$(date -d "$ts" -u +%s)
+          max_age=$((SLA_HOURS * 3600))
+          age=$((now - run_ts))
+          if [ "$conclusion" != "success" ]; then
+            echo "Latest spectator-privacy-nightly run concluded with $conclusion" >&2
+            exit 1
+          fi
+          if [ "$age" -gt "$max_age" ]; then
+            echo "Latest spectator-privacy-nightly run is older than ${SLA_HOURS}h" >&2
+            exit 1
+          fi
+
+      - name: Notify on-call on stale spectator privacy run
+        if: failure() && steps.spectator_privacy_nightly.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            { "text": "\uD83D\uDEAB Deployment blocked: spectator-privacy-nightly workflow failed or stale for ${{ github.repository }}@${{ github.sha }}" }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: PagerDuty alert on stale spectator privacy run
+        if: failure() && steps.spectator_privacy_nightly.outcome == 'failure'
+        env:
+          ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+        run: |
+          curl -X POST https://events.pagerduty.com/v2/enqueue \
+            -H 'Content-Type: application/json' \
+            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"spectator-privacy-nightly workflow failed or stale during deployment","source":"github-actions","severity":"error"}}'
+
       - name: Verify ops artifacts
         id: verify_ops_artifacts
         env:
