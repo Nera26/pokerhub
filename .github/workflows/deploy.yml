@@ -186,7 +186,6 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
-
       - name: Ensure pg-restore-smoke recent success
         id: pg_restore_smoke
         env:
@@ -463,7 +462,16 @@ jobs:
             echo "- http_error_rate: ${{ steps.metrics.outputs.http_error_rate }}"
           } >> "$GITHUB_STEP_SUMMARY"
 
-soak:
-  needs: deploy
-  uses: ./.github/workflows/soak.yml
-  secrets: inherit
+  proof-archive:
+    needs: deploy
+    uses: ./.github/workflows/proof-archive.yml
+    secrets:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      PAGERDUTY_ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+
+  soak:
+    needs: deploy
+    uses: ./.github/workflows/soak.yml
+    secrets: inherit
