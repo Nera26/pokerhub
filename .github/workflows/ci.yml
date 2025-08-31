@@ -618,3 +618,52 @@ jobs:
             metrics/heap-histogram.json
             metrics/cpu-histogram.json
             metrics/baseline.json
+
+  dr-trends:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+      - name: Check DR RTO/RPO trends
+        id: dr-trends
+        env:
+          DR_METRICS_BUCKET: ${{ vars.DR_METRICS_BUCKET }}
+          RTO_THRESHOLD: ${{ vars.DR_RTO_TARGET || 1800 }}
+          RPO_THRESHOLD: ${{ vars.DR_RPO_TARGET || 300 }}
+        run: |
+          set -e
+          result=$(npx ts-node infra/disaster-recovery/check-dr-trends.ts)
+          echo "$result" | tee dr-trends.json
+          echo "$result" | jq -r '[
+            "Latest RTO: \(.latest.rto)s",
+            "Latest RPO snapshot: \(.latest.rpoSnap)s",
+            "Latest RPO WAL: \(.latest.rpoWal)s",
+            "Average RTO: \(.average.rto)s",
+            "Average RPO snapshot: \(.average.rpoSnap)s",
+            "Average RPO WAL: \(.average.rpoWal)s",
+            "Δ RTO: \(.trend.rto)s",
+            "Δ RPO snapshot: \(.trend.rpoSnap)s",
+            "Δ RPO WAL: \(.trend.rpoWal)s"
+          ] | join("\n")' >> "$GITHUB_STEP_SUMMARY"
+      - name: Prepare DR trend Slack payload
+        if: always()
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          node -e "const fs=require('fs');const d=JSON.parse(fs.readFileSync('dr-trends.json','utf8'));const msg=`DR drill trends: latest RTO ${d.latest.rto}s avg ${d.average.rto.toFixed(1)}s, latest RPO WAL ${d.latest.rpoWal}s avg ${d.average.rpoWal.toFixed(1)}s`;fs.writeFileSync('dr-trends-slack.json',JSON.stringify({channel:process.env.SLACK_CHANNEL_ID,text:msg}));"
+      - name: Publish DR trend summary
+        if: always()
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: dr-trends-slack.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
