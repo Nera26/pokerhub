@@ -1,13 +1,15 @@
 # Accounting Book
 
-**Version:** 1.1.0
-**Last Updated:** 2025-08-30
+**Version:** 1.1.1
+**Last Updated:** 2025-08-31
 
 ## Ledger Schema
 
 Ledger code lives under [`backend/src/wallet`](../backend/src/wallet). The
 daily reconciliation job is implemented in
 [`backend/src/wallet/reconcile.job.ts`](../backend/src/wallet/reconcile.job.ts).
+
+Operational response steps for ledger discrepancies are detailed in the [Wallet Reconciliation Runbook](./runbooks/wallet-reconciliation.md), and service availability targets are defined in the [service uptime SLO](./SLOs.md#service-uptime).
 
 - **Account**: tracks the running balance for a wallet participant.
 - **JournalEntry**: immutable rows recording debits and credits with a `refType` and `refId`.
@@ -73,9 +75,14 @@ See the [Reconciliation Guide](./handbook/reconciliation-guide.md) for the end-t
 - Findings and corrective actions are logged for regulatory inspection.
 
 ## Revision History
+- 2025-08-31: linked wallet reconciliation runbook and service uptime SLO; added review footer
 - cac8e82: add external KYC provider with denial reasons
 - 36ba907: add reconcile zero-sum property test
 - 3ab6709: add wallet reconciliation job and tests
 - 2025-01-04: document revision history
 - 2025-08-30: add version metadata, ledger flow diagram, and example
 - 2025-08-30: cover buy-ins, payouts, and audit controls
+
+---
+_Last reviewed: 2025-08-31 by Nera26_
+

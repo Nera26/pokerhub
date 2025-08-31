@@ -1,13 +1,15 @@
 # Tournament Handbook
 
-**Version:** 1.1.1
-**Last Updated:** 2025-08-30
+**Version:** 1.1.2
+**Last Updated:** 2025-08-31
 **Changelog:** [CHANGELOG](./CHANGELOG.md)
 
 This handbook standardizes how PokerHub hosts competitive events. Engine
 behavior is detailed in the [Game Engine Specification](../game-engine-spec.md),
 and ledger procedures reside in the [Reconciliation Guide](./reconciliation-guide.md).
 Upcoming tournament features are tracked in the [Milestone Roadmap](../roadmap.md).
+
+Operational playbooks for seating issues live in the [Tourney Balancing Backlog Runbook](../runbooks/tourney-balancing-backlog.md), and reliability targets are outlined in the [queue saturation SLO](../SLOs.md#queue-saturation).
 
 Tournament logic is implemented in [`backend/src/tournament`](../../backend/src/tournament)
 with event ingestion defined in [`infrastructure/analytics/ingest-tournament.sql`](../../infrastructure/analytics/ingest-tournament.sql).
@@ -74,8 +76,13 @@ flowchart LR
 Tournament ledger entries must be verified daily. Follow the [reconciliation procedure](../accounting-book.md#reconciliation-procedure) to confirm balances.
 
 ## Changelog
+- **1.1.2** – 2025-08-31 – Added runbook and SLO references; added review footer.
 - **1.1.1** – 2025-08-30 – Introduced changelog and added checklist review.
 - **1.1.0** – 2025-08-30 – Added cross-references to engine spec and reconciliation guide; converted revision history to changelog.
 - **1.0.1** – 2025-08-30 – Added lifecycle diagram and version metadata.
 - **1.0.0** – 2025-01-04 – Initial tournament policies.
+
+
+---
+_Last reviewed: 2025-08-31 by Nera26_
 
