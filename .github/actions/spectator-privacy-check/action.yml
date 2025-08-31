@@ -1,0 +1,29 @@
+name: 'Spectator Privacy Check'
+description: 'Install dependencies and run backend and frontend spectator privacy tests'
+inputs:
+  node-version:
+    description: 'Node.js version'
+    required: false
+    default: '20'
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: npm
+    - name: Install root dependencies
+      run: npm ci
+    - name: Install backend dependencies
+      run: npm ci --prefix backend
+    - name: Install frontend dependencies
+      run: npm ci --prefix frontend
+    - name: Run backend spectator privacy tests
+      run: |
+        set -o pipefail
+        npm test --prefix backend -- "test/game/spectator.*spec.ts" 2>&1 | tee backend-tests.log
+    - name: Run frontend spectator privacy tests
+      run: |
+        set -o pipefail
+        npm test --prefix frontend -- "spectator/privacy.test.tsx" 2>&1 | tee frontend-tests.log

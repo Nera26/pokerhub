@@ -199,15 +199,7 @@ jobs:
     continue-on-error: false
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm ci --prefix backend
-      - run: npm ci --prefix frontend
-      - run: npm test --prefix backend "test/game/spectator.*spec.ts"
-      - run: npm test --prefix frontend "spectator/privacy.test.tsx"
+      - uses: ./.github/actions/spectator-privacy-check
   integration:
     needs: spectator-privacy
     runs-on: ubuntu-latest

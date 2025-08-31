@@ -161,17 +161,10 @@ jobs:
         run: |
           python -m pip install pyyaml >/dev/null
           python infra/observability/validate.py
-
       - name: Run spectator privacy tests
-        run: npm test --prefix backend test/game/spectator-privacy.spec.ts
-
-      - name: Set up Node for frontend tests
-        uses: actions/setup-node@v4
+        uses: ./.github/actions/spectator-privacy-check
         with:
           node-version: 18
-
-      - name: Run frontend spectator privacy tests
-        run: npm test --prefix frontend spectator/privacy.test.tsx
 
       # --- Canary, SLO check, promote/rollback ---
       - name: Run canary deploy
