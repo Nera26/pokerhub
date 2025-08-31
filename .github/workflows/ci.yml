@@ -547,6 +547,7 @@ jobs:
           path: chaos.log
 
   soak:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: chaos
     runs-on: ubuntu-latest
     continue-on-error: false
@@ -603,7 +604,9 @@ jobs:
         if: always()
         run: |
           gcloud storage rsync -r metrics "gs://${{ secrets.SOAK_TRENDS_BUCKET }}/soak-${{ github.run_id }}/"
+          gcloud storage cp load/results/ws-soak-summary.json "gs://${{ secrets.SOAK_TRENDS_BUCKET }}/soak-${{ github.run_id }}/ws-soak-summary.json"
           gcloud storage rsync -r metrics "gs://${{ secrets.SOAK_TRENDS_BUCKET }}/soak/latest/"
+          gcloud storage cp load/results/ws-soak-summary.json "gs://${{ secrets.SOAK_TRENDS_BUCKET }}/soak/latest/ws-soak-summary.json"
       - name: Check soak metrics
         id: check-metrics
         if: always()
