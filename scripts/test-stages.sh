@@ -21,7 +21,10 @@ run_property() {
   npm ci --prefix analytics
   npm run test:property --prefix backend
   npm test --prefix frontend -- --testPathPattern=.property.spec.ts$ --passWithNoTests
-  npm run test:property --prefix analytics
+  npx c8 --reporter=lcov --reporter=text --clean=false npm run test:property --prefix analytics
+  if [ -d shared/test ]; then
+    npx c8 --reporter=lcov --reporter=text --clean=false ts-node shared/test/**/*.property.ts
+  fi
   if [ -d tests/property ]; then
     npx ts-node tests/property/**/*.ts
   fi
