@@ -76,6 +76,10 @@ jobs:
         env:
           SLA_HOURS: 24
           GITHUB_TOKEN: ${{ github.token }}
+          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
           set -euo pipefail
           run=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" \
@@ -89,6 +93,7 @@ jobs:
             echo "Latest soak workflow run did not succeed within ${SLA_HOURS} hours" >&2
             exit 1
           fi
+          npx ts-node --compiler-options '{"module":"commonjs"}' scripts/check-soak-metrics.ts
 
       - name: Ensure spectator-privacy nightly recent success
         env:
