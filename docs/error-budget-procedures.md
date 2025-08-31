@@ -17,7 +17,7 @@ PagerDuty routes SLO burn alerts based on the metric:
 
 On-call engineers escalate to the engineering manager if burn rates stay high for more than an hour and involve the CTO once the full monthly budget is exhausted.
 
-An example Prometheus burn-rate rule lives at [../infrastructure/observability/error-budgets.rules.yml](../infrastructure/observability/error-budgets.rules.yml) to illustrate alert configuration.
+An example Prometheus burn-rate rule lives at [../infra/observability/error-budgets.rules.yml](../infra/observability/error-budgets.rules.yml) to illustrate alert configuration.
 
 ## Burn Rate Calculation
 
@@ -31,7 +31,7 @@ time_to_exhaust_hours = (30 * 24) / burn_rate
 A 99.9% availability SLO allows 0.1% errors (43.2 minutes per month). If the observed error rate reaches 5%, the burn rate is `0.05 / 0.001 = 50`, exhausting the monthly budget in roughly `14.4` hours. Multi-window alerts fire when burn rates exceed **14.4×** over 1 h or **6×** over 6 h.
 
 ## Dashboards & Alert Thresholds
-All SLOs use multi-window burn rates of **14.4×** (5 m/1 h) and **6×** (30 m/6 h). Dashboards live under `../infrastructure/observability/`:
+All SLOs use multi-window burn rates of **14.4×** (5 m/1 h) and **6×** (30 m/6 h). Dashboards live under `../infra/observability/`:
 
 | Metric | Grafana UID | PagerDuty service | PagerDuty policy | Runbook |
 | --- | --- | --- | --- | --- |

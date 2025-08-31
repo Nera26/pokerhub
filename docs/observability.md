@@ -51,10 +51,10 @@ aggregates and receive alerts when thresholds are crossed.
 
 ### Player Analytics
 
-Import `infrastructure/observability/player-analytics-dashboard.json` into
+Import `infra/observability/player-analytics-dashboard.json` into
 Grafana for DAU/MAU trends, rake curves, and stake-level VPIP/PFR/Pot
 visualizations. Metabase cards for the same metrics live in
-`infrastructure/observability/metabase-dashboard.json`.
+`infra/observability/metabase-dashboard.json`.
 
 ## OpenTelemetry
 Metrics can also be shipped via OTLP:
@@ -125,7 +125,7 @@ The Grafana SLO dashboard tracks:
 Prometheus evaluates these objectives and sends violations to the
 `pokerhub-sre` PagerDuty service.
 
-See [SLOs](SLOs.md) for targets and [error-budget procedures](error-budget-procedures.md) for freeze and rollback thresholds. Import `infrastructure/observability/alerts-overview-grafana.json` for a Grafana summary of active burn rates, or `infrastructure/observability/alerts-overview-metabase.json` for a Metabase view of the same data.
+See [SLOs](SLOs.md) for targets and [error-budget procedures](error-budget-procedures.md) for freeze and rollback thresholds. Import `infra/observability/alerts-overview-grafana.json` for a Grafana summary of active burn rates, or `infra/observability/alerts-overview-metabase.json` for a Metabase view of the same data.
 
 Production deployments expose these views at:
 
@@ -140,15 +140,15 @@ Production deployments expose these views at:
 
 Individual metric runbooks provide dashboard links and PagerDuty escalation details. See the [runbook index](runbooks/index.md) for the full list:
 
-- [HTTP API Latency](runbooks/http-api-latency.md) ([Grafana JSON](../infrastructure/observability/http-api-latency-dashboard.json))
-- [WebSocket Latency](runbooks/websocket-latency.md) ([Grafana JSON](../infrastructure/observability/websocket-latency-dashboard.json))
-- [Action ACK Latency](runbooks/action-ack-latency.md) ([Grafana JSON](../infrastructure/observability/socket-latency-dashboard.json))
-- [Wallet Throughput](runbooks/wallet-throughput.md) ([Grafana JSON](../infrastructure/observability/wallet-throughput-dashboard.json))
-- [Socket Connect Success](runbooks/socket-connect-success.md) ([Grafana JSON](../infrastructure/observability/socket-connects-dashboard.json))
-- [Error Rates](runbooks/error-rates.md) ([Grafana JSON](../infrastructure/observability/error-rates-dashboard.json))
-- [Service Uptime](runbooks/service-uptime.md) ([Grafana JSON](../infrastructure/observability/service-uptime-dashboard.json))
-- [Queue Saturation](runbooks/queue-saturation.md) ([Grafana JSON](../infrastructure/observability/queue-lag-dashboard.json))
-- [Telemetry Pipeline](runbooks/telemetry-pipeline.md) ([Grafana JSON](../infrastructure/observability/latency-error-resource-dashboard.json))
+- [HTTP API Latency](runbooks/http-api-latency.md) ([Grafana JSON](../infra/observability/http-api-latency-dashboard.json))
+- [WebSocket Latency](runbooks/websocket-latency.md) ([Grafana JSON](../infra/observability/websocket-latency-dashboard.json))
+- [Action ACK Latency](runbooks/action-ack-latency.md) ([Grafana JSON](../infra/observability/socket-latency-dashboard.json))
+- [Wallet Throughput](runbooks/wallet-throughput.md) ([Grafana JSON](../infra/observability/wallet-throughput-dashboard.json))
+- [Socket Connect Success](runbooks/socket-connect-success.md) ([Grafana JSON](../infra/observability/socket-connects-dashboard.json))
+- [Error Rates](runbooks/error-rates.md) ([Grafana JSON](../infra/observability/error-rates-dashboard.json))
+- [Service Uptime](runbooks/service-uptime.md) ([Grafana JSON](../infra/observability/service-uptime-dashboard.json))
+- [Queue Saturation](runbooks/queue-saturation.md) ([Grafana JSON](../infra/observability/queue-lag-dashboard.json))
+- [Telemetry Pipeline](runbooks/telemetry-pipeline.md) ([Grafana JSON](../infra/observability/latency-error-resource-dashboard.json))
 - [Security Incident Response](security/incident-response.md)
 
 ![Alert Routing](images/alert-routing.svg)
@@ -187,7 +187,7 @@ scrape_configs:
 
 Alertmanager evaluates latency and request error SLOs using fast (1 h) and
 slow (6 h) burn rate windows. These rules live under
-`infrastructure/prometheus/alerts.yml`:
+`infra/prometheus/alerts.yml`:
 
 ```yaml
 groups:

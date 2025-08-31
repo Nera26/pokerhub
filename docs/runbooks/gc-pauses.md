@@ -3,7 +3,7 @@
 Investigate long garbage collection pauses that impact gameplay responsiveness.
 
 ## Dashboard
-- Grafana: [GC Pauses](../../infrastructure/observability/gc-pauses-dashboard.json)
+- Grafana: [GC Pauses](../../infra/observability/gc-pauses-dashboard.json)
 
 ## PagerDuty
 - Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->

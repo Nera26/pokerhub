@@ -3,7 +3,7 @@
 Handle anomalies in player engagement metrics such as DAU, MAU, and rake trends.
 
 ## Dashboard
-- Grafana: [Player Analytics](../../infrastructure/observability/player-analytics-dashboard.json)
+- Grafana: [Player Analytics](../../infra/observability/player-analytics-dashboard.json)
 
 ## PagerDuty
 - Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->

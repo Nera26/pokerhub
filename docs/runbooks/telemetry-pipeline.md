@@ -13,7 +13,7 @@ metrics, and logs.
 
 ## Playbook
 1. Check collector health using the dashboards above.
-2. Verify endpoints defined in [`infrastructure/observability/otel-collector.yaml`](../../infrastructure/observability/otel-collector.yaml).
+2. Verify endpoints defined in [`infra/observability/otel-collector.yaml`](../../infra/observability/otel-collector.yaml).
 3. Restart the collector if unresponsive.
 4. If the pipeline remains degraded after 30 minutes, escalate to the observability on-call via PagerDuty.
 

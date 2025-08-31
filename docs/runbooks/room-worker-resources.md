@@ -3,7 +3,7 @@
 Handles situations where room workers consume excessive CPU or memory.
  
 ## Dashboard
-- Grafana: [Room Worker Resources](../../infrastructure/observability/room-cpu-memory-dashboard.json)
+- Grafana: [Room Worker Resources](../../infra/observability/room-cpu-memory-dashboard.json)
 
 ## PagerDuty
 - Service: `pokerhub-sre` (ID: PSRE789) <!-- Update ID if PagerDuty service changes -->

@@ -9,7 +9,7 @@ Investigates slow Next.js route responses affecting players.
 ## Alerting
 - Route: [`pokerhub-eng`](../../metrics/alert-routes.md#pokerhub-eng) (PagerDuty ID: PENG012)
 - Escalation: [Engineering](https://pokerhub.pagerduty.com/escalation_policies/PDEF456)
-- Rule: `HttpApiLatencySLOViolation` in [alerts.yml](../../infrastructure/observability/alerts.yml)
+- Rule: `HttpApiLatencySLOViolation` in [alerts.yml](../../infra/observability/alerts.yml)
 
 ## Playbook
 1. Compare latency spikes with recent deployments.

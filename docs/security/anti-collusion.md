@@ -39,7 +39,7 @@ potential collusion for review.
 
 The scheduled SQL lives in [`CollusionQueryService`](../../backend/src/analytics/collusion.queries.ts)
 and populates a `collusion_alerts` table used by reviewers. Supporting warehouse queries are
-defined under [`../../infrastructure/analytics/`](../../infrastructure/analytics/).
+defined under [`../../infra/analytics/`](../../infra/analytics/).
 
 ### Example Queries
 ```sql

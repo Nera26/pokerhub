@@ -14,7 +14,7 @@ Upcoming tournament features are tracked in the [Milestone Roadmap](../roadmap.m
 Operational playbooks for seating issues live in the [Tourney Balancing Backlog Runbook](../runbooks/tourney-balancing-backlog.md), and reliability targets are outlined in the [queue saturation SLO](../SLOs.md#queue-saturation).
 
 Tournament logic is implemented in [`backend/src/tournament`](../../backend/src/tournament)
-with event ingestion defined in [`infrastructure/analytics/ingest-tournament.sql`](../../infrastructure/analytics/ingest-tournament.sql).
+with event ingestion defined in [`infra/analytics/ingest-tournament.sql`](../../infra/analytics/ingest-tournament.sql).
 
 ## Lifecycle
 
