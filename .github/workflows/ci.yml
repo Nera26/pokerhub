@@ -264,19 +264,21 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT }}
       - name: Check soak metrics
         id: check-metrics
-        run: npx ts-node scripts/check-soak-metrics.ts
+        run: |
+          set -euo pipefail
+          npx ts-node scripts/check-soak-metrics.ts 2>&1 | tee soak-metrics.log
         env:
           SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+          SOAK_TRENDS_WINDOW: ${{ vars.SOAK_TRENDS_WINDOW || 7 }}
+          SOAK_TRENDS_DEVIATION_PCT: ${{ vars.SOAK_TRENDS_DEVIATION_PCT || 20 }}
       - name: Prepare soak metrics alert
         if: failure() && steps.check-metrics.outcome == 'failure'
         env:
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
         run: |
-          cat <<'EOF' > soak-metrics.md
-          Soak metrics check failed.
-          EOF
+          cat soak-metrics.log > soak-metrics.md
           jq -n --arg channel "$SLACK_CHANNEL_ID" \
-            --arg text "Soak metrics check failed." \
+            --arg text "$(cat soak-metrics.log)" \
             '{channel: $channel, text: $text}' > soak-metrics-slack.json
       - name: Slack soak metrics alert
         if: failure() && steps.check-metrics.outcome == 'failure'

@@ -13,6 +13,8 @@ if (!bucket) {
 const maxLatency = Number(process.env.SOAK_LATENCY_P95_MS || 120);
 const minThroughput = Number(process.env.SOAK_THROUGHPUT_MIN || 0);
 const durationSec = Number(process.env.SOAK_DURATION_SEC || 24 * 60 * 60);
+const windowSize = Number(process.env.SOAK_TRENDS_WINDOW || 7);
+const deviationPct = Number(process.env.SOAK_TRENDS_DEVIATION_PCT || 20);
 
 let listing: string;
 try {
@@ -31,58 +33,92 @@ const lines = listing
   .map((l) => l.trim())
   .filter(Boolean);
 
-const now = Date.now();
-const dayMs = 24 * 60 * 60 * 1000;
-let latestTs = 0;
-let latestPath: string | null = null;
+type RunMetric = { ts: number; dir: string };
+const runs: RunMetric[] = [];
 for (const line of lines) {
   const parts = line.split(/\s+/);
   const datePart = parts.find((p) => /\d{4}-\d{2}-\d{2}T/.test(p));
   if (!datePart) continue;
   const ts = Date.parse(datePart);
   const obj = parts[parts.length - 1];
-  if (!isNaN(ts) && ts > latestTs) {
-    latestTs = ts;
-    latestPath = obj;
+  if (obj.endsWith('/baseline.json') && !isNaN(ts)) {
+    runs.push({ ts, dir: obj.replace(/\/baseline\.json$/, '') });
   }
 }
 
-if (!latestPath || now - latestTs > dayMs) {
+runs.sort((a, b) => a.ts - b.ts);
+const recent = runs.slice(-windowSize);
+if (recent.length === 0) {
+  console.error(`No metrics in gs://${bucket}`);
+  process.exit(1);
+}
+
+const latest = recent[recent.length - 1];
+const now = Date.now();
+const dayMs = 24 * 60 * 60 * 1000;
+if (now - latest.ts > dayMs) {
   console.error(`No metrics in gs://${bucket} within last 24h`);
   process.exit(1);
 }
 
-const runDir = latestPath.replace(/\/[^/]+$/, '');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'soak-metrics-'));
-
-try {
-  execSync(`gcloud storage cp ${runDir}/baseline.json ${tmp}/baseline.json`);
-  execSync(
-    `gcloud storage cp ${runDir}/latency-histogram.json ${tmp}/latency-histogram.json`
-  );
-} catch (err) {
-  console.error('Failed to download metrics files');
-  process.exit(1);
+const p95s: number[] = [];
+const throughputs: number[] = [];
+for (let i = 0; i < recent.length; i++) {
+  const dir = recent[i].dir;
+  const base = path.join(tmp, String(i));
+  fs.mkdirSync(base);
+  try {
+    execSync(`gcloud storage cp ${dir}/baseline.json ${base}/baseline.json`);
+    execSync(
+      `gcloud storage cp ${dir}/latency-histogram.json ${base}/latency-histogram.json`
+    );
+  } catch (err) {
+    console.error(`Failed to download metrics files for ${dir}`);
+    process.exit(1);
+  }
+  const baseline = JSON.parse(
+    fs.readFileSync(path.join(base, 'baseline.json'), 'utf-8')
+  ) as { latency?: { p95: number } };
+  const hist = JSON.parse(
+    fs.readFileSync(path.join(base, 'latency-histogram.json'), 'utf-8')
+  ) as Record<string, number>;
+  const latP95 = baseline.latency?.p95 ?? Infinity;
+  const total = Object.values(hist).reduce((s, c) => s + c, 0);
+  const throughput = total / durationSec;
+  p95s.push(latP95);
+  throughputs.push(throughput);
 }
 
-const baseline = JSON.parse(
-  fs.readFileSync(path.join(tmp, 'baseline.json'), 'utf-8')
-) as { latency?: { p95: number } };
-const hist = JSON.parse(
-  fs.readFileSync(path.join(tmp, 'latency-histogram.json'), 'utf-8')
-) as Record<string, number>;
+const latestLat = p95s[p95s.length - 1];
+const latestThr = throughputs[throughputs.length - 1];
+const prevLat = p95s.slice(0, -1);
+const prevThr = throughputs.slice(0, -1);
 
-const latP95 = baseline.latency?.p95 ?? Infinity;
-const total = Object.values(hist).reduce((s, c) => s + c, 0);
-const throughput = total / durationSec;
+const avgLat =
+  prevLat.length > 0 ? prevLat.reduce((s, v) => s + v, 0) / prevLat.length : 0;
+const avgThr =
+  prevThr.length > 0 ? prevThr.reduce((s, v) => s + v, 0) / prevThr.length : 0;
 
 let fail = false;
-if (latP95 > maxLatency) {
-  console.error(`Latency p95 ${latP95}ms exceeds ${maxLatency}ms`);
+if (latestLat > maxLatency) {
+  console.error(`Latency p95 ${latestLat}ms exceeds ${maxLatency}ms`);
   fail = true;
 }
-if (throughput < minThroughput) {
-  console.error(`Throughput ${throughput} < ${minThroughput}`);
+if (latestThr < minThroughput) {
+  console.error(`Throughput ${latestThr} < ${minThroughput}`);
+  fail = true;
+}
+if (prevLat.length > 0 && latestLat > avgLat * (1 + deviationPct / 100)) {
+  console.error(
+    `Latency p95 ${latestLat}ms deviates >${deviationPct}% from avg ${avgLat}`
+  );
+  fail = true;
+}
+if (prevThr.length > 0 && latestThr < avgThr * (1 - deviationPct / 100)) {
+  console.error(
+    `Throughput ${latestThr} deviates >${deviationPct}% from avg ${avgThr}`
+  );
   fail = true;
 }
 
@@ -91,5 +127,5 @@ if (fail) {
 }
 
 console.log(
-  `Recent metrics found in gs://${bucket}; latency p95=${latP95}ms throughput=${throughput}`
+  `Recent metrics found in gs://${bucket}; latency p95=${latestLat}ms throughput=${latestThr}`
 );
