@@ -13,8 +13,10 @@ spec:
             - name: restore-test
               image: {{ .Values.restore.image }}
               env:
-                - name: PG_SNAPSHOT_ID
-                  value: {{ .Values.restore.snapshotId | quote }}
+                - name: PG_BACKUP_ID
+                  value: {{ .Values.restore.backupId | quote }}
+                - name: PROJECT_ID
+                  value: {{ .Values.restore.projectId | quote }}
                 - name: SECONDARY_REGION
                   value: {{ .Values.restore.region | quote }}
               command:

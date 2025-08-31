@@ -90,9 +90,10 @@ the restored instance for inspection.
 Run the automated failover drill to measure restore time and data loss.
 
 ```bash
-PG_SNAPSHOT_ID=<snapshot-id> \
+PG_BACKUP_ID=<backup-id> \
 CLICKHOUSE_SNAPSHOT=<snapshot-file> \
 SECONDARY_REGION=<region> \
+PROJECT_ID=<project-id> \
 bash infra/disaster-recovery/tests/failover.sh
 ```
 

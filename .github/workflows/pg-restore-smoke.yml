@@ -22,21 +22,24 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v4
-      - name: Install clients
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+      - name: Install Postgres client
         run: |
           sudo apt-get update
-          sudo apt-get install -y postgresql-client awscli
+          sudo apt-get install -y postgresql-client
       - name: Restore latest backup
         run: bash infra/scripts/pg-restore-smoke.sh | tee restore.log
         env:
-          PG_BACKUP_S3_URI: ${{ vars.PG_BACKUP_S3_URI }}
+          PG_BACKUP_GCS_URI: ${{ vars.PG_BACKUP_GCS_URI }}
           PGHOST: localhost
           PGUSER: postgres
           PGPASSWORD: postgres
           PGDATABASE: postgres
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
       - name: Check metrics
         run: |
           source restore.metrics
