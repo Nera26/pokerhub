@@ -1,0 +1,13 @@
+{
+  "name": "@pokerhub/analytics",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test:property": "node --test --require ts-node/register anti_collusion/*.property.spec.ts"
+  },
+  "devDependencies": {
+    "fast-check": "^3.17.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  }
+}

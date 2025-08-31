@@ -66,10 +66,13 @@ jobs:
       - run: npm ci
       - run: npm ci --prefix backend
       - run: npm ci --prefix frontend
+      - run: npm ci --prefix analytics
       - name: Backend property tests
         run: npm run test:property --prefix backend | tee property.log
       - name: Frontend property tests
         run: npm test --prefix frontend -- --testPathPattern=.property.spec.ts$ --passWithNoTests | tee -a property.log
+      - name: Analytics property tests
+        run: npm run test:property --prefix analytics | tee -a property.log
       - name: Run repository property tests
         run: |
           if [ -d tests/property ]; then
