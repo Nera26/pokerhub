@@ -1,0 +1,36 @@
+name: soak-smoke
+
+on:
+  pull_request:
+
+jobs:
+  soak-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run k6 soak smoke test
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: load/k6-ws-soak.js
+          flags: >-
+            --vus 100
+            --duration 1m
+            --summary-export=soak-smoke-summary.json
+            --threshold "ws_latency{p(95)<200}"
+            --threshold "cpu_usage{p(100)<85}"
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT }}
+      - name: Write soak smoke metrics to Cloud Monitoring
+        run: |
+          p95=$(jq -r '.metrics.ws_latency["p(95)"] // 0' soak-smoke-summary.json)
+          gcloud monitoring metrics write custom.googleapis.com/soak_smoke/latency "$p95" --labels build_sha=${{ github.sha }},run_id=${{ github.run_id }}
+      - name: Upload summary
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: soak-smoke-summary
+          path: soak-smoke-summary.json

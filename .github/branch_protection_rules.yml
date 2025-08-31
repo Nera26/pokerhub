@@ -10,4 +10,5 @@
     - ops-artifacts-verify
     - "ci / ops-artifacts"
     - soak
+    - soak-smoke
     - spectator-privacy # require spectator privacy workflow
