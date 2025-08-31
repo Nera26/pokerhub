@@ -3,7 +3,7 @@
     - ci
     - "ci / dr-runbook"
     - contracts
-    - deploy
+    - "deploy / deploy"
     - proof-archive
     - check-proof-archive
     - ops-artifacts-verify
