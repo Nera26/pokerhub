@@ -1,7 +1,7 @@
 # Game Engine Specification
 
-**Version:** 1.2.0
-**Last Updated:** 2025-08-30
+**Version:** 1.2.1
+**Last Updated:** 2025-08-31
 
 For upcoming milestones, see the [Milestone Roadmap](./roadmap.md).
 
@@ -10,6 +10,7 @@ state machine and engine workers are defined. Tournament operations are
 documented in the [Tournament Handbook](./handbook/tournament-handbook.md), and ledger
 procedures are covered in the [Reconciliation Guide](./handbook/reconciliation-guide.md).
 Operational remediation steps are outlined in the [Stuck Hand Runbook](./runbooks/stuck-hand.md).
+Service reliability targets are defined in the [Action ACK latency](./SLOs.md#game-action-ack-latency) and [Socket connect success](./SLOs.md#socket-connect-success) SLOs with remediation playbooks in the [Action ACK Latency](./runbooks/action-ack-latency.md) and [Socket Connect Success](./runbooks/socket-connect-success.md) runbooks.
 
 ## State Machine
 ```mermaid
@@ -121,6 +122,11 @@ sequenceDiagram
 - Collusion tracking records user, device and IP on every action.
 
 ## Changelog
+- **1.2.1** – 2025-08-31 – Linked SLO and runbook references; added review footer.
 - **1.2.0** – 2025-08-30 – Cross-referenced tournament and reconciliation guides.
 - **1.1.0** – 2025-08-30 – Added version metadata and message flow diagram.
 - **1.0.0** – 2025-01-04 – Initial publication with hand log/state endpoints and SLO definitions.
+
+---
+_Last reviewed: 2025-08-31 by Nera26_
+
