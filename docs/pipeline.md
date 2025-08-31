@@ -6,7 +6,7 @@ PokerHub uses a multi‑stage GitHub Actions pipeline to gate changes before rel
 
 1. **Contracts** – runs `npm run test:contracts` for backend and frontend to ensure the OpenAPI contract matches implementation.
 2. **Unit** – installs dependencies for backend and frontend, runs eslint, unit tests and verifies OpenAPI drift.
-3. **Property** – `scripts/test-stages.sh property` installs all workspaces and runs backend, frontend, analytics, and repo‑level property tests.
+3. **Property** – `scripts/test-stages.sh property` installs all workspaces and runs backend, frontend, analytics, shared, and repo‑level property tests, generating coverage for analytics and shared modules.
 4. **Integration** – `scripts/test-stages.sh integration` executes backend API e2e tests and frontend integration tests.
 5. **E2E** – exercises full end‑to‑end flows with Playwright via `scripts/test-stages.sh e2e`.
 6. **Load** – `scripts/test-stages.sh load` smoke runs a websocket load scenario with k6.
@@ -28,8 +28,7 @@ runs `npm run test:contracts` for both apps on every pull request.
 percentage of traffic to the canary. After deployment the workflow queries Prometheus for
 SLO metrics—p95 `game_action_ack_latency_ms` and HTTP error rate. If p95 latency exceeds
 **120 ms** or the error rate rises above **0.05 %** (`$ERROR_RATE_THRESHOLD`),
-[`deploy/rollback.sh`](../deploy/rollback.sh) aborts and reverts the rollout. Successful runs
-write `outcome=success`, promote the canary to 100 % traffic, and upload the metrics for audit.
+[`deploy/rollback.sh`](../deploy/rollback.sh) aborts and reverts the rollout. The script runs integration checks to confirm canary pods are removed and health endpoints respond before completing. Successful runs write `outcome=success`, promote the canary to 100 % traffic, and upload the metrics for audit.
 
 [`canary.yml`](../.github/workflows/canary.yml) also checks Prometheus for SLO breaches
 after deploying and runs [`deploy/rollback.sh`](../deploy/rollback.sh)
