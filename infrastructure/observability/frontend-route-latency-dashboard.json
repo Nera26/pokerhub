@@ -1,5 +1,6 @@
 {
   "dashboard": {
+    "uid": "frontend-route-latency",
     "title": "Frontend Route Latency",
     "labels": {
       "pagerduty_service": "pokerhub-eng",

@@ -1,5 +1,6 @@
 {
   "dashboard": {
+    "uid": "service-uptime",
     "title": "Service Uptime",
     "labels": {
       "pagerduty_service": "pokerhub-sre",

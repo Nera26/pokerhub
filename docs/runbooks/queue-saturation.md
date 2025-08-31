@@ -3,7 +3,7 @@
 Handle situations where message queues accumulate a backlog faster than consumers can process.
 
 ## Dashboard
-- Grafana: [Queue Lag](../../infrastructure/observability/queue-lag-dashboard.json)
+- Grafana: [Queue Saturation](../../infrastructure/observability/queue-lag-dashboard.json)
 - Metabase: [Queue Saturation](../analytics-dashboards.md#queue-saturation-1)
 
 ## Detection

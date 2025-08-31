@@ -40,6 +40,14 @@ groups:
 - Grafana: <https://grafana.pokerhub.example/d/slo/service-slos>
 - Metabase: <https://metabase.pokerhub.example/dashboard/42-alerts>
 - JSON definitions live under `../../infrastructure/observability/` and include `pagerduty_service` labels mapping each panel to the owning PagerDuty service.
+Key SLO dashboards:
+- Service uptime – <https://grafana.pokerhub.example/d/service-uptime> (`pokerhub-sre`)
+- Action ACK latency – <https://grafana.pokerhub.example/d/socket-latency> (`pokerhub-sre`)
+- Socket connect success – <https://grafana.pokerhub.example/d/socket-connects> (`pokerhub-sre`)
+- Request error rate – <https://grafana.pokerhub.example/d/error-rates> (`pokerhub-sre`)
+- Queue saturation – <https://grafana.pokerhub.example/d/queue-saturation> (`pokerhub-eng`)
+- Frontend route latency – <https://grafana.pokerhub.example/d/frontend-route-latency> (`pokerhub-eng`)
+
 
 ## PagerDuty Services and Escalation Paths
 <!-- Update service IDs or escalation details if PagerDuty services change -->

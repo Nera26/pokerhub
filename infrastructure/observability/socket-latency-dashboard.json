@@ -1,5 +1,6 @@
 {
   "dashboard": {
+    "uid": "socket-latency",
     "title": "Socket Latency",
     "labels": {
       "pagerduty_service": "pokerhub-sre",
