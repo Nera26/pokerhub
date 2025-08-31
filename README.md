@@ -148,6 +148,11 @@ npm test
 
 This single command executes the backend and frontend unit tests, contract tests, and frontend E2E suite.
 
+Pull requests additionally run a lightweight soak smoke test via the
+`soak-smoke` workflow. It reuses `load/k6-ws-soak.js` with a shortened
+duration and reports metrics to Cloud Monitoring to catch performance
+regressions early.
+
 ## Release
 
 The release workflow publishes player documentation only after the following
