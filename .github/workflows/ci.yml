@@ -92,6 +92,15 @@ jobs:
           unit: hours
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
+      - name: Check soak workflow SLA
+        id: soak
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: soak.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
       - uses: actions/checkout@v4
       - uses: google-github-actions/auth@v2
         with:
@@ -585,7 +594,7 @@ jobs:
         id: threshold
         run: |
           if [ -f baseline/baseline.json ]; then
-            npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-soak-trends.ts metrics baseline
+            npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-soak-trends.ts metrics baseline load/results/ws-soak-summary.json
           else
             echo "No baseline to compare against"
           fi
