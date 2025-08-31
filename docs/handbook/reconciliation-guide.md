@@ -1,9 +1,9 @@
 # Reconciliation Guide
 
-**Version:** 1.2.0
+**Version:** 1.2.1
 **Last Updated:** 2025-10-05
 
-This guide explains how wallet ledgers stay consistent and how disputes are resolved. Tournament flows are covered in the [Tournament Handbook](./tournament-handbook.md) and engine behavior in the [Game Engine Specification](../game-engine-spec.md). Operational steps are detailed in the [Wallet Reconciliation Runbook](../runbooks/wallet-reconciliation.md). Upcoming ledger enhancements are listed in the [Milestone Roadmap](../roadmap.md).
+This guide explains how wallet ledgers stay consistent and how disputes are resolved. Tournament flows are covered in the [Tournament Handbook](./tournament-handbook.md) and engine behavior in the [Game Engine Specification](../game-engine-spec.md). Operational steps are detailed in the [Wallet Reconciliation Runbook](../runbooks/wallet-reconciliation.md). The ledger schema is documented in the [Accounting Book](../accounting-book.md), and deck randomness is verified in the [RNG Whitepaper](../player/rng-whitepaper.md). Upcoming ledger enhancements are listed in the [Milestone Roadmap](../roadmap.md).
 
 ## Ledger Reconciliation
 
@@ -99,7 +99,9 @@ Deposit provider reports $50, but journal shows $40 credit. Create a $10 correct
 - Reports older than one year move to cold storage but remain retrievable for regulators.
 
 ## Changelog
+- **1.2.1** – 2025-10-05 – Linked RNG Whitepaper and Accounting Book.
 - **1.2.0** – 2025-10-05 – Cross-referenced engine spec and tournament handbook; converted revision history to changelog.
 - **1.1.0** – 2025-10-05 – Added CLI walkthrough and version metadata.
 - **1.0.0** – 2025-08-30 – Initial coverage with buy-ins/payouts reconciliation, flow diagram, and audit trail details.
-
+---
+_Last reviewed: 2025-10-05 by Nera26_

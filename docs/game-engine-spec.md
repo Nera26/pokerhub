@@ -1,7 +1,7 @@
 # Game Engine Specification
 
-**Version:** 1.2.1
-**Last Updated:** 2025-08-31
+**Version:** 1.2.2
+**Last Updated:** 2025-10-05
 
 For upcoming milestones, see the [Milestone Roadmap](./roadmap.md).
 
@@ -118,15 +118,16 @@ sequenceDiagram
 
 - Duplicate action protection via Redis idempotency keys.
 - Rate limiting blocks clients after 30 actions in 10 seconds.
-- Commit-reveal RNG proves deck fairness.
+- Commit-reveal RNG proves deck fairness; see the [RNG Whitepaper](./player/rng-whitepaper.md).
 - Collusion tracking records user, device and IP on every action.
 
 ## Changelog
+- **1.2.2** – 2025-10-05 – Linked to RNG Whitepaper.
 - **1.2.1** – 2025-08-31 – Linked SLO and runbook references; added review footer.
 - **1.2.0** – 2025-08-30 – Cross-referenced tournament and reconciliation guides.
 - **1.1.0** – 2025-08-30 – Added version metadata and message flow diagram.
 - **1.0.0** – 2025-01-04 – Initial publication with hand log/state endpoints and SLO definitions.
 
 ---
-_Last reviewed: 2025-08-31 by Nera26_
+_Last reviewed: 2025-10-05 by Nera26_
 
