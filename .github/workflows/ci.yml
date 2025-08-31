@@ -33,6 +33,29 @@ jobs:
             exit 1
           fi
 
+      - name: Verify recent failover drill
+        env:
+          SLA_DAYS: 7
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          resp=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/failover-drill.yml/runs?per_page=1")
+          ts=$(echo "$resp" | jq -r '.workflow_runs[0].updated_at')
+          conclusion=$(echo "$resp" | jq -r '.workflow_runs[0].conclusion')
+          now=$(date -u +%s)
+          run_ts=$(date -d "$ts" -u +%s)
+          max_age=$((SLA_DAYS * 86400))
+          age=$((now - run_ts))
+          if [ "$conclusion" != "success" ]; then
+            echo "Latest failover-drill run concluded with $conclusion" >&2
+            exit 1
+          fi
+          if [ "$age" -gt "$max_age" ]; then
+            echo "Latest failover-drill run is older than ${SLA_DAYS}d" >&2
+            exit 1
+          fi
+
       - name: Ensure proof-archive recent success
         env:
           GITHUB_TOKEN: ${{ github.token }}

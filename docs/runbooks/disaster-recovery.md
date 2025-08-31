@@ -105,6 +105,11 @@ The `dr-drill` GitHub Actions workflow runs weekly to spin up a standby
 cluster in `${SECONDARY_REGION}` and measure time to service readiness.
 It validates snapshot freshness and WAL shipping to ensure **RPO ≤ 5 min**
 and **RTO ≤ 30 min**. Failures trigger a PagerDuty alert to `pokerhub-eng` (ID: PENG012).
+
+The `failover-drill` workflow exercises a full regional failover and must
+succeed at least once every 7 days. The `workflow-sla` CI job checks the
+latest run and fails if it is older than 7 days or the run did not
+complete successfully.
 If the workflow fails, an issue is automatically created with the contents of
 `drill.metrics`. Resolve the issue by:
 
