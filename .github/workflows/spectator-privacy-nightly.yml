@@ -14,7 +14,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: google-github-actions/auth@v2
         with:
-          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
@@ -25,7 +26,7 @@ jobs:
       - name: Verify sanitized logs
         if: always()
         run: |
-          if rg -i "userId|tableSecret" backend-tests.log frontend-tests.log; then
+          if rg -i "userId|tableSecret|sessionToken|email|ipAddress" backend-tests.log frontend-tests.log; then
             echo "PII found in logs" >&2
             exit 1
           fi
