@@ -17,4 +17,4 @@ Runbook for investigating and responding to potential fraud cases.
 - Inform affected players only after investigation concludes.
 
 ## References
-- [Anti-Collusion Heuristics](../security/anti_collusion.md)
+- [Anti-Collusion Monitoring](../security/anti-collusion.md)
