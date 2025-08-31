@@ -5,26 +5,8 @@ import { createHash } from 'crypto';
 import { verifyProof } from '../shared/verify';
 import type { HandProof } from '../shared/types';
 
-async function main() {
-  const [proofPath, manifestPath] = process.argv.slice(2);
-  if (!proofPath || !manifestPath) {
-    console.error('usage: restore-proof-check <proof> <manifest>');
-    process.exit(1);
-  }
-
-  const [proofBuf, manifestRaw] = await Promise.all([
-    fs.readFile(proofPath),
-    fs.readFile(manifestPath, 'utf-8')
-  ]);
-
-  const manifest: Record<string, string> = {};
-  for (const line of manifestRaw.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    const [hash, file] = trimmed.split(/\s+/);
-    if (hash && file) manifest[file] = hash;
-  }
-
+async function verifyFile(proofPath: string, manifest: Record<string, string>): Promise<boolean> {
+  const proofBuf = await fs.readFile(proofPath);
   const fileName = path.basename(proofPath);
   const expected = manifest[fileName];
   const checksum = createHash('sha256').update(proofBuf).digest('hex');
@@ -55,10 +37,46 @@ async function main() {
     valid = false;
   }
 
-  if (!valid) {
+  if (valid) {
+    console.log(`${fileName}: ok`);
+  }
+  return valid;
+}
+
+async function main() {
+  const args = process.argv.slice(2);
+  if (args.length < 2) {
+    console.error('usage: restore-proof-check <proof...> <manifest>');
     process.exit(1);
   }
-  console.log(`${fileName}: ok`);
+
+  const manifestPath = args[args.length - 1];
+  const proofPaths = args.slice(0, -1);
+  const manifestRaw = await fs.readFile(manifestPath, 'utf-8');
+
+  const manifest: Record<string, string> = {};
+  for (const line of manifestRaw.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const [hash, file] = trimmed.split(/\s+/);
+    if (hash && file) manifest[file] = hash;
+  }
+
+  let okCount = 0;
+  let failCount = 0;
+  for (const proofPath of proofPaths) {
+    const valid = await verifyFile(proofPath, manifest);
+    if (valid) {
+      okCount++;
+    } else {
+      failCount++;
+    }
+  }
+
+  console.log(`Summary: ${okCount} passed, ${failCount} failed`);
+  if (failCount > 0) {
+    process.exit(1);
+  }
 }
 
 main().catch((err) => {

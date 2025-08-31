@@ -62,19 +62,23 @@ jobs:
       - name: Sync proofs to GCS
         if: success()
         run: gcloud storage cp storage/proofs/* "gs://${{ secrets.PROOF_ARCHIVE_BUCKET }}/$(date +%Y-%m-%d)/"
-      - name: Restore and validate archived proof
+      - name: Restore and validate archived proofs
         if: success()
         run: |
+          set -o pipefail
           tmpdir=$(mktemp -d)
           prefix="gs://${{ secrets.PROOF_ARCHIVE_BUCKET }}/$(date +%Y-%m-%d)/"
-          file=$(gcloud storage ls "$prefix" | awk -F/ '{print $NF}' | grep '.json$' | head -n 1)
-          if [ -z "$file" ]; then
+          mapfile -t files < <(gcloud storage ls "$prefix" | awk -F/ '{print $NF}' | grep '.json$' | shuf -n 5)
+          if [ ${#files[@]} -eq 0 ]; then
             echo "No proof files found in archive" >&2
             exit 1
           fi
-          gcloud storage cp "${prefix}${file}" "$tmpdir/$file"
           gcloud storage cp "${prefix}manifest.txt" "$tmpdir/manifest.txt"
-          npx -y ts-node scripts/restore-proof-check.ts "$tmpdir/$file" "$tmpdir/manifest.txt" 2>&1 | tee restore-validation.log
+          for f in "${files[@]}"; do
+            gcloud storage cp "${prefix}${f}" "$tmpdir/$f"
+          done
+          npx -y ts-node scripts/restore-proof-check.ts "${files[@]/#/$tmpdir/}" "$tmpdir/manifest.txt" 2>&1 | tee restore-validation.log
+          cat restore-validation.log >> "$GITHUB_STEP_SUMMARY"
       - name: Upload restore validation logs
         if: always()
         uses: actions/upload-artifact@v4
