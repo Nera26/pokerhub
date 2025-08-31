@@ -15,6 +15,8 @@ Pipeline config: see [`../../infra/analytics/anti-collusion-analytics.yaml`](../
 - **Chat Signaling**: Scan table chat for shared keywords or timing used to coordinate plays.
 - **Unbalanced Pot Contributions**: Flag repeated small bets where players fold to each other to shift chips.
 - **Device or Geolocation Swaps**: Detect accounts that change devices or regions in tandem.
+- **Correlated Betting Across Hands**: Compare bet sequences over multiple hands to uncover coordinated strategies.
+- **Network Proximity**: Flag accounts playing from unusually close geographic locations.
 
 ## Statistical Detection Thresholds
 
@@ -22,6 +24,8 @@ Pipeline config: see [`../../infra/analytics/anti-collusion-analytics.yaml`](../
 - Win rate anomaly: z-score ≥ 3 over 100 hands against same opponents.
 - Chip transfers: single-direction transfers exceeding 100k chips per day.
 - Action timing: stddev of bet timing <200 ms across a hand.
+- Correlated betting: Pearson correlation ≥0.9 over ≥3 shared hands.
+- Network proximity: distance <50 km between accounts.
 
 ## Replay Tools
 
