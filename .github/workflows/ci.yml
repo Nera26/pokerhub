@@ -135,6 +135,17 @@ jobs:
             exit 1
           fi
 
+      - name: Verify ops artifacts
+        env:
+          PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+          SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
+          RUN_ID: ${{ github.run_id }}
+          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/verify-ops-artifacts.ts
+
   docs:
     needs: workflow-sla
     runs-on: ubuntu-latest
