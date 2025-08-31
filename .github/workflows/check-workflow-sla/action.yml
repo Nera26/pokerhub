@@ -1,0 +1,96 @@
+name: "Workflow SLA check"
+description: "Verify a workflow ran successfully within an SLA window and alert if it is stale or failed"
+inputs:
+  workflow:
+    description: "Workflow filename"
+    required: true
+  sla:
+    description: "Maximum allowed age"
+    required: true
+  unit:
+    description: "Units for SLA (minutes|hours|days)"
+    required: true
+  slack-channel-id:
+    description: "Slack channel to notify"
+    required: true
+outputs:
+  workflow:
+    description: "Workflow name"
+    value: ${{ steps.check.outputs.workflow }}
+  timestamp:
+    description: "Last run timestamp"
+    value: ${{ steps.check.outputs.timestamp }}
+  conclusion:
+    description: "Last run conclusion"
+    value: ${{ steps.check.outputs.conclusion }}
+  run_id:
+    description: "Last run id"
+    value: ${{ steps.check.outputs.run_id }}
+runs:
+  using: "composite"
+  steps:
+    - id: check
+      name: Check workflow SLA
+      shell: bash
+      env:
+        WORKFLOW: ${{ inputs.workflow }}
+        SLA: ${{ inputs.sla }}
+        UNIT: ${{ inputs.unit }}
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        resp=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
+          "https://api.github.com/repos/${{ github.repository }}/actions/workflows/$WORKFLOW/runs?per_page=1")
+        ts=$(echo "$resp" | jq -r '.workflow_runs[0].updated_at')
+        conclusion=$(echo "$resp" | jq -r '.workflow_runs[0].conclusion')
+        run_id=$(echo "$resp" | jq -r '.workflow_runs[0].id')
+        case "$UNIT" in
+          minutes) max_age=$((SLA * 60));;
+          hours) max_age=$((SLA * 3600));;
+          days) max_age=$((SLA * 86400));;
+          *) max_age=$SLA;;
+        esac
+        echo "workflow=$WORKFLOW" >> $GITHUB_OUTPUT
+        echo "timestamp=$ts" >> $GITHUB_OUTPUT
+        echo "conclusion=$conclusion" >> $GITHUB_OUTPUT
+        echo "run_id=$run_id" >> $GITHUB_OUTPUT
+        now=$(date -u +%s)
+        run_ts=$(date -d "$ts" -u +%s)
+        age=$((now - run_ts))
+        if [ "$conclusion" != "success" ]; then
+          echo "Latest $WORKFLOW run concluded with $conclusion" >&2
+          exit 1
+        fi
+        if [ "$age" -gt "$max_age" ]; then
+          echo "Latest $WORKFLOW run is older than ${SLA}$UNIT" >&2
+          exit 1
+        fi
+    - name: Prepare SLA alert
+      if: failure()
+      shell: bash
+      env:
+        WORKFLOW: ${{ inputs.workflow }}
+        SLACK_CHANNEL_ID: ${{ inputs['slack-channel-id'] }}
+      run: |
+        cat <<EOF2 > workflow-sla.md
+        Workflow: $WORKFLOW
+        Last Run: ${{ steps.check.outputs.timestamp }}
+        Conclusion: ${{ steps.check.outputs.conclusion }}
+        EOF2
+        jq -n --arg channel "$SLACK_CHANNEL_ID" \
+          --arg text "$WORKFLOW SLA check failed. Last run: ${{ steps.check.outputs.timestamp }} (conclusion: ${{ steps.check.outputs.conclusion }})." \
+          '{channel: $channel, text: $text}' > workflow-slack.json
+    - name: Slack alert
+      if: failure()
+      uses: slackapi/slack-github-action@v1
+      with:
+        method: chat.postMessage
+        payload-file-path: workflow-slack.json
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+    - name: Create issue for SLA
+      if: failure()
+      uses: peter-evans/create-issue-from-file@v4
+      with:
+        title: "SLA breached: ${{ inputs.workflow }}"
+        content-filepath: workflow-sla.md

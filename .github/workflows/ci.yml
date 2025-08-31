@@ -14,115 +14,23 @@ jobs:
   workflow-sla:
     runs-on: ubuntu-latest
     steps:
-      - name: Verify recent DR drill
+      - name: Check DR drill SLA
         id: dr-drill
-        env:
-          SLA_DAYS: 7
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          resp=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/dr-drill.yml/runs?per_page=1")
-          ts=$(echo "$resp" | jq -r '.workflow_runs[0].updated_at')
-          conclusion=$(echo "$resp" | jq -r '.workflow_runs[0].conclusion')
-          echo "workflow=dr-drill.yml" >> $GITHUB_OUTPUT
-          echo "timestamp=$ts" >> $GITHUB_OUTPUT
-          echo "conclusion=$conclusion" >> $GITHUB_OUTPUT
-          now=$(date -u +%s)
-          run_ts=$(date -d "$ts" -u +%s)
-          max_age=$((SLA_DAYS * 86400))
-          age=$((now - run_ts))
-          if [ "$conclusion" != "success" ]; then
-            echo "Latest dr-drill run concluded with $conclusion" >&2
-            exit 1
-          fi
-          if [ "$age" -gt "$max_age" ]; then
-            echo "Latest dr-drill run is older than ${SLA_DAYS}d" >&2
-            exit 1
-          fi
-
-      - name: Prepare dr-drill SLA alert
-        if: failure() && steps.dr-drill.outcome == 'failure'
-        env:
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-        run: |
-          cat <<'EOF' > dr-drill-sla.md
-          Workflow: ${{ steps.dr-drill.outputs.workflow }}
-          Last Run: ${{ steps.dr-drill.outputs.timestamp }}
-          Conclusion: ${{ steps.dr-drill.outputs.conclusion }}
-          EOF
-          jq -n --arg channel "$SLACK_CHANNEL_ID" \
-            --arg text "dr-drill.yml SLA check failed. Last run: ${{ steps.dr-drill.outputs.timestamp }} (conclusion: ${{ steps.dr-drill.outputs.conclusion }})." \
-            '{channel: $channel, text: $text}' > dr-drill-slack.json
-      - name: Slack alert (dr-drill SLA)
-        if: failure() && steps.dr-drill.outcome == 'failure'
-        uses: slackapi/slack-github-action@v1
+        uses: ./.github/workflows/check-workflow-sla
         with:
-          method: chat.postMessage
-          payload-file-path: dr-drill-slack.json
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      - name: Create issue for dr-drill SLA
-        if: failure() && steps.dr-drill.outcome == 'failure'
-        uses: peter-evans/create-issue-from-file@v4
-        with:
-          title: "SLA breached: dr-drill"
-          content-filepath: dr-drill-sla.md
+          workflow: dr-drill.yml
+          sla: 7
+          unit: days
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
-      - name: Verify recent failover drill
+      - name: Check failover drill SLA
         id: failover-drill
-        env:
-          SLA_DAYS: 7
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          resp=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/failover-drill.yml/runs?per_page=1")
-          ts=$(echo "$resp" | jq -r '.workflow_runs[0].updated_at')
-          conclusion=$(echo "$resp" | jq -r '.workflow_runs[0].conclusion')
-          echo "workflow=failover-drill.yml" >> $GITHUB_OUTPUT
-          echo "timestamp=$ts" >> $GITHUB_OUTPUT
-          echo "conclusion=$conclusion" >> $GITHUB_OUTPUT
-          now=$(date -u +%s)
-          run_ts=$(date -d "$ts" -u +%s)
-          max_age=$((SLA_DAYS * 86400))
-          age=$((now - run_ts))
-          if [ "$conclusion" != "success" ]; then
-            echo "Latest failover-drill run concluded with $conclusion" >&2
-            exit 1
-          fi
-          if [ "$age" -gt "$max_age" ]; then
-            echo "Latest failover-drill run is older than ${SLA_DAYS}d" >&2
-            exit 1
-          fi
-
-      - name: Prepare failover-drill SLA alert
-        if: failure() && steps.failover-drill.outcome == 'failure'
-        env:
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-        run: |
-          cat <<'EOF' > failover-drill-sla.md
-          Workflow: ${{ steps.failover-drill.outputs.workflow }}
-          Last Run: ${{ steps.failover-drill.outputs.timestamp }}
-          Conclusion: ${{ steps.failover-drill.outputs.conclusion }}
-          EOF
-          jq -n --arg channel "$SLACK_CHANNEL_ID" \
-            --arg text "failover-drill.yml SLA check failed. Last run: ${{ steps.failover-drill.outputs.timestamp }} (conclusion: ${{ steps.failover-drill.outputs.conclusion }})." \
-            '{channel: $channel, text: $text}' > failover-drill-slack.json
-      - name: Slack alert (failover-drill SLA)
-        if: failure() && steps.failover-drill.outcome == 'failure'
-        uses: slackapi/slack-github-action@v1
+        uses: ./.github/workflows/check-workflow-sla
         with:
-          method: chat.postMessage
-          payload-file-path: failover-drill-slack.json
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      - name: Create issue for failover-drill SLA
-        if: failure() && steps.failover-drill.outcome == 'failure'
-        uses: peter-evans/create-issue-from-file@v4
-        with:
-          title: "SLA breached: failover-drill"
-          content-filepath: failover-drill-sla.md
+          workflow: failover-drill.yml
+          sla: 7
+          unit: days
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
       - uses: actions/setup-node@v4
         with:
@@ -130,101 +38,23 @@ jobs:
       - name: Check DR runbook entry
         run: npx -y ts-node scripts/check-dr-runbook.ts
 
-      - name: Ensure proof-archive recent success
+      - name: Check proof-archive SLA
         id: proof-archive
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          run=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/proof-archive.yml/runs?per_page=1")
-          conclusion=$(echo "$run" | jq -r '.workflow_runs[0].conclusion')
-          started=$(echo "$run" | jq -r '.workflow_runs[0].run_started_at')
-          echo "workflow=proof-archive.yml" >> $GITHUB_OUTPUT
-          echo "timestamp=$started" >> $GITHUB_OUTPUT
-          echo "conclusion=$conclusion" >> $GITHUB_OUTPUT
-          start_ts=$(date -d "$started" +%s)
-          now=$(date -u +%s)
-          if [ "$conclusion" != "success" ] || [ $((now - start_ts)) -gt 86400 ]; then
-            echo "Latest proof-archive workflow run did not succeed within 24 hours" >&2
-            exit 1
-          fi
-
-      - name: Prepare proof-archive SLA alert
-        if: failure() && steps.proof-archive.outcome == 'failure'
-        env:
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-        run: |
-          cat <<'EOF' > proof-archive-sla.md
-          Workflow: ${{ steps.proof-archive.outputs.workflow }}
-          Last Run: ${{ steps.proof-archive.outputs.timestamp }}
-          Conclusion: ${{ steps.proof-archive.outputs.conclusion }}
-          EOF
-          jq -n --arg channel "$SLACK_CHANNEL_ID" \
-            --arg text "proof-archive.yml SLA check failed. Last run: ${{ steps.proof-archive.outputs.timestamp }} (conclusion: ${{ steps.proof-archive.outputs.conclusion }})." \
-            '{channel: $channel, text: $text}' > proof-archive-slack.json
-      - name: Slack alert (proof-archive SLA)
-        if: failure() && steps.proof-archive.outcome == 'failure'
-        uses: slackapi/slack-github-action@v1
+        uses: ./.github/workflows/check-workflow-sla
         with:
-          method: chat.postMessage
-          payload-file-path: proof-archive-slack.json
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      - name: Create issue for proof-archive SLA
-        if: failure() && steps.proof-archive.outcome == 'failure'
-        uses: peter-evans/create-issue-from-file@v4
-        with:
-          title: "SLA breached: proof-archive"
-          content-filepath: proof-archive-sla.md
+          workflow: proof-archive.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
-      - name: Ensure ops-artifacts-verify recent success
+      - name: Check ops-artifacts-verify SLA
         id: ops-artifacts-verify
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          run=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/ops-artifacts-verify.yml/runs?per_page=1")
-          conclusion=$(echo "$run" | jq -r '.workflow_runs[0].conclusion')
-          started=$(echo "$run" | jq -r '.workflow_runs[0].run_started_at')
-          echo "workflow=ops-artifacts-verify.yml" >> $GITHUB_OUTPUT
-          echo "timestamp=$started" >> $GITHUB_OUTPUT
-          echo "conclusion=$conclusion" >> $GITHUB_OUTPUT
-          start_ts=$(date -d "$started" +%s)
-          now=$(date -u +%s)
-          if [ "$conclusion" != "success" ] || [ $((now - start_ts)) -gt 86400 ]; then
-            echo "Latest ops-artifacts-verify workflow run did not succeed within 24 hours" >&2
-            exit 1
-          fi
-
-      - name: Prepare ops-artifacts-verify SLA alert
-        if: failure() && steps.ops-artifacts-verify.outcome == 'failure'
-        env:
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-        run: |
-          cat <<'EOF' > ops-artifacts-verify-sla.md
-          Workflow: ${{ steps.ops-artifacts-verify.outputs.workflow }}
-          Last Run: ${{ steps.ops-artifacts-verify.outputs.timestamp }}
-          Conclusion: ${{ steps.ops-artifacts-verify.outputs.conclusion }}
-          EOF
-          jq -n --arg channel "$SLACK_CHANNEL_ID" \
-            --arg text "ops-artifacts-verify.yml SLA check failed. Last run: ${{ steps.ops-artifacts-verify.outputs.timestamp }} (conclusion: ${{ steps.ops-artifacts-verify.outputs.conclusion }})." \
-            '{channel: $channel, text: $text}' > ops-artifacts-verify-slack.json
-      - name: Slack alert (ops-artifacts-verify SLA)
-        if: failure() && steps.ops-artifacts-verify.outcome == 'failure'
-        uses: slackapi/slack-github-action@v1
+        uses: ./.github/workflows/check-workflow-sla
         with:
-          method: chat.postMessage
-          payload-file-path: ops-artifacts-verify-slack.json
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      - name: Create issue for ops-artifacts-verify SLA
-        if: failure() && steps.ops-artifacts-verify.outcome == 'failure'
-        uses: peter-evans/create-issue-from-file@v4
-        with:
-          title: "SLA breached: ops-artifacts-verify"
-          content-filepath: ops-artifacts-verify-sla.md
+          workflow: ops-artifacts-verify.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
       - uses: actions/checkout@v4
       - uses: google-github-actions/auth@v2
@@ -264,167 +94,39 @@ jobs:
           title: "Proof archive integrity check failed"
           content-filepath: proof-archive-integrity.md
 
-      - name: Ensure soak test recent success
+      - name: Check soak SLA
         id: soak
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: soak.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+      - name: Check soak metrics
+        run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/check-soak-metrics.ts
         env:
-          SLA_HOURS: 24
-          GITHUB_TOKEN: ${{ github.token }}
           SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
-        run: |
-          set -euo pipefail
-          run=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/soak.yml/runs?per_page=1")
-          conclusion=$(echo "$run" | jq -r '.workflow_runs[0].conclusion')
-          started=$(echo "$run" | jq -r '.workflow_runs[0].run_started_at')
-          echo "workflow=soak.yml" >> $GITHUB_OUTPUT
-          echo "timestamp=$started" >> $GITHUB_OUTPUT
-          echo "conclusion=$conclusion" >> $GITHUB_OUTPUT
-          start_ts=$(date -d "$started" +%s)
-          now=$(date -u +%s)
-          max_age=$((SLA_HOURS * 3600))
-          if [ "$conclusion" != "success" ] || [ $((now - start_ts)) -gt "$max_age" ]; then
-            echo "Latest soak workflow run did not succeed within ${SLA_HOURS} hours" >&2
-            exit 1
-          fi
-          npx ts-node --compiler-options '{"module":"commonjs"}' scripts/check-soak-metrics.ts
 
-      - name: Prepare soak SLA alert
-        if: failure() && steps.soak.outcome == 'failure'
-        env:
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-        run: |
-          cat <<'EOF' > soak-sla.md
-          Workflow: ${{ steps.soak.outputs.workflow }}
-          Last Run: ${{ steps.soak.outputs.timestamp }}
-          Conclusion: ${{ steps.soak.outputs.conclusion }}
-          EOF
-          jq -n --arg channel "$SLACK_CHANNEL_ID" \
-            --arg text "soak.yml SLA check failed. Last run: ${{ steps.soak.outputs.timestamp }} (conclusion: ${{ steps.soak.outputs.conclusion }})." \
-            '{channel: $channel, text: $text}' > soak-slack.json
-      - name: Slack alert (soak SLA)
-        if: failure() && steps.soak.outcome == 'failure'
-        uses: slackapi/slack-github-action@v1
-        with:
-          method: chat.postMessage
-          payload-file-path: soak-slack.json
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      - name: Create issue for soak SLA
-        if: failure() && steps.soak.outcome == 'failure'
-        uses: peter-evans/create-issue-from-file@v4
-        with:
-          title: "SLA breached: soak"
-          content-filepath: soak-sla.md
-
-      - name: Ensure pg-restore-smoke recent success
+      - name: Check pg-restore-smoke SLA
         id: pg-restore-smoke
-        env:
-          SLA_MINUTES: 60
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          run=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/pg-restore-smoke.yml/runs?per_page=1")
-          conclusion=$(echo "$run" | jq -r '.workflow_runs[0].conclusion')
-          started=$(echo "$run" | jq -r '.workflow_runs[0].run_started_at')
-          echo "workflow=pg-restore-smoke.yml" >> $GITHUB_OUTPUT
-          echo "timestamp=$started" >> $GITHUB_OUTPUT
-          echo "conclusion=$conclusion" >> $GITHUB_OUTPUT
-          start_ts=$(date -d "$started" +%s)
-          now=$(date -u +%s)
-          max_age=$((SLA_MINUTES * 60))
-          if [ "$conclusion" != "success" ] || [ $((now - start_ts)) -gt "$max_age" ]; then
-            echo "Latest pg-restore-smoke workflow run did not succeed within ${SLA_MINUTES} minutes" >&2
-            exit 1
-          fi
-
-      - name: Prepare pg-restore-smoke SLA alert
-        if: failure() && steps.pg-restore-smoke.outcome == 'failure'
-        env:
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-        run: |
-          cat <<'EOF' > pg-restore-smoke-sla.md
-          Workflow: ${{ steps.pg-restore-smoke.outputs.workflow }}
-          Last Run: ${{ steps.pg-restore-smoke.outputs.timestamp }}
-          Conclusion: ${{ steps.pg-restore-smoke.outputs.conclusion }}
-          EOF
-          jq -n --arg channel "$SLACK_CHANNEL_ID" \
-            --arg text "pg-restore-smoke.yml SLA check failed. Last run: ${{ steps.pg-restore-smoke.outputs.timestamp }} (conclusion: ${{ steps.pg-restore-smoke.outputs.conclusion }})." \
-            '{channel: $channel, text: $text}' > pg-restore-smoke-slack.json
-      - name: Slack alert (pg-restore-smoke SLA)
-        if: failure() && steps.pg-restore-smoke.outcome == 'failure'
-        uses: slackapi/slack-github-action@v1
+        uses: ./.github/workflows/check-workflow-sla
         with:
-          method: chat.postMessage
-          payload-file-path: pg-restore-smoke-slack.json
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      - name: Create issue for pg-restore-smoke SLA
-        if: failure() && steps.pg-restore-smoke.outcome == 'failure'
-        uses: peter-evans/create-issue-from-file@v4
-        with:
-          title: "SLA breached: pg-restore-smoke"
-          content-filepath: pg-restore-smoke-sla.md
+          workflow: pg-restore-smoke.yml
+          sla: 60
+          unit: minutes
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
-      - name: Verify recent spectator-privacy-nightly run
+      - name: Check spectator-privacy-nightly SLA
         id: spectator-privacy-nightly
-        env:
-          SLA_HOURS: 24
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          resp=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/spectator-privacy-nightly.yml/runs?per_page=1")
-          ts=$(echo "$resp" | jq -r '.workflow_runs[0].updated_at')
-          conclusion=$(echo "$resp" | jq -r '.workflow_runs[0].conclusion')
-          run_id=$(echo "$resp" | jq -r '.workflow_runs[0].id')
-          echo "workflow=spectator-privacy-nightly.yml" >> $GITHUB_OUTPUT
-          echo "timestamp=$ts" >> $GITHUB_OUTPUT
-          echo "conclusion=$conclusion" >> $GITHUB_OUTPUT
-          echo "run_id=$run_id" >> $GITHUB_OUTPUT
-          now=$(date -u +%s)
-          run_ts=$(date -d "$ts" -u +%s)
-          max_age=$((SLA_HOURS * 3600))
-          age=$((now - run_ts))
-          if [ "$conclusion" != "success" ]; then
-            echo "Latest spectator-privacy-nightly run concluded with $conclusion" >&2
-            exit 1
-          fi
-          if [ "$age" -gt "$max_age" ]; then
-            echo "Latest spectator-privacy-nightly run is older than ${SLA_HOURS}h" >&2
-            exit 1
-          fi
-
-      - name: Prepare spectator-privacy-nightly SLA alert
-        if: failure() && steps.spectator-privacy-nightly.outcome == 'failure'
-        env:
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-        run: |
-          cat <<'EOF' > spectator-privacy-sla.md
-          Workflow: ${{ steps.spectator-privacy-nightly.outputs.workflow }}
-          Last Run: ${{ steps.spectator-privacy-nightly.outputs.timestamp }}
-          Conclusion: ${{ steps.spectator-privacy-nightly.outputs.conclusion }}
-          EOF
-          jq -n --arg channel "$SLACK_CHANNEL_ID" \
-            --arg text "spectator-privacy-nightly.yml SLA check failed. Last run: ${{ steps.spectator-privacy-nightly.outputs.timestamp }} (conclusion: ${{ steps.spectator-privacy-nightly.outputs.conclusion }})." \
-            '{channel: $channel, text: $text}' > spectator-privacy-slack.json
-      - name: Slack alert (spectator-privacy-nightly SLA)
-        if: failure() && steps.spectator-privacy-nightly.outcome == 'failure'
-        uses: slackapi/slack-github-action@v1
+        uses: ./.github/workflows/check-workflow-sla
         with:
-          method: chat.postMessage
-          payload-file-path: spectator-privacy-slack.json
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      - name: Create issue for spectator-privacy-nightly SLA
-        if: failure() && steps.spectator-privacy-nightly.outcome == 'failure'
-        uses: peter-evans/create-issue-from-file@v4
-        with:
-          title: "SLA breached: spectator-privacy-nightly"
-          content-filepath: spectator-privacy-sla.md
+          workflow: spectator-privacy-nightly.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
       - uses: google-github-actions/auth@v2
         with:
@@ -443,31 +145,14 @@ jobs:
   soak-metrics:
     runs-on: ubuntu-latest
     steps:
-      - name: Verify recent soak run
+      - name: Check soak run SLA
         id: soak-run
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          resp=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/soak.yml/runs?per_page=1")
-          ts=$(echo "$resp" | jq -r '.workflow_runs[0].updated_at')
-          conclusion=$(echo "$resp" | jq -r '.workflow_runs[0].conclusion')
-          echo "workflow=soak.yml" >> $GITHUB_OUTPUT
-          echo "timestamp=$ts" >> $GITHUB_OUTPUT
-          echo "conclusion=$conclusion" >> $GITHUB_OUTPUT
-          now=$(date -u +%s)
-          run_ts=$(date -d "$ts" -u +%s)
-          max_age=$((24 * 3600))
-          age=$((now - run_ts))
-          if [ "$conclusion" != "success" ]; then
-            echo "Latest soak.yml run concluded with $conclusion" >&2
-            exit 1
-          fi
-          if [ "$age" -gt "$max_age" ]; then
-            echo "Latest soak.yml run is older than 24h" >&2
-            exit 1
-          fi
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: soak.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
       - uses: actions/checkout@v4
         if: steps.soak-run.outcome == 'success'
       - uses: google-github-actions/auth@v2
@@ -485,7 +170,7 @@ jobs:
         env:
           SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
       - name: Prepare soak metrics alert
-        if: failure() && (steps.soak-run.outcome == 'failure' || steps.check-metrics.outcome == 'failure')
+        if: failure() && steps.check-metrics.outcome == 'failure'
         env:
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
         run: |
@@ -496,7 +181,7 @@ jobs:
             --arg text "Soak metrics check failed." \
             '{channel: $channel, text: $text}' > soak-metrics-slack.json
       - name: Slack soak metrics alert
-        if: failure() && (steps.soak-run.outcome == 'failure' || steps.check-metrics.outcome == 'failure')
+        if: failure() && steps.check-metrics.outcome == 'failure'
         uses: slackapi/slack-github-action@v1
         with:
           method: chat.postMessage
@@ -504,7 +189,7 @@ jobs:
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
       - name: Create issue for soak metrics
-        if: failure() && (steps.soak-run.outcome == 'failure' || steps.check-metrics.outcome == 'failure')
+        if: failure() && steps.check-metrics.outcome == 'failure'
         uses: peter-evans/create-issue-from-file@v4
         with:
           title: "SLA breached: soak metrics"
