@@ -1,6 +1,7 @@
 import { parentPort, workerData } from 'worker_threads';
 import Redis from 'ioredis';
 import { metrics } from '@opentelemetry/api';
+import { Logger } from '@nestjs/common';
 import { GameAction, GameEngine, InternalGameState } from './engine';
 import { AppDataSource } from '../database/data-source';
 import { SettlementService } from '../wallet/settlement.service';
@@ -17,6 +18,7 @@ const pub: Redis | undefined = opts ? new Redis(opts) : undefined;
 const sub: Redis | undefined = opts ? new Redis(opts) : undefined;
 const diffChannel = `room:${workerData.tableId}:diffs`;
 const ackChannel = `room:${workerData.tableId}:snapshotAck`;
+const logger = new Logger('RoomWorker');
 
 const meter = metrics.getMeter('game');
 const actionCounter = meter.createCounter('actions_per_table_total', {
@@ -126,8 +128,10 @@ async function main() {
               svc = await getSettlement();
               await svc.reserve(engine.getHandId(), state.street, idx);
             } catch (err) {
-              // eslint-disable-next-line no-console
-              console.error('Failed to reserve settlement', err);
+              logger.error(
+                `Failed to reserve settlement (table: ${workerData.tableId}, hand: ${engine.getHandId()})`,
+                err instanceof Error ? err.stack : undefined,
+              );
             }
           }
 
@@ -172,8 +176,10 @@ async function main() {
               } catch {
                 // swallow cancel errors
               }
-              // eslint-disable-next-line no-console
-              console.error('Failed to commit settlement', err);
+              logger.error(
+                `Failed to commit settlement (table: ${workerData.tableId}, hand: ${engine.getHandId()})`,
+                err instanceof Error ? err.stack : undefined,
+              );
             }
           }
 
