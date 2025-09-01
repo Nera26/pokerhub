@@ -7,6 +7,121 @@ import Ajv, { ValidateFunction } from 'ajv';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { EventSchemas, Events, EventName } from '@shared/events';
 import { GcsService } from '../storage/gcs.service';
+import { ParquetSchema, ParquetWriter } from 'parquetjs-lite';
+import { PassThrough } from 'stream';
+
+const HandStartSchema = new ParquetSchema({
+  handId: { type: 'UTF8' },
+  tableId: { type: 'UTF8', optional: true },
+  players: { type: 'UTF8', repeated: true },
+});
+
+const HandEndSchema = new ParquetSchema({
+  handId: { type: 'UTF8' },
+  tableId: { type: 'UTF8', optional: true },
+  winners: { type: 'UTF8', repeated: true, optional: true },
+});
+
+const WalletMovementSchema = new ParquetSchema({
+  accountId: { type: 'UTF8' },
+  amount: { type: 'DOUBLE' },
+  refType: { type: 'UTF8' },
+  refId: { type: 'UTF8' },
+  currency: { type: 'UTF8' },
+});
+
+const ActionAmountSchema = new ParquetSchema({
+  handId: { type: 'UTF8' },
+  tableId: { type: 'UTF8', optional: true },
+  playerId: { type: 'UTF8' },
+  amount: { type: 'DOUBLE' },
+});
+
+const ActionFoldSchema = new ParquetSchema({
+  handId: { type: 'UTF8' },
+  tableId: { type: 'UTF8', optional: true },
+  playerId: { type: 'UTF8' },
+});
+
+const TournamentRegisterSchema = new ParquetSchema({
+  tournamentId: { type: 'UTF8' },
+  playerId: { type: 'UTF8' },
+});
+
+const TournamentEliminateSchema = new ParquetSchema({
+  tournamentId: { type: 'UTF8' },
+  playerId: { type: 'UTF8' },
+  position: { type: 'INT64', optional: true },
+  payout: { type: 'DOUBLE', optional: true },
+});
+
+const TournamentCancelSchema = new ParquetSchema({
+  tournamentId: { type: 'UTF8' },
+});
+
+const WalletReserveSchema = new ParquetSchema({
+  accountId: { type: 'UTF8' },
+  amount: { type: 'DOUBLE' },
+  refId: { type: 'UTF8' },
+  currency: { type: 'UTF8' },
+});
+
+const WalletCommitSchema = new ParquetSchema({
+  refId: { type: 'UTF8' },
+  amount: { type: 'DOUBLE' },
+  rake: { type: 'DOUBLE' },
+  currency: { type: 'UTF8' },
+});
+
+const AuthLoginSchema = new ParquetSchema({
+  userId: { type: 'UTF8' },
+  ts: { type: 'INT64' },
+});
+
+const AntiCheatFlagSchema = new ParquetSchema({
+  accountId: { type: 'UTF8', optional: true },
+  operation: { type: 'UTF8', optional: true },
+  amount: { type: 'DOUBLE', optional: true },
+  dailyTotal: { type: 'DOUBLE', optional: true },
+  limit: { type: 'DOUBLE', optional: true },
+  currency: { type: 'UTF8', optional: true },
+  sessionId: { type: 'UTF8', optional: true },
+  users: { type: 'UTF8', repeated: true, optional: true },
+  features: { type: 'UTF8', optional: true },
+});
+
+const WalletVelocityLimitSchema = new ParquetSchema({
+  accountId: { type: 'UTF8' },
+  operation: { type: 'UTF8' },
+  type: { type: 'UTF8' },
+  window: { type: 'UTF8' },
+  limit: { type: 'DOUBLE' },
+  value: { type: 'DOUBLE' },
+});
+
+const WalletReconcileMismatchSchema = new ParquetSchema({
+  date: { type: 'UTF8' },
+  total: { type: 'DOUBLE' },
+});
+
+const ParquetSchemas: Record<string, ParquetSchema> = {
+  'hand.start': HandStartSchema,
+  'hand.end': HandEndSchema,
+  'wallet.credit': WalletMovementSchema,
+  'wallet.debit': WalletMovementSchema,
+  'action.bet': ActionAmountSchema,
+  'action.call': ActionAmountSchema,
+  'action.fold': ActionFoldSchema,
+  'tournament.register': TournamentRegisterSchema,
+  'tournament.eliminate': TournamentEliminateSchema,
+  'tournament.cancel': TournamentCancelSchema,
+  'wallet.reserve': WalletReserveSchema,
+  'wallet.commit': WalletCommitSchema,
+  'auth.login': AuthLoginSchema,
+  'antiCheat.flag': AntiCheatFlagSchema,
+  'wallet.velocity.limit': WalletVelocityLimitSchema,
+  'wallet.reconcile.mismatch': WalletReconcileMismatchSchema,
+};
 
 @Injectable()
 export class AnalyticsService {
@@ -62,14 +177,54 @@ export class AnalyticsService {
     });
   }
 
+  private buildSchema(record: Record<string, unknown>): ParquetSchema {
+    const fields: Record<string, any> = {};
+    for (const [key, value] of Object.entries(record)) {
+      if (Array.isArray(value)) {
+        const first = value[0];
+        if (typeof first === 'number') {
+          fields[key] = {
+            type: Number.isInteger(first) ? 'INT64' : 'DOUBLE',
+            repeated: true,
+          };
+        } else if (typeof first === 'boolean') {
+          fields[key] = { type: 'BOOLEAN', repeated: true };
+        } else {
+          fields[key] = { type: 'UTF8', repeated: true };
+        }
+      } else if (typeof value === 'number') {
+        fields[key] = { type: Number.isInteger(value) ? 'INT64' : 'DOUBLE' };
+      } else if (typeof value === 'boolean') {
+        fields[key] = { type: 'BOOLEAN' };
+      } else {
+        fields[key] = { type: 'UTF8' };
+      }
+    }
+    return new ParquetSchema(fields);
+  }
+
   async archive(event: string, data: Record<string, unknown>) {
     const now = new Date();
     const prefix = `analytics/${now.getUTCFullYear()}/${String(
       now.getUTCMonth() + 1,
     ).padStart(2, '0')}/${String(now.getUTCDate()).padStart(2, '0')}`;
-    const key = `${prefix}/${event}-${Date.now()}.json`;
+    const key = `${prefix}/${event}-${Date.now()}.parquet`;
+
+    const schema = ParquetSchemas[event] ?? this.buildSchema(data);
+    const row =
+      event === 'antiCheat.flag' && 'features' in data
+        ? { ...data, features: JSON.stringify(data.features) }
+        : data;
+
     try {
-      await this.gcs.uploadObject(key, JSON.stringify({ event, data }));
+      const stream = new PassThrough();
+      const chunks: Buffer[] = [];
+      stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+      const writer = await ParquetWriter.openStream(schema, stream);
+      await writer.appendRow(row as Record<string, any>);
+      await writer.close();
+      const buffer = Buffer.concat(chunks);
+      await this.gcs.uploadObject(key, buffer);
     } catch (err) {
       this.logger.error(`Failed to upload event ${event} to GCS`, err as Error);
     }
