@@ -35,12 +35,15 @@ class MockCache {
 }
 
 describe('leaderboard rebuild worker performance', () => {
-  it('rebuilds 30 days within threshold', async () => {
+  it('rebuilds synthetic events within threshold', async () => {
     jest.useFakeTimers();
     const maxDurationMs = Number(
       process.env.LEADERBOARD_WORKER_MAX_MS ?? 30 * 60 * 1000,
     );
-    await writeSyntheticEvents(30);
+    const days = Number(process.env.LEADERBOARD_BENCH_DAYS ?? 30);
+    const players = Number(process.env.LEADERBOARD_BENCH_PLAYERS ?? 10);
+    const perDay = Number(process.env.LEADERBOARD_BENCH_PER_DAY ?? 100);
+    await writeSyntheticEvents(days, players, perDay);
     const cache = new MockCache();
     const analytics = { ingest: jest.fn(), rangeStream: jest.fn() };
     const service = new LeaderboardService(
