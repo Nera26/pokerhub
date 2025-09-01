@@ -705,3 +705,12 @@ jobs:
         env:
           RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
         run: npx ts-node scripts/verify-ops-artifacts.ts
+      - name: Check soak regressions
+        run: |
+          npx ts-node scripts/check-soak-metrics.ts || true
+          if [ -f soak-regression.json ] && [ $(jq '.regressions | length' soak-regression.json) -gt 0 ]; then
+            cat soak-regression.json
+            exit 1
+          fi
+        env:
+          SOAK_TRENDS_BUCKET: ${{ env.SOAK_TRENDS_BUCKET }}

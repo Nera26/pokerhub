@@ -105,31 +105,22 @@ jobs:
         run: npx ts-node scripts/check-soak-metrics.ts
         env:
           SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
-      - name: Prepare soak metrics alert
-        if: failure() && steps.check-metrics.outcome == 'failure'
-        env:
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-        run: |
-          cat <<'EOF' > soak-metrics.md
-          Soak metrics check failed.
-          EOF
-          jq -n --arg channel "$SLACK_CHANNEL_ID" \
-            --arg text "Soak metrics check failed." \
-            '{channel: $channel, text: $text}' > soak-metrics-slack.json
-      - name: Slack soak metrics alert
-        if: failure() && steps.check-metrics.outcome == 'failure'
-        uses: slackapi/slack-github-action@v1
-        with:
-          method: chat.postMessage
-          payload-file-path: soak-metrics-slack.json
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      - name: Create issue for soak metrics
+      - name: Create soak regression issue
         if: failure() && steps.check-metrics.outcome == 'failure'
         uses: peter-evans/create-issue-from-file@v4
         with:
           title: "SLA breached: soak metrics"
-          content-filepath: soak-metrics.md
+          content-filepath: soak-regression.json
+      - name: PagerDuty soak regression alert
+        if: failure() && steps.check-metrics.outcome == 'failure'
+        env:
+          ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+        run: |
+          if jq -e '.regressions[] | select(.level=="critical")' soak-regression.json >/dev/null; then
+            curl -X POST https://events.pagerduty.com/v2/enqueue \
+              -H 'Content-Type: application/json' \
+              -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Critical soak regression detected","source":"github-actions","severity":"error"}}'
+          fi
       - name: Publish soak metrics
         if: always()
         run: |
