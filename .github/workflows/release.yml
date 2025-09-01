@@ -34,17 +34,24 @@ jobs:
     uses: ./.github/workflows/ops-artifacts-verify.yml
     secrets: inherit
 
+  check-proof-archive:
+    needs: preflight
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
+
   publish-docs:
     needs:
       - preflight
       - ops-artifacts-verify
+      - check-proof-archive
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
       - name: Verify prerequisite workflows
         run: |
           if [ "${{ needs.preflight.result }}" != "success" ] || \
-             [ "${{ needs.ops-artifacts-verify.result }}" != "success" ]; then
+             [ "${{ needs.ops-artifacts-verify.result }}" != "success" ] || \
+             [ "${{ needs.check-proof-archive.result }}" != "success" ]; then
             echo "One or more prerequisite workflows failed." >&2
             exit 1
           fi
