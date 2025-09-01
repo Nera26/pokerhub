@@ -1,4 +1,5 @@
 name: ops-artifacts-verify
+
 concurrency:
   group: "ops-artifacts-verify"
   cancel-in-progress: true
@@ -20,6 +21,11 @@ on:
       DR_METRICS_BUCKET:
         required: true
 
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
 jobs:
   check-proof-archive:
     uses: ./.github/workflows/check-proof-archive.yml
@@ -29,46 +35,58 @@ jobs:
     needs: check-proof-archive
     runs-on: ubuntu-latest
     env:
-        PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
-        PROOF_MANIFEST_BUCKET: ${{ secrets.PROOF_MANIFEST_BUCKET }}
-        PROOF_MANIFEST_MIN_RETENTION_DAYS: 365
-        PROOF_MANIFEST_KMS_KEY: ${{ vars.PROOF_MANIFEST_KMS_KEY }}
-        PROOF_MANIFEST_KMS_KEYRING: ${{ vars.PROOF_MANIFEST_KMS_KEYRING }}
-        PROOF_MANIFEST_KMS_LOCATION: ${{ vars.PROOF_MANIFEST_KMS_LOCATION }}
-        PROOF_MANIFEST_KMS_VERSION: ${{ vars.PROOF_MANIFEST_KMS_VERSION || 1 }}
-        SPECTATOR_LOGS_BUCKET: ${{ secrets.SPECTATOR_LOGS_BUCKET }}
-        SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
-        SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS || 120 }}
-        SOAK_THROUGHPUT_MIN: ${{ vars.SOAK_THROUGHPUT_MIN || 100 }}
-        SOAK_TRENDS_MAX_PCT: ${{ vars.SOAK_TRENDS_MAX_PCT || 20 }}
+      # Proof archive + manifest
+      PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+      PROOF_MANIFEST_BUCKET: ${{ secrets.PROOF_MANIFEST_BUCKET }}
+      PROOF_MANIFEST_MIN_RETENTION_DAYS: 365
+      PROOF_MANIFEST_KMS_KEY: ${{ vars.PROOF_MANIFEST_KMS_KEY }}
+      PROOF_MANIFEST_KMS_KEYRING: ${{ vars.PROOF_MANIFEST_KMS_KEYRING }}
+      PROOF_MANIFEST_KMS_LOCATION: ${{ vars.PROOF_MANIFEST_KMS_LOCATION }}
+      PROOF_MANIFEST_KMS_VERSION: ${{ vars.PROOF_MANIFEST_KMS_VERSION || 1 }}
 
-        GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      # Spectator / soak
+      SPECTATOR_LOGS_BUCKET: ${{ secrets.SPECTATOR_LOGS_BUCKET }}
+      SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+      SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS || 120 }}
+      SOAK_THROUGHPUT_MIN: ${{ vars.SOAK_THROUGHPUT_MIN || 100 }}
+      SOAK_TRENDS_MAX_PCT: ${{ vars.SOAK_TRENDS_MAX_PCT || 20 }}
+      SOAK_TRENDS_MIN_RETENTION_DAYS: ${{ vars.SOAK_TRENDS_MIN_RETENTION_DAYS || 30 }}
 
-        DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
+      # DR metrics & GCP
+      DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
+      DR_METRICS_MIN_RETENTION_DAYS: ${{ vars.DR_METRICS_MIN_RETENTION_DAYS || 30 }}
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
 
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+
       - run: npm ci --legacy-peer-deps
+
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
+
       - name: Check proof archive bucket policies
         run: npx -y ts-node scripts/check-proof-archive-retention.ts
         env:
           PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
           PROOF_ARCHIVE_MIN_RETENTION_DAYS: 365
+
       - name: Check proof archive replication
         run: npx -y ts-node scripts/check-proof-archive-replication.ts
         env:
           PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
           SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+
       - name: Get spectator privacy run ID
         id: get_run_id
         env:
@@ -82,11 +100,10 @@ jobs:
             echo "No spectator-privacy-nightly run found" >&2
             exit 1
           fi
-          # Expose the spectator privacy run ID for later verification
           echo "SPECTATOR_RUN_ID=$RUN_ID" >> "$GITHUB_OUTPUT"
+
       - name: Verify ops artifacts
         env:
-          # Pass the spectator privacy run ID to verification script
           RUN_ID: ${{ steps.get_run_id.outputs.SPECTATOR_RUN_ID }}
         run: |
           set +e
@@ -100,6 +117,7 @@ jobs:
           url="https://storage.googleapis.com/$DR_METRICS_BUCKET/verify/$GITHUB_RUN_ID/verify-ops.log"
           echo "$url" >> "$GITHUB_STEP_SUMMARY"
           exit $status
+
       - name: Prepare ops artifacts alert
         if: failure()
         env:
@@ -111,6 +129,7 @@ jobs:
           jq -n --arg channel "$SLACK_CHANNEL_ID" \
             --arg text "Ops artifacts verification failed: proofs, soak metrics, or DR logs missing." \
             '{channel: $channel, text: $text}' > ops-artifacts-slack.json
+
       - name: Slack ops artifacts alert
         if: failure()
         uses: slackapi/slack-github-action@v1
@@ -119,6 +138,7 @@ jobs:
           payload-file-path: ops-artifacts-slack.json
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
       - name: Create issue for ops artifacts
         if: failure()
         uses: peter-evans/create-issue-from-file@v4

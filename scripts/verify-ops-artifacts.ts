@@ -623,19 +623,38 @@ function main() {
     throw new Error('Invalid PROOF_MANIFEST_MIN_RETENTION_DAYS');
   }
 
+  const soakRetention = Number(
+    process.env.SOAK_TRENDS_MIN_RETENTION_DAYS || '30',
+  );
+  if (!Number.isFinite(soakRetention) || soakRetention <= 0) {
+    throw new Error('Invalid SOAK_TRENDS_MIN_RETENTION_DAYS');
+  }
+  const drMetricsRetention = Number(
+    process.env.DR_METRICS_MIN_RETENTION_DAYS || '30',
+  );
+  if (!Number.isFinite(drMetricsRetention) || drMetricsRetention <= 0) {
+    throw new Error('Invalid DR_METRICS_MIN_RETENTION_DAYS');
+  }
+
+  // Retention checks
   checkBucketRetention(proofBucket, proofRetention);
   checkBucketRetention(spectatorBucket, spectatorRetention);
+  checkBucketRetention(soakBucket, soakRetention);
+  checkBucketRetention(drMetricsBucket, drMetricsRetention);
   checkBucketRetention(manifestBucket, manifestRetention);
 
+  // Replication checks
   checkBucketReplication(proofBucket, secondaryRegion);
   checkBucketReplication(spectatorBucket, secondaryRegion);
   checkBucketReplication(soakBucket, secondaryRegion);
   checkBucketReplication(drMetricsBucket, secondaryRegion);
   checkBucketReplication(manifestBucket, secondaryRegion);
 
+  // Proof archive integrity + metrics
   checkProofArchive(proofBucket);
   checkProofArchiveMetrics(projectId);
   checkProofArchiveBigQuery(projectId);
+
   checkProofSummaryManifest(
     manifestBucket,
     manifestKey,
