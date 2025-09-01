@@ -77,7 +77,12 @@ async function main() {
           const idx = engine.getHandLog().slice(-1)[0]?.[0] ?? 0;
           const state = engine.getPublicState();
 
-          await svc.reserve(engine.getHandId(), state.street, idx);
+          try {
+            await svc.reserve(engine.getHandId(), state.street, idx);
+          } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error('Failed to reserve settlement', err);
+          }
 
           const delta = diff(previousState, state);
           previousState = state;
@@ -88,7 +93,15 @@ async function main() {
           // Publish compact deltas over Redis for socket fan-out
           await pub?.publish(diffChannel, JSON.stringify([idx, delta]));
 
-          await svc.commit(engine.getHandId(), state.street, idx);
+          try {
+            await svc.commit(engine.getHandId(), state.street, idx);
+          } catch (err) {
+            try {
+              await svc.cancel(engine.getHandId(), state.street, idx);
+            } catch {}
+            // eslint-disable-next-line no-console
+            console.error('Failed to commit settlement', err);
+          }
 
           // Respond directly to the requester with the full state
           port.postMessage({ seq: msg.seq, state });
