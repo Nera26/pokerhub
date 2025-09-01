@@ -67,7 +67,7 @@ jobs:
         uses: ./.github/workflows/check-workflow-sla
         with:
           workflow: dr-throwaway.yml
-          sla: 30
+          sla: 7
           unit: days
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
