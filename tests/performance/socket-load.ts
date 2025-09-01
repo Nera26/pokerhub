@@ -278,11 +278,16 @@ async function primaryMain(replay?: RunSeeds) {
         JSON.stringify(tableMetrics, null, 2),
       );
 
-      const P95_LIMIT = Number(process.env.P95_LIMIT || 120);
+      const ACK_P50_MS = Number(process.env.ACK_P50_MS || 40);
+      const ACK_P95_MS = Number(process.env.ACK_P95_MS || 120);
+      const ACK_P99_MS = Number(process.env.ACK_P99_MS || 200);
       const TPS_LIMIT = Number(process.env.TPS_LIMIT || 15);
       let failed = false;
+      if (hist.p50 > ACK_P50_MS || hist.p95 > ACK_P95_MS || hist.p99 > ACK_P99_MS) {
+        failed = true;
+      }
       for (const m of Object.values(tableMetrics)) {
-        if (m.p95 > P95_LIMIT || m.actionsPerMin < TPS_LIMIT) {
+        if (m.p95 > ACK_P95_MS || m.actionsPerMin < TPS_LIMIT) {
           failed = true;
           break;
         }
