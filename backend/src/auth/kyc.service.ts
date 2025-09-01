@@ -18,8 +18,7 @@ export interface VerificationJob {
 
 @Injectable()
 export class KycService {
-  private readonly blockedCountries = ['IR', 'KP', 'SY', 'CU', 'RU', 'BY'];
-
+  private readonly blockedCountries: string[];
   private readonly sanctionedNames = ['bad actor'];
 
   private queue?: Queue;
@@ -43,7 +42,17 @@ export class KycService {
     @InjectRepository(Account)
     private readonly accounts: Repository<Account>,
     private readonly config: ConfigService,
-  ) {}
+  ) {
+    this.blockedCountries =
+      this.config.get<string[]>('kyc.blockedCountries') ?? [
+        'IR',
+        'KP',
+        'SY',
+        'CU',
+        'RU',
+        'BY',
+      ];
+  }
 
   private async getQueue(): Promise<Queue> {
     if (this.queue) return this.queue;
