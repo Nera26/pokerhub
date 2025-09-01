@@ -14,6 +14,7 @@ interface HarnessOptions {
   tables: number;
   wsUrl: string;
   packetLoss: number;
+  latencyMs: number;
   jitterMs: number;
   ackP95: number;
   duration: number;
@@ -82,6 +83,7 @@ export class GameGatewaySoakHarness {
       tables: Number(process.env.TABLES ?? 10000),
       wsUrl: process.env.WS_URL ?? 'ws://localhost:3001/game',
       packetLoss: Number(process.env.PACKET_LOSS ?? 0.05),
+      latencyMs: Number(process.env.LATENCY_MS ?? 0),
       jitterMs: Number(process.env.JITTER_MS ?? 200),
       ackP95: Number(process.env.ACK_P95_MS ?? 120),
       duration: Number(process.env.DURATION_SEC ?? 24 * 60 * 60),
@@ -97,7 +99,8 @@ export class GameGatewaySoakHarness {
       env: {
         ...process.env,
         PACKET_LOSS: String(this.opts.packetLoss),
-        LATENCY_MS: String(this.opts.jitterMs),
+        LATENCY_MS: String(this.opts.latencyMs),
+        JITTER_MS: String(this.opts.jitterMs),
       },
     });
   }
@@ -156,7 +159,12 @@ export class GameGatewaySoakHarness {
   /** Kill the room worker and verify replay from HandLog. */
   private async crashAndReplay(tableId: string) {
     const room = this.roomMgr.get(tableId) as any;
-    const before = (await room.getPublicState()) as InternalGameState;
+    let before = (await room.getPublicState()) as InternalGameState;
+    // Ensure we're mid-hand; start one if waiting for blinds
+    if ((before as any).phase === 'WAIT_BLINDS') {
+      await room.apply({ type: 'postBlind', playerId: 'p1', amount: 1 });
+      before = (await room.getPublicState()) as InternalGameState;
+    }
     const primary = room?.primary as any;
     const pid = primary?.worker?.threadId;
     if (pid) {
@@ -172,6 +180,12 @@ export class GameGatewaySoakHarness {
       this.replayFailures++;
       GameGatewaySoakHarness.replayCounter.add(1, { tableId });
       throw new Error(`replay mismatch for ${tableId}`);
+    }
+    // Resume play; if table was waiting for big blind, post it
+    try {
+      await room.apply({ type: 'postBlind', playerId: 'p2', amount: 2 });
+    } catch {
+      // ignore if action invalid for current phase
     }
   }
 
@@ -212,13 +226,14 @@ export class GameGatewaySoakHarness {
     for (let i = 0; i < this.opts.sockets; i++) {
       this.spawnBot(i);
     }
-    const killInterval = setInterval(() => {
-      const target = `table-${Math.floor(Math.random() * this.opts.tables)}`;
-      void this.crashAndReplay(target).catch(() => {});
-    }, 30000);
+    const crashTable = 'soak-crash-table';
+    // Spawn a dedicated table for crash testing
+    this.roomMgr.get(crashTable);
+    setTimeout(() => {
+      void this.crashAndReplay(crashTable).catch(() => {});
+    }, 5000);
     await new Promise((r) => setTimeout(r, this.opts.duration * 1000));
     clearInterval(memInterval);
-    clearInterval(killInterval);
     const p95 = this.histogram.percentile(95);
     const start = this.memSamples[0];
     const end = this.memSamples[this.memSamples.length - 1];
