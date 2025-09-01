@@ -9,7 +9,17 @@ export class WebhookController {
   constructor(
     private readonly wallet: WalletService,
     private readonly provider: PaymentProviderService,
-  ) {}
+  ) {
+    this.provider.registerHandler('disbursement', (event) =>
+      this.wallet.processDisbursement(
+        event.eventId,
+        event.idempotencyKey,
+        event.providerTxnId,
+        event.status,
+      ),
+    );
+    void this.provider.drainQueue();
+  }
 
   @Post('callback')
   async callback(@Req() req: Request, @Body() body: ProviderCallback) {
@@ -19,14 +29,7 @@ export class WebhookController {
       throw new UnauthorizedException('invalid signature');
     }
     const parsed = ProviderCallbackSchema.parse(body);
-    await this.provider.handleWebhook(parsed, () =>
-      this.wallet.processDisbursement(
-        parsed.eventId,
-        parsed.idempotencyKey,
-        parsed.providerTxnId,
-        parsed.status,
-      ),
-    );
+    await this.provider.handleWebhook(parsed, 'disbursement');
     return { message: 'acknowledged' };
   }
 }

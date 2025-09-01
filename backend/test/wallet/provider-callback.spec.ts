@@ -17,9 +17,9 @@ describe('Provider webhook', () => {
   let dataSource: DataSource;
   let service: WalletService;
   let controller: WebhookController;
+  let provider: PaymentProviderService;
   const events = { emit: jest.fn() } as unknown as EventPublisher;
   const redis = new MockRedis();
-  const provider = new PaymentProviderService();
   const kyc = {
     validate: jest.fn().mockResolvedValue(undefined),
     isVerified: jest.fn().mockResolvedValue(true),
@@ -27,6 +27,8 @@ describe('Provider webhook', () => {
 
   beforeAll(async () => {
     process.env.PROVIDER_WEBHOOK_SECRET = 'shhh';
+    process.env.REDIS_HOST = '127.0.0.1';
+    process.env.REDIS_PORT = '6379';
     const db = newDb();
     db.public.registerFunction({
       name: 'version',
@@ -58,6 +60,7 @@ describe('Provider webhook', () => {
     const journalRepo = dataSource.getRepository(JournalEntry);
     const disbRepo = dataSource.getRepository(Disbursement);
     const settleRepo = dataSource.getRepository(SettlementJournal);
+    provider = new PaymentProviderService();
     service = new WalletService(
       accountRepo,
       journalRepo,
@@ -94,6 +97,9 @@ describe('Provider webhook', () => {
 
   afterAll(async () => {
     await dataSource.destroy();
+    await provider?.drainQueue();
+    await (provider as any).retryWorker?.close();
+    await (provider as any).retryQueue?.close();
   });
 
   it('validates signature and updates journal exactly once', async () => {
