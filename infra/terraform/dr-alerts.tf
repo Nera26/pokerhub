@@ -47,3 +47,40 @@ resource "google_monitoring_alert_policy" "dr_rpo_exceeded" {
   }
 }
 
+resource "google_monitoring_alert_policy" "proof_archive_retention_low" {
+  display_name = "Proof Archive Retention Low"
+  combiner     = "OR"
+
+  conditions {
+    display_name = "Retention days < ${var.proof_archive_retention_days}"
+    condition_threshold {
+      filter          = "metric.type=\"custom.googleapis.com/proof_archive/retention_days\" AND metric.label.bucket=\"${var.proof_archive_bucket}\""
+      comparison      = "COMPARISON_LT"
+      threshold_value = var.proof_archive_retention_days
+      duration        = "0s"
+      trigger {
+        count = 1
+      }
+    }
+  }
+}
+
+resource "google_monitoring_alert_policy" "proof_archive_replication_lag" {
+  display_name = "Proof Archive Replication Lag"
+  combiner     = "OR"
+
+  conditions {
+    display_name = "Replication lag > ${var.proof_archive_replication_lag_threshold_seconds}s"
+    condition_threshold {
+      filter          = "metric.type=\"custom.googleapis.com/proof_archive/replication_lag\" AND metric.label.bucket=\"${var.proof_archive_bucket}\""
+      comparison      = "COMPARISON_GT"
+      threshold_value = var.proof_archive_replication_lag_threshold_seconds
+      duration        = "0s"
+      trigger {
+        count = 1
+      }
+    }
+  }
+}
+
+
