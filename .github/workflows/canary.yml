@@ -6,7 +6,14 @@ on:
     branches: [ main ]
 
 jobs:
+  spectator-privacy:
+    uses: ./.github/workflows/spectator-privacy.yml
+    with:
+      logs: "backend-tests.log frontend-tests.log"
+    secrets: inherit
+
   canary:
+    needs: [spectator-privacy]
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -104,4 +111,34 @@ jobs:
         run: |
           curl -X POST https://events.pagerduty.com/v2/enqueue \
             -H 'Content-Type: application/json' \
-            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Canary blocke_
+            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Canary blocked: dr-restore workflow failed or stale","source":"github-actions","severity":"error","custom_details":{"runbook":"https://github.com/Nera26/pokerhub/blob/main/docs/runbooks/disaster-recovery.md"}}}'
+          exit 1
+
+      - name: Check soak SLA
+        id: soak
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: soak.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+        continue-on-error: true
+
+      - name: Fail on stale soak run
+        if: steps.soak.outcome == 'failure'
+        run: exit 1
+
+      - name: Check proof archive SLA
+        id: proof_archive
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: proof-archive.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+        continue-on-error: true
+
+      - name: Fail on stale proof archive
+        if: steps.proof_archive.outcome == 'failure'
+        run: exit 1
+
