@@ -2,6 +2,8 @@ import crypto from 'crypto';
 import fc from 'fast-check';
 import { GameEngine, GameAction } from './engine';
 import { hashCommitment, verifyProof } from './rng';
+import { existsSync, readFileSync, unlinkSync } from 'fs';
+import path from 'path';
 
 const players = ['p1', 'p2'];
 const config = { startingStack: 100, smallBlind: 1, bigBlind: 2 };
@@ -70,6 +72,15 @@ describe('GameEngine hand lifecycle', () => {
     expect(proof.commitment).toBe(
       hashCommitment(Buffer.alloc(32, 1), Buffer.alloc(16, 2)),
     );
+
+    const file = path.resolve(
+      process.cwd(),
+      '../storage/proofs',
+      `${handId}.json`,
+    );
+    expect(existsSync(file)).toBe(true);
+    expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual(proof);
+    unlinkSync(file);
 
     spy.mockRestore();
   });
