@@ -9,6 +9,8 @@ import { EventSchemas, Events, EventName } from '@shared/events';
 import { GcsService } from '../storage/gcs.service';
 import { ParquetSchema, ParquetWriter } from 'parquetjs-lite';
 import { PassThrough } from 'stream';
+import path from 'path';
+import { promises as fs } from 'fs';
 
 const HandStartSchema = new ParquetSchema({
   handId: { type: 'UTF8' },
@@ -179,6 +181,7 @@ export class AnalyticsService {
     }
 
     this.scheduleStakeAggregates();
+    this.scheduleEngagementMetrics();
   }
 
   async ingest(table: string, data: Record<string, any>) {
@@ -350,6 +353,82 @@ export class AnalyticsService {
       format: 'JSONEachRow',
     });
     return (await result.json()) as T[];
+  }
+
+  private scheduleEngagementMetrics() {
+    const oneDay = 24 * 60 * 60 * 1000;
+    const now = new Date();
+    const next = new Date(now);
+    next.setUTCDate(now.getUTCDate() + 1);
+    next.setUTCHours(0, 0, 0, 0);
+    const delay = next.getTime() - now.getTime();
+    setTimeout(() => {
+      void this.rebuildEngagementMetrics();
+      setInterval(() => void this.rebuildEngagementMetrics(), oneDay);
+    }, delay);
+  }
+
+  async rebuildEngagementMetrics() {
+    const oneDay = 24 * 60 * 60 * 1000;
+    const today = new Date();
+    const from = new Date(today);
+    from.setUTCDate(today.getUTCDate() - 1);
+    from.setUTCHours(0, 0, 0, 0);
+    const to = new Date(from.getTime() + oneDay);
+    const dateStr = from.toISOString().slice(0, 10);
+    let dau = 0;
+    let mau = 0;
+    let regs = 0;
+    let deps = 0;
+    if (this.client) {
+      const createTable =
+        'CREATE TABLE IF NOT EXISTS engagement_metrics (date Date, dau UInt64, mau UInt64, reg_to_dep Float64) ENGINE = MergeTree() ORDER BY date';
+      await this.query(createTable);
+      const dauSql = `SELECT uniq(userId) AS dau FROM auth_login WHERE ts >= toDateTime('${from.toISOString()}') AND ts < toDateTime('${to.toISOString()}')`;
+      const dauRow = await this.select<{ dau: number }>(dauSql);
+      const mauFrom = new Date(to.getTime() - 30 * oneDay);
+      const mauSql = `SELECT uniq(userId) AS mau FROM auth_login WHERE ts >= toDateTime('${mauFrom.toISOString()}') AND ts < toDateTime('${to.toISOString()}')`;
+      const mauRow = await this.select<{ mau: number }>(mauSql);
+      const regSql = `SELECT uniq(userId) AS regs FROM auth_login WHERE ts >= toDateTime('${from.toISOString()}') AND ts < toDateTime('${to.toISOString()}')`;
+      const regRow = await this.select<{ regs: number }>(regSql);
+      const depSql = `SELECT uniq(accountId) AS deps FROM wallet_credit WHERE refType = 'deposit' AND ts >= toDateTime('${from.toISOString()}') AND ts < toDateTime('${to.toISOString()}')`;
+      const depRow = await this.select<{ deps: number }>(depSql);
+      dau = dauRow[0]?.dau ?? 0;
+      mau = mauRow[0]?.mau ?? 0;
+      regs = regRow[0]?.regs ?? 0;
+      deps = depRow[0]?.deps ?? 0;
+      const conversion = regs > 0 ? deps / regs : 0;
+      await this.query(`ALTER TABLE engagement_metrics DELETE WHERE date = '${dateStr}'`);
+      await this.query(
+        `INSERT INTO engagement_metrics (date, dau, mau, reg_to_dep) VALUES ('${dateStr}', ${dau}, ${mau}, ${conversion})`,
+      );
+      const dir = path.resolve(__dirname, '../../../storage/events');
+      await fs.mkdir(dir, { recursive: true });
+      await fs.writeFile(
+        path.join(dir, `engagement-${dateStr}.json`),
+        JSON.stringify({ date: dateStr, dau, mau, regToDep: conversion }),
+      );
+    } else {
+      const dayLogins = await this.rangeStream('analytics:auth.login', from.getTime());
+      dau = new Set(dayLogins.map((e: any) => e.userId)).size;
+      const mauLogins = await this.rangeStream('analytics:auth.login', from.getTime() - 29 * oneDay);
+      mau = new Set(mauLogins.map((e: any) => e.userId)).size;
+      regs = dau;
+      const depositEvents = await this.rangeStream('analytics:wallet.credit', from.getTime());
+      deps = new Set(
+        depositEvents
+          .filter((e: any) => e.refType === 'deposit')
+          .map((e: any) => e.accountId),
+      ).size;
+      const conversion = regs > 0 ? deps / regs : 0;
+      const dir = path.resolve(__dirname, '../../../storage/events');
+      await fs.mkdir(dir, { recursive: true });
+      await fs.writeFile(
+        path.join(dir, `engagement-${dateStr}.json`),
+        JSON.stringify({ date: dateStr, dau, mau, regToDep: conversion }),
+      );
+    }
+    this.logger.log('Rebuilt engagement metrics');
   }
 
   private scheduleStakeAggregates() {
