@@ -2,6 +2,7 @@ import { run } from '../../src/leaderboard/rebuild';
 import { LeaderboardService } from '../../src/leaderboard/leaderboard.service';
 import type { Cache } from 'cache-manager';
 import { createClient, ClickHouseClient } from '@clickhouse/client';
+import { ConfigService } from '@nestjs/config';
 
 class MockCache {
   private store = new Map<string, any>();
@@ -51,6 +52,7 @@ describe('leaderboard rebuild benchmark', () => {
       cache as unknown as Cache,
       { find: jest.fn() } as any,
       analytics as any,
+      new ConfigService(),
     );
     const { durationMs } = await run({
       days: 30,

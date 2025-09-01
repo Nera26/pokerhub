@@ -2,6 +2,7 @@ import { LeaderboardService } from '../../src/leaderboard/leaderboard.service';
 import { writeSyntheticEvents } from './synthetic-events';
 import { Cache } from 'cache-manager';
 import { createClient, ClickHouseClient } from '@clickhouse/client';
+import { ConfigService } from '@nestjs/config';
 
 class MockCache {
   private store = new Map<string, any>();
@@ -53,11 +54,12 @@ describe('leaderboard rebuild performance', () => {
       cache as unknown as Cache,
       { find: jest.fn() } as any,
       analytics as any,
+      new ConfigService(),
     );
     const { durationMs, memoryMb } = await service.rebuildFromEvents(30);
     expect(durationMs).toBeLessThan(1_800_000);
     // memoryMb captured and sent via analytics.ingest inside service
-    expect(memoryMb).toBeGreaterThan(0);
+    expect(memoryMb).toBeGreaterThanOrEqual(0);
     await analytics.close();
     jest.useRealTimers();
   });

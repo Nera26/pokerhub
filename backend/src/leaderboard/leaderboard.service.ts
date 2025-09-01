@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { metrics } from '@opentelemetry/api';
+import { ConfigService } from '@nestjs/config';
 import { User } from '../database/entities/user.entity';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { updateRating } from './rating';
@@ -33,13 +34,24 @@ export class LeaderboardService {
         unit: 'mb',
       },
     );
+  private static readonly rebuildExceeded =
+    LeaderboardService.meter.createCounter(
+      'leaderboard_rebuild_exceeded',
+      {
+        description: 'Total leaderboard rebuilds exceeding duration threshold',
+      },
+    );
+
+  private readonly rebuildMaxMs: number;
 
   constructor(
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
     @InjectRepository(User) private readonly _userRepo: Repository<User>,
     private readonly analytics: AnalyticsService,
+    config: ConfigService,
   ) {
+    this.rebuildMaxMs = config.get<number>('LEADERBOARD_REBUILD_MAX_MS', 30 * 60 * 1000);
     setInterval(
       () => {
         void this.rebuild();
@@ -101,16 +113,24 @@ export class LeaderboardService {
 
   async rebuildFromEvents(
     days: number,
+    maxDurationMs = this.rebuildMaxMs,
   ): Promise<{ durationMs: number; memoryMb: number }> {
     const start = Date.now();
+    const rssBefore = process.memoryUsage().rss;
     const now = start;
     const base = join(process.cwd(), 'storage', 'events');
     const events = this.loadEvents(days, base, now);
     await this.rebuildWithEvents(events);
     const durationMs = Date.now() - start;
-    const memoryMb = process.memoryUsage().rss / 1024 / 1024;
+    const memoryMb = (process.memoryUsage().rss - rssBefore) / 1024 / 1024;
     LeaderboardService.rebuildEventsDuration.record(durationMs);
     LeaderboardService.rebuildEventsMemory.record(memoryMb);
+    if (durationMs > maxDurationMs) {
+      LeaderboardService.rebuildExceeded.add(1);
+      throw new Error(
+        `Rebuild exceeded ${maxDurationMs}ms (took ${durationMs}ms)`,
+      );
+    }
     await this.analytics.ingest('leaderboard_rebuild', {
       duration_ms: durationMs,
       memory_mb: memoryMb,
