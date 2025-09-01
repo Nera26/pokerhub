@@ -65,4 +65,12 @@ export class FeatureFlagsService {
   deleteTourney(tourneyId: string, flag: string) {
     return this.delete(this.tourneyKey(tourneyId, flag));
   }
+
+  async canDeal(tableId: string): Promise<boolean> {
+    const [global, room] = await Promise.all([
+      this.get('dealing'),
+      this.getRoom(tableId, 'dealing'),
+    ]);
+    return global !== false && room !== false;
+  }
 }
