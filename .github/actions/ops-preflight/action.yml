@@ -37,6 +37,19 @@ runs:
         sla: ${{ inputs.spectator-privacy-sla-hours }}
         unit: hours
         slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Auth GCP for spectator privacy metric
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+    - name: Setup gcloud for spectator privacy metric
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ vars.GCP_PROJECT_ID }}
+    - name: Check spectator privacy metric SLA
+      run: npx -y ts-node scripts/check-spectator-privacy-metric.ts
+      env:
+        GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        SPECTATOR_PRIVACY_SLA_HOURS: ${{ inputs.spectator-privacy-sla-hours }}
     - name: Check soak-metrics SLA
       uses: ./.github/workflows/check-workflow-sla
       with:

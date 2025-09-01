@@ -2,42 +2,43 @@ Ops Preflight
 
 The ops-preflight composite action centralizes operational gates used across deployment workflows. It verifies:
 
-Spectator privacy scan freshness (spectator-privacy-nightly)
+Spectator privacy: spectator-privacy-nightly workflow freshness and spectator_privacy/run_success metric freshness
 
-Soak metrics: SLA freshness and performance thresholds (p95 latency, min throughput) and trend artifacts presence
+Soak metrics: SLA freshness, p95 latency, minimum throughput, and trend artifacts presence
 
 Disaster recovery drills: dr-drill, dr-failover, dr-restore, dr-throwaway
 
-DR RTO/RPO trend targets: fails if latest or averages exceed RTO_TARGET / RPO_TARGET
+Disaster recovery trends: fails if latest or average RTO/RPO exceed RTO_TARGET / RPO_TARGET
 
-Proof archive workflow freshness (proof-archive)
+Proof archive: workflow freshness and integrity checks
 
 Inputs
 Name	Required	Description
 slack-channel-id	✅	Slack channel ID to receive SLA alerts.
-spectator-privacy-sla-hours		Max age (hours) for spectator-privacy-nightly. Default: 24.
-soak-metrics-sla-hours	✅	Max age (hours) for the soak/soak-metrics workflow artifacts.
+spectator-privacy-sla-hours		Max age (hours) for spectator-privacy-nightly and the spectator_privacy/run_success metric. Default: 24.
+soak-metrics-sla-hours	✅	Max age (hours) for the soak / soak-metrics workflow artifacts.
 dr-drill-sla-days	✅	Max age (days) for the last dr-drill run.
 dr-failover-sla-days	✅	Max age (days) for the last dr-failover run.
 dr-restore-sla-days	✅	Max age (days) for the last dr-restore run.
 dr-throwaway-sla-days	✅	Max age (days) for the last dr-throwaway run.
 proof-archive-sla-hours		Max age (hours) for the proof-archive workflow. Default: 24.
 
-The action fails if required artifacts (e.g., soak-summary.json) are missing or if any thresholds are exceeded.
+❗ The action fails if required artifacts (e.g., soak-summary.json) are missing or if thresholds are exceeded.
 
 Required secrets & vars
 
 Secrets
 
-SLACK_BOT_TOKEN – used by check-workflow-sla to send alerts.
+SLACK_BOT_TOKEN – used by check-workflow-sla
+ to send alerts.
 
-GCP_SA_KEY – service-account JSON used for DR metric checks (if the action reads Monitoring or GCS directly).
+GCP_SA_KEY – service-account JSON for DR and spectator privacy metric checks.
 
 Repository / Environment Vars
 
-vars.GCP_PROJECT_ID – GCP project containing DR metrics.
+vars.GCP_PROJECT_ID – GCP project containing DR and spectator privacy metrics.
 
-vars.DR_METRICS_BUCKET – GCS bucket holding DR drill metrics/trend files.
+vars.DR_METRICS_BUCKET – GCS bucket holding DR drill metrics / trend files.
 
 vars.RTO_TARGET – maximum allowed RTO in seconds (e.g., 1800).
 
@@ -48,6 +49,8 @@ vars.SOAK_TRENDS_BUCKET – GCS bucket for soak trend artifacts.
 vars.SOAK_LATENCY_P95_MS – maximum allowed p95 latency for the latest soak (e.g., 120).
 
 vars.SOAK_THROUGHPUT_MIN – minimum allowed throughput for the latest soak (e.g., 100).
+
+The service account must have permission to read Cloud Monitoring time-series data (e.g., roles/monitoring.viewer) and GCS buckets for soak/DR/proof artifacts.
 
 Behavior on failure
 
