@@ -208,6 +208,32 @@ export class PaymentProviderService {
     }
   }
 
+  async confirm3DS(payload: unknown): Promise<void> {
+    const type = (payload as { type?: string })?.type;
+    if (!type || !type.startsWith('payment_intent.')) {
+      throw new Error('invalid event type');
+    }
+    const intent = (payload as any)?.data?.object as
+      | { id: string; status?: string; metadata?: { idempotencyKey?: string } }
+      | undefined;
+    if (!intent?.id) {
+      throw new Error('invalid event payload');
+    }
+    const status: ProviderStatus =
+      intent.status === 'succeeded'
+        ? 'approved'
+        : intent.status === 'requires_action'
+          ? 'risky'
+          : 'chargeback';
+    const event: ProviderCallback = {
+      eventId: (payload as { id?: string }).id ?? intent.id,
+      idempotencyKey: intent.metadata?.idempotencyKey ?? intent.id,
+      providerTxnId: intent.id,
+      status,
+    };
+    await this.handleWebhook(event, '3ds');
+  }
+
   verifySignature(payload: string, signature: string): boolean {
     const secret = process.env.PROVIDER_WEBHOOK_SECRET ?? '';
     const expected = createHmac('sha256', secret).update(payload).digest('hex');

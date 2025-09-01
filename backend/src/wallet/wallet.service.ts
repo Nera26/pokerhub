@@ -13,6 +13,7 @@ import type { Queue } from 'bullmq';
 import {
   PaymentProviderService,
   ProviderStatus,
+  ProviderChallenge,
 } from './payment-provider.service';
 import { KycService } from './kyc.service';
 import { SettlementService } from './settlement.service';
@@ -20,6 +21,7 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import { ChargebackMonitor } from './chargeback.service';
 import type { Street } from '../game/state-machine';
 import { GeoIpService } from '../auth/geoip.service';
+import type { ProviderCallback } from '../schemas/wallet';
 
 interface Movement {
   account: Account;
@@ -80,6 +82,10 @@ export class WalletService {
   protected async enqueueDisbursement(id: string, currency: string): Promise<void> {
     const queue = await this.getQueue();
     await queue.add('payout', { id, currency });
+  }
+
+  private challengeKey(id: string) {
+    return `wallet:3ds:${id}`;
   }
 
   private buildHash(
@@ -336,6 +342,58 @@ export class WalletService {
     return res === null;
   }
 
+  async confirm3DS(event: ProviderCallback): Promise<void> {
+    if (await this.isDuplicateWebhook(event.eventId)) return;
+    const stored = await this.redis.get(this.challengeKey(event.providerTxnId));
+    if (!stored) return;
+    await this.redis.del(this.challengeKey(event.providerTxnId));
+    const { op, accountId, amount, currency } = JSON.parse(stored) as {
+      op: 'deposit' | 'withdraw';
+      accountId: string;
+      amount: number;
+      currency: string;
+    };
+    const user = await this.accounts.findOneByOrFail({ id: accountId, currency });
+    const house = await this.accounts.findOneByOrFail({
+      name: 'house',
+      currency,
+    });
+    const ref = randomUUID();
+    if (op === 'deposit') {
+      if (event.status === 'approved') {
+        await this.record(
+          'deposit',
+          ref,
+          [
+            { account: house, amount: -amount },
+            { account: user, amount },
+          ],
+          { providerTxnId: event.providerTxnId, providerStatus: event.status },
+        );
+      }
+    } else if (op === 'withdraw') {
+      if (event.status === 'approved') {
+        await this.record(
+          'withdraw',
+          ref,
+          [
+            { account: user, amount: -amount },
+            { account: house, amount },
+          ],
+          { providerTxnId: event.providerTxnId, providerStatus: event.status },
+        );
+        const disb = await this.disbursements.save({
+          id: randomUUID(),
+          accountId,
+          amount,
+          idempotencyKey: randomUUID(),
+          status: 'pending',
+        });
+        await this.enqueueDisbursement(disb.id, currency);
+      }
+    }
+  }
+
   async processDisbursement(
     eventId: string,
     idempotencyKey: string,
@@ -579,7 +637,7 @@ export class WalletService {
     deviceId: string,
     ip: string,
     currency: string,
-  ): Promise<void> {
+  ): Promise<ProviderChallenge> {
     return WalletService.tracer.startActiveSpan(
       'wallet.withdraw',
       async (span) => {
@@ -599,45 +657,15 @@ export class WalletService {
           await this.checkVelocity('withdraw', deviceId, ip);
           await this.enforceVelocity('withdraw', accountId, amount);
           await this.enforceDailyLimit('withdraw', accountId, amount, currency);
-          const house = await this.accounts.findOneByOrFail({ name: 'house', currency });
           const challenge = await this.provider.initiate3DS(accountId, amount);
-          const status: ProviderStatus = await this.provider.getStatus(
-            challenge.id,
+          await this.redis.set(
+            this.challengeKey(challenge.id),
+            JSON.stringify({ op: 'withdraw', accountId, amount, currency }),
+            'EX',
+            600,
           );
-          if (status === 'risky') {
-            throw new Error('Transaction flagged as risky');
-          }
-          const ref = randomUUID();
-          await this.record(
-            'withdraw',
-            ref,
-            [
-              { account: user, amount: -amount },
-              { account: house, amount },
-            ],
-            { providerTxnId: challenge.id, providerStatus: status },
-          );
-          if (status === 'chargeback') {
-            await this.record(
-              'withdraw_reversal',
-              `${ref}:reversal`,
-              [
-                { account: user, amount },
-                { account: house, amount: -amount },
-              ],
-              { providerTxnId: challenge.id, providerStatus: 'chargeback' },
-            );
-          } else {
-            const disb = await this.disbursements.save({
-              id: randomUUID(),
-              accountId,
-              amount,
-              idempotencyKey: randomUUID(),
-              status: 'pending',
-            });
-            await this.enqueueDisbursement(disb.id, currency);
-          }
           span.setStatus({ code: SpanStatusCode.OK });
+          return challenge;
         } catch (err) {
           span.recordException(err as Error);
           span.setStatus({ code: SpanStatusCode.ERROR });
@@ -658,7 +686,7 @@ export class WalletService {
     deviceId: string,
     ip: string,
     currency: string,
-  ): Promise<void> {
+  ): Promise<ProviderChallenge> {
     return WalletService.tracer.startActiveSpan(
       'wallet.deposit',
       async (span) => {
@@ -691,37 +719,15 @@ export class WalletService {
             });
             throw new Error('Chargeback threshold exceeded');
           }
-          const house = await this.accounts.findOneByOrFail({ name: 'house', currency });
           const challenge = await this.provider.initiate3DS(accountId, amount);
-          const status: ProviderStatus = await this.provider.getStatus(
-            challenge.id,
+          await this.redis.set(
+            this.challengeKey(challenge.id),
+            JSON.stringify({ op: 'deposit', accountId, amount, currency }),
+            'EX',
+            600,
           );
-          if (status === 'risky') {
-            throw new Error('Transaction flagged as risky');
-          }
-          const ref = randomUUID();
-          await this.record(
-            'deposit',
-            ref,
-            [
-              { account: house, amount: -amount },
-              { account: user, amount },
-            ],
-            { providerTxnId: challenge.id, providerStatus: status },
-          );
-          if (status === 'chargeback') {
-            await this.record(
-              'deposit_reversal',
-              `${ref}:reversal`,
-              [
-                { account: house, amount },
-                { account: user, amount: -amount },
-              ],
-              { providerTxnId: challenge.id, providerStatus: 'chargeback' },
-            );
-            await this.chargebacks?.record(accountId, deviceId);
-          }
           span.setStatus({ code: SpanStatusCode.OK });
+          return challenge;
         } catch (err) {
           span.recordException(err as Error);
           span.setStatus({ code: SpanStatusCode.ERROR });
