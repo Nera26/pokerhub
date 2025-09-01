@@ -39,8 +39,74 @@ jobs:
             backend-tests.log
             frontend-tests.log
 
-  rollback:
+  verify:
     needs: spectator-privacy
+    runs-on: ubuntu-latest
+    env:
+      PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+      PROOF_ARCHIVE_EXPECTED_DAILY_COUNT: ${{ vars.PROOF_ARCHIVE_EXPECTED_DAILY_COUNT }}
+      SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+      PROOF_MANIFEST_KMS_KEY: ${{ vars.PROOF_MANIFEST_KMS_KEY }}
+      PROOF_MANIFEST_KMS_KEYRING: ${{ vars.PROOF_MANIFEST_KMS_KEYRING }}
+      PROOF_MANIFEST_KMS_LOCATION: ${{ vars.PROOF_MANIFEST_KMS_LOCATION }}
+      PROOF_MANIFEST_KMS_VERSION: ${{ vars.PROOF_MANIFEST_KMS_VERSION || 1 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER || vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT || vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
+      - id: soak
+        run: npx -y ts-node scripts/check-soak-metrics.ts
+        continue-on-error: true
+      - name: Slack alert on soak regression
+        if: steps.soak.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            { "channel": "${{ secrets.SLACK_CHANNEL_ID }}", "text": "Canary rollback blocked: soak metrics regression" }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: PagerDuty alert on soak regression
+        if: steps.soak.outcome == 'failure'
+        env:
+          ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+        run: |
+          curl -X POST https://events.pagerduty.com/v2/enqueue \
+            -H 'Content-Type: application/json' \
+            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Canary rollback blocked: soak metrics regression","source":"github-actions","severity":"error"}}'
+      - id: proof
+        run: npx -y ts-node scripts/check-proof-archive.ts
+        continue-on-error: true
+      - name: Slack alert on proof archive failure
+        if: steps.proof.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            { "channel": "${{ secrets.SLACK_CHANNEL_ID }}", "text": "Canary rollback blocked: proof archive integrity check failed" }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: PagerDuty alert on proof archive failure
+        if: steps.proof.outcome == 'failure'
+        env:
+          ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+        run: |
+          curl -X POST https://events.pagerduty.com/v2/enqueue \
+            -H 'Content-Type: application/json' \
+            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Canary rollback blocked: proof archive integrity check failed","source":"github-actions","severity":"error"}}'
+      - name: Fail on regression or archive issues
+        if: steps.soak.outcome == 'failure' || steps.proof.outcome == 'failure'
+        run: exit 1
+
+  rollback:
+    needs: verify
     runs-on: ubuntu-latest
     environment: production
     steps:
