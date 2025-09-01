@@ -135,6 +135,17 @@ npx ts-node backend/src/scripts/verify-proof.ts <commitment> <seed> <nonce> path
 The command recomputes the commitment and shuffles a fresh deck, reporting any
 mismatches between the expected and provided deck order.
 
+## Manual Verification
+
+The proof can also be checked directly from the command line:
+
+```sh
+npx ts-node scripts/verify-proof.ts <seed> <nonce> <commitment>
+```
+
+The script prints `valid` if the commitment matches `sha256(seed || nonce)` and
+`invalid` otherwise.
+
 ## Independent Audits
 
 PokerHub engages external security firms annually to review the RNG
