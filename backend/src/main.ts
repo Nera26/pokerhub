@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { WalletService } from './wallet/wallet.service';
 import { scheduleReconcileJob } from './wallet/reconcile.job';
+import { EventPublisher } from './events/events.service';
 import {
   setupTelemetry,
   shutdownTelemetry,
@@ -44,7 +45,11 @@ async function bootstrap() {
   );
 
   await app.listen(process.env.PORT ?? 3000);
-  scheduleReconcileJob(app.get(WalletService), app.get(Logger));
+  scheduleReconcileJob(
+    app.get(WalletService),
+    app.get(Logger),
+    app.get(EventPublisher),
+  );
 
   const shutdown = async () => {
     await app.close();

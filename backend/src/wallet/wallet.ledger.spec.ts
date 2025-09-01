@@ -194,13 +194,13 @@ describe('Wallet ledger invariants', () => {
             const total = await service.totalBalance();
             expect(total).toBe(0);
 
-            await runInTmp(() => runReconcile(service));
+            await runInTmp(() => runReconcile(service, events));
 
             const user = await accountRepo.findOneByOrFail({ id: userId });
             user.balance += 1;
             await accountRepo.save(user);
             await expect(
-              runInTmp(() => runReconcile(service)),
+              runInTmp(() => runReconcile(service, events)),
             ).rejects.toThrow('wallet reconciliation discrepancies');
           },
         ),
@@ -278,7 +278,7 @@ describe('Wallet ledger invariants', () => {
             const sum = allEntries.reduce((s, e) => s + Number(e.amount), 0);
             expect(sum).toBe(0);
 
-            await runInTmp(() => runReconcile(service));
+            await runInTmp(() => runReconcile(service, events));
 
             const accs = await accountRepo.find();
             for (const acc of accs) {
@@ -297,5 +297,25 @@ describe('Wallet ledger invariants', () => {
     },
     30000,
   );
+
+  it('emits alert on log sum mismatch', async () => {
+    (events.emit as jest.Mock).mockClear();
+    const day = new Date(Date.now() - 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+    await runInTmp(async () => {
+      const dir = path.join(process.cwd(), '../storage/hand-logs');
+      fs.mkdirSync(dir, { recursive: true });
+      const file = path.join(dir, `${day}.jsonl`);
+      fs.writeFileSync(file, JSON.stringify({ accounts: { a: 5 } }) + '\n');
+      await expect(runReconcile(service, events)).rejects.toThrow(
+        'wallet reconciliation discrepancies',
+      );
+    });
+    expect(events.emit).toHaveBeenCalledWith(
+      'wallet.reconcile.mismatch',
+      { date: day, total: 5 },
+    );
+  });
 });
 

@@ -2,14 +2,18 @@
 <!-- Update service IDs in this file if PagerDuty services change -->
 
 The wallet service runs a daily reconciliation that compares the sum of journal
-entries with the persisted account balances. Any mismatch is logged so that
-operators can investigate.
+entries with the persisted account balances and validates that prior-day hand
+and tournament logs net to zero. Any mismatch is logged so that operators can
+investigate.
 
 ## Dashboard
 - Metabase: [Wallet Reconciliation](../analytics-dashboards.md)
 
 ## PagerDuty Escalation
 - Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->
+
+## Alerting
+- Event: `wallet.reconcile.mismatch` is published when log sums deviate from zero.
 
 ## Reviewing logs
 

@@ -42,8 +42,8 @@ Every business action writes equal and opposite `JournalEntry` rows so that the 
 ## Reconciliation Procedure
 
 1. Run `WalletService.reconcile()` which sums journal entries per account and compares them with the `balance` column.
-2. The job `backend/src/wallet/reconcile.job.ts` executes nightly and writes a report to `storage/reconcile-YYYY-MM-DD.json`.
-3. Any mismatched account causes the job to fail and alerts ops to investigate.
+2. The job `backend/src/wallet/reconcile.job.ts` runs daily at 00:00 UTC, scans prior-day hand and tournament logs, and writes a report to `storage/reconcile-YYYY-MM-DD.json`.
+3. Any mismatched account or non‑zero log total causes the job to fail and emit a `wallet.reconcile.mismatch` alert for investigation.
 
 ## 3-D Secure & Chargebacks
 
