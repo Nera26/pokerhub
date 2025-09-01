@@ -1,4 +1,4 @@
-import { Inject, Injectable, Optional } from '@nestjs/common';
+import { Inject, Injectable, Optional, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type Redis from 'ioredis';
 import { Repository } from 'typeorm';
@@ -24,7 +24,7 @@ import { FeatureFlagsService } from '../feature-flags/feature-flags.service';
 import { EventPublisher } from '../events/events.service';
 
 @Injectable()
-export class TournamentService {
+export class TournamentService implements OnModuleInit {
   private currentLevels = new Map<string, number>();
   private patchedLevels = new Map<
     string,
@@ -46,6 +46,37 @@ export class TournamentService {
     private readonly events: EventPublisher,
     @Optional() @Inject('REDIS_CLIENT') private readonly redis?: Redis,
   ) {}
+
+  async onModuleInit(): Promise<void> {
+    if (!this.redis) return;
+    const levelKeys = await this.redis.keys('tournament:*:currentLevel');
+    if (levelKeys.length) {
+      const values = await this.redis.mget(levelKeys);
+      for (let i = 0; i < levelKeys.length; i++) {
+        const key = levelKeys[i];
+        const value = values[i];
+        if (value !== null) {
+          const tournamentId = key.split(':')[1];
+          this.currentLevels.set(tournamentId, Number(value));
+        }
+      }
+    }
+    const patchKeys = await this.redis.keys('tournament:*:patchedLevels');
+    for (const key of patchKeys) {
+      const value = await this.redis.get(key);
+      if (!value) continue;
+      const tournamentId = key.split(':')[1];
+      const parsed = JSON.parse(value) as Record<string, {
+        smallBlind: number;
+        bigBlind: number;
+      }>;
+      const levelMap = new Map<number, { smallBlind: number; bigBlind: number }>();
+      for (const [lvl, blinds] of Object.entries(parsed)) {
+        levelMap.set(Number(lvl), blinds);
+      }
+      this.patchedLevels.set(tournamentId, levelMap);
+    }
+  }
 
   async list(): Promise<Tournament[]> {
     return this.tournaments.find();
@@ -206,6 +237,10 @@ export class TournamentService {
    */
   async handleLevelUp(tournamentId: string, level: number): Promise<void> {
     this.currentLevels.set(tournamentId, level);
+    await this.redis?.set(
+      `tournament:${tournamentId}:currentLevel`,
+      level.toString(),
+    );
   }
 
   getCurrentLevel(tournamentId: string): number {
@@ -228,6 +263,17 @@ export class TournamentService {
       this.patchedLevels.set(tournamentId, levels);
     }
     levels.set(level, { smallBlind, bigBlind });
+    await this.redis?.set(
+      `tournament:${tournamentId}:patchedLevels`,
+      JSON.stringify(
+        Object.fromEntries(
+          Array.from(levels.entries()).map(([lvl, blinds]) => [
+            lvl.toString(),
+            blinds,
+          ]),
+        ),
+      ),
+    );
   }
 
   getHotPatchedLevel(
