@@ -5,6 +5,7 @@
     - "ci / dr-trends"
     - "ci / workflow-sla"
     - "ci / ops-sla"
+    - "ci / ensure-dr-drill"
     - "ci / soak-metrics"
     - contracts
     - "deploy / preflight"
