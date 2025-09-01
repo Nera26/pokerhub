@@ -11,7 +11,14 @@ These scripts perform canary deployments and rollbacks to GKE.
   - `roles/cloudbuild.builds.editor` to trigger Cloud Build builds
   - `roles/artifactregistry.reader` and `roles/artifactregistry.writer` to pull/push images
 - **Images**: container images are built with Cloud Build and stored in Artifact Registry.
+  Set `ARTIFACT_REGISTRY` to the repository path, e.g. `us-docker.pkg.dev/<project>/<repo>`.
 
 ## Usage
 
 These scripts assume that `gcloud container clusters get-credentials` has been executed to set the kubectl context.
+Set `ARTIFACT_REGISTRY` before invoking any script, e.g.:
+
+```bash
+export ARTIFACT_REGISTRY=us-docker.pkg.dev/$GCP_PROJECT_ID/pokerhub
+bash deploy/canary.sh <image-tag>
+```
