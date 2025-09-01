@@ -1,4 +1,7 @@
 name: spectator-retention
+concurrency:
+  group: "spectator-retention"
+  cancel-in-progress: true
 
 on:
   schedule:

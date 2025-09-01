@@ -1,4 +1,7 @@
 name: check-dr-runbook
+concurrency:
+  group: "check-dr-runbook"
+  cancel-in-progress: true
 
 on:
   schedule:

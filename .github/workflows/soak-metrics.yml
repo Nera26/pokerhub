@@ -6,6 +6,9 @@
   workflow_dispatch:
 
 name: soak-metrics
+concurrency:
+  group: "soak-metrics"
+  cancel-in-progress: true
 
 jobs:
   check:

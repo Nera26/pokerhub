@@ -1,4 +1,7 @@
 name: ops-artifacts-verify
+concurrency:
+  group: "ops-artifacts-verify"
+  cancel-in-progress: true
 
 on:
   schedule:

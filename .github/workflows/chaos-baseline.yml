@@ -1,4 +1,7 @@
 name: chaos-baseline
+concurrency:
+  group: "chaos-baseline"
+  cancel-in-progress: true
 
 on:
   schedule:

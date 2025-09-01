@@ -1,4 +1,7 @@
 name: k6-table-action-soak
+concurrency:
+  group: "k6-table-action-soak"
+  cancel-in-progress: true
 
 on:
   schedule:

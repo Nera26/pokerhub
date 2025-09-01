@@ -1,4 +1,7 @@
 name: ws-soak-staging
+concurrency:
+  group: "ws-soak-staging"
+  cancel-in-progress: true
 
 on:
   schedule:

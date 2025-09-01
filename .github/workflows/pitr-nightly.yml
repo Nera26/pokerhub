@@ -1,4 +1,7 @@
 name: pitr-nightly
+concurrency:
+  group: "pitr-nightly"
+  cancel-in-progress: true
 
 on:
   schedule:

@@ -1,4 +1,7 @@
 name: ops-sla
+concurrency:
+  group: "ops-sla"
+  cancel-in-progress: true
 
 on:
   schedule:

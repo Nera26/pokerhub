@@ -1,4 +1,7 @@
 name: nightly-soak-chaos
+concurrency:
+  group: "nightly-soak-chaos"
+  cancel-in-progress: true
 
 on:
   schedule:

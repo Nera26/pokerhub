@@ -1,4 +1,7 @@
 name: nightly-chaos
+concurrency:
+  group: "nightly-chaos"
+  cancel-in-progress: true
 
 on:
   schedule:

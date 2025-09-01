@@ -1,4 +1,7 @@
 name: CI
+concurrency:
+  group: "CI"
+  cancel-in-progress: true
 
 on:
   pull_request:

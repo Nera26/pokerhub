@@ -1,4 +1,7 @@
 name: spectator-privacy-nightly
+concurrency:
+  group: "spectator-privacy-nightly"
+  cancel-in-progress: true
 
 on:
   schedule:

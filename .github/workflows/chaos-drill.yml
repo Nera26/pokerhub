@@ -1,4 +1,7 @@
 name: monthly-chaos-drill
+concurrency:
+  group: "monthly-chaos-drill"
+  cancel-in-progress: true
 
 on:
   schedule:

@@ -1,4 +1,7 @@
 name: restore-latest
+concurrency:
+  group: "restore-latest"
+  cancel-in-progress: true
 
 on:
   schedule:

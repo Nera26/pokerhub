@@ -1,4 +1,7 @@
 name: pg-restore-smoke
+concurrency:
+  group: "pg-restore-smoke"
+  cancel-in-progress: true
 
 on:
   schedule:

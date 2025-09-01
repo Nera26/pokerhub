@@ -1,4 +1,7 @@
 name: Archive analytics events
+concurrency:
+  group: "Archive analytics events"
+  cancel-in-progress: true
 
 on:
   schedule:

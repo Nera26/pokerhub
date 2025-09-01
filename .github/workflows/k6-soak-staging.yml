@@ -1,4 +1,7 @@
 name: k6-soak-staging
+concurrency:
+  group: "k6-soak-staging"
+  cancel-in-progress: true
 
 on:
   schedule:
