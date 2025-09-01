@@ -63,6 +63,7 @@ jobs:
             -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Check proof archive failed","source":"github-actions","severity":"error"}}'
 
   spectator-privacy:
+    if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

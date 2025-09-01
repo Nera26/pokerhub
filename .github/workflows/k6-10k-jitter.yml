@@ -55,7 +55,8 @@ jobs:
     needs:
     - ack-latency
     - check-proof-archive
-    uses: ../spectator-privacy.yml
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
     with:
       logs: ack-summary.json ack-telemetry.json
     secrets: inherit

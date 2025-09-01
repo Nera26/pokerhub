@@ -47,6 +47,7 @@ jobs:
         run: gcloud monitoring metrics write custom.googleapis.com/proof/archive_audit_success 0
 
   spectator-privacy:
+    if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

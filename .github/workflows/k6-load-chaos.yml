@@ -76,7 +76,8 @@ jobs:
     - load-test
     - chaos-test
     - check-proof-archive
-    uses: ../spectator-privacy.yml
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
     with:
       logs: load-summary.json load-metrics.json chaos-summary.json 
         chaos-metrics.json

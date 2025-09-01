@@ -49,6 +49,7 @@ jobs:
     needs:
     - check-proof-archive
   spectator-privacy:
+    if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

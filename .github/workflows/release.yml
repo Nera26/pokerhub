@@ -66,5 +66,6 @@ jobs:
           path: docs/player
 
   spectator-privacy:
+    if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
