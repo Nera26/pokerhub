@@ -1,6 +1,9 @@
 #!/usr/bin/env ts-node
 import { execSync } from 'child_process';
 import { createHash } from 'crypto';
+import { mkdtempSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 import { checkBucketRetention } from './bucket-retention';
 
 function requireEnv(name: string): string {
@@ -116,6 +119,59 @@ function checkProofArchiveMetrics(projectId: string) {
       throw new Error('manifest_hash metric missing hash label');
     }
   }
+}
+
+function checkProofSummaryManifest(
+  bucket: string,
+  key: string,
+  keyRing: string,
+  location: string,
+  version: string,
+) {
+  const base = `gs://${bucket}/latest`;
+  const summaryUri = `${base}/proof-summary.json`;
+  const manifestUri = `${base}/manifest.json`;
+  let summary: Buffer;
+  try {
+    summary = gcloud.run(`cat ${summaryUri}`, undefined) as Buffer;
+  } catch {
+    throw new Error(`Missing proof summary at ${summaryUri}`);
+  }
+  let manifestRaw: string;
+  try {
+    manifestRaw = gcloud.run(`cat ${manifestUri}`) as string;
+  } catch {
+    throw new Error(`Missing proof summary manifest at ${manifestUri}`);
+  }
+  let manifest: { sha256?: string; signature?: string } = {};
+  try {
+    manifest = JSON.parse(manifestRaw);
+  } catch {
+    throw new Error(`Unable to parse proof summary manifest at ${manifestUri}`);
+  }
+  const digest = createHash('sha256').update(summary).digest('hex');
+  if (manifest.sha256 !== digest) {
+    throw new Error('Proof summary checksum mismatch');
+  }
+  const dir = mkdtempSync(join(tmpdir(), 'proof-'));
+  const summaryFile = join(dir, 'summary.json');
+  const sigFile = join(dir, 'signature.bin');
+  writeFileSync(summaryFile, summary);
+  writeFileSync(sigFile, Buffer.from(manifest.signature || '', 'base64'));
+  try {
+    // Use SHA256 for deterministic verification to match computed digest
+    execSync(
+      `gcloud kms asymmetric-signature verify ` +
+        `--key=${key} --keyring=${keyRing} --location=${location} ` +
+        `--version=${version} --digest-algorithm=SHA256 ` +
+        `--plaintext-file=${summaryFile} --signature-file=${sigFile}`,
+      { stdio: 'ignore' },
+    );
+  } catch {
+    throw new Error('Proof summary signature verification failed');
+  }
+  assertFresh(manifestUri, 'proof summary manifest');
+  assertFresh(summaryUri, 'proof summary');
 }
 
 function checkSpectatorPrivacyMetric(projectId: string) {
@@ -365,6 +421,11 @@ function checkDrMetrics(bucket: string) {
 
 function main() {
   const proofBucket = requireEnv('PROOF_ARCHIVE_BUCKET');
+  const manifestBucket = requireEnv('PROOF_MANIFEST_BUCKET');
+  const manifestKey = requireEnv('PROOF_MANIFEST_KMS_KEY');
+  const manifestKeyring = requireEnv('PROOF_MANIFEST_KMS_KEYRING');
+  const manifestLocation = requireEnv('PROOF_MANIFEST_KMS_LOCATION');
+  const manifestVersion = requireEnv('PROOF_MANIFEST_KMS_VERSION');
   const spectatorBucket = requireEnv('SPECTATOR_PRIVACY_BUCKET');
   const runId = requireEnv('RUN_ID');
   const soakBucket = requireEnv('SOAK_TRENDS_BUCKET');
@@ -392,6 +453,13 @@ function main() {
 
   checkProofArchive(proofBucket);
   checkProofArchiveMetrics(projectId);
+  checkProofSummaryManifest(
+    manifestBucket,
+    manifestKey,
+    manifestKeyring,
+    manifestLocation,
+    manifestVersion,
+  );
   checkSpectatorLogs(spectatorBucket, runId);
   checkSpectatorPrivacyMetric(projectId);
   checkSoakMetrics(soakBucket);
@@ -414,6 +482,7 @@ if (typeof require !== 'undefined' && require.main === module) {
 export {
   checkProofArchive,
   checkProofArchiveMetrics,
+  checkProofSummaryManifest,
   checkSpectatorLogs,
   checkSpectatorPrivacyMetric,
   checkSoakMetrics,
