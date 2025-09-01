@@ -2,17 +2,18 @@ import http from 'k6/http';
 import { sleep } from 'k6';
 import { Gauge, Trend } from 'k6/metrics';
 
-const gcPause = new Gauge('gc_pause_ms');
 const latency = new Trend('latency');
-const memLeak = new Gauge('mem_leak');
+const gcPause = new Gauge('gc_pause_p95_ms');
+const heapGrowth = new Gauge('heap_growth_pct');
+const METRICS_FILE = __ENV.GC_METRICS_FILE || '../../metrics/soak_gc.jsonl';
 
 export const options = {
   vus: 50,
   duration: '24h',
   thresholds: {
-    gc_pause_ms: ['p(95)<50'],
     latency: ['p(95)<120'],
-    mem_leak: ['p(100)<1'],
+    gc_pause_p95_ms: ['value<50'],
+    heap_growth_pct: ['value<1'],
   },
 };
 
@@ -21,16 +22,21 @@ const grafanaPushUrl = __ENV.GRAFANA_PUSH_URL;
 
 export default function () {
   const res = http.get(`${BASE_URL}/tables/random`);
-  const gc = parseFloat(res.headers['X-GC-Pause'] || '0');
-  if (!isNaN(gc)) {
-    gcPause.add(gc);
-  }
-  const leak = parseFloat(res.headers['X-Mem-Leak'] || '0');
-  if (!isNaN(leak)) {
-    memLeak.add(leak);
-  }
   latency.add(res.timings.duration);
   sleep(1);
+}
+
+export function teardown() {
+  const text = open(METRICS_FILE);
+  const lines = text.trim().split('\n');
+  const summary = JSON.parse(lines[lines.length - 1] || '{}');
+  const gc = Number(summary.gc_p95_ms || 0);
+  const heap = Number(summary.heap_delta_pct || 0);
+  gcPause.add(gc);
+  heapGrowth.add(heap);
+  if (gc > 50 || heap > 1) {
+    throw new Error(`GC p95 ${gc}ms or heap growth ${heap}% exceeded thresholds`);
+  }
 }
 
 export function handleSummary(data) {
@@ -38,8 +44,8 @@ export function handleSummary(data) {
     return {};
   }
   const lat = data.metrics.latency?.values || {};
-  const leak = data.metrics.mem_leak?.values || {};
-  const body = `latency_p95_ms ${lat['p(95)'] || 0}\nmem_leak_pct ${leak['p(100)'] || 0}\n`;
+  const heap = data.metrics.heap_growth_pct?.values || {};
+  const body = `latency_p95_ms ${lat['p(95)'] || 0}\nheap_growth_pct ${heap.value || 0}\n`;
   http.post(`${grafanaPushUrl}/metrics/job/k6-soak`, body, {
     headers: { 'Content-Type': 'text/plain' },
   });
