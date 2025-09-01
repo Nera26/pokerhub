@@ -20,6 +20,8 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT }}
       - id: check
         run: npx ts-node scripts/check-soak-metrics.ts
+      - name: Analyze soak trends
+        run: npx ts-node scripts/analyze-soak-trends.ts metrics/
       - name: Prepare regression alert
         if: steps.check.outcome == 'failure'
         env:
