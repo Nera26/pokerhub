@@ -1,7 +1,7 @@
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { metrics } from '@opentelemetry/api';
@@ -326,6 +326,44 @@ export class LeaderboardService {
         finishes: Record<number, number>;
       }[]
     >(this.dataKey);
-    return cached ?? [];
+    if (cached) {
+      return cached;
+    }
+
+    const rows = await this.analytics.select<{
+      playerId: string;
+      rank: number;
+      points: number;
+      net: number;
+      bb100: number;
+      hours: number;
+      roi: number;
+      finishes?: any;
+    }>(
+      'SELECT playerId, rank, points, net, bb100, hours, roi, finishes FROM leaderboard ORDER BY rank LIMIT 100',
+    );
+    const ids = rows.map((r) => r.playerId);
+    const existing = await this._userRepo.find({
+      where: { id: In(ids), banned: false },
+      select: ['id'],
+    });
+    const allowed = new Set(existing.map((u) => u.id));
+    const top = rows
+      .filter((r) => allowed.has(r.playerId))
+      .map((r, idx) => ({
+        playerId: r.playerId,
+        rank: idx + 1,
+        points: r.points,
+        net: r.net,
+        bb100: r.bb100,
+        hours: r.hours,
+        roi: r.roi,
+        finishes:
+          typeof r.finishes === 'string'
+            ? (JSON.parse(r.finishes) as Record<number, number>)
+            : (r.finishes ?? {}),
+      }));
+    await this.cache.set(this.dataKey, top);
+    return top;
   }
 }
