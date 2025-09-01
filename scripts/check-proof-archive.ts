@@ -21,6 +21,34 @@ function requireEnv(name: string): string {
   return val;
 }
 
+function checkKms(bucket: string, expected: string) {
+  let out: string;
+  try {
+    out = execSync(`gsutil kms encryption gs://${bucket}`, {
+      encoding: 'utf-8',
+    });
+  } catch {
+    console.error('Unable to fetch bucket KMS metadata');
+    process.exit(1);
+  }
+  if (/has no default encryption key/i.test(out)) {
+    console.error('Bucket default KMS key not set');
+    process.exit(1);
+  }
+  const lines = out
+    .trim()
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const key = lines[lines.length - 1];
+  if (key !== expected) {
+    console.error(
+      `Bucket default KMS key mismatch: expected ${expected}, got ${key}`,
+    );
+    process.exit(1);
+  }
+}
+
 function checkReplication(bucket: string, secondary: string) {
   let metaRaw: string;
   try {
@@ -125,11 +153,13 @@ function main() {
     process.exit(1);
   }
   const secondary = requireEnv('SECONDARY_REGION');
+  const bucketKms = requireEnv('PROOF_ARCHIVE_KMS_KEY');
   const kmsKey = requireEnv('PROOF_MANIFEST_KMS_KEY');
   const kmsKeyring = requireEnv('PROOF_MANIFEST_KMS_KEYRING');
   const kmsLocation = requireEnv('PROOF_MANIFEST_KMS_LOCATION');
   const kmsVersion = requireEnv('PROOF_MANIFEST_KMS_VERSION');
 
+  checkKms(bucket, bucketKms);
   checkReplication(bucket, secondary);
 
   const prefixes = listPrefixes(bucket);
