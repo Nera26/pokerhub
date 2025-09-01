@@ -2,6 +2,11 @@ name: spectator-privacy
 
 on:
   workflow_call:
+    inputs:
+      logs:
+        description: Space-separated list of log files to process
+        required: true
+        type: string
     secrets:
       GCP_WORKLOAD_IDENTITY_PROVIDER:
         required: true
@@ -17,6 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SPECTATOR_LOGS_BUCKET: ${{ secrets.SPECTATOR_LOGS_BUCKET }}
+      LOGS: ${{ inputs.logs }}
     steps:
       - uses: actions/checkout@v4
       - uses: google-github-actions/auth@v2
@@ -26,15 +32,33 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
+      - name: Download log artifacts
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for log in $LOGS; do
+            base="${log%.*}"
+            gh run download $GITHUB_RUN_ID --name "$base-${GITHUB_SHA}" --dir . || true
+          done
       - uses: ./.github/actions/spectator-privacy-check
+      - name: Resolve log files
+        run: |
+          EXISTING=""
+          for log in $LOGS; do
+            if [ -f "$log" ]; then
+              EXISTING="$EXISTING $log"
+            fi
+          done
+          echo "LOGS=$EXISTING" >> $GITHUB_ENV
       - name: Sanitize logs
         if: always()
-        run: npx ts-node scripts/sanitize-spectator-logs.ts backend-tests.log frontend-tests.log integration.log property.log
+        run: npx ts-node scripts/sanitize-spectator-logs.ts $LOGS
       - name: DLP scan logs
         if: always()
         env:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
-        run: npx ts-node scripts/dlp-scan.ts backend-tests.log frontend-tests.log integration.log property.log
+        run: npx ts-node scripts/dlp-scan.ts $LOGS
       - name: Write run success metric
         if: always()
         run: |
@@ -45,23 +69,24 @@ jobs:
       - name: Verify sanitized logs
         if: always()
         run: |
-          if rg -i "userId|tableSecret|sessionToken|email|ipAddress|authToken" backend-tests.log frontend-tests.log integration.log property.log; then
+          if [ -n "$LOGS" ] && rg -i "userId|tableSecret|sessionToken|email|ipAddress|authToken" $LOGS; then
             echo "PII found in logs" >&2
             exit 1
           fi
       - name: Copy logs to spectator bucket
         if: always()
         run: |
-          gsutil cp backend-tests.log frontend-tests.log integration.log property.log dlp-scan.json gs://$SPECTATOR_LOGS_BUCKET/${{ github.run_id }}/
+          gsutil cp $LOGS dlp-scan.json gs://$SPECTATOR_LOGS_BUCKET/${{ github.run_id }}/
+      - name: Gather logs
+        if: always()
+        run: |
+          mkdir -p spectator-privacy
+          if [ -n "$LOGS" ]; then cp $LOGS spectator-privacy/; fi
+          cp dlp-scan.json spectator-privacy/
       - name: Upload logs as artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: spectator-privacy-logs
-          path: |
-            backend-tests.log
-            frontend-tests.log
-            integration.log
-            property.log
-            dlp-scan.json
+          path: spectator-privacy
           retention-days: 14
