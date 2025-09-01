@@ -4,7 +4,7 @@ PokerHub employs a commit–reveal scheme to ensure every shuffle can be indepen
 
 ## Key Modules
 - `backend/src/game/rng.ts` – implements `HandRNG` with SHA‑256 commitments and deterministic Fisher–Yates shuffling.
-- `backend/src/game/verify.ts` – CLI verifier that rebuilds decks and checks commitments.
+- `shared/verify` – reusable verifier library and CLI for rebuilding decks and checking commitments.
 
 ## Commit–Reveal Flow
 1. Server draws a 32‑byte seed and 16‑byte nonce using Google Cloud's Cloud RNG.
@@ -13,7 +13,7 @@ PokerHub employs a commit–reveal scheme to ensure every shuffle can be indepen
 
 ## Provable Fairness Checks
 1. Fetch `{ seed, nonce, commitment }` via `GET /hands/{id}/proof`.
-2. Run `npx ts-node backend/src/game/verify.ts <seedHex> <nonceHex> [commitment]`.
+2. Run `npx ts-node shared/verify/index.ts <seedHex> <nonceHex> [commitment]`.
 3. The script recomputes the commitment and deterministic deck. Any mismatch signals tampering.
 
 ## Audit Trail
@@ -30,9 +30,9 @@ Auditors can independently download and verify proofs from the public GCS bucket
 
 2. Run the verifier with the downloaded values:
 
-   ```sh
-   npx ts-node backend/src/game/verify.ts $(jq -r '.seed' proof.json) \
-     $(jq -r '.nonce' proof.json) $(jq -r '.commitment' proof.json)
-   ```
+    ```sh
+    npx ts-node shared/verify/index.ts $(jq -r '.seed' proof.json) \
+      $(jq -r '.nonce' proof.json) $(jq -r '.commitment' proof.json)
+    ```
 
 The script recomputes the commitment and deterministic deck; any mismatch signals tampering.

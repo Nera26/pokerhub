@@ -1,4 +1,4 @@
-import type { HandProof } from './types';
+import type { HandProof } from '../types';
 import { webcrypto as nodeCrypto } from 'crypto';
 
 const subtle =
@@ -68,5 +68,31 @@ export async function verifyProof(proof: HandProof): Promise<boolean> {
 export async function revealDeck(proof: HandProof): Promise<number[]> {
   const seed = hexToBytes(proof.seed);
   return shuffle(standardDeck(), seed);
+}
+
+if (require.main === module) {
+  (async () => {
+    const [seedHex, nonceHex, commitment] = process.argv.slice(2);
+    if (!seedHex || !nonceHex) {
+      console.error(
+        'Usage: ts-node shared/verify/index.ts <seedHex> <nonceHex> [commitment]'
+      );
+      process.exit(1);
+    }
+    const seed = hexToBytes(seedHex);
+    const nonce = hexToBytes(nonceHex);
+    const computed = await hashCommitment(seed, nonce);
+    if (commitment && commitment !== computed) {
+      console.error('Commitment mismatch');
+      process.exit(1);
+    }
+    const deck = await shuffle(standardDeck(), seed);
+    console.log(
+      JSON.stringify({ commitment: computed, deck: deck.join(' ') })
+    );
+  })().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
 }
 

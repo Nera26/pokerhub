@@ -24,6 +24,7 @@ jobs:
       DR_FAILOVER_SLA_DAYS: 30
       DR_RESTORE_SLA_DAYS: 30
       SOAK_SLA_HOURS: 24
+      RUN_SOAK_SMOKE: ${{ vars.RUN_SOAK_SMOKE || 'false' }}
       PG_RESTORE_SLA_MINUTES: 60
     steps:
       - uses: actions/checkout@v4
@@ -236,13 +237,10 @@ jobs:
           python -m pip install pyyaml >/dev/null
           python infra/observability/validate.py
 
-      - name: Run spectator privacy checks
-        uses: ./.github/workflows/spectator-privacy.yml
-        secrets:
-          GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          GCP_SERVICE_ACCOUNT: ${{ vars.GCP_SERVICE_ACCOUNT }}
-          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
+      - name: Run spectator privacy tests
+        uses: ./.github/actions/spectator-privacy-check
+        with:
+          node-version: 18
 
       # --- Canary, SLO check, promote/rollback ---
       - name: Run canary deploy
@@ -279,10 +277,42 @@ jobs:
         if: steps.metrics.outcome == 'success'
         run: echo "outcome=success" > outcome.txt
 
+      - name: Run DR failover
+        id: dr_failover
+        if: steps.metrics.outcome == 'success'
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+          SQL_REPLICA_INSTANCE: ${{ vars.SQL_REPLICA_INSTANCE }}
+          MEMORYSTORE_INSTANCE: ${{ vars.MEMORYSTORE_INSTANCE }}
+          CLOUD_DNS_ZONE: ${{ vars.CLOUD_DNS_ZONE }}
+          DB_RECORD_NAME: ${{ vars.DB_RECORD_NAME }}
+          REDIS_RECORD_NAME: ${{ vars.REDIS_RECORD_NAME }}
+        run: bash infra/disaster-recovery/failover.sh
+
+      - name: Notify on-call on failover script failure
+        if: failure() && steps.dr_failover.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            { "text": "🚫 Deployment failed: failover script failed for ${{ github.repository }}@${{ github.sha }}" }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: PagerDuty alert on failover script failure
+        if: failure() && steps.dr_failover.outcome == 'failure'
+        env:
+          ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+        run: |
+          curl -X POST https://events.pagerduty.com/v2/enqueue \
+            -H 'Content-Type: application/json' \
+            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"DR failover script failed during deployment","source":"github-actions","severity":"error"}}'
+
       - name: Promote canary
         if: steps.metrics.outcome == 'success'
         run: scripts/promote.sh
 
+      # Re-auth for any subsequent gcloud operations
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
@@ -291,6 +321,106 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      # Optional freshness gates and soak smoke trigger
+      - name: Get spectator privacy run ID
+        id: get_run_id
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN_ID=$(gh api \
+            repos/${{ github.repository }}/actions/workflows/spectator-privacy-nightly.yml/runs \
+            --jq '.workflow_runs[0].id')
+          echo "RUN_ID=$RUN_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Validate spectator privacy nightly run
+        id: spectator_privacy_nightly
+        env:
+          SLA_HOURS: 24
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          resp=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/spectator-privacy-nightly.yml/runs?per_page=1")
+          ts=$(echo "$resp" | jq -r '.workflow_runs[0].updated_at')
+          conclusion=$(echo "$resp" | jq -r '.workflow_runs[0].conclusion')
+          echo "timestamp=$ts" >> "$GITHUB_OUTPUT"
+          now=$(date -u +%s)
+          run_ts=$(date -d "$ts" -u +%s)
+          max_age=$((SLA_HOURS * 3600))
+          age=$((now - run_ts))
+          if [ "$conclusion" != "success" ]; then
+            echo "Latest spectator-privacy-nightly run concluded with $conclusion" >&2
+            exit 1
+          fi
+          if [ "$age" -gt "$max_age" ]; then
+            echo "Latest spectator-privacy-nightly run is older than ${SLA_HOURS}h" >&2
+            exit 1
+          fi
+
+      - name: Notify on-call on stale spectator privacy run
+        if: failure() && steps.spectator_privacy_nightly.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            { "text": "🚫 Deployment blocked: spectator-privacy-nightly workflow failed or stale for ${{ github.repository }}@${{ github.sha }}" }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Ensure recent soak success
+        id: soak_gate
+        env:
+          SLA_HOURS: ${{ env.SOAK_SLA_HOURS }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          resp=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/soak.yml/runs?per_page=1")
+          ts=$(echo "$resp" | jq -r '.workflow_runs[0].updated_at')
+          conclusion=$(echo "$resp" | jq -r '.workflow_runs[0].conclusion')
+          echo "timestamp=$ts" >> "$GITHUB_OUTPUT"
+          now=$(date -u +%s)
+          run_ts=$(date -d "$ts" -u +%s)
+          max_age=$((SLA_HOURS * 3600))
+          age=$((now - run_ts))
+          if [ "$conclusion" != "success" ]; then
+            echo "Latest soak run concluded with $conclusion" >&2
+            exit 1
+          fi
+          if [ "$age" -gt "$max_age" ]; then
+            echo "Latest soak run is older than ${SLA_HOURS}h" >&2
+            exit 1
+          fi
+
+      - name: Run soak-smoke
+        if: ${{ env.RUN_SOAK_SMOKE == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl -fsS -X POST -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
+            -d '{"ref":"main"}' \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/soak-smoke.yml/dispatches"
+          completed=0
+          for i in {1..30}; do
+            resp=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/actions/workflows/soak-smoke.yml/runs?per_page=1")
+            status=$(echo "$resp" | jq -r '.workflow_runs[0].status')
+            conclusion=$(echo "$resp" | jq -r '.workflow_runs[0].conclusion')
+            if [ "$status" = "completed" ]; then
+              completed=1
+              if [ "$conclusion" != "success" ]; then
+                echo "soak-smoke concluded with $conclusion" >&2
+                exit 1
+              fi
+              break
+            fi
+            sleep 10
+          done
+          if [ $completed -ne 1 ]; then
+            echo 'Timed out waiting for soak-smoke run' >&2
+            exit 1
+          fi
 
       - name: Verify ops artifacts
         id: verify_ops_artifacts
