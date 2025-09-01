@@ -17,11 +17,12 @@ async function run(options: RebuildOptions = {}): Promise<{
 }> {
   const days = options.days ?? 30;
   let app: INestApplicationContext | undefined;
-  const service = options.service ?? (await (async () => {
-    const { AppModule } = await import('../app.module');
-    app = await NestFactory.createApplicationContext(AppModule);
-    return app.get(LeaderboardService);
-  })());
+  const service: LeaderboardService = options.service ??
+    (await (async () => {
+      const { AppModule } = await import('../app.module');
+      app = await NestFactory.createApplicationContext(AppModule);
+      return app.get(LeaderboardService);
+    })());
 
   try {
     if (options.benchmark) {
