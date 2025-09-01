@@ -29,11 +29,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { API_CONTRACT_VERSION } from '@shared/constants';
 
-// User management (new endpoints)
-import { UsersController } from './routes/users.controller';
-import { UsersService } from './users/users.service';
-import { UserRepository } from './users/user.repository';
-
 // Infra / features
 import { MessagingModule } from './messaging/messaging.module';
 import { RedisModule } from './redis/redis.module';
@@ -134,11 +129,9 @@ class SecurityHeadersMiddleware implements NestMiddleware {
     AuthModule,
     FeatureFlagsModule,
   ],
-  controllers: [AppController, UsersController],
+  controllers: [AppController],
   providers: [
     AppService,
-    UsersService,
-    UserRepository,
     {
       provide: 'API_CONTRACT_VERSION',
       useValue: API_CONTRACT_VERSION,
