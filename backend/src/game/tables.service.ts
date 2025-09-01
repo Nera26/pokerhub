@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Table as TableEntity } from '../database/entities/table.entity';
 import type {
   Table as TableDto,
+  TableData,
   CreateTableRequest,
   UpdateTableRequest,
 } from '../schemas/tables';
@@ -19,6 +20,21 @@ export class TablesService {
     const now = Date.now();
     const all = await this.tables.find();
     return all.map((t) => this.toDto(t, now));
+  }
+
+  async getTable(id: string): Promise<TableData> {
+    const table = await this.tables.findOne({ where: { id } });
+    if (!table) {
+      throw new Error('Table not found');
+    }
+    return {
+      smallBlind: table.smallBlind,
+      bigBlind: table.bigBlind,
+      pot: 0,
+      communityCards: [],
+      players: [],
+      chatMessages: [],
+    };
   }
 
   async createTable(data: CreateTableRequest): Promise<TableDto> {
