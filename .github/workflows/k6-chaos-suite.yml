@@ -56,3 +56,8 @@ jobs:
         with:
           name: ${{ matrix.script }}-${{ github.run_id }}
           path: ${{ env.METRICS_DIR }}
+
+  soak-metrics:
+    needs: [k6, chaos]
+    uses: ../soak-metrics.yml
+    secrets: inherit

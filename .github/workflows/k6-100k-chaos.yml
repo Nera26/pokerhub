@@ -90,3 +90,8 @@ jobs:
           name: k6-100k-replay-${{ github.run_id }}
           path: load/metrics/base/replay
           retention-days: 7
+
+  soak-metrics:
+    needs: [chaos, replay]
+    uses: ../soak-metrics.yml
+    secrets: inherit

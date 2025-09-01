@@ -21,14 +21,19 @@ jobs:
           ACK_P95_MS: 120
         with:
           filename: load/k6-10k-tables.js
-          flags: --summary-export=ack-summary.json --out json=ack-telemetry.json
+          flags: --summary-export=ack-summary.json --out json=ack-metrics.json
       - name: Check thresholds
         run: ./load/check-thresholds.sh ack-summary.json
       - name: Upload artifacts
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: k6-10k-jitter
           path: |
             ack-summary.json
-            ack-telemetry.json
+            ack-metrics.json
+
+  soak-metrics:
+    needs: ack-latency
+    uses: ../soak-metrics.yml
+    secrets: inherit

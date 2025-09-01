@@ -29,3 +29,8 @@ jobs:
           path: |
             tournament-summary.json
             tournament-metrics.json
+
+  soak-metrics:
+    needs: tournament
+    uses: ../soak-metrics.yml
+    secrets: inherit

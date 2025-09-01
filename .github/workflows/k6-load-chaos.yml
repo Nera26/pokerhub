@@ -45,3 +45,8 @@ jobs:
           path: |
             chaos-summary.json
             chaos-metrics.json
+
+  soak-metrics:
+    needs: [load-test, chaos-test]
+    uses: ../soak-metrics.yml
+    secrets: inherit

@@ -10,3 +10,13 @@
     - check-proof-archive
     - "ci / ops-artifacts-verify"
     - spectator-retention
+    - "k6-100k-chaos / soak-metrics"
+    - "k6-10k-chaos / soak-metrics"
+    - "k6-10k-jitter / soak-metrics"
+    - "k6-chaos-suite / soak-metrics"
+    - "k6-latency-thresholds / soak-metrics"
+    - "k6-load-chaos / soak-metrics"
+    - "nightly-k6-metrics / soak-metrics"
+    - "k6-table-action-soak / soak-metrics"
+    - "k6-soak-staging / soak-metrics"
+    - "k6 tournament 10k / soak-metrics"

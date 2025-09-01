@@ -23,6 +23,14 @@ jobs:
         with:
           filename: load/k6-ws-soak.js
           flags: --summary-export=ws-soak-summary.json --out json=ws-soak-metrics.json
+      - name: Export ws soak artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ws-soak-metrics
+          path: |
+            ws-soak-summary.json
+            ws-soak-metrics.json
       - name: Upload metrics to GCS
         if: always()
         run: |
@@ -52,6 +60,14 @@ jobs:
         with:
           filename: load/k6-10k-tables.js
           flags: --summary-export=10k-summary.json --out json=10k-metrics.json
+      - name: Export 10k table artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tables-10k-metrics
+          path: |
+            10k-summary.json
+            10k-metrics.json
       - name: Upload metrics to GCS
         if: always()
         run: |
@@ -64,3 +80,8 @@ jobs:
             -H 'Content-Type: application/x-yaml' \
             --data-binary @infra/observability/pagerduty-burn-rate.yml \
             ${{ secrets.PAGERDUTY_WEBHOOK_URL }}
+
+  soak-metrics:
+    needs: [ws-soak, tables-10k]
+    uses: ../soak-metrics.yml
+    secrets: inherit

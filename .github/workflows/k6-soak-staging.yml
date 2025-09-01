@@ -20,11 +20,19 @@ jobs:
           filename: infra/tests/load/k6-soak.js
           flags: >-
             --summary-export=soak-summary.json
+            --out json=soak-metrics.json
             -o experimental-prometheus-rw=${{ secrets.GRAFANA_PROM_URL }}
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v3
         with:
           name: k6-soak-staging
-          path: soak-summary.json
+          path: |
+            soak-summary.json
+            soak-metrics.json
+
+  soak-metrics:
+    needs: http-soak
+    uses: ../soak-metrics.yml
+    secrets: inherit
 

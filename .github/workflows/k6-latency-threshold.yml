@@ -36,3 +36,8 @@ jobs:
           path: |
             summary.json
             metrics.json
+
+  soak-metrics:
+    needs: ack-latency
+    uses: ../soak-metrics.yml
+    secrets: inherit

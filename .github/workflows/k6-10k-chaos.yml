@@ -30,3 +30,8 @@ jobs:
         with:
           name: k6-10k-chaos-${{ github.run_id }}
           path: ${{ env.METRICS_DIR }}
+
+  soak-metrics:
+    needs: chaos
+    uses: ../soak-metrics.yml
+    secrets: inherit
