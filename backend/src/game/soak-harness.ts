@@ -2,8 +2,10 @@ import { io, Socket } from 'socket.io-client';
 import { createHash } from 'crypto';
 import { spawnSync } from 'child_process';
 import { performance, monitorEventLoopDelay } from 'perf_hooks';
+import { metrics } from '@opentelemetry/api';
 import { RoomManager } from './room.service';
 import type { GameAction } from '@shared/types';
+import type { InternalGameState } from './engine';
 
 interface HarnessOptions {
   sockets: number;
@@ -44,8 +46,19 @@ export class GameGatewaySoakHarness {
   private readonly trackers = new Map<string, AckTracker>();
   private readonly gcMonitor = monitorEventLoopDelay();
   private dropped = 0;
+  private replayFailures = 0;
   private readonly memSamples: number[] = [];
   private roomMgr = new RoomManager();
+
+  private static readonly meter = metrics.getMeter('game');
+  private static readonly droppedCounter =
+    GameGatewaySoakHarness.meter.createCounter?.('soak_dropped_frames_total', {
+      description: 'Frames dropped due to missed ACKs',
+    }) ?? ({ add() {} } as { add(n: number, attrs?: Record<string, unknown>): void });
+  private static readonly replayCounter =
+    GameGatewaySoakHarness.meter.createCounter?.('soak_replay_failures_total', {
+      description: 'Room replay mismatches after crash',
+    }) ?? ({ add() {} } as { add(n: number, attrs?: Record<string, unknown>): void });
 
   constructor(options?: Partial<HarnessOptions>) {
     this.opts = {
@@ -92,6 +105,10 @@ export class GameGatewaySoakHarness {
       query: { tableId, playerId },
     });
 
+    socket.on('disconnect', () => {
+      setTimeout(() => socket.connect(), 1000);
+    });
+
     socket.on('connect', () => {
       const action = this.createAction(tableId, playerId);
       const actionId = createHash('sha256')
@@ -110,6 +127,7 @@ export class GameGatewaySoakHarness {
       socket.on('action:ack', ackHandler);
       const timeout = setTimeout(() => {
         this.dropped++;
+        GameGatewaySoakHarness.droppedCounter.add(1, { tableId });
         socket.off('action:ack', ackHandler);
       }, 1000);
       this.trackers.set(actionId, {
@@ -120,13 +138,25 @@ export class GameGatewaySoakHarness {
     });
   }
 
-  /** Restart a room worker and verify replay from HandLog. */
-  private async restartWorker(tableId: string) {
-    await this.roomMgr.close(tableId);
-    const room = this.roomMgr.get(tableId);
-    const state = await room.replay();
-    if (!state) {
-      throw new Error(`replay failed for ${tableId}`);
+  /** Kill the room worker and verify replay from HandLog. */
+  private async crashAndReplay(tableId: string) {
+    const room = this.roomMgr.get(tableId) as any;
+    const before = (await room.getPublicState()) as InternalGameState;
+    const primary = room?.primary as any;
+    const pid = primary?.worker?.threadId;
+    if (pid) {
+      try {
+        process.kill(pid);
+      } catch {
+        // ignore if already dead
+      }
+    }
+    await new Promise((r) => setTimeout(r, 100));
+    const after = (await room.replay()) as InternalGameState;
+    if (JSON.stringify(before) !== JSON.stringify(after)) {
+      this.replayFailures++;
+      GameGatewaySoakHarness.replayCounter.add(1, { tableId });
+      throw new Error(`replay mismatch for ${tableId}`);
     }
   }
 
@@ -141,9 +171,13 @@ export class GameGatewaySoakHarness {
       this.spawnBot(i);
     }
     const restartTarget = 'table-0';
-    setTimeout(() => void this.restartWorker(restartTarget), 5000);
+    const killInterval = setInterval(
+      () => void this.crashAndReplay(restartTarget).catch(() => {}),
+      30000,
+    );
     await new Promise((r) => setTimeout(r, this.opts.duration * 1000));
     clearInterval(memInterval);
+    clearInterval(killInterval);
     const p95 = this.histogram.percentile(95);
     const start = this.memSamples[0];
     const end = this.memSamples[this.memSamples.length - 1];
@@ -155,6 +189,9 @@ export class GameGatewaySoakHarness {
     }
     if (this.dropped > 0) {
       throw new Error(`Detected ${this.dropped} dropped frames`);
+    }
+    if (this.replayFailures > 0) {
+      throw new Error(`Detected ${this.replayFailures} replay failures`);
     }
     if (memDelta > 1) {
       throw new Error(`Heap increased by ${memDelta.toFixed(2)}% > 1%`);

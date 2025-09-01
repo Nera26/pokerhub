@@ -79,6 +79,23 @@ memory:  { "rss": 520000000, "heapUsed": 210000000 }
 gc:      { "before": {"heapUsed": 210000000}, "after": {"heapUsed": 180000000} }
 ```
 
+## Game Gateway Soak Harness
+
+`backend/src/game/soak-harness.ts` drives actions against the Game Gateway
+while periodically killing the room worker process. After each crash the
+harness reconnects, invokes `room.replay()` and asserts the reconstructed state
+matches the pre‑crash snapshot. Metrics are emitted for
+`soak_dropped_frames_total` and `soak_replay_failures_total`.
+
+Run locally:
+
+```bash
+ts-node backend/src/game/soak-harness.ts
+```
+
+Defaults (socket count, tables, duration, etc.) can be overridden via
+environment variables as described in the source file.
+
 ## Regression reports
 
 The [`high-scale-regression` workflow](../.github/workflows/high-scale-regression.yml)
