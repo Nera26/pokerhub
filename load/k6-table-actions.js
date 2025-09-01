@@ -8,10 +8,15 @@ const ACTION_COUNTER = new Counter('table_actions');
 
 const TABLES = Number(__ENV.TABLES || 10);
 const thresholds = {
-  ack_latency: [`p(95)<${__ENV.ACK_P95_MS || 500}`],
+  ack_latency: [
+    `p(50)<${__ENV.ACK_P50_MS || 40}`,
+    `p(95)<${__ENV.ACK_P95_MS || 120}`,
+    `p(99)<${__ENV.ACK_P99_MS || 200}`,
+  ],
+  table_actions: ['rate>2.5'],
 };
 for (let i = 0; i < TABLES; i++) {
-  thresholds[`table_actions{table:${i}}`] = ['rate>=2.5'];
+  thresholds[`table_actions{table:${i}}`] = ['rate>2.5'];
 }
 
 export const options = {

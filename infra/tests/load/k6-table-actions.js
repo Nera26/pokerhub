@@ -6,6 +6,7 @@ import { sleep } from 'k6';
 const ACK_LATENCY = new Trend('ack_latency', true);
 const DROPPED_FRAMES = new Counter('dropped_frames');
 const RATE_LIMIT_ERRORS = new Counter('rate_limit_errors');
+const ACTION_COUNTER = new Counter('table_actions');
 const gcPause = new Gauge('gc_pause_p95_ms');
 const heapGrowth = new Gauge('heap_growth_pct');
 const METRICS_FILE = __ENV.GC_METRICS_FILE || '../../metrics/soak_gc.jsonl';
@@ -14,7 +15,12 @@ export const options = {
   vus: Number(__ENV.SOCKETS || 80000),
   duration: __ENV.DURATION || '5m',
   thresholds: {
-    ack_latency: [`p(95)<${__ENV.ACK_P95_MS || 120}`],
+    ack_latency: [
+      `p(50)<${__ENV.ACK_P50_MS || 40}`,
+      `p(95)<${__ENV.ACK_P95_MS || 120}`,
+      `p(99)<${__ENV.ACK_P99_MS || 200}`,
+    ],
+    table_actions: ['rate>2.5'],
     gc_pause_p95_ms: ['value<50'],
     heap_growth_pct: ['value<1'],
   },
@@ -41,6 +47,7 @@ export default function () {
             RATE_LIMIT_ERRORS.add(1);
           } else {
             ACK_LATENCY.add(Date.now() - start);
+            ACTION_COUNTER.add(1);
           }
           socket.off('message', handler);
         };
