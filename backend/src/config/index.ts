@@ -8,3 +8,4 @@ export { default as rabbitmqConfig } from './rabbitmq.config';
 export { default as authConfig } from './auth.config';
 export { default as rateLimitConfig } from './rate-limit.config';
 export { default as kycConfig } from './kyc.config';
+export { default as geoConfig } from './geo.config';

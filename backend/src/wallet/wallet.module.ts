@@ -6,6 +6,8 @@ import { Disbursement } from './disbursement.entity';
 import { SettlementJournal } from './settlement-journal.entity';
 import { WalletService } from './wallet.service';
 import { SettlementService } from './settlement.service';
+import { ChargebackMonitor } from './chargeback.service';
+import { AnalyticsModule } from '../analytics/analytics.module';
 import { WalletController } from '../routes/wallet.controller';
 import { WebhookController } from './webhook.controller';
 import { RateLimitGuard } from '../routes/rate-limit.guard';
@@ -14,6 +16,7 @@ import { RedisModule } from '../redis/redis.module';
 import { startPayoutWorker } from './payout.worker';
 import { PaymentProviderService } from './payment-provider.service';
 import { KycService } from './kyc.service';
+import { GeoIpService } from '../auth/geoip.service';
 
 @Injectable()
 class PayoutWorker implements OnModuleInit {
@@ -35,6 +38,7 @@ class PayoutWorker implements OnModuleInit {
     ]),
     EventsModule,
     RedisModule,
+    AnalyticsModule,
   ],
   providers: [
     WalletService,
@@ -43,6 +47,8 @@ class PayoutWorker implements OnModuleInit {
     KycService,
     SettlementService,
     RateLimitGuard,
+    ChargebackMonitor,
+    GeoIpService,
   ],
   controllers: [WalletController, WebhookController],
   exports: [WalletService, KycService, SettlementService],

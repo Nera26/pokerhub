@@ -2,6 +2,8 @@ import { io, Socket } from 'socket.io-client';
 import { createHash } from 'crypto';
 import { spawnSync } from 'child_process';
 import { performance, monitorEventLoopDelay } from 'perf_hooks';
+import * as fs from 'fs';
+import { join } from 'path';
 import { metrics } from '@opentelemetry/api';
 import { RoomManager } from './room.service';
 import type { GameAction } from '@shared/types';
@@ -48,6 +50,11 @@ export class GameGatewaySoakHarness {
   private dropped = 0;
   private replayFailures = 0;
   private readonly memSamples: number[] = [];
+  private lastElu = performance.eventLoopUtilization();
+  private readonly metricsPath = join(
+    __dirname,
+    '../../../infra/metrics/soak_gc.jsonl',
+  );
   private roomMgr = new RoomManager();
 
   private static readonly meter = metrics.getMeter('game');
@@ -162,11 +169,37 @@ export class GameGatewaySoakHarness {
 
   async run() {
     this.setupNetworkImpairment();
-    this.memSamples.push(process.memoryUsage().heapUsed);
-    const memInterval = setInterval(
-      () => this.memSamples.push(process.memoryUsage().heapUsed),
-      1000,
+    const metricsDir = join(__dirname, '../../../infra/metrics');
+    fs.mkdirSync(metricsDir, { recursive: true });
+    fs.writeFileSync(this.metricsPath, '');
+    const firstMem = process.memoryUsage();
+    const firstElu = performance.eventLoopUtilization(this.lastElu);
+    this.lastElu = firstElu;
+    this.memSamples.push(firstMem.heapUsed);
+    fs.appendFileSync(
+      this.metricsPath,
+      JSON.stringify({
+        ts: Date.now(),
+        heapUsed: firstMem.heapUsed,
+        rss: firstMem.rss,
+        elu: firstElu.utilization,
+      }) + '\n',
     );
+    const memInterval = setInterval(() => {
+      const mem = process.memoryUsage();
+      const elu = performance.eventLoopUtilization(this.lastElu);
+      this.lastElu = elu;
+      this.memSamples.push(mem.heapUsed);
+      fs.appendFileSync(
+        this.metricsPath,
+        JSON.stringify({
+          ts: Date.now(),
+          heapUsed: mem.heapUsed,
+          rss: mem.rss,
+          elu: elu.utilization,
+        }) + '\n',
+      );
+    }, 1000);
     for (let i = 0; i < this.opts.sockets; i++) {
       this.spawnBot(i);
     }
@@ -184,6 +217,14 @@ export class GameGatewaySoakHarness {
     const memDelta = ((end - start) / start) * 100;
     const gcP95 = this.gcMonitor.percentile(95) / 1e6; // ns -> ms
     this.gcMonitor.disable();
+    fs.appendFileSync(
+      this.metricsPath,
+      JSON.stringify({
+        ts: Date.now(),
+        gc_p95_ms: gcP95,
+        heap_delta_pct: memDelta,
+      }) + '\n',
+    );
     if (p95 > this.opts.ackP95) {
       throw new Error(`ACK p95 ${p95.toFixed(2)}ms exceeds ${this.opts.ackP95}ms`);
     }

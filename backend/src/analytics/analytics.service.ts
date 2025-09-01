@@ -104,6 +104,13 @@ const WalletReconcileMismatchSchema = new ParquetSchema({
   total: { type: 'DOUBLE' },
 });
 
+const WalletChargebackFlagSchema = new ParquetSchema({
+  accountId: { type: 'UTF8' },
+  deviceId: { type: 'UTF8' },
+  count: { type: 'INT64' },
+  limit: { type: 'INT64' },
+});
+
 const ParquetSchemas: Record<string, ParquetSchema> = {
   'hand.start': HandStartSchema,
   'hand.end': HandEndSchema,
@@ -121,6 +128,7 @@ const ParquetSchemas: Record<string, ParquetSchema> = {
   'antiCheat.flag': AntiCheatFlagSchema,
   'wallet.velocity.limit': WalletVelocityLimitSchema,
   'wallet.reconcile.mismatch': WalletReconcileMismatchSchema,
+  'wallet.chargeback_flag': WalletChargebackFlagSchema,
 };
 
 @Injectable()

@@ -24,6 +24,7 @@ import { AdminGuard } from './admin.guard';
 import { AuthRateLimitMiddleware } from './rate-limit.middleware';
 import { SecurityHeadersMiddleware } from './security.middleware';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { GeoIpService } from './geoip.service';
 
 @Injectable()
 class KycWorker implements OnModuleInit {
@@ -64,9 +65,10 @@ function providerFactory(config: ConfigService): CountryProvider {
     AuthService,
     AuthGuard,
     AdminGuard,
+    GeoIpService,
   ],
   controllers: [AuthController],
-  exports: [KycService, AuthGuard, AdminGuard],
+  exports: [KycService, AuthGuard, AdminGuard, GeoIpService],
 })
 export class AuthModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
