@@ -42,3 +42,10 @@ jobs:
         with:
           name: artillery-summary
           path: artillery-summary.json
+
+  spectator-privacy:
+    needs: [k6, artillery]
+    uses: ../spectator-privacy.yml
+    with:
+      logs: k6-summary.json artillery-summary.json
+    secrets: inherit

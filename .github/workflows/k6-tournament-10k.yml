@@ -29,3 +29,10 @@ jobs:
           path: |
             tournament-summary.json
             tournament-metrics.json
+
+  spectator-privacy:
+    needs: tournament
+    uses: ../spectator-privacy.yml
+    with:
+      logs: tournament-summary.json tournament-metrics.json
+    secrets: inherit

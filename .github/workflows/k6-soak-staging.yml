@@ -28,3 +28,10 @@ jobs:
           name: k6-soak-staging
           path: soak-summary.json
 
+  spectator-privacy:
+    needs: http-soak
+    uses: ../spectator-privacy.yml
+    with:
+      logs: soak-summary.json
+    secrets: inherit
+

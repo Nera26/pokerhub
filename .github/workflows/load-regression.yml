@@ -192,3 +192,10 @@ jobs:
         with:
           name: chaos-${{ matrix.scenario }}-summary
           path: chaos-${{ matrix.scenario }}.json
+
+  spectator-privacy:
+    needs: [tables-10k, packet-loss, chaos-regression]
+    uses: ../spectator-privacy.yml
+    with:
+      logs: backend-tests.log frontend-tests.log
+    secrets: inherit
