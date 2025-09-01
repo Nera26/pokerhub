@@ -254,6 +254,45 @@ jobs:
           title: "SLA breached: spectator-privacy-nightly"
           content-filepath: spectator-privacy-nightly-sla.md
 
+      - name: Check spectator-retention SLA
+        id: spectator-retention
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: spectator-retention.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
+      - name: Prepare spectator-retention SLA alert
+        if: failure() && steps.spectator-retention.outcome == 'failure'
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          cat <<'EOF' > spectator-retention-sla.md
+          Workflow: ${{ steps.spectator-retention.outputs.workflow }}
+          Last Run: ${{ steps.spectator-retention.outputs.timestamp }}
+          Conclusion: ${{ steps.spectator-retention.outputs.conclusion }}
+          EOF
+          jq -n --arg channel "$SLACK_CHANNEL_ID" \
+            --arg text "spectator-retention.yml SLA check failed. Last run: ${{ steps.spectator-retention.outputs.timestamp }} (conclusion: ${{ steps.spectator-retention.outputs.conclusion }})." \
+            '{channel: $channel, text: $text}' > spectator-retention-slack.json
+
+      - name: Slack alert (spectator-retention SLA)
+        if: failure() && steps.spectator-retention.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: spectator-retention-slack.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+      - name: Create issue for spectator-retention SLA
+        if: failure() && steps.spectator-retention.outcome == 'failure'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "SLA breached: spectator-retention"
+          content-filepath: spectator-retention-sla.md
+
       - name: Get spectator privacy run ID
         id: get_run_id
         env:
