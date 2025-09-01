@@ -18,7 +18,12 @@ on:
         required: true
 
 jobs:
+  check-proof-archive:
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
+
   verify:
+    needs: check-proof-archive
     runs-on: ubuntu-latest
     env:
       PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}

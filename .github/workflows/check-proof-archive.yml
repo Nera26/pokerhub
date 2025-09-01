@@ -2,6 +2,10 @@ name: check-proof-archive
 
 on:
   pull_request:
+  workflow_call:
+    secrets:
+      PROOF_ARCHIVE_BUCKET:
+        required: true
 
 jobs:
   check-proof-archive:
