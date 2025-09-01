@@ -33,4 +33,36 @@ export class FeatureFlagsService {
   async delete(key: string): Promise<void> {
     await this.redis.del(this.prefix + key);
   }
+
+  private roomKey(tableId: string, flag: string): string {
+    return `room:${tableId}:${flag}`;
+  }
+
+  private tourneyKey(tourneyId: string, flag: string): string {
+    return `tourney:${tourneyId}:${flag}`;
+  }
+
+  getRoom(tableId: string, flag: string) {
+    return this.get(this.roomKey(tableId, flag));
+  }
+
+  setRoom(tableId: string, flag: string, value: boolean) {
+    return this.set(this.roomKey(tableId, flag), value);
+  }
+
+  deleteRoom(tableId: string, flag: string) {
+    return this.delete(this.roomKey(tableId, flag));
+  }
+
+  getTourney(tourneyId: string, flag: string) {
+    return this.get(this.tourneyKey(tourneyId, flag));
+  }
+
+  setTourney(tourneyId: string, flag: string, value: boolean) {
+    return this.set(this.tourneyKey(tourneyId, flag), value);
+  }
+
+  deleteTourney(tourneyId: string, flag: string) {
+    return this.delete(this.tourneyKey(tourneyId, flag));
+  }
 }

@@ -2,7 +2,9 @@ import { handleResponse } from './client';
 import { getBaseUrl } from '@/lib/base-url';
 import {
   FeatureFlagsResponseSchema,
+  FeatureFlagSchema,
   type FeatureFlagsResponse,
+  type FeatureFlag,
 } from '@shared/types';
 import { serverFetch } from '@/lib/server-fetch';
 
@@ -30,4 +32,36 @@ export async function getFeatureFlags(): Promise<FeatureFlagsResponse> {
     window.localStorage.setItem('feature-flags', JSON.stringify(cache));
   }
   return cache;
+}
+
+export async function setRoomFeatureFlag(
+  tableId: string,
+  key: string,
+  value: boolean,
+): Promise<FeatureFlag> {
+  const baseUrl = getBaseUrl();
+  return handleResponse(
+    serverFetch(`${baseUrl}/feature-flags/room/${tableId}/${key}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value }),
+    }),
+    FeatureFlagSchema,
+  );
+}
+
+export async function setTourneyFeatureFlag(
+  tourneyId: string,
+  key: string,
+  value: boolean,
+): Promise<FeatureFlag> {
+  const baseUrl = getBaseUrl();
+  return handleResponse(
+    serverFetch(`${baseUrl}/feature-flags/tourney/${tourneyId}/${key}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value }),
+    }),
+    FeatureFlagSchema,
+  );
 }

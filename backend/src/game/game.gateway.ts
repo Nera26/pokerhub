@@ -225,6 +225,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     tableId = parsedTableId;
     const gameAction = wire as GameActionPayload;
 
+    if (
+      (await this.flags?.get('dealing')) === false ||
+      (await this.flags?.getRoom(tableId, 'dealing')) === false
+    ) {
+      this.enqueue(client, 'server:Error', 'dealing disabled');
+      this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+      this.recordAckLatency(start, tableId);
+      return;
+    }
+
     const room = this.rooms.get(tableId);
     await room.apply(gameAction);
     const state = await room.getPublicState();
@@ -550,7 +560,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleReplay(@ConnectedSocket() client: Socket) {
     return GameGateway.tracer.startActiveSpan('ws.replay', async (span) => {
       span.setAttribute('socket.id', client.id);
-      if ((await this.flags?.get('dealing')) === false) {
+      if (
+        (await this.flags?.get('dealing')) === false ||
+        (await this.flags?.getRoom('default', 'dealing')) === false
+      ) {
         this.enqueue(client, 'server:Error', 'dealing disabled');
         span.end();
         return;
@@ -576,7 +589,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return GameGateway.tracer.startActiveSpan('ws.resume', async (span) => {
       span.setAttribute('socket.id', client.id);
       const from = body?.tick ?? 0;
-      if ((await this.flags?.get('dealing')) === false) {
+      if (
+        (await this.flags?.get('dealing')) === false ||
+        (await this.flags?.getRoom('default', 'dealing')) === false
+      ) {
         this.enqueue(client, 'server:Error', 'dealing disabled');
         span.end();
         return;

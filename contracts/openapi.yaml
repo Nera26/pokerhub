@@ -753,6 +753,94 @@ paths:
       responses:
         '204':
           description: Flag deleted
+
+  /feature-flags/room/{tableId}/{key}:
+    put:
+      summary: Set room feature flag
+      parameters:
+        - in: path
+          name: tableId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: key
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeatureFlagRequest'
+      responses:
+        '200':
+          description: Flag set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureFlag'
+    delete:
+      summary: Delete room feature flag
+      parameters:
+        - in: path
+          name: tableId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: key
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Flag deleted
+
+  /feature-flags/tourney/{tourneyId}/{key}:
+    put:
+      summary: Set tournament feature flag
+      parameters:
+        - in: path
+          name: tourneyId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: key
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeatureFlagRequest'
+      responses:
+        '200':
+          description: Flag set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureFlag'
+    delete:
+      summary: Delete tournament feature flag
+      parameters:
+        - in: path
+          name: tourneyId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: key
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Flag deleted
 components:
   securitySchemes:
     bearerAuth:

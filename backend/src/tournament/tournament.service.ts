@@ -130,8 +130,12 @@ export class TournamentService {
     return this.rebuys.apply(stack, chips, cost);
   }
 
-  async settleBounty(currentBounty: number) {
-    if ((await this.flags.get('settlement')) === false) {
+  async settleBounty(currentBounty: number, tournamentId?: string) {
+    if (
+      (await this.flags.get('settlement')) === false ||
+      (tournamentId &&
+        (await this.flags.getTourney(tournamentId, 'settlement')) === false)
+    ) {
       return { playerAward: 0, newBounty: currentBounty };
     }
     return this.pko.settleBounty(currentBounty);
