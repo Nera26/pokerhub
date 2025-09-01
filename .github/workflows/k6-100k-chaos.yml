@@ -35,6 +35,18 @@ jobs:
       - name: Sync metrics to GCS
         if: always()
         run: gcloud storage cp --recursive "$METRICS_DIR" "gs://${{ secrets.CHAOS_TRENDS_BUCKET }}/$(basename "$METRICS_DIR")/"
+      - name: Upload k6 summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-summary-${{ github.sha }}
+          path: load/metrics/latest/k6-summary.json
+      - name: Upload k6 metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-metrics-${{ github.sha }}
+          path: load/metrics/latest/k6-metrics.json
       - name: Upload metrics
         if: always()
         uses: actions/upload-artifact@v4
@@ -66,6 +78,11 @@ jobs:
       - name: Artifact info
         if: always()
         run: echo "Metrics artifact: k6-100k-chaos-${{ github.run_id }}" >> "$GITHUB_STEP_SUMMARY"
+
+  soak-metrics:
+    needs: chaos
+    uses: ../soak-metrics.yml
+    secrets: inherit
   replay:
     needs: chaos
     runs-on: ubuntu-latest

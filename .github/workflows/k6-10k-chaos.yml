@@ -24,12 +24,29 @@ jobs:
         run: echo "METRICS_DIR=$(ls -td load/metrics/*/ | head -n 1)" >> $GITHUB_ENV
       - name: Check thresholds
         run: ./load/check-thresholds.sh "$METRICS_DIR/k6-summary.json" | tee -a "$GITHUB_STEP_SUMMARY"
-      - name: Upload metrics
+      - name: Upload k6 summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-summary-${{ github.sha }}
+          path: ${{ env.METRICS_DIR }}/k6-summary.json
+      - name: Upload k6 metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-metrics-${{ github.sha }}
+          path: ${{ env.METRICS_DIR }}/k6-metrics.json
+      - name: Upload metrics directory
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: k6-10k-chaos-${{ github.run_id }}
           path: ${{ env.METRICS_DIR }}
+
+  soak-metrics:
+    needs: chaos
+    uses: ../soak-metrics.yml
+    secrets: inherit
 
   spectator-privacy:
     needs: chaos

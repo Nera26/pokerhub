@@ -30,11 +30,20 @@ jobs:
         with:
           filename: load/k6-swarm.js
           flags: --summary-export=summary.json --summary-trend-stats="avg,med,min,max,p(50),p(95),p(99)" --out json=metrics.json
-      - name: Upload artifacts
+      - name: Upload swarm summary
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: k6-swarm
-          path: |
-            summary.json
-            metrics.json
+          name: summary-${{ github.sha }}
+          path: summary.json
+      - name: Upload swarm metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: metrics-${{ github.sha }}
+          path: metrics.json
+
+  soak-metrics:
+    needs: swarm
+    uses: ../soak-metrics.yml
+    secrets: inherit

@@ -21,12 +21,17 @@ jobs:
           flags: >-
             --summary-export=soak-summary.json
             -o experimental-prometheus-rw=${{ secrets.GRAFANA_PROM_URL }}
-      - name: Upload artifacts
+      - name: Upload soak summary
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: k6-soak-staging
+          name: soak-summary-${{ github.sha }}
           path: soak-summary.json
+
+  soak-metrics:
+    needs: http-soak
+    uses: ../soak-metrics.yml
+    secrets: inherit
 
   spectator-privacy:
     needs: http-soak

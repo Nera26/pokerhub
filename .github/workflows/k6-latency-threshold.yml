@@ -28,14 +28,23 @@ jobs:
           flags: --summary-export=summary.json --summary-trend-stats="avg,med,min,max,p(95),p(99)" --out json=metrics.json
       - name: Check thresholds
         run: ./load/check-thresholds.sh summary.json
-      - name: Upload artifacts
+      - name: Upload latency summary
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: k6-ack-latency
-          path: |
-            summary.json
-            metrics.json
+          name: summary-${{ github.sha }}
+          path: summary.json
+      - name: Upload latency metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: metrics-${{ github.sha }}
+          path: metrics.json
+
+  soak-metrics:
+    needs: ack-latency
+    uses: ../soak-metrics.yml
+    secrets: inherit
 
   spectator-privacy:
     needs: ack-latency
