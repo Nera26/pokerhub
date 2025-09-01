@@ -12,6 +12,8 @@ Handle anomalies in player engagement metrics such as DAU, MAU, and rake trends.
 ## Playbook
 1. Verify ClickHouse ingestion jobs are healthy.
 2. Re-run analytics ETL for missing data.
+3. Confirm the Parquet archive contains the latest daily file under
+   `storage/events/archive/`.
 3. Escalate to data engineering if metrics remain inconsistent.
 
 Refer to [Error Budget Procedures](../error-budget-procedures.md) if data gaps impact SLOs.

@@ -3,5 +3,8 @@
   "private": true,
   "scripts": {
     "test": "TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\",\\\"allowImportingTsExtensions\\\":true}\" TS_NODE_PREFER_TS_EXTS=1 node --test --require ts-node/register test/*.spec.js test/*.spec.ts"
+  },
+  "dependencies": {
+    "parquetjs-lite": "^0.8.7"
   }
 }
