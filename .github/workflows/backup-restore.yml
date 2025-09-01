@@ -33,6 +33,11 @@ jobs:
           dr_backup_restore_rto_seconds $RTO_SECONDS
           dr_backup_restore_rpo_seconds $RPO_SECONDS
           METRICS
+      - name: Publish metrics to Cloud Monitoring
+        run: |
+          source restore-backup.metrics
+          gcloud monitoring metrics write custom.googleapis.com/dr/rto "$RTO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/rpo "$RPO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v3

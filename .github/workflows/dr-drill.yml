@@ -156,11 +156,11 @@ jobs:
           FAILOVER: ${{ steps.metrics.outputs.failover }}
           PRIMARY_RESTORE: ${{ steps.metrics.outputs.primary_restore }}
         run: |
-          gcloud monitoring metrics write custom.googleapis.com/dr/rto "$RTO"
-          gcloud monitoring metrics write custom.googleapis.com/dr/rpo_snapshot "$RPO_SNAP"
-          gcloud monitoring metrics write custom.googleapis.com/dr/rpo_wal "$RPO_WAL"
-          gcloud monitoring metrics write custom.googleapis.com/dr/failover "$FAILOVER"
-          gcloud monitoring metrics write custom.googleapis.com/dr/primary_restore "$PRIMARY_RESTORE"
+          gcloud monitoring metrics write custom.googleapis.com/dr/rto "$RTO" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/rpo_snapshot "$RPO_SNAP" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/rpo_wal "$RPO_WAL" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/failover "$FAILOVER" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/primary_restore "$PRIMARY_RESTORE" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
 
       - name: PagerDuty alert on failure
         if: failure()

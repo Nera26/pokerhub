@@ -50,6 +50,11 @@ jobs:
             echo "RPO exceeds 5 minutes" >&2
             exit 1
           fi
+      - name: Publish metrics to Cloud Monitoring
+        run: |
+          source dr-restore.metrics
+          gcloud monitoring metrics write custom.googleapis.com/dr/rto "$RTO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/rpo "$RPO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
       - name: Upload metrics to GCS
         id: upload_metrics
         if: success()

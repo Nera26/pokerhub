@@ -55,8 +55,8 @@ jobs:
       - name: Publish metrics to Cloud Monitoring
         run: |
           source infra/disaster-recovery/drill.metrics
-          gcloud monitoring metrics write custom.googleapis.com/drill/rto "$RTO_SECONDS"
-          gcloud monitoring metrics write custom.googleapis.com/drill/rpo "$RPO_SECONDS"
+          gcloud monitoring metrics write custom.googleapis.com/dr/rto "$RTO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/rpo "$RPO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
       - name: Append results to runbook
         if: success()
         env:

@@ -52,6 +52,13 @@ jobs:
             echo "Restore duration exceeds 30 minutes" >&2; exit 1; fi; \
           if [ "$SNAPSHOT_AGE_SECONDS" -gt 300 ]; then \
             echo "Snapshot age exceeds 5 minutes" >&2; exit 1; fi
+      - name: Publish metrics to Cloud Monitoring
+        run: |
+          source restore.metrics
+          gcloud monitoring metrics write custom.googleapis.com/dr/rto "$RESTORE_DURATION_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/rpo "$SNAPSHOT_AGE_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/restore_duration "$RESTORE_DURATION_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/snapshot_age "$SNAPSHOT_AGE_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v3
