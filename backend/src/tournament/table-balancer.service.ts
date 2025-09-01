@@ -54,9 +54,9 @@ export class TableBalancerService {
     const max = Math.max(...counts);
     const min = Math.min(...counts);
     if (max - min > 1) {
+      const key = `tourney:${tournamentId}:lastMoved`;
       let recentlyMoved = new Map<string, number>();
       if (this.redis) {
-        const key = `tourney:${tournamentId}:lastMoved`;
         const data = await this.redis.hgetall(key);
         recentlyMoved = new Map(
           Object.entries(data).map(([k, v]) => [k, Number(v)]),
@@ -65,15 +65,35 @@ export class TableBalancerService {
         recentlyMoved =
           this.localRecentlyMoved.get(tournamentId) ?? new Map<string, number>();
       }
+
+      for (const [playerId, last] of recentlyMoved) {
+        if (currentHand - last > avoidWithin) {
+          recentlyMoved.delete(playerId);
+        }
+      }
+
       await this.tournamentService.balanceTournament(
         tournamentId,
         currentHand,
         avoidWithin,
         recentlyMoved,
       );
-      if (!this.redis) {
+
+      if (this.redis) {
+        if (recentlyMoved.size === 0) {
+          await this.redis.del(key);
+        } else {
+          await this.redis.hset(
+            key,
+            Object.fromEntries(
+              Array.from(recentlyMoved.entries()).map(([k, v]) => [k, v.toString()]),
+            ),
+          );
+        }
+      } else {
         this.localRecentlyMoved.set(tournamentId, recentlyMoved);
       }
+
       return true;
     }
     return false;
