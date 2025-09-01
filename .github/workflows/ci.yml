@@ -909,7 +909,25 @@ jobs:
           curl -X POST -H 'Content-Type: application/json' -d @pd.json https://events.pagerduty.com/v2/enqueue
 
   ops-artifacts-verify:
-    needs: [ops-preflight, ops-sla, workflow-sla, dr-trends, spectator-privacy]
     if: ${{ always() }}
+    needs:
+      - ops-preflight
+      - ops-sla
+      - workflow-sla
+      - dr-trends
+      - spectator-privacy
     uses: ./.github/workflows/ops-artifacts-verify.yml
     secrets: inherit
+
+      PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+      PROOF_MANIFEST_BUCKET: ${{ secrets.PROOF_MANIFEST_BUCKET }}
+      SPECTATOR_LOGS_BUCKET: ${{ secrets.SPECTATOR_LOGS_BUCKET }}
+      SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+      DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      PAGERDUTY_ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+      SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
