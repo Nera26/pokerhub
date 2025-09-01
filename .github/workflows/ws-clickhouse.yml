@@ -4,38 +4,47 @@ on:
   workflow_dispatch:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   staging-clickhouse:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Start proxy with packet loss and jitter
-        run: |
-          docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 ghcr.io/shopify/toxiproxy
-          UPSTREAM=staging.pokerhub:80 ./load/toxiproxy-soak.sh
-      - name: Run 10k table WS scenario exporting to ClickHouse
-        uses: grafana/k6-action@v0.2.0
-        env:
-          WS_URL: ws://localhost:3001
-          TABLES: 10000
-          SOCKETS: 80000
-          PACKET_LOSS: 0.05
-          JITTER_MS: 200
-          CLICKHOUSE_DSN: ${{ secrets.CLICKHOUSE_DSN }}
-        with:
-          filename: load/k6-10k-tables-clickhouse.js
-          flags: --summary-export=clickhouse-summary.json --out json=clickhouse-telemetry.json --out xk6-clickhouse=$CLICKHOUSE_DSN
-          docker-image: ghcr.io/grafana/xk6-output-clickhouse:latest
-      - name: Upload artifacts
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: ws-clickhouse
-          path: |
-            clickhouse-summary.json
-            clickhouse-telemetry.json
+    - uses: actions/checkout@v4
+    - name: Start proxy with packet loss and jitter
+      run: |
+        docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 ghcr.io/shopify/toxiproxy
+        UPSTREAM=staging.pokerhub:80 ./load/toxiproxy-soak.sh
+    - name: Run 10k table WS scenario exporting to ClickHouse
+      uses: grafana/k6-action@v0.2.0
+      env:
+        WS_URL: ws://localhost:3001
+        TABLES: 10000
+        SOCKETS: 80000
+        PACKET_LOSS: 0.05
+        JITTER_MS: 200
+        CLICKHOUSE_DSN: ${{ secrets.CLICKHOUSE_DSN }}
+      with:
+        filename: load/k6-10k-tables-clickhouse.js
+        flags: --summary-export=clickhouse-summary.json --out 
+          json=clickhouse-telemetry.json --out xk6-clickhouse=$CLICKHOUSE_DSN
+        docker-image: ghcr.io/grafana/xk6-output-clickhouse:latest
+    - name: Upload artifacts
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: ws-clickhouse
+        path: |
+          clickhouse-summary.json
+          clickhouse-telemetry.json
 
+    needs:
+    - check-proof-archive
   spectator-privacy:
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:
       logs: backend-tests.log frontend-tests.log integration.log property.log
+    needs:
+    - check-proof-archive

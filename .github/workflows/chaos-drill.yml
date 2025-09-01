@@ -5,40 +5,52 @@ concurrency:
 
 on:
   schedule:
-    - cron: '0 0 1 * *'
+  - cron: '0 0 1 * *'
   workflow_dispatch:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   chaos:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Run k6 latency chaos
-        uses: grafana/k6-action@v0.2.0
-        with:
-          filename: load/chaos/k6-latency.js
-          flags: --vus 50 --duration 1m --summary-export=k6-latency.json
-      - name: Install Artillery
-        run: npm install -g artillery@2
-      - name: Run Artillery packet loss test
-        run: artillery run load/chaos/artillery-packet-loss.yml --output artillery-packet-loss.json
-      - name: Upload chaos artifacts
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: chaos-drill
-          path: |
-            k6-latency.json
-            artillery-packet-loss.json
+    - uses: actions/checkout@v4
+    - name: Run k6 latency chaos
+      uses: grafana/k6-action@v0.2.0
+      with:
+        filename: load/chaos/k6-latency.js
+        flags: --vus 50 --duration 1m --summary-export=k6-latency.json
+    - name: Install Artillery
+      run: npm install -g artillery@2
+    - name: Run Artillery packet loss test
+      run: artillery run load/chaos/artillery-packet-loss.yml --output 
+        artillery-packet-loss.json
+    - name: Upload chaos artifacts
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: chaos-drill
+        path: |
+          k6-latency.json
+          artillery-packet-loss.json
 
+    needs:
+    - check-proof-archive
   soak-metrics:
-    needs: chaos
+    needs:
+    - chaos
+    - check-proof-archive
     if: ${{ always() }}
     uses: ./.github/workflows/soak-metrics.yml
     secrets: inherit
 
   spectator-privacy:
-    needs: [chaos, soak-metrics]
+    needs:
+    - chaos
+    - soak-metrics
+    - check-proof-archive
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

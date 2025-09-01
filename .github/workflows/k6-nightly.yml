@@ -5,108 +5,117 @@ concurrency:
 
 on:
   schedule:
-    - cron: '0 3 * * *'
+  - cron: '0 3 * * *'
   workflow_dispatch:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   ws-soak:
     runs-on: ubuntu-latest
     env:
       METRICS_URL: http://localhost:3000/metrics
     steps:
-      - uses: actions/checkout@v4
-      - uses: google-github-actions/auth@v2
-        with:
-          credentials_json: '${{ secrets.GCP_SA_KEY }}'
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ vars.GCP_PROJECT_ID }}
-      - name: Run ws soak test
-        uses: grafana/k6-action@v0.2.0
-        with:
-          filename: load/k6-ws-soak.js
-          flags: --summary-export=ws-soak-summary.json --out json=ws-soak-metrics.json
-      - name: Upload metrics to GCS
-        if: always()
-        run: |
-          gsutil cp ws-soak-summary.json gs://${{ vars.K6_METRICS_BUCKET }}/ws-soak/summary-${GITHUB_RUN_ID}.json
-          gsutil cp ws-soak-metrics.json gs://${{ vars.K6_METRICS_BUCKET }}/ws-soak/metrics-${GITHUB_RUN_ID}.json
-      - name: Upload ws soak summary
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ws-soak-summary-${{ github.sha }}
-          path: ws-soak-summary.json
-      - name: Upload ws soak metrics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ws-soak-metrics-${{ github.sha }}
-          path: ws-soak-metrics.json
-      - name: PagerDuty alert
-        if: failure()
-        run: |
-          curl -X POST \
-            -H 'Content-Type: application/x-yaml' \
-            --data-binary @infra/observability/pagerduty-burn-rate.yml \
-            ${{ secrets.PAGERDUTY_WEBHOOK_URL }}
+    - uses: actions/checkout@v4
+    - uses: google-github-actions/auth@v2
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+    - uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ vars.GCP_PROJECT_ID }}
+    - name: Run ws soak test
+      uses: grafana/k6-action@v0.2.0
+      with:
+        filename: load/k6-ws-soak.js
+        flags: --summary-export=ws-soak-summary.json --out 
+          json=ws-soak-metrics.json
+    - name: Upload metrics to GCS
+      if: always()
+      run: |
+        gsutil cp ws-soak-summary.json gs://${{ vars.K6_METRICS_BUCKET }}/ws-soak/summary-${GITHUB_RUN_ID}.json
+        gsutil cp ws-soak-metrics.json gs://${{ vars.K6_METRICS_BUCKET }}/ws-soak/metrics-${GITHUB_RUN_ID}.json
+    - name: Upload ws soak summary
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ws-soak-summary-${{ github.sha }}
+        path: ws-soak-summary.json
+    - name: Upload ws soak metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ws-soak-metrics-${{ github.sha }}
+        path: ws-soak-metrics.json
+    - name: PagerDuty alert
+      if: failure()
+      run: |
+        curl -X POST \
+          -H 'Content-Type: application/x-yaml' \
+          --data-binary @infra/observability/pagerduty-burn-rate.yml \
+          ${{ secrets.PAGERDUTY_WEBHOOK_URL }}
 
+    needs:
+    - check-proof-archive
   tables-10k:
     runs-on: ubuntu-latest
-    needs: ws-soak
+    needs:
+    - ws-soak
+    - check-proof-archive
     steps:
-      - uses: actions/checkout@v4
-      - uses: google-github-actions/auth@v2
-        with:
-          credentials_json: '${{ secrets.GCP_SA_KEY }}'
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ vars.GCP_PROJECT_ID }}
-      - name: Run 10k tables test
-        uses: grafana/k6-action@v0.2.0
-        with:
-          filename: load/k6-10k-tables.js
-          flags: --summary-export=10k-summary.json --out json=10k-metrics.json
-      - name: Upload metrics to GCS
-        if: always()
-        run: |
-          gsutil cp 10k-summary.json gs://${{ vars.K6_METRICS_BUCKET }}/10k-tables/summary-${GITHUB_RUN_ID}.json
-          gsutil cp 10k-metrics.json gs://${{ vars.K6_METRICS_BUCKET }}/10k-tables/metrics-${GITHUB_RUN_ID}.json
-      - name: Upload 10k tables summary
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: tables-10k-summary-${{ github.sha }}
-          path: 10k-summary.json
-      - name: Upload 10k tables metrics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: tables-10k-metrics-${{ github.sha }}
-          path: 10k-metrics.json
-      - name: PagerDuty alert
-        if: failure()
-        run: |
-          curl -X POST \
-            -H 'Content-Type: application/x-yaml' \
-          --data-binary @infra/observability/pagerduty-burn-rate.yml \
-            ${{ secrets.PAGERDUTY_WEBHOOK_URL }}
+    - uses: actions/checkout@v4
+    - uses: google-github-actions/auth@v2
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+    - uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ vars.GCP_PROJECT_ID }}
+    - name: Run 10k tables test
+      uses: grafana/k6-action@v0.2.0
+      with:
+        filename: load/k6-10k-tables.js
+        flags: --summary-export=10k-summary.json --out json=10k-metrics.json
+    - name: Upload metrics to GCS
+      if: always()
+      run: |
+        gsutil cp 10k-summary.json gs://${{ vars.K6_METRICS_BUCKET }}/10k-tables/summary-${GITHUB_RUN_ID}.json
+        gsutil cp 10k-metrics.json gs://${{ vars.K6_METRICS_BUCKET }}/10k-tables/metrics-${GITHUB_RUN_ID}.json
+    - name: Upload 10k tables summary
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: tables-10k-summary-${{ github.sha }}
+        path: 10k-summary.json
+    - name: Upload 10k tables metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: tables-10k-metrics-${{ github.sha }}
+        path: 10k-metrics.json
+    - name: PagerDuty alert
+      if: failure()
+      run: |
+        curl -X POST \
+          -H 'Content-Type: application/x-yaml' \
+        --data-binary @infra/observability/pagerduty-burn-rate.yml \
+          ${{ secrets.PAGERDUTY_WEBHOOK_URL }}
 
   soak-metrics:
-    needs: tables-10k
+    needs:
+    - tables-10k
+    - check-proof-archive
     if: ${{ always() }}
     uses: ../soak-metrics.yml
     secrets: inherit
 
   spectator-privacy:
-    needs: tables-10k
+    needs:
+    - tables-10k
+    - check-proof-archive
     uses: ../spectator-privacy.yml
     with:
-      logs: ws-soak-summary.json ws-soak-metrics.json 10k-summary.json 10k-metrics.json
+      logs: ws-soak-summary.json ws-soak-metrics.json 10k-summary.json 
+        10k-metrics.json
     secrets: inherit
 
-  spectator-privacy:
-    uses: ./.github/workflows/spectator-privacy.yml
-    secrets: inherit
-    with:
-      logs: backend-tests.log frontend-tests.log integration.log property.log

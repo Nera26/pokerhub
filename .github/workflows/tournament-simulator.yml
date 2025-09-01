@@ -3,29 +3,37 @@ name: tournament simulator
 on:
   push:
     paths:
-      - 'backend/src/scripts/tournament-simulator.ts'
-      - 'docs/tournament-handbook.md'
-      - '.github/workflows/tournament-simulator.yml'
+    - 'backend/src/scripts/tournament-simulator.ts'
+    - 'docs/tournament-handbook.md'
+    - '.github/workflows/tournament-simulator.yml'
   pull_request:
     paths:
-      - 'backend/src/scripts/tournament-simulator.ts'
-      - 'docs/tournament-handbook.md'
-      - '.github/workflows/tournament-simulator.yml'
+    - 'backend/src/scripts/tournament-simulator.ts'
+    - 'docs/tournament-handbook.md'
+    - '.github/workflows/tournament-simulator.yml'
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Validate structures
-        run: |
-          node -e "const fs=require('fs'),{execSync}=require('child_process');const md=fs.readFileSync('docs/tournament-handbook.md','utf8');const blocks=[...md.matchAll(/```json\\n([\s\S]*?)```/g)];let failed=false;for(const [,json] of blocks){const cfg=JSON.parse(json);if(!cfg.expectedDuration) continue;const args=['--levels',cfg.levels,'--levelMinutes',cfg.levelMinutes,'--increment',cfg.increment];if(cfg.entrants) args.push('--entrants',cfg.entrants);if(cfg.runs) args.push('--runs',cfg.runs);const out=execSync(`npx ts-node backend/src/scripts/tournament-simulator.ts ${args.join(' ')}`,{encoding:'utf8'});const res=JSON.parse(out);const diff=Math.abs(res.averageDuration-cfg.expectedDuration)/cfg.expectedDuration;if(diff>0.05){console.error(`${cfg.name} expected ${cfg.expectedDuration}, got ${res.averageDuration}`);failed=true;}}if(failed) process.exit(1);"
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+    - name: Validate structures
+      run: |
+        node -e "const fs=require('fs'),{execSync}=require('child_process');const md=fs.readFileSync('docs/tournament-handbook.md','utf8');const blocks=[...md.matchAll(/```json\\n([\s\S]*?)```/g)];let failed=false;for(const [,json] of blocks){const cfg=JSON.parse(json);if(!cfg.expectedDuration) continue;const args=['--levels',cfg.levels,'--levelMinutes',cfg.levelMinutes,'--increment',cfg.increment];if(cfg.entrants) args.push('--entrants',cfg.entrants);if(cfg.runs) args.push('--runs',cfg.runs);const out=execSync(`npx ts-node backend/src/scripts/tournament-simulator.ts ${args.join(' ')}`,{encoding:'utf8'});const res=JSON.parse(out);const diff=Math.abs(res.averageDuration-cfg.expectedDuration)/cfg.expectedDuration;if(diff>0.05){console.error(`${cfg.name} expected ${cfg.expectedDuration}, got ${res.averageDuration}`);failed=true;}}if(failed) process.exit(1);"
 
+    needs:
+    - check-proof-archive
   spectator-privacy:
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:
       logs: backend-tests.log frontend-tests.log integration.log property.log
+    needs:
+    - check-proof-archive

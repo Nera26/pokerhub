@@ -1,8 +1,7 @@
----
 "on":
   workflow_call:
   schedule:
-    - cron: "0 0 * * *"
+  - cron: "0 0 * * *"
   workflow_dispatch:
 
 name: soak-metrics
@@ -11,91 +10,99 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ vars.GCP_PROJECT_ID }}
-      - id: check
-        run: npx ts-node scripts/check-soak-metrics.ts
-      - id: trend
-        env:
-          SOAK_TRENDS_WINDOW: ${{ vars.SOAK_TRENDS_WINDOW }}
-          SOAK_TRENDS_DEVIATION_PCT: ${{ vars.SOAK_TRENDS_DEVIATION_PCT }}
-        run: |
-          set -o pipefail
-          npx ts-node scripts/check-soak-trend-regression.ts 2>&1 | tee soak-trend-regression.log
-      - name: Analyze soak trends
-        run: npx ts-node scripts/analyze-soak-trends.ts metrics/
-      - name: Prepare regression alert
-        if: steps.check.outcome == 'failure'
-        env:
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-        run: |
-          msg=$(jq -r '.regressions[].message' soak-regression.json | paste -sd '; ' -)
-          jq -n --arg channel "$SLACK_CHANNEL_ID" --arg text "Soak metrics regression detected: $msg" '{channel:$channel, text:$text}' > slack.json
-          printf "Soak metrics regression detected\n\n\`\`\`\n%s\n\`\`\`\n" "$(cat soak-regression.json)" > soak-regression.md
-      - name: Slack alert
-        if: steps.check.outcome == 'failure'
-        uses: slackapi/slack-github-action@v1
-        with:
-          method: chat.postMessage
-          payload-file-path: slack.json
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      - name: Open soak regression issue
-        if: steps.check.outcome == 'failure'
-        uses: peter-evans/create-issue-from-file@v4
-        with:
-          title: "SLA breached: soak metrics"
-          content-filepath: soak-regression.md
-      - name: Prepare trend regression alert
-        if: steps.trend.outcome == 'failure'
-        env:
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-        run: |
-          msg=$(cat soak-trend-regression.log | paste -sd '; ' -)
-          jq -n --arg channel "$SLACK_CHANNEL_ID" --arg text "Soak trend regression detected: $msg" '{channel:$channel, text:$text}' > slack-trend.json
-          printf "Soak trend regression detected\\n\\n\`\`\`\n%s\n\`\`\`\n" "$(cat soak-trend-regression.log)" > soak-trend-regression.md
-      - name: Slack alert (trend)
-        if: steps.trend.outcome == 'failure'
-        uses: slackapi/slack-github-action@v1
-        with:
-          method: chat.postMessage
-          payload-file-path: slack-trend.json
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      - name: Open soak trend regression issue
-        if: steps.trend.outcome == 'failure'
-        uses: peter-evans/create-issue-from-file@v4
-        with:
-          title: "SLA breached: soak trends"
-          content-filepath: soak-trend-regression.md
-      - name: Upload soak summary
-        if: always() && hashFiles('soak-summary.json') != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: soak-summary
-          path: soak-summary.json
-      - name: Publish soak summary
-        if: always() && hashFiles('soak-summary.json') != ''
-        env:
-          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
-        run: |
-          gcloud storage cp soak-summary.json "gs://${SOAK_TRENDS_BUCKET}/soak-summary-${GITHUB_RUN_ID}.json"
-      - name: Load soak summary to BigQuery
-        if: always() && hashFiles('soak-summary.json') != ''
-        run: |
-          bq load --source_format=NEWLINE_DELIMITED_JSON \
-            --schema=infra/analytics/soak_trends.schema.json \
-            ops_metrics.soak_trends soak-summary.json
+    - uses: actions/checkout@v4
+    - uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+    - uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ vars.GCP_PROJECT_ID }}
+    - id: check
+      run: npx ts-node scripts/check-soak-metrics.ts
+    - id: trend
+      env:
+        SOAK_TRENDS_WINDOW: ${{ vars.SOAK_TRENDS_WINDOW }}
+        SOAK_TRENDS_DEVIATION_PCT: ${{ vars.SOAK_TRENDS_DEVIATION_PCT }}
+      run: |
+        set -o pipefail
+        npx ts-node scripts/check-soak-trend-regression.ts 2>&1 | tee soak-trend-regression.log
+    - name: Analyze soak trends
+      run: npx ts-node scripts/analyze-soak-trends.ts metrics/
+    - name: Prepare regression alert
+      if: steps.check.outcome == 'failure'
+      env:
+        SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+      run: |
+        msg=$(jq -r '.regressions[].message' soak-regression.json | paste -sd '; ' -)
+        jq -n --arg channel "$SLACK_CHANNEL_ID" --arg text "Soak metrics regression detected: $msg" '{channel:$channel, text:$text}' > slack.json
+        printf "Soak metrics regression detected\n\n\`\`\`\n%s\n\`\`\`\n" "$(cat soak-regression.json)" > soak-regression.md
+    - name: Slack alert
+      if: steps.check.outcome == 'failure'
+      uses: slackapi/slack-github-action@v1
+      with:
+        method: chat.postMessage
+        payload-file-path: slack.json
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+    - name: Open soak regression issue
+      if: steps.check.outcome == 'failure'
+      uses: peter-evans/create-issue-from-file@v4
+      with:
+        title: "SLA breached: soak metrics"
+        content-filepath: soak-regression.md
+    - name: Prepare trend regression alert
+      if: steps.trend.outcome == 'failure'
+      env:
+        SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+      run: |
+        msg=$(cat soak-trend-regression.log | paste -sd '; ' -)
+        jq -n --arg channel "$SLACK_CHANNEL_ID" --arg text "Soak trend regression detected: $msg" '{channel:$channel, text:$text}' > slack-trend.json
+        printf "Soak trend regression detected\\n\\n\`\`\`\n%s\n\`\`\`\n" "$(cat soak-trend-regression.log)" > soak-trend-regression.md
+    - name: Slack alert (trend)
+      if: steps.trend.outcome == 'failure'
+      uses: slackapi/slack-github-action@v1
+      with:
+        method: chat.postMessage
+        payload-file-path: slack-trend.json
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+    - name: Open soak trend regression issue
+      if: steps.trend.outcome == 'failure'
+      uses: peter-evans/create-issue-from-file@v4
+      with:
+        title: "SLA breached: soak trends"
+        content-filepath: soak-trend-regression.md
+    - name: Upload soak summary
+      if: always() && hashFiles('soak-summary.json') != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: soak-summary
+        path: soak-summary.json
+    - name: Publish soak summary
+      if: always() && hashFiles('soak-summary.json') != ''
+      env:
+        SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+      run: |
+        gcloud storage cp soak-summary.json "gs://${SOAK_TRENDS_BUCKET}/soak-summary-${GITHUB_RUN_ID}.json"
+    - name: Load soak summary to BigQuery
+      if: always() && hashFiles('soak-summary.json') != ''
+      run: |
+        bq load --source_format=NEWLINE_DELIMITED_JSON \
+          --schema=infra/analytics/soak_trends.schema.json \
+          ops_metrics.soak_trends soak-summary.json
 
+    needs:
+    - check-proof-archive
   spectator-privacy:
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
+    needs:
+    - check-proof-archive

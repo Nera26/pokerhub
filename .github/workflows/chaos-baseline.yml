@@ -5,55 +5,68 @@ concurrency:
 
 on:
   schedule:
-    - cron: '0 1 * * *'
+  - cron: '0 1 * * *'
   workflow_dispatch:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   baseline:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Install k6 and Artillery
-        run: npm install -g k6 artillery
-      - uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-      - name: Run 10k chaos baseline
-        run: ./load/run-10k-chaos.sh
-        env:
-          TABLES: 10000
-          RNG_SEED: ${{ github.run_id }}
-      - name: Resolve metrics dir
-        run: echo "METRICS_DIR=$(readlink -f load/metrics/latest)" >> $GITHUB_ENV
-      - name: Analyze chaos trends
-        run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-chaos-trends.ts "$METRICS_DIR"
-        env:
-          CHAOS_TRENDS_BUCKET: ${{ secrets.CHAOS_TRENDS_BUCKET }}
-      - name: Sync metrics to GCS
-        if: always()
-        run: gcloud storage cp --recursive "$METRICS_DIR" "gs://${{ secrets.CHAOS_TRENDS_BUCKET }}/$(basename "$METRICS_DIR")/"
-      - name: Upload metrics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: chaos-baseline-${{ github.run_id }}
-          path: ${{ env.METRICS_DIR }}
-          retention-days: 7
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+    - name: Install k6 and Artillery
+      run: npm install -g k6 artillery
+    - uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+    - uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+    - name: Run 10k chaos baseline
+      run: ./load/run-10k-chaos.sh
+      env:
+        TABLES: 10000
+        RNG_SEED: ${{ github.run_id }}
+    - name: Resolve metrics dir
+      run: echo "METRICS_DIR=$(readlink -f load/metrics/latest)" >> $GITHUB_ENV
+    - name: Analyze chaos trends
+      run: npx ts-node --compiler-options '{"module":"commonjs"}' 
+        scripts/analyze-chaos-trends.ts "$METRICS_DIR"
+      env:
+        CHAOS_TRENDS_BUCKET: ${{ secrets.CHAOS_TRENDS_BUCKET }}
+    - name: Sync metrics to GCS
+      if: always()
+      run: gcloud storage cp --recursive "$METRICS_DIR" "gs://${{ 
+        secrets.CHAOS_TRENDS_BUCKET }}/$(basename "$METRICS_DIR")/"
+    - name: Upload metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: chaos-baseline-${{ github.run_id }}
+        path: ${{ env.METRICS_DIR }}
+        retention-days: 7
 
+    needs:
+    - check-proof-archive
   soak-metrics:
-    needs: baseline
+    needs:
+    - baseline
+    - check-proof-archive
     if: ${{ always() }}
     uses: ./.github/workflows/soak-metrics.yml
     secrets: inherit
 
   spectator-privacy:
-    needs: [baseline, soak-metrics]
+    needs:
+    - baseline
+    - soak-metrics
+    - check-proof-archive
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

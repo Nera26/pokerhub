@@ -5,44 +5,53 @@ concurrency:
 
 on:
   schedule:
-    - cron: '15 1 * * *'
+  - cron: '15 1 * * *'
   workflow_dispatch:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   pitr:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-      - name: Run nightly PITR backup
-        run: bash infra/disaster-recovery/tests/pitr-nightly.sh | tee pitr-nightly.log
-        env:
-          PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-          PG_INSTANCE_ID: ${{ vars.PG_INSTANCE_ID }}
-          CLICKHOUSE_BUCKET: ${{ vars.CLICKHOUSE_BUCKET }}
-          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
-      - name: Upload logs
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: pitr-nightly
-          path: pitr-nightly.log
-      - name: Notify Slack on failure
-        if: failure()
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          payload: |
-            { "text": "Nightly PITR backup failed for ${GITHUB_REPOSITORY}@${GITHUB_SHA}" }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    - uses: actions/checkout@v4
+    - uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+    - uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+    - name: Run nightly PITR backup
+      run: bash infra/disaster-recovery/tests/pitr-nightly.sh | tee 
+        pitr-nightly.log
+      env:
+        PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        PG_INSTANCE_ID: ${{ vars.PG_INSTANCE_ID }}
+        CLICKHOUSE_BUCKET: ${{ vars.CLICKHOUSE_BUCKET }}
+        SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+    - name: Upload logs
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: pitr-nightly
+        path: pitr-nightly.log
+    - name: Notify Slack on failure
+      if: failure()
+      uses: slackapi/slack-github-action@v1.24.0
+      with:
+        payload: |
+          { "text": "Nightly PITR backup failed for ${GITHUB_REPOSITORY}@${GITHUB_SHA}" }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
+    needs:
+    - check-proof-archive
   spectator-privacy:
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:
       logs: backend-tests.log frontend-tests.log integration.log property.log
+    needs:
+    - check-proof-archive

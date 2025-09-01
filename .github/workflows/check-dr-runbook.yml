@@ -5,7 +5,7 @@ concurrency:
 
 on:
   schedule:
-    - cron: '0 0 * * 0'
+  - cron: '0 0 * * 0'
   workflow_dispatch:
 
 permissions:
@@ -13,53 +13,61 @@ permissions:
   issues: write
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   dr-runbook:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Install dependencies
-        run: npm ci
-      - name: Check DR runbook
-        id: runbook
-        run: |
-          set -euo pipefail
-          if ! out=$(npx ts-node scripts/check-dr-runbook.ts 2>&1); then
-            echo "$out" >&2
-            echo "error=${out//$'\n'/ }" >> $GITHUB_OUTPUT
-            exit 1
-          fi
-          echo "message=$out" >> $GITHUB_OUTPUT
-      - name: Prepare DR runbook alert
-        if: failure() && steps.runbook.outcome == 'failure'
-        env:
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-        run: |
-          cat <<'EOT' > dr-runbook-alert.md
-          DR runbook check failed: ${{ steps.runbook.outputs.error }}
-          EOT
-          jq -n --arg channel "$SLACK_CHANNEL_ID" \
-            --arg text "DR runbook check failed: ${{ steps.runbook.outputs.error }}" \
-            '{channel: $channel, text: $text}' > dr-runbook-slack.json
-      - name: Slack alert (DR runbook)
-        if: failure() && steps.runbook.outcome == 'failure'
-        uses: slackapi/slack-github-action@v1
-        with:
-          method: chat.postMessage
-          payload-file-path: dr-runbook-slack.json
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      - name: Create issue for DR runbook
-        if: failure() && steps.runbook.outcome == 'failure'
-        uses: peter-evans/create-issue-from-file@v4
-        with:
-          title: "SLA breached: DR runbook"
-          content-filepath: dr-runbook-alert.md
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+    - name: Install dependencies
+      run: npm ci
+    - name: Check DR runbook
+      id: runbook
+      run: |
+        set -euo pipefail
+        if ! out=$(npx ts-node scripts/check-dr-runbook.ts 2>&1); then
+          echo "$out" >&2
+          echo "error=${out//$'\n'/ }" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+        echo "message=$out" >> $GITHUB_OUTPUT
+    - name: Prepare DR runbook alert
+      if: failure() && steps.runbook.outcome == 'failure'
+      env:
+        SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+      run: |
+        cat <<'EOT' > dr-runbook-alert.md
+        DR runbook check failed: ${{ steps.runbook.outputs.error }}
+        EOT
+        jq -n --arg channel "$SLACK_CHANNEL_ID" \
+          --arg text "DR runbook check failed: ${{ steps.runbook.outputs.error }}" \
+          '{channel: $channel, text: $text}' > dr-runbook-slack.json
+    - name: Slack alert (DR runbook)
+      if: failure() && steps.runbook.outcome == 'failure'
+      uses: slackapi/slack-github-action@v1
+      with:
+        method: chat.postMessage
+        payload-file-path: dr-runbook-slack.json
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+    - name: Create issue for DR runbook
+      if: failure() && steps.runbook.outcome == 'failure'
+      uses: peter-evans/create-issue-from-file@v4
+      with:
+        title: "SLA breached: DR runbook"
+        content-filepath: dr-runbook-alert.md
 
+    needs:
+    - check-proof-archive
   spectator-privacy:
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:
       logs: backend-tests.log frontend-tests.log integration.log property.log
+    needs:
+    - check-proof-archive

@@ -17,38 +17,47 @@ on:
         default: '200'
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   staging-actions:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Start proxy with packet loss and jitter
-        run: |
-          docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 ghcr.io/shopify/toxiproxy
-          PACKET_LOSS=${{ inputs.packet_loss }} LATENCY_MS=${{ inputs.jitter_ms }} UPSTREAM=staging.pokerhub:80 ./load/toxiproxy.sh
-      - name: Run table action scenario exporting to ClickHouse
-        uses: grafana/k6-action@v0.2.0
-        env:
-          WS_URL: ws://localhost:3001
-          TABLES: ${{ inputs.tables }}
-          SOCKETS: ${{ inputs.players }}
-          PACKET_LOSS: ${{ inputs.packet_loss }}
-          JITTER_MS: ${{ inputs.jitter_ms }}
-          CLICKHOUSE_DSN: ${{ secrets.CLICKHOUSE_DSN }}
-        with:
-          filename: infra/tests/load/k6-table-actions.js
-          flags: --summary-export=table-actions-summary.json --out json=table-actions-telemetry.json --out xk6-clickhouse=$CLICKHOUSE_DSN
-          docker-image: ghcr.io/grafana/xk6-output-clickhouse:latest
-      - name: Upload artifacts
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: table-actions
-          path: |
-            table-actions-summary.json
-            table-actions-telemetry.json
+    - uses: actions/checkout@v4
+    - name: Start proxy with packet loss and jitter
+      run: |
+        docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 ghcr.io/shopify/toxiproxy
+        PACKET_LOSS=${{ inputs.packet_loss }} LATENCY_MS=${{ inputs.jitter_ms }} UPSTREAM=staging.pokerhub:80 ./load/toxiproxy.sh
+    - name: Run table action scenario exporting to ClickHouse
+      uses: grafana/k6-action@v0.2.0
+      env:
+        WS_URL: ws://localhost:3001
+        TABLES: ${{ inputs.tables }}
+        SOCKETS: ${{ inputs.players }}
+        PACKET_LOSS: ${{ inputs.packet_loss }}
+        JITTER_MS: ${{ inputs.jitter_ms }}
+        CLICKHOUSE_DSN: ${{ secrets.CLICKHOUSE_DSN }}
+      with:
+        filename: infra/tests/load/k6-table-actions.js
+        flags: --summary-export=table-actions-summary.json --out 
+          json=table-actions-telemetry.json --out xk6-clickhouse=$CLICKHOUSE_DSN
+        docker-image: ghcr.io/grafana/xk6-output-clickhouse:latest
+    - name: Upload artifacts
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: table-actions
+        path: |
+          table-actions-summary.json
+          table-actions-telemetry.json
 
+    needs:
+    - check-proof-archive
   spectator-privacy:
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:
       logs: backend-tests.log frontend-tests.log integration.log property.log
+    needs:
+    - check-proof-archive

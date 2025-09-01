@@ -4,54 +4,59 @@ on:
   workflow_dispatch:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   ack-latency:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Start toxiproxy
-        run: |
-          docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 ghcr.io/shopify/toxiproxy
-          PACKET_LOSS=0.05 LATENCY_MS=0 JITTER_MS=200 ./load/chaos/toxiproxy-chaos.sh
-      - name: Run k6 10k tables jitter scenario
-        uses: grafana/k6-action@v0.2.0
-        env:
-          WS_URL: ws://localhost:3001
-          TABLES: 10000
-          SOCKETS: 80000
-          ACK_P95_MS: 120
-        with:
-          filename: load/k6-10k-tables.js
-          flags: --summary-export=ack-summary.json --out json=ack-telemetry.json
-      - name: Check thresholds
-        run: ./load/check-thresholds.sh ack-summary.json
-      - name: Upload ack summary
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ack-summary-${{ github.sha }}
-          path: ack-summary.json
-      - name: Upload ack metrics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ack-telemetry-${{ github.sha }}
-          path: ack-telemetry.json
+    - uses: actions/checkout@v4
+    - name: Start toxiproxy
+      run: |
+        docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 ghcr.io/shopify/toxiproxy
+        PACKET_LOSS=0.05 LATENCY_MS=0 JITTER_MS=200 ./load/chaos/toxiproxy-chaos.sh
+    - name: Run k6 10k tables jitter scenario
+      uses: grafana/k6-action@v0.2.0
+      env:
+        WS_URL: ws://localhost:3001
+        TABLES: 10000
+        SOCKETS: 80000
+        ACK_P95_MS: 120
+      with:
+        filename: load/k6-10k-tables.js
+        flags: --summary-export=ack-summary.json --out json=ack-telemetry.json
+    - name: Check thresholds
+      run: ./load/check-thresholds.sh ack-summary.json
+    - name: Upload ack summary
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ack-summary-${{ github.sha }}
+        path: ack-summary.json
+    - name: Upload ack metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ack-telemetry-${{ github.sha }}
+        path: ack-telemetry.json
 
+    needs:
+    - check-proof-archive
   soak-metrics:
-    needs: ack-latency
+    needs:
+    - ack-latency
+    - check-proof-archive
     if: ${{ always() }}
     uses: ../soak-metrics.yml
     secrets: inherit
 
   spectator-privacy:
-    needs: ack-latency
+    needs:
+    - ack-latency
+    - check-proof-archive
     uses: ../spectator-privacy.yml
     with:
       logs: ack-summary.json ack-telemetry.json
     secrets: inherit
 
-  spectator-privacy:
-    uses: ./.github/workflows/spectator-privacy.yml
-    secrets: inherit
-    with:
-      logs: backend-tests.log frontend-tests.log integration.log property.log

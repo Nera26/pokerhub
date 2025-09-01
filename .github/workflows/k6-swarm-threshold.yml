@@ -3,48 +3,58 @@ name: k6-swarm-thresholds
 on:
   push:
     paths:
-      - 'load/k6-swarm.js'
-      - '.github/workflows/k6-swarm-threshold.yml'
-      - 'docs/load-testing.md'
+    - 'load/k6-swarm.js'
+    - '.github/workflows/k6-swarm-threshold.yml'
+    - 'docs/load-testing.md'
   pull_request:
     paths:
-      - 'load/k6-swarm.js'
-      - '.github/workflows/k6-swarm-threshold.yml'
-      - 'docs/load-testing.md'
+    - 'load/k6-swarm.js'
+    - '.github/workflows/k6-swarm-threshold.yml'
+    - 'docs/load-testing.md'
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   swarm:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Run k6 swarm test
-        uses: grafana/k6-action@v0.2.0
-        env:
-          ACK_P50_MS: 40
-          ACK_P95_MS: 120
-          ACK_P99_MS: 200
-          ACTIONS_PER_MIN_THRESHOLD: 150
-          SOCKETS: 100
-          TABLES: 100
-          DURATION: 1m
-        with:
-          filename: load/k6-swarm.js
-          flags: --summary-export=summary.json --summary-trend-stats="avg,med,min,max,p(50),p(95),p(99)" --out json=metrics.json
-      - name: Upload swarm summary
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: summary-${{ github.sha }}
-          path: summary.json
-      - name: Upload swarm metrics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: metrics-${{ github.sha }}
-          path: metrics.json
+    - uses: actions/checkout@v4
+    - name: Run k6 swarm test
+      uses: grafana/k6-action@v0.2.0
+      env:
+        ACK_P50_MS: 40
+        ACK_P95_MS: 120
+        ACK_P99_MS: 200
+        ACTIONS_PER_MIN_THRESHOLD: 150
+        SOCKETS: 100
+        TABLES: 100
+        DURATION: 1m
+      with:
+        filename: load/k6-swarm.js
+        flags: --summary-export=summary.json 
+          --summary-trend-stats="avg,med,min,max,p(50),p(95),p(99)" --out 
+          json=metrics.json
+    - name: Upload swarm summary
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: summary-${{ github.sha }}
+        path: summary.json
+    - name: Upload swarm metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: metrics-${{ github.sha }}
+        path: metrics.json
 
+    needs:
+    - check-proof-archive
   soak-metrics:
-    needs: swarm
+    needs:
+    - swarm
+    - check-proof-archive
     if: ${{ always() }}
     uses: ../soak-metrics.yml
     secrets: inherit
@@ -54,3 +64,5 @@ jobs:
     secrets: inherit
     with:
       logs: backend-tests.log frontend-tests.log integration.log property.log
+    needs:
+    - check-proof-archive

@@ -9,7 +9,12 @@ on:
   workflow_dispatch:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   tables:
+    needs: [check-proof-archive]
     runs-on: ubuntu-latest
     env:
       METRICS_URL: http://localhost:3000/metrics
@@ -92,7 +97,7 @@ PY
             gc-heap-metrics.log
 
   soak:
-    needs: tables
+    needs: [tables, check-proof-archive]
     runs-on: ubuntu-latest
     timeout-minutes: 1440
     env:
@@ -176,7 +181,7 @@ PY
 
   chaos:
     runs-on: ubuntu-latest
-    needs: soak
+    needs: [soak, check-proof-archive]
     env:
       METRICS_URL: http://localhost:3000/metrics
     steps:
@@ -252,13 +257,13 @@ PY
             gc-heap-metrics.log
 
   soak-metrics:
-    needs: chaos
+    needs: [chaos, check-proof-archive]
     if: ${{ always() }}
     uses: ./.github/workflows/soak-metrics.yml
     secrets: inherit
 
   spectator-privacy:
-    needs: [chaos, soak-metrics]
+    needs: [chaos, soak-metrics, check-proof-archive]
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

@@ -3,93 +3,104 @@ name: dr-restore
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 4 1 * *'
+  - cron: '0 4 1 * *'
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   restore:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-      - name: Fetch latest backup
-        id: snap
-        run: |
-          SNAP_ID=$(gcloud sql backups list \
-            --instance ${{ vars.DB_PRIMARY_ID }} \
-            --project ${{ secrets.GCP_PROJECT_ID }} \
-            --sort-by ~endTime \
-            --limit 1 \
-            --format 'value(id)')
-          echo "snapshot_id=$SNAP_ID" >> "$GITHUB_OUTPUT"
-      - name: Restore backup
-        env:
-          PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-          PG_BACKUP_ID: ${{ steps.snap.outputs.snapshot_id }}
-          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
-        run: |
-          start=$(date +%s)
-          bash infra/disaster-recovery/tests/restore-backup.sh | tee restore.log
-          end=$(date +%s)
-          duration=$((end-start))
-          echo "dr_restore_duration_seconds $duration" | \
-            curl --data-binary @- ${{ vars.PUSHGATEWAY_URL }}/metrics/job/dr-restore
-          mv infra/disaster-recovery/tests/restore-backup.metrics dr-restore.metrics
-      - name: Check RTO/RPO
-        run: |
-          source dr-restore.metrics
-          echo "RTO: $RTO_SECONDS seconds"
-          echo "RPO: $RPO_SECONDS seconds"
-          if [ "$RTO_SECONDS" -gt 1800 ]; then
-            echo "RTO exceeds 30 minutes" >&2
-            exit 1
-          fi
-          if [ "$RPO_SECONDS" -gt 300 ]; then
-            echo "RPO exceeds 5 minutes" >&2
-            exit 1
-          fi
-      - name: Publish metrics to Cloud Monitoring
-        run: |
-          source dr-restore.metrics
-          gcloud monitoring metrics write custom.googleapis.com/dr/rto "$RTO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
-          gcloud monitoring metrics write custom.googleapis.com/dr/rpo "$RPO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
-      - name: Upload metrics to GCS
-        id: upload_metrics
-        if: success()
-        env:
-          BUCKET: ${{ vars.DR_METRICS_BUCKET }}
-        run: |
-          uri="gs://$BUCKET/restore/${GITHUB_RUN_ID}/dr-restore.metrics"
-          gcloud storage cp dr-restore.metrics "$uri"
-          url="https://storage.googleapis.com/$BUCKET/restore/${GITHUB_RUN_ID}/dr-restore.metrics"
-          echo "url=$url" >> "$GITHUB_OUTPUT"
+    - uses: actions/checkout@v4
+    - uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+    - uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+    - name: Fetch latest backup
+      id: snap
+      run: |
+        SNAP_ID=$(gcloud sql backups list \
+          --instance ${{ vars.DB_PRIMARY_ID }} \
+          --project ${{ secrets.GCP_PROJECT_ID }} \
+          --sort-by ~endTime \
+          --limit 1 \
+          --format 'value(id)')
+        echo "snapshot_id=$SNAP_ID" >> "$GITHUB_OUTPUT"
+    - name: Restore backup
+      env:
+        PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        PG_BACKUP_ID: ${{ steps.snap.outputs.snapshot_id }}
+        SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+      run: |
+        start=$(date +%s)
+        bash infra/disaster-recovery/tests/restore-backup.sh | tee restore.log
+        end=$(date +%s)
+        duration=$((end-start))
+        echo "dr_restore_duration_seconds $duration" | \
+          curl --data-binary @- ${{ vars.PUSHGATEWAY_URL }}/metrics/job/dr-restore
+        mv infra/disaster-recovery/tests/restore-backup.metrics dr-restore.metrics
+    - name: Check RTO/RPO
+      run: |
+        source dr-restore.metrics
+        echo "RTO: $RTO_SECONDS seconds"
+        echo "RPO: $RPO_SECONDS seconds"
+        if [ "$RTO_SECONDS" -gt 1800 ]; then
+          echo "RTO exceeds 30 minutes" >&2
+          exit 1
+        fi
+        if [ "$RPO_SECONDS" -gt 300 ]; then
+          echo "RPO exceeds 5 minutes" >&2
+          exit 1
+        fi
+    - name: Publish metrics to Cloud Monitoring
+      run: |
+        source dr-restore.metrics
+        gcloud monitoring metrics write custom.googleapis.com/dr/rto "$RTO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+        gcloud monitoring metrics write custom.googleapis.com/dr/rpo "$RPO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+    - name: Upload metrics to GCS
+      id: upload_metrics
+      if: success()
+      env:
+        BUCKET: ${{ vars.DR_METRICS_BUCKET }}
+      run: |
+        uri="gs://$BUCKET/restore/${GITHUB_RUN_ID}/dr-restore.metrics"
+        gcloud storage cp dr-restore.metrics "$uri"
+        url="https://storage.googleapis.com/$BUCKET/restore/${GITHUB_RUN_ID}/dr-restore.metrics"
+        echo "url=$url" >> "$GITHUB_OUTPUT"
 
-      - name: Upload restore log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: restore-${{ github.sha }}
-          path: restore.log
+    - name: Upload restore log
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: restore-${{ github.sha }}
+        path: restore.log
 
-      - name: Upload metrics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dr-restore-metrics-${{ github.sha }}
-          path: dr-restore.metrics
+    - name: Upload metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: dr-restore-metrics-${{ github.sha }}
+        path: dr-restore.metrics
 
+    needs:
+    - check-proof-archive
   soak-metrics:
-    needs: restore
+    needs:
+    - restore
+    - check-proof-archive
     if: ${{ always() }}
     uses: ./.github/workflows/soak-metrics.yml
     secrets: inherit
 
   spectator-privacy:
-    needs: [restore, soak-metrics]
+    needs:
+    - restore
+    - soak-metrics
+    - check-proof-archive
     if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
