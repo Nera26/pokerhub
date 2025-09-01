@@ -139,6 +139,29 @@ Infrastructure manifests, dashboards, and operational scripts live under
    under [infra/terraform](infra/terraform/) (e.g.,
    [main.tf](infra/terraform/main.tf)) for full details.
 
+## Ops Preflight Configuration
+
+The deployment workflow runs an operations preflight using
+`.github/actions/ops-preflight`. Configure these repository secrets and
+variables so the checks can run:
+
+- **Secrets**
+  - `GCP_SA_KEY` – service account JSON for GCP API access.
+  - `PROOF_ARCHIVE_BUCKET` – Cloud Storage bucket holding proof archives.
+- **Variables**
+  - `SOAK_TRENDS_BUCKET`
+  - `SOAK_LATENCY_P95_MS`
+  - `SOAK_THROUGHPUT_MIN`
+  - `DR_METRICS_BUCKET`
+  - `RTO_TARGET`
+  - `RPO_TARGET`
+  - `SECONDARY_REGION`
+  - `PROOF_ARCHIVE_EXPECTED_DAILY_COUNT`
+  - `PROOF_MANIFEST_KMS_KEY`
+  - `PROOF_MANIFEST_KMS_KEYRING`
+  - `PROOF_MANIFEST_KMS_LOCATION`
+  - `PROOF_MANIFEST_KMS_VERSION`
+
 ## Testing
 
 Run all backend, frontend, contract, and end-to-end tests with:

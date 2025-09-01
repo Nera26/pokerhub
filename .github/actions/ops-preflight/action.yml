@@ -143,3 +143,23 @@ runs:
       env:
         PROOF_ARCHIVE_BUCKET: ${{ env.PROOF_ARCHIVE_BUCKET }}
         SECONDARY_REGION: ${{ env.SECONDARY_REGION }}
+    - name: Validate proof archive contents
+      id: proof_archive
+      run: npx -y ts-node scripts/check-proof-archive.ts
+      env:
+        PROOF_ARCHIVE_BUCKET: ${{ env.PROOF_ARCHIVE_BUCKET }}
+        PROOF_ARCHIVE_EXPECTED_DAILY_COUNT: ${{ env.PROOF_ARCHIVE_EXPECTED_DAILY_COUNT }}
+        SECONDARY_REGION: ${{ env.SECONDARY_REGION }}
+        PROOF_MANIFEST_KMS_KEY: ${{ env.PROOF_MANIFEST_KMS_KEY }}
+        PROOF_MANIFEST_KMS_KEYRING: ${{ env.PROOF_MANIFEST_KMS_KEYRING }}
+        PROOF_MANIFEST_KMS_LOCATION: ${{ env.PROOF_MANIFEST_KMS_LOCATION }}
+        PROOF_MANIFEST_KMS_VERSION: ${{ env.PROOF_MANIFEST_KMS_VERSION }}
+    - name: Proof archive summary
+      if: always()
+      run: |
+        {
+          echo "### Proof Archive"
+          echo "- expected: ${{ steps.proof_archive.outputs.expected }}"
+          echo "- found: ${{ steps.proof_archive.outputs.count }}"
+          echo "- status: ${{ steps.proof_archive.outcome }}"
+        } >> "$GITHUB_STEP_SUMMARY"
