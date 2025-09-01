@@ -3,6 +3,7 @@ import type { Cache } from 'cache-manager';
 import { promises as fs } from 'fs';
 import { join } from 'path';
 import { ConfigService } from '@nestjs/config';
+import { writeSyntheticEvents } from './synthetic-events';
 
 class MockCache {
   store = new Map<string, any>();
@@ -40,6 +41,7 @@ describe('LeaderboardService', () => {
   let service: LeaderboardService;
 
   beforeEach(() => {
+    jest.useFakeTimers({ doNotFake: ['Date'] });
     cache = new MockCache();
     analytics = new MockAnalytics();
     service = new LeaderboardService(
@@ -48,6 +50,10 @@ describe('LeaderboardService', () => {
       analytics as unknown as any,
       new ConfigService(),
     );
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('returns leaderboard with points, ROI and finish counts', async () => {
@@ -256,6 +262,21 @@ describe('LeaderboardService', () => {
       'alice',
       'bob',
     ]);
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('rebuildFromEvents(30) respects max duration and records memory', async () => {
+    await writeSyntheticEvents(30);
+    const dir = join(process.cwd(), 'storage', 'events');
+    const rssStart = process.memoryUsage().rss;
+    const { durationMs, memoryMb } = await service.rebuildFromEvents(30);
+    const rssEnd = process.memoryUsage().rss;
+    const rssDeltaMb = (rssEnd - rssStart) / 1024 / 1024;
+    const maxMs = Number(process.env.LEADERBOARD_REBUILD_MAX_MS) || 30 * 60 * 1000;
+    console.info('leaderboard rebuild metrics', { durationMs, memoryMb, rssDeltaMb });
+    expect(durationMs).toBeLessThanOrEqual(maxMs);
+    expect(memoryMb).toBeGreaterThanOrEqual(0);
+    expect(rssDeltaMb).toBeGreaterThanOrEqual(0);
     await fs.rm(dir, { recursive: true, force: true });
   });
 });
