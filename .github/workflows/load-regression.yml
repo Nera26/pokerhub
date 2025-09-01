@@ -4,7 +4,26 @@ on:
   workflow_dispatch:
 
 jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    env:
+      DR_DRILL_SLA_DAYS: 7
+      DR_FAILOVER_SLA_DAYS: 30
+      DR_RESTORE_SLA_DAYS: 30
+      DR_THROWAWAY_SLA_DAYS: 7
+      SOAK_SLA_HOURS: 24
+    steps:
+      - uses: ./.github/actions/ops-preflight
+        with:
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          soak-metrics-sla-hours: ${{ env.SOAK_SLA_HOURS }}
+          dr-drill-sla-days: ${{ env.DR_DRILL_SLA_DAYS }}
+          dr-failover-sla-days: ${{ env.DR_FAILOVER_SLA_DAYS }}
+          dr-restore-sla-days: ${{ env.DR_RESTORE_SLA_DAYS }}
+          dr-throwaway-sla-days: ${{ env.DR_THROWAWAY_SLA_DAYS }}
+
   tables-10k:
+    needs: preflight
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,6 +42,7 @@ jobs:
           path: 10k-summary.json
 
   packet-loss:
+    needs: preflight
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -41,6 +61,7 @@ jobs:
           path: packet-summary.json
 
   chaos-regression:
+    needs: preflight
     runs-on: ubuntu-latest
     strategy:
       matrix:

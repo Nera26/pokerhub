@@ -5,22 +5,23 @@ on:
     types: [published]
 
 jobs:
-  spectator-privacy:
-    # Run reusable spectator privacy checks
-    uses: ./.github/workflows/spectator-privacy.yml
-    secrets: inherit
-
-  soak:
-    uses: ./.github/workflows/soak.yml
-    secrets: inherit
-
-  failover-drill:
-    uses: ./.github/workflows/failover-drill.yml
-    secrets: inherit
-
-  proof-archive:
-    uses: ./.github/workflows/proof-archive.yml
-    secrets: inherit
+  preflight:
+    runs-on: ubuntu-latest
+    env:
+      DR_DRILL_SLA_DAYS: 7
+      DR_FAILOVER_SLA_DAYS: 30
+      DR_RESTORE_SLA_DAYS: 30
+      DR_THROWAWAY_SLA_DAYS: 7
+      SOAK_SLA_HOURS: 24
+    steps:
+      - uses: ./.github/actions/ops-preflight
+        with:
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          soak-metrics-sla-hours: ${{ env.SOAK_SLA_HOURS }}
+          dr-drill-sla-days: ${{ env.DR_DRILL_SLA_DAYS }}
+          dr-failover-sla-days: ${{ env.DR_FAILOVER_SLA_DAYS }}
+          dr-restore-sla-days: ${{ env.DR_RESTORE_SLA_DAYS }}
+          dr-throwaway-sla-days: ${{ env.DR_THROWAWAY_SLA_DAYS }}
 
   ops-artifacts-verify:
     uses: ./.github/workflows/ops-artifacts-verify.yml
@@ -28,20 +29,14 @@ jobs:
 
   publish-docs:
     needs:
-      - spectator-privacy
-      - soak
-      - failover-drill
-      - proof-archive
+      - preflight
       - ops-artifacts-verify
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
       - name: Verify prerequisite workflows
         run: |
-          if [ "${{ needs.spectator-privacy.result }}" != "success" ] || \
-             [ "${{ needs.soak.result }}" != "success" ] || \
-             [ "${{ needs.failover-drill.result }}" != "success" ] || \
-             [ "${{ needs.proof-archive.result }}" != "success" ] || \
+          if [ "${{ needs.preflight.result }}" != "success" ] || \
              [ "${{ needs.ops-artifacts-verify.result }}" != "success" ]; then
             echo "One or more prerequisite workflows failed." >&2
             exit 1

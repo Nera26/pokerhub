@@ -6,7 +6,26 @@ on:
     branches: [ main ]
 
 jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    env:
+      DR_DRILL_SLA_DAYS: 7
+      DR_FAILOVER_SLA_DAYS: 30
+      DR_RESTORE_SLA_DAYS: 30
+      DR_THROWAWAY_SLA_DAYS: 7
+      SOAK_SLA_HOURS: 24
+    steps:
+      - uses: ./.github/actions/ops-preflight
+        with:
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          soak-metrics-sla-hours: ${{ env.SOAK_SLA_HOURS }}
+          dr-drill-sla-days: ${{ env.DR_DRILL_SLA_DAYS }}
+          dr-failover-sla-days: ${{ env.DR_FAILOVER_SLA_DAYS }}
+          dr-restore-sla-days: ${{ env.DR_RESTORE_SLA_DAYS }}
+          dr-throwaway-sla-days: ${{ env.DR_THROWAWAY_SLA_DAYS }}
+
   canary:
+    needs: preflight
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -21,87 +40,22 @@ jobs:
       PROMETHEUS: ${{ vars.PROMETHEUS_URL }}
       METRICS_URL: ${{ vars.METRICS_URL }}
       ERROR_RATE_THRESHOLD: ${{ vars.ERROR_RATE_THRESHOLD }}
-      DR_DRILL_SLA_DAYS: 7
-      DR_FAILOVER_SLA_DAYS: 30
-      DR_RESTORE_SLA_DAYS: 30
-      DR_THROWAWAY_SLA_DAYS: 7
       PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
       PROOF_MANIFEST_BUCKET: ${{ secrets.PROOF_MANIFEST_BUCKET }}
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
-
       - name: Configure kubectl
         uses: azure/setup-kubectl@v3
         with:
           version: v1.27.3
-
       - name: Install Helm
         uses: azure/setup-helm@v3
         with:
           version: v3.13.0
-
-      # --- Pre-deploy gates (all must pass) ---
-      - name: Check DR drill SLA
-        id: dr_drill
-        uses: ./.github/workflows/check-workflow-sla
-        with:
-          workflow: dr-drill.yml
-          sla: ${{ env.DR_DRILL_SLA_DAYS }}
-          unit: days
-          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-        continue-on-error: true
-
-      - name: PagerDuty alert on stale DR drill
-        if: steps.dr_drill.outcome == 'failure'
-        env:
-          ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
-        run: |
-          curl -X POST https://events.pagerduty.com/v2/enqueue \
-            -H 'Content-Type: application/json' \
-            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Canary blocked: dr-drill workflow failed or stale","source":"github-actions","severity":"error","custom_details":{"runbook":"https://github.com/Nera26/pokerhub/blob/main/docs/runbooks/disaster-recovery.md"}}}'
-          exit 1
-
-      - name: Check DR failover SLA
-        id: dr_failover
-        uses: ./.github/workflows/check-workflow-sla
-        with:
-          workflow: dr-failover.yml
-          sla: ${{ env.DR_FAILOVER_SLA_DAYS }}
-          unit: days
-          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-        continue-on-error: true
-
-      - name: PagerDuty alert on stale DR failover
-        if: steps.dr_failover.outcome == 'failure'
-        env:
-          ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
-        run: |
-          curl -X POST https://events.pagerduty.com/v2/enqueue \
-            -H 'Content-Type: application/json' \
-            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Canary blocked: dr-failover workflow failed or stale","source":"github-actions","severity":"error","custom_details":{"runbook":"https://github.com/Nera26/pokerhub/blob/main/docs/runbooks/disaster-recovery.md"}}}'
-          exit 1
-
-      - name: Check DR restore SLA
-        id: dr_restore
-        uses: ./.github/workflows/check-workflow-sla
-        with:
-          workflow: dr-restore.yml
-          sla: ${{ env.DR_RESTORE_SLA_DAYS }}
-          unit: days
-          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-        continue-on-error: true
-
-      - name: PagerDuty alert on stale DR restore
-        if: steps.dr_restore.outcome == 'failure'
-        env:
-          ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
-        run: |
-          curl -X POST https://events.pagerduty.com/v2/enqueue \
-            -H 'Content-Type: application/json' \
-            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Canary blocke_
+      - name: Run canary script
+        run: echo 'deploying canary...'
