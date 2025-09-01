@@ -76,11 +76,13 @@ describe('GameGateway restart', () => {
     const { app: app2, url: url2 } = await createApp();
     const client2 = io(url2, { transports: ['websocket'] });
     const acks: any[] = [];
+    const states: any[] = [];
     client2.on('action:ack', (a) => acks.push(a));
+    client2.on('state', (s) => states.push(s));
     await waitForConnect(client2);
     client2.emit('action', { ...action, actionId });
     client2.emit('action', { ...action, actionId: 'a2' });
-    await waitFor(() => acks.length >= 2, 5000);
+    await waitFor(() => acks.length >= 2 && states.length >= 1, 5000);
     client2.disconnect();
     await app2.close();
 
@@ -88,5 +90,6 @@ describe('GameGateway restart', () => {
       actionId,
       duplicate: true,
     });
+    expect(states[0]?.tick).toBe(2);
   });
 });

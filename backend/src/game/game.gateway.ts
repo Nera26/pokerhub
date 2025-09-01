@@ -7,7 +7,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Inject, Logger, Optional } from '@nestjs/common';
+import { Inject, Logger, Optional, OnModuleInit } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { randomUUID, createHash } from 'crypto';
 import Redis from 'ioredis';
@@ -125,7 +125,9 @@ export const GAME_STATE_BROADCAST_LATENCY_MS =
   'game_state_broadcast_latency_ms';
 
 @WebSocketGateway({ namespace: 'game' })
-export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class GameGateway
+  implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit
+{
   private readonly logger = new Logger(GameGateway.name);
   private static readonly meter = metrics.getMeter('game');
   private static readonly ackLatency = GameGateway.meter.createHistogram(
@@ -192,8 +194,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private readonly actionHashKey = 'game:action';
   private readonly actionRetentionMs = 24 * 60 * 60 * 1000; // 24h
+  private readonly stateKeyPrefix = 'game:state';
+  private readonly tickKey = 'game:tick';
 
-  private readonly processed: Map<string, number> = new Map();
   private readonly states: Map<string, InternalGameState> = new Map();
 
   private readonly queues = new Map<string, PQueue>();
@@ -247,8 +250,33 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     setInterval(() => void this.trimActionHashes(), 60 * 60 * 1000);
   }
 
+  async onModuleInit() {
+    await this.restoreState();
+  }
+
   private hashAction(id: string) {
     return createHash('sha256').update(id).digest('hex');
+  }
+
+  private async restoreState() {
+    const storedTick = await this.redis.get(this.tickKey);
+    if (storedTick) this.tick = Number(storedTick);
+    const keys = await this.redis.keys(`${this.stateKeyPrefix}:*`);
+    if (keys.length) {
+      const pipe = this.redis.pipeline();
+      for (const key of keys) pipe.get(key);
+      const res = await pipe.exec();
+      keys.forEach((key, idx) => {
+        const raw = res[idx]?.[1];
+        if (typeof raw === 'string') {
+          try {
+            const state = JSON.parse(raw) as InternalGameState;
+            const tableId = key.substring(this.stateKeyPrefix.length + 1);
+            this.states.set(tableId, state);
+          } catch {}
+        }
+      });
+    }
   }
 
   handleConnection(client: GameSocket) {
@@ -315,15 +343,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    if (this.processed.has(actionId)) {
-      this.enqueue(client, 'action:ack', {
-        actionId,
-        duplicate: true,
-      } satisfies AckPayload);
-      this.recordAckLatency(start, tableId);
-      return;
-    }
-
     const hash = this.hashAction(actionId);
     const existing = await this.redis.hget(this.actionHashKey, hash);
     if (existing && Date.now() - Number(existing) < this.actionRetentionMs) {
@@ -336,7 +355,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     const now = Date.now();
-    this.processed.set(actionId, now);
     await this.redis.hset(this.actionHashKey, hash, now.toString());
 
     if ('playerId' in parsed && parsed.playerId) {
@@ -388,6 +406,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const prev = this.states.get(tableId);
     const delta = diff(prev, state);
     this.states.set(tableId, state);
+    await this.redis.set(
+      `${this.stateKeyPrefix}:${tableId}`,
+      JSON.stringify(state),
+    );
+    await this.redis.set(this.tickKey, this.tick.toString());
     if (this.server) {
       this.server.emit('server:StateDelta', {
         version: '1',
@@ -423,6 +446,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     if (state.phase === 'NEXT_HAND') {
       this.states.delete(tableId);
+      await this.redis.del(`${this.stateKeyPrefix}:${tableId}`);
     }
   }
 
@@ -507,14 +531,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     event: 'join' | 'buy-in' | 'sitout' | 'rebuy',
     payload: AckPayload,
   ) {
-    if (this.processed.has(payload.actionId)) {
-      this.enqueue(client, `${event}:ack` as keyof ServerToClientEvents, {
-        actionId: payload.actionId,
-        duplicate: true,
-      } satisfies AckPayload);
-      return;
-    }
-
     const hash = this.hashAction(payload.actionId);
     const existing = await this.redis.hget(this.actionHashKey, hash);
     if (existing && Date.now() - Number(existing) < this.actionRetentionMs) {
@@ -529,7 +545,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       actionId: payload.actionId,
     } satisfies AckPayload);
     const now = Date.now();
-    this.processed.set(payload.actionId, now);
     await this.redis.hset(this.actionHashKey, hash, now.toString());
   }
 
@@ -630,10 +645,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
       }
       await pipe.exec();
-    }
-
-    for (const [id, ts] of this.processed) {
-      if (ts < threshold) this.processed.delete(id);
     }
   }
 
@@ -765,12 +776,21 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const prev = this.states.get(tableId);
       const delta = diff(prev, state);
       this.states.set(tableId, state);
+      await this.redis.set(
+        `${this.stateKeyPrefix}:${tableId}`,
+        JSON.stringify(state),
+      );
+      await this.redis.set(this.tickKey, this.tick.toString());
       this.server.to(tableId).emit('state', payload);
       this.server.to(tableId).emit('server:StateDelta', {
         version: '1',
         tick: this.tick,
         delta,
       });
+      if (state.phase === 'NEXT_HAND') {
+        this.states.delete(tableId);
+        await this.redis.del(`${this.stateKeyPrefix}:${tableId}`);
+      }
     }
   }
 }
