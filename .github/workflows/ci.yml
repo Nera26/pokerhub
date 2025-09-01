@@ -701,6 +701,11 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
+      - name: Check proof archive replication
+        run: npx ts-node scripts/check-proof-archive-replication.ts
+        env:
+          PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
       - name: Get spectator privacy run ID
         id: get_run_id
         env:
