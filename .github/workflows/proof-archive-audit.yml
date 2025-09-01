@@ -10,6 +10,7 @@ on:
 
 jobs:
   check-proof-archive:
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     env:
       PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}

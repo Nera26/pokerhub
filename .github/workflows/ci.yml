@@ -113,6 +113,7 @@ jobs:
 
   check-proof-archive:
     needs: [ops-preflight, ops-sla]
+    if: ${{ always() }}
     uses: ./.github/workflows/check-proof-archive.yml
     secrets: inherit
 
@@ -516,6 +517,7 @@ jobs:
 
   proof-archive:
     needs: contracts
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     services:
       postgres:
