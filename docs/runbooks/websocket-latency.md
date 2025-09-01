@@ -18,3 +18,17 @@ Investigates slow WebSocket message delivery or ACKs.
 3. Restart or scale socket servers if latency remains high.
 
 Refer to [Error Budget Procedures](../error-budget-procedures.md) when burn alerts trigger.
+
+## CI Regression Check
+
+The `socket-load` harness (`npm run perf:socket-load`) exercises WebSocket
+actions at scale and enforces latency and throughput thresholds. CI publishes
+the generated `metrics/` directory as an artifact.
+
+Thresholds:
+
+- p95 latency ≤120 ms per table
+- actions/min ≥15 per table
+
+Runs that exceed these limits exit non‑zero and should block deployment until
+investigated.

@@ -60,3 +60,27 @@ Any hand can be replayed from the action log.  Fetch the state at a specific
 index via `GET /api/hands/{handId}/state/{actionIndex}` and compare to a client
 simulation to prove determinism.
 
+## Performance Regression Check
+
+The socket load harness (`tests/performance/socket-load.ts`) simulates random
+clients across thousands of tables and records per‑table latency histograms and
+throughput.
+
+Run locally with modest scale:
+
+```bash
+TABLES=100 SOCKETS=1000 npm run perf:socket-load
+```
+
+Metrics are written under `metrics/`:
+
+- `latency-hist.json` – global p50/p95/p99 latency and dropped frame count.
+- `table-metrics.json` – per table p50/p95/p99 and actions/min.
+
+Thresholds (test fails when exceeded):
+
+- p95 latency **≤120 ms** per table
+- throughput **≥15 actions/min** per table
+
+CI publishes the `metrics` directory as an artifact for dashboard ingestion.
+
