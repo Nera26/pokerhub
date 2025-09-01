@@ -1,0 +1,45 @@
+name: ops-sla
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  sla:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - workflow: dr-drill.yml
+            sla: 7
+            unit: days
+          - workflow: dr-failover.yml
+            sla: 24
+            unit: hours
+          - workflow: dr-restore.yml
+            sla: 30
+            unit: days
+          - workflow: spectator-privacy-nightly.yml
+            sla: 24
+            unit: hours
+          - workflow: proof-archive.yml
+            sla: 24
+            unit: hours
+          - workflow: soak.yml
+            sla: 24
+            unit: hours
+    steps:
+      - name: Check ${{ matrix.workflow }} SLA
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: ${{ matrix.workflow }}
+          sla: ${{ matrix.sla }}
+          unit: ${{ matrix.unit }}
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
