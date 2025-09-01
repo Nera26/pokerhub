@@ -8,7 +8,8 @@ export type HandPhase =
   | 'DEAL'
   | 'BETTING_ROUND'
   | 'SHOWDOWN'
-  | 'SETTLE';
+  | 'SETTLE'
+  | 'NEXT_HAND';
 
 export type GameAction =
   | { type: 'postBlind'; playerId: string; amount: number }
@@ -56,7 +57,8 @@ export class HandStateMachine {
 
   apply(action: GameAction): GameStateInternal {
     switch (this.state.phase) {
-      case 'WAIT_BLINDS': {
+      case 'WAIT_BLINDS':
+      case 'NEXT_HAND': {
         if (action.type === 'postBlind') {
           const player = this.findPlayer(action.playerId);
           this.placeBet(player, action.amount);
@@ -67,6 +69,7 @@ export class HandStateMachine {
               p.holeCards = [this.state.deck.pop()!, this.state.deck.pop()!];
             }
             this.state.phase = 'DEAL';
+            this.blindsPosted.clear();
           }
         } else {
           throw new Error('invalid action for phase');
@@ -139,7 +142,25 @@ export class HandStateMachine {
         break;
       }
       case 'SETTLE': {
-        throw new Error('invalid action for phase');
+        if (action.type === 'next') {
+          for (const p of this.state.players) {
+            p.folded = false;
+            p.bet = 0;
+            p.allIn = false;
+            delete p.holeCards;
+          }
+          this.state.pot = 0;
+          this.state.sidePots = [];
+          this.state.currentBet = 0;
+          this.state.communityCards = [];
+          this.state.deck = [];
+          this.state.street = 'preflop';
+          this.state.phase = 'NEXT_HAND';
+          this.blindsPosted.clear();
+        } else {
+          throw new Error('invalid action for phase');
+        }
+        break;
       }
     }
     return this.state;

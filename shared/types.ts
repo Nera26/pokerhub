@@ -203,7 +203,14 @@ export const GameStateSchema = z
   .object({
     version: z.literal('1'),
     tick: z.number(),
-    phase: z.enum(['WAIT_BLINDS', 'DEAL', 'BETTING_ROUND', 'SHOWDOWN', 'SETTLE']),
+    phase: z.enum([
+      'WAIT_BLINDS',
+      'DEAL',
+      'BETTING_ROUND',
+      'SHOWDOWN',
+      'SETTLE',
+      'NEXT_HAND',
+    ]),
     street: z.enum(['preflop', 'flop', 'turn', 'river', 'showdown']),
     pot: z.number(),
     sidePots: z.array(

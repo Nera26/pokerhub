@@ -345,7 +345,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
     this.recordAckLatency(start, tableId);
 
-    if ('playerId' in parsed && parsed.playerId) {
+    if ('playerId' in parsed && parsed.playerId && state.phase !== 'NEXT_HAND') {
       const { playerId } = parsed;
       this.clock.setTimer(
         playerId,
@@ -353,6 +353,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         30_000,
         () => void this.handleTimeout(playerId, tableId),
       );
+    }
+
+    if (state.phase === 'NEXT_HAND') {
+      this.states.delete(tableId);
     }
   }
 
