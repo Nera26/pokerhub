@@ -10,6 +10,23 @@ import { MockRedis } from './utils/mock-redis';
 import { AnalyticsService } from '../src/analytics/analytics.service';
 import { GeoIpService } from '../src/auth/geoip.service';
 import { AuthRateLimitMiddleware } from '../src/auth/rate-limit.middleware';
+import * as bcrypt from 'bcrypt';
+import { UserRepository } from '../src/users/user.repository';
+
+class InMemoryUserRepository {
+  private users: any[] = [];
+  create(data: any) {
+    return { id: String(this.users.length + 1), ...data };
+  }
+  async save(user: any) {
+    this.users.push(user);
+    return user;
+  }
+  async findOne(opts: any) {
+    const email = opts?.where?.email;
+    return this.users.find((u) => u.email === email) ?? null;
+  }
+}
 
 class MockConfigService {
   get(key: string, def?: any) {
@@ -39,12 +56,18 @@ describe('AuthController', () => {
         { provide: 'REDIS_CLIENT', useClass: MockRedis },
         { provide: ConfigService, useClass: MockConfigService },
         { provide: AnalyticsService, useValue: { emit: jest.fn() } },
+        { provide: UserRepository, useClass: InMemoryUserRepository },
       ],
     }).compile();
 
     app = moduleRef.createNestApplication();
     const rateLimit = app.get(AuthRateLimitMiddleware);
     app.use(rateLimit.use.bind(rateLimit));
+    const repo = app.get<UserRepository>(UserRepository);
+    const hash = await bcrypt.hash('secret', 10);
+    await repo.save(
+      repo.create({ email: 'user@example.com', password: hash, username: 'user@example.com' }),
+    );
     await app.init();
   });
 
