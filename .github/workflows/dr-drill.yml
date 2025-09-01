@@ -7,9 +7,8 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  schedule:
-    - cron: '0 2 * * 1'
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   preflight:
