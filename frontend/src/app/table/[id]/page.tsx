@@ -19,6 +19,19 @@ export default function TablePage({ params }: PageProps) {
   const [status, setStatus] = useState('');
   const [lastActionId, setLastActionId] = useState<string | null>(null);
 
+  const applyDelta = (target: any, delta: any): any => {
+    if (!delta || typeof delta !== 'object') return delta;
+    const result: any = Array.isArray(target) ? [...(target ?? [])] : { ...(target ?? {}) };
+    for (const [key, value] of Object.entries(delta)) {
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        result[key] = applyDelta(result[key], value);
+      } else {
+        result[key] = value as any;
+      }
+    }
+    return result;
+  };
+
   // Join table and listen for state/ack/error events
   useEffect(() => {
     if (!socket) return;
@@ -33,6 +46,13 @@ export default function TablePage({ params }: PageProps) {
         return;
       }
       setState(s);
+    };
+    const handleDelta = (d: { version: string; delta: Partial<GameState> }) => {
+      if (d.version !== EVENT_SCHEMA_VERSION) {
+        setStatus('Protocol version mismatch');
+        return;
+      }
+      setState((prev) => applyDelta(prev, d.delta));
     };
     const handleAck = (
       ack: { actionId: string; duplicate?: boolean; version: string },
@@ -54,11 +74,13 @@ export default function TablePage({ params }: PageProps) {
     socket.on('state', handleState);
     socket.on('action:ack', handleAck);
     socket.on('server:Error', handleError);
+    socket.on('server:StateDelta', handleDelta);
 
     return () => {
       socket.off('state', handleState);
       socket.off('action:ack', handleAck);
       socket.off('server:Error', handleError);
+      socket.off('server:StateDelta', handleDelta);
     };
   }, [socket, join, lastActionId]);
 

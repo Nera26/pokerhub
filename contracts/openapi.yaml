@@ -1017,6 +1017,17 @@ components:
         - $ref: '#/components/schemas/NextAction'
       discriminator:
         propertyName: type
+    GameStateDelta:
+      type: object
+      properties:
+        version:
+          type: string
+          enum: ['1']
+        tick:
+          type: number
+        delta:
+          type: object
+      required: [version, tick, delta]
     PostBlindAction:
       type: object
       properties:
