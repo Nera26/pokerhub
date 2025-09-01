@@ -24,11 +24,15 @@ describe('TournamentService algorithms', () => {
   function createRepo<T extends { id: string }>(initial: T[] = []) {
     const items = new Map(initial.map((i) => [i.id, i]));
     return {
+      create: jest.fn((obj: T) => obj),
       find: jest.fn(async () => Array.from(items.values())),
       findOne: jest.fn(async ({ where: { id } }) => items.get(id)),
       save: jest.fn(async (obj: T) => {
         items.set(obj.id, obj);
         return obj;
+      }),
+      remove: jest.fn(async (obj: T) => {
+        items.delete(obj.id);
       }),
     };
   }
@@ -66,6 +70,18 @@ describe('TournamentService algorithms', () => {
       flags,
       events,
     );
+  });
+
+  describe('registration flow', () => {
+    it('registers and withdraws a player', async () => {
+      tablesRepo.find.mockResolvedValue([
+        { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
+      ]);
+      const seat = await service.register('t1', 'u1');
+      (seatsRepo.findOne as any).mockResolvedValue(seat);
+      await service.withdraw('t1', 'u1');
+      expect(seatsRepo.remove).toHaveBeenCalledWith(seat);
+    });
   });
 
   describe('balanceTables', () => {

@@ -317,6 +317,19 @@ export class TournamentService implements OnModuleInit {
     return this.seats.save(seat);
   }
 
+  async withdraw(tournamentId: string, userId: string): Promise<void> {
+    const seat = await this.seats.findOne({
+      where: {
+        table: { tournament: { id: tournamentId } } as any,
+        user: { id: userId } as any,
+      },
+      relations: ['table', 'user'],
+    });
+    if (seat) {
+      await this.seats.remove(seat);
+    }
+  }
+
   async balanceTournament(
     tournamentId: string,
     currentHand = 0,
