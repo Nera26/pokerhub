@@ -138,6 +138,28 @@ function checkProofArchiveMetrics(projectId: string) {
   }
 }
 
+function checkProofArchiveBigQuery(projectId: string) {
+  let raw: string;
+  try {
+    raw = execSync(
+      `bq query --project_id=${projectId} --nouse_legacy_sql --format=json 'SELECT COUNT(*) AS cnt FROM ops_metrics.proof_archives WHERE timestamp > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 DAY)'`,
+      { encoding: 'utf-8' },
+    );
+  } catch {
+    throw new Error('Failed to query BigQuery for proof archives');
+  }
+  let rows: Array<{ cnt?: number | string; f0_?: number | string }>; // fallback for unnamed column
+  try {
+    rows = JSON.parse(raw);
+  } catch {
+    throw new Error('Unable to parse BigQuery proof archive result');
+  }
+  const count = Number(rows?.[0]?.cnt ?? rows?.[0]?.f0_);
+  if (!Number.isFinite(count) || count <= 0) {
+    throw new Error('No recent proof archive rows in BigQuery');
+  }
+}
+
 function checkProofSummaryManifest(
   bucket: string,
   key: string,
@@ -605,6 +627,7 @@ function main() {
 
   checkProofArchive(proofBucket);
   checkProofArchiveMetrics(projectId);
+  checkProofArchiveBigQuery(projectId);
   checkProofSummaryManifest(
     manifestBucket,
     manifestKey,
@@ -638,6 +661,7 @@ export {
   checkBucketReplication,
   checkProofArchive,
   checkProofArchiveMetrics,
+  checkProofArchiveBigQuery,
   checkProofSummaryManifest,
   checkSpectatorLogs,
   checkSpectatorPrivacyMetric,
