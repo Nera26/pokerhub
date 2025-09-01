@@ -103,3 +103,9 @@ jobs:
     with:
       logs: ws-soak-summary.json ws-soak-metrics.json 10k-summary.json 10k-metrics.json
     secrets: inherit
+
+  spectator-privacy:
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log

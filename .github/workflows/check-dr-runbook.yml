@@ -57,3 +57,9 @@ jobs:
         with:
           title: "SLA breached: DR runbook"
           content-filepath: dr-runbook-alert.md
+
+  spectator-privacy:
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log

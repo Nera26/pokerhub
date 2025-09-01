@@ -145,3 +145,9 @@ jobs:
         with:
           title: "SLA breached: ops artifacts"
           content-filepath: ops-artifacts-alert.md
+
+  spectator-privacy:
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log

@@ -34,3 +34,9 @@ jobs:
         with:
           name: soak-smoke-summary
           path: soak-smoke-summary.json
+
+  spectator-privacy:
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log

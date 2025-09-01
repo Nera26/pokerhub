@@ -78,3 +78,9 @@ jobs:
           path: |
             backend-tests.log
             frontend-tests.log
+
+  spectator-privacy:
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log

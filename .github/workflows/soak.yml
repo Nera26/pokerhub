@@ -206,3 +206,9 @@ jobs:
       - name: Run GameGateway soak test
         working-directory: backend
         run: node --trace-gc -r ts-node/register test/soak/soak24h.ts
+
+  spectator-privacy:
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log

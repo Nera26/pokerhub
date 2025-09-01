@@ -118,3 +118,9 @@ jobs:
           if ! bash infra/canary/rollback.sh; then
             helm rollback canary --namespace "$NAMESPACE"
           fi
+
+  spectator-privacy:
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log

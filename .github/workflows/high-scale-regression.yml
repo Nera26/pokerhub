@@ -34,3 +34,9 @@ jobs:
       - name: Cleanup
         if: always()
         run: docker rm -f toxiproxy
+
+  spectator-privacy:
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log

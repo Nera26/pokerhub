@@ -45,3 +45,9 @@ jobs:
           name: chaos-baseline-${{ github.run_id }}
           path: ${{ env.METRICS_DIR }}
           retention-days: 7
+
+  spectator-privacy:
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log

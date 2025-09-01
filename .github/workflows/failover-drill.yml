@@ -75,3 +75,9 @@ jobs:
           source failover.metrics
           payload=$(jq -n --arg rto "$RTO_SECONDS" --arg rpo "$RPO_SECONDS" --arg url "$LOG_URL" --arg status "${{ job.status }}" '{text: "Failover drill \($status)\nRTO: \($rto)s\nRPO: \($rpo)s\nLogs: \($url)"}')
           curl -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK_URL" --fail
+
+  spectator-privacy:
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log
