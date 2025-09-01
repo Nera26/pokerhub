@@ -713,8 +713,7 @@ jobs:
             metrics/baseline.json
 
   run-soak-metrics:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: soak
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     uses: ./.github/workflows/soak-metrics.yml
     secrets:
       GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
