@@ -1,7 +1,7 @@
 # Tournament Handbook
 
-**Version:** 1.2.0
-**Last Updated:** 2025-10-10
+**Version:** 1.2.1
+**Last Updated:** 2025-10-11
 **Changelog:** [CHANGELOG](./CHANGELOG.md)
 
 This handbook standardizes how PokerHub hosts competitive events. Engine
@@ -55,8 +55,8 @@ flowchart LR
 ## Operational Controls
 
 - Tournament endpoints are protected by a configurable rate limit guard.
-- Table balancing skips players moved within the last few hands to reduce
-  churn.
+- Table balancing persists seat moves and skips players moved within the
+  last few hands (default 10) to reduce churn.
 - Blind levels may be hot patched during play with director approval.
 
 ## ICM Payouts
@@ -89,6 +89,8 @@ ICM calculations round expectations so the total error is less than one chip.
 Tournament ledger entries must be verified daily. Follow the [reconciliation procedure](../accounting-book.md#reconciliation-procedure) to confirm balances.
 
 ## Changelog
+- **1.2.1** – 2025-10-11 – Record seat moves to prevent double rebalancing
+  within the last few hands.
 - **1.2.0** – 2025-10-10 – Document rate limit guard, churn-aware table
   balancing, hot patching, and ICM rounding.
 - **1.1.3** – 2025-10-05 – Linked RNG Whitepaper and Accounting Book.
