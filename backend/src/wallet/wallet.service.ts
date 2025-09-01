@@ -16,6 +16,8 @@ import {
 } from './payment-provider.service';
 import { KycService } from './kyc.service';
 import { SettlementService } from './settlement.service';
+import { AnalyticsService } from '../analytics/analytics.service';
+import { ChargebackMonitor } from './chargeback.service';
 import type { Street } from '../game/state-machine';
 import { GeoIpService } from '../auth/geoip.service';
 
@@ -42,6 +44,7 @@ export class WalletService {
     'wallet_transaction_duration_ms',
     { description: 'Duration of wallet operations', unit: 'ms' },
   );
+
   constructor(
     @InjectRepository(Account) private readonly accounts: Repository<Account>,
     @InjectRepository(JournalEntry)
@@ -55,6 +58,8 @@ export class WalletService {
     private readonly provider: PaymentProviderService,
     private readonly kyc: KycService,
     private readonly settlementSvc: SettlementService,
+    @Optional() private readonly analytics?: AnalyticsService,
+    @Optional() private readonly chargebacks?: ChargebackMonitor,
     @Optional() private readonly geo?: GeoIpService,
   ) {}
 
@@ -670,6 +675,22 @@ export class WalletService {
             throw new Error('KYC required');
           }
           await this.enforceDailyLimit('deposit', accountId, amount, currency);
+          const cb = await this.chargebacks?.check(accountId, deviceId);
+          if (cb?.flagged) {
+            await this.analytics?.emit('wallet.chargeback_flag', {
+              accountId,
+              deviceId,
+              count:
+                cb.accountCount >= cb.accountLimit
+                  ? cb.accountCount
+                  : cb.deviceCount,
+              limit:
+                cb.accountCount >= cb.accountLimit
+                  ? cb.accountLimit
+                  : cb.deviceLimit,
+            });
+            throw new Error('Chargeback threshold exceeded');
+          }
           const house = await this.accounts.findOneByOrFail({ name: 'house', currency });
           const challenge = await this.provider.initiate3DS(accountId, amount);
           const status: ProviderStatus = await this.provider.getStatus(
@@ -698,6 +719,7 @@ export class WalletService {
               ],
               { providerTxnId: challenge.id, providerStatus: 'chargeback' },
             );
+            await this.chargebacks?.record(accountId, deviceId);
           }
           span.setStatus({ code: SpanStatusCode.OK });
         } catch (err) {

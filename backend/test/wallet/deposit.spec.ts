@@ -51,6 +51,7 @@ describe('WalletService deposit', () => {
     }) as DataSource;
     await dataSource.initialize();
 
+    redis = new MockRedis();
     const accountRepo = dataSource.getRepository(Account);
     const journalRepo = dataSource.getRepository(JournalEntry);
     const disbRepo = dataSource.getRepository(Disbursement);
@@ -79,6 +80,7 @@ describe('WalletService deposit', () => {
 
   beforeEach(async () => {
     redis = new MockRedis();
+    (service as any).redis = redis;
     (events.emit as jest.Mock).mockClear();
     (provider.initiate3DS as jest.Mock).mockResolvedValue({ id: 'tx' });
     (provider.getStatus as jest.Mock).mockResolvedValue('approved');
