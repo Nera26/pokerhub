@@ -5,6 +5,10 @@ Each file is named `YYYY-MM-DD.jsonl` and contains newline-delimited JSON
 objects describing sessions. Generating a 30‑day dataset therefore requires 30
 such files.
 
+Each leaderboard entry includes the player's cumulative ROI (net divided by
+total buy-ins) and a map of tournament finish counts keyed by finishing
+position. These metrics are derived from analytics events during rebuild.
+
 The CLI `rebuild.ts` streams events from disk and rebuilds the read model while
 recording total runtime and RSS memory usage. A warning is logged when a
 30‑day rebuild exceeds 30 minutes. Use `--assert-duration=<ms>` to fail the run
