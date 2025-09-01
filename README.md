@@ -77,6 +77,13 @@ npm run push:all        # push both subtrees
 Infrastructure manifests, dashboards, and operational scripts live under
 `/infra` (replacing the former `/infrastructure` directory).
 
+## Metrics & Monitoring
+
+The backend gateway exports WebSocket queue and rate‑limit metrics used by
+Grafana dashboards and Prometheus alerts. See [`metrics/gateway-metrics.md`](metrics/gateway-metrics.md)
+for available dashboards (`queue-saturation`, backend overview) and alert rules
+such as `HighOutboundQueueDepth` and `GlobalRateLimitExceeded`.
+
 ## Google Cloud Deployment
 
 1. **Enable APIs**

@@ -124,6 +124,9 @@ export const GAME_ACTION_ACK_LATENCY_MS = 'game_action_ack_latency_ms';
 export const GAME_STATE_BROADCAST_LATENCY_MS =
   'game_state_broadcast_latency_ms';
 
+export const WS_OUTBOUND_QUEUE_ALERT_THRESHOLD = 80;
+export const GAME_ACTION_GLOBAL_LIMIT = 30;
+
 @WebSocketGateway({ namespace: 'game' })
 export class GameGateway
   implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit
@@ -192,6 +195,31 @@ export class GameGateway
       removeCallback(cb: (r: ObservableResult) => void): void;
     });
 
+  private static readonly outboundQueueThreshold =
+    GameGateway.meter.createObservableGauge?.('ws_outbound_queue_threshold', {
+      description: 'Configured alert threshold for outbound queue depth',
+      unit: 'messages',
+    }) ??
+    ({
+      addCallback() {},
+      removeCallback() {},
+    } as {
+      addCallback(cb: (r: ObservableResult) => void): void;
+      removeCallback(cb: (r: ObservableResult) => void): void;
+    });
+
+  private static readonly globalActionLimitGauge =
+    GameGateway.meter.createObservableGauge?.('game_action_global_limit', {
+      description: 'Configured global action limit within rate-limit window',
+    }) ??
+    ({
+      addCallback() {},
+      removeCallback() {},
+    } as {
+      addCallback(cb: (r: ObservableResult) => void): void;
+      removeCallback(cb: (r: ObservableResult) => void): void;
+    });
+
   private static readonly outboundQueueDropped =
     GameGateway.meter.createCounter('ws_outbound_dropped_total', {
       description: 'Messages dropped due to full outbound queue',
@@ -208,12 +236,17 @@ export class GameGateway
   private readonly queueLimit = Number(
     process.env.GATEWAY_QUEUE_LIMIT ?? '100',
   );
+  private readonly queueThreshold = Number(
+    process.env.WS_OUTBOUND_QUEUE_ALERT_THRESHOLD ??
+      WS_OUTBOUND_QUEUE_ALERT_THRESHOLD.toString(),
+  );
   private readonly maxQueueSizes = new Map<string, number>();
 
   private readonly actionCounterKey = 'game:action_counter';
   private readonly globalActionCounterKey = 'game:action_counter:global';
   private readonly globalLimit = Number(
-    process.env.GATEWAY_GLOBAL_LIMIT ?? '30',
+    process.env.GATEWAY_GLOBAL_LIMIT ??
+      GAME_ACTION_GLOBAL_LIMIT.toString(),
   );
 
   private readonly frameAcks = new Map<string, Map<string, FrameInfo>>();
@@ -233,6 +266,14 @@ export class GameGateway
     }
   };
 
+  private readonly reportQueueThreshold = (result: ObservableResult) => {
+    result.observe(this.queueThreshold);
+  };
+
+  private readonly reportGlobalLimit = (result: ObservableResult) => {
+    result.observe(this.globalLimit);
+  };
+
   constructor(
     private readonly rooms: RoomManager,
     private readonly analytics: AnalyticsService,
@@ -245,6 +286,10 @@ export class GameGateway
     @Optional() private readonly flags?: FeatureFlagsService,
   ) {
     GameGateway.outboundQueueMax.addCallback(this.observeQueueMax);
+    GameGateway.outboundQueueThreshold.addCallback(
+      this.reportQueueThreshold,
+    );
+    GameGateway.globalActionLimitGauge.addCallback(this.reportGlobalLimit);
 
     this.clock.onTick((now) => {
       if (this.server) {
