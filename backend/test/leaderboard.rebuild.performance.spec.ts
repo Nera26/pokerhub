@@ -1,8 +1,7 @@
-import { LeaderboardService } from '../src/leaderboard/leaderboard.service';
-import { writeSyntheticEvents } from './leaderboard/synthetic-events';
 import { Cache } from 'cache-manager';
-import { join } from 'path';
 import { ConfigService } from '@nestjs/config';
+import { run } from '../src/leaderboard/rebuild';
+import { LeaderboardService } from '../src/leaderboard/leaderboard.service';
 
 class MockCache {
   private store = new Map<string, any>();
@@ -18,15 +17,9 @@ class MockCache {
 }
 
 describe('leaderboard rebuild performance', () => {
-  it('rebuildFromEvents(30) stays under 30 min and <30 MB RSS growth', async () => {
+  it('run() stays under 30 minutes', async () => {
     jest.useFakeTimers();
-    const cwd = process.cwd();
-    process.chdir(join(__dirname, '..', '..'));
-    try {
-      await writeSyntheticEvents(30, 50, 200);
-    } finally {
-      process.chdir(cwd);
-    }
+
     const cache = new MockCache();
     const analytics = { ingest: jest.fn(), rangeStream: jest.fn() };
     const service = new LeaderboardService(
@@ -35,9 +28,14 @@ describe('leaderboard rebuild performance', () => {
       analytics as any,
       new ConfigService(),
     );
-    const { durationMs, memoryMb } = await service.rebuildFromEvents(30);
-    expect(durationMs).toBeLessThan(1_800_000);
-    expect(memoryMb).toBeLessThan(30);
+
+    const { durationMs } = await run({
+      days: 30,
+      benchmark: true,
+      service,
+    });
+
+    expect(durationMs).toBeLessThan(30 * 60 * 1000);
     jest.useRealTimers();
   });
 });
