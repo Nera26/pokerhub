@@ -112,7 +112,14 @@ describe('hand ledger journal property', () => {
         try {
           for (const settlements of batches) {
             const key = randomUUID();
-            await writeHandLedger(service, key, 'river' as Street, 0, settlements);
+            await writeHandLedger(
+              service,
+              dataSource,
+              key,
+              'river' as Street,
+              0,
+              settlements,
+            );
             const entries = await journalRepo.find();
             const total = entries.reduce((sum, e) => sum + Number(e.amount), 0);
             expect(total).toBe(0);
