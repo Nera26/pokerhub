@@ -15,6 +15,8 @@ jobs:
     secrets: inherit
     with:
       logs: backend-tests.log frontend-tests.log integration.log property.log
+    env:
+      PROD_LOG_SCAN: true
 
   deploy:
     needs: spectator-privacy
