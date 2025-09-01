@@ -1,7 +1,8 @@
 import { io, Socket } from 'socket.io-client';
 import { createHash } from 'crypto';
 import { spawnSync } from 'child_process';
-import { performance, PerformanceObserver } from 'perf_hooks';
+import { performance, monitorEventLoopDelay } from 'perf_hooks';
+import { createServer } from 'http';
 import * as fs from 'fs';
 import { join } from 'path';
 import { metrics } from '@opentelemetry/api';
@@ -50,19 +51,11 @@ export class GameGatewaySoakHarness {
     __dirname,
     '../../../infra/metrics/soak_gc.jsonl',
   );
-  private readonly gcHistogram = new Histogram();
-  private readonly gcObserver = new PerformanceObserver((list) => {
-    for (const entry of list.getEntries()) {
-      this.gcHistogram.record(entry.duration);
-      fs.appendFileSync(
-        this.metricsPath,
-        JSON.stringify({ ts: Date.now(), gc_ms: entry.duration }) + '\n',
-      );
-    }
-  });
+  private readonly eld = monitorEventLoopDelay();
   private dropped = 0;
   private replayFailures = 0;
-  private readonly memSamples: number[] = [];
+  private readonly rssSamples: number[] = [];
+  private metricsServer?: ReturnType<typeof createServer>;
   private lastElu = performance.eventLoopUtilization();
   private roomMgr = new RoomManager();
 
@@ -109,6 +102,19 @@ export class GameGatewaySoakHarness {
       playerId,
       type: 'fold',
     } as GameAction;
+  }
+
+  private startMetricsServer() {
+    const port = Number(process.env.METRICS_PORT ?? 4000);
+    this.metricsServer = createServer((_req, res) => {
+      res.setHeader('Content-Type', 'application/json');
+      res.end(
+        JSON.stringify({
+          rssBytes: process.memoryUsage().rss,
+          gcPauseP95: this.eld.percentile(95) / 1e6,
+        }),
+      );
+    }).listen(port);
   }
 
   /** Spawn a socket and perform one action measuring ACK latency. */
@@ -180,11 +186,11 @@ export class GameGatewaySoakHarness {
     const metricsDir = join(__dirname, '../../../infra/metrics');
     fs.mkdirSync(metricsDir, { recursive: true });
     fs.writeFileSync(this.metricsPath, '');
-    this.gcObserver.observe({ entryTypes: ['gc'] });
+    this.eld.enable();
     const firstMem = process.memoryUsage();
     const firstElu = performance.eventLoopUtilization(this.lastElu);
     this.lastElu = firstElu;
-    this.memSamples.push(firstMem.heapUsed);
+    this.rssSamples.push(firstMem.rss);
     fs.appendFileSync(
       this.metricsPath,
       JSON.stringify({
@@ -194,11 +200,12 @@ export class GameGatewaySoakHarness {
         elu: firstElu.utilization,
       }) + '\n',
     );
+    this.startMetricsServer();
     const memInterval = setInterval(() => {
       const mem = process.memoryUsage();
       const elu = performance.eventLoopUtilization(this.lastElu);
       this.lastElu = elu;
-      this.memSamples.push(mem.heapUsed);
+      this.rssSamples.push(mem.rss);
       fs.appendFileSync(
         this.metricsPath,
         JSON.stringify({
@@ -220,17 +227,17 @@ export class GameGatewaySoakHarness {
     clearInterval(memInterval);
     clearInterval(killInterval);
     const p95 = this.histogram.percentile(95);
-    const start = this.memSamples[0];
-    const end = this.memSamples[this.memSamples.length - 1];
-    const memDelta = ((end - start) / start) * 100;
-    const gcP95 = this.gcHistogram.percentile(95);
-    this.gcObserver.disconnect();
+    const start = this.rssSamples[0];
+    const end = this.rssSamples[this.rssSamples.length - 1];
+    const rssDelta = ((end - start) / start) * 100;
+    const gcP95 = this.eld.percentile(95) / 1e6;
+    this.eld.disable();
     fs.appendFileSync(
       this.metricsPath,
       JSON.stringify({
         ts: Date.now(),
         gc_p95_ms: gcP95,
-        heap_delta_pct: memDelta,
+        rss_delta_pct: rssDelta,
       }) + '\n',
     );
     if (p95 > this.opts.ackP95) {
@@ -242,15 +249,16 @@ export class GameGatewaySoakHarness {
     if (this.replayFailures > 0) {
       throw new Error(`Detected ${this.replayFailures} replay failures`);
     }
-    if (memDelta > 1) {
-      throw new Error(`Heap increased by ${memDelta.toFixed(2)}% > 1%`);
+    if (rssDelta >= 1) {
+      throw new Error(`RSS increased by ${rssDelta.toFixed(2)}% \u2265 1%`);
     }
     if (gcP95 > this.opts.gcP95) {
       throw new Error(`GC p95 ${gcP95.toFixed(2)}ms exceeds ${this.opts.gcP95}ms`);
     }
     console.log(
-      `ACK p95 ${p95.toFixed(2)}ms, heap delta ${memDelta.toFixed(2)}%, GC p95 ${gcP95.toFixed(2)}ms`,
+      `ACK p95 ${p95.toFixed(2)}ms, RSS delta ${rssDelta.toFixed(2)}%, GC p95 ${gcP95.toFixed(2)}ms`,
     );
+    this.metricsServer?.close();
   }
 }
 

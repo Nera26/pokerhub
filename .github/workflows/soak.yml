@@ -65,6 +65,7 @@ jobs:
           echo $! > collector.pid
         env:
           GRAFANA_PUSH_URL: ${{ secrets.GRAFANA_PUSH_URL }}
+          STATS_FILE: gc-rss-stats.json
       - name: Run k6 soak test
         uses: grafana/k6-action@v0.2.0
         with:
@@ -171,7 +172,22 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Stop GC/heap collector
         if: always()
-        run: kill $(cat collector.pid)
+        run: |
+          pid=$(cat collector.pid)
+          kill $pid || true
+          wait $pid
+      - name: Check GC/RSS metrics
+        if: always()
+        run: |
+          stats=$(cat gc-rss-stats.json)
+          rss=$(jq '.rssGrowthPercent' <<<"$stats")
+          gc=$(jq '.gcPauseP95Ms' <<<"$stats")
+          if (( $(echo "$rss >= 1" | bc -l) )); then
+            echo "RSS growth ${rss}% exceeds 1%"; exit 1;
+          fi
+          if (( $(echo "$gc > 50" | bc -l) )); then
+            echo "GC pause p95 ${gc}ms exceeds 50ms"; exit 1;
+          fi
       - name: Stop toxiproxy
         if: always()
         run: docker rm -f toxiproxy
