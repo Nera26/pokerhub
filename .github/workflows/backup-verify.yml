@@ -20,19 +20,31 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
       - name: Verify backups
-        run: bash infra/scripts/verify-backups.sh
+        run: bash infra/scripts/verify-backups.sh | tee verify.log
         env:
           GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
           GCP_REGION: ${{ vars.SECONDARY_REGION }}
           PG_BACKUP_ID: ${{ vars.PG_BACKUP_ID }}
           REDIS_BACKUP_ID: ${{ vars.REDIS_BACKUP_ID }}
       - name: Restore snapshots to test cluster
-        run: bash infra/scripts/restore-test-cluster.sh
+        run: bash infra/scripts/restore-test-cluster.sh | tee restore.log
         env:
           GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
           GCP_REGION: ${{ vars.SECONDARY_REGION }}
           PG_BACKUP_ID: ${{ vars.PG_BACKUP_ID }}
           REDIS_BACKUP_ID: ${{ vars.REDIS_BACKUP_ID }}
+      - name: Upload verify log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-${{ github.sha }}
+          path: verify.log
+      - name: Upload restore log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: restore-${{ github.sha }}
+          path: restore.log
       - name: Notify Slack on failure
         if: failure()
         uses: slackapi/slack-github-action@v1.24.0
@@ -41,3 +53,11 @@ jobs:
             { "text": "Backup verification failed for ${GITHUB_REPOSITORY}@${GITHUB_SHA}" }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  spectator-privacy:
+    needs: verify
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: verify.log restore.log

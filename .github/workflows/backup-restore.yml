@@ -35,9 +35,9 @@ jobs:
           METRICS
       - name: Upload logs
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: backup-restore
+          name: restore-${{ github.sha }}
           path: |
             restore.log
             restore-backup.metrics
@@ -49,3 +49,11 @@ jobs:
             { "text": "Backup restore test failed for ${GITHUB_REPOSITORY}@${GITHUB_SHA}" }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  spectator-privacy:
+    needs: restore
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: restore.log
