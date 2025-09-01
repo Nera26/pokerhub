@@ -1,10 +1,105 @@
 #!/usr/bin/env ts-node
 import { execSync } from 'child_process';
 import { createHash } from 'crypto';
-import { appendFileSync } from 'fs';
+import { appendFileSync, mkdtempSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 
-function runGcloud(cmd: string, encoding: BufferEncoding | undefined = 'utf-8'): string | Buffer {
+function runGcloud(
+  cmd: string,
+  encoding: BufferEncoding | undefined = 'utf-8',
+): string | Buffer {
   return execSync(`gcloud storage ${cmd}`, { encoding: encoding as any });
+}
+
+function requireEnv(name: string): string {
+  const val = process.env[name];
+  if (!val) {
+    console.error(`${name} not set`);
+    process.exit(1);
+  }
+  return val;
+}
+
+function checkReplication(bucket: string, secondary: string) {
+  let metaRaw: string;
+  try {
+    metaRaw = execSync(
+      `gcloud storage buckets describe gs://${bucket} --format=json`,
+      { encoding: 'utf-8' },
+    );
+  } catch {
+    console.error('Unable to describe bucket');
+    process.exit(1);
+  }
+  let meta: any;
+  try {
+    meta = JSON.parse(metaRaw);
+  } catch {
+    console.error('Unable to parse bucket metadata');
+    process.exit(1);
+  }
+  const locations: string[] = meta?.customPlacementConfig?.dataLocations || [];
+  if (!Array.isArray(locations) || !locations.includes(secondary)) {
+    console.error(`Bucket not replicated to secondary region ${secondary}`);
+    process.exit(1);
+  }
+}
+
+function verifySummary(
+  bucket: string,
+  prefix: string,
+  key: string,
+  keyRing: string,
+  location: string,
+  version: string,
+) {
+  let summary: Buffer;
+  try {
+    summary = download(bucket, `${prefix}/proof-summary.json`);
+  } catch {
+    console.error('proof-summary.json missing or unreadable');
+    process.exit(1);
+  }
+  let manifestRaw: string;
+  try {
+    manifestRaw = download(
+      bucket,
+      `${prefix}/proof-summary.manifest.json`,
+    ).toString('utf-8');
+  } catch {
+    console.error('proof-summary.manifest.json missing or unreadable');
+    process.exit(1);
+  }
+  let manifest: { sha256?: string; signature?: string } = {};
+  try {
+    manifest = JSON.parse(manifestRaw);
+  } catch {
+    console.error('Unable to parse proof-summary.manifest.json');
+    process.exit(1);
+  }
+  const digest = createHash('sha256').update(summary).digest('hex');
+  if (manifest.sha256 !== digest) {
+    console.error('Proof summary checksum mismatch');
+    process.exit(1);
+  }
+  const dir = mkdtempSync(join(tmpdir(), 'proof-'));
+  const summaryFile = join(dir, 'summary.json');
+  const sigFile = join(dir, 'signature.bin');
+  writeFileSync(summaryFile, summary);
+  writeFileSync(sigFile, Buffer.from(manifest.signature || '', 'base64'));
+  try {
+    execSync(
+      `gcloud kms asymmetric-signature verify ` +
+        `--key=${key} --keyring=${keyRing} --location=${location} ` +
+        `--version=${version} --digest-algorithm=SHA256 ` +
+        `--plaintext-file=${summaryFile} --signature-file=${sigFile}`,
+      { stdio: 'ignore' },
+    );
+  } catch {
+    console.error('Proof summary signature verification failed');
+    process.exit(1);
+  }
 }
 
 function listPrefixes(bucket: string): string[] {
@@ -22,22 +117,20 @@ function download(bucket: string, key: string): Buffer {
 }
 
 function main() {
-  const bucket = process.env.PROOF_ARCHIVE_BUCKET;
-  if (!bucket) {
-    console.error('PROOF_ARCHIVE_BUCKET not set');
-    process.exit(1);
-  }
-
-  const expectedStr = process.env.PROOF_ARCHIVE_EXPECTED_DAILY_COUNT;
-  if (!expectedStr) {
-    console.error('PROOF_ARCHIVE_EXPECTED_DAILY_COUNT not set');
-    process.exit(1);
-  }
+  const bucket = requireEnv('PROOF_ARCHIVE_BUCKET');
+  const expectedStr = requireEnv('PROOF_ARCHIVE_EXPECTED_DAILY_COUNT');
   const expected = parseInt(expectedStr, 10);
   if (isNaN(expected) || expected <= 0) {
     console.error('Invalid PROOF_ARCHIVE_EXPECTED_DAILY_COUNT');
     process.exit(1);
   }
+  const secondary = requireEnv('SECONDARY_REGION');
+  const kmsKey = requireEnv('PROOF_MANIFEST_KMS_KEY');
+  const kmsKeyring = requireEnv('PROOF_MANIFEST_KMS_KEYRING');
+  const kmsLocation = requireEnv('PROOF_MANIFEST_KMS_LOCATION');
+  const kmsVersion = requireEnv('PROOF_MANIFEST_KMS_VERSION');
+
+  checkReplication(bucket, secondary);
 
   const prefixes = listPrefixes(bucket);
   if (prefixes.length === 0) {
@@ -46,6 +139,8 @@ function main() {
   }
   prefixes.sort();
   const latest = prefixes[prefixes.length - 1];
+
+  verifySummary(bucket, latest, kmsKey, kmsKeyring, kmsLocation, kmsVersion);
 
   const manifestBuf = download(bucket, `${latest}/manifest.txt`);
   const lines = manifestBuf
