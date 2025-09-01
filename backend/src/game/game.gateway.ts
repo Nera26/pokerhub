@@ -293,7 +293,6 @@ export class GameGateway
     this.clock.setTimer(
       client.id,
       'default',
-      30_000,
       () => void this.handleTimeout(client.id, 'default'),
     );
   }
@@ -439,7 +438,6 @@ export class GameGateway
       this.clock.setTimer(
         playerId,
         tableId,
-        30_000,
         () => void this.handleTimeout(playerId, tableId),
       );
     }

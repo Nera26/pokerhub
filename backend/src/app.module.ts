@@ -22,6 +22,7 @@ import {
   rateLimitConfig,
   kycConfig,
   geoConfig,
+  gameConfig,
 } from './config';
 import { validationSchema } from './config/env.validation';
 
@@ -88,6 +89,7 @@ class SecurityHeadersMiddleware implements NestMiddleware {
         rateLimitConfig,
         kycConfig,
         geoConfig,
+        gameConfig,
       ],
     }),
 

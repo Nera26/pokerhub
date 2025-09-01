@@ -7,6 +7,7 @@ import { EventPublisher } from '../../src/events/events.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Hand } from '../../src/database/entities/hand.entity';
 import { MockRedis } from '../utils/mock-redis';
+import { ConfigService } from '@nestjs/config';
 
 describe('player timeout', () => {
   it('folds player only at their table', async () => {
@@ -26,6 +27,7 @@ describe('player timeout', () => {
       providers: [
         GameGateway,
         ClockService,
+        { provide: ConfigService, useValue: new ConfigService({ game: { actionTimeoutMs: 0 } }) },
         { provide: RoomManager, useValue: rooms },
         { provide: AnalyticsService, useValue: { recordGameEvent: jest.fn() } },
         { provide: EventPublisher, useValue: { emit: jest.fn() } },
@@ -41,8 +43,8 @@ describe('player timeout', () => {
     const server = { emit: jest.fn(), to: jest.fn().mockReturnValue({ emit: emitMock }) } as any;
     gateway.server = server;
 
-    clock.setTimer('p1', 't1', 0, () => (gateway as any).handleTimeout('p1', 't1'));
-    clock.setTimer('p1', 't2', 1000, () => (gateway as any).handleTimeout('p1', 't2'));
+    clock.setTimer('p1', 't1', () => (gateway as any).handleTimeout('p1', 't1'));
+    clock.setTimer('p1', 't2', () => (gateway as any).handleTimeout('p1', 't2'), 1000);
     (clock as any).tick();
     await new Promise((r) => setImmediate(r));
 

@@ -64,6 +64,7 @@ export const validationSchema = Joi.object({
   PACKET_LOSS: Joi.number().optional(),
   JITTER_MS: Joi.number().integer().optional(),
   ACK_P95_MS: Joi.number().integer().optional(),
+  ACTION_TIMEOUT_MS: Joi.number().integer().optional(),
   DURATION_SEC: Joi.number().integer().optional(),
   LATENCY_MS: Joi.number().integer().optional(),
   GC_P95_MS: Joi.number().integer().optional(),
