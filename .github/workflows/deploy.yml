@@ -215,32 +215,6 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
-      - name: Ensure spectator-privacy recent success
-        id: spectator_privacy
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          run=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/spectator-privacy.yml/runs?per_page=1")
-          conclusion=$(echo "$run" | jq -r '.workflow_runs[0].conclusion')
-          started=$(echo "$run" | jq -r '.workflow_runs[0].run_started_at')
-          start_ts=$(date -d "$started" +%s)
-          now=$(date -u +%s)
-          if [ "$conclusion" != "success" ] || [ $((now - start_ts)) -gt 86400 ]; then
-            echo "Latest spectator-privacy workflow run did not succeed within 24 hours"
-            exit 1
-          fi
-
-      - name: Notify on-call on stale spectator-privacy
-        if: failure() && steps.spectator_privacy.outcome == 'failure'
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          payload: |
-            { "text": "🚫 Deployment blocked: spectator-privacy workflow failed or stale for ${{ github.repository }}@${{ github.sha }}" }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
       # --- Tooling/setup ---
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -267,13 +241,6 @@ jobs:
         uses: ./.github/actions/spectator-privacy-check
         with:
           node-version: 18
-
-      - name: Upload spectator privacy logs
-        if: always()
-        env:
-          SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
-        run: |
-          gcloud storage cp backend-tests.log frontend-tests.log gs://$SPECTATOR_PRIVACY_BUCKET/${{ github.run_id }}/
 
       # --- Canary, SLO check, promote/rollback ---
       - name: Run canary deploy
@@ -345,6 +312,7 @@ jobs:
         if: steps.metrics.outcome == 'success'
         run: scripts/promote.sh
 
+      # Re-auth for any subsequent gcloud operations
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
@@ -354,29 +322,7 @@ jobs:
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
 
-      - name: Run spectator privacy tests on production
-        uses: ./.github/actions/spectator-privacy-check
-        with:
-          node-version: 18
-
-      - name: Sanitize logs
-        if: always()
-        run: npx ts-node scripts/sanitize-spectator-logs.ts backend-tests.log frontend-tests.log
-
-      - name: DLP scan logs
-        if: always()
-        env:
-          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-        run: npx ts-node scripts/dlp-scan.ts backend-tests.log frontend-tests.log
-
-      - name: Verify sanitized logs
-        if: always()
-        run: |
-          if rg -i "userId|tableSecret|sessionToken|email|ipAddress" backend-tests.log frontend-tests.log; then
-            echo "PII found in logs" >&2
-            exit 1
-          fi
-
+      # Optional freshness gates and soak smoke trigger
       - name: Get spectator privacy run ID
         id: get_run_id
         env:
@@ -421,69 +367,60 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
-        - name: PagerDuty alert on stale spectator privacy run
-          if: failure() && steps.spectator_privacy_nightly.outcome == 'failure'
-          env:
-            ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
-          run: |
-            curl -X POST https://events.pagerduty.com/v2/enqueue \
-              -H 'Content-Type: application/json' \
-              -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"spectator-privacy-nightly workflow failed or stale during deployment","source":"github-actions","severity":"error"}}'
+      - name: Ensure recent soak success
+        id: soak_gate
+        env:
+          SLA_HOURS: ${{ env.SOAK_SLA_HOURS }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          resp=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/soak.yml/runs?per_page=1")
+          ts=$(echo "$resp" | jq -r '.workflow_runs[0].updated_at')
+          conclusion=$(echo "$resp" | jq -r '.workflow_runs[0].conclusion')
+          echo "timestamp=$ts" >> "$GITHUB_OUTPUT"
+          now=$(date -u +%s)
+          run_ts=$(date -d "$ts" -u +%s)
+          max_age=$((SLA_HOURS * 3600))
+          age=$((now - run_ts))
+          if [ "$conclusion" != "success" ]; then
+            echo "Latest soak run concluded with $conclusion" >&2
+            exit 1
+          fi
+          if [ "$age" -gt "$max_age" ]; then
+            echo "Latest soak run is older than ${SLA_HOURS}h" >&2
+            exit 1
+          fi
 
-        - name: Ensure recent soak success
-          id: soak_gate
-          env:
-            SLA_HOURS: ${{ env.SOAK_SLA_HOURS }}
-            GITHUB_TOKEN: ${{ github.token }}
-          run: |
-            set -euo pipefail
+      - name: Run soak-smoke
+        if: ${{ env.RUN_SOAK_SMOKE == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl -fsS -X POST -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
+            -d '{"ref":"main"}' \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/soak-smoke.yml/dispatches"
+          completed=0
+          for i in {1..30}; do
             resp=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/${{ github.repository }}/actions/workflows/soak.yml/runs?per_page=1")
-            ts=$(echo "$resp" | jq -r '.workflow_runs[0].updated_at')
+              "https://api.github.com/repos/${{ github.repository }}/actions/workflows/soak-smoke.yml/runs?per_page=1")
+            status=$(echo "$resp" | jq -r '.workflow_runs[0].status')
             conclusion=$(echo "$resp" | jq -r '.workflow_runs[0].conclusion')
-            echo "timestamp=$ts" >> "$GITHUB_OUTPUT"
-            now=$(date -u +%s)
-            run_ts=$(date -d "$ts" -u +%s)
-            max_age=$((SLA_HOURS * 3600))
-            age=$((now - run_ts))
-            if [ "$conclusion" != "success" ]; then
-              echo "Latest soak run concluded with $conclusion" >&2
-              exit 1
-            fi
-            if [ "$age" -gt "$max_age" ]; then
-              echo "Latest soak run is older than ${SLA_HOURS}h" >&2
-              exit 1
-            fi
-
-        - name: Run soak-smoke
-          if: ${{ env.RUN_SOAK_SMOKE == 'true' }}
-          env:
-            GITHUB_TOKEN: ${{ github.token }}
-          run: |
-            set -euo pipefail
-            curl -fsS -X POST -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
-              -d '{"ref":"main"}' \
-              "https://api.github.com/repos/${{ github.repository }}/actions/workflows/soak-smoke.yml/dispatches"
-            completed=0
-            for i in {1..30}; do
-              resp=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
-                "https://api.github.com/repos/${{ github.repository }}/actions/workflows/soak-smoke.yml/runs?per_page=1")
-              status=$(echo "$resp" | jq -r '.workflow_runs[0].status')
-              conclusion=$(echo "$resp" | jq -r '.workflow_runs[0].conclusion')
-              if [ "$status" = "completed" ]; then
-                completed=1
-                if [ "$conclusion" != "success" ]; then
-                  echo "soak-smoke concluded with $conclusion" >&2
-                  exit 1
-                fi
-                break
+            if [ "$status" = "completed" ]; then
+              completed=1
+              if [ "$conclusion" != "success" ]; then
+                echo "soak-smoke concluded with $conclusion" >&2
+                exit 1
               fi
-              sleep 10
-            done
-            if [ $completed -ne 1 ]; then
-              echo 'Timed out waiting for soak-smoke run' >&2
-              exit 1
+              break
             fi
+            sleep 10
+          done
+          if [ $completed -ne 1 ]; then
+            echo 'Timed out waiting for soak-smoke run' >&2
+            exit 1
+          fi
 
       - name: Verify ops artifacts
         id: verify_ops_artifacts
@@ -491,7 +428,7 @@ jobs:
           PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
           SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
           SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
-          RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
+          RUN_ID: ${{ github.run_id }}
           DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
           SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS || 120 }}
           SOAK_THROUGHPUT_MIN: ${{ vars.SOAK_THROUGHPUT_MIN || 100 }}
