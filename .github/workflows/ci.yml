@@ -722,7 +722,8 @@ jobs:
             metrics/cpu-histogram.json
             metrics/baseline.json
 
-  run-soak-metrics:
+  soak-metrics:
+    needs: [unit, integration]
     if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     uses: ./.github/workflows/soak-metrics.yml
     secrets:
