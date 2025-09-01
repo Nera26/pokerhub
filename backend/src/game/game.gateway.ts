@@ -35,7 +35,6 @@ import PQueue from 'p-queue';
 import { sanitize } from './state-sanitize';
 import { diff } from './state-diff';
 
-
 /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-redundant-type-constituents */
 
 interface AckPayload {
@@ -48,6 +47,8 @@ interface FrameAckPayload {
 }
 
 export const GAME_ACTION_ACK_LATENCY_MS = 'game_action_ack_latency_ms';
+export const GAME_STATE_BROADCAST_LATENCY_MS =
+  'game_state_broadcast_latency_ms';
 
 @WebSocketGateway({ namespace: 'game' })
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -57,6 +58,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     GAME_ACTION_ACK_LATENCY_MS,
     {
       description: 'Latency from action frame receipt to ACK enqueue',
+      unit: 'ms',
+    },
+  );
+  private static readonly stateLatency = GameGateway.meter.createHistogram(
+    GAME_STATE_BROADCAST_LATENCY_MS,
+    {
+      description: 'Latency from action receipt to state broadcast',
       unit: 'ms',
     },
   );
@@ -82,10 +90,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     GameGateway.meter.createCounter('per_socket_limit_exceeded', {
       description: 'Actions rejected due to per-socket limit',
     });
-  private static readonly globalLimitExceeded =
-    GameGateway.meter.createCounter('global_limit_exceeded', {
+  private static readonly globalLimitExceeded = GameGateway.meter.createCounter(
+    'global_limit_exceeded',
+    {
       description: 'Actions rejected due to global limit',
-    });
+    },
+  );
 
   private readonly actionHashKey = 'game:action';
   private readonly actionRetentionMs = 24 * 60 * 60 * 1000; // 24h
@@ -143,7 +153,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     setInterval(() => void this.trimActionHashes(), 60 * 60 * 1000);
   }
-
 
   private hashAction(id: string) {
     return createHash('sha256').update(id).digest('hex');
@@ -234,6 +243,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.recordAckLatency(start, tableId);
       return;
     }
+    if (
+      (await this.flags?.get('settlement')) === false ||
+      (await this.flags?.getRoom(tableId, 'settlement')) === false
+    ) {
+      this.enqueue(client, 'server:Error', 'settlement disabled');
+      this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+      this.recordAckLatency(start, tableId);
+      return;
+    }
 
     const room = this.rooms.get(tableId);
     await room.apply(gameAction);
@@ -253,6 +271,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const payload = { version: '1', ...safe, tick: ++this.tick };
     GameStateSchema.parse(payload);
     this.enqueue(client, 'state', payload, true);
+    this.recordStateLatency(start, tableId);
 
     const prev = this.states.get(tableId);
     const delta = diff(prev, state);
@@ -396,6 +415,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const now = Date.now();
     this.processed.set(payload.actionId, now);
     await this.redis.hset(this.actionHashKey, hash, now.toString());
+  }
+
+  private recordStateLatency(start: number, tableId: string) {
+    GameGateway.stateLatency.record(Date.now() - start, { tableId });
   }
 
   private recordAckLatency(start: number, tableId: string) {

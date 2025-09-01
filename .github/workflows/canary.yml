@@ -45,17 +45,21 @@ jobs:
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
+
       - name: Configure kubectl
         uses: azure/setup-kubectl@v3
         with:
           version: v1.27.3
+
       - name: Install Helm
         uses: azure/setup-helm@v3
         with:
           version: v3.13.0
-      - name: Run canary script
-        run: echo 'deploying canary...'
+
+      - name: Run canary deploy
+        run: bash deploy/canary.sh ${{ github.sha }}

@@ -5,6 +5,7 @@ import {
   NestModule,
   MiddlewareConsumer,
   RequestMethod,
+  forwardRef,
 } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -22,6 +23,7 @@ import { AuthGuard } from './auth.guard';
 import { AdminGuard } from './admin.guard';
 import { AuthRateLimitMiddleware } from './rate-limit.middleware';
 import { SecurityHeadersMiddleware } from './security.middleware';
+import { AnalyticsModule } from '../analytics/analytics.module';
 
 @Injectable()
 class KycWorker implements OnModuleInit {
@@ -49,6 +51,7 @@ function providerFactory(config: ConfigService): CountryProvider {
     ConfigModule,
     TypeOrmModule.forFeature([Account, KycVerification]),
     SessionModule,
+    forwardRef(() => AnalyticsModule),
   ],
   providers: [
     {

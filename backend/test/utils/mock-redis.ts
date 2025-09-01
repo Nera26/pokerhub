@@ -12,8 +12,26 @@ export class MockRedis {
     return this.store.get(key) ?? null;
   }
 
-  async set(key: string, value: string, _mode?: string, _ttl?: number) {
+  async set(key: string, value: string, ...args: any[]) {
+    let nx = false;
+    let ttl: number | undefined;
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+      if (arg === 'NX') {
+        nx = true;
+      } else if (arg === 'EX') {
+        ttl = Number(args[++i]);
+      } else if (typeof arg === 'number') {
+        ttl = arg;
+      }
+    }
+    if (nx && this.store.has(key)) {
+      return null;
+    }
     this.store.set(key, value);
+    if (ttl) {
+      this.expirations.set(key, Date.now() + ttl * 1000);
+    }
     return 'OK';
   }
 

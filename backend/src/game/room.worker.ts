@@ -47,6 +47,17 @@ async function getSettlement() {
   return settlement;
 }
 
+async function isSettlementEnabled(): Promise<boolean> {
+  // Default to enabled if flag keys are absent
+  if (!pub) return true;
+  const [global, room] = await Promise.all([
+    pub.get('feature-flag:settlement'),
+    pub.get(`feature-flag:room:${workerData.tableId}:settlement`),
+  ]);
+  const enabled = (v: string | null) => v === null || v === '1' || v === 'true';
+  return enabled(global) && enabled(room);
+}
+
 async function main() {
   const engine = await GameEngine.create(
     workerData.playerIds,
@@ -59,9 +70,7 @@ async function main() {
 
   port.on(
     'message',
-    async (
-      msg: { type: string; seq: number; action?: GameAction; from?: number },
-    ) => {
+    async (msg: { type: string; seq: number; action?: GameAction; from?: number }) => {
       switch (msg.type) {
         case 'apply': {
           engine.applyAction(msg.action as GameAction);
@@ -73,11 +82,21 @@ async function main() {
             actionCounter.add(1, { tableId: workerData.tableId });
           }
 
-          const svc = await getSettlement();
           const idx = engine.getHandLog().slice(-1)[0]?.[0] ?? 0;
           const state = engine.getPublicState();
 
-          await svc.reserve(engine.getHandId(), state.street, idx);
+          // Settlement (gated by feature flags)
+          const settlementEnabled = await isSettlementEnabled();
+          let svc: SettlementService | undefined;
+          if (settlementEnabled) {
+            try {
+              svc = await getSettlement();
+              await svc.reserve(engine.getHandId(), state.street, idx);
+            } catch (err) {
+              // eslint-disable-next-line no-console
+              console.error('Failed to reserve settlement', err);
+            }
+          }
 
           const delta = diff(previousState, state);
           previousState = state;
@@ -88,7 +107,23 @@ async function main() {
           // Publish compact deltas over Redis for socket fan-out
           await pub?.publish(diffChannel, JSON.stringify([idx, delta]));
 
-          await svc.commit(engine.getHandId(), state.street, idx);
+          if (settlementEnabled && svc) {
+            try {
+              await svc.commit(engine.getHandId(), state.street, idx);
+            } catch (err) {
+              // Try to cancel if the service supports it
+              try {
+                const maybeCancel = (svc as unknown as { cancel?: Function }).cancel;
+                if (typeof maybeCancel === 'function') {
+                  await maybeCancel.call(svc, engine.getHandId(), state.street, idx);
+                }
+              } catch {
+                // swallow cancel errors
+              }
+              // eslint-disable-next-line no-console
+              console.error('Failed to commit settlement', err);
+            }
+          }
 
           // Respond directly to the requester with the full state
           port.postMessage({ seq: msg.seq, state });
@@ -114,10 +149,7 @@ async function main() {
           const log = engine
             .getHandLog()
             .filter(([index]) => index >= from)
-            .map(
-              ([index, , , post]) =>
-                [index, post] as [number, InternalGameState],
-            );
+            .map(([index, , , post]) => [index, post] as [number, InternalGameState]);
           port.postMessage({ seq: msg.seq, states: log });
           break;
         }
@@ -125,10 +157,7 @@ async function main() {
         case 'snapshot': {
           const snap = engine
             .getHandLog()
-            .map(
-              ([index, , , post]) =>
-                [index, post] as [number, InternalGameState],
-            );
+            .map(([index, , , post]) => [index, post] as [number, InternalGameState]);
           port.postMessage({ seq: msg.seq, states: snap });
           break;
         }
