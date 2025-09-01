@@ -20,7 +20,7 @@ jobs:
           project_id: ${{ vars.GCP_PROJECT_ID }}
 
       - name: Run disaster recovery drill
-        run: bash infra/disaster-recovery/drill.sh
+        run: bash infra/disaster-recovery/drill.sh | tee dr-drill.log
         env:
           PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
           PG_INSTANCE_ID: ${{ vars.PG_INSTANCE_ID }}
@@ -130,11 +130,18 @@ jobs:
           git config user.email actions@github.com
           git commit -am "chore(dr): record drill results" && git push
 
+      - name: Upload drill log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dr-drill-${{ github.sha }}
+          path: dr-drill.log
+
       - name: Upload metrics
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: dr-drill
+          name: dr-drill-metrics-${{ github.sha }}
           path: drill.metrics
 
       - name: Publish metrics to Cloud Monitoring
@@ -167,3 +174,11 @@ jobs:
         with:
           title: DR drill failure
           content-filepath: drill.metrics
+
+  spectator-privacy:
+    needs: drill
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: dr-drill.log
