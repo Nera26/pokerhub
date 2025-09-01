@@ -150,6 +150,7 @@ To inspect the metrics:
 
 ### Recent Failover Results
 <!-- DR_FAILOVER_RESULTS -->
+Results from the monthly failover drill are appended automatically by the `dr-failover-monthly` workflow.
 
 ## PagerDuty Escalation
 - Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->
