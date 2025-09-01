@@ -8,9 +8,15 @@ set -euo pipefail
 : "${PGPASSWORD?Must set PGPASSWORD}"
 : "${PGDATABASE:=postgres}"
 : "${WAL_ARCHIVE_BUCKET?Must set WAL_ARCHIVE_BUCKET}"
+: "${DR_METRICS_BUCKET?Must set DR_METRICS_BUCKET}"
+: "${REPLICATION_LAG_THRESHOLD_SECONDS:=900}"
 
 if ! command -v gcloud >/dev/null 2>&1; then
   echo "gcloud CLI not found. Install the Google Cloud SDK and authenticate before running this drill." >&2
+  exit 1
+fi
+if ! command -v jq >/dev/null 2>&1; then
+  echo "jq not found. Install jq before running this drill." >&2
   exit 1
 fi
 
@@ -20,6 +26,7 @@ log() {
 
 metrics_file="drill.metrics"
 : > "$metrics_file"
+status=0
 
 start_iso=$(date --iso-8601=seconds)
 start_epoch=$(date +%s)
@@ -48,6 +55,25 @@ echo "RPO_SNAPSHOT_SECONDS=$rpo_snapshot" >> "$metrics_file"
 echo "RPO_WAL_SECONDS=$rpo_wal" >> "$metrics_file"
 echo "RPO_SECONDS=$rpo_wal" >> "$metrics_file"
 
+check_replication_bucket() {
+  local bucket="$1"
+  local metric_key="$2"
+  log "Checking replication for $bucket..."
+  local desc
+  desc=$(gcloud storage buckets describe "gs://$bucket" --format=json)
+  local lag
+  lag=$(echo "$desc" | jq -r '.replication?//{} | .asyncTurbo?.lagDuration // "0s"' | sed 's/s$//')
+  echo "${metric_key}=${lag}" >> "$metrics_file"
+  log "$bucket replication lag ${lag}s"
+  if [ "${lag:-0}" -gt "$REPLICATION_LAG_THRESHOLD_SECONDS" ]; then
+    log "$bucket replication lag exceeds threshold (${lag}s)"
+    status=1
+  fi
+}
+
+check_replication_bucket "$DR_METRICS_BUCKET" METRICS_REPLICATION_LAG_SECONDS
+check_replication_bucket "$WAL_ARCHIVE_BUCKET" WAL_REPLICATION_LAG_SECONDS
+
 log "Disabling primary instance $PG_INSTANCE_ID..."
 failover_start=$(date +%s)
 gcloud sql instances patch "$PG_INSTANCE_ID" --activation-policy=NEVER --quiet
@@ -70,8 +96,6 @@ trap restore_primary EXIT
 
 db_identifier="drill-$start_epoch"
 echo "DB_IDENTIFIER=$db_identifier" >> "$metrics_file"
-
-status=0
 if [ $rpo_snapshot -gt 300 ] || [ $rpo_wal -gt 300 ]; then
   log "RPO exceeds threshold (snapshot ${rpo_snapshot}s, wal ${rpo_wal}s)"
   status=1

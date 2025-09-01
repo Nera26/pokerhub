@@ -5,5 +5,7 @@
   {"name": "rpo_snapshot_seconds", "type": "INTEGER"},
   {"name": "rpo_wal_seconds", "type": "INTEGER"},
   {"name": "failover_seconds", "type": "INTEGER"},
-  {"name": "primary_restore_seconds", "type": "INTEGER"}
+  {"name": "primary_restore_seconds", "type": "INTEGER"},
+  {"name": "metrics_replication_lag_seconds", "type": "INTEGER"},
+  {"name": "wal_replication_lag_seconds", "type": "INTEGER"}
 ]

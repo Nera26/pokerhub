@@ -32,6 +32,8 @@ jobs:
           PGPASSWORD: ${{ secrets.PGPASSWORD }}
           PGDATABASE: postgres
           WAL_ARCHIVE_BUCKET: ${{ vars.WAL_ARCHIVE_BUCKET }}
+          DR_METRICS_BUCKET: ${{ vars.DR_METRICS_BUCKET }}
+          REPLICATION_LAG_THRESHOLD_SECONDS: 900
 
       - uses: actions/setup-node@v4
         with:
@@ -54,6 +56,8 @@ jobs:
           echo "rpo_wal=$RPO_WAL_SECONDS" >> "$GITHUB_OUTPUT"
           echo "failover=$FAILOVER_SECONDS" >> "$GITHUB_OUTPUT"
           echo "primary_restore=$PRIMARY_RESTORE_SECONDS" >> "$GITHUB_OUTPUT"
+          echo "metrics_repl=$METRICS_REPLICATION_LAG_SECONDS" >> "$GITHUB_OUTPUT"
+          echo "wal_repl=$WAL_REPLICATION_LAG_SECONDS" >> "$GITHUB_OUTPUT"
 
       - name: Check RTO/RPO objectives
         env:
@@ -62,8 +66,11 @@ jobs:
           RPO_WAL: ${{ steps.metrics.outputs.rpo_wal }}
           FAILOVER: ${{ steps.metrics.outputs.failover }}
           PRIMARY_RESTORE: ${{ steps.metrics.outputs.primary_restore }}
+          METRICS_REPL: ${{ steps.metrics.outputs.metrics_repl }}
+          WAL_REPL: ${{ steps.metrics.outputs.wal_repl }}
           RTO_TARGET: 1800
           RPO_TARGET: 300
+          REPL_TARGET: 900
         run: |
           {
             echo "### DR Drill Metrics"
@@ -72,9 +79,11 @@ jobs:
             echo "- RPO (WAL): ${RPO_WAL}s (target ≤ ${RPO_TARGET}s)"
             echo "- Failover: ${FAILOVER}s"
             echo "- Primary restore: ${PRIMARY_RESTORE}s"
+            echo "- Metrics bucket replication lag: ${METRICS_REPL}s (target ≤ ${REPL_TARGET}s)"
+            echo "- WAL bucket replication lag: ${WAL_REPL}s (target ≤ ${REPL_TARGET}s)"
           } >> "$GITHUB_STEP_SUMMARY"
-          if [ "$RTO" -gt "$RTO_TARGET" ] || [ "$RPO_SNAP" -gt "$RPO_TARGET" ] || [ "$RPO_WAL" -gt "$RPO_TARGET" ]; then
-            echo "RTO/RPO objectives exceeded" >&2
+          if [ "$RTO" -gt "$RTO_TARGET" ] || [ "$RPO_SNAP" -gt "$RPO_TARGET" ] || [ "$RPO_WAL" -gt "$RPO_TARGET" ] || [ "$METRICS_REPL" -gt "$REPL_TARGET" ] || [ "$WAL_REPL" -gt "$REPL_TARGET" ]; then
+            echo "RTO/RPO/replication objectives exceeded" >&2
             exit 1
           fi
 
@@ -98,6 +107,8 @@ jobs:
           rpo_wal=${{ steps.metrics.outputs.rpo_wal }}
           failover=${{ steps.metrics.outputs.failover }}
           primary_restore=${{ steps.metrics.outputs.primary_restore }}
+          metrics_repl=${{ steps.metrics.outputs.metrics_repl }}
+          wal_repl=${{ steps.metrics.outputs.wal_repl }}
           cat > dr-drill-run.json <<EOF
           {
             "run_id": "${GITHUB_RUN_ID}",
@@ -106,7 +117,9 @@ jobs:
             "rpo_snapshot_seconds": $rpo_snap,
             "rpo_wal_seconds": $rpo_wal,
             "failover_seconds": $failover,
-            "primary_restore_seconds": $primary_restore
+            "primary_restore_seconds": $primary_restore,
+            "metrics_replication_lag_seconds": $metrics_repl,
+            "wal_replication_lag_seconds": $wal_repl
           }
           EOF
 
