@@ -6,6 +6,15 @@ describe('SpectatorGateway', () => {
 
   beforeEach(() => {
     jest.resetModules();
+    jest.mock('p-queue', () => ({
+      __esModule: true,
+      default: jest.fn().mockImplementation(() => ({
+        add: (fn: any) => Promise.resolve().then(fn),
+        size: 0,
+        pending: 0,
+        clear: jest.fn(),
+      })),
+    }));
     addMock = jest.fn();
     const getMeterMock = jest.fn(() => ({
       createCounter: jest.fn(() => ({ add: addMock })),
@@ -35,7 +44,7 @@ describe('SpectatorGateway', () => {
     class DummyRoom extends EventEmitter {
       state = 0;
       async getPublicState() {
-        return { n: ++this.state };
+        return { n: ++this.state, players: [] };
       }
     }
 
@@ -46,20 +55,23 @@ describe('SpectatorGateway', () => {
     const getStateSpy = jest.spyOn(room, 'getPublicState');
 
     await gateway.handleConnection(client);
-    room.emit('state', { n: 2 });
+    room.emit('state', { n: 2, players: [] });
     await new Promise((r) => setImmediate(r));
 
     expect(getStateSpy).toHaveBeenCalledTimes(1);
     const states = client.emit.mock.calls
       .filter(([ev]) => ev === 'state')
       .map(([, s]) => s);
-    expect(states).toEqual([{ n: 1 }, { n: 2 }]);
+    expect(states).toEqual([
+      { n: 1, players: [] },
+      { n: 2, players: [] },
+    ]);
   });
 
   it('increments dropped-frame metric when client is disconnected', async () => {
     class DummyRoom extends EventEmitter {
       async getPublicState() {
-        return {};
+        return { players: [] };
       }
     }
 
@@ -69,12 +81,12 @@ describe('SpectatorGateway', () => {
     const client = createClient();
 
     await gateway.handleConnection(client);
-    room.emit('state', {});
+    room.emit('state', { players: [] });
     await new Promise((r) => setImmediate(r));
     expect(addMock).not.toHaveBeenCalled();
 
     client.connected = false;
-    room.emit('state', {});
+    room.emit('state', { players: [] });
     await new Promise((r) => setImmediate(r));
     expect(addMock).toHaveBeenCalledTimes(1);
 
