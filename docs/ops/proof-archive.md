@@ -5,7 +5,7 @@ The proof archive workflow emits a `proof-summary.json` describing each batch of
 ## Replication
 
 - The proof archive bucket (`$PROOF_ARCHIVE_BUCKET`) must be dual-region and replicate data to `$SECONDARY_REGION` for disaster recovery.
-- The `scripts/check-proof-archive-replication.ts` script verifies this configuration via `gcloud storage buckets describe`.
+- Run `npx -y ts-node scripts/check-proof-archive-replication.ts` to verify the configuration. The script calls `gcloud storage buckets describe` and confirms the bucket's `locationType` is `dual-region` and that `$SECONDARY_REGION` is listed in its `customPlacementConfig.dataLocations`.
 
 ## Signed manifest
 
