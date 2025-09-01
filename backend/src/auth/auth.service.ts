@@ -5,10 +5,12 @@ import Redis from 'ioredis';
 import * as bcrypt from 'bcrypt';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { UserRepository } from '../users/user.repository';
+import { EmailService } from './email.service';
 
 @Injectable()
 export class AuthService {
   private readonly revokedPrefix = 'revoked:';
+  private readonly resetPrefix = 'reset:';
 
   constructor(
     private readonly sessions: SessionService,
@@ -16,6 +18,7 @@ export class AuthService {
     private readonly config: ConfigService,
     private readonly analytics: AnalyticsService,
     private readonly users: UserRepository,
+    private readonly email: EmailService,
   ) {}
 
   async register(email: string, password: string) {
@@ -77,5 +80,34 @@ export class AuthService {
       ttl,
     );
     await this.sessions.revoke(refreshToken);
+  }
+
+  async requestPasswordReset(email: string) {
+    const user = await this.users.findOne({ where: { email } });
+    if (!user) return;
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const ttl = this.config.get<number>('auth.resetTtl', 900);
+    await this.redis.set(`${this.resetPrefix}${email}`, code, 'EX', ttl);
+    await this.email.sendResetCode(email, code);
+  }
+
+  async verifyResetCode(email: string, code: string): Promise<boolean> {
+    const stored = await this.redis.get(`${this.resetPrefix}${email}`);
+    return stored === code;
+  }
+
+  async resetPassword(
+    email: string,
+    code: string,
+    password: string,
+  ): Promise<boolean> {
+    const valid = await this.verifyResetCode(email, code);
+    if (!valid) return false;
+    const user = await this.users.findOne({ where: { email } });
+    if (!user) return false;
+    user.password = await bcrypt.hash(password, 10);
+    await this.users.save(user);
+    await this.redis.del(`${this.resetPrefix}${email}`);
+    return true;
   }
 }
