@@ -67,11 +67,15 @@ vars.GCP_PROJECT_ID – GCP project containing DR & spectator privacy metrics.
 
 vars.DR_METRICS_BUCKET – GCS bucket holding DR drill metrics / trend files.
 
+vars.DR_METRICS_MIN_RETENTION_DAYS – minimum retention (days) for DR metrics bucket.
+
 vars.RTO_TARGET – maximum allowed RTO in seconds (e.g., 1800).
 
 vars.RPO_TARGET – maximum allowed RPO in seconds (e.g., 300).
 
 vars.SOAK_TRENDS_BUCKET – GCS bucket for soak trend artifacts.
+
+vars.SOAK_TRENDS_MIN_RETENTION_DAYS – minimum retention (days) for soak trends bucket.
 
 vars.SOAK_LATENCY_P95_MS – max allowed p95 latency for the latest soak (e.g., 120).
 
