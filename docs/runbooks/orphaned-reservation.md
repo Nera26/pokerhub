@@ -29,4 +29,12 @@ Use this guide when seat reservations are not released after players disconnect.
 - Slack: #ops
 
 ## Drill
-- Simulated quarterly with `load/chaos/reservation-stall.js`.
+
+Simulate orphaned reservations with the chaos script:
+
+```sh
+RESERVATIONS=5 node load/chaos/reservation-stall.js
+```
+
+The script logs each hand ID and the `redis-cli del` command required to clean
+up. Remove the printed keys after validating recovery.
