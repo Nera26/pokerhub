@@ -36,3 +36,27 @@ jobs:
           duration=$((end-start))
           echo "dr_restore_duration_seconds $duration" | \
             curl --data-binary @- ${{ vars.PUSHGATEWAY_URL }}/metrics/job/dr-restore
+          mv infra/disaster-recovery/tests/restore-backup.metrics dr-restore.metrics
+      - name: Check RTO/RPO
+        run: |
+          source dr-restore.metrics
+          echo "RTO: $RTO_SECONDS seconds"
+          echo "RPO: $RPO_SECONDS seconds"
+          if [ "$RTO_SECONDS" -gt 1800 ]; then
+            echo "RTO exceeds 30 minutes" >&2
+            exit 1
+          fi
+          if [ "$RPO_SECONDS" -gt 300 ]; then
+            echo "RPO exceeds 5 minutes" >&2
+            exit 1
+          fi
+      - name: Upload metrics to GCS
+        id: upload_metrics
+        if: success()
+        env:
+          BUCKET: ${{ vars.DR_METRICS_BUCKET }}
+        run: |
+          uri="gs://$BUCKET/restore/${GITHUB_RUN_ID}/dr-restore.metrics"
+          gcloud storage cp dr-restore.metrics "$uri"
+          url="https://storage.googleapis.com/$BUCKET/restore/${GITHUB_RUN_ID}/dr-restore.metrics"
+          echo "url=$url" >> "$GITHUB_OUTPUT"

@@ -113,3 +113,55 @@ test('checkDrMetrics passes for fresh metrics within thresholds', () => {
   assert.doesNotThrow(() => verify.checkDrMetrics('dr'));
   mock.restoreAll();
 });
+
+test('checkDrFailoverMetrics enforces RPO threshold', () => {
+  const listing = JSON.stringify([
+    {
+      name: 'gs://dr/failover/run1/dr-failover.metrics',
+      timeCreated: nowIso,
+    },
+  ]);
+  const outputs = {
+    'ls --format=json gs://dr/failover/**/dr-failover.metrics': listing,
+    'cat gs://dr/failover/run1/dr-failover.metrics':
+      'RTO_SECONDS=100\nRPO_SECONDS=400\n',
+  };
+  mock.method(verify.gcloud, 'run', (cmd) => outputs[cmd]);
+  assert.throws(
+    () => verify.checkDrFailoverMetrics('dr'),
+    /RPO 400s exceeds/,
+  );
+  mock.restoreAll();
+});
+
+test('checkDrRestoreMetrics fails when metrics are stale', () => {
+  const listing = JSON.stringify([
+    {
+      name: 'gs://dr/restore/run1/dr-restore.metrics',
+      timeCreated: staleIso,
+    },
+  ]);
+  mock.method(verify.gcloud, 'run', () => listing);
+  assert.throws(
+    () => verify.checkDrRestoreMetrics('dr'),
+    /older than 24h/,
+  );
+  mock.restoreAll();
+});
+
+test('checkDrRestoreMetrics passes for fresh metrics within thresholds', () => {
+  const listing = JSON.stringify([
+    {
+      name: 'gs://dr/restore/run1/dr-restore.metrics',
+      timeCreated: nowIso,
+    },
+  ]);
+  const outputs = {
+    'ls --format=json gs://dr/restore/**/dr-restore.metrics': listing,
+    'cat gs://dr/restore/run1/dr-restore.metrics':
+      'RTO_SECONDS=100\nRPO_SECONDS=200\n',
+  };
+  mock.method(verify.gcloud, 'run', (cmd) => outputs[cmd]);
+  assert.doesNotThrow(() => verify.checkDrRestoreMetrics('dr'));
+  mock.restoreAll();
+});

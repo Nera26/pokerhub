@@ -419,6 +419,102 @@ function checkDrMetrics(bucket: string) {
   }
 }
 
+function checkDrFailoverMetrics(bucket: string) {
+  const base = `gs://${bucket}/failover`;
+  let listing: string;
+  try {
+    listing = gcloud.run(
+      `ls --format=json ${base}/**/dr-failover.metrics`,
+    ) as string;
+  } catch {
+    throw new Error(`Missing DR failover metrics in ${base}/`);
+  }
+  let items: Array<{ name: string; timeCreated?: string; updated?: string }> = [];
+  try {
+    items = JSON.parse(listing);
+  } catch {
+    throw new Error(`Unable to parse listing for ${base}/`);
+  }
+  if (items.length === 0) {
+    throw new Error(`Missing DR failover metrics in ${base}/`);
+  }
+  const latest = items.reduce((a, b) => {
+    const at = Date.parse(a.timeCreated || a.updated || '');
+    const bt = Date.parse(b.timeCreated || b.updated || '');
+    return at > bt ? a : b;
+  });
+  const t = Date.parse(latest.timeCreated || latest.updated || '');
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  if (isNaN(t) || t < cutoff) {
+    throw new Error(`DR failover metrics in ${base}/ are older than 24h`);
+  }
+  let metrics: string;
+  try {
+    metrics = gcloud.run(`cat ${latest.name}`) as string;
+  } catch {
+    throw new Error(`Unable to read ${latest.name}`);
+  }
+  const rto = Number(/RTO_SECONDS=(\d+)/.exec(metrics)?.[1]);
+  const rpo = Number(/RPO_SECONDS=(\d+)/.exec(metrics)?.[1]);
+  if (isNaN(rto) || isNaN(rpo)) {
+    throw new Error(`Unable to parse RTO/RPO from ${latest.name}`);
+  }
+  if (rto > 1800) {
+    throw new Error(`RTO ${rto}s exceeds 1800s threshold`);
+  }
+  if (rpo > 300) {
+    throw new Error(`RPO ${rpo}s exceeds 300s threshold`);
+  }
+}
+
+function checkDrRestoreMetrics(bucket: string) {
+  const base = `gs://${bucket}/restore`;
+  let listing: string;
+  try {
+    listing = gcloud.run(
+      `ls --format=json ${base}/**/dr-restore.metrics`,
+    ) as string;
+  } catch {
+    throw new Error(`Missing DR restore metrics in ${base}/`);
+  }
+  let items: Array<{ name: string; timeCreated?: string; updated?: string }> = [];
+  try {
+    items = JSON.parse(listing);
+  } catch {
+    throw new Error(`Unable to parse listing for ${base}/`);
+  }
+  if (items.length === 0) {
+    throw new Error(`Missing DR restore metrics in ${base}/`);
+  }
+  const latest = items.reduce((a, b) => {
+    const at = Date.parse(a.timeCreated || a.updated || '');
+    const bt = Date.parse(b.timeCreated || b.updated || '');
+    return at > bt ? a : b;
+  });
+  const t = Date.parse(latest.timeCreated || latest.updated || '');
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  if (isNaN(t) || t < cutoff) {
+    throw new Error(`DR restore metrics in ${base}/ are older than 24h`);
+  }
+  let metrics: string;
+  try {
+    metrics = gcloud.run(`cat ${latest.name}`) as string;
+  } catch {
+    throw new Error(`Unable to read ${latest.name}`);
+  }
+  const rto = Number(/RTO_SECONDS=(\d+)/.exec(metrics)?.[1]);
+  const rpo = Number(/RPO_SECONDS=(\d+)/.exec(metrics)?.[1]);
+  if (isNaN(rto) || isNaN(rpo)) {
+    throw new Error(`Unable to parse RTO/RPO from ${latest.name}`);
+  }
+  if (rto > 1800) {
+    throw new Error(`RTO ${rto}s exceeds 1800s threshold`);
+  }
+  if (rpo > 300) {
+    throw new Error(`RPO ${rpo}s exceeds 300s threshold`);
+  }
+}
+
 function main() {
   const proofBucket = requireEnv('PROOF_ARCHIVE_BUCKET');
   const manifestBucket = requireEnv('PROOF_MANIFEST_BUCKET');
@@ -466,6 +562,8 @@ function main() {
   checkSoakSummary(soakBucket, maxLatencyP95, minThroughput);
   checkSoakTrendDelta(soakBucket, maxTrendPct);
   checkDrMetrics(drMetricsBucket);
+  checkDrFailoverMetrics(drMetricsBucket);
+  checkDrRestoreMetrics(drMetricsBucket);
 
   console.log('All ops artifacts verified');
 }
@@ -489,4 +587,6 @@ export {
   checkSoakSummary,
   checkSoakTrendDelta,
   checkDrMetrics,
+  checkDrFailoverMetrics,
+  checkDrRestoreMetrics,
 };
