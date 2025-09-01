@@ -18,7 +18,7 @@ Presence of trend artifacts
 
 Disaster recovery drills
 
-dr-drill, dr-failover, dr-restore, dr-throwaway workflow freshness
+dr-drill, dr-failover, dr-restore, check-dr-runbook, dr-throwaway workflow freshness
 
 Disaster recovery trends
 
@@ -40,6 +40,7 @@ soak-metrics-sla-hours	✅	Max age (hours) for the soak / soak-metrics workflow 
 dr-drill-sla-days	✅	Max age (days) for the last dr-drill run.
 dr-failover-sla-days	✅	Max age (days) for the last dr-failover run.
 dr-restore-sla-days	✅	Max age (days) for the last dr-restore run.
+dr-runbook-sla-days       ✅      Max age (days) for the last check-dr-runbook run.
 dr-throwaway-sla-days	✅	Max age (days) for the last dr-throwaway run.
 proof-archive-sla-hours		Max age (hours) for the proof-archive workflow. Default: 24.
 
@@ -94,5 +95,6 @@ jobs:
           dr-drill-sla-days: 7
           dr-failover-sla-days: 30
           dr-restore-sla-days: 30
+          dr-runbook-sla-days: 7
           dr-throwaway-sla-days: 7
           proof-archive-sla-hours: 24

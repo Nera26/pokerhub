@@ -20,6 +20,9 @@ inputs:
   dr-restore-sla-days:
     description: "Max age for dr-restore workflow"
     required: true
+  dr-runbook-sla-days:
+    description: "Max age for check-dr-runbook workflow"
+    required: true
   dr-throwaway-sla-days:
     description: "Max age for dr-throwaway workflow"
     required: true
@@ -87,6 +90,13 @@ runs:
       with:
         workflow: dr-restore.yml
         sla: ${{ inputs.dr-restore-sla-days }}
+        unit: days
+        slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Check DR runbook SLA
+      uses: ./.github/workflows/check-workflow-sla
+      with:
+        workflow: check-dr-runbook.yml
+        sla: ${{ inputs.dr-runbook-sla-days }}
         unit: days
         slack-channel-id: ${{ inputs.slack-channel-id }}
     - name: Check DR throwaway SLA
