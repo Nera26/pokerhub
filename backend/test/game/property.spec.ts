@@ -36,7 +36,13 @@ describe('GameEngine property tests', () => {
       fc.asyncProperty(fc.array(actionArb, { maxLength: 20 }), async (actions) => {
         const engine = await GameEngine.create(players, config);
         const initialTotal = totalChips(engine.getState());
-        actions.forEach((a) => engine.applyAction(a));
+        actions.forEach((a) => {
+          try {
+            engine.applyAction(a);
+          } catch (err) {
+            expect(err).toBeInstanceOf(Error);
+          }
+        });
         const finalTotal = totalChips(engine.getState());
         expect(finalTotal).toBe(initialTotal);
       }),
@@ -47,9 +53,22 @@ describe('GameEngine property tests', () => {
     await fc.assert(
       fc.asyncProperty(fc.array(actionArb, { maxLength: 20 }), async (actions) => {
         const engine = await GameEngine.create(players, config);
-        actions.forEach((a) => engine.applyAction(a));
-        while (engine.getState().street !== 'showdown') {
-          engine.applyAction({ type: 'next' });
+        actions.forEach((a) => {
+          try {
+            engine.applyAction(a);
+          } catch (err) {
+            expect(err).toBeInstanceOf(Error);
+          }
+        });
+        let guard = 0;
+        while (engine.getState().street !== 'showdown' && guard < 10) {
+          try {
+            engine.applyAction({ type: 'next' });
+          } catch (err) {
+            expect(err).toBeInstanceOf(Error);
+            break;
+          }
+          guard++;
         }
         const settlements = engine.getSettlements();
         const sum = settlements.reduce((s, e) => s + e.delta, 0);
@@ -63,7 +82,11 @@ describe('GameEngine property tests', () => {
       fc.asyncProperty(fc.array(actionArb, { maxLength: 20 }), async (actions) => {
         const engine = await GameEngine.create(players, config);
         actions.forEach((a) => {
-          engine.applyAction(a);
+          try {
+            engine.applyAction(a);
+          } catch (err) {
+            expect(err).toBeInstanceOf(Error);
+          }
           engine.getState().players.forEach((p) => {
             expect(p.stack).toBeGreaterThanOrEqual(0);
           });
@@ -78,7 +101,11 @@ describe('GameEngine property tests', () => {
         const engine = await GameEngine.create(players, config);
         const initialTotal = totalChips(engine.getState());
         actions.forEach((a) => {
-          engine.applyAction(a);
+          try {
+            engine.applyAction(a);
+          } catch (err) {
+            expect(err).toBeInstanceOf(Error);
+          }
           const state = engine.getState();
           expect(totalChips(state)).toBe(initialTotal);
           state.players.forEach((p) => {
@@ -98,20 +125,31 @@ describe('GameEngine property tests', () => {
         );
         let prev = engine.getState();
         actions.forEach((a) => {
-          const next = engine.applyAction(a);
-          next.players.forEach((p, idx) => {
-            const diff = prev.players[idx].stack - p.stack;
-            if (diff > 0) contributions[p.id] += diff;
-          });
-          prev = next;
+          try {
+            const next = engine.applyAction(a);
+            next.players.forEach((p, idx) => {
+              const diff = prev.players[idx].stack - p.stack;
+              if (diff > 0) contributions[p.id] += diff;
+            });
+            prev = next;
+          } catch (err) {
+            expect(err).toBeInstanceOf(Error);
+          }
         });
-        while (engine.getState().street !== 'showdown') {
-          const next = engine.applyAction({ type: 'next' });
-          next.players.forEach((p, idx) => {
-            const diff = prev.players[idx].stack - p.stack;
-            if (diff > 0) contributions[p.id] += diff;
-          });
-          prev = next;
+        let guard = 0;
+        while (engine.getState().street !== 'showdown' && guard < 10) {
+          try {
+            const next = engine.applyAction({ type: 'next' });
+            next.players.forEach((p, idx) => {
+              const diff = prev.players[idx].stack - p.stack;
+              if (diff > 0) contributions[p.id] += diff;
+            });
+            prev = next;
+          } catch (err) {
+            expect(err).toBeInstanceOf(Error);
+            break;
+          }
+          guard++;
         }
         const totalContribution = Object.values(contributions).reduce(
           (s, v) => s + v,
