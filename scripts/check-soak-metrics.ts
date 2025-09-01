@@ -6,10 +6,19 @@ import * as path from 'path';
 
 type Regression = { level: 'critical' | 'warning'; message: string };
 
-function writeAndExit(regressions: Regression[]): never {
+function writeAndExit(regressions: Regression[], metrics?: {
+  latencyP95?: number | null;
+  throughput?: number | null;
+}): never {
+  const summary = {
+    latencyP95: metrics?.latencyP95 ?? null,
+    throughput: metrics?.throughput ?? null,
+    regressions,
+  };
+  fs.writeFileSync('soak-summary.json', JSON.stringify(summary, null, 2));
   fs.writeFileSync(
     'soak-regression.json',
-    JSON.stringify({ regressions }, null, 2),
+    JSON.stringify(summary, null, 2),
   );
   for (const r of regressions) {
     console.error(r.message);
@@ -134,16 +143,25 @@ if (prevThr.length > 0 && latestThr < avgThr * (1 - deviationPct / 100)) {
     message: `Throughput ${latestThr} deviates >${deviationPct}% from avg ${avgThr}`,
   });
 }
+try {
+  execSync(
+    `gcloud monitoring metrics write custom.googleapis.com/soak/latency ${latestLat} ` +
+      `--labels build_sha=${process.env.GITHUB_SHA},run_id=${process.env.GITHUB_RUN_ID}`,
+  );
+  execSync(
+    `gcloud monitoring metrics write custom.googleapis.com/soak/throughput ${latestThr} ` +
+      `--labels build_sha=${process.env.GITHUB_SHA},run_id=${process.env.GITHUB_RUN_ID}`,
+  );
+} catch (err) {
+  console.error('Failed to write Cloud Monitoring metrics');
+  console.error(err);
+}
+
+const summary = { latencyP95: latestLat, throughput: latestThr, regressions };
+fs.writeFileSync('soak-summary.json', JSON.stringify(summary, null, 2));
 
 if (regressions.length > 0) {
-  fs.writeFileSync(
-    'soak-regression.json',
-    JSON.stringify(
-      { latencyP95: latestLat, throughput: latestThr, regressions },
-      null,
-      2,
-    ),
-  );
+  fs.writeFileSync('soak-regression.json', JSON.stringify(summary, null, 2));
   for (const r of regressions) {
     console.error(r.message);
   }
@@ -151,5 +169,5 @@ if (regressions.length > 0) {
 }
 
 console.log(
-  `Recent metrics found in gs://${bucket}; latency p95=${latestLat}ms throughput=${latestThr}`
+  `Recent metrics found in gs://${bucket}; latency p95=${latestLat}ms throughput=${latestThr}`,
 );

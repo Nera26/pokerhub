@@ -32,6 +32,7 @@ import {
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
 import { metrics, trace } from '@opentelemetry/api';
 import PQueue from 'p-queue';
+import { diff } from './state-diff';
 
 /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-redundant-type-constituents */
 
@@ -141,21 +142,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     setInterval(() => void this.trimActionHashes(), 60 * 60 * 1000);
   }
 
-  private diff(prev: any, curr: any): Record<string, any> {
-    if (!prev) return curr as Record<string, any>;
-    const delta: Record<string, any> = {};
-    for (const key of Object.keys(curr as Record<string, any>)) {
-      const pv = (prev as any)[key];
-      const cv = (curr as any)[key];
-      if (pv && cv && typeof pv === 'object' && typeof cv === 'object') {
-        const d = this.diff(pv, cv);
-        if (Object.keys(d).length) delta[key] = d;
-      } else if (pv !== cv) {
-        delta[key] = cv;
-      }
-    }
-    return delta;
-  }
 
   private hashAction(id: string) {
     return createHash('sha256').update(id).digest('hex');
@@ -257,7 +243,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.enqueue(client, 'state', payload, true);
 
     const prev = this.states.get(tableId);
-    const delta = this.diff(prev, state);
+    const delta = diff(prev, state);
     this.states.set(tableId, state);
     if (this.server) {
       this.server.emit('server:StateDelta', {
@@ -639,7 +625,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       };
       GameStateSchema.parse(payload);
       const prev = this.states.get(tableId);
-      const delta = this.diff(prev, state);
+      const delta = diff(prev, state);
       this.states.set(tableId, state);
       this.server.to(tableId).emit('state', payload);
       this.server.to(tableId).emit('server:StateDelta', {

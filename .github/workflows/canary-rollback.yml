@@ -5,7 +5,42 @@ on:
     types: [canary-burn]
 
 jobs:
+  spectator-privacy:
+    runs-on: ubuntu-latest
+    env:
+      SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER || vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT || vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
+      - uses: ./.github/actions/spectator-privacy-check
+      - name: Verify sanitized logs
+        if: always()
+        run: |
+          if rg -i "userId|tableSecret|sessionToken|email|ipAddress" backend-tests.log frontend-tests.log; then
+            echo "PII found in logs" >&2
+            exit 1
+          fi
+      - name: Copy logs to spectator bucket
+        if: always()
+        run: |
+          gsutil cp backend-tests.log frontend-tests.log gs://$SPECTATOR_PRIVACY_BUCKET/${{ github.run_id }}/
+      - name: Upload logs as artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spectator-privacy-logs
+          path: |
+            backend-tests.log
+            frontend-tests.log
+
   rollback:
+    needs: spectator-privacy
     runs-on: ubuntu-latest
     environment: production
     steps:
