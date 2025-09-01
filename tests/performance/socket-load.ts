@@ -24,8 +24,14 @@ interface Assignment {
   tableId: number;
 }
 
+interface TableStat {
+  latencies: number[];
+  actions: number;
+}
+
 interface WorkerReport {
   latencies: number[];
+  tableStats: Record<number, TableStat>;
   dropped: number;
   assignments: Assignment[];
   gc: { type: string; duration: number }[];
@@ -96,6 +102,7 @@ async function simulateClient(
   latencies: number[],
   dropped: { count: number },
   rng: () => number,
+  tableStats: Record<number, TableStat>,
 ): Promise<void> {
   return new Promise((resolve) => {
     const WS_URL = process.env.WS_URL || "ws://localhost:3001";
@@ -110,11 +117,15 @@ async function simulateClient(
         socket
           .timeout(5000)
           .emit("action", { move: "check" }, (err: unknown) => {
+            const stat = (tableStats[tableId] ||= { latencies: [], actions: 0 });
             if (err) {
               dropped.count++;
             } else {
-              latencies.push(Date.now() - start);
+              const latency = Date.now() - start;
+              latencies.push(latency);
+              stat.latencies.push(latency);
             }
+            stat.actions++;
             actions++;
             if (actions < ACTIONS_PER_CLIENT) {
               setTimeout(act, ACTION_INTERVAL_MS + rng() * ACTION_INTERVAL_MS);
@@ -140,6 +151,7 @@ async function workerMain() {
   const dropped = { count: 0 };
   const tasks: Promise<void>[] = [];
   const usedAssignments: Assignment[] = [];
+  const tableStats: Record<number, TableStat> = {};
 
   let sources: Assignment[];
   if (assignments.length > 0) {
@@ -156,7 +168,7 @@ async function workerMain() {
   for (const { seed, tableId } of sources) {
     const clientRng = mulberry32(seed);
     usedAssignments.push({ seed, tableId });
-    tasks.push(simulateClient(tableId, latencies, dropped, clientRng));
+    tasks.push(simulateClient(tableId, latencies, dropped, clientRng, tableStats));
   }
 
   const gcEvents: { type: string; duration: number }[] = [];
@@ -169,7 +181,14 @@ async function workerMain() {
 
   await Promise.all(tasks);
   obs.disconnect();
-  process.send?.({ latencies, dropped: dropped.count, assignments: usedAssignments, gc: gcEvents, memory: process.memoryUsage() } as WorkerReport);
+  process.send?.({
+    latencies,
+    tableStats,
+    dropped: dropped.count,
+    assignments: usedAssignments,
+    gc: gcEvents,
+    memory: process.memoryUsage(),
+  } as WorkerReport);
   process.exit(0);
 }
 
@@ -194,6 +213,8 @@ async function primaryMain(replay?: RunSeeds) {
   const allAssignments: Array<Assignment[]> = [];
   const allGc: Array<{ type: string; duration: number }[]> = [];
   const allMemory: NodeJS.MemoryUsage[] = [];
+  const perTable: Record<number, TableStat> = {};
+  const startTime = Date.now();
 
   for (let i = 0; i < workers; i++) {
     const seed = replay ? replay.workers[i]?.seed ?? 0 : Math.floor(runRng() * 0xffffffff);
@@ -213,6 +234,11 @@ async function primaryMain(replay?: RunSeeds) {
       allAssignments[idx] = msg.assignments;
       allGc[idx] = msg.gc;
       allMemory[idx] = msg.memory;
+      for (const [id, stat] of Object.entries(msg.tableStats)) {
+        const t = (perTable[Number(id)] ||= { latencies: [], actions: 0 });
+        t.latencies.push(...stat.latencies);
+        t.actions += stat.actions;
+      }
     });
   }
 
@@ -237,8 +263,37 @@ async function primaryMain(replay?: RunSeeds) {
         `${METRICS_DIR}/memory-gc.json`,
         JSON.stringify({ gc: allGc.flat(), memory: allMemory }, null, 2),
       );
+
+      const durationMin = (Date.now() - startTime) / 60000;
+      const tableMetrics: Record<number, Histogram & { actionsPerMin: number }> = {};
+      for (const [id, stat] of Object.entries(perTable)) {
+        const histT = recordHistogram(stat.latencies);
+        tableMetrics[Number(id)] = {
+          ...histT,
+          actionsPerMin: stat.actions / durationMin,
+        };
+      }
+      fs.writeFileSync(
+        `${METRICS_DIR}/table-metrics.json`,
+        JSON.stringify(tableMetrics, null, 2),
+      );
+
+      const P95_LIMIT = Number(process.env.P95_LIMIT || 120);
+      const TPS_LIMIT = Number(process.env.TPS_LIMIT || 15);
+      let failed = false;
+      for (const m of Object.values(tableMetrics)) {
+        if (m.p95 > P95_LIMIT || m.actionsPerMin < TPS_LIMIT) {
+          failed = true;
+          break;
+        }
+      }
       console.log("Latency ms", hist, "dropped", droppedFrames);
-      process.exit(0);
+      if (failed) {
+        console.error("Performance thresholds exceeded");
+        process.exit(1);
+      } else {
+        process.exit(0);
+      }
     }
   });
 }
