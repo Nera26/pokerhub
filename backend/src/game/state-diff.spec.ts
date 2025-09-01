@@ -10,6 +10,32 @@ describe('state diff', () => {
   it('diffs arrays of objects', () => {
     const prev = { arr: [{ x: 1 }, { x: 2 }] };
     const curr = { arr: [{ x: 1 }, { x: 3 }, { x: 4 }] };
-    expect(diff(prev, curr)).toEqual({ arr: { '1': { x: 3 }, '2': { x: 4 } } });
+    expect(diff(prev, curr)).toEqual({
+      arr: { '1': { x: 3 }, '2': { x: 4 }, length: 3 },
+    });
+  });
+
+  it('diffs nested arrays', () => {
+    const prev = { arr: [[1], [2]] };
+    const curr = { arr: [[1, 2], [2]] };
+    expect(diff(prev, curr)).toEqual({
+      arr: { '0': { '1': 2, length: 2 } },
+    });
+  });
+
+  it('handles array deletions', () => {
+    const prev = { arr: [1, 2, 3] };
+    const curr = { arr: [1, 3] };
+    expect(diff(prev, curr)).toEqual({
+      arr: { '1': 3, length: 2 },
+    });
+  });
+
+  it('handles array insertions', () => {
+    const prev = { arr: [1, 2] };
+    const curr = { arr: [1, 2, 3] };
+    expect(diff(prev, curr)).toEqual({
+      arr: { '2': 3, length: 3 },
+    });
   });
 });
