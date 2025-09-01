@@ -11,6 +11,8 @@ import { HandRNG } from '../rng';
 import { Repository } from 'typeorm';
 import { Hand } from '../../database/entities/hand.entity';
 import { EventPublisher } from '../../events/events.service';
+import { mkdirSync, writeFileSync } from 'fs';
+import path from 'path';
 
 /**
  * GameEngine orchestrates the poker hand state machine, keeping
@@ -238,6 +240,16 @@ export class GameEngine {
     // Finalize proof and persist final hand log
     const proof = this.rng.reveal();
     this.log.recordProof(proof);
+
+    try {
+      const dir = path.resolve(process.cwd(), '..', 'storage', 'proofs');
+      mkdirSync(dir, { recursive: true });
+      const file = path.join(dir, `${this.handId}.json`);
+      writeFileSync(file, JSON.stringify(proof));
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('failed to write proof file', err);
+    }
 
     if (this.handRepo) {
       await this.handRepo.save({
