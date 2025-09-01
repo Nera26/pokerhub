@@ -23,6 +23,23 @@ sub?.on('message', (channel, msg) => {
 });
 
 let settlement: SettlementService;
+let previousState: GameState | undefined;
+
+function diff(prev: any, curr: any): Record<string, any> {
+  if (!prev) return curr as Record<string, any>;
+  const delta: Record<string, any> = {};
+  for (const key of Object.keys(curr as Record<string, any>)) {
+    const pv = (prev as any)[key];
+    const cv = (curr as any)[key];
+    if (pv && cv && typeof pv === 'object' && typeof cv === 'object') {
+      const d = diff(pv, cv);
+      if (Object.keys(d).length) delta[key] = d;
+    } else if (pv !== cv) {
+      delta[key] = cv;
+    }
+  }
+  return delta;
+}
 
 async function getSettlement() {
   if (process.env.NODE_ENV === 'test') {
@@ -64,9 +81,11 @@ async function main() {
             const svc = await getSettlement();
             const idx = engine.getHandLog().slice(-1)[0]?.[0] ?? 0;
             await svc.reserve(engine.getHandId(), state.street, idx);
+            const delta = diff(previousState, state);
+            previousState = state;
             port.postMessage({ event: 'state', state });
             await svc.commit(engine.getHandId(), state.street, idx);
-            await pub?.publish(diffChannel, JSON.stringify([idx, state]));
+            await pub?.publish(diffChannel, JSON.stringify([idx, delta]));
           }
           port.postMessage({ seq: msg.seq, state });
           break;

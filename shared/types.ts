@@ -196,6 +196,13 @@ export const GameStateSchema = z
 
 export type GameState = z.infer<typeof GameStateSchema>;
 
+export const GameStateDeltaSchema = z.object({
+  version: z.literal('1'),
+  tick: z.number(),
+  delta: z.record(z.unknown()),
+});
+export type GameStateDelta = z.infer<typeof GameStateDeltaSchema>;
+
 export const TournamentSchema = z.object({
   id: z.string(),
   title: z.string(),

@@ -15,13 +15,26 @@ const ackChannel = `room:${workerData.tableId}:snapshotAck`;
 let log: Array<[number, GameState]> = [];
 let current: GameState | undefined;
 
+function applyDelta(target: any, delta: any): any {
+  if (!delta || typeof delta !== 'object') return delta;
+  const result: any = Array.isArray(target) ? [...(target ?? [])] : { ...(target ?? {}) };
+  for (const [key, value] of Object.entries(delta)) {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      result[key] = applyDelta(result[key], value);
+    } else {
+      result[key] = value as any;
+    }
+  }
+  return result;
+}
+
 if (redis) {
   void redis.subscribe(diffChannel);
   redis.on('message', (_channel, msg) => {
-    const [idx, state] = JSON.parse(msg) as [number, GameState];
-    log[idx] = [idx, state];
-    current = state;
-    port.postMessage({ event: 'state', state });
+    const [idx, delta] = JSON.parse(msg) as [number, GameState];
+    current = applyDelta(current, delta);
+    log[idx] = [idx, current as GameState];
+    port.postMessage({ event: 'state', state: current });
   });
 }
 
