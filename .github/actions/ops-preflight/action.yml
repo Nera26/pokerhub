@@ -20,6 +20,9 @@ inputs:
   dr-failover-sla-days:
     description: "Max age for dr-failover workflow"
     required: true
+  dr-failover-monthly-sla-days:
+    description: "Max age for dr-failover-monthly workflow"
+    required: true
   dr-restore-sla-days:
     description: "Max age for dr-restore workflow"
     required: true
@@ -93,6 +96,13 @@ runs:
       with:
         workflow: dr-failover.yml
         sla: ${{ inputs.dr-failover-sla-days }}
+        unit: days
+        slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Check DR failover monthly SLA
+      uses: ./.github/workflows/check-workflow-sla
+      with:
+        workflow: dr-failover-monthly.yml
+        sla: ${{ inputs.dr-failover-monthly-sla-days }}
         unit: days
         slack-channel-id: ${{ inputs.slack-channel-id }}
     - name: Check DR restore SLA

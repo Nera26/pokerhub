@@ -59,6 +59,7 @@ jobs:
           soak-metrics-sla-hours: 24
           dr-drill-sla-days: 7
           dr-failover-sla-days: 30
+          dr-failover-monthly-sla-days: 30
           dr-restore-sla-days: 30
           dr-runbook-sla-days: 7
           dr-throwaway-sla-days: 7
