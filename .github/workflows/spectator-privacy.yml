@@ -3,6 +3,14 @@ name: spectator-privacy
 on:
   pull_request:
     # Run spectator privacy checks on every pull request
+  workflow_call:
+    secrets:
+      GCP_WORKLOAD_IDENTITY_PROVIDER:
+        required: true
+      GCP_SERVICE_ACCOUNT:
+        required: true
+      GCP_PROJECT_ID:
+        required: true
 
 jobs:
   spectator-privacy:
@@ -11,11 +19,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER || vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT || vars.GCP_SERVICE_ACCOUNT }}
       - uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: ${{ vars.GCP_PROJECT_ID }}
+          project_id: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
       - uses: ./.github/actions/spectator-privacy-check
       - name: Sanitize logs
         if: always()
@@ -23,7 +31,7 @@ jobs:
       - name: DLP scan logs
         if: always()
         env:
-          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
         run: npx ts-node scripts/dlp-scan.ts backend-tests.log frontend-tests.log
       - name: Verify sanitized logs
         if: always()

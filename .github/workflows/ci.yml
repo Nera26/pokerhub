@@ -430,49 +430,14 @@ jobs:
           name: property-${{ github.sha }}
           path: property.log
 
-  spectator-privacy-tests:
+  spectator-privacy:
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
     needs: property
-    runs-on: ubuntu-latest
-    continue-on-error: false
-    env:
-      SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ vars.GCP_PROJECT_ID }}
-      - uses: ./.github/actions/spectator-privacy-check
-      - name: Upload logs to GCS
-        if: always()
-        env:
-          RUN_ID: ${{ github.run_id }}
-        run: |
-          gcloud storage cp backend-tests.log gs://$SPECTATOR_PRIVACY_BUCKET/$RUN_ID/backend-tests.log
-          gcloud storage cp frontend-tests.log gs://$SPECTATOR_PRIVACY_BUCKET/$RUN_ID/frontend-tests.log
-      - name: Verify logs in GCS
-        if: always()
-        env:
-          RUN_ID: ${{ github.run_id }}
-        run: |
-          gcloud storage ls gs://$SPECTATOR_PRIVACY_BUCKET/$RUN_ID/ | tee gcs-logs.txt
-          grep backend-tests.log gcs-logs.txt
-          grep frontend-tests.log gcs-logs.txt
-      - name: Upload spectator privacy logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: spectator-privacy-logs-${{ github.sha }}
-          path: |
-            backend-tests.log
-            frontend-tests.log
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
 
   integration:
-    needs: spectator-privacy-tests
+    needs: spectator-privacy
     runs-on: ubuntu-latest
     continue-on-error: false
     steps:
@@ -698,42 +663,6 @@ jobs:
           payload-file-path: dr-trends-slack.json
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-
-  spectator-privacy:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Wait for spectator-privacy workflow
-        uses: lewagon/wait-on-check-action@v1.3.3
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          check-name: spectator-privacy
-          repo-token: ${{ github.token }}
-          wait-interval: 10
-      - name: Verify spectator-privacy freshness
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -euo pipefail
-          resp=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/spectator-privacy.yml/runs?per_page=1&head_sha=$SHA")
-          updated=$(echo "$resp" | jq -r '.workflow_runs[0].updated_at // empty')
-          if [ -z "$updated" ]; then
-            echo "spectator-privacy workflow missing for commit $SHA" >&2
-            exit 1
-          fi
-          conclusion=$(echo "$resp" | jq -r '.workflow_runs[0].conclusion // empty')
-          if [ "$conclusion" != "success" ]; then
-            echo "spectator-privacy workflow conclusion: ${conclusion:-none}" >&2
-            exit 1
-          fi
-          run_ts=$(date -d "$updated" +%s)
-          now=$(date -u +%s)
-          if [ $((now - run_ts)) -gt $((24*3600)) ]; then
-            echo "spectator-privacy workflow run is stale: $updated" >&2
-            exit 1
-          fi
 
   ops-artifacts:
     needs: [dr-runbook, workflow-sla, dr-trends, spectator-privacy]

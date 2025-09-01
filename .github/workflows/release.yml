@@ -6,6 +6,7 @@ on:
 
 jobs:
   spectator-privacy:
+    # Run reusable spectator privacy checks
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
 
