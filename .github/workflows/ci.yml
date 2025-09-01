@@ -11,6 +11,9 @@ permissions:
   actions: read
 
 jobs:
+  soak-metrics:
+    uses: ./.github/workflows/soak-metrics.yml
+    secrets: inherit
   dr-runbook:
     runs-on: ubuntu-latest
     steps:

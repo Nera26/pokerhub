@@ -1,5 +1,6 @@
 ---
 "on":
+  workflow_call:
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch:
@@ -19,7 +20,6 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT }}
       - id: check
         run: npx ts-node scripts/check-soak-metrics.ts
-        continue-on-error: true
       - name: Prepare regression alert
         if: steps.check.outcome == 'failure'
         env:
@@ -42,3 +42,9 @@ jobs:
         with:
           title: "SLA breached: soak metrics"
           content-filepath: soak-regression.md
+      - name: Upload soak summary
+        if: always() && hashFiles('soak-summary.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: soak-summary
+          path: soak-summary.json
