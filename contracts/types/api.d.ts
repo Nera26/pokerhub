@@ -44,15 +44,60 @@ export interface paths {
       };
     };
   };
+  "/auth/register": {
+    /** Register */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["LoginRequest"];
+        };
+      };
+      responses: {
+        /** @description Registered */
+        200: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
   "/auth/logout": {
     /** Logout */
     post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["RefreshRequest"];
+        };
+      };
       responses: {
         /** @description Logged out */
         200: {
           content: {
             "application/json": components["schemas"]["MessageResponse"];
           };
+        };
+      };
+    };
+  };
+  "/auth/refresh": {
+    /** Refresh access token */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["RefreshRequest"];
+        };
+      };
+      responses: {
+        /** @description Refreshed */
+        200: {
+          content: {
+            "application/json": components["schemas"]["LoginResponse"];
+          };
+        };
+        /** @description Invalid token */
+        401: {
+          content: never;
         };
       };
     };
@@ -1005,6 +1050,9 @@ export interface components {
     };
     MessageResponse: {
       message: string;
+    };
+    RefreshRequest: {
+      refreshToken: string;
     };
     RequestResetRequest: {
       email: string;

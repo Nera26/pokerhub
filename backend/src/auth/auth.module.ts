@@ -14,6 +14,8 @@ import { GbgProvider } from './providers/gbg.provider';
 import { TruliooProvider } from './providers/trulioo.provider';
 import { Account } from '../wallet/account.entity';
 import { KycVerification } from '../database/entities/kycVerification.entity';
+import { User } from '../database/entities/user.entity';
+import { UserRepository } from '../users/user.repository';
 import { CountryProvider } from './providers/country-provider';
 import { startKycWorker } from './kyc.worker';
 import { AuthController } from './auth.controller';
@@ -50,7 +52,7 @@ function providerFactory(config: ConfigService): CountryProvider {
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([Account, KycVerification]),
+    TypeOrmModule.forFeature([Account, KycVerification, User]),
     SessionModule,
     forwardRef(() => AnalyticsModule),
   ],
@@ -66,6 +68,7 @@ function providerFactory(config: ConfigService): CountryProvider {
     AuthGuard,
     AdminGuard,
     GeoIpService,
+    UserRepository,
   ],
   controllers: [AuthController],
   exports: [KycService, AuthGuard, AdminGuard, GeoIpService],

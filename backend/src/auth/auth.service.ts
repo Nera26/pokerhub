@@ -3,17 +3,11 @@ import { SessionService } from '../session/session.service';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import * as bcrypt from 'bcrypt';
-import { randomUUID } from 'crypto';
 import { AnalyticsService } from '../analytics/analytics.service';
-
-interface UserRecord {
-  id: string;
-  password: string;
-}
+import { UserRepository } from '../users/user.repository';
 
 @Injectable()
 export class AuthService {
-  private users = new Map<string, UserRecord>();
   private readonly revokedPrefix = 'revoked:';
 
   constructor(
@@ -21,21 +15,26 @@ export class AuthService {
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
     private readonly config: ConfigService,
     private readonly analytics: AnalyticsService,
-  ) {
-    const hash = bcrypt.hashSync('secret', 10);
-    this.users.set('user@example.com', { id: '1', password: hash });
-  }
+    private readonly users: UserRepository,
+  ) {}
 
   async register(email: string, password: string) {
-    const id = randomUUID();
     const hash = await bcrypt.hash(password, 10);
-    this.users.set(email, { id, password: hash });
-    return id;
+    const user = this.users.create({
+      email,
+      password: hash,
+      username: email,
+    });
+    const saved = await this.users.save(user);
+    return saved.id;
   }
 
-  private async validateUser(email: string, password: string): Promise<string | null> {
-    const user = this.users.get(email);
-    if (!user) return null;
+  private async validateUser(
+    email: string,
+    password: string,
+  ): Promise<string | null> {
+    const user = await this.users.findOne({ where: { email } });
+    if (!user || !user.password) return null;
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return null;
     return user.id;
@@ -67,5 +66,16 @@ export class AuthService {
       ttl,
     );
     return rotated;
+  }
+
+  async logout(refreshToken: string) {
+    const ttl = this.config.get<number>('auth.refreshTtl', 604800);
+    await this.redis.set(
+      `${this.revokedPrefix}${refreshToken}`,
+      '1',
+      'EX',
+      ttl,
+    );
+    await this.sessions.revoke(refreshToken);
   }
 }
