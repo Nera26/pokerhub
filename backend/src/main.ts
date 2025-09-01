@@ -13,9 +13,10 @@ import {
 } from './telemetry/telemetry';
 
 async function bootstrap() {
-  setupTelemetry();
+  await setupTelemetry();
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
+  app.get(Logger).log('Telemetry initialized');
 
   app.use(cookieParser());
   app.use(telemetryMiddleware);
