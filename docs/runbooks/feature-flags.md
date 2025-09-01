@@ -35,6 +35,23 @@ curl -X PUT https://api.pokerhub.local/feature-flags/settlement \
 curl -X DELETE https://api.pokerhub.local/feature-flags/dealing
 ```
 
+### Scoped Flags
+
+```bash
+# disable dealing on a specific table
+curl -X PUT https://api.pokerhub.local/feature-flags/room/TABLE_ID/dealing \
+  -H 'Content-Type: application/json' \
+  -d '{"value": false}'
+
+# disable settlement for a specific tournament
+curl -X PUT https://api.pokerhub.local/feature-flags/tourney/TOURNEY_ID/settlement \
+  -H 'Content-Type: application/json' \
+  -d '{"value": false}'
+
+# remove a room flag
+curl -X DELETE https://api.pokerhub.local/feature-flags/room/TABLE_ID/dealing
+```
+
 ## Frontend Cache
 
 Flags are cached in the browser's `localStorage`. When updating flags,

@@ -816,6 +816,84 @@ export interface paths {
       };
     };
   };
+  "/feature-flags/room/{tableId}/{key}": {
+    /** Set room feature flag */
+    put: {
+      parameters: {
+        path: {
+          tableId: string;
+          key: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["FeatureFlagRequest"];
+        };
+      };
+      responses: {
+        /** @description Flag set */
+        200: {
+          content: {
+            "application/json": components["schemas"]["FeatureFlag"];
+          };
+        };
+      };
+    };
+    /** Delete room feature flag */
+    delete: {
+      parameters: {
+        path: {
+          tableId: string;
+          key: string;
+        };
+      };
+      responses: {
+        /** @description Flag deleted */
+        204: {
+          content: never;
+        };
+      };
+    };
+  };
+  "/feature-flags/tourney/{tourneyId}/{key}": {
+    /** Set tournament feature flag */
+    put: {
+      parameters: {
+        path: {
+          tourneyId: string;
+          key: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["FeatureFlagRequest"];
+        };
+      };
+      responses: {
+        /** @description Flag set */
+        200: {
+          content: {
+            "application/json": components["schemas"]["FeatureFlag"];
+          };
+        };
+      };
+    };
+    /** Delete tournament feature flag */
+    delete: {
+      parameters: {
+        path: {
+          tourneyId: string;
+          key: string;
+        };
+      };
+      responses: {
+        /** @description Flag deleted */
+        204: {
+          content: never;
+        };
+      };
+    };
+  };
 }
 
 export type webhooks = Record<string, never>;
@@ -927,6 +1005,12 @@ export interface components {
       balance: number;
     };
     GameAction: components["schemas"]["PostBlindAction"] | components["schemas"]["BetAction"] | components["schemas"]["RaiseAction"] | components["schemas"]["CallAction"] | components["schemas"]["CheckAction"] | components["schemas"]["FoldAction"] | components["schemas"]["NextAction"];
+    GameStateDelta: {
+      /** @enum {string} */
+      version: "1";
+      tick: number;
+      delta: Record<string, never>;
+    };
     PostBlindAction: {
       /** @enum {string} */
       version: "1";
@@ -1069,22 +1153,6 @@ export interface components {
       method?: "topN" | "icm";
       stacks?: number[];
     };
-    HotPatchLevelRequest: {
-      level: number;
-      smallBlind: number;
-      bigBlind: number;
-    };
-    LeaderboardEntry: {
-      playerId: string;
-      rank: number;
-      points: number;
-      net: number;
-      bb100: number;
-      hours: number;
-      roi: number;
-      finishes: { [key: string]: number };
-    };
-    LeaderboardResponse: components["schemas"]["LeaderboardEntry"][];
   };
   responses: never;
   parameters: never;
