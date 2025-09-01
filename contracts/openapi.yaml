@@ -617,7 +617,7 @@ paths:
               schema:
                 type: string
 
-  /hands/{id}/state/{actionIndex}:
+  /hands/{id}/state/{index}:
     get:
       summary: Reconstruct hand state at action index
       parameters:
@@ -627,7 +627,7 @@ paths:
           schema:
             type: string
         - in: path
-          name: actionIndex
+          name: index
           required: true
           schema:
             type: integer
@@ -637,7 +637,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HandStateResponse'
+                $ref: '#/components/schemas/GameState'
   /analytics/collusion/flagged:
     get:
       summary: List collusion flagged sessions
@@ -1806,9 +1806,42 @@ components:
       required:
         - id
         - proof
-  HandStateResponse:
+  GameStatePlayer:
     type: object
     properties:
+      id:
+        type: string
+      stack:
+        type: number
+      folded:
+        type: boolean
+      bet:
+        type: number
+      allIn:
+        type: boolean
+      holeCards:
+        type: array
+        items:
+          type: number
+        minItems: 2
+        maxItems: 2
+    required:
+      - id
+      - stack
+      - folded
+      - bet
+      - allIn
+  GameState:
+    type: object
+    properties:
+      version:
+        type: string
+        enum: ['1']
+      tick:
+        type: integer
+      phase:
+        type: string
+        enum: [WAIT_BLINDS, DEAL, BETTING_ROUND, SHOWDOWN, SETTLE, NEXT_HAND]
       street:
         type: string
         enum: [preflop, flop, turn, river, showdown]
@@ -1825,38 +1858,34 @@ components:
               type: array
               items:
                 type: string
+            contributions:
+              type: object
+              additionalProperties:
+                type: number
           required:
             - amount
             - players
+            - contributions
       currentBet:
         type: number
       players:
         type: array
         items:
-          type: object
-          properties:
-            id:
-              type: string
-            stack:
-              type: number
-            folded:
-              type: boolean
-            bet:
-              type: number
-            allIn:
-              type: boolean
-          required:
-            - id
-            - stack
-            - folded
-            - bet
-            - allIn
+          $ref: '#/components/schemas/GameStatePlayer'
+      communityCards:
+        type: array
+        items:
+          type: number
     required:
+      - version
+      - tick
+      - phase
       - street
       - pot
       - sidePots
       - currentBet
       - players
+      - communityCards
     
     FeatureFlagRequest:
       type: object
