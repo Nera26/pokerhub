@@ -6,7 +6,18 @@ const handId = process.argv[2];
 const baseUrl = process.argv[3] || 'http://localhost:3000';
 
 if (!handId) {
-  console.error('Usage: ts-node scripts/verify-hand.ts <handId> [baseUrl]');
+  console.error('Usage: verify-hand <handId> [baseUrl]');
+  process.exit(1);
+}
+
+const proofRes = await fetch(`${baseUrl}/api/hands/${handId}/proof`);
+if (!proofRes.ok) {
+  console.error('Failed to fetch proof');
+  process.exit(1);
+}
+const proof = (await proofRes.json()) as HandProof;
+if (!(await verifyProof(proof))) {
+  console.error('Invalid proof: commitment mismatch');
   process.exit(1);
 }
 
@@ -18,7 +29,6 @@ if (!logRes.ok) {
 const logText = await logRes.text();
 
 let deck: number[] | undefined;
-let proof: HandProof | undefined;
 for (const line of logText.trim().split('\n')) {
   if (!line) continue;
   if (line.startsWith('[')) {
@@ -27,29 +37,10 @@ for (const line of logText.trim().split('\n')) {
         const entry = JSON.parse(line);
         deck = entry[2]?.deck;
       } catch {
-        // ignore malformed entry
+        // ignore
       }
-    }
-  } else {
-    try {
-      const obj = JSON.parse(line);
-      if (obj.proof) {
-        proof = obj.proof as HandProof;
-      }
-    } catch {
-      // ignore malformed json
     }
   }
-}
-
-if (!proof) {
-  console.error('Proof not found in log');
-  process.exit(1);
-}
-
-if (!(await verifyProof(proof))) {
-  console.error('Invalid proof: commitment mismatch');
-  process.exit(1);
 }
 
 if (!Array.isArray(deck)) {
