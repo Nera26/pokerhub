@@ -3,6 +3,11 @@
 
 The leaderboard is rebuilt automatically every 24h but can also be triggered manually.
 
+`LeaderboardService` streams recent game events and writes the resulting top
+players to Redis under `leaderboard:data`. This keeps `GET /leaderboard` fast
+even after Redis restarts. The scheduled run occurs once a day, and the same
+`rebuild` routine is invoked by the CLI and admin API endpoints below.
+
 ## Dashboard
 - Metabase: [Leaderboard](../analytics-dashboards.md)
 

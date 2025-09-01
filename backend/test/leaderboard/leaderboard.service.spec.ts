@@ -33,6 +33,9 @@ class MockAnalytics {
   ingest(): Promise<void> {
     return Promise.resolve();
   }
+  select(_sql: string): Promise<any[]> {
+    return Promise.resolve([]);
+  }
 }
 
 describe('LeaderboardService', () => {
@@ -110,6 +113,59 @@ describe('LeaderboardService', () => {
       },
     ]);
     expect(cache.ttl.get('leaderboard:hot')).toBe(30);
+  });
+
+  it('fetches from analytics when cache is empty and filters banned players', async () => {
+    const analytics = new MockAnalytics();
+    const selectSpy = jest
+      .spyOn(analytics, 'select')
+      .mockResolvedValue([
+        {
+          playerId: 'alice',
+          rank: 1,
+          points: 10,
+          net: 100,
+          bb100: 50,
+          hours: 2,
+          roi: 2,
+          finishes: { 1: 1 },
+        },
+        {
+          playerId: 'bob',
+          rank: 2,
+          points: 5,
+          net: -50,
+          bb100: -50,
+          hours: 1,
+          roi: -1,
+          finishes: { 2: 1 },
+        },
+      ]);
+    const userRepo = {
+      find: jest
+        .fn()
+        .mockResolvedValue([{ id: 'alice', banned: false }]),
+    } as any;
+    const svc = new LeaderboardService(
+      cache as unknown as Cache,
+      userRepo,
+      analytics as unknown as any,
+      new ConfigService(),
+    );
+    const top = await svc.getTopPlayers();
+    expect(selectSpy).toHaveBeenCalled();
+    expect(top).toEqual([
+      {
+        playerId: 'alice',
+        rank: 1,
+        points: 10,
+        net: 100,
+        bb100: 50,
+        hours: 2,
+        roi: 2,
+        finishes: { 1: 1 },
+      },
+    ]);
   });
 
   it('rebuild filters by session minimum and decay', async () => {
