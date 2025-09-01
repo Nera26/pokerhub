@@ -795,28 +795,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
-  /users/{id}/balance:
-    post:
-      summary: Adjust user balance
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BalanceAdjustmentRequest'
-      responses:
-        '200':
-          description: Updated balance
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
 
   /feature-flags:
     get:
@@ -1203,13 +1181,6 @@ components:
       properties:
         reason:
           type: string
-    BalanceAdjustmentRequest:
-      type: object
-      properties:
-        amount:
-          type: number
-      required:
-        - amount
     User:
       type: object
       properties:
@@ -1221,13 +1192,10 @@ components:
           type: string
         banned:
           type: boolean
-        balance:
-          type: number
       required:
         - id
         - username
         - banned
-        - balance
     GameAction:
       oneOf:
         - $ref: '#/components/schemas/PostBlindAction'

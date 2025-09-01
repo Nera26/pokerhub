@@ -82,7 +82,6 @@ describe('UsersController (e2e)', () => {
       .send({ username: 'alice' })
       .expect(201);
     expect(res.body.username).toBe('alice');
-    expect(res.body.balance).toBe(0);
   });
 
   it('rejects invalid create', async () => {
@@ -108,7 +107,7 @@ describe('UsersController (e2e)', () => {
       .expect(404);
   });
 
-  it('bans user and adjusts balance', async () => {
+  it('bans a user', async () => {
     const create = await request(app.getHttpServer())
       .post('/users')
       .send({ username: 'carol' });
@@ -118,22 +117,6 @@ describe('UsersController (e2e)', () => {
       .send({})
       .expect(200)
       .expect((res) => expect(res.body.banned).toBe(true));
-    await request(app.getHttpServer())
-      .post(`/users/${id}/balance`)
-      .send({ amount: 50 })
-      .expect(200)
-      .expect((res) => expect(res.body.balance).toBe(50));
-  });
-
-  it('rejects invalid balance adjustment', async () => {
-    const create = await request(app.getHttpServer())
-      .post('/users')
-      .send({ username: 'dave' });
-    const id = create.body.id;
-    await request(app.getHttpServer())
-      .post(`/users/${id}/balance`)
-      .send({ amount: 'nope' })
-      .expect(400);
   });
 });
 

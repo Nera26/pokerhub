@@ -541,7 +541,6 @@ export const UserSchema = z.object({
   username: z.string(),
   avatarKey: z.string().optional(),
   banned: z.boolean(),
-  balance: z.number(),
 });
 export type User = z.infer<typeof UserSchema>;
 
@@ -561,10 +560,3 @@ export const BanUserSchema = z.object({
   reason: z.string().optional(),
 });
 export type BanUserRequest = z.infer<typeof BanUserSchema>;
-
-export const BalanceAdjustmentSchema = z.object({
-  amount: z.number(),
-});
-export type BalanceAdjustmentRequest = z.infer<
-  typeof BalanceAdjustmentSchema
->;

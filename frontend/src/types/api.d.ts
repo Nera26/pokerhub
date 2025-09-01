@@ -845,39 +845,40 @@ export interface paths {
           "application/json": components["schemas"]["BanUserRequest"];
         };
       };
-      responses: {
-        /** @description Banned user */
-        200: {
-          content: {
-            "application/json": components["schemas"]["User"];
-          };
-        };
+     responses: {
+    /** @description Banned user */
+    200: {
+      content: {
+        "application/json": components["schemas"]["User"];
       };
     };
   };
-  "/users/{id}/balance": {
-    /** Adjust user balance */
-    post: {
-      parameters: {
-        path: {
-          id: string;
-        };
+};
+  
+"/users/{id}/balance": {
+  /** Adjust user balance */
+  post: {
+    parameters: {
+      path: {
+        id: string;
       };
-      requestBody: {
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BalanceAdjustmentRequest"];
+      };
+    };
+    responses: {
+      /** @description Updated balance */
+      200: {
         content: {
-          "application/json": components["schemas"]["BalanceAdjustmentRequest"];
-        };
-      };
-      responses: {
-        /** @description Updated balance */
-        200: {
-          content: {
-            "application/json": components["schemas"]["User"];
-          };
+          "application/json": components["schemas"]["User"];
         };
       };
     };
   };
+};
+
   "/feature-flags": {
     /** List feature flags */
     get: {
@@ -1117,15 +1118,11 @@ export interface components {
     BanUserRequest: {
       reason?: string;
     };
-    BalanceAdjustmentRequest: {
-      amount: number;
-    };
     User: {
       id: string;
       username: string;
       avatarKey?: string;
       banned: boolean;
-      balance: number;
     };
     GameAction: components["schemas"]["PostBlindAction"] | components["schemas"]["BetAction"] | components["schemas"]["RaiseAction"] | components["schemas"]["CallAction"] | components["schemas"]["CheckAction"] | components["schemas"]["FoldAction"] | components["schemas"]["NextAction"];
     GameStateDelta: {

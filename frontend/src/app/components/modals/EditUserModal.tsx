@@ -12,7 +12,6 @@ interface User {
   id: number;
   name: string;
   email: string;
-  balance: number;
   status: 'Active' | 'Frozen' | 'Banned';
 }
 
@@ -68,7 +67,7 @@ export default function EditUserModal({
   }, [isOpen, user, reset]);
 
   const submit = handleSubmit(({ name, email, status }) => {
-    onSave({ ...user, name, email, balance: user.balance, status });
+    onSave({ ...user, name, email, status });
     onClose();
   });
 

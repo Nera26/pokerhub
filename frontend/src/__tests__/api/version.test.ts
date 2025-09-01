@@ -16,7 +16,7 @@ describe('checkApiContractVersion', () => {
   it('throws on mismatched major version', async () => {
     mockedServerFetch.mockResolvedValue(
       new Response(
-        JSON.stringify({ status: 'ok', contractVersion: '2.0.0' }),
+        JSON.stringify({ status: 'ok', contractVersion: '3.0.0' }),
         {
           status: 200,
           headers: { 'Content-Type': 'application/json' },

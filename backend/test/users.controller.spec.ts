@@ -16,7 +16,6 @@ describe('UsersController ID validation', () => {
           useValue: {
             update: jest.fn(),
             ban: jest.fn(),
-            adjustBalance: jest.fn(),
             create: jest.fn(),
           },
         },
@@ -45,10 +44,4 @@ describe('UsersController ID validation', () => {
       .expect(400);
   });
 
-  it('returns 400 for invalid id on balance adjustment', async () => {
-    await request(app.getHttpServer())
-      .post('/users/not-a-uuid/balance')
-      .send({ amount: 10 })
-      .expect(400);
-  });
 });
