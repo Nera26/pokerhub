@@ -16,5 +16,4 @@
     - spectator-privacy
     - "ci / spectator-privacy"
     - soak
-    - soak-metrics
     - dr-heartbeat
