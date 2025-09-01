@@ -41,9 +41,9 @@ jobs:
         env:
           BUCKET: ${{ vars.DR_METRICS_BUCKET }}
         run: |
-          uri="gs://$BUCKET/${GITHUB_RUN_ID}/dr-failover.metrics"
+          uri="gs://$BUCKET/failover/${GITHUB_RUN_ID}/dr-failover.metrics"
           gcloud storage cp dr-failover.metrics "$uri"
-          url="https://storage.googleapis.com/$BUCKET/${GITHUB_RUN_ID}/dr-failover.metrics"
+          url="https://storage.googleapis.com/$BUCKET/failover/${GITHUB_RUN_ID}/dr-failover.metrics"
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: Publish failover results
