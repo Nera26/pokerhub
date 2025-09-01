@@ -192,6 +192,11 @@ export class GameGateway
       removeCallback(cb: (r: ObservableResult) => void): void;
     });
 
+  private static readonly outboundQueueDropped =
+    GameGateway.meter.createCounter('ws_outbound_dropped_total', {
+      description: 'Messages dropped due to full outbound queue',
+    });
+
   private readonly actionHashKey = 'game:action';
   private readonly actionRetentionMs = 24 * 60 * 60 * 1000; // 24h
   private readonly stateKeyPrefix = 'game:state';
@@ -570,6 +575,7 @@ export class GameGateway
       this.queues.set(id, queue);
     }
     if (queue.size + queue.pending >= this.queueLimit) {
+      GameGateway.outboundQueueDropped.add(1, { socketId: id } as Attributes);
       client.emit('server:Error', 'throttled');
       return;
     }

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { RoomManager } from './room.service';
-import { metrics } from '@opentelemetry/api';
+import { metrics, type Attributes, type ObservableResult } from '@opentelemetry/api';
 import PQueue from 'p-queue';
 import type { InternalGameState } from './engine';
 import type { GameState } from '@shared/types';
@@ -28,7 +28,32 @@ export class SpectatorGateway
     { description: 'Number of spectator rate limit hits' },
   );
 
+  private static readonly outboundQueueDepth =
+    SpectatorGateway.meter.createHistogram('ws_outbound_queue_depth', {
+      description: 'Depth of outbound WebSocket message queue',
+      unit: 'messages',
+    });
+
+  private static readonly outboundQueueMax =
+    SpectatorGateway.meter.createObservableGauge?.('ws_outbound_queue_max', {
+      description: 'Maximum outbound WebSocket queue depth per socket',
+      unit: 'messages',
+    }) ??
+    ({
+      addCallback() {},
+      removeCallback() {},
+    } as {
+      addCallback(cb: (r: ObservableResult) => void): void;
+      removeCallback(cb: (r: ObservableResult) => void): void;
+    });
+
+  private static readonly outboundQueueDropped =
+    SpectatorGateway.meter.createCounter('ws_outbound_dropped_total', {
+      description: 'Messages dropped due to full outbound queue',
+    });
+
   private readonly queues = new Map<string, PQueue>();
+  private readonly maxQueueSizes = new Map<string, number>();
   private readonly queueLimit = Number(
     process.env.SPECTATOR_QUEUE_LIMIT ?? '100',
   );
@@ -39,7 +64,16 @@ export class SpectatorGateway
     process.env.SPECTATOR_INTERVAL_MS ?? '10000',
   );
 
-  constructor(private readonly rooms: RoomManager) {}
+  private readonly observeQueueMax = (result: ObservableResult) => {
+    for (const [socketId, max] of this.maxQueueSizes) {
+      result.observe(max, { socketId } as Attributes);
+      this.maxQueueSizes.set(socketId, 0);
+    }
+  };
+
+  constructor(private readonly rooms: RoomManager) {
+    SpectatorGateway.outboundQueueMax.addCallback(this.observeQueueMax);
+  }
 
   async handleConnection(client: Socket) {
     const tableId = (client.handshake.query.tableId as string) || 'default';
@@ -65,6 +99,7 @@ export class SpectatorGateway
   handleDisconnect(client: Socket) {
     this.queues.get(client.id)?.clear();
     this.queues.delete(client.id);
+    this.maxQueueSizes.delete(client.id);
   }
 
   private enqueue(client: Socket, event: string, payload: unknown) {
@@ -81,8 +116,15 @@ export class SpectatorGateway
     if (queue.size + queue.pending >= this.queueLimit) {
       SpectatorGateway.rateLimitHits.add(1);
       SpectatorGateway.droppedFrames.add(1, { reason: 'rate_limit' });
+      SpectatorGateway.outboundQueueDropped.add(1, { socketId: id } as Attributes);
       return;
     }
     void queue.add(() => client.emit(event, payload as GameState));
+    const depth = queue.size + queue.pending;
+    SpectatorGateway.outboundQueueDepth.record(depth, { socketId: id } as Attributes);
+    this.maxQueueSizes.set(
+      id,
+      Math.max(this.maxQueueSizes.get(id) ?? 0, depth),
+    );
   }
 }

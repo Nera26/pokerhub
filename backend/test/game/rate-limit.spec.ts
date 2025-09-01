@@ -1,4 +1,3 @@
-import { GameGateway } from '../../src/game/game.gateway';
 import { RoomManager } from '../../src/game/room.service';
 import { ClockService } from '../../src/game/clock.service';
 
@@ -66,6 +65,36 @@ class DummyRepo {
 }
 
 describe('GameGateway rate limits', () => {
+  let GameGateway: any;
+  let perSocketMock: jest.Mock;
+  let globalMock: jest.Mock;
+
+  beforeEach(() => {
+    jest.resetModules();
+    perSocketMock = jest.fn();
+    globalMock = jest.fn();
+    const getMeterMock = jest.fn(() => ({
+      createHistogram: jest.fn(() => ({ record: jest.fn() })),
+      createCounter: jest.fn((name: string) => {
+        if (name === 'per_socket_limit_exceeded') return { add: perSocketMock };
+        if (name === 'global_limit_exceeded') return { add: globalMock };
+        return { add: jest.fn() };
+      }),
+      createObservableGauge: jest
+        .fn()
+        .mockReturnValue({ addCallback: jest.fn(), removeCallback: jest.fn() }),
+    }));
+    jest.doMock('@opentelemetry/api', () => ({
+      metrics: { getMeter: getMeterMock },
+      trace: {
+        getTracer: () => ({
+          startActiveSpan: (_n: string, fn: any) => fn({ setAttribute: () => {}, end: () => {} }),
+        }),
+      },
+    }));
+    ({ GameGateway } = require('../../src/game/game.gateway'));
+  });
+
   afterEach(() => {
     delete process.env.GATEWAY_GLOBAL_LIMIT;
   });
@@ -90,15 +119,13 @@ describe('GameGateway rate limits', () => {
       }
       await gateway.handleJoin(slow, { actionId: 'b1' });
 
-      const fastErrors = fast.emit.mock.calls.filter(
-        ([ev]: any[]) => ev === 'server:Error',
-      );
-      const slowErrors = slow.emit.mock.calls.filter(
-        ([ev]: any[]) => ev === 'server:Error',
-      );
+      const fastErrors = fast.emit.mock.calls.filter(([ev]: any[]) => ev === 'server:Error');
+      const slowErrors = slow.emit.mock.calls.filter(([ev]: any[]) => ev === 'server:Error');
 
       expect(fastErrors.length).toBe(1);
       expect(slowErrors.length).toBe(0);
+      expect(perSocketMock).toHaveBeenCalledTimes(1);
+      expect(globalMock).not.toHaveBeenCalled();
     } finally {
       await rooms.onModuleDestroy();
     }
@@ -126,13 +153,11 @@ describe('GameGateway rate limits', () => {
       }
       await gateway.handleJoin(clients[5], { actionId: 'a5' });
 
-      const errors = clients[5].emit.mock.calls.filter(
-        ([ev]: any[]) => ev === 'server:Error',
-      );
+      const errors = clients[5].emit.mock.calls.filter(([ev]: any[]) => ev === 'server:Error');
       expect(errors.length).toBe(1);
+      expect(globalMock).toHaveBeenCalledTimes(1);
     } finally {
       await rooms.onModuleDestroy();
     }
   });
 });
-
