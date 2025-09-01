@@ -251,7 +251,14 @@ PY
             chaos-summary.json
             gc-heap-metrics.log
 
+  soak-metrics:
+    needs: chaos
+    if: ${{ always() }}
+    uses: ./.github/workflows/soak-metrics.yml
+    secrets: inherit
+
   spectator-privacy:
+    needs: [chaos, soak-metrics]
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

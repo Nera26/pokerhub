@@ -45,8 +45,14 @@ jobs:
             -H 'Content-Type: application/json' \
             -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Latest backup restore failed","source":"github-actions","severity":"error","custom_details":{"runbook":"https://github.com/Nera26/pokerhub/blob/main/docs/runbooks/disaster-recovery.md"}}}'
 
-  spectator-privacy:
+  soak-metrics:
     needs: restore-latest
+    if: ${{ always() }}
+    uses: ./.github/workflows/soak-metrics.yml
+    secrets: inherit
+
+  spectator-privacy:
+    needs: [restore-latest, soak-metrics]
     if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit

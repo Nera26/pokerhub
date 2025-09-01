@@ -46,7 +46,14 @@ jobs:
           path: ${{ env.METRICS_DIR }}
           retention-days: 7
 
+  soak-metrics:
+    needs: baseline
+    if: ${{ always() }}
+    uses: ./.github/workflows/soak-metrics.yml
+    secrets: inherit
+
   spectator-privacy:
+    needs: [baseline, soak-metrics]
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

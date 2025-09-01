@@ -43,14 +43,21 @@ jobs:
           name: artillery-summary
           path: artillery-summary.json
 
-  spectator-privacy:
+  soak-metrics:
     needs: [k6, artillery]
+    if: ${{ always() }}
+    uses: ./.github/workflows/soak-metrics.yml
+    secrets: inherit
+
+  spectator-privacy:
+    needs: [k6, artillery, soak-metrics]
     uses: ../spectator-privacy.yml
     with:
       logs: k6-summary.json artillery-summary.json
     secrets: inherit
 
   spectator-privacy:
+    needs: soak-metrics
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:
