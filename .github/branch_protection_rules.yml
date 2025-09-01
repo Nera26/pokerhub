@@ -5,6 +5,7 @@
     - "ci / dr-trends"
     - "ci / workflow-sla"
     - "ci / ops-sla"
+    - soak-metrics
     - contracts
     - "deploy / preflight"
     - "deploy / deploy"
@@ -13,3 +14,4 @@
     - "ci / ops-artifacts-verify"
     - spectator-retention
     - "ci / spectator-privacy"
+    - soak

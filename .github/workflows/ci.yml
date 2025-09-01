@@ -181,15 +181,6 @@ jobs:
           unit: hours
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
-      - name: Check soak metrics SLA
-        id: soak-metrics
-        uses: ./.github/workflows/check-workflow-sla
-        with:
-          workflow: soak-metrics.yml
-          sla: 24
-          unit: hours
-          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-
       - uses: actions/checkout@v4
       - uses: google-github-actions/auth@v2
         with:
@@ -424,6 +415,18 @@ jobs:
           RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
           GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
         run: npx ts-node scripts/verify-ops-artifacts.ts
+
+  soak-metrics:
+    needs: [ops-preflight, ops-sla]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check soak metrics SLA
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: soak-metrics.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
   docs:
     needs: [ops-preflight, ops-sla, workflow-sla]
@@ -699,7 +702,7 @@ jobs:
             metrics/cpu-histogram.json
             metrics/baseline.json
 
-  soak-metrics:
+  run-soak-metrics:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: soak
     uses: ./.github/workflows/soak-metrics.yml
