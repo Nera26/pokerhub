@@ -786,61 +786,7 @@ jobs:
           jq -n --arg rk "$PAGERDUTY_ROUTING_KEY" --arg msg "$summary" '{routing_key:$rk,event_action:"trigger",payload:{summary:$msg,source:"ci",severity:"critical"}}' > pd.json
           curl -X POST -H 'Content-Type: application/json' -d @pd.json https://events.pagerduty.com/v2/enqueue
 
-  ops-artifacts:
+  ops-artifacts-verify:
     needs: [dr-runbook, workflow-sla, dr-trends, spectator-privacy]
-    runs-on: ubuntu-latest
-    env:
-      PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
-      SPECTATOR_LOGS_BUCKET: ${{ secrets.SPECTATOR_LOGS_BUCKET }}
-      SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
-      DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
-      SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS || 120 }}
-      SOAK_THROUGHPUT_MIN: ${{ vars.SOAK_THROUGHPUT_MIN || 100 }}
-      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm ci --legacy-peer-deps
-      - uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ vars.GCP_PROJECT_ID }}
-      - name: Check proof archive replication
-        run: npx ts-node scripts/check-proof-archive-replication.ts
-        env:
-          PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
-          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
-      - name: Get spectator privacy run ID
-        id: get_run_id
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -e
-          RUN_ID=$(gh api \
-            repos/${{ github.repository }}/actions/workflows/spectator-privacy-nightly.yml/runs \
-            --jq '.workflow_runs[0].id // empty')
-          if [ -z "$RUN_ID" ]; then
-            echo "No spectator-privacy-nightly run found" >&2
-            exit 1
-          fi
-          echo "RUN_ID=$RUN_ID" >> "$GITHUB_OUTPUT"
-      - name: Verify ops artifacts
-        env:
-          RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
-        run: npx ts-node scripts/verify-ops-artifacts.ts
-      - name: Check soak regressions
-        run: |
-          set +e
-          npx ts-node scripts/check-soak-metrics.ts
-          status=$?
-          if [ -f soak-regression.json ] && [ $(jq '.regressions | length' soak-regression.json) -gt 0 ]; then
-            cat soak-regression.json
-          fi
-          exit $status
-        env:
-          SOAK_TRENDS_BUCKET: ${{ env.SOAK_TRENDS_BUCKET }}
+    uses: ./.github/workflows/ops-artifacts-verify.yml
+    secrets: inherit
