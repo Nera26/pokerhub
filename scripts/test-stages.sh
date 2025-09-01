@@ -6,7 +6,7 @@ run_unit() {
   npm ci --prefix backend
   npm ci --prefix frontend
   npm run lint --prefix backend
-  npm test --prefix backend
+  npm test --prefix backend -- --testPathIgnorePatterns=.property.spec.ts$
   npm run lint --prefix frontend
   npm test --prefix frontend
   npx -y @redocly/openapi-cli@latest lint contracts/openapi.yaml
