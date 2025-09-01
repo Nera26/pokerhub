@@ -37,6 +37,9 @@ jobs:
           - workflow: soak.yml
             sla: 24
             unit: hours
+          - workflow: soak-metrics.yml
+            sla: 24
+            unit: hours
           - workflow: spectator-retention.yml
             sla: 1
             unit: days
