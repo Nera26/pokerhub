@@ -73,6 +73,18 @@ jobs:
             --labels build_sha=${{ github.sha }},run_id=${{ github.run_id }}
           gcloud monitoring metrics write custom.googleapis.com/soak/throughput "${throughput}" \
             --labels build_sha=${{ github.sha }},run_id=${{ github.run_id }}
+      - name: Prepare soak run summary
+        run: |
+          ts=$(date --iso-8601=seconds)
+          jq -n --arg run_id "${GITHUB_RUN_ID}" --arg ts "$ts" --arg sha "${GITHUB_SHA}" \
+            --argjson p95 "$(jq -r '.metrics.ws_latency[\"p(95)\"] // .metrics.ack_latency[\"p(95)\"] // 0' soak-summary.json)" \
+            --argjson thr "$(jq -r '.metrics.ws_msgs_sent.rate // 0' soak-summary.json)" \
+            '{run_id:$run_id,timestamp:$ts,build_sha:$sha,latency_p95_ms:$p95,throughput:$thr}' \
+            > soak-run.json
+      - name: Load soak metrics to BigQuery
+        run: |
+          bq --project_id=${{ secrets.GCP_PROJECT }} load --source_format=NEWLINE_DELIMITED_JSON \
+            --time_partitioning_field timestamp ops_metrics.soak_runs soak-run.json infra/analytics/soak_runs.schema.json
       - name: Analyze soak trends
         run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-soak-trends.ts metrics
         env:
@@ -103,8 +115,6 @@ jobs:
         id: check-metrics
         if: always()
         run: npx ts-node scripts/check-soak-metrics.ts
-        env:
-          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
       - name: Create soak regression issue
         if: failure() && steps.check-metrics.outcome == 'failure'
         uses: peter-evans/create-issue-from-file@v4

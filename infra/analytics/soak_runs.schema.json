@@ -1,0 +1,7 @@
+[
+  {"name": "run_id", "type": "STRING"},
+  {"name": "timestamp", "type": "TIMESTAMP"},
+  {"name": "build_sha", "type": "STRING"},
+  {"name": "latency_p95_ms", "type": "FLOAT"},
+  {"name": "throughput", "type": "FLOAT"}
+]
