@@ -77,6 +77,7 @@ describe('leaderboard rebuild', () => {
               {
                 sessions: new Set<string>(),
                 rating: 0,
+                volatility: 0,
                 net: 0,
                 bb: 0,
                 hands: 0,
@@ -84,12 +85,17 @@ describe('leaderboard rebuild', () => {
                 buyIn: 0,
                 finishes: {},
               };
+            const preSessions = entry.sessions.size;
             entry.sessions.add(ev.sessionId);
             const ageDays = (now - ev.ts) / DAY_MS;
-            entry.rating = updateRating(entry.rating, ev.points, ageDays, {
-              kFactor: 0.5,
-              decay: 0.95,
-            });
+            const updated = updateRating(
+              { rating: entry.rating, volatility: entry.volatility, sessions: preSessions },
+              ev.points,
+              ageDays,
+              { kFactor: 0.5, decay: 0.95, minSessions: 10 },
+            );
+            entry.rating = updated.rating;
+            entry.volatility = updated.volatility;
             entry.net += ev.net;
             entry.bb += ev.bb;
             entry.hands += ev.hands;
