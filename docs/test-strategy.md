@@ -77,6 +77,8 @@ Breaching these thresholds indicates memory or GC regressions requiring investig
 
 The `backend/tests/performance/tournament-10k.ts` script seeds 10 k players and runs the tournament scheduler and table balancer end-to-end. It asserts the total runtime stays within 5 % of a warmed baseline and that final payouts align with Independent Chip Model results within one chip.
 
+`npm test --prefix backend` also runs `backend/test/tournament/mega-sim.spec.ts`, which loads the documented blind structures to simulate a 10 k-player MTT. The test converts elapsed execution time to minutes using the handbook's 130‑minute target and asserts the result stays within ±5 % while comparing final payouts against `calculateIcmPayouts`.
+
 ### Running locally
 
 ```bash
