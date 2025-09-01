@@ -2,6 +2,8 @@ Ops Preflight
 
 The ops-preflight composite action centralizes operational gates used across deployment workflows. It verifies:
 
+All repository workflows must invoke the spectator-privacy reusable workflow (`uses: ./.github/workflows/spectator-privacy.yml`). The `scripts/ensure-spectator-privacy.ts` check runs in CI and fails if a workflow omits this job.
+
 Spectator privacy
 
 spectator-privacy-nightly workflow freshness
