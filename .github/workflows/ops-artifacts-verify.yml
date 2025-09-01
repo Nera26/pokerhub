@@ -28,6 +28,7 @@ permissions:
 
 jobs:
   check-proof-archive:
+    if: ${{ always() }}
     uses: ./.github/workflows/check-proof-archive.yml
     secrets: inherit
 

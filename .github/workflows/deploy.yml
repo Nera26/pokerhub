@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   check-proof-archive:
+    if: ${{ always() }}
     uses: ./.github/workflows/check-proof-archive.yml
     secrets: inherit
 
@@ -437,6 +438,7 @@ jobs:
 
   proof-archive:
     needs: deploy
+    if: ${{ always() }}
     uses: ./.github/workflows/proof-archive.yml
     secrets:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
