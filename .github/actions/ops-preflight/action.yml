@@ -8,6 +8,9 @@ inputs:
     description: "Maximum age for spectator-privacy-nightly workflow"
     required: false
     default: 24
+  spectator-retention-sla-days:
+    description: "Max age for spectator-retention workflow"
+    required: true
   soak-metrics-sla-hours:
     description: "Maximum age for soak-metrics workflow"
     required: true
@@ -50,6 +53,13 @@ runs:
       env:
         GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
         SPECTATOR_PRIVACY_SLA_HOURS: ${{ inputs.spectator-privacy-sla-hours }}
+    - name: Check spectator retention SLA
+      uses: ./.github/workflows/check-workflow-sla
+      with:
+        workflow: spectator-retention.yml
+        sla: ${{ inputs.spectator-retention-sla-days }}
+        unit: days
+        slack-channel-id: ${{ inputs.slack-channel-id }}
     - name: Check soak-metrics SLA
       uses: ./.github/workflows/check-workflow-sla
       with:
