@@ -6,6 +6,17 @@ on:
 jobs:
   tables-10k:
     runs-on: ubuntu-latest
+    env:
+      PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+      PROOF_ARCHIVE_EXPECTED_DAILY_COUNT: ${{ vars.PROOF_ARCHIVE_EXPECTED_DAILY_COUNT }}
+      PROOF_MANIFEST_KMS_KEY: ${{ vars.PROOF_MANIFEST_KMS_KEY }}
+      PROOF_MANIFEST_KMS_KEYRING: ${{ vars.PROOF_MANIFEST_KMS_KEYRING }}
+      PROOF_MANIFEST_KMS_LOCATION: ${{ vars.PROOF_MANIFEST_KMS_LOCATION }}
+      PROOF_MANIFEST_KMS_VERSION: ${{ vars.PROOF_MANIFEST_KMS_VERSION || 1 }}
+      SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER || vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT || vars.GCP_SERVICE_ACCOUNT }}
     steps:
       - uses: actions/checkout@v4
       - name: Run 10k table scenario
@@ -15,6 +26,29 @@ jobs:
           flags: --summary-export=10k-summary.json
       - name: Check thresholds
         run: ./load/check-thresholds.sh 10k-summary.json
+      - uses: ./.github/actions/spectator-privacy-check
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+      - run: npx ts-node scripts/check-proof-archive.ts
+      - name: Verify sanitized logs
+        run: |
+          if rg -i "userId|tableSecret|sessionToken|email|ipAddress|authToken" backend-tests.log frontend-tests.log; then
+            echo "PII found in logs" >&2
+            exit 1
+          fi
+      - name: Upload sanitized logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tables-10k-logs
+          path: |
+            backend-tests.log
+            frontend-tests.log
       - name: Upload summary
         if: always()
         uses: actions/upload-artifact@v3
@@ -24,6 +58,17 @@ jobs:
 
   packet-loss:
     runs-on: ubuntu-latest
+    env:
+      PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+      PROOF_ARCHIVE_EXPECTED_DAILY_COUNT: ${{ vars.PROOF_ARCHIVE_EXPECTED_DAILY_COUNT }}
+      PROOF_MANIFEST_KMS_KEY: ${{ vars.PROOF_MANIFEST_KMS_KEY }}
+      PROOF_MANIFEST_KMS_KEYRING: ${{ vars.PROOF_MANIFEST_KMS_KEYRING }}
+      PROOF_MANIFEST_KMS_LOCATION: ${{ vars.PROOF_MANIFEST_KMS_LOCATION }}
+      PROOF_MANIFEST_KMS_VERSION: ${{ vars.PROOF_MANIFEST_KMS_VERSION || 1 }}
+      SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER || vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT || vars.GCP_SERVICE_ACCOUNT }}
     steps:
       - uses: actions/checkout@v4
       - name: Run packet loss scenario
@@ -33,6 +78,29 @@ jobs:
           flags: --summary-export=packet-summary.json
       - name: Check thresholds
         run: ./load/check-thresholds.sh packet-summary.json
+      - uses: ./.github/actions/spectator-privacy-check
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+      - run: npx ts-node scripts/check-proof-archive.ts
+      - name: Verify sanitized logs
+        run: |
+          if rg -i "userId|tableSecret|sessionToken|email|ipAddress|authToken" backend-tests.log frontend-tests.log; then
+            echo "PII found in logs" >&2
+            exit 1
+          fi
+      - name: Upload sanitized logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: packet-loss-logs
+          path: |
+            backend-tests.log
+            frontend-tests.log
       - name: Upload summary
         if: always()
         uses: actions/upload-artifact@v3
@@ -42,6 +110,17 @@ jobs:
 
   chaos-regression:
     runs-on: ubuntu-latest
+    env:
+      PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+      PROOF_ARCHIVE_EXPECTED_DAILY_COUNT: ${{ vars.PROOF_ARCHIVE_EXPECTED_DAILY_COUNT }}
+      PROOF_MANIFEST_KMS_KEY: ${{ vars.PROOF_MANIFEST_KMS_KEY }}
+      PROOF_MANIFEST_KMS_KEYRING: ${{ vars.PROOF_MANIFEST_KMS_KEYRING }}
+      PROOF_MANIFEST_KMS_LOCATION: ${{ vars.PROOF_MANIFEST_KMS_LOCATION }}
+      PROOF_MANIFEST_KMS_VERSION: ${{ vars.PROOF_MANIFEST_KMS_VERSION || 1 }}
+      SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER || vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT || vars.GCP_SERVICE_ACCOUNT }}
     strategy:
       matrix:
         scenario:
@@ -63,6 +142,29 @@ jobs:
           flags: --summary-export=chaos-${{ matrix.scenario }}.json
       - name: Check thresholds
         run: ./load/check-thresholds.sh chaos-${{ matrix.scenario }}.json
+      - uses: ./.github/actions/spectator-privacy-check
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+      - run: npx ts-node scripts/check-proof-archive.ts
+      - name: Verify sanitized logs
+        run: |
+          if rg -i "userId|tableSecret|sessionToken|email|ipAddress|authToken" backend-tests.log frontend-tests.log; then
+            echo "PII found in logs" >&2
+            exit 1
+          fi
+      - name: Upload sanitized logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chaos-${{ matrix.scenario }}-logs
+          path: |
+            backend-tests.log
+            frontend-tests.log
       - name: Upload summary
         if: always()
         uses: actions/upload-artifact@v3
