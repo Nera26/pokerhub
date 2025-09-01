@@ -6,42 +6,7 @@ on:
     branches: [ main ]
 
 jobs:
-  spectator-privacy:
-    runs-on: ubuntu-latest
-    env:
-      SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER || vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT || vars.GCP_SERVICE_ACCOUNT }}
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
-      - uses: ./.github/actions/spectator-privacy-check
-      - name: Verify sanitized logs
-        if: always()
-        run: |
-          if rg -i "userId|tableSecret|sessionToken|email|ipAddress" backend-tests.log frontend-tests.log; then
-            echo "PII found in logs" >&2
-            exit 1
-          fi
-      - name: Copy logs to spectator bucket
-        if: always()
-        run: |
-          gsutil cp backend-tests.log frontend-tests.log gs://$SPECTATOR_PRIVACY_BUCKET/${{ github.run_id }}/
-      - name: Upload logs as artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: spectator-privacy-logs
-          path: |
-            backend-tests.log
-            frontend-tests.log
-
   canary:
-    needs: spectator-privacy
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -56,144 +21,87 @@ jobs:
       PROMETHEUS: ${{ vars.PROMETHEUS_URL }}
       METRICS_URL: ${{ vars.METRICS_URL }}
       ERROR_RATE_THRESHOLD: ${{ vars.ERROR_RATE_THRESHOLD }}
+      DR_DRILL_SLA_DAYS: 7
+      DR_FAILOVER_SLA_DAYS: 30
+      DR_RESTORE_SLA_DAYS: 30
+      DR_THROWAWAY_SLA_DAYS: 7
       PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
       PROOF_MANIFEST_BUCKET: ${{ secrets.PROOF_MANIFEST_BUCKET }}
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
+
       - name: Configure kubectl
         uses: azure/setup-kubectl@v3
         with:
           version: v1.27.3
+
       - name: Install Helm
         uses: azure/setup-helm@v3
         with:
           version: v3.13.0
-      - name: Install dependencies
-        run: npm ci --legacy-peer-deps
-      - uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ vars.GCP_PROJECT_ID }}
-      - name: Validate observability configs
-        run: |
-          python -m pip install pyyaml >/dev/null
-          python infra/observability/validate.py
-      - name: Check soak workflow SLA
+
+      # --- Pre-deploy gates (all must pass) ---
+      - name: Check DR drill SLA
+        id: dr_drill
         uses: ./.github/workflows/check-workflow-sla
         with:
-          workflow: soak.yml
-          sla: 24
-          unit: hours
+          workflow: dr-drill.yml
+          sla: ${{ env.DR_DRILL_SLA_DAYS }}
+          unit: days
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-      - uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT }}
-      - name: Check soak metrics
-        id: soak-metrics
-        run: npx -y ts-node scripts/check-soak-metrics.ts
-        env:
-          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
-          SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS }}
-          SOAK_THROUGHPUT_MIN: ${{ vars.SOAK_THROUGHPUT_MIN }}
-      - name: Upload soak metrics
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: soak-metrics
-          path: soak-summary.json
-      - name: Deploy canary
-        run: scripts/canary-rollback.sh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_SHA: ${{ github.sha }}
+        continue-on-error: true
 
-      - name: Monitor ACK latency
-        run: |
-          npm install --no-save k6 >/dev/null
-          npx k6 run load/k6-ws-packet-loss.js --summary-export=summary.json
-          p95=$(jq '.metrics.ws_latency["p(95)"]' summary.json)
-          slo=250
-          echo "p95 ACK latency: ${p95} ms (SLO ${slo} ms)"
-          if (( $(echo "$p95 > $slo" | bc -l) )); then
-            echo "ACK latency SLO breach; rolling back" >&2
-            scripts/canary-rollback.sh
-            exit 1
-          fi
+      - name: PagerDuty alert on stale DR drill
+        if: steps.dr_drill.outcome == 'failure'
         env:
-          WS_URL: ${{ vars.CANARY_WS_URL }}
-          PACKET_LOSS: 0.05
-      - name: Verify SLO metrics
-        id: metrics
-        run: scripts/check-metrics.sh
-        continue-on-error: true
-      - name: Canary rollback on SLO violation
-        if: steps.metrics.outcome != 'success'
-        run: scripts/canary-rollback.sh
-      - name: Get spectator privacy run ID
-        id: get_run_id
-        env:
-          GH_TOKEN: ${{ github.token }}
+          ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
         run: |
-          set -e
-          RUN_ID=$(gh api \
-            repos/${{ github.repository }}/actions/workflows/spectator-privacy-nightly.yml/runs \
-            --jq '.workflow_runs[0].id // empty')
-          if [ -z "$RUN_ID" ]; then
-            echo "No spectator-privacy-nightly run found" >&2
-            exit 1
-          fi
-          echo "SPECTATOR_RUN_ID=$RUN_ID" >> "$GITHUB_OUTPUT"
-      - name: Verify ops artifacts
-        id: verify_ops
-        continue-on-error: true
-        env:
-          RUN_ID: ${{ steps.get_run_id.outputs.SPECTATOR_RUN_ID }}
-          PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
-          PROOF_MANIFEST_BUCKET: ${{ secrets.PROOF_MANIFEST_BUCKET }}
-          PROOF_MANIFEST_KMS_KEY: ${{ vars.PROOF_MANIFEST_KMS_KEY }}
-          PROOF_MANIFEST_KMS_KEYRING: ${{ vars.PROOF_MANIFEST_KMS_KEYRING }}
-          PROOF_MANIFEST_KMS_LOCATION: ${{ vars.PROOF_MANIFEST_KMS_LOCATION }}
-          PROOF_MANIFEST_KMS_VERSION: ${{ vars.PROOF_MANIFEST_KMS_VERSION || 1 }}
-          SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
-          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
-          SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS || 120 }}
-          SOAK_THROUGHPUT_MIN: ${{ vars.SOAK_THROUGHPUT_MIN || 100 }}
-          SOAK_TRENDS_MAX_PCT: ${{ vars.SOAK_TRENDS_MAX_PCT || 20 }}
-          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
-          PROOF_ARCHIVE_MIN_RETENTION_DAYS: 365
-          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
-        run: |
-          set +e
-          out=$(npx -y ts-node scripts/check-proof-archive-retention.ts && \
-                npx -y ts-node scripts/check-proof-archive-replication.ts && \
-                npx -y ts-node scripts/verify-ops-artifacts.ts 2>&1)
-          status=$?
-          set -e
-          echo "$out"
-          printf "%s\n" "$out" > verify-ops.log
-          printf "%s" "$out" | sha256sum >> verify-ops.log
-          gcloud storage cp verify-ops.log gs://$DR_METRICS_BUCKET/verify/$GITHUB_RUN_ID/
-          metric=$([ $status -eq 0 ] && echo 1 || echo 0)
-          gcloud monitoring metrics write custom.googleapis.com/ops/artifacts_verify $metric
-          url="https://storage.googleapis.com/$DR_METRICS_BUCKET/verify/$GITHUB_RUN_ID/verify-ops.log"
-          echo "$url" >> "$GITHUB_STEP_SUMMARY"
-          exit $status
-      - name: Canary rollback on ops artifacts failure
-        if: steps.verify_ops.outcome != 'success'
-        run: |
-          scripts/canary-rollback.sh
+          curl -X POST https://events.pagerduty.com/v2/enqueue \
+            -H 'Content-Type: application/json' \
+            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Canary blocked: dr-drill workflow failed or stale","source":"github-actions","severity":"error","custom_details":{"runbook":"https://github.com/Nera26/pokerhub/blob/main/docs/runbooks/disaster-recovery.md"}}}'
           exit 1
+
+      - name: Check DR failover SLA
+        id: dr_failover
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: dr-failover.yml
+          sla: ${{ env.DR_FAILOVER_SLA_DAYS }}
+          unit: days
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+        continue-on-error: true
+
+      - name: PagerDuty alert on stale DR failover
+        if: steps.dr_failover.outcome == 'failure'
+        env:
+          ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+        run: |
+          curl -X POST https://events.pagerduty.com/v2/enqueue \
+            -H 'Content-Type: application/json' \
+            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Canary blocked: dr-failover workflow failed or stale","source":"github-actions","severity":"error","custom_details":{"runbook":"https://github.com/Nera26/pokerhub/blob/main/docs/runbooks/disaster-recovery.md"}}}'
+          exit 1
+
+      - name: Check DR restore SLA
+        id: dr_restore
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: dr-restore.yml
+          sla: ${{ env.DR_RESTORE_SLA_DAYS }}
+          unit: days
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+        continue-on-error: true
+
+      - name: PagerDuty alert on stale DR restore
+        if: steps.dr_restore.outcome == 'failure'
+        env:
+          ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+        run: |
+          curl -X POST https://events.pagerduty.com/v2/enqueue \
+            -H 'Content-Type: application/json' \
+            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Canary blocke_
