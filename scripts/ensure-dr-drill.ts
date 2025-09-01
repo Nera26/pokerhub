@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
-import { execSync } from 'child_process';
 import { writeFileSync } from 'fs';
+import { BigQuery } from '@google-cloud/bigquery';
 import { getOctokit } from '@actions/github';
 
 function fail(msg: string): never {
@@ -9,25 +9,19 @@ function fail(msg: string): never {
 }
 
 async function main() {
-  const project = process.env.GCP_PROJECT_ID ? `--project_id=${process.env.GCP_PROJECT_ID} ` : '';
-  let raw: string;
+  const bigquery = new BigQuery({ projectId: process.env.GCP_PROJECT_ID });
+  let rows: any[];
   try {
-    raw = execSync(
-      `bq ${project}--format=json query --nouse_legacy_sql 'SELECT timestamp FROM ops_metrics.dr_drill_runs ORDER BY timestamp DESC LIMIT 1'`,
-      { encoding: 'utf-8' },
-    );
+    [rows] = await bigquery.query({
+      query:
+        'SELECT timestamp FROM ops_metrics.dr_drill_runs ORDER BY timestamp DESC LIMIT 1',
+    });
   } catch {
     fail('Failed to query BigQuery');
   }
 
-  let data: any;
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    fail('Unable to parse BigQuery response');
-  }
-
-  const ts = data?.[0]?.timestamp;
+  const tsField = rows?.[0]?.timestamp as any;
+  const ts = tsField?.value || tsField;
   if (!ts) {
     fail('No DR drill metrics found');
   }
