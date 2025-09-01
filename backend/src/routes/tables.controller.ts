@@ -23,11 +23,16 @@ import {
   UpdateTableSchema,
   type UpdateTableRequest,
 } from '../schemas/tables';
+import { ChatMessagesSchema, SendChatMessageRequestSchema } from '../schemas/chat';
 import { TablesService } from '../game/tables.service';
+import { ChatService } from '../game/chat.service';
 
 @Controller('tables')
 export class TablesController {
-  constructor(private readonly tables: TablesService) {}
+  constructor(
+    private readonly tables: TablesService,
+    private readonly chat: ChatService,
+  ) {}
 
   @Get()
   async list(): Promise<TableList> {
@@ -80,5 +85,30 @@ export class TablesController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<void> {
     await this.tables.deleteTable(id);
+  }
+
+  @Get(':id/chat')
+  async getChat(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    const msgs = await this.chat.getRecentMessages(id);
+    return ChatMessagesSchema.parse(msgs);
+  }
+
+  @Post(':id/chat')
+  @HttpCode(204)
+  async sendChat(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: any,
+  ): Promise<void> {
+    try {
+      const parsed = SendChatMessageRequestSchema.parse(body);
+      await this.chat.appendMessage(id, parsed.userId, parsed.text);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        throw new BadRequestException(err.errors);
+      }
+      throw err;
+    }
   }
 }

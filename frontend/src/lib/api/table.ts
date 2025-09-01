@@ -1,16 +1,27 @@
 import { getBaseUrl } from '@/lib/base-url';
 import { handleResponse } from './client';
 import { serverFetch } from '@/lib/server-fetch';
+import { z } from 'zod';
 export { join, bet, buyIn, sitOut, rebuy } from '@/lib/socket';
 import {
   PlayerSchema,
   ChatMessageSchema,
   TableDataSchema,
+  SendChatMessageRequestSchema,
+  ChatMessagesResponseSchema,
   type TableData,
+  type SendChatMessageRequest,
+  type ChatMessagesResponse,
 } from '@shared/types';
 
-export { PlayerSchema, ChatMessageSchema, TableDataSchema };
-export type { TableData };
+export {
+  PlayerSchema,
+  ChatMessageSchema,
+  TableDataSchema,
+  SendChatMessageRequestSchema,
+  ChatMessagesResponseSchema,
+};
+export type { TableData, SendChatMessageRequest, ChatMessagesResponse };
 
 export async function fetchTable(
   id: string,
@@ -23,4 +34,31 @@ export async function fetchTable(
     cache: 'no-store',
   });
   return handleResponse(res, TableDataSchema);
+}
+
+export async function fetchChatMessages(
+  id: string,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<ChatMessagesResponse> {
+  const baseUrl = getBaseUrl();
+  const res = serverFetch(`${baseUrl}/api/tables/${id}/chat`, {
+    credentials: 'include',
+    signal,
+    cache: 'no-store',
+  });
+  return handleResponse(res, ChatMessagesResponseSchema);
+}
+
+export async function sendChatMessage(
+  id: string,
+  body: SendChatMessageRequest,
+): Promise<void> {
+  const baseUrl = getBaseUrl();
+  const res = serverFetch(`${baseUrl}/api/tables/${id}/chat`, {
+    method: 'POST',
+    credentials: 'include',
+    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'application/json' },
+  });
+  await handleResponse(res, z.void());
 }
