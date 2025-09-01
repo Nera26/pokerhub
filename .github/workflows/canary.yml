@@ -21,6 +21,9 @@ jobs:
       PROMETHEUS: ${{ vars.PROMETHEUS_URL }}
       METRICS_URL: ${{ vars.METRICS_URL }}
       ERROR_RATE_THRESHOLD: ${{ vars.ERROR_RATE_THRESHOLD }}
+      PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+      PROOF_MANIFEST_BUCKET: ${{ secrets.PROOF_MANIFEST_BUCKET }}
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Node
@@ -35,6 +38,15 @@ jobs:
         uses: azure/setup-helm@v3
         with:
           version: v3.13.0
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
       - name: Validate observability configs
         run: |
           python -m pip install pyyaml >/dev/null
@@ -69,3 +81,58 @@ jobs:
       - name: Canary rollback on SLO violation
         if: steps.metrics.outcome != 'success'
         run: scripts/canary-rollback.sh
+      - name: Get spectator privacy run ID
+        id: get_run_id
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          RUN_ID=$(gh api \
+            repos/${{ github.repository }}/actions/workflows/spectator-privacy-nightly.yml/runs \
+            --jq '.workflow_runs[0].id // empty')
+          if [ -z "$RUN_ID" ]; then
+            echo "No spectator-privacy-nightly run found" >&2
+            exit 1
+          fi
+          echo "SPECTATOR_RUN_ID=$RUN_ID" >> "$GITHUB_OUTPUT"
+      - name: Verify ops artifacts
+        id: verify_ops
+        continue-on-error: true
+        env:
+          RUN_ID: ${{ steps.get_run_id.outputs.SPECTATOR_RUN_ID }}
+          PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+          PROOF_MANIFEST_BUCKET: ${{ secrets.PROOF_MANIFEST_BUCKET }}
+          PROOF_MANIFEST_KMS_KEY: ${{ vars.PROOF_MANIFEST_KMS_KEY }}
+          PROOF_MANIFEST_KMS_KEYRING: ${{ vars.PROOF_MANIFEST_KMS_KEYRING }}
+          PROOF_MANIFEST_KMS_LOCATION: ${{ vars.PROOF_MANIFEST_KMS_LOCATION }}
+          PROOF_MANIFEST_KMS_VERSION: ${{ vars.PROOF_MANIFEST_KMS_VERSION || 1 }}
+          SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
+          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+          SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS || 120 }}
+          SOAK_THROUGHPUT_MIN: ${{ vars.SOAK_THROUGHPUT_MIN || 100 }}
+          SOAK_TRENDS_MAX_PCT: ${{ vars.SOAK_TRENDS_MAX_PCT || 20 }}
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
+          PROOF_ARCHIVE_MIN_RETENTION_DAYS: 365
+          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+        run: |
+          set +e
+          out=$(npx -y ts-node scripts/check-proof-archive-retention.ts && \
+                npx -y ts-node scripts/check-proof-archive-replication.ts && \
+                npx -y ts-node scripts/verify-ops-artifacts.ts 2>&1)
+          status=$?
+          set -e
+          echo "$out"
+          printf "%s\n" "$out" > verify-ops.log
+          printf "%s" "$out" | sha256sum >> verify-ops.log
+          gcloud storage cp verify-ops.log gs://$DR_METRICS_BUCKET/verify/$GITHUB_RUN_ID/
+          metric=$([ $status -eq 0 ] && echo 1 || echo 0)
+          gcloud monitoring metrics write custom.googleapis.com/ops/artifacts_verify $metric
+          url="https://storage.googleapis.com/$DR_METRICS_BUCKET/verify/$GITHUB_RUN_ID/verify-ops.log"
+          echo "$url" >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+      - name: Canary rollback on ops artifacts failure
+        if: steps.verify_ops.outcome != 'success'
+        run: |
+          scripts/canary-rollback.sh
+          exit 1
