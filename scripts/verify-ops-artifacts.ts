@@ -617,8 +617,23 @@ function main() {
     throw new Error('Invalid SPECTATOR_LOGS_MIN_RETENTION_DAYS');
   }
 
+  const soakRetention = Number(
+    process.env.SOAK_TRENDS_MIN_RETENTION_DAYS || '30',
+  );
+  if (!Number.isFinite(soakRetention) || soakRetention <= 0) {
+    throw new Error('Invalid SOAK_TRENDS_MIN_RETENTION_DAYS');
+  }
+  const drMetricsRetention = Number(
+    process.env.DR_METRICS_MIN_RETENTION_DAYS || '30',
+  );
+  if (!Number.isFinite(drMetricsRetention) || drMetricsRetention <= 0) {
+    throw new Error('Invalid DR_METRICS_MIN_RETENTION_DAYS');
+  }
+
   checkBucketRetention(proofBucket, proofRetention);
   checkBucketRetention(spectatorBucket, spectatorRetention);
+  checkBucketRetention(soakBucket, soakRetention);
+  checkBucketRetention(drMetricsBucket, drMetricsRetention);
 
   checkBucketReplication(proofBucket, secondaryRegion);
   checkBucketReplication(spectatorBucket, secondaryRegion);

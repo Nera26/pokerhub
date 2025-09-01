@@ -40,10 +40,12 @@ jobs:
       SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS || 120 }}
       SOAK_THROUGHPUT_MIN: ${{ vars.SOAK_THROUGHPUT_MIN || 100 }}
       SOAK_TRENDS_MAX_PCT: ${{ vars.SOAK_TRENDS_MAX_PCT || 20 }}
+      SOAK_TRENDS_MIN_RETENTION_DAYS: ${{ vars.SOAK_TRENDS_MIN_RETENTION_DAYS || 30 }}
 
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
 
       DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
+      DR_METRICS_MIN_RETENTION_DAYS: ${{ vars.DR_METRICS_MIN_RETENTION_DAYS || 30 }}
 
     steps:
       - uses: actions/checkout@v4
