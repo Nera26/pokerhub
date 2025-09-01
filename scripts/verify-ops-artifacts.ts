@@ -555,7 +555,7 @@ function main() {
   const manifestKeyring = requireEnv('PROOF_MANIFEST_KMS_KEYRING');
   const manifestLocation = requireEnv('PROOF_MANIFEST_KMS_LOCATION');
   const manifestVersion = requireEnv('PROOF_MANIFEST_KMS_VERSION');
-  const spectatorBucket = requireEnv('SPECTATOR_PRIVACY_BUCKET');
+  const spectatorBucket = requireEnv('SPECTATOR_LOGS_BUCKET');
   const runId = requireEnv('RUN_ID');
   const soakBucket = requireEnv('SOAK_TRENDS_BUCKET');
   const drMetricsBucket = requireEnv('DR_METRICS_BUCKET');
@@ -571,10 +571,10 @@ function main() {
     throw new Error('Invalid PROOF_ARCHIVE_MIN_RETENTION_DAYS');
   }
   const spectatorRetention = Number(
-    process.env.SPECTATOR_PRIVACY_MIN_RETENTION_DAYS || '30',
+    process.env.SPECTATOR_LOGS_MIN_RETENTION_DAYS || '30',
   );
   if (!Number.isFinite(spectatorRetention) || spectatorRetention <= 0) {
-    throw new Error('Invalid SPECTATOR_PRIVACY_MIN_RETENTION_DAYS');
+    throw new Error('Invalid SPECTATOR_LOGS_MIN_RETENTION_DAYS');
   }
 
   checkBucketRetention(proofBucket, proofRetention);

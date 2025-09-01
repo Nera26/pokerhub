@@ -285,8 +285,8 @@ jobs:
       - name: Upload spectator privacy artifacts
         if: always()
         env:
-          SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
-        run: gcloud storage cp backend-tests.log frontend-tests.log dlp-scan.json gs://$SPECTATOR_PRIVACY_BUCKET/$GITHUB_RUN_ID/
+          SPECTATOR_LOGS_BUCKET: ${{ secrets.SPECTATOR_LOGS_BUCKET }}
+        run: gcloud storage cp backend-tests.log frontend-tests.log dlp-scan.json gs://$SPECTATOR_LOGS_BUCKET/$GITHUB_RUN_ID/
 
       # --- Canary, SLO check, promote/rollback ---
       - name: Run canary deploy
@@ -490,7 +490,7 @@ jobs:
         id: verify_ops_artifacts
         env:
           PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
-          SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
+          SPECTATOR_LOGS_BUCKET: ${{ secrets.SPECTATOR_LOGS_BUCKET }}
           SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
           RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
           DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}

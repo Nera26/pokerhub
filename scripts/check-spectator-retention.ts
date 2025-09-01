@@ -11,11 +11,11 @@ function requireEnv(name: string): string {
 }
 
 function main() {
-  const bucket = requireEnv('SPECTATOR_PRIVACY_BUCKET');
-  const requiredDaysStr = process.env.SPECTATOR_PRIVACY_MIN_RETENTION_DAYS || '30';
+  const bucket = requireEnv('SPECTATOR_LOGS_BUCKET');
+  const requiredDaysStr = process.env.SPECTATOR_LOGS_MIN_RETENTION_DAYS || '30';
   const requiredDays = Number(requiredDaysStr);
   if (!Number.isFinite(requiredDays) || requiredDays <= 0) {
-    console.error('Invalid SPECTATOR_PRIVACY_MIN_RETENTION_DAYS');
+    console.error('Invalid SPECTATOR_LOGS_MIN_RETENTION_DAYS');
     process.exit(1);
   }
 
