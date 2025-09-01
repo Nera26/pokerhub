@@ -5,6 +5,8 @@ import { Tournament, TournamentState } from '../src/database/entities/tournament
 import { Table } from '../src/database/entities/table.entity';
 import { Seat } from '../src/database/entities/seat.entity';
 import { Repository } from 'typeorm';
+import { RebuyService } from '../src/tournament/rebuy.service';
+import { PkoService } from '../src/tournament/pko.service';
 
 function createTournamentRepo(initial: Tournament[]): any {
   const items = new Map(initial.map((t) => [t.id, t]));
@@ -118,6 +120,54 @@ describe('Tournament scheduling and balancing', () => {
     const after = tables.map((t) => t.seats.length);
     expect(Math.max(...after) - Math.min(...after)).toBeLessThanOrEqual(1);
     expect(after.reduce((a, b) => a + b, 0)).toBe(6);
+  });
+
+  it('emits bubble event when players reach payout threshold', async () => {
+    const tables: Table[] = [
+      { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
+    ];
+    for (let i = 0; i < 5; i++) {
+      tables[0].seats.push({
+        id: `s${i}`,
+        table: tables[0],
+        user: { id: `p${i}` } as any,
+        position: i,
+        lastMovedHand: 0,
+      } as Seat);
+    }
+    const seatsRepo = createSeatRepo(tables);
+    const tablesRepo = { find: jest.fn(async () => tables) } as any;
+    const tournamentsRepo = createTournamentRepo([
+      {
+        id: 't1',
+        title: 'Bubble Test',
+        buyIn: 0,
+        prizePool: 0,
+        maxPlayers: 100,
+        state: TournamentState.RUNNING,
+        tables,
+      } as Tournament,
+    ]);
+    const scheduler: any = {};
+    const rooms: any = { get: jest.fn() };
+    const events = { emit: jest.fn() };
+    const service = new TournamentService(
+      tournamentsRepo,
+      seatsRepo,
+      tablesRepo,
+      scheduler,
+      rooms,
+      new RebuyService(),
+      new PkoService(),
+      { get: jest.fn() } as any,
+      events as any,
+    );
+    const balancer = new TableBalancerService(tablesRepo, service);
+    await balancer.rebalanceIfNeeded('t1', 0, 10, 5);
+    expect(events.emit).toHaveBeenCalledWith('tournament.bubble', {
+      tournamentId: 't1',
+      remainingPlayers: 5,
+    });
   });
 });
 
