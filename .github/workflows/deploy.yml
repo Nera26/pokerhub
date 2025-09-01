@@ -392,6 +392,24 @@ jobs:
             exit 1
           fi
 
+      - name: Check soak metrics
+        id: check_soak_metrics
+        env:
+          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+          SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS }}
+          SOAK_THROUGHPUT_MIN: ${{ vars.SOAK_THROUGHPUT_MIN }}
+          SOAK_TRENDS_MAX_PCT: ${{ vars.SOAK_TRENDS_MAX_PCT }}
+          SOAK_TRENDS_DEVIATION_PCT: ${{ vars.SOAK_TRENDS_MAX_PCT }}
+        run: |
+          npm ci --legacy-peer-deps
+          set +e
+          out=$(npx ts-node scripts/check-soak-metrics.ts 2>&1)
+          status=$?
+          set -e
+          echo "$out"
+          echo "$out" >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+
       - name: Run soak-smoke
         if: ${{ env.RUN_SOAK_SMOKE == 'true' }}
         env:
