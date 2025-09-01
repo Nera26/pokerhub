@@ -32,3 +32,10 @@ jobs:
           path: |
             ack-summary.json
             ack-telemetry.json
+
+  spectator-privacy:
+    needs: ack-latency
+    uses: ../spectator-privacy.yml
+    with:
+      logs: ack-summary.json ack-telemetry.json
+    secrets: inherit

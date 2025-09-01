@@ -90,3 +90,10 @@ jobs:
           name: k6-100k-replay-${{ github.run_id }}
           path: load/metrics/base/replay
           retention-days: 7
+
+  spectator-privacy:
+    needs: replay
+    uses: ../spectator-privacy.yml
+    with:
+      logs: baseline.json
+    secrets: inherit

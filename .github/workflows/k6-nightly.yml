@@ -64,3 +64,10 @@ jobs:
             -H 'Content-Type: application/x-yaml' \
             --data-binary @infra/observability/pagerduty-burn-rate.yml \
             ${{ secrets.PAGERDUTY_WEBHOOK_URL }}
+
+  spectator-privacy:
+    needs: tables-10k
+    uses: ../spectator-privacy.yml
+    with:
+      logs: ws-soak-summary.json ws-soak-metrics.json 10k-summary.json 10k-metrics.json
+    secrets: inherit

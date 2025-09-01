@@ -56,3 +56,10 @@ jobs:
         with:
           name: ${{ matrix.script }}-${{ github.run_id }}
           path: ${{ env.METRICS_DIR }}
+
+  spectator-privacy:
+    needs: [k6, chaos]
+    uses: ../spectator-privacy.yml
+    with:
+      logs: summary.json metrics.json
+    secrets: inherit

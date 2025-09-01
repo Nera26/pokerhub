@@ -28,3 +28,10 @@ jobs:
           path: |
             soak-summary.json
             soak-metrics.json
+
+  spectator-privacy:
+    needs: soak
+    uses: ../spectator-privacy.yml
+    with:
+      logs: soak-summary.json soak-metrics.json
+    secrets: inherit

@@ -45,3 +45,10 @@ jobs:
           path: |
             chaos-summary.json
             chaos-metrics.json
+
+  spectator-privacy:
+    needs: [load-test, chaos-test]
+    uses: ../spectator-privacy.yml
+    with:
+      logs: load-summary.json load-metrics.json chaos-summary.json chaos-metrics.json
+    secrets: inherit
