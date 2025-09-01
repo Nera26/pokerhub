@@ -4,6 +4,18 @@ on:
   schedule:
     - cron: '0 4 * * *'
   workflow_dispatch:
+  workflow_call:
+    secrets:
+      PROOF_ARCHIVE_BUCKET:
+        required: true
+      PROOF_MANIFEST_BUCKET:
+        required: true
+      SPECTATOR_LOGS_BUCKET:
+        required: true
+      SOAK_TRENDS_BUCKET:
+        required: true
+      DR_METRICS_BUCKET:
+        required: true
 
 jobs:
   verify:

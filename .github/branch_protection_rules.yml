@@ -8,8 +8,7 @@
     - "deploy / deploy"
     - proof-archive
     - check-proof-archive
-    - ops-artifacts-verify
-    - "ci / ops-artifacts"
+    - "ci / ops-artifacts-verify"
     - soak
     - soak-smoke
     - "ci / spectator-privacy"
