@@ -135,6 +135,25 @@ jobs:
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
 
+      - name: Check latest DR drill metrics
+        run: |
+          set -euo pipefail
+          row=$(bq query --nouse_legacy_sql --format=json \
+            'SELECT rto_seconds, rpo_snapshot_seconds, rpo_wal_seconds FROM ops_metrics.dr_drill_runs ORDER BY timestamp DESC LIMIT 1')
+          rto=$(echo "$row" | jq -r '.[0].rto_seconds')
+          rpo_snap=$(echo "$row" | jq -r '.[0].rpo_snapshot_seconds')
+          rpo_wal=$(echo "$row" | jq -r '.[0].rpo_wal_seconds')
+          {
+            echo 'Latest DR drill metrics:'
+            echo "- RTO: ${rto}s"
+            echo "- RPO snapshot: ${rpo_snap}s"
+            echo "- RPO WAL: ${rpo_wal}s"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$rto" -gt 1800 ] || [ "$rpo_snap" -gt 300 ] || [ "$rpo_wal" -gt 300 ]; then
+            echo 'DR drill metrics exceed thresholds' >&2
+            exit 1
+          fi
+
       - name: Verify proof archive integrity
         id: proof-archive-integrity
         env:
