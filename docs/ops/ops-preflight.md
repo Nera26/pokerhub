@@ -1,31 +1,75 @@
-# Ops Preflight
+Ops Preflight
 
-The `ops-preflight` composite action centralizes operational gates used across deployment workflows. It verifies:
+The ops-preflight composite action centralizes operational gates used across deployment workflows. It verifies:
 
-- Spectator privacy scan and metric freshness
-- Soak metric SLA
-- Disaster recovery drills (dr-drill, dr-failover, dr-restore, dr-throwaway)
-- Proof archive workflow freshness
+Spectator privacy: spectator-privacy-nightly workflow freshness and spectator_privacy/run_success metric freshness
 
-## Inputs
+Soak metrics: SLA freshness, p95 latency, minimum throughput, and trend artifacts presence
 
-| Name | Description |
-| --- | --- |
-| `slack-channel-id` | Slack channel ID to receive SLA alerts. |
-| `spectator-privacy-sla-hours` | Optional. Maximum age in hours for `spectator-privacy-nightly` and the `spectator_privacy/run_success` metric. Defaults to `24`. |
-| `soak-metrics-sla-hours` | Maximum age in hours for the `soak-metrics` workflow. |
-| `dr-drill-sla-days` | Maximum age in days for the last `dr-drill` run. |
-| `dr-failover-sla-days` | Maximum age in days for the last `dr-failover` run. |
-| `dr-restore-sla-days` | Maximum age in days for the last `dr-restore` run. |
-| `dr-throwaway-sla-days` | Maximum age in days for the last `dr-throwaway` run. |
-| `proof-archive-sla-hours` | Optional. Maximum age in hours for the `proof-archive` workflow. Defaults to `24`. |
+Disaster recovery drills: dr-drill, dr-failover, dr-restore, dr-throwaway
 
-## Required Secrets and Vars
+Disaster recovery trends: fails if latest or average RTO/RPO exceed RTO_TARGET / RPO_TARGET
 
-- `SLACK_BOT_TOKEN` – used by [`check-workflow-sla`](../../.github/workflows/check-workflow-sla/action.yml) to send alerts.
-- `GCP_SA_KEY` – service account JSON for DR drill and spectator privacy metric checks.
-- `vars.GCP_PROJECT_ID` – project containing DR and spectator privacy metrics.
+Proof archive: workflow freshness and integrity checks
 
-The service account must have permission to read Cloud Monitoring time-series data (e.g., `roles/monitoring.viewer`).
+Inputs
+Name	Required	Description
+slack-channel-id	✅	Slack channel ID to receive SLA alerts.
+spectator-privacy-sla-hours		Max age (hours) for spectator-privacy-nightly and the spectator_privacy/run_success metric. Default: 24.
+soak-metrics-sla-hours	✅	Max age (hours) for the soak / soak-metrics workflow artifacts.
+dr-drill-sla-days	✅	Max age (days) for the last dr-drill run.
+dr-failover-sla-days	✅	Max age (days) for the last dr-failover run.
+dr-restore-sla-days	✅	Max age (days) for the last dr-restore run.
+dr-throwaway-sla-days	✅	Max age (days) for the last dr-throwaway run.
+proof-archive-sla-hours		Max age (hours) for the proof-archive workflow. Default: 24.
 
-Callers must also pass a `slack-channel-id` input when invoking the action.
+❗ The action fails if required artifacts (e.g., soak-summary.json) are missing or if thresholds are exceeded.
+
+Required secrets & vars
+
+Secrets
+
+SLACK_BOT_TOKEN – used by check-workflow-sla
+ to send alerts.
+
+GCP_SA_KEY – service-account JSON for DR and spectator privacy metric checks.
+
+Repository / Environment Vars
+
+vars.GCP_PROJECT_ID – GCP project containing DR and spectator privacy metrics.
+
+vars.DR_METRICS_BUCKET – GCS bucket holding DR drill metrics / trend files.
+
+vars.RTO_TARGET – maximum allowed RTO in seconds (e.g., 1800).
+
+vars.RPO_TARGET – maximum allowed RPO in seconds (e.g., 300).
+
+vars.SOAK_TRENDS_BUCKET – GCS bucket for soak trend artifacts.
+
+vars.SOAK_LATENCY_P95_MS – maximum allowed p95 latency for the latest soak (e.g., 120).
+
+vars.SOAK_THROUGHPUT_MIN – minimum allowed throughput for the latest soak (e.g., 100).
+
+The service account must have permission to read Cloud Monitoring time-series data (e.g., roles/monitoring.viewer) and GCS buckets for soak/DR/proof artifacts.
+
+Behavior on failure
+
+Posts a Slack message to slack-channel-id describing the failing check.
+
+Exits non-zero to block downstream deploy/canary jobs.
+
+Example usage
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/ops-preflight
+        with:
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          spectator-privacy-sla-hours: 24
+          soak-metrics-sla-hours: 24
+          dr-drill-sla-days: 7
+          dr-failover-sla-days: 30
+          dr-restore-sla-days: 30
+          dr-throwaway-sla-days: 7
+          proof-archive-sla-hours: 24

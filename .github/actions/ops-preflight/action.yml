@@ -57,6 +57,17 @@ runs:
         sla: ${{ inputs.soak-metrics-sla-hours }}
         unit: hours
         slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Check soak metrics thresholds
+      run: |
+        npx ts-node scripts/check-soak-metrics.ts
+        if [ ! -f soak-summary.json ]; then
+          echo "soak-summary.json missing" >&2
+          exit 1
+        fi
+      env:
+        SOAK_TRENDS_BUCKET: ${{ env.SOAK_TRENDS_BUCKET }}
+        SOAK_LATENCY_P95_MS: ${{ env.SOAK_LATENCY_P95_MS }}
+        SOAK_THROUGHPUT_MIN: ${{ env.SOAK_THROUGHPUT_MIN }}
     - name: Check DR drill SLA
       uses: ./.github/workflows/check-workflow-sla
       with:
@@ -85,6 +96,27 @@ runs:
         sla: ${{ inputs.dr-throwaway-sla-days }}
         unit: days
         slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Check DR trend targets
+      run: |
+        set -euo pipefail
+        out=$(npx -y ts-node infra/disaster-recovery/check-dr-trends.ts)
+        echo "$out"
+        latest_rto=$(echo "$out" | jq -r '.latest.rto')
+        avg_rto=$(echo "$out" | jq -r '.average.rto')
+        latest_rpo_snap=$(echo "$out" | jq -r '.latest.rpoSnap')
+        latest_rpo_wal=$(echo "$out" | jq -r '.latest.rpoWal')
+        avg_rpo_snap=$(echo "$out" | jq -r '.average.rpoSnap')
+        avg_rpo_wal=$(echo "$out" | jq -r '.average.rpoWal')
+        if [ "$latest_rto" -gt "$RTO_TARGET" ] || [ "$avg_rto" -gt "$RTO_TARGET" ] \
+          || [ "$latest_rpo_snap" -gt "$RPO_TARGET" ] || [ "$latest_rpo_wal" -gt "$RPO_TARGET" ] \
+          || [ "$avg_rpo_snap" -gt "$RPO_TARGET" ] || [ "$avg_rpo_wal" -gt "$RPO_TARGET" ]; then
+          echo 'DR metrics exceed targets'
+          exit 1
+        fi
+      env:
+        DR_METRICS_BUCKET: ${{ env.DR_METRICS_BUCKET }}
+        RTO_TARGET: ${{ env.RTO_TARGET }}
+        RPO_TARGET: ${{ env.RPO_TARGET }}
     - name: Check proof-archive SLA
       uses: ./.github/workflows/check-workflow-sla
       with:
