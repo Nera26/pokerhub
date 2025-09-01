@@ -102,6 +102,7 @@ class InMemoryRooms {
       undefined,
       undefined,
       undefined,
+      undefined,
       tableId,
     );
     this.rooms.set(tableId, new InMemoryRoom(engine));

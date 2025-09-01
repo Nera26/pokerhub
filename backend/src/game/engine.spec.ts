@@ -74,9 +74,27 @@ describe('GameEngine hand lifecycle', () => {
     }
 
     expect(wallet.reserve).toHaveBeenCalledTimes(2);
-    expect(wallet.rollback).toHaveBeenCalledWith('A', 100, handId, 'USD');
-    expect(wallet.rollback).toHaveBeenCalledWith('B', 98, handId, 'USD');
-    expect(wallet.commit).toHaveBeenCalledWith(handId, 2, 0, 'USD');
+    expect(wallet.rollback).toHaveBeenCalledWith(
+      'A',
+      100,
+      handId,
+      'USD',
+      `${handId}#preflop#0`,
+    );
+    expect(wallet.rollback).toHaveBeenCalledWith(
+      'B',
+      98,
+      handId,
+      'USD',
+      `${handId}#preflop#1`,
+    );
+    expect(wallet.commit).toHaveBeenCalledWith(
+      handId,
+      2,
+      0,
+      'USD',
+      `${handId}#preflop#2`,
+    );
 
     const proof = engine.getHandProof()!;
     expect(verifyProof(proof)).toBe(true);

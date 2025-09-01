@@ -63,6 +63,7 @@ async function main() {
     workerData.playerIds,
     { startingStack: 100, smallBlind: 1, bigBlind: 2 },
     undefined, // wallet
+    undefined, // settlementSvc
     undefined, // handRepo
     undefined, // events
     workerData.tableId,
