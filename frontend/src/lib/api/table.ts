@@ -1,4 +1,3 @@
-/* istanbul ignore file */
 import { getBaseUrl } from '@/lib/base-url';
 import { handleResponse } from './client';
 import { serverFetch } from '@/lib/server-fetch';
