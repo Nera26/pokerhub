@@ -59,6 +59,34 @@ Emitted when a hand is finished.
 }
 ```
 
+## hand.settle
+Emitted after chip balances are settled.
+
+- `handId` – ID of the hand
+- `tableId` – Table where the hand occurred
+- `playerIds` – Players receiving settlement deltas
+- `deltas` – Chip delta for each player corresponding to `playerIds`
+
+```json
+{
+  "type": "object",
+  "required": ["handId", "playerIds", "deltas"],
+  "additionalProperties": false,
+  "properties": {
+    "handId": { "type": "string", "format": "uuid" },
+    "tableId": { "type": "string", "format": "uuid" },
+    "playerIds": {
+      "type": "array",
+      "items": { "type": "string", "format": "uuid" }
+    },
+    "deltas": {
+      "type": "array",
+      "items": { "type": "number" }
+    }
+  }
+}
+```
+
 ## wallet.credit
 Emitted when chips are credited to a wallet.
 

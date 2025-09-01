@@ -15,6 +15,13 @@ export const HandEndEvent = z.object({
   winners: z.array(z.string().uuid()).optional(),
 });
 
+export const HandSettleEvent = z.object({
+  handId: z.string().uuid(),
+  tableId: z.string().uuid().optional(),
+  playerIds: z.array(z.string().uuid()),
+  deltas: z.array(z.number()),
+});
+
 export const WalletMovementEvent = z.object({
   accountId: z.string().uuid(),
   amount: z.number(),
@@ -118,6 +125,7 @@ export const WalletReconcileMismatchEvent = z.object({
 export const EventSchemas = {
   "hand.start": HandStartEvent,
   "hand.end": HandEndEvent,
+  "hand.settle": HandSettleEvent,
   "wallet.credit": WalletMovementEvent,
   "wallet.debit": WalletMovementEvent,
   "action.bet": ActionBetEvent,
@@ -138,6 +146,7 @@ export const EventSchemas = {
 export type Events = {
   "hand.start": z.infer<typeof HandStartEvent>;
   "hand.end": z.infer<typeof HandEndEvent>;
+  "hand.settle": z.infer<typeof HandSettleEvent>;
   "wallet.credit": z.infer<typeof WalletMovementEvent>;
   "wallet.debit": z.infer<typeof WalletMovementEvent>;
   "action.bet": z.infer<typeof ActionBetEvent>;

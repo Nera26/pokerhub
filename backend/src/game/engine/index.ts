@@ -268,6 +268,14 @@ export class GameEngine {
       .filter((e) => e.delta > 0)
       .map((e) => e.playerId);
 
+    this.events?.emit('hand.settle', {
+      handId: this.handId,
+      tableId: this.tableId,
+      playerIds: entries.map((e) => e.playerId),
+      deltas: entries.map((e) => e.delta),
+      stake: this.stake,
+    });
+
     this.events?.emit('hand.end', {
       handId: this.handId,
       winners,

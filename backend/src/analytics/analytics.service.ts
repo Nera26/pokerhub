@@ -22,6 +22,13 @@ const HandEndSchema = new ParquetSchema({
   winners: { type: 'UTF8', repeated: true, optional: true },
 });
 
+const HandSettleSchema = new ParquetSchema({
+  handId: { type: 'UTF8' },
+  tableId: { type: 'UTF8', optional: true },
+  playerIds: { type: 'UTF8', repeated: true },
+  deltas: { type: 'DOUBLE', repeated: true },
+});
+
 const WalletMovementSchema = new ParquetSchema({
   accountId: { type: 'UTF8' },
   amount: { type: 'DOUBLE' },
@@ -114,6 +121,7 @@ const WalletChargebackFlagSchema = new ParquetSchema({
 const ParquetSchemas: Record<string, ParquetSchema> = {
   'hand.start': HandStartSchema,
   'hand.end': HandEndSchema,
+  'hand.settle': HandSettleSchema,
   'wallet.credit': WalletMovementSchema,
   'wallet.debit': WalletMovementSchema,
   'action.bet': ActionAmountSchema,
