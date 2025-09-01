@@ -1,5 +1,7 @@
 # Runbooks
 
+See the [GCP Ops Runbook](gcp-ops-runbook.md) for disaster recovery, spectator privacy, soak metrics, and proof archive restoration procedures.
+
 ## PagerDuty Alert Policies
 - **Telemetry pipeline**: see `infra/observability/pagerduty-telemetry.yml` for SLO burn-rate alerts.
 - **Service burn rate**: `infra/observability/pagerduty-burn-rate.yml` covers core availability SLOs.

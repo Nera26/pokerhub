@@ -40,3 +40,5 @@ To alert when the metric stops reporting:
 
 This ensures operators are notified if the spectator privacy workflow fails to
 publish metrics.
+
+Remediation steps are outlined in the [GCP Ops Runbook](../gcp-ops-runbook.md).

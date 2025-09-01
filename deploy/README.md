@@ -22,3 +22,5 @@ Set `ARTIFACT_REGISTRY` before invoking any script, e.g.:
 export ARTIFACT_REGISTRY=us-docker.pkg.dev/$GCP_PROJECT_ID/pokerhub
 bash deploy/canary.sh <image-tag>
 ```
+
+For recovery and remediation procedures, see the [GCP Ops Runbook](../docs/gcp-ops-runbook.md).
