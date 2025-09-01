@@ -19,7 +19,7 @@ export type GameAction =
   | { type: 'fold'; playerId: string }
   | { type: 'next' };
 
-export interface PlayerState {
+export interface PlayerStateInternal {
   id: string;
   stack: number;
   folded: boolean;
@@ -28,7 +28,7 @@ export interface PlayerState {
   holeCards?: number[];
 }
 
-export interface GameState {
+export interface GameStateInternal {
   phase: HandPhase;
   street: Street;
   pot: number;
@@ -38,7 +38,7 @@ export interface GameState {
     contributions: Record<string, number>;
   }[];
   currentBet: number;
-  players: PlayerState[];
+  players: PlayerStateInternal[];
   deck: number[];
   communityCards: number[];
 }
@@ -47,14 +47,14 @@ const ORDER: Street[] = ['preflop', 'flop', 'turn', 'river', 'showdown'];
 
 export class HandStateMachine {
   constructor(
-    private readonly state: GameState,
+    private readonly state: GameStateInternal,
     private readonly rng: HandRNG,
     private readonly config: { smallBlind: number; bigBlind: number },
   ) {}
 
   private blindsPosted = new Set<string>();
 
-  apply(action: GameAction): GameState {
+  apply(action: GameAction): GameStateInternal {
     switch (this.state.phase) {
       case 'WAIT_BLINDS': {
         if (action.type === 'postBlind') {
@@ -137,15 +137,15 @@ export class HandStateMachine {
     return this.state;
   }
 
-  getState(): GameState {
+  getState(): GameStateInternal {
     return this.state;
   }
 
-  activePlayers(): PlayerState[] {
+  activePlayers(): PlayerStateInternal[] {
     return this.state.players.filter((p) => !p.folded);
   }
 
-  private findPlayer(id: string): PlayerState {
+  private findPlayer(id: string): PlayerStateInternal {
     const player = this.state.players.find((p) => p.id === id);
     if (!player) throw new Error(`Unknown player ${id}`);
     return player;
@@ -156,7 +156,7 @@ export class HandStateMachine {
     this.state.street = ORDER[Math.min(index + 1, ORDER.length - 1)];
   }
 
-  private placeBet(player: PlayerState, amount: number) {
+  private placeBet(player: PlayerStateInternal, amount: number) {
     if (amount <= 0) {
       throw new Error('amount must be positive');
     }

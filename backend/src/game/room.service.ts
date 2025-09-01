@@ -8,7 +8,7 @@ import {
 import { Worker } from 'worker_threads';
 import { resolve } from 'path';
 import { metrics, type ObservableResult } from '@opentelemetry/api';
-import type { GameAction, GameState } from './engine';
+import type { GameAction, InternalGameState } from './engine';
 import type Redis from 'ioredis';
 
 class WorkerHost extends EventEmitter {
@@ -33,7 +33,7 @@ class WorkerHost extends EventEmitter {
 
     this.worker.on('message', (msg: any) => {
       if (msg?.event === 'state') {
-        this.emit('state', msg.state as GameState);
+        this.emit('state', msg.state as InternalGameState);
         return;
       }
       const seq = msg?.seq as number | undefined;
@@ -66,7 +66,7 @@ class WorkerHost extends EventEmitter {
     });
   }
 
-  private call<T = GameState>(
+  private call<T = InternalGameState>(
     type: string,
     payload?: Record<string, unknown>,
   ): Promise<T> {
@@ -82,23 +82,23 @@ class WorkerHost extends EventEmitter {
     });
   }
 
-  apply(action: GameAction): Promise<GameState> {
+  apply(action: GameAction): Promise<InternalGameState> {
     return this.call('apply', { action });
   }
 
-  getPublicState(): Promise<GameState> {
+  getPublicState(): Promise<InternalGameState> {
     return this.call('getState');
   }
 
-  replay(): Promise<GameState> {
+  replay(): Promise<InternalGameState> {
     return this.call('replay');
   }
 
-  resume(from: number): Promise<Array<[number, GameState]>> {
+  resume(from: number): Promise<Array<[number, InternalGameState]>> {
     return this.call('resume', { from });
   }
 
-  snapshot(states: Array<[number, GameState]>): Promise<void> {
+  snapshot(states: Array<[number, InternalGameState]>): Promise<void> {
     return this.call('snapshot', { states });
   }
 
@@ -205,18 +205,18 @@ class RoomWorker extends EventEmitter {
     this.emit('failover', this.tableId);
   }
 
-  async apply(action: GameAction): Promise<GameState> {
+  async apply(action: GameAction): Promise<InternalGameState> {
     const state = await this.primary.apply(action);
     this.applied++;
     this.lastConfirmed = this.applied;
     return state;
   }
 
-  getPublicState(): Promise<GameState> {
+  getPublicState(): Promise<InternalGameState> {
     return this.primary.getPublicState();
   }
 
-  async replay(): Promise<GameState> {
+  async replay(): Promise<InternalGameState> {
     const state = await this.primary.replay();
     if (this.follower) {
       await this.follower.replay();
@@ -224,7 +224,7 @@ class RoomWorker extends EventEmitter {
     return state;
   }
 
-  resume(from: number): Promise<Array<[number, GameState]>> {
+  resume(from: number): Promise<Array<[number, InternalGameState]>> {
     return this.primary.resume(from);
   }
 

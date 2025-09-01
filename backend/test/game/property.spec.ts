@@ -1,5 +1,9 @@
 import fc from 'fast-check';
-import { GameEngine, GameAction, GameState } from '../../src/game/engine';
+import {
+  GameEngine,
+  GameAction,
+  InternalGameState,
+} from '../../src/game/engine';
 
 const players = ['p1', 'p2'];
 const config = { startingStack: 100, smallBlind: 1, bigBlind: 2 };
@@ -22,7 +26,7 @@ const actionArb: fc.Arbitrary<GameAction> = fc.oneof(
   fc.record({ type: fc.constant('next') }),
 );
 
-function totalChips(state: GameState): number {
+function totalChips(state: InternalGameState): number {
   return state.pot + state.players.reduce((s, p) => s + p.stack, 0);
 }
 

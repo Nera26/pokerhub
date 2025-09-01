@@ -1,5 +1,9 @@
 import { HandLog, HandLogEntry } from '../hand-log';
-import { HandStateMachine, GameAction, GameState } from '../state-machine';
+import {
+  HandStateMachine,
+  GameAction,
+  GameStateInternal,
+} from '../state-machine';
 import { SettlementJournal, recordDeltas } from '../settlement';
 import { WalletService } from '../../wallet/wallet.service';
 import { randomUUID } from 'crypto';
@@ -126,7 +130,7 @@ export class GameEngine {
     return this.handId;
   }
 
-  applyAction(action: GameAction): GameState {
+  applyAction(action: GameAction): GameStateInternal {
     // Use a safe deep clone (structuredClone is available in modern runtimes)
     const preState = structuredClone(this.machine.getState());
     let state = this.machine.apply(action);
@@ -151,11 +155,11 @@ export class GameEngine {
     return postState;
   }
 
-  getState(): GameState {
+  getState(): GameStateInternal {
     return this.machine.getState();
   }
 
-  getPublicState(): GameState {
+  getPublicState(): GameStateInternal {
     const state = structuredClone(this.machine.getState());
     // Strip private info (hole cards, deck)
     for (const player of state.players as unknown as Array<Record<string, unknown>>) {
@@ -183,7 +187,7 @@ export class GameEngine {
    * We preserve blinds/stack config and stake, but intentionally
    * do NOT pass wallet/handRepo/events/tableId to avoid side effects.
    */
-  replayHand(): GameState {
+  replayHand(): GameStateInternal {
     const replay = new GameEngine(
       this.machine.getState().players.map((p) => p.id),
       this.config,
@@ -261,4 +265,7 @@ export class GameEngine {
   }
 }
 
-export type { GameAction, GameState } from '../state-machine';
+export type {
+  GameAction,
+  GameStateInternal as InternalGameState,
+} from '../state-machine';

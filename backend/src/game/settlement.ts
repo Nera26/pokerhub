@@ -17,14 +17,14 @@ export class SettlementJournal {
 
 // --- New settlement helpers -------------------------------------------------
 
-import type { GameState } from './state-machine';
+import type { GameStateInternal } from './state-machine';
 import { evaluateHand } from './hand-evaluator';
 
 /**
  * Distribute all pots in the given state to the appropriate winners.
  * Mutates player stacks and clears the pot/sidePots collections.
  */
-export function settlePots(state: GameState): void {
+export function settlePots(state: GameStateInternal): void {
   const active = state.players.filter((p) => !p.folded);
   if (active.length === 0) return;
 
@@ -75,7 +75,7 @@ export function settlePots(state: GameState): void {
  * Returns the recorded entries for further processing.
  */
 export function recordDeltas(
-  state: GameState,
+  state: GameStateInternal,
   initial: Map<string, number>,
   journal: SettlementJournal,
 ): SettlementEntry[] {

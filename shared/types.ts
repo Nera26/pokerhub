@@ -190,9 +190,34 @@ export const GameActionSchema = z
 
 export type GameAction = z.infer<typeof GameActionSchema>;
 
+export const GameStatePlayerSchema = z.object({
+  id: z.string(),
+  stack: z.number(),
+  folded: z.boolean(),
+  bet: z.number(),
+  allIn: z.boolean(),
+  holeCards: z.array(z.number()).length(2).optional(),
+});
+
 export const GameStateSchema = z
-  .object({ version: z.literal('1'), tick: z.number() })
-  .passthrough();
+  .object({
+    version: z.literal('1'),
+    tick: z.number(),
+    phase: z.enum(['WAIT_BLINDS', 'DEAL', 'BETTING_ROUND', 'SHOWDOWN', 'SETTLE']),
+    street: z.enum(['preflop', 'flop', 'turn', 'river', 'showdown']),
+    pot: z.number(),
+    sidePots: z.array(
+      z.object({
+        amount: z.number(),
+        players: z.array(z.string()),
+        contributions: z.record(z.string(), z.number()),
+      }),
+    ),
+    currentBet: z.number(),
+    players: z.array(GameStatePlayerSchema),
+    communityCards: z.array(z.number()),
+  })
+  .strict();
 
 export type GameState = z.infer<typeof GameStateSchema>;
 

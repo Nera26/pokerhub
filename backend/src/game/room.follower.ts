@@ -1,6 +1,6 @@
 import { parentPort, workerData } from 'worker_threads';
 import Redis from 'ioredis';
-import type { GameState } from './engine';
+import type { InternalGameState } from './engine';
 
 if (!parentPort) {
   throw new Error('Worker must be run as a worker thread');
@@ -12,13 +12,13 @@ const redis: Redis | undefined = opts ? new Redis(opts) : undefined;
 const diffChannel = `room:${workerData.tableId}:diffs`;
 const ackChannel = `room:${workerData.tableId}:snapshotAck`;
 
-let log: Array<[number, GameState]> = [];
-let current: GameState | undefined;
+let log: Array<[number, InternalGameState]> = [];
+let current: InternalGameState | undefined;
 
 if (redis) {
   void redis.subscribe(diffChannel);
   redis.on('message', (_channel, msg) => {
-    const [idx, state] = JSON.parse(msg) as [number, GameState];
+    const [idx, state] = JSON.parse(msg) as [number, InternalGameState];
     log[idx] = [idx, state];
     current = state;
     port.postMessage({ event: 'state', state });
@@ -28,7 +28,7 @@ if (redis) {
 port.on('message', (msg: any) => {
   switch (msg.type) {
     case 'snapshot': {
-      log = (msg.states as Array<[number, GameState]>) ?? [];
+      log = (msg.states as Array<[number, InternalGameState]>) ?? [];
       current = log[log.length - 1]?.[1];
       void redis?.publish(ackChannel, String(log.length));
       port.postMessage({ seq: msg.seq, ok: true });

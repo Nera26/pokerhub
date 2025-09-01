@@ -1,15 +1,15 @@
 import { settlePots, recordDeltas, SettlementJournal } from './settlement';
-import type { GameState, PlayerState } from './state-machine';
+import type { GameStateInternal, PlayerStateInternal } from './state-machine';
 
 describe('settlePots', () => {
   it('distributes side pots and records deltas', () => {
-    const players: PlayerState[] = [
+    const players: PlayerStateInternal[] = [
       { id: 'A', stack: 0, folded: false, bet: 0, allIn: true, holeCards: [48, 49] }, // AA
       { id: 'B', stack: 0, folded: false, bet: 0, allIn: true, holeCards: [44, 45] }, // KK
       { id: 'C', stack: 0, folded: false, bet: 0, allIn: true, holeCards: [40, 41] }, // QQ
     ];
 
-    const state: GameState = {
+    const state: GameStateInternal = {
       phase: 'SHOWDOWN',
       street: 'showdown',
       pot: 50,

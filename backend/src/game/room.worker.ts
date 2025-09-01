@@ -1,6 +1,6 @@
 import { parentPort, workerData } from 'worker_threads';
 import Redis from 'ioredis';
-import { GameAction, GameEngine, GameState } from './engine';
+import { GameAction, GameEngine, InternalGameState } from './engine';
 import { AppDataSource } from '../database/data-source';
 import { SettlementService } from '../wallet/settlement.service';
 import { SettlementJournal } from '../wallet/settlement-journal.entity';
@@ -53,7 +53,7 @@ async function main() {
     async (
       msg: { type: string; seq: number; action?: GameAction; from?: number },
     ) => {
-      let state: GameState;
+      let state: InternalGameState;
       switch (msg.type) {
         case 'apply':
           state = engine.applyAction(msg.action as GameAction);
@@ -84,13 +84,13 @@ async function main() {
           const log = engine
             .getHandLog()
             .filter(([index]) => index >= from)
-            .map(([index, , , post]) => [index, post] as [number, GameState]);
+            .map(([index, , , post]) => [index, post] as [number, InternalGameState]);
           port.postMessage({ seq: msg.seq, states: log });
           break;
         case 'snapshot':
           const snap = engine
             .getHandLog()
-            .map(([index, , , post]) => [index, post] as [number, GameState]);
+            .map(([index, , , post]) => [index, post] as [number, InternalGameState]);
           port.postMessage({ seq: msg.seq, states: snap });
           break;
         case 'ping':
