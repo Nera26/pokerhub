@@ -309,6 +309,37 @@ jobs:
         if: steps.metrics.outcome == 'success'
         run: echo "outcome=success" > outcome.txt
 
+      - name: Run DR failover
+        id: dr_failover
+        if: steps.metrics.outcome == 'success'
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+          SQL_REPLICA_INSTANCE: ${{ vars.SQL_REPLICA_INSTANCE }}
+          MEMORYSTORE_INSTANCE: ${{ vars.MEMORYSTORE_INSTANCE }}
+          CLOUD_DNS_ZONE: ${{ vars.CLOUD_DNS_ZONE }}
+          DB_RECORD_NAME: ${{ vars.DB_RECORD_NAME }}
+          REDIS_RECORD_NAME: ${{ vars.REDIS_RECORD_NAME }}
+        run: bash infra/disaster-recovery/failover.sh
+
+      - name: Notify on-call on failover script failure
+        if: failure() && steps.dr_failover.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            { "text": "🚫 Deployment failed: failover script failed for ${{ github.repository }}@${{ github.sha }}" }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: PagerDuty alert on failover script failure
+        if: failure() && steps.dr_failover.outcome == 'failure'
+        env:
+          ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+        run: |
+          curl -X POST https://events.pagerduty.com/v2/enqueue \
+            -H 'Content-Type: application/json' \
+            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"DR failover script failed during deployment","source":"github-actions","severity":"error"}}'
+
       - name: Promote canary
         if: steps.metrics.outcome == 'success'
         run: scripts/promote.sh
