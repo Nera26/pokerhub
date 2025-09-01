@@ -72,3 +72,13 @@ Run with `--log-format json` to capture custom metrics:
 - `gc_pause_ms` – p95 should stay below 50 ms.
 
 Breaching these thresholds indicates memory or GC regressions requiring investigation.
+
+## Tournament
+
+The `backend/tests/performance/tournament-10k.ts` script seeds 10 k players and runs the tournament scheduler and table balancer end-to-end. It asserts the total runtime stays within 5 % of a warmed baseline and that final payouts align with Independent Chip Model results within one chip.
+
+### Running locally
+
+```bash
+npx ts-node -P backend/tsconfig.json backend/tests/performance/tournament-10k.ts
+```
