@@ -34,6 +34,18 @@ The script spawns ~180 actions/min per table and exports the `ack_latency` metri
 - Prometheus UI: <http://localhost:9090>
 - Grafana UI: <http://localhost:3000> (import `load/grafana-ack-latency.json`)
 
+### GC Pause & Heap Growth
+
+Run `load/collect-gc-heap.sh` alongside the soak test to sample
+`process.memoryUsage()` and event‑loop lag.  In Grafana, create panels with the
+following Prometheus queries to visualize these samples:
+
+- p95 GC pause: `histogram_quantile(0.95, rate(nodejs_gc_duration_seconds_bucket[5m]))`
+- Heap used bytes: `nodejs_heap_size_used_bytes`
+
+The soak harness logs these values and exits non‑zero if heap usage grows by
+more than 1 % or if the p95 GC pause exceeds 50 ms.
+
 ### Stake Level Metrics
 
 The nightly analytics job populates ClickHouse tables with stake-level VPIP,
