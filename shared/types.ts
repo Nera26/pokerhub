@@ -363,6 +363,14 @@ export type HandProof = z.infer<typeof HandProofSchema>;
 export const HandProofResponseSchema = HandProofSchema;
 export type HandProofResponse = HandProof;
 
+export const HandProofsResponseSchema = z.array(
+  z.object({
+    id: z.string(),
+    proof: HandProofSchema,
+  }),
+);
+export type HandProofsResponse = z.infer<typeof HandProofsResponseSchema>;
+
 // Raw JSONL hand history
 export const HandLogResponseSchema = z.string();
 export type HandLogResponse = z.infer<typeof HandLogResponseSchema>;
