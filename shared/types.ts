@@ -343,6 +343,8 @@ export const HandStateResponseSchema = z.object({
 });
 export type HandStateResponse = z.infer<typeof HandStateResponseSchema>;
 
+// Commitment, seed and nonce proving deck fairness for a hand
+// Used by GET /hands/:id/proof
 export const HandProofSchema = z.object({
   seed: z.string(),
   nonce: z.string(),
@@ -350,7 +352,6 @@ export const HandProofSchema = z.object({
 });
 export type HandProof = z.infer<typeof HandProofSchema>;
 
-// Backwards-compat alias used by older code
 export const HandProofResponseSchema = HandProofSchema;
 export type HandProofResponse = HandProof;
 

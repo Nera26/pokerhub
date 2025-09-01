@@ -452,8 +452,6 @@ paths:
   /hands/{id}/proof:
     get:
       summary: Get stored RNG proof for a hand
-      security:
-        - bearerAuth: []
       parameters:
         - in: path
           name: id
