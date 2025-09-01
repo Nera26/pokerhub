@@ -30,8 +30,13 @@ jobs:
           dr-throwaway-sla-days: 7
           proof-archive-sla-hours: 24
 
-  tourney-sim:
+  ops-sla:
     needs: ops-preflight
+    uses: ./.github/workflows/ops-sla.yml
+    secrets: inherit
+
+  tourney-sim:
+    needs: [ops-preflight, ops-sla]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -49,7 +54,7 @@ jobs:
 
   k6-tournament:
     if: github.event_name == 'pull_request' || github.event_name == 'schedule'
-    needs: ops-preflight
+    needs: [ops-preflight, ops-sla]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -72,7 +77,7 @@ jobs:
           NODE
 
   workflow-sla:
-    needs: ops-preflight
+    needs: [ops-preflight, ops-sla]
     runs-on: ubuntu-latest
     steps:
       - name: Check DR drill SLA
@@ -407,7 +412,7 @@ jobs:
         run: npx ts-node scripts/verify-ops-artifacts.ts
 
   docs:
-    needs: [ops-preflight, workflow-sla]
+    needs: [ops-preflight, ops-sla, workflow-sla]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -785,6 +790,6 @@ jobs:
           curl -X POST -H 'Content-Type: application/json' -d @pd.json https://events.pagerduty.com/v2/enqueue
 
   ops-artifacts-verify:
-    needs: [ops-preflight, workflow-sla, dr-trends, spectator-privacy]
+    needs: [ops-preflight, ops-sla, workflow-sla, dr-trends, spectator-privacy]
     uses: ./.github/workflows/ops-artifacts-verify.yml
     secrets: inherit
