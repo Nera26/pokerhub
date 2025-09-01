@@ -59,14 +59,19 @@ jobs:
           git config user.email actions@github.com
           git commit -am "chore(dr): record failover results" && git push
 
-      - name: Upload logs
+      - name: Upload failover log
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: dr-failover
-          path: |
-            dr-failover.log
-            dr-failover.metrics
+          name: dr-failover-${{ github.sha }}
+          path: dr-failover.log
+
+      - name: Upload metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dr-failover-metrics-${{ github.sha }}
+          path: dr-failover.metrics
       - name: Notify Slack on failure
         if: failure()
         uses: slackapi/slack-github-action@v1.24.0
@@ -75,3 +80,11 @@ jobs:
             { "text": "DR failover exceeded RTO/RPO for ${GITHUB_REPOSITORY}@${GITHUB_SHA}" }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  spectator-privacy:
+    needs: failover
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: dr-failover.log

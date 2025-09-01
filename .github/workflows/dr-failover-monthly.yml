@@ -66,14 +66,26 @@ jobs:
           git config user.name github-actions
           git config user.email actions@github.com
           git commit -am "chore(dr): record monthly failover" && git push
-      - name: Upload logs
+      - name: Upload failover log
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: dr-failover-monthly
+          name: failover-${{ github.sha }}
+          path: failover.log
+
+      - name: Upload restore log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: restore-${{ github.sha }}
+          path: restore.log
+
+      - name: Upload metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dr-failover-monthly-metrics-${{ github.sha }}
           path: |
-            failover.log
-            restore.log
             infra/disaster-recovery/restore-latest.metrics
             infra/disaster-recovery/drill.metrics
       - name: Alert Slack and PagerDuty on failure
@@ -87,3 +99,11 @@ jobs:
           curl -X POST -H 'Content-type: application/json' \
             --data "{\"routing_key\": \"$PAGERDUTY_INTEGRATION_KEY\", \"event_action\": \"trigger\", \"payload\": {\"summary\": \"Monthly DR failover failed\", \"source\": \"github\", \"severity\": \"error\"}}" \
             https://events.pagerduty.com/v2/enqueue
+
+  spectator-privacy:
+    needs: monthly-failover
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: failover.log restore.log

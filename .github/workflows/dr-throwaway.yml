@@ -61,13 +61,33 @@ jobs:
             echo "Restore RPO exceeds 5 minutes" >&2
             exit 1
           fi
-      - name: Upload logs
+      - name: Upload failover log
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: dr-throwaway
+          name: failover-${{ github.sha }}
+          path: failover.log
+
+      - name: Upload restore log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: restore-${{ github.sha }}
+          path: restore.log
+
+      - name: Upload metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dr-throwaway-metrics-${{ github.sha }}
           path: |
-            failover.log
             failover.metrics
-            restore.log
             restore-backup.metrics
+
+  spectator-privacy:
+    needs: dr-tests
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: failover.log restore.log
