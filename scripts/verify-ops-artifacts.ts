@@ -213,9 +213,9 @@ function checkProofSummaryManifest(
   assertFresh(summaryUri, 'proof summary');
 }
 
-function checkSpectatorPrivacyMetric(projectId: string) {
+function checkSpectatorPrivacyMetric(projectId: string, slaHours = 24) {
   const end = new Date();
-  const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+  const start = new Date(end.getTime() - slaHours * 60 * 60 * 1000);
   let raw: string;
   try {
     raw = execSync(
