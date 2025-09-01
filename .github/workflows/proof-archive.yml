@@ -157,6 +157,12 @@ jobs:
             echo "Manifest hash mismatch: local $local_hash vs remote $remote_hash" >&2
             exit 1
           fi
+      - name: Check proof archive replication
+        if: success()
+        run: npx -y ts-node scripts/check-proof-archive-replication.ts
+        env:
+          PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
       - name: Restore and validate archived proofs
         if: success()
         run: |
