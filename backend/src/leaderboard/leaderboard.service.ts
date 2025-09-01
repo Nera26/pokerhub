@@ -65,6 +65,8 @@ export class LeaderboardService {
       playerId: string;
       rank: number;
       points: number;
+      rd: number;
+      volatility: number;
       net: number;
       bb100: number;
       hours: number;
@@ -77,6 +79,8 @@ export class LeaderboardService {
         playerId: string;
         rank: number;
         points: number;
+        rd: number;
+        volatility: number;
         net: number;
         bb100: number;
         hours: number;
@@ -101,14 +105,12 @@ export class LeaderboardService {
     options: {
       days?: number;
       minSessions?: number | ((playerId: string) => number);
-      decay?: number | ((playerId: string) => number);
-      kFactor?: number | ((playerId: string) => number);
     } = {},
   ): Promise<void> {
-    const { days = 30, minSessions, decay, kFactor } = options;
+    const { days = 30, minSessions } = options;
     const since = Date.now() - days * DAY_MS;
     const events = await this.analytics.rangeStream('analytics:game', since);
-    await this.rebuildWithEvents(events, { minSessions, decay, kFactor });
+    await this.rebuildWithEvents(events, { minSessions });
   }
 
   async rebuildFromEvents(
@@ -168,17 +170,16 @@ export class LeaderboardService {
     events: Iterable<unknown>,
     options: {
       minSessions?: number | ((playerId: string) => number);
-      decay?: number | ((playerId: string) => number);
-      kFactor?: number | ((playerId: string) => number);
     } = {},
   ): Promise<void> {
-    const { minSessions = 10, decay = 0.95, kFactor = 0.5 } = options;
+    const { minSessions = 10 } = options;
     const now = Date.now();
     const scores = new Map<
       string,
       {
         sessions: Set<string>;
         rating: number;
+        rd: number;
         volatility: number;
         net: number;
         bb: number;
@@ -191,11 +192,7 @@ export class LeaderboardService {
 
     const minSessionsFn =
       typeof minSessions === 'function' ? minSessions : () => minSessions;
-    const decayFn = typeof decay === 'function' ? decay : () => decay;
-    const kFactorFn = typeof kFactor === 'function' ? kFactor : () => kFactor;
     const minSessionsCache = new Map<string, number>();
-    const decayCache = new Map<string, number>();
-    const kFactorCache = new Map<string, number>();
 
     for (const ev of events) {
       const {
@@ -226,7 +223,8 @@ export class LeaderboardService {
         {
           sessions: new Set<string>(),
           rating: 0,
-          volatility: 0,
+          rd: 350,
+          volatility: 0.06,
           net: 0,
           bb: 0,
           hands: 0,
@@ -234,31 +232,21 @@ export class LeaderboardService {
           buyIn: 0,
           finishes: {},
         };
-      const preSessions = entry.sessions.size;
       entry.sessions.add(sessionId);
       const ageDays = (now - ts) / DAY_MS;
-      let playerDecay = decayCache.get(playerId);
-      if (playerDecay === undefined) {
-        playerDecay = decayFn(playerId);
-        decayCache.set(playerId, playerDecay);
-      }
-      let playerK = kFactorCache.get(playerId);
-      if (playerK === undefined) {
-        playerK = kFactorFn(playerId);
-        kFactorCache.set(playerId, playerK);
-      }
       let playerMin = minSessionsCache.get(playerId);
       if (playerMin === undefined) {
         playerMin = minSessionsFn(playerId);
         minSessionsCache.set(playerId, playerMin);
       }
+      const result = points > 0 ? 1 : points < 0 ? 0 : 0.5;
       const updated = updateRating(
-        { rating: entry.rating, volatility: entry.volatility, sessions: preSessions },
-        points,
+        { rating: entry.rating, rd: entry.rd, volatility: entry.volatility },
+        [{ rating: 0, rd: 350, score: result }],
         ageDays,
-        { kFactor: playerK, decay: playerDecay, minSessions: playerMin },
       );
       entry.rating = updated.rating;
+      entry.rd = updated.rd;
       entry.volatility = updated.volatility;
       entry.net += net;
       entry.bb += bb;
@@ -288,6 +276,8 @@ export class LeaderboardService {
         playerId: id,
         rank: idx + 1,
         points: v.rating,
+        rd: v.rd,
+        volatility: v.volatility,
         net: v.net,
         bb100: v.hands ? (v.bb / v.hands) * 100 : 0,
         hours: v.duration / 3600000,
@@ -307,6 +297,8 @@ export class LeaderboardService {
       playerId: string;
       rank: number;
       points: number;
+      rd: number;
+      volatility: number;
       net: number;
       bb100: number;
       hours: number;
@@ -331,16 +323,18 @@ export class LeaderboardService {
     }
 
     const rows = await this.analytics.select<{
-      playerId: string;
-      rank: number;
-      points: number;
-      net: number;
-      bb100: number;
-      hours: number;
-      roi: number;
-      finishes?: any;
+        playerId: string;
+        rank: number;
+        points: number;
+        rd: number;
+        volatility: number;
+        net: number;
+        bb100: number;
+        hours: number;
+        roi: number;
+        finishes?: any;
     }>(
-      'SELECT playerId, rank, points, net, bb100, hours, roi, finishes FROM leaderboard ORDER BY rank LIMIT 100',
+      'SELECT playerId, rank, points, rd, volatility, net, bb100, hours, roi, finishes FROM leaderboard ORDER BY rank LIMIT 100',
     );
     const ids = rows.map((r) => r.playerId);
     const existing = await this._userRepo.find({
@@ -354,6 +348,8 @@ export class LeaderboardService {
         playerId: r.playerId,
         rank: idx + 1,
         points: r.points,
+        rd: r.rd,
+        volatility: r.volatility,
         net: r.net,
         bb100: r.bb100,
         hours: r.hours,

@@ -1748,6 +1748,10 @@ components:
         type: integer
       points:
         type: number
+      rd:
+        type: number
+      volatility:
+        type: number
       net:
         type: number
       bb100:
@@ -1764,6 +1768,8 @@ components:
       - playerId
       - rank
       - points
+      - rd
+      - volatility
       - net
       - bb100
       - hours

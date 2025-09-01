@@ -1,31 +1,19 @@
 # Leaderboard Ratings
 
-The leaderboard uses a volatility adjusted rating system derived from an
-exponentially weighted moving average of session points. Each session contributes
-`points × decay^ageDays` where older games are discounted by the configured
-`decay` factor.
+The leaderboard now uses a [Glicko-2](https://www.glicko.net/glicko.html)
+rating system. Each session updates a player's rating, rating deviation (RD)
+and volatility based on the match result. Older sessions naturally increase RD
+until the player competes again.
 
 ## Variable K‑factor
 
-The traditional constant K‑factor is replaced with a dynamic value that scales
-with both player volatility and experience:
-
-- **Sessions played** – players with few sessions receive only a fraction of the
-  base K to discourage rating farming. The factor ramps up until the player
-  reaches the configured minimum session count.
-- **Volatility** – the system tracks the average absolute deviation of each
-  player's performance. High volatility increases the effective K so ratings can
-  react faster to hot or cold streaks.
-
-This mechanism keeps long‑term grinders stable while allowing legitimately
-swingy players to move on the leaderboard more quickly.
+Glicko-2 exposes RD and volatility directly, allowing swingy players to move
+on the leaderboard more quickly while long-term grinders remain stable.
 
 ## Anti‑farm rationale
 
-Because K is dampened for newcomers, playing a handful of high scoring sessions
-no longer results in outsized leaderboard positions. Players must log a minimum
-number of sessions before their results carry full weight, making it costly to
-create disposable accounts for rating boosts.
+Players must still meet a minimum number of sessions before being ranked,
+discouraging rating farming with disposable accounts.
 
 See `backend/src/leaderboard/rating.ts` for implementation details.
 

@@ -63,6 +63,8 @@ describe('leaderboard rebuild', () => {
             {
               sessions: Set<string>;
               rating: number;
+              rd: number;
+              volatility: number;
               net: number;
               bb: number;
               hands: number;
@@ -77,7 +79,8 @@ describe('leaderboard rebuild', () => {
               {
                 sessions: new Set<string>(),
                 rating: 0,
-                volatility: 0,
+                rd: 350,
+                volatility: 0.06,
                 net: 0,
                 bb: 0,
                 hands: 0,
@@ -85,16 +88,16 @@ describe('leaderboard rebuild', () => {
                 buyIn: 0,
                 finishes: {},
               };
-            const preSessions = entry.sessions.size;
             entry.sessions.add(ev.sessionId);
             const ageDays = (now - ev.ts) / DAY_MS;
+            const result = ev.points > 0 ? 1 : ev.points < 0 ? 0 : 0.5;
             const updated = updateRating(
-              { rating: entry.rating, volatility: entry.volatility, sessions: preSessions },
-              ev.points,
+              { rating: entry.rating, rd: entry.rd, volatility: entry.volatility },
+              [{ rating: 0, rd: 350, score: result }],
               ageDays,
-              { kFactor: 0.5, decay: 0.95, minSessions: 10 },
             );
             entry.rating = updated.rating;
+            entry.rd = updated.rd;
             entry.volatility = updated.volatility;
             entry.net += ev.net;
             entry.bb += ev.bb;
@@ -119,6 +122,8 @@ describe('leaderboard rebuild', () => {
               playerId: id,
               rank: idx + 1,
               points: v.rating,
+              rd: v.rd,
+              volatility: v.volatility,
               net: v.net,
               bb100: v.hands ? (v.bb / v.hands) * 100 : 0,
               hours: v.duration / 3600000,
@@ -127,7 +132,7 @@ describe('leaderboard rebuild', () => {
             }))
             .slice(0, 100);
 
-          await (service as any).rebuildWithEvents(events, { kFactor: 0.5 });
+          await (service as any).rebuildWithEvents(events);
           const top = await service.getTopPlayers();
           expect(top).toEqual(expected);
         },
@@ -184,9 +189,7 @@ describe('leaderboard rebuild', () => {
             analytics2 as any,
             new ConfigService(),
           );
-          await (service2 as any).rebuildWithEvents([...events].reverse(), {
-            kFactor: 0.5,
-          });
+          await (service2 as any).rebuildWithEvents([...events].reverse());
           const top2 = await service2.getTopPlayers();
           expect(top1).toEqual(top2);
         },
