@@ -23,6 +23,9 @@ on:
 jobs:
   archive:
     runs-on: ubuntu-latest
+    env:
+      PROOF_MANIFEST_BUCKET: ${{ secrets.PROOF_MANIFEST_BUCKET }}
+      PROOF_MANIFEST_MIN_RETENTION_DAYS: 365
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -93,8 +96,6 @@ jobs:
           bq load --project_id=${{ vars.GCP_PROJECT_ID }} --source_format=NEWLINE_DELIMITED_JSON ops_metrics.proof_archives proof-summary.bq.json infra/analytics/proof_archives.schema.json
       - name: Sign and upload proof summary manifest
         if: success()
-        env:
-          PROOF_MANIFEST_BUCKET: ${{ secrets.PROOF_MANIFEST_BUCKET }}
         run: |
           set -e
           sha=$(sha256sum proof-summary.json | awk '{print $1}')

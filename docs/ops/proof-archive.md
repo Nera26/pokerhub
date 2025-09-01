@@ -9,7 +9,7 @@ The proof archive workflow emits a `proof-summary.json` describing each batch of
 
 ## Signed manifest
 
-- **Bucket**: `gs://$PROOF_MANIFEST_BUCKET` (object versioning or WORM enabled)
+- **Bucket**: `gs://$PROOF_MANIFEST_BUCKET` (dual-region with a minimum retention/WORM policy)
 - **Manifest URI**: `gs://$PROOF_MANIFEST_BUCKET/latest/manifest.json`
 - **Summary URI**: `gs://$PROOF_MANIFEST_BUCKET/latest/proof-summary.json`
 - Manifest fields:

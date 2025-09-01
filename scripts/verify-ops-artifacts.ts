@@ -616,6 +616,12 @@ function main() {
   if (!Number.isFinite(spectatorRetention) || spectatorRetention <= 0) {
     throw new Error('Invalid SPECTATOR_LOGS_MIN_RETENTION_DAYS');
   }
+  const manifestRetention = Number(
+    process.env.PROOF_MANIFEST_MIN_RETENTION_DAYS || '365',
+  );
+  if (!Number.isFinite(manifestRetention) || manifestRetention <= 0) {
+    throw new Error('Invalid PROOF_MANIFEST_MIN_RETENTION_DAYS');
+  }
 
   const soakRetention = Number(
     process.env.SOAK_TRENDS_MIN_RETENTION_DAYS || '30',
@@ -630,19 +636,25 @@ function main() {
     throw new Error('Invalid DR_METRICS_MIN_RETENTION_DAYS');
   }
 
+  // Retention checks
   checkBucketRetention(proofBucket, proofRetention);
   checkBucketRetention(spectatorBucket, spectatorRetention);
   checkBucketRetention(soakBucket, soakRetention);
   checkBucketRetention(drMetricsBucket, drMetricsRetention);
+  checkBucketRetention(manifestBucket, manifestRetention);
 
+  // Replication checks
   checkBucketReplication(proofBucket, secondaryRegion);
   checkBucketReplication(spectatorBucket, secondaryRegion);
   checkBucketReplication(soakBucket, secondaryRegion);
   checkBucketReplication(drMetricsBucket, secondaryRegion);
+  checkBucketReplication(manifestBucket, secondaryRegion);
 
+  // Proof archive integrity + metrics
   checkProofArchive(proofBucket);
   checkProofArchiveMetrics(projectId);
   checkProofArchiveBigQuery(projectId);
+
   checkProofSummaryManifest(
     manifestBucket,
     manifestKey,
