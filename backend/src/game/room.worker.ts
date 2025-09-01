@@ -4,6 +4,7 @@ import { GameAction, GameEngine, InternalGameState } from './engine';
 import { AppDataSource } from '../database/data-source';
 import { SettlementService } from '../wallet/settlement.service';
 import { SettlementJournal } from '../wallet/settlement-journal.entity';
+import { diff } from './state-diff';
 
 if (!parentPort) {
   throw new Error('Worker must be run as a worker thread');
@@ -25,22 +26,6 @@ sub?.on('message', (channel, msg) => {
 
 let settlement: SettlementService;
 let previousState: InternalGameState | undefined;
-
-function diff(prev: any, curr: any): Record<string, any> {
-  if (!prev) return curr as Record<string, any>;
-  const delta: Record<string, any> = {};
-  for (const key of Object.keys(curr as Record<string, any>)) {
-    const pv = (prev as any)[key];
-    const cv = (curr as any)[key];
-    if (pv && cv && typeof pv === 'object' && typeof cv === 'object') {
-      const d = diff(pv, cv);
-      if (Object.keys(d).length) delta[key] = d;
-    } else if (pv !== cv) {
-      delta[key] = cv;
-    }
-  }
-  return delta;
-}
 
 async function getSettlement() {
   if (process.env.NODE_ENV === 'test') {
