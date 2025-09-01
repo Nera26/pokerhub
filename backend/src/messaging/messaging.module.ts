@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { TournamentsProducer } from './tournaments/tournaments.producer';
 import { TournamentsConsumer } from './tournaments/tournaments.consumer';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { TournamentScheduler } from '../tournament/scheduler.service';
 
 @Module({
   imports: [
@@ -22,7 +23,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     ]),
     AnalyticsModule,
   ],
-  providers: [TournamentsProducer],
+  providers: [TournamentsProducer, TournamentScheduler],
   controllers: [TournamentsConsumer],
   exports: [TournamentsProducer],
 })

@@ -94,4 +94,13 @@ export class TournamentScheduler {
       current += lvl.durationMinutes * 60_000;
     }
   }
+
+  async scheduleStart(tournamentId: string, start: Date): Promise<void> {
+    const queue = await this.getQueue('tournament-start');
+    await queue.add(
+      'start',
+      { tournamentId },
+      { delay: start.getTime() - Date.now() },
+    );
+  }
 }

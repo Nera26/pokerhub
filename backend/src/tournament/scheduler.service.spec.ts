@@ -81,6 +81,14 @@ describe('TournamentScheduler', () => {
     );
   });
 
+  it('enqueues tournament start', async () => {
+    const q = new MockQueue();
+    setQueue('tournament-start', q);
+    const start = new Date(4000);
+    await scheduler.scheduleStart('t6', start);
+    expect(q.add).toHaveBeenCalledWith('start', { tournamentId: 't6' }, { delay: 4000 });
+  });
+
   it('enqueues level up events based on structure', async () => {
     const q = new MockQueue();
     setQueue('level-up', q);
