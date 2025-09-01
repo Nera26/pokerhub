@@ -7,7 +7,6 @@ import { CollusionService } from './collusion.service';
 import { CollusionQueryService } from './collusion.queries';
 import { ReviewController } from './review.controller';
 import { CollusionController } from './collusion.controller';
-import { FlaggedSessionJob } from './flagged-session.job';
 import { AdminController } from '../routes/admin.controller';
 import { WalletModule } from '../wallet/wallet.module';
 import { AuthModule } from '../auth/auth.module';
@@ -20,14 +19,12 @@ import { StorageModule } from '../storage/storage.module';
     EtlService,
     CollusionService,
     CollusionQueryService,
-    FlaggedSessionJob,
   ],
   exports: [
     AnalyticsService,
     EtlService,
     CollusionService,
     CollusionQueryService,
-    FlaggedSessionJob,
   ],
   controllers: [ReviewController, CollusionController, AdminController],
 })

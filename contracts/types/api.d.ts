@@ -694,32 +694,6 @@ export interface paths {
       };
     };
   };
-  "/review/sessions": {
-    /** List flagged sessions */
-    get: {
-      responses: {
-        /** @description Flagged sessions */
-        200: {
-          content: {
-            "application/json": components["schemas"]["FlaggedSessionsResponse"];
-          };
-        };
-      };
-    };
-  };
-  "/admin/flagged-sessions": {
-    /** List flagged sessions */
-    get: {
-      responses: {
-        /** @description Flagged sessions */
-        200: {
-          content: {
-            "application/json": components["schemas"]["FlaggedSessionsResponse"];
-          };
-        };
-      };
-    };
-  };
   "/analytics/collusion/flagged": {
     /** List collusion flagged sessions */
     get: {
@@ -789,25 +763,6 @@ export interface paths {
         200: {
           content: {
             "application/json": components["schemas"]["KycDenialResponse"];
-          };
-        };
-      };
-    };
-  };
-  "/review/sessions/{id}/{action}": {
-    /** Apply review action */
-    post: {
-      parameters: {
-        path: {
-          id: string;
-          action: components["schemas"]["ReviewAction"];
-        };
-      };
-      responses: {
-        /** @description Action applied */
-        200: {
-          content: {
-            "application/json": components["schemas"]["MessageResponse"];
           };
         };
       };
@@ -1134,19 +1089,6 @@ export interface components {
     BalanceAdjustmentRequest: {
       amount: number;
     };
-    LeaderboardEntry: {
-      playerId: string;
-      rank: number;
-      points: number;
-      rd: number;
-      volatility: number;
-      net: number;
-      bb100: number;
-      hours: number;
-      roi: number;
-      finishes: Record<string, number>;
-    };
-    LeaderboardResponse: components["schemas"]["LeaderboardEntry"][];
     User: {
       id: string;
       username: string;

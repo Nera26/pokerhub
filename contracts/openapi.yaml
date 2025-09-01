@@ -638,26 +638,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HandStateResponse'
-  /review/sessions:
-    get:
-      summary: List flagged sessions
-      responses:
-        '200':
-          description: Flagged sessions
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FlaggedSessionsResponse'
-  /admin/flagged-sessions:
-    get:
-      summary: List flagged sessions
-      responses:
-        '200':
-          description: Flagged sessions
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FlaggedSessionsResponse'
   /analytics/collusion/flagged:
     get:
       summary: List collusion flagged sessions
@@ -733,27 +713,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/KycDenialResponse'
-  /review/sessions/{id}/{action}:
-    post:
-      summary: Apply review action
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: action
-          required: true
-          schema:
-            $ref: '#/components/schemas/ReviewAction'
-      responses:
-        '200':
-          description: Action applied
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MessageResponse'
   /users:
     post:
       summary: Create user
