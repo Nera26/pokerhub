@@ -86,6 +86,33 @@ jobs:
           url="https://storage.googleapis.com/$BUCKET/${GITHUB_RUN_ID}/drill.metrics"
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
+      - name: Prepare drill run summary
+        if: success()
+        run: |
+          ts=$(date --iso-8601=seconds)
+          rto=${{ steps.metrics.outputs.rto }}
+          rpo_snap=${{ steps.metrics.outputs.rpo_snap }}
+          rpo_wal=${{ steps.metrics.outputs.rpo_wal }}
+          failover=${{ steps.metrics.outputs.failover }}
+          primary_restore=${{ steps.metrics.outputs.primary_restore }}
+          cat > dr-drill-run.json <<EOF
+          {
+            "run_id": "${GITHUB_RUN_ID}",
+            "timestamp": "$ts",
+            "rto_seconds": $rto,
+            "rpo_snapshot_seconds": $rpo_snap,
+            "rpo_wal_seconds": $rpo_wal,
+            "failover_seconds": $failover,
+            "primary_restore_seconds": $primary_restore
+          }
+          EOF
+
+      - name: Load drill metrics to BigQuery
+        if: success()
+        run: |
+          bq --project_id=${{ vars.GCP_PROJECT_ID }} load --source_format=NEWLINE_DELIMITED_JSON \
+            --time_partitioning_field timestamp ops_metrics.dr_drill_runs dr-drill-run.json infra/analytics/dr_drill_runs.schema.json
+
       - name: Publish drill results
         if: success()
         env:

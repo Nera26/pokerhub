@@ -1,14 +1,5 @@
 #!/usr/bin/env ts-node
 import { execSync } from 'child_process';
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
-
-const bucket = process.env.DR_METRICS_BUCKET;
-if (!bucket) {
-  console.error('DR_METRICS_BUCKET env var required');
-  process.exit(1);
-}
 
 const rtoThreshold = Number(process.env.RTO_THRESHOLD || '1800');
 const rpoThreshold = Number(process.env.RPO_THRESHOLD || '300');
@@ -17,43 +8,31 @@ function avg(nums: number[]): number {
   return nums.reduce((a, b) => a + b, 0) / (nums.length || 1);
 }
 
-let uris: string[] = [];
+let rows: {
+  timestamp: string;
+  rto_seconds: number;
+  rpo_snapshot_seconds: number;
+  rpo_wal_seconds: number;
+}[];
 try {
-  const out = execSync(`gcloud storage ls gs://${bucket}/**/drill.metrics`, {
-    encoding: 'utf-8',
-  });
-  uris = out
-    .trim()
-    .split('\n')
-    .map((l) => l.trim())
-    .filter(Boolean)
-    .sort();
+  const out = execSync(
+    `bq query --nouse_legacy_sql --format=json 'SELECT timestamp, rto_seconds, rpo_snapshot_seconds, rpo_wal_seconds FROM ops_metrics.dr_drill_runs ORDER BY timestamp'`,
+    { encoding: 'utf-8' }
+  );
+  rows = JSON.parse(out);
 } catch {
-  console.error(`Failed to list gs://${bucket}`);
+  console.error('Failed to query BigQuery');
   process.exit(1);
 }
 
-if (uris.length === 0) {
-  console.error(`No metrics found in gs://${bucket}`);
+if (rows.length === 0) {
+  console.error('No drill runs in BigQuery');
   process.exit(1);
 }
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dr-metrics-'));
-const rtos: number[] = [];
-const rpoSnaps: number[] = [];
-const rpoWals: number[] = [];
-
-for (const uri of uris) {
-  const dest = path.join(tmp, path.basename(path.dirname(uri)) + '.metrics');
-  execSync(`gcloud storage cp ${uri} ${dest}`);
-  const content = fs.readFileSync(dest, 'utf-8');
-  const rto = Number(/RTO_SECONDS=(\d+)/.exec(content)?.[1]);
-  const rpoSnap = Number(/RPO_SNAPSHOT_SECONDS=(\d+)/.exec(content)?.[1]);
-  const rpoWal = Number(/RPO_WAL_SECONDS=(\d+)/.exec(content)?.[1]);
-  if (!isNaN(rto)) rtos.push(rto);
-  if (!isNaN(rpoSnap)) rpoSnaps.push(rpoSnap);
-  if (!isNaN(rpoWal)) rpoWals.push(rpoWal);
-}
+const rtos = rows.map((r) => r.rto_seconds);
+const rpoSnaps = rows.map((r) => r.rpo_snapshot_seconds);
+const rpoWals = rows.map((r) => r.rpo_wal_seconds);
 
 const latest = {
   rto: rtos[rtos.length - 1],
@@ -81,12 +60,8 @@ console.log(JSON.stringify(summary));
 
 const rpoTrend = Math.max(trend.rpoSnap, trend.rpoWal);
 try {
-  execSync(
-    `gcloud monitoring metrics write custom.googleapis.com/dr/rto_trend ${trend.rto}`,
-  );
-  execSync(
-    `gcloud monitoring metrics write custom.googleapis.com/dr/rpo_trend ${rpoTrend}`,
-  );
+  execSync(`gcloud monitoring metrics write custom.googleapis.com/dr/rto_trend ${trend.rto}`);
+  execSync(`gcloud monitoring metrics write custom.googleapis.com/dr/rpo_trend ${rpoTrend}`);
 } catch (err) {
   console.error('Failed to write Cloud Monitoring metrics');
   console.error(err);
