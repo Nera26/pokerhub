@@ -61,9 +61,9 @@ jobs:
           gcloud monitoring metrics write custom.googleapis.com/dr/snapshot_age "$SNAPSHOT_AGE_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
       - name: Upload artifacts
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: pg-restore-smoke
+          name: restore-${{ github.sha }}
           path: |
             restore.log
             restore.metrics
@@ -75,3 +75,11 @@ jobs:
             { "text": "Postgres restore smoke failed for ${GITHUB_REPOSITORY}@${GITHUB_SHA}" }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  spectator-privacy:
+    needs: restore
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: restore.log
