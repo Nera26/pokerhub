@@ -664,6 +664,20 @@ jobs:
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
+      - name: PagerDuty alert on DR trend breach
+        if: failure() && steps.dr-trends.outcome == 'failure'
+        env:
+          PAGERDUTY_ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+        run: |
+          set -e
+          if [ -f dr-trends.json ]; then
+            summary=$(jq -r '"DR trends exceeded targets: latest RTO \(.latest.rto)s, WAL RPO \(.latest.rpoWal)s"' dr-trends.json)
+          else
+            summary="DR trends exceeded targets"
+          fi
+          jq -n --arg rk "$PAGERDUTY_ROUTING_KEY" --arg msg "$summary" '{routing_key:$rk,event_action:"trigger",payload:{summary:$msg,source:"ci",severity:"critical"}}' > pd.json
+          curl -X POST -H 'Content-Type: application/json' -d @pd.json https://events.pagerduty.com/v2/enqueue
+
   ops-artifacts:
     needs: [dr-runbook, workflow-sla, dr-trends, spectator-privacy]
     runs-on: ubuntu-latest
@@ -705,3 +719,12 @@ jobs:
         env:
           RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
         run: npx ts-node scripts/verify-ops-artifacts.ts
+      - name: Check soak regressions
+        run: |
+          npx ts-node scripts/check-soak-metrics.ts || true
+          if [ -f soak-regression.json ] && [ $(jq '.regressions | length' soak-regression.json) -gt 0 ]; then
+            cat soak-regression.json
+            exit 1
+          fi
+        env:
+          SOAK_TRENDS_BUCKET: ${{ env.SOAK_TRENDS_BUCKET }}

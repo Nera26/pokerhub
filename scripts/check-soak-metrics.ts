@@ -4,10 +4,22 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
+type Regression = { level: 'critical' | 'warning'; message: string };
+
+function writeAndExit(regressions: Regression[]): never {
+  fs.writeFileSync(
+    'soak-regression.json',
+    JSON.stringify({ regressions }, null, 2),
+  );
+  for (const r of regressions) {
+    console.error(r.message);
+  }
+  process.exit(1);
+}
+
 const bucket = process.env.SOAK_TRENDS_BUCKET;
 if (!bucket) {
-  console.error('SOAK_TRENDS_BUCKET env var required');
-  process.exit(1);
+  writeAndExit([{ level: 'critical', message: 'SOAK_TRENDS_BUCKET env var required' }]);
 }
 
 const maxLatency = Number(process.env.SOAK_LATENCY_P95_MS || 120);
@@ -25,8 +37,7 @@ try {
   );
   objects = JSON.parse(out);
 } catch {
-  console.error(`Failed to list gs://${bucket}/`);
-  process.exit(1);
+  writeAndExit([{ level: 'critical', message: `Failed to list gs://${bucket}/` }]);
 }
 
 const runs: RunMetric[] = [];
@@ -40,16 +51,19 @@ for (const obj of objects) {
 runs.sort((a, b) => a.ts - b.ts);
 const recent = runs.slice(-windowSize);
 if (recent.length === 0) {
-  console.error(`No metrics in gs://${bucket}`);
-  process.exit(1);
+  writeAndExit([{ level: 'critical', message: `No metrics in gs://${bucket}` }]);
 }
 
 const latest = recent[recent.length - 1];
 const now = Date.now();
 const dayMs = 24 * 60 * 60 * 1000;
 if (now - latest.ts > dayMs) {
-  console.error(`No metrics in gs://${bucket} within last 24h`);
-  process.exit(1);
+  writeAndExit([
+    {
+      level: 'critical',
+      message: `No metrics in gs://${bucket} within last 24h`,
+    },
+  ]);
 }
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'soak-metrics-'));
@@ -65,8 +79,12 @@ for (let i = 0; i < recent.length; i++) {
       `gcloud storage cp ${dir}/latency-histogram.json ${base}/latency-histogram.json`
     );
   } catch (err) {
-    console.error(`Failed to download metrics files for ${dir}`);
-    process.exit(1);
+    writeAndExit([
+      {
+        level: 'critical',
+        message: `Failed to download metrics files for ${dir}`,
+      },
+    ]);
   }
   const baseline = JSON.parse(
     fs.readFileSync(path.join(base, 'baseline.json'), 'utf-8')
@@ -91,29 +109,44 @@ const avgLat =
 const avgThr =
   prevThr.length > 0 ? prevThr.reduce((s, v) => s + v, 0) / prevThr.length : 0;
 
-let fail = false;
+const regressions: Regression[] = [];
 if (latestLat > maxLatency) {
-  console.error(`Latency p95 ${latestLat}ms exceeds ${maxLatency}ms`);
-  fail = true;
+  regressions.push({
+    level: 'critical',
+    message: `Latency p95 ${latestLat}ms exceeds ${maxLatency}ms`,
+  });
 }
 if (latestThr < minThroughput) {
-  console.error(`Throughput ${latestThr} < ${minThroughput}`);
-  fail = true;
+  regressions.push({
+    level: 'critical',
+    message: `Throughput ${latestThr} < ${minThroughput}`,
+  });
 }
 if (prevLat.length > 0 && latestLat > avgLat * (1 + deviationPct / 100)) {
-  console.error(
-    `Latency p95 ${latestLat}ms deviates >${deviationPct}% from avg ${avgLat}`
-  );
-  fail = true;
+  regressions.push({
+    level: 'warning',
+    message: `Latency p95 ${latestLat}ms deviates >${deviationPct}% from avg ${avgLat}`,
+  });
 }
 if (prevThr.length > 0 && latestThr < avgThr * (1 - deviationPct / 100)) {
-  console.error(
-    `Throughput ${latestThr} deviates >${deviationPct}% from avg ${avgThr}`
-  );
-  fail = true;
+  regressions.push({
+    level: 'warning',
+    message: `Throughput ${latestThr} deviates >${deviationPct}% from avg ${avgThr}`,
+  });
 }
 
-if (fail) {
+if (regressions.length > 0) {
+  fs.writeFileSync(
+    'soak-regression.json',
+    JSON.stringify(
+      { latencyP95: latestLat, throughput: latestThr, regressions },
+      null,
+      2,
+    ),
+  );
+  for (const r of regressions) {
+    console.error(r.message);
+  }
   process.exit(1);
 }
 

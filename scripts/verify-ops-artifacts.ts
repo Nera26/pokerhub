@@ -159,17 +159,54 @@ function checkProofSummaryManifest(
   writeFileSync(summaryFile, summary);
   writeFileSync(sigFile, Buffer.from(manifest.signature || '', 'base64'));
   try {
+    // Use SHA256 for deterministic verification to match computed digest
     execSync(
       `gcloud kms asymmetric-signature verify ` +
         `--key=${key} --keyring=${keyRing} --location=${location} ` +
-        `--version=${version} --plaintext-file=${summaryFile} ` +
-        `--signature-file=${sigFile}`,
+        `--version=${version} --digest-algorithm=SHA256 ` +
+        `--plaintext-file=${summaryFile} --signature-file=${sigFile}`,
+      { stdio: 'ignore' },
     );
   } catch {
     throw new Error('Proof summary signature verification failed');
   }
   assertFresh(manifestUri, 'proof summary manifest');
   assertFresh(summaryUri, 'proof summary');
+}
+
+function checkSpectatorPrivacyMetric(projectId: string) {
+  const end = new Date();
+  const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+  let raw: string;
+  try {
+    raw = execSync(
+      `gcloud monitoring time-series list --project=${projectId} ` +
+        `--filter="metric.type='custom.googleapis.com/spectator_privacy/run_success'" ` +
+        `--interval-start=${start.toISOString()} ` +
+        `--interval-end=${end.toISOString()} ` +
+        `--limit=1 --format=json`,
+      { encoding: 'utf-8' },
+    );
+  } catch {
+    throw new Error(
+      'Missing metric custom.googleapis.com/spectator_privacy/run_success',
+    );
+  }
+  let series: Array<{ metric: { labels?: Record<string, string> }; points?: any[] }> = [];
+  try {
+    series = JSON.parse(raw);
+  } catch {
+    throw new Error(
+      'Unable to parse spectator_privacy/run_success metric response',
+    );
+  }
+  if (series.length === 0 || !series[0].points?.length) {
+    throw new Error('No recent data points for spectator_privacy run metric');
+  }
+  const labels = series[0].metric?.labels || {};
+  if (!labels.run_id || !labels.commit_sha) {
+    throw new Error('spectator_privacy run metric missing run_id or commit_sha');
+  }
 }
 
 function checkSpectatorLogs(bucket: string, runId: string) {
@@ -424,6 +461,7 @@ function main() {
     manifestVersion,
   );
   checkSpectatorLogs(spectatorBucket, runId);
+  checkSpectatorPrivacyMetric(projectId);
   checkSoakMetrics(soakBucket);
   checkSoakSummary(soakBucket, maxLatencyP95, minThroughput);
   checkSoakTrendDelta(soakBucket, maxTrendPct);
@@ -446,6 +484,7 @@ export {
   checkProofArchiveMetrics,
   checkProofSummaryManifest,
   checkSpectatorLogs,
+  checkSpectatorPrivacyMetric,
   checkSoakMetrics,
   checkSoakSummary,
   checkSoakTrendDelta,
