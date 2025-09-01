@@ -68,6 +68,8 @@ export class HandStateMachine {
             }
             this.state.phase = 'DEAL';
           }
+        } else {
+          throw new Error('invalid action for phase');
         }
         break;
       }
@@ -83,6 +85,8 @@ export class HandStateMachine {
               break;
           }
           this.state.phase = 'BETTING_ROUND';
+        } else {
+          throw new Error('invalid action for phase');
         }
         break;
       }
@@ -120,6 +124,8 @@ export class HandStateMachine {
             }
             break;
           }
+          default:
+            throw new Error('invalid action for phase');
         }
         break;
       }
@@ -127,11 +133,13 @@ export class HandStateMachine {
         if (action.type === 'next') {
           settlePots(this.state);
           this.state.phase = 'SETTLE';
+        } else {
+          throw new Error('invalid action for phase');
         }
         break;
       }
       case 'SETTLE': {
-        break;
+        throw new Error('invalid action for phase');
       }
     }
     return this.state;
