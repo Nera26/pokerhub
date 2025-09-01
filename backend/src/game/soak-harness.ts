@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import { createHash } from 'crypto';
 import { spawnSync } from 'child_process';
-import { performance, monitorEventLoopDelay } from 'perf_hooks';
+import { performance, PerformanceObserver } from 'perf_hooks';
 import * as fs from 'fs';
 import { join } from 'path';
 import { metrics } from '@opentelemetry/api';
@@ -46,15 +46,24 @@ export class GameGatewaySoakHarness {
   private readonly opts: HarnessOptions;
   private readonly histogram = new Histogram();
   private readonly trackers = new Map<string, AckTracker>();
-  private readonly gcMonitor = monitorEventLoopDelay();
-  private dropped = 0;
-  private replayFailures = 0;
-  private readonly memSamples: number[] = [];
-  private lastElu = performance.eventLoopUtilization();
   private readonly metricsPath = join(
     __dirname,
     '../../../infra/metrics/soak_gc.jsonl',
   );
+  private readonly gcHistogram = new Histogram();
+  private readonly gcObserver = new PerformanceObserver((list) => {
+    for (const entry of list.getEntries()) {
+      this.gcHistogram.record(entry.duration);
+      fs.appendFileSync(
+        this.metricsPath,
+        JSON.stringify({ ts: Date.now(), gc_ms: entry.duration }) + '\n',
+      );
+    }
+  });
+  private dropped = 0;
+  private replayFailures = 0;
+  private readonly memSamples: number[] = [];
+  private lastElu = performance.eventLoopUtilization();
   private roomMgr = new RoomManager();
 
   private static readonly meter = metrics.getMeter('game');
@@ -79,7 +88,6 @@ export class GameGatewaySoakHarness {
       gcP95: Number(process.env.GC_P95_MS ?? 50),
       ...options,
     };
-    this.gcMonitor.enable();
   }
 
   /** Configure toxiproxy with loss and latency. */
@@ -172,6 +180,7 @@ export class GameGatewaySoakHarness {
     const metricsDir = join(__dirname, '../../../infra/metrics');
     fs.mkdirSync(metricsDir, { recursive: true });
     fs.writeFileSync(this.metricsPath, '');
+    this.gcObserver.observe({ entryTypes: ['gc'] });
     const firstMem = process.memoryUsage();
     const firstElu = performance.eventLoopUtilization(this.lastElu);
     this.lastElu = firstElu;
@@ -215,8 +224,8 @@ export class GameGatewaySoakHarness {
     const start = this.memSamples[0];
     const end = this.memSamples[this.memSamples.length - 1];
     const memDelta = ((end - start) / start) * 100;
-    const gcP95 = this.gcMonitor.percentile(95) / 1e6; // ns -> ms
-    this.gcMonitor.disable();
+    const gcP95 = this.gcHistogram.percentile(95);
+    this.gcObserver.disconnect();
     fs.appendFileSync(
       this.metricsPath,
       JSON.stringify({

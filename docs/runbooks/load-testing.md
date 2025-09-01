@@ -152,6 +152,24 @@ seed file (`seeds.json`) and a latency histogram (`latency-hist.json`).
 5. The k6 script enforces <1% heap growth, p95 GC pause <50 ms and CPU usage <80%.
 6. After the test, review `gc-heap-metrics.log` and roll back if thresholds were breached.
 
+### Monitoring GC pauses
+
+The soak harness records `performance.nodeTiming.garbageCollection` events to
+`infra/metrics/soak_gc.jsonl`.
+
+```
+{ "ts": 1700000000000, "gc_ms": 12.3 }
+```
+
+Tail the file during a run to observe pauses in real time:
+
+```bash
+tail -f infra/metrics/soak_gc.jsonl | jq 'select(.gc_ms) | .gc_ms'
+```
+
+The final line includes `gc_p95_ms`. The harness fails when the p95 exceeds
+**50 ms**, signalling excessive GC pressure.
+
 ### Interpreting soak summaries
 
 `k6-ws-soak.js` writes a JSON report (`soak-summary.json`) with a `metrics`
