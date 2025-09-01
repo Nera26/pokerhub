@@ -237,6 +237,8 @@ This ensures the exact same type is used on both sides.
 12) CI Rules (root)
 sync-subtrees.yml: mirrors /frontend and /backend to their repos on push to main.
 
+All new workflows must include proof-archive verification (`check-proof-archive` or `proof-archive`).
+
 Required checks:
 
 frontend: typecheck + unit + e2e smoke
