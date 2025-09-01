@@ -1,7 +1,7 @@
 # RNG Whitepaper
 
 **Version:** 1.0.0
-**Last Updated:** 2025-10-04
+**Last Updated:** 2025-10-05
 
 PokerHub uses a commit–reveal protocol to prove every shuffle was fair and unmanipulated.
 
@@ -63,6 +63,42 @@ Players can independently validate a hand using the public Google Cloud Storage 
 
 The verifier recomputes the commitment and deterministic deck to confirm fairness.
 
+### Exporting a Proof Locally
+For an on-chain audit or offline archive you can export a hand's proof and deck
+straight from the database:
+
+```sh
+npx ts-node scripts/export-hand-proof.ts <handId>
+```
+
+Sample output:
+
+```json
+{
+  "seed": "0x7e3",
+  "nonce": "0xa9",
+  "commitment": "0x5b2f...",
+  "deck": ["AC", "KD", "QS", "JH", "10C", "..."]
+}
+Proof saved to storage/proofs/<handId>.json
+```
+
+### Verifying a Seed/Nonce Pair
+Use the standalone verifier to check any seed and nonce against a commitment:
+
+```sh
+npx ts-node scripts/verify-proof.ts 0x7e3 0xa9 0x5b2f...
+```
+
+Expected output:
+
+```
+valid
+```
+
+If the commitment does not match the seed and nonce the script prints
+`invalid` instead.
+
 ### Sample Verification Proof
 
 For hand `h1` the server published:
@@ -98,6 +134,7 @@ Our RNG undergoes yearly reviews using the NIST SP 800‑22 battery and diehar
 - [Collusion Review Runbook](../runbooks/collusion-review.md)
 
 ## Revision History
+- 2025-10-05: add export and verify script examples
 - 2025-10-04: document audit proofs, seed retention policy, and version metadata
 - 2025-08-30: add commit–reveal diagram and flow summary
 - 2025-01-04: initial public release
