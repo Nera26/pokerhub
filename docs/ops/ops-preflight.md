@@ -6,6 +6,9 @@ The `ops-preflight` composite action centralizes operational gates used across d
 - Soak metric SLA
 - Disaster recovery drills (dr-drill, dr-failover, dr-restore, dr-throwaway)
 - Proof archive workflow freshness
+- Proof archive bucket retention and dual-region replication
+
+Failures in retention or replication checks stop the deployment.
 
 ## Inputs
 
@@ -25,5 +28,7 @@ The `ops-preflight` composite action centralizes operational gates used across d
 - `SLACK_BOT_TOKEN` – used by [`check-workflow-sla`](../../.github/workflows/check-workflow-sla/action.yml) to send alerts.
 - `GCP_SA_KEY` – service account JSON for DR drill metric checks.
 - `vars.GCP_PROJECT_ID` – project containing DR metrics.
+- `PROOF_ARCHIVE_BUCKET` – bucket to audit for retention and replication.
+- `vars.SECONDARY_REGION` – expected secondary region for proof archive replication.
 
 Callers must also pass a `slack-channel-id` input when invoking the action.
