@@ -2,6 +2,11 @@
 
 The proof archive workflow emits a `proof-summary.json` describing each batch of hand proofs. The summary is signed with a dedicated Cloud KMS key and the signed manifest is stored in a write-once bucket for auditing.
 
+## Replication
+
+- The proof archive bucket (`$PROOF_ARCHIVE_BUCKET`) must be dual-region and replicate data to `$SECONDARY_REGION` for disaster recovery.
+- The `scripts/check-proof-archive-replication.ts` script verifies this configuration via `gcloud storage buckets describe`.
+
 ## Signed manifest
 
 - **Bucket**: `gs://$PROOF_MANIFEST_BUCKET` (object versioning or WORM enabled)
