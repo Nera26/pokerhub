@@ -6,6 +6,8 @@ import type { Request } from 'express';
 import {
   WithdrawSchema,
   type WithdrawRequest,
+  DepositSchema,
+  type DepositRequest,
   WalletStatusSchema,
   type WalletStatusResponse,
   WalletTransactionsResponseSchema,
@@ -56,6 +58,23 @@ export class WalletController {
     const parsed = WithdrawSchema.parse(body);
     await this.wallet.withdraw(id, parsed.amount, parsed.deviceId, req.ip, parsed.currency);
     return { message: 'withdrawn' };
+  }
+
+  @Post(':id/deposit')
+  async deposit(
+    @Param('id') id: string,
+    @Body() body: DepositRequest,
+    @Req() req: Request,
+  ) {
+    const parsed = DepositSchema.parse(body);
+    const challenge = await this.wallet.deposit(
+      id,
+      parsed.amount,
+      parsed.deviceId,
+      req.ip,
+      parsed.currency,
+    );
+    return challenge;
   }
 
   @Post(':id/kyc')

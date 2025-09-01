@@ -288,6 +288,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+  /wallet/{id}/deposit:
+    post:
+      summary: Deposit funds
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepositRequest'
+      responses:
+        '200':
+          description: Deposit challenge
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderChallenge'
   /wallet/{id}/withdraw:
     post:
       summary: Withdraw funds
@@ -1036,6 +1058,24 @@ components:
         - amount
         - deviceId
         - currency
+    DepositRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+        deviceId:
+          type: string
+        currency:
+          type: string
+      required:
+        - amount
+        - deviceId
+        - currency
+    ProviderChallenge:
+      type: object
+      properties:
+        id:
+          type: string
     ProviderCallback:
       type: object
       properties:

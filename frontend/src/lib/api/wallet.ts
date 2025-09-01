@@ -4,7 +4,10 @@ import {
   AmountSchema,
   MessageResponseSchema,
   WithdrawRequestSchema,
+  DepositRequestSchema,
+  ProviderChallengeSchema,
   type MessageResponse,
+  type ProviderChallenge,
   WalletStatusResponseSchema,
   type WalletStatusResponse,
   WalletTransactionsResponseSchema,
@@ -60,6 +63,20 @@ export function withdraw(
 ) {
   const payload = WithdrawRequestSchema.parse({ amount, deviceId, currency });
   return apiClient('/api/wallet/withdraw', MessageResponseSchema, {
+    method: 'POST',
+    body: payload,
+    signal: opts.signal,
+  });
+}
+
+export function deposit(
+  amount: number,
+  deviceId: string,
+  currency: string,
+  opts: { signal?: AbortSignal } = {},
+): Promise<ProviderChallenge> {
+  const payload = DepositRequestSchema.parse({ amount, deviceId, currency });
+  return apiClient('/api/wallet/deposit', ProviderChallengeSchema, {
     method: 'POST',
     body: payload,
     signal: opts.signal,

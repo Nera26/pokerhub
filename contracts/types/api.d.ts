@@ -325,6 +325,29 @@ export interface paths {
       };
     };
   };
+  "/wallet/{id}/deposit": {
+    /** Deposit funds */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["DepositRequest"];
+        };
+      };
+      responses: {
+        /** @description Deposit challenge */
+        200: {
+          content: {
+            "application/json": components["schemas"]["ProviderChallenge"];
+          };
+        };
+      };
+    };
+  };
   "/wallet/{id}/withdraw": {
     /** Withdraw funds */
     post: {
@@ -1029,6 +1052,14 @@ export interface components {
       amount: number;
       deviceId: string;
       currency: string;
+    };
+    DepositRequest: {
+      amount: number;
+      deviceId: string;
+      currency: string;
+    };
+    ProviderChallenge: {
+      id?: string;
     };
     ProviderCallback: {
       eventId: string;

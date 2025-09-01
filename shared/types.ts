@@ -70,6 +70,18 @@ export const WithdrawRequestSchema = z.object({
 });
 export type WithdrawRequest = z.infer<typeof WithdrawRequestSchema>;
 
+export const DepositRequestSchema = z.object({
+  amount: z.number().int().positive(),
+  deviceId: z.string(),
+  currency: z.string().length(3),
+});
+export type DepositRequest = z.infer<typeof DepositRequestSchema>;
+
+export const ProviderChallengeSchema = z.object({
+  id: z.string(),
+});
+export type ProviderChallenge = z.infer<typeof ProviderChallengeSchema>;
+
 export const ProviderCallbackSchema = z.object({
   eventId: z.string(),
   idempotencyKey: z.string(),
