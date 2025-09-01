@@ -13,23 +13,13 @@ import {
 } from './telemetry/telemetry';
 
 async function bootstrap() {
-  setupTelemetry();
+  await setupTelemetry();
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
+  app.get(Logger).log('Telemetry initialized');
 
   app.use(cookieParser());
   app.use(telemetryMiddleware);
-  app.use((req, res, next) => {
-    const original = res.cookie.bind(res);
-    res.cookie = (name: string, value: any, options: any = {}) =>
-      original(name, value, {
-        sameSite: 'strict',
-        httpOnly: true,
-        secure: true,
-        ...options,
-      });
-    next();
-  });
 
   app.use(
     helmet({

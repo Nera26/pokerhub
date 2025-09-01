@@ -88,6 +88,19 @@ snapshots. Re-run a scenario with:
 node infra/tests/load/replay.js seed.txt
 ```
 
+## Chaos soak workflow
+
+Trigger a 24 h chaos soak via [`soak.yaml`](../.github/workflows/soak.yaml):
+
+```bash
+gh workflow run soak.yaml
+```
+
+The workflow runs `infra/tests/load/k6-100k-chaos.js` with `DURATION=24h`,
+polling GC and heap statistics from `$MEM_URL`. It fails when
+`heap_delta_pct \u2265 1` or `gc_p95_ms > 50`. See
+[runbooks/soak-testing.md](runbooks/soak-testing.md) for triage guidance.
+
 ### Example histogram and memory footprint
 
 ```
