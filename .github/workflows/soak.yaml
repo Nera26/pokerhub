@@ -1,0 +1,49 @@
+name: chaos-soak-100k
+concurrency:
+  group: chaos-soak-100k
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-proof-archive:
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
+
+  soak:
+    needs: check-proof-archive
+    runs-on: ubuntu-latest
+    timeout-minutes: 1440
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run 24h chaos soak
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: infra/tests/load/k6-100k-chaos.js
+          flags: --summary-export=soak-summary.json
+        env:
+          DURATION: '24h'
+          MEM_URL: ${{ secrets.MEM_URL }}
+      - name: Check GC/heap thresholds
+        run: |
+          curl -sf "$MEM_URL" > memory.json
+          jq -e '.heap_delta_pct < 1 and .gc_p95_ms <= 50' memory.json > /dev/null \
+            || { echo "GC/heap thresholds exceeded"; cat memory.json; exit 1; }
+        env:
+          MEM_URL: ${{ secrets.MEM_URL }}
+      - name: Upload soak artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: chaos-soak-metrics
+          path: |
+            soak-summary.json
+            memory.json
+
+  spectator-privacy:
+    needs: soak
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: soak-summary.json memory.json
