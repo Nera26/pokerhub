@@ -8,12 +8,17 @@ import type { ConfigService } from '@nestjs/config';
 describe('KycService', () => {
   it('blocks users from restricted countries', async () => {
     const provider: CountryProvider = {
-      getCountry: () => Promise.resolve('IR'),
+      getCountry: () => Promise.resolve('US'),
+    };
+    const config: Partial<ConfigService> = {
+      get: (key: string) =>
+        key === 'kyc.blockedCountries' ? ['US'] : undefined,
     };
     const service = new KycService(
       provider,
       {} as unknown as Repository<KycVerification>,
       {} as unknown as Repository<Account>,
+      config as ConfigService,
     );
     await expect(
       service.runChecks('good', '1.1.1.1', '1990-01-01'),
@@ -26,10 +31,15 @@ describe('KycService', () => {
     const provider: CountryProvider = {
       getCountry: () => Promise.resolve('GB'),
     };
+    const config: Partial<ConfigService> = {
+      get: (key: string) =>
+        key === 'kyc.blockedCountries' ? [] : undefined,
+    };
     const service = new KycService(
       provider,
       {} as unknown as Repository<KycVerification>,
       {} as unknown as Repository<Account>,
+      config as ConfigService,
     );
     await expect(
       service.runChecks('Bad Actor', '1.1.1.1', '1990-01-01'),
@@ -42,10 +52,15 @@ describe('KycService', () => {
     const provider: CountryProvider = {
       getCountry: () => Promise.resolve('GB'),
     };
+    const config: Partial<ConfigService> = {
+      get: (key: string) =>
+        key === 'kyc.blockedCountries' ? [] : undefined,
+    };
     const service = new KycService(
       provider,
       {} as unknown as Repository<KycVerification>,
       {} as unknown as Repository<Account>,
+      config as ConfigService,
     );
     await expect(
       service.runChecks('Young User', '1.1.1.1', '2010-01-01'),
@@ -56,10 +71,15 @@ describe('KycService', () => {
     const provider: CountryProvider = {
       getCountry: () => Promise.resolve('GB'),
     };
+    const config: Partial<ConfigService> = {
+      get: (key: string) =>
+        key === 'kyc.blockedCountries' ? [] : undefined,
+    };
     const service = new KycService(
       provider,
       {} as unknown as Repository<KycVerification>,
       {} as unknown as Repository<Account>,
+      config as ConfigService,
     );
     await expect(
       service.runChecks('Famous Politician', '1.1.1.1', '1990-01-01'),
