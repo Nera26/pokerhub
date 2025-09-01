@@ -21,7 +21,8 @@
     "perf:socket-load": "ts-node tests/performance/socket-load.ts",
     "perf:replay": "ts-node tests/performance/replay.ts",
     "docs:lint": "remark docs --frail",
-    "docs:check": "node scripts/check-docs-meta.js"
+    "docs:check": "node scripts/check-docs-meta.js",
+    "simulate:tourney": "ts-node backend/src/scripts/tournament-simulator.ts --entrants 10000 --runs 100"
   },
   "devDependencies": {
     "@google-cloud/dlp": "^5.13.0",
