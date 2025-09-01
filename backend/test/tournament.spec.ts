@@ -122,6 +122,82 @@ describe('Tournament scheduling and balancing', () => {
     expect(after.reduce((a, b) => a + b, 0)).toBe(6);
   });
 
+  it('rebalanceIfNeeded avoids moving recently relocated players', async () => {
+    const tables: Table[] = [
+      { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
+      { id: 'tbl2', seats: [], tournament: { id: 't1' } as Tournament } as Table,
+    ];
+    const distribution = [5, 1];
+    const currentHand = 100;
+    const avoidWithin = 10;
+    const recentHand = currentHand - 5;
+    const recent = new Map<string, number>();
+    let seatId = 0;
+    distribution.forEach((count, idx) => {
+      for (let i = 0; i < count; i++) {
+        const table = tables[idx];
+        const seat: Seat = {
+          id: `s${seatId}`,
+          table,
+          user: { id: `p${seatId}` } as any,
+          position: table.seats.length,
+          lastMovedHand: idx === 0 && i < 2 ? recentHand : 0,
+        } as Seat;
+        table.seats.push(seat);
+        if (seat.lastMovedHand === recentHand) {
+          recent.set(seat.user.id, seat.lastMovedHand);
+        }
+        seatId++;
+      }
+    });
+    const seatsRepo = createSeatRepo(tables);
+    const tablesRepo = { find: jest.fn(async () => tables) } as any;
+    const tournamentsRepo = createTournamentRepo([
+      {
+        id: 't1',
+        title: 'Test',
+        buyIn: 0,
+        prizePool: 0,
+        maxPlayers: 100,
+        state: TournamentState.RUNNING,
+        tables,
+      } as Tournament,
+    ]);
+    const scheduler: any = {};
+    const rooms: any = { get: jest.fn() };
+    const service = new TournamentService(
+      tournamentsRepo,
+      seatsRepo,
+      tablesRepo,
+      scheduler,
+      rooms,
+    );
+    const redis = {
+      hgetall: jest.fn(async () =>
+        Object.fromEntries(
+          Array.from(recent.entries()).map(([k, v]) => [k, v.toString()]),
+        ),
+      ),
+      hset: jest.fn(async () => undefined),
+      del: jest.fn(async () => undefined),
+    } as any;
+    const balancer = new TableBalancerService(tablesRepo, service, redis);
+    const keep = tables[0].seats
+      .filter((s) => s.lastMovedHand === recentHand)
+      .map((s) => s.user.id);
+    const changed = await balancer.rebalanceIfNeeded(
+      't1',
+      currentHand,
+      avoidWithin,
+    );
+    expect(changed).toBe(true);
+    const counts = tables.map((t) => t.seats.length);
+    expect(Math.max(...counts) - Math.min(...counts)).toBeLessThanOrEqual(1);
+    expect(counts.reduce((a, b) => a + b, 0)).toBe(6);
+    const remaining = tables[0].seats.map((s) => s.user.id);
+    keep.forEach((id) => expect(remaining).toContain(id));
+  });
+
   it('emits bubble event when players reach payout threshold', async () => {
     const tables: Table[] = [
       { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
