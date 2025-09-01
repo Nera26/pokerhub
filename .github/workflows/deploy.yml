@@ -37,8 +37,16 @@ jobs:
           dr-runbook-sla-days: ${{ env.DR_RUNBOOK_SLA_DAYS }}
           dr-throwaway-sla-days: ${{ env.DR_THROWAWAY_SLA_DAYS }}
 
-  deploy:
+  dr-trends:
     needs: preflight
+    uses: ./.github/workflows/dr-trends.yml
+    secrets:
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+
+  deploy:
+    needs: [preflight, dr-trends]
     runs-on: ubuntu-latest
     environment: production
     env:
