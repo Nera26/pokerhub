@@ -130,6 +130,18 @@ export class MockRedis {
     return arr.slice(start, end).map((e) => e.member);
   }
 
+  async zremrangebyscore(key: string, min: number, max: number) {
+    const arr = this.sorted.get(key) ?? [];
+    const filtered = arr.filter((e) => e.score < min || e.score > max);
+    const removed = arr.length - filtered.length;
+    this.sorted.set(key, filtered);
+    return removed;
+    }
+
+  async zcard(key: string) {
+    return (this.sorted.get(key) ?? []).length;
+  }
+
   async rpush(key: string, value: string) {
     if (!this.lists.has(key)) this.lists.set(key, []);
     const list = this.lists.get(key)!;

@@ -103,6 +103,13 @@ export const WalletVelocityLimitEvent = z.object({
   value: z.number(),
 });
 
+export const WalletChargebackFlagEvent = z.object({
+  accountId: z.string().uuid(),
+  deviceId: z.string(),
+  count: z.number(),
+  limit: z.number(),
+});
+
 export const WalletReconcileMismatchEvent = z.object({
   date: z.string(),
   total: z.number(),
@@ -125,6 +132,7 @@ export const EventSchemas = {
   "antiCheat.flag": AntiCheatFlagEvent,
   "wallet.velocity.limit": WalletVelocityLimitEvent,
   "wallet.reconcile.mismatch": WalletReconcileMismatchEvent,
+  "wallet.chargeback_flag": WalletChargebackFlagEvent,
 } as const;
 
 export type Events = {
@@ -144,6 +152,7 @@ export type Events = {
   "antiCheat.flag": z.infer<typeof AntiCheatFlagEvent>;
   "wallet.velocity.limit": z.infer<typeof WalletVelocityLimitEvent>;
   "wallet.reconcile.mismatch": z.infer<typeof WalletReconcileMismatchEvent>;
+  "wallet.chargeback_flag": z.infer<typeof WalletChargebackFlagEvent>;
 };
 
 export type EventName = keyof Events;
