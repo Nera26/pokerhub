@@ -6,6 +6,7 @@ function sanitize(content: string): string {
     .replace(/(\"?userId\"?\s*[:=]\s*)(\"?)[A-Za-z0-9-]+\2/g, '$1$2<redacted>$2')
     .replace(/(\"?tableSecret\"?\s*[:=]\s*)(\"?)[A-Za-z0-9-]+\2/g, '$1$2<redacted>$2')
     .replace(/(\"?sessionToken\"?\s*[:=]\s*)(\"?)[A-Za-z0-9-]+\2/g, '$1$2<redacted>$2')
+    .replace(/(\"?authToken\"?\s*[:=]\s*)(\"?)[A-Za-z0-9-]+\2/g, '$1$2<redacted>$2')
     .replace(/(\"?email\"?\s*[:=]\s*)(\"?)[^\s"'@]+@[^\s"']+\2/g, '$1$2<redacted>$2')
     .replace(/(\"?ipAddress\"?\s*[:=]\s*)(\"?)(?:\d{1,3}\.){3}\d{1,3}\2/g, '$1$2<redacted>$2');
 }
