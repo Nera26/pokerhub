@@ -4,6 +4,7 @@ import { spawnSync } from 'child_process';
 import { performance } from 'perf_hooks';
 import { RoomManager } from './room.service';
 import type { GameAction } from '@shared/types';
+import type { InternalGameState } from './engine';
 
 interface HarnessOptions {
   sockets: number;
@@ -44,6 +45,7 @@ export class GameGatewayLoadHarness {
   private dropped = 0;
   private memStart = 0;
   private roomMgr = new RoomManager();
+  private replayFailures = 0;
 
   constructor(options?: Partial<HarnessOptions>) {
     this.opts = {
@@ -116,13 +118,24 @@ export class GameGatewayLoadHarness {
     });
   }
 
-  /** Restart a room worker and verify replay from HandLog. */
-  private async restartWorker(tableId: string) {
-    await this.roomMgr.close(tableId);
-    const room = this.roomMgr.get(tableId);
-    const state = await room.replay();
-    if (!state) {
-      throw new Error(`replay failed for ${tableId}`);
+  /** Kill the room worker and verify replay from HandLog. */
+  private async crashAndReplay(tableId: string) {
+    const room = this.roomMgr.get(tableId) as any;
+    const before = (await room.getPublicState()) as InternalGameState;
+    const primary = room?.primary as any;
+    const pid = primary?.worker?.threadId;
+    if (pid) {
+      try {
+        process.kill(pid);
+      } catch {
+        // worker may already be dead
+      }
+    }
+    await new Promise((r) => setTimeout(r, 100));
+    const after = (await room.replay()) as InternalGameState;
+    if (JSON.stringify(before) !== JSON.stringify(after)) {
+      this.replayFailures++;
+      throw new Error(`replay mismatch for ${tableId}`);
     }
   }
 
@@ -139,9 +152,12 @@ export class GameGatewayLoadHarness {
     for (let i = 0; i < this.opts.sockets; i++) {
       this.spawnBot(i);
     }
-    const restartTarget = 'table-0';
-    setTimeout(() => void this.restartWorker(restartTarget), 5000);
+    const killInterval = setInterval(() => {
+      const target = `table-${Math.floor(Math.random() * this.opts.tables)}`;
+      void this.crashAndReplay(target).catch(() => {});
+    }, 5000);
     await new Promise((r) => setTimeout(r, this.opts.duration * 1000));
+    clearInterval(killInterval);
     const p95 = this.histogram.percentile(95);
     const mem = this.recordMemory();
     if (p95 > this.opts.ackP95) {
@@ -149,6 +165,9 @@ export class GameGatewayLoadHarness {
     }
     if (this.dropped > 0) {
       throw new Error(`Detected ${this.dropped} dropped frames`);
+    }
+    if (this.replayFailures > 0) {
+      throw new Error(`Detected ${this.replayFailures} replay failures`);
     }
     if (mem.delta > 1) {
       throw new Error(`Heap increased by ${mem.delta.toFixed(2)}% > 1%`);

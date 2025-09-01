@@ -203,11 +203,10 @@ export class GameGatewaySoakHarness {
     for (let i = 0; i < this.opts.sockets; i++) {
       this.spawnBot(i);
     }
-    const restartTarget = 'table-0';
-    const killInterval = setInterval(
-      () => void this.crashAndReplay(restartTarget).catch(() => {}),
-      30000,
-    );
+    const killInterval = setInterval(() => {
+      const target = `table-${Math.floor(Math.random() * this.opts.tables)}`;
+      void this.crashAndReplay(target).catch(() => {});
+    }, 30000);
     await new Promise((r) => setTimeout(r, this.opts.duration * 1000));
     clearInterval(memInterval);
     clearInterval(killInterval);
