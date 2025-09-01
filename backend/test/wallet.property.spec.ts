@@ -51,7 +51,8 @@ describe('writeHandLedger property', () => {
           },
         } as any;
 
-        await writeHandLedger(wallet, 'hand', 'river', 0, settlements);
+        const ds = { transaction: async (fn: any) => fn({}) } as any;
+        await writeHandLedger(wallet, ds, 'hand', 'river', 0, settlements);
         const total = Object.values(ledger).reduce((s, v) => s + v, 0);
         expect(total).toBe(0);
       }),
