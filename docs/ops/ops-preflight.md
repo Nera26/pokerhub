@@ -5,6 +5,7 @@ The `ops-preflight` composite action centralizes operational gates used across d
 - Spectator privacy scan freshness
 - Soak metric SLA
 - Disaster recovery drills (dr-drill, dr-failover, dr-restore, dr-throwaway)
+- Disaster recovery RTO/RPO trend targets (fails if latest or average exceed `RTO_TARGET`/`RPO_TARGET`)
 - Proof archive workflow freshness
 
 ## Inputs
@@ -25,5 +26,8 @@ The `ops-preflight` composite action centralizes operational gates used across d
 - `SLACK_BOT_TOKEN` – used by [`check-workflow-sla`](../../.github/workflows/check-workflow-sla/action.yml) to send alerts.
 - `GCP_SA_KEY` – service account JSON for DR drill metric checks.
 - `vars.GCP_PROJECT_ID` – project containing DR metrics.
+- `vars.DR_METRICS_BUCKET` – GCS bucket holding DR metrics.
+- `vars.RTO_TARGET` – maximum allowed RTO in seconds.
+- `vars.RPO_TARGET` – maximum allowed RPO in seconds.
 
 Callers must also pass a `slack-channel-id` input when invoking the action.
