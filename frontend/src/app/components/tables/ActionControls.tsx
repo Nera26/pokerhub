@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Button from '../ui/Button';
+import ActionTimer from './ActionTimer';
 
 export interface ActionControlsProps {
   currentBet: number; // highest "to" (commitment) this street
@@ -21,6 +22,10 @@ export interface ActionControlsProps {
   onRaiseTo: (total: number) => void;
 
   isHeroTurn: boolean;
+  /** Absolute server timestamp when the turn expires */
+  turnDeadline?: number | null;
+  /** When true, the server acknowledged the action and timer should stop */
+  actionAcknowledged?: boolean;
   autoCheckFold: boolean;
   onToggleAutoCheckFold: (v: boolean) => void;
   autoFoldAny: boolean;
@@ -270,6 +275,8 @@ export default function ActionControls({
   onCall,
   onRaiseTo,
   isHeroTurn,
+  turnDeadline,
+  actionAcknowledged,
   autoCheckFold,
   onToggleAutoCheckFold,
   autoFoldAny,
@@ -283,6 +290,20 @@ export default function ActionControls({
   const isBBStep = sliderTotal % bigBlind === 0;
   const isIllegal =
     sliderTotal < minTotal || sliderTotal > maxTotal || !isBBStep;
+
+  const [deadline, setDeadline] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (isHeroTurn && turnDeadline) {
+      setDeadline(turnDeadline);
+    }
+  }, [isHeroTurn, turnDeadline]);
+
+  useEffect(() => {
+    if (actionAcknowledged) {
+      setDeadline(null);
+    }
+  }, [actionAcknowledged]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -299,6 +320,12 @@ export default function ActionControls({
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-card-bg border-t border-border-dark p-4 pb-[env(safe-area-inset-bottom)]">
       <div className="max-w-6xl mx-auto">
+        {deadline != null && (
+          <div className="text-center mb-2">
+            <ActionTimer deadline={deadline} />
+          </div>
+        )}
+
         <BetInput
           currentBet={currentBet}
           callAmount={callAmount}

@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import TopBar from './TopBar';
 import ActionControls from './ActionControls';
+import { getServerTime } from '@/lib/server-time';
 import TableMain, { type TableMainHandle } from './TableMain';
 import useBetting from '@/hooks/useBetting';
 import useToasts from '@/hooks/useToasts';
@@ -186,6 +187,11 @@ export default function PokerTableLayout({
           )
         }
         isHeroTurn={!!hero?.isActive}
+        turnDeadline={
+          hero?.isActive && hero?.timeLeft != null
+            ? getServerTime() + hero.timeLeft
+            : undefined
+        }
         autoCheckFold={autoCheckFold}
         onToggleAutoCheckFold={setAutoCheckFold}
         autoFoldAny={autoFoldAny}
