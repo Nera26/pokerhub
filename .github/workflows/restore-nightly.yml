@@ -57,8 +57,14 @@ jobs:
             restore.log
             infra/disaster-recovery/tests/restore-backup.metrics
 
-  spectator-privacy:
+  soak-metrics:
     needs: restore
+    if: ${{ always() }}
+    uses: ./.github/workflows/soak-metrics.yml
+    secrets: inherit
+
+  spectator-privacy:
+    needs: [restore, soak-metrics]
     if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit

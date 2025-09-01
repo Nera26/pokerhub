@@ -47,7 +47,14 @@ jobs:
           name: nightly-chaos
           path: load/metrics/latest
 
+  soak-metrics:
+    needs: chaos
+    if: ${{ always() }}
+    uses: ./.github/workflows/soak-metrics.yml
+    secrets: inherit
+
   spectator-privacy:
+    needs: [chaos, soak-metrics]
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

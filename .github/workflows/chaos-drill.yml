@@ -31,7 +31,14 @@ jobs:
             k6-latency.json
             artillery-packet-loss.json
 
+  soak-metrics:
+    needs: chaos
+    if: ${{ always() }}
+    uses: ./.github/workflows/soak-metrics.yml
+    secrets: inherit
+
   spectator-privacy:
+    needs: [chaos, soak-metrics]
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

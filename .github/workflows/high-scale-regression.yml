@@ -35,7 +35,14 @@ jobs:
         if: always()
         run: docker rm -f toxiproxy
 
+  soak-metrics:
+    needs: regression
+    if: ${{ always() }}
+    uses: ./.github/workflows/soak-metrics.yml
+    secrets: inherit
+
   spectator-privacy:
+    needs: [regression, soak-metrics]
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

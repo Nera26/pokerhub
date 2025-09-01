@@ -76,8 +76,14 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
-  spectator-privacy:
+  soak-metrics:
     needs: restore
+    if: ${{ always() }}
+    uses: ./.github/workflows/soak-metrics.yml
+    secrets: inherit
+
+  spectator-privacy:
+    needs: [restore, soak-metrics]
     if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit

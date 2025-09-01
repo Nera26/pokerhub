@@ -193,14 +193,21 @@ jobs:
           name: chaos-${{ matrix.scenario }}-summary
           path: chaos-${{ matrix.scenario }}.json
 
-  spectator-privacy:
+  soak-metrics:
     needs: [tables-10k, packet-loss, chaos-regression]
+    if: ${{ always() }}
+    uses: ./.github/workflows/soak-metrics.yml
+    secrets: inherit
+
+  spectator-privacy:
+    needs: [tables-10k, packet-loss, chaos-regression, soak-metrics]
     uses: ../spectator-privacy.yml
     with:
       logs: backend-tests.log frontend-tests.log
     secrets: inherit
 
   spectator-privacy:
+    needs: soak-metrics
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:
