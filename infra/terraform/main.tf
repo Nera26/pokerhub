@@ -66,3 +66,21 @@ resource "google_redis_instance" "redis_replica" {
   memory_size_gb = var.redis_memory_size_gb
   region         = var.replica_region
 }
+
+# Ops bucket outputs
+output "spectator_logs_bucket_name" {
+  value = google_storage_bucket.ops["spectator_logs"].name
+}
+
+output "proof_archive_bucket_name" {
+  value = google_storage_bucket.ops["proof_archives"].name
+}
+
+output "soak_trends_bucket_name" {
+  value = google_storage_bucket.ops["soak_trends"].name
+}
+
+output "dr_metrics_bucket_name" {
+  value = google_storage_bucket.ops["dr_metrics"].name
+}
+

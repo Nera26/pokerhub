@@ -314,7 +314,7 @@ jobs:
       - name: Verify ops artifacts
         env:
           PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
-          SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
+          SPECTATOR_LOGS_BUCKET: ${{ secrets.SPECTATOR_LOGS_BUCKET }}
           SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
           DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
           SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS || 120 }}
@@ -474,7 +474,7 @@ jobs:
     needs: property
     runs-on: ubuntu-latest
     env:
-      SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
+      SPECTATOR_LOGS_BUCKET: ${{ secrets.SPECTATOR_LOGS_BUCKET }}
     steps:
       - uses: actions/checkout@v4
       - uses: google-github-actions/auth@v2
@@ -509,7 +509,7 @@ jobs:
       - name: Copy logs to spectator bucket
         if: always()
         run: |
-          gsutil cp backend-tests.log frontend-tests.log dlp-scan.json gs://$SPECTATOR_PRIVACY_BUCKET/${{ github.run_id }}/
+          gsutil cp backend-tests.log frontend-tests.log dlp-scan.json gs://$SPECTATOR_LOGS_BUCKET/${{ github.run_id }}/
       - name: Upload logs as artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -768,7 +768,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
-      SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
+      SPECTATOR_LOGS_BUCKET: ${{ secrets.SPECTATOR_LOGS_BUCKET }}
       SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
       DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
       SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS || 120 }}
