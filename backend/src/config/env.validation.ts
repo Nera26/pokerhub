@@ -23,4 +23,5 @@ export const validationSchema = Joi.object({
   RATE_LIMIT_MAX: Joi.number().integer().optional(),
   KYC_API_URL: Joi.string().uri().optional(),
   KYC_API_KEY: Joi.string().optional(),
+  ALLOWED_COUNTRIES: Joi.string().optional(),
 });
