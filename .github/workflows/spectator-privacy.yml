@@ -17,6 +17,10 @@ on:
       SPECTATOR_LOGS_BUCKET:
         required: true
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   spectator-privacy:
     runs-on: ubuntu-latest
@@ -81,6 +85,17 @@ jobs:
             echo "PII found in logs" >&2
             exit 1
           fi
+      - name: Confirm run success metric
+        if: always()
+        run: |
+          gcloud monitoring time-series list \
+            --project=${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }} \
+            --filter='metric.type="custom.googleapis.com/spectator_privacy/run_success" AND metric.labels.run_id="${{ github.run_id }}"' \
+            --limit=1 > metric.json
+          if [ ! -s metric.json ]; then
+            echo "run_success metric not found" >&2
+            exit 1
+          fi
       - name: Copy logs to spectator bucket
         if: always()
         run: |
@@ -98,3 +113,26 @@ jobs:
           name: spectator-privacy-logs
           path: spectator-privacy
           retention-days: 14
+      - name: Prepare spectator privacy alert
+        if: failure()
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          jq -n --arg channel "$SLACK_CHANNEL_ID" \
+            --arg text "Spectator privacy scan failed for run $GITHUB_RUN_ID" \
+            '{channel: $channel, text: $text}' > spectator-privacy-slack.json
+          echo "Spectator privacy scan failed for run $GITHUB_RUN_ID" > spectator-privacy-alert.md
+      - name: Slack spectator privacy alert
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: spectator-privacy-slack.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: Create issue for spectator privacy failure
+        if: failure()
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: Spectator privacy failure
+          content-filepath: spectator-privacy-alert.md
