@@ -74,3 +74,11 @@ Run it with:
 ```bash
 npm test --workspace backend -- leaderboard.rebuild.performance.spec.ts
 ```
+
+Another spec (`backend/test/leaderboard/rebuild.worker.perf.spec.ts`) executes the BullMQ worker that schedules a rebuild job. It seeds 30 days of synthetic events and fails if the worker run exceeds 30 minutes. Override the default threshold with `LEADERBOARD_WORKER_MAX_MS`.
+
+Run it with:
+
+```bash
+npm test --workspace backend -- leaderboard/rebuild.worker.perf.spec.ts
+```
