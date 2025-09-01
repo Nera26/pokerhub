@@ -28,6 +28,10 @@ resource "google_storage_bucket" "ops" {
   name     = each.value.name
   location = var.primary_region
 
+  custom_placement_config {
+    data_locations = [var.primary_region, var.secondary_region]
+  }
+
   uniform_bucket_level_access = true
 
   versioning {

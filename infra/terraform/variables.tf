@@ -15,6 +15,12 @@ variable "replica_region" {
   default     = "us-west1"
 }
 
+variable "secondary_region" {
+  description = "Secondary GCP region for ops bucket replication"
+  type        = string
+  default     = "us-west1"
+}
+
 variable "db_name" {
   description = "Cloud SQL instance name prefix"
   type        = string
