@@ -9,7 +9,7 @@ import request from 'supertest';
 import { TablesController } from '../../src/routes/tables.controller';
 import { TablesService } from '../../src/game/tables.service';
 import { Table } from '../../src/database/entities/table.entity';
-import { TableListSchema } from '@shared/types';
+import { TableListSchema, TableDataSchema } from '@shared/types';
 
 function createTestModule() {
   let dataSource: DataSource;
@@ -44,6 +44,7 @@ function createTestModule() {
 describe('TablesController', () => {
   let app: INestApplication;
   let dataSource: DataSource;
+  let tableId: string;
 
   beforeAll(async () => {
     const TablesTestModule = createTestModule();
@@ -55,7 +56,7 @@ describe('TablesController', () => {
     await app.init();
 
     const repo = dataSource.getRepository(Table);
-    await repo.save({
+    const saved = await repo.save({
       name: 'Test Table',
       gameType: 'texas',
       smallBlind: 1,
@@ -65,6 +66,7 @@ describe('TablesController', () => {
       minBuyIn: 40,
       maxBuyIn: 200,
     });
+    tableId = saved.id;
   });
 
   afterAll(async () => {
@@ -76,5 +78,14 @@ describe('TablesController', () => {
     const parsed = TableListSchema.parse(res.body);
     expect(parsed).toHaveLength(1);
     expect(parsed[0].tableName).toBe('Test Table');
+  });
+
+  it('returns table data', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/tables/${tableId}`)
+      .expect(200);
+    const parsed = TableDataSchema.parse(res.body);
+    expect(parsed.smallBlind).toBe(1);
+    expect(parsed.bigBlind).toBe(2);
   });
 });

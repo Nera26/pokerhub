@@ -16,6 +16,8 @@ import {
   TableListSchema,
   type Table,
   type TableList,
+  TableDataSchema,
+  type TableData,
   CreateTableSchema,
   type CreateTableRequest,
   UpdateTableSchema,
@@ -31,6 +33,14 @@ export class TablesController {
   async list(): Promise<TableList> {
     const res = await this.tables.getTables();
     return TableListSchema.parse(res);
+  }
+
+  @Get(':id')
+  async get(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<TableData> {
+    const res = await this.tables.getTable(id);
+    return TableDataSchema.parse(res);
   }
 
   @Post()

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { TableSchema, GameTypeSchema } from '@shared/types';
+import { TableSchema, GameTypeSchema, TableDataSchema } from '@shared/types';
 
 export const CreateTableSchema = z.object({
   tableName: z.string(),
@@ -14,7 +14,8 @@ export type CreateTableRequest = z.infer<typeof CreateTableSchema>;
 export const UpdateTableSchema = CreateTableSchema.partial();
 export type UpdateTableRequest = z.infer<typeof UpdateTableSchema>;
 
-export { TableSchema };
+export { TableSchema, TableDataSchema };
 export const TableListSchema = z.array(TableSchema);
 export type Table = z.infer<typeof TableSchema>;
 export type TableList = z.infer<typeof TableListSchema>;
+export type TableData = z.infer<typeof TableDataSchema>;
