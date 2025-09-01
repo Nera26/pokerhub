@@ -9,6 +9,7 @@ jobs:
     env:
       PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
       PROOF_ARCHIVE_EXPECTED_DAILY_COUNT: ${{ vars.PROOF_ARCHIVE_EXPECTED_DAILY_COUNT }}
+      SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
       GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
       GCP_SERVICE_ACCOUNT: ${{ vars.GCP_SERVICE_ACCOUNT }}
@@ -26,3 +27,4 @@ jobs:
         with:
           project_id: ${{ env.GCP_PROJECT_ID }}
       - run: npx -y ts-node scripts/check-proof-archive.ts
+      - run: npx -y ts-node scripts/check-proof-archive-replication.ts

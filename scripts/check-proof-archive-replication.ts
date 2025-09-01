@@ -26,6 +26,13 @@ function main() {
     process.exit(1);
   }
 
+  if (meta.locationType !== 'dual-region') {
+    console.error(
+      `Bucket locationType ${meta.locationType} is not dual-region`,
+    );
+    process.exit(1);
+  }
+
   const locations: string[] = meta?.customPlacementConfig?.dataLocations || [];
   if (!Array.isArray(locations) || locations.length === 0) {
     console.error('Bucket does not have a custom placement configuration');
@@ -37,7 +44,9 @@ function main() {
     process.exit(1);
   }
 
-  console.log(`Bucket ${bucket} replicates to ${secondary}`);
+  console.log(
+    `Bucket ${bucket} is dual-region and replicates to ${secondary}`,
+  );
 }
 
 try {
