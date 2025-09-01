@@ -30,6 +30,10 @@ ALERTMANAGER_URL=http://localhost:9093 ./infra/observability/provision-alertmana
 | Telemetry pipeline uptime | 99.9% collector availability | 43.2 m downtime | 14.4× (1h) / 6× (6h) | [Telemetry Pipeline](https://grafana.pokerhub.example/d/otel-pipeline) | [Alerts Overview](https://metabase.pokerhub.example/dashboard/alerts-overview) | [Telemetry Pipeline](runbooks/telemetry-pipeline.md) | `pokerhub-observability` | [Ops](https://pokerhub.pagerduty.com/escalation_policies/PGHI789) |
 | Frontend route latency | 95% of routes < 500 ms | 5% slow routes | 14.4× (1h) / 6× (6h) | [Frontend Route Latency](https://grafana.pokerhub.example/d/frontend-route-latency) | [Latency & Error Overview](https://metabase.pokerhub.example/dashboard/latency-error-overview) | [Frontend Route Latency](runbooks/http-api-latency.md) | `pokerhub-eng` | [Engineering](https://pokerhub.pagerduty.com/escalation_policies/PDEF456) |
 
+### Table action rate
+
+The `actions_per_table_total{tableId}` counter tracks actions applied per table. A recording rule `table_actions_per_minute = rate(actions_per_table_total[1m]) * 60` derives per-table throughput. Investigate any table sustaining fewer than **150 actions/minute**.
+
 We use a multi‑window burn‑rate policy: a fast 5 m/1 h window at **14.4×** and a slow 30 m/6 h window at **6×**. Alerts are routed to PagerDuty via `pagerduty_service` labels in the rule definitions.
 
 ## Error Budget Handling
