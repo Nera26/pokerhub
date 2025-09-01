@@ -325,6 +325,29 @@ export interface paths {
       };
     };
   };
+  "/wallet/{id}/deposit": {
+    /** Deposit funds */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["DepositRequest"];
+        };
+      };
+      responses: {
+        /** @description Deposit challenge */
+        200: {
+          content: {
+            "application/json": components["schemas"]["ProviderChallenge"];
+          };
+        };
+      };
+    };
+  };
   "/wallet/{id}/withdraw": {
     /** Withdraw funds */
     post: {
@@ -484,7 +507,7 @@ export interface paths {
       };
       requestBody: {
         content: {
-          "application/json": components["schemas"]["TournamentRegisterRequest"];
+          "application/json": components["schemas"]["TournamentWithdrawRequest"];
         };
       };
       responses: {
@@ -849,7 +872,7 @@ export interface paths {
         /** @description Updated balance */
         200: {
           content: {
-            "application/json": unknown;
+            "application/json": components["schemas"]["User"];
           };
         };
       };
@@ -1030,6 +1053,14 @@ export interface components {
       deviceId: string;
       currency: string;
     };
+    DepositRequest: {
+      amount: number;
+      deviceId: string;
+      currency: string;
+    };
+    ProviderChallenge: {
+      id?: string;
+    };
     ProviderCallback: {
       eventId: string;
       idempotencyKey: string;
@@ -1179,108 +1210,6 @@ export interface components {
       registered: boolean;
     };
     TournamentList: components["schemas"]["Tournament"][];
-    TournamentRegisterRequest: {
-      userId: string;
-    };
-    Table: {
-      id: string;
-      tableName: string;
-      /** @enum {string} */
-      gameType: "texas" | "omaha" | "allin" | "tournaments";
-      stakes: {
-        small: number;
-        big: number;
-      };
-      players: {
-        current: number;
-        max: number;
-      };
-      buyIn: {
-        min: number;
-        max: number;
-      };
-      stats: {
-        handsPerHour: number;
-        avgPot: number;
-        rake: number;
-      };
-      createdAgo: string;
-    };
-    TableList: components["schemas"]["Table"][];
-    CreateTableRequest: {
-      tableName: string;
-      /** @enum {string} */
-      gameType: "texas" | "omaha" | "allin" | "tournaments";
-      stakes: {
-        small?: number;
-        big?: number;
-      };
-      startingStack: number;
-      players: {
-        max?: number;
-      };
-      buyIn: {
-        min?: number;
-        max?: number;
-      };
-    };
-    UpdateTableRequest: {
-      tableName?: string;
-      /** @enum {string} */
-      gameType?: "texas" | "omaha" | "allin" | "tournaments";
-      stakes?: {
-        small?: number;
-        big?: number;
-      };
-      startingStack?: number;
-      players?: {
-        max?: number;
-      };
-      buyIn?: {
-        min?: number;
-        max?: number;
-      };
-    };
-    Player: {
-      id: number;
-      username: string;
-      avatar: string;
-      chips: number;
-      committed?: number;
-      isActive?: boolean;
-      isFolded?: boolean;
-      sittingOut?: boolean;
-      isAllIn?: boolean;
-      isWinner?: boolean;
-      timeLeft?: number;
-      cards?: string[];
-      pos?: string;
-      lastAction?: string;
-    };
-    ChatMessage: {
-      id: number;
-      username: string;
-      avatar: string;
-      text: string;
-      time: string;
-    };
-    TableData: {
-      smallBlind: number;
-      bigBlind: number;
-      pot: number;
-      communityCards: string[];
-      players: components["schemas"]["Player"][];
-      chatMessages: components["schemas"]["ChatMessage"][];
-    };
-    CalculatePrizesRequest: {
-      prizePool: number;
-      payouts: number[];
-      bountyPct?: number;
-      satelliteSeatCost?: number;
-      /** @enum {string} */
-      method?: "topN" | "icm";
-      stacks?: number[];
-    };
   };
   responses: never;
   parameters: never;

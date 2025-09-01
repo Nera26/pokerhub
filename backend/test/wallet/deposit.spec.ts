@@ -79,6 +79,7 @@ describe('WalletService deposit', () => {
 
   beforeEach(async () => {
     redis = new MockRedis();
+    (redis as any).decr = (key: string) => redis.decrby(key, 1);
     (service as any).redis = redis;
     (events.emit as jest.Mock).mockClear();
     (provider.initiate3DS as jest.Mock).mockResolvedValue({ id: 'tx' });
@@ -117,6 +118,19 @@ describe('WalletService deposit', () => {
 
   afterAll(async () => {
     await dataSource.destroy();
+  });
+
+  it('returns 3DS challenge payload', async () => {
+    (provider.initiate3DS as jest.Mock).mockResolvedValue({ id: 'challenge1' });
+    await expect(
+      service.deposit(
+        'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        100,
+        'd0',
+        '1.1.1.1',
+        'USD',
+      ),
+    ).resolves.toEqual({ id: 'challenge1' });
   });
 
   it('enforces rate limits', async () => {
@@ -180,6 +194,25 @@ describe('WalletService deposit', () => {
     expect(await jRepo.count()).toBe(0);
   });
 
+  it('enforces velocity limits', async () => {
+    process.env.WALLET_VELOCITY_DEPOSIT_HOURLY_COUNT = '2';
+    await service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 50, 'v1', '8.8.8.8', 'USD');
+    await service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 50, 'v2', '8.8.8.9', 'USD');
+    await expect(
+      service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 50, 'v3', '8.8.8.10', 'USD'),
+    ).rejects.toThrow('Velocity limit exceeded');
+    expect(events.emit as jest.Mock).toHaveBeenCalledWith(
+      'wallet.velocity.limit',
+      expect.objectContaining({
+        accountId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        operation: 'deposit',
+      }),
+    );
+    const [key] = await redis.keys('wallet:deposit*');
+    expect(parseInt((await redis.get(key)) ?? '0', 10)).toBe(2);
+    delete process.env.WALLET_VELOCITY_DEPOSIT_HOURLY_COUNT;
+  });
+
   it('flags and rejects deposits exceeding daily limits', async () => {
     process.env.WALLET_DAILY_DEPOSIT_LIMIT = '200';
     await service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 150, 'd5', '7.7.7.7', 'USD');
@@ -195,7 +228,8 @@ describe('WalletService deposit', () => {
         currency: 'USD',
       }),
     );
-    const [key] = await redis.keys('wallet:deposit*');
+    const dateKey = new Date().toISOString().slice(0, 10);
+    const key = `wallet:deposit:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa:${dateKey}`;
     expect(parseInt((await redis.get(key)) ?? '0', 10)).toBe(150);
     delete process.env.WALLET_DAILY_DEPOSIT_LIMIT;
   });
