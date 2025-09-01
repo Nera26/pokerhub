@@ -10,6 +10,7 @@ function writeAndExit(
     latencyP95?: number | null;
     throughput?: number | null;
     gcPauseP95?: number | null;
+    rssGrowthPct?: number | null;
   }
 ): never {
   const base = {
@@ -17,6 +18,7 @@ function writeAndExit(
     latency_p95_ms: metrics?.latencyP95 ?? null,
     throughput: metrics?.throughput ?? null,
     gc_pause_p95_ms: metrics?.gcPauseP95 ?? null,
+    rss_growth_pct: metrics?.rssGrowthPct ?? null,
   };
   fs.writeFileSync('soak-summary.json', JSON.stringify(base) + '\n');
   fs.writeFileSync(
@@ -32,6 +34,7 @@ function writeAndExit(
 const maxLatency = Number(process.env.SOAK_LATENCY_P95_MS || 120);
 const minThroughput = Number(process.env.SOAK_THROUGHPUT_MIN || 0);
 const maxGcPause = Number(process.env.SOAK_GC_P95_MS || 50);
+const maxRssGrowth = Number(process.env.SOAK_RSS_GROWTH_PCT || 1);
 const windowSize = Number(process.env.SOAK_TRENDS_WINDOW || 7);
 const deviationPct = Number(process.env.SOAK_TRENDS_DEVIATION_PCT || 20);
 
@@ -40,10 +43,11 @@ let rows: {
   latency_p95_ms: number;
   throughput: number;
   gc_pause_p95_ms: number;
+  rss_delta_pct: number;
 }[];
 try {
   const out = execSync(
-    `bq query --nouse_legacy_sql --format=json 'SELECT timestamp, latency_p95_ms, throughput, gc_pause_p95_ms FROM ops_metrics.soak_runs ORDER BY timestamp DESC LIMIT ${windowSize}'`,
+    `bq query --nouse_legacy_sql --format=json 'SELECT timestamp, latency_p95_ms, throughput, gc_pause_p95_ms, rss_delta_pct FROM ops_metrics.soak_runs ORDER BY timestamp DESC LIMIT ${windowSize}'`,
     { encoding: 'utf-8' }
   );
   rows = JSON.parse(out);
@@ -58,14 +62,18 @@ if (rows.length === 0) {
 const p95s = rows.map((r) => r.latency_p95_ms);
 const throughputs = rows.map((r) => r.throughput);
 const gcP95s = rows.map((r) => r.gc_pause_p95_ms);
+const rssGrowths = rows.map((r) => r.rss_delta_pct);
 const latestLat = p95s[0];
 const latestThr = throughputs[0];
 const latestGc = gcP95s[0];
+const latestRss = rssGrowths[0];
 const prevLat = p95s.slice(1);
 const prevThr = throughputs.slice(1);
+const prevRss = rssGrowths.slice(1);
 
 const avgLat = prevLat.length > 0 ? prevLat.reduce((s, v) => s + v, 0) / prevLat.length : 0;
 const avgThr = prevThr.length > 0 ? prevThr.reduce((s, v) => s + v, 0) / prevThr.length : 0;
+const avgRss = prevRss.length > 0 ? prevRss.reduce((s, v) => s + v, 0) / prevRss.length : 0;
 
 const regressions: Regression[] = [];
 if (latestLat > maxLatency) {
@@ -77,6 +85,9 @@ if (latestThr < minThroughput) {
 if (latestGc > maxGcPause) {
   regressions.push({ level: 'critical', message: `GC pause p95 ${latestGc}ms exceeds ${maxGcPause}ms` });
 }
+if (latestRss > maxRssGrowth) {
+  regressions.push({ level: 'critical', message: `RSS growth ${latestRss}% exceeds ${maxRssGrowth}%` });
+}
 if (prevLat.length > 0 && latestLat > avgLat * (1 + deviationPct / 100)) {
   regressions.push({
     level: 'warning',
@@ -87,6 +98,12 @@ if (prevThr.length > 0 && latestThr < avgThr * (1 - deviationPct / 100)) {
   regressions.push({
     level: 'warning',
     message: `Throughput ${latestThr} deviates >${deviationPct}% from avg ${avgThr}`,
+  });
+}
+if (prevRss.length > 0 && latestRss > avgRss * (1 + deviationPct / 100)) {
+  regressions.push({
+    level: 'warning',
+    message: `RSS growth ${latestRss} deviates >${deviationPct}% from avg ${avgRss}`,
   });
 }
 
@@ -109,6 +126,7 @@ const summary = {
   latency_p95_ms: latestLat,
   throughput: latestThr,
   gc_pause_p95_ms: latestGc,
+  rss_delta_pct: latestRss,
 };
 fs.writeFileSync('soak-summary.json', JSON.stringify(summary) + '\n');
 
@@ -124,5 +142,5 @@ if (regressions.length > 0) {
 }
 
 console.log(
-  `Recent soak runs queried from BigQuery; latency p95=${latestLat}ms throughput=${latestThr} gc_pause_p95=${latestGc}`,
+  `Recent soak runs queried from BigQuery; latency p95=${latestLat}ms throughput=${latestThr} gc_pause_p95=${latestGc} rss_delta_pct=${latestRss}`,
 );

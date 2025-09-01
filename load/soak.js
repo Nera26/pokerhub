@@ -1,14 +1,19 @@
 import http from 'k6/http';
-import { Gauge, Trend } from 'k6/metrics';
+import { Trend } from 'k6/metrics';
 import swarm, { options as swarmOptions } from './k6-swarm.js';
 
 export const options = {
   ...swarmOptions,
   duration: '24h',
+  thresholds: {
+    ...(swarmOptions.thresholds || {}),
+    rss_growth: ['p(100)<1'],
+    gc_pause: ['p(95)<50'],
+  },
 };
 
-const HEAP_USED = new Gauge('heap_used_bytes');
-const GC_PAUSE = new Trend('gc_pause_ms');
+const RSS_GROWTH = new Trend('rss_growth');
+const GC_PAUSE = new Trend('gc_pause');
 
 export default swarm;
 
@@ -18,8 +23,8 @@ export function setup() {
   try {
     const res = http.get(url);
     const data = res.json();
-    if (data.heapUsed !== undefined) {
-      return { startHeap: data.heapUsed };
+    if (data.rssBytes !== undefined) {
+      return { startRss: data.rssBytes };
     }
   } catch (e) {
     // ignore parse errors
@@ -38,13 +43,16 @@ export function teardown(data) {
     // ignore network/parse errors
     return;
   }
-  if (end.heapUsed !== undefined) {
-    HEAP_USED.add(end.heapUsed);
-    if (data.startHeap) {
-      const growth = ((end.heapUsed - data.startHeap) / data.startHeap) * 100;
-      if (growth >= 1) {
-        throw new Error(`heap usage grew by ${growth.toFixed(2)}%`);
-      }
+  if (end.rssDeltaPct !== undefined) {
+    RSS_GROWTH.add(end.rssDeltaPct);
+    if (end.rssDeltaPct >= 1) {
+      throw new Error(`RSS growth ${end.rssDeltaPct.toFixed(2)}% exceeds 1%`);
+    }
+  } else if (data.startRss && end.rssBytes !== undefined) {
+    const growth = ((end.rssBytes - data.startRss) / data.startRss) * 100;
+    RSS_GROWTH.add(growth);
+    if (growth >= 1) {
+      throw new Error(`RSS growth ${growth.toFixed(2)}% exceeds 1%`);
     }
   }
   if (end.gcPauseP95 !== undefined) {
