@@ -34,6 +34,15 @@ jobs:
           - workflow: soak.yml
             sla: 24
             unit: hours
+          - workflow: spectator-retention.yml
+            sla: 1
+            unit: days
+          - workflow: check-dr-runbook.yml
+            sla: 7
+            unit: days
+          - workflow: dr-throwaway.yml
+            sla: 7
+            unit: days
     steps:
       - name: Check ${{ matrix.workflow }} SLA
         uses: ./.github/workflows/check-workflow-sla
