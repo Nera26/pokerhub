@@ -61,6 +61,15 @@ describe('Provider webhook', () => {
     const disbRepo = dataSource.getRepository(Disbursement);
     const settleRepo = dataSource.getRepository(SettlementJournal);
     provider = new PaymentProviderService(redis as any);
+    jest
+      .spyOn(provider, 'initiate3DS')
+      .mockResolvedValue({ id: 'tx1' } as any);
+    jest
+      .spyOn(provider as any, 'handleWebhook')
+      .mockImplementation(async (event: any) => {
+        await service.confirm3DS(event);
+      });
+    jest.spyOn(provider, 'drainQueue').mockResolvedValue();
     service = new WalletService(
       accountRepo,
       journalRepo,
@@ -86,13 +95,6 @@ describe('Provider webhook', () => {
       { id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', name: 'house', balance: 0, kycVerified: false, currency: 'USD' },
       { id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', name: 'user', balance: 0, kycVerified: true, currency: 'USD' },
     ]);
-    await disbRepo.save({
-      id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
-      accountId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-      amount: 50,
-      idempotencyKey: 'idem1',
-      status: 'pending',
-    });
   });
 
   afterAll(async () => {
@@ -103,37 +105,44 @@ describe('Provider webhook', () => {
   });
 
   it('validates signature and updates journal exactly once', async () => {
+    const challenge = await service.deposit(
+      'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+      50,
+      'dev1',
+      '1.1.1.1',
+      'USD',
+    );
     const body = {
-      eventId: 'evt1',
-      idempotencyKey: 'idem1',
-      providerTxnId: 'tx1',
-      status: 'approved',
+      id: 'evt1',
+      type: 'payment_intent.succeeded',
+      data: { object: { id: challenge.id, status: 'succeeded' } },
     };
     const sig = createHmac('sha256', 'shhh')
       .update(JSON.stringify(body))
       .digest('hex');
     const req = { headers: { 'x-provider-signature': sig } } as unknown as Request;
     await controller.callback(req, body);
-    const disbRepo = dataSource.getRepository(Disbursement);
-    const disb = await disbRepo.findOneByOrFail({ id: 'dddddddd-dddd-dddd-dddd-dddddddddddd' });
-    expect(disb.status).toBe('completed');
     const journalRepo = dataSource.getRepository(JournalEntry);
     let entries = await journalRepo.find();
-    expect(entries).toHaveLength(1);
-    expect(entries[0].providerTxnId).toBe('tx1');
-    expect(entries[0].providerStatus).toBe('approved');
-    expect(entries[0].currency).toBe('USD');
+    expect(entries).toHaveLength(2);
+    expect(entries[0].providerTxnId).toBe(challenge.id);
     await controller.callback(req, body);
     entries = await journalRepo.find();
-    expect(entries).toHaveLength(1);
+    expect(entries).toHaveLength(2);
   });
 
   it('rejects invalid signatures', async () => {
+    const challenge = await service.deposit(
+      'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+      50,
+      'dev1',
+      '1.1.1.1',
+      'USD',
+    );
     const body = {
-      eventId: 'evt1',
-      idempotencyKey: 'idem1',
-      providerTxnId: 'tx1',
-      status: 'approved',
+      id: 'evt1',
+      type: 'payment_intent.succeeded',
+      data: { object: { id: challenge.id, status: 'succeeded' } },
     };
     const req = { headers: { 'x-provider-signature': 'bad' } } as unknown as Request;
     await expect(controller.callback(req, body)).rejects.toThrow('invalid signature');

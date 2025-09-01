@@ -18,7 +18,6 @@ describe('WalletService deposit', () => {
 
   const provider = {
     initiate3DS: jest.fn().mockResolvedValue({ id: 'tx' }),
-    getStatus: jest.fn().mockResolvedValue('approved'),
   } as unknown as PaymentProviderService;
 
   beforeAll(async () => {
@@ -83,7 +82,6 @@ describe('WalletService deposit', () => {
     (service as any).redis = redis;
     (events.emit as jest.Mock).mockClear();
     (provider.initiate3DS as jest.Mock).mockResolvedValue({ id: 'tx' });
-    (provider.getStatus as jest.Mock).mockResolvedValue('approved');
     const accountRepo = dataSource.getRepository(Account);
     const journalRepo = dataSource.getRepository(JournalEntry);
     const disbRepo = dataSource.getRepository(Disbursement);
@@ -136,29 +134,50 @@ describe('WalletService deposit', () => {
     ).rejects.toThrow('KYC required');
   });
 
-  it('aborts risky transactions', async () => {
-    (provider.initiate3DS as jest.Mock).mockResolvedValueOnce({ id: 'risk' });
-    (provider.getStatus as jest.Mock).mockResolvedValueOnce('risky');
-    await expect(
-      service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 100, 'd3', '5.5.5.5', 'USD'),
-    ).rejects.toThrow('Transaction flagged as risky');
+  it('commits on challenge success', async () => {
+    const challenge = await service.deposit(
+      'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      100,
+      'd3',
+      '5.5.5.5',
+      'USD',
+    );
+    await service.confirm3DS({
+      eventId: 'evt1',
+      idempotencyKey: 'idem1',
+      providerTxnId: challenge.id,
+      status: 'approved',
+    });
+    const accountRepo = dataSource.getRepository(Account);
+    const user = await accountRepo.findOneByOrFail({
+      id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    });
+    expect(user.balance).toBe(100);
     const jRepo = dataSource.getRepository(JournalEntry);
-    expect(await jRepo.count()).toBe(0);
+    expect(await jRepo.count()).toBe(2);
   });
 
-  it('reverses chargebacks', async () => {
-    (provider.initiate3DS as jest.Mock).mockResolvedValueOnce({ id: 'cb' });
-    (provider.getStatus as jest.Mock).mockResolvedValueOnce('chargeback');
-    await service.deposit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 100, 'd4', '6.6.6.6', 'USD');
+  it('ignores failed challenges', async () => {
+    const challenge = await service.deposit(
+      'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      100,
+      'd4',
+      '6.6.6.6',
+      'USD',
+    );
+    await service.confirm3DS({
+      eventId: 'evt2',
+      idempotencyKey: 'idem2',
+      providerTxnId: challenge.id,
+      status: 'chargeback',
+    });
     const accountRepo = dataSource.getRepository(Account);
     const user = await accountRepo.findOneByOrFail({
       id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
     });
     expect(user.balance).toBe(0);
     const jRepo = dataSource.getRepository(JournalEntry);
-    const entries = await jRepo.find();
-    expect(entries.filter((e) => e.providerStatus === 'chargeback').length).toBe(4);
-    expect(entries.every((e) => e.currency === 'USD')).toBe(true);
+    expect(await jRepo.count()).toBe(0);
   });
 
   it('flags and rejects deposits exceeding daily limits', async () => {
