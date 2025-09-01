@@ -26,6 +26,7 @@
     "simulate:tourney": "ts-node backend/src/scripts/tournament-simulator.ts --entrants 10000 --runs 100"
   },
   "devDependencies": {
+    "@actions/github": "^6.0.1",
     "@google-cloud/dlp": "^5.13.0",
     "@opentelemetry/api": "^1.9.0",
     "openapi-typescript": "^6.7.0",

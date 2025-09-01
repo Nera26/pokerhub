@@ -1,75 +1,68 @@
 #!/usr/bin/env ts-node
-import { readdirSync, readFileSync, Dirent } from 'fs';
-import { join } from 'path';
+import { execSync } from 'child_process';
+import { writeFileSync } from 'fs';
+import { getOctokit } from '@actions/github';
 
-function collectYamlFiles(dir: string): string[] {
-  const entries: Dirent[] = readdirSync(dir, { withFileTypes: true });
-  let files: string[] = [];
-  for (const entry of entries) {
-    const fullPath = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      files = files.concat(collectYamlFiles(fullPath));
-    } else if (entry.isFile() && entry.name.endsWith('.yml')) {
-      files.push(fullPath);
-    }
-  }
-  return files;
-}
-
-function main() {
-  const workflowsDir = join(process.cwd(), '.github', 'workflows');
-  const files = collectYamlFiles(workflowsDir);
-  const missingWorkflows: string[] = [];
-  const missingConditions: string[] = [];
-  for (const file of files) {
-    const content = readFileSync(file, 'utf-8');
-    if (!/^\s*(?:['"])?on(?:['"])?:/m.test(content)) continue;
-    const relative = file.replace(`${process.cwd()}/`, '');
-    const jobRegex = /^([ \t]*)(dr-drill|dr-failover|check-dr-runbook):/gm;
-    let match: RegExpExecArray | null;
-    let found = false;
-    while ((match = jobRegex.exec(content)) !== null) {
-      found = true;
-      const indent = match[1];
-      const rest = content.slice(match.index + match[0].length);
-      const lines = rest.split('\n');
-      let hasIfAlways = false;
-      for (const line of lines) {
-        if (line.trim() === '') continue;
-        if (!line.startsWith(indent + '  ')) break;
-        if (line.trim().startsWith('if:') && line.includes('${{ always() }}')) {
-          hasIfAlways = true;
-          break;
-        }
-      }
-      if (!hasIfAlways) {
-        missingConditions.push(`${relative}:${match[2]}`);
-      }
-    }
-    if (!found &&
-        !file.endsWith('dr-drill.yml') &&
-        !file.endsWith('dr-failover.yml') &&
-        !file.endsWith('check-dr-runbook.yml')) {
-      missingWorkflows.push(relative);
-    }
-  }
-  if (missingWorkflows.length > 0 || missingConditions.length > 0) {
-    if (missingWorkflows.length > 0) {
-      console.error(`Missing DR verification in: ${missingWorkflows.join(', ')}`);
-    }
-    if (missingConditions.length > 0) {
-      console.error(
-        'Missing `if: ${{ always() }}` for jobs: ' +
-          missingConditions.join(', '),
-      );
-    }
-    process.exit(1);
-  }
-}
-
-try {
-  main();
-} catch (err) {
-  console.error(err);
+function fail(msg: string): never {
+  console.error(msg);
   process.exit(1);
 }
+
+async function main() {
+  const project = process.env.GCP_PROJECT_ID ? `--project_id=${process.env.GCP_PROJECT_ID} ` : '';
+  let raw: string;
+  try {
+    raw = execSync(
+      `bq ${project}--format=json query --nouse_legacy_sql 'SELECT timestamp FROM ops_metrics.dr_drill_runs ORDER BY timestamp DESC LIMIT 1'`,
+      { encoding: 'utf-8' },
+    );
+  } catch {
+    fail('Failed to query BigQuery');
+  }
+
+  let data: any;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    fail('Unable to parse BigQuery response');
+  }
+
+  const ts = data?.[0]?.timestamp;
+  if (!ts) {
+    fail('No DR drill metrics found');
+  }
+
+  const latest = new Date(ts);
+  if (isNaN(latest.getTime())) {
+    fail(`Invalid timestamp: ${ts}`);
+  }
+
+  const now = new Date();
+  const diffDays = (now.getTime() - latest.getTime()) / (1000 * 60 * 60 * 24);
+  const limit = Number(process.env.DR_DRILL_SLA_DAYS || '30');
+  if (diffDays > limit) {
+    const token = process.env.GITHUB_TOKEN;
+    const repo = process.env.GITHUB_REPOSITORY;
+    if (!token || !repo) {
+      fail(`Latest DR drill ${ts} is older than ${limit} days`);
+    }
+    const [owner, repoName] = repo.split('/');
+    const github = getOctokit(token);
+    const issue = await github.rest.issues.create({
+      owner,
+      repo: repoName,
+      title: 'DR drill overdue',
+      body: `Latest DR drill ${ts} is older than ${limit} days.`,
+    });
+    writeFileSync('dr-drill-issue.json', JSON.stringify(issue.data, null, 2));
+    console.log(`Opened issue ${issue.data.html_url}`);
+    return;
+  }
+
+  console.log(`Latest DR drill ${ts} is ${Math.floor(diffDays)} days old`);
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
