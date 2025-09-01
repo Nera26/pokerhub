@@ -44,6 +44,17 @@ runs:
         sla: ${{ inputs.soak-metrics-sla-hours }}
         unit: hours
         slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Check soak metrics thresholds
+      run: |
+        npx ts-node scripts/check-soak-metrics.ts
+        if [ ! -f soak-summary.json ]; then
+          echo "soak-summary.json missing" >&2
+          exit 1
+        fi
+      env:
+        SOAK_TRENDS_BUCKET: ${{ env.SOAK_TRENDS_BUCKET }}
+        SOAK_LATENCY_P95_MS: ${{ env.SOAK_LATENCY_P95_MS }}
+        SOAK_THROUGHPUT_MIN: ${{ env.SOAK_THROUGHPUT_MIN }}
     - name: Check DR drill SLA
       uses: ./.github/workflows/check-workflow-sla
       with:
