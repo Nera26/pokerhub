@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
 import type { ProviderCallback } from '../schemas/wallet';
 import { metrics } from '@opentelemetry/api';
+import { Queue, Worker } from 'bullmq';
 
 export type ProviderStatus = 'approved' | 'risky' | 'chargeback';
 
@@ -15,7 +16,11 @@ export class PaymentProviderService {
   private readonly baseUrl = 'https://api.stripe.com/v1';
 
   private readonly webhookEvents = new Map<string, ProviderCallback>();
-  private retryQueue: Array<() => Promise<void>> = [];
+
+  private handlers = new Map<string, (event: ProviderCallback) => Promise<void>>();
+  private retryQueue?: Queue;
+  private retryWorker?: Worker;
+  private draining: Promise<void> = Promise.resolve();
 
   private static readonly meter = metrics.getMeter('wallet');
   private static readonly retriesExhausted =
@@ -30,10 +35,7 @@ export class PaymentProviderService {
   private failures = 0;
   private circuitOpenUntil = 0;
 
-  constructor() {
-    // Periodically attempt to drain the retry queue. Using unref so tests can exit.
-    setInterval(() => this.processRetryQueue(), 1_000).unref?.();
-  }
+  constructor() {}
 
   private authHeaders() {
     return {
@@ -42,34 +44,74 @@ export class PaymentProviderService {
     };
   }
 
+  registerHandler(key: string, handler: (event: ProviderCallback) => Promise<void>): void {
+    this.handlers.set(key, handler);
+  }
+
+  private async initQueue(): Promise<void> {
+    if (this.retryQueue) return;
+    const connection = {
+      host: process.env.REDIS_HOST ?? 'localhost',
+      port: Number(process.env.REDIS_PORT ?? 6379),
+    };
+    this.retryQueue = new Queue('provider-webhook-retry', { connection });
+    this.retryWorker = new Worker(
+      'provider-webhook-retry',
+      async (job) => {
+        const { event, handlerKey } = job.data as {
+          event: ProviderCallback;
+          handlerKey: string;
+        };
+        const handler = this.handlers.get(handlerKey);
+        if (!handler) throw new Error(`Missing handler for ${handlerKey}`);
+        await handler(event);
+        this.webhookEvents.delete(event.idempotencyKey);
+      },
+      { connection },
+    );
+    this.retryWorker.on('failed', (job) => void job.retry());
+  }
+
+  async drainQueue(): Promise<void> {
+    await this.initQueue();
+    const queue = this.retryQueue!;
+    const failed = await queue.getFailed();
+    for (const job of failed) {
+      await job.retry();
+    }
+    this.draining = (async () => {
+      while (true) {
+        const counts = await queue.getJobCounts('waiting', 'delayed', 'active');
+        if (counts.waiting + counts.delayed + counts.active === 0) break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
+    })();
+    await this.draining;
+  }
+
   /**
    * Persist a webhook event by its idempotency key and execute the handler.
    * If the handler fails, the callback is queued for retry.
    */
   async handleWebhook(
     event: ProviderCallback,
-    handler: () => Promise<void>,
+    handlerKey: string,
   ): Promise<void> {
+    await this.initQueue();
+    await this.draining;
     if (this.webhookEvents.has(event.idempotencyKey)) return;
     this.webhookEvents.set(event.idempotencyKey, event);
+    const handler = this.handlers.get(handlerKey);
+    if (!handler) throw new Error(`Missing handler for ${handlerKey}`);
     try {
-      await handler();
+      await handler(event);
       this.webhookEvents.delete(event.idempotencyKey);
     } catch {
-      this.retryQueue.push(handler);
-    }
-  }
-
-  private async processRetryQueue(): Promise<void> {
-    if (this.retryQueue.length === 0) return;
-    const queue = this.retryQueue;
-    this.retryQueue = [];
-    for (const job of queue) {
-      try {
-        await job();
-      } catch {
-        this.retryQueue.push(job);
-      }
+      await this.retryQueue!.add(
+        'retry',
+        { event, handlerKey },
+        { jobId: event.idempotencyKey },
+      );
     }
   }
 
