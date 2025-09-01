@@ -35,8 +35,8 @@ let meterProvider: MeterProvider | undefined;
 let loggerProvider: LoggerProvider | undefined;
 let requestCounter: Counter | undefined;
 
-export function setupTelemetry() {
-  if (sdk) return sdk;
+export function setupTelemetry(): Promise<void> {
+  if (sdk) return Promise.resolve();
 
   const resource = new Resource({
     [SemanticResourceAttributes.SERVICE_NAME]:
@@ -118,8 +118,7 @@ export function setupTelemetry() {
     ],
   });
 
-  sdk.start();
-  return sdk;
+  return sdk.start();
 }
 
 export function telemetryMiddleware(
