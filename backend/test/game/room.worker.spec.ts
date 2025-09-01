@@ -1,75 +1,155 @@
-import { RoomManager } from '../../src/game/room.service';
+import { EventEmitter } from 'events';
 
-jest.setTimeout(15000);
+async function setup(flags: Record<string, string | null> = {}) {
+  jest.resetModules();
 
-describe('RoomWorker lifecycle', () => {
-  it('creates, reuses, and terminates workers', async () => {
-    const manager = new RoomManager();
-    try {
-      const worker1 = manager.get('t1');
-      const state0 = await worker1.getPublicState();
-      expect(state0.phase).toBe('WAIT_BLINDS');
+  const port = new EventEmitter() as any;
+  const messages: any[] = [];
+  (port as any).postMessage = (msg: any) => {
+    messages.push(msg);
+  };
 
-      await worker1.apply({ type: 'postBlind', playerId: 'p1', amount: 1 });
-      const state1 = await worker1.apply({ type: 'postBlind', playerId: 'p2', amount: 2 });
-      expect(state1.phase).toBe('BETTING_ROUND');
+  const redisInstances: any[] = [];
 
-      const state2 = await worker1.apply({ type: 'next' });
-      expect(state2.street).toBe('flop');
-
-      const sameWorker = manager.get('t1');
-      expect(sameWorker).toBe(worker1);
-
-      const terminateSpy = jest.spyOn(worker1, 'terminate');
-      await manager.close('t1');
-      expect(terminateSpy).toHaveBeenCalled();
-
-      const worker2 = manager.get('t1');
-      expect(worker2).not.toBe(worker1);
-
-      await manager.close('t1');
-    } finally {
-      await manager.onModuleDestroy();
+  class MockRedis extends EventEmitter {
+    options = {};
+    publishes: Array<[string, string]> = [];
+    subs: string[] = [];
+    constructor() {
+      super();
+      redisInstances.push(this);
     }
+    async publish(channel: string, message: string) {
+      this.publishes.push([channel, message]);
+      return 1;
+    }
+    async subscribe(channel: string) {
+      this.subs.push(channel);
+      return 1;
+    }
+    async get(key: string) {
+      return flags[key] ?? null;
+    }
+  }
+
+  const reserve = jest.fn(async () => {});
+  const commit = jest.fn(async () => {});
+  const cancel = jest.fn(async () => {});
+
+  jest.doMock('worker_threads', () => ({
+    parentPort: port,
+    workerData: {
+      tableId: 't',
+      playerIds: ['p1', 'p2'],
+      redisOptions: {},
+    },
+  }));
+
+  jest.doMock('ioredis', () => MockRedis);
+
+  jest.doMock('../../src/database/data-source', () => ({
+    AppDataSource: {
+      initialize: jest.fn().mockResolvedValue({ getRepository: jest.fn() }),
+    },
+  }));
+
+  jest.doMock('../../src/wallet/settlement.service', () => ({
+    SettlementService: jest.fn(() => ({ reserve, commit, cancel })),
+  }));
+
+  process.env.NODE_ENV = 'development';
+
+  require('../../src/game/room.worker');
+
+  await new Promise((res) => setImmediate(res));
+
+  async function send(msg: any) {
+    port.emit('message', msg);
+    await new Promise((res) => setImmediate(res));
+  }
+
+  return { port, messages, redisInstances, reserve, commit, cancel, send };
+}
+
+describe('room.worker', () => {
+  it('publishes diffs and handles snapshot ACK', async () => {
+    const ctx = await setup();
+    await ctx.send({
+      type: 'apply',
+      seq: 1,
+      action: { type: 'postBlind', playerId: 'p1', amount: 1 },
+    });
+
+    const pub = ctx.redisInstances[0];
+    expect(pub.publishes.length).toBe(1);
+    const [channel, payload] = pub.publishes[0];
+    expect(channel).toBe('room:t:diffs');
+    const [idx, delta] = JSON.parse(payload);
+    expect(typeof idx).toBe('number');
+    expect(delta).toHaveProperty('players');
+
+    const sub = ctx.redisInstances[1];
+    sub.emit('message', sub.subs[0], '5');
+    await new Promise((res) => setImmediate(res));
+    expect(
+      ctx.messages.find((m) => m.event === 'snapshotAck' && m.index === 5),
+    ).toBeTruthy();
   });
 
-  it('replays current hand', async () => {
-    const manager = new RoomManager();
-    try {
-      const worker = manager.get('t2');
-      await worker.apply({ type: 'postBlind', playerId: 'p1', amount: 1 });
-      await worker.apply({ type: 'postBlind', playerId: 'p2', amount: 2 });
-      await worker.apply({ type: 'next' });
-      const replay = await worker.replay();
-      expect(replay.street).toBe('flop');
-    } finally {
-      await manager.onModuleDestroy();
-    }
+  it('halts dealing when feature flag disabled', async () => {
+    const ctx = await setup({ 'feature-flag:dealing': '0' });
+    await ctx.send({
+      type: 'apply',
+      seq: 1,
+      action: { type: 'postBlind', playerId: 'p1', amount: 1 },
+    });
+    await ctx.send({
+      type: 'apply',
+      seq: 2,
+      action: { type: 'postBlind', playerId: 'p2', amount: 2 },
+    });
+
+    expect(
+      ctx.messages.find((m) => m.event === 'dealingDisabled'),
+    ).toBeTruthy();
+    const state = ctx.messages.find((m) => m.seq === 2)?.state;
+    expect(state.phase).toBe('WAIT_BLINDS');
   });
 
-  it('rejects pending calls when worker errors', async () => {
-    const manager = new RoomManager();
-    const worker: any = manager.get('t_err');
-    try {
-      const pending = worker.getPublicState();
-      worker.primary.worker.emit('error', new Error('boom'));
-      await expect(pending).rejects.toThrow('worker error: boom');
-    } finally {
-      await manager.onModuleDestroy();
-    }
+  it('skips settlement when feature flag disabled', async () => {
+    const ctx = await setup({ 'feature-flag:settlement': '0' });
+    await ctx.send({
+      type: 'apply',
+      seq: 1,
+      action: { type: 'postBlind', playerId: 'p1', amount: 1 },
+    });
+
+    expect(ctx.reserve).not.toHaveBeenCalled();
+    expect(ctx.commit).not.toHaveBeenCalled();
   });
 
-  it('cleans up workers after errors', async () => {
-    const manager = new RoomManager();
-    const worker: any = manager.get('t_clean');
-    const terminateSpy = jest.spyOn(worker, 'terminate');
-    try {
-      const pending = worker.getPublicState();
-      worker.primary.worker.emit('error', new Error('boom'));
-      await expect(pending).rejects.toThrow();
-    } finally {
-      await manager.onModuleDestroy();
-    }
-    expect(terminateSpy).toHaveBeenCalled();
+  it('recovers after settlement commit failures', async () => {
+    const ctx = await setup();
+    ctx.commit.mockImplementationOnce(async () => {
+      throw new Error('fail');
+    });
+
+    await ctx.send({
+      type: 'apply',
+      seq: 1,
+      action: { type: 'postBlind', playerId: 'p1', amount: 1 },
+    });
+    expect(ctx.commit).toHaveBeenCalledTimes(1);
+    expect(ctx.cancel).toHaveBeenCalledTimes(1);
+
+    await ctx.send({
+      type: 'apply',
+      seq: 2,
+      action: { type: 'postBlind', playerId: 'p2', amount: 2 },
+    });
+    expect(ctx.commit).toHaveBeenCalledTimes(2);
+    const stateMsg = ctx.messages.find((m) => m.seq === 2);
+    expect(stateMsg).toBeTruthy();
   });
 });
+
