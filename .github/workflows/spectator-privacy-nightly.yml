@@ -10,6 +10,8 @@ on:
 
 jobs:
   spectator-privacy:
+    env:
+      PROD_LOG_SCAN: true
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:
