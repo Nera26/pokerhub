@@ -9,18 +9,24 @@ const ACK_SUCCESS = new Rate('ack_success');
 const ACTION_COUNTER = new Counter('actions');
 
 const TABLES = Number(__ENV.TABLES) || 10000;
-const TPS_THRESHOLD = Number(__ENV.TPS_THRESHOLD) || 150;
+const ACTIONS_PER_MIN_THRESHOLD = Number(__ENV.ACTIONS_PER_MIN_THRESHOLD) || 150;
 
 const thresholds = {
   ack_latency: [
-    `p(95)<${__ENV.ACK_P95_MS || 200}`,
-    `p(99)<${__ENV.ACK_P99_MS || 400}`,
+    `p(50)<${__ENV.ACK_P50_MS || 40}`,
+    `p(95)<${__ENV.ACK_P95_MS || 120}`,
+    `p(99)<${__ENV.ACK_P99_MS || 200}`,
   ],
   ack_success: [`rate>${__ENV.ACK_SUCCESS_RATE || 0.99}`],
 };
 
 for (let i = 0; i < TABLES; i++) {
-  thresholds[`actions{table:${i}}`] = [`rate>=${TPS_THRESHOLD}`];
+  thresholds[`ack_latency{table:${i}}`] = [
+    `p(50)<${__ENV.ACK_P50_MS || 40}`,
+    `p(95)<${__ENV.ACK_P95_MS || 120}`,
+    `p(99)<${__ENV.ACK_P99_MS || 200}`,
+  ];
+  thresholds[`actions{table:${i}}`] = [`rate>=${(ACTIONS_PER_MIN_THRESHOLD / 60).toFixed(2)}`];
 }
 
 export const options = {
@@ -42,7 +48,7 @@ export default function () {
     for (const action of ACTIONS) {
       const start = Date.now();
       socket.emit('action', action, () => {
-        ACK_LATENCY.add(Date.now() - start);
+        ACK_LATENCY.add(Date.now() - start, { table: tableId });
         ACK_SUCCESS.add(1);
         ACTION_COUNTER.add(1, { table: tableId });
       });
@@ -56,9 +62,7 @@ export default function () {
 }
 
 export function handleSummary(data) {
-  const sub = data.metrics.actions?.submetrics || {};
-  const tables = {};
-  for (const key of Object.keys(sub)) {
+  const parseTable = (key) => {
     let table = key;
     try {
       table = JSON.parse(key).table;
@@ -66,12 +70,34 @@ export function handleSummary(data) {
       const m = key.match(/table:?"?(\d+)/);
       if (m) table = m[1];
     }
-    const rate = sub[key].values.rate || 0;
+    return table;
+  };
+
+  const actionSub = data.metrics.actions?.submetrics || {};
+  const latencySub = data.metrics.ack_latency?.submetrics || {};
+  const tables = {};
+
+  for (const key of Object.keys(actionSub)) {
+    const table = parseTable(key);
+    const rate = actionSub[key].values.rate || 0;
     tables[table] = {
       tps: rate,
       actions_per_minute: rate * 60,
     };
   }
+
+  for (const key of Object.keys(latencySub)) {
+    const table = parseTable(key);
+    const vals = latencySub[key].values;
+    const p50 = vals['p(50)'] || vals.median || 0;
+    const p95 = vals['p(95)'] || 0;
+    const p99 = vals['p(99)'] || 0;
+    tables[table] = {
+      ...(tables[table] || {}),
+      ack_latency: { p50, p95, p99 },
+    };
+  }
+
   data.tables = tables;
   return {
     stdout: textSummary(data, { indent: ' ', enableColors: true }),

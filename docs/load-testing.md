@@ -24,6 +24,23 @@ Artifacts include:
 - `gc-heap.log`, `heap-histogram.json`, `gc-histogram.json`
 - `seed.txt` for deterministic replay
 
+## WebSocket swarm thresholds
+
+`load/k6-swarm.js` records ACK latency histograms and transaction rates for
+each table. Thresholds enforce p50 < 40 ms, p95 < 120 ms, p99 < 200 ms and at
+least 150 actions per minute. The workflow
+[`.github/workflows/k6-swarm-threshold.yml`](../.github/workflows/k6-swarm-threshold.yml)
+runs this script in CI and fails when limits are exceeded.
+
+Run locally:
+
+```bash
+SOCKETS=100 TABLES=100 npm run load:swarm
+```
+
+Results are written to `load/results/k6-swarm-summary.json` with per‑table
+latency percentiles and TPS.
+
 ## Replaying a run
 
 All randomness is seeded via `RNG_SEED`. Re-run the script with the same seed to replay a scenario:
