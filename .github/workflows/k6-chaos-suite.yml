@@ -5,80 +5,91 @@ concurrency:
 
 on:
   schedule:
-    - cron: '0 5 * * *'
+  - cron: '0 5 * * *'
   workflow_dispatch:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   k6:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         script: [k6-game-actions.js, k6-table-actions.js, k6-ws-reconnect.js]
     steps:
-      - uses: actions/checkout@v4
-      - name: Run ${{ matrix.script }}
-        uses: grafana/k6-action@v0.2.0
-        env:
-          WS_URL: ws://staging.pokerhub/game
-          SOCKETS: 100
-          DURATION: 30s
-        with:
-          filename: load/${{ matrix.script }}
-          flags: --summary-export=summary.json --out json=metrics.json
-      - name: Upload summary
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.script }}-summary-${{ github.sha }}
-          path: summary.json
-      - name: Upload metrics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.script }}-metrics-${{ github.sha }}
-          path: metrics.json
+    - uses: actions/checkout@v4
+    - name: Run ${{ matrix.script }}
+      uses: grafana/k6-action@v0.2.0
+      env:
+        WS_URL: ws://staging.pokerhub/game
+        SOCKETS: 100
+        DURATION: 30s
+      with:
+        filename: load/${{ matrix.script }}
+        flags: --summary-export=summary.json --out json=metrics.json
+    - name: Upload summary
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.script }}-summary-${{ github.sha }}
+        path: summary.json
+    - name: Upload metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.script }}-metrics-${{ github.sha }}
+        path: metrics.json
 
+    needs:
+    - check-proof-archive
   chaos:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         script: [run-10k-chaos.sh, run-100k-chaos.sh]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Install k6 and Artillery
-        run: npm install -g k6 artillery toxiproxy-cli
-      - name: Run ${{ matrix.script }}
-        run: ./load/${{ matrix.script }} --sockets 100000 --packet-loss 0.05 --jitter 200
-        env:
-          TABLES: 10000
-          RNG_SEED: ${{ github.run_id }}
-      - name: Find metrics dir
-        run: echo "METRICS_DIR=$(ls -td load/metrics/*/ | head -n 1)" >> $GITHUB_ENV
-      - name: Upload metrics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.script }}-${{ github.run_id }}
-          path: ${{ env.METRICS_DIR }}
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+    - name: Install k6 and Artillery
+      run: npm install -g k6 artillery toxiproxy-cli
+    - name: Run ${{ matrix.script }}
+      run: ./load/${{ matrix.script }} --sockets 100000 --packet-loss 0.05 
+        --jitter 200
+      env:
+        TABLES: 10000
+        RNG_SEED: ${{ github.run_id }}
+    - name: Find metrics dir
+      run: echo "METRICS_DIR=$(ls -td load/metrics/*/ | head -n 1)" >> 
+        $GITHUB_ENV
+    - name: Upload metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.script }}-${{ github.run_id }}
+        path: ${{ env.METRICS_DIR }}
 
+    needs:
+    - check-proof-archive
   soak-metrics:
-    needs: [k6, chaos]
+    needs:
+    - k6
+    - chaos
+    - check-proof-archive
     if: ${{ always() }}
     uses: ../soak-metrics.yml
     secrets: inherit
 
   spectator-privacy:
-    needs: [k6, chaos]
+    needs:
+    - k6
+    - chaos
+    - check-proof-archive
     uses: ../spectator-privacy.yml
     with:
       logs: summary.json metrics.json
     secrets: inherit
 
-  spectator-privacy:
-    uses: ./.github/workflows/spectator-privacy.yml
-    secrets: inherit
-    with:
-      logs: backend-tests.log frontend-tests.log integration.log property.log

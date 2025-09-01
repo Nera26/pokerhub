@@ -5,56 +5,67 @@ concurrency:
 
 on:
   schedule:
-    - cron: '0 2 * * *'
+  - cron: '0 2 * * *'
   workflow_dispatch:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   chaos:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Run 10k chaos scenario
-        run: load/run-10k-chaos.sh
-        env:
-          GRAFANA_PUSH_URL: ${{ secrets.GRAFANA_PUSH_URL }}
-      - name: Export GC metrics to Grafana
-        run: |
-          METRICS_URL=http://localhost:4000/metrics \
-          OUT_FILE=load/metrics/latest/gc-heap.log \
-          HEAP_HIST_FILE=load/metrics/latest/heap-histogram.json \
-          GC_HIST_FILE=load/metrics/latest/gc-histogram.json \
-          GRAFANA_PUSH_URL=${{ secrets.GRAFANA_PUSH_URL }} \
-          timeout 30s load/collect-gc-heap.sh || true
-      - name: Append run summary
-        run: |
-          ts=$(date --iso-8601=seconds)
-          seed=$(cat load/metrics/latest/seed.txt)
-          p95=$(jq -r '.metrics.ack_latency.values["p(95)"]' load/metrics/latest/k6-summary.json)
-          p99=$(jq -r '.metrics.ack_latency.values["p(99)"]' load/metrics/latest/k6-summary.json)
-          heap=$(jq -r '.[-1].heap_used' load/metrics/latest/gc-stats.json)
-          gc=$(jq -r '.[-1].gc_avg_ms' load/metrics/latest/gc-stats.json)
-          line="- ${ts}: seed ${seed}, p95 ${p95}ms, p99 ${p99}ms, heap ${heap}, gc_avg ${gc}ms"
-          sed -i '/<!-- CHAOS_SUMMARY -->/i '"$line" docs/load-testing.md
-      - name: Commit summary
-        run: |
-          git config user.name github-actions
-          git config user.email actions@github.com
-          git commit -am "chore(load): record nightly chaos" && git push
-      - name: Upload metrics
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: nightly-chaos
-          path: load/metrics/latest
+    - uses: actions/checkout@v4
+    - name: Run 10k chaos scenario
+      run: load/run-10k-chaos.sh
+      env:
+        GRAFANA_PUSH_URL: ${{ secrets.GRAFANA_PUSH_URL }}
+    - name: Export GC metrics to Grafana
+      run: |
+        METRICS_URL=http://localhost:4000/metrics \
+        OUT_FILE=load/metrics/latest/gc-heap.log \
+        HEAP_HIST_FILE=load/metrics/latest/heap-histogram.json \
+        GC_HIST_FILE=load/metrics/latest/gc-histogram.json \
+        GRAFANA_PUSH_URL=${{ secrets.GRAFANA_PUSH_URL }} \
+        timeout 30s load/collect-gc-heap.sh || true
+    - name: Append run summary
+      run: |
+        ts=$(date --iso-8601=seconds)
+        seed=$(cat load/metrics/latest/seed.txt)
+        p95=$(jq -r '.metrics.ack_latency.values["p(95)"]' load/metrics/latest/k6-summary.json)
+        p99=$(jq -r '.metrics.ack_latency.values["p(99)"]' load/metrics/latest/k6-summary.json)
+        heap=$(jq -r '.[-1].heap_used' load/metrics/latest/gc-stats.json)
+        gc=$(jq -r '.[-1].gc_avg_ms' load/metrics/latest/gc-stats.json)
+        line="- ${ts}: seed ${seed}, p95 ${p95}ms, p99 ${p99}ms, heap ${heap}, gc_avg ${gc}ms"
+        sed -i '/<!-- CHAOS_SUMMARY -->/i '"$line" docs/load-testing.md
+    - name: Commit summary
+      run: |
+        git config user.name github-actions
+        git config user.email actions@github.com
+        git commit -am "chore(load): record nightly chaos" && git push
+    - name: Upload metrics
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: nightly-chaos
+        path: load/metrics/latest
 
+    needs:
+    - check-proof-archive
   soak-metrics:
-    needs: chaos
+    needs:
+    - chaos
+    - check-proof-archive
     if: ${{ always() }}
     uses: ./.github/workflows/soak-metrics.yml
     secrets: inherit
 
   spectator-privacy:
-    needs: [chaos, soak-metrics]
+    needs:
+    - chaos
+    - soak-metrics
+    - check-proof-archive
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

@@ -9,7 +9,12 @@ on:
   workflow_dispatch:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   chaos:
+    needs: [check-proof-archive]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

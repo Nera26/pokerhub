@@ -11,7 +11,12 @@ on:
   workflow_call:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   preflight:
+    needs: [check-proof-archive]
     runs-on: ubuntu-latest
     env:
       DR_DRILL_SLA_DAYS: 7
@@ -33,7 +38,7 @@ jobs:
           dr-runbook-sla-days: ${{ env.DR_RUNBOOK_SLA_DAYS }}
           dr-throwaway-sla-days: ${{ env.DR_THROWAWAY_SLA_DAYS }}
   drill:
-    needs: preflight
+    needs: [preflight, check-proof-archive]
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -231,7 +236,7 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
   spectator-privacy:
-    needs: drill
+    needs: [drill, check-proof-archive]
     if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit

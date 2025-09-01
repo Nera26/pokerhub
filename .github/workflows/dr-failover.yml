@@ -8,88 +8,96 @@ on:
   workflow_call:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   failover:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
-      - uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ vars.GCP_PROJECT_ID }}
-      - name: Run DR failover script
-        run: bash scripts/dr-failover.sh | tee dr-failover.log
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      - name: Check RTO/RPO
-        run: |
-          source dr-failover.metrics
-          echo "RTO: $RTO_SECONDS seconds"
-          echo "RPO: $RPO_SECONDS seconds"
-          if [ "$RTO_SECONDS" -gt 1800 ]; then
-            echo "RTO exceeds 30 minutes" >&2
-            exit 1
-          fi
-          if [ "$RPO_SECONDS" -gt 300 ]; then
-            echo "RPO exceeds 5 minutes" >&2
-            exit 1
-          fi
-      - name: Publish metrics to Cloud Monitoring
-        run: |
-          source dr-failover.metrics
-          gcloud monitoring metrics write custom.googleapis.com/dr/rto "$RTO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
-          gcloud monitoring metrics write custom.googleapis.com/dr/rpo "$RPO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
-      - name: Upload metrics to GCS
-        id: upload_metrics
-        if: success()
-        env:
-          BUCKET: ${{ vars.DR_METRICS_BUCKET }}
-        run: |
-          uri="gs://$BUCKET/failover/${GITHUB_RUN_ID}/dr-failover.metrics"
-          gcloud storage cp dr-failover.metrics "$uri"
-          url="https://storage.googleapis.com/$BUCKET/failover/${GITHUB_RUN_ID}/dr-failover.metrics"
-          echo "url=$url" >> "$GITHUB_OUTPUT"
+    - uses: actions/checkout@v4
+    - uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+    - uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ vars.GCP_PROJECT_ID }}
+    - name: Run DR failover script
+      run: bash scripts/dr-failover.sh | tee dr-failover.log
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    - name: Check RTO/RPO
+      run: |
+        source dr-failover.metrics
+        echo "RTO: $RTO_SECONDS seconds"
+        echo "RPO: $RPO_SECONDS seconds"
+        if [ "$RTO_SECONDS" -gt 1800 ]; then
+          echo "RTO exceeds 30 minutes" >&2
+          exit 1
+        fi
+        if [ "$RPO_SECONDS" -gt 300 ]; then
+          echo "RPO exceeds 5 minutes" >&2
+          exit 1
+        fi
+    - name: Publish metrics to Cloud Monitoring
+      run: |
+        source dr-failover.metrics
+        gcloud monitoring metrics write custom.googleapis.com/dr/rto "$RTO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+        gcloud monitoring metrics write custom.googleapis.com/dr/rpo "$RPO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+    - name: Upload metrics to GCS
+      id: upload_metrics
+      if: success()
+      env:
+        BUCKET: ${{ vars.DR_METRICS_BUCKET }}
+      run: |
+        uri="gs://$BUCKET/failover/${GITHUB_RUN_ID}/dr-failover.metrics"
+        gcloud storage cp dr-failover.metrics "$uri"
+        url="https://storage.googleapis.com/$BUCKET/failover/${GITHUB_RUN_ID}/dr-failover.metrics"
+        echo "url=$url" >> "$GITHUB_OUTPUT"
 
-      - name: Publish failover results
-        if: success()
-        env:
-          METRICS_URL: ${{ steps.upload_metrics.outputs.url }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          source dr-failover.metrics
-          ts=$(date --iso-8601=seconds)
-          perl -0 -i -pe "s/<!-- DR_FAILOVER_RESULTS -->/<!-- DR_FAILOVER_RESULTS -->\n- $ts: [metrics]($METRICS_URL) – RTO ${RTO_SECONDS}s, RPO ${RPO_SECONDS}s/" docs/runbooks/disaster-recovery.md
-          git config user.name github-actions
-          git config user.email actions@github.com
-          git commit -am "chore(dr): record failover results" && git push
+    - name: Publish failover results
+      if: success()
+      env:
+        METRICS_URL: ${{ steps.upload_metrics.outputs.url }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        source dr-failover.metrics
+        ts=$(date --iso-8601=seconds)
+        perl -0 -i -pe "s/<!-- DR_FAILOVER_RESULTS -->/<!-- DR_FAILOVER_RESULTS -->\n- $ts: [metrics]($METRICS_URL) – RTO ${RTO_SECONDS}s, RPO ${RPO_SECONDS}s/" docs/runbooks/disaster-recovery.md
+        git config user.name github-actions
+        git config user.email actions@github.com
+        git commit -am "chore(dr): record failover results" && git push
 
-      - name: Upload failover log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dr-failover-${{ github.sha }}
-          path: dr-failover.log
+    - name: Upload failover log
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: dr-failover-${{ github.sha }}
+        path: dr-failover.log
 
-      - name: Upload metrics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dr-failover-metrics-${{ github.sha }}
-          path: dr-failover.metrics
-      - name: Notify Slack on failure
-        if: failure()
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          payload: |
-            { "text": "DR failover exceeded RTO/RPO for ${GITHUB_REPOSITORY}@${GITHUB_SHA}" }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    - name: Upload metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: dr-failover-metrics-${{ github.sha }}
+        path: dr-failover.metrics
+    - name: Notify Slack on failure
+      if: failure()
+      uses: slackapi/slack-github-action@v1.24.0
+      with:
+        payload: |
+          { "text": "DR failover exceeded RTO/RPO for ${GITHUB_REPOSITORY}@${GITHUB_SHA}" }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
+    needs:
+    - check-proof-archive
   spectator-privacy:
-    needs: failover
+    needs:
+    - failover
+    - check-proof-archive
     if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit

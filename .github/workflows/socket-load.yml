@@ -3,60 +3,71 @@ name: socket-load
 on:
   push:
     paths:
-      - 'tests/performance/socket-load.ts'
-      - '.github/workflows/socket-load.yml'
+    - 'tests/performance/socket-load.ts'
+    - '.github/workflows/socket-load.yml'
   pull_request:
     paths:
-      - 'tests/performance/socket-load.ts'
-      - '.github/workflows/socket-load.yml'
+    - 'tests/performance/socket-load.ts'
+    - '.github/workflows/socket-load.yml'
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   ack-latency:
     runs-on: ubuntu-latest
     services:
       toxiproxy:
         image: ghcr.io/shopify/toxiproxy:2.5.0
         ports:
-          - 8474:8474
-          - 3001:3001
+        - 8474:8474
+        - 3001:3001
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm ci
-      - name: Start test server
-        run: |
-          node -e "const { Server } = require('socket.io'); const http = require('http'); const server = http.createServer(); const io = new Server(server); io.on('connection', (s) => { s.on('join', () => {}); s.on('action', (_, cb) => cb()); }); server.listen(3000);" &
-          sleep 1
-      - name: Run socket load
-        run: npm run perf:socket-load
-        env:
-          TABLES: 5
-          SOCKETS: 20
-          ACTIONS_PER_CLIENT: 5
-          LATENCY_MS: 10
-          JITTER_MS: 5
-          PACKET_LOSS: 0
-      - name: Upload metrics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: socket-load-${{ github.sha }}
-          path: |
-            metrics/latency-hist.json
-            metrics/seeds.json
-            metrics/memory-gc.json
-            metrics/table-metrics.json
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+    - run: npm ci
+    - name: Start test server
+      run: |
+        node -e "const { Server } = require('socket.io'); const http = require('http'); const server = http.createServer(); const io = new Server(server); io.on('connection', (s) => { s.on('join', () => {}); s.on('action', (_, cb) => cb()); }); server.listen(3000);" &
+        sleep 1
+    - name: Run socket load
+      run: npm run perf:socket-load
+      env:
+        TABLES: 5
+        SOCKETS: 20
+        ACTIONS_PER_CLIENT: 5
+        LATENCY_MS: 10
+        JITTER_MS: 5
+        PACKET_LOSS: 0
+    - name: Upload metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: socket-load-${{ github.sha }}
+        path: |
+          metrics/latency-hist.json
+          metrics/seeds.json
+          metrics/memory-gc.json
+          metrics/table-metrics.json
 
+    needs:
+    - check-proof-archive
   soak-metrics:
-    needs: ack-latency
+    needs:
+    - ack-latency
+    - check-proof-archive
     if: ${{ always() }}
     uses: ./.github/workflows/soak-metrics.yml
     secrets: inherit
 
   spectator-privacy:
-    needs: [ack-latency, soak-metrics]
+    needs:
+    - ack-latency
+    - soak-metrics
+    - check-proof-archive
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

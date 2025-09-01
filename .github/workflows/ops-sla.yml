@@ -5,7 +5,7 @@ concurrency:
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+  - cron: '0 0 * * *'
   workflow_dispatch:
 
 permissions:
@@ -13,57 +13,65 @@ permissions:
   actions: read
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   sla:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - workflow: dr-drill.yml
-            sla: 7
-            unit: days
-          - workflow: dr-failover.yml
-            sla: 24
-            unit: hours
-          - workflow: dr-restore.yml
-            sla: 30
-            unit: days
-          - workflow: spectator-privacy-nightly.yml
-            sla: 24
-            unit: hours
-          - workflow: proof-archive.yml
-            sla: 24
-            unit: hours
-          - workflow: proof-archive-audit.yml
-            sla: 24
-            unit: hours
-          - workflow: soak.yml
-            sla: 24
-            unit: hours
-          - workflow: soak-metrics.yml
-            sla: 24
-            unit: hours
-          - workflow: spectator-retention.yml
-            sla: 1
-            unit: days
-          - workflow: check-dr-runbook.yml
-            sla: 7
-            unit: days
-          - workflow: dr-throwaway.yml
-            sla: 7
-            unit: days
+        - workflow: dr-drill.yml
+          sla: 7
+          unit: days
+        - workflow: dr-failover.yml
+          sla: 24
+          unit: hours
+        - workflow: dr-restore.yml
+          sla: 30
+          unit: days
+        - workflow: spectator-privacy-nightly.yml
+          sla: 24
+          unit: hours
+        - workflow: proof-archive.yml
+          sla: 24
+          unit: hours
+        - workflow: proof-archive-audit.yml
+          sla: 24
+          unit: hours
+        - workflow: soak.yml
+          sla: 24
+          unit: hours
+        - workflow: soak-metrics.yml
+          sla: 24
+          unit: hours
+        - workflow: spectator-retention.yml
+          sla: 1
+          unit: days
+        - workflow: check-dr-runbook.yml
+          sla: 7
+          unit: days
+        - workflow: dr-throwaway.yml
+          sla: 7
+          unit: days
     steps:
-      - name: Check ${{ matrix.workflow }} SLA
-        uses: ./.github/workflows/check-workflow-sla
-        with:
-          workflow: ${{ matrix.workflow }}
-          sla: ${{ matrix.sla }}
-          unit: ${{ matrix.unit }}
-          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+    - name: Check ${{ matrix.workflow }} SLA
+      uses: ./.github/workflows/check-workflow-sla
+      with:
+        workflow: ${{ matrix.workflow }}
+        sla: ${{ matrix.sla }}
+        unit: ${{ matrix.unit }}
+        slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
 
+    needs:
+    - check-proof-archive
   spectator-privacy:
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:
       logs: backend-tests.log frontend-tests.log integration.log property.log
+    needs:
+    - check-proof-archive

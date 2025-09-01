@@ -4,45 +4,58 @@ on:
   workflow_dispatch:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   regression:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Install dependencies
-        run: npm ci
-      - name: Start toxiproxy
-        run: docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 ghcr.io/shopify/toxiproxy
-      - name: Run socket load
-        run: npm run perf:socket-load
-        env:
-          TABLES: 10000
-          SOCKETS: 100000
-      - name: Compare histograms
-        run: npx ts-node scripts/compare-histograms.ts load/metrics/100k-chaos-sample metrics | tee -a "$GITHUB_STEP_SUMMARY"
-      - name: Upload metrics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: high-scale-metrics-${{ github.run_id }}
-          path: |
-            metrics/latency-hist.json
-            metrics/memory-gc.json
-          retention-days: 7
-      - name: Cleanup
-        if: always()
-        run: docker rm -f toxiproxy
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+    - name: Install dependencies
+      run: npm ci
+    - name: Start toxiproxy
+      run: docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 
+        ghcr.io/shopify/toxiproxy
+    - name: Run socket load
+      run: npm run perf:socket-load
+      env:
+        TABLES: 10000
+        SOCKETS: 100000
+    - name: Compare histograms
+      run: npx ts-node scripts/compare-histograms.ts 
+        load/metrics/100k-chaos-sample metrics | tee -a "$GITHUB_STEP_SUMMARY"
+    - name: Upload metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: high-scale-metrics-${{ github.run_id }}
+        path: |
+          metrics/latency-hist.json
+          metrics/memory-gc.json
+        retention-days: 7
+    - name: Cleanup
+      if: always()
+      run: docker rm -f toxiproxy
 
+    needs:
+    - check-proof-archive
   soak-metrics:
-    needs: regression
+    needs:
+    - regression
+    - check-proof-archive
     if: ${{ always() }}
     uses: ./.github/workflows/soak-metrics.yml
     secrets: inherit
 
   spectator-privacy:
-    needs: [regression, soak-metrics]
+    needs:
+    - regression
+    - soak-metrics
+    - check-proof-archive
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

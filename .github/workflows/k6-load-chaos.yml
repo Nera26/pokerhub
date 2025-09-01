@@ -4,71 +4,81 @@ on:
   workflow_dispatch:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   load-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: run k6 load test
-        uses: grafana/k6-action@v0.2.0
-        with:
-          filename: load/k6/load-test.js
-          flags: --summary-export=load-summary.json --out json=load-metrics.json
-      - name: Upload load summary
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: load-summary-${{ github.sha }}
-          path: load-summary.json
-      - name: Upload load metrics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: load-metrics-${{ github.sha }}
-          path: load-metrics.json
+    - uses: actions/checkout@v4
+    - name: run k6 load test
+      uses: grafana/k6-action@v0.2.0
+      with:
+        filename: load/k6/load-test.js
+        flags: --summary-export=load-summary.json --out json=load-metrics.json
+    - name: Upload load summary
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: load-summary-${{ github.sha }}
+        path: load-summary.json
+    - name: Upload load metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: load-metrics-${{ github.sha }}
+        path: load-metrics.json
 
+    needs:
+    - check-proof-archive
   chaos-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: start toxiproxy with packet loss and jitter
-        run: |
-          docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 ghcr.io/shopify/toxiproxy
-          PACKET_LOSS=0.01 LATENCY_MS=80 JITTER_MS=20 ./load/chaos/toxiproxy-chaos.sh
-      - name: run k6 chaos test
-        uses: grafana/k6-action@v0.2.0
-        env:
-          SIO_URL: ws://localhost:3001/game
-        with:
-          filename: load/chaos/ws-chaos.js
-          flags: --summary-export=chaos-summary.json --out json=chaos-metrics.json
-      - name: Upload chaos summary
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: chaos-summary-${{ github.sha }}
-          path: chaos-summary.json
-      - name: Upload chaos metrics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: chaos-metrics-${{ github.sha }}
-          path: chaos-metrics.json
+    - uses: actions/checkout@v4
+    - name: start toxiproxy with packet loss and jitter
+      run: |
+        docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 ghcr.io/shopify/toxiproxy
+        PACKET_LOSS=0.01 LATENCY_MS=80 JITTER_MS=20 ./load/chaos/toxiproxy-chaos.sh
+    - name: run k6 chaos test
+      uses: grafana/k6-action@v0.2.0
+      env:
+        SIO_URL: ws://localhost:3001/game
+      with:
+        filename: load/chaos/ws-chaos.js
+        flags: --summary-export=chaos-summary.json --out json=chaos-metrics.json
+    - name: Upload chaos summary
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: chaos-summary-${{ github.sha }}
+        path: chaos-summary.json
+    - name: Upload chaos metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: chaos-metrics-${{ github.sha }}
+        path: chaos-metrics.json
 
+    needs:
+    - check-proof-archive
   soak-metrics:
-    needs: [load-test, chaos-test]
+    needs:
+    - load-test
+    - chaos-test
+    - check-proof-archive
     if: ${{ always() }}
     uses: ../soak-metrics.yml
     secrets: inherit
 
   spectator-privacy:
-    needs: [load-test, chaos-test]
+    needs:
+    - load-test
+    - chaos-test
+    - check-proof-archive
     uses: ../spectator-privacy.yml
     with:
-      logs: load-summary.json load-metrics.json chaos-summary.json chaos-metrics.json
+      logs: load-summary.json load-metrics.json chaos-summary.json 
+        chaos-metrics.json
     secrets: inherit
 
-  spectator-privacy:
-    uses: ./.github/workflows/spectator-privacy.yml
-    secrets: inherit
-    with:
-      logs: backend-tests.log frontend-tests.log integration.log property.log
