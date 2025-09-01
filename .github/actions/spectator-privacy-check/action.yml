@@ -29,3 +29,7 @@ runs:
         npm test --prefix frontend -- "spectator/privacy.test.tsx" 2>&1 | tee frontend-tests.log
     - name: Sanitize logs
       run: npx ts-node scripts/sanitize-spectator-logs.ts backend-tests.log frontend-tests.log
+    - name: Run sanitization unit tests
+      run: |
+        TS_NODE_COMPILER_OPTIONS="{\"module\":\"commonjs\",\"allowImportingTsExtensions\":true}" \
+        TS_NODE_PREFER_TS_EXTS=1 node --test --require ts-node/register tests/sanitize-spectator-logs.test.ts
