@@ -433,6 +433,25 @@ export type CalculatePrizesResponse = z.infer<
 
 export const TournamentScheduleRequestSchema = z.object({
   startTime: z.string().datetime(),
+  registration: z.object({
+    open: z.string().datetime(),
+    close: z.string().datetime(),
+  }),
+  structure: z.array(
+    z.object({
+      level: z.number().int().positive(),
+      durationMinutes: z.number().int().positive(),
+    }),
+  ),
+  breaks: z
+    .array(
+      z.object({
+        start: z.string().datetime(),
+        durationMs: z.number().int().positive(),
+      }),
+    )
+    .optional()
+    .default([]),
 });
 export type TournamentScheduleRequest = z.infer<
   typeof TournamentScheduleRequestSchema

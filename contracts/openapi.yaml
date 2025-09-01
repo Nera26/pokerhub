@@ -436,7 +436,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TournamentRegisterRequest'
+              $ref: '#/components/schemas/TournamentWithdrawRequest'
       responses:
         '200':
           description: Tournament withdrawal
@@ -1399,13 +1399,20 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Tournament'
-    TournamentRegisterRequest:
-      type: object
-      properties:
-        userId:
-          type: string
-      required:
-        - userId
+  TournamentRegisterRequest:
+    type: object
+    properties:
+      userId:
+        type: string
+    required:
+      - userId
+  TournamentWithdrawRequest:
+    type: object
+    properties:
+      userId:
+        type: string
+    required:
+      - userId
     Table:
       type: object
       properties:
@@ -1677,8 +1684,47 @@ components:
       startTime:
         type: string
         format: date-time
+      registration:
+        type: object
+        properties:
+          open:
+            type: string
+            format: date-time
+          close:
+            type: string
+            format: date-time
+        required:
+          - open
+          - close
+      structure:
+        type: array
+        items:
+          type: object
+          properties:
+            level:
+              type: integer
+            durationMinutes:
+              type: integer
+          required:
+            - level
+            - durationMinutes
+      breaks:
+        type: array
+        items:
+          type: object
+          properties:
+            start:
+              type: string
+              format: date-time
+            durationMs:
+              type: integer
+          required:
+            - start
+            - durationMs
     required:
       - startTime
+      - registration
+      - structure
   ReviewAction:
     type: string
     enum: [warn, restrict, ban]
