@@ -103,6 +103,21 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Table'
+    post:
+      summary: Create table
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTableRequest'
+      responses:
+        '200':
+          description: Created table
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Table'
   /tables/{id}:
     get:
       summary: Get table data
@@ -119,6 +134,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TableData'
+    put:
+      summary: Update table
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTableRequest'
+      responses:
+        '200':
+          description: Updated table
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Table'
+    delete:
+      summary: Delete table
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Table deleted
   /game/action:
     post:
       summary: Perform a game action
@@ -1371,6 +1418,71 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Table'
+    CreateTableRequest:
+      type: object
+      properties:
+        tableName:
+          type: string
+        gameType:
+          type: string
+          enum: [texas, omaha, allin, tournaments]
+        stakes:
+          type: object
+          properties:
+            small:
+              type: number
+            big:
+              type: number
+        startingStack:
+          type: number
+        players:
+          type: object
+          properties:
+            max:
+              type: number
+        buyIn:
+          type: object
+          properties:
+            min:
+              type: number
+            max:
+              type: number
+      required:
+        - tableName
+        - gameType
+        - stakes
+        - startingStack
+        - players
+        - buyIn
+    UpdateTableRequest:
+      type: object
+      properties:
+        tableName:
+          type: string
+        gameType:
+          type: string
+          enum: [texas, omaha, allin, tournaments]
+        stakes:
+          type: object
+          properties:
+            small:
+              type: number
+            big:
+              type: number
+        startingStack:
+          type: number
+        players:
+          type: object
+          properties:
+            max:
+              type: number
+        buyIn:
+          type: object
+          properties:
+            min:
+              type: number
+            max:
+              type: number
     Player:
       type: object
       properties:

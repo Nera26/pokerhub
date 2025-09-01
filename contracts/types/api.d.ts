@@ -123,6 +123,22 @@ export interface paths {
         };
       };
     };
+    /** Create table */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["CreateTableRequest"];
+        };
+      };
+      responses: {
+        /** @description Created table */
+        200: {
+          content: {
+            "application/json": components["schemas"]["Table"];
+          };
+        };
+      };
+    };
   };
   "/tables/{id}": {
     /** Get table data */
@@ -138,6 +154,41 @@ export interface paths {
           content: {
             "application/json": components["schemas"]["TableData"];
           };
+        };
+      };
+    };
+    /** Update table */
+    put: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["UpdateTableRequest"];
+        };
+      };
+      responses: {
+        /** @description Updated table */
+        200: {
+          content: {
+            "application/json": components["schemas"]["Table"];
+          };
+        };
+      };
+    };
+    /** Delete table */
+    delete: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Table deleted */
+        204: {
+          content: never;
         };
       };
     };
@@ -537,6 +588,26 @@ export interface paths {
         /** @description Hand not found */
         404: {
           content: never;
+        };
+      };
+    };
+  };
+  "/hands/proofs": {
+    /** List stored RNG proofs */
+    get: {
+      parameters: {
+        query?: {
+          from?: number;
+          to?: number;
+          ids?: string;
+        };
+      };
+      responses: {
+        /** @description Proofs for hands */
+        200: {
+          content: {
+            "application/json": components["schemas"]["HandProofs"];
+          };
         };
       };
     };
@@ -1133,6 +1204,40 @@ export interface components {
       createdAgo: string;
     };
     TableList: components["schemas"]["Table"][];
+    CreateTableRequest: {
+      tableName: string;
+      /** @enum {string} */
+      gameType: "texas" | "omaha" | "allin" | "tournaments";
+      stakes: {
+        small?: number;
+        big?: number;
+      };
+      startingStack: number;
+      players: {
+        max?: number;
+      };
+      buyIn: {
+        min?: number;
+        max?: number;
+      };
+    };
+    UpdateTableRequest: {
+      tableName?: string;
+      /** @enum {string} */
+      gameType?: "texas" | "omaha" | "allin" | "tournaments";
+      stakes?: {
+        small?: number;
+        big?: number;
+      };
+      startingStack?: number;
+      players?: {
+        max?: number;
+      };
+      buyIn?: {
+        min?: number;
+        max?: number;
+      };
+    };
     Player: {
       id: number;
       username: string;

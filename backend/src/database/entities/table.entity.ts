@@ -6,6 +6,7 @@ import {
   ManyToMany,
   JoinTable,
   OneToMany,
+  CreateDateColumn,
 } from 'typeorm';
 import { Tournament } from './tournament.entity';
 import { User } from './user.entity';
@@ -19,10 +20,46 @@ export class Table {
   @Column()
   name: string;
 
+  @Column({ default: 'texas' })
+  gameType: string;
+
+  @Column('int')
+  smallBlind: number;
+
+  @Column('int')
+  bigBlind: number;
+
+  @Column('int')
+  startingStack: number;
+
+  @Column('int', { default: 0 })
+  playersCurrent: number;
+
+  @Column('int')
+  playersMax: number;
+
+  @Column('int')
+  minBuyIn: number;
+
+  @Column('int')
+  maxBuyIn: number;
+
+  @Column('int', { default: 0 })
+  handsPerHour: number;
+
+  @Column('int', { default: 0 })
+  avgPot: number;
+
+  @Column('int', { default: 0 })
+  rake: number;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
   @ManyToOne(() => Tournament, (tournament) => tournament.tables, {
-    nullable: false,
+    nullable: true,
   })
-  tournament: Tournament;
+  tournament?: Tournament;
 
   @ManyToMany(() => User, (user) => user.tables)
   @JoinTable()
