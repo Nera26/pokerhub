@@ -46,6 +46,23 @@ function assertFresh(uri: string, label: string) {
   }
 }
 
+function checkBucketReplication(bucket: string, secondary: string) {
+  let meta: any;
+  try {
+    meta = JSON.parse(
+      gcloud.run(`buckets describe gs://${bucket} --format=json`) as string,
+    );
+  } catch {
+    throw new Error(`Unable to describe bucket ${bucket}`);
+  }
+  const locations: string[] = meta?.customPlacementConfig?.dataLocations || [];
+  if (!Array.isArray(locations) || !locations.includes(secondary)) {
+    throw new Error(
+      `Bucket ${bucket} not replicated to secondary region ${secondary}`,
+    );
+  }
+}
+
 function checkProofArchive(bucket: string) {
   const base = `gs://${bucket}/latest`;
   let manifest: string;
@@ -560,6 +577,7 @@ function main() {
   const soakBucket = requireEnv('SOAK_TRENDS_BUCKET');
   const drMetricsBucket = requireEnv('DR_METRICS_BUCKET');
   const projectId = requireEnv('GCP_PROJECT_ID');
+  const secondaryRegion = requireEnv('SECONDARY_REGION');
   const maxLatencyP95 = Number(requireEnv('SOAK_LATENCY_P95_MS'));
   const minThroughput = Number(requireEnv('SOAK_THROUGHPUT_MIN'));
   const maxTrendPct = Number(requireEnv('SOAK_TRENDS_MAX_PCT'));
@@ -579,6 +597,11 @@ function main() {
 
   checkBucketRetention(proofBucket, proofRetention);
   checkBucketRetention(spectatorBucket, spectatorRetention);
+
+  checkBucketReplication(proofBucket, secondaryRegion);
+  checkBucketReplication(spectatorBucket, secondaryRegion);
+  checkBucketReplication(soakBucket, secondaryRegion);
+  checkBucketReplication(drMetricsBucket, secondaryRegion);
 
   checkProofArchive(proofBucket);
   checkProofArchiveMetrics(projectId);
@@ -612,6 +635,7 @@ if (typeof require !== 'undefined' && require.main === module) {
 }
 
 export {
+  checkBucketReplication,
   checkProofArchive,
   checkProofArchiveMetrics,
   checkProofSummaryManifest,
