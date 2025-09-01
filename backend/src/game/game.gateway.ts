@@ -32,6 +32,7 @@ import {
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
 import { metrics, trace } from '@opentelemetry/api';
 import PQueue from 'p-queue';
+import { sanitize } from './state-sanitize';
 
 /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-redundant-type-constituents */
 
@@ -251,7 +252,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       void this.collusion.record(userId, deviceId, ip);
     }
 
-    const safe = this.sanitize(state, parsed.playerId);
+    const safe = sanitize(state, parsed.playerId);
     const payload = { version: '1', ...safe, tick: ++this.tick };
     GameStateSchema.parse(payload);
     this.enqueue(client, 'state', payload, true);
@@ -272,7 +273,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const publicState = await room.getPublicState();
       const spectatorPayload = {
         version: '1',
-        ...this.sanitize(publicState),
+        ...sanitize(publicState),
         tick: this.tick,
       };
       GameStateSchema.parse(spectatorPayload);
@@ -405,26 +406,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       event: 'action',
       tableId,
     });
-  }
-
-  private sanitize(state: InternalGameState, playerId?: string): GameState {
-    const { deck, players, ...rest } = state as any;
-    return {
-      ...(rest as Omit<GameState, 'players'>),
-      players: players.map((p: any) => {
-        const base: any = {
-          id: p.id,
-          stack: p.stack,
-          folded: p.folded,
-          bet: p.bet,
-          allIn: p.allIn,
-        };
-        if (playerId && p.id === playerId && p.holeCards) {
-          base.holeCards = p.holeCards;
-        }
-        return base;
-      }),
-    } as GameState;
   }
 
   private enqueue(
@@ -591,7 +572,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const state = await room.replay();
       const payload = {
         version: '1',
-        ...this.sanitize(state),
+        ...sanitize(state),
         tick: this.tick,
       };
       GameStateSchema.parse(payload);
@@ -618,7 +599,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       for (const [index, state] of states) {
         const payload = {
           version: '1',
-          ...this.sanitize(state),
+          ...sanitize(state),
           tick: index + 1,
         };
         GameStateSchema.parse(payload);
@@ -634,7 +615,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (this.server) {
       const payload = {
         version: '1',
-        ...this.sanitize(state),
+        ...sanitize(state),
         tick: ++this.tick,
       };
       GameStateSchema.parse(payload);
