@@ -41,6 +41,7 @@ import { LoggingModule } from './logging/logging.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { TournamentModule } from './tournament/tournament.module';
 import { WalletModule } from './wallet/wallet.module';
+import { WithdrawalsModule } from './withdrawals/withdrawals.module';
 import { AuthModule } from './auth/auth.module';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { UsersModule } from './users/users.module';
@@ -130,6 +131,7 @@ class SecurityHeadersMiddleware implements NestMiddleware {
     AnalyticsModule,
     TournamentModule,
     WalletModule,
+    WithdrawalsModule,
     AuthModule,
     FeatureFlagsModule,
     UsersModule,

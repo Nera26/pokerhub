@@ -32,11 +32,16 @@ export const MessageResponseSchema = z.object({
 });
 export type MessageResponse = z.infer<typeof MessageResponseSchema>;
 
-export const NotificationTypeSchema = z.enum([
-  'bonus',
-  'tournament',
-  'system',
-]);
+/** ---- Withdrawals ---- */
+export const WithdrawalDecisionRequestSchema = z.object({
+  comment: z.string(),
+});
+export type WithdrawalDecisionRequest = z.infer<
+  typeof WithdrawalDecisionRequestSchema
+>;
+
+/** ---- Notifications ---- */
+export const NotificationTypeSchema = z.enum(['bonus', 'tournament', 'system']);
 export type NotificationType = z.infer<typeof NotificationTypeSchema>;
 
 export const NotificationSchema = z.object({
@@ -52,14 +57,13 @@ export type Notification = z.infer<typeof NotificationSchema>;
 export const NotificationsResponseSchema = z.object({
   notifications: z.array(NotificationSchema),
 });
-export type NotificationsResponse = z.infer<
-  typeof NotificationsResponseSchema
->;
+export type NotificationsResponse = z.infer<typeof NotificationsResponseSchema>;
 
 export const RefreshRequestSchema = z.object({
   refreshToken: z.string(),
 });
 export type RefreshRequest = z.infer<typeof RefreshRequestSchema>;
+
 
 export const RequestResetRequestSchema = z.object({
   email: z.string().email(),

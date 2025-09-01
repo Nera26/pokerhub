@@ -505,6 +505,52 @@ export interface paths {
       };
     };
   };
+  "/withdrawals/{user}/approve": {
+    /** Approve withdrawal */
+    post: {
+      parameters: {
+        path: {
+          user: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["WithdrawalDecisionRequest"];
+        };
+      };
+      responses: {
+        /** @description Withdrawal approved */
+        200: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/withdrawals/{user}/reject": {
+    /** Reject withdrawal */
+    post: {
+      parameters: {
+        path: {
+          user: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["WithdrawalDecisionRequest"];
+        };
+      };
+      responses: {
+        /** @description Withdrawal rejected */
+        200: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
   "/tournaments": {
     /** List tournaments */
     get: {
@@ -1049,6 +1095,9 @@ export interface components {
     };
     MessageResponse: {
       message: string;
+    };
+    WithdrawalDecisionRequest: {
+      comment: string;
     };
     RefreshRequest: {
       refreshToken: string;

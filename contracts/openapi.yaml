@@ -484,6 +484,50 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+  /withdrawals/{user}/approve:
+    post:
+      summary: Approve withdrawal
+      parameters:
+        - in: path
+          name: user
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WithdrawalDecisionRequest'
+      responses:
+        '200':
+          description: Withdrawal approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /withdrawals/{user}/reject:
+    post:
+      summary: Reject withdrawal
+      parameters:
+        - in: path
+          name: user
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WithdrawalDecisionRequest'
+      responses:
+        '200':
+          description: Withdrawal rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /tournaments:
     get:
       summary: List tournaments
@@ -1048,6 +1092,13 @@ components:
           type: string
       required:
         - message
+    WithdrawalDecisionRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+      required:
+        - comment
     RefreshRequest:
       type: object
       properties:
