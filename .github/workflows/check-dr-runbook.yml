@@ -59,6 +59,7 @@ jobs:
           content-filepath: dr-runbook-alert.md
 
   spectator-privacy:
+    if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

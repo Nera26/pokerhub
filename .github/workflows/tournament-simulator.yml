@@ -25,6 +25,7 @@ jobs:
           node -e "const fs=require('fs'),{execSync}=require('child_process');const md=fs.readFileSync('docs/tournament-handbook.md','utf8');const blocks=[...md.matchAll(/```json\\n([\s\S]*?)```/g)];let failed=false;for(const [,json] of blocks){const cfg=JSON.parse(json);if(!cfg.expectedDuration) continue;const args=['--levels',cfg.levels,'--levelMinutes',cfg.levelMinutes,'--increment',cfg.increment];if(cfg.entrants) args.push('--entrants',cfg.entrants);if(cfg.runs) args.push('--runs',cfg.runs);const out=execSync(`npx ts-node backend/src/scripts/tournament-simulator.ts ${args.join(' ')}`,{encoding:'utf8'});const res=JSON.parse(out);const diff=Math.abs(res.averageDuration-cfg.expectedDuration)/cfg.expectedDuration;if(diff>0.05){console.error(`${cfg.name} expected ${cfg.expectedDuration}, got ${res.averageDuration}`);failed=true;}}if(failed) process.exit(1);"
 
   spectator-privacy:
+    if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

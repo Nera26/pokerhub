@@ -204,14 +204,9 @@ jobs:
 
   spectator-privacy:
     needs: [tables-10k, packet-loss, chaos-regression, soak-metrics]
-    uses: ../spectator-privacy.yml
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
     with:
       logs: backend-tests.log frontend-tests.log
     secrets: inherit
 
-  spectator-privacy:
-    needs: soak-metrics
-    uses: ./.github/workflows/spectator-privacy.yml
-    secrets: inherit
-    with:
-      logs: backend-tests.log frontend-tests.log integration.log property.log

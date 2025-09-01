@@ -45,6 +45,7 @@ jobs:
             leaderboard-rebuild.metrics
 
   spectator-privacy:
+    if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

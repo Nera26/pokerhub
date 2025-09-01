@@ -54,6 +54,7 @@ jobs:
 
   spectator-privacy:
     needs: [baseline, soak-metrics]
+    if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

@@ -48,6 +48,7 @@ jobs:
             gc-heap-metrics.log
 
   spectator-privacy:
+    if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

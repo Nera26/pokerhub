@@ -259,6 +259,7 @@ PY
 
   spectator-privacy:
     needs: [chaos, soak-metrics]
+    if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

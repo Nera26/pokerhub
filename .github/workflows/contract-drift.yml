@@ -20,6 +20,7 @@ jobs:
       - run: ./scripts/check-contract-drift.sh
 
   spectator-privacy:
+    if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

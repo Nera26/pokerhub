@@ -14,6 +14,8 @@ permissions:
 
 jobs:
   spectator-privacy:
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
     env:
       PROD_LOG_SCAN: true
     uses: ./.github/workflows/spectator-privacy.yml

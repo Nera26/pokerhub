@@ -35,6 +35,7 @@ jobs:
             clickhouse-telemetry.json
 
   spectator-privacy:
+    if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:
