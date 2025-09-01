@@ -60,7 +60,7 @@ describe('Provider webhook', () => {
     const journalRepo = dataSource.getRepository(JournalEntry);
     const disbRepo = dataSource.getRepository(Disbursement);
     const settleRepo = dataSource.getRepository(SettlementJournal);
-    provider = new PaymentProviderService();
+    provider = new PaymentProviderService(redis as any);
     service = new WalletService(
       accountRepo,
       journalRepo,
