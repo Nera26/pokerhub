@@ -461,6 +461,52 @@ export interface paths {
       };
     };
   };
+  "/withdrawals/{user}/approve": {
+    /** Approve withdrawal */
+    post: {
+      parameters: {
+        path: {
+          user: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["WithdrawalDecisionRequest"];
+        };
+      };
+      responses: {
+        /** @description Withdrawal approved */
+        200: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/withdrawals/{user}/reject": {
+    /** Reject withdrawal */
+    post: {
+      parameters: {
+        path: {
+          user: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["WithdrawalDecisionRequest"];
+        };
+      };
+      responses: {
+        /** @description Withdrawal rejected */
+        200: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
   "/tournaments": {
     /** List tournaments */
     get: {
@@ -833,67 +879,41 @@ export interface paths {
     };
   };
   "/users/{id}/ban": {
-  /** Ban user */
-  post: {
-    parameters: {
-      path: {
-        id: string;
+    /** Ban user */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
       };
-    };
-    requestBody?: {
-      content: {
-        "application/json": components["schemas"]["BanUserRequest"];
-      };
-    };
-    responses: {
-      /** @description Banned user */
-      200: {
+      requestBody?: {
         content: {
-          "application/json": components["schemas"]["User"];
+          "application/json": components["schemas"]["BanUserRequest"];
+        };
+      };
+      responses: {
+        /** @description Banned user */
+        200: {
+          content: {
+            "application/json": components["schemas"]["User"];
+          };
         };
       };
     };
   };
-};
-
-"/users/{id}/balance": {
-  /** Adjust user balance */
-  post: {
-    parameters: {
-      path: {
-        id: string;
-      };
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["BalanceAdjustmentRequest"];
-      };
-    };
-    responses: {
-      /** @description Updated balance */
-      200: {
-        content: {
-          "application/json": components["schemas"]["User"];
+  "/feature-flags": {
+    /** List feature flags */
+    get: {
+      responses: {
+        /** @description Feature flags */
+        200: {
+          content: {
+            "application/json": components["schemas"]["FeatureFlagsResponse"];
+          };
         };
       };
     };
   };
-};
-
-"/feature-flags": {
-  /** List feature flags */
-  get: {
-    responses: {
-      /** @description Feature flags */
-      200: {
-        content: {
-          "application/json": components["schemas"]["FeatureFlagsResponse"];
-        };
-      };
-    };
-  };
-};
-
   "/feature-flags/{key}": {
     /** Set feature flag */
     put: {
@@ -1031,6 +1051,9 @@ export interface components {
     };
     MessageResponse: {
       message: string;
+    };
+    WithdrawalDecisionRequest: {
+      comment: string;
     };
     RefreshRequest: {
       refreshToken: string;

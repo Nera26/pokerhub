@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 1.4.0
+  version: 1.5.0
 paths:
   /status:
     get:
@@ -408,6 +408,50 @@ paths:
       responses:
         '200':
           description: Callback processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /withdrawals/{user}/approve:
+    post:
+      summary: Approve withdrawal
+      parameters:
+        - in: path
+          name: user
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WithdrawalDecisionRequest'
+      responses:
+        '200':
+          description: Withdrawal approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /withdrawals/{user}/reject:
+    post:
+      summary: Reject withdrawal
+      parameters:
+        - in: path
+          name: user
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WithdrawalDecisionRequest'
+      responses:
+        '200':
+          description: Withdrawal rejected
           content:
             application/json:
               schema:
@@ -976,6 +1020,13 @@ components:
           type: string
       required:
         - message
+    WithdrawalDecisionRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+      required:
+        - comment
     RefreshRequest:
       type: object
       properties:

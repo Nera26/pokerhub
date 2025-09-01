@@ -32,6 +32,13 @@ export const MessageResponseSchema = z.object({
 });
 export type MessageResponse = z.infer<typeof MessageResponseSchema>;
 
+export const WithdrawalDecisionRequestSchema = z.object({
+  comment: z.string(),
+});
+export type WithdrawalDecisionRequest = z.infer<
+  typeof WithdrawalDecisionRequestSchema
+>;
+
 export const RefreshRequestSchema = z.object({
   refreshToken: z.string(),
 });
