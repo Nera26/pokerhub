@@ -79,6 +79,7 @@ jobs:
       run: bash deploy/canary.sh ${{ github.sha }}
 
   spectator-privacy:
+    if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

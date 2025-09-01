@@ -66,7 +66,8 @@ jobs:
     - artillery
     - soak-metrics
     - check-proof-archive
-    uses: ../spectator-privacy.yml
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
     with:
       logs: k6-summary.json artillery-summary.json
     secrets: inherit

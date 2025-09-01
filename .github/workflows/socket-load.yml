@@ -68,6 +68,7 @@ jobs:
     - ack-latency
     - soak-metrics
     - check-proof-archive
+    if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

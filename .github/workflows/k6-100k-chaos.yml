@@ -119,12 +119,14 @@ jobs:
 
   spectator-privacy:
     needs: replay
-    uses: ../spectator-privacy.yml
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
     with:
       logs: baseline.json
     secrets: inherit
 
   spectator-privacy:
+    if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

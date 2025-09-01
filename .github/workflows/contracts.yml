@@ -123,6 +123,7 @@ jobs:
       run: npm run test:contracts
 
   spectator-privacy:
+    if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

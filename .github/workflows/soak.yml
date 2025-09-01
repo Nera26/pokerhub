@@ -234,6 +234,7 @@ jobs:
       run: node --trace-gc -r ts-node/register test/soak/soak24h.ts
 
   spectator-privacy:
+    if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:
