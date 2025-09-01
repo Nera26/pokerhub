@@ -47,24 +47,30 @@ jobs:
         id: drdrill
         env:
           SLA_DAYS: ${{ env.DR_DRILL_SLA_DAYS }}
-          GITHUB_TOKEN: ${{ github.token }}
+          RTO_TARGET: 1800
+          RPO_TARGET: 300
         run: |
           set -euo pipefail
-          resp=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/dr-drill.yml/runs?per_page=1")
-          ts=$(echo "$resp" | jq -r '.workflow_runs[0].updated_at')
-          conclusion=$(echo "$resp" | jq -r '.workflow_runs[0].conclusion')
+          row=$(bq query --project_id=${{ vars.GCP_PROJECT_ID }} --nouse_legacy_sql --format=json \
+            'SELECT run_id, timestamp, rto_seconds, rpo_snapshot_seconds, rpo_wal_seconds FROM ops_metrics.dr_drill_runs ORDER BY timestamp DESC LIMIT 1')
+          run_id=$(echo "$row" | jq -r '.[0].run_id')
+          ts=$(echo "$row" | jq -r '.[0].timestamp')
+          rto=$(echo "$row" | jq -r '.[0].rto_seconds')
+          rpo_snap=$(echo "$row" | jq -r '.[0].rpo_snapshot_seconds')
+          rpo_wal=$(echo "$row" | jq -r '.[0].rpo_wal_seconds')
           echo "timestamp=$ts" >> "$GITHUB_OUTPUT"
+          url="https://github.com/${{ github.repository }}/actions/runs/$run_id"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
           now=$(date -u +%s)
           run_ts=$(date -d "$ts" -u +%s)
           max_age=$((SLA_DAYS * 86400))
           age=$((now - run_ts))
-          if [ "$conclusion" != "success" ]; then
-            echo "Latest dr-drill run concluded with $conclusion" >&2
+          if [ "$age" -gt "$max_age" ]; then
+            echo "Latest DR drill is older than ${SLA_DAYS}d" >&2
             exit 1
           fi
-          if [ "$age" -gt "$max_age" ]; then
-            echo "Latest dr-drill run is older than ${SLA_DAYS}d" >&2
+          if [ "$rto" -gt "$RTO_TARGET" ] || [ "$rpo_snap" -gt "$RPO_TARGET" ] || [ "$rpo_wal" -gt "$RPO_TARGET" ]; then
+            echo "DR drill exceeded RTO/RPO targets" >&2
             exit 1
           fi
 
@@ -543,7 +549,7 @@ jobs:
         run: |
           {
             echo "### Deployment Audit"
-            echo "- DR drill last run: ${{ steps.drdrill.outputs.timestamp }}"
+            echo "- DR drill last run: ${{ steps.drdrill.outputs.timestamp }} ([summary](${{ steps.drdrill.outputs.url }}))"
             echo "- DR failover last run: ${{ steps.drfailover.outputs.timestamp }}"
             echo "- DR restore last run: ${{ steps.drrestore.outputs.timestamp }}"
             echo "- DR throwaway last run: ${{ steps.drthrowaway.outputs.timestamp }}"
