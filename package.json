@@ -26,6 +26,7 @@
   },
   "devDependencies": {
     "@google-cloud/dlp": "^5.13.0",
+    "@opentelemetry/api": "^1.9.0",
     "openapi-typescript": "^6.7.0",
     "remark-cli": "^11.0.0",
     "remark-preset-lint-recommended": "^6.1.0",

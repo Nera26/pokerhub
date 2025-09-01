@@ -3,6 +3,7 @@ import os from "os";
 import { io, Socket } from "socket.io-client";
 import fs from "fs";
 import { PerformanceObserver } from "perf_hooks";
+import { metrics } from "@opentelemetry/api";
 
 function mulberry32(a: number) {
   return function () {
@@ -39,6 +40,7 @@ interface WorkerReport {
 }
 
 const METRICS_DIR = "metrics";
+const meter = metrics.getMeter("socket-load");
 
 function percentile(sorted: number[], p: number): number {
   if (sorted.length === 0) return 0;
@@ -273,26 +275,37 @@ async function primaryMain(replay?: RunSeeds) {
           actionsPerMin: stat.actions / durationMin,
         };
       }
+      const avgActionsPerMin =
+        Object.values(tableMetrics).reduce((s, m) => s + m.actionsPerMin, 0) /
+        Math.max(Object.keys(tableMetrics).length, 1);
       fs.writeFileSync(
         `${METRICS_DIR}/table-metrics.json`,
-        JSON.stringify(tableMetrics, null, 2),
+        JSON.stringify({ averageActionsPerMin: avgActionsPerMin, tables: tableMetrics }, null, 2),
       );
+
+      const tpsHist = meter.createHistogram("actions_per_min", {
+        description: "Average actions per table per minute",
+      });
+      tpsHist.record(avgActionsPerMin);
 
       const ACK_P50_MS = Number(process.env.ACK_P50_MS || 40);
       const ACK_P95_MS = Number(process.env.ACK_P95_MS || 120);
       const ACK_P99_MS = Number(process.env.ACK_P99_MS || 200);
-      const TPS_LIMIT = Number(process.env.TPS_LIMIT || 15);
+      const TPS_LIMIT = Number(process.env.TPS_LIMIT || 150);
       let failed = false;
       if (hist.p50 > ACK_P50_MS || hist.p95 > ACK_P95_MS || hist.p99 > ACK_P99_MS) {
         failed = true;
       }
       for (const m of Object.values(tableMetrics)) {
-        if (m.p95 > ACK_P95_MS || m.actionsPerMin < TPS_LIMIT) {
+        if (m.p95 > ACK_P95_MS) {
           failed = true;
           break;
         }
       }
-      console.log("Latency ms", hist, "dropped", droppedFrames);
+      if (avgActionsPerMin < TPS_LIMIT) {
+        failed = true;
+      }
+      console.log("Latency ms", hist, "dropped", droppedFrames, "avg actions/min", avgActionsPerMin);
       if (failed) {
         console.error("Performance thresholds exceeded");
         process.exit(1);
