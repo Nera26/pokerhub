@@ -47,6 +47,17 @@ async function getSettlement() {
   return settlement;
 }
 
+async function isSettlementEnabled(): Promise<boolean> {
+  if (!pub) return true;
+  const [global, room] = await Promise.all([
+    pub.get('feature-flag:settlement'),
+    pub.get(`feature-flag:room:${workerData.tableId}:settlement`),
+  ]);
+  const enabled = (v: string | null) =>
+    v === null || v === '1' || v === 'true';
+  return enabled(global) && enabled(room);
+}
+
 async function main() {
   const engine = await GameEngine.create(
     workerData.playerIds,
@@ -73,11 +84,15 @@ async function main() {
             actionCounter.add(1, { tableId: workerData.tableId });
           }
 
-          const svc = await getSettlement();
           const idx = engine.getHandLog().slice(-1)[0]?.[0] ?? 0;
           const state = engine.getPublicState();
 
-          await svc.reserve(engine.getHandId(), state.street, idx);
+          const settlementEnabled = await isSettlementEnabled();
+          let svc: SettlementService | undefined;
+          if (settlementEnabled) {
+            svc = await getSettlement();
+            await svc.reserve(engine.getHandId(), state.street, idx);
+          }
 
           const delta = diff(previousState, state);
           previousState = state;
@@ -88,7 +103,9 @@ async function main() {
           // Publish compact deltas over Redis for socket fan-out
           await pub?.publish(diffChannel, JSON.stringify([idx, delta]));
 
-          await svc.commit(engine.getHandId(), state.street, idx);
+          if (settlementEnabled && svc) {
+            await svc.commit(engine.getHandId(), state.street, idx);
+          }
 
           // Respond directly to the requester with the full state
           port.postMessage({ seq: msg.seq, state });

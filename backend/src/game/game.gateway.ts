@@ -234,6 +234,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.recordAckLatency(start, tableId);
       return;
     }
+    if (
+      (await this.flags?.get('settlement')) === false ||
+      (await this.flags?.getRoom(tableId, 'settlement')) === false
+    ) {
+      this.enqueue(client, 'server:Error', 'settlement disabled');
+      this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+      this.recordAckLatency(start, tableId);
+      return;
+    }
 
     const room = this.rooms.get(tableId);
     await room.apply(gameAction);
