@@ -1,4 +1,7 @@
 name: backup-restore
+concurrency:
+  group: "backup-restore"
+  cancel-in-progress: true
 
 on:
   schedule:

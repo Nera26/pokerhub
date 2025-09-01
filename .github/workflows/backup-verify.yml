@@ -1,4 +1,7 @@
 name: backup-verify
+concurrency:
+  group: "backup-verify"
+  cancel-in-progress: true
 
 on:
   schedule:

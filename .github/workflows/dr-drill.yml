@@ -1,4 +1,7 @@
 name: dr-drill
+concurrency:
+  group: "dr-drill"
+  cancel-in-progress: true
 
 on:
   schedule:

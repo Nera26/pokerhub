@@ -1,4 +1,7 @@
 name: Security Scan
+concurrency:
+  group: "Security Scan"
+  cancel-in-progress: true
 
 on:
   schedule:

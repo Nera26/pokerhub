@@ -1,4 +1,7 @@
 name: dr-failover
+concurrency:
+  group: "dr-failover"
+  cancel-in-progress: true
 
 on:
   schedule:

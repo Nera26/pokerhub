@@ -1,4 +1,7 @@
 name: k6-10k-chaos
+concurrency:
+  group: "k6-10k-chaos"
+  cancel-in-progress: true
 
 on:
   schedule:

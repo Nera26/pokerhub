@@ -6,6 +6,9 @@
     - cron: '0 0 * * *'
 
 name: soak-test
+concurrency:
+  group: "soak-test"
+  cancel-in-progress: true
 
 jobs:
   soak:

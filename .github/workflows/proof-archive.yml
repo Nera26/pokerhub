@@ -1,4 +1,7 @@
 name: proof-archive
+concurrency:
+  group: "proof-archive"
+  cancel-in-progress: true
 
 on:
   schedule:

@@ -1,4 +1,7 @@
 name: dr-failover-monthly
+concurrency:
+  group: "dr-failover-monthly"
+  cancel-in-progress: true
 
 on:
   schedule:

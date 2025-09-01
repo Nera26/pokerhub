@@ -1,4 +1,7 @@
 name: nightly-k6-metrics
+concurrency:
+  group: "nightly-k6-metrics"
+  cancel-in-progress: true
 
 on:
   schedule:

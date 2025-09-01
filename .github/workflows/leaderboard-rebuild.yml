@@ -1,4 +1,7 @@
 name: leaderboard-rebuild
+concurrency:
+  group: "leaderboard-rebuild"
+  cancel-in-progress: true
 
 on:
   schedule:

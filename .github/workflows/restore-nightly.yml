@@ -1,4 +1,7 @@
 name: restore-nightly
+concurrency:
+  group: "restore-nightly"
+  cancel-in-progress: true
 
 on:
   schedule:
