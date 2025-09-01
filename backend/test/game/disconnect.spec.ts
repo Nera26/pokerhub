@@ -7,6 +7,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Hand } from '../../src/database/entities/hand.entity';
 import { RoomManager } from '../../src/game/room.service';
 import { EventEmitter } from 'events';
+import { MockRedis } from '../utils/mock-redis';
 
 class MockSocket extends EventEmitter {
   id = Math.random().toString(36).slice(2);
@@ -47,32 +48,7 @@ describe('GameGateway disconnect dedupe', () => {
         { provide: EventPublisher, useValue: { emit: jest.fn() } },
         { provide: getRepositoryToken(Hand), useValue: { findOne: jest.fn() } },
         { provide: RoomManager, useValue: { get: () => room } },
-        {
-          provide: 'REDIS_CLIENT',
-          useValue: (() => {
-            const store = new Map<string, string>();
-            return {
-              incr: async () => 1,
-              expire: async () => 1,
-              exists: async (key: string) => (store.has(key) ? 1 : 0),
-              set: async (key: string, value: string) => {
-                store.set(key, value);
-                return 'OK';
-              },
-              multi: () => {
-                const results: [null, number][] = [];
-                const chain = {
-                  incr: (_k: string) => {
-                    results.push([null, results.length + 1]);
-                    return chain;
-                  },
-                  exec: async () => results,
-                };
-                return chain;
-              },
-            };
-          })(),
-        },
+        { provide: 'REDIS_CLIENT', useClass: MockRedis },
       ],
     }).compile();
     gateway = moduleRef.get(GameGateway);
