@@ -2,11 +2,6 @@ name: spectator-privacy
 
 on:
   workflow_call:
-    inputs:
-      logs:
-        description: Space-separated list of log files to process
-        required: true
-        type: string
     secrets:
       GCP_WORKLOAD_IDENTITY_PROVIDER:
         required: true
@@ -26,7 +21,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SPECTATOR_LOGS_BUCKET: ${{ secrets.SPECTATOR_LOGS_BUCKET }}
-      LOGS: ${{ inputs.logs }}
       PROD_LOG_SCAN: ${{ env.PROD_LOG_SCAN || 'false' }}
     steps:
       - uses: actions/checkout@v4
@@ -41,21 +35,12 @@ jobs:
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          for log in $LOGS; do
-            base="${log%.*}"
-            gh run download $GITHUB_RUN_ID --name "$base-${GITHUB_SHA}" --dir . || true
-          done
+        run: gh run download $GITHUB_RUN_ID --dir . || true
       - uses: ./.github/actions/spectator-privacy-check
-      - name: Resolve log files
+      - name: Discover log files
         run: |
-          EXISTING=""
-          for log in $LOGS; do
-            if [ -f "$log" ]; then
-              EXISTING="$EXISTING $log"
-            fi
-          done
-          echo "LOGS=$EXISTING" >> $GITHUB_ENV
+          LOGS=$(find . -type f -name "*.log")
+          echo "LOGS=$LOGS" >> $GITHUB_ENV
       - name: Fetch prod spectator logs
         if: env.PROD_LOG_SCAN == 'true'
         env:
@@ -65,7 +50,10 @@ jobs:
           echo "LOGS=$LOGS $FILES" >> $GITHUB_ENV
       - name: Sanitize logs
         if: always()
-        run: npx ts-node scripts/sanitize-spectator-logs.ts $LOGS
+        run: |
+          if [ -n "$LOGS" ]; then
+            npx ts-node scripts/sanitize-spectator-logs.ts $LOGS
+          fi
       - name: DLP scan logs
         if: always()
         env:
