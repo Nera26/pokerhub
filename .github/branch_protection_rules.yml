@@ -4,6 +4,7 @@
     - "ci / dr-runbook"
     - "ci / dr-trends"
     - "ci / workflow-sla"
+    - "ci / ops-sla"
     - contracts
     - "deploy / preflight"
     - "deploy / deploy"
