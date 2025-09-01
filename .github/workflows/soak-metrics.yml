@@ -1,0 +1,44 @@
+---
+"on":
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+name: soak-metrics
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT }}
+      - id: check
+        run: npx ts-node scripts/check-soak-metrics.ts
+        continue-on-error: true
+      - name: Prepare regression alert
+        if: steps.check.outcome == 'failure'
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          msg=$(jq -r '.regressions[].message' soak-regression.json | paste -sd '; ' -)
+          jq -n --arg channel "$SLACK_CHANNEL_ID" --arg text "Soak metrics regression detected: $msg" '{channel:$channel, text:$text}' > slack.json
+          printf "Soak metrics regression detected\n\n\`\`\`\n%s\n\`\`\`\n" "$(cat soak-regression.json)" > soak-regression.md
+      - name: Slack alert
+        if: steps.check.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: slack.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: Open soak regression issue
+        if: steps.check.outcome == 'failure'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "SLA breached: soak metrics"
+          content-filepath: soak-regression.md
