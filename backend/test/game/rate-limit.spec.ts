@@ -68,13 +68,18 @@ describe('GameGateway rate limits', () => {
   let GameGateway: any;
   let perSocketMock: jest.Mock;
   let globalMock: jest.Mock;
+  let globalCountMock: jest.Mock;
 
   beforeEach(() => {
     jest.resetModules();
     perSocketMock = jest.fn();
     globalMock = jest.fn();
+    globalCountMock = jest.fn();
     const getMeterMock = jest.fn(() => ({
-      createHistogram: jest.fn(() => ({ record: jest.fn() })),
+      createHistogram: jest.fn((name: string) => {
+        if (name === 'game_action_global_count') return { record: globalCountMock };
+        return { record: jest.fn() };
+      }),
       createCounter: jest.fn((name: string) => {
         if (name === 'per_socket_limit_exceeded') return { add: perSocketMock };
         if (name === 'global_limit_exceeded') return { add: globalMock };
@@ -156,6 +161,8 @@ describe('GameGateway rate limits', () => {
       const errors = clients[5].emit.mock.calls.filter(([ev]: any[]) => ev === 'server:Error');
       expect(errors.length).toBe(1);
       expect(globalMock).toHaveBeenCalledTimes(1);
+      expect(globalCountMock).toHaveBeenCalledTimes(6);
+      expect(globalCountMock).toHaveBeenLastCalledWith(6);
     } finally {
       await rooms.onModuleDestroy();
     }
