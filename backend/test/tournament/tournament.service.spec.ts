@@ -18,6 +18,8 @@ describe('TournamentService algorithms', () => {
   let seatsRepo: any;
   let tablesRepo: any;
   let rooms: any;
+  let flags: any;
+  let events: any;
 
   function createRepo<T extends { id: string }>(initial: T[] = []) {
     const items = new Map(initial.map((i) => [i.id, i]));
@@ -51,6 +53,8 @@ describe('TournamentService algorithms', () => {
     seatsRepo = createRepo<Seat>();
     tablesRepo = { find: jest.fn() };
     rooms = { get: jest.fn() };
+    flags = { get: jest.fn(), getTourney: jest.fn() };
+    events = { emit: jest.fn() };
     service = new TournamentService(
       tournamentsRepo as Repository<Tournament>,
       seatsRepo as Repository<Seat>,
@@ -59,6 +63,8 @@ describe('TournamentService algorithms', () => {
       rooms,
       new RebuyService(),
       new PkoService(),
+      flags,
+      events,
     );
   });
 
@@ -116,6 +122,22 @@ describe('TournamentService algorithms', () => {
       expect(await service.getState('t1')).toBe(TournamentState.PAUSED);
       await service.finish('t1');
       expect(await service.getState('t1')).toBe(TournamentState.FINISHED);
+    });
+
+    it('cancels from open state and emits event', async () => {
+      await service.cancel('t1');
+      expect(await service.getState('t1')).toBe(TournamentState.CANCELLED);
+      expect(events.emit).toHaveBeenCalledWith('tournament.cancel', {
+        tournamentId: 't1',
+      });
+    });
+
+    it('rejects cancel after finish', async () => {
+      await service.start('t1');
+      await service.finish('t1');
+      await expect(service.cancel('t1')).rejects.toThrow(
+        'Invalid transition from FINISHED to CANCELLED',
+      );
     });
   });
 

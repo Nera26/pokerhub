@@ -6,7 +6,7 @@ export const TournamentSchema = z.object({
   buyIn: z.number(),
   prizePool: z.number(),
   maxPlayers: z.number(),
-  state: z.enum(['REG_OPEN', 'RUNNING', 'PAUSED', 'FINISHED']),
+  state: z.enum(['REG_OPEN', 'RUNNING', 'PAUSED', 'FINISHED', 'CANCELLED']),
 });
 
 export const TournamentListSchema = z.array(TournamentSchema);

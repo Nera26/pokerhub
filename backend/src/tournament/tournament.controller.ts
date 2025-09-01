@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, UseGuards } from '@nestjs/common';
 import { RateLimitGuard } from '../routes/rate-limit.guard';
 import { TournamentService } from './tournament.service';
 import type {
@@ -20,6 +20,13 @@ export class TournamentController {
   @Post(':id/register')
   register(@Param('id') id: string, @Body('userId') userId: string) {
     return this.service.register(id, userId);
+  }
+
+  @Post(':id/cancel')
+  @HttpCode(200)
+  async cancel(@Param('id') id: string) {
+    await this.service.cancel(id);
+    return { message: 'tournament cancelled' };
   }
 
   @Post(':id/prizes')
