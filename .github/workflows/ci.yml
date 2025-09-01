@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - main
+  schedule:
+    - cron: '0 0 * * *'
   workflow_call:
 
 permissions:
@@ -42,6 +44,29 @@ jobs:
           echo "$result"
           export RESULT="$result"
           node -e 'const r=JSON.parse(process.env.RESULT);const target=130;const maxVar=3e9;if(Math.abs(r.averageDuration-target)/target>0.05){console.error("Average duration "+r.averageDuration+" outside ±5% of "+target);process.exit(1);}if(r.durationVariance>maxVar){console.error("Variance "+r.durationVariance+" exceeds "+maxVar);process.exit(1);}'
+
+  k6-tournament:
+    if: github.event_name == 'pull_request' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: run k6 tournament
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: load/k6-tournament-10k.js
+          flags: --summary-export=tournament-summary.json
+      - name: verify tournament metrics
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const summary=JSON.parse(fs.readFileSync('tournament-summary.json','utf8'));
+          const baseline=500;
+          const avg=summary.metrics.tournament_duration.avg;
+          if(Math.abs(avg-baseline)/baseline>0.05){console.error(`Average duration ${avg}ms outside ±5% of ${baseline}ms`);process.exit(1);}
+          const icmErr=summary.metrics.icm_error.max;
+          if(icmErr>=1){console.error(`ICM error ${icmErr} ≥ 1`);process.exit(1);}
+          NODE
 
   workflow-sla:
     runs-on: ubuntu-latest
