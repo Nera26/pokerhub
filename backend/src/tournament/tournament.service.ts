@@ -22,6 +22,7 @@ import {
 } from './pko.service';
 import { FeatureFlagsService } from '../feature-flags/feature-flags.service';
 import { EventPublisher } from '../events/events.service';
+import { WalletService } from '../wallet/wallet.service';
 
 @Injectable()
 export class TournamentService implements OnModuleInit {
@@ -45,6 +46,7 @@ export class TournamentService implements OnModuleInit {
     private readonly flags: FeatureFlagsService,
     private readonly events: EventPublisher,
     @Optional() @Inject('REDIS_CLIENT') private readonly redis?: Redis,
+    @Optional() private readonly wallet?: WalletService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -164,6 +166,21 @@ export class TournamentService implements OnModuleInit {
     }
     t.state = TournamentState.CANCELLED;
     await this.tournaments.save(t);
+    if (this.wallet) {
+      const seats = await this.seats.find({
+        where: { table: { tournament: { id } } } as any,
+        relations: ['user'],
+      });
+      for (const seat of seats) {
+        await this.wallet.rollback(seat.user.id, t.buyIn, id, 'USD');
+        await this.events.emit('wallet.rollback', {
+          accountId: seat.user.id,
+          amount: t.buyIn,
+          refId: id,
+          currency: 'USD',
+        });
+      }
+    }
     await this.events.emit('tournament.cancel', { tournamentId: id });
   }
 
@@ -296,6 +313,15 @@ export class TournamentService implements OnModuleInit {
     if (!regOpen && !lateReg) {
       throw new Error('registration closed');
     }
+    if (this.wallet) {
+      await this.wallet.reserve(userId, t.buyIn, tournamentId, 'USD');
+      await this.events.emit('wallet.reserve', {
+        accountId: userId,
+        amount: t.buyIn,
+        refId: tournamentId,
+        currency: 'USD',
+      });
+    }
     const tables = await this.tables.find({
       where: { tournament: { id: tournamentId } },
       relations: ['seats'],
@@ -318,6 +344,7 @@ export class TournamentService implements OnModuleInit {
   }
 
   async withdraw(tournamentId: string, userId: string): Promise<void> {
+    const t = await this.get(tournamentId);
     const seat = await this.seats.findOne({
       where: {
         table: { tournament: { id: tournamentId } } as any,
@@ -326,6 +353,15 @@ export class TournamentService implements OnModuleInit {
       relations: ['table', 'user'],
     });
     if (seat) {
+      if (this.wallet) {
+        await this.wallet.rollback(userId, t.buyIn, tournamentId, 'USD');
+        await this.events.emit('wallet.rollback', {
+          accountId: userId,
+          amount: t.buyIn,
+          refId: tournamentId,
+          currency: 'USD',
+        });
+      }
       await this.seats.remove(seat);
     }
   }
