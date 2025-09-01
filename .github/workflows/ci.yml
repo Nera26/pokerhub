@@ -254,6 +254,45 @@ jobs:
           title: "SLA breached: spectator-privacy-nightly"
           content-filepath: spectator-privacy-nightly-sla.md
 
+      - name: Check spectator-retention SLA
+        id: spectator-retention
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: spectator-retention.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
+      - name: Prepare spectator-retention SLA alert
+        if: failure() && steps.spectator-retention.outcome == 'failure'
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          cat <<'EOF' > spectator-retention-sla.md
+          Workflow: ${{ steps.spectator-retention.outputs.workflow }}
+          Last Run: ${{ steps.spectator-retention.outputs.timestamp }}
+          Conclusion: ${{ steps.spectator-retention.outputs.conclusion }}
+          EOF
+          jq -n --arg channel "$SLACK_CHANNEL_ID" \
+            --arg text "spectator-retention.yml SLA check failed. Last run: ${{ steps.spectator-retention.outputs.timestamp }} (conclusion: ${{ steps.spectator-retention.outputs.conclusion }})." \
+            '{channel: $channel, text: $text}' > spectator-retention-slack.json
+
+      - name: Slack alert (spectator-retention SLA)
+        if: failure() && steps.spectator-retention.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: spectator-retention-slack.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+      - name: Create issue for spectator-retention SLA
+        if: failure() && steps.spectator-retention.outcome == 'failure'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "SLA breached: spectator-retention"
+          content-filepath: spectator-retention-sla.md
+
       - name: Get spectator privacy run ID
         id: get_run_id
         env:
@@ -275,7 +314,7 @@ jobs:
       - name: Verify ops artifacts
         env:
           PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
-          SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
+          SPECTATOR_LOGS_BUCKET: ${{ secrets.SPECTATOR_LOGS_BUCKET }}
           SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
           DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
           SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS || 120 }}
@@ -430,70 +469,6 @@ jobs:
         with:
           name: property-${{ github.sha }}
           path: property.log
-
-  spectator-privacy:
-    needs: [property, integration]
-    runs-on: ubuntu-latest
-    env:
-      SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER || vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT || vars.GCP_SERVICE_ACCOUNT }}
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
-      - uses: ./.github/actions/spectator-privacy-check
-        with:
-          node-version: 20
-      - uses: actions/download-artifact@v4
-        with:
-          name: property-${{ github.sha }}
-          path: .
-      - uses: actions/download-artifact@v4
-        with:
-          name: integration-${{ github.sha }}
-          path: .
-      - name: Sanitize logs
-        if: always()
-        run: npx ts-node scripts/sanitize-spectator-logs.ts backend-tests.log frontend-tests.log integration.log property.log
-      - name: DLP scan logs
-        if: always()
-        env:
-          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
-        run: npx ts-node scripts/dlp-scan.ts backend-tests.log frontend-tests.log integration.log property.log
-      - name: Write run success metric
-        if: always()
-        run: |
-          gcloud monitoring metrics write \
-            custom.googleapis.com/spectator_privacy/run_success 1 \
-            --project=${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }} \
-            --labels=run_id=${{ github.run_id }},commit_sha=${{ github.sha }}
-      - name: Verify sanitized logs
-        if: always()
-        run: |
-          if rg -i "userId|tableSecret|sessionToken|email|ipAddress|authToken" backend-tests.log frontend-tests.log integration.log property.log; then
-            echo "PII found in logs" >&2
-            exit 1
-          fi
-      - name: Copy logs to spectator bucket
-        if: always()
-        run: |
-          gsutil cp backend-tests.log frontend-tests.log integration.log property.log dlp-scan.json gs://$SPECTATOR_PRIVACY_BUCKET/${{ github.run_id }}/
-      - name: Upload logs as artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: spectator-privacy-logs
-          path: |
-            backend-tests.log
-            frontend-tests.log
-            integration.log
-            property.log
-            dlp-scan.json
-          retention-days: 14
 
   integration:
     needs: property
@@ -673,6 +648,70 @@ jobs:
             metrics/cpu-histogram.json
             metrics/baseline.json
 
+  spectator-privacy:
+    needs: [property, integration]
+    runs-on: ubuntu-latest
+    env:
+      SPECTATOR_LOGS_BUCKET: ${{ secrets.SPECTATOR_LOGS_BUCKET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER || vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT || vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
+      - uses: ./.github/actions/spectator-privacy-check
+        with:
+          node-version: 20
+      - uses: actions/download-artifact@v4
+        with:
+          name: property-${{ github.sha }}
+          path: .
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-${{ github.sha }}
+          path: .
+      - name: Sanitize logs
+        if: always()
+        run: npx ts-node scripts/sanitize-spectator-logs.ts backend-tests.log frontend-tests.log integration.log property.log
+      - name: DLP scan logs
+        if: always()
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
+        run: npx ts-node scripts/dlp-scan.ts backend-tests.log frontend-tests.log integration.log property.log
+      - name: Write run success metric
+        if: always()
+        run: |
+          gcloud monitoring metrics write \
+            custom.googleapis.com/spectator_privacy/run_success 1 \
+            --project=${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }} \
+            --labels=run_id=${{ github.run_id }},commit_sha=${{ github.sha }}
+      - name: Verify sanitized logs
+        if: always()
+        run: |
+          if rg -i "userId|tableSecret|sessionToken|email|ipAddress|authToken" backend-tests.log frontend-tests.log integration.log property.log; then
+            echo "PII found in logs" >&2
+            exit 1
+          fi
+      - name: Copy logs to spectator bucket
+        if: always()
+        run: |
+          gsutil cp backend-tests.log frontend-tests.log integration.log property.log dlp-scan.json gs://$SPECTATOR_LOGS_BUCKET/${{ github.run_id }}/
+      - name: Upload logs as artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spectator-privacy-logs
+          path: |
+            backend-tests.log
+            frontend-tests.log
+            integration.log
+            property.log
+            dlp-scan.json
+          retention-days: 14
+
   dr-trends:
     runs-on: ubuntu-latest
     steps:
@@ -742,7 +781,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
-      SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
+      SPECTATOR_LOGS_BUCKET: ${{ secrets.SPECTATOR_LOGS_BUCKET }}
       SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
       DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
       SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS || 120 }}

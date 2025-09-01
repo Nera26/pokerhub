@@ -12,3 +12,4 @@
     - soak
     - soak-smoke
     - "ci / spectator-privacy"
+    - spectator-retention
