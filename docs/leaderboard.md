@@ -61,3 +61,16 @@ incremental calculation.
 
 The dataset size can be tuned with `--days`, `--players`, and `--sessions`
 arguments to reduce runtime when experimenting locally or in CI.
+
+## Automated performance test
+
+A Jest spec (`backend/test/leaderboard.rebuild.performance.spec.ts`)
+seeds 30 days of synthetic events into `storage/events/` and rebuilds the
+leaderboard. The test fails if rebuild time reaches 30 minutes or if RSS
+memory increases by 30 MB or more.
+
+Run it with:
+
+```bash
+npm test --workspace backend -- leaderboard.rebuild.performance.spec.ts
+```
