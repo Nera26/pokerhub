@@ -56,6 +56,8 @@ export class LeaderboardService {
       net: number;
       bb100: number;
       hours: number;
+      roi: number;
+      finishes: Record<number, number>;
     }[]
   > {
     const cached = await this.cache.get<
@@ -66,6 +68,8 @@ export class LeaderboardService {
         net: number;
         bb100: number;
         hours: number;
+        roi: number;
+        finishes: Record<number, number>;
       }[]
     >(this.cacheKey);
     if (cached) {
@@ -159,6 +163,8 @@ export class LeaderboardService {
         bb: number;
         hands: number;
         duration: number;
+        buyIn: number;
+        finishes: Record<number, number>;
       }
     >();
 
@@ -179,6 +185,8 @@ export class LeaderboardService {
         bb = 0,
         hands = 0,
         duration = 0,
+        buyIn = 0,
+        finish,
         ts = now,
       } = ev as {
         playerId: string;
@@ -188,6 +196,8 @@ export class LeaderboardService {
         bb?: number;
         hands?: number;
         duration?: number;
+        buyIn?: number;
+        finish?: number;
         ts?: number;
       };
       const entry =
@@ -199,6 +209,8 @@ export class LeaderboardService {
           bb: 0,
           hands: 0,
           duration: 0,
+          buyIn: 0,
+          finishes: {},
         };
       entry.sessions.add(sessionId);
       const ageDays = (now - ts) / DAY_MS;
@@ -220,6 +232,10 @@ export class LeaderboardService {
       entry.bb += bb;
       entry.hands += hands;
       entry.duration += duration;
+      entry.buyIn += buyIn;
+      if (typeof finish === 'number') {
+        entry.finishes[finish] = (entry.finishes[finish] ?? 0) + 1;
+      }
       scores.set(playerId, entry);
     }
 
@@ -243,6 +259,8 @@ export class LeaderboardService {
         net: v.net,
         bb100: v.hands ? (v.bb / v.hands) * 100 : 0,
         hours: v.duration / 3600000,
+        roi: v.buyIn ? v.net / v.buyIn : 0,
+        finishes: v.finishes,
       }))
       .slice(0, 100);
 
@@ -260,6 +278,8 @@ export class LeaderboardService {
       net: number;
       bb100: number;
       hours: number;
+      roi: number;
+      finishes: Record<number, number>;
     }[]
   > {
     const cached = await this.cache.get<
@@ -270,6 +290,8 @@ export class LeaderboardService {
         net: number;
         bb100: number;
         hours: number;
+        roi: number;
+        finishes: Record<number, number>;
       }[]
     >(this.dataKey);
     return cached ?? [];

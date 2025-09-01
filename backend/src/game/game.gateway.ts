@@ -88,6 +88,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly actionRetentionMs = 24 * 60 * 60 * 1000; // 24h
 
   private readonly processed = new Map<string, number>();
+  private readonly states = new Map<string, any>();
 
   private readonly queues = new Map<string, PQueue>();
   private readonly queueLimit = Number(
@@ -138,6 +139,22 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
 
     setInterval(() => void this.trimActionHashes(), 60 * 60 * 1000);
+  }
+
+  private diff(prev: any, curr: any): Record<string, any> {
+    if (!prev) return curr as Record<string, any>;
+    const delta: Record<string, any> = {};
+    for (const key of Object.keys(curr as Record<string, any>)) {
+      const pv = (prev as any)[key];
+      const cv = (curr as any)[key];
+      if (pv && cv && typeof pv === 'object' && typeof cv === 'object') {
+        const d = this.diff(pv, cv);
+        if (Object.keys(d).length) delta[key] = d;
+      } else if (pv !== cv) {
+        delta[key] = cv;
+      }
+    }
+    return delta;
   }
 
   private hashAction(id: string) {
@@ -221,7 +238,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const gameAction = wire as GameActionPayload;
 
     const room = this.rooms.get(tableId);
-    const state = await room.apply(gameAction);
+    await room.apply(gameAction);
+    const state = await room.getPublicState();
 
     void this.analytics.recordGameEvent({
       clientId: client.id,
@@ -238,7 +256,19 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     GameStateSchema.parse(payload);
     this.enqueue(client, 'state', payload, true);
 
+    const prev = this.states.get(tableId);
+    const delta = this.diff(prev, state);
+    this.states.set(tableId, state);
+    if (this.server) {
+      this.server.emit('server:StateDelta', {
+        version: '1',
+        tick: this.tick,
+        delta,
+      });
+    }
+
     if (this.server?.of) {
+      // Send sanitized state to spectators as well
       const publicState = await room.getPublicState();
       const spectatorPayload = {
         version: '1',
@@ -608,7 +638,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         tick: ++this.tick,
       };
       GameStateSchema.parse(payload);
+      const prev = this.states.get(tableId);
+      const delta = this.diff(prev, state);
+      this.states.set(tableId, state);
       this.server.to(tableId).emit('state', payload);
+      this.server.to(tableId).emit('server:StateDelta', {
+        version: '1',
+        tick: this.tick,
+        delta,
+      });
     }
   }
 }

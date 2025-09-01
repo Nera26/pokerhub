@@ -221,6 +221,13 @@ export const GameStateSchema = z
 
 export type GameState = z.infer<typeof GameStateSchema>;
 
+export const GameStateDeltaSchema = z.object({
+  version: z.literal('1'),
+  tick: z.number(),
+  delta: z.record(z.unknown()),
+});
+export type GameStateDelta = z.infer<typeof GameStateDeltaSchema>;
+
 export const TournamentSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -407,6 +414,8 @@ export const LeaderboardEntrySchema = z.object({
   net: z.number(),
   bb100: z.number(),
   hours: z.number(),
+  roi: z.number(),
+  finishes: z.record(z.number().int().nonnegative()),
 });
 export const LeaderboardResponseSchema = z.array(LeaderboardEntrySchema);
 export type LeaderboardEntry = z.infer<typeof LeaderboardEntrySchema>;

@@ -48,7 +48,7 @@ describe('LeaderboardService', () => {
     );
   });
 
-  it('returns leaderboard with points, net and bb/100', async () => {
+  it('returns leaderboard with points, ROI and finish counts', async () => {
     const now = Date.now();
     analytics.events = [
       {
@@ -59,6 +59,8 @@ describe('LeaderboardService', () => {
         bb: 200,
         hands: 400,
         duration: 2 * 60 * 60 * 1000,
+        buyIn: 50,
+        finish: 1,
         ts: now,
       },
       {
@@ -69,6 +71,8 @@ describe('LeaderboardService', () => {
         bb: -100,
         hands: 200,
         duration: 60 * 60 * 1000,
+        buyIn: 50,
+        finish: 2,
         ts: now,
       },
     ];
@@ -83,6 +87,8 @@ describe('LeaderboardService', () => {
         net: 100,
         bb100: 50,
         hours: 2,
+        roi: 2,
+        finishes: { 1: 1 },
       },
       {
         playerId: 'bob',
@@ -91,6 +97,8 @@ describe('LeaderboardService', () => {
         net: -50,
         bb100: -50,
         hours: 1,
+        roi: -1,
+        finishes: { 2: 1 },
       },
     ]);
     expect(cache.ttl.get('leaderboard:hot')).toBe(30);

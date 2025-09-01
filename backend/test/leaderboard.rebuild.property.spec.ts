@@ -65,6 +65,8 @@ describe('leaderboard rebuild', () => {
               bb: number;
               hands: number;
               duration: number;
+              buyIn: number;
+              finishes: Record<number, number>;
             }
           >();
           for (const ev of events) {
@@ -77,6 +79,8 @@ describe('leaderboard rebuild', () => {
                 bb: 0,
                 hands: 0,
                 duration: 0,
+                buyIn: 0,
+                finishes: {},
               };
             entry.sessions.add(ev.sessionId);
             const ageDays = (now - ev.ts) / DAY_MS;
@@ -88,6 +92,13 @@ describe('leaderboard rebuild', () => {
             entry.bb += ev.bb;
             entry.hands += ev.hands;
             entry.duration += ev.duration;
+            if (typeof (ev as any).buyIn === 'number') {
+              entry.buyIn += (ev as any).buyIn as number;
+            }
+            if (typeof (ev as any).finish === 'number') {
+              const f = (ev as any).finish as number;
+              entry.finishes[f] = (entry.finishes[f] ?? 0) + 1;
+            }
             scores.set(ev.playerId, entry);
           }
           const expected = [...scores.entries()]
@@ -103,6 +114,8 @@ describe('leaderboard rebuild', () => {
               net: v.net,
               bb100: v.hands ? (v.bb / v.hands) * 100 : 0,
               hours: v.duration / 3600000,
+              roi: v.buyIn ? v.net / v.buyIn : 0,
+              finishes: v.finishes,
             }))
             .slice(0, 100);
 

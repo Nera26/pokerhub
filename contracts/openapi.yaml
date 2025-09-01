@@ -1017,6 +1017,17 @@ components:
         - $ref: '#/components/schemas/NextAction'
       discriminator:
         propertyName: type
+    GameStateDelta:
+      type: object
+      properties:
+        version:
+          type: string
+          enum: ['1']
+        tick:
+          type: number
+        delta:
+          type: object
+      required: [version, tick, delta]
     PostBlindAction:
       type: object
       properties:
@@ -1376,53 +1387,48 @@ components:
         format: date-time
     required:
       - startTime
-
-    LeaderboardResponse:
-      type: array
-      items:
-        $ref: '#/components/schemas/LeaderboardEntry'
-    ReviewAction:
-      type: string
-      enum: [warn, restrict, ban]
-    ReviewActionRequest:
-      type: object
-      properties:
-        action:
-          $ref: '#/components/schemas/ReviewAction'
-      required: [action]
-    ReviewStatus:
-      type: string
-      enum: [flagged, warn, restrict, ban]
-    FlaggedSession:
-      type: object
-      properties:
-        id:
+  ReviewAction:
+    type: string
+    enum: [warn, restrict, ban]
+  ReviewActionRequest:
+    type: object
+    properties:
+      action:
+        $ref: '#/components/schemas/ReviewAction'
+    required: [action]
+  ReviewStatus:
+    type: string
+    enum: [flagged, warn, restrict, ban]
+  FlaggedSession:
+    type: object
+    properties:
+      id:
+        type: string
+      users:
+        type: array
+        items:
           type: string
-        users:
-          type: array
-          items:
-            type: string
-        status:
-          $ref: '#/components/schemas/ReviewStatus'
-      required: [id, users, status]
-    FlaggedSessionsResponse:
-      type: array
-      items:
-        $ref: '#/components/schemas/FlaggedSession'
-    ReviewActionLog:
-      type: object
-      properties:
-        action:
-          $ref: '#/components/schemas/ReviewAction'
-        timestamp:
-          type: integer
-        reviewerId:
-          type: string
-      required: [action, timestamp, reviewerId]
-    ReviewActionLogsResponse:
-      type: array
-      items:
-        $ref: '#/components/schemas/ReviewActionLog'
+      status:
+        $ref: '#/components/schemas/ReviewStatus'
+    required: [id, users, status]
+  FlaggedSessionsResponse:
+    type: array
+    items:
+      $ref: '#/components/schemas/FlaggedSession'
+  ReviewActionLog:
+    type: object
+    properties:
+      action:
+        $ref: '#/components/schemas/ReviewAction'
+      timestamp:
+        type: integer
+      reviewerId:
+        type: string
+    required: [action, timestamp, reviewerId]
+  ReviewActionLogsResponse:
+    type: array
+    items:
+      $ref: '#/components/schemas/ReviewActionLog'
   HotPatchLevelRequest:
     type: object
     properties:
@@ -1456,6 +1462,12 @@ components:
         type: number
       hours:
         type: number
+      roi:
+        type: number
+      finishes:
+        type: object
+        additionalProperties:
+          type: integer
     required:
       - playerId
       - rank
@@ -1463,6 +1475,8 @@ components:
       - net
       - bb100
       - hours
+      - roi
+      - finishes
   HandProof:
     type: object
     description: Commitment, seed and nonce proving deck fairness for a hand.

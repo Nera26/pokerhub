@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import type Redis from 'ioredis';
 import { Repository } from 'typeorm';
 import { Table } from '../database/entities/table.entity';
 import { TournamentService } from './tournament.service';
@@ -11,11 +12,10 @@ import { TournamentService } from './tournament.service';
  */
 @Injectable()
 export class TableBalancerService {
-  private readonly lastMoved = new Map<string, Map<string, number>>();
-
   constructor(
     @InjectRepository(Table) private readonly tables: Repository<Table>,
     private readonly tournamentService: TournamentService,
+    @Optional() @Inject('REDIS_CLIENT') private readonly redis?: Redis,
   ) {}
 
   /**
@@ -37,10 +37,13 @@ export class TableBalancerService {
     const max = Math.max(...counts);
     const min = Math.min(...counts);
     if (max - min > 1) {
-      let recentlyMoved = this.lastMoved.get(tournamentId);
-      if (!recentlyMoved) {
-        recentlyMoved = new Map();
-        this.lastMoved.set(tournamentId, recentlyMoved);
+      let recentlyMoved = new Map<string, number>();
+      if (this.redis) {
+        const key = `tourney:${tournamentId}:lastMoved`;
+        const data = await this.redis.hgetall(key);
+        recentlyMoved = new Map(
+          Object.entries(data).map(([k, v]) => [k, Number(v)]),
+        );
       }
       await this.tournamentService.balanceTournament(
         tournamentId,

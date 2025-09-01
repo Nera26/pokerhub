@@ -1069,13 +1069,22 @@ export interface components {
       method?: "topN" | "icm";
       stacks?: number[];
     };
-    ReviewAction: "warn" | "restrict" | "ban";
-    ReviewActionLog: {
-      action: components["schemas"]["ReviewAction"];
-      timestamp: number;
-      reviewerId: string;
+    HotPatchLevelRequest: {
+      level: number;
+      smallBlind: number;
+      bigBlind: number;
     };
-    ReviewActionLogsResponse: components["schemas"]["ReviewActionLog"][];
+    LeaderboardEntry: {
+      playerId: string;
+      rank: number;
+      points: number;
+      net: number;
+      bb100: number;
+      hours: number;
+      roi: number;
+      finishes: { [key: string]: number };
+    };
+    LeaderboardResponse: components["schemas"]["LeaderboardEntry"][];
   };
   responses: never;
   parameters: never;
