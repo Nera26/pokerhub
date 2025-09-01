@@ -421,3 +421,8 @@ jobs:
     needs: deploy
     uses: ./.github/workflows/soak.yml
     secrets: inherit
+
+  soak-metrics:
+    needs: soak
+    uses: ./.github/workflows/soak-metrics.yml
+    secrets: inherit
