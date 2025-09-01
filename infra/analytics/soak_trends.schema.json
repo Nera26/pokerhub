@@ -1,0 +1,6 @@
+[
+  {"name": "timestamp", "type": "TIMESTAMP"},
+  {"name": "latency_p95_ms", "type": "FLOAT"},
+  {"name": "throughput", "type": "FLOAT"},
+  {"name": "gc_pause_p95_ms", "type": "FLOAT"}
+]

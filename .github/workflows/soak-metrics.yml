@@ -82,10 +82,18 @@ jobs:
         with:
           name: soak-summary
           path: soak-summary.json
+      - name: Publish soak summary
+        if: always() && hashFiles('soak-summary.json') != ''
+        env:
+          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+        run: |
+          gcloud storage cp soak-summary.json "gs://${SOAK_TRENDS_BUCKET}/soak-summary-${GITHUB_RUN_ID}.json"
       - name: Load soak summary to BigQuery
         if: always() && hashFiles('soak-summary.json') != ''
         run: |
-          bq load --source_format=NEWLINE_DELIMITED_JSON --autodetect ops_metrics.soak_trends soak-summary.json
+          bq load --source_format=NEWLINE_DELIMITED_JSON \
+            --schema=infra/analytics/soak_trends.schema.json \
+            ops_metrics.soak_trends soak-summary.json
 
   spectator-privacy:
     uses: ./.github/workflows/spectator-privacy.yml
