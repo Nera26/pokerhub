@@ -254,6 +254,9 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
+      - name: Check soak trend regression
+        run: npx ts-node scripts/check-soak-trend-regression.ts
+
       # --- Tooling/setup ---
       - name: Set up Node
         uses: actions/setup-node@v4

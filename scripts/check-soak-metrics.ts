@@ -12,14 +12,17 @@ function writeAndExit(
     gcPauseP95?: number | null;
   }
 ): never {
-  const summary = {
-    latencyP95: metrics?.latencyP95 ?? null,
+  const base = {
+    timestamp: new Date().toISOString(),
+    latency_p95_ms: metrics?.latencyP95 ?? null,
     throughput: metrics?.throughput ?? null,
-    gcPauseP95: metrics?.gcPauseP95 ?? null,
-    regressions,
+    gc_pause_p95_ms: metrics?.gcPauseP95 ?? null,
   };
-  fs.writeFileSync('soak-summary.json', JSON.stringify(summary, null, 2));
-  fs.writeFileSync('soak-regression.json', JSON.stringify(summary, null, 2));
+  fs.writeFileSync('soak-summary.json', JSON.stringify(base) + '\n');
+  fs.writeFileSync(
+    'soak-regression.json',
+    JSON.stringify({ ...base, regressions }, null, 2),
+  );
   for (const r of regressions) {
     console.error(r.message);
   }
@@ -101,11 +104,19 @@ try {
   console.error(err);
 }
 
-const summary = { latencyP95: latestLat, throughput: latestThr, gcPauseP95: latestGc, regressions };
-fs.writeFileSync('soak-summary.json', JSON.stringify(summary, null, 2));
+const summary = {
+  timestamp: new Date().toISOString(),
+  latency_p95_ms: latestLat,
+  throughput: latestThr,
+  gc_pause_p95_ms: latestGc,
+};
+fs.writeFileSync('soak-summary.json', JSON.stringify(summary) + '\n');
 
 if (regressions.length > 0) {
-  fs.writeFileSync('soak-regression.json', JSON.stringify(summary, null, 2));
+  fs.writeFileSync(
+    'soak-regression.json',
+    JSON.stringify({ ...summary, regressions }, null, 2),
+  );
   for (const r of regressions) {
     console.error(r.message);
   }

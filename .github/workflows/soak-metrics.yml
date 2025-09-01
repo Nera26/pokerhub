@@ -50,3 +50,7 @@ jobs:
         with:
           name: soak-summary
           path: soak-summary.json
+      - name: Load soak summary to BigQuery
+        if: always() && hashFiles('soak-summary.json') != ''
+        run: |
+          bq load --source_format=NEWLINE_DELIMITED_JSON --autodetect ops_metrics.soak_trends soak-summary.json
