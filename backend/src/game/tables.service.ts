@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Table as TableEntity } from '../database/entities/table.entity';
 import { RoomManager } from './room.service';
+import { ChatService } from './chat.service';
 import type {
   Table as TableDto,
   TableData,
@@ -16,6 +17,7 @@ export class TablesService {
     @InjectRepository(TableEntity)
     private readonly tables: Repository<TableEntity>,
     private readonly rooms: RoomManager,
+    private readonly chat: ChatService,
   ) {}
 
   async getTables(): Promise<TableDto[]> {
@@ -48,8 +50,7 @@ export class TablesService {
         isFolded: p.folded,
         isAllIn: p.allIn,
       }));
-      // Chat history retrieval not yet implemented; placeholder
-      chatMessages = [];
+      chatMessages = await this.chat.getRecentMessages(id);
     } catch {
       // Fallback to empty state if room not available or state fetch fails
     }

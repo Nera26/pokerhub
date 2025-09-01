@@ -13,8 +13,13 @@ describe('TablesService.getTable', () => {
     };
     const room = { getPublicState: jest.fn().mockResolvedValue(state) } as any;
     const rooms = { get: jest.fn().mockReturnValue(room) } as any;
+    const chat = {
+      getRecentMessages: jest
+        .fn()
+        .mockResolvedValue([{ id: 1, username: 'p1', avatar: '', text: 'hi', time: '2023-01-01T00:00:00Z' }]),
+    } as any;
 
-    const service = new TablesService(repo, rooms);
+    const service = new TablesService(repo, rooms, chat);
     const res = await service.getTable('t1');
 
     expect(res.pot).toBe(100);
@@ -29,6 +34,9 @@ describe('TablesService.getTable', () => {
         isFolded: false,
         isAllIn: false,
       },
+    ]);
+    expect(res.chatMessages).toEqual([
+      { id: 1, username: 'p1', avatar: '', text: 'hi', time: '2023-01-01T00:00:00Z' },
     ]);
   });
 });

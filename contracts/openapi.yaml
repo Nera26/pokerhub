@@ -188,6 +188,42 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateTableRequest'
+
+  /tables/{id}/chat:
+    get:
+      summary: Get table chat messages
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Chat messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatMessage'
+    post:
+      summary: Send chat message
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendChatMessageRequest'
+      responses:
+        '204':
+          description: Message sent
       responses:
         '200':
           description: Updated table
@@ -1563,6 +1599,16 @@ components:
         - avatar
         - text
         - time
+    SendChatMessageRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+        text:
+          type: string
+      required:
+        - userId
+        - text
     TableData:
       type: object
       properties:

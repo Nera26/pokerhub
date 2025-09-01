@@ -347,6 +347,15 @@ export const ChatMessageSchema = z.object({
 });
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
+export const SendChatMessageRequestSchema = z.object({
+  userId: z.string(),
+  text: z.string(),
+});
+export type SendChatMessageRequest = z.infer<typeof SendChatMessageRequestSchema>;
+
+export const ChatMessagesResponseSchema = z.array(ChatMessageSchema);
+export type ChatMessagesResponse = z.infer<typeof ChatMessagesResponseSchema>;
+
 export const TableDataSchema = z.object({
   smallBlind: z.number(),
   bigBlind: z.number(),
