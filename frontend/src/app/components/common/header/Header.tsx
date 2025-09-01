@@ -3,14 +3,16 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useNotifications } from '@/hooks/notifications';
+import { useWallet } from '@/features/wallet/useWallet';
 import NavigationLinks from './NavigationLinks';
 import NotificationDropdown from './NotificationDropdown';
 
 export default function Header() {
-  const { data } = useNotifications();
-  const notifications = data?.notifications ?? [];
-  const balance = data
-    ? data.balance.toLocaleString('en-US', {
+  const { data: notifData } = useNotifications();
+  const notifications = notifData?.notifications ?? [];
+  const { data: wallet } = useWallet();
+  const balance = wallet
+    ? (wallet.realBalance / 100).toLocaleString('en-US', {
         style: 'currency',
         currency: 'USD',
       })

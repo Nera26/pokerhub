@@ -29,10 +29,18 @@ export async function serverFetch(
       );
     }
     if (url.includes('/api/wallet')) {
-      return new Response(JSON.stringify({ balance: 123456 }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({
+          kycVerified: true,
+          denialReason: null,
+          realBalance: 123456,
+          creditBalance: 0,
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
     }
     if (url.includes('/api/tables')) {
       return new Response(
@@ -58,10 +66,7 @@ export async function serverFetch(
     }
     if (url.includes('/api/notifications')) {
       return new Response(
-        JSON.stringify({
-          notifications: [],
-          balance: 0,
-        }),
+        JSON.stringify({ notifications: [] }),
         { status: 200, headers: { 'Content-Type': 'application/json' } },
       );
     }

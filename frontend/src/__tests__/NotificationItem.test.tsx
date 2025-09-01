@@ -3,7 +3,7 @@ import NotificationItem from '@/app/components/notifications/NotificationItem';
 
 describe('NotificationItem', () => {
   const notification = {
-    id: 1,
+    id: '1',
     type: 'bonus' as const,
     title: 'Bonus Unlocked',
     message: 'You have received a bonus!',
@@ -21,6 +21,6 @@ describe('NotificationItem', () => {
     const onClick = jest.fn();
     render(<NotificationItem notification={notification} onClick={onClick} />);
     fireEvent.click(screen.getByText('Bonus Unlocked'));
-    expect(onClick).toHaveBeenCalledWith(1);
+    expect(onClick).toHaveBeenCalledWith('1');
   });
 });

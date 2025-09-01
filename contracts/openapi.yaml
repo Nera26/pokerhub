@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 1.4.0
+  version: 1.5.0
 paths:
   /status:
     get:
@@ -131,6 +131,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+  /notifications:
+    get:
+      summary: Get notifications
+      responses:
+        '200':
+          description: Notifications list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationsResponse'
+  /notifications/mark-all:
+    post:
+      summary: Mark all notifications as read
+      responses:
+        '200':
+          description: Marked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+  /notifications/{id}:
+    post:
+      summary: Mark a notification as read
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Marked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
   /tables:
     get:
       summary: Get lobby tables
@@ -1962,3 +1998,35 @@ components:
       type: object
       additionalProperties:
         type: boolean
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        title:
+          type: string
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        read:
+          type: boolean
+      required:
+        - id
+        - type
+        - title
+        - message
+        - timestamp
+        - read
+    NotificationsResponse:
+      type: object
+      properties:
+        notifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+      required:
+        - notifications

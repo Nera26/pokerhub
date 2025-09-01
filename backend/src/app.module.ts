@@ -44,6 +44,7 @@ import { WalletModule } from './wallet/wallet.module';
 import { AuthModule } from './auth/auth.module';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { UsersModule } from './users/users.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 class SecurityHeadersMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
@@ -132,6 +133,7 @@ class SecurityHeadersMiddleware implements NestMiddleware {
     AuthModule,
     FeatureFlagsModule,
     UsersModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [
