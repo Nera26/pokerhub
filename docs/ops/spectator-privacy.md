@@ -12,6 +12,16 @@ DLP scan. Each point has:
 This metric allows the `scripts/verify-ops-artifacts.ts` check to verify that a
 successful run occurred in the last 24 h.
 
+## Log Sources
+
+The workflow sanitizes and scans the following logs for PII before uploading
+them to Cloud Storage:
+
+- `backend-tests.log` – backend spectator privacy tests
+- `frontend-tests.log` – frontend spectator privacy tests
+- `integration.log` – integration test stage
+- `property.log` – property-based test stage
+
 ## Retention
 
 Custom metrics in Cloud Monitoring are retained for **6 weeks**. No additional
