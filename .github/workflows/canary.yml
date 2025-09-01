@@ -25,20 +25,27 @@ jobs:
       DR_FAILOVER_SLA_DAYS: 30
       DR_RESTORE_SLA_DAYS: 30
       DR_THROWAWAY_SLA_DAYS: 7
+      PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+      PROOF_MANIFEST_BUCKET: ${{ secrets.PROOF_MANIFEST_BUCKET }}
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
+
       - name: Configure kubectl
         uses: azure/setup-kubectl@v3
         with:
           version: v1.27.3
+
       - name: Install Helm
         uses: azure/setup-helm@v3
         with:
           version: v3.13.0
+
       # --- Pre-deploy gates (all must pass) ---
       - name: Check DR drill SLA
         id: dr_drill
@@ -49,6 +56,7 @@ jobs:
           unit: days
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
         continue-on-error: true
+
       - name: PagerDuty alert on stale DR drill
         if: steps.dr_drill.outcome == 'failure'
         env:
@@ -68,6 +76,7 @@ jobs:
           unit: days
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
         continue-on-error: true
+
       - name: PagerDuty alert on stale DR failover
         if: steps.dr_failover.outcome == 'failure'
         env:
@@ -87,6 +96,7 @@ jobs:
           unit: days
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
         continue-on-error: true
+
       - name: PagerDuty alert on stale DR restore
         if: steps.dr_restore.outcome == 'failure'
         env:
@@ -94,59 +104,4 @@ jobs:
         run: |
           curl -X POST https://events.pagerduty.com/v2/enqueue \
             -H 'Content-Type: application/json' \
-            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Canary blocked: dr-restore workflow failed or stale","source":"github-actions","severity":"error","custom_details":{"runbook":"https://github.com/Nera26/pokerhub/blob/main/docs/runbooks/disaster-recovery.md"}}}'
-          exit 1
-
-      - name: Check DR throwaway SLA
-        id: dr_throwaway
-        uses: ./.github/workflows/check-workflow-sla
-        with:
-          workflow: dr-throwaway.yml
-          sla: ${{ env.DR_THROWAWAY_SLA_DAYS }}
-          unit: days
-          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-        continue-on-error: true
-      - name: PagerDuty alert on stale DR throwaway
-        if: steps.dr_throwaway.outcome == 'failure'
-        env:
-          ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
-        run: |
-          curl -X POST https://events.pagerduty.com/v2/enqueue \
-            -H 'Content-Type: application/json' \
-            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Canary blocked: dr-throwaway workflow failed or stale","source":"github-actions","severity":"error","custom_details":{"runbook":"https://github.com/Nera26/pokerhub/blob/main/docs/runbooks/disaster-recovery.md"}}}'
-          exit 1
-
-      - name: Validate observability configs
-        run: |
-          python -m pip install pyyaml >/dev/null
-          python infra/observability/validate.py
-      - name: Deploy canary
-        run: scripts/canary-rollback.sh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_SHA: ${{ github.sha }}
-
-      - name: Monitor ACK latency
-        run: |
-          npm install --no-save k6 >/dev/null
-          npx k6 run load/k6-ws-packet-loss.js --summary-export=summary.json
-          p95=$(jq '.metrics.ws_latency["p(95)"]' summary.json)
-          slo=250
-          echo "p95 ACK latency: ${p95} ms (SLO ${slo} ms)"
-          if (( $(echo "$p95 > $slo" | bc -l) )); then
-            echo "ACK latency SLO breach; rolling back" >&2
-            scripts/canary-rollback.sh
-            exit 1
-          fi
-        env:
-          WS_URL: ${{ vars.CANARY_WS_URL }}
-          PACKET_LOSS: 0.05
-      - name: Verify SLO metrics
-        id: metrics
-        run: scripts/check-metrics.sh
-        continue-on-error: true
-      - name: Canary rollback on SLO violation
-        if: steps.metrics.outcome != 'success'
-        run: scripts/canary-rollback.sh
+            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Canary blocke_
