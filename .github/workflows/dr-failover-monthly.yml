@@ -1,0 +1,89 @@
+name: dr-failover-monthly
+
+on:
+  schedule:
+    - cron: '0 4 1 * *'
+  workflow_dispatch:
+
+jobs:
+  monthly-failover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+      - name: Run failover
+        run: bash infra/disaster-recovery/failover.sh | tee failover.log
+        env:
+          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+          SQL_REPLICA_INSTANCE: ${{ vars.SQL_REPLICA_INSTANCE }}
+          MEMORYSTORE_INSTANCE: ${{ vars.MEMORYSTORE_INSTANCE }}
+          CLOUD_DNS_ZONE: ${{ vars.CLOUD_DNS_ZONE }}
+          DB_RECORD_NAME: ${{ vars.DB_RECORD_NAME }}
+          REDIS_RECORD_NAME: ${{ vars.REDIS_RECORD_NAME }}
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      - name: Restore latest backup
+        run: bash infra/disaster-recovery/restore-latest.sh | tee restore.log
+        env:
+          PG_PRIMARY_ID: ${{ vars.PG_PRIMARY_ID }}
+          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          PGUSER: ${{ secrets.PGUSER }}
+          PGPASSWORD: ${{ secrets.PGPASSWORD }}
+      - name: Collect metrics
+        run: |
+          cp infra/disaster-recovery/restore-latest.metrics infra/disaster-recovery/drill.metrics
+          cat infra/disaster-recovery/drill.metrics
+      - name: Upload metrics to GCS
+        id: upload
+        env:
+          BUCKET: ${{ vars.DR_METRICS_BUCKET }}
+        run: |
+          uri="gs://$BUCKET/monthly/${GITHUB_RUN_ID}/drill.metrics"
+          gcloud storage cp infra/disaster-recovery/drill.metrics "$uri"
+          url="https://storage.googleapis.com/$BUCKET/monthly/${GITHUB_RUN_ID}/drill.metrics"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+      - name: Publish metrics to Cloud Monitoring
+        run: |
+          source infra/disaster-recovery/drill.metrics
+          gcloud monitoring metrics write custom.googleapis.com/drill/rto "$RTO_SECONDS"
+          gcloud monitoring metrics write custom.googleapis.com/drill/rpo "$RPO_SECONDS"
+      - name: Append results to runbook
+        if: success()
+        env:
+          METRICS_URL: ${{ steps.upload.outputs.url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          source infra/disaster-recovery/drill.metrics
+          ts=$(date --iso-8601=seconds)
+          perl -0 -i -pe "s/<!-- DR_FAILOVER_RESULTS -->/<!-- DR_FAILOVER_RESULTS -->\n- $ts: [metrics]($METRICS_URL) – RTO ${RTO_SECONDS}s, RPO ${RPO_SECONDS}s/" docs/runbooks/disaster-recovery.md
+          git config user.name github-actions
+          git config user.email actions@github.com
+          git commit -am "chore(dr): record monthly failover" && git push
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: dr-failover-monthly
+          path: |
+            failover.log
+            restore.log
+            infra/disaster-recovery/restore-latest.metrics
+            infra/disaster-recovery/drill.metrics
+      - name: Alert Slack and PagerDuty on failure
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          PAGERDUTY_INTEGRATION_KEY: ${{ secrets.PAGERDUTY_INTEGRATION_KEY }}
+        run: |
+          payload=$(jq -n --arg repo "$GITHUB_REPOSITORY" --arg sha "$GITHUB_SHA" '{text: "Monthly DR failover failed for "+$repo+"@"+$sha}')
+          curl -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK_URL" --fail
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{\"routing_key\": \"$PAGERDUTY_INTEGRATION_KEY\", \"event_action\": \"trigger\", \"payload\": {\"summary\": \"Monthly DR failover failed\", \"source\": \"github\", \"severity\": \"error\"}}" \
+            https://events.pagerduty.com/v2/enqueue
