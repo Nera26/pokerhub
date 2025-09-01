@@ -11,3 +11,4 @@
     - proof-archive
     - "ci / ops-artifacts-verify"
     - spectator-retention
+    - "ci / spectator-privacy"
