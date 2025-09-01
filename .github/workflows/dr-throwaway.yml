@@ -43,6 +43,11 @@ jobs:
             echo "Failover RPO exceeds 5 minutes" >&2
             exit 1
           fi
+      - name: Publish failover metrics to Cloud Monitoring
+        run: |
+          source failover.metrics
+          gcloud monitoring metrics write custom.googleapis.com/dr/rto "$RTO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/rpo "$RPO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
       - name: Run backup restore test
         run: bash infra/disaster-recovery/tests/restore-backup.sh | tee restore.log
         env:
@@ -64,6 +69,11 @@ jobs:
             echo "Restore RPO exceeds 5 minutes" >&2
             exit 1
           fi
+      - name: Publish restore metrics to Cloud Monitoring
+        run: |
+          source restore-backup.metrics
+          gcloud monitoring metrics write custom.googleapis.com/dr/rto "$RTO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/rpo "$RPO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
       - name: Upload failover log
         if: always()
         uses: actions/upload-artifact@v4

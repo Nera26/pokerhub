@@ -43,6 +43,11 @@ jobs:
             echo "Restore RPO exceeds 5 minutes" >&2
             exit 1
           fi
+      - name: Publish metrics to Cloud Monitoring
+        run: |
+          source infra/disaster-recovery/tests/restore-backup.metrics
+          gcloud monitoring metrics write custom.googleapis.com/dr/rto "$RTO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/rpo "$RPO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v3

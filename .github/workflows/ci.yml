@@ -763,6 +763,14 @@ jobs:
             "Δ RPO snapshot: \(.trend.rpoSnap)s",
             "Δ RPO WAL: \(.trend.rpoWal)s"
           ] | join("\n")' >> "$GITHUB_STEP_SUMMARY"
+      - name: Publish trend metrics to Cloud Monitoring
+        run: |
+          rto=$(jq -r '.latest.rto' dr-trends.json)
+          rpo_snap=$(jq -r '.latest.rpoSnap' dr-trends.json)
+          rpo_wal=$(jq -r '.latest.rpoWal' dr-trends.json)
+          gcloud monitoring metrics write custom.googleapis.com/dr/rto "$rto" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/rpo_snapshot "$rpo_snap" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/rpo_wal "$rpo_wal" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
       - name: Prepare DR trend Slack payload
         if: always()
         env:
