@@ -47,8 +47,18 @@ jobs:
       - run: npm ci
       - run: npx ts-node scripts/ensure-proof-archive.ts
 
+  ensure-dr-drill:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npx ts-node scripts/ensure-dr-drill.ts
+
   ops-preflight:
-    needs: [ensure-spectator-privacy, ensure-ops-preflight, ensure-proof-archive]
+    needs: [ensure-spectator-privacy, ensure-ops-preflight, ensure-proof-archive, ensure-dr-drill]
     runs-on: ubuntu-latest
     steps:
       - uses: ./.github/actions/ops-preflight
