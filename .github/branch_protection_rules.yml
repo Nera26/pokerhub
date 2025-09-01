@@ -13,3 +13,4 @@
     - soak-smoke
     - "ci / spectator-privacy"
     - spectator-retention
+    - "ci / soak-metrics"
