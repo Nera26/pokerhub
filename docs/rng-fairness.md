@@ -124,6 +124,17 @@ npx ts-node scripts/export-hand-proof.ts <handId>
 
 The script also prints the same object to stdout for quick inspection.
 
+### Verifying an exported proof
+
+To validate a saved proof and deck offline:
+
+```sh
+npx ts-node backend/src/scripts/verify-proof.ts <commitment> <seed> <nonce> path/to/deck.json
+```
+
+The command recomputes the commitment and shuffles a fresh deck, reporting any
+mismatches between the expected and provided deck order.
+
 ## Independent Audits
 
 PokerHub engages external security firms annually to review the RNG
