@@ -83,6 +83,11 @@ jobs:
           manifest_sha=$(jq -r '.manifestSha' proof-summary.json)
           gcloud monitoring metrics write custom.googleapis.com/proof/archive_count "$count" --project=${{ vars.GCP_PROJECT_ID }}
           gcloud monitoring metrics write custom.googleapis.com/proof/manifest_hash 1 --project=${{ vars.GCP_PROJECT_ID }} --labels=hash="$manifest_sha"
+      - name: Load proof summary to BigQuery
+        if: success()
+        run: |
+          jq --arg run_id "${GITHUB_RUN_ID}" --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '. + {run_id:$run_id, timestamp:$ts}' proof-summary.json > proof-summary.bq.json
+          bq load --project_id=${{ vars.GCP_PROJECT_ID }} --source_format=NEWLINE_DELIMITED_JSON ops_metrics.proof_archives proof-summary.bq.json infra/analytics/proof_archives.schema.json
       - name: Sign and upload proof summary manifest
         if: success()
         env:
