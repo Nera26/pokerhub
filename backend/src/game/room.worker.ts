@@ -82,8 +82,8 @@ async function main() {
             actionCounter.add(1, { tableId: workerData.tableId });
           }
 
-          const idx = engine.getHandLog().slice(-1)[0]?.[0] ?? 0;
-          const state = engine.getPublicState();
+          let idx = engine.getHandLog().slice(-1)[0]?.[0] ?? 0;
+          let state = engine.getPublicState();
 
           // Settlement (gated by feature flags)
           const settlementEnabled = await isSettlementEnabled();
@@ -98,7 +98,7 @@ async function main() {
             }
           }
 
-          const delta = diff(previousState, state);
+          let delta = diff(previousState, state);
           previousState = state;
 
           // Emit a full-state event for local consumers
@@ -106,6 +106,21 @@ async function main() {
 
           // Publish compact deltas over Redis for socket fan-out
           await pub?.publish(diffChannel, JSON.stringify([idx, delta]));
+
+          if (state.phase === 'SETTLE') {
+            engine.applyAction({ type: 'next' });
+            actionCounter.add(1, { tableId: workerData.tableId });
+            idx = engine.getHandLog().slice(-1)[0]?.[0] ?? idx;
+            state = engine.getPublicState();
+            delta = diff(previousState, state);
+            previousState = state;
+            port.postMessage({ event: 'state', state });
+            await pub?.publish(diffChannel, JSON.stringify([idx, delta]));
+          }
+
+          if (state.phase === 'NEXT_HAND') {
+            previousState = undefined;
+          }
 
           if (settlementEnabled && svc) {
             try {
@@ -125,7 +140,7 @@ async function main() {
             }
           }
 
-          // Respond directly to the requester with the full state
+          // Respond directly to the requester with the final state
           port.postMessage({ seq: msg.seq, state });
           break;
         }

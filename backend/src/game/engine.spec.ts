@@ -55,12 +55,23 @@ describe('GameEngine hand lifecycle', () => {
     }
     await new Promise((r) => setImmediate(r));
 
-    const state = engine.getState();
+    let state = engine.getState();
     expect(state.phase).toBe('SETTLE');
     expect(engine.getSettlements()).toEqual([
       { playerId: 'A', delta: 2 },
       { playerId: 'B', delta: -2 },
     ]);
+
+    state = engine.applyAction({ type: 'next' });
+    expect(state.phase).toBe('NEXT_HAND');
+    expect(state.pot).toBe(0);
+    expect(state.communityCards).toHaveLength(0);
+    for (const p of state.players) {
+      expect(p.folded).toBe(false);
+      expect(p.bet).toBe(0);
+      expect(p.allIn).toBe(false);
+      expect(p.holeCards).toBeUndefined();
+    }
 
     expect(wallet.reserve).toHaveBeenCalledTimes(2);
     expect(wallet.rollback).toHaveBeenCalledWith('A', 100, handId, 'USD');
