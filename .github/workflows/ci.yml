@@ -650,6 +650,7 @@ jobs:
 
   spectator-privacy:
     needs: [property, integration]
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     env:
       SPECTATOR_LOGS_BUCKET: ${{ secrets.SPECTATOR_LOGS_BUCKET }}
