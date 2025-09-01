@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 interface UserRecord {
   id: string;
@@ -19,6 +20,7 @@ export class AuthService {
     private readonly sessions: SessionService,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
     private readonly config: ConfigService,
+    private readonly analytics: AnalyticsService,
   ) {
     const hash = bcrypt.hashSync('secret', 10);
     this.users.set('user@example.com', { id: '1', password: hash });
@@ -42,6 +44,7 @@ export class AuthService {
   async login(email: string, password: string) {
     const userId = await this.validateUser(email, password);
     if (!userId) return null;
+    await this.analytics.emit('auth.login', { userId, ts: Date.now() });
     return this.sessions.issueTokens(userId);
   }
 
