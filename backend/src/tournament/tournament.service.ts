@@ -30,6 +30,7 @@ export class TournamentService {
     string,
     Map<number, { smallBlind: number; bigBlind: number }>
   >();
+  private bubbleAnnounced = new Set<string>();
   constructor(
     @InjectRepository(Tournament)
     private readonly tournaments: Repository<Tournament>,
@@ -379,6 +380,29 @@ export class TournamentService {
     remainder?: number;
   } {
     return calculatePrizesFn(prizePool, payouts, opts);
+  }
+
+  /**
+   * Detect when the field has reached the bubble (one spot from payouts).
+   * Emits a `tournament.bubble` event the first time this occurs.
+   */
+  async detectBubble(
+    tournamentId: string,
+    remainingPlayers: number,
+    payoutThreshold: number,
+  ): Promise<boolean> {
+    if (
+      remainingPlayers !== payoutThreshold ||
+      this.bubbleAnnounced.has(tournamentId)
+    ) {
+      return false;
+    }
+    this.bubbleAnnounced.add(tournamentId);
+    await this.events.emit('tournament.bubble', {
+      tournamentId,
+      remainingPlayers,
+    });
+    return true;
   }
 
   /**

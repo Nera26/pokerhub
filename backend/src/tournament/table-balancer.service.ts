@@ -27,6 +27,7 @@ export class TableBalancerService {
     tournamentId: string,
     currentHand = 0,
     avoidWithin = 10,
+    payoutThreshold?: number,
   ): Promise<boolean> {
     const tables = await this.tables.find({
       where: { tournament: { id: tournamentId } },
@@ -34,6 +35,14 @@ export class TableBalancerService {
     });
     if (tables.length === 0) return false;
     const counts = tables.map((t) => t.seats.length);
+    if (payoutThreshold !== undefined) {
+      const remaining = counts.reduce((a, b) => a + b, 0);
+      await this.tournamentService.detectBubble(
+        tournamentId,
+        remaining,
+        payoutThreshold,
+      );
+    }
     const max = Math.max(...counts);
     const min = Math.min(...counts);
     if (max - min > 1) {
