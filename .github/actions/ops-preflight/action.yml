@@ -124,3 +124,12 @@ runs:
         sla: ${{ inputs.proof-archive-sla-hours }}
         unit: hours
         slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Check proof archive bucket retention
+      run: npx -y ts-node scripts/check-proof-archive-retention.ts
+      env:
+        PROOF_ARCHIVE_BUCKET: ${{ env.PROOF_ARCHIVE_BUCKET }}
+    - name: Check proof archive replication
+      run: npx -y ts-node scripts/check-proof-archive-replication.ts
+      env:
+        PROOF_ARCHIVE_BUCKET: ${{ env.PROOF_ARCHIVE_BUCKET }}
+        SECONDARY_REGION: ${{ env.SECONDARY_REGION }}

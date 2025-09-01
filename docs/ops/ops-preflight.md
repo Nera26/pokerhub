@@ -2,15 +2,35 @@ Ops Preflight
 
 The ops-preflight composite action centralizes operational gates used across deployment workflows. It verifies:
 
-Spectator privacy: spectator-privacy-nightly workflow freshness and spectator_privacy/run_success metric freshness
+Spectator privacy
 
-Soak metrics: SLA freshness, p95 latency, minimum throughput, and trend artifacts presence
+spectator-privacy-nightly workflow freshness
 
-Disaster recovery drills: dr-drill, dr-failover, dr-restore, dr-throwaway
+spectator_privacy/run_success metric freshness
 
-Disaster recovery trends: fails if latest or average RTO/RPO exceed RTO_TARGET / RPO_TARGET
+Soak metrics
 
-Proof archive: workflow freshness and integrity checks
+Workflow/artifact SLA freshness
+
+Performance thresholds: p95 latency and minimum throughput
+
+Presence of trend artifacts
+
+Disaster recovery drills
+
+dr-drill, dr-failover, dr-restore, dr-throwaway workflow freshness
+
+Disaster recovery trends
+
+Fails if latest or average RTO/RPO exceed RTO_TARGET / RPO_TARGET
+
+Proof archive
+
+proof-archive workflow freshness
+
+Bucket retention and dual-region replication audits (fail deployment on breach)
+
+If any gate fails, deployment is blocked.
 
 Inputs
 Name	Required	Description
@@ -26,17 +46,16 @@ proof-archive-sla-hours		Max age (hours) for the proof-archive workflow. Default
 ❗ The action fails if required artifacts (e.g., soak-summary.json) are missing or if thresholds are exceeded.
 
 Required secrets & vars
-
 Secrets
 
 SLACK_BOT_TOKEN – used by check-workflow-sla
  to send alerts.
 
-GCP_SA_KEY – service-account JSON for DR and spectator privacy metric checks.
+GCP_SA_KEY – service-account JSON for DR and spectator-privacy metric checks (Cloud Monitoring API).
 
 Repository / Environment Vars
 
-vars.GCP_PROJECT_ID – GCP project containing DR and spectator privacy metrics.
+vars.GCP_PROJECT_ID – GCP project containing DR & spectator privacy metrics.
 
 vars.DR_METRICS_BUCKET – GCS bucket holding DR drill metrics / trend files.
 
@@ -46,11 +65,15 @@ vars.RPO_TARGET – maximum allowed RPO in seconds (e.g., 300).
 
 vars.SOAK_TRENDS_BUCKET – GCS bucket for soak trend artifacts.
 
-vars.SOAK_LATENCY_P95_MS – maximum allowed p95 latency for the latest soak (e.g., 120).
+vars.SOAK_LATENCY_P95_MS – max allowed p95 latency for the latest soak (e.g., 120).
 
 vars.SOAK_THROUGHPUT_MIN – minimum allowed throughput for the latest soak (e.g., 100).
 
-The service account must have permission to read Cloud Monitoring time-series data (e.g., roles/monitoring.viewer) and GCS buckets for soak/DR/proof artifacts.
+PROOF_ARCHIVE_BUCKET – GCS bucket to audit for proof archive retention & replication.
+
+vars.SECONDARY_REGION – expected secondary region for proof archive replication.
+
+The service account must have permission to read Cloud Monitoring time-series data (e.g., roles/monitoring.viewer) and access GCS buckets for soak/DR/proof artifacts.
 
 Behavior on failure
 
