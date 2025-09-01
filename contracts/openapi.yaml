@@ -484,6 +484,33 @@ paths:
         '404':
           description: Hand not found
 
+  /hands/proofs:
+    get:
+      summary: List stored RNG proofs
+      parameters:
+        - in: query
+          name: from
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: to
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: ids
+          schema:
+            type: string
+            description: Comma separated hand IDs
+      responses:
+        '200':
+          description: Proofs for hands
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HandProofs'
+
   /hands/{id}/log:
     get:
       summary: Export hand log
@@ -1597,6 +1624,18 @@ components:
       - seed
       - nonce
       - commitment
+  HandProofs:
+    type: array
+    items:
+      type: object
+      properties:
+        id:
+          type: string
+        proof:
+          $ref: '#/components/schemas/HandProof'
+      required:
+        - id
+        - proof
   HandStateResponse:
     type: object
     properties:

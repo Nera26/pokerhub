@@ -8,6 +8,14 @@ export const HandProofResponse = z.object({
 });
 export type HandProofResponse = z.infer<typeof HandProofResponse>;
 
+export const HandProofsResponse = z.array(
+  z.object({
+    id: z.string(),
+    proof: HandProofResponse,
+  }),
+);
+export type HandProofsResponse = z.infer<typeof HandProofsResponse>;
+
 /** ---- /hands/:id/log (plain text JSONL) ---- */
 export const HandLogResponse = z.string();
 export type HandLogResponse = z.infer<typeof HandLogResponse>;

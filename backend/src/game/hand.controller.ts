@@ -8,10 +8,11 @@ import {
   Header,
   StreamableFile,
   Req,
+  Query,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createReadStream } from 'fs';
-import { readFile } from 'fs/promises';
+import { readFile, readdir, stat } from 'fs/promises';
 import { Readable } from 'stream';
 import { join } from 'path';
 import { Repository } from 'typeorm';
@@ -19,8 +20,14 @@ import { ConfigService } from '@nestjs/config';
 import jwt from 'jsonwebtoken';
 import type { Request } from 'express';
 import { Hand } from '../database/entities/hand.entity';
-import { HandProofResponse as HandProofResponseSchema } from '../schemas/hands';
-import type { HandProofResponse } from '../schemas/hands';
+import {
+  HandProofResponse as HandProofResponseSchema,
+  HandProofsResponse as HandProofsResponseSchema,
+} from '../schemas/hands';
+import type {
+  HandProofResponse,
+  HandProofsResponse,
+} from '../schemas/hands';
 import { HandLog } from './hand-log';
 
 @Controller('hands')
@@ -81,6 +88,55 @@ export class HandController {
       }
     }
     return participants;
+  }
+
+  @Get('proofs')
+  async listProofs(
+    @Req() req: Request,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('ids') ids?: string,
+  ): Promise<HandProofsResponse> {
+    const { isAdmin } = this.verifyToken(req.headers['authorization']);
+    if (!isAdmin) {
+      throw new ForbiddenException();
+    }
+
+    const dir = join(process.cwd(), '../storage/proofs');
+    let files: string[] = [];
+    try {
+      files = await readdir(dir);
+    } catch {
+      return [];
+    }
+
+    const fromMs = from ? Number(from) : undefined;
+    const toMs = to ? Number(to) : undefined;
+    const idSet = ids ? new Set(ids.split(',')) : undefined;
+
+    const proofs: HandProofsResponse = [];
+
+    for (const file of files) {
+      if (!file.endsWith('.json')) continue;
+      const id = file.slice(0, -5);
+      if (idSet && !idSet.has(id)) continue;
+
+      const filepath = join(dir, file);
+      try {
+        const stats = await stat(filepath);
+        const mtime = stats.mtimeMs;
+        if (fromMs && mtime < fromMs) continue;
+        if (toMs && mtime > toMs) continue;
+
+        const raw = await readFile(filepath, 'utf8');
+        const proof = HandProofResponseSchema.parse(JSON.parse(raw));
+        proofs.push({ id, proof });
+      } catch {
+        continue;
+      }
+    }
+
+    return HandProofsResponseSchema.parse(proofs);
   }
 
   @Get(':id/proof')
