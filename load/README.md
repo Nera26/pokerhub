@@ -7,8 +7,9 @@ This directory contains load test scripts for PokerHub.
 - `k6-ws-soak.js` – 24h k6 soak test emulating 80k sockets across 10k tables with 5% packet loss and 200 ms jitter. Deterministic runs are achieved via a seed and the script checks memory leak (<1%) and GC pause p95 (<50 ms) using a metrics endpoint.
 - `toxiproxy.sh` – configures a Toxiproxy instance injecting packet loss, latency and jitter between clients and the server.
 - `toxiproxy-soak.sh` – wrapper around `toxiproxy.sh` with 5% packet loss and 200 ms jitter for soak tests.
-- `collect-gc-heap.sh` – polls the metrics endpoint for GC pause and heap stats and can push them to Grafana.
+- `collect-gc-heap.sh` – polls the metrics endpoint for GC pause and RSS stats, exporting p95 and growth metrics (fails if RSS grows ≥1% or GC pause p95 ≥50 ms).
 - `run-10k-chaos.sh` – orchestrates k6 and Artillery runs, capturing ACK latency, GC/heap metrics and RNG seeds under `load/metrics/`.
+- `run-ws-soak.sh` – runs the 24 h `k6-ws-soak.js` scenario and records GC pause p95 and RSS growth metrics under `load/metrics/`.
 - `k6-10k-tables.js` – k6 WebSocket scenario driving ~80 k sockets across 10 k tables, injecting packet loss and jitter while recording ACK latency. Supports deterministic replays via `RNG_SEED` and outputs histograms under `load/metrics/`.
 - `artillery-10k-tables.yml` – Artillery equivalent to `k6-10k-tables.js` that captures per-endpoint latency histograms.
 - `k6-10k-tables-clickhouse.js` – k6 scenario for 10k tables and 80 k sockets injecting 5% packet loss and 200 ms jitter, capturing latency histograms and error rates with metrics exported to ClickHouse and deterministic seeds.
