@@ -12,6 +12,9 @@ permissions:
   actions: read
 
 jobs:
+  check-proof-archive:
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   soak-metrics:
     uses: ./.github/workflows/soak-metrics.yml
     secrets: inherit
@@ -776,6 +779,6 @@ jobs:
           curl -X POST -H 'Content-Type: application/json' -d @pd.json https://events.pagerduty.com/v2/enqueue
 
   ops-artifacts-verify:
-    needs: [dr-runbook, workflow-sla, dr-trends, spectator-privacy]
+    needs: [dr-runbook, workflow-sla, dr-trends, spectator-privacy, check-proof-archive]
     uses: ./.github/workflows/ops-artifacts-verify.yml
     secrets: inherit

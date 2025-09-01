@@ -10,7 +10,12 @@ permissions:
   actions: read
 
 jobs:
+  check-proof-archive:
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
+
   preflight:
+    needs: check-proof-archive
     runs-on: ubuntu-latest
     env:
       DR_DRILL_SLA_DAYS: 7
