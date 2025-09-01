@@ -1,3 +1,6 @@
+# Requires secrets for Slack notifications:
+#   SLACK_BOT_TOKEN – bot token used to post messages
+#   SLACK_CHANNEL_ID – ID of the operations channel
 name: dr-drill
 concurrency:
   group: "dr-drill"
@@ -190,6 +193,21 @@ jobs:
         with:
           title: DR drill failure
           content-filepath: drill.metrics
+
+      - name: Prepare Slack alert
+        if: failure()
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: tail -n 40 dr-drill.log | jq -Rs '{channel: env.SLACK_CHANNEL_ID, text: "DR drill failed:\n" + .}' > dr-drill-slack.json
+
+      - name: Slack alert (DR drill)
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: dr-drill-slack.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
   spectator-privacy:
     needs: drill
