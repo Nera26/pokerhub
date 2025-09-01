@@ -367,6 +367,39 @@ function checkSoakTrendDelta(bucket: string, maxPct: number) {
   }
 }
 
+function checkSoakMonitoringMetrics(projectId: string) {
+  const end = new Date();
+  const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+  const metrics = [
+    'custom.googleapis.com/soak/latency',
+    'custom.googleapis.com/soak/throughput',
+  ];
+  for (const metric of metrics) {
+    let raw: string;
+    try {
+      raw = execSync(
+        `gcloud monitoring time-series list --project=${projectId} ` +
+          `--filter="metric.type='${metric}'" ` +
+          `--interval-start=${start.toISOString()} ` +
+          `--interval-end=${end.toISOString()} ` +
+          `--limit=1 --format=json`,
+        { encoding: 'utf-8' },
+      );
+    } catch {
+      throw new Error(`Missing metric ${metric}`);
+    }
+    let series: Array<{ points?: any[] }> = [];
+    try {
+      series = JSON.parse(raw);
+    } catch {
+      throw new Error(`Unable to parse metric ${metric}`);
+    }
+    if (series.length === 0 || !series[0].points?.length) {
+      throw new Error(`No recent data points for ${metric}`);
+    }
+  }
+}
+
 function checkDrMetrics(bucket: string) {
   let listing: string;
   try {
@@ -465,6 +498,7 @@ function main() {
   checkSoakMetrics(soakBucket);
   checkSoakSummary(soakBucket, maxLatencyP95, minThroughput);
   checkSoakTrendDelta(soakBucket, maxTrendPct);
+  checkSoakMonitoringMetrics(projectId);
   checkDrMetrics(drMetricsBucket);
 
   console.log('All ops artifacts verified');
@@ -488,5 +522,6 @@ export {
   checkSoakMetrics,
   checkSoakSummary,
   checkSoakTrendDelta,
+  checkSoakMonitoringMetrics,
   checkDrMetrics,
 };

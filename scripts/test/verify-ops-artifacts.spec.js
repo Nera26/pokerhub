@@ -36,6 +36,21 @@ test('checkSoakMetrics fails when metrics are stale', () => {
   mock.restoreAll();
 });
 
+test('checkSoakMonitoringMetrics fails without data', () => {
+  const cp = require('child_process');
+  mock.method(cp, 'execSync', () => '[]');
+  assert.throws(() => verify.checkSoakMonitoringMetrics('proj'), /No recent data points/);
+  mock.restoreAll();
+});
+
+test('checkSoakMonitoringMetrics passes with data', () => {
+  const cp = require('child_process');
+  const resp = JSON.stringify([{ points: [{}] }]);
+  mock.method(cp, 'execSync', () => resp);
+  assert.doesNotThrow(() => verify.checkSoakMonitoringMetrics('proj'));
+  mock.restoreAll();
+});
+
 test('checkSoakSummary enforces latency threshold', () => {
   const summary = JSON.stringify({
     metrics: { ws_latency: { 'p(95)': 150, count: 100 } },

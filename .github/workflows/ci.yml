@@ -281,6 +281,7 @@ jobs:
           SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS || 120 }}
           SOAK_THROUGHPUT_MIN: ${{ vars.SOAK_THROUGHPUT_MIN || 100 }}
           RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
         run: npx ts-node scripts/verify-ops-artifacts.ts
 
   soak-metrics:
@@ -688,6 +689,7 @@ jobs:
       DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
       SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS || 120 }}
       SOAK_THROUGHPUT_MIN: ${{ vars.SOAK_THROUGHPUT_MIN || 100 }}
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

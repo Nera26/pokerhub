@@ -21,6 +21,8 @@ jobs:
       SOAK_THROUGHPUT_MIN: ${{ vars.SOAK_THROUGHPUT_MIN || 100 }}
       SOAK_TRENDS_MAX_PCT: ${{ vars.SOAK_TRENDS_MAX_PCT || 20 }}
 
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+
       RUN_ID: ${{ github.run_id }}
       DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
 
