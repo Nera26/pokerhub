@@ -39,3 +39,9 @@ jobs:
       - name: Record audit failure metric
         if: failure()
         run: gcloud monitoring metrics write custom.googleapis.com/proof/archive_audit_success 0
+
+  spectator-privacy:
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log

@@ -86,3 +86,9 @@ jobs:
         if: always() && hashFiles('soak-summary.json') != ''
         run: |
           bq load --source_format=NEWLINE_DELIMITED_JSON --autodetect ops_metrics.soak_trends soak-summary.json
+
+  spectator-privacy:
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log

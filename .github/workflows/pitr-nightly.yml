@@ -40,3 +40,9 @@ jobs:
             { "text": "Nightly PITR backup failed for ${GITHUB_REPOSITORY}@${GITHUB_SHA}" }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  spectator-privacy:
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log

@@ -18,3 +18,9 @@ jobs:
       - run: npm ci --prefix backend
       - run: npm ci --prefix frontend
       - run: ./scripts/check-contract-drift.sh
+
+  spectator-privacy:
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log

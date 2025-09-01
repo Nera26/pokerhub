@@ -18,3 +18,9 @@ jobs:
           node-version: 20
       - run: npm ci --prefix scripts
       - run: npx ts-node scripts/archive-events.ts
+
+  spectator-privacy:
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log

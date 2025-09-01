@@ -112,3 +112,9 @@ jobs:
         run: npm run contracts:generate
       - name: Run contract tests
         run: npm run test:contracts
+
+  spectator-privacy:
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log

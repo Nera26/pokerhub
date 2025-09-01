@@ -18,3 +18,9 @@ jobs:
             echo "SLO breach: ACK latency exceeds threshold" >&2
             exit 1
           fi
+
+  spectator-privacy:
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log

@@ -59,3 +59,9 @@ jobs:
         with:
           title: "SLA breached: spectator-retention"
           content-filepath: spectator-retention-alert.md
+
+  spectator-privacy:
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log

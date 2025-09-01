@@ -61,3 +61,9 @@ jobs:
           unit: ${{ matrix.unit }}
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
+
+  spectator-privacy:
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log
