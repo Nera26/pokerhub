@@ -79,6 +79,19 @@ const trend = {
 const summary = { latest, average, trend, runs: rtos.length };
 console.log(JSON.stringify(summary));
 
+const rpoTrend = Math.max(trend.rpoSnap, trend.rpoWal);
+try {
+  execSync(
+    `gcloud monitoring metrics write custom.googleapis.com/dr/rto_trend ${trend.rto}`,
+  );
+  execSync(
+    `gcloud monitoring metrics write custom.googleapis.com/dr/rpo_trend ${rpoTrend}`,
+  );
+} catch (err) {
+  console.error('Failed to write Cloud Monitoring metrics');
+  console.error(err);
+}
+
 if (
   latest.rto > rtoThreshold ||
   average.rto > rtoThreshold ||
