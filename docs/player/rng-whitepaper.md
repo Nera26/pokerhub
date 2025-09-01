@@ -29,6 +29,22 @@ PokerHub uses a commit–reveal protocol to prove every shuffle was fair and unm
 3. Shuffle a new deck with the seed and compare against the public hand log.
 4. Optional: run `bin/verify-hand <handId>` to automate steps 1–3.
 
+## How to verify a hand
+1. Play a hand and note its identifier from the table history.
+2. Download the proof JSON via `GET /hands/{id}/proof`.
+3. Download the hand log via `GET /hands/{id}/log` and extract the deck order.
+4. Save the deck to `deck.json` and run:
+
+   ```sh
+   npx ts-node backend/src/scripts/verify-proof.ts \
+     <commitment> <seed> <nonce> deck.json
+   ```
+
+   The script recomputes the commitment and verifies the provided deck matches the deterministic shuffle.
+5. A passing run prints `Proof verified: deck order matches commitment`.
+
+The Playwright test `frontend/e2e/hand-proof-deck.spec.ts` automates this workflow end-to-end.
+
 ### Verifying Proofs via GCS
 Players can independently validate a hand using the public Google Cloud Storage bucket:
 
