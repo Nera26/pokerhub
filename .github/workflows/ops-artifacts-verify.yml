@@ -23,7 +23,6 @@ jobs:
 
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
 
-      RUN_ID: ${{ github.run_id }}
       DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
 
     steps:
@@ -62,10 +61,12 @@ jobs:
             echo "No spectator-privacy-nightly run found" >&2
             exit 1
           fi
-          echo "RUN_ID=$RUN_ID" >> "$GITHUB_OUTPUT"
+          # Expose the spectator privacy run ID for later verification
+          echo "SPECTATOR_RUN_ID=$RUN_ID" >> "$GITHUB_OUTPUT"
       - name: Verify ops artifacts
         env:
-          RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
+          # Pass the spectator privacy run ID to verification script
+          RUN_ID: ${{ steps.get_run_id.outputs.SPECTATOR_RUN_ID }}
         run: |
           set +e
           out=$(npx ts-node scripts/verify-ops-artifacts.ts 2>&1)
