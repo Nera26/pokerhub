@@ -428,7 +428,7 @@ jobs:
           PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
           SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
           SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
-          RUN_ID: ${{ github.run_id }}
+          RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
           DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
           SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS || 120 }}
           SOAK_THROUGHPUT_MIN: ${{ vars.SOAK_THROUGHPUT_MIN || 100 }}
