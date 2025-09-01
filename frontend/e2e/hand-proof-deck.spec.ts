@@ -1,15 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { io } from 'socket.io-client';
 import { execSync } from 'child_process';
-import fs from 'fs';
 import path from 'path';
-import { z } from 'zod';
-
-const HandProofResponseSchema = z.object({
-  seed: z.string(),
-  nonce: z.string(),
-  commitment: z.string(),
-});
 
 async function waitFor(url: string, timeout = 60_000) {
   const start = Date.now();
@@ -62,43 +54,8 @@ test.describe('hand proof deck verification', () => {
 
     const handId = events.end.handId as string;
 
-    // Fetch proof
-    const proofRes = await page.request.get(`http://localhost:3000/hands/${handId}/proof`);
-    const proof = HandProofResponseSchema.parse(await proofRes.json());
-
-    // Download hand log
-    const logRes = await page.request.get(`http://localhost:3000/hands/${handId}/log`);
-    const logText = await logRes.text();
-
-    const outDir = path.resolve(__dirname, '../test-results');
-    fs.mkdirSync(outDir, { recursive: true });
-    const logPath = path.join(outDir, `${handId}.log`);
-    fs.writeFileSync(logPath, logText);
-
-    // Extract initial deck and hole cards
-    const lines = logText.trim().split('\n').filter(Boolean).map((l) => JSON.parse(l));
-    const entryWithDeck = lines.find(
-      (e) => Array.isArray(e) && e[3]?.deck && e[3].deck.length > 0,
-    );
-    if (!entryWithDeck) throw new Error('Deck not found in log');
-    const postState = entryWithDeck[3];
-    const deckAfterDeal: number[] = postState.deck;
-    const holeCards: number[] = [];
-    for (const p of postState.players) {
-      if (Array.isArray(p.holeCards)) holeCards.push(...p.holeCards);
-    }
-    const fullDeck = deckAfterDeal.concat([...holeCards].reverse());
-
-    const deckPath = path.join(outDir, `${handId}-deck.json`);
-    fs.writeFileSync(deckPath, JSON.stringify({ deck: fullDeck }, null, 2));
-
-    // Verify using backend script
-    const script = path.resolve(
-      __dirname,
-      '../../backend/src/scripts/verify-proof.ts',
-    );
-    const cmd = `npx ts-node ${script} ${proof.commitment} ${proof.seed} ${proof.nonce} ${deckPath}`;
-    const output = execSync(cmd, {
+    const cmd = path.resolve(__dirname, '../../bin/verify-proof');
+    const output = execSync(`${cmd} ${handId} --base http://localhost:3000`, {
       cwd: path.resolve(__dirname, '..', '..'),
       encoding: 'utf8',
     });

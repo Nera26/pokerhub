@@ -124,16 +124,17 @@ npx ts-node scripts/export-hand-proof.ts <handId>
 
 The script also prints the same object to stdout for quick inspection.
 
-### Verifying an exported proof
+### Verifying a hand via CLI
 
-To validate a saved proof and deck offline:
+You can validate any completed hand directly against the API:
 
 ```sh
-npx ts-node backend/src/scripts/verify-proof.ts <commitment> <seed> <nonce> path/to/deck.json
+bin/verify-proof <handId> [--base <url>]
 ```
 
-The command recomputes the commitment and shuffles a fresh deck, reporting any
-mismatches between the expected and provided deck order.
+The command fetches `/hands/{id}/proof` and the associated hand log, recomputes
+the deck from the revealed seed and reports whether it matches the recorded
+order. It exits with code `1` on failure.
 
 ## Manual Verification
 
