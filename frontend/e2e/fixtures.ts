@@ -33,7 +33,12 @@ export const test = base.extend({
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ balance: 123456 }),
+        body: JSON.stringify({
+          kycVerified: true,
+          denialReason: null,
+          realBalance: 123456,
+          creditBalance: 0,
+        }),
       });
     });
 
@@ -41,7 +46,7 @@ export const test = base.extend({
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ notifications: [], balance: 0 }),
+        body: JSON.stringify({ notifications: [] }),
       });
     });
 

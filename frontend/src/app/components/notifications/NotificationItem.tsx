@@ -10,7 +10,7 @@ import { faTrophy } from '@fortawesome/free-solid-svg-icons/faTrophy';
 
 export interface NotificationItemProps {
   notification: Notification;
-  onClick?: (id: number) => void;
+  onClick?: (id: string) => void;
 }
 
 // Helper to format elapsed time

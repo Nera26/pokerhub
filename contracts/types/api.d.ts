@@ -156,6 +156,50 @@ export interface paths {
       };
     };
   };
+  "/notifications": {
+    /** Get notifications */
+    get: {
+      responses: {
+        /** @description Notifications list */
+        200: {
+          content: {
+            "application/json": components["schemas"]["NotificationsResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/notifications/mark-all": {
+    /** Mark all notifications as read */
+    post: {
+      responses: {
+        /** @description Marked */
+        200: {
+          content: {
+            "application/json": components["schemas"]["StatusResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/notifications/{id}": {
+    /** Mark a notification as read */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Marked */
+        200: {
+          content: {
+            "application/json": components["schemas"]["StatusResponse"];
+          };
+        };
+      };
+    };
+  };
   "/tables": {
     /** Get lobby tables */
     get: {
@@ -833,67 +877,41 @@ export interface paths {
     };
   };
   "/users/{id}/ban": {
-  /** Ban user */
-  post: {
-    parameters: {
-      path: {
-        id: string;
+    /** Ban user */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
       };
-    };
-    requestBody?: {
-      content: {
-        "application/json": components["schemas"]["BanUserRequest"];
-      };
-    };
-    responses: {
-      /** @description Banned user */
-      200: {
+      requestBody?: {
         content: {
-          "application/json": components["schemas"]["User"];
+          "application/json": components["schemas"]["BanUserRequest"];
+        };
+      };
+      responses: {
+        /** @description Banned user */
+        200: {
+          content: {
+            "application/json": components["schemas"]["User"];
+          };
         };
       };
     };
   };
-};
-
-"/users/{id}/balance": {
-  /** Adjust user balance */
-  post: {
-    parameters: {
-      path: {
-        id: string;
-      };
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["BalanceAdjustmentRequest"];
-      };
-    };
-    responses: {
-      /** @description Updated balance */
-      200: {
-        content: {
-          "application/json": components["schemas"]["User"];
+  "/feature-flags": {
+    /** List feature flags */
+    get: {
+      responses: {
+        /** @description Feature flags */
+        200: {
+          content: {
+            "application/json": components["schemas"]["FeatureFlagsResponse"];
+          };
         };
       };
     };
   };
-};
-
-"/feature-flags": {
-  /** List feature flags */
-  get: {
-    responses: {
-      /** @description Feature flags */
-      200: {
-        content: {
-          "application/json": components["schemas"]["FeatureFlagsResponse"];
-        };
-      };
-    };
-  };
-};
-
   "/feature-flags/{key}": {
     /** Set feature flag */
     put: {

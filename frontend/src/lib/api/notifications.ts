@@ -2,24 +2,21 @@ import { z } from 'zod';
 import { getBaseUrl } from '@/lib/base-url';
 import { handleResponse, ApiError } from './client';
 import { serverFetch } from '@/lib/server-fetch';
-import { MessageResponseSchema, type MessageResponse } from '@shared/types';
+import {
+  MessageResponseSchema,
+  type MessageResponse,
+  NotificationSchema as NotificationBaseSchema,
+  type NotificationType,
+} from '@shared/types';
 
-export const NotificationTypeSchema = z.enum(['bonus', 'tournament', 'system']);
-export type NotificationType = z.infer<typeof NotificationTypeSchema>;
-
-export const NotificationSchema = z.object({
-  id: z.number(),
-  type: NotificationTypeSchema,
-  title: z.string(),
-  message: z.string(),
+const NotificationSchema = NotificationBaseSchema.extend({
   timestamp: z.coerce.date(),
-  read: z.boolean(),
 });
 export type Notification = z.infer<typeof NotificationSchema>;
+export type { NotificationType };
 
 const NotificationsResponseSchema = z.object({
   notifications: z.array(NotificationSchema),
-  balance: z.number(),
 });
 export type NotificationsResponse = z.infer<typeof NotificationsResponseSchema>;
 
@@ -52,9 +49,7 @@ export async function markAllNotificationsRead(): Promise<MessageResponse> {
   );
 }
 
-export async function markNotificationRead(
-  id: number,
-): Promise<MessageResponse> {
+export async function markNotificationRead(id: string): Promise<MessageResponse> {
   return handleResponse(
     serverFetch(`${getBaseUrl()}/api/notifications/${id}`, {
       method: 'POST',
