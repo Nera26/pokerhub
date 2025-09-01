@@ -220,7 +220,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const gameAction = wire as GameActionPayload;
 
     const room = this.rooms.get(tableId);
-    const state = await room.apply(gameAction);
+    await room.apply(gameAction);
+    const state = await room.getPublicState();
 
     void this.analytics.recordGameEvent({
       clientId: client.id,
@@ -237,8 +238,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.enqueue(client, 'state', payload, true);
 
     if (this.server?.of) {
-      const publicState = await room.getPublicState();
-      const spectatorPayload = { version: '1', ...publicState, tick: this.tick };
+      const spectatorPayload = { version: '1', ...state, tick: this.tick };
       GameStateSchema.parse(spectatorPayload);
       this.server
         .of('/spectate')

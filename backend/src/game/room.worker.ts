@@ -53,31 +53,35 @@ async function main() {
     async (
       msg: { type: string; seq: number; action?: GameAction; from?: number },
     ) => {
-      let state: GameState;
       switch (msg.type) {
         case 'apply':
-          state = engine.applyAction(msg.action as GameAction);
-          while (state.phase === 'DEAL') {
-            state = engine.applyAction({ type: 'next' });
+          engine.applyAction(msg.action as GameAction);
+          while (engine.getState().phase === 'DEAL') {
+            engine.applyAction({ type: 'next' });
           }
           {
             const svc = await getSettlement();
             const idx = engine.getHandLog().slice(-1)[0]?.[0] ?? 0;
+            const state = engine.getPublicState();
             await svc.reserve(engine.getHandId(), state.street, idx);
             port.postMessage({ event: 'state', state });
             await svc.commit(engine.getHandId(), state.street, idx);
             await pub?.publish(diffChannel, JSON.stringify([idx, state]));
+            port.postMessage({ seq: msg.seq, state });
           }
+          break;
+        case 'getState': {
+          const state = engine.getPublicState();
           port.postMessage({ seq: msg.seq, state });
           break;
-        case 'getState':
-          state = engine.getPublicState();
-          port.postMessage({ seq: msg.seq, state });
-          break;
+        }
         case 'replay':
-          state = engine.replayHand();
-          port.postMessage({ event: 'state', state });
-          port.postMessage({ seq: msg.seq, state });
+          engine.replayHand();
+          {
+            const state = engine.getPublicState();
+            port.postMessage({ event: 'state', state });
+            port.postMessage({ seq: msg.seq, state });
+          }
           break;
         case 'resume':
           const from = msg.from ?? 0;
