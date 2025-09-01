@@ -14,25 +14,24 @@ permissions:
   actions: read
 
 jobs:
-  check-proof-archive:
-    uses: ./.github/workflows/check-proof-archive.yml
-    secrets: inherit
-  soak-metrics:
-    uses: ./.github/workflows/soak-metrics.yml
-    secrets: inherit
-  dr-runbook:
+  ops-preflight:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: ./.github/actions/ops-preflight
         with:
-          node-version: 20
-      - name: Check DR runbook entry
-        run: |
-          set -euo pipefail
-          npx -y ts-node scripts/check-dr-runbook.ts
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          spectator-privacy-sla-hours: 24
+          spectator-retention-sla-days: 1
+          soak-metrics-sla-hours: 24
+          dr-drill-sla-days: 7
+          dr-failover-sla-days: 30
+          dr-restore-sla-days: 30
+          dr-runbook-sla-days: 7
+          dr-throwaway-sla-days: 7
+          proof-archive-sla-hours: 24
 
   tourney-sim:
+    needs: ops-preflight
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -50,6 +49,7 @@ jobs:
 
   k6-tournament:
     if: github.event_name == 'pull_request' || github.event_name == 'schedule'
+    needs: ops-preflight
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -72,6 +72,7 @@ jobs:
           NODE
 
   workflow-sla:
+    needs: ops-preflight
     runs-on: ubuntu-latest
     steps:
       - name: Check DR drill SLA
@@ -405,28 +406,8 @@ jobs:
           GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
         run: npx ts-node scripts/verify-ops-artifacts.ts
 
-  soak-metrics:
-    runs-on: ubuntu-latest
-    env:
-      SOAK_LATENCY_P95_MS: 120
-      SOAK_THROUGHPUT_MIN: 100
-    steps:
-      - uses: actions/checkout@v4
-      - uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ vars.GCP_PROJECT_ID }}
-      - name: Check soak metrics
-        run: npx ts-node scripts/check-soak-metrics.ts
-        env:
-          SOAK_TRENDS_WINDOW: ${{ vars.SOAK_TRENDS_WINDOW || 7 }}
-          SOAK_TRENDS_DEVIATION_PCT: ${{ vars.SOAK_TRENDS_DEVIATION_PCT || 20 }}
-
   docs:
-    needs: workflow-sla
+    needs: [ops-preflight, workflow-sla]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -804,6 +785,6 @@ jobs:
           curl -X POST -H 'Content-Type: application/json' -d @pd.json https://events.pagerduty.com/v2/enqueue
 
   ops-artifacts-verify:
-    needs: [dr-runbook, workflow-sla, dr-trends, spectator-privacy, check-proof-archive]
+    needs: [ops-preflight, workflow-sla, dr-trends, spectator-privacy]
     uses: ./.github/workflows/ops-artifacts-verify.yml
     secrets: inherit
