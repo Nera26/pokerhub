@@ -44,7 +44,7 @@ export class GameGatewaySoakHarness {
   private readonly trackers = new Map<string, AckTracker>();
   private readonly gcMonitor = monitorEventLoopDelay();
   private dropped = 0;
-  private memStart = 0;
+  private readonly memSamples: number[] = [];
   private roomMgr = new RoomManager();
 
   constructor(options?: Partial<HarnessOptions>) {
@@ -130,24 +130,24 @@ export class GameGatewaySoakHarness {
     }
   }
 
-  private recordMemory() {
-    const usage = process.memoryUsage().heapUsed;
-    if (!this.memStart) this.memStart = usage;
-    const delta = ((usage - this.memStart) / this.memStart) * 100;
-    return { usage, delta };
-  }
-
   async run() {
     this.setupNetworkImpairment();
-    this.memStart = process.memoryUsage().heapUsed;
+    this.memSamples.push(process.memoryUsage().heapUsed);
+    const memInterval = setInterval(
+      () => this.memSamples.push(process.memoryUsage().heapUsed),
+      1000,
+    );
     for (let i = 0; i < this.opts.sockets; i++) {
       this.spawnBot(i);
     }
     const restartTarget = 'table-0';
     setTimeout(() => void this.restartWorker(restartTarget), 5000);
     await new Promise((r) => setTimeout(r, this.opts.duration * 1000));
+    clearInterval(memInterval);
     const p95 = this.histogram.percentile(95);
-    const mem = this.recordMemory();
+    const start = this.memSamples[0];
+    const end = this.memSamples[this.memSamples.length - 1];
+    const memDelta = ((end - start) / start) * 100;
     const gcP95 = this.gcMonitor.percentile(95) / 1e6; // ns -> ms
     this.gcMonitor.disable();
     if (p95 > this.opts.ackP95) {
@@ -156,14 +156,14 @@ export class GameGatewaySoakHarness {
     if (this.dropped > 0) {
       throw new Error(`Detected ${this.dropped} dropped frames`);
     }
-    if (mem.delta > 1) {
-      throw new Error(`Heap increased by ${mem.delta.toFixed(2)}% > 1%`);
+    if (memDelta > 1) {
+      throw new Error(`Heap increased by ${memDelta.toFixed(2)}% > 1%`);
     }
     if (gcP95 > this.opts.gcP95) {
       throw new Error(`GC p95 ${gcP95.toFixed(2)}ms exceeds ${this.opts.gcP95}ms`);
     }
     console.log(
-      `ACK p95 ${p95.toFixed(2)}ms, heap delta ${mem.delta.toFixed(2)}%, GC p95 ${gcP95.toFixed(2)}ms`,
+      `ACK p95 ${p95.toFixed(2)}ms, heap delta ${memDelta.toFixed(2)}%, GC p95 ${gcP95.toFixed(2)}ms`,
     );
   }
 }
