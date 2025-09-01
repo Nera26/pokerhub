@@ -164,6 +164,14 @@ jobs:
         env:
           PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
           SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+      - name: Check proof archive retention
+        if: success()
+        run: npx -y ts-node scripts/check-proof-archive-retention.ts
+        env:
+          PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+          PROOF_ARCHIVE_MIN_RETENTION_DAYS: 365
+          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
       - name: Restore and validate archived proofs
         if: success()
         run: |
