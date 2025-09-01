@@ -34,7 +34,7 @@ The test writes metrics to `metrics/table-metrics.json` and fails when:
 
 ## Table Action Load Test
 
-The `infra/tests/load/k6-table-actions.js` script simulates action traffic across 10k tables. It records an `ack_latency` histogram for each action acknowledgement.
+The `infra/tests/load/k6-table-actions.js` script simulates action traffic across 10k tables. It records an `ack_latency` histogram for each action acknowledgement and enforces latency and throughput thresholds: p50 ≤ 40 ms, p95 ≤ 120 ms, p99 ≤ 200 ms and >150 actions per minute. k6 fails the run if any threshold is breached.
 
 ### Running in CI
 
