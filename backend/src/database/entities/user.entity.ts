@@ -28,9 +28,6 @@ export class User {
   @Column({ default: false })
   banned: boolean;
 
-  @Column({ type: 'integer', default: 0 })
-  balance: number;
-
   @ManyToMany(() => Table, (table) => table.players)
   tables: Table[];
 

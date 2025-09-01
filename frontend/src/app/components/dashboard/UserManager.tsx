@@ -6,7 +6,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faPlus,
   faMagnifyingGlass,
-  faCoins,
   faScroll,
   faSpinner,
 } from '@fortawesome/free-solid-svg-icons';
@@ -17,7 +16,6 @@ import ReviewWithdrawalModal from '../modals/ReviewWithdrawalModal';
 import AddUserModal from '../modals/AddUserModal';
 import EditUserModal from '../modals/EditUserModal';
 import BanUserModal from '../modals/BanUserModal';
-import ManageBalanceModal from '../modals/ManageBalanceModal';
 import ToastNotification from '../ui/ToastNotification';
 import TransactionHistoryModal, {
   TransactionEntry,
@@ -26,12 +24,7 @@ import TransactionHistoryModal, {
 import useRenderCount from '@/hooks/useRenderCount';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  createUser,
-  updateUser,
-  toggleUserBan,
-  updateUserBalance,
-} from '@/lib/api/users';
+import { createUser, updateUser, toggleUserBan } from '@/lib/api/users';
 import { approveWithdrawal, rejectWithdrawal } from '@/lib/api/withdrawals';
 
 type User = {
@@ -232,7 +225,6 @@ export default function UserManager() {
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [banModalOpen, setBanModalOpen] = useState(false);
-  const [balanceModalOpen, setBalanceModalOpen] = useState(false);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
 
@@ -266,7 +258,6 @@ export default function UserManager() {
       username: string;
       email: string;
       password: string;
-      balance: number;
       status: string;
     }) => createUser(newUser),
     onMutate: async (newUser) => {
@@ -281,7 +272,7 @@ export default function UserManager() {
           id,
           name: newUser.username,
           email: newUser.email,
-          balance: newUser.balance ?? 0,
+          balance: 0,
           status: newUser.status as User['status'],
           avatar,
         },
@@ -306,7 +297,6 @@ export default function UserManager() {
     username: string;
     email: string;
     password: string;
-    balance: number;
     status: string;
   }) => {
     addUserMutation.mutate(newUser);
@@ -317,7 +307,6 @@ export default function UserManager() {
       id: number;
       name: string;
       email: string;
-      balance: number;
       status: string;
     }) => updateUser(updated),
     onMutate: async (updated) => {
@@ -352,7 +341,6 @@ export default function UserManager() {
     id: number;
     name: string;
     email: string;
-    balance: number;
     status: string;
   }) => {
     editUserMutation.mutate(updated);
@@ -401,104 +389,6 @@ export default function UserManager() {
     banUserMutation.mutate(selectedUser);
   };
 
-  const manageBalanceMutation = useMutation({
-    mutationFn: ({
-      user,
-      amount,
-      action,
-      notes,
-    }: {
-      user: User;
-      amount: number;
-      action: 'add' | 'remove' | 'freeze';
-      notes: string;
-    }) => updateUserBalance(user.id, { amount, action, notes }),
-    onMutate: async ({ user, amount, action, notes }) => {
-      await queryClient.cancelQueries({ queryKey: ['users'] });
-      const previousUsers = queryClient.getQueryData<User[]>(['users']);
-      const prevSelected = selectedUser;
-      const prevTransactions = transactionsByUser[user.name];
-      const newStatus = action === 'freeze' ? 'Frozen' : user.status;
-      const newBalance =
-        action === 'freeze'
-          ? user.balance
-          : Math.max(0, user.balance + (action === 'add' ? amount : -amount));
-      queryClient.setQueryData<User[]>(['users'], (old) =>
-        old
-          ? old.map((u) =>
-              u.id === user.id
-                ? { ...u, status: newStatus, balance: newBalance }
-                : u,
-            )
-          : [],
-      );
-      setSelectedUser((u) =>
-        u && u.id === user.id
-          ? { ...u, status: newStatus, balance: newBalance }
-          : u,
-      );
-      if (action !== 'freeze') {
-        setTransactionsByUser((prev) => {
-          const list = prev[user.name] ?? [];
-          const entry: TransactionEntry = {
-            date: new Date().toLocaleString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: false,
-            }),
-            action: action === 'add' ? 'Admin Add' : 'Admin Remove',
-            amount: action === 'add' ? amount : -amount,
-            performedBy: PerformedBy.Admin,
-            notes: notes || 'Manual balance update',
-            status: 'Completed',
-          };
-          return { ...prev, [user.name]: [entry, ...list] };
-        });
-      }
-      return { previousUsers, prevSelected, prevTransactions };
-    },
-    onError: (_err, vars, ctx) => {
-      if (ctx?.previousUsers) {
-        queryClient.setQueryData(['users'], ctx.previousUsers);
-      }
-      setSelectedUser(ctx?.prevSelected ?? null);
-      if (vars.action !== 'freeze' && ctx?.prevTransactions) {
-        setTransactionsByUser((prev) => ({
-          ...prev,
-          [vars.user.name]: ctx.prevTransactions!,
-        }));
-      }
-      showToast('Failed to update balance', 'error');
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      setBalanceModalOpen(false);
-    },
-    onSuccess: (_data, vars) => {
-      if (vars.action === 'freeze') {
-        showToast('Funds frozen');
-      } else {
-        showToast(`Balance ${vars.action}ed successfully`);
-      }
-    },
-  });
-
-  const handleManageBalance = (
-    amount: number,
-    action: 'add' | 'remove' | 'freeze',
-    notes: string,
-  ) => {
-    if (!selectedUser) return;
-    manageBalanceMutation.mutate({
-      user: selectedUser,
-      amount,
-      action,
-      notes,
-    });
-  };
 
   const approveWithdrawalMutation = useMutation({
     mutationFn: ({
@@ -970,18 +860,6 @@ export default function UserManager() {
                           </button>
 
                           <button
-                            aria-label="Manage balance"
-                            title="Manage Balance"
-                            className="bg-accent-yellow hover:bg-yellow-500 text-black px-3 py-1 rounded-lg text-xs font-semibold transition"
-                            onClick={() => {
-                              setSelectedUser(u);
-                              setBalanceModalOpen(true);
-                            }}
-                          >
-                            <FontAwesomeIcon icon={faCoins} />
-                          </button>
-
-                          <button
                             aria-label="Transaction history"
                             title="Transaction History"
                             className="bg-accent-blue hover:bg-blue-600 px-3 py-1 rounded-lg text-xs font-semibold transition"
@@ -1037,13 +915,6 @@ export default function UserManager() {
         onClose={() => setBanModalOpen(false)}
         onConfirm={handleBanUser}
         userName={selectedUser?.name ?? ''}
-      />
-      <ManageBalanceModal
-        isOpen={balanceModalOpen}
-        onClose={() => setBalanceModalOpen(false)}
-        userName={selectedUser?.name ?? ''}
-        currentBalance={selectedUser?.balance ?? 0}
-        onSubmit={handleManageBalance}
       />
       <ReviewWithdrawalModal
         isOpen={reviewModalOpen}

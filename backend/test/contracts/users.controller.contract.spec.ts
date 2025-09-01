@@ -3,11 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { UsersController } from '../../src/routes/users.controller';
 import { UsersService } from '../../src/users/users.service';
-import {
-  CreateUserRequest,
-  User,
-  UserSchema,
-} from '../../src/schemas/users';
+import { CreateUserRequest, User, UserSchema } from '../../src/schemas/users';
 
 describe('Contract: UsersController', () => {
   let app: INestApplication;
@@ -24,7 +20,6 @@ describe('Contract: UsersController', () => {
               username: dto.username,
               avatarKey: dto.avatarKey,
               banned: false,
-              balance: 0,
             }),
           },
         },

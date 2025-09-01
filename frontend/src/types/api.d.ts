@@ -484,7 +484,7 @@ export interface paths {
       };
       requestBody: {
         content: {
-          "application/json": components["schemas"]["TournamentRegisterRequest"];
+          "application/json": components["schemas"]["TournamentWithdrawRequest"];
         };
       };
       responses: {
@@ -832,29 +832,6 @@ export interface paths {
       };
     };
   };
-  "/users/{id}/balance": {
-    /** Adjust user balance */
-    post: {
-      parameters: {
-        path: {
-          id: string;
-        };
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["BalanceAdjustmentRequest"];
-        };
-      };
-      responses: {
-        /** @description Updated balance */
-        200: {
-          content: {
-            "application/json": unknown;
-          };
-        };
-      };
-    };
-  };
   "/feature-flags": {
     /** List feature flags */
     get: {
@@ -1086,15 +1063,11 @@ export interface components {
     BanUserRequest: {
       reason?: string;
     };
-    BalanceAdjustmentRequest: {
-      amount: number;
-    };
     User: {
       id: string;
       username: string;
       avatarKey?: string;
       banned: boolean;
-      balance: number;
     };
     GameAction: components["schemas"]["PostBlindAction"] | components["schemas"]["BetAction"] | components["schemas"]["RaiseAction"] | components["schemas"]["CallAction"] | components["schemas"]["CheckAction"] | components["schemas"]["FoldAction"] | components["schemas"]["NextAction"];
     GameStateDelta: {
@@ -1179,108 +1152,6 @@ export interface components {
       registered: boolean;
     };
     TournamentList: components["schemas"]["Tournament"][];
-    TournamentRegisterRequest: {
-      userId: string;
-    };
-    Table: {
-      id: string;
-      tableName: string;
-      /** @enum {string} */
-      gameType: "texas" | "omaha" | "allin" | "tournaments";
-      stakes: {
-        small: number;
-        big: number;
-      };
-      players: {
-        current: number;
-        max: number;
-      };
-      buyIn: {
-        min: number;
-        max: number;
-      };
-      stats: {
-        handsPerHour: number;
-        avgPot: number;
-        rake: number;
-      };
-      createdAgo: string;
-    };
-    TableList: components["schemas"]["Table"][];
-    CreateTableRequest: {
-      tableName: string;
-      /** @enum {string} */
-      gameType: "texas" | "omaha" | "allin" | "tournaments";
-      stakes: {
-        small?: number;
-        big?: number;
-      };
-      startingStack: number;
-      players: {
-        max?: number;
-      };
-      buyIn: {
-        min?: number;
-        max?: number;
-      };
-    };
-    UpdateTableRequest: {
-      tableName?: string;
-      /** @enum {string} */
-      gameType?: "texas" | "omaha" | "allin" | "tournaments";
-      stakes?: {
-        small?: number;
-        big?: number;
-      };
-      startingStack?: number;
-      players?: {
-        max?: number;
-      };
-      buyIn?: {
-        min?: number;
-        max?: number;
-      };
-    };
-    Player: {
-      id: number;
-      username: string;
-      avatar: string;
-      chips: number;
-      committed?: number;
-      isActive?: boolean;
-      isFolded?: boolean;
-      sittingOut?: boolean;
-      isAllIn?: boolean;
-      isWinner?: boolean;
-      timeLeft?: number;
-      cards?: string[];
-      pos?: string;
-      lastAction?: string;
-    };
-    ChatMessage: {
-      id: number;
-      username: string;
-      avatar: string;
-      text: string;
-      time: string;
-    };
-    TableData: {
-      smallBlind: number;
-      bigBlind: number;
-      pot: number;
-      communityCards: string[];
-      players: components["schemas"]["Player"][];
-      chatMessages: components["schemas"]["ChatMessage"][];
-    };
-    CalculatePrizesRequest: {
-      prizePool: number;
-      payouts: number[];
-      bountyPct?: number;
-      satelliteSeatCost?: number;
-      /** @enum {string} */
-      method?: "topN" | "icm";
-      stacks?: number[];
-    };
   };
   responses: never;
   parameters: never;

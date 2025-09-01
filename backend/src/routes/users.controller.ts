@@ -16,8 +16,6 @@ import {
   type UpdateUserRequest,
   BanUserSchema,
   type BanUserRequest,
-  BalanceAdjustmentSchema,
-  type BalanceAdjustmentRequest,
   UserSchema,
   type User,
 } from '../schemas/users';
@@ -83,22 +81,5 @@ export class UsersController {
     }
   }
 
-  @Post(':id/balance')
-  @HttpCode(200)
-  async adjustBalance(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() body: BalanceAdjustmentRequest,
-  ): Promise<User> {
-    try {
-      const parsed = BalanceAdjustmentSchema.parse(body);
-      const updated = await this.users.adjustBalance(id, parsed.amount);
-      return this.parseUser(updated);
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
-    }
-  }
 }
 
