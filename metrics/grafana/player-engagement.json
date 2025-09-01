@@ -1,0 +1,34 @@
+{
+  "title": "Player Engagement",
+  "schemaVersion": 30,
+  "version": 1,
+  "panels": [
+    {
+      "id": 1,
+      "type": "graph",
+      "title": "Daily Active Users",
+      "datasource": "ClickHouse",
+      "targets": [
+        { "query": "SELECT date, dau FROM engagement_metrics ORDER BY date" }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "graph",
+      "title": "Monthly Active Users",
+      "datasource": "ClickHouse",
+      "targets": [
+        { "query": "SELECT date, mau FROM engagement_metrics ORDER BY date" }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "graph",
+      "title": "Reg→Dep Conversion",
+      "datasource": "ClickHouse",
+      "targets": [
+        { "query": "SELECT date, reg_to_dep FROM engagement_metrics ORDER BY date" }
+      ]
+    }
+  ]
+}
