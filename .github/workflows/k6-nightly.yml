@@ -28,6 +28,18 @@ jobs:
         run: |
           gsutil cp ws-soak-summary.json gs://${{ vars.K6_METRICS_BUCKET }}/ws-soak/summary-${GITHUB_RUN_ID}.json
           gsutil cp ws-soak-metrics.json gs://${{ vars.K6_METRICS_BUCKET }}/ws-soak/metrics-${GITHUB_RUN_ID}.json
+      - name: Upload ws soak summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ws-soak-summary-${{ github.sha }}
+          path: ws-soak-summary.json
+      - name: Upload ws soak metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ws-soak-metrics-${{ github.sha }}
+          path: ws-soak-metrics.json
       - name: PagerDuty alert
         if: failure()
         run: |
@@ -57,13 +69,30 @@ jobs:
         run: |
           gsutil cp 10k-summary.json gs://${{ vars.K6_METRICS_BUCKET }}/10k-tables/summary-${GITHUB_RUN_ID}.json
           gsutil cp 10k-metrics.json gs://${{ vars.K6_METRICS_BUCKET }}/10k-tables/metrics-${GITHUB_RUN_ID}.json
+      - name: Upload 10k tables summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tables-10k-summary-${{ github.sha }}
+          path: 10k-summary.json
+      - name: Upload 10k tables metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tables-10k-metrics-${{ github.sha }}
+          path: 10k-metrics.json
       - name: PagerDuty alert
         if: failure()
         run: |
           curl -X POST \
             -H 'Content-Type: application/x-yaml' \
-            --data-binary @infra/observability/pagerduty-burn-rate.yml \
+          --data-binary @infra/observability/pagerduty-burn-rate.yml \
             ${{ secrets.PAGERDUTY_WEBHOOK_URL }}
+
+  soak-metrics:
+    needs: tables-10k
+    uses: ../soak-metrics.yml
+    secrets: inherit
 
   spectator-privacy:
     needs: tables-10k

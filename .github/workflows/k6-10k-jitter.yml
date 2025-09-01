@@ -24,14 +24,23 @@ jobs:
           flags: --summary-export=ack-summary.json --out json=ack-telemetry.json
       - name: Check thresholds
         run: ./load/check-thresholds.sh ack-summary.json
-      - name: Upload artifacts
+      - name: Upload ack summary
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: k6-10k-jitter
-          path: |
-            ack-summary.json
-            ack-telemetry.json
+          name: ack-summary-${{ github.sha }}
+          path: ack-summary.json
+      - name: Upload ack metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ack-telemetry-${{ github.sha }}
+          path: ack-telemetry.json
+
+  soak-metrics:
+    needs: ack-latency
+    uses: ../soak-metrics.yml
+    secrets: inherit
 
   spectator-privacy:
     needs: ack-latency

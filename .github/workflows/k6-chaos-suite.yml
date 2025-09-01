@@ -22,14 +22,18 @@ jobs:
         with:
           filename: load/${{ matrix.script }}
           flags: --summary-export=summary.json --out json=metrics.json
+      - name: Upload summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.script }}-summary-${{ github.sha }}
+          path: summary.json
       - name: Upload metrics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.script }}-${{ github.run_id }}
-          path: |
-            summary.json
-            metrics.json
+          name: ${{ matrix.script }}-metrics-${{ github.sha }}
+          path: metrics.json
 
   chaos:
     runs-on: ubuntu-latest
@@ -56,6 +60,11 @@ jobs:
         with:
           name: ${{ matrix.script }}-${{ github.run_id }}
           path: ${{ env.METRICS_DIR }}
+
+  soak-metrics:
+    needs: [k6, chaos]
+    uses: ../soak-metrics.yml
+    secrets: inherit
 
   spectator-privacy:
     needs: [k6, chaos]
