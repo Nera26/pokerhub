@@ -8,6 +8,10 @@ spectator-privacy-nightly workflow freshness
 
 spectator_privacy/run_success metric freshness
 
+Spectator retention
+
+spectator-retention workflow freshness
+
 Soak metrics
 
 Workflow/artifact SLA freshness
@@ -36,6 +40,7 @@ Inputs
 Name	Required	Description
 slack-channel-id	✅	Slack channel ID to receive SLA alerts.
 spectator-privacy-sla-hours		Max age (hours) for spectator-privacy-nightly and the spectator_privacy/run_success metric. Default: 24.
+spectator-retention-sla-days	✅	Max age (days) for the spectator-retention workflow.
 soak-metrics-sla-hours	✅	Max age (hours) for the soak / soak-metrics workflow artifacts.
 dr-drill-sla-days	✅	Max age (days) for the last dr-drill run.
 dr-failover-sla-days	✅	Max age (days) for the last dr-failover run.
@@ -90,6 +95,7 @@ jobs:
         with:
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
           spectator-privacy-sla-hours: 24
+          spectator-retention-sla-days: 1
           soak-metrics-sla-hours: 24
           dr-drill-sla-days: 7
           dr-failover-sla-days: 30

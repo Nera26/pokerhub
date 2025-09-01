@@ -18,10 +18,12 @@ jobs:
       DR_RESTORE_SLA_DAYS: 30
       DR_THROWAWAY_SLA_DAYS: 7
       SOAK_SLA_HOURS: 24
+      SPECTATOR_RETENTION_SLA_DAYS: 1
     steps:
       - uses: ./.github/actions/ops-preflight
         with:
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          spectator-retention-sla-days: ${{ env.SPECTATOR_RETENTION_SLA_DAYS }}
           soak-metrics-sla-hours: ${{ env.SOAK_SLA_HOURS }}
           dr-drill-sla-days: ${{ env.DR_DRILL_SLA_DAYS }}
           dr-failover-sla-days: ${{ env.DR_FAILOVER_SLA_DAYS }}
