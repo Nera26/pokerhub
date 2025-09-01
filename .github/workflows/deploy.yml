@@ -268,6 +268,26 @@ jobs:
         with:
           node-version: 18
 
+      - name: Run DLP scan on spectator logs
+        run: npx ts-node scripts/dlp-scan.ts backend-tests.log frontend-tests.log
+
+      - name: Verify sanitized logs
+        run: |
+          set -euo pipefail
+          if grep -E '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+|([0-9]{1,3}\\.){3}[0-9]{1,3}|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}' backend-tests.log frontend-tests.log; then
+            echo 'PII found in logs' >&2
+            exit 1
+          fi
+
+      - name: Write spectator privacy success metric
+        run: gcloud monitoring metrics write custom.googleapis.com/spectator_privacy/run_success 1
+
+      - name: Upload spectator privacy artifacts
+        if: always()
+        env:
+          SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET }}
+        run: gcloud storage cp backend-tests.log frontend-tests.log dlp-scan.json gs://$SPECTATOR_PRIVACY_BUCKET/$GITHUB_RUN_ID/
+
       # --- Canary, SLO check, promote/rollback ---
       - name: Run canary deploy
         run: bash deploy/canary.sh ${{ github.sha }}
