@@ -10,4 +10,4 @@ The `dr-trends` workflow writes RTO and RPO trend values to Google Cloud Monitor
 - **RPO:** 300 seconds (5 minutes)
 
 ## Alerts
-The CI job evaluates these metrics. When the latest or average values exceed their targets, a PagerDuty alert is triggered for the DR service. On-call engineers should acknowledge the incident, investigate the failing drill, and follow the disaster recovery runbook.
+The CI job evaluates these metrics. When the latest or average values exceed their targets, a PagerDuty alert is triggered for the DR service. On-call engineers should acknowledge the incident, investigate the failing drill, and follow the [GCP Ops Runbook](../gcp-ops-runbook.md).

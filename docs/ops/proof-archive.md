@@ -39,3 +39,5 @@ gcloud kms asymmetric-signature verify \
 | Date       | Manifest URI                                   | Signature            |
 |------------|------------------------------------------------|----------------------|
 | YYYY-MM-DD | `gs://$PROOF_MANIFEST_BUCKET/YYYY-MM-DD/manifest.json` | `<base64 signature>` |
+
+Restoration steps are covered in the [GCP Ops Runbook](../gcp-ops-runbook.md).

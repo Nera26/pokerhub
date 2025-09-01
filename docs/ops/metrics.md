@@ -27,3 +27,5 @@ bq query --nouse_legacy_sql \
 ## Retention
 
 Rows older than 90 days are automatically deleted. Export anything that needs to be kept longer to GCS before expiry.
+
+Escalation paths for soak metric regressions are documented in the [GCP Ops Runbook](../gcp-ops-runbook.md).
