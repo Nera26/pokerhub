@@ -825,10 +825,12 @@ jobs:
         run: npx ts-node scripts/verify-ops-artifacts.ts
       - name: Check soak regressions
         run: |
-          npx ts-node scripts/check-soak-metrics.ts || true
+          set +e
+          npx ts-node scripts/check-soak-metrics.ts
+          status=$?
           if [ -f soak-regression.json ] && [ $(jq '.regressions | length' soak-regression.json) -gt 0 ]; then
             cat soak-regression.json
-            exit 1
           fi
+          exit $status
         env:
           SOAK_TRENDS_BUCKET: ${{ env.SOAK_TRENDS_BUCKET }}
