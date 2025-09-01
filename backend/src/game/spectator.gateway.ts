@@ -6,7 +6,8 @@ import {
 import { Server, Socket } from 'socket.io';
 import { RoomManager } from './room.service';
 import { metrics } from '@opentelemetry/api';
-import type { GameState } from './engine';
+import type { InternalGameState } from './engine';
+import type { GameState } from '@shared/types';
 
 @WebSocketGateway({ namespace: 'spectate' })
 export class SpectatorGateway implements OnGatewayConnection {
@@ -25,12 +26,13 @@ export class SpectatorGateway implements OnGatewayConnection {
     const room = this.rooms.get(tableId);
     void client.join(tableId);
 
-    const state = await room.getPublicState();
-    client.emit('state', state);
+    const state = (await room.getPublicState()) as InternalGameState;
+    client.emit('state', this.sanitize(state));
 
-    const listener = (s: GameState) => {
+    const listener = (s: InternalGameState) => {
+      const safe = this.sanitize(s);
       if (client.connected) {
-        client.emit('state', s);
+        client.emit('state', safe);
       } else {
         SpectatorGateway.droppedFrames.add(1);
       }
@@ -38,5 +40,19 @@ export class SpectatorGateway implements OnGatewayConnection {
 
     room.on('state', listener);
     client.on('disconnect', () => room.off('state', listener));
+  }
+
+  private sanitize(state: InternalGameState): GameState {
+    const { deck, players, ...rest } = state as any;
+    return {
+      ...(rest as Omit<GameState, 'players'>),
+      players: players.map((p: any) => ({
+        id: p.id,
+        stack: p.stack,
+        folded: p.folded,
+        bet: p.bet,
+        allIn: p.allIn,
+      })),
+    } as GameState;
   }
 }

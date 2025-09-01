@@ -1,5 +1,8 @@
 import fc from 'fast-check';
-import { HandStateMachine, GameState } from '../../src/game/state-machine';
+import {
+  HandStateMachine,
+  GameStateInternal,
+} from '../../src/game/state-machine';
 import { HandRNG } from '../../src/game/rng';
 
 describe('side pot contributions', () => {
@@ -16,7 +19,7 @@ describe('side pot contributions', () => {
             allIn: true,
           }));
           const total = bets.reduce((s, v) => s + v, 0);
-          const state: GameState = {
+          const state: GameStateInternal = {
             phase: 'BETTING_ROUND',
             street: 'preflop',
             pot: total,

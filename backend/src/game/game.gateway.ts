@@ -11,7 +11,7 @@ import { Inject, Logger, Optional } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { randomUUID, createHash } from 'crypto';
 import Redis from 'ioredis';
-import { GameAction } from './engine';
+import { GameAction, InternalGameState } from './engine';
 import { RoomManager } from './room.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { CollusionService } from '../analytics/collusion.service';
@@ -27,6 +27,7 @@ import {
   GameStateSchema,
   type GameAction as WireGameAction,
   type GameActionPayload,
+  type GameState,
 } from '@shared/types';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
 import { metrics, trace } from '@opentelemetry/api';
@@ -250,7 +251,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       void this.collusion.record(userId, deviceId, ip);
     }
 
-    const payload = { version: '1', ...state, tick: ++this.tick };
+    const safe = this.sanitize(state, parsed.playerId);
+    const payload = { version: '1', ...safe, tick: ++this.tick };
     GameStateSchema.parse(payload);
     this.enqueue(client, 'state', payload, true);
 
@@ -266,12 +268,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     if (this.server?.of) {
-      const spectatorPayload = { version: '1', ...state, tick: this.tick };
+      // Send sanitized state to spectators as well
+      const publicState = await room.getPublicState();
+      const spectatorPayload = {
+        version: '1',
+        ...this.sanitize(publicState),
+        tick: this.tick,
+      };
       GameStateSchema.parse(spectatorPayload);
-      this.server
-        .of('/spectate')
-        .to(tableId)
-        .emit('state', spectatorPayload);
+      this.server.of('/spectate').to(tableId).emit('state', spectatorPayload);
     }
 
     this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
@@ -400,6 +405,26 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       event: 'action',
       tableId,
     });
+  }
+
+  private sanitize(state: InternalGameState, playerId?: string): GameState {
+    const { deck, players, ...rest } = state as any;
+    return {
+      ...(rest as Omit<GameState, 'players'>),
+      players: players.map((p: any) => {
+        const base: any = {
+          id: p.id,
+          stack: p.stack,
+          folded: p.folded,
+          bet: p.bet,
+          allIn: p.allIn,
+        };
+        if (playerId && p.id === playerId && p.holeCards) {
+          base.holeCards = p.holeCards;
+        }
+        return base;
+      }),
+    } as GameState;
   }
 
   private enqueue(
@@ -564,7 +589,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
       const room = this.rooms.get('default');
       const state = await room.replay();
-      const payload = { version: '1', ...state, tick: this.tick };
+      const payload = {
+        version: '1',
+        ...this.sanitize(state),
+        tick: this.tick,
+      };
       GameStateSchema.parse(payload);
       this.enqueue(client, 'state', payload);
       span.end();
@@ -587,7 +616,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const room = this.rooms.get('default');
       const states = await room.resume(from);
       for (const [index, state] of states) {
-        const payload = { version: '1', ...state, tick: index + 1 };
+        const payload = {
+          version: '1',
+          ...this.sanitize(state),
+          tick: index + 1,
+        };
         GameStateSchema.parse(payload);
         this.enqueue(client, 'state', payload);
       }
@@ -599,7 +632,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const room = this.rooms.get(tableId);
     const state = await room.apply({ type: 'fold', playerId } as GameAction);
     if (this.server) {
-      const payload = { version: '1', ...state, tick: ++this.tick };
+      const payload = {
+        version: '1',
+        ...this.sanitize(state),
+        tick: ++this.tick,
+      };
       GameStateSchema.parse(payload);
       const prev = this.states.get(tableId);
       const delta = this.diff(prev, state);

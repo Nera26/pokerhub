@@ -1,6 +1,6 @@
 import { parentPort, workerData } from 'worker_threads';
 import Redis from 'ioredis';
-import { GameAction, GameEngine, GameState } from './engine';
+import { GameAction, GameEngine, InternalGameState } from './engine';
 import { AppDataSource } from '../database/data-source';
 import { SettlementService } from '../wallet/settlement.service';
 import { SettlementJournal } from '../wallet/settlement-journal.entity';
@@ -24,7 +24,7 @@ sub?.on('message', (channel, msg) => {
 });
 
 let settlement: SettlementService;
-let previousState: GameState | undefined;
+let previousState: InternalGameState | undefined;
 
 function diff(prev: any, curr: any): Record<string, any> {
   if (!prev) return curr as Record<string, any>;
@@ -92,7 +92,7 @@ async function main() {
           // Emit a full-state event for local consumers
           port.postMessage({ event: 'state', state });
 
-          // Publish compact deltas over Redis for socket fans-out
+          // Publish compact deltas over Redis for socket fan-out
           await pub?.publish(diffChannel, JSON.stringify([idx, delta]));
 
           await svc.commit(engine.getHandId(), state.street, idx);
@@ -121,7 +121,10 @@ async function main() {
           const log = engine
             .getHandLog()
             .filter(([index]) => index >= from)
-            .map(([index, , , post]) => [index, post] as [number, GameState]);
+            .map(
+              ([index, , , post]) =>
+                [index, post] as [number, InternalGameState],
+            );
           port.postMessage({ seq: msg.seq, states: log });
           break;
         }
@@ -129,7 +132,10 @@ async function main() {
         case 'snapshot': {
           const snap = engine
             .getHandLog()
-            .map(([index, , , post]) => [index, post] as [number, GameState]);
+            .map(
+              ([index, , , post]) =>
+                [index, post] as [number, InternalGameState],
+            );
           port.postMessage({ seq: msg.seq, states: snap });
           break;
         }
