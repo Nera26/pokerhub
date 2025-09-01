@@ -47,6 +47,34 @@ groups:
           severity: warning
         annotations:
           summary: "Dropped frames detected"
+      - alert: HighOutboundQueueDepth
+        expr: max_over_time(ws_outbound_queue_max[5m]) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "WebSocket outbound queue depth high"
+      - alert: DroppedWsMessages
+        expr: rate(ws_outbound_dropped_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "WebSocket messages dropped"
+      - alert: PerSocketRateLimitExceeded
+        expr: sum(rate(per_socket_limit_exceeded[5m])) / sum(rate(game_action_global_count[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Per-socket rate limit frequently exceeded"
+      - alert: GlobalRateLimitExceeded
+        expr: sum(rate(global_limit_exceeded[5m])) / sum(rate(game_action_global_count[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Global rate limit frequently exceeded"
       - alert: LatencySLOBurnRate1h
         expr: latency_error_budget_burn_rate_1h > 14.4
         for: 2m
