@@ -27,8 +27,18 @@ jobs:
       - run: npm ci
       - run: npx ts-node scripts/ensure-spectator-privacy.ts
 
+  ensure-ops-preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npx ts-node scripts/ensure-ops-preflight.ts
+
   ops-preflight:
-    needs: ensure-spectator-privacy
+    needs: [ensure-spectator-privacy, ensure-ops-preflight]
     runs-on: ubuntu-latest
     steps:
       - uses: ./.github/actions/ops-preflight
