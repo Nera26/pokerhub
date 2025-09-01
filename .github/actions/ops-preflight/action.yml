@@ -1,0 +1,81 @@
+name: "Ops preflight"
+description: "Run spectator-privacy, soak metric, DR SLA and proof-archive checks"
+inputs:
+  slack-channel-id:
+    description: "Slack channel to notify on failure"
+    required: true
+  spectator-privacy-sla-hours:
+    description: "Maximum age for spectator-privacy-nightly workflow"
+    required: false
+    default: 24
+  soak-metrics-sla-hours:
+    description: "Maximum age for soak-metrics workflow"
+    required: true
+  dr-drill-sla-days:
+    description: "Max age for dr-drill workflow"
+    required: true
+  dr-failover-sla-days:
+    description: "Max age for dr-failover workflow"
+    required: true
+  dr-restore-sla-days:
+    description: "Max age for dr-restore workflow"
+    required: true
+  dr-throwaway-sla-days:
+    description: "Max age for dr-throwaway workflow"
+    required: true
+  proof-archive-sla-hours:
+    description: "Maximum age for proof-archive workflow"
+    required: false
+    default: 24
+runs:
+  using: "composite"
+  steps:
+    - name: Check spectator-privacy-nightly SLA
+      uses: ./.github/workflows/check-workflow-sla
+      with:
+        workflow: spectator-privacy-nightly.yml
+        sla: ${{ inputs.spectator-privacy-sla-hours }}
+        unit: hours
+        slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Check soak-metrics SLA
+      uses: ./.github/workflows/check-workflow-sla
+      with:
+        workflow: soak-metrics.yml
+        sla: ${{ inputs.soak-metrics-sla-hours }}
+        unit: hours
+        slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Check DR drill SLA
+      uses: ./.github/workflows/check-workflow-sla
+      with:
+        workflow: dr-drill.yml
+        sla: ${{ inputs.dr-drill-sla-days }}
+        unit: days
+        slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Check DR failover SLA
+      uses: ./.github/workflows/check-workflow-sla
+      with:
+        workflow: dr-failover.yml
+        sla: ${{ inputs.dr-failover-sla-days }}
+        unit: days
+        slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Check DR restore SLA
+      uses: ./.github/workflows/check-workflow-sla
+      with:
+        workflow: dr-restore.yml
+        sla: ${{ inputs.dr-restore-sla-days }}
+        unit: days
+        slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Check DR throwaway SLA
+      uses: ./.github/workflows/check-workflow-sla
+      with:
+        workflow: dr-throwaway.yml
+        sla: ${{ inputs.dr-throwaway-sla-days }}
+        unit: days
+        slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Check proof-archive SLA
+      uses: ./.github/workflows/check-workflow-sla
+      with:
+        workflow: proof-archive.yml
+        sla: ${{ inputs.proof-archive-sla-hours }}
+        unit: hours
+        slack-channel-id: ${{ inputs.slack-channel-id }}

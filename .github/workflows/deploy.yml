@@ -10,16 +10,26 @@ permissions:
   actions: read
 
 jobs:
-  spectator-privacy:
-    uses: ./.github/workflows/spectator-privacy.yml
-    secrets: inherit
-    with:
-      logs: backend-tests.log frontend-tests.log integration.log property.log
+  preflight:
+    runs-on: ubuntu-latest
     env:
-      PROD_LOG_SCAN: true
+      DR_DRILL_SLA_DAYS: 7
+      DR_FAILOVER_SLA_DAYS: 30
+      DR_RESTORE_SLA_DAYS: 30
+      DR_THROWAWAY_SLA_DAYS: 7
+      SOAK_SLA_HOURS: 24
+    steps:
+      - uses: ./.github/actions/ops-preflight
+        with:
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          soak-metrics-sla-hours: ${{ env.SOAK_SLA_HOURS }}
+          dr-drill-sla-days: ${{ env.DR_DRILL_SLA_DAYS }}
+          dr-failover-sla-days: ${{ env.DR_FAILOVER_SLA_DAYS }}
+          dr-restore-sla-days: ${{ env.DR_RESTORE_SLA_DAYS }}
+          dr-throwaway-sla-days: ${{ env.DR_THROWAWAY_SLA_DAYS }}
 
   deploy:
-    needs: spectator-privacy
+    needs: preflight
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -30,11 +40,6 @@ jobs:
       ARTIFACT_REGISTRY: ${{ vars.ARTIFACT_REGISTRY }}
       ACK_LATENCY_THRESHOLD_MS: 120
       ERROR_RATE_THRESHOLD: 0.0005
-      DR_DRILL_SLA_DAYS: 7
-      DR_FAILOVER_SLA_DAYS: 30
-      DR_RESTORE_SLA_DAYS: 30
-      DR_THROWAWAY_SLA_DAYS: 7
-      SOAK_SLA_HOURS: 24
       RUN_SOAK_SMOKE: ${{ vars.RUN_SOAK_SMOKE || 'false' }}
       PG_RESTORE_SLA_MINUTES: 60
     steps:
@@ -51,157 +56,6 @@ jobs:
 
       - name: Set GKE cluster context
         run: gcloud container clusters get-credentials ${{ vars.GKE_CLUSTER_NAME }} --zone ${{ vars.GKE_CLUSTER_ZONE }} --project ${{ vars.GCP_PROJECT_ID }}
-
-      # --- Pre-deploy gates (all must pass) ---
-      - name: Verify recent DR drill
-        id: drdrill
-        env:
-          SLA_DAYS: ${{ env.DR_DRILL_SLA_DAYS }}
-          RTO_TARGET: 1800
-          RPO_TARGET: 300
-        run: |
-          set -euo pipefail
-          row=$(bq query --project_id=${{ vars.GCP_PROJECT_ID }} --nouse_legacy_sql --format=json \
-            'SELECT run_id, timestamp, rto_seconds, rpo_snapshot_seconds, rpo_wal_seconds FROM ops_metrics.dr_drill_runs ORDER BY timestamp DESC LIMIT 1')
-          run_id=$(echo "$row" | jq -r '.[0].run_id')
-          ts=$(echo "$row" | jq -r '.[0].timestamp')
-          rto=$(echo "$row" | jq -r '.[0].rto_seconds')
-          rpo_snap=$(echo "$row" | jq -r '.[0].rpo_snapshot_seconds')
-          rpo_wal=$(echo "$row" | jq -r '.[0].rpo_wal_seconds')
-          echo "timestamp=$ts" >> "$GITHUB_OUTPUT"
-          url="https://github.com/${{ github.repository }}/actions/runs/$run_id"
-          echo "url=$url" >> "$GITHUB_OUTPUT"
-          now=$(date -u +%s)
-          run_ts=$(date -d "$ts" -u +%s)
-          max_age=$((SLA_DAYS * 86400))
-          age=$((now - run_ts))
-          if [ "$age" -gt "$max_age" ]; then
-            echo "Latest DR drill is older than ${SLA_DAYS}d" >&2
-            exit 1
-          fi
-          if [ "$rto" -gt "$RTO_TARGET" ] || [ "$rpo_snap" -gt "$RPO_TARGET" ] || [ "$rpo_wal" -gt "$RPO_TARGET" ]; then
-            echo "DR drill exceeded RTO/RPO targets" >&2
-            exit 1
-          fi
-
-      - name: Verify recent DR failover
-        id: drfailover
-        env:
-          SLA_DAYS: ${{ env.DR_FAILOVER_SLA_DAYS }}
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          resp=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/dr-failover.yml/runs?per_page=1")
-          ts=$(echo "$resp" | jq -r '.workflow_runs[0].updated_at')
-          conclusion=$(echo "$resp" | jq -r '.workflow_runs[0].conclusion')
-          echo "timestamp=$ts" >> "$GITHUB_OUTPUT"
-          now=$(date -u +%s)
-          run_ts=$(date -d "$ts" -u +%s)
-          max_age=$((SLA_DAYS * 86400))
-          age=$((now - run_ts))
-          if [ "$conclusion" != "success" ]; then
-            echo "Latest dr-failover run concluded with $conclusion" >&2
-            exit 1
-          fi
-          if [ "$age" -gt "$max_age" ]; then
-            echo "Latest dr-failover run is older than ${SLA_DAYS}d" >&2
-            exit 1
-          fi
-
-      - name: Notify on-call on stale DR failover
-        if: failure() && steps.drfailover.outcome == 'failure'
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          payload: |
-            { "text": "🚫 Deployment blocked: dr-failover workflow failed or stale for ${{ github.repository }}@${{ github.sha }}" }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
-      - name: Ensure dr-restore recent success
-        id: drrestore
-        env:
-          SLA_DAYS: ${{ env.DR_RESTORE_SLA_DAYS }}
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          resp=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/dr-restore.yml/runs?per_page=1")
-          ts=$(echo "$resp" | jq -r '.workflow_runs[0].updated_at')
-          conclusion=$(echo "$resp" | jq -r '.workflow_runs[0].conclusion')
-          echo "timestamp=$ts" >> "$GITHUB_OUTPUT"
-          now=$(date -u +%s)
-          run_ts=$(date -d "$ts" -u +%s)
-          max_age=$((SLA_DAYS * 86400))
-          age=$((now - run_ts))
-          if [ "$conclusion" != "success" ]; then
-            echo "Latest dr-restore run concluded with $conclusion" >&2
-            exit 1
-          fi
-          if [ "$age" -gt "$max_age" ]; then
-            echo "Latest dr-restore run is older than ${SLA_DAYS}d" >&2
-            exit 1
-          fi
-
-      - name: Notify on-call on stale DR restore
-        if: failure() && steps.drrestore.outcome == 'failure'
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          payload: |
-            { "text": "🚫 Deployment blocked: dr-restore workflow failed or stale for ${{ github.repository }}@${{ github.sha }}" }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
-      - name: Ensure dr-throwaway recent success
-        id: drthrowaway
-        env:
-          SLA_DAYS: ${{ env.DR_THROWAWAY_SLA_DAYS }}
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          resp=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/dr-throwaway.yml/runs?per_page=1")
-          ts=$(echo "$resp" | jq -r '.workflow_runs[0].updated_at')
-          conclusion=$(echo "$resp" | jq -r '.workflow_runs[0].conclusion')
-          echo "timestamp=$ts" >> "$GITHUB_OUTPUT"
-          now=$(date -u +%s)
-          run_ts=$(date -d "$ts" -u +%s)
-          max_age=$((SLA_DAYS * 86400))
-          age=$((now - run_ts))
-          if [ "$conclusion" != "success" ]; then
-            echo "Latest dr-throwaway run concluded with $conclusion" >&2
-            exit 1
-          fi
-          if [ "$age" -gt "$max_age" ]; then
-            echo "Latest dr-throwaway run is older than ${SLA_DAYS}d" >&2
-            exit 1
-          fi
-
-      - name: Ensure proof-archive recent success
-        id: proof_archive
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          run=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/proof-archive.yml/runs?per_page=1")
-          conclusion=$(echo "$run" | jq -r '.workflow_runs[0].conclusion')
-          started=$(echo "$run" | jq -r '.workflow_runs[0].run_started_at')
-          start_ts=$(date -d "$started" +%s)
-          now=$(date -u +%s)
-          if [ "$conclusion" != "success" ] || [ $((now - start_ts)) -gt 86400 ]; then
-            echo "Latest proof-archive workflow run did not succeed within 24 hours"
-            exit 1
-          fi
-
-      - name: Notify on-call on stale proof-archive
-        if: failure() && steps.proof_archive.outcome == 'failure'
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          payload: |
-            { "text": "🚫 Deployment blocked: proof-archive workflow failed or stale for ${{ github.repository }}@${{ github.sha }}" }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
       - name: Ensure ops-artifacts-verify recent success
         id: ops_artifacts_verify
