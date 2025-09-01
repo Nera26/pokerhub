@@ -10,7 +10,6 @@
     - "deploy / preflight"
     - "deploy / deploy"
     - check-proof-archive
-    - proof-archive
     - "ci / ops-artifacts-verify"
     - spectator-retention
     - spectator-privacy
