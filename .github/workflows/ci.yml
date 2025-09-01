@@ -28,6 +28,16 @@ jobs:
       - run: npm ci
       - run: TS_NODE_COMPILER_OPTIONS='{"module":"commonjs"}' npx ts-node scripts/ensure-spectator-privacy.ts
 
+  ensure-ops-artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: TS_NODE_COMPILER_OPTIONS='{"module":"commonjs"}' npx ts-node scripts/ensure-ops-artifacts.ts
+
   ensure-ops-preflight:
     runs-on: ubuntu-latest
     steps:
@@ -95,6 +105,7 @@ jobs:
   ops-preflight:
     needs:
       - ensure-spectator-privacy
+      - ensure-ops-artifacts
       - ensure-ops-preflight
       - ensure-proof-archive
       - ensure-soak-metrics
@@ -899,5 +910,6 @@ jobs:
 
   ops-artifacts-verify:
     needs: [ops-preflight, ops-sla, workflow-sla, dr-trends, spectator-privacy]
+    if: ${{ always() }}
     uses: ./.github/workflows/ops-artifacts-verify.yml
     secrets: inherit
