@@ -58,6 +58,16 @@ async function isSettlementEnabled(): Promise<boolean> {
   return enabled(global) && enabled(room);
 }
 
+async function isDealingEnabled(): Promise<boolean> {
+  if (!pub) return true;
+  const [global, room] = await Promise.all([
+    pub.get('feature-flag:dealing'),
+    pub.get(`feature-flag:room:${workerData.tableId}:dealing`),
+  ]);
+  const enabled = (v: string | null) => v === null || v === '1' || v === 'true';
+  return enabled(global) && enabled(room);
+}
+
 async function main() {
   const engine = await GameEngine.create(
     workerData.playerIds,
@@ -74,11 +84,33 @@ async function main() {
     async (msg: { type: string; seq: number; action?: GameAction; from?: number }) => {
       switch (msg.type) {
         case 'apply': {
+          const beforePhase = engine.getState().phase;
           engine.applyAction(msg.action as GameAction);
           actionCounter.add(1, { tableId: workerData.tableId });
 
+          let dealingHalted = false;
+          if (beforePhase === 'WAIT_BLINDS' && engine.getState().phase === 'DEAL') {
+            if (!(await isDealingEnabled())) {
+              const st = engine.getState();
+              st.phase = 'WAIT_BLINDS';
+              st.deck = [];
+              st.communityCards = [];
+              for (const p of st.players) delete p.holeCards;
+              dealingHalted = true;
+            }
+          }
+
           // Auto-advance dealing to reach a betting round or showdown
-          while (engine.getState().phase === 'DEAL') {
+          while (engine.getState().phase === 'DEAL' && !dealingHalted) {
+            if (!(await isDealingEnabled())) {
+              const st = engine.getState();
+              st.phase = 'WAIT_BLINDS';
+              st.deck = [];
+              st.communityCards = [];
+              for (const p of st.players) delete p.holeCards;
+              dealingHalted = true;
+              break;
+            }
             engine.applyAction({ type: 'next' });
             actionCounter.add(1, { tableId: workerData.tableId });
           }
@@ -107,6 +139,10 @@ async function main() {
 
           // Publish compact deltas over Redis for socket fan-out
           await pub?.publish(diffChannel, JSON.stringify([idx, delta]));
+
+          if (dealingHalted) {
+            port.postMessage({ event: 'dealingDisabled' });
+          }
 
           if (state.phase === 'SETTLE') {
             engine.applyAction({ type: 'next' });
