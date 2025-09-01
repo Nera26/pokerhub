@@ -10,6 +10,8 @@ on:
         required: true
       PROOF_ARCHIVE_BUCKET:
         required: true
+      PROOF_MANIFEST_BUCKET:
+        required: true
       SLACK_WEBHOOK_URL:
         required: true
       PAGERDUTY_ROUTING_KEY:
@@ -81,6 +83,28 @@ jobs:
           manifest_sha=$(jq -r '.manifestSha' proof-summary.json)
           gcloud monitoring metrics write custom.googleapis.com/proof/archive_count "$count" --project=${{ vars.GCP_PROJECT_ID }}
           gcloud monitoring metrics write custom.googleapis.com/proof/manifest_hash 1 --project=${{ vars.GCP_PROJECT_ID }} --labels=hash="$manifest_sha"
+      - name: Sign and upload proof summary manifest
+        if: success()
+        env:
+          PROOF_MANIFEST_BUCKET: ${{ secrets.PROOF_MANIFEST_BUCKET }}
+        run: |
+          set -e
+          sha=$(sha256sum proof-summary.json | awk '{print $1}')
+          gcloud kms asymmetric-signature sign \
+            --key=${{ vars.PROOF_MANIFEST_KMS_KEY }} \
+            --keyring=${{ vars.PROOF_MANIFEST_KMS_KEYRING }} \
+            --location=${{ vars.PROOF_MANIFEST_KMS_LOCATION }} \
+            --version=${{ vars.PROOF_MANIFEST_KMS_VERSION || 1 }} \
+            --plaintext-file=proof-summary.json \
+            --signature-file=proof-summary.sig
+          sig=$(base64 -w0 proof-summary.sig)
+          printf '{"sha256":"%s","signature":"%s"}' "$sha" "$sig" > proof-summary.manifest.json
+          dest_date="gs://$PROOF_MANIFEST_BUCKET/$(date +%Y-%m-%d)/"
+          dest_latest="gs://$PROOF_MANIFEST_BUCKET/latest/"
+          gcloud storage cp proof-summary.json "${dest_date}proof-summary.json"
+          gcloud storage cp proof-summary.manifest.json "${dest_date}manifest.json"
+          gcloud storage cp proof-summary.json "${dest_latest}proof-summary.json"
+          gcloud storage cp proof-summary.manifest.json "${dest_latest}manifest.json"
       - name: Upload proof summary
         if: always()
         uses: actions/upload-artifact@v4
