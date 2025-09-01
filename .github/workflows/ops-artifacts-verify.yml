@@ -57,6 +57,8 @@ jobs:
       DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
       DR_METRICS_MIN_RETENTION_DAYS: ${{ vars.DR_METRICS_MIN_RETENTION_DAYS || 30 }}
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      OPS_METRICS_DATASET: ${{ vars.OPS_METRICS_DATASET || 'ops_metrics' }}
+      OPS_VERIFICATION_TABLE: ${{ vars.OPS_VERIFICATION_TABLE || 'ops_verification' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -117,6 +119,7 @@ jobs:
           gcloud storage cp verify-ops.log gs://$DR_METRICS_BUCKET/verify/$GITHUB_RUN_ID/
           url="https://storage.googleapis.com/$DR_METRICS_BUCKET/verify/$GITHUB_RUN_ID/verify-ops.log"
           echo "$url" >> "$GITHUB_STEP_SUMMARY"
+          STATUS=$status npx ts-node scripts/verify-ops-artifacts.ts record || true
           exit $status
 
       - name: Prepare ops artifacts alert

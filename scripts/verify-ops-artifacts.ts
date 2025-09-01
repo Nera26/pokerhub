@@ -160,6 +160,23 @@ function checkProofArchiveBigQuery(projectId: string) {
   }
 }
 
+function insertOpsVerificationRow(
+  projectId: string,
+  dataset: string,
+  table: string,
+  runId: string,
+  commitSha: string,
+  status: string,
+) {
+  const query =
+    `INSERT INTO \`${dataset}.${table}\` (run_id, commit_sha, status, timestamp) ` +
+    `VALUES ('${runId}', '${commitSha}', '${status}', CURRENT_TIMESTAMP())`;
+  execSync(
+    `bq query --project_id=${projectId} --nouse_legacy_sql --format=none '${query}'`,
+    { stdio: 'ignore' },
+  );
+}
+
 function checkProofSummaryManifest(
   bucket: string,
   key: string,
@@ -676,11 +693,35 @@ function main() {
 }
 
 if (typeof require !== 'undefined' && require.main === module) {
-  try {
-    main();
-  } catch (err) {
-    console.error((err as Error).message);
-    process.exit(1);
+  if (process.argv[2] === 'record') {
+    const runId = requireEnv('RUN_ID');
+    const projectId = requireEnv('GCP_PROJECT_ID');
+    const dataset = requireEnv('OPS_METRICS_DATASET');
+    const table = requireEnv('OPS_VERIFICATION_TABLE');
+    const status = requireEnv('STATUS');
+    const commitSha = execSync('git rev-parse HEAD', {
+      encoding: 'utf-8',
+    }).trim();
+    try {
+      insertOpsVerificationRow(
+        projectId,
+        dataset,
+        table,
+        runId,
+        commitSha,
+        status,
+      );
+    } catch (err) {
+      console.error((err as Error).message);
+      process.exit(1);
+    }
+  } else {
+    try {
+      main();
+    } catch (err) {
+      console.error((err as Error).message);
+      process.exit(1);
+    }
   }
 }
 
@@ -699,4 +740,5 @@ export {
   checkDrMetrics,
   checkDrFailoverMetrics,
   checkDrRestoreMetrics,
+  insertOpsVerificationRow,
 };
