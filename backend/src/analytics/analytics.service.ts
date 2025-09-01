@@ -88,6 +88,13 @@ const WalletCommitSchema = new ParquetSchema({
   currency: { type: 'UTF8' },
 });
 
+const WalletRollbackSchema = new ParquetSchema({
+  accountId: { type: 'UTF8' },
+  amount: { type: 'DOUBLE' },
+  refId: { type: 'UTF8' },
+  currency: { type: 'UTF8' },
+});
+
 const AuthLoginSchema = new ParquetSchema({
   userId: { type: 'UTF8' },
   ts: { type: 'INT64' },
@@ -139,6 +146,7 @@ const ParquetSchemas: Record<string, ParquetSchema> = {
   'tournament.eliminate': TournamentEliminateSchema,
   'tournament.cancel': TournamentCancelSchema,
   'wallet.reserve': WalletReserveSchema,
+  'wallet.rollback': WalletRollbackSchema,
   'wallet.commit': WalletCommitSchema,
   'auth.login': AuthLoginSchema,
   'antiCheat.flag': AntiCheatFlagSchema,

@@ -76,6 +76,13 @@ export const WalletCommitEvent = z.object({
   currency: z.string(),
 });
 
+export const WalletRollbackEvent = z.object({
+  accountId: z.string().uuid(),
+  amount: z.number(),
+  refId: z.string(),
+  currency: z.string(),
+});
+
 export const AuthLoginEvent = z.object({
   userId: z.string().uuid(),
   ts: z.number().int(),
@@ -135,6 +142,7 @@ export const EventSchemas = {
   "tournament.eliminate": TournamentEliminateEvent,
   "tournament.cancel": TournamentCancelEvent,
   "wallet.reserve": WalletReserveEvent,
+  "wallet.rollback": WalletRollbackEvent,
   "wallet.commit": WalletCommitEvent,
   "auth.login": AuthLoginEvent,
   "antiCheat.flag": AntiCheatFlagEvent,
@@ -156,6 +164,7 @@ export type Events = {
   "tournament.eliminate": z.infer<typeof TournamentEliminateEvent>;
   "tournament.cancel": z.infer<typeof TournamentCancelEvent>;
   "wallet.reserve": z.infer<typeof WalletReserveEvent>;
+  "wallet.rollback": z.infer<typeof WalletRollbackEvent>;
   "wallet.commit": z.infer<typeof WalletCommitEvent>;
   "auth.login": z.infer<typeof AuthLoginEvent>;
   "antiCheat.flag": z.infer<typeof AntiCheatFlagEvent>;
