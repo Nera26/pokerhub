@@ -9,6 +9,7 @@ set -euo pipefail
 APP_NAME=${APP_NAME:-pokerhub}
 IMAGE_TAG=${1:-latest}
 NAMESPACE=${NAMESPACE:-default}
+ARTIFACT_REGISTRY=${ARTIFACT_REGISTRY:?ARTIFACT_REGISTRY env var must be set}
 CANARY_SUFFIX="-canary"
 
 rollback() {
@@ -19,7 +20,7 @@ rollback() {
 trap rollback ERR
 
 echo "Deploying canary $APP_NAME$CANARY_SUFFIX with image tag $IMAGE_TAG"
-kubectl set image deployment/${APP_NAME}${CANARY_SUFFIX} ${APP_NAME}=registry.example.com/${APP_NAME}:${IMAGE_TAG} -n "$NAMESPACE"
+kubectl set image deployment/${APP_NAME}${CANARY_SUFFIX} ${APP_NAME}=${ARTIFACT_REGISTRY}/${APP_NAME}:${IMAGE_TAG} -n "$NAMESPACE"
 kubectl rollout status deployment/${APP_NAME}${CANARY_SUFFIX} -n "$NAMESPACE" --timeout=60s
 
 # basic health check
@@ -30,5 +31,5 @@ if ! kubectl run ${APP_NAME}-probe --rm -i --restart=Never --image=curlimages/cu
 fi
 
 echo "Promoting canary to production"
-kubectl set image deployment/${APP_NAME} ${APP_NAME}=registry.example.com/${APP_NAME}:${IMAGE_TAG} -n "$NAMESPACE"
+kubectl set image deployment/${APP_NAME} ${APP_NAME}=${ARTIFACT_REGISTRY}/${APP_NAME}:${IMAGE_TAG} -n "$NAMESPACE"
 kubectl rollout status deployment/${APP_NAME} -n "$NAMESPACE" --timeout=60s

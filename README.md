@@ -127,6 +127,7 @@ Infrastructure manifests, dashboards, and operational scripts live under
    - `K8S_NAMESPACE`
    - `HEALTH_CHECK_URL`
    - `PROMETHEUS_URL`
+   - `ARTIFACT_REGISTRY` (e.g., `us-docker.pkg.dev/<project>/<repo>`)
 
    Then trigger the workflow:
 
