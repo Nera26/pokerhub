@@ -103,7 +103,7 @@ describe('UsersController (e2e)', () => {
 
   it('returns 404 for missing user update', async () => {
     await request(app.getHttpServer())
-      .put('/users/missing')
+      .put('/users/00000000-0000-0000-0000-000000000001')
       .send({ username: 'x' })
       .expect(404);
   });
