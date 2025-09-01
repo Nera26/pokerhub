@@ -11,7 +11,18 @@ export async function serverFetch(
     }
     if (url.includes('/api/leaderboard')) {
       return new Response(
-        JSON.stringify({ players: [{ id: 1, name: 'Neo', chips: 42000 }] }),
+        JSON.stringify([
+          {
+            playerId: 'neo',
+            rank: 1,
+            points: 100,
+            net: 50,
+            bb100: 10,
+            hours: 1,
+            roi: 1,
+            finishes: { 1: 1 },
+          },
+        ]),
         { status: 200, headers: { 'Content-Type': 'application/json' } },
       );
     }

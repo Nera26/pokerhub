@@ -227,3 +227,16 @@ JSON exports for core operational metrics. Import these into Grafana or Metabase
   }
 }
 ```
+
+### Leaderboard ROI
+```json
+{
+  "name": "Leaderboard ROI",
+  "dataset_query": {
+    "type": "native",
+    "native": {
+      "query": "SELECT playerId, roi FROM leaderboard ORDER BY roi DESC LIMIT 10"
+    }
+  }
+}
+```

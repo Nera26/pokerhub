@@ -389,6 +389,8 @@ export const LeaderboardEntrySchema = z.object({
   net: z.number(),
   bb100: z.number(),
   hours: z.number(),
+  roi: z.number(),
+  finishes: z.record(z.number().int().nonnegative()),
 });
 export const LeaderboardResponseSchema = z.array(LeaderboardEntrySchema);
 export type LeaderboardEntry = z.infer<typeof LeaderboardEntrySchema>;

@@ -6,7 +6,16 @@ test('shows leaderboard players', async ({ page }) => {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify([
-        { playerId: 'alice', rank: 1, points: 100, net: 10, bb100: 5, hours: 2 },
+        {
+          playerId: 'alice',
+          rank: 1,
+          points: 100,
+          net: 10,
+          bb100: 5,
+          hours: 2,
+          roi: 0.2,
+          finishes: { 1: 1 },
+        },
       ]),
     });
   });

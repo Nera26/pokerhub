@@ -8,7 +8,16 @@ jest.mock('@/lib/api/leaderboard');
 describe('LeaderboardPage', () => {
   it('renders data from server', async () => {
     (fetchLeaderboard as jest.Mock).mockResolvedValue([
-      { playerId: 'alice', rank: 1, points: 100, net: 10, bb100: 5, hours: 2 },
+      {
+        playerId: 'alice',
+        rank: 1,
+        points: 100,
+        net: 10,
+        bb100: 5,
+        hours: 2,
+        roi: 0.2,
+        finishes: { 1: 1 },
+      },
     ]);
 
     const client = new QueryClient({

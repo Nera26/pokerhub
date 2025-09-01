@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import type Redis from 'ioredis';
 import { Repository } from 'typeorm';
 import {
   Tournament,
@@ -40,6 +41,7 @@ export class TournamentService {
     private readonly rebuys: RebuyService,
     private readonly pko: PkoService,
     private readonly flags: FeatureFlagsService,
+    @Optional() @Inject('REDIS_CLIENT') private readonly redis?: Redis,
   ) {}
 
   async list(): Promise<Tournament[]> {
@@ -278,6 +280,19 @@ export class TournamentService {
           recentlyMoved.set(playerId, currentHand);
           await this.seats.save(seat);
         }
+      }
+    }
+    if (this.redis) {
+      const key = `tourney:${tournamentId}:lastMoved`;
+      if (recentlyMoved.size === 0) {
+        await this.redis.del(key);
+      } else {
+        await this.redis.hset(
+          key,
+          Object.fromEntries(
+            Array.from(recentlyMoved.entries()).map(([k, v]) => [k, v.toString()]),
+          ),
+        );
       }
     }
   }

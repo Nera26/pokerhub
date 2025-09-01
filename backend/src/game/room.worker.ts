@@ -15,6 +15,7 @@ const pub: Redis | undefined = opts ? new Redis(opts) : undefined;
 const sub: Redis | undefined = opts ? new Redis(opts) : undefined;
 const diffChannel = `room:${workerData.tableId}:diffs`;
 const ackChannel = `room:${workerData.tableId}:snapshotAck`;
+
 sub?.subscribe(ackChannel);
 sub?.on('message', (channel, msg) => {
   if (channel === ackChannel) {
@@ -59,9 +60,9 @@ async function main() {
   const engine = await GameEngine.create(
     workerData.playerIds,
     { startingStack: 100, smallBlind: 1, bigBlind: 2 },
-    undefined,
-    undefined,
-    undefined,
+    undefined, // wallet
+    undefined, // handRepo
+    undefined, // events
     workerData.tableId,
   );
 
@@ -70,35 +71,52 @@ async function main() {
     async (
       msg: { type: string; seq: number; action?: GameAction; from?: number },
     ) => {
-      let state: GameState;
       switch (msg.type) {
-        case 'apply':
-          state = engine.applyAction(msg.action as GameAction);
-          while (state.phase === 'DEAL') {
-            state = engine.applyAction({ type: 'next' });
+        case 'apply': {
+          engine.applyAction(msg.action as GameAction);
+
+          // Auto-advance dealing to reach a betting round or showdown
+          while (engine.getState().phase === 'DEAL') {
+            engine.applyAction({ type: 'next' });
           }
-          {
-            const svc = await getSettlement();
-            const idx = engine.getHandLog().slice(-1)[0]?.[0] ?? 0;
-            await svc.reserve(engine.getHandId(), state.street, idx);
-            const delta = diff(previousState, state);
-            previousState = state;
-            port.postMessage({ event: 'state', state });
-            await svc.commit(engine.getHandId(), state.street, idx);
-            await pub?.publish(diffChannel, JSON.stringify([idx, delta]));
-          }
+
+          const svc = await getSettlement();
+          const idx = engine.getHandLog().slice(-1)[0]?.[0] ?? 0;
+          const state = engine.getPublicState();
+
+          await svc.reserve(engine.getHandId(), state.street, idx);
+
+          const delta = diff(previousState, state);
+          previousState = state;
+
+          // Emit a full-state event for local consumers
+          port.postMessage({ event: 'state', state });
+
+          // Publish compact deltas over Redis for socket fans-out
+          await pub?.publish(diffChannel, JSON.stringify([idx, delta]));
+
+          await svc.commit(engine.getHandId(), state.street, idx);
+
+          // Respond directly to the requester with the full state
           port.postMessage({ seq: msg.seq, state });
           break;
-        case 'getState':
-          state = engine.getPublicState();
+        }
+
+        case 'getState': {
+          const state = engine.getPublicState();
           port.postMessage({ seq: msg.seq, state });
           break;
-        case 'replay':
-          state = engine.replayHand();
+        }
+
+        case 'replay': {
+          engine.replayHand();
+          const state = engine.getPublicState();
           port.postMessage({ event: 'state', state });
           port.postMessage({ seq: msg.seq, state });
           break;
-        case 'resume':
+        }
+
+        case 'resume': {
           const from = msg.from ?? 0;
           const log = engine
             .getHandLog()
@@ -106,15 +124,20 @@ async function main() {
             .map(([index, , , post]) => [index, post] as [number, GameState]);
           port.postMessage({ seq: msg.seq, states: log });
           break;
-        case 'snapshot':
+        }
+
+        case 'snapshot': {
           const snap = engine
             .getHandLog()
             .map(([index, , , post]) => [index, post] as [number, GameState]);
           port.postMessage({ seq: msg.seq, states: snap });
           break;
-        case 'ping':
+        }
+
+        case 'ping': {
           port.postMessage({ seq: msg.seq, ok: true });
           break;
+        }
       }
     },
   );
