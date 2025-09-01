@@ -4,7 +4,7 @@ import { createHash } from 'crypto';
 import { mkdtempSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { checkBucketRetention } from './bucket-retention';
+import { checkBucketRetention } from './bucket-retention.ts';
 
 function requireEnv(name: string): string {
   const val = process.env[name];
