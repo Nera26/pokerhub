@@ -12,6 +12,14 @@ import { TournamentService } from './tournament.service';
  */
 @Injectable()
 export class TableBalancerService {
+  /**
+   * Fallback store for `recentlyMoved` when Redis is unavailable. Maps
+   * tournament id → map of player id → last moved hand.
+   */
+  private readonly localRecentlyMoved = new Map<
+    string,
+    Map<string, number>
+  >();
   constructor(
     @InjectRepository(Table) private readonly tables: Repository<Table>,
     private readonly tournamentService: TournamentService,
@@ -53,6 +61,9 @@ export class TableBalancerService {
         recentlyMoved = new Map(
           Object.entries(data).map(([k, v]) => [k, Number(v)]),
         );
+      } else {
+        recentlyMoved =
+          this.localRecentlyMoved.get(tournamentId) ?? new Map<string, number>();
       }
       await this.tournamentService.balanceTournament(
         tournamentId,
@@ -60,6 +71,9 @@ export class TableBalancerService {
         avoidWithin,
         recentlyMoved,
       );
+      if (!this.redis) {
+        this.localRecentlyMoved.set(tournamentId, recentlyMoved);
+      }
       return true;
     }
     return false;
