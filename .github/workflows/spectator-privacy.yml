@@ -33,6 +33,13 @@ jobs:
         env:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
         run: npx ts-node scripts/dlp-scan.ts backend-tests.log frontend-tests.log
+      - name: Write run success metric
+        if: always()
+        run: |
+          gcloud monitoring metrics write \
+            custom.googleapis.com/spectator_privacy/run_success 1 \
+            --project=${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }} \
+            --labels=run_id=${{ github.run_id }},commit_sha=${{ github.sha }}
       - name: Verify sanitized logs
         if: always()
         run: |

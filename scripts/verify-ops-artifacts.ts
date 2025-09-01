@@ -118,6 +118,41 @@ function checkProofArchiveMetrics(projectId: string) {
   }
 }
 
+function checkSpectatorPrivacyMetric(projectId: string) {
+  const end = new Date();
+  const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+  let raw: string;
+  try {
+    raw = execSync(
+      `gcloud monitoring time-series list --project=${projectId} ` +
+        `--filter="metric.type='custom.googleapis.com/spectator_privacy/run_success'" ` +
+        `--interval-start=${start.toISOString()} ` +
+        `--interval-end=${end.toISOString()} ` +
+        `--limit=1 --format=json`,
+      { encoding: 'utf-8' },
+    );
+  } catch {
+    throw new Error(
+      'Missing metric custom.googleapis.com/spectator_privacy/run_success',
+    );
+  }
+  let series: Array<{ metric: { labels?: Record<string, string> }; points?: any[] }> = [];
+  try {
+    series = JSON.parse(raw);
+  } catch {
+    throw new Error(
+      'Unable to parse spectator_privacy/run_success metric response',
+    );
+  }
+  if (series.length === 0 || !series[0].points?.length) {
+    throw new Error('No recent data points for spectator_privacy run metric');
+  }
+  const labels = series[0].metric?.labels || {};
+  if (!labels.run_id || !labels.commit_sha) {
+    throw new Error('spectator_privacy run metric missing run_id or commit_sha');
+  }
+}
+
 function checkSpectatorLogs(bucket: string, runId: string) {
   console.log(`Fetching spectator privacy logs for run ${runId}`);
   let listing: string;
@@ -358,6 +393,7 @@ function main() {
   checkProofArchive(proofBucket);
   checkProofArchiveMetrics(projectId);
   checkSpectatorLogs(spectatorBucket, runId);
+  checkSpectatorPrivacyMetric(projectId);
   checkSoakMetrics(soakBucket);
   checkSoakSummary(soakBucket, maxLatencyP95, minThroughput);
   checkSoakTrendDelta(soakBucket, maxTrendPct);
@@ -379,6 +415,7 @@ export {
   checkProofArchive,
   checkProofArchiveMetrics,
   checkSpectatorLogs,
+  checkSpectatorPrivacyMetric,
   checkSoakMetrics,
   checkSoakSummary,
   checkSoakTrendDelta,
