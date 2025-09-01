@@ -3,7 +3,7 @@
 The `ops-preflight` composite action centralizes operational gates used across deployment workflows. It verifies:
 
 - Spectator privacy scan freshness
-- Soak metric SLA
+- Soak metric SLA and performance thresholds
 - Disaster recovery drills (dr-drill, dr-failover, dr-restore, dr-throwaway)
 - Proof archive workflow freshness
 
@@ -25,5 +25,8 @@ The `ops-preflight` composite action centralizes operational gates used across d
 - `SLACK_BOT_TOKEN` – used by [`check-workflow-sla`](../../.github/workflows/check-workflow-sla/action.yml) to send alerts.
 - `GCP_SA_KEY` – service account JSON for DR drill metric checks.
 - `vars.GCP_PROJECT_ID` – project containing DR metrics.
+- `SOAK_TRENDS_BUCKET` – Cloud Storage bucket for soak trend artifacts.
+- `SOAK_LATENCY_P95_MS` – maximum allowed p95 latency for the latest soak run.
+- `SOAK_THROUGHPUT_MIN` – minimum throughput for the latest soak run.
 
-Callers must also pass a `slack-channel-id` input when invoking the action.
+Callers must also pass a `slack-channel-id` input when invoking the action. The action fails if `soak-summary.json` is missing or if the metrics exceed the thresholds above.
