@@ -14,6 +14,24 @@ npm test --prefix backend -- test/game/.*\.property\.spec\.ts
 
 The `load` stage of `.github/workflows/ci.yml` runs `load/k6-swarm.js` against the staging cluster. `load/check-thresholds.sh` fails the build if p95 acknowledgement latency or error rates breach thresholds. A scheduled soak test is handled separately by `.github/workflows/soak.yml`.
 
+## Socket Load Harness
+
+`tests/performance/socket-load.ts` simulates websocket clients performing actions across many tables. It records per-table latency and action rates and exports a TPS metric via OpenTelemetry.
+
+### Running
+
+```bash
+docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 ghcr.io/shopify/toxiproxy
+TABLES=10000 SOCKETS=80000 npm run perf:socket-load
+```
+
+The test writes metrics to `metrics/table-metrics.json` and fails when:
+
+- p50 ACK latency > 40 ms
+- p95 ACK latency > 120 ms
+- p99 ACK latency > 200 ms
+- average actions per table per minute < 150
+
 ## Table Action Load Test
 
 The `infra/tests/load/k6-table-actions.js` script simulates action traffic across 10k tables. It records an `ack_latency` histogram for each action acknowledgement.
