@@ -15,6 +15,14 @@ export const WithdrawSchema = z.object({
 
 export type WithdrawRequest = z.infer<typeof WithdrawSchema>;
 
+export const DepositSchema = z.object({
+  amount: z.number().int().positive(),
+  deviceId: z.string(),
+  currency: z.string().length(3),
+});
+
+export type DepositRequest = z.infer<typeof DepositSchema>;
+
 export const ProviderCallbackSchema = z.object({
   eventId: z.string(),
   idempotencyKey: z.string(),

@@ -325,6 +325,29 @@ export interface paths {
       };
     };
   };
+  "/wallet/{id}/deposit": {
+    /** Deposit funds */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["DepositRequest"];
+        };
+      };
+      responses: {
+        /** @description Deposit challenge */
+        200: {
+          content: {
+            "application/json": components["schemas"]["ProviderChallenge"];
+          };
+        };
+      };
+    };
+  };
   "/wallet/{id}/withdraw": {
     /** Withdraw funds */
     post: {
@@ -822,16 +845,40 @@ export interface paths {
           "application/json": components["schemas"]["BanUserRequest"];
         };
       };
-      responses: {
-        /** @description Banned user */
-        200: {
-          content: {
-            "application/json": components["schemas"]["User"];
-          };
+     responses: {
+    /** @description Banned user */
+    200: {
+      content: {
+        "application/json": components["schemas"]["User"];
+      };
+    };
+  };
+};
+  
+"/users/{id}/balance": {
+  /** Adjust user balance */
+  post: {
+    parameters: {
+      path: {
+        id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BalanceAdjustmentRequest"];
+      };
+    };
+    responses: {
+      /** @description Updated balance */
+      200: {
+        content: {
+          "application/json": components["schemas"]["User"];
         };
       };
     };
   };
+};
+
   "/feature-flags": {
     /** List feature flags */
     get: {
@@ -1006,6 +1053,14 @@ export interface components {
       amount: number;
       deviceId: string;
       currency: string;
+    };
+    DepositRequest: {
+      amount: number;
+      deviceId: string;
+      currency: string;
+    };
+    ProviderChallenge: {
+      id?: string;
     };
     ProviderCallback: {
       eventId: string;

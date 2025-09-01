@@ -325,6 +325,29 @@ export interface paths {
       };
     };
   };
+  "/wallet/{id}/deposit": {
+    /** Deposit funds */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["DepositRequest"];
+        };
+      };
+      responses: {
+        /** @description Deposit challenge */
+        200: {
+          content: {
+            "application/json": components["schemas"]["ProviderChallenge"];
+          };
+        };
+      };
+    };
+  };
   "/wallet/{id}/withdraw": {
     /** Withdraw funds */
     post: {
@@ -675,20 +698,20 @@ export interface paths {
       };
     };
   };
-  "/hands/{id}/state/{actionIndex}": {
+  "/hands/{id}/state/{index}": {
     /** Reconstruct hand state at action index */
     get: {
       parameters: {
         path: {
           id: string;
-          actionIndex: number;
+          index: number;
         };
       };
       responses: {
         /** @description Reconstructed hand state */
         200: {
           content: {
-            "application/json": components["schemas"]["HandStateResponse"];
+            "application/json": components["schemas"]["GameState"];
           };
         };
       };
@@ -810,41 +833,67 @@ export interface paths {
     };
   };
   "/users/{id}/ban": {
-    /** Ban user */
-    post: {
-      parameters: {
-        path: {
-          id: string;
-        };
+  /** Ban user */
+  post: {
+    parameters: {
+      path: {
+        id: string;
       };
-      requestBody?: {
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["BanUserRequest"];
+      };
+    };
+    responses: {
+      /** @description Banned user */
+      200: {
         content: {
-          "application/json": components["schemas"]["BanUserRequest"];
-        };
-      };
-      responses: {
-        /** @description Banned user */
-        200: {
-          content: {
-            "application/json": components["schemas"]["User"];
-          };
+          "application/json": components["schemas"]["User"];
         };
       };
     };
   };
-  "/feature-flags": {
-    /** List feature flags */
-    get: {
-      responses: {
-        /** @description Feature flags */
-        200: {
-          content: {
-            "application/json": components["schemas"]["FeatureFlagsResponse"];
-          };
+};
+
+"/users/{id}/balance": {
+  /** Adjust user balance */
+  post: {
+    parameters: {
+      path: {
+        id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BalanceAdjustmentRequest"];
+      };
+    };
+    responses: {
+      /** @description Updated balance */
+      200: {
+        content: {
+          "application/json": components["schemas"]["User"];
         };
       };
     };
   };
+};
+
+"/feature-flags": {
+  /** List feature flags */
+  get: {
+    responses: {
+      /** @description Feature flags */
+      200: {
+        content: {
+          "application/json": components["schemas"]["FeatureFlagsResponse"];
+        };
+      };
+    };
+  };
+};
+
   "/feature-flags/{key}": {
     /** Set feature flag */
     put: {
@@ -1006,6 +1055,14 @@ export interface components {
       amount: number;
       deviceId: string;
       currency: string;
+    };
+    DepositRequest: {
+      amount: number;
+      deviceId: string;
+      currency: string;
+    };
+    ProviderChallenge: {
+      id?: string;
     };
     ProviderCallback: {
       eventId: string;

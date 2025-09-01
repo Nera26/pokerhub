@@ -1,7 +1,7 @@
 # Accounting Book
 
-**Version:** 1.1.1
-**Last Updated:** 2025-08-31
+**Version:** 1.1.2
+**Last Updated:** 2025-09-01
 
 ## Ledger Schema
 
@@ -54,6 +54,7 @@ See the [Reconciliation Guide](./handbook/reconciliation-guide.md) for the end-t
 - Property-based test (`backend/test/wallet/reconcile.sum.property.spec.ts`) generates random transaction batches.
 - For each batch `WalletService.reconcile()` must return no discrepancies and the totals must sum to zero.
 - Any failing case writes the offending batch and report to `storage/wallet-reconcile-failure.json` and fails CI, ensuring ledger integrity.
+- Additional property tests (`backend/test/wallet.ledger.property.ts`) verify that arbitrary transaction batches net to zero and that hand logs can be replayed to produce identical journal entries.  On failure the offending sequence is written to `storage/reconcile-YYYY-MM-DD.json` for investigation.
 
 ## KYC Provider Configuration
 
@@ -76,6 +77,7 @@ See the [Reconciliation Guide](./handbook/reconciliation-guide.md) for the end-t
 
 ## Revision History
 - 2025-08-31: linked wallet reconciliation runbook and service uptime SLO; added review footer
+- 2025-09-01: document automated ledger replay audit
 - cac8e82: add external KYC provider with denial reasons
 - 36ba907: add reconcile zero-sum property test
 - 3ab6709: add wallet reconciliation job and tests

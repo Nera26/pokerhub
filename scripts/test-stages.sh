@@ -20,6 +20,7 @@ run_property() {
   npm ci --prefix frontend
   npm ci --prefix analytics
   npm run test:property --prefix backend
+  npx c8 --reporter=lcov --reporter=text --clean=false ts-node backend/test/wallet.ledger.property.ts
   npm test --prefix frontend -- --testPathPattern=.property.spec.ts$ --passWithNoTests
   npx c8 --reporter=lcov --reporter=text --clean=false npm run test:property --prefix analytics
   if [ -d shared/test ]; then

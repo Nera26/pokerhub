@@ -43,8 +43,10 @@ following Prometheus queries to visualize these samples:
 - p95 GC pause: `histogram_quantile(0.95, rate(nodejs_gc_duration_seconds_bucket[5m]))`
 - Heap used bytes: `nodejs_heap_size_used_bytes`
 
-The soak harness logs these values and exits non‑zero if heap usage grows by
-more than 1 % or if the p95 GC pause exceeds 50 ms.
+The soak harness records p50/p95/p99 ACK latency as well as GC pause and RSS
+samples. It exits non‑zero if latency exceeds 60 ms (p50), 120 ms (p95) or
+200 ms (p99), if heap usage grows by more than 1 % or if the p95 GC pause
+exceeds 50 ms.
 
 ### Stake Level Metrics
 
@@ -164,6 +166,23 @@ Individual metric runbooks provide dashboard links and PagerDuty escalation deta
 - [Security Incident Response](security/incident-response.md)
 
 ![Alert Routing](images/alert-routing.svg)
+
+## WebSocket Queue Metrics
+
+The game and spectator gateways instrument their outbound queues with the
+following metrics:
+
+- `ws_outbound_queue_depth` – histogram recording the per-socket queue depth
+  for every enqueued frame.
+- `ws_outbound_queue_max` – observable gauge capturing the maximum depth per
+  socket between scrapes.
+- `ws_outbound_dropped_total` – counter incremented when a message is dropped
+  because the queue limit was hit.
+- `game_action_global_count` – histogram tracking the total number of actions
+  within the global rate-limit window.
+
+These metrics surface saturation and dropped messages before they impact game
+play, and drive the alert rules below.
 
 ## Rate Limit Alerts
 

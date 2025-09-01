@@ -111,10 +111,22 @@ export class GameGatewaySoakHarness {
     const port = Number(process.env.METRICS_PORT ?? 4000);
     this.metricsServer = createServer((_req, res) => {
       res.setHeader('Content-Type', 'application/json');
+      const rss = process.memoryUsage().rss;
+      const gcPauseP50 = this.eld.percentile(50) / 1e6;
+      const gcPauseP95 = this.eld.percentile(95) / 1e6;
+      const gcPauseP99 = this.eld.percentile(99) / 1e6;
+      const latencyP50 = this.histogram.percentile(50);
+      const latencyP95 = this.histogram.percentile(95);
+      const latencyP99 = this.histogram.percentile(99);
       res.end(
         JSON.stringify({
-          rssBytes: process.memoryUsage().rss,
-          gcPauseP95: this.eld.percentile(95) / 1e6,
+          rssBytes: rss,
+          gcPauseP50,
+          gcPauseP95,
+          gcPauseP99,
+          latencyP50,
+          latencyP95,
+          latencyP99,
         }),
       );
     }).listen(port);
@@ -241,17 +253,26 @@ export class GameGatewaySoakHarness {
     }, 5000);
     await new Promise((r) => setTimeout(r, this.opts.duration * 1000));
     clearInterval(memInterval);
+    const p50 = this.histogram.percentile(50);
     const p95 = this.histogram.percentile(95);
+    const p99 = this.histogram.percentile(99);
     const start = this.rssSamples[0];
     const end = this.rssSamples[this.rssSamples.length - 1];
     const rssDelta = ((end - start) / start) * 100;
+    const gcP50 = this.eld.percentile(50) / 1e6;
     const gcP95 = this.eld.percentile(95) / 1e6;
+    const gcP99 = this.eld.percentile(99) / 1e6;
     this.eld.disable();
     fs.appendFileSync(
       this.metricsPath,
       JSON.stringify({
         ts: Date.now(),
+        latency_p50_ms: p50,
+        latency_p95_ms: p95,
+        latency_p99_ms: p99,
+        gc_p50_ms: gcP50,
         gc_p95_ms: gcP95,
+        gc_p99_ms: gcP99,
         rss_delta_pct: rssDelta,
       }) + '\n',
     );
@@ -271,7 +292,9 @@ export class GameGatewaySoakHarness {
       throw new Error(`GC p95 ${gcP95.toFixed(2)}ms exceeds ${this.opts.gcP95}ms`);
     }
     console.log(
-      `ACK p95 ${p95.toFixed(2)}ms, RSS delta ${rssDelta.toFixed(2)}%, GC p95 ${gcP95.toFixed(2)}ms`,
+      `ACK p50 ${p50.toFixed(2)}ms p95 ${p95.toFixed(2)}ms p99 ${p99.toFixed(
+        2,
+      )}ms, RSS delta ${rssDelta.toFixed(2)}%, GC p95 ${gcP95.toFixed(2)}ms`,
     );
     this.metricsServer?.close();
   }

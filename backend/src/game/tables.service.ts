@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Table as TableEntity } from '../database/entities/table.entity';
+import { RoomManager } from './room.service';
 import type {
   Table as TableDto,
   TableData,
@@ -14,6 +15,7 @@ export class TablesService {
   constructor(
     @InjectRepository(TableEntity)
     private readonly tables: Repository<TableEntity>,
+    private readonly rooms: RoomManager,
   ) {}
 
   async getTables(): Promise<TableDto[]> {
@@ -27,13 +29,38 @@ export class TablesService {
     if (!table) {
       throw new Error('Table not found');
     }
+    let pot = 0;
+    let communityCards: string[] = [];
+    let players: TableData['players'] = [];
+    let chatMessages: TableData['chatMessages'] = [];
+
+    try {
+      const room = this.rooms.get(id);
+      const state = await room.getPublicState();
+      pot = state.pot;
+      communityCards = state.communityCards.map((c) => this.cardToString(c));
+      players = state.players.map((p, idx) => ({
+        id: idx + 1,
+        username: p.id,
+        avatar: '',
+        chips: p.stack,
+        committed: p.bet,
+        isFolded: p.folded,
+        isAllIn: p.allIn,
+      }));
+      // Chat history retrieval not yet implemented; placeholder
+      chatMessages = [];
+    } catch {
+      // Fallback to empty state if room not available or state fetch fails
+    }
+
     return {
       smallBlind: table.smallBlind,
       bigBlind: table.bigBlind,
-      pot: 0,
-      communityCards: [],
-      players: [],
-      chatMessages: [],
+      pot,
+      communityCards,
+      players,
+      chatMessages,
     };
   }
 
@@ -97,5 +124,13 @@ export class TablesService {
     if (minutes < 60) return `${minutes}m`;
     const hours = Math.floor(minutes / 60);
     return `${hours}h`;
+  }
+
+  private cardToString(card: number): string {
+    const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
+    const suits = ['♣', '♦', '♥', '♠'];
+    const rank = ranks[Math.floor(card / 4)] ?? '?';
+    const suit = suits[card % 4] ?? '?';
+    return `${rank}${suit}`;
   }
 }

@@ -1,9 +1,8 @@
 # Ops Metrics
 
 Operational soak and disaster recovery drill metrics are stored in the BigQuery dataset `ops_metrics`.
-CI jobs such as `scripts/ensure-dr-drill.ts` query this dataset. Workflows install the BigQuery CLI by
-invoking `google-github-actions/setup-gcloud@v2` with the project ID and running
-`gcloud components install bq --quiet`.
+CI jobs such as `scripts/ensure-dr-drill.ts` query this dataset using the Node BigQuery client
+(`@google-cloud/bigquery`), removing the need for the `bq` CLI.
 Tables are automatically retained for 90 days via the dataset's default table expiration.
 
 ## Tables

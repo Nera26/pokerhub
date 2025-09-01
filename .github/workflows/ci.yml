@@ -73,12 +73,10 @@ jobs:
         with:
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ vars.GCP_PROJECT_ID }}
-      - run: gcloud components install bq --quiet
       - run: npm ci
       - id: dr-drill
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
         run: |
           npx ts-node scripts/ensure-dr-drill.ts
           npx ts-node scripts/ensure-dr-workflows.ts

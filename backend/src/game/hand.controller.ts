@@ -29,6 +29,8 @@ import type {
   HandProofsResponse,
 } from '../schemas/hands';
 import { HandLog } from './hand-log';
+import { sanitize } from './state-sanitize';
+import { GameStateSchema, type GameState } from '@shared/types';
 
 @Controller('hands')
 export class HandController {
@@ -181,6 +183,61 @@ export class HandController {
     }
 
     return HandProofResponseSchema.parse(proof);
+  }
+
+  @Get(':id/state/:index')
+  async getState(
+    @Param('id') id: string,
+    @Param('index') indexParam: string,
+    @Req() req: Request,
+  ): Promise<GameState> {
+    const { userId, isAdmin } = this.verifyToken(req.headers['authorization']);
+    const participants = await this.getParticipants(id);
+    if (!isAdmin && !participants.has(userId)) {
+      throw new ForbiddenException();
+    }
+
+    const index = Number(indexParam);
+    if (!Number.isInteger(index) || index < 0) {
+      throw new NotFoundException('state not found');
+    }
+
+    const file = join(process.cwd(), '../storage/hand-logs', `${id}.jsonl`);
+    let raw: string | undefined;
+    try {
+      raw = await readFile(file, 'utf8');
+    } catch {
+      const hand = await this.hands.findOne({ where: { id } });
+      if (!hand) {
+        throw new NotFoundException('log not found');
+      }
+      raw = hand.log;
+    }
+
+    const log = new HandLog();
+    for (const line of raw.trim().split('\n')) {
+      if (!line) continue;
+      try {
+        const parsed = JSON.parse(line);
+        if (Array.isArray(parsed)) {
+          (log as any).entries.push(parsed);
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    const state = log.reconstruct(index);
+    if (!state) {
+      throw new NotFoundException('state not found');
+    }
+
+    const payload = {
+      version: '1',
+      ...sanitize(state, userId),
+      tick: index + 1,
+    } as GameState;
+    return GameStateSchema.parse(payload);
   }
 
   @Get(':id/log')
