@@ -4,13 +4,18 @@ import * as fs from 'fs';
 
 type Regression = { level: 'critical' | 'warning'; message: string };
 
-function writeAndExit(regressions: Regression[], metrics?: {
-  latencyP95?: number | null;
-  throughput?: number | null;
-}): never {
+function writeAndExit(
+  regressions: Regression[],
+  metrics?: {
+    latencyP95?: number | null;
+    throughput?: number | null;
+    gcPauseP95?: number | null;
+  }
+): never {
   const summary = {
     latencyP95: metrics?.latencyP95 ?? null,
     throughput: metrics?.throughput ?? null,
+    gcPauseP95: metrics?.gcPauseP95 ?? null,
     regressions,
   };
   fs.writeFileSync('soak-summary.json', JSON.stringify(summary, null, 2));
@@ -23,13 +28,19 @@ function writeAndExit(regressions: Regression[], metrics?: {
 
 const maxLatency = Number(process.env.SOAK_LATENCY_P95_MS || 120);
 const minThroughput = Number(process.env.SOAK_THROUGHPUT_MIN || 0);
+const maxGcPause = Number(process.env.SOAK_GC_P95_MS || 50);
 const windowSize = Number(process.env.SOAK_TRENDS_WINDOW || 7);
 const deviationPct = Number(process.env.SOAK_TRENDS_DEVIATION_PCT || 20);
 
-let rows: { timestamp: string; latency_p95_ms: number; throughput: number }[];
+let rows: {
+  timestamp: string;
+  latency_p95_ms: number;
+  throughput: number;
+  gc_pause_p95_ms: number;
+}[];
 try {
   const out = execSync(
-    `bq query --nouse_legacy_sql --format=json 'SELECT timestamp, latency_p95_ms, throughput FROM ops_metrics.soak_runs ORDER BY timestamp DESC LIMIT ${windowSize}'`,
+    `bq query --nouse_legacy_sql --format=json 'SELECT timestamp, latency_p95_ms, throughput, gc_pause_p95_ms FROM ops_metrics.soak_runs ORDER BY timestamp DESC LIMIT ${windowSize}'`,
     { encoding: 'utf-8' }
   );
   rows = JSON.parse(out);
@@ -43,8 +54,10 @@ if (rows.length === 0) {
 
 const p95s = rows.map((r) => r.latency_p95_ms);
 const throughputs = rows.map((r) => r.throughput);
+const gcP95s = rows.map((r) => r.gc_pause_p95_ms);
 const latestLat = p95s[0];
 const latestThr = throughputs[0];
+const latestGc = gcP95s[0];
 const prevLat = p95s.slice(1);
 const prevThr = throughputs.slice(1);
 
@@ -57,6 +70,9 @@ if (latestLat > maxLatency) {
 }
 if (latestThr < minThroughput) {
   regressions.push({ level: 'critical', message: `Throughput ${latestThr} < ${minThroughput}` });
+}
+if (latestGc > maxGcPause) {
+  regressions.push({ level: 'critical', message: `GC pause p95 ${latestGc}ms exceeds ${maxGcPause}ms` });
 }
 if (prevLat.length > 0 && latestLat > avgLat * (1 + deviationPct / 100)) {
   regressions.push({
@@ -85,7 +101,7 @@ try {
   console.error(err);
 }
 
-const summary = { latencyP95: latestLat, throughput: latestThr, regressions };
+const summary = { latencyP95: latestLat, throughput: latestThr, gcPauseP95: latestGc, regressions };
 fs.writeFileSync('soak-summary.json', JSON.stringify(summary, null, 2));
 
 if (regressions.length > 0) {
@@ -97,5 +113,5 @@ if (regressions.length > 0) {
 }
 
 console.log(
-  `Recent soak runs queried from BigQuery; latency p95=${latestLat}ms throughput=${latestThr}`,
+  `Recent soak runs queried from BigQuery; latency p95=${latestLat}ms throughput=${latestThr} gc_pause_p95=${latestGc}`,
 );
