@@ -82,13 +82,6 @@ jobs:
             echo "- proofs: $count"
             echo "- manifest sha256: \`$manifest_sha\`"
           } >> "$GITHUB_STEP_SUMMARY"
-      - name: Record proof metrics
-        if: success()
-        run: |
-          count=$(jq '.count' proof-summary.json)
-          manifest_sha=$(jq -r '.manifestSha' proof-summary.json)
-          gcloud monitoring metrics write custom.googleapis.com/proof/archive_count "$count" --project=${{ vars.GCP_PROJECT_ID }}
-          gcloud monitoring metrics write custom.googleapis.com/proof/manifest_hash 1 --project=${{ vars.GCP_PROJECT_ID }} --labels=hash="$manifest_sha"
       - name: Load proof summary to BigQuery
         if: success()
         run: |
@@ -158,6 +151,13 @@ jobs:
             echo "Manifest hash mismatch: local $local_hash vs remote $remote_hash" >&2
             exit 1
           fi
+      - name: Record proof metrics
+        if: success()
+        run: |
+          count=$(jq '.count' proof-summary.json)
+          manifest_sha=$(jq -r '.manifestSha' proof-summary.json)
+          gcloud monitoring metrics write custom.googleapis.com/proof/archive_count "$count" --project=${{ vars.GCP_PROJECT_ID }}
+          gcloud monitoring metrics write custom.googleapis.com/proof/manifest_hash 1 --project=${{ vars.GCP_PROJECT_ID }} --labels=hash="$manifest_sha"
       - name: Check proof archive replication
         if: success()
         run: npx -y ts-node scripts/check-proof-archive-replication.ts
