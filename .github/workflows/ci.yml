@@ -73,6 +73,7 @@ jobs:
       - id: dr-drill
         run: |
           npx ts-node scripts/ensure-dr-drill.ts
+          npx ts-node scripts/ensure-dr-workflows.ts
           if [ -f dr-drill-issue.json ]; then
             echo "issue=true" >> "$GITHUB_OUTPUT"
           fi
