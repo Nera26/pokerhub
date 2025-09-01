@@ -1,17 +1,22 @@
 import ws from 'k6/ws';
 import http from 'k6/http';
-import { Trend, Counter } from 'k6/metrics';
+import { Trend, Counter, Gauge } from 'k6/metrics';
 import { sleep } from 'k6';
 
 const ACK_LATENCY = new Trend('ack_latency', true);
 const DROPPED_FRAMES = new Counter('dropped_frames');
 const RATE_LIMIT_ERRORS = new Counter('rate_limit_errors');
+const gcPause = new Gauge('gc_pause_p95_ms');
+const heapGrowth = new Gauge('heap_growth_pct');
+const METRICS_FILE = __ENV.GC_METRICS_FILE || '../../metrics/soak_gc.jsonl';
 
 export const options = {
   vus: Number(__ENV.SOCKETS || 80000),
   duration: __ENV.DURATION || '5m',
   thresholds: {
     ack_latency: [`p(95)<${__ENV.ACK_P95_MS || 120}`],
+    gc_pause_p95_ms: ['value<50'],
+    heap_growth_pct: ['value<1'],
   },
 };
 
@@ -77,4 +82,17 @@ export function handleSummary(data) {
     );
   }
   return {};
+}
+
+export function teardown() {
+  const text = open(METRICS_FILE);
+  const lines = text.trim().split('\n');
+  const summary = JSON.parse(lines[lines.length - 1] || '{}');
+  const gc = Number(summary.gc_p95_ms || 0);
+  const heap = Number(summary.heap_delta_pct || 0);
+  gcPause.add(gc);
+  heapGrowth.add(heap);
+  if (gc > 50 || heap > 1) {
+    throw new Error(`GC p95 ${gc}ms or heap growth ${heap}% exceeded thresholds`);
+  }
 }

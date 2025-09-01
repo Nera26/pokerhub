@@ -1,4 +1,4 @@
-import { Inject, Injectable, Optional } from '@nestjs/common';
+import { Inject, Injectable, ForbiddenException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { createHash, randomUUID } from 'crypto';
@@ -19,6 +19,7 @@ import { SettlementService } from './settlement.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { ChargebackMonitor } from './chargeback.service';
 import type { Street } from '../game/state-machine';
+import { GeoIpService } from '../auth/geoip.service';
 
 interface Movement {
   account: Account;
@@ -43,6 +44,7 @@ export class WalletService {
     'wallet_transaction_duration_ms',
     { description: 'Duration of wallet operations', unit: 'ms' },
   );
+
   constructor(
     @InjectRepository(Account) private readonly accounts: Repository<Account>,
     @InjectRepository(JournalEntry)
@@ -58,6 +60,7 @@ export class WalletService {
     private readonly settlementSvc: SettlementService,
     @Optional() private readonly analytics?: AnalyticsService,
     @Optional() private readonly chargebacks?: ChargebackMonitor,
+    @Optional() private readonly geo?: GeoIpService,
   ) {}
 
   private payoutQueue?: Queue;
@@ -583,6 +586,9 @@ export class WalletService {
         const start = Date.now();
         WalletService.txnCounter.add(1, { operation: 'withdraw' });
         try {
+          if (this.geo && !this.geo.isAllowed(ip)) {
+            throw new ForbiddenException('Country not allowed');
+          }
           const user = await this.accounts.findOneByOrFail({ id: accountId, currency });
           if (!(await this.kyc.isVerified(accountId, ip))) {
             throw new Error('KYC required');
@@ -659,6 +665,9 @@ export class WalletService {
         const start = Date.now();
         WalletService.txnCounter.add(1, { operation: 'deposit' });
         try {
+          if (this.geo && !this.geo.isAllowed(ip)) {
+            throw new ForbiddenException('Country not allowed');
+          }
           await this.checkVelocity('deposit', deviceId, ip);
           await this.enforceVelocity('deposit', accountId, amount);
           const user = await this.accounts.findOneByOrFail({ id: accountId, currency });

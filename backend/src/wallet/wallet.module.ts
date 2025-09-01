@@ -16,6 +16,7 @@ import { RedisModule } from '../redis/redis.module';
 import { startPayoutWorker } from './payout.worker';
 import { PaymentProviderService } from './payment-provider.service';
 import { KycService } from './kyc.service';
+import { GeoIpService } from '../auth/geoip.service';
 
 @Injectable()
 class PayoutWorker implements OnModuleInit {
@@ -47,6 +48,7 @@ class PayoutWorker implements OnModuleInit {
     SettlementService,
     RateLimitGuard,
     ChargebackMonitor,
+    GeoIpService,
   ],
   controllers: [WalletController, WebhookController],
   exports: [WalletService, KycService, SettlementService],
