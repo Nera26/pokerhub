@@ -4,6 +4,8 @@ The ops-preflight composite action centralizes operational gates used across dep
 
 All repository workflows must invoke the spectator-privacy reusable workflow (`uses: ./.github/workflows/spectator-privacy.yml`). The `scripts/ensure-spectator-privacy.ts` check runs in CI and fails if a workflow omits this job.
 
+Workflows that call `.github/workflows/soak.yml` or `.github/workflows/soak-metrics.yml` must include `if: ${{ always() }}` so soak metrics are published even when preceding jobs fail. The `scripts/ensure-soak-metrics.ts` check enforces this.
+
 Spectator privacy
 
 spectator-privacy-nightly workflow freshness

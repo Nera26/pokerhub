@@ -67,6 +67,7 @@ jobs:
 
   soak-metrics:
     needs: run
+    if: ${{ always() }}
     uses: ../soak-metrics.yml
     secrets: inherit
 

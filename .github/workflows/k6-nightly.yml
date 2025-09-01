@@ -94,6 +94,7 @@ jobs:
 
   soak-metrics:
     needs: tables-10k
+    if: ${{ always() }}
     uses: ../soak-metrics.yml
     secrets: inherit
 

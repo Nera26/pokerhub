@@ -66,6 +66,7 @@ jobs:
 
   soak-metrics:
     needs: [k6, chaos]
+    if: ${{ always() }}
     uses: ../soak-metrics.yml
     secrets: inherit
 
