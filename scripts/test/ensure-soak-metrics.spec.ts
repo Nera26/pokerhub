@@ -8,19 +8,19 @@ function runScript(dir: string) {
   const cwd = process.cwd();
   process.chdir(dir);
   try {
-    delete require.cache[require.resolve('../ensure-proof-archive.ts')];
-    require('../ensure-proof-archive.ts');
+    delete require.cache[require.resolve('../ensure-soak-metrics.ts')];
+    require('../ensure-soak-metrics.ts');
   } finally {
     process.chdir(cwd);
   }
 }
 
-test('passes when workflow references check-proof-archive', () => {
+test('passes when soak job has downstream soak-metrics job', () => {
   const dir = mkdtempSync(join(tmpdir(), 'wf-'));
   mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
   writeFileSync(
     join(dir, '.github', 'workflows', 'ci.yml'),
-    `on: push\njobs:\n  check-proof-archive:\n    if: \${{ always() }}\n    uses: ./.github/workflows/check-proof-archive.yml\n`,
+    `on: push\njobs:\n  soak:\n    if: \${{ always() }}\n    uses: ./.github/workflows/soak.yml\n  soak-metrics:\n    needs: soak\n    if: \${{ always() }}\n    uses: ./.github/workflows/soak-metrics.yml\n`,
   );
   const exitMock = mock.method(process, 'exit');
   runScript(dir);
@@ -28,25 +28,12 @@ test('passes when workflow references check-proof-archive', () => {
   exitMock.mock.restore();
 });
 
-test('passes when workflow references proof-archive', () => {
+test('fails when soak job missing soak-metrics job', () => {
   const dir = mkdtempSync(join(tmpdir(), 'wf-'));
   mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
   writeFileSync(
     join(dir, '.github', 'workflows', 'ci.yml'),
-    `on: push\njobs:\n  proof-archive:\n    if: \${{ always() }}\n    uses: ./.github/workflows/proof-archive.yml\n`,
-  );
-  const exitMock = mock.method(process, 'exit');
-  runScript(dir);
-  assert.equal(exitMock.mock.calls.length, 0);
-  exitMock.mock.restore();
-});
-
-test('fails when workflow omits proof-archive verification', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'wf-'));
-  mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
-  writeFileSync(
-    join(dir, '.github', 'workflows', 'ci.yml'),
-    `on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps: []\n`,
+    `on: push\njobs:\n  soak:\n    if: \${{ always() }}\n    uses: ./.github/workflows/soak.yml\n`,
   );
   const exitMock = mock.method(process, 'exit', (code?: number) => {
     throw new Error(String(code));

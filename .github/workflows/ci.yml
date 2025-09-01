@@ -56,7 +56,7 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - run: TS_NODE_COMPILER_OPTIONS='{"module":"commonjs"}' npx ts-node scripts/ensure-soak-metrics.ts
+      - run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/ensure-soak-metrics.ts
 
   ensure-dr-drill:
     runs-on: ubuntu-latest
