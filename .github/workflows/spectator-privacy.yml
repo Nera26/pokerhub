@@ -136,3 +136,9 @@ jobs:
         with:
           title: Spectator privacy failure
           content-filepath: spectator-privacy-alert.md
+
+  check-proof-archive:
+    needs: spectator-privacy
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit

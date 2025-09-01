@@ -20,3 +20,9 @@ jobs:
     secrets: inherit
     with:
       logs: backend-tests.log frontend-tests.log integration.log property.log
+
+  check-proof-archive:
+    needs: spectator-privacy
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
