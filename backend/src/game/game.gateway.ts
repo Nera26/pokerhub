@@ -101,7 +101,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly actionCounterKey = 'game:action_counter';
   private readonly globalActionCounterKey = 'game:action_counter:global';
   private readonly globalLimit = Number(
-    process.env.GATEWAY_GLOBAL_LIMIT ?? '10000',
+    process.env.GATEWAY_GLOBAL_LIMIT ?? '30',
   );
 
   private readonly frameAcks = new Map<

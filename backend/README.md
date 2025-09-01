@@ -14,6 +14,7 @@ Copy the root `.env.example` to `.env` and update values. Core variables:
 DATABASE_URL=postgres://user:pass@host:5432/pokerhub
 REDIS_URL=redis://host:6379
 JWT_SECRET=dev-secret
+GATEWAY_GLOBAL_LIMIT=30 # max actions per 10s across all sockets
 ```
 Additional options exist for storage, telemetry and message queues (see `.env.example`).
 
