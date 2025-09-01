@@ -1,49 +1,89 @@
-export interface RatingOptions {
-  /**
-   * Base K-factor controlling reaction speed to new results. Values between 0
-   * and 1. The effective K is further adjusted by volatility and session
-   * count.
-   */
-  kFactor: number;
-  /**
-   * Decay factor applied per day to historic session points. Should be between
-   * 0 and 1. Older sessions contribute less as this value decreases.
-   */
-  decay: number;
-  /**
-   * Sessions required before a player receives full K-factor weight. Players
-   * with fewer sessions are dampened to prevent rating farming.
-   */
-  minSessions: number;
+export interface Match {
+  rating: number;
+  rd: number;
+  score: number; // 1 win, 0 loss, 0.5 draw
 }
 
 export interface RatingState {
-  /** Current rating value for the player */
   rating: number;
-  /** Average absolute deviation from expected session performance */
+  rd: number;
   volatility: number;
-  /** Number of completed sessions before the current update */
-  sessions: number;
 }
 
+const SCALE = 173.7178;
+const TAU = 0.5;
+const q = Math.log(10) / 400;
+
 /**
- * Applies a single session result to the rating state using a variable
- * K‑factor that scales with player volatility and session count. The rating is
- * treated as an exponentially weighted moving average of session points.
+ * Update a Glicko-2 rating state given a list of opponent results.
+ * @param state Current rating state
+ * @param matches Array of opponent ratings, deviations and outcomes
+ * @param ageDays Days since the last result to increase deviation
  */
 export function updateRating(
   state: RatingState,
-  points: number,
+  matches: Match[],
   ageDays: number,
-  options: RatingOptions,
 ): RatingState {
-  const weighted = points * Math.pow(options.decay, ageDays);
-  const delta = weighted - state.rating;
-  const experience = state.sessions + 1;
-  const sessionFactor = Math.min(1, experience / options.minSessions);
-  const dynamicK = options.kFactor * (1 + state.volatility) * sessionFactor;
-  const rating = state.rating + dynamicK * delta;
-  const volatility =
-    (state.volatility * state.sessions + Math.abs(delta)) / experience;
-  return { rating, volatility, sessions: experience };
+  // Step 1: increase RD for inactivity
+  let phi = state.rd / SCALE;
+  const sigma = state.volatility;
+  phi = Math.sqrt(phi * phi + sigma * sigma * ageDays);
+  let mu = state.rating / SCALE;
+
+  if (matches.length === 0) {
+    return { rating: mu * SCALE, rd: phi * SCALE, volatility: sigma };
+  }
+
+  const g = (phi_j: number) => 1 / Math.sqrt(1 + (3 * q * q * phi_j * phi_j) / Math.PI ** 2);
+  const E = (mu_i: number, mu_j: number, phi_j: number) =>
+    1 / (1 + Math.exp(-g(phi_j) * (mu_i - mu_j)));
+
+  let vDen = 0;
+  let deltaSum = 0;
+  for (const m of matches) {
+    const mu_j = m.rating / SCALE;
+    const phi_j = m.rd / SCALE;
+    const E_ij = E(mu, mu_j, phi_j);
+    const gPhi = g(phi_j);
+    vDen += gPhi * gPhi * E_ij * (1 - E_ij);
+    deltaSum += gPhi * (m.score - E_ij);
+  }
+  const v = 1 / vDen;
+  const delta = v * deltaSum;
+
+  const a = Math.log(sigma * sigma);
+  const f = (x: number): number => {
+    const ex = Math.exp(x);
+    return (
+      (ex * (delta * delta - phi * phi - v - ex)) /
+        (2 * (phi * phi + v + ex) * (phi * phi + v + ex)) -
+      (x - a) / (TAU * TAU)
+    );
+  };
+  let A = a;
+  let B = delta * delta > phi * phi + v ? Math.log(delta * delta - phi * phi - v) : a - 1;
+  let fA = f(A);
+  let fB = f(B);
+  while (Math.abs(B - A) > 1e-6) {
+    const C = A + ((A - B) * fA) / (fB - fA);
+    const fC = f(C);
+    if (fC * fB < 0) {
+      A = B;
+      fA = fB;
+    }
+    B = C;
+    fB = fC;
+  }
+  const sigmaPrime = Math.exp(A / 2);
+
+  const phiStar = Math.sqrt(phi * phi + sigmaPrime * sigmaPrime);
+  const phiPrime = 1 / Math.sqrt(1 / (phiStar * phiStar) + 1 / v);
+  const muPrime = mu + phiPrime * phiPrime * deltaSum;
+
+  return {
+    rating: muPrime * SCALE,
+    rd: phiPrime * SCALE,
+    volatility: sigmaPrime,
+  };
 }

@@ -4,6 +4,8 @@ export const LeaderboardEntrySchema = z.object({
   playerId: z.string(),
   rank: z.number().int().positive(),
   points: z.number(),
+  rd: z.number(),
+  volatility: z.number(),
   net: z.number(),
   bb100: z.number(),
   hours: z.number(),

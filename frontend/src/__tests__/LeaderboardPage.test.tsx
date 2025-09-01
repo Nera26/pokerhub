@@ -12,6 +12,8 @@ describe('LeaderboardPage', () => {
         playerId: 'alice',
         rank: 1,
         points: 100,
+        rd: 40,
+        volatility: 0.06,
         net: 10,
         bb100: 5,
         hours: 2,

@@ -17,6 +17,8 @@ export const test = base.extend({
             playerId: 'neo',
             rank: 1,
             points: 100,
+            rd: 40,
+            volatility: 0.06,
             net: 50,
             bb100: 10,
             hours: 1,

@@ -1015,6 +1015,19 @@ export interface components {
     BalanceAdjustmentRequest: {
       amount: number;
     };
+    LeaderboardEntry: {
+      playerId: string;
+      rank: number;
+      points: number;
+      rd: number;
+      volatility: number;
+      net: number;
+      bb100: number;
+      hours: number;
+      roi: number;
+      finishes: Record<string, number>;
+    };
+    LeaderboardResponse: components["schemas"]["LeaderboardEntry"][];
     User: {
       id: string;
       username: string;
