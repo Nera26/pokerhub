@@ -8,6 +8,7 @@ import { RoomManager } from './room.service';
 import { metrics } from '@opentelemetry/api';
 import type { InternalGameState } from './engine';
 import type { GameState } from '@shared/types';
+import { sanitize } from './state-sanitize';
 
 @WebSocketGateway({ namespace: 'spectate' })
 export class SpectatorGateway implements OnGatewayConnection {
@@ -27,10 +28,10 @@ export class SpectatorGateway implements OnGatewayConnection {
     void client.join(tableId);
 
     const state = (await room.getPublicState()) as InternalGameState;
-    client.emit('state', this.sanitize(state));
+    client.emit('state', sanitize(state));
 
     const listener = (s: InternalGameState) => {
-      const safe = this.sanitize(s);
+      const safe = sanitize(s);
       if (client.connected) {
         client.emit('state', safe);
       } else {
@@ -40,19 +41,5 @@ export class SpectatorGateway implements OnGatewayConnection {
 
     room.on('state', listener);
     client.on('disconnect', () => room.off('state', listener));
-  }
-
-  private sanitize(state: InternalGameState): GameState {
-    const { deck, players, ...rest } = state as any;
-    return {
-      ...(rest as Omit<GameState, 'players'>),
-      players: players.map((p: any) => ({
-        id: p.id,
-        stack: p.stack,
-        folded: p.folded,
-        bet: p.bet,
-        allIn: p.allIn,
-      })),
-    } as GameState;
-  }
+}
 }
