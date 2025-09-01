@@ -11,6 +11,12 @@ import { ParquetSchema, ParquetWriter } from 'parquetjs-lite';
 import { PassThrough } from 'stream';
 import path from 'path';
 import { promises as fs } from 'fs';
+import {
+  analyzeCollusion,
+  Session as CollusionSession,
+  Transfer as CollusionTransfer,
+  BetEvent as CollusionBetEvent,
+} from '../../../analytics/anti-collusion';
 
 const HandStartSchema = new ParquetSchema({
   handId: { type: 'UTF8' },
@@ -158,6 +164,9 @@ export class AnalyticsService {
     auth: 'auth',
     antiCheat: 'auth',
   };
+  private collusionSessions: CollusionSession[] = [];
+  private collusionTransfers: CollusionTransfer[] = [];
+  private collusionEvents: CollusionBetEvent[] = [];
 
   constructor(
     config: ConfigService,
@@ -292,6 +301,18 @@ export class AnalyticsService {
       this.ingest('game_event', event),
       this.archive('game.event', event),
     ]);
+    if (
+      'handId' in event &&
+      'playerId' in event &&
+      typeof event.timeMs === 'number'
+    ) {
+      this.collusionEvents.push({
+        handId: event.handId,
+        playerId: event.playerId,
+        timeMs: event.timeMs,
+      });
+      await this.runCollusionHeuristics();
+    }
   }
 
   async recordTournamentEvent(event: Record<string, any>) {
@@ -313,6 +334,45 @@ export class AnalyticsService {
       this.ingest('tournament_event', event),
       this.archive('tournament.event', event),
     ]);
+  }
+
+  async recordCollusionSession(session: CollusionSession) {
+    this.collusionSessions.push(session);
+    await this.runCollusionHeuristics();
+  }
+
+  async recordCollusionTransfer(transfer: CollusionTransfer) {
+    this.collusionTransfers.push(transfer);
+    await this.runCollusionHeuristics();
+  }
+
+  private async runCollusionHeuristics() {
+    const report = analyzeCollusion({
+      sessions: this.collusionSessions,
+      transfers: this.collusionTransfers,
+      events: this.collusionEvents,
+    });
+    for (const { ip, players } of report.sharedIPs) {
+      await this.emitAntiCheatFlag({
+        sessionId: `shared-${ip}`,
+        users: players,
+        features: { type: 'sharedIp', ip },
+      });
+    }
+    for (const { from, to, total } of report.chipDumping) {
+      await this.emitAntiCheatFlag({
+        sessionId: `dump-${from}-${to}`,
+        users: [from, to],
+        features: { type: 'chipDumping', total },
+      });
+    }
+    for (const { handId, players } of report.synchronizedBetting) {
+      await this.emitAntiCheatFlag({
+        sessionId: `sync-${handId}`,
+        users: players,
+        features: { type: 'synchronizedBetting', handId },
+      });
+    }
   }
 
   async emitAntiCheatFlag(data: Events['antiCheat.flag']) {
