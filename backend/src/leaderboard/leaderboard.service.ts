@@ -179,6 +179,7 @@ export class LeaderboardService {
       {
         sessions: Set<string>;
         rating: number;
+        volatility: number;
         net: number;
         bb: number;
         hands: number;
@@ -225,6 +226,7 @@ export class LeaderboardService {
         {
           sessions: new Set<string>(),
           rating: 0,
+          volatility: 0,
           net: 0,
           bb: 0,
           hands: 0,
@@ -232,6 +234,7 @@ export class LeaderboardService {
           buyIn: 0,
           finishes: {},
         };
+      const preSessions = entry.sessions.size;
       entry.sessions.add(sessionId);
       const ageDays = (now - ts) / DAY_MS;
       let playerDecay = decayCache.get(playerId);
@@ -244,10 +247,19 @@ export class LeaderboardService {
         playerK = kFactorFn(playerId);
         kFactorCache.set(playerId, playerK);
       }
-      entry.rating = updateRating(entry.rating, points, ageDays, {
-        kFactor: playerK,
-        decay: playerDecay,
-      });
+      let playerMin = minSessionsCache.get(playerId);
+      if (playerMin === undefined) {
+        playerMin = minSessionsFn(playerId);
+        minSessionsCache.set(playerId, playerMin);
+      }
+      const updated = updateRating(
+        { rating: entry.rating, volatility: entry.volatility, sessions: preSessions },
+        points,
+        ageDays,
+        { kFactor: playerK, decay: playerDecay, minSessions: playerMin },
+      );
+      entry.rating = updated.rating;
+      entry.volatility = updated.volatility;
       entry.net += net;
       entry.bb += bb;
       entry.hands += hands;
