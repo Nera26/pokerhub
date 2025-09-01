@@ -86,6 +86,32 @@ jobs:
         run: |
           python -m pip install pyyaml >/dev/null
           python infra/observability/validate.py
+      - name: Check soak workflow SLA
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: soak.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT }}
+      - name: Check soak metrics
+        id: soak-metrics
+        run: npx -y ts-node scripts/check-soak-metrics.ts
+        env:
+          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+          SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS }}
+          SOAK_THROUGHPUT_MIN: ${{ vars.SOAK_THROUGHPUT_MIN }}
+      - name: Upload soak metrics
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: soak-metrics
+          path: soak-summary.json
       - name: Deploy canary
         run: scripts/canary-rollback.sh
         env:
