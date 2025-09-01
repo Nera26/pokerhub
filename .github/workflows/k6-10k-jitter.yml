@@ -39,6 +39,7 @@ jobs:
 
   soak-metrics:
     needs: ack-latency
+    if: ${{ always() }}
     uses: ../soak-metrics.yml
     secrets: inherit
 

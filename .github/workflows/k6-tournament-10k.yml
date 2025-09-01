@@ -36,6 +36,7 @@ jobs:
 
   soak-metrics:
     needs: tournament
+    if: ${{ always() }}
     uses: ../soak-metrics.yml
     secrets: inherit
 

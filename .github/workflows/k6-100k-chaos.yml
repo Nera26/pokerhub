@@ -84,6 +84,7 @@ jobs:
 
   soak-metrics:
     needs: chaos
+    if: ${{ always() }}
     uses: ../soak-metrics.yml
     secrets: inherit
   replay:

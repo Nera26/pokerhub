@@ -448,10 +448,12 @@ jobs:
 
   soak:
     needs: deploy
+    if: ${{ always() }}
     uses: ./.github/workflows/soak.yml
     secrets: inherit
 
   soak-metrics:
     needs: soak
+    if: ${{ always() }}
     uses: ./.github/workflows/soak-metrics.yml
     secrets: inherit

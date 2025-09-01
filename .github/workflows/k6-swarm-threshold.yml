@@ -45,6 +45,7 @@ jobs:
 
   soak-metrics:
     needs: swarm
+    if: ${{ always() }}
     uses: ../soak-metrics.yml
     secrets: inherit
 
