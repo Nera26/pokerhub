@@ -21,6 +21,7 @@ import {
   CalculatePrizeOptions,
 } from './pko.service';
 import { FeatureFlagsService } from '../feature-flags/feature-flags.service';
+import { EventPublisher } from '../events/events.service';
 
 @Injectable()
 export class TournamentService {
@@ -41,6 +42,7 @@ export class TournamentService {
     private readonly rebuys: RebuyService,
     private readonly pko: PkoService,
     private readonly flags: FeatureFlagsService,
+    private readonly events: EventPublisher,
     @Optional() @Inject('REDIS_CLIENT') private readonly redis?: Redis,
   ) {}
 
@@ -117,6 +119,20 @@ export class TournamentService {
     }
     t.state = TournamentState.FINISHED;
     await this.tournaments.save(t);
+  }
+
+  async cancel(id: string): Promise<void> {
+    const t = await this.get(id);
+    if (
+      t.state !== TournamentState.REG_OPEN &&
+      t.state !== TournamentState.RUNNING &&
+      t.state !== TournamentState.PAUSED
+    ) {
+      throw new Error(`Invalid transition from ${t.state} to CANCELLED`);
+    }
+    t.state = TournamentState.CANCELLED;
+    await this.tournaments.save(t);
+    await this.events.emit('tournament.cancel', { tournamentId: id });
   }
 
   async canRebuy(stack: number, threshold: number): Promise<boolean> {

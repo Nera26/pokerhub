@@ -82,6 +82,9 @@ export default function TournamentList({
                       <p className="text-text-secondary text-sm mb-4">
                         Prize Pool: {t.prizePool}
                       </p>
+                      {t.state === 'CANCELLED' && (
+                        <p className="text-red-500 text-sm mb-4">Cancelled</p>
+                      )}
                       {t.nextBreak && t.breakDurationMs && (
                         <p className="text-text-secondary text-sm mb-4">
                           Next break in{' '}
@@ -120,6 +123,9 @@ export default function TournamentList({
                     <p className="text-text-secondary text-sm mb-4">
                       Prize Pool: {t.prizePool}
                     </p>
+                    {t.state === 'CANCELLED' && (
+                      <p className="text-red-500 text-sm mb-4">Cancelled</p>
+                    )}
                     {t.nextBreak && t.breakDurationMs && (
                       <p className="text-text-secondary text-sm mb-4">
                         Next break in{' '}

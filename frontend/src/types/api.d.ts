@@ -401,6 +401,24 @@ export interface paths {
       };
     };
   };
+  "/tournaments/{id}/cancel": {
+    /** Cancel tournament */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Tournament cancelled */
+        200: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
   "/tournaments/{id}/schedule": {
     /** Schedule tournament */
     post: {
@@ -1076,6 +1094,8 @@ export interface components {
       buyIn: number;
       fee?: number;
       prizePool: number;
+      /** @enum {string} */
+      state: "REG_OPEN" | "RUNNING" | "PAUSED" | "FINISHED" | "CANCELLED";
       pko?: components["schemas"]["PkoOptions"];
       rebuys?: components["schemas"]["RebuyOptions"];
       players: {

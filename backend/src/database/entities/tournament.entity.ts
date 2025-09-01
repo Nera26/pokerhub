@@ -6,6 +6,7 @@ export enum TournamentState {
   RUNNING = 'RUNNING',
   PAUSED = 'PAUSED',
   FINISHED = 'FINISHED',
+  CANCELLED = 'CANCELLED',
 }
 
 @Entity()

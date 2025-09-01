@@ -234,6 +234,7 @@ export const TournamentSchema = z.object({
   buyIn: z.number(),
   fee: z.number().optional(),
   prizePool: z.number(),
+  state: z.enum(['REG_OPEN', 'RUNNING', 'PAUSED', 'FINISHED', 'CANCELLED']),
   players: z.object({ current: z.number(), max: z.number() }),
   registered: z.boolean(),
 });

@@ -40,7 +40,7 @@ import {
 import ToastNotification from '../ui/ToastNotification';
 import Tooltip from '../ui/Tooltip';
 
-const statusEnum = z.enum(['scheduled', 'running', 'finished']);
+const statusEnum = z.enum(['scheduled', 'running', 'finished', 'cancelled']);
 type Status = z.infer<typeof statusEnum>;
 const tournamentSchema = z.object({
   id: z.number(),
@@ -156,7 +156,7 @@ const initialData: Tournament[] = [
     description: 'Monthly freeroll for all registered players',
     rebuy: false,
     addon: false,
-    status: 'scheduled',
+    status: 'cancelled',
   },
 ];
 
@@ -311,6 +311,13 @@ export default function ManageTournaments() {
           <FontAwesomeIcon icon={faClock} className="mr-1" /> Scheduled
         </span>
       );
+    if (s === 'cancelled')
+      return (
+        <span className="bg-red-500 px-3 py-1 rounded-full text-white text-sm font-semibold inline-flex items-center">
+          <FontAwesomeIcon icon={faExclamationTriangle} className="mr-1" />
+          Cancelled
+        </span>
+      );
     return (
       <span className="bg-hover-bg px-3 py-1 rounded-full text-text-secondary text-sm font-semibold">
         Finished
@@ -386,6 +393,13 @@ export default function ManageTournaments() {
             className="border-text-secondary text-text-secondary"
           >
             Finished
+          </FilterBtn>
+          <FilterBtn
+            active={statusFilter === 'cancelled'}
+            onClick={() => setStatusFilter('cancelled')}
+            className="border-red-500 text-red-500"
+          >
+            Cancelled
           </FilterBtn>
         </div>
 
