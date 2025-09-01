@@ -3,7 +3,6 @@ import { INestApplication, ForbiddenException } from '@nestjs/common';
 import request from 'supertest';
 import { AuthController } from '../src/auth/auth.controller';
 import { AuthService } from '../src/auth/auth.service';
-import { SessionService } from '../src/session/session.service';
 import { LoginResponseSchema } from '@shared/types';
 import { ConfigService } from '@nestjs/config';
 import { GeoIpService } from '../src/auth/geoip.service';
@@ -32,8 +31,7 @@ describe('GeoIP restrictions', () => {
     const moduleRef = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
-        AuthService,
-        SessionService,
+        { provide: AuthService, useValue: { login: async () => ({ accessToken: 't' }) } },
         GeoIpService,
         { provide: 'REDIS_CLIENT', useClass: MockRedis },
         { provide: ConfigService, useClass: MockConfigService },

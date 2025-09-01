@@ -108,7 +108,8 @@ export class AuthController {
     @Body() body: RequestResetRequest,
   ): Promise<MessageResponse> {
     try {
-      RequestResetSchema.parse(body);
+      const parsed = RequestResetSchema.parse(body);
+      await this.auth.requestPasswordReset(parsed.email);
       return { message: 'reset requested' };
     } catch (err) {
       if (err instanceof ZodError) {
@@ -124,7 +125,9 @@ export class AuthController {
     @Body() body: VerifyResetCodeRequest,
   ): Promise<MessageResponse> {
     try {
-      VerifyResetCodeSchema.parse(body);
+      const parsed = VerifyResetCodeSchema.parse(body);
+      const ok = await this.auth.verifyResetCode(parsed.email, parsed.code);
+      if (!ok) throw new UnauthorizedException('Invalid code');
       return { message: 'code verified' };
     } catch (err) {
       if (err instanceof ZodError) {
@@ -140,7 +143,13 @@ export class AuthController {
     @Body() body: ResetPasswordRequest,
   ): Promise<MessageResponse> {
     try {
-      ResetPasswordSchema.parse(body);
+      const parsed = ResetPasswordSchema.parse(body);
+      const ok = await this.auth.resetPassword(
+        parsed.email,
+        parsed.code,
+        parsed.password,
+      );
+      if (!ok) throw new UnauthorizedException('Invalid code');
       return { message: 'password reset' };
     } catch (err) {
       if (err instanceof ZodError) {

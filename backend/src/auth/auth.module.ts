@@ -27,6 +27,7 @@ import { AuthRateLimitMiddleware } from './rate-limit.middleware';
 import { SecurityHeadersMiddleware } from './security.middleware';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { GeoIpService } from './geoip.service';
+import { EmailService } from './email.service';
 
 @Injectable()
 class KycWorker implements OnModuleInit {
@@ -69,6 +70,7 @@ function providerFactory(config: ConfigService): CountryProvider {
     AdminGuard,
     GeoIpService,
     UserRepository,
+    EmailService,
   ],
   controllers: [AuthController],
   exports: [KycService, AuthGuard, AdminGuard, GeoIpService],
