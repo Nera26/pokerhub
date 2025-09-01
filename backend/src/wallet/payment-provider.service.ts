@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
 import type { ProviderCallback } from '../schemas/wallet';
 import { metrics } from '@opentelemetry/api';
 import { Queue, Worker } from 'bullmq';
+import Redis from 'ioredis';
 
 export type ProviderStatus = 'approved' | 'risky' | 'chargeback';
 
@@ -14,8 +15,6 @@ export interface ProviderChallenge {
 export class PaymentProviderService {
   private readonly apiKey = process.env.STRIPE_API_KEY ?? '';
   private readonly baseUrl = 'https://api.stripe.com/v1';
-
-  private readonly webhookEvents = new Map<string, ProviderCallback>();
 
   private handlers = new Map<string, (event: ProviderCallback) => Promise<void>>();
   private retryQueue?: Queue;
@@ -35,7 +34,11 @@ export class PaymentProviderService {
   private failures = 0;
   private circuitOpenUntil = 0;
 
-  constructor() {}
+  constructor(@Inject('REDIS_CLIENT') private readonly redis: Redis) {}
+
+  private redisKey(idempotencyKey: string) {
+    return `provider:webhook:${idempotencyKey}`;
+  }
 
   private authHeaders() {
     return {
@@ -65,7 +68,7 @@ export class PaymentProviderService {
         const handler = this.handlers.get(handlerKey);
         if (!handler) throw new Error(`Missing handler for ${handlerKey}`);
         await handler(event);
-        this.webhookEvents.delete(event.idempotencyKey);
+        await this.redis.del(this.redisKey(event.idempotencyKey));
       },
       { connection },
     );
@@ -99,13 +102,20 @@ export class PaymentProviderService {
   ): Promise<void> {
     await this.initQueue();
     await this.draining;
-    if (this.webhookEvents.has(event.idempotencyKey)) return;
-    this.webhookEvents.set(event.idempotencyKey, event);
+    const key = this.redisKey(event.idempotencyKey);
+    const stored = await this.redis.set(
+      key,
+      JSON.stringify(event),
+      'NX',
+      'EX',
+      60 * 60,
+    );
+    if (stored === null) return;
     const handler = this.handlers.get(handlerKey);
     if (!handler) throw new Error(`Missing handler for ${handlerKey}`);
     try {
       await handler(event);
-      this.webhookEvents.delete(event.idempotencyKey);
+      await this.redis.del(key);
     } catch {
       await this.retryQueue!.add(
         'retry',

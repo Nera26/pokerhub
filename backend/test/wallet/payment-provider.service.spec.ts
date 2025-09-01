@@ -1,6 +1,7 @@
 import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
+import { MockRedis } from '../utils/mock-redis';
 
-describe('PaymentProviderService retries', () => {
+describe('PaymentProviderService', () => {
   const originalFetch = global.fetch;
 
   afterEach(() => {
@@ -9,7 +10,7 @@ describe('PaymentProviderService retries', () => {
   });
 
   it('retries initiate3DS until success', async () => {
-    const service = new PaymentProviderService();
+    const service = new PaymentProviderService(new MockRedis() as any);
     const fetchMock = jest
       .spyOn(global, 'fetch' as any)
       .mockRejectedValueOnce(new Error('fail1'))
@@ -23,7 +24,7 @@ describe('PaymentProviderService retries', () => {
   });
 
   it('throws descriptive error when getStatus exhausts retries', async () => {
-    const service = new PaymentProviderService();
+    const service = new PaymentProviderService(new MockRedis() as any);
     const fetchMock = jest
       .spyOn(global, 'fetch' as any)
       .mockRejectedValue(new Error('network'));
@@ -31,6 +32,28 @@ describe('PaymentProviderService retries', () => {
       /failed after 3 attempts/,
     );
     expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+  it('deduplicates concurrent webhook events and cleans up', async () => {
+    const redis = new MockRedis();
+    const service = new PaymentProviderService(redis as any);
+    (service as any).initQueue = jest.fn().mockResolvedValue(undefined);
+    const handler = jest
+      .fn()
+      .mockImplementation(async () => await new Promise((r) => setTimeout(r, 10)));
+    service.registerHandler('test', handler);
+    const event = {
+      eventId: 'evt1',
+      idempotencyKey: 'idem1',
+      providerTxnId: 'tx1',
+      status: 'approved',
+    };
+    await Promise.all([
+      service.handleWebhook(event as any, 'test'),
+      service.handleWebhook(event as any, 'test'),
+    ]);
+    expect(handler).toHaveBeenCalledTimes(1);
+    const key = (service as any).redisKey('idem1');
+    expect(await redis.get(key)).toBeNull();
   });
 });
 

@@ -7,6 +7,7 @@ import { SessionService } from '../src/session/session.service';
 import { LoginResponseSchema } from '@shared/types';
 import { ConfigService } from '@nestjs/config';
 import { MockRedis } from './utils/mock-redis';
+import { AnalyticsService } from '../src/analytics/analytics.service';
 
 class MockConfigService {
   get(key: string, def?: any) {
@@ -32,6 +33,7 @@ describe('AuthController', () => {
         SessionService,
         { provide: 'REDIS_CLIENT', useClass: MockRedis },
         { provide: ConfigService, useClass: MockConfigService },
+        { provide: AnalyticsService, useValue: { emit: jest.fn() } },
       ],
     }).compile();
 
