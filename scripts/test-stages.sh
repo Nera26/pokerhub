@@ -77,6 +77,15 @@ run_chaos() {
   fi
 }
 
+run_soak() {
+  npm ci
+  if [[ "${RUN_SOAK:-}" != "1" ]]; then
+    echo "Skipping soak test (set RUN_SOAK=1 to enable)"
+    return 0
+  fi
+  NODE_OPTIONS=--expose-gc DURATION_MS="${DURATION_MS:-10000}" npx ts-node --compiler-options '{"module":"commonjs"}' backend/tests/soak-harness.ts
+}
+
 case "${1:-}" in
   unit)
     run_unit
@@ -96,8 +105,11 @@ case "${1:-}" in
   chaos)
     run_chaos
     ;;
+  soak)
+    run_soak
+    ;;
   *)
-    echo "Usage: $0 {unit|property|integration|e2e|load|chaos}" >&2
+    echo "Usage: $0 {unit|property|integration|e2e|load|chaos|soak}" >&2
     exit 1
     ;;
 esac
