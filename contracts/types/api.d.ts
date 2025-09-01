@@ -156,6 +156,50 @@ export interface paths {
       };
     };
   };
+  "/notifications": {
+    /** Get notifications */
+    get: {
+      responses: {
+        /** @description Notifications list */
+        200: {
+          content: {
+            "application/json": components["schemas"]["NotificationsResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/notifications/mark-all": {
+    /** Mark all notifications as read */
+    post: {
+      responses: {
+        /** @description Marked */
+        200: {
+          content: {
+            "application/json": components["schemas"]["StatusResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/notifications/{id}": {
+    /** Mark a notification as read */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Marked */
+        200: {
+          content: {
+            "application/json": components["schemas"]["StatusResponse"];
+          };
+        };
+      };
+    };
+  };
   "/tables": {
     /** Get lobby tables */
     get: {

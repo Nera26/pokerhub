@@ -32,6 +32,7 @@ export const MessageResponseSchema = z.object({
 });
 export type MessageResponse = z.infer<typeof MessageResponseSchema>;
 
+/** ---- Withdrawals ---- */
 export const WithdrawalDecisionRequestSchema = z.object({
   comment: z.string(),
 });
@@ -39,10 +40,30 @@ export type WithdrawalDecisionRequest = z.infer<
   typeof WithdrawalDecisionRequestSchema
 >;
 
+/** ---- Notifications ---- */
+export const NotificationTypeSchema = z.enum(['bonus', 'tournament', 'system']);
+export type NotificationType = z.infer<typeof NotificationTypeSchema>;
+
+export const NotificationSchema = z.object({
+  id: z.string(),
+  type: NotificationTypeSchema,
+  title: z.string(),
+  message: z.string(),
+  timestamp: z.string().datetime(),
+  read: z.boolean(),
+});
+export type Notification = z.infer<typeof NotificationSchema>;
+
+export const NotificationsResponseSchema = z.object({
+  notifications: z.array(NotificationSchema),
+});
+export type NotificationsResponse = z.infer<typeof NotificationsResponseSchema>;
+
 export const RefreshRequestSchema = z.object({
   refreshToken: z.string(),
 });
 export type RefreshRequest = z.infer<typeof RefreshRequestSchema>;
+
 
 export const RequestResetRequestSchema = z.object({
   email: z.string().email(),
@@ -353,6 +374,15 @@ export const ChatMessageSchema = z.object({
   time: z.string(),
 });
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
+
+export const SendChatMessageRequestSchema = z.object({
+  userId: z.string(),
+  text: z.string(),
+});
+export type SendChatMessageRequest = z.infer<typeof SendChatMessageRequestSchema>;
+
+export const ChatMessagesResponseSchema = z.array(ChatMessageSchema);
+export type ChatMessagesResponse = z.infer<typeof ChatMessagesResponseSchema>;
 
 export const TableDataSchema = z.object({
   smallBlind: z.number(),

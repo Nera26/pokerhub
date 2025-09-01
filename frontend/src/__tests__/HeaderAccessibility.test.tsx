@@ -11,24 +11,50 @@ describe('header notifications accessibility', () => {
   });
 
   it('focuses first item and closes on tab out', async () => {
-    const fetchMock = jest.fn<Promise<ResponseLike>, []>().mockResolvedValue({
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-      json: async () => ({
-        notifications: [
-          {
-            id: 1,
-            type: 'system',
-            title: 'First',
-            message: '',
-            timestamp: new Date().toISOString(),
-            read: false,
-          },
-        ],
-        balance: 100,
-      }),
-    });
+    const fetchMock = jest
+      .fn<Promise<ResponseLike>, [RequestInfo | URL, RequestInit?]>()
+      .mockImplementation(async (input: RequestInfo | URL) => {
+        const url =
+          typeof input === 'string' ? input : (input as Request).url;
+        if (url.includes('/api/notifications')) {
+          return {
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            json: async () => ({
+              notifications: [
+                {
+                  id: '1',
+                  type: 'system',
+                  title: 'First',
+                  message: '',
+                  timestamp: new Date().toISOString(),
+                  read: false,
+                },
+              ],
+            }),
+          } as ResponseLike;
+        }
+        if (url.includes('/api/wallet/status')) {
+          return {
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            json: async () => ({
+              kycVerified: true,
+              denialReason: null,
+              realBalance: 10000,
+              creditBalance: 0,
+            }),
+          } as ResponseLike;
+        }
+        return {
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: async () => ({}),
+        } as ResponseLike;
+      });
     global.fetch = fetchMock as unknown as typeof fetch;
 
     const client = new QueryClient();
@@ -40,7 +66,7 @@ describe('header notifications accessibility', () => {
       </QueryClientProvider>,
     );
 
-    await screen.findByText('$100.00');
+    await screen.findByRole('link', { name: /wallet/i });
 
     const trigger = screen.getByRole('button');
     await user.click(trigger);

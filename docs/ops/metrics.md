@@ -9,6 +9,7 @@ Tables are automatically retained for 90 days via the dataset's default table ex
 
 - `soak_runs` – one row per soak test run with latency and throughput summaries.
 - `dr_drill_runs` – one row per DR drill run with RTO/RPO measurements.
+- `ops_verification` – ops artifacts verification status (`run_id`, `commit_sha`, `status`, `timestamp`).
 
 ## Querying
 

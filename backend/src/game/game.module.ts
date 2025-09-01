@@ -7,8 +7,10 @@ import { ClockService } from './clock.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Hand } from '../database/entities/hand.entity';
 import { Table } from '../database/entities/table.entity';
+import { ChatMessage } from '../database/entities/chatMessage.entity';
 import { TablesController } from '../routes/tables.controller';
 import { TablesService } from './tables.service';
+import { ChatService } from './chat.service';
 import { EventsModule } from '../events/events.module';
 import { HandController } from './hand.controller';
 
@@ -16,9 +18,16 @@ import { HandController } from './hand.controller';
   imports: [
     AnalyticsModule,
     EventsModule,
-    TypeOrmModule.forFeature([Hand, Table]),
+    TypeOrmModule.forFeature([Hand, Table, ChatMessage]),
   ],
-  providers: [GameGateway, SpectatorGateway, RoomManager, ClockService, TablesService],
+  providers: [
+    GameGateway,
+    SpectatorGateway,
+    RoomManager,
+    ClockService,
+    TablesService,
+    ChatService,
+  ],
   controllers: [TablesController, HandController],
   exports: [RoomManager],
 })

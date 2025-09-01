@@ -10,6 +10,7 @@ import { SettlementJournal } from '../wallet/settlement-journal.entity';
 import { Hand } from './entities/hand.entity';
 import { AntiCheatFlag } from './entities/antiCheatFlag.entity';
 import { KycVerification } from './entities/kycVerification.entity';
+import { ChatMessage } from './entities/chatMessage.entity';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -25,6 +26,7 @@ export const AppDataSource = new DataSource({
     Hand,
     AntiCheatFlag,
     KycVerification,
+    ChatMessage,
   ],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
 });
