@@ -80,7 +80,9 @@ export function teardown(data) {
   const res = http.get(metricsUrl);
   try {
     const end = res.json();
-    if (data.startRss && end.rssBytes !== undefined) {
+    if (end.rssDeltaPct !== undefined) {
+      rssGrowth.add(end.rssDeltaPct);
+    } else if (data.startRss && end.rssBytes !== undefined) {
       const growth = ((end.rssBytes - data.startRss) / data.startRss) * 100;
       rssGrowth.add(growth);
     }
