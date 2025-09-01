@@ -2,6 +2,7 @@
   required_status_checks:
     - ci
     - "ci / dr-runbook"
+    - "ci / dr-trends"
     - "ci / workflow-sla"
     - contracts
     - "deploy / deploy"
