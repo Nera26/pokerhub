@@ -1,0 +1,40 @@
+name: k6-swarm-thresholds
+
+on:
+  push:
+    paths:
+      - 'load/k6-swarm.js'
+      - '.github/workflows/k6-swarm-threshold.yml'
+      - 'docs/load-testing.md'
+  pull_request:
+    paths:
+      - 'load/k6-swarm.js'
+      - '.github/workflows/k6-swarm-threshold.yml'
+      - 'docs/load-testing.md'
+
+jobs:
+  swarm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run k6 swarm test
+        uses: grafana/k6-action@v0.2.0
+        env:
+          ACK_P50_MS: 40
+          ACK_P95_MS: 120
+          ACK_P99_MS: 200
+          ACTIONS_PER_MIN_THRESHOLD: 150
+          SOCKETS: 100
+          TABLES: 100
+          DURATION: 1m
+        with:
+          filename: load/k6-swarm.js
+          flags: --summary-export=summary.json --summary-trend-stats="avg,med,min,max,p(50),p(95),p(99)" --out json=metrics.json
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: k6-swarm
+          path: |
+            summary.json
+            metrics.json
