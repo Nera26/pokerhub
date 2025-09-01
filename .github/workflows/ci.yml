@@ -788,15 +788,10 @@ jobs:
             metrics/baseline.json
 
   soak-metrics:
-    needs: [unit, integration]
+    needs: integration
     if: ${{ always() }}
     uses: ./.github/workflows/soak-metrics.yml
-    secrets:
-      GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
-      GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
-      SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+    secrets: inherit
 
   spectator-privacy:
     needs: [property, integration]
