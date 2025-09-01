@@ -8,3 +8,4 @@ scrape_configs:
 
 rule_files:
   - alerts.yml
+  - table-action-rate.rules.yml

@@ -1,5 +1,6 @@
 import { parentPort, workerData } from 'worker_threads';
 import Redis from 'ioredis';
+import { metrics } from '@opentelemetry/api';
 import { GameAction, GameEngine, InternalGameState } from './engine';
 import { AppDataSource } from '../database/data-source';
 import { SettlementService } from '../wallet/settlement.service';
@@ -16,6 +17,11 @@ const pub: Redis | undefined = opts ? new Redis(opts) : undefined;
 const sub: Redis | undefined = opts ? new Redis(opts) : undefined;
 const diffChannel = `room:${workerData.tableId}:diffs`;
 const ackChannel = `room:${workerData.tableId}:snapshotAck`;
+
+const meter = metrics.getMeter('game');
+const actionCounter = meter.createCounter('actions_per_table_total', {
+  description: 'Total game actions applied per table',
+});
 
 sub?.subscribe(ackChannel);
 sub?.on('message', (channel, msg) => {
@@ -59,10 +65,12 @@ async function main() {
       switch (msg.type) {
         case 'apply': {
           engine.applyAction(msg.action as GameAction);
+          actionCounter.add(1, { tableId: workerData.tableId });
 
           // Auto-advance dealing to reach a betting round or showdown
           while (engine.getState().phase === 'DEAL') {
             engine.applyAction({ type: 'next' });
+            actionCounter.add(1, { tableId: workerData.tableId });
           }
 
           const svc = await getSettlement();
