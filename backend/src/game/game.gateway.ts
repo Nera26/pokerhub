@@ -11,7 +11,7 @@ import { Inject, Logger, Optional } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { randomUUID, createHash } from 'crypto';
 import Redis from 'ioredis';
-import { GameAction, InternalGameState } from './engine';
+import { GameAction } from './engine';
 import { RoomManager } from './room.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { CollusionService } from '../analytics/collusion.service';
@@ -27,15 +27,14 @@ import {
   GameStateSchema,
   type GameAction as WireGameAction,
   type GameActionPayload,
-  type GameState,
 } from '@shared/types';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
-import { metrics, trace } from '@opentelemetry/api';
+import { metrics, trace, type ObservableResult } from '@opentelemetry/api';
 import PQueue from 'p-queue';
 import { sanitize } from './state-sanitize';
 import { diff } from './state-diff';
 
-/* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-redundant-type-constituents */
+/* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
 
 interface AckPayload {
   actionId: string;
@@ -97,6 +96,25 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     },
   );
 
+  private static readonly outboundQueueDepth =
+    GameGateway.meter.createHistogram('ws_outbound_queue_depth', {
+      description: 'Depth of outbound WebSocket message queue',
+      unit: 'messages',
+    });
+
+  private static readonly outboundQueueMax =
+    GameGateway.meter.createObservableGauge?.('ws_outbound_queue_max', {
+      description: 'Maximum outbound WebSocket queue depth per socket',
+      unit: 'messages',
+    }) ??
+    ({
+      addCallback() {},
+      removeCallback() {},
+    } as {
+      addCallback(cb: (r: ObservableResult) => void): void;
+      removeCallback(cb: (r: ObservableResult) => void): void;
+    });
+
   private readonly actionHashKey = 'game:action';
   private readonly actionRetentionMs = 24 * 60 * 60 * 1000; // 24h
 
@@ -107,6 +125,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly queueLimit = Number(
     process.env.GATEWAY_QUEUE_LIMIT ?? '100',
   );
+  private readonly maxQueueSizes = new Map<string, number>();
 
   private readonly actionCounterKey = 'game:action_counter';
   private readonly globalActionCounterKey = 'game:action_counter:global';
@@ -135,6 +154,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private tick = 0;
   private static readonly tracer = trace.getTracer('game-gateway');
 
+  private readonly observeQueueMax = (result: ObservableResult) => {
+    for (const [socketId, max] of this.maxQueueSizes) {
+      result.observe(max, { socketId } as any);
+      this.maxQueueSizes.set(socketId, 0);
+    }
+  };
+
   constructor(
     private readonly rooms: RoomManager,
     private readonly analytics: AnalyticsService,
@@ -146,6 +172,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @Optional() private readonly collusion?: CollusionService,
     @Optional() private readonly flags?: FeatureFlagsService,
   ) {
+    GameGateway.outboundQueueMax.addCallback(this.observeQueueMax);
+
     this.clock.onTick((now) => {
       if (this.server) {
         this.server.emit('server:Clock', Number(now / 1_000_000n));
@@ -191,6 +219,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     this.queues.get(client.id)?.clear();
     this.queues.delete(client.id);
+    this.maxQueueSizes.delete(client.id);
   }
 
   @SubscribeMessage('action')
@@ -247,7 +276,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if ('playerId' in parsed && parsed.playerId) {
       this.clock.clearTimer(parsed.playerId, tableId);
     }
-    const { tableId: parsedTableId, version: _v, ...wire } = parsed;
+    const { tableId: parsedTableId, ...wire } = parsed;
     tableId = parsedTableId;
     const gameAction = wire as GameActionPayload;
 
@@ -477,6 +506,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         this.trackFrame(client, event, payload as Record<string, unknown>);
       }
     });
+    const depth = queue.size + queue.pending;
+    GameGateway.outboundQueueDepth.record(depth, { socketId: id } as any);
+    this.maxQueueSizes.set(
+      id,
+      Math.max(this.maxQueueSizes.get(id) ?? 0, depth),
+    );
   }
 
   private trackFrame(

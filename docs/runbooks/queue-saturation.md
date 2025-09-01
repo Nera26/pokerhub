@@ -5,12 +5,14 @@ Handle situations where message queues accumulate a backlog faster than consumer
 ## Monitoring
 - Grafana: [Queue Saturation](https://grafana.pokerhub.example/d/queue-saturation) (UID `queue-saturation`)
 - Metabase: [Latency & Error Overview](https://metabase.pokerhub.example/dashboard/latency-error-overview)
+- Prometheus metric `ws_outbound_queue_depth` (histogram, labeled by `socketId`) and `ws_outbound_queue_max` gauge for peak per-socket backlog.
 
 ## Detection
 - Rising queue depth metrics or alerts.
 - Consumers lagging or timing out.
 - Dashboard shows message age exceeding 30 s.
 - `queueLag` metric remains above 10 s for 5 m.
+- `ws_outbound_queue_max` > 80 for 1 m.
 
 ## When to page
 Page according to the [SLO error-budget policy](../SLOs.md#error-budget-handling) when queue lag burns budget faster than thresholds.
@@ -31,6 +33,7 @@ Refer to [Error Budget Procedures](../error-budget-procedures.md) when saturatio
 ## Alerting
 - Route: [`pokerhub-eng`](../../metrics/alert-routes.md#pokerhub-eng) (PagerDuty ID: PENG012)
 - Escalation: [Engineering](https://pokerhub.pagerduty.com/escalation_policies/PDEF456)
+- Alert threshold: `ws_outbound_queue_max` ≥ 80 for 1 m triggers `WS Outbound Queue Saturation`.
 
 ## Drill
 - Simulated monthly with `load/chaos/artillery-packet-loss.yml`.
