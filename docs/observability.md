@@ -43,8 +43,10 @@ following Prometheus queries to visualize these samples:
 - p95 GC pause: `histogram_quantile(0.95, rate(nodejs_gc_duration_seconds_bucket[5m]))`
 - Heap used bytes: `nodejs_heap_size_used_bytes`
 
-The soak harness logs these values and exits non‑zero if heap usage grows by
-more than 1 % or if the p95 GC pause exceeds 50 ms.
+The soak harness records p50/p95/p99 ACK latency as well as GC pause and RSS
+samples. It exits non‑zero if latency exceeds 60 ms (p50), 120 ms (p95) or
+200 ms (p99), if heap usage grows by more than 1 % or if the p95 GC pause
+exceeds 50 ms.
 
 ### Stake Level Metrics
 
