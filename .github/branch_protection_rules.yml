@@ -11,4 +11,4 @@
     - "ci / ops-artifacts"
     - soak
     - soak-smoke
-    - spectator-privacy # require spectator privacy workflow
+    - "ci / spectator-privacy"
