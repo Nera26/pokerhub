@@ -2,6 +2,7 @@ import { startLeaderboardRebuildWorker } from '../../src/leaderboard/rebuild.wor
 import { LeaderboardService } from '../../src/leaderboard/leaderboard.service';
 import type { Cache } from 'cache-manager';
 import { writeSyntheticEvents } from './synthetic-events';
+import { ConfigService } from '@nestjs/config';
 
 jest.mock('bullmq', () => {
   class Queue {
@@ -46,6 +47,7 @@ describe('leaderboard rebuild worker performance', () => {
       cache as unknown as Cache,
       { find: jest.fn() } as any,
       analytics as any,
+      new ConfigService(),
     );
     const start = process.hrtime.bigint();
     await startLeaderboardRebuildWorker(service);

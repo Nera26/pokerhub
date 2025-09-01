@@ -2,6 +2,7 @@ import { LeaderboardService } from '../src/leaderboard/leaderboard.service';
 import { writeSyntheticEvents } from './leaderboard/synthetic-events';
 import { Cache } from 'cache-manager';
 import { join } from 'path';
+import { ConfigService } from '@nestjs/config';
 
 class MockCache {
   private store = new Map<string, any>();
@@ -32,13 +33,11 @@ describe('leaderboard rebuild performance', () => {
       cache as unknown as Cache,
       { find: jest.fn() } as any,
       analytics as any,
+      new ConfigService(),
     );
-    const rssBefore = process.memoryUsage().rss;
-    const { durationMs } = await service.rebuildFromEvents(30);
-    const rssAfter = process.memoryUsage().rss;
-    const growthMb = (rssAfter - rssBefore) / 1024 / 1024;
+    const { durationMs, memoryMb } = await service.rebuildFromEvents(30);
     expect(durationMs).toBeLessThan(1_800_000);
-    expect(growthMb).toBeLessThan(30);
+    expect(memoryMb).toBeLessThan(30);
     jest.useRealTimers();
   });
 });

@@ -2,6 +2,7 @@ import { LeaderboardService } from '../../src/leaderboard/leaderboard.service';
 import type { Cache } from 'cache-manager';
 import { promises as fs } from 'fs';
 import { join } from 'path';
+import { ConfigService } from '@nestjs/config';
 
 class MockCache {
   store = new Map<string, any>();
@@ -45,6 +46,7 @@ describe('LeaderboardService', () => {
       cache as unknown as Cache,
       {} as any,
       analytics as unknown as any,
+      new ConfigService(),
     );
   });
 

@@ -3,6 +3,7 @@ import { LeaderboardService } from '../src/leaderboard/leaderboard.service';
 import { updateRating } from '../src/leaderboard/rating';
 import { promises as fs } from 'fs';
 import { join } from 'path';
+import { ConfigService } from '@nestjs/config';
 
 class MockCache {
   private store = new Map<string, any>();
@@ -54,6 +55,7 @@ describe('leaderboard rebuild', () => {
             cache as any,
             { find: jest.fn() } as any,
             analytics as any,
+            new ConfigService(),
           );
 
           const scores = new Map<
@@ -163,6 +165,7 @@ describe('leaderboard rebuild', () => {
             cache1 as any,
             { find: jest.fn() } as any,
             analytics1 as any,
+            new ConfigService(),
           );
           await (service1 as any).rebuildWithEvents(events);
           const top1 = await service1.getTopPlayers();
@@ -173,6 +176,7 @@ describe('leaderboard rebuild', () => {
             cache2 as any,
             { find: jest.fn() } as any,
             analytics2 as any,
+            new ConfigService(),
           );
           await (service2 as any).rebuildWithEvents([...events].reverse(), {
             kFactor: 0.5,
@@ -192,6 +196,7 @@ describe('leaderboard rebuild', () => {
       cache as any,
       { find: jest.fn() } as any,
       analytics as any,
+      new ConfigService(),
     );
 
     const dir = join(process.cwd(), 'storage', 'events');
