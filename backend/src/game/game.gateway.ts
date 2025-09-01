@@ -127,6 +127,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     >
   >();
   private readonly maxFrameAttempts = 5;
+  private readonly socketPlayers = new Map<string, string>();
 
   @WebSocketServer()
   server!: Server;
@@ -160,6 +161,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleConnection(client: Socket) {
     this.logger.debug(`Client connected: ${client.id}`);
+    const playerId =
+      (client as any)?.data?.playerId ??
+      ((client.handshake?.auth as any)?.playerId as string | undefined) ??
+      (client.handshake?.query?.playerId as string | undefined);
+    if (playerId) {
+      this.socketPlayers.set(client.id, playerId);
+    }
     this.clock.setTimer(
       client.id,
       'default',
@@ -171,6 +179,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleDisconnect(client: Socket) {
     this.logger.debug(`Client disconnected: ${client.id}`);
     this.clock.clearTimer(client.id, 'default');
+    this.socketPlayers.delete(client.id);
 
     const frames = this.frameAcks.get(client.id);
     if (frames) {
@@ -201,6 +210,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
       this.recordAckLatency(start, tableId);
       throw err;
+    }
+
+    const expectedPlayerId = this.socketPlayers.get(client.id);
+    if (!expectedPlayerId || parsed.playerId !== expectedPlayerId) {
+      this.enqueue(client, 'server:Error', 'player mismatch');
+      this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+      this.recordAckLatency(start, tableId);
+      return;
     }
 
     if (this.processed.has(actionId)) {
