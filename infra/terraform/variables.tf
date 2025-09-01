@@ -126,3 +126,27 @@ variable "dr_metrics_kms_key" {
   default     = ""
 }
 
+variable "spectator_privacy_absence_minutes" {
+  description = "Minutes without spectator privacy run_success metric before alerting"
+  type        = number
+  default     = 60
+}
+
+variable "soak_latency_threshold_ms" {
+  description = "Alert threshold for soak test latency in milliseconds"
+  type        = number
+  default     = 500
+}
+
+variable "soak_throughput_threshold" {
+  description = "Alert threshold for minimum soak test throughput"
+  type        = number
+  default     = 1000
+}
+
+variable "proof_archive_replication_lag_threshold_seconds" {
+  description = "Alert threshold for proof archive replication lag in seconds"
+  type        = number
+  default     = 600
+}
+
