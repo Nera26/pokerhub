@@ -11,9 +11,10 @@ function loadConfig(): Record<string, RakeRule> {
   }
 }
 
+const RAKE_TABLE: Record<string, RakeRule> = loadConfig();
+
 export function getRakeRule(stake: string): RakeRule {
-  const table = loadConfig();
-  return table[stake] ?? { percent: 0, cap: 0 };
+  return RAKE_TABLE[stake] ?? { percent: 0, cap: 0 };
 }
 
 export function resolveRake(totalPot: number, stake: string): number {
