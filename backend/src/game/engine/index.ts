@@ -6,6 +6,7 @@ import {
 } from '../state-machine';
 import { SettlementJournal, recordDeltas } from '../settlement';
 import { WalletService } from '../../wallet/wallet.service';
+import { SettlementService } from '../../wallet/settlement.service';
 import { randomUUID } from 'crypto';
 import { HandRNG } from '../rng';
 import { Repository } from 'typeorm';
@@ -35,6 +36,7 @@ export class GameEngine {
       bigBlind: number;
     },
     private readonly wallet?: WalletService,
+    private readonly settlementSvc?: SettlementService,
     private readonly handRepo?: Repository<Hand>,
     private readonly events?: EventPublisher,
     private readonly tableId?: string,
@@ -92,6 +94,7 @@ export class GameEngine {
       bigBlind: 2,
     },
     wallet?: WalletService,
+    settlementSvc?: SettlementService,
     handRepo?: Repository<Hand>,
     events?: EventPublisher,
     tableId?: string,
@@ -101,6 +104,7 @@ export class GameEngine {
       playerIds,
       config,
       wallet,
+      settlementSvc,
       handRepo,
       events,
       tableId,
@@ -197,6 +201,7 @@ export class GameEngine {
       undefined,
       undefined,
       undefined,
+      undefined,
       this.stake,
     );
 
@@ -220,6 +225,8 @@ export class GameEngine {
 
     const entries = recordDeltas(state, this.initialStacks, this.settlement);
 
+    const street = state.street;
+    let idx = 0;
     let totalLoss = 0;
     for (const { playerId, delta } of entries) {
       const initial = this.initialStacks.get(playerId) ?? 0;
@@ -227,14 +234,19 @@ export class GameEngine {
       const refund = initial - loss;
 
       if (this.wallet && refund > 0) {
-        await this.wallet.rollback(playerId, refund, this.handId, 'USD');
+        const key = `${this.handId}#${street}#${idx}`;
+        await this.settlementSvc?.reserve(this.handId, street, idx);
+        await this.wallet.rollback(playerId, refund, this.handId, 'USD', key);
+        idx++;
       }
 
       totalLoss += loss;
     }
 
     if (this.wallet && totalLoss > 0) {
-      await this.wallet.commit(this.handId, totalLoss, 0, 'USD');
+      const key = `${this.handId}#${street}#${idx}`;
+      await this.settlementSvc?.reserve(this.handId, street, idx);
+      await this.wallet.commit(this.handId, totalLoss, 0, 'USD', key);
     }
 
     // Finalize proof and persist final hand log

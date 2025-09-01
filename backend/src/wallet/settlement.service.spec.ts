@@ -84,4 +84,14 @@ describe('SettlementService', () => {
     expect(entry.status).toBe('committed');
     expect(entry.updatedAt.getTime()).toBe(firstUpdated);
   });
+
+  it('cancel removes reservation', async () => {
+    await repo.clear();
+    await service.reserve(handId, street, idx);
+    await service.cancel(handId, street, idx);
+    const entry = await repo.findOne({
+      where: { idempotencyKey: `${handId}#${street}#${idx}` },
+    });
+    expect(entry).toBeNull();
+  });
 });
