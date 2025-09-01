@@ -27,7 +27,7 @@ PokerHub uses a commit–reveal protocol to prove every shuffle was fair and unm
 1. Fetch `{ seed, nonce, commitment }` from `/hands/{id}/proof`.
 2. Verify the hash equality.
 3. Shuffle a new deck with the seed and compare against the public hand log.
-4. Optional: run `npx ts-node scripts/verify-hand.ts <handId>` to automate steps 1–3.
+4. Optional: run `bin/verify-hand <handId>` to automate steps 1–3.
 
 ### Verifying Proofs via GCS
 Players can independently validate a hand using the public Google Cloud Storage bucket:
@@ -41,7 +41,7 @@ Players can independently validate a hand using the public Google Cloud Storage 
 2. Run the verifier with the downloaded values:
 
    ```sh
-   npx ts-node backend/src/game/verify.ts $(jq -r '.seed' proof.json) \
+   npx ts-node shared/verify/index.ts $(jq -r '.seed' proof.json) \
      $(jq -r '.nonce' proof.json) $(jq -r '.commitment' proof.json)
    ```
 

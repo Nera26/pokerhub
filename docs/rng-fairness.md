@@ -74,7 +74,7 @@ curl /hands/<handId>/proof # { seed, nonce, commitment }
 2. Run the verifier with the returned values:
 
 ```sh
-npx ts-node backend/src/game/verify.ts <seed> <nonce> [commitment]
+npx ts-node shared/verify/index.ts <seed> <nonce> [commitment]
 ```
 
 3. Recompute `sha256(seed || nonce)` and confirm it matches the published `commitment`.
@@ -83,10 +83,10 @@ npx ts-node backend/src/game/verify.ts <seed> <nonce> [commitment]
 
 ### CLI verification
 
-A convenience script fetches the hand log, extracts the embedded proof and checks the deck order:
+A convenience script fetches the hand's proof and log to validate the deck order:
 
 ```sh
-npx ts-node scripts/verify-hand.ts <handId> [baseUrl]
+bin/verify-hand <handId> [baseUrl]
 ```
 
 It verifies the commitment and asserts that the recorded deck matches the
