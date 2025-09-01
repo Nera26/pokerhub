@@ -36,12 +36,12 @@ PokerHub uses a commit–reveal protocol to prove every shuffle was fair and unm
 4. Save the deck to `deck.json` and run:
 
    ```sh
-   npx ts-node backend/src/scripts/verify-proof.ts \
-     <commitment> <seed> <nonce> deck.json
+   bin/verify-proof <handId> [--base <url>]
    ```
 
-   The script recomputes the commitment and verifies the provided deck matches the deterministic shuffle.
-5. A passing run prints `Proof verified: deck order matches commitment`.
+   The CLI downloads the proof and log, verifies the commitment and asserts the
+   deterministic deck order.
+5. A passing run prints `Proof verified for hand <handId>`.
 
 The Playwright test `frontend/e2e/hand-proof-deck.spec.ts` automates this workflow end-to-end.
 

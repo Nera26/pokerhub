@@ -6,6 +6,9 @@ export const LoginRequestSchema = z.object({
 });
 export type LoginRequest = z.infer<typeof LoginRequestSchema>;
 
+export const RegisterRequestSchema = LoginRequestSchema;
+export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
+
 export const LoginResponseSchema = z.object({
   token: z.string(),
 });
@@ -15,6 +18,11 @@ export const MessageResponseSchema = z.object({
   message: z.string(),
 });
 export type MessageResponse = z.infer<typeof MessageResponseSchema>;
+
+export const RefreshRequestSchema = z.object({
+  refreshToken: z.string(),
+});
+export type RefreshRequest = z.infer<typeof RefreshRequestSchema>;
 
 export const RequestResetSchema = z.object({
   email: z.string().email(),

@@ -17,6 +17,7 @@
     "test:property": "npm run test:property --prefix backend",
     "test:e2e": "npm run test:e2e --prefix frontend",
     "test:scripts": "npm test --prefix scripts",
+    "test:perf": "npm test --prefix backend -- \"(test|tests)/.*\\.sim\\.spec\\.ts$\"",
     "test": "npm run test:scripts && npm test --prefix backend && npm test --prefix frontend && npm run test:contracts && npm run test:e2e --prefix frontend",
     "perf:socket-load": "ts-node tests/performance/socket-load.ts",
     "perf:replay": "ts-node tests/performance/replay.ts",

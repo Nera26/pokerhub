@@ -1,6 +1,9 @@
 # Leaderboard Rebuild
 
 The leaderboard can be rebuilt from event logs stored under `storage/events/`.
+`LeaderboardService` runs this rebuild once per day to refresh the Redis key
+`leaderboard:data`, which is used to serve `GET /leaderboard` responses. Manual
+rebuilds through the CLI or API invoke the same routine.
 Each file is named `YYYY-MM-DD.jsonl` and contains newline-delimited JSON
 objects describing sessions. Generating a 30‑day dataset therefore requires 30
 such files.

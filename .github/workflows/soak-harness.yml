@@ -1,0 +1,53 @@
+name: soak-harness
+concurrency:
+  group: soak-harness
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-proof-archive:
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
+
+  harness:
+    needs: check-proof-archive
+    runs-on: ubuntu-latest
+    timeout-minutes: 1440
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm ci --prefix backend
+      - name: Run soak harness
+        env:
+          DURATION_SEC: 86400
+        run: node -r ts-node/register backend/src/game/soak-harness.ts
+      - name: Check GC metrics
+        run: |
+          METRICS=infra/metrics/soak_gc.jsonl
+          tail -n 1 "$METRICS" | jq -e '((.gc_p95_ms // .gcPauseP95) <= 50) and ((.rss_delta_pct // .rssGrowth) < 1)' >/dev/null \
+            || { echo "GC pause or RSS growth thresholds exceeded"; tail -n 1 "$METRICS"; exit 1; }
+      - name: Upload metrics
+        if: always()
+        id: metrics
+        uses: actions/upload-artifact@v4
+        with:
+          name: soak-gc-metrics
+          path: infra/metrics/soak_gc.jsonl
+      - name: Publish summary
+        if: always()
+        run: |
+          echo "Metrics: [soak_gc.jsonl](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.metrics.outputs.artifact-id }})" >> $GITHUB_STEP_SUMMARY
+
+  spectator-privacy:
+    needs: harness
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: infra/metrics/soak_gc.jsonl

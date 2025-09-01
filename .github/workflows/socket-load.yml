@@ -49,7 +49,14 @@ jobs:
             metrics/memory-gc.json
             metrics/table-metrics.json
 
+  soak-metrics:
+    needs: ack-latency
+    if: ${{ always() }}
+    uses: ./.github/workflows/soak-metrics.yml
+    secrets: inherit
+
   spectator-privacy:
+    needs: [ack-latency, soak-metrics]
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:

@@ -19,6 +19,9 @@ export const LoginRequestSchema = z.object({
 });
 export type LoginRequest = z.infer<typeof LoginRequestSchema>;
 
+export const RegisterRequestSchema = LoginRequestSchema;
+export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
+
 export const LoginResponseSchema = z.object({
   token: z.string(),
 });
@@ -28,6 +31,11 @@ export const MessageResponseSchema = z.object({
   message: z.string(),
 });
 export type MessageResponse = z.infer<typeof MessageResponseSchema>;
+
+export const RefreshRequestSchema = z.object({
+  refreshToken: z.string(),
+});
+export type RefreshRequest = z.infer<typeof RefreshRequestSchema>;
 
 export const RequestResetRequestSchema = z.object({
   email: z.string().email(),
@@ -286,6 +294,19 @@ export const TableSchema = z.object({
 export const TableListSchema = z.array(TableSchema);
 export type Table = z.infer<typeof TableSchema>;
 export type TableList = z.infer<typeof TableListSchema>;
+
+export const CreateTableSchema = z.object({
+  tableName: z.string(),
+  gameType: GameTypeSchema,
+  stakes: z.object({ small: z.number(), big: z.number() }),
+  startingStack: z.number(),
+  players: z.object({ max: z.number() }),
+  buyIn: z.object({ min: z.number(), max: z.number() }),
+});
+export type CreateTableRequest = z.infer<typeof CreateTableSchema>;
+
+export const UpdateTableSchema = CreateTableSchema.partial();
+export type UpdateTableRequest = z.infer<typeof UpdateTableSchema>;
 
 export const PlayerSchema = z.object({
   id: z.number(),
