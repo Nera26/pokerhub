@@ -11,6 +11,7 @@ import {
 import { RateLimitGuard } from '../routes/rate-limit.guard';
 import { TournamentService } from './tournament.service';
 import { AuthGuard } from '../auth/auth.guard';
+import { AdminGuard } from '../auth/admin.guard';
 import type {
   CalculatePrizesRequest,
   CalculatePrizesResponse,
@@ -49,7 +50,7 @@ export class TournamentController {
   }
 
   @Post(':id/cancel')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, AdminGuard)
   @HttpCode(200)
   async cancel(@Param('id') id: string) {
     await this.service.cancel(id);
@@ -69,7 +70,7 @@ export class TournamentController {
   }
 
   @Post(':id/levels/hot-patch')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, AdminGuard)
   hotPatchLevel(
     @Param('id') id: string,
     @Body() body: HotPatchLevelRequest,
@@ -83,7 +84,7 @@ export class TournamentController {
   }
 
   @Post(':id/schedule')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, AdminGuard)
   @HttpCode(200)
   async schedule(
     @Param('id') id: string,

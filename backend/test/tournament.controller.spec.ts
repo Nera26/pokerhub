@@ -5,6 +5,7 @@ import { TournamentController } from '../src/tournament/tournament.controller';
 import { TournamentService } from '../src/tournament/tournament.service';
 import { RateLimitGuard } from '../src/routes/rate-limit.guard';
 import { AuthGuard } from '../src/auth/auth.guard';
+import { AdminGuard } from '../src/auth/admin.guard';
 
 describe('TournamentController', () => {
   let app: INestApplication;
@@ -34,6 +35,13 @@ describe('TournamentController', () => {
           return false;
         },
       })
+      .overrideGuard(AdminGuard)
+      .useValue({
+        canActivate: (ctx: ExecutionContext) => {
+          const header = ctx.switchToHttp().getRequest().headers['authorization'];
+          return typeof header === 'string' && header == 'Bearer admin';
+        },
+      })
       .compile();
     app = moduleRef.createNestApplication();
     await app.init();
@@ -50,6 +58,13 @@ describe('TournamentController', () => {
       .expect(200);
     expect(svc.cancel).toHaveBeenCalledWith('abc');
   });
+  it('rejects non-admin cancel', async () => {
+    await request(app.getHttpServer())
+      .post('/tournaments/abc/cancel')
+      .set('Authorization', 'Bearer u1')
+      .expect(403);
+  });
+
 
   it('registers player', async () => {
     svc.register?.mockResolvedValue({ id: 'seat1' } as any);
@@ -93,4 +108,20 @@ describe('TournamentController', () => {
       start: new Date(payload.startTime),
     });
   });
+
+  it('rejects non-admin schedule', async () => {
+    const now = new Date();
+    const payload = {
+      startTime: now.toISOString(),
+      registration: { open: now.toISOString(), close: now.toISOString() },
+      structure: [{ level: 1, durationMinutes: 10 }],
+      breaks: [{ start: now.toISOString(), durationMs: 60000 }],
+    };
+    await request(app.getHttpServer())
+      .post('/tournaments/t1/schedule')
+      .set('Authorization', 'Bearer u1')
+      .send(payload)
+      .expect(403);
+  });
+
 });
