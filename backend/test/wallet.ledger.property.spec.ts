@@ -252,11 +252,27 @@ export async function handLogsReplayable() {
       const { dataSource, service, journalRepo } = await setupHand();
       try {
         const handId = randomUUID();
-        await writeHandLedger(service, dataSource, handId, 'river' as Street, 0, settlements);
+        await writeHandLedger(
+          service,
+          dataSource,
+          handId,
+          'river' as Street,
+          0,
+          settlements,
+          'USD',
+        );
         const original = normalize(await journalRepo.find());
         const { dataSource: ds2, service: service2, journalRepo: jr2 } = await setupHand();
         try {
-          await writeHandLedger(service2, ds2, handId, 'river' as Street, 0, settlements);
+          await writeHandLedger(
+            service2,
+            ds2,
+            handId,
+            'river' as Street,
+            0,
+            settlements,
+            'USD',
+          );
           const replayed = normalize(await jr2.find());
           if (JSON.stringify(original) !== JSON.stringify(replayed)) {
             await writeFailure({ kind: 'replay', settlements, original, replayed });

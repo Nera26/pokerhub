@@ -93,6 +93,7 @@ export class TournamentService implements OnModuleInit {
       id: t.id,
       title: t.title,
       buyIn: t.buyIn,
+      currency: t.currency,
       prizePool: t.prizePool,
       state: t.state,
       players: { current: playerCount, max: t.maxPlayers },
@@ -191,13 +192,14 @@ export class TournamentService implements OnModuleInit {
         where: { table: { tournament: { id } } } as any,
         relations: ['user'],
       });
+      const currency = t.currency ?? 'USD';
       for (const seat of seats) {
-        await this.wallet.rollback(seat.user.id, t.buyIn, id, 'USD');
+        await this.wallet.rollback(seat.user.id, t.buyIn, id, currency);
         await this.events.emit('wallet.rollback', {
           accountId: seat.user.id,
           amount: t.buyIn,
           refId: id,
-          currency: 'USD',
+          currency,
         });
         await this.events.emit('notification.create', {
           userId: seat.user.id,
@@ -339,12 +341,13 @@ export class TournamentService implements OnModuleInit {
       throw new Error('registration closed');
     }
     if (this.wallet) {
-      await this.wallet.reserve(userId, t.buyIn, tournamentId, 'USD');
+      const currency = t.currency ?? 'USD';
+      await this.wallet.reserve(userId, t.buyIn, tournamentId, currency);
       await this.events.emit('wallet.reserve', {
         accountId: userId,
         amount: t.buyIn,
         refId: tournamentId,
-        currency: 'USD',
+        currency,
       });
     }
     const tables = await this.tables.find({
@@ -379,12 +382,13 @@ export class TournamentService implements OnModuleInit {
     });
     if (seat) {
       if (this.wallet) {
-        await this.wallet.rollback(userId, t.buyIn, tournamentId, 'USD');
+        const currency = t.currency ?? 'USD';
+        await this.wallet.rollback(userId, t.buyIn, tournamentId, currency);
         await this.events.emit('wallet.rollback', {
           accountId: userId,
           amount: t.buyIn,
           refId: tournamentId,
-          currency: 'USD',
+          currency,
         });
       }
       await this.seats.remove(seat);

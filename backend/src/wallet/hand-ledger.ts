@@ -18,6 +18,7 @@ export async function writeHandLedger(
   street: Street,
   idx: number,
   settlements: SettlementEntry[],
+  currency = 'USD',
 ): Promise<void> {
   const key = `${handId}#${street}#${idx}`;
   await dataSource.transaction(async (manager) => {
@@ -48,11 +49,11 @@ export async function writeHandLedger(
         if (entry.delta < 0) {
           const amount = -entry.delta;
           total += amount;
-          await wallet.reserve(entry.playerId, amount, key, 'USD', key);
+          await wallet.reserve(entry.playerId, amount, key, currency, key);
         }
       }
       if (total > 0) {
-        await wallet.commit(key, total, 0, 'USD', key);
+        await wallet.commit(key, total, 0, currency, key);
       }
     } finally {
       if (hasRepos) {

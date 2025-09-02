@@ -1,8 +1,10 @@
 import { z } from 'zod';
 
+export const CurrencySchema = z.string().length(3);
+
 export const AmountSchema = z.object({
   amount: z.number().int().positive(),
-  currency: z.string().length(3),
+  currency: CurrencySchema,
 });
 
 export type Amount = z.infer<typeof AmountSchema>;
@@ -10,7 +12,7 @@ export type Amount = z.infer<typeof AmountSchema>;
 export const WithdrawSchema = z.object({
   amount: z.number().int().positive(),
   deviceId: z.string(),
-  currency: z.string().length(3),
+  currency: CurrencySchema,
 });
 
 export type WithdrawRequest = z.infer<typeof WithdrawSchema>;
@@ -18,7 +20,7 @@ export type WithdrawRequest = z.infer<typeof WithdrawSchema>;
 export const DepositSchema = z.object({
   amount: z.number().int().positive(),
   deviceId: z.string(),
-  currency: z.string().length(3),
+  currency: CurrencySchema,
 });
 
 export type DepositRequest = z.infer<typeof DepositSchema>;
@@ -26,7 +28,7 @@ export type DepositRequest = z.infer<typeof DepositSchema>;
 export const TxSchema = z.object({
   amount: z.number().int().positive(),
   tx: z.string(),
-  currency: z.string().length(3),
+  currency: CurrencySchema,
   rake: z.number().int().nonnegative().optional(),
 });
 
@@ -61,7 +63,7 @@ export const WalletTransactionSchema = z.object({
   id: z.string(),
   type: z.string(),
   amount: z.number().int(),
-  currency: z.string().length(3),
+  currency: CurrencySchema,
   status: z.string(),
   createdAt: z.string().datetime(),
 });
@@ -81,7 +83,7 @@ export const PendingTransactionSchema = z.object({
   id: z.string(),
   type: z.string(),
   amount: z.number().int(),
-  currency: z.string().length(3),
+  currency: CurrencySchema,
   status: z.string(),
   createdAt: z.string().datetime(),
 });

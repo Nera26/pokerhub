@@ -4,6 +4,7 @@ export const TournamentSchema = z.object({
   id: z.string().uuid(),
   title: z.string(),
   buyIn: z.number(),
+  currency: z.string().length(3),
   prizePool: z.number(),
   maxPlayers: z.number(),
   state: z.enum(['REG_OPEN', 'RUNNING', 'PAUSED', 'FINISHED', 'CANCELLED']),

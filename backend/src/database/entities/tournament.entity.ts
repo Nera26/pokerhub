@@ -20,6 +20,9 @@ export class Tournament {
   @Column('int')
   buyIn: number;
 
+  @Column({ length: 3, default: 'USD' })
+  currency: string;
+
   @Column('int')
   prizePool: number;
 

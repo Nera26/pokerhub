@@ -35,7 +35,15 @@ describe('writeHandLedger transactional rollback', () => {
       { playerId: 'winner', delta: 100 },
     ];
     await expect(
-      writeHandLedger(wallet, ds, 'hand', 'river' as Street, 0, settlements),
+      writeHandLedger(
+        wallet,
+        ds,
+        'hand',
+        'river' as Street,
+        0,
+        settlements,
+        'USD',
+      ),
     ).rejects.toThrow('boom');
     expect(balances.user).toBe(1000);
     expect(balances.reserve).toBe(0);
