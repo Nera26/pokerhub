@@ -680,7 +680,10 @@ export interface paths {
     };
   };
   "/tournaments/{id}/cancel": {
-    /** Cancel tournament */
+    /**
+     * Cancel tournament
+     * @description Admin only
+     */
     post: {
       parameters: {
         path: {
@@ -698,7 +701,10 @@ export interface paths {
     };
   };
   "/tournaments/{id}/schedule": {
-    /** Schedule tournament */
+    /**
+     * Schedule tournament
+     * @description Admin only
+     */
     post: {
       parameters: {
         path: {
@@ -744,7 +750,10 @@ export interface paths {
     };
   };
   "/tournaments/{id}/levels/hot-patch": {
-    /** Hot patch blind level */
+    /**
+     * Hot patch blind level
+     * @description Admin only
+     */
     post: {
       parameters: {
         path: {

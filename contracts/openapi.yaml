@@ -635,6 +635,7 @@ paths:
   /tournaments/{id}/cancel:
     post:
       summary: Cancel tournament
+      description: Admin only
       parameters:
         - in: path
           name: id
@@ -653,6 +654,7 @@ paths:
   /tournaments/{id}/schedule:
     post:
       summary: Schedule tournament
+      description: Admin only
       parameters:
         - in: path
           name: id
@@ -701,6 +703,7 @@ paths:
   /tournaments/{id}/levels/hot-patch:
     post:
       summary: Hot patch blind level
+      description: Admin only
       parameters:
         - in: path
           name: id
