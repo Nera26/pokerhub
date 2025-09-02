@@ -15,6 +15,10 @@ class DummyRepo {
   async findOne() {
     return null;
   }
+  async find() {
+    return [];
+  }
+  async save() {}
 }
 
 class DummyRedis {
@@ -100,6 +104,7 @@ describe('GameGateway rate-limit fuzz', () => {
             new DummyAnalytics() as any,
             new ClockService(),
             new DummyRepo() as any,
+            new DummyRepo() as any,
             new DummyRedis() as any,
           );
           const client: any = {
@@ -135,6 +140,7 @@ describe('GameGateway rate-limit fuzz', () => {
             new RoomManager() as any,
             new DummyAnalytics() as any,
             new ClockService(),
+            new DummyRepo() as any,
             new DummyRepo() as any,
             new DummyRedis() as any,
           );

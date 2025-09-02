@@ -52,6 +52,10 @@ class DummyRepo {
   async findOne() {
     return null;
   }
+  async find() {
+    return [];
+  }
+  async save() {}
 }
 
 describe('GameGateway outbound queue metrics', () => {
@@ -116,6 +120,7 @@ describe('GameGateway outbound queue metrics', () => {
       rooms,
       new DummyAnalytics() as any,
       new ClockService(),
+      new DummyRepo() as any,
       new DummyRepo() as any,
       new DummyRedis() as any,
     );

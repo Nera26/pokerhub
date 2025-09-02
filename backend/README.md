@@ -37,6 +37,18 @@ npm run start:prod
 npm test
 ```
 
+## Game State Recovery
+
+The WebSocket gateway periodically persists table snapshots to Postgres in the
+`game_state` table. On startup, the latest snapshot is loaded before applying
+pending diffs from Redis, allowing games to resume after a crash or Redis loss.
+
+Run migrations to create the table:
+
+```bash
+npm run migration:run
+```
+
 ## Shared Contracts & Frontend Integration
 
 This repository contains shared API contracts under `../contracts` and TypeScript DTOs in `../shared`. The backend imports these types (e.g. `@shared/types`) and must keep them in sync with the OpenAPI spec. The frontend in `../frontend` consumes the same shared types to call this API. Any endpoint change should update the shared contracts and corresponding frontend code in the same pull request.

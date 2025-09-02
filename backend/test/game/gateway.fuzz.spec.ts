@@ -116,6 +116,10 @@ class DummyRepo {
   async findOne() {
     return null;
   }
+  async find() {
+    return [];
+  }
+  async save() {}
 }
 
 describe('GameGateway fuzz tests', () => {
@@ -126,6 +130,7 @@ describe('GameGateway fuzz tests', () => {
           new RoomManager() as any,
           new DummyAnalytics() as any,
           new ClockService(),
+          new DummyRepo() as any,
           new DummyRepo() as any,
           new DummyRedis() as any,
         );
@@ -154,6 +159,7 @@ describe('GameGateway fuzz tests', () => {
           new DummyAnalytics() as any,
           new ClockService(),
           new DummyRepo() as any,
+          new DummyRepo() as any,
           new DummyRedis() as any,
         );
         const client: any = { id: 'c1', emit: jest.fn() };
@@ -174,6 +180,7 @@ describe('GameGateway fuzz tests', () => {
             new RoomManager() as any,
             new DummyAnalytics() as any,
             new ClockService(),
+            new DummyRepo() as any,
             new DummyRepo() as any,
             new DummyRedis() as any,
           );
@@ -206,6 +213,7 @@ describe('GameGateway fuzz tests', () => {
           new RoomManager() as any,
           new DummyAnalytics() as any,
           new ClockService(),
+          new DummyRepo() as any,
           new DummyRepo() as any,
           new DummyRedis() as any,
         );

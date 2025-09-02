@@ -39,6 +39,8 @@ class DummyAnalytics {
 
 class DummyRepo {
   async save(): Promise<void> {}
+  async find(): Promise<any[]> { return []; }
+  async findOne(): Promise<any> { return null; }
 }
 
 class DummyRedis {
@@ -129,6 +131,7 @@ async function run() {
     rooms as any,
     new DummyAnalytics() as any,
     new ClockService(),
+    new DummyRepo() as any,
     new DummyRepo() as any,
     new DummyRedis() as any,
   );

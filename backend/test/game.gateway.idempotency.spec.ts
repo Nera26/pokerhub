@@ -6,6 +6,7 @@ import { EventPublisher } from '../src/events/events.service';
 import { RoomManager } from '../src/game/room.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Hand } from '../src/database/entities/hand.entity';
+import { GameState } from '../src/database/entities/game-state.entity';
 import { MockRedis } from './utils/mock-redis';
 
 jest.mock('p-queue', () => ({
@@ -35,6 +36,7 @@ describe('GameGateway idempotency', () => {
         { provide: AnalyticsService, useValue: { recordGameEvent: jest.fn() } },
         { provide: EventPublisher, useValue: { emit: jest.fn() } },
         { provide: getRepositoryToken(Hand), useValue: { findOne: jest.fn() } },
+        { provide: getRepositoryToken(GameState), useValue: { find: jest.fn(), save: jest.fn() } },
         { provide: RoomManager, useValue: { get: () => room } },
         { provide: 'REDIS_CLIENT', useValue: redis },
       ],
