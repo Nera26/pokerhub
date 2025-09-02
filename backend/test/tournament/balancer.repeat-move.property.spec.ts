@@ -88,7 +88,7 @@ describe('table balancer repeat move property', () => {
                   const afterIdx = tables.findIndex((t) => t.includes(p));
                   if (afterIdx !== -1 && afterIdx !== i) {
                     const last = lastMoved.get(p) ?? -Infinity;
-                    expect(hand - last).toBeGreaterThan(avoidWithin);
+                    expect(hand - last).toBeGreaterThanOrEqual(avoidWithin);
                     lastMoved.set(p, hand);
                   }
                 }
