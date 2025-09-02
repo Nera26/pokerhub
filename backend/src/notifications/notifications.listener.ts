@@ -1,8 +1,16 @@
-import { Injectable, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleDestroy,
+  OnModuleInit,
+  Optional,
+  Logger,
+  Inject,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Kafka, Consumer } from 'kafkajs';
 import { ConfigService } from '@nestjs/config';
+import Redis from 'ioredis';
 import { Notification } from './notification.entity';
 import { NotificationCreateEvent } from '@shared/events';
 
@@ -11,11 +19,13 @@ import { NotificationCreateEvent } from '@shared/events';
  */
 @Injectable()
 export class NotificationsListener implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(NotificationsListener.name);
   private consumer?: Consumer;
 
   constructor(
     @InjectRepository(Notification) private readonly repo: Repository<Notification>,
     private readonly config: ConfigService,
+    @Optional() @Inject('REDIS_CLIENT') private readonly redis?: Redis,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -28,10 +38,32 @@ export class NotificationsListener implements OnModuleInit, OnModuleDestroy {
     await this.consumer.connect();
     await this.consumer.subscribe({ topic: 'notification.create' });
     await this.consumer.run({
-      eachMessage: async ({ message }) => {
+      autoCommit: false,
+      eachMessage: async ({ topic, partition, message }) => {
         if (!message.value) return;
-        const payload = NotificationCreateEvent.parse(JSON.parse(message.value.toString()));
-        await this.handleEvent(payload);
+        try {
+          const payload = NotificationCreateEvent.parse(
+            JSON.parse(message.value.toString()),
+          );
+          await this.handleEvent(payload);
+          await this.consumer!.commitOffsets([
+            {
+              topic,
+              partition,
+              offset: (Number(message.offset) + 1).toString(),
+            },
+          ]);
+        } catch (err) {
+          this.logger.error(err);
+          const raw = message.value?.toString();
+          if (raw && this.redis) {
+            try {
+              await this.redis.lpush('notifications:dead-letter', raw);
+            } catch (redisErr) {
+              this.logger.error(redisErr);
+            }
+          }
+        }
       },
     });
   }
