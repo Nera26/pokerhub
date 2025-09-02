@@ -605,12 +605,6 @@ paths:
           required: true
           schema:
             type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TournamentRegisterRequest'
       responses:
         '200':
           description: Tournament registration
@@ -629,12 +623,6 @@ paths:
           required: true
           schema:
             type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TournamentWithdrawRequest'
       responses:
         '200':
           description: Tournament withdrawal
@@ -1698,20 +1686,6 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Tournament'
-  TournamentRegisterRequest:
-    type: object
-    properties:
-      userId:
-        type: string
-    required:
-      - userId
-  TournamentWithdrawRequest:
-    type: object
-    properties:
-      userId:
-        type: string
-    required:
-      - userId
     Table:
       type: object
       properties:

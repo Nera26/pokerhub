@@ -20,7 +20,6 @@ import TournamentCard from '@/app/components/tournaments/TournamentCard';
 import TournamentRegisterModalContent from '@/app/components/tournaments/TournamentRegisterModalContent';
 import Modal from '@/app/components/ui/Modal';
 import ToastNotification from '@/app/components/ui/ToastNotification';
-import { useAuth } from '@/context/AuthContext';
 
 interface Tournament {
   id: string;
@@ -42,7 +41,6 @@ function isTournamentFilter(v: string | null): v is TournamentFilter {
 export default function Page() {
   useRenderCount('TournamentPage');
   const queryClient = useQueryClient();
-  const { playerId } = useAuth();
   // 1) filter state synced with URL
   const router = useRouter();
   const pathname = usePathname();
@@ -122,7 +120,7 @@ export default function Page() {
 
   const handleConfirm = async (id: string) => {
     try {
-      await registerTournament(id, { userId: playerId });
+      await registerTournament(id);
       await queryClient.invalidateQueries({ queryKey: ['tournaments'] });
       setToast({
         message: "You're registered!",

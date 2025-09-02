@@ -2,10 +2,7 @@
 
 import { useState } from 'react';
 import Button from '@/app/components/ui/Button';
-import {
-  registerTournament,
-  withdrawTournament,
-} from '@/lib/api/lobby';
+import { registerTournament, withdrawTournament } from '@/lib/api/lobby';
 
 interface RegisterButtonProps {
   id: string;
@@ -19,12 +16,11 @@ export default function RegisterButton({
   const [registered, setRegistered] = useState(initialRegistered);
 
   const handleClick = async () => {
-    const body = { userId: 'user-1' };
     if (registered) {
-      await withdrawTournament(id, body);
+      await withdrawTournament(id);
       setRegistered(false);
     } else {
-      await registerTournament(id, body);
+      await registerTournament(id);
       setRegistered(true);
     }
   };
