@@ -6,11 +6,23 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { RoomManager } from './room.service';
-import { metrics, type Attributes, type ObservableResult } from '@opentelemetry/api';
+import {
+  metrics,
+  type Attributes,
+  type ObservableResult,
+} from '@opentelemetry/api';
 import PQueue from 'p-queue';
 import type { InternalGameState } from './engine';
 import type { GameState } from '@shared/types';
 import { sanitize } from './state-sanitize';
+
+const noopGauge = {
+  addCallback() {},
+  removeCallback() {},
+} as {
+  addCallback(cb: (r: ObservableResult) => void): void;
+  removeCallback(cb: (r: ObservableResult) => void): void;
+};
 
 @WebSocketGateway({ namespace: 'spectate' })
 export class SpectatorGateway
@@ -28,11 +40,31 @@ export class SpectatorGateway
     { description: 'Number of spectator rate limit hits' },
   );
 
-  private static readonly outboundQueueDepth =
-    SpectatorGateway.meter.createHistogram('ws_outbound_queue_depth', {
-      description: 'Depth of outbound WebSocket message queue',
-      unit: 'messages',
-    });
+  private static readonly outboundQueueDepthGauge =
+    SpectatorGateway.meter.createObservableGauge?.(
+      'ws_outbound_queue_depth',
+      {
+        description: 'Current depth of outbound WebSocket message queue',
+        unit: 'messages',
+      },
+    ) ?? noopGauge;
+
+  private static readonly outboundQueueUtilization =
+    SpectatorGateway.meter.createObservableGauge?.(
+      'ws_outbound_queue_utilization',
+      {
+        description: 'Outbound WebSocket queue depth as a fraction of limit',
+      },
+    ) ?? noopGauge;
+
+  private static readonly outboundQueueDepthHistogram =
+    SpectatorGateway.meter.createHistogram(
+      'ws_outbound_queue_depth_samples',
+      {
+        description: 'Depth of outbound WebSocket message queue',
+        unit: 'messages',
+      },
+    );
 
   private static readonly outboundQueueMax =
     SpectatorGateway.meter.createObservableGauge?.('ws_outbound_queue_max', {
@@ -64,6 +96,21 @@ export class SpectatorGateway
     process.env.SPECTATOR_INTERVAL_MS ?? '10000',
   );
 
+  private readonly observeQueueDepth = (result: ObservableResult) => {
+    for (const [socketId, queue] of this.queues) {
+      result.observe(queue.size + queue.pending, { socketId } as Attributes);
+    }
+  };
+
+  private readonly observeQueueUtilization = (result: ObservableResult) => {
+    for (const [socketId, queue] of this.queues) {
+      result.observe(
+        (queue.size + queue.pending) / this.queueLimit,
+        { socketId } as Attributes,
+      );
+    }
+  };
+
   private readonly observeQueueMax = (result: ObservableResult) => {
     for (const [socketId, max] of this.maxQueueSizes) {
       result.observe(max, { socketId } as Attributes);
@@ -73,6 +120,12 @@ export class SpectatorGateway
 
   constructor(private readonly rooms: RoomManager) {
     SpectatorGateway.outboundQueueMax.addCallback(this.observeQueueMax);
+    SpectatorGateway.outboundQueueDepthGauge.addCallback(
+      this.observeQueueDepth,
+    );
+    SpectatorGateway.outboundQueueUtilization.addCallback(
+      this.observeQueueUtilization,
+    );
   }
 
   async handleConnection(client: Socket) {
@@ -121,7 +174,9 @@ export class SpectatorGateway
     }
     void queue.add(() => client.emit(event, payload as GameState));
     const depth = queue.size + queue.pending;
-    SpectatorGateway.outboundQueueDepth.record(depth, { socketId: id } as Attributes);
+    SpectatorGateway.outboundQueueDepthHistogram.record(depth, {
+      socketId: id,
+    } as Attributes);
     this.maxQueueSizes.set(
       id,
       Math.max(this.maxQueueSizes.get(id) ?? 0, depth),
