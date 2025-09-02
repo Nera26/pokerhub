@@ -124,7 +124,7 @@ jobs:
           dr-throwaway-sla-days: ${{ env.DR_THROWAWAY_SLA_DAYS }}
 
   dr-trends:
-    needs: [preflight, check-soak-metrics]
+    needs: [check-proof-archive, preflight, check-soak-metrics]
     uses: ./.github/workflows/dr-trends.yml
     secrets:
       GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
@@ -133,6 +133,7 @@ jobs:
 
   deploy:
     needs:
+      - check-proof-archive
       - preflight
       - dr-trends
       - check-soak-metrics
@@ -449,7 +450,7 @@ jobs:
         env:
           PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
           SPECTATOR_LOGS_BUCKET: ${{ secrets.SPECTATOR_LOGS_BUCKET }}
-          SOAK_TRENDS_BUCKET: ${{ secrets.SONG_TRENDS_BUCKET }}
+          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
           RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
           DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
           SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS || 120 }}
@@ -518,7 +519,7 @@ jobs:
           retention-days: 14
 
   spectator-privacy:
-    needs: [deploy, check-soak-metrics]
+    needs: [check-proof-archive, deploy, check-soak-metrics]
     if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
@@ -526,7 +527,7 @@ jobs:
       logs: deployment.log
 
   proof-archive:
-    needs: [deploy, check-soak-metrics, spectator-privacy]
+    needs: [check-proof-archive, deploy, check-soak-metrics, spectator-privacy]
     if: ${{ always() }}
     uses: ./.github/workflows/proof-archive.yml
     secrets:
@@ -536,13 +537,13 @@ jobs:
       PAGERDUTY_ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
 
   soak:
-    needs: [deploy, check-soak-metrics, spectator-privacy]
+    needs: [check-proof-archive, deploy, check-soak-metrics, spectator-privacy]
     if: ${{ always() }}
     uses: ./.github/workflows/soak.yml
     secrets: inherit
 
   soak-metrics:
-    needs: [soak, check-soak-metrics, spectator-privacy]
+    needs: [check-proof-archive, soak, check-soak-metrics, spectator-privacy]
     if: ${{ always() }}
     uses: ./.github/workflows/soak-metrics.yml
     secrets: inherit
