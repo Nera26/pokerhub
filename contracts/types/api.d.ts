@@ -1014,6 +1014,10 @@ export interface paths {
             "application/json": components["schemas"]["User"];
           };
         };
+        /** @description Username already exists */
+        409: {
+          content: never;
+        };
       };
     };
   };

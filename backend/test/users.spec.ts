@@ -120,6 +120,20 @@ describe('UsersController (e2e)', () => {
       .expect(400);
   });
 
+  it('rejects duplicate usernames', async () => {
+    await request(app.getHttpServer())
+      .post('/users')
+      .set('Authorization', 'Bearer admin')
+      .send({ username: 'eve' })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post('/users')
+      .set('Authorization', 'Bearer admin')
+      .send({ username: 'eve' })
+      .expect(409);
+  });
+
   it('updates a user', async () => {
     const create = await request(app.getHttpServer())
       .post('/users')
