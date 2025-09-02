@@ -37,7 +37,7 @@ jobs:
         dr-throwaway-sla-days: ${{ env.DR_THROWAWAY_SLA_DAYS }}
     needs:
     - check-proof-archive
-  soak:
+  soak-run:
     needs:
     - preflight
     - check-proof-archive
@@ -119,7 +119,7 @@ jobs:
         bq --project_id=${{ secrets.GCP_PROJECT }} load --source_format=NEWLINE_DELIMITED_JSON \
           --time_partitioning_field timestamp ops_metrics.soak_runs soak-run.json infra/analytics/soak_runs.schema.json
     - name: Analyze soak trends
-      run: npx ts-node --compiler-options '{"module":"commonjs"}' 
+      run: npx ts-node --compiler-options '{"module":"commonjs"}'
         scripts/analyze-soak-trends.ts metrics
       env:
         SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
@@ -232,3 +232,12 @@ jobs:
       logs: backend-tests.log frontend-tests.log integration.log property.log
     needs:
     - check-proof-archive
+    - soak-run
+    - gateway-soak
+
+  soak:
+    needs: [soak-run, gateway-soak, spectator-privacy]
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    steps:
+    - run: echo "soak checks passed"

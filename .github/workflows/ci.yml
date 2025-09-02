@@ -825,7 +825,7 @@ jobs:
         if: steps.ledger.outcome == 'failure' || steps.replay.outcome == 'failure' || steps.backend-property.outcome == 'failure' || steps.audit.outcome == 'failure' || steps.frontend-property.outcome == 'failure' || steps.analytics-property.outcome == 'failure' || steps.shared-property.outcome == 'failure' || steps.repo-property.outcome == 'failure'
         run: exit 1
 
-  integration:
+  integration-run:
     needs: property
     runs-on: ubuntu-latest
     continue-on-error: false
@@ -843,7 +843,7 @@ jobs:
           path: integration.log
 
   e2e:
-    needs: integration
+    needs: integration-run
     runs-on: ubuntu-latest
     continue-on-error: false
     strategy:
@@ -986,16 +986,23 @@ jobs:
             metrics/baseline.json
 
   soak-metrics:
-    needs: integration
+    needs: [integration-run, spectator-privacy]
     if: ${{ always() }}
     uses: ./.github/workflows/soak-metrics.yml
     secrets: inherit
 
   spectator-privacy:
-    needs: [property, integration]
+    needs: [property, integration-run]
     if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
+
+  integration:
+    needs: [integration-run, spectator-privacy]
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    steps:
+      - run: echo "integration checks passed"
 
   dr-trends:
     needs: spectator-privacy

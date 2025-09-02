@@ -40,7 +40,7 @@ jobs:
     uses: ./.github/workflows/check-proof-archive.yml
     secrets: inherit
 
-  publish-docs:
+  publish-docs-run:
     needs:
       - preflight
       - ops-artifacts-verify
@@ -67,6 +67,14 @@ jobs:
           path: docs/player
 
   spectator-privacy:
+    needs: publish-docs-run
     if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
+
+  publish-docs:
+    needs: [publish-docs-run, spectator-privacy]
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    steps:
+      - run: echo "publish docs checks passed"

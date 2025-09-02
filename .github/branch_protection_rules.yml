@@ -11,10 +11,13 @@
     - contracts
     - "deploy / preflight"
     - "deploy / deploy"
+    - "deploy / spectator-privacy"
     - check-proof-archive
     - "ci / ops-artifacts-verify"
     - spectator-retention
     - spectator-privacy
     - "ci / spectator-privacy"
+    - "release / spectator-privacy"
+    - "soak-test / spectator-privacy"
     - soak
     - dr-heartbeat
