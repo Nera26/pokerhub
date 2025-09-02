@@ -11,8 +11,33 @@ jobs:
     uses: ./.github/workflows/check-proof-archive.yml
     secrets: inherit
 
-  soak:
+  ops-preflight:
     needs: check-proof-archive
+    runs-on: ubuntu-latest
+    env:
+      DR_DRILL_SLA_DAYS: 7
+      DR_FAILOVER_SLA_DAYS: 30
+      DR_RESTORE_SLA_DAYS: 30
+      DR_RUNBOOK_SLA_DAYS: 7
+      DR_THROWAWAY_SLA_DAYS: 7
+      SOAK_SLA_HOURS: 24
+      SPECTATOR_RETENTION_SLA_DAYS: 1
+    steps:
+      - uses: ./.github/actions/ops-preflight
+        with:
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          spectator-retention-sla-days: ${{ env.SPECTATOR_RETENTION_SLA_DAYS }}
+          soak-metrics-sla-hours: ${{ env.SOAK_SLA_HOURS }}
+          dr-drill-sla-days: ${{ env.DR_DRILL_SLA_DAYS }}
+          dr-failover-sla-days: ${{ env.DR_FAILOVER_SLA_DAYS }}
+          dr-restore-sla-days: ${{ env.DR_RESTORE_SLA_DAYS }}
+          dr-runbook-sla-days: ${{ env.DR_RUNBOOK_SLA_DAYS }}
+          dr-throwaway-sla-days: ${{ env.DR_THROWAWAY_SLA_DAYS }}
+
+  soak:
+    needs:
+      - ops-preflight
+      - check-proof-archive
     runs-on: ubuntu-latest
     timeout-minutes: 1440
     steps:
@@ -34,7 +59,7 @@ jobs:
           MEM_URL: ${{ secrets.MEM_URL }}
       - name: Upload soak artifacts
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: chaos-soak-metrics
           path: |
@@ -42,7 +67,10 @@ jobs:
             memory.json
 
   spectator-privacy:
-    needs: soak
+    needs:
+      - soak
+      - ops-preflight
+      - check-proof-archive
     if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
