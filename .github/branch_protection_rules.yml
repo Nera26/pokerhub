@@ -3,6 +3,7 @@
     - ci
     - "ci / dr-runbook"
     - "ci / dr-trends"
+    - "ci / dr-trends (failure)"
     - "ci / workflow-sla"
     - "ci / ops-sla"
     - "ci / ensure-dr-drill"
