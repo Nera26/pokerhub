@@ -491,6 +491,12 @@ jobs:
     uses: ./.github/workflows/check-proof-archive.yml
     secrets: inherit
 
+  proof-archive-audit:
+    needs: [ops-preflight, ops-sla]
+    if: ${{ always() }}
+    uses: ./.github/workflows/proof-archive-audit.yml
+    secrets: inherit
+
   workflow-sla:
     needs: [ops-preflight, ops-sla]
     runs-on: ubuntu-latest
@@ -1358,6 +1364,7 @@ jobs:
       - spectator-privacy
       - spectator-privacy-metric-check
       - check-proof-archive
+      - proof-archive-audit
       - soak-metrics
       - soak-perf-metrics
     uses: ./.github/workflows/ops-artifacts-verify.yml

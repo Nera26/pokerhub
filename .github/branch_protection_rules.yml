@@ -14,6 +14,7 @@
     - "deploy / deploy"
     - "deploy / spectator-privacy"
     - check-proof-archive
+    - proof-archive-audit
     - "ci / ops-artifacts-verify"
     - spectator-retention
     - spectator-privacy # enforce privacy checks
