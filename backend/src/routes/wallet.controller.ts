@@ -109,7 +109,18 @@ export class WalletController {
   ) {
     this.ensureOwner(req, id);
     const parsed = WithdrawSchema.parse(body);
-    await this.wallet.withdraw(id, parsed.amount, parsed.deviceId, req.ip, parsed.currency);
+    const idempotencyKey =
+      typeof (body as any).idempotencyKey === 'string'
+        ? (body as any).idempotencyKey
+        : undefined;
+    await this.wallet.withdraw(
+      id,
+      parsed.amount,
+      parsed.deviceId,
+      req.ip,
+      parsed.currency,
+      idempotencyKey,
+    );
     return { message: 'withdrawn' };
   }
 
@@ -121,12 +132,17 @@ export class WalletController {
   ) {
     this.ensureOwner(req, id);
     const parsed = DepositSchema.parse(body);
+    const idempotencyKey =
+      typeof (body as any).idempotencyKey === 'string'
+        ? (body as any).idempotencyKey
+        : undefined;
     const challenge = await this.wallet.deposit(
       id,
       parsed.amount,
       parsed.deviceId,
       req.ip,
       parsed.currency,
+      idempotencyKey,
     );
     return challenge;
   }
