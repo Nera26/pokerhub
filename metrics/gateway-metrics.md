@@ -18,6 +18,11 @@ The game WebSocket gateway exposes metrics for outbound queue health and rate li
   rejected due to the per-socket rate limit.
 - `global_limit_exceeded` – counter tagged with `socketId` for actions rejected
   due to the global rate limit.
+- `http_request_duration_p50_ms`, `http_request_duration_p95_ms`,
+  `http_request_duration_p99_ms` – observable gauges exporting HTTP request
+  latency percentiles.
+- `http_request_throughput` – observable gauge reporting per‑second HTTP
+  request throughput.
 
 ## Dashboards
 
@@ -40,3 +45,18 @@ The game WebSocket gateway exposes metrics for outbound queue health and rate li
 
 These metrics help surface saturation and abusive clients before they impact
 live games.
+
+## CI Thresholds
+
+The `perf` workflow runs `load/soak.js` and fails when performance falls outside
+the following limits:
+
+- Ack latency p95 < 120 ms
+- Ack latency p99 < 200 ms
+- Error rate < 1%
+- CPU usage p95 < 80%
+- GC pause p95 < 50 ms
+- Heap usage p95 < 1024 MB
+
+These bounds are enforced by `load/check-thresholds.sh` and guard against
+regressions in request latency and resource consumption.

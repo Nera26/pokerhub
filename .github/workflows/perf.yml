@@ -1,0 +1,41 @@
+name: perf
+
+on:
+  pull_request:
+    paths:
+      - 'load/soak.js'
+      - 'load/check-thresholds.sh'
+      - '.github/workflows/perf.yml'
+
+jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
+  perf:
+    runs-on: ubuntu-latest
+    needs: check-proof-archive
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run soak test
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: load/soak.js
+          flags: --vus 10 --duration 1m --summary-export=summary.json
+      - name: Check thresholds
+        run: ./load/check-thresholds.sh summary.json
+      - name: Upload summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-summary
+          path: summary.json
+  spectator-privacy:
+    if: ${{ always() }}
+    needs:
+      - perf
+      - check-proof-archive
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: summary.json

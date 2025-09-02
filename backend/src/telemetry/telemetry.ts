@@ -60,12 +60,16 @@ function addSample(arr: number[], value: number) {
   if (arr.length > MAX_SAMPLES) arr.shift();
 }
 
-function recordTimestamp(ts: number) {
-  requestTimestamps.push(ts);
-  const cutoff = ts - 1000;
+function pruneTimestamps(now: number) {
+  const cutoff = now - 1000;
   while (requestTimestamps.length && requestTimestamps[0] < cutoff) {
     requestTimestamps.shift();
   }
+}
+
+function recordTimestamp(ts: number) {
+  requestTimestamps.push(ts);
+  pruneTimestamps(ts);
 }
 
 function percentile(arr: number[], p: number): number {
@@ -147,11 +151,7 @@ export function setupTelemetry(): Promise<void> {
   reqP95.addCallback((r) => r.observe(percentile(requestLatencies, 95)));
   reqP99.addCallback((r) => r.observe(percentile(requestLatencies, 99)));
   reqThroughput.addCallback((r) => {
-    const now = Date.now();
-    const cutoff = now - 1000;
-    while (requestTimestamps.length && requestTimestamps[0] < cutoff) {
-      requestTimestamps.shift();
-    }
+    pruneTimestamps(Date.now());
     r.observe(requestTimestamps.length);
   });
 
