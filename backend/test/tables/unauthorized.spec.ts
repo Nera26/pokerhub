@@ -25,7 +25,7 @@ describe('TablesController auth', () => {
           const req = ctx.switchToHttp().getRequest();
           const header = req.headers['authorization'];
           if (typeof header === 'string' && header.startsWith('Bearer ')) {
-            (req as any).userId = header.slice(7);
+            req.userId = header.slice(7);
             return true;
           }
           return false;

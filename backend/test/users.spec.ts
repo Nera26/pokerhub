@@ -78,7 +78,7 @@ describe('UsersController (e2e)', () => {
           const req = ctx.switchToHttp().getRequest();
           const header = req.headers['authorization'];
           if (typeof header === 'string' && header.startsWith('Bearer ')) {
-            (req as any).userId = header.slice(7);
+            req.userId = header.slice(7);
             return true;
           }
           return false;
@@ -90,7 +90,7 @@ describe('UsersController (e2e)', () => {
           const req = ctx.switchToHttp().getRequest();
           const header = req.headers['authorization'];
           if (header === 'Bearer admin') {
-            (req as any).userId = 'admin';
+            req.userId = 'admin';
             return true;
           }
           return false;

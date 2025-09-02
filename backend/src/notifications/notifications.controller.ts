@@ -11,15 +11,13 @@ export class NotificationsController {
 
   @Get()
   async getAll(@Req() req: Request) {
-    const userId = (req as any).userId as string;
-    const notifications = await this.notifications.findForUser(userId);
+    const notifications = await this.notifications.findForUser(req.userId);
     return { notifications };
   }
 
   @Post('mark-all')
   async markAll(@Req() req: Request): Promise<StatusResponse> {
-    const userId = (req as any).userId as string;
-    await this.notifications.markAllRead(userId);
+    await this.notifications.markAllRead(req.userId);
     return { status: 'ok' };
   }
 
@@ -28,8 +26,7 @@ export class NotificationsController {
     @Param('id') id: string,
     @Req() req: Request,
   ): Promise<StatusResponse> {
-    const userId = (req as any).userId as string;
-    await this.notifications.markRead(id, userId);
+    await this.notifications.markRead(id, req.userId);
     return { status: 'ok' };
   }
 }
