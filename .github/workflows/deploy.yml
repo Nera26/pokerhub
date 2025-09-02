@@ -131,7 +131,7 @@ jobs:
           dr-throwaway-sla-days: ${{ env.DR_THROWAWAY_SLA_DAYS }}
 
   dr-trends:
-    needs: preflight
+    needs: [check-proof-archive, preflight]
     uses: ./.github/workflows/dr-trends.yml
     secrets:
       GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
@@ -139,7 +139,7 @@ jobs:
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
 
   deploy:
-    needs: [preflight, dr-trends]
+    needs: [check-proof-archive, preflight, dr-trends]
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -522,7 +522,7 @@ jobs:
           retention-days: 14
 
   spectator-privacy:
-    needs: deploy
+    needs: [check-proof-archive, deploy]
     if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
@@ -530,7 +530,7 @@ jobs:
       logs: deployment.log
 
   proof-archive:
-    needs: deploy
+    needs: [check-proof-archive, deploy]
     if: ${{ always() }}
     uses: ./.github/workflows/proof-archive.yml
     secrets:
@@ -540,13 +540,13 @@ jobs:
       PAGERDUTY_ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
 
   soak:
-    needs: deploy
+    needs: [check-proof-archive, deploy]
     if: ${{ always() }}
     uses: ./.github/workflows/soak.yml
     secrets: inherit
 
   soak-metrics:
-    needs: soak
+    needs: [check-proof-archive, soak]
     if: ${{ always() }}
     uses: ./.github/workflows/soak-metrics.yml
     secrets: inherit

@@ -1150,6 +1150,7 @@ jobs:
       - workflow-sla
       - dr-trends
       - spectator-privacy
+      - check-proof-archive
     uses: ./.github/workflows/ops-artifacts-verify.yml
     secrets: inherit
 
