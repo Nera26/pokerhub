@@ -27,6 +27,13 @@ bq query --nouse_legacy_sql \
   'SELECT AVG(rto_seconds) FROM ops_metrics.dr_drill_runs WHERE timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)'
 ```
 
+## SLA thresholds
+
+- Nightly soak metrics must produce a row in `soak_runs` within **24 h**. Older data blocks deployment.
+- The latest run must satisfy **latency p95 ≤ 120 ms**, **throughput ≥ `SOAK_THROUGHPUT_MIN`**,
+  **GC pause p95 ≤ 50 ms**, and **RSS growth ≤ 1 %**. These limits are enforced by
+  [`scripts/check-soak-metrics.ts`](../../scripts/check-soak-metrics.ts).
+
 ## Retention
 
 Rows older than 90 days are automatically deleted. Export anything that needs to be kept longer to GCS before expiry.

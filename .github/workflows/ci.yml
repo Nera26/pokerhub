@@ -114,6 +114,7 @@ jobs:
       - ensure-dr-drill
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/ops-preflight
         with:
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
@@ -127,6 +128,10 @@ jobs:
           dr-runbook-sla-days: 7
           dr-throwaway-sla-days: 7
           proof-archive-sla-hours: 24
+      - name: Check soak metrics freshness
+        run: npx -y ts-node scripts/check-soak-metrics.ts
+        env:
+          SOAK_METRICS_SLA_HOURS: 24
 
 
   ops-sla:
