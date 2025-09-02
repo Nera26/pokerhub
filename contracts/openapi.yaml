@@ -194,6 +194,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Table'
+      security:
+        - bearerAuth: []
   /tables/{id}:
     get:
       summary: Get table data
@@ -226,6 +228,21 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateTableRequest'
+      security:
+        - bearerAuth: []
+    delete:
+      summary: Delete table
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Table deleted
+      security:
+        - bearerAuth: []
 
   /tables/{id}/chat:
     get:
@@ -268,17 +285,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Table'
-    delete:
-      summary: Delete table
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Table deleted
+      security:
+        - bearerAuth: []
   /game/action:
     post:
       summary: Perform a game action
@@ -577,6 +585,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+      security:
+        - bearerAuth: []
   /tournaments/{id}/withdraw:
     post:
       summary: Withdraw from tournament
@@ -599,6 +609,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+      security:
+        - bearerAuth: []
   /tournaments/{id}/cancel:
     post:
       summary: Cancel tournament
@@ -615,6 +627,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+      security:
+        - bearerAuth: []
   /tournaments/{id}/schedule:
     post:
       summary: Schedule tournament
@@ -637,6 +651,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+      security:
+        - bearerAuth: []
   /tournaments/{id}/prizes:
     post:
       summary: Calculate prize distribution
@@ -658,7 +674,9 @@ paths:
           content:
             application/json:
               schema:
-              $ref: '#/components/schemas/CalculatePrizesResponse'
+                $ref: '#/components/schemas/CalculatePrizesResponse'
+      security:
+        - bearerAuth: []
   /tournaments/{id}/levels/hot-patch:
     post:
       summary: Hot patch blind level
@@ -681,6 +699,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+      security:
+        - bearerAuth: []
   /leaderboard:
     get:
       summary: Get leaderboard
