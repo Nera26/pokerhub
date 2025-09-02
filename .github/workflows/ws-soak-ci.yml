@@ -1,0 +1,46 @@
+name: ws-soak-ci
+
+on:
+  pull_request:
+    paths:
+      - 'load/**'
+      - '.github/workflows/ws-soak-ci.yml'
+
+jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
+
+  ws-soak:
+    runs-on: ubuntu-latest
+    needs: check-proof-archive
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run WebSocket soak test
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: load/k6-ws-soak.js
+          flags: >-
+            --vus 100
+            --duration 1m
+            --summary-export=ws-soak-summary.json
+            --summary-trend-stats="avg,med,min,max,p(50),p(95),p(99)"
+      - name: Check thresholds
+        run: ./load/check-thresholds.sh ws-soak-summary.json metrics/gc-histogram.json metrics/heap-histogram.json metrics/cpu-histogram.json
+      - name: Upload summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ws-soak-summary
+          path: ws-soak-summary.json
+
+  spectator-privacy:
+    if: ${{ always() }}
+    needs:
+      - ws-soak
+      - check-proof-archive
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: ws-soak-summary.json
