@@ -27,6 +27,7 @@ const noopGauge = {
 @WebSocketGateway({ namespace: 'spectate' })
 export class SpectatorGateway
   implements OnGatewayConnection, OnGatewayDisconnect
+
 {
   @WebSocketServer()
   server!: Server;
@@ -83,6 +84,107 @@ export class SpectatorGateway
     SpectatorGateway.meter.createCounter('ws_outbound_dropped_total', {
       description: 'Messages dropped due to full outbound queue',
     });
+
+  private static readonly stateLatency = SpectatorGateway.meter.createHistogram(
+    'spectator_state_latency_ms',
+    {
+      description: 'Latency from enqueue to spectator state emit',
+      unit: 'ms',
+    },
+  );
+  private static readonly throughputHist =
+    SpectatorGateway.meter.createHistogram('spectator_throughput_ps', {
+      description: 'Spectator frames processed per second',
+      unit: 'frames/s',
+    });
+
+  private static readonly latencySamples: number[] = [];
+  private static readonly frameTimestamps: number[] = [];
+  private static readonly throughputSamples: number[] = [];
+  private static readonly MAX_SAMPLES = 1000;
+
+  private static readonly latencyP50 =
+    SpectatorGateway.meter.createObservableGauge?.(
+      'spectator_state_latency_p50_ms',
+      { description: 'p50 spectator state latency', unit: 'ms' },
+    ) ?? noopGauge;
+  private static readonly latencyP95 =
+    SpectatorGateway.meter.createObservableGauge?.(
+      'spectator_state_latency_p95_ms',
+      { description: 'p95 spectator state latency', unit: 'ms' },
+    ) ?? noopGauge;
+  private static readonly latencyP99 =
+    SpectatorGateway.meter.createObservableGauge?.(
+      'spectator_state_latency_p99_ms',
+      { description: 'p99 spectator state latency', unit: 'ms' },
+    ) ?? noopGauge;
+  private static readonly throughputGauge =
+    SpectatorGateway.meter.createObservableGauge?.('spectator_throughput', {
+      description: 'Spectator frames processed per second',
+      unit: 'frames/s',
+    }) ?? noopGauge;
+  private static readonly throughputP50 =
+    SpectatorGateway.meter.createObservableGauge?.(
+      'spectator_throughput_p50',
+      { description: 'p50 spectator throughput', unit: 'frames/s' },
+    ) ?? noopGauge;
+  private static readonly throughputP95 =
+    SpectatorGateway.meter.createObservableGauge?.(
+      'spectator_throughput_p95',
+      { description: 'p95 spectator throughput', unit: 'frames/s' },
+    ) ?? noopGauge;
+  private static readonly throughputP99 =
+    SpectatorGateway.meter.createObservableGauge?.(
+      'spectator_throughput_p99',
+      { description: 'p99 spectator throughput', unit: 'frames/s' },
+    ) ?? noopGauge;
+
+  static {
+    SpectatorGateway.latencyP50.addCallback((r) =>
+      r.observe(
+        SpectatorGateway.percentile(SpectatorGateway.latencySamples, 50),
+      ),
+    );
+    SpectatorGateway.latencyP95.addCallback((r) =>
+      r.observe(
+        SpectatorGateway.percentile(SpectatorGateway.latencySamples, 95),
+      ),
+    );
+    SpectatorGateway.latencyP99.addCallback((r) =>
+      r.observe(
+        SpectatorGateway.percentile(SpectatorGateway.latencySamples, 99),
+      ),
+    );
+    SpectatorGateway.throughputGauge.addCallback((r) => {
+      const now = Date.now();
+      const cutoff = now - 1000;
+      while (
+        SpectatorGateway.frameTimestamps.length &&
+        SpectatorGateway.frameTimestamps[0] < cutoff
+      ) {
+        SpectatorGateway.frameTimestamps.shift();
+      }
+      const fps = SpectatorGateway.frameTimestamps.length;
+      r.observe(fps);
+      SpectatorGateway.throughputHist.record(fps);
+      SpectatorGateway.addSample(SpectatorGateway.throughputSamples, fps);
+    });
+    SpectatorGateway.throughputP50.addCallback((r) =>
+      r.observe(
+        SpectatorGateway.percentile(SpectatorGateway.throughputSamples, 50),
+      ),
+    );
+    SpectatorGateway.throughputP95.addCallback((r) =>
+      r.observe(
+        SpectatorGateway.percentile(SpectatorGateway.throughputSamples, 95),
+      ),
+    );
+    SpectatorGateway.throughputP99.addCallback((r) =>
+      r.observe(
+        SpectatorGateway.percentile(SpectatorGateway.throughputSamples, 99),
+      ),
+    );
+  }
 
   private readonly queues = new Map<string, PQueue>();
   private readonly maxQueueSizes = new Map<string, number>();
@@ -172,7 +274,14 @@ export class SpectatorGateway
       SpectatorGateway.outboundQueueDropped.add(1, { socketId: id } as Attributes);
       return;
     }
-    void queue.add(() => client.emit(event, payload as GameState));
+    const start = Date.now();
+    void queue.add(() => {
+      client.emit(event, payload as GameState);
+      const latency = Date.now() - start;
+      SpectatorGateway.stateLatency.record(latency, { socketId: id } as Attributes);
+      SpectatorGateway.addSample(SpectatorGateway.latencySamples, latency);
+      SpectatorGateway.recordFrame(Date.now());
+    });
     const depth = queue.size + queue.pending;
     SpectatorGateway.outboundQueueDepthHistogram.record(depth, {
       socketId: id,
@@ -181,5 +290,28 @@ export class SpectatorGateway
       id,
       Math.max(this.maxQueueSizes.get(id) ?? 0, depth),
     );
+  }
+
+  private static addSample(arr: number[], value: number) {
+    arr.push(value);
+    if (arr.length > SpectatorGateway.MAX_SAMPLES) arr.shift();
+  }
+
+  private static recordFrame(ts: number) {
+    SpectatorGateway.frameTimestamps.push(ts);
+    const cutoff = ts - 1000;
+    while (
+      SpectatorGateway.frameTimestamps.length &&
+      SpectatorGateway.frameTimestamps[0] < cutoff
+    ) {
+      SpectatorGateway.frameTimestamps.shift();
+    }
+  }
+
+  private static percentile(arr: number[], p: number): number {
+    if (arr.length === 0) return 0;
+    const sorted = [...arr].sort((a, b) => a - b);
+    const idx = Math.floor((p / 100) * (sorted.length - 1));
+    return sorted[idx];
   }
 }
