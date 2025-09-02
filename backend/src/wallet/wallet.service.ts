@@ -667,6 +667,7 @@ export class WalletService {
     deviceId: string,
     ip: string,
     currency: string,
+    idempotencyKey?: string,
   ): Promise<ProviderChallenge> {
     return WalletService.tracer.startActiveSpan(
       'wallet.withdraw',
@@ -674,6 +675,25 @@ export class WalletService {
         const start = Date.now();
         WalletService.txnCounter.add(1, { operation: 'withdraw' });
         try {
+          let redisKey: string | undefined;
+          if (idempotencyKey) {
+            redisKey = `wallet:idemp:${idempotencyKey}`;
+            const existing = await this.redis.get(redisKey);
+            if (existing && existing !== 'LOCK') {
+              span.setStatus({ code: SpanStatusCode.OK });
+              return JSON.parse(existing);
+            }
+            const lock = await this.redis.set(redisKey, 'LOCK', 'NX', 'EX', 600);
+            if (lock === null) {
+              const cached = await this.redis.get(redisKey);
+              if (cached && cached !== 'LOCK') {
+                span.setStatus({ code: SpanStatusCode.OK });
+                return JSON.parse(cached);
+              }
+              throw new Error('Duplicate request in progress');
+            }
+          }
+
           if (this.geo && !this.geo.isAllowed(ip)) {
             throw new ForbiddenException('Country not allowed');
           }
@@ -694,9 +714,15 @@ export class WalletService {
             'EX',
             600,
           );
+          if (redisKey) {
+            await this.redis.set(redisKey, JSON.stringify(challenge), 'EX', 600);
+          }
           span.setStatus({ code: SpanStatusCode.OK });
           return challenge;
         } catch (err) {
+          if (idempotencyKey) {
+            await this.redis.del(`wallet:idemp:${idempotencyKey}`);
+          }
           span.recordException(err as Error);
           span.setStatus({ code: SpanStatusCode.ERROR });
           throw err;
@@ -716,6 +742,7 @@ export class WalletService {
     deviceId: string,
     ip: string,
     currency: string,
+    idempotencyKey?: string,
   ): Promise<ProviderChallenge> {
     return WalletService.tracer.startActiveSpan(
       'wallet.deposit',
@@ -723,6 +750,25 @@ export class WalletService {
         const start = Date.now();
         WalletService.txnCounter.add(1, { operation: 'deposit' });
         try {
+          let redisKey: string | undefined;
+          if (idempotencyKey) {
+            redisKey = `wallet:idemp:${idempotencyKey}`;
+            const existing = await this.redis.get(redisKey);
+            if (existing && existing !== 'LOCK') {
+              span.setStatus({ code: SpanStatusCode.OK });
+              return JSON.parse(existing);
+            }
+            const lock = await this.redis.set(redisKey, 'LOCK', 'NX', 'EX', 600);
+            if (lock === null) {
+              const cached = await this.redis.get(redisKey);
+              if (cached && cached !== 'LOCK') {
+                span.setStatus({ code: SpanStatusCode.OK });
+                return JSON.parse(cached);
+              }
+              throw new Error('Duplicate request in progress');
+            }
+          }
+
           if (this.geo && !this.geo.isAllowed(ip)) {
             throw new ForbiddenException('Country not allowed');
           }
@@ -756,9 +802,15 @@ export class WalletService {
             'EX',
             600,
           );
+          if (redisKey) {
+            await this.redis.set(redisKey, JSON.stringify(challenge), 'EX', 600);
+          }
           span.setStatus({ code: SpanStatusCode.OK });
           return challenge;
         } catch (err) {
+          if (idempotencyKey) {
+            await this.redis.del(`wallet:idemp:${idempotencyKey}`);
+          }
           span.recordException(err as Error);
           span.setStatus({ code: SpanStatusCode.ERROR });
           throw err;
