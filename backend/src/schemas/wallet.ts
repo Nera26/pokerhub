@@ -23,6 +23,15 @@ export const DepositSchema = z.object({
 
 export type DepositRequest = z.infer<typeof DepositSchema>;
 
+export const TxSchema = z.object({
+  amount: z.number().int().positive(),
+  tx: z.string(),
+  currency: z.string().length(3),
+  rake: z.number().int().nonnegative().optional(),
+});
+
+export type TxRequest = z.infer<typeof TxSchema>;
+
 export const ProviderCallbackSchema = z.object({
   eventId: z.string(),
   idempotencyKey: z.string(),
