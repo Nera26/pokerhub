@@ -88,7 +88,7 @@ PY
         run: gcloud storage cp --recursive metrics "gs://${{ secrets.SOAK_TRENDS_BUCKET }}/tables-${{ github.run_id }}/"
       - name: Upload artifacts
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: tables-metrics
           path: |
@@ -172,7 +172,7 @@ PY
         run: gcloud storage cp --recursive metrics "gs://${{ secrets.SOAK_TRENDS_BUCKET }}/soak-${{ github.run_id }}/"
       - name: Upload artifacts
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: soak-metrics
           path: |
@@ -249,7 +249,7 @@ PY
         run: gcloud storage cp --recursive metrics "gs://${{ secrets.SOAK_TRENDS_BUCKET }}/chaos-${{ github.run_id }}/"
       - name: Upload artifacts
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: chaos-metrics
           path: |

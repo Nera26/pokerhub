@@ -9,6 +9,7 @@ import { Hand } from '../database/entities/hand.entity';
 import { Table } from '../database/entities/table.entity';
 import { ChatMessage } from '../database/entities/chatMessage.entity';
 import { GameState } from '../database/entities/game-state.entity';
+import { User } from '../database/entities/user.entity';
 import { TablesController } from '../routes/tables.controller';
 import { TablesService } from './tables.service';
 import { ChatService } from './chat.service';
@@ -19,7 +20,7 @@ import { HandController } from './hand.controller';
   imports: [
     AnalyticsModule,
     EventsModule,
-    TypeOrmModule.forFeature([Hand, Table, ChatMessage, GameState]),
+    TypeOrmModule.forFeature([Hand, Table, ChatMessage, GameState, User]),
   ],
   providers: [
     GameGateway,

@@ -14,6 +14,16 @@ export const TournamentListSchema = z.array(TournamentSchema);
 export type Tournament = z.infer<typeof TournamentSchema>;
 export type TournamentList = z.infer<typeof TournamentListSchema>;
 
+export const TournamentDetailSchema = TournamentSchema.extend({
+  players: z.object({ current: z.number(), max: z.number() }),
+  registered: z.boolean(),
+  registration: z.object({
+    open: z.string().datetime().nullable(),
+    close: z.string().datetime().nullable(),
+  }),
+});
+export type TournamentDetail = z.infer<typeof TournamentDetailSchema>;
+
 export const CalculatePrizesRequestSchema = z.object({
   prizePool: z.number().int().nonnegative(),
   payouts: z.array(z.number()).nonempty(),

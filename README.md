@@ -47,6 +47,13 @@ The project provides a Docker setup for the full stack:
 
     Adjust the URLs as needed for your local environment.
 
+    Optional tournament settings allow tuning table balancing behavior:
+
+    ```
+    # Hands to wait before a moved player can be rebalanced again
+    TOURNAMENT_AVOID_WITHIN=10
+    ```
+
 2. Start all services:
 
    ```bash

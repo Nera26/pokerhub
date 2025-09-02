@@ -20,6 +20,11 @@ export class TournamentController {
     return this.service.list();
   }
 
+  @Get(':id')
+  get(@Param('id') id: string) {
+    return this.service.get(id);
+  }
+
   @Post(':id/register')
   register(@Param('id') id: string, @Body() body: RegisterRequest) {
     return this.service.register(id, body.userId);

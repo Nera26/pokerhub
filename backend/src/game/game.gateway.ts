@@ -156,12 +156,10 @@ export class GameGateway
       unit: 'ms',
     },
   );
-  private static readonly globalActionCount = GameGateway.meter.createHistogram(
-    'game_action_global_count',
-    {
-      description: 'Global action counter within rate limit window',
-    },
-  );
+  private static readonly globalActionCount =
+    GameGateway.meter.createObservableGauge?.('game_action_global_count', {
+      description: 'Global action count within rate-limit window',
+    }) ?? noopGauge;
   private static readonly frameRetries = GameGateway.meter.createCounter(
     'frame_retries_total',
     {
@@ -245,10 +243,10 @@ export class GameGateway
     ) ?? noopGauge;
 
   private static readonly outboundQueueDepth =
-    GameGateway.meter.createHistogram('ws_outbound_queue_depth', {
-      description: 'Depth of outbound WebSocket message queue',
+    GameGateway.meter.createObservableGauge?.('ws_outbound_queue_depth', {
+      description: 'Current depth of outbound WebSocket message queue',
       unit: 'messages',
-    });
+    }) ?? noopGauge;
 
   private static readonly outboundQueueMax =
     GameGateway.meter.createObservableGauge?.('ws_outbound_queue_max', {
@@ -343,6 +341,7 @@ export class GameGateway
       WS_OUTBOUND_QUEUE_ALERT_THRESHOLD.toString(),
   );
   private readonly maxQueueSizes = new Map<string, number>();
+  private globalActionCountValue = 0;
 
   private readonly actionCounterKey = 'game:action_counter';
   private readonly globalActionCounterKey = 'game:action_counter:global';
@@ -361,6 +360,12 @@ export class GameGateway
   private tick = 0;
   private static readonly tracer = trace.getTracer('game-gateway');
 
+  private readonly observeQueueDepth = (result: ObservableResult) => {
+    for (const [socketId, queue] of this.queues) {
+      result.observe(queue.size + queue.pending, { socketId } as Attributes);
+    }
+  };
+
   private readonly observeQueueMax = (result: ObservableResult) => {
     for (const [socketId, max] of this.maxQueueSizes) {
       result.observe(max, { socketId } as Attributes);
@@ -374,6 +379,10 @@ export class GameGateway
 
   private readonly reportGlobalLimit = (result: ObservableResult) => {
     result.observe(this.globalLimit);
+  };
+
+  private readonly reportGlobalActionCount = (result: ObservableResult) => {
+    result.observe(this.globalActionCountValue);
   };
 
   constructor(
@@ -394,6 +403,8 @@ export class GameGateway
       this.reportQueueThreshold,
     );
     GameGateway.globalActionLimitGauge.addCallback(this.reportGlobalLimit);
+    GameGateway.outboundQueueDepth.addCallback(this.observeQueueDepth);
+    GameGateway.globalActionCount.addCallback(this.reportGlobalActionCount);
 
     this.clock.onTick((now) => {
       if (this.server) {
@@ -793,9 +804,6 @@ export class GameGateway
       }
     });
     const depth = queue.size + queue.pending;
-    GameGateway.outboundQueueDepth.record(depth, {
-      socketId: id,
-    } as Attributes);
     this.maxQueueSizes.set(
       id,
       Math.max(this.maxQueueSizes.get(id) ?? 0, depth),
@@ -894,7 +902,7 @@ export class GameGateway
     if (global === 1) {
       await this.redis.expire(this.globalActionCounterKey, 10);
     }
-    GameGateway.globalActionCount.record(global);
+    this.globalActionCountValue = global;
     if (global > this.globalLimit) {
       GameGateway.globalLimitExceeded.add(1, {
         socketId: client.id,

@@ -297,6 +297,14 @@ export const TournamentListSchema = z.array(TournamentSchema);
 export type Tournament = z.infer<typeof TournamentSchema>;
 export type TournamentList = z.infer<typeof TournamentListSchema>;
 
+export const TournamentDetailSchema = TournamentSchema.extend({
+  registration: z.object({
+    open: z.string().datetime().nullable(),
+    close: z.string().datetime().nullable(),
+  }),
+});
+export type TournamentDetail = z.infer<typeof TournamentDetailSchema>;
+
 export const TournamentRegisterRequestSchema = z.object({
   userId: z.string(),
 });
@@ -597,3 +605,6 @@ export const BanUserSchema = z.object({
   reason: z.string().optional(),
 });
 export type BanUserRequest = z.infer<typeof BanUserSchema>;
+
+export const GetUserResponseSchema = UserSchema;
+export type GetUserResponse = z.infer<typeof GetUserResponseSchema>;

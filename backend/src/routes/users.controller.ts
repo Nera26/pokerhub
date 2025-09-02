@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Put,
+  Get,
   Param,
   Body,
   BadRequestException,
@@ -38,6 +39,21 @@ export class UsersController {
       const parsed = CreateUserSchema.parse(body);
       const created = await this.users.create(parsed);
       return this.parseUser(created);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        throw new BadRequestException(err.errors);
+      }
+      throw err;
+    }
+  }
+
+  @Get(':id')
+  async findById(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<User> {
+    try {
+      const user = await this.users.findById(id);
+      return this.parseUser(user);
     } catch (err) {
       if (err instanceof ZodError) {
         throw new BadRequestException(err.errors);

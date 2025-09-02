@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 1.5.0
+  version: 1.6.0
 paths:
   /status:
     get:
@@ -260,7 +260,6 @@ paths:
       responses:
         '204':
           description: Message sent
-      responses:
         '200':
           description: Updated table
           content:
@@ -538,6 +537,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TournamentList'
+  /tournaments/{id}:
+    get:
+      summary: Get tournament
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tournament detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TournamentDetail'
   /tournaments/{id}/register:
     post:
       summary: Register for tournament
@@ -868,6 +883,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
   /users/{id}:
+    get:
+      summary: Get user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
     put:
       summary: Update user
       parameters:
@@ -1485,6 +1515,22 @@ components:
         - state
         - players
         - registered
+    TournamentDetail:
+      allOf:
+        - $ref: '#/components/schemas/Tournament'
+        - type: object
+          properties:
+            registration:
+              type: object
+              properties:
+                open:
+                  type: string
+                  format: date-time
+                  nullable: true
+                close:
+                  type: string
+                  format: date-time
+                  nullable: true
     TournamentList:
       type: array
       items:

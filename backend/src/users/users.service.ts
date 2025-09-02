@@ -26,6 +26,21 @@ export class UsersService {
     );
   }
 
+  async findById(id: string): Promise<User> {
+    return UsersService.tracer.startActiveSpan(
+      'users.findById',
+      async (span) => {
+        span.setAttribute('user.id', id);
+        const user = await this.users.findOne({ where: { id } });
+        span.end();
+        if (!user) {
+          throw new NotFoundException('User not found');
+        }
+        return user;
+      },
+    );
+  }
+
   async update(id: string, data: UpdateUserRequest): Promise<User> {
     return UsersService.tracer.startActiveSpan(
       'users.update',

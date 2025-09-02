@@ -4,7 +4,9 @@ import { join } from 'path';
 
 function main() {
   const workflowsDir = join(process.cwd(), '.github', 'workflows');
-  const files = readdirSync(workflowsDir).filter((f) => f.endsWith('.yml'));
+  const files = readdirSync(workflowsDir).filter(
+    (f) => f.endsWith('.yml') || f.endsWith('.yaml'),
+  );
   const missing: string[] = [];
 
   for (const file of files) {

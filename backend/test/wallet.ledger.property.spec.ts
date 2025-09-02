@@ -3,6 +3,8 @@ import { writeHandLedger } from '../src/wallet/hand-ledger';
 import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
 import { randomUUID } from 'crypto';
+import { promises as fs } from 'fs';
+import path from 'path';
 import { Account } from '../src/wallet/account.entity';
 import { JournalEntry } from '../src/wallet/journal-entry.entity';
 import { Disbursement } from '../src/wallet/disbursement.entity';
@@ -28,6 +30,14 @@ describe('hand ledger journal property', () => {
     '00000000-0000-0000-0000-000000000003',
   ];
   const events: EventPublisher = { emit: jest.fn() } as any;
+
+  async function writeFailure(data: unknown) {
+    const dir = path.join(__dirname, '../../storage');
+    await fs.mkdir(dir, { recursive: true });
+    const today = new Date().toISOString().slice(0, 10);
+    const file = path.join(dir, `reconcile-${today}.json`);
+    await fs.writeFile(file, JSON.stringify(data, null, 2));
+  }
 
   async function setup() {
     const db = newDb();
@@ -122,6 +132,9 @@ describe('hand ledger journal property', () => {
             );
             const entries = await journalRepo.find();
             const total = entries.reduce((sum, e) => sum + Number(e.amount), 0);
+            if (total !== 0) {
+              await writeFailure({ kind: 'spec', batches, settlements, entries, total });
+            }
             expect(total).toBe(0);
           }
         } finally {

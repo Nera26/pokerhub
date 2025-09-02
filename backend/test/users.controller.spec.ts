@@ -14,6 +14,7 @@ describe('UsersController ID validation', () => {
         {
           provide: UsersService,
           useValue: {
+            findById: jest.fn(),
             update: jest.fn(),
             ban: jest.fn(),
             create: jest.fn(),
@@ -35,6 +36,10 @@ describe('UsersController ID validation', () => {
       .put('/users/not-a-uuid')
       .send({ username: 'alice' })
       .expect(400);
+  });
+
+  it('returns 400 for invalid id on get', async () => {
+    await request(app.getHttpServer()).get('/users/not-a-uuid').expect(400);
   });
 
   it('returns 400 for invalid id on ban', async () => {

@@ -32,7 +32,7 @@ jobs:
         docker-image: ghcr.io/grafana/xk6-output-clickhouse:latest
     - name: Upload artifacts
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ws-clickhouse
         path: |
