@@ -1,0 +1,22 @@
+# Alert when global action count exceeds configured limits
+---
+groups:
+  - name: game-action-global-limit-alerts
+    rules:
+      - alert: GameActionGlobalLimitWarning
+        expr: game_action_global_count > game_action_global_limit * 0.8
+        for: 1m
+        labels:
+          severity: warning
+          pagerduty_service: pokerhub-sre
+        annotations:
+          summary: "Global action count above 80% of limit"
+      - alert: GameActionGlobalLimitExceeded
+        expr: game_action_global_count > game_action_global_limit
+        for: 30s
+        labels:
+          severity: critical
+          pagerduty_service: pokerhub-sre
+        annotations:
+          summary: "Global action count exceeded limit"
+

@@ -299,6 +299,16 @@ export class GameGateway
       removeCallback(cb: (r: ObservableResult) => void): void;
     });
 
+  private static readonly outboundQueueUtilization =
+    GameGateway.meter.createObservableGauge?.('ws_outbound_queue_utilization', {
+      description: 'Outbound WebSocket queue depth as a fraction of limit',
+    }) ?? noopGauge;
+
+  private static readonly globalActionUtilization =
+    GameGateway.meter.createObservableGauge?.('game_action_global_utilization', {
+      description: 'Ratio of global action count to configured limit',
+    }) ?? noopGauge;
+
   private static readonly outboundQueueDropped =
     GameGateway.meter.createCounter('ws_outbound_dropped_total', {
       description: 'Messages dropped due to full outbound queue',
@@ -386,6 +396,15 @@ export class GameGateway
     }
   };
 
+  private readonly observeQueueUtilization = (result: ObservableResult) => {
+    for (const [socketId, queue] of this.queues) {
+      result.observe(
+        (queue.size + queue.pending) / this.queueLimit,
+        { socketId } as Attributes,
+      );
+    }
+  };
+
   private readonly reportQueueThreshold = (result: ObservableResult) => {
     result.observe(this.queueThreshold);
   };
@@ -400,6 +419,12 @@ export class GameGateway
 
   private readonly reportGlobalActionCount = (result: ObservableResult) => {
     result.observe(this.globalActionCountValue);
+  };
+
+  private readonly reportGlobalUtilization = (result: ObservableResult) => {
+    if (this.globalLimit > 0) {
+      result.observe(this.globalActionCountValue / this.globalLimit);
+    }
   };
 
   constructor(
@@ -420,9 +445,13 @@ export class GameGateway
       this.reportQueueThreshold,
     );
     GameGateway.outboundQueueLimit.addCallback(this.reportQueueLimit);
+    GameGateway.outboundQueueUtilization.addCallback(
+      this.observeQueueUtilization,
+    );
     GameGateway.globalActionLimitGauge.addCallback(this.reportGlobalLimit);
     GameGateway.outboundQueueDepth.addCallback(this.observeQueueDepth);
     GameGateway.globalActionCount.addCallback(this.reportGlobalActionCount);
+    GameGateway.globalActionUtilization.addCallback(this.reportGlobalUtilization);
 
     this.clock.onTick((now) => {
       if (this.server) {
