@@ -405,6 +405,7 @@ export class TournamentService implements OnModuleInit {
       currentHand,
       avoidWithin,
     );
+    const movedSeats: Seat[] = [];
     for (let i = 0; i < balanced.length; i++) {
       for (const playerId of balanced[i]) {
         const seat = tables
@@ -414,9 +415,12 @@ export class TournamentService implements OnModuleInit {
           seat.table = tables[i];
           seat.lastMovedHand = currentHand;
           recentlyMoved.set(playerId, currentHand);
-          await this.seats.save(seat);
+          movedSeats.push(seat);
         }
       }
+    }
+    if (movedSeats.length > 0) {
+      await this.seats.save(movedSeats);
     }
     if (this.redis) {
       const key = `tourney:${tournamentId}:lastMoved`;

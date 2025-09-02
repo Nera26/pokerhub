@@ -59,7 +59,14 @@ flowchart LR
   few hands. Configure the window with `tournament.avoidWithin` (env
   `TOURNAMENT_AVOID_WITHIN`, default 10). For example, with
   `TOURNAMENT_AVOID_WITHIN=5`, a player moved on hand 42 will not be
-  rebalanced again until hand 47.
+  rebalanced again until hand 47. The seat records `lastMovedHand` so the
+  avoidance window survives restarts.
+
+  | Hand | Event                             | Effect                       |
+  |-----:|-----------------------------------|------------------------------|
+  | 42   | P1 moves from Table A → Table B   | `lastMovedHand` set to 42    |
+  | 44   | Imbalance detected                | P1 skipped (42 within 5)     |
+  | 47   | Next imbalance                    | P1 eligible for movement     |
 - Blind levels may be hot patched during play with director approval.
 
 ## ICM Payouts
