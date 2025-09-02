@@ -21,9 +21,9 @@ on:
         required: true
 
 jobs:
-  ensure-proof-archive:
+  check-proof-archive:
     if: ${{ always() }}
-    uses: ./.github/workflows/ensure-proof-archive.yml
+    uses: ./.github/workflows/check-proof-archive.yml
     secrets: inherit
   archive:
     runs-on: ubuntu-latest
@@ -225,7 +225,7 @@ jobs:
           -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Hand proof archive failed","source":"github-actions","severity":"error"}}'
 
     needs:
-    - ensure-proof-archive
+    - check-proof-archive
   historical-sample:
     runs-on: ubuntu-latest
     steps:
@@ -276,10 +276,9 @@ jobs:
         fi
 
     needs:
-    - ensure-proof-archive
+    - check-proof-archive
   spectator-privacy:
-    if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     needs:
-    - ensure-proof-archive
+    - check-proof-archive
