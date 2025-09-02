@@ -40,7 +40,9 @@ instances.
 
 The `socket-load` harness (`npm run perf:socket-load`) exercises WebSocket
 actions at scale and enforces latency and throughput thresholds. CI publishes
-the generated `metrics/` directory as an artifact.
+the generated `metrics/` directory as an artifact. `scripts/check-backpressure.ts`
+re-runs the harness and fails if `ws_outbound_queue_depth` exceeds 80 messages
+or if the global action counters reach their configured limit.
 
 Thresholds:
 
@@ -48,4 +50,5 @@ Thresholds:
 - actions/min ≥15 per table
 
 Runs that exceed these limits exit non‑zero and should block deployment until
-investigated.
+investigated. Backpressure failures reference the [Queue Saturation](queue-saturation.md)
+runbook for mitigation steps.

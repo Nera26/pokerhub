@@ -107,7 +107,7 @@ This gate ensures that action acknowledgements remain below the 120 ms p95 SLO
 
 ## Seeded Socket Chaos Harness
 
-This harness (`backend/test/load/socket-load.ts`) drives up to **10k** tables and
+This harness (`tests/performance/socket-load.ts`) drives up to **10k** tables and
 **100k** sockets while injecting network faults. Each run emits a deterministic
 seed file (`seeds.json`) and a latency histogram (`latency-hist.json`).
 
@@ -116,7 +116,7 @@ seed file (`seeds.json`) and a latency histogram (`latency-hist.json`).
    ```bash
    METRICS_URL=http://localhost:3000/metrics \
    CLICKHOUSE_URL=$CH_URL TABLES=10000 SOCKETS=100000 \
-   npx ts-node backend/test/load/socket-load.ts
+   npx ts-node tests/performance/socket-load.ts
    ```
 2. Inspect `latency-hist.json`; p95 must remain **≤120 ms** and dropped frames
    should stay below 5 %.
