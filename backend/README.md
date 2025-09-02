@@ -18,6 +18,10 @@ GATEWAY_GLOBAL_LIMIT=30 # max actions per 10s across all sockets
 ```
 Additional options exist for storage, telemetry and message queues (see `.env.example`).
 
+To reduce churn during table balancing, set `TOURNAMENT_AVOID_WITHIN` to the
+number of hands a player must wait before being moved again. This maps to the
+`tournament.avoidWithin` configuration key and defaults to `10` hands.
+
 ## Install & Run
 
 ```bash

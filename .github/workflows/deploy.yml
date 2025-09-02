@@ -74,25 +74,6 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
-      - name: Check DR drill metrics
-        run: npx ts-node scripts/check-dr-drill.ts
-        env:
-          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          DR_DRILL_SLA_DAYS: ${{ env.DR_DRILL_SLA_DAYS }}
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm ci --legacy-peer-deps
-      - uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ vars.GCP_PROJECT_ID }}
       - id: check
         env:
           GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
@@ -120,8 +101,6 @@ jobs:
       SPECTATOR_RETENTION_SLA_DAYS: 1
     steps:
       - uses: actions/checkout@v4
-
-      # (merged from main) Node + GCP auth + DR drill check
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -133,8 +112,6 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
-
-      # Composite preflight (kept)
       - uses: ./.github/actions/ops-preflight
         with:
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
@@ -155,7 +132,11 @@ jobs:
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
 
   deploy:
-    needs: [preflight, dr-trends, check-soak-metrics]
+    needs:
+      - preflight
+      - dr-trends
+      - check-soak-metrics
+      - dr-drill-sla
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -341,7 +322,6 @@ jobs:
         with:
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
-
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
@@ -469,7 +449,7 @@ jobs:
         env:
           PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
           SPECTATOR_LOGS_BUCKET: ${{ secrets.SPECTATOR_LOGS_BUCKET }}
-          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+          SOAK_TRENDS_BUCKET: ${{ secrets.SONG_TRENDS_BUCKET }}
           RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
           DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
           SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS || 120 }}
@@ -546,7 +526,7 @@ jobs:
       logs: deployment.log
 
   proof-archive:
-    needs: [deploy, check-soak-metrics]
+    needs: [deploy, check-soak-metrics, spectator-privacy]
     if: ${{ always() }}
     uses: ./.github/workflows/proof-archive.yml
     secrets:
@@ -556,13 +536,13 @@ jobs:
       PAGERDUTY_ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
 
   soak:
-    needs: [deploy, check-soak-metrics]
+    needs: [deploy, check-soak-metrics, spectator-privacy]
     if: ${{ always() }}
     uses: ./.github/workflows/soak.yml
     secrets: inherit
 
   soak-metrics:
-    needs: [soak, check-soak-metrics]
+    needs: [soak, check-soak-metrics, spectator-privacy]
     if: ${{ always() }}
     uses: ./.github/workflows/soak-metrics.yml
     secrets: inherit

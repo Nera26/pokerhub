@@ -28,6 +28,7 @@ import { ChatMessagesSchema, SendChatMessageRequestSchema } from '../schemas/cha
 import { TablesService } from '../game/tables.service';
 import { ChatService } from '../game/chat.service';
 import { AuthGuard } from '../auth/auth.guard';
+import { AdminGuard } from '../auth/admin.guard';
 
 @Controller('tables')
 export class TablesController {
@@ -51,7 +52,7 @@ export class TablesController {
   }
 
   @Post()
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, AdminGuard)
   async create(@Body() body: CreateTableRequest): Promise<Table> {
     try {
       const parsed = CreateTableSchema.parse(body);
@@ -66,7 +67,7 @@ export class TablesController {
   }
 
   @Put(':id')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, AdminGuard)
   async update(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: UpdateTableRequest,
@@ -84,7 +85,7 @@ export class TablesController {
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, AdminGuard)
   @HttpCode(204)
   async remove(
     @Param('id', new ParseUUIDPipe()) id: string,

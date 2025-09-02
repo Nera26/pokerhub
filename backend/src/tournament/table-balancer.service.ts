@@ -100,7 +100,11 @@ export class TableBalancerService {
           );
         }
       } else {
-        this.localRecentlyMoved.set(tournamentId, recentlyMoved);
+        if (recentlyMoved.size === 0) {
+          this.localRecentlyMoved.delete(tournamentId);
+        } else {
+          this.localRecentlyMoved.set(tournamentId, recentlyMoved);
+        }
       }
 
       return true;

@@ -65,11 +65,11 @@ jobs:
       id: upload_metrics
       if: success()
       env:
-        BUCKET: ${{ vars.DR_METRICS_BUCKET }}
+        DR_METRICS_BUCKET: ${{ vars.DR_METRICS_BUCKET }}
       run: |
-        uri="gs://$BUCKET/restore/${GITHUB_RUN_ID}/dr-restore.metrics"
+        uri="gs://$DR_METRICS_BUCKET/restore/${GITHUB_RUN_ID}/dr-restore.metrics"
         gcloud storage cp dr-restore.metrics "$uri"
-        url="https://storage.googleapis.com/$BUCKET/restore/${GITHUB_RUN_ID}/dr-restore.metrics"
+        url="https://storage.googleapis.com/$DR_METRICS_BUCKET/restore/${GITHUB_RUN_ID}/dr-restore.metrics"
         echo "url=$url" >> "$GITHUB_OUTPUT"
 
     - name: Upload restore log

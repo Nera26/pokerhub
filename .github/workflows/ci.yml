@@ -820,7 +820,7 @@ jobs:
           npm ci --prefix analytics
       - name: Remaining backend property tests
         id: backend-property
-        run: npm run test:property --prefix backend -- --testPathIgnorePatterns=src/wallet/wallet.ledger.property.spec.ts --testPathIgnorePatterns=test/wallet/hand-logs.replay.property.spec.ts | tee backend-property.log
+        run: npm run test:property --prefix backend -- --testPathIgnorePatterns=test/wallet.ledger.property.spec.ts --testPathIgnorePatterns=test/wallet/hand-logs.replay.property.spec.ts | tee backend-property.log
         continue-on-error: true
       - name: Ledger audit
         id: ledger-audit
@@ -1143,12 +1143,11 @@ jobs:
           content-filepath: dr-trends.json
 
   ops-artifacts-verify:
-    if: ${{ always() }}
     needs:
       - ops-preflight
       - ops-sla
       - workflow-sla
-      - dr-trends
+      - dr-trends # gate on DR trend health
       - spectator-privacy
       - soak-metrics
     uses: ./.github/workflows/ops-artifacts-verify.yml

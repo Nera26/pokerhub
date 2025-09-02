@@ -8,6 +8,7 @@ import { WalletService } from './wallet.service';
 import { SettlementService } from './settlement.service';
 import { ChargebackMonitor } from './chargeback.service';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { MetricsModule } from '../metrics/metrics.module';
 import { WalletController } from '../routes/wallet.controller';
 import { WebhookController } from './webhook.controller';
 import { RateLimitGuard } from '../routes/rate-limit.guard';
@@ -39,6 +40,7 @@ class PayoutWorker implements OnModuleInit {
     EventsModule,
     RedisModule,
     AnalyticsModule,
+    MetricsModule,
   ],
   providers: [
     WalletService,
