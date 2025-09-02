@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'fs';
+import { readdirSync, readFileSync, promises as fs } from 'fs';
 import path from 'path';
 import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
@@ -10,6 +10,14 @@ import { WalletService } from '../../src/wallet/wallet.service';
 import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
 import { KycService } from '../../src/wallet/kyc.service';
 import { MockRedis } from '../utils/mock-redis';
+
+async function writeFailure(data: unknown) {
+  const dir = path.join(__dirname, '../../storage');
+  await fs.mkdir(dir, { recursive: true });
+  const today = new Date().toISOString().slice(0, 10);
+  const file = path.join(dir, `reconcile-${today}.json`);
+  await fs.writeFile(file, JSON.stringify(data, null, 2));
+}
 
 interface ReplayResult {
   entries: { account: string; amount: number; ref: string }[];
@@ -101,6 +109,9 @@ async function replay(file: string): Promise<ReplayResult> {
         amount: Number(amt),
       }));
       const total = entries.reduce((s, e) => s + e.amount, 0);
+      if (total !== 0) {
+        await writeFailure({ kind: 'batch', file, index, entries, total });
+      }
       expect(total).toBe(0);
       const batch = entries.map((e) => ({
         account: accounts.get(e.account)!,
@@ -114,6 +125,9 @@ async function replay(file: string): Promise<ReplayResult> {
     }
     const all = await journalRepo.find();
     const sum = all.reduce((s, e) => s + Number(e.amount), 0);
+    if (sum !== 0) {
+      await writeFailure({ kind: 'journal', file, entries: all, sum });
+    }
     expect(sum).toBe(0);
     return { entries: normalize(all) };
   } finally {
@@ -129,6 +143,9 @@ describe('hand log replay', () => {
       const full = path.join(dir, file);
       const first = await replay(full);
       const second = await replay(full);
+      if (JSON.stringify(second) !== JSON.stringify(first)) {
+        await writeFailure({ kind: 'replay', file: full, first, second });
+      }
       expect(second).toEqual(first);
     });
   }
