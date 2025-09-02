@@ -51,7 +51,7 @@ Property-based tests check that accounting invariants hold over random batches a
 
 ```bash
 # Ledger batches sum to zero and reconcile with logs
-npm test --prefix backend -- src/wallet/wallet.ledger.property.spec.ts
+npm test --prefix backend -- test/ledger/wallet.ledger.property.spec.ts
 
 # Hand-log replay consistency
 npm test --prefix backend -- test/wallet/hand-logs.replay.property.spec.ts
