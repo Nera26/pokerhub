@@ -61,8 +61,7 @@ export class UsersController {
     @Req() req: Request,
   ): Promise<User> {
     try {
-      const requesterId = (req as any).userId as string;
-      if (requesterId !== id) {
+      if (req.userId !== id) {
         throw new ForbiddenException();
       }
       const user = await this.users.findById(id);
@@ -82,8 +81,7 @@ export class UsersController {
     @Req() req: Request,
   ): Promise<User> {
     try {
-      const requesterId = (req as any).userId as string;
-      if (requesterId !== id) {
+      if (req.userId !== id) {
         throw new ForbiddenException();
       }
       const parsed = UpdateUserSchema.parse(body);

@@ -39,7 +39,7 @@ export class WalletController {
   ) {}
 
   private ensureOwner(req: Request, id: string) {
-    if ((req as any).userId !== id) {
+    if (req.userId !== id) {
       throw new ForbiddenException();
     }
   }
