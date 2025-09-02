@@ -156,6 +156,19 @@ export interface paths {
       };
     };
   };
+  "/dashboard/metrics": {
+    /** Get dashboard metrics */
+    get: {
+      responses: {
+        /** @description Dashboard metrics */
+        200: {
+          content: {
+            "application/json": components["schemas"]["DashboardMetricsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/notifications": {
     /** Get notifications */
     get: {
@@ -263,6 +276,20 @@ export interface paths {
         };
       };
     };
+    /** Delete table */
+    delete: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Table deleted */
+        204: {
+          content: never;
+        };
+      };
+    };
   };
   "/tables/{id}/chat": {
     /** Get table chat messages */
@@ -301,20 +328,6 @@ export interface paths {
           };
         };
         /** @description Message sent */
-        204: {
-          content: never;
-        };
-      };
-    };
-    /** Delete table */
-    delete: {
-      parameters: {
-        path: {
-          id: string;
-        };
-      };
-      responses: {
-        /** @description Table deleted */
         204: {
           content: never;
         };
@@ -725,7 +738,7 @@ export interface paths {
         /** @description Prize distribution */
         200: {
           content: {
-            "application/json": unknown;
+            "application/json": components["schemas"]["CalculatePrizesResponse"];
           };
         };
       };
@@ -1168,6 +1181,10 @@ export interface components {
     };
     MessageResponse: {
       message: string;
+    };
+    DashboardMetricsResponse: {
+      online: number;
+      revenue: number;
     };
     WithdrawalDecisionRequest: {
       comment: string;
