@@ -274,6 +274,19 @@ export class GameGateway
       removeCallback(cb: (r: ObservableResult) => void): void;
     });
 
+  private static readonly outboundQueueLimit =
+    GameGateway.meter.createObservableGauge?.('ws_outbound_queue_limit', {
+      description: 'Configured max outbound WebSocket queue depth',
+      unit: 'messages',
+    }) ??
+    ({
+      addCallback() {},
+      removeCallback() {},
+    } as {
+      addCallback(cb: (r: ObservableResult) => void): void;
+      removeCallback(cb: (r: ObservableResult) => void): void;
+    });
+
   private static readonly globalActionLimitGauge =
     GameGateway.meter.createObservableGauge?.('game_action_global_limit', {
       description: 'Configured global action limit within rate-limit window',
@@ -377,6 +390,10 @@ export class GameGateway
     result.observe(this.queueThreshold);
   };
 
+  private readonly reportQueueLimit = (result: ObservableResult) => {
+    result.observe(this.queueLimit);
+  };
+
   private readonly reportGlobalLimit = (result: ObservableResult) => {
     result.observe(this.globalLimit);
   };
@@ -402,6 +419,7 @@ export class GameGateway
     GameGateway.outboundQueueThreshold.addCallback(
       this.reportQueueThreshold,
     );
+    GameGateway.outboundQueueLimit.addCallback(this.reportQueueLimit);
     GameGateway.globalActionLimitGauge.addCallback(this.reportGlobalLimit);
     GameGateway.outboundQueueDepth.addCallback(this.observeQueueDepth);
     GameGateway.globalActionCount.addCallback(this.reportGlobalActionCount);
