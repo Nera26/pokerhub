@@ -10,13 +10,13 @@ permissions:
   actions: read
 
 jobs:
-  check-proof-archive:
+  ensure-proof-archive:
     if: ${{ always() }}
-    uses: ./.github/workflows/check-proof-archive.yml
+    uses: ./.github/workflows/ensure-proof-archive.yml
     secrets: inherit
 
   preflight:
-    needs: check-proof-archive
+    needs: ensure-proof-archive
     runs-on: ubuntu-latest
     env:
       DR_DRILL_SLA_DAYS: 7
