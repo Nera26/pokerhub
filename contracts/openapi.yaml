@@ -134,6 +134,8 @@ paths:
   /dashboard/metrics:
     get:
       summary: Get dashboard metrics
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: Dashboard metrics
