@@ -4,9 +4,22 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  pull_request:
   schedule:
     - cron: '0 0 * * *'
   workflow_dispatch:
+  workflow_call:
+    secrets:
+      PROOF_ARCHIVE_BUCKET:
+        required: true
+      GCP_WORKLOAD_IDENTITY_PROVIDER:
+        required: true
+      GCP_SERVICE_ACCOUNT:
+        required: true
+      GCP_PROJECT_ID:
+        required: true
+      SPECTATOR_LOGS_BUCKET:
+        required: true
 
 jobs:
   check-proof-archive:
