@@ -17,7 +17,12 @@ on:
         required: false
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   dr-trends:
+    needs: [check-proof-archive]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -93,3 +98,9 @@ jobs:
         with:
           title: DR trend breach
           content-filepath: dr-trends.json
+
+  spectator-privacy:
+    if: ${{ always() }}
+    needs: [dr-trends, check-proof-archive]
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
