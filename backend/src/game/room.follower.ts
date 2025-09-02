@@ -1,5 +1,7 @@
 import { parentPort, workerData } from 'worker_threads';
 import Redis from 'ioredis';
+import { mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { resolve } from 'path';
 import type { GameState } from '@shared/types';
 
 if (!parentPort) {
@@ -12,8 +14,39 @@ const redis: Redis | undefined = opts ? new Redis(opts) : undefined;
 const diffChannel = `room:${workerData.tableId}:diffs`;
 const ackChannel = `room:${workerData.tableId}:snapshotAck`;
 
+const persistDir = resolve(__dirname, '../../..', 'storage', 'room-follower');
+mkdirSync(persistDir, { recursive: true });
+const persistFile = resolve(persistDir, `${workerData.tableId}.json`);
+
 let log: Array<[number, GameState]> = [];
 let current: GameState | undefined;
+
+function loadPersisted(): void {
+  try {
+    const data = JSON.parse(readFileSync(persistFile, 'utf8')) as {
+      log?: Array<[number, GameState]>;
+      current?: GameState;
+    };
+    log = data.log ?? [];
+    current = data.current;
+  } catch {
+    /* ignore */
+  }
+}
+
+function persist(): void {
+  try {
+    writeFileSync(
+      persistFile,
+      JSON.stringify({ log, current }),
+      'utf8',
+    );
+  } catch {
+    /* ignore */
+  }
+}
+
+loadPersisted();
 
 /**
  * Deeply applies a delta onto the target. Objects are merged recursively.
@@ -40,6 +73,7 @@ if (redis) {
     const [idx, delta] = JSON.parse(msg) as [number, Partial<GameState>];
     current = applyDelta(current, delta) as GameState;
     log[idx] = [idx, current as GameState];
+    persist();
     port.postMessage({ event: 'state', state: current });
   });
 }
@@ -50,6 +84,7 @@ port.on('message', (msg: any) => {
       // Full snapshot is an array of [index, state]
       log = (msg.states as Array<[number, GameState]>) ?? [];
       current = log[log.length - 1]?.[1];
+      persist();
       void redis?.publish(ackChannel, String(log.length));
       port.postMessage({ seq: msg.seq, ok: true });
       break;
