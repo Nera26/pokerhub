@@ -1143,7 +1143,6 @@ jobs:
           content-filepath: dr-trends.json
 
   ops-artifacts-verify:
-    if: ${{ always() }}
     needs:
       - ops-preflight
       - ops-sla
