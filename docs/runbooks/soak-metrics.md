@@ -12,3 +12,16 @@ Key soak test outputs are exported to Cloud Monitoring for long-term visibility.
 | `custom.googleapis.com/soak/rss_delta_pct` | percent | RSS growth over the soak run |
 
 `scripts/check-soak-metrics.ts` writes these metrics during the soak-metrics workflow.
+
+## Thresholds
+
+- Latency p95: **≤120 ms**
+- Throughput: **≥150 actions/min**
+- GC pause p95: **≤50 ms**
+- RSS growth over 24h: **<1%**
+
+Refer to related runbooks for remediation steps:
+
+- [Soak Testing](./soak-testing.md)
+- [Soak Harness](./soak-harness.md)
+- [GC Pauses](./gc-pauses.md)
