@@ -298,6 +298,8 @@ paths:
   /wallet/{id}/reserve:
     post:
       summary: Reserve funds in wallet
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -320,6 +322,8 @@ paths:
   /wallet/{id}/commit:
     post:
       summary: Commit reserved funds
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -342,6 +346,8 @@ paths:
   /wallet/{id}/rollback:
     post:
       summary: Roll back reserved funds
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -364,6 +370,8 @@ paths:
   /wallet/{id}/deposit:
     post:
       summary: Deposit funds
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -386,6 +394,8 @@ paths:
   /wallet/{id}/withdraw:
     post:
       summary: Withdraw funds
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -408,6 +418,8 @@ paths:
   /wallet/{id}/kyc:
     post:
       summary: Trigger KYC verification
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -424,6 +436,8 @@ paths:
   /wallet/{id}/status:
     get:
       summary: Get wallet status
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -440,6 +454,8 @@ paths:
   /wallet/{id}/transactions:
     get:
       summary: List wallet transactions
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -456,6 +472,8 @@ paths:
   /wallet/{id}/pending:
     get:
       summary: List pending wallet transactions
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
