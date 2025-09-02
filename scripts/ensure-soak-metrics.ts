@@ -1,135 +1,88 @@
 #!/usr/bin/env ts-node
-import { readFileSync } from 'fs';
-import { collectWorkflowDirs, collectYamlFiles } from './ensure-spectator-privacy';
+import { readdirSync, readFileSync, Dirent, existsSync, statSync } from 'fs';
+import { join } from 'path';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const yaml = require('js-yaml');
+
+function collectWorkflowDirs(root: string): string[] {
+  const dirs = [
+    join(root, '.github/workflows'),
+    join(root, '.github'), // fallback if someone placed ymls directly here
+  ];
+  return dirs.filter((d) => existsSync(d) && statSync(d).isDirectory());
+}
+
+function collectYamlFiles(dir: string): string[] {
+  let files: string[] = [];
+  const entries: Dirent[] = readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files = files.concat(collectYamlFiles(fullPath));
+    } else if (
+      entry.isFile() &&
+      (entry.name.endsWith('.yml') || entry.name.endsWith('.yaml'))
+    ) {
+      files.push(fullPath);
+    }
+  }
+  return files;
+}
 
 function main() {
   const workflowDirs = collectWorkflowDirs(process.cwd());
   const files = workflowDirs.flatMap(collectYamlFiles);
   const missingIf: string[] = [];
   const missingMetrics: string[] = [];
-  const CONDITION = '${{ always() }}';
+  const CONDITION = /\$\{\{\s*always\(\)\s*\}\}/;
 
   for (const file of files) {
     if (file.endsWith('soak-metrics.yml') || file.endsWith('soak.yml')) continue;
+
     const content = readFileSync(file, 'utf-8');
-    if (!/^\s*(?:['"])?on(?:['"])?\s*:/m.test(content)) continue;
+    let doc: any;
+    try {
+      doc = yaml.load(content);
+    } catch {
+      continue;
+    }
+    if (!doc || typeof doc !== 'object' || !doc.on) continue;
 
     const relative = file.replace(`${process.cwd()}/`, '');
-    const lines = content.split(/\r?\n/);
+    const jobs: Record<string, any> = doc.jobs ?? {};
+    const soakJobs: string[] = [];
+    const metricsJobs: { name: string; needs: string[] }[] = [];
 
-    // Track missing if conditions
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].includes('uses:') && (lines[i].includes('soak-metrics.yml') || lines[i].includes('soak.yml'))) {
-        const indentMatch = lines[i].match(/^\s*/);
-        const indent = indentMatch ? indentMatch[0] : '';
-        let hasIf = false;
-
-        for (let j = i - 1; j >= 0; j--) {
-          if (lines[j].startsWith(indent)) {
-            if (lines[j].trim().startsWith('if:')) {
-              if (lines[j].includes(CONDITION)) hasIf = true;
-              break;
-            }
-          } else if (lines[j].trim() !== '') {
-            break;
+    for (const [name, job] of Object.entries<any>(jobs)) {
+      if (typeof job.uses === 'string') {
+        if (job.uses.includes('soak.yml')) {
+          soakJobs.push(name);
+          if (!CONDITION.test(String(job.if ?? ''))) {
+            missingIf.push(`${relative}:${name}`);
+          }
+        } else if (job.uses.includes('soak-metrics.yml')) {
+          const needs = Array.isArray(job.needs)
+            ? job.needs
+            : job.needs
+            ? [job.needs]
+            : [];
+          metricsJobs.push({ name, needs });
+          if (!CONDITION.test(String(job.if ?? ''))) {
+            missingIf.push(`${relative}:${name}`);
           }
         }
-
-        for (let j = i + 1; j < lines.length && !hasIf; j++) {
-          if (lines[j].startsWith(indent)) {
-            if (lines[j].trim().startsWith('if:')) {
-              if (lines[j].includes(CONDITION)) hasIf = true;
-              break;
-            }
-          } else if (lines[j].trim() !== '') {
-            break;
-          }
-        }
-
-        if (!hasIf) {
-          missingIf.push(`${relative}:${i + 1}`);
-        }
       }
     }
-
-    // Track soak jobs and ensure downstream soak-metrics
-    interface JobInfo {
-      name: string;
-      usesSoak: boolean;
-      usesMetrics: boolean;
-      needs: string[];
-    }
-
-    const jobs: JobInfo[] = [];
-    let inJobs = false;
-    let current: JobInfo | null = null;
-    let expectingNeeds = false;
-
-    for (const line of lines) {
-      if (/^\s*jobs:\s*$/.test(line)) {
-        inJobs = true;
-        continue;
-      }
-      if (!inJobs) continue;
-
-      const jobMatch = line.match(/^\s{2}([A-Za-z0-9_-]+):\s*$/);
-      if (jobMatch) {
-        if (current) jobs.push(current);
-        current = { name: jobMatch[1], usesSoak: false, usesMetrics: false, needs: [] };
-        expectingNeeds = false;
-        continue;
-      }
-
-      if (!current) continue;
-
-      const needsMatch = line.match(/^\s{4}needs:\s*(.*)$/);
-      if (needsMatch) {
-        const rest = needsMatch[1].trim();
-        if (rest.startsWith('[') && rest.endsWith(']')) {
-          const arr = rest.slice(1, -1).split(',').map((s) => s.trim()).filter(Boolean);
-          current.needs.push(...arr);
-        } else if (rest) {
-          current.needs.push(rest);
-        } else {
-          expectingNeeds = true;
-        }
-        continue;
-      }
-
-      if (expectingNeeds) {
-        const itemMatch = line.match(/^\s{6}-\s*(\S+)/);
-        if (itemMatch) {
-          current.needs.push(itemMatch[1]);
-          continue;
-        } else if (/^\s{4}\S/.test(line)) {
-          expectingNeeds = false;
-        } else {
-          continue;
-        }
-      }
-
-      const usesMatch = line.match(/^\s{4}uses:\s*(.*)$/);
-      if (usesMatch) {
-        const val = usesMatch[1];
-        if (val.includes('soak-metrics.yml')) current.usesMetrics = true;
-        else if (val.includes('soak.yml')) current.usesSoak = true;
-      }
-    }
-
-    if (current) jobs.push(current);
-
-    const soakJobs = jobs.filter((j) => j.usesSoak);
-    const metricsJobs = jobs.filter((j) => j.usesMetrics);
 
     for (const sj of soakJobs) {
-      const hasDownstream = metricsJobs.some((mj) => mj.needs.includes(sj.name));
-      if (!hasDownstream) missingMetrics.push(`${relative}:${sj.name}`);
+      const hasDownstream = metricsJobs.some((mj) => mj.needs.includes(sj));
+      if (!hasDownstream) missingMetrics.push(`${relative}:${sj}`);
     }
   }
 
   if (missingIf.length > 0 || missingMetrics.length > 0) {
     if (missingIf.length > 0) {
-      console.error(`Missing 'if: ${CONDITION}' in soak jobs:`);
+      console.error("Missing 'if: ${{ always() }}' in soak jobs:");
       for (const file of missingIf) console.error(`  - ${file}`);
     }
     if (missingMetrics.length > 0) {

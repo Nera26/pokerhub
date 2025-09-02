@@ -1,6 +1,8 @@
 #!/usr/bin/env ts-node
 import { readdirSync, readFileSync, Dirent } from 'fs';
 import { join } from 'path';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const yaml = require('js-yaml');
 
 function collectYamlFiles(dir: string): string[] {
   const entries: Dirent[] = readdirSync(dir, { withFileTypes: true });
@@ -26,47 +28,28 @@ function main() {
   const files = collectYamlFiles(workflowsDir);
   const missing: string[] = [];
   const missingIf: string[] = [];
-  const CONDITION = '${{ always() }}';
+  const CONDITION = /\$\{\{\s*always\(\)\s*\}\}/;
 
   for (const file of files) {
     if (file.endsWith('ops-artifacts-verify.yml')) continue;
     const content = readFileSync(file, 'utf-8');
-    if (!/^\s*(?:['"])?on(?:['"])?:/m.test(content)) continue;
+    let doc: any;
+    try {
+      doc = yaml.load(content);
+    } catch {
+      continue;
+    }
+    if (!doc || typeof doc !== 'object' || !doc.on) continue;
 
     const relative = file.replace(`${process.cwd()}/`, '');
-    const lines = content.split(/\r?\n/);
+    const jobs: Record<string, any> = doc.jobs ?? {};
     let found = false;
 
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].includes('uses: ./.github/workflows/ops-artifacts-verify.yml')) {
+    for (const job of Object.values<any>(jobs)) {
+      if (typeof job.uses === 'string' && job.uses.includes('ops-artifacts-verify.yml')) {
         found = true;
-        const indentMatch = lines[i].match(/^\s*/);
-        const indent = indentMatch ? indentMatch[0] : '';
-        let hasIf = false;
-
-        for (let j = i - 1; j >= 0; j--) {
-          if (lines[j].startsWith(indent)) {
-            if (lines[j].trim().startsWith('if:')) {
-              if (lines[j].includes(CONDITION)) hasIf = true;
-              break;
-            }
-          } else if (lines[j].trim() !== '') {
-            break;
-          }
-        }
-
-        for (let j = i + 1; j < lines.length && !hasIf; j++) {
-          if (lines[j].startsWith(indent)) {
-            if (lines[j].trim().startsWith('if:')) {
-              if (lines[j].includes(CONDITION)) hasIf = true;
-              break;
-            }
-          } else if (lines[j].trim() !== '') {
-            break;
-          }
-        }
-
-        if (!hasIf) {
+        const ifCond = String(job.if ?? '');
+        if (!CONDITION.test(ifCond)) {
           missingIf.push(relative);
         }
       }
@@ -81,7 +64,8 @@ function main() {
     }
     if (missingIf.length > 0) {
       console.error(
-        `Missing 'if: ${CONDITION}' in ops-artifacts-verify job in: ${missingIf.join(', ')}`,
+        "Missing 'if: ${{ always() }}' in ops-artifacts-verify job in: " +
+          missingIf.join(', '),
       );
     }
     process.exit(1);

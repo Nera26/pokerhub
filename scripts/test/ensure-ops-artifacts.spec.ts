@@ -20,7 +20,7 @@ test('passes when ops-artifacts-verify job has always condition', () => {
   mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
   writeFileSync(
     join(dir, '.github', 'workflows', 'ci.yml'),
-    `on: push\njobs:\n  ops-artifacts-verify:\n    if: \${{ always() }}\n    uses: ./.github/workflows/ops-artifacts-verify.yml\n`,
+    `on: push\njobs:\n  ops-artifacts-verify:\n    # ensure artifacts\n    if: \${{ always() }}\n    uses: ./.github/workflows/ops-artifacts-verify.yml\n`,
   );
   const exitMock = mock.method(process, 'exit');
   runScript(dir);
@@ -33,7 +33,7 @@ test('fails when ops-artifacts-verify job missing always condition', () => {
   mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
   writeFileSync(
     join(dir, '.github', 'workflows', 'ci.yml'),
-    `on: push\njobs:\n  ops-artifacts-verify:\n    uses: ./.github/workflows/ops-artifacts-verify.yml\n`,
+    `on: push\n# missing if\njobs:\n  ops-artifacts-verify:\n    uses: ./.github/workflows/ops-artifacts-verify.yml\n`,
   );
   const exitMock = mock.method(process, 'exit', (code?: number) => {
     throw new Error(String(code));

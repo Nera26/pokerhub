@@ -20,7 +20,7 @@ test('passes when workflow references check-proof-archive', () => {
   mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
   writeFileSync(
     join(dir, '.github', 'workflows', 'ci.yml'),
-    `on: push\njobs:\n  check-proof-archive:\n    if: \${{ always() }}\n    uses: ./.github/workflows/check-proof-archive.yml\n`,
+    `# comment before\non: push\njobs:\n  check-proof-archive:\n    if: \${{ always() }} # inline\n    uses: ./.github/workflows/check-proof-archive.yml\n`,
   );
   const exitMock = mock.method(process, 'exit');
   runScript(dir);
@@ -33,7 +33,7 @@ test('passes when workflow references proof-archive', () => {
   mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
   writeFileSync(
     join(dir, '.github', 'workflows', 'ci.yml'),
-    `on: push\njobs:\n  proof-archive:\n    if: \${{ always() }}\n    uses: ./.github/workflows/proof-archive.yml\n`,
+    `on: push\n# another comment\njobs:\n  proof-archive:\n    uses: ./.github/workflows/proof-archive.yml\n    if: \${{ always() }}\n`,
   );
   const exitMock = mock.method(process, 'exit');
   runScript(dir);
@@ -46,7 +46,7 @@ test('fails when workflow omits proof-archive verification', () => {
   mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
   writeFileSync(
     join(dir, '.github', 'workflows', 'ci.yml'),
-    `on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps: []\n`,
+    `on: push\n# no proof archive job\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps: []\n`,
   );
   const exitMock = mock.method(process, 'exit', (code?: number) => {
     throw new Error(String(code));

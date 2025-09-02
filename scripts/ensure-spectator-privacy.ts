@@ -6,6 +6,8 @@ import {
   existsSync,
 } from 'fs';
 import { join } from 'path';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const yaml = require('js-yaml');
 
 export function collectWorkflowDirs(dir: string): string[] {
   const entries: Dirent[] = readdirSync(dir, { withFileTypes: true });
@@ -45,49 +47,28 @@ export function main() {
   const files = workflowDirs.flatMap(collectYamlFiles);
   const missing: string[] = [];
   const missingIf: string[] = [];
-  const CONDITION = '${{ always() }}';
+  const CONDITION = /\$\{\{\s*always\(\)\s*\}\}/;
 
   for (const file of files) {
     if (file.endsWith('spectator-privacy.yml')) continue;
     const content = readFileSync(file, 'utf-8');
-    if (!/^\s*(?:['"])?on(?:['"])?:/m.test(content)) continue;
+    let doc: any;
+    try {
+      doc = yaml.load(content);
+    } catch {
+      continue;
+    }
+    if (!doc || typeof doc !== 'object' || !doc.on) continue;
 
     const relative = file.replace(`${process.cwd()}/`, '');
-    const lines = content.split(/\r?\n/);
+    const jobs: Record<string, any> = doc.jobs ?? {};
     let found = false;
 
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].includes('uses: ./.github/workflows/spectator-privacy.yml')) {
+    for (const job of Object.values<any>(jobs)) {
+      if (typeof job.uses === 'string' && job.uses.includes('spectator-privacy.yml')) {
         found = true;
-        const indentMatch = lines[i].match(/^\s*/);
-        const indent = indentMatch ? indentMatch[0] : '';
-        let hasIf = false;
-
-        // search upward within same job block
-        for (let j = i - 1; j >= 0; j--) {
-          if (lines[j].startsWith(indent)) {
-            if (lines[j].trim().startsWith('if:')) {
-              if (lines[j].includes(CONDITION)) hasIf = true;
-              break;
-            }
-          } else if (lines[j].trim() !== '') {
-            break;
-          }
-        }
-
-        // search downward in case 'if' comes after 'uses'
-        for (let j = i + 1; j < lines.length && !hasIf; j++) {
-          if (lines[j].startsWith(indent)) {
-            if (lines[j].trim().startsWith('if:')) {
-              if (lines[j].includes(CONDITION)) hasIf = true;
-              break;
-            }
-          } else if (lines[j].trim() !== '') {
-            break;
-          }
-        }
-
-        if (!hasIf) {
+        const ifCond = String(job.if ?? '');
+        if (!CONDITION.test(ifCond)) {
           missingIf.push(relative);
         }
       }
@@ -102,7 +83,8 @@ export function main() {
     }
     if (missingIf.length > 0) {
       console.error(
-        `Missing 'if: ${CONDITION}' in spectator-privacy job in: ${missingIf.join(', ')}`,
+        "Missing 'if: ${{ always() }}' in spectator-privacy job in: " +
+          missingIf.join(', '),
       );
     }
     process.exit(1);
