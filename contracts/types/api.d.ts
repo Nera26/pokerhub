@@ -447,7 +447,30 @@ export interface paths {
         /** @description Deposit challenge */
         200: {
           content: {
-            "application/json": components["schemas"]["ProviderChallenge"];
+            "application/json": unknown;
+          };
+        };
+      };
+    };
+  };
+  "/wallet/{id}/deposit/bank-transfer": {
+    /** Initiate bank transfer deposit */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["BankTransferDepositRequest"];
+        };
+      };
+      responses: {
+        /** @description Deposit reference */
+        200: {
+          content: {
+            "application/json": components["schemas"]["BankTransferDepositResponse"];
           };
         };
       };
@@ -999,6 +1022,60 @@ export interface paths {
       };
     };
   };
+  "/admin/deposits": {
+    /** List pending deposits */
+    get: {
+      responses: {
+        /** @description Pending deposits */
+        200: {
+          content: {
+            "application/json": components["schemas"]["PendingDepositsResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/admin/deposits/{id}/confirm": {
+    /** Confirm pending deposit */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Deposit confirmed */
+        200: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/admin/deposits/{id}/reject": {
+    /** Reject pending deposit */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["DepositDecisionRequest"];
+        };
+      };
+      responses: {
+        /** @description Deposit rejected */
+        200: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
   "/users": {
     /** Create user */
     post: {
@@ -1289,6 +1366,13 @@ export interface components {
       deviceId: string;
       currency: string;
     };
+    BankTransferDepositRequest: {
+      amount: number;
+      currency: string;
+    };
+    BankTransferDepositResponse: {
+      reference: string;
+    };
     ProviderChallenge: {
       id?: string;
     };
@@ -1336,6 +1420,32 @@ export interface components {
       realBalance: number;
       creditBalance: number;
       transactions: components["schemas"]["PendingTransaction"][];
+    };
+    PendingDeposit: {
+      id: string;
+      userId: string;
+      amount: number;
+      reference: string;
+      /** @enum {string} */
+      status: "pending" | "confirmed" | "rejected";
+      actionRequired: boolean;
+      confirmedBy?: string;
+      /** Format: date-time */
+      confirmedAt?: string;
+      rejectedBy?: string;
+      /** Format: date-time */
+      rejectedAt?: string;
+      rejectionReason?: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    PendingDepositsResponse: {
+      deposits: components["schemas"]["PendingDeposit"][];
+    };
+    DepositDecisionRequest: {
+      reason?: string;
     };
     CreateUserRequest: {
       username: string;

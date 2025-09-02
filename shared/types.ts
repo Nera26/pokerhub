@@ -32,6 +32,21 @@ export const MessageResponseSchema = z.object({
 });
 export type MessageResponse = z.infer<typeof MessageResponseSchema>;
 
+export {
+  BankTransferDepositRequestSchema,
+  BankTransferDepositResponseSchema,
+  PendingDepositSchema,
+  PendingDepositsResponseSchema,
+  DepositDecisionRequestSchema,
+} from '../backend/src/schemas/wallet';
+export type {
+  BankTransferDepositRequest,
+  BankTransferDepositResponse,
+  PendingDeposit,
+  PendingDepositsResponse,
+  DepositDecisionRequest,
+} from '../backend/src/schemas/wallet';
+
 export const DashboardMetricsSchema = z.object({
   online: z.number(),
   revenue: z.number(),

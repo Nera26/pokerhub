@@ -21,6 +21,9 @@ import {
   type WithdrawRequest,
   DepositSchema,
   type DepositRequest,
+  BankTransferDepositRequestSchema,
+  type BankTransferDepositRequest,
+  BankTransferDepositResponseSchema,
   WalletStatusSchema,
   type WalletStatusResponse,
   WalletTransactionsResponseSchema,
@@ -157,6 +160,34 @@ export class WalletController {
       idempotencyKey,
     );
     return challenge;
+  }
+
+  @Post(':id/deposit/bank-transfer')
+  @ApiOperation({ summary: 'Initiate bank transfer deposit' })
+  @ApiResponse({
+    status: 200,
+    description: 'Deposit reference',
+  })
+  async bankTransfer(
+    @Param('id') id: string,
+    @Body() body: BankTransferDepositRequest,
+    @Req() req: Request,
+  ) {
+    this.ensureOwner(req, id);
+    try {
+      const parsed = BankTransferDepositRequestSchema.parse(body);
+      const res = await this.wallet.initiateBankTransfer(
+        id,
+        parsed.amount,
+        parsed.currency,
+      );
+      return BankTransferDepositResponseSchema.parse(res);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        throw new BadRequestException(err.errors);
+      }
+      throw err;
+    }
   }
 
   @Post(':id/kyc')

@@ -98,3 +98,49 @@ export const PendingTransactionsResponseSchema = z.object({
 export type PendingTransactionsResponse = z.infer<
   typeof PendingTransactionsResponseSchema
 >;
+
+export const BankTransferDepositRequestSchema = z.object({
+  amount: z.number().int().positive(),
+  currency: CurrencySchema,
+});
+export type BankTransferDepositRequest = z.infer<
+  typeof BankTransferDepositRequestSchema
+>;
+
+export const BankTransferDepositResponseSchema = z.object({
+  reference: z.string(),
+});
+export type BankTransferDepositResponse = z.infer<
+  typeof BankTransferDepositResponseSchema
+>;
+
+export const PendingDepositSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  amount: z.number().int(),
+  reference: z.string(),
+  status: z.enum(['pending', 'confirmed', 'rejected']),
+  actionRequired: z.boolean(),
+  confirmedBy: z.string().optional(),
+  confirmedAt: z.string().datetime().optional(),
+  rejectedBy: z.string().optional(),
+  rejectedAt: z.string().datetime().optional(),
+  rejectionReason: z.string().optional(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+export type PendingDeposit = z.infer<typeof PendingDepositSchema>;
+
+export const PendingDepositsResponseSchema = z.object({
+  deposits: z.array(PendingDepositSchema),
+});
+export type PendingDepositsResponse = z.infer<
+  typeof PendingDepositsResponseSchema
+>;
+
+export const DepositDecisionRequestSchema = z.object({
+  reason: z.string().optional(),
+});
+export type DepositDecisionRequest = z.infer<
+  typeof DepositDecisionRequestSchema
+>;

@@ -6,6 +6,7 @@ import { Account } from './account.entity';
 import { JournalEntry } from './journal-entry.entity';
 import { Disbursement } from './disbursement.entity';
 import { SettlementJournal } from './settlement-journal.entity';
+import { PendingDeposit } from './pending-deposit.entity';
 import { EventPublisher } from '../events/events.service';
 import Redis from 'ioredis';
 import { metrics, trace, SpanStatusCode } from '@opentelemetry/api';
@@ -56,6 +57,8 @@ export class WalletService {
     private readonly disbursements: Repository<Disbursement>,
     @InjectRepository(SettlementJournal)
     private readonly settlements: Repository<SettlementJournal>,
+    @InjectRepository(PendingDeposit)
+    private readonly pendingDeposits: Repository<PendingDeposit>,
     private readonly events: EventPublisher,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
     private readonly provider: PaymentProviderService,
@@ -68,6 +71,7 @@ export class WalletService {
   ) {}
 
   private payoutQueue?: Queue;
+  private pendingQueue?: Queue;
 
   private async getQueue(): Promise<Queue> {
     if (this.payoutQueue) return this.payoutQueue;
@@ -79,6 +83,18 @@ export class WalletService {
       },
     });
     return this.payoutQueue;
+  }
+
+  private async getPendingQueue(): Promise<Queue> {
+    if (this.pendingQueue) return this.pendingQueue;
+    const bull = await import('bullmq');
+    this.pendingQueue = new bull.Queue('pending-deposit', {
+      connection: {
+        host: process.env.REDIS_HOST ?? 'localhost',
+        port: Number(process.env.REDIS_PORT ?? 6379),
+      },
+    });
+    return this.pendingQueue;
   }
 
   protected async enqueueDisbursement(id: string, currency: string): Promise<void> {
@@ -862,5 +878,99 @@ export class WalletService {
         createdAt: d.createdAt.toISOString(),
       })),
     };
+  }
+
+  async initiateBankTransfer(
+    accountId: string,
+    amount: number,
+    currency: string,
+  ): Promise<{ reference: string }> {
+    await this.accounts.findOneByOrFail({ id: accountId, currency });
+    const deposit = await this.pendingDeposits.save({
+      id: randomUUID(),
+      userId: accountId,
+      amount,
+      reference: randomUUID(),
+      status: 'pending',
+      actionRequired: false,
+    });
+    const queue = await this.getPendingQueue();
+    await queue.add('check', { id: deposit.id }, { delay: 10_000 });
+    return { reference: deposit.reference };
+  }
+
+  async markActionRequiredIfPending(id: string): Promise<void> {
+    const dep = await this.pendingDeposits.findOneBy({ id });
+    if (dep && dep.status === 'pending' && !dep.actionRequired) {
+      dep.actionRequired = true;
+      await this.pendingDeposits.save(dep);
+    }
+  }
+
+  async listPendingDeposits() {
+    return this.pendingDeposits.find({
+      where: { status: 'pending' },
+      order: { createdAt: 'ASC' },
+    });
+  }
+
+  async confirmPendingDeposit(id: string, adminId: string): Promise<void> {
+    const lockKey = `wallet:pending:${id}:lock`;
+    const lock = await this.redis.set(lockKey, '1', 'NX', 'EX', 30);
+    if (lock === null) throw new Error('Deposit locked');
+    try {
+      const deposit = await this.pendingDeposits.findOneBy({ id });
+      if (!deposit || deposit.status !== 'pending') return;
+      const user = await this.accounts.findOneByOrFail({ id: deposit.userId });
+      const house = await this.accounts.findOneByOrFail({
+        name: 'house',
+        currency: user.currency,
+      });
+      await this.record('deposit', deposit.id, [
+        { account: house, amount: -deposit.amount },
+        { account: user, amount: deposit.amount },
+      ]);
+      deposit.status = 'confirmed';
+      deposit.confirmedBy = adminId;
+      deposit.confirmedAt = new Date();
+      deposit.actionRequired = false;
+      await this.pendingDeposits.save(deposit);
+    } finally {
+      await this.redis.del(lockKey);
+    }
+  }
+
+  async rejectPendingDeposit(
+    id: string,
+    adminId: string,
+    reason?: string,
+  ): Promise<void> {
+    const lockKey = `wallet:pending:${id}:lock`;
+    const lock = await this.redis.set(lockKey, '1', 'NX', 'EX', 30);
+    if (lock === null) throw new Error('Deposit locked');
+    try {
+      const deposit = await this.pendingDeposits.findOneBy({ id });
+      if (!deposit || deposit.status !== 'pending') return;
+      deposit.status = 'rejected';
+      deposit.rejectedBy = adminId;
+      deposit.rejectedAt = new Date();
+      deposit.rejectionReason = reason;
+      deposit.actionRequired = false;
+      await this.pendingDeposits.save(deposit);
+      await this.events.emit('notification.create', {
+        userId: deposit.userId,
+        type: 'system',
+        message: reason
+          ? `Deposit rejected: ${reason}`
+          : 'Deposit rejected',
+      });
+      await this.events.emit('wallet.deposit.rejected', {
+        accountId: deposit.userId,
+        depositId: deposit.id,
+        reason,
+      });
+    } finally {
+      await this.redis.del(lockKey);
+    }
   }
 }
