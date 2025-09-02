@@ -59,7 +59,7 @@ flowchart LR
   few hands. Configure the window with `tournament.avoidWithin` (env
   `TOURNAMENT_AVOID_WITHIN`, default 10). For example, with
   `TOURNAMENT_AVOID_WITHIN=5`, a player moved on hand 42 will not be
-  rebalanced again until at least hand 48.
+  rebalanced again until hand 47.
 - Blind levels may be hot patched during play with director approval.
 
 ## ICM Payouts
