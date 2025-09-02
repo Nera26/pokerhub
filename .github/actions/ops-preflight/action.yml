@@ -91,6 +91,11 @@ runs:
         sla: ${{ inputs.dr-drill-sla-days }}
         unit: days
         slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Check DR drill metrics
+      run: npx -y ts-node scripts/check-dr-drill.ts
+      env:
+        GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        DR_DRILL_SLA_DAYS: ${{ inputs.dr-drill-sla-days }}
     - name: Check DR failover SLA
       uses: ./.github/workflows/check-workflow-sla
       with:
