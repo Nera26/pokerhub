@@ -26,7 +26,7 @@ jobs:
         arguments: --vus 10 --duration 10s --summary-export=k6-summary.json
     - name: Upload k6 summary
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: k6-summary
         path: k6-summary.json
@@ -44,7 +44,7 @@ jobs:
         artillery run load/artillery-ws-packet-loss.yml --output artillery-summary.json --overrides '{"phases":[{"duration":10,"arrivalRate":10}]}'
     - name: Upload Artillery summary
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: artillery-summary
         path: artillery-summary.json

@@ -82,7 +82,7 @@ jobs:
           frontend-tests.log
     - name: Upload summary
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: tables-10k-summary
         path: 10k-summary.json
@@ -141,7 +141,7 @@ jobs:
           frontend-tests.log
     - name: Upload summary
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: packet-loss-summary
         path: packet-summary.json
@@ -212,7 +212,7 @@ jobs:
           frontend-tests.log
     - name: Upload summary
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: chaos-${{ matrix.scenario }}-summary
         path: chaos-${{ matrix.scenario }}.json
