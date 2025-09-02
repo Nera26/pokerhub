@@ -47,15 +47,7 @@ export class WithdrawalsService {
       order: { createdAt: 'DESC' },
     });
     if (disb) {
-      const account = await this.accounts.findOneByOrFail({ id: userId });
-      const house = await this.accounts.findOneByOrFail({
-        name: 'house',
-        currency: account.currency,
-      });
-      await (this.wallet as any).record('withdraw_reject', disb.id, [
-        { account: house, amount: -disb.amount },
-        { account, amount: disb.amount },
-      ]);
+      await this.wallet.refundDisbursement(disb);
       await this.disbursements.delete(disb.id);
     }
   }

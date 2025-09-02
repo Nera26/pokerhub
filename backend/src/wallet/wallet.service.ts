@@ -316,6 +316,18 @@ export class WalletService {
     });
   }
 
+  async refundDisbursement(disb: Disbursement): Promise<void> {
+    const account = await this.accounts.findOneByOrFail({ id: disb.accountId });
+    const house = await this.accounts.findOneByOrFail({
+      name: 'house',
+      currency: account.currency,
+    });
+    await this.record('withdraw_reject', disb.id, [
+      { account: house, amount: -disb.amount },
+      { account, amount: disb.amount },
+    ]);
+  }
+
   async status(
     accountId: string,
   ): Promise<{ kycVerified: boolean; denialReason?: string; realBalance: number; creditBalance: number }> {
