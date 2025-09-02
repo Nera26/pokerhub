@@ -38,7 +38,8 @@ const now = new Date();
 const diffDays = (now.getTime() - latest.getTime()) / (1000 * 60 * 60 * 24);
 const limit = Number(process.env.DR_DRILL_SLA_DAYS || '30');
 if (diffDays > limit) {
-  fail(`Latest DR drill ${ts} is older than ${limit} days`);
+  console.error(`Latest DR drill ${ts} is older than ${limit} days`);
+  process.exit(2);
 }
 
 console.log(`Latest DR drill ${ts} is ${Math.floor(diffDays)} days old`);

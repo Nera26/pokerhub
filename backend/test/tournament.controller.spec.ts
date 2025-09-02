@@ -4,6 +4,7 @@ import request from 'supertest';
 import { TournamentController } from '../src/tournament/tournament.controller';
 import { TournamentService } from '../src/tournament/tournament.service';
 import { RateLimitGuard } from '../src/routes/rate-limit.guard';
+import { AuthGuard } from '../src/auth/auth.guard';
 
 describe('TournamentController', () => {
   let app: INestApplication;
@@ -20,6 +21,8 @@ describe('TournamentController', () => {
       providers: [{ provide: TournamentService, useValue: svc }],
     })
       .overrideGuard(RateLimitGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(AuthGuard)
       .useValue({ canActivate: () => true })
       .compile();
     app = moduleRef.createNestApplication();

@@ -1,5 +1,15 @@
-import { Controller, Post, Param, Body, Req, Get, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Param,
+  Body,
+  Req,
+  Get,
+  UseGuards,
+  ForbiddenException,
+} from '@nestjs/common';
 import { RateLimitGuard } from './rate-limit.guard';
+import { AuthGuard } from '../auth/auth.guard';
 import { WalletService } from '../wallet/wallet.service';
 import { KycService } from '../wallet/kyc.service';
 import type { Request } from 'express';
@@ -23,7 +33,7 @@ interface TxDto {
   currency: string;
 }
 
-@UseGuards(RateLimitGuard)
+@UseGuards(AuthGuard, RateLimitGuard)
 @Controller('wallet')
 export class WalletController {
   constructor(
@@ -31,20 +41,41 @@ export class WalletController {
     private readonly kyc: KycService,
   ) {}
 
+  private ensureOwner(req: Request, id: string) {
+    if ((req as any).userId !== id) {
+      throw new ForbiddenException();
+    }
+  }
+
   @Post(':id/reserve')
-  async reserve(@Param('id') id: string, @Body() body: TxDto) {
+  async reserve(
+    @Param('id') id: string,
+    @Body() body: TxDto,
+    @Req() req: Request,
+  ) {
+    this.ensureOwner(req, id);
     await this.wallet.reserve(id, body.amount, body.tx, body.currency);
     return { message: 'reserved' };
   }
 
   @Post(':id/commit')
-  async commit(@Param('id') id: string, @Body() body: TxDto) {
+  async commit(
+    @Param('id') id: string,
+    @Body() body: TxDto,
+    @Req() req: Request,
+  ) {
+    this.ensureOwner(req, id);
     await this.wallet.commit(body.tx, body.amount, body.rake ?? 0, body.currency);
     return { message: 'committed' };
   }
 
   @Post(':id/rollback')
-  async rollback(@Param('id') id: string, @Body() body: TxDto) {
+  async rollback(
+    @Param('id') id: string,
+    @Body() body: TxDto,
+    @Req() req: Request,
+  ) {
+    this.ensureOwner(req, id);
     await this.wallet.rollback(id, body.amount, body.tx, body.currency);
     return { message: 'rolled back' };
   }
@@ -55,6 +86,7 @@ export class WalletController {
     @Body() body: WithdrawRequest,
     @Req() req: Request,
   ) {
+    this.ensureOwner(req, id);
     const parsed = WithdrawSchema.parse(body);
     await this.wallet.withdraw(id, parsed.amount, parsed.deviceId, req.ip, parsed.currency);
     return { message: 'withdrawn' };
@@ -66,6 +98,7 @@ export class WalletController {
     @Body() body: DepositRequest,
     @Req() req: Request,
   ) {
+    this.ensureOwner(req, id);
     const parsed = DepositSchema.parse(body);
     const challenge = await this.wallet.deposit(
       id,
@@ -78,13 +111,18 @@ export class WalletController {
   }
 
   @Post(':id/kyc')
-  async verify(@Param('id') id: string) {
+  async verify(@Param('id') id: string, @Req() req: Request) {
+    this.ensureOwner(req, id);
     await this.kyc.verify(id);
     return { message: 'verified' };
   }
 
   @Get(':id/status')
-  async status(@Param('id') id: string): Promise<WalletStatusResponse> {
+  async status(
+    @Param('id') id: string,
+    @Req() req: Request,
+  ): Promise<WalletStatusResponse> {
+    this.ensureOwner(req, id);
     const res = await this.wallet.status(id);
     return WalletStatusSchema.parse(res);
   }
@@ -92,13 +130,19 @@ export class WalletController {
   @Get(':id/transactions')
   async transactions(
     @Param('id') id: string,
+    @Req() req: Request,
   ): Promise<WalletTransactionsResponse> {
+    this.ensureOwner(req, id);
     const res = await this.wallet.transactions(id);
     return WalletTransactionsResponseSchema.parse(res);
   }
 
   @Get(':id/pending')
-  async pending(@Param('id') id: string): Promise<PendingTransactionsResponse> {
+  async pending(
+    @Param('id') id: string,
+    @Req() req: Request,
+  ): Promise<PendingTransactionsResponse> {
+    this.ensureOwner(req, id);
     const res = await this.wallet.pending(id);
     return PendingTransactionsResponseSchema.parse(res);
   }

@@ -9,7 +9,7 @@ The game WebSocket gateway exposes metrics for outbound queue health and rate li
 - `ws_outbound_queue_max` – observable gauge exporting the peak queue depth per
   socket within a scrape window.
 - `ws_outbound_queue_threshold` – observable gauge exposing the configured
-  queue depth threshold used for alerts.
+  queue depth threshold used for alerts (defaults to 80 messages).
 - `ws_outbound_dropped_total` – counter of messages dropped when a socket queue
   is full.
 - `game_action_global_count` – observable gauge tracking the number of actions
@@ -21,20 +21,22 @@ The game WebSocket gateway exposes metrics for outbound queue health and rate li
 
 ## Dashboards
 
-- **Queue Saturation** – Grafana dashboard `queue-saturation` visualizes
-  `ws_outbound_queue_depth` and the per-socket peak `ws_outbound_queue_max`.
+- **Queue Saturation** – [Grafana dashboard `queue-saturation`](https://grafana.pokerhub.example/d/queue-saturation)
+  visualizes `ws_outbound_queue_depth` and the per-socket peak
+  `ws_outbound_queue_max`.
 - **Backend Overview** – includes `game_action_global_count` and rate limit
   violations to track player actions.
 
 ## Alert Rules
 
 - **HighOutboundQueueDepth** – fires when `ws_outbound_queue_max` exceeds
-  `ws_outbound_queue_threshold` for 5 m.
-- **DroppedWsMessages** – fires when `ws_outbound_dropped_total` > 0 for 1 m.
-- **GlobalRateLimitExceeded** – fires when the ratio of
-  `global_limit_exceeded` to `game_action_global_count` exceeds 5% over 5 m.
-- **PerSocketRateLimitExceeded** – fires when `per_socket_limit_exceeded`
-  exceeds 5% of `game_action_global_count` over 5 m.
+  `ws_outbound_queue_threshold` (80 messages) for 5 m.
+- **DroppedWsMessages** – fires when any `ws_outbound_dropped_total` is
+  observed (>0 for 1 m).
+- **GlobalRateLimitExceeded** – fires when `global_limit_exceeded` /
+  `game_action_global_count` > 5% for 5 m.
+- **PerSocketRateLimitExceeded** – fires when
+  `per_socket_limit_exceeded` / `game_action_global_count` > 5% for 5 m.
 
 These metrics help surface saturation and abusive clients before they impact
 live games.

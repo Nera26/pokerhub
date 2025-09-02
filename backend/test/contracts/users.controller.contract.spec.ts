@@ -1,8 +1,10 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ExecutionContext } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { UsersController } from '../../src/routes/users.controller';
 import { UsersService } from '../../src/users/users.service';
+import { AuthGuard } from '../../src/auth/auth.guard';
+import { AdminGuard } from '../../src/auth/admin.guard';
 import { CreateUserRequest, User, UserSchema } from '../../src/schemas/users';
 
 describe('Contract: UsersController', () => {
@@ -30,7 +32,32 @@ describe('Contract: UsersController', () => {
           },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(AuthGuard)
+      .useValue({
+        canActivate: (ctx: ExecutionContext) => {
+          const req = ctx.switchToHttp().getRequest();
+          const header = req.headers['authorization'];
+          if (typeof header === 'string' && header.startsWith('Bearer ')) {
+            (req as any).userId = header.slice(7);
+            return true;
+          }
+          return false;
+        },
+      })
+      .overrideGuard(AdminGuard)
+      .useValue({
+        canActivate: (ctx: ExecutionContext) => {
+          const req = ctx.switchToHttp().getRequest();
+          const header = req.headers['authorization'];
+          if (header === 'Bearer admin') {
+            (req as any).userId = 'admin';
+            return true;
+          }
+          return false;
+        },
+      })
+      .compile();
 
     app = moduleRef.createNestApplication();
     await app.init();
@@ -43,6 +70,7 @@ describe('Contract: UsersController', () => {
   it('validates request and response schemas', async () => {
     const res = await request(app.getHttpServer())
       .post('/users')
+      .set('Authorization', 'Bearer admin')
       .send({ username: 'alice' })
       .expect(201);
 
@@ -53,6 +81,7 @@ describe('Contract: UsersController', () => {
   it('rejects invalid payloads', async () => {
     await request(app.getHttpServer())
       .post('/users')
+      .set('Authorization', 'Bearer admin')
       .send({ username: 123 })
       .expect(400);
   });
@@ -61,6 +90,7 @@ describe('Contract: UsersController', () => {
     const id = '00000000-0000-0000-0000-000000000001';
     const res = await request(app.getHttpServer())
       .get(`/users/${id}`)
+      .set('Authorization', `Bearer ${id}`)
       .expect(200);
     const parsed = UserSchema.parse(res.body);
     expect(parsed.id).toBe(id);

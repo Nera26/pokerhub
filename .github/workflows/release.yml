@@ -40,16 +40,16 @@ jobs:
     uses: ./.github/workflows/ops-artifacts-verify.yml
     secrets: inherit
 
-  check-proof-archive:
+  ensure-proof-archive:
     needs: preflight
-    uses: ./.github/workflows/check-proof-archive.yml
+    uses: ./.github/workflows/ensure-proof-archive.yml
     secrets: inherit
 
-  publish-docs:
+  publish-docs-run:
     needs:
       - preflight
       - ops-artifacts-verify
-      - check-proof-archive
+      - ensure-proof-archive
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
@@ -57,7 +57,7 @@ jobs:
         run: |
           if [ "${{ needs.preflight.result }}" != "success" ] || \
              [ "${{ needs.ops-artifacts-verify.result }}" != "success" ] || \
-             [ "${{ needs.check-proof-archive.result }}" != "success" ]; then
+             [ "${{ needs.ensure-proof-archive.result }}" != "success" ]; then
             echo "One or more prerequisite workflows failed." >&2
             exit 1
           fi
@@ -72,6 +72,14 @@ jobs:
           path: docs/player
 
   spectator-privacy:
+    needs: publish-docs-run
     if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
+
+  publish-docs:
+    needs: [publish-docs-run, spectator-privacy]
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    steps:
+      - run: echo "publish docs checks passed"

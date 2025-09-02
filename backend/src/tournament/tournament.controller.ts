@@ -1,6 +1,15 @@
-import { Body, Controller, Get, HttpCode, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { RateLimitGuard } from '../routes/rate-limit.guard';
 import { TournamentService } from './tournament.service';
+import { AuthGuard } from '../auth/auth.guard';
 import type {
   CalculatePrizesRequest,
   CalculatePrizesResponse,
@@ -26,11 +35,13 @@ export class TournamentController {
   }
 
   @Post(':id/register')
+  @UseGuards(AuthGuard)
   register(@Param('id') id: string, @Body() body: RegisterRequest) {
     return this.service.register(id, body.userId);
   }
 
   @Post(':id/withdraw')
+  @UseGuards(AuthGuard)
   @HttpCode(200)
   async withdraw(@Param('id') id: string, @Body() body: WithdrawRequest) {
     await this.service.withdraw(id, body.userId);
@@ -38,6 +49,7 @@ export class TournamentController {
   }
 
   @Post(':id/cancel')
+  @UseGuards(AuthGuard)
   @HttpCode(200)
   async cancel(@Param('id') id: string) {
     await this.service.cancel(id);
@@ -45,6 +57,7 @@ export class TournamentController {
   }
 
   @Post(':id/prizes')
+  @UseGuards(AuthGuard)
   calculatePrizes(
     @Param('id') id: string,
     @Body() body: CalculatePrizesRequest,
@@ -56,6 +69,7 @@ export class TournamentController {
   }
 
   @Post(':id/levels/hot-patch')
+  @UseGuards(AuthGuard)
   hotPatchLevel(
     @Param('id') id: string,
     @Body() body: HotPatchLevelRequest,
@@ -69,6 +83,7 @@ export class TournamentController {
   }
 
   @Post(':id/schedule')
+  @UseGuards(AuthGuard)
   @HttpCode(200)
   async schedule(
     @Param('id') id: string,

@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   actions: read
+  id-token: write
 
 jobs:
   check-proof-archive:
@@ -28,6 +29,26 @@ jobs:
       SPECTATOR_RETENTION_SLA_DAYS: 1
     steps:
       - uses: actions/checkout@v4
+
+      # (merged from main) Node + GCP auth + DR drill check
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --legacy-peer-deps
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+      - name: Check DR drill metrics
+        run: npx ts-node scripts/check-dr-drill.ts
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          DR_DRILL_SLA_DAYS: ${{ env.DR_DRILL_SLA_DAYS }}
+
+      # Composite preflight (kept)
       - uses: ./.github/actions/ops-preflight
         with:
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
@@ -38,6 +59,8 @@ jobs:
           dr-restore-sla-days: ${{ env.DR_RESTORE_SLA_DAYS }}
           dr-runbook-sla-days: ${{ env.DR_RUNBOOK_SLA_DAYS }}
           dr-throwaway-sla-days: ${{ env.DR_THROWAWAY_SLA_DAYS }}
+
+      # Soak freshness check (kept)
       - name: Check soak metrics freshness
         run: npx -y ts-node scripts/check-soak-metrics.ts
         env:
@@ -117,7 +140,7 @@ jobs:
             "https://api.github.com/repos/${{ github.repository }}/actions/workflows/pg-restore-smoke.yml/runs?per_page=1")
           conclusion=$(echo "$run" | jq -r '.workflow_runs[0].conclusion')
           started=$(echo "$run" | jq -r '.workflow_runs[0].run_started_at')
-          start_ts=$(date -d "$started" +%s)
+          start_ts=$(date -d "$started" -u +%s)
           now=$(date -u +%s)
           max_age=$((SLA_MINUTES * 60))
           if [ "$conclusion" != "success" ] || [ $((now - start_ts)) -gt "$max_age" ]; then
@@ -134,15 +157,19 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
-      - name: Check soak trend regression
-        run: npx ts-node scripts/check-soak-trend-regression.ts
-
-      # --- Tooling/setup ---
+      # --- Tooling/setup (place before any ts-node usage) ---
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Check soak trend regression
+        run: npx ts-node scripts/check-soak-trend-regression.ts
+
+      # --- K8s tooling ---
       - name: Configure kubectl
         uses: azure/setup-kubectl@v3
         with:
@@ -318,14 +345,14 @@ jobs:
           SOAK_TRENDS_MAX_PCT: ${{ vars.SOAK_TRENDS_MAX_PCT }}
           SOAK_TRENDS_DEVIATION_PCT: ${{ vars.SOAK_TRENDS_MAX_PCT }}
         run: |
-          npm ci --legacy-peer-deps
-          set +e
-          out=$(npx ts-node scripts/check-soak-metrics.ts 2>&1)
-          status=$?
           set -e
+          out=$(npx ts-node scripts/check-soak-metrics.ts 2>&1 || true)
           echo "$out"
           echo "$out" >> "$GITHUB_STEP_SUMMARY"
-          exit $status
+          # Fail if script printed "ERROR:" prefix
+          if echo "$out" | grep -q "^ERROR:"; then
+            exit 1
+          fi
 
       - name: Run soak-smoke
         if: ${{ env.RUN_SOAK_SMOKE == 'true' }}
@@ -368,7 +395,6 @@ jobs:
           SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS || 120 }}
           SOAK_THROUGHPUT_MIN: ${{ vars.SOAK_THROUGHPUT_MIN || 100 }}
         run: |
-          npm ci --legacy-peer-deps
           set +e
           out=$(npx ts-node scripts/verify-ops-artifacts.ts 2>&1)
           status=$?
@@ -414,10 +440,7 @@ jobs:
         run: |
           {
             echo "### Deployment Audit"
-            echo "- DR drill last run: ${{ steps.drdrill.outputs.timestamp }} ([summary](${{ steps.drdrill.outputs.url }}))"
-            echo "- DR failover last run: ${{ steps.drfailover.outputs.timestamp }}"
-            echo "- DR restore last run: ${{ steps.drrestore.outputs.timestamp }}"
-            echo "- DR throwaway last run: ${{ steps.drthrowaway.outputs.timestamp }}"
+            echo "- Commit: ${{ github.sha }}"
             echo "- game_action_ack_p95_ms: ${{ steps.metrics.outputs.ack_p95_ms }}"
             echo "- http_error_rate: ${{ steps.metrics.outputs.http_error_rate }}"
           } >> "$GITHUB_STEP_SUMMARY"
