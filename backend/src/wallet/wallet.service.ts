@@ -148,10 +148,25 @@ export class WalletService {
         refId,
         currency: entry.account.currency,
       };
+      const systemAccounts = ['reserve', 'house', 'rake', 'prize'];
       if (entry.amount > 0) {
         await this.events.emit('wallet.credit', payload);
+        if (!systemAccounts.includes(entry.account.name)) {
+          await this.events.emit('notification.create', {
+            userId: entry.account.id,
+            type: 'system',
+            message: `Wallet credited ${entry.amount} ${entry.account.currency}`,
+          });
+        }
       } else {
         await this.events.emit('wallet.debit', payload);
+        if (!systemAccounts.includes(entry.account.name)) {
+          await this.events.emit('notification.create', {
+            userId: entry.account.id,
+            type: 'system',
+            message: `Wallet debited ${Math.abs(entry.amount)} ${entry.account.currency}`,
+          });
+        }
       }
     }
   }
