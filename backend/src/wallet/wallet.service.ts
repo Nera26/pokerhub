@@ -321,8 +321,8 @@ export class WalletService {
     return {
       kycVerified: account.kycVerified,
       denialReason,
-      realBalance: account.balance,
-      creditBalance: 0,
+      realBalance: account.balance - account.creditBalance,
+      creditBalance: account.creditBalance,
     };
   }
 
@@ -749,8 +749,8 @@ export class WalletService {
     });
     const account = await this.accounts.findOneByOrFail({ id: accountId });
     return {
-      realBalance: account.balance,
-      creditBalance: 0,
+      realBalance: account.balance - account.creditBalance,
+      creditBalance: account.creditBalance,
       transactions: entries.map((e) => ({
         id: e.id,
         type: e.refType,
@@ -769,8 +769,8 @@ export class WalletService {
     });
     const account = await this.accounts.findOneByOrFail({ id: accountId });
     return {
-      realBalance: account.balance,
-      creditBalance: 0,
+      realBalance: account.balance - account.creditBalance,
+      creditBalance: account.creditBalance,
       transactions: disbs.map((d) => ({
         id: d.id,
         type: 'withdraw',

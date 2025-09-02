@@ -16,6 +16,13 @@ export class Account {
   @Column({ type: 'int', default: 0 })
   balance: number;
 
+  @Column({
+    type: 'int',
+    default: 0,
+    transformer: { to: (v: number) => v, from: (v: string | number) => Number(v) },
+  })
+  creditBalance: number;
+
   @Column({ type: 'boolean', default: false })
   kycVerified: boolean;
 
