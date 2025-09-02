@@ -753,20 +753,76 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - id: property
-        run: ./scripts/test-stages.sh property | tee property.log
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm ci --prefix backend
+          npm ci --prefix frontend
+          npm ci --prefix analytics
+      - name: Ledger batch property tests
+        id: ledger
+        run: npm test --prefix backend -- src/wallet/wallet.ledger.property.spec.ts | tee ledger.log
+        continue-on-error: true
+      - name: Hand-log replay property tests
+        id: replay
+        run: npm test --prefix backend -- test/wallet/hand-logs.replay.property.spec.ts | tee replay.log
+        continue-on-error: true
+      - name: Remaining backend property tests
+        id: backend-property
+        run: npm run test:property --prefix backend -- --testPathIgnorePatterns=src/wallet/wallet.ledger.property.spec.ts --testPathIgnorePatterns=test/wallet/hand-logs.replay.property.spec.ts | tee backend-property.log
+        continue-on-error: true
+      - name: Ledger audit
+        id: audit
+        run: npm run audit:ledger --prefix backend | tee audit.log
+        continue-on-error: true
+      - name: Frontend property tests
+        id: frontend-property
+        run: npm test --prefix frontend -- --testPathPattern=.property.spec.ts$ --passWithNoTests | tee frontend-property.log
+        continue-on-error: true
+      - name: Analytics property tests
+        id: analytics-property
+        run: npx c8 --reporter=lcov --reporter=text --clean=false npm run test:property --prefix analytics | tee analytics-property.log
+        continue-on-error: true
+      - name: Shared property tests
+        id: shared-property
+        run: |
+          if [ -d shared/test ]; then
+            npx c8 --reporter=lcov --reporter=text --clean=false ts-node shared/test/**/*.property.ts
+          fi
+        continue-on-error: true
+      - name: Repo property tests
+        id: repo-property
+        run: |
+          if [ -d tests/property ]; then
+            npx ts-node tests/property/**/*.ts
+          fi
         continue-on-error: true
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: property-${{ github.sha }}
-          path: property.log
+          path: |
+            ledger.log
+            replay.log
+            audit.log
+            backend-property.log
+            frontend-property.log
+            analytics-property.log
+      - name: Summarize ledger audits
+        if: always()
+        run: |
+          echo "| Check | Status |" > property-summary.md
+          echo "| --- | --- |" >> property-summary.md
+          echo "| ledger batches | ${{ steps.ledger.outcome }} |" >> property-summary.md
+          echo "| hand-log replay | ${{ steps.replay.outcome }} |" >> property-summary.md
+          cat property-summary.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
-        if: steps.property.outcome == 'failure' && hashFiles('storage/reconcile-*.json') != ''
+        if: always()
         with:
-          name: reconcile-${{ github.sha }}
-          path: storage/reconcile-*.json
-      - if: steps.property.outcome == 'failure'
+          name: property-summary-${{ github.sha }}
+          path: property-summary.md
+      - name: Fail if property tests failed
+        if: steps.ledger.outcome == 'failure' || steps.replay.outcome == 'failure' || steps.backend-property.outcome == 'failure' || steps.audit.outcome == 'failure' || steps.frontend-property.outcome == 'failure' || steps.analytics-property.outcome == 'failure' || steps.shared-property.outcome == 'failure' || steps.repo-property.outcome == 'failure'
         run: exit 1
 
   integration:
