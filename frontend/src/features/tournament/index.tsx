@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useRef, useMemo, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   fetchTournaments,
+  registerTournament,
   type Tournament as ApiTournament,
 } from '@/lib/api/lobby';
 import Header from '@/app/components/common/Header';
@@ -19,6 +20,7 @@ import TournamentCard from '@/app/components/tournaments/TournamentCard';
 import TournamentRegisterModalContent from '@/app/components/tournaments/TournamentRegisterModalContent';
 import Modal from '@/app/components/ui/Modal';
 import ToastNotification from '@/app/components/ui/ToastNotification';
+import { useAuth } from '@/context/AuthContext';
 
 interface Tournament {
   id: string;
@@ -39,6 +41,8 @@ function isTournamentFilter(v: string | null): v is TournamentFilter {
 
 export default function Page() {
   useRenderCount('TournamentPage');
+  const queryClient = useQueryClient();
+  const { playerId } = useAuth();
   // 1) filter state synced with URL
   const router = useRouter();
   const pathname = usePathname();
@@ -116,9 +120,23 @@ export default function Page() {
   const handleRegisterClick = (id: string) => setOpenModalId(id);
   const handleModalClose = () => setOpenModalId(null);
 
-  const handleConfirm = () => {
-    setToast({ message: "You're registered!", type: 'success', isOpen: true });
-    setOpenModalId(null);
+  const handleConfirm = async (id: string) => {
+    try {
+      await registerTournament(id, { userId: playerId });
+      await queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+      setToast({
+        message: "You're registered!",
+        type: 'success',
+        isOpen: true,
+      });
+      setOpenModalId(null);
+    } catch {
+      setToast({
+        message: 'Failed to register. Please try again.',
+        type: 'error',
+        isOpen: true,
+      });
+    }
   };
 
   const closeToast = () => setToast((t) => ({ ...t, isOpen: false }));
@@ -241,7 +259,7 @@ export default function Page() {
                 ],
               }}
               onClose={handleModalClose}
-              onConfirm={handleConfirm}
+              onConfirm={() => handleConfirm(openModalId!)}
             />
           </ErrorBoundary>
         </Modal>
