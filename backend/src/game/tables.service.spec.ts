@@ -45,5 +45,20 @@ describe('TablesService.getTable', () => {
     expect(res.chatMessages).toEqual([
       { id: 1, username: 'p1', avatar: '', text: 'hi', time: '2023-01-01T00:00:00Z' },
     ]);
+    expect(res.stateAvailable).toBe(true);
+  });
+
+  it('sets stateAvailable=false when room state cannot be fetched', async () => {
+    const table = { id: 't1', smallBlind: 1, bigBlind: 2 } as any;
+    const repo: any = { findOne: jest.fn().mockResolvedValue(table) };
+    const userRepo: any = { findBy: jest.fn().mockResolvedValue([]) };
+    const room = { getPublicState: jest.fn().mockRejectedValue(new Error('no state')) } as any;
+    const rooms = { get: jest.fn().mockReturnValue(room) } as any;
+    const chat = { getRecentMessages: jest.fn().mockResolvedValue([]) } as any;
+
+    const service = new TablesService(repo, userRepo, rooms, chat);
+    const res = await service.getTable('t1');
+
+    expect(res.stateAvailable).toBe(false);
   });
 });

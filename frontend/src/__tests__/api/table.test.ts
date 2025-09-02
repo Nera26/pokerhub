@@ -29,6 +29,7 @@ const sampleTable = {
       time: '2023-01-01T00:00:00Z',
     },
   ],
+  stateAvailable: true,
 };
 
 describe('table api', () => {
