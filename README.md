@@ -54,6 +54,11 @@ The project provides a Docker setup for the full stack:
     TOURNAMENT_AVOID_WITHIN=10
     ```
 
+    For example, setting `TOURNAMENT_AVOID_WITHIN=5` records the hand number
+    whenever a seat is moved. A player relocated on hand 42 will carry a
+    `lastMovedHand` of 42 and the balancer skips them until hand 47, even if
+    the service restarts.
+
 2. Start all services:
 
    ```bash

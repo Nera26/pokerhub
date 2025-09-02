@@ -18,9 +18,12 @@ describe('table balancer repeat move property', () => {
     await fc.assert(
       fc.asyncProperty(
         fc.array(fc.integer({ min: 1, max: 9 }), { minLength: 2, maxLength: 5 }),
-        fc.integer({ min: 1, max: 20 }),
         fc.array(fc.nat(20), { minLength: 1, maxLength: 20 }),
-        async (sizes, avoidWithin, eliminations) => {
+        async (sizes, eliminations) => {
+          const avoidWithin = parseInt(
+            process.env.TOURNAMENT_AVOID_WITHIN ?? '10',
+            10,
+          );
           const total = sizes.reduce((a, b) => a + b, 0);
           const ids = Array.from({ length: total }, (_, i) => `p${i}`);
           const tables: string[][] = sizes.map((s) => ids.splice(0, s));

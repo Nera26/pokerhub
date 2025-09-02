@@ -56,11 +56,24 @@ export class TableBalancerService {
     const min = Math.min(...counts);
     if (max - min > 1) {
       const recentlyMoved = new Map<string, number>();
+      if (this.redis) {
+        const key = `tourney:${tournamentId}:lastMoved`;
+        const entries = await this.redis.hgetall(key);
+        for (const [playerId, hand] of Object.entries(entries)) {
+          const parsed = parseInt(hand, 10);
+          if (!Number.isNaN(parsed)) {
+            recentlyMoved.set(playerId, parsed);
+          }
+        }
+      }
       for (const tbl of tables) {
         for (const seat of tbl.seats) {
           const last = seat.lastMovedHand ?? 0;
           if (currentHand > 0 && currentHand - last < avoidWithin) {
-            recentlyMoved.set(seat.user.id, last);
+            const prev = recentlyMoved.get(seat.user.id) ?? -Infinity;
+            if (last > prev) {
+              recentlyMoved.set(seat.user.id, last);
+            }
           }
         }
       }
