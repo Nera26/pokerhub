@@ -9,8 +9,6 @@ import {
   type Table,
   type Tournament,
   MessageResponseSchema,
-  type TournamentRegisterRequest,
-  type TournamentWithdrawRequest,
   type MessageResponse,
 } from '@shared/types';
 
@@ -98,14 +96,11 @@ export async function fetchTournaments({
 
 export async function registerTournament(
   id: string,
-  body: TournamentRegisterRequest,
   { signal }: { signal?: AbortSignal } = {},
 ): Promise<MessageResponse> {
   const baseUrl = getBaseUrl();
   const res = await fetch(`${baseUrl}/api/tournaments/${id}/register`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
     credentials: 'include',
     signal,
   });
@@ -114,14 +109,11 @@ export async function registerTournament(
 
 export async function withdrawTournament(
   id: string,
-  body: TournamentWithdrawRequest,
   { signal }: { signal?: AbortSignal } = {},
 ): Promise<MessageResponse> {
   const baseUrl = getBaseUrl();
   const res = await fetch(`${baseUrl}/api/tournaments/${id}/withdraw`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
     credentials: 'include',
     signal,
   });

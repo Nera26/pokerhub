@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ExecutionContext } from '@nestjs/common';
 import request from 'supertest';
 import { TournamentController } from '../src/tournament/tournament.controller';
 import { TournamentService } from '../src/tournament/tournament.service';
@@ -23,7 +23,17 @@ describe('TournamentController', () => {
       .overrideGuard(RateLimitGuard)
       .useValue({ canActivate: () => true })
       .overrideGuard(AuthGuard)
-      .useValue({ canActivate: () => true })
+      .useValue({
+        canActivate: (ctx: ExecutionContext) => {
+          const req = ctx.switchToHttp().getRequest();
+          const header = req.headers['authorization'];
+          if (typeof header === 'string' && header.startsWith('Bearer ')) {
+            req.userId = header.slice(7);
+            return true;
+          }
+          return false;
+        },
+      })
       .compile();
     app = moduleRef.createNestApplication();
     await app.init();
@@ -36,6 +46,7 @@ describe('TournamentController', () => {
   it('cancels tournament', async () => {
     await request(app.getHttpServer())
       .post('/tournaments/abc/cancel')
+      .set('Authorization', 'Bearer admin')
       .expect(200);
     expect(svc.cancel).toHaveBeenCalledWith('abc');
   });
@@ -44,7 +55,7 @@ describe('TournamentController', () => {
     svc.register?.mockResolvedValue({ id: 'seat1' } as any);
     await request(app.getHttpServer())
       .post('/tournaments/t1/register')
-      .send({ userId: 'u1' })
+      .set('Authorization', 'Bearer u1')
       .expect(201);
     expect(svc.register).toHaveBeenCalledWith('t1', 'u1');
   });
@@ -53,7 +64,7 @@ describe('TournamentController', () => {
     svc.withdraw?.mockResolvedValue(undefined);
     await request(app.getHttpServer())
       .post('/tournaments/t1/withdraw')
-      .send({ userId: 'u1' })
+      .set('Authorization', 'Bearer u1')
       .expect(200);
     expect(svc.withdraw).toHaveBeenCalledWith('t1', 'u1');
   });
@@ -69,6 +80,7 @@ describe('TournamentController', () => {
     };
     await request(app.getHttpServer())
       .post('/tournaments/t1/schedule')
+      .set('Authorization', 'Bearer admin')
       .send(payload)
       .expect(200);
     expect(svc.scheduleTournament).toHaveBeenCalledWith('t1', {

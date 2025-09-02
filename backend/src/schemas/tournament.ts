@@ -45,9 +45,7 @@ export type CalculatePrizesResponse = z.infer<
   typeof CalculatePrizesResponseSchema
 >;
 
-export const RegisterRequestSchema = z.object({
-  userId: z.string().uuid(),
-});
+export const RegisterRequestSchema = z.object({});
 
 export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
 

@@ -34,7 +34,6 @@ describe('TournamentController auth', () => {
   it('rejects unauthenticated registration', async () => {
     await request(app.getHttpServer())
       .post('/tournaments/t1/register')
-      .send({ userId: 'u1' })
       .expect(401);
   });
 });

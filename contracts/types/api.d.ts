@@ -651,11 +651,6 @@ export interface paths {
           id: string;
         };
       };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["TournamentRegisterRequest"];
-        };
-      };
       responses: {
         /** @description Tournament registration */
         200: {
@@ -672,11 +667,6 @@ export interface paths {
       parameters: {
         path: {
           id: string;
-        };
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["TournamentWithdrawRequest"];
         };
       };
       responses: {
@@ -1442,6 +1432,110 @@ export interface components {
       };
     });
     TournamentList: components["schemas"]["Tournament"][];
+    Table: {
+      id: string;
+      tableName: string;
+      /** @enum {string} */
+      gameType: "texas" | "omaha" | "allin" | "tournaments";
+      stakes: {
+        small: number;
+        big: number;
+      };
+      players: {
+        current: number;
+        max: number;
+      };
+      buyIn: {
+        min: number;
+        max: number;
+      };
+      stats: {
+        handsPerHour: number;
+        avgPot: number;
+        rake: number;
+      };
+      createdAgo: string;
+    };
+    TableList: components["schemas"]["Table"][];
+    CreateTableRequest: {
+      tableName: string;
+      /** @enum {string} */
+      gameType: "texas" | "omaha" | "allin" | "tournaments";
+      stakes: {
+        small?: number;
+        big?: number;
+      };
+      startingStack: number;
+      players: {
+        max?: number;
+      };
+      buyIn: {
+        min?: number;
+        max?: number;
+      };
+    };
+    UpdateTableRequest: {
+      tableName?: string;
+      /** @enum {string} */
+      gameType?: "texas" | "omaha" | "allin" | "tournaments";
+      stakes?: {
+        small?: number;
+        big?: number;
+      };
+      startingStack?: number;
+      players?: {
+        max?: number;
+      };
+      buyIn?: {
+        min?: number;
+        max?: number;
+      };
+    };
+    Player: {
+      id: number;
+      username: string;
+      avatar: string;
+      chips: number;
+      committed?: number;
+      isActive?: boolean;
+      isFolded?: boolean;
+      sittingOut?: boolean;
+      isAllIn?: boolean;
+      isWinner?: boolean;
+      timeLeft?: number;
+      cards?: string[];
+      pos?: string;
+      lastAction?: string;
+    };
+    ChatMessage: {
+      id: number;
+      username: string;
+      avatar: string;
+      text: string;
+      time: string;
+    };
+    SendChatMessageRequest: {
+      userId: string;
+      text: string;
+    };
+    TableData: {
+      smallBlind: number;
+      bigBlind: number;
+      pot: number;
+      communityCards: string[];
+      players: components["schemas"]["Player"][];
+      chatMessages: components["schemas"]["ChatMessage"][];
+      stateAvailable?: boolean;
+    };
+    CalculatePrizesRequest: {
+      prizePool: number;
+      payouts: number[];
+      bountyPct?: number;
+      satelliteSeatCost?: number;
+      /** @enum {string} */
+      method?: "topN" | "icm";
+      stacks?: number[];
+    };
   };
   responses: never;
   parameters: never;

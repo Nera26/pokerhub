@@ -5,6 +5,7 @@ import {
   HttpCode,
   Param,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { RateLimitGuard } from '../routes/rate-limit.guard';
@@ -14,10 +15,9 @@ import type {
   CalculatePrizesRequest,
   CalculatePrizesResponse,
   HotPatchLevelRequest,
-  RegisterRequest,
-  WithdrawRequest,
   TournamentScheduleRequest,
 } from '../schemas/tournament';
+import type { Request } from 'express';
 
 @UseGuards(RateLimitGuard)
 @Controller('tournaments')
@@ -36,15 +36,15 @@ export class TournamentController {
 
   @Post(':id/register')
   @UseGuards(AuthGuard)
-  register(@Param('id') id: string, @Body() body: RegisterRequest) {
-    return this.service.register(id, body.userId);
+  register(@Param('id') id: string, @Req() req: Request) {
+    return this.service.register(id, req.userId);
   }
 
   @Post(':id/withdraw')
   @UseGuards(AuthGuard)
   @HttpCode(200)
-  async withdraw(@Param('id') id: string, @Body() body: WithdrawRequest) {
-    await this.service.withdraw(id, body.userId);
+  async withdraw(@Param('id') id: string, @Req() req: Request) {
+    await this.service.withdraw(id, req.userId);
     return { message: 'tournament withdrawal' };
   }
 

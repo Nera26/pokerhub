@@ -156,6 +156,19 @@ export interface paths {
       };
     };
   };
+  "/dashboard/metrics": {
+    /** Get dashboard metrics */
+    get: {
+      responses: {
+        /** @description Dashboard metrics */
+        200: {
+          content: {
+            "application/json": components["schemas"]["DashboardMetricsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/notifications": {
     /** Get notifications */
     get: {
@@ -212,7 +225,10 @@ export interface paths {
         };
       };
     };
-    /** Create table */
+    /**
+     * Create table
+     * @description Admin only
+     */
     post: {
       requestBody: {
         content: {
@@ -250,7 +266,10 @@ export interface paths {
         };
       };
     };
-    /** Update table */
+    /**
+     * Update table
+     * @description Admin only
+     */
     put: {
       parameters: {
         path: {
@@ -260,6 +279,23 @@ export interface paths {
       requestBody: {
         content: {
           "application/json": components["schemas"]["UpdateTableRequest"];
+        };
+      };
+    };
+    /**
+     * Delete table
+     * @description Admin only
+     */
+    delete: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Table deleted */
+        204: {
+          content: never;
         };
       };
     };
@@ -301,20 +337,6 @@ export interface paths {
           };
         };
         /** @description Message sent */
-        204: {
-          content: never;
-        };
-      };
-    };
-    /** Delete table */
-    delete: {
-      parameters: {
-        path: {
-          id: string;
-        };
-      };
-      responses: {
-        /** @description Table deleted */
         204: {
           content: never;
         };
@@ -629,11 +651,6 @@ export interface paths {
           id: string;
         };
       };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["TournamentRegisterRequest"];
-        };
-      };
       responses: {
         /** @description Tournament registration */
         200: {
@@ -650,11 +667,6 @@ export interface paths {
       parameters: {
         path: {
           id: string;
-        };
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["TournamentWithdrawRequest"];
         };
       };
       responses: {
@@ -725,7 +737,7 @@ export interface paths {
         /** @description Prize distribution */
         200: {
           content: {
-            "application/json": unknown;
+            "application/json": components["schemas"]["CalculatePrizesResponse"];
           };
         };
       };
@@ -800,6 +812,14 @@ export interface paths {
             "application/json": components["schemas"]["HandProof"];
           };
         };
+        /** @description Unauthorized */
+        401: {
+          content: never;
+        };
+        /** @description Forbidden */
+        403: {
+          content: never;
+        };
         /** @description Hand not found */
         404: {
           content: never;
@@ -858,7 +878,39 @@ export interface paths {
         /** @description Reconstructed hand state */
         200: {
           content: {
-            "application/json": components["schemas"]["GameState"];
+            "application/json": unknown;
+          };
+        };
+      };
+    };
+  };
+  "/analytics/logs": {
+    /** List system audit logs */
+    get: {
+      parameters: {
+        query?: {
+          cursor?: number;
+          limit?: number;
+        };
+      };
+      responses: {
+        /** @description Audit logs */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AuditLogsResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/analytics/summary": {
+    /** Get audit log summary */
+    get: {
+      responses: {
+        /** @description Audit log summary */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AuditSummaryResponse"];
           };
         };
       };
@@ -1169,6 +1221,29 @@ export interface components {
     MessageResponse: {
       message: string;
     };
+    DashboardMetricsResponse: {
+      online: number;
+      revenue: number;
+    };
+    AuditLogEntry: {
+      id: number;
+      /** Format: date-time */
+      timestamp: string;
+      /** @enum {string} */
+      type: "Login" | "Table Event" | "Broadcast" | "Error";
+      description: string;
+      user: string;
+      ip: string;
+    };
+    AuditLogsResponse: {
+      logs: components["schemas"]["AuditLogEntry"][];
+      nextCursor?: number | null;
+    };
+    AuditSummaryResponse: {
+      total: number;
+      errors: number;
+      logins: number;
+    };
     WithdrawalDecisionRequest: {
       comment: string;
     };
@@ -1357,6 +1432,110 @@ export interface components {
       };
     });
     TournamentList: components["schemas"]["Tournament"][];
+    Table: {
+      id: string;
+      tableName: string;
+      /** @enum {string} */
+      gameType: "texas" | "omaha" | "allin" | "tournaments";
+      stakes: {
+        small: number;
+        big: number;
+      };
+      players: {
+        current: number;
+        max: number;
+      };
+      buyIn: {
+        min: number;
+        max: number;
+      };
+      stats: {
+        handsPerHour: number;
+        avgPot: number;
+        rake: number;
+      };
+      createdAgo: string;
+    };
+    TableList: components["schemas"]["Table"][];
+    CreateTableRequest: {
+      tableName: string;
+      /** @enum {string} */
+      gameType: "texas" | "omaha" | "allin" | "tournaments";
+      stakes: {
+        small?: number;
+        big?: number;
+      };
+      startingStack: number;
+      players: {
+        max?: number;
+      };
+      buyIn: {
+        min?: number;
+        max?: number;
+      };
+    };
+    UpdateTableRequest: {
+      tableName?: string;
+      /** @enum {string} */
+      gameType?: "texas" | "omaha" | "allin" | "tournaments";
+      stakes?: {
+        small?: number;
+        big?: number;
+      };
+      startingStack?: number;
+      players?: {
+        max?: number;
+      };
+      buyIn?: {
+        min?: number;
+        max?: number;
+      };
+    };
+    Player: {
+      id: number;
+      username: string;
+      avatar: string;
+      chips: number;
+      committed?: number;
+      isActive?: boolean;
+      isFolded?: boolean;
+      sittingOut?: boolean;
+      isAllIn?: boolean;
+      isWinner?: boolean;
+      timeLeft?: number;
+      cards?: string[];
+      pos?: string;
+      lastAction?: string;
+    };
+    ChatMessage: {
+      id: number;
+      username: string;
+      avatar: string;
+      text: string;
+      time: string;
+    };
+    SendChatMessageRequest: {
+      userId: string;
+      text: string;
+    };
+    TableData: {
+      smallBlind: number;
+      bigBlind: number;
+      pot: number;
+      communityCards: string[];
+      players: components["schemas"]["Player"][];
+      chatMessages: components["schemas"]["ChatMessage"][];
+      stateAvailable?: boolean;
+    };
+    CalculatePrizesRequest: {
+      prizePool: number;
+      payouts: number[];
+      bountyPct?: number;
+      satelliteSeatCost?: number;
+      /** @enum {string} */
+      method?: "topN" | "icm";
+      stacks?: number[];
+    };
   };
   responses: never;
   parameters: never;

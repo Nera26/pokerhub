@@ -342,9 +342,7 @@ export const TournamentDetailSchema = TournamentSchema.extend({
 });
 export type TournamentDetail = z.infer<typeof TournamentDetailSchema>;
 
-export const TournamentRegisterRequestSchema = z.object({
-  userId: z.string(),
-});
+export const TournamentRegisterRequestSchema = z.object({});
 export type TournamentRegisterRequest = z.infer<
   typeof TournamentRegisterRequestSchema
 >;
