@@ -15,6 +15,7 @@ import { AntiCheatFlag } from './entities/antiCheatFlag.entity';
 import { KycVerification } from './entities/kycVerification.entity';
 import { ChatMessage } from './entities/chatMessage.entity';
 import { GameState } from './entities/game-state.entity';
+import { CollusionAudit } from '../analytics/collusion-audit.entity';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -35,6 +36,7 @@ export const AppDataSource = new DataSource({
     KycVerification,
     ChatMessage,
     GameState,
+    CollusionAudit,
   ],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
 });

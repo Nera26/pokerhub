@@ -12,9 +12,18 @@ import { AdminController } from '../routes/admin.controller';
 import { WalletModule } from '../wallet/wallet.module';
 import { AuthModule } from '../auth/auth.module';
 import { StorageModule } from '../storage/storage.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { CollusionAudit } from './collusion-audit.entity';
 
 @Module({
-  imports: [ConfigModule, RedisModule, WalletModule, AuthModule, StorageModule],
+  imports: [
+    ConfigModule,
+    RedisModule,
+    WalletModule,
+    AuthModule,
+    StorageModule,
+    TypeOrmModule.forFeature([CollusionAudit]),
+  ],
   providers: [
     AnalyticsService,
     EtlService,

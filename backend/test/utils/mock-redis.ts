@@ -124,6 +124,10 @@ export class MockRedis {
     return Array.from(this.sets.get(key) ?? []);
   }
 
+  async scard(key: string) {
+    return this.sets.get(key)?.size ?? 0;
+  }
+
   async zadd(key: string, score: number, member: string) {
     if (!this.sorted.has(key)) this.sorted.set(key, []);
     const arr = this.sorted.get(key)!;

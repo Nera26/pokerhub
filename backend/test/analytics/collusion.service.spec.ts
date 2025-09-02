@@ -1,15 +1,47 @@
 import { CollusionService } from '../../src/analytics/collusion.service';
 import type Redis from 'ioredis';
 import { MockRedis } from '../utils/mock-redis';
+import { DataSource } from 'typeorm';
+import { newDb } from 'pg-mem';
+import { CollusionAudit } from '../../src/analytics/collusion-audit.entity';
 
 describe('CollusionService', () => {
   let service: CollusionService;
   let client: MockRedis;
+  let dataSource: DataSource;
+  let db: ReturnType<typeof newDb>;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     client = new MockRedis();
+    db = newDb();
+    db.public.registerFunction({
+      name: 'version',
+      returns: 'text',
+      implementation: () => 'pg-mem',
+    });
+    db.public.registerFunction({
+      name: 'current_database',
+      returns: 'text',
+      implementation: () => 'test',
+    });
+    db.public.registerFunction({
+      name: 'uuid_generate_v4',
+      returns: 'text',
+      implementation: () => '00000000-0000-0000-0000-000000000000',
+    });
+    dataSource = db.adapters.createTypeormDataSource({
+      type: 'postgres',
+      entities: [CollusionAudit],
+      synchronize: true,
+    }) as DataSource;
+    await dataSource.initialize();
+    const repo = dataSource.getRepository(CollusionAudit);
     const typed: unknown = client;
-    service = new CollusionService(typed as Redis);
+    service = new CollusionService(typed as Redis, repo);
+  });
+
+  afterEach(async () => {
+    await dataSource.destroy();
   });
 
   it('clusters by device/ip and detects fast actions', async () => {
@@ -51,9 +83,6 @@ describe('CollusionService', () => {
     await service.applyAction('s1', 'ban', 'r1');
     const flagged = await service.listFlaggedSessions();
     expect(flagged[0]).toMatchObject({ id: 's1', status: 'ban' });
-    const log = await client.lrange('collusion:session:s1:log', 0, -1);
-    expect(log).toHaveLength(3);
-    expect(JSON.parse(log[0])).toHaveProperty('reviewerId', 'r1');
     const history = await service.getActionHistory('s1');
     expect(history[0]).toMatchObject({ reviewerId: 'r1' });
   });
@@ -90,5 +119,21 @@ describe('CollusionService', () => {
     expect(warned).toEqual([
       expect.objectContaining({ id: 's1', status: 'warn' }),
     ]);
+  });
+  it('retrieves audit history after restart', async () => {
+    await service.flagSession('s1', ['u1'], {});
+    await service.applyAction('s1', 'warn', 'r1');
+    await dataSource.destroy();
+    dataSource = db.adapters.createTypeormDataSource({
+      type: 'postgres',
+      entities: [CollusionAudit],
+      synchronize: false,
+    }) as DataSource;
+    await dataSource.initialize();
+    const repo = dataSource.getRepository(CollusionAudit);
+    service = new CollusionService(client as unknown as Redis, repo);
+    const history = await service.getActionHistory('s1');
+    expect(history).toHaveLength(1);
+    expect(history[0]).toMatchObject({ action: 'warn' });
   });
 });
