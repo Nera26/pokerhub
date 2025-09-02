@@ -1,0 +1,56 @@
+name: metrics-check
+on:
+  pull_request:
+    paths:
+      - 'scripts/check-soak-metrics.ts'
+      - 'scripts/check-perf-metrics.ts'
+      - '.github/workflows/metrics-check.yml'
+jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
+  metrics:
+    runs-on: ubuntu-latest
+    needs: check-proof-archive
+    env:
+      SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS }}
+      SOAK_LATENCY_P99_MS: ${{ vars.SOAK_LATENCY_P99_MS }}
+      SOAK_THROUGHPUT_MIN: ${{ vars.SOAK_THROUGHPUT_MIN }}
+      PERF_LATENCY_P95_MS: ${{ vars.PERF_LATENCY_P95_MS }}
+      PERF_LATENCY_P99_MS: ${{ vars.PERF_LATENCY_P99_MS }}
+      PERF_THROUGHPUT_MIN: ${{ vars.PERF_THROUGHPUT_MIN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run soak metrics check
+        id: soak
+        continue-on-error: true
+        run: npx ts-node scripts/check-soak-metrics.ts
+      - name: Run perf metrics check
+        id: perf
+        continue-on-error: true
+        run: npx ts-node scripts/check-perf-metrics.ts
+      - name: Upload soak results
+        if: always() && hashFiles('soak-summary.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: soak-metrics
+          path: |
+            soak-summary.json
+            soak-regression.json
+      - name: Upload perf results
+        if: always() && hashFiles('perf-summary.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-metrics
+          path: |
+            perf-summary.json
+            perf-regression.json
+      - name: Fail on regression
+        if: steps.soak.outcome == 'failure' || steps.perf.outcome == 'failure'
+        run: exit 1
+  spectator-privacy:
+    if: ${{ always() }}
+    needs: [metrics, check-proof-archive]
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit

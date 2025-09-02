@@ -17,6 +17,8 @@ Central index of metric runbooks with links to dashboards and PagerDuty escalati
 | GC pauses | [GC Pauses](../../infra/observability/gc-pauses-dashboard.json) | [GC Pauses](gc-pauses.md) | `pokerhub-eng` (PENG012) | [Engineering](https://pokerhub.pagerduty.com/escalation_policies/PD9YTWT) |
 | Telemetry pipeline | [Latency/Error/Resource](../../infra/observability/latency-error-resource-dashboard.json) | [Telemetry Pipeline](telemetry-pipeline.md) | `pokerhub-sre` (PM5RKAT) | [SRE](https://pokerhub.pagerduty.com/escalation_policies/P3IMDMC) |
 | Player analytics | [Player Analytics](../../infra/observability/player-analytics-dashboard.json) | [Player Analytics](player-analytics.md) | `pokerhub-eng` (PENG012) | [Engineering](https://pokerhub.pagerduty.com/escalation_policies/PD9YTWT) |
+| Soak metrics | – | [Soak Metrics](soak-metrics.md) | `pokerhub-eng` (PENG012) | [Engineering](https://pokerhub.pagerduty.com/escalation_policies/PD9YTWT) |
+| Performance metrics | – | [Performance Metrics](perf-metrics.md) | `pokerhub-eng` (PENG012) | [Engineering](https://pokerhub.pagerduty.com/escalation_policies/PD9YTWT) |
 
 ## On‑call Escalation Path
 1. Primary on‑call acknowledges within 15 minutes.
