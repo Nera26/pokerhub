@@ -1437,9 +1437,14 @@ components:
           type: number
         currency:
           type: string
+        deviceId:
+          type: string
+        ip:
+          type: string
       required:
         - amount
         - currency
+        - deviceId
     BankTransferDepositResponse:
       type: object
       properties:

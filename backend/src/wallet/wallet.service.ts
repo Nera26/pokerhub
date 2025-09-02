@@ -883,9 +883,17 @@ export class WalletService {
   async initiateBankTransfer(
     accountId: string,
     amount: number,
+    deviceId: string,
+    ip: string,
     currency: string,
   ): Promise<{ reference: string }> {
+    await this.checkVelocity('deposit', deviceId, ip);
+    await this.enforceVelocity('deposit', accountId, amount);
     await this.accounts.findOneByOrFail({ id: accountId, currency });
+    if (!(await this.kyc.isVerified(accountId, ip))) {
+      throw new Error('KYC required');
+    }
+    await this.enforceDailyLimit('deposit', accountId, amount, currency);
     const deposit = await this.pendingDeposits.save({
       id: randomUUID(),
       userId: accountId,

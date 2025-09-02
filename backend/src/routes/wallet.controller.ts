@@ -179,6 +179,8 @@ export class WalletController {
       const res = await this.wallet.initiateBankTransfer(
         id,
         parsed.amount,
+        parsed.deviceId,
+        parsed.ip ?? req.ip,
         parsed.currency,
       );
       return BankTransferDepositResponseSchema.parse(res);
