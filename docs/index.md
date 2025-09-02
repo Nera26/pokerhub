@@ -23,6 +23,7 @@
 ## Observability & SLOs
 - [SLO Guidelines](./SLOs.md)
 - [Observability Guide](./observability.md)
+- [Dashboard Metrics](./dashboard-metrics.md)
 
 ## Documentation Checklist
 

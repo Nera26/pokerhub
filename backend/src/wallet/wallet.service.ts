@@ -18,6 +18,7 @@ import {
 import { KycService } from './kyc.service';
 import { SettlementService } from './settlement.service';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { MetricsWriterService } from '../metrics/metrics-writer.service';
 import { ChargebackMonitor } from './chargeback.service';
 import type { Street } from '../game/state-machine';
 import { GeoIpService } from '../auth/geoip.service';
@@ -63,6 +64,7 @@ export class WalletService {
     @Optional() private readonly analytics?: AnalyticsService,
     @Optional() private readonly chargebacks?: ChargebackMonitor,
     @Optional() private readonly geo?: GeoIpService,
+    @Optional() private readonly metrics?: MetricsWriterService,
   ) {}
 
   private payoutQueue?: Queue;
@@ -233,6 +235,7 @@ export class WalletService {
             { account: prize, amount: amount - rakeAmount },
             { account: rakeAcc, amount: rakeAmount },
           ]);
+          await this.metrics?.addRevenue(rakeAmount);
           if (idempotencyKey && this.settlements) {
             await this.settlements.update(
               { idempotencyKey },

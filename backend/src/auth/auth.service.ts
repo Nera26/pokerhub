@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import * as bcrypt from 'bcrypt';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { MetricsWriterService } from '../metrics/metrics-writer.service';
 import { UserRepository } from '../users/user.repository';
 import { EmailService } from './email.service';
 
@@ -19,6 +20,7 @@ export class AuthService {
     private readonly analytics: AnalyticsService,
     private readonly users: UserRepository,
     private readonly email: EmailService,
+    private readonly metrics: MetricsWriterService,
   ) {}
 
   async register(email: string, password: string) {
@@ -51,6 +53,7 @@ export class AuthService {
     const userId = await this.validateUser(email, password);
     if (!userId) return null;
     await this.analytics.emit('auth.login', { userId, ts: Date.now() });
+    await this.metrics.recordLogin(userId);
     return this.sessions.issueTokens(userId);
   }
 
