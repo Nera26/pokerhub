@@ -1147,7 +1147,7 @@ jobs:
       - ops-preflight
       - ops-sla
       - workflow-sla
-      - dr-trends
+      - dr-trends # gate on DR trend health
       - spectator-privacy
     uses: ./.github/workflows/ops-artifacts-verify.yml
     secrets: inherit

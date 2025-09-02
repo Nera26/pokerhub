@@ -139,7 +139,7 @@ jobs:
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
 
   deploy:
-    needs: [preflight, dr-trends]
+    needs: [preflight, dr-drill-sla, dr-trends]
     runs-on: ubuntu-latest
     environment: production
     env:
