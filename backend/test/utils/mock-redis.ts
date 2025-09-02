@@ -60,6 +60,14 @@ export class MockRedis {
     return parseInt(next, 10);
   }
 
+  async incrbyfloat(key: string, amount: number) {
+    const next = (
+      parseFloat(this.store.get(key) ?? '0') + amount
+    ).toString();
+    this.store.set(key, next);
+    return parseFloat(next);
+  }
+
   async decrby(key: string, amount: number) {
     return this.incrby(key, -amount);
   }

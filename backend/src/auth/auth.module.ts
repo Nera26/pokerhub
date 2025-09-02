@@ -26,6 +26,7 @@ import { AdminGuard } from './admin.guard';
 import { AuthRateLimitMiddleware } from './rate-limit.middleware';
 import { SecurityHeadersMiddleware } from './security.middleware';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { MetricsModule } from '../metrics/metrics.module';
 import { GeoIpService } from './geoip.service';
 import { EmailService } from './email.service';
 
@@ -56,6 +57,7 @@ function providerFactory(config: ConfigService): CountryProvider {
     TypeOrmModule.forFeature([Account, KycVerification, User]),
     SessionModule,
     forwardRef(() => AnalyticsModule),
+    MetricsModule,
   ],
   providers: [
     {
