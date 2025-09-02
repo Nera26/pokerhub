@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.3.0
+  version: 2.4.0
 paths:
   /status:
     get:
@@ -875,6 +875,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuditLogsResponse'
+  /analytics/summary:
+    get:
+      summary: Get audit log summary
+      responses:
+        '200':
+          description: Audit log summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditSummaryResponse'
   /analytics/collusion/flagged:
     get:
       summary: List collusion flagged sessions
@@ -1260,6 +1270,19 @@ components:
           nullable: true
       required:
         - logs
+    AuditSummaryResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+        errors:
+          type: integer
+        logins:
+          type: integer
+      required:
+        - total
+        - errors
+        - logins
     WithdrawalDecisionRequest:
       type: object
       properties:
