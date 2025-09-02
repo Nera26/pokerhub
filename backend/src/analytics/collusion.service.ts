@@ -7,11 +7,19 @@ import {
 } from './collusion.model';
 import { FlaggedSession, ReviewStatus } from '../schemas/review';
 import { AnalyticsService } from './analytics.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import {
+  CollusionAudit,
+  CollusionHistoryEntry,
+} from './collusion-audit.entity';
 
 @Injectable()
 export class CollusionService {
   constructor(
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
+    @InjectRepository(CollusionAudit)
+    private readonly auditRepo: Repository<CollusionAudit>,
     @Optional() private readonly analytics?: AnalyticsService,
   ) {}
 
@@ -129,12 +137,14 @@ export class CollusionService {
   ) {
     const ipClusters = await this.clusterByIp(users);
     const enriched = { ...features, ipClusters };
-    await this.redis.hset(`collusion:session:${sessionId}`, {
-      users: JSON.stringify(users),
+    const audit = this.auditRepo.create({
+      sessionId,
+      users,
       status: 'flagged',
-      features: JSON.stringify(enriched),
+      features: enriched,
+      history: [],
     });
-    await this.redis.sadd('collusion:flagged', sessionId);
+    await this.auditRepo.save(audit);
     await this.analytics?.ingest('collusion_evidence', {
       session_id: sessionId,
       users,
@@ -153,20 +163,17 @@ export class CollusionService {
     status?: ReviewStatus;
   }): Promise<FlaggedSession[]> {
     const { page = 1, pageSize = 20, status } = opts ?? {};
-    const ids = await this.redis.smembers('collusion:flagged');
-    const result: FlaggedSession[] = [];
-    for (const id of ids) {
-      const data = await this.redis.hgetall(`collusion:session:${id}`);
-      const sessionStatus = (data.status ?? 'flagged') as ReviewStatus;
-      if (status && sessionStatus !== status) continue;
-      result.push({
-        id,
-        users: JSON.parse(data.users ?? '[]'),
-        status: sessionStatus,
-      });
-    }
-    const start = (page - 1) * pageSize;
-    return result.slice(start, start + pageSize);
+    const where = status ? { status } : {};
+    const audits = await this.auditRepo.find({
+      where,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    });
+    return audits.map((a) => ({
+      id: a.sessionId,
+      users: a.users,
+      status: a.status as ReviewStatus,
+    }));
   }
 
   async applyAction(
@@ -174,33 +181,33 @@ export class CollusionService {
     action: 'warn' | 'restrict' | 'ban',
     reviewerId: string,
   ) {
-    const key = `collusion:session:${sessionId}`;
-    const current = await this.redis.hget(key, 'status');
+    const audit = await this.auditRepo.findOne({ where: { sessionId } });
+    if (!audit) {
+      throw new Error('Session not found');
+    }
     const order: Array<'flagged' | 'warn' | 'restrict' | 'ban'> = [
       'flagged',
       'warn',
       'restrict',
       'ban',
     ];
-    const currentIndex = order.indexOf((current as any) || 'flagged');
+    const currentIndex = order.indexOf(audit.status);
     const nextIndex = order.indexOf(action);
     if (nextIndex !== currentIndex + 1) {
       throw new Error('Invalid review action');
     }
-    await this.redis.hset(key, { status: action });
-    await this.redis.rpush(
-      `${key}:log`,
-      JSON.stringify({ action, timestamp: Date.now(), reviewerId }),
-    );
+    const entry: CollusionHistoryEntry = {
+      action,
+      timestamp: Date.now(),
+      reviewerId,
+    };
+    audit.status = action;
+    audit.history.push(entry);
+    await this.auditRepo.save(audit);
   }
 
   async getActionHistory(sessionId: string) {
-    const key = `collusion:session:${sessionId}:log`;
-    const entries = await this.redis.lrange(key, 0, -1);
-    return entries.map((e) => JSON.parse(e) as {
-      action: 'warn' | 'restrict' | 'ban';
-      timestamp: number;
-      reviewerId: string;
-    });
+    const audit = await this.auditRepo.findOne({ where: { sessionId } });
+    return audit?.history ?? [];
   }
 }

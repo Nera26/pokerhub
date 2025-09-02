@@ -3,19 +3,55 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { ReviewController } from '../../src/analytics/review.controller';
 import { CollusionService } from '../../src/analytics/collusion.service';
+import { CollusionController } from '../../src/analytics/collusion.controller';
+import { AnalyticsService } from '../../src/analytics/analytics.service';
 import { AdminGuard } from '../../src/auth/admin.guard';
 import { MockRedis } from '../utils/mock-redis';
+import { DataSource } from 'typeorm';
+import { newDb } from 'pg-mem';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { CollusionAudit } from '../../src/analytics/collusion-audit.entity';
 
 describe('ReviewController', () => {
   let app: INestApplication;
   let service: CollusionService;
+  let dataSource: DataSource;
 
   beforeAll(async () => {
+    const db = newDb();
+    db.public.registerFunction({
+      name: 'version',
+      returns: 'text',
+      implementation: () => 'pg-mem',
+    });
+    db.public.registerFunction({
+      name: 'current_database',
+      returns: 'text',
+      implementation: () => 'test',
+    });
+    db.public.registerFunction({
+      name: 'uuid_generate_v4',
+      returns: 'text',
+      implementation: () => '00000000-0000-0000-0000-000000000000',
+    });
+    dataSource = db.adapters.createTypeormDataSource({
+      type: 'postgres',
+      entities: [CollusionAudit],
+      synchronize: true,
+    }) as DataSource;
+    await dataSource.initialize();
+    const repo = dataSource.getRepository(CollusionAudit);
+
     const moduleRef = await Test.createTestingModule({
-      controllers: [ReviewController],
+      controllers: [ReviewController, CollusionController],
       providers: [
         CollusionService,
         { provide: 'REDIS_CLIENT', useClass: MockRedis },
+        { provide: getRepositoryToken(CollusionAudit), useValue: repo },
+        {
+          provide: AnalyticsService,
+          useValue: { ingest: jest.fn(), emitAntiCheatFlag: jest.fn() },
+        },
       ],
     })
       .overrideGuard(AdminGuard)
@@ -34,6 +70,7 @@ describe('ReviewController', () => {
 
   afterAll(async () => {
     await app.close();
+    await dataSource.destroy();
   });
 
   it('transitions session statuses via actions', async () => {
