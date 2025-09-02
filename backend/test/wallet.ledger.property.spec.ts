@@ -19,6 +19,7 @@ import type { Street } from '../src/game/state-machine';
 import { EventPublisher } from '../src/events/events.service';
 import type { Redis } from 'ioredis';
 
+jest.setTimeout(20000);
 interface BatchEntry {
   account: number;
   delta: number;
@@ -271,6 +272,16 @@ export async function handLogsReplayable() {
     { numRuns: 25 },
   );
 }
+
+describe('wallet ledger', () => {
+  test('deltas sum to zero', async () => {
+    await ledgerDeltasSumToZero();
+  });
+
+  test('hand logs are replayable', async () => {
+    await handLogsReplayable();
+  });
+});
 
 if (process.argv[1] === __filename) {
   (async () => {
