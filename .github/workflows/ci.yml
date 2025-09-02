@@ -255,6 +255,15 @@ jobs:
             unit: hours
             slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
+        - name: Check proof-archive-audit SLA
+          id: proof-archive-audit
+          uses: ./.github/workflows/check-workflow-sla
+          with:
+            workflow: proof-archive-audit.yml
+            sla: 24
+            unit: hours
+            slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
         - name: PagerDuty alert (check-proof-archive SLA)
           if: failure() && steps.check-proof-archive.outcome == 'failure'
           env:
