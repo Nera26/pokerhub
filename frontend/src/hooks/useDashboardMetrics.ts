@@ -1,15 +1,12 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { z } from 'zod';
 import { getBaseUrl } from '@/lib/base-url';
 import { handleResponse, ApiError } from '@/lib/api/client';
-
-const MetricsSchema = z.object({
-  online: z.number(),
-  revenue: z.number(),
-});
-export type DashboardMetrics = z.infer<typeof MetricsSchema>;
+import {
+  DashboardMetricsSchema,
+  type DashboardMetrics,
+} from '@shared/types';
 
 async function fetchMetrics({
   signal,
@@ -23,7 +20,7 @@ async function fetchMetrics({
         credentials: 'include',
         signal,
       }),
-      MetricsSchema,
+      DashboardMetricsSchema,
     );
   } catch (err) {
     const message =
