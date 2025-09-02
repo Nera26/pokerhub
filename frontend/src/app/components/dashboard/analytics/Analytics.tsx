@@ -11,14 +11,15 @@ import ErrorChart from './ErrorChart';
 import AuditTable from './AuditTable';
 import AdvancedFilterModal from './AdvancedFilterModal';
 import DetailModal from './DetailModal';
-import { SAMPLE_LOGS, LogRow, LogType } from '../data/analyticsSample';
+import { useAuditLogs } from '@/hooks/useAuditLogs';
+import type { AuditLogEntry, AuditLogType } from '@shared/types';
 
 export default function Analytics() {
   const [search, setSearch] = useState('');
-  const [type, setType] = useState<'all' | LogType>('all');
+  const [type, setType] = useState<'all' | AuditLogType>('all');
 
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [showDetail, setShowDetail] = useState<LogRow | null>(null);
+  const [showDetail, setShowDetail] = useState<AuditLogEntry | null>(null);
 
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -28,12 +29,15 @@ export default function Analytics() {
   const [page, setPage] = useState(1);
   const pageSize = 8;
 
+  const { data } = useAuditLogs();
+  const logs = data?.logs ?? [];
+
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
-    let rows = SAMPLE_LOGS.filter((r) => {
+    let rows = logs.filter((r) => {
       const textOk =
         !s ||
-        `${r.date} ${r.type} ${r.description} ${r.user} ${r.ip}`
+        `${r.timestamp} ${r.type} ${r.description} ${r.user} ${r.ip}`
           .toLowerCase()
           .includes(s);
       const typeOk = type === 'all' || r.type === type;
@@ -45,17 +49,17 @@ export default function Analytics() {
         `${r.user}`.toLowerCase().includes(userFilter.trim().toLowerCase()),
       );
     }
-    if (dateFrom) {
-      rows = rows.filter((r) => new Date(r.date) >= new Date(dateFrom));
-    }
-    if (dateTo) {
-      rows = rows.filter(
-        (r) => new Date(r.date) <= new Date(dateTo + ' 23:59:59'),
-      );
-    }
+      if (dateFrom) {
+        rows = rows.filter((r) => new Date(r.timestamp) >= new Date(dateFrom));
+      }
+      if (dateTo) {
+        rows = rows.filter(
+          (r) => new Date(r.timestamp) <= new Date(dateTo + ' 23:59:59'),
+        );
+      }
 
     return rows.slice(0, resultLimit);
-  }, [search, type, userFilter, dateFrom, dateTo, resultLimit]);
+  }, [logs, search, type, userFilter, dateFrom, dateTo, resultLimit]);
 
   const total = filtered.length;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
@@ -69,7 +73,7 @@ export default function Analytics() {
   const exportCSV = () => {
     const header = 'Date,Type,Description,User\n';
     const body = filtered
-      .map((r) => `${r.date},${r.type},"${r.description}",${r.user}`)
+      .map((r) => `${r.timestamp},${r.type},"${r.description}",${r.user}`)
       .join('\n');
     const csvContent = 'data:text/csv;charset=utf-8,' + header + body;
     const encodedUri = encodeURI(csvContent);

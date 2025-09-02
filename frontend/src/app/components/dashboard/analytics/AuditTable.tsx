@@ -6,18 +6,18 @@ import {
   faChevronLeft,
   faChevronRight,
 } from '@fortawesome/free-solid-svg-icons';
-import type { LogRow } from '../data/analyticsSample';
-import { TYPE_BADGE_CLASSES } from '../data/analyticsSample';
+import type { AuditLogEntry } from '@shared/types';
+import { TYPE_BADGE_CLASSES } from './constants';
 import useRenderCount from '@/hooks/useRenderCount';
 
 interface Props {
-  rows: LogRow[];
+  rows: AuditLogEntry[];
   page: number;
   pageCount: number;
   start: number;
   total: number;
   setPage: (p: number) => void;
-  onView: (row: LogRow) => void;
+  onView: (row: AuditLogEntry) => void;
 }
 
 export default function AuditTable({
@@ -63,7 +63,7 @@ export default function AuditTable({
                 key={r.id}
                 className="border-b border-dark hover:bg-hover-bg transition-colors"
               >
-                <td className="p-4 text-sm">{r.date}</td>
+                <td className="p-4 text-sm">{r.timestamp}</td>
                 <td className="p-4">
                   <span
                     className={`px-2 py-1 rounded-lg text-xs font-semibold ${TYPE_BADGE_CLASSES[r.type]}`}

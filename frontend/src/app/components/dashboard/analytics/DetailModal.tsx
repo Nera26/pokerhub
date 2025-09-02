@@ -2,11 +2,11 @@
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faCopy } from '@fortawesome/free-solid-svg-icons';
-import type { LogRow } from '../data/analyticsSample';
-import { TYPE_BADGE_CLASSES } from '../data/analyticsSample';
+import type { AuditLogEntry } from '@shared/types';
+import { TYPE_BADGE_CLASSES } from './constants';
 
 interface Props {
-  row: LogRow | null;
+  row: AuditLogEntry | null;
   onClose: () => void;
 }
 
@@ -34,7 +34,7 @@ export default function DetailModal({ row, onClose }: Props) {
                 Timestamp
               </label>
               <div className="bg-primary-bg p-3 rounded-xl text-sm">
-                {row.date}
+                {row.timestamp}
               </div>
             </div>
             <div>
