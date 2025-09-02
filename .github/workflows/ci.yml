@@ -1233,6 +1233,27 @@ jobs:
         with:
           title: DR trend breach
           content-filepath: dr-trends.json
+  spectator-privacy-metric-check:
+    needs: spectator-privacy
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+      - run: npm ci
+      - run: npx ts-node scripts/check-spectator-privacy-metric.ts
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          SPECTATOR_PRIVACY_SLA_HOURS: ${{ vars.SPECTATOR_PRIVACY_SLA_HOURS || 24 }}
   ops-artifacts-verify:
     needs:
       - ops-preflight
@@ -1241,6 +1262,7 @@ jobs:
       - ensure-dr-workflows
       - dr-trends # gate on DR trend health
       - spectator-privacy
+      - spectator-privacy-metric-check
       - check-proof-archive
       - soak-metrics
     uses: ./.github/workflows/ops-artifacts-verify.yml
