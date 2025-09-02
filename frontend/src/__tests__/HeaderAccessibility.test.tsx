@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Header from '@/app/components/common/header/Header';
 import type { ResponseLike } from '@/lib/api/client';
+import { AuthProvider } from '@/context/AuthContext';
 
 describe('header notifications accessibility', () => {
   const originalFetch = global.fetch;
@@ -35,7 +36,7 @@ describe('header notifications accessibility', () => {
             }),
           } as ResponseLike;
         }
-        if (url.includes('/api/wallet/status')) {
+        if (url.includes('/api/wallet/u1/status')) {
           return {
             ok: true,
             status: 200,
@@ -62,7 +63,9 @@ describe('header notifications accessibility', () => {
 
     render(
       <QueryClientProvider client={client}>
-        <Header />
+        <AuthProvider>
+          <Header />
+        </AuthProvider>
       </QueryClientProvider>,
     );
 

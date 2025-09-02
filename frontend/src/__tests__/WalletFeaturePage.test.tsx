@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import WalletPage from '@/features/wallet';
+import { AuthProvider } from '@/context/AuthContext';
 import { getStatus } from '@/lib/api/wallet';
 
 jest.mock('@/lib/api/wallet');
@@ -19,7 +20,9 @@ describe('WalletPage', () => {
 
     render(
       <QueryClientProvider client={client}>
-        <WalletPage />
+        <AuthProvider>
+          <WalletPage />
+        </AuthProvider>
       </QueryClientProvider>,
     );
 
