@@ -12,9 +12,12 @@ import { SettlementJournal } from '../src/wallet/settlement-journal.entity';
 import { WalletService } from '../src/wallet/wallet.service';
 import { PaymentProviderService } from '../src/wallet/payment-provider.service';
 import { KycService } from '../src/wallet/kyc.service';
+import { SettlementService } from '../src/wallet/settlement.service';
 import { MockRedis } from './utils/mock-redis';
 import { writeHandLedger } from '../src/wallet/hand-ledger';
 import type { Street } from '../src/game/state-machine';
+import { EventPublisher } from '../src/events/events.service';
+import type { Redis } from 'ioredis';
 
 interface BatchEntry {
   account: number;
@@ -26,8 +29,10 @@ interface HandLog {
   settlements: { playerId: string; delta: number }[];
 }
 
-type EventPublisher = { emit: (...args: any[]) => Promise<void> };
-const events: EventPublisher = { emit: async () => undefined } as any;
+const events = {
+  emit: async () => undefined,
+  onModuleDestroy: async () => undefined,
+} as unknown as EventPublisher;
 
 async function writeFailure(data: unknown) {
   const dir = path.join(__dirname, '../../../storage');
@@ -41,18 +46,18 @@ async function setup() {
   const db = newDb();
   db.public.registerFunction({
     name: 'version',
-    returns: 'text',
+    returns: 'text' as any,
     implementation: () => 'pg-mem',
   });
   db.public.registerFunction({
     name: 'current_database',
-    returns: 'text',
+    returns: 'text' as any,
     implementation: () => 'test',
   });
   let seq = 1;
   db.public.registerFunction({
     name: 'uuid_generate_v4',
-    returns: 'text',
+    returns: 'text' as any,
     implementation: () => {
       const id = seq.toString(16).padStart(32, '0');
       seq++;
@@ -69,12 +74,17 @@ async function setup() {
   const journalRepo = dataSource.getRepository(JournalEntry);
   const disbRepo = dataSource.getRepository(Disbursement);
   const settleRepo = dataSource.getRepository(SettlementJournal);
-  const redis = new MockRedis();
+  const redis = new MockRedis() as unknown as Redis;
   const provider = { initiate3DS: async () => undefined, getStatus: async () => undefined } as unknown as PaymentProviderService;
   const kyc = {
     validate: async () => undefined,
     isVerified: async () => true,
   } as unknown as KycService;
+  const settlementSvc = {
+    reserve: async () => undefined,
+    commit: async () => undefined,
+    cancel: async () => undefined,
+  } as unknown as SettlementService;
   const service = new WalletService(
     accountRepo,
     journalRepo,
@@ -84,6 +94,7 @@ async function setup() {
     redis,
     provider,
     kyc,
+    settlementSvc,
   );
   (service as any).enqueueDisbursement = async () => undefined;
   const accounts = await accountRepo.save([
@@ -140,7 +151,7 @@ const batchArb = fc
       }),
   );
 
-async function ledgerDeltasSumToZero() {
+export async function ledgerDeltasSumToZero() {
   await fc.assert(
     fc.asyncProperty(batchArb, async (batch) => {
       const { dataSource, service, accounts, journalRepo } = await setup();
@@ -234,7 +245,7 @@ async function setupHand() {
   return { dataSource, service, journalRepo };
 }
 
-async function handLogsReplayable() {
+export async function handLogsReplayable() {
   await fc.assert(
     fc.asyncProperty(settlementBatchArb, async (settlements) => {
       const { dataSource, service, journalRepo } = await setupHand();
@@ -261,7 +272,10 @@ async function handLogsReplayable() {
   );
 }
 
-(async () => {
-  await ledgerDeltasSumToZero();
-  await handLogsReplayable();
-})();
+if (process.argv[1] === __filename) {
+  (async () => {
+    await ledgerDeltasSumToZero();
+    await handLogsReplayable();
+  })();
+}
+
