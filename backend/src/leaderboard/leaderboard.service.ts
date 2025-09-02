@@ -7,6 +7,7 @@ import { join } from 'path';
 import { metrics } from '@opentelemetry/api';
 import { ConfigService } from '@nestjs/config';
 import { User } from '../database/entities/user.entity';
+import { Leaderboard } from '../database/entities/leaderboard.entity';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { updateRating } from './rating';
 
@@ -63,6 +64,8 @@ export class LeaderboardService implements OnModuleInit {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
     @InjectRepository(User) private readonly _userRepo: Repository<User>,
+    @InjectRepository(Leaderboard)
+    private readonly _leaderboardRepo: Repository<Leaderboard>,
     private readonly analytics: AnalyticsService,
     config: ConfigService,
   ) {
@@ -76,7 +79,69 @@ export class LeaderboardService implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
-    await this.rebuild();
+    const existing = await this._leaderboardRepo.find();
+    if (existing.length === 0) {
+      await this.rebuild();
+      return;
+    }
+    for (const row of existing) {
+      this.scores.set(row.playerId, {
+        sessions: new Set<string>(),
+        rating: row.rating,
+        rd: row.rd,
+        volatility: row.volatility,
+        net: row.net,
+        bb: row.bb,
+        hands: row.hands,
+        duration: row.duration,
+        buyIn: row.buyIn,
+        finishes: row.finishes ?? {},
+      });
+    }
+  }
+
+  private async persist(): Promise<void> {
+    const rows = [...this.scores.entries()]
+      .sort((a, b) => {
+        const diff = b[1].rating - a[1].rating;
+        return diff !== 0 ? diff : a[0].localeCompare(b[0]);
+      })
+      .map(([id, v], idx) => ({
+        playerId: id,
+        rank: idx + 1,
+        rating: v.rating,
+        rd: v.rd,
+        volatility: v.volatility,
+        net: v.net,
+        bb: v.bb,
+        hands: v.hands,
+        duration: v.duration,
+        buyIn: v.buyIn,
+        finishes: v.finishes,
+      }));
+
+    await this._leaderboardRepo.clear();
+    if (rows.length) {
+      await this._leaderboardRepo.insert(rows);
+    }
+
+    const leaders = rows.slice(0, 100).map((r) => ({
+      playerId: r.playerId,
+      rank: r.rank,
+      points: r.rating,
+      rd: r.rd,
+      volatility: r.volatility,
+      net: r.net,
+      bb100: r.hands ? (r.bb / r.hands) * 100 : 0,
+      hours: r.duration / 3600000,
+      roi: r.buyIn ? r.net / r.buyIn : 0,
+      finishes: r.finishes,
+    }));
+
+    await Promise.all([
+      this.cache.set(this.dataKey, leaders),
+      this.cache.set(this.cacheKey, leaders, { ttl: this.ttl }),
+    ]);
   }
 
   async getTopPlayers(): Promise<
@@ -194,30 +259,7 @@ export class LeaderboardService implements OnModuleInit {
       entry.hands += 1;
       this.scores.set(playerId, entry);
     });
-
-    const leaders = [...this.scores.entries()]
-      .sort((a, b) => {
-        const diff = b[1].rating - a[1].rating;
-        return diff !== 0 ? diff : a[0].localeCompare(b[0]);
-      })
-      .map(([id, v], idx) => ({
-        playerId: id,
-        rank: idx + 1,
-        points: v.rating,
-        rd: v.rd,
-        volatility: v.volatility,
-        net: v.net,
-        bb100: v.hands ? (v.bb / v.hands) * 100 : 0,
-        hours: v.duration / 3600000,
-        roi: v.buyIn ? v.net / v.buyIn : 0,
-        finishes: v.finishes,
-      }))
-      .slice(0, 100);
-
-    await Promise.all([
-      this.cache.set(this.dataKey, leaders),
-      this.cache.set(this.cacheKey, leaders, { ttl: this.ttl }),
-    ]);
+    await this.persist();
   }
 
   private loadEvents(
@@ -338,38 +380,17 @@ export class LeaderboardService implements OnModuleInit {
       scores.set(playerId, entry);
     }
 
-    const leaders = [...scores.entries()]
-      .filter(([id, v]) => {
-        let min = minSessionsCache.get(id);
-        if (min === undefined) {
-          min = minSessionsFn(id);
-          minSessionsCache.set(id, min);
-        }
-        return v.sessions.size >= min;
-      })
-      .sort((a, b) => {
-        const diff = b[1].rating - a[1].rating;
-        return diff !== 0 ? diff : a[0].localeCompare(b[0]);
-      })
-      .map(([id, v], idx) => ({
-        playerId: id,
-        rank: idx + 1,
-        points: v.rating,
-        rd: v.rd,
-        volatility: v.volatility,
-        net: v.net,
-        bb100: v.hands ? (v.bb / v.hands) * 100 : 0,
-        hours: v.duration / 3600000,
-        roi: v.buyIn ? v.net / v.buyIn : 0,
-        finishes: v.finishes,
-      }))
-      .slice(0, 100);
+    const filtered = [...scores.entries()].filter(([id, v]) => {
+      let min = minSessionsCache.get(id);
+      if (min === undefined) {
+        min = minSessionsFn(id);
+        minSessionsCache.set(id, min);
+      }
+      return v.sessions.size >= min;
+    });
 
-    this.scores = scores;
-    await Promise.all([
-      this.cache.set(this.dataKey, leaders),
-      this.cache.set(this.cacheKey, leaders, { ttl: this.ttl }),
-    ]);
+    this.scores = new Map(filtered);
+    await this.persist();
   }
 
   private async fetchTopPlayers(): Promise<
@@ -402,20 +423,10 @@ export class LeaderboardService implements OnModuleInit {
       return cached;
     }
 
-    const rows = await this.analytics.select<{
-        playerId: string;
-        rank: number;
-        points: number;
-        rd: number;
-        volatility: number;
-        net: number;
-        bb100: number;
-        hours: number;
-        roi: number;
-        finishes?: any;
-    }>(
-      'SELECT playerId, rank, points, rd, volatility, net, bb100, hours, roi, finishes FROM leaderboard ORDER BY rank LIMIT 100',
-    );
+    const rows = await this._leaderboardRepo.find({
+      order: { rank: 'ASC' },
+      take: 100,
+    });
     const ids = rows.map((r) => r.playerId);
     const existing = await this._userRepo.find({
       where: { id: In(ids), banned: false },
@@ -424,20 +435,17 @@ export class LeaderboardService implements OnModuleInit {
     const allowed = new Set(existing.map((u) => u.id));
     const top = rows
       .filter((r) => allowed.has(r.playerId))
-      .map((r, idx) => ({
+      .map((r) => ({
         playerId: r.playerId,
-        rank: idx + 1,
-        points: r.points,
+        rank: r.rank,
+        points: r.rating,
         rd: r.rd,
         volatility: r.volatility,
         net: r.net,
-        bb100: r.bb100,
-        hours: r.hours,
-        roi: r.roi,
-        finishes:
-          typeof r.finishes === 'string'
-            ? (JSON.parse(r.finishes) as Record<number, number>)
-            : (r.finishes ?? {}),
+        bb100: r.hands ? (r.bb / r.hands) * 100 : 0,
+        hours: r.duration / 3600000,
+        roi: r.buyIn ? r.net / r.buyIn : 0,
+        finishes: r.finishes ?? {},
       }));
     await this.cache.set(this.dataKey, top);
     return top;

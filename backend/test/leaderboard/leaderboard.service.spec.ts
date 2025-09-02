@@ -38,18 +38,48 @@ class MockAnalytics {
   }
 }
 
+class MockLeaderboardRepo {
+  rows: any[] = [];
+  async clear(): Promise<void> {
+    this.rows = [];
+  }
+  async insert(entries: any[]): Promise<void> {
+    this.rows.push(...entries);
+  }
+  async find(options?: {
+    order?: Record<string, 'ASC' | 'DESC'>;
+    take?: number;
+  }): Promise<any[]> {
+    let res = [...this.rows];
+    if (options?.order) {
+      if (options.order.rank === 'ASC') {
+        res.sort((a, b) => a.rank - b.rank);
+      } else if (options.order.rating === 'DESC') {
+        res.sort((a, b) => b.rating - a.rating);
+      }
+    }
+    if (options?.take) {
+      res = res.slice(0, options.take);
+    }
+    return res;
+  }
+}
+
 describe('LeaderboardService', () => {
   let cache: MockCache;
   let analytics: MockAnalytics;
+  let leaderboardRepo: MockLeaderboardRepo;
   let service: LeaderboardService;
 
   beforeEach(() => {
     jest.useFakeTimers({ doNotFake: ['Date'] });
     cache = new MockCache();
     analytics = new MockAnalytics();
+    leaderboardRepo = new MockLeaderboardRepo();
     service = new LeaderboardService(
       cache as unknown as Cache,
       {} as any,
+      leaderboardRepo as any,
       analytics as unknown as any,
       new ConfigService(),
     );
@@ -119,36 +149,36 @@ describe('LeaderboardService', () => {
     expect(cache.ttl.get('leaderboard:hot')).toBe(30);
   });
 
-  it('fetches from analytics when cache is empty and filters banned players', async () => {
-    const analytics = new MockAnalytics();
-    const selectSpy = jest
-      .spyOn(analytics, 'select')
-      .mockResolvedValue([
-        {
-          playerId: 'alice',
-          rank: 1,
-          points: 10,
-          rd: 40,
-          volatility: 0.06,
-          net: 100,
-          bb100: 50,
-          hours: 2,
-          roi: 2,
-          finishes: { 1: 1 },
-        },
-        {
-          playerId: 'bob',
-          rank: 2,
-          points: 5,
-          rd: 40,
-          volatility: 0.06,
-          net: -50,
-          bb100: -50,
-          hours: 1,
-          roi: -1,
-          finishes: { 2: 1 },
-        },
-      ]);
+  it('reads from table when cache is empty and filters banned players', async () => {
+    const repo = new MockLeaderboardRepo();
+    await repo.insert([
+      {
+        playerId: 'alice',
+        rank: 1,
+        rating: 10,
+        rd: 40,
+        volatility: 0.06,
+        net: 100,
+        bb: 200,
+        hands: 400,
+        duration: 2 * 60 * 60 * 1000,
+        buyIn: 50,
+        finishes: { 1: 1 },
+      },
+      {
+        playerId: 'bob',
+        rank: 2,
+        rating: 5,
+        rd: 40,
+        volatility: 0.06,
+        net: -50,
+        bb: -100,
+        hands: 200,
+        duration: 60 * 60 * 1000,
+        buyIn: 50,
+        finishes: { 2: 1 },
+      },
+    ]);
     const userRepo = {
       find: jest
         .fn()
@@ -157,11 +187,12 @@ describe('LeaderboardService', () => {
     const svc = new LeaderboardService(
       cache as unknown as Cache,
       userRepo,
+      repo as any,
       analytics as unknown as any,
       new ConfigService(),
     );
     const top = await svc.getTopPlayers();
-    expect(selectSpy).toHaveBeenCalled();
+    expect(userRepo.find).toHaveBeenCalled();
     expect(top).toEqual([
       {
         playerId: 'alice',

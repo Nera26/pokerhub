@@ -64,9 +64,15 @@ async function main(): Promise<void> {
   await writeSyntheticEvents(30);
   const cache = new MockCache();
   const analytics = { ingest: async () => {}, rangeStream: async () => [] };
+  const repo = {
+    clear: async () => {},
+    insert: async () => {},
+    find: async () => [],
+  } as any;
   const service = new LeaderboardService(
     cache as any,
     { find: async () => [] } as any,
+    repo,
     analytics as any,
     new MockConfigService() as any,
   );

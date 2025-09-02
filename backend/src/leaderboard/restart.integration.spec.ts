@@ -35,45 +35,43 @@ class MockAnalytics {
   }
 }
 
+class MockLeaderboardRepo {
+  rows: any[] = [];
+  async clear(): Promise<void> {
+    this.rows = [];
+  }
+  async insert(entries: any[]): Promise<void> {
+    this.rows.push(...entries);
+  }
+  async find(): Promise<any[]> {
+    return [...this.rows];
+  }
+}
+
 describe('LeaderboardService restart integration', () => {
-  it('returns data after onModuleInit', async () => {
-    const cache = new MockCache();
+  it('persists data across service restart', async () => {
+    const repo = new MockLeaderboardRepo();
     const analytics = new MockAnalytics();
-    const now = Date.now();
-    analytics.events = [
-      {
-        playerId: 'alice',
-        sessionId: 's1',
-        points: 10,
-        net: 50,
-        bb: 100,
-        hands: 200,
-        duration: 60 * 60 * 1000,
-        buyIn: 25,
-        ts: now,
-      },
-    ];
-    const service = new LeaderboardService(
-      cache as unknown as Cache,
+
+    const svc1 = new LeaderboardService(
+      new MockCache() as unknown as Cache,
       {} as any,
+      repo as any,
       analytics as unknown as any,
       new ConfigService(),
     );
-    await service.onModuleInit();
-    const top = await service.getTopPlayers();
-    expect(top).toEqual([
-      {
-        playerId: 'alice',
-        rank: 1,
-        points: expect.any(Number),
-        rd: expect.any(Number),
-        volatility: expect.any(Number),
-        net: 50,
-        bb100: 50,
-        hours: 1,
-        roi: 2,
-        finishes: {},
-      },
-    ]);
+    await svc1.handleHandSettled({ playerIds: ['alice'], deltas: [10] });
+    const first = await svc1.getTopPlayers();
+
+    const svc2 = new LeaderboardService(
+      new MockCache() as unknown as Cache,
+      {} as any,
+      repo as any,
+      analytics as unknown as any,
+      new ConfigService(),
+    );
+    await svc2.onModuleInit();
+    const second = await svc2.getTopPlayers();
+    expect(second).toEqual(first);
   });
 });

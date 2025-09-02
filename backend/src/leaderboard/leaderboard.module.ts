@@ -5,10 +5,15 @@ import { LeaderboardService } from './leaderboard.service';
 import { startLeaderboardRebuildWorker } from './rebuild.worker';
 import { LeaderboardController } from './leaderboard.controller';
 import { User } from '../database/entities/user.entity';
+import { Leaderboard } from '../database/entities/leaderboard.entity';
 import { AnalyticsModule } from '../analytics/analytics.module';
 
 @Module({
-  imports: [RedisModule, TypeOrmModule.forFeature([User]), AnalyticsModule],
+  imports: [
+    RedisModule,
+    TypeOrmModule.forFeature([User, Leaderboard]),
+    AnalyticsModule,
+  ],
   providers: [LeaderboardService, RebuildWorker],
   controllers: [LeaderboardController],
   exports: [LeaderboardService],

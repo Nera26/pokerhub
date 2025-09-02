@@ -46,9 +46,15 @@ describe('leaderboard rebuild worker performance', () => {
     await writeSyntheticEvents(days, players, perDay);
     const cache = new MockCache();
     const analytics = { ingest: jest.fn(), rangeStream: jest.fn() };
+    const repo = {
+      clear: jest.fn(),
+      insert: jest.fn(),
+      find: jest.fn().mockResolvedValue([]),
+    } as any;
     const service = new LeaderboardService(
       cache as unknown as Cache,
       { find: jest.fn() } as any,
+      repo,
       analytics as any,
       new ConfigService(),
     );

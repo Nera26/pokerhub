@@ -50,9 +50,15 @@ describe('leaderboard rebuild performance', () => {
     await writeSyntheticEvents(30);
     const cache = new MockCache();
     const analytics = new ClickHouseAnalytics();
+    const repo = {
+      clear: jest.fn(),
+      insert: jest.fn(),
+      find: jest.fn().mockResolvedValue([]),
+    } as any;
     const service = new LeaderboardService(
       cache as unknown as Cache,
       { find: jest.fn() } as any,
+      repo,
       analytics as any,
       new ConfigService(),
     );
