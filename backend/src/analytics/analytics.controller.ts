@@ -13,4 +13,9 @@ export class AnalyticsController {
     const { cursor, limit } = AuditLogsQuerySchema.parse(query);
     return this.analytics.getAuditLogs({ cursor, limit });
   }
+
+  @Get('summary')
+  async summary() {
+    return this.analytics.getAuditSummary();
+  }
 }

@@ -12,6 +12,7 @@ import AuditTable from './AuditTable';
 import AdvancedFilterModal from './AdvancedFilterModal';
 import DetailModal from './DetailModal';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
+import { useAuditSummary } from '@/hooks/useAuditSummary';
 import type { AuditLogEntry, AuditLogType } from '@shared/types';
 
 export default function Analytics() {
@@ -31,6 +32,7 @@ export default function Analytics() {
 
   const { data } = useAuditLogs();
   const logs = data?.logs ?? [];
+  const { data: summary } = useAuditSummary();
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
@@ -66,9 +68,9 @@ export default function Analytics() {
   const start = (page - 1) * pageSize;
   const rows = filtered.slice(start, start + pageSize);
 
-  const statTotal = filtered.length || 1247; // fallback demo figure
-  const statErrors = filtered.filter((r) => r.type === 'Error').length || 23;
-  const statLogins = filtered.filter((r) => r.type === 'Login').length || 892;
+  const statTotal = summary?.total ?? 0;
+  const statErrors = summary?.errors ?? 0;
+  const statLogins = summary?.logins ?? 0;
 
   const exportCSV = () => {
     const header = 'Date,Type,Description,User\n';
