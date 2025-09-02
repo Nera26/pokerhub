@@ -26,12 +26,15 @@ describe('TableBalancerService avoidWithin', () => {
     const items = new Map(seats.map((s) => [s.id, s]));
     return {
       find: jest.fn(async () => Array.from(items.values())),
-      save: jest.fn(async (seat: Seat) => {
-        tables.forEach((tbl) => {
-          tbl.seats = tbl.seats.filter((s) => s.id !== seat.id);
+      save: jest.fn(async (seat: Seat | Seat[]) => {
+        const arr = Array.isArray(seat) ? seat : [seat];
+        arr.forEach((s) => {
+          tables.forEach((tbl) => {
+            tbl.seats = tbl.seats.filter((st) => st.id !== s.id);
+          });
+          s.table.seats.push(s);
+          items.set(s.id, s);
         });
-        seat.table.seats.push(seat);
-        items.set(seat.id, seat);
         return seat;
       }),
     } as Repository<Seat>;
@@ -253,6 +256,110 @@ describe('TableBalancerService avoidWithin', () => {
     expect(seat.lastMovedHand).toBe(10);
   });
 
+  it('respects TOURNAMENT_AVOID_WITHIN when set via env', async () => {
+    const original = process.env.TOURNAMENT_AVOID_WITHIN;
+    process.env.TOURNAMENT_AVOID_WITHIN = '3';
+    const tables: Table[] = [
+      { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
+      { id: 'tbl2', seats: [], tournament: { id: 't1' } as Tournament } as Table,
+    ];
+    const players1 = ['p1', 'p2', 'p3', 'p4'];
+    const players2 = ['p5', 'p6'];
+    let seatId = 0;
+    players1.forEach((id) => {
+      const seat: Seat = {
+        id: `s${seatId++}`,
+        table: tables[0],
+        user: { id } as any,
+        position: tables[0].seats.length,
+        lastMovedHand: 0,
+      } as Seat;
+      tables[0].seats.push(seat);
+    });
+    players2.forEach((id) => {
+      const seat: Seat = {
+        id: `s${seatId++}`,
+        table: tables[1],
+        user: { id } as any,
+        position: tables[1].seats.length,
+        lastMovedHand: 0,
+      } as Seat;
+      tables[1].seats.push(seat);
+    });
+    const seatsRepo = createSeatRepo(tables);
+    const tablesRepo = { find: jest.fn(async () => tables) } as any;
+    const tournamentsRepo = createTournamentRepo([
+      {
+        id: 't1',
+        title: 'Test',
+        buyIn: 0,
+        prizePool: 0,
+        maxPlayers: 1000,
+        state: TournamentState.RUNNING,
+        tables,
+      } as Tournament,
+    ]);
+    const scheduler: any = {};
+    const rooms: any = { get: jest.fn() };
+    const service = new TournamentService(
+      tournamentsRepo,
+      seatsRepo,
+      tablesRepo,
+      scheduler,
+      rooms,
+    );
+    const balancer = new TableBalancerService(
+      tablesRepo,
+      service,
+    );
+
+    await balancer.rebalanceIfNeeded('t1', 10);
+    const initialSecond = new Set(players2);
+    const movedFirstSeat = tables[1].seats.find(
+      (s) => !initialSecond.has(s.user.id),
+    )!;
+    const movedFirst = movedFirstSeat.user.id;
+    expect(movedFirstSeat.lastMovedHand).toBe(10);
+
+    ['p7', 'p8'].forEach((id) => {
+      const seat: Seat = {
+        id: `s${seatId++}`,
+        table: tables[1],
+        user: { id } as any,
+        position: tables[1].seats.length,
+        lastMovedHand: 0,
+      } as Seat;
+      tables[1].seats.push(seat);
+    });
+
+    await balancer.rebalanceIfNeeded('t1', 11);
+    let seat = tables[1].seats.find((s) => s.user.id === movedFirst)!;
+    expect(seat.table.id).toBe('tbl2');
+    expect(seat.lastMovedHand).toBe(10);
+
+    ['p9', 'p10'].forEach((id) => {
+      const seat: Seat = {
+        id: `s${seatId++}`,
+        table: tables[1],
+        user: { id } as any,
+        position: tables[1].seats.length,
+        lastMovedHand: 0,
+      } as Seat;
+      tables[1].seats.push(seat);
+    });
+
+    await balancer.rebalanceIfNeeded('t1', 12);
+    seat = tables[1].seats.find((s) => s.user.id === movedFirst)!;
+    expect(seat.table.id).toBe('tbl2');
+    expect(seat.lastMovedHand).toBe(10);
+
+    if (original === undefined) {
+      delete process.env.TOURNAMENT_AVOID_WITHIN;
+    } else {
+      process.env.TOURNAMENT_AVOID_WITHIN = original;
+    }
+  });
+
   it('moves a player once avoidWithin hands have elapsed', () => {
     const service = new TournamentService(
       {} as any,
@@ -299,7 +406,10 @@ describe('TableBalancerService avoidWithin', () => {
       ['p1', 'p2'],
       [] as string[],
     ];
-    const recentlyMoved = new Map<string, number>([['p1', 0]]);
+    const recentlyMoved = new Map<string, number>([
+      ['p1', 0],
+      ['p2', 1],
+    ]);
 
     const balanced = service.balanceTables(
       tables,

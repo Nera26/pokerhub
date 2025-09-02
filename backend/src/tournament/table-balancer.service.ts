@@ -75,17 +75,14 @@ export class TableBalancerService {
         recentlyMoved =
           this.localRecentlyMoved.get(tournamentId) ?? new Map<string, number>();
       }
+
+      const updated = new Map<string, number>();
       for (const tbl of tables) {
         for (const seat of tbl.seats) {
-          const last = seat.lastMovedHand ?? 0;
-          if (currentHand > 0 && currentHand - last < avoidWithin) {
-            const prev = recentlyMoved.get(seat.user.id) ?? -Infinity;
-            if (last > prev) {
-              recentlyMoved.set(seat.user.id, last);
-            }
-          }
+          updated.set(seat.user.id, seat.lastMovedHand ?? 0);
         }
       }
+      recentlyMoved = updated;
 
       await this.tournamentService.balanceTournament(
         tournamentId,
