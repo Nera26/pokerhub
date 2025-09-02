@@ -747,19 +747,27 @@ jobs:
     needs: unit
     if: ${{ always() }}
     runs-on: ubuntu-latest
-    continue-on-error: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - run: ./scripts/test-stages.sh property | tee property.log
+      - id: property
+        run: ./scripts/test-stages.sh property | tee property.log
+        continue-on-error: true
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: property-${{ github.sha }}
           path: property.log
+      - uses: actions/upload-artifact@v4
+        if: steps.property.outcome == 'failure' && hashFiles('storage/reconcile-*.json') != ''
+        with:
+          name: reconcile-${{ github.sha }}
+          path: storage/reconcile-*.json
+      - if: steps.property.outcome == 'failure'
+        run: exit 1
 
   integration:
     needs: property

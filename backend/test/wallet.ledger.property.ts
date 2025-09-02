@@ -35,7 +35,7 @@ const events = {
 } as unknown as EventPublisher;
 
 async function writeFailure(data: unknown) {
-  const dir = path.join(__dirname, '../../../storage');
+  const dir = path.join(__dirname, '../../storage');
   await fs.mkdir(dir, { recursive: true });
   const today = new Date().toISOString().slice(0, 10);
   const file = path.join(dir, `reconcile-${today}.json`);
