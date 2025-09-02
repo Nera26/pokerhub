@@ -7,7 +7,7 @@ import {
 } from 'fs';
 import { join } from 'path';
 
-function collectWorkflowDirs(dir: string): string[] {
+export function collectWorkflowDirs(dir: string): string[] {
   const entries: Dirent[] = readdirSync(dir, { withFileTypes: true });
   let dirs: string[] = [];
   for (const entry of entries) {
@@ -23,7 +23,7 @@ function collectWorkflowDirs(dir: string): string[] {
   return dirs;
 }
 
-function collectYamlFiles(dir: string): string[] {
+export function collectYamlFiles(dir: string): string[] {
   const entries: Dirent[] = readdirSync(dir, { withFileTypes: true });
   let files: string[] = [];
   for (const entry of entries) {
@@ -40,7 +40,7 @@ function collectYamlFiles(dir: string): string[] {
   return files;
 }
 
-function main() {
+export function main() {
   const workflowDirs = collectWorkflowDirs(process.cwd());
   const files = workflowDirs.flatMap(collectYamlFiles);
   const missing: string[] = [];
@@ -109,9 +109,11 @@ function main() {
   }
 }
 
-try {
-  main();
-} catch (err) {
-  console.error(err);
-  process.exit(1);
+if (require.main === module) {
+  try {
+    main();
+  } catch (err) {
+    console.error(err);
+    process.exit(1);
+  }
 }

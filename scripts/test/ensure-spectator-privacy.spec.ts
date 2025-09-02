@@ -9,7 +9,8 @@ function runScript(dir: string) {
   process.chdir(dir);
   try {
     delete require.cache[require.resolve('../ensure-spectator-privacy.ts')];
-    require('../ensure-spectator-privacy.ts');
+    const { main } = require('../ensure-spectator-privacy.ts');
+    main();
   } finally {
     process.chdir(cwd);
   }
