@@ -845,7 +845,32 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GameState'
+              $ref: '#/components/schemas/GameState'
+  /analytics/logs:
+    get:
+      summary: List system audit logs
+      parameters:
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Audit logs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogsResponse'
   /analytics/collusion/flagged:
     get:
       summary: List collusion flagged sessions
@@ -1195,6 +1220,42 @@ components:
       required:
         - online
         - revenue
+    AuditLogEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+        type:
+          type: string
+          enum: [Login, 'Table Event', Broadcast, Error]
+        description:
+          type: string
+        user:
+          type: string
+        ip:
+          type: string
+      required:
+        - id
+        - timestamp
+        - type
+        - description
+        - user
+        - ip
+    AuditLogsResponse:
+      type: object
+      properties:
+        logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLogEntry'
+        nextCursor:
+          type: integer
+          nullable: true
+      required:
+        - logs
     WithdrawalDecisionRequest:
       type: object
       properties:

@@ -201,6 +201,36 @@ export class AnalyticsService {
     this.scheduleEngagementMetrics();
   }
 
+  async getAuditLogs({
+    cursor = 0,
+    limit = 50,
+  }: {
+    cursor?: number;
+    limit?: number;
+  }) {
+    if (this.client) {
+      const res = await this.client.query({
+        query: `SELECT id, ts AS timestamp, type, description, user, ip FROM audit_log ORDER BY ts DESC LIMIT {limit:UInt32} OFFSET {cursor:UInt32}`,
+        query_params: { cursor, limit },
+        format: 'JSONEachRow',
+      });
+      const logs = (await res.json()) as any[];
+      return {
+        logs,
+        nextCursor: logs.length === limit ? cursor + limit : null,
+      };
+    }
+
+    const start = cursor;
+    const end = cursor + limit - 1;
+    const entries = await this.redis.lrange('audit-logs', start, end);
+    const logs = entries.map((e) => JSON.parse(e));
+    return {
+      logs,
+      nextCursor: logs.length === limit ? cursor + limit : null,
+    };
+  }
+
   async ingest(table: string, data: Record<string, any>) {
     if (!this.client) {
       this.logger.warn('No ClickHouse client configured');

@@ -7,6 +7,7 @@ import { CollusionService } from './collusion.service';
 import { CollusionQueryService } from './collusion.queries';
 import { ReviewController } from './review.controller';
 import { CollusionController } from './collusion.controller';
+import { AnalyticsController } from './analytics.controller';
 import { AdminController } from '../routes/admin.controller';
 import { WalletModule } from '../wallet/wallet.module';
 import { AuthModule } from '../auth/auth.module';
@@ -26,6 +27,11 @@ import { StorageModule } from '../storage/storage.module';
     CollusionService,
     CollusionQueryService,
   ],
-  controllers: [ReviewController, CollusionController, AdminController],
+  controllers: [
+    ReviewController,
+    CollusionController,
+    AnalyticsController,
+    AdminController,
+  ],
 })
 export class AnalyticsModule {}

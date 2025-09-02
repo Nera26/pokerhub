@@ -38,6 +38,30 @@ export const DashboardMetricsSchema = z.object({
 });
 export type DashboardMetrics = z.infer<typeof DashboardMetricsSchema>;
 
+export const AuditLogTypeSchema = z.enum([
+  'Login',
+  'Table Event',
+  'Broadcast',
+  'Error',
+]);
+export type AuditLogType = z.infer<typeof AuditLogTypeSchema>;
+
+export const AuditLogEntrySchema = z.object({
+  id: z.number().int(),
+  timestamp: z.string().datetime(),
+  type: AuditLogTypeSchema,
+  description: z.string(),
+  user: z.string(),
+  ip: z.string(),
+});
+export type AuditLogEntry = z.infer<typeof AuditLogEntrySchema>;
+
+export const AuditLogsResponseSchema = z.object({
+  logs: z.array(AuditLogEntrySchema),
+  nextCursor: z.number().int().nullable().optional(),
+});
+export type AuditLogsResponse = z.infer<typeof AuditLogsResponseSchema>;
+
 /** ---- Withdrawals ---- */
 export const WithdrawalDecisionRequestSchema = z.object({
   comment: z.string(),
