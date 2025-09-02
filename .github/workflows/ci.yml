@@ -843,11 +843,11 @@ jobs:
           npm ci --prefix analytics
       - name: Remaining backend property tests
         id: backend-property
-        run: npm run test:property --prefix backend -- --testPathIgnorePatterns=test/wallet.ledger.property.spec.ts --testPathIgnorePatterns=test/wallet/hand-logs.replay.property.spec.ts | tee backend-property.log
+        run: npm run test:property --prefix backend -- --testPathIgnorePatterns=test/ledger/wallet.ledger.property.spec.ts --testPathIgnorePatterns=test/wallet/hand-logs.replay.property.spec.ts | tee backend-property.log
         continue-on-error: true
       - name: Ledger audit
         id: ledger-audit
-        run: npm run audit:ledger | tee audit.log
+        run: npm run audit:ledger --prefix backend | tee audit.log
         continue-on-error: true
       - uses: actions/upload-artifact@v4
         if: steps.ledger-audit.outcome == 'failure' && hashFiles('storage/reconcile-*.json') != ''
