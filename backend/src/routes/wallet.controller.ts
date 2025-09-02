@@ -5,6 +5,7 @@ import {
   Body,
   Req,
   Get,
+  Delete,
   UseGuards,
   ForbiddenException,
   BadRequestException,
@@ -190,6 +191,19 @@ export class WalletController {
       }
       throw err;
     }
+  }
+
+  @Delete(':id/deposit/:depositId')
+  @ApiOperation({ summary: 'Cancel pending deposit' })
+  @ApiResponse({ status: 200, description: 'Deposit cancelled' })
+  async cancelDeposit(
+    @Param('id') id: string,
+    @Param('depositId') depositId: string,
+    @Req() req: Request,
+  ) {
+    this.ensureOwner(req, id);
+    await this.wallet.cancelPendingDeposit(id, depositId);
+    return { message: 'cancelled' };
   }
 
   @Post(':id/kyc')
