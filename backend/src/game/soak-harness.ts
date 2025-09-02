@@ -36,6 +36,10 @@ class Histogram {
     const rank = Math.ceil((p / 100) * sorted.length) - 1;
     return sorted[Math.max(0, Math.min(rank, sorted.length - 1))];
   }
+
+  count(): number {
+    return this.values.length;
+  }
 }
 
 interface AckTracker {
@@ -59,6 +63,7 @@ export class GameGatewaySoakHarness {
   private metricsServer?: ReturnType<typeof createServer>;
   private lastElu = performance.eventLoopUtilization();
   private roomMgr = new RoomManager();
+  private startTime = Date.now();
 
   private static readonly meter = metrics.getMeter('game');
   private static readonly droppedCounter =
@@ -118,6 +123,8 @@ export class GameGatewaySoakHarness {
       const latencyP50 = this.histogram.percentile(50);
       const latencyP95 = this.histogram.percentile(95);
       const latencyP99 = this.histogram.percentile(99);
+      const elapsed = (Date.now() - this.startTime) / 1000;
+      const throughput = elapsed > 0 ? this.histogram.count() / elapsed : 0;
       res.end(
         JSON.stringify({
           rssBytes: rss,
@@ -127,6 +134,7 @@ export class GameGatewaySoakHarness {
           latencyP50,
           latencyP95,
           latencyP99,
+          throughput,
         }),
       );
     }).listen(port);
@@ -209,6 +217,7 @@ export class GameGatewaySoakHarness {
 
   async run() {
     this.setupNetworkImpairment();
+    this.startTime = Date.now();
     const metricsDir = join(__dirname, '../../../infra/metrics');
     fs.mkdirSync(metricsDir, { recursive: true });
     fs.writeFileSync(this.metricsPath, '');
@@ -256,6 +265,7 @@ export class GameGatewaySoakHarness {
     const p50 = this.histogram.percentile(50);
     const p95 = this.histogram.percentile(95);
     const p99 = this.histogram.percentile(99);
+    const throughput = this.histogram.count() / this.opts.duration;
     const start = this.rssSamples[0];
     const end = this.rssSamples[this.rssSamples.length - 1];
     const rssDelta = ((end - start) / start) * 100;
@@ -270,9 +280,10 @@ export class GameGatewaySoakHarness {
         latency_p50_ms: p50,
         latency_p95_ms: p95,
         latency_p99_ms: p99,
-        gc_p50_ms: gcP50,
-        gc_p95_ms: gcP95,
-        gc_p99_ms: gcP99,
+        throughput,
+        gc_pause_p50_ms: gcP50,
+        gc_pause_p95_ms: gcP95,
+        gc_pause_p99_ms: gcP99,
         rss_delta_pct: rssDelta,
       }) + '\n',
     );
