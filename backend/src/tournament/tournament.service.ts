@@ -346,18 +346,66 @@ export class TournamentService implements OnModuleInit {
     if (!regOpen && !lateReg) {
       throw new Error('registration closed');
     }
+    let walletEvent: {
+      accountId: string;
+      amount: number;
+      refId: string;
+      currency: string;
+    } | undefined;
+    let newSeat: Seat | undefined;
+    const manager: any = this.seats.manager as any;
+    if (manager?.transaction) {
+      await manager.transaction(async (txManager: any) => {
+        if (this.wallet) {
+          const currency = t.currency ?? 'USD';
+          await this.wallet.reserve(userId, t.buyIn, tournamentId, currency);
+          walletEvent = {
+            accountId: userId,
+            amount: t.buyIn,
+            refId: tournamentId,
+            currency,
+          };
+        }
+        const tables = await txManager.find(Table, {
+          where: { tournament: { id: tournamentId } } as any,
+          relations: ['seats'],
+        });
+        let target = tables[0];
+        let min = tables[0]?.seats.length ?? 0;
+        for (const tbl of tables) {
+          if (tbl.seats.length < min) {
+            min = tbl.seats.length;
+            target = tbl;
+          }
+        }
+        const seatRepo = txManager.getRepository(Seat);
+        newSeat = seatRepo.create({
+          table: target,
+          user: { id: userId } as any,
+          position: target.seats.length,
+          lastMovedHand: 0,
+        });
+        await seatRepo.save(newSeat);
+      });
+      if (walletEvent) {
+        await this.events.emit('wallet.reserve', walletEvent);
+      }
+      return newSeat!;
+    }
+
+    // Fallback for tests/mocks without transaction support
     if (this.wallet) {
       const currency = t.currency ?? 'USD';
       await this.wallet.reserve(userId, t.buyIn, tournamentId, currency);
-      await this.events.emit('wallet.reserve', {
+      walletEvent = {
         accountId: userId,
         amount: t.buyIn,
         refId: tournamentId,
         currency,
-      });
+      };
     }
     const tables = await this.tables.find({
-      where: { tournament: { id: tournamentId } },
+      where: { tournament: { id: tournamentId } } as any,
       relations: ['seats'],
     });
     let target = tables[0];
@@ -368,17 +416,57 @@ export class TournamentService implements OnModuleInit {
         target = tbl;
       }
     }
-    const seat = this.seats.create({
+    newSeat = this.seats.create({
       table: target,
       user: { id: userId } as any,
       position: target.seats.length,
       lastMovedHand: 0,
     });
-    return this.seats.save(seat);
+    await this.seats.save(newSeat);
+    if (walletEvent) {
+      await this.events.emit('wallet.reserve', walletEvent);
+    }
+    return newSeat;
   }
 
   async withdraw(tournamentId: string, userId: string): Promise<void> {
     const t = await this.getEntity(tournamentId);
+    let walletEvent: {
+      accountId: string;
+      amount: number;
+      refId: string;
+      currency: string;
+    } | undefined;
+    const manager: any = this.seats.manager as any;
+    if (manager?.transaction) {
+      await manager.transaction(async (txManager: any) => {
+        const seat = await txManager.findOne(Seat, {
+          where: {
+            table: { tournament: { id: tournamentId } } as any,
+            user: { id: userId } as any,
+          },
+          relations: ['table', 'user'],
+        });
+        if (!seat) return;
+        if (this.wallet) {
+          const currency = t.currency ?? 'USD';
+          await this.wallet.rollback(userId, t.buyIn, tournamentId, currency);
+          walletEvent = {
+            accountId: userId,
+            amount: t.buyIn,
+            refId: tournamentId,
+            currency,
+          };
+        }
+        await txManager.remove(Seat, seat);
+      });
+      if (walletEvent) {
+        await this.events.emit('wallet.rollback', walletEvent);
+      }
+      return;
+    }
+
+    // Fallback when transaction manager is unavailable (tests/mocks)
     const seat = await this.seats.findOne({
       where: {
         table: { tournament: { id: tournamentId } } as any,
@@ -386,18 +474,20 @@ export class TournamentService implements OnModuleInit {
       },
       relations: ['table', 'user'],
     });
-    if (seat) {
-      if (this.wallet) {
-        const currency = t.currency ?? 'USD';
-        await this.wallet.rollback(userId, t.buyIn, tournamentId, currency);
-        await this.events.emit('wallet.rollback', {
-          accountId: userId,
-          amount: t.buyIn,
-          refId: tournamentId,
-          currency,
-        });
-      }
-      await this.seats.remove(seat);
+    if (!seat) return;
+    if (this.wallet) {
+      const currency = t.currency ?? 'USD';
+      await this.wallet.rollback(userId, t.buyIn, tournamentId, currency);
+      walletEvent = {
+        accountId: userId,
+        amount: t.buyIn,
+        refId: tournamentId,
+        currency,
+      };
+    }
+    await this.seats.remove(seat);
+    if (walletEvent) {
+      await this.events.emit('wallet.rollback', walletEvent);
     }
   }
 
