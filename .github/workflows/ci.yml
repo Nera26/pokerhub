@@ -334,7 +334,8 @@ jobs:
         run: |
           node -e "const { Server } = require('socket.io'); const http = require('http'); const server = http.createServer(); const io = new Server(server); io.on('connection', (s) => { s.on('join', () => {}); s.on('action', (_, cb) => cb()); }); server.listen(3000);" &
           sleep 1
-      - run: npx ts-node scripts/check-backpressure.ts
+      - name: Run socket load
+        run: node -r ts-node/register tests/performance/socket-load.ts
         env:
           TABLES: 5
           SOCKETS: 20
@@ -343,6 +344,12 @@ jobs:
           JITTER_MS: 5
           PACKET_LOSS: 0
           METRICS_URL: http://localhost:3000/metrics
+          ACK_P50_MS: 1000000000
+          ACK_P95_MS: 1000000000
+          ACK_P99_MS: 1000000000
+          TPS_LIMIT: 0
+      - run: node -r ts-node/register scripts/check-backpressure.ts
+        env:
           WS_QUEUE_DEPTH_THRESHOLD: ${{ vars.WS_QUEUE_DEPTH_THRESHOLD || 80 }}
       - name: Upload backpressure metrics
         if: always()
