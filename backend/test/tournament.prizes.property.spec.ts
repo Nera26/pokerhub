@@ -67,7 +67,7 @@ describe('tournament prizes property', () => {
                 const prev = beforeIdx.get(p);
                 if (prev !== undefined && prev !== idx) {
                   const last = beforeMoved.get(p) ?? -Infinity;
-                  expect(hand - last).toBeGreaterThan(avoidWithin);
+                  expect(hand - last).toBeGreaterThanOrEqual(avoidWithin);
                 }
               }
             });

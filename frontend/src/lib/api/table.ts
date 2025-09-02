@@ -9,9 +9,13 @@ import {
   TableDataSchema,
   SendChatMessageRequestSchema,
   ChatMessagesResponseSchema,
+  TableSchema,
   type TableData,
   type SendChatMessageRequest,
   type ChatMessagesResponse,
+  type Table,
+  type CreateTableRequest,
+  type UpdateTableRequest,
 } from '@shared/types';
 
 export {
@@ -20,8 +24,16 @@ export {
   TableDataSchema,
   SendChatMessageRequestSchema,
   ChatMessagesResponseSchema,
+  TableSchema,
 };
-export type { TableData, SendChatMessageRequest, ChatMessagesResponse };
+export type {
+  TableData,
+  SendChatMessageRequest,
+  ChatMessagesResponse,
+  Table,
+  CreateTableRequest,
+  UpdateTableRequest,
+};
 
 export async function fetchTable(
   id: string,
@@ -59,6 +71,42 @@ export async function sendChatMessage(
     credentials: 'include',
     body: JSON.stringify(body),
     headers: { 'Content-Type': 'application/json' },
+  });
+  await handleResponse(res, z.void());
+}
+
+export async function createTable(
+  body: CreateTableRequest,
+): Promise<Table> {
+  const baseUrl = getBaseUrl();
+  const res = serverFetch(`${baseUrl}/api/tables`, {
+    method: 'POST',
+    credentials: 'include',
+    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return handleResponse(res, TableSchema);
+}
+
+export async function updateTable(
+  id: string,
+  body: UpdateTableRequest,
+): Promise<Table> {
+  const baseUrl = getBaseUrl();
+  const res = serverFetch(`${baseUrl}/api/tables/${id}`, {
+    method: 'PUT',
+    credentials: 'include',
+    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return handleResponse(res, TableSchema);
+}
+
+export async function deleteTable(id: string): Promise<void> {
+  const baseUrl = getBaseUrl();
+  const res = serverFetch(`${baseUrl}/api/tables/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
   });
   await handleResponse(res, z.void());
 }

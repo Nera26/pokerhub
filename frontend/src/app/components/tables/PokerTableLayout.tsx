@@ -157,6 +157,8 @@ export default function PokerTableLayout({
         handNumber={handNumber}
         soundEnabled={soundEnabled}
         chatMessages={chatMessages}
+        tableId={Array.isArray(tableId) ? tableId[0] : tableId}
+        heroId={heroId ?? ''}
         onSendMessage={(text) => pushToast(`You: ${text}`)}
         onToggleSound={() => {
           setSoundEnabled((s) => !s);

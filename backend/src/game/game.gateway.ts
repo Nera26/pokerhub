@@ -335,6 +335,11 @@ export class GameGateway
       description: 'Messages dropped due to full outbound queue',
     });
 
+  private static readonly outboundRateLimitHits =
+    GameGateway.meter.createCounter('ws_outbound_rate_limit_hits_total', {
+      description: 'Times outbound queue limit was hit',
+    });
+
   static {
     GameGateway.ackLatencyP50.addCallback((r) =>
       r.observe(GameGateway.percentile(GameGateway.ackLatencySamples, 50)),
@@ -863,6 +868,7 @@ export class GameGateway
       this.queues.set(id, queue);
     }
     if (queue.size + queue.pending >= this.queueLimit) {
+      GameGateway.outboundRateLimitHits.add(1, { socketId: id } as Attributes);
       GameGateway.outboundQueueDropped.add(1, { socketId: id } as Attributes);
       client.emit('server:Error', 'throttled');
       return;

@@ -191,6 +191,7 @@ paths:
                   $ref: '#/components/schemas/Table'
     post:
       summary: Create table
+      description: Admin only
       requestBody:
         required: true
         content:
@@ -226,6 +227,7 @@ paths:
           description: Table not found
     put:
       summary: Update table
+      description: Admin only
       parameters:
         - in: path
           name: id
@@ -242,6 +244,7 @@ paths:
         - bearerAuth: []
     delete:
       summary: Delete table
+      description: Admin only
       parameters:
         - in: path
           name: id

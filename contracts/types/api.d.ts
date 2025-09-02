@@ -225,7 +225,10 @@ export interface paths {
         };
       };
     };
-    /** Create table */
+    /**
+     * Create table
+     * @description Admin only
+     */
     post: {
       requestBody: {
         content: {
@@ -263,7 +266,10 @@ export interface paths {
         };
       };
     };
-    /** Update table */
+    /**
+     * Update table
+     * @description Admin only
+     */
     put: {
       parameters: {
         path: {
@@ -276,7 +282,10 @@ export interface paths {
         };
       };
     };
-    /** Delete table */
+    /**
+     * Delete table
+     * @description Admin only
+     */
     delete: {
       parameters: {
         path: {

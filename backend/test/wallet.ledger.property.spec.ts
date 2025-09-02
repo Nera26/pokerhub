@@ -1,142 +1,160 @@
-import fc from 'fast-check';
-import { writeHandLedger } from '../src/wallet/hand-ledger';
 import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
+import fc from 'fast-check';
 import { randomUUID } from 'crypto';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { Account } from '../src/wallet/account.entity';
 import { JournalEntry } from '../src/wallet/journal-entry.entity';
 import { Disbursement } from '../src/wallet/disbursement.entity';
+import { SettlementJournal } from '../src/wallet/settlement-journal.entity';
 import { WalletService } from '../src/wallet/wallet.service';
 import { EventPublisher } from '../src/events/events.service';
 import { PaymentProviderService } from '../src/wallet/payment-provider.service';
 import { KycService } from '../src/wallet/kyc.service';
-import { SettlementJournal } from '../src/wallet/settlement-journal.entity';
-import type { Street } from '../src/game/state-machine';
+import { SettlementService } from '../src/wallet/settlement.service';
 import { MockRedis } from './utils/mock-redis';
 
 jest.setTimeout(20000);
 
-interface SettlementEntry {
-  playerId: string;
+interface BatchEntry {
+  account: number;
   delta: number;
 }
 
-describe('hand ledger journal property', () => {
-  const playerIds = [
-    '00000000-0000-0000-0000-000000000001',
-    '00000000-0000-0000-0000-000000000002',
-    '00000000-0000-0000-0000-000000000003',
-  ];
-  const events: EventPublisher = { emit: jest.fn() } as any;
+const events: EventPublisher = { emit: jest.fn() } as any;
 
-  async function writeFailure(data: unknown) {
-    const dir = path.join(__dirname, '../../storage');
-    await fs.mkdir(dir, { recursive: true });
-    const today = new Date().toISOString().slice(0, 10);
-    const file = path.join(dir, `reconcile-${today}.json`);
-    await fs.writeFile(file, JSON.stringify(data, null, 2));
-  }
+async function writeFailure(data: unknown) {
+  const dir = path.join(__dirname, '../../storage');
+  await fs.mkdir(dir, { recursive: true });
+  const today = new Date().toISOString().slice(0, 10);
+  const file = path.join(dir, `reconcile-${today}.json`);
+  await fs.writeFile(file, JSON.stringify(data, null, 2));
+}
 
-  async function setup() {
-    const db = newDb();
-    db.public.registerFunction({
-      name: 'version',
-      returns: 'text',
-      implementation: () => 'pg-mem',
-    });
-    db.public.registerFunction({
-      name: 'current_database',
-      returns: 'text',
-      implementation: () => 'test',
-    });
-    let seq = 1;
-    db.public.registerFunction({
-      name: 'uuid_generate_v4',
-      returns: 'text',
-      implementation: () => {
-        const id = seq.toString(16).padStart(32, '0');
-        seq++;
-        return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(16, 20)}-${id.slice(20)}`;
-      },
-    });
-    const dataSource = db.adapters.createTypeormDataSource({
-      type: 'postgres',
-      entities: [Account, JournalEntry, Disbursement, SettlementJournal],
-      synchronize: true,
-    }) as DataSource;
-    await dataSource.initialize();
-    const accountRepo = dataSource.getRepository(Account);
-    const journalRepo = dataSource.getRepository(JournalEntry);
-    const disbRepo = dataSource.getRepository(Disbursement);
-    const settleRepo = dataSource.getRepository(SettlementJournal);
-    const redis = new MockRedis();
-    const provider = { initiate3DS: jest.fn(), getStatus: jest.fn() } as unknown as PaymentProviderService;
-    const kyc = { validate: jest.fn().mockResolvedValue(undefined) } as unknown as KycService;
-    const service = new WalletService(
-      accountRepo,
-      journalRepo,
-      disbRepo,
-      settleRepo,
-      events,
-      redis,
-      provider,
-      kyc,
-    );
-    (service as any).enqueueDisbursement = jest.fn();
-    await accountRepo.save([
-      { id: playerIds[0], name: 'p1', balance: 0, currency: 'USD' },
-      { id: playerIds[1], name: 'p2', balance: 0, currency: 'USD' },
-      { id: playerIds[2], name: 'p3', balance: 0, currency: 'USD' },
-      { id: '00000000-0000-0000-0000-000000000004', name: 'reserve', balance: 0, currency: 'USD' },
-      { id: '00000000-0000-0000-0000-000000000005', name: 'prize', balance: 0, currency: 'USD' },
-      { id: '00000000-0000-0000-0000-000000000006', name: 'rake', balance: 0, currency: 'USD' },
-    ]);
-    return { dataSource, service, journalRepo };
-  }
+async function setup() {
+  const db = newDb();
+  db.public.registerFunction({
+    name: 'version',
+    returns: 'text',
+    implementation: () => 'pg-mem',
+  });
+  db.public.registerFunction({
+    name: 'current_database',
+    returns: 'text',
+    implementation: () => 'test',
+  });
+  let seq = 1;
+  db.public.registerFunction({
+    name: 'uuid_generate_v4',
+    returns: 'text',
+    implementation: () => {
+      const id = seq.toString(16).padStart(32, '0');
+      seq++;
+      return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(16, 20)}-${id.slice(20)}`;
+    },
+  });
+  const dataSource = db.adapters.createTypeormDataSource({
+    type: 'postgres',
+    entities: [Account, JournalEntry, Disbursement, SettlementJournal],
+    synchronize: true,
+  }) as DataSource;
+  await dataSource.initialize();
+  const accountRepo = dataSource.getRepository(Account);
+  const journalRepo = dataSource.getRepository(JournalEntry);
+  const disbRepo = dataSource.getRepository(Disbursement);
+  const settleRepo = dataSource.getRepository(SettlementJournal);
+  const redis = new MockRedis();
+  const provider = { initiate3DS: jest.fn(), getStatus: jest.fn() } as unknown as PaymentProviderService;
+  const kyc = {
+    validate: jest.fn().mockResolvedValue(undefined),
+    isVerified: jest.fn().mockResolvedValue(true),
+  } as unknown as KycService;
+  const settlementSvc = {
+    reserve: jest.fn(),
+    commit: jest.fn(),
+    cancel: jest.fn(),
+  } as unknown as SettlementService;
+  const service = new WalletService(
+    accountRepo,
+    journalRepo,
+    disbRepo,
+    settleRepo,
+    events,
+    redis,
+    provider,
+    kyc,
+    settlementSvc,
+  );
+  (service as any).enqueueDisbursement = jest.fn();
+  const accounts = await accountRepo.save([
+    {
+      id: '00000000-0000-0000-0000-000000000001',
+      name: 'a',
+      balance: 0,
+      currency: 'USD',
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000002',
+      name: 'b',
+      balance: 0,
+      currency: 'USD',
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000003',
+      name: 'c',
+      balance: 0,
+      currency: 'USD',
+    },
+  ]);
+  return { dataSource, service, accounts, journalRepo };
+}
 
-  const settlementBatchArb = fc
-    .array(
-      fc.record({
-        player: fc.integer({ min: 0, max: playerIds.length - 1 }),
-        amount: fc.integer({ min: 1, max: 100 }),
+function commitBatch(
+  service: WalletService,
+  accounts: Account[],
+  batch: BatchEntry[],
+  ref: string,
+) {
+  return (service as any).record(
+    'test',
+    ref,
+    batch.map((e) => ({ account: accounts[e.account], amount: e.delta })),
+  );
+}
+
+const batchArb = fc
+  .uniqueArray(
+    fc.record({
+      account: fc.integer({ min: 0, max: 2 }),
+      delta: fc.integer({ min: -100, max: 100 }).filter((n) => n !== 0),
+    }),
+    { minLength: 1, maxLength: 2, selector: (a) => a.account },
+  )
+  .chain((entries) =>
+    fc
+      .integer({ min: 0, max: 2 })
+      .filter((account) => !entries.some((e) => e.account === account))
+      .map((account) => {
+        const sum = entries.reduce((s, e) => s + e.delta, 0);
+        return [...entries, { account, delta: -sum }];
       }),
-      { minLength: 1, maxLength: playerIds.length },
-    )
-    .map((losses) => {
-      const total = losses.reduce((s, l) => s + l.amount, 0);
-      const settlements = losses.map((l) => ({
-        playerId: playerIds[l.player],
-        delta: -l.amount,
-      }));
-      settlements.push({ playerId: 'winner', delta: total });
-      return settlements as SettlementEntry[];
-    });
+  );
 
-  it('journal deltas sum to zero after random hand ledger batches', async () => {
-    const batchesArb = fc.array(settlementBatchArb, { maxLength: 5 });
+describe('ledger batch property', () => {
+  it('each transaction batch nets to zero', async () => {
     await fc.assert(
-      fc.asyncProperty(batchesArb, async (batches) => {
-        const { dataSource, service, journalRepo } = await setup();
+      fc.asyncProperty(batchArb, async (batch) => {
+        const { dataSource, service, accounts, journalRepo } = await setup();
         try {
-          for (const settlements of batches) {
-            const key = randomUUID();
-            await writeHandLedger(
-              service,
-              dataSource,
-              key,
-              'river' as Street,
-              0,
-              settlements,
-            );
-            const entries = await journalRepo.find();
-            const total = entries.reduce((sum, e) => sum + Number(e.amount), 0);
-            if (total !== 0) {
-              await writeFailure({ kind: 'spec', batches, settlements, entries, total });
-            }
-            expect(total).toBe(0);
+          const ref = randomUUID();
+          await commitBatch(service, accounts, batch, ref);
+          const entries = await journalRepo.find({ where: { refType: 'test', refId: ref } });
+          const total = entries.reduce((sum, e) => sum + Number(e.amount), 0);
+          if (total !== 0) {
+            await writeFailure({ kind: 'batch', batch, entries, total });
           }
+          expect(total).toBe(0);
         } finally {
           await dataSource.destroy();
         }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type KeyboardEvent } from 'react';
+import { useState, type KeyboardEvent, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPaperPlane } from '@fortawesome/free-solid-svg-icons/faPaperPlane';
 import { faVolumeHigh } from '@fortawesome/free-solid-svg-icons/faVolumeHigh';
@@ -9,11 +9,15 @@ import { faDoorOpen } from '@fortawesome/free-solid-svg-icons/faDoorOpen';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import type { ChatMessage } from './PokerTableLayout';
+import useGameSocket from '@/hooks/useGameSocket';
+import { sendChatMessage } from '@/lib/api/table';
 
 export interface SidePanelProps {
   isOpen: boolean;
+  tableId: string;
+  heroId: string;
   chatMessages: ChatMessage[];
-  onSendMessage: (text: string) => void;
+  onSendMessage?: (text: string) => void;
   onToggleSound: () => void;
   onSitOut: () => void;
   onLeave: () => void;
@@ -24,6 +28,8 @@ type TabKey = 'history' | 'chat' | 'notes';
 
 export default function SidePanel({
   isOpen,
+  tableId,
+  heroId,
   chatMessages,
   onSendMessage,
   onToggleSound,
@@ -33,6 +39,23 @@ export default function SidePanel({
 }: SidePanelProps) {
   const [input, setInput] = useState('');
   const [tab, setTab] = useState<TabKey>('history');
+  const [messages, setMessages] = useState(chatMessages);
+  const { socket } = useGameSocket();
+
+  useEffect(() => {
+    setMessages(chatMessages);
+  }, [chatMessages]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handle = (msg: ChatMessage) => {
+      setMessages((prev) => [...prev, msg]);
+    };
+    socket.on('chat:message', handle);
+    return () => {
+      socket.off('chat:message', handle);
+    };
+  }, [socket]);
 
   const tabs: TabKey[] = ['history', 'chat', 'notes'];
   const switchTab = (key: TabKey) => {
@@ -49,10 +72,11 @@ export default function SidePanel({
     }
   };
 
-  const send = () => {
+  const send = async () => {
     const t = input.trim();
     if (!t) return;
-    onSendMessage(t);
+    await sendChatMessage(tableId, { userId: heroId, text: t });
+    onSendMessage?.(t);
     setInput('');
   };
 
@@ -152,7 +176,7 @@ export default function SidePanel({
           className="h-[calc(100%-210px)] p-4 border-t border-border-color flex flex-col"
         >
           <div className="flex-1 overflow-y-auto space-y-2 text-sm mb-4">
-            {chatMessages.map((msg) => (
+            {messages.map((msg) => (
               <div key={msg.id} className="text-text-secondary">
                 <span className="text-accent-yellow font-semibold">
                   {msg.username}:
@@ -161,7 +185,7 @@ export default function SidePanel({
                 <div className="text-xs text-text-secondary">{msg.time}</div>
               </div>
             ))}
-            {chatMessages.length === 0 && (
+            {messages.length === 0 && (
               <div className="text-xs text-text-secondary">
                 No messages yet.
               </div>
