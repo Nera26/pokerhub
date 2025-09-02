@@ -1,0 +1,41 @@
+name: dr-sla
+
+on:
+  workflow_call:
+    inputs:
+      dr-drill-sla-days:
+        description: Maximum allowed age of the last DR drill in days
+        required: false
+        type: number
+        default: 30
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
+
+  check-dr-drill:
+    needs: check-proof-archive
+    runs-on: ubuntu-latest
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      DR_DRILL_SLA_DAYS: ${{ inputs.dr-drill-sla-days }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+      - run: npx -y ts-node scripts/check-dr-drill.ts

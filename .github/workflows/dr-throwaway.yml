@@ -13,6 +13,12 @@ jobs:
     if: ${{ always() }}
     uses: ./.github/workflows/check-proof-archive.yml
     secrets: inherit
+  dr-sla:
+    needs: check-proof-archive
+    uses: ./.github/workflows/dr-sla.yml
+    secrets: inherit
+    with:
+      dr-drill-sla-days: 30
   dr-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -103,9 +109,11 @@ jobs:
           restore-backup.metrics
 
     needs:
+    - dr-sla
     - check-proof-archive
   spectator-privacy:
     needs:
+    - dr-sla
     - dr-tests
     - check-proof-archive
     if: ${{ always() }}

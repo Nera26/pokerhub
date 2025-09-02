@@ -12,6 +12,12 @@ jobs:
     if: ${{ always() }}
     uses: ./.github/workflows/check-proof-archive.yml
     secrets: inherit
+  dr-sla:
+    needs: check-proof-archive
+    uses: ./.github/workflows/dr-sla.yml
+    secrets: inherit
+    with:
+      dr-drill-sla-days: 30
   failover:
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -93,9 +99,11 @@ jobs:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
     needs:
+    - dr-sla
     - check-proof-archive
   spectator-privacy:
     needs:
+    - dr-sla
     - failover
     - check-proof-archive
     if: ${{ always() }}

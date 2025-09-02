@@ -9,7 +9,18 @@ on:
   workflow_dispatch:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
+  dr-sla:
+    needs: check-proof-archive
+    uses: ./.github/workflows/dr-sla.yml
+    secrets: inherit
+    with:
+      dr-drill-sla-days: 30
   dr-heartbeat:
+    needs: [dr-sla, check-proof-archive]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -48,15 +59,10 @@ jobs:
             -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"DR heartbeat stale","source":"github-actions","severity":"error"}}'
 
   spectator-privacy:
-    needs: dr-heartbeat
+    needs: [dr-heartbeat, dr-sla, check-proof-archive]
     if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:
       logs: backend-tests.log frontend-tests.log integration.log property.log
 
-  check-proof-archive:
-    needs: spectator-privacy
-    if: ${{ always() }}
-    uses: ./.github/workflows/check-proof-archive.yml
-    secrets: inherit
