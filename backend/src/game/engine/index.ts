@@ -27,6 +27,7 @@ export class GameEngine {
   private readonly handId = randomUUID();
   private readonly rng = new HandRNG();
   private readonly stake: string;
+  private readonly currency: string;
 
   private constructor(
     playerIds: string[] = ['p1', 'p2'],
@@ -41,6 +42,7 @@ export class GameEngine {
     private readonly events?: EventPublisher,
     private readonly tableId?: string,
     stake: string = '1-2',
+    currency = 'USD',
   ) {
     const players = playerIds.map((id) => ({
       id,
@@ -84,6 +86,7 @@ export class GameEngine {
     }
 
     this.stake = stake;
+    this.currency = currency;
   }
 
   static async create(
@@ -99,6 +102,7 @@ export class GameEngine {
     events?: EventPublisher,
     tableId?: string,
     stake: string = '1-2',
+    currency = 'USD',
   ): Promise<GameEngine> {
     const engine = new GameEngine(
       playerIds,
@@ -109,6 +113,7 @@ export class GameEngine {
       events,
       tableId,
       stake,
+      currency,
     );
 
     if (wallet) {
@@ -128,7 +133,12 @@ export class GameEngine {
   private async reserveStacks() {
     const state = this.machine.getState();
     for (const player of state.players) {
-      await this.wallet!.reserve(player.id, player.stack, this.handId, 'USD');
+      await this.wallet!.reserve(
+        player.id,
+        player.stack,
+        this.handId,
+        this.currency,
+      );
     }
   }
 
@@ -236,7 +246,13 @@ export class GameEngine {
       if (this.wallet && refund > 0) {
         const key = `${this.handId}#${street}#${idx}`;
         await this.settlementSvc?.reserve(this.handId, street, idx);
-        await this.wallet.rollback(playerId, refund, this.handId, 'USD', key);
+        await this.wallet.rollback(
+          playerId,
+          refund,
+          this.handId,
+          this.currency,
+          key,
+        );
         idx++;
       }
 
@@ -246,7 +262,13 @@ export class GameEngine {
     if (this.wallet && totalLoss > 0) {
       const key = `${this.handId}#${street}#${idx}`;
       await this.settlementSvc?.reserve(this.handId, street, idx);
-      await this.wallet.commit(this.handId, totalLoss, 0, 'USD', key);
+      await this.wallet.commit(
+        this.handId,
+        totalLoss,
+        0,
+        this.currency,
+        key,
+      );
     }
 
     // Finalize proof and persist final hand log
