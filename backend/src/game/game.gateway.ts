@@ -186,6 +186,7 @@ export class GameGateway
   private static readonly ackLatencySamples: number[] = [];
   private static readonly stateLatencySamples: number[] = [];
   private static readonly actionTimestamps: number[] = [];
+  private static readonly throughputSamples: number[] = [];
   private static readonly MAX_SAMPLES = 1000;
 
   private static readonly ackLatencyP50 =
@@ -212,11 +213,31 @@ export class GameGateway
         unit: 'ms',
       },
     ) ?? noopGauge;
+  private static readonly throughputHist =
+    GameGateway.meter.createHistogram('game_action_throughput_ps', {
+      description: 'Distribution of game action throughput per second',
+      unit: 'actions/s',
+    });
   private static readonly actionThroughput =
     GameGateway.meter.createObservableGauge?.('game_action_throughput', {
       description: 'Game actions processed per second',
       unit: 'actions/s',
     }) ?? noopGauge;
+  private static readonly actionThroughputP50 =
+    GameGateway.meter.createObservableGauge?.(
+      'game_action_throughput_p50',
+      { description: 'p50 game action throughput', unit: 'actions/s' },
+    ) ?? noopGauge;
+  private static readonly actionThroughputP95 =
+    GameGateway.meter.createObservableGauge?.(
+      'game_action_throughput_p95',
+      { description: 'p95 game action throughput', unit: 'actions/s' },
+    ) ?? noopGauge;
+  private static readonly actionThroughputP99 =
+    GameGateway.meter.createObservableGauge?.(
+      'game_action_throughput_p99',
+      { description: 'p99 game action throughput', unit: 'actions/s' },
+    ) ?? noopGauge;
   private static readonly stateLatencyP50 =
     GameGateway.meter.createObservableGauge?.(
       'game_state_broadcast_latency_p50_ms',
@@ -342,8 +363,20 @@ export class GameGateway
       ) {
         GameGateway.actionTimestamps.shift();
       }
-      r.observe(GameGateway.actionTimestamps.length);
+      const tps = GameGateway.actionTimestamps.length;
+      r.observe(tps);
+      GameGateway.throughputHist.record(tps);
+      GameGateway.addSample(GameGateway.throughputSamples, tps);
     });
+    GameGateway.actionThroughputP50.addCallback((r) =>
+      r.observe(GameGateway.percentile(GameGateway.throughputSamples, 50)),
+    );
+    GameGateway.actionThroughputP95.addCallback((r) =>
+      r.observe(GameGateway.percentile(GameGateway.throughputSamples, 95)),
+    );
+    GameGateway.actionThroughputP99.addCallback((r) =>
+      r.observe(GameGateway.percentile(GameGateway.throughputSamples, 99)),
+    );
   }
 
   private readonly actionHashKey = 'game:action';
