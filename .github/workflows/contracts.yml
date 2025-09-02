@@ -119,8 +119,12 @@ jobs:
       working-directory: frontend
     - name: Generate contract API types
       run: npm run contracts:generate
-    - name: Run contract tests
-      run: npm run test:contracts
+    - name: Run root tests
+      run: npm test
+    - name: Run backend tests
+      run: npm test --prefix backend
+    - name: Run frontend tests
+      run: npm test --prefix frontend
 
   spectator-privacy:
     if: ${{ always() }}
