@@ -1,4 +1,5 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import type Redis from 'ioredis';
 import { Repository } from 'typeorm';
@@ -20,11 +21,18 @@ export class TableBalancerService {
     string,
     Map<string, number>
   >();
+  private readonly defaultAvoidWithin: number;
   constructor(
     @InjectRepository(Table) private readonly tables: Repository<Table>,
     private readonly tournamentService: TournamentService,
     @Optional() @Inject('REDIS_CLIENT') private readonly redis?: Redis,
-  ) {}
+    @Optional() private readonly config: ConfigService = new ConfigService(),
+  ) {
+    this.defaultAvoidWithin = this.config.get<number>(
+      'tournament.avoidWithin',
+      10,
+    );
+  }
 
   /**
    * Rebalance tables if needed.
@@ -34,9 +42,10 @@ export class TableBalancerService {
   async rebalanceIfNeeded(
     tournamentId: string,
     currentHand = 0,
-    avoidWithin = 10,
+    avoidWithin?: number,
     payoutThreshold?: number,
   ): Promise<boolean> {
+    avoidWithin = avoidWithin ?? this.defaultAvoidWithin;
     const tables = await this.tables.find({
       where: { tournament: { id: tournamentId } },
       relations: ['seats'],
