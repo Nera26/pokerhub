@@ -17,6 +17,7 @@ test('passes when workflows are fresh', () => {
       'dr-restore': '2024-05-30T00:00:00Z',
       'dr-throwaway': '2024-05-28T00:00:00Z',
       'dr-drill': '2024-05-29T00:00:00Z',
+      'dr-drill-schedule': '2024-05-27T00:00:00Z',
     } as Record<string, string>;
     return JSON.stringify([{ timestamp: tsMap[wf] }]);
   });
@@ -38,6 +39,7 @@ test('fails when workflow exceeds SLA', () => {
       'dr-restore': '2024-05-30T00:00:00Z',
       'dr-throwaway': '2024-05-28T00:00:00Z',
       'dr-drill': '2024-05-29T00:00:00Z',
+      'dr-drill-schedule': '2024-05-27T00:00:00Z',
     } as Record<string, string>;
     return JSON.stringify([{ timestamp: tsMap[wf] }]);
   });

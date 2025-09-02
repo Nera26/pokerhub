@@ -121,6 +121,7 @@ jobs:
           DR_RESTORE_SLA_DAYS: ${{ vars.DR_RESTORE_SLA_DAYS || '' }}
           DR_THROWAWAY_SLA_DAYS: ${{ vars.DR_THROWAWAY_SLA_DAYS || '' }}
           DR_DRILL_SLA_DAYS: ${{ vars.DR_DRILL_SLA_DAYS || '' }}
+          DR_DRILL_SCHEDULE_SLA_DAYS: ${{ vars.DR_DRILL_SCHEDULE_SLA_DAYS || '' }}
 
   ensure-dr-drill:
     runs-on: ubuntu-latest
