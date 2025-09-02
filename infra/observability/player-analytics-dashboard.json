@@ -1,0 +1,51 @@
+{
+  "dashboard": {
+    "title": "Player Analytics",
+    "labels": {
+      "pagerduty_service": "pokerhub-eng",
+      "runbook": "docs/runbooks/player-analytics.md"
+    },
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "Daily Active Users",
+        "datasource": "ClickHouse",
+        "targets": [
+          {
+            "query": "SELECT countDistinct(playerId) AS dau, toDate(ts) AS day FROM game_event GROUP BY day ORDER BY day"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Monthly Active Users",
+        "datasource": "ClickHouse",
+        "targets": [
+          {
+            "query": "SELECT countDistinct(playerId) AS mau, toStartOfMonth(ts) AS month FROM game_event GROUP BY month ORDER BY month"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Rake Curve",
+        "datasource": "ClickHouse",
+        "targets": [
+          {
+            "query": "SELECT sum(rake) AS rake, toStartOfHour(ts) AS ts FROM wallet_commit GROUP BY ts ORDER BY ts"
+          }
+        ]
+      },
+      {
+        "type": "table",
+        "title": "Stake VPIP/PFR/Pot",
+        "datasource": "ClickHouse",
+        "targets": [
+          {
+            "query": "SELECT v.stake, v.vpip, p.pfr, s.pot FROM stake_vpip v JOIN stake_pfr p USING (stake) JOIN stake_pot s USING (stake) ORDER BY v.stake"
+          }
+        ]
+      }
+    ]
+  }
+}

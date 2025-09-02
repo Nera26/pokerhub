@@ -12,14 +12,33 @@
     "load:swarm": "mkdir -p load/results && k6 run load/k6-swarm.js --summary-export=load/results/k6-swarm-summary.json",
     "soak:test": "mkdir -p load/results && k6 run load/soak.js --log-format json --summary-export=load/results/soak-summary.json",
     "contracts:generate": "node contracts/generate-types.mjs",
-    "test:contracts": "npm test --prefix backend -- test/contracts/status.service.contract.spec.ts",
+    "test:contracts": "npm test --prefix backend -- \"test/contracts/.*\\.contract\\.spec\\.ts\"",
     "test:load": "npm run load:socket --prefix backend",
-    "test:e2e": "npm run test:e2e --prefix frontend"
+    "test:property": "npm run test:property --prefix backend && npm run audit:ledger",
+    "test:e2e": "npm run test:e2e --prefix frontend",
+    "test:scripts": "npm test --prefix scripts",
+    "test:perf": "npm test --prefix backend -- \"(test|tests)/.*\\.sim\\.spec\\.ts$\"",
+    "test:ledger": "npm run audit:ledger --prefix backend",
+    "audit:ledger": "npm run audit:ledger --prefix backend",
+    "test": "npm run test:scripts && npm test --prefix backend && npm run audit:ledger && npm test --prefix frontend && npm run test:contracts && npm run test:e2e --prefix frontend",
+    "perf:socket-load": "ts-node tests/performance/socket-load.ts",
+    "perf:replay": "ts-node tests/performance/replay.ts",
+    "docs:lint": "remark docs --frail",
+    "docs:check": "node scripts/check-docs-meta.js",
+    "simulate:tourney": "ts-node backend/src/scripts/tournament-simulator.ts --entrants 10000 --runs 100"
   },
   "devDependencies": {
+    "@actions/github": "^6.0.1",
+    "@google-cloud/dlp": "^5.13.0",
+    "@opentelemetry/api": "^1.9.0",
     "openapi-typescript": "^6.7.0",
+    "remark-cli": "^11.0.0",
+    "remark-preset-lint-recommended": "^6.1.0",
+    "remark-validate-links": "^13.0.2",
+    "socket.io-client": "^4.8.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "jest": "^30.1.1"
   }
 }

@@ -40,6 +40,7 @@ describe('GameGateway proof', () => {
       new DummyAnalytics() as any,
       new ClockService(),
       repo as any,
+      {} as any,
       new DummyRedis() as any,
     );
     const client: any = { id: 'c1', emit: jest.fn() };

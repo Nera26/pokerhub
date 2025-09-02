@@ -3,13 +3,52 @@ name: canary-deploy
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
+  ensure-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/ensure-proof-archive.yml
+    secrets: inherit
+  preflight:
+    runs-on: ubuntu-latest
+    env:
+      DR_DRILL_SLA_DAYS: 7
+      DR_FAILOVER_SLA_DAYS: 30
+      DR_RESTORE_SLA_DAYS: 30
+      DR_THROWAWAY_SLA_DAYS: 7
+      SPECTATOR_RETENTION_SLA_DAYS: 1
+      DR_RUNBOOK_SLA_DAYS: 7
+      PROOF_ARCHIVE_SLA_HOURS: 24
+      SOAK_SLA_HOURS: 24
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/ops-preflight
+      with:
+        slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+        spectator-retention-sla-days: ${{ env.SPECTATOR_RETENTION_SLA_DAYS }}
+        soak-metrics-sla-hours: ${{ env.SOAK_SLA_HOURS }}
+        dr-drill-sla-days: ${{ env.DR_DRILL_SLA_DAYS }}
+        dr-failover-sla-days: ${{ env.DR_FAILOVER_SLA_DAYS }}
+        dr-restore-sla-days: ${{ env.DR_RESTORE_SLA_DAYS }}
+        dr-runbook-sla-days: ${{ env.DR_RUNBOOK_SLA_DAYS }}
+        dr-throwaway-sla-days: ${{ env.DR_THROWAWAY_SLA_DAYS }}
+        proof-archive-sla-hours: ${{ env.PROOF_ARCHIVE_SLA_HOURS }}
+    - name: Check soak metrics freshness
+      run: npx -y ts-node scripts/check-soak-metrics.ts
+      env:
+        SOAK_METRICS_SLA_HOURS: ${{ env.SOAK_SLA_HOURS }}
+
+    needs:
+    - ensure-proof-archive
   canary:
+    needs:
+    - preflight
+    - ensure-proof-archive
     runs-on: ubuntu-latest
     environment: production
     env:
+      DEPLOY_ENV: production
       CANARY_TRAFFIC_PERCENT: 5
       CANARY_DURATION_MINUTES: 30
       NAMESPACE: ${{ vars.K8S_NAMESPACE }}
@@ -18,34 +57,37 @@ jobs:
       CANARY: api-canary
       CANARY_RELEASE: canary
       PROMETHEUS: ${{ vars.PROMETHEUS_URL }}
+      METRICS_URL: ${{ vars.METRICS_URL }}
+      ERROR_RATE_THRESHOLD: ${{ vars.ERROR_RATE_THRESHOLD }}
+      PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+      PROOF_MANIFEST_BUCKET: ${{ secrets.PROOF_MANIFEST_BUCKET }}
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-      - name: Configure kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: v1.27.3
-      - name: Install Helm
-        uses: azure/setup-helm@v3
-        with:
-          version: v3.13.0
-      - name: Validate observability configs
-        run: |
-          python -m pip install pyyaml >/dev/null
-          python infra/observability/validate.py
-      - name: Deploy canary and monitor metrics
-        run: bash infra/scripts/canary-deploy.sh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_SHA: ${{ github.sha }}
-      - name: Upload summary
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: k6-summary
-          path: summary.json
+    - uses: actions/checkout@v4
+
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+
+    - name: Configure kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: v1.27.3
+
+    - name: Install Helm
+      uses: azure/setup-helm@v3
+      with:
+        version: v3.13.0
+
+    - name: Run canary deploy
+      run: bash deploy/canary.sh ${{ github.sha }}
+
+  spectator-privacy:
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log
+    needs:
+    - ensure-proof-archive

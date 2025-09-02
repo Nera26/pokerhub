@@ -1,0 +1,191 @@
+name: "Ops preflight"
+description: "Run spectator-privacy, soak metric, DR SLA and proof-archive checks"
+inputs:
+  slack-channel-id:
+    description: "Slack channel to notify on failure"
+    required: true
+  spectator-privacy-sla-hours:
+    description: "Maximum age for spectator-privacy-nightly workflow"
+    required: false
+    default: 24
+  spectator-retention-sla-days:
+    description: "Max age for spectator-retention workflow"
+    required: true
+  soak-metrics-sla-hours:
+    description: "Maximum age for soak-metrics workflow"
+    required: true
+  dr-drill-sla-days:
+    description: "Max age for dr-drill workflow"
+    required: true
+  dr-failover-sla-days:
+    description: "Max age for dr-failover workflow"
+    required: true
+  dr-failover-monthly-sla-days:
+    description: "Max age for dr-failover-monthly workflow"
+    required: true
+  dr-restore-sla-days:
+    description: "Max age for dr-restore workflow"
+    required: true
+  dr-runbook-sla-days:
+    description: "Max age for check-dr-runbook workflow"
+    required: true
+  dr-throwaway-sla-days:
+    description: "Max age for dr-throwaway workflow"
+    required: true
+  proof-archive-sla-hours:
+    description: "Maximum age for proof-archive workflow"
+    required: false
+    default: 24
+runs:
+  using: "composite"
+  steps:
+    - name: Check spectator-privacy-nightly SLA
+      uses: ./.github/workflows/check-workflow-sla
+      with:
+        workflow: spectator-privacy-nightly.yml
+        sla: ${{ inputs.spectator-privacy-sla-hours }}
+        unit: hours
+        slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Auth GCP for spectator privacy metric
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+    - name: Setup gcloud for spectator privacy metric
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ vars.GCP_PROJECT_ID }}
+    - name: Check spectator privacy metric SLA
+      run: npx -y ts-node scripts/check-spectator-privacy-metric.ts
+      env:
+        GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        SPECTATOR_PRIVACY_SLA_HOURS: ${{ inputs.spectator-privacy-sla-hours }}
+    - name: Check spectator retention SLA
+      uses: ./.github/workflows/check-workflow-sla
+      with:
+        workflow: spectator-retention.yml
+        sla: ${{ inputs.spectator-retention-sla-days }}
+        unit: days
+        slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Check soak-metrics SLA
+      uses: ./.github/workflows/check-workflow-sla
+      with:
+        workflow: soak-metrics.yml
+        sla: ${{ inputs.soak-metrics-sla-hours }}
+        unit: hours
+        slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Check soak metrics thresholds
+      run: |
+        npx ts-node scripts/check-soak-metrics.ts
+        if [ ! -f soak-summary.json ]; then
+          echo "soak-summary.json missing" >&2
+          exit 1
+        fi
+      env:
+        SOAK_TRENDS_BUCKET: ${{ env.SOAK_TRENDS_BUCKET }}
+        SOAK_LATENCY_P95_MS: ${{ env.SOAK_LATENCY_P95_MS }}
+        SOAK_THROUGHPUT_MIN: ${{ env.SOAK_THROUGHPUT_MIN }}
+        SOAK_METRICS_SLA_HOURS: ${{ inputs.soak-metrics-sla-hours }}
+    - name: Check DR drill SLA
+      uses: ./.github/workflows/check-workflow-sla
+      with:
+        workflow: dr-drill.yml
+        sla: ${{ inputs.dr-drill-sla-days }}
+        unit: days
+        slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Check DR drill metrics
+      run: npx -y ts-node scripts/check-dr-drill.ts
+      env:
+        GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        DR_DRILL_SLA_DAYS: ${{ inputs.dr-drill-sla-days }}
+    - name: Check DR failover SLA
+      uses: ./.github/workflows/check-workflow-sla
+      with:
+        workflow: dr-failover.yml
+        sla: ${{ inputs.dr-failover-sla-days }}
+        unit: days
+        slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Check DR failover monthly SLA
+      uses: ./.github/workflows/check-workflow-sla
+      with:
+        workflow: dr-failover-monthly.yml
+        sla: ${{ inputs.dr-failover-monthly-sla-days }}
+        unit: days
+        slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Check DR restore SLA
+      uses: ./.github/workflows/check-workflow-sla
+      with:
+        workflow: dr-restore.yml
+        sla: ${{ inputs.dr-restore-sla-days }}
+        unit: days
+        slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Check DR runbook SLA
+      uses: ./.github/workflows/check-workflow-sla
+      with:
+        workflow: check-dr-runbook.yml
+        sla: ${{ inputs.dr-runbook-sla-days }}
+        unit: days
+        slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Check DR throwaway SLA
+      uses: ./.github/workflows/check-workflow-sla
+      with:
+        workflow: dr-throwaway.yml
+        sla: ${{ inputs.dr-throwaway-sla-days }}
+        unit: days
+        slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Check DR trend targets
+      run: |
+        set -euo pipefail
+        out=$(npx -y ts-node infra/disaster-recovery/check-dr-trends.ts)
+        echo "$out"
+        latest_rto=$(echo "$out" | jq -r '.latest.rto')
+        avg_rto=$(echo "$out" | jq -r '.average.rto')
+        latest_rpo_snap=$(echo "$out" | jq -r '.latest.rpoSnap')
+        latest_rpo_wal=$(echo "$out" | jq -r '.latest.rpoWal')
+        avg_rpo_snap=$(echo "$out" | jq -r '.average.rpoSnap')
+        avg_rpo_wal=$(echo "$out" | jq -r '.average.rpoWal')
+        if [ "$latest_rto" -gt "$RTO_TARGET" ] || [ "$avg_rto" -gt "$RTO_TARGET" ] \
+          || [ "$latest_rpo_snap" -gt "$RPO_TARGET" ] || [ "$latest_rpo_wal" -gt "$RPO_TARGET" ] \
+          || [ "$avg_rpo_snap" -gt "$RPO_TARGET" ] || [ "$avg_rpo_wal" -gt "$RPO_TARGET" ]; then
+          echo 'DR metrics exceed targets'
+          exit 1
+        fi
+      env:
+        DR_METRICS_BUCKET: ${{ env.DR_METRICS_BUCKET }}
+        RTO_TARGET: ${{ env.RTO_TARGET }}
+        RPO_TARGET: ${{ env.RPO_TARGET }}
+    - name: Check proof-archive SLA
+      uses: ./.github/workflows/check-workflow-sla
+      with:
+        workflow: proof-archive.yml
+        sla: ${{ inputs.proof-archive-sla-hours }}
+        unit: hours
+        slack-channel-id: ${{ inputs.slack-channel-id }}
+    - name: Check proof archive bucket retention
+      run: npx -y ts-node scripts/check-proof-archive-retention.ts
+      env:
+        PROOF_ARCHIVE_BUCKET: ${{ env.PROOF_ARCHIVE_BUCKET }}
+    - name: Check proof archive replication
+      run: npx -y ts-node scripts/check-proof-archive-replication.ts
+      env:
+        PROOF_ARCHIVE_BUCKET: ${{ env.PROOF_ARCHIVE_BUCKET }}
+        SECONDARY_REGION: ${{ env.SECONDARY_REGION }}
+    - name: Validate proof archive contents
+      id: proof_archive
+      run: npx -y ts-node scripts/check-proof-archive.ts
+      env:
+        PROOF_ARCHIVE_BUCKET: ${{ env.PROOF_ARCHIVE_BUCKET }}
+        PROOF_ARCHIVE_EXPECTED_DAILY_COUNT: ${{ env.PROOF_ARCHIVE_EXPECTED_DAILY_COUNT }}
+        SECONDARY_REGION: ${{ env.SECONDARY_REGION }}
+        PROOF_MANIFEST_KMS_KEY: ${{ env.PROOF_MANIFEST_KMS_KEY }}
+        PROOF_MANIFEST_KMS_KEYRING: ${{ env.PROOF_MANIFEST_KMS_KEYRING }}
+        PROOF_MANIFEST_KMS_LOCATION: ${{ env.PROOF_MANIFEST_KMS_LOCATION }}
+        PROOF_MANIFEST_KMS_VERSION: ${{ env.PROOF_MANIFEST_KMS_VERSION }}
+    - name: Proof archive summary
+      if: always()
+      run: |
+        {
+          echo "### Proof Archive"
+          echo "- expected: ${{ steps.proof_archive.outputs.expected }}"
+          echo "- found: ${{ steps.proof_archive.outputs.count }}"
+          echo "- status: ${{ steps.proof_archive.outcome }}"
+        } >> "$GITHUB_STEP_SUMMARY"

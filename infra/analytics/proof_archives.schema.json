@@ -1,0 +1,6 @@
+[
+  {"name": "run_id", "type": "STRING"},
+  {"name": "timestamp", "type": "TIMESTAMP"},
+  {"name": "count", "type": "INTEGER"},
+  {"name": "manifestSha", "type": "STRING"}
+]

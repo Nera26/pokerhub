@@ -5,24 +5,122 @@ on:
     types: [canary-burn]
 
 jobs:
+  ensure-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/ensure-proof-archive.yml
+    secrets: inherit
+  preflight:
+    runs-on: ubuntu-latest
+    env:
+      DR_DRILL_SLA_DAYS: 7
+      DR_FAILOVER_SLA_DAYS: 30
+      DR_RESTORE_SLA_DAYS: 30
+      DR_THROWAWAY_SLA_DAYS: 7
+      SOAK_SLA_HOURS: 24
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/ops-preflight
+      with:
+        slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+        soak-metrics-sla-hours: ${{ env.SOAK_SLA_HOURS }}
+        dr-drill-sla-days: ${{ env.DR_DRILL_SLA_DAYS }}
+        dr-failover-sla-days: ${{ env.DR_FAILOVER_SLA_DAYS }}
+        dr-restore-sla-days: ${{ env.DR_RESTORE_SLA_DAYS }}
+        dr-throwaway-sla-days: ${{ env.DR_THROWAWAY_SLA_DAYS }}
+    - name: Check soak metrics freshness
+      run: npx -y ts-node scripts/check-soak-metrics.ts
+      env:
+        SOAK_METRICS_SLA_HOURS: ${{ env.SOAK_SLA_HOURS }}
+
+    needs:
+    - ensure-proof-archive
+  verify:
+    needs:
+    - preflight
+    - ensure-proof-archive
+    runs-on: ubuntu-latest
+    env:
+      PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+      PROOF_ARCHIVE_EXPECTED_DAILY_COUNT: ${{ 
+        vars.PROOF_ARCHIVE_EXPECTED_DAILY_COUNT }}
+      SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+      PROOF_ARCHIVE_KMS_KEY: ${{ vars.PROOF_ARCHIVE_KMS_KEY }}
+      PROOF_MANIFEST_KMS_KEY: ${{ vars.PROOF_MANIFEST_KMS_KEY }}
+      PROOF_MANIFEST_KMS_KEYRING: ${{ vars.PROOF_MANIFEST_KMS_KEYRING }}
+      PROOF_MANIFEST_KMS_LOCATION: ${{ vars.PROOF_MANIFEST_KMS_LOCATION }}
+      PROOF_MANIFEST_KMS_VERSION: ${{ vars.PROOF_MANIFEST_KMS_VERSION || 1 }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+    - run: npm ci
+    - uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER 
+          || vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ${{ secrets.GCP_SERVICE_ACCOUNT || 
+          vars.GCP_SERVICE_ACCOUNT }}
+    - uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
+
+    - id: soak
+      run: npx -y ts-node scripts/check-soak-metrics.ts
+      continue-on-error: true
+
+    - name: Slack alert on soak regression
+      if: steps.soak.outcome == 'failure'
+      uses: slackapi/slack-github-action@v1
+      with:
+        payload: |
+          { "channel": "${{ secrets.SLACK_CHANNEL_ID }}", "text": "Canary rollback blocked: soak metrics regression" }
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+    - name: PagerDuty alert on soak regression
+      if: steps.soak.outcome == 'failure'
+      env:
+        ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+      run: |
+        curl -X POST https://events.pagerduty.com/v2/enqueue \
+          -H 'Content-Type: application/json' \
+          -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Canary rollback blocked: soak metrics regression","source":"github-actions","severity":"error"}}'
+
+    - name: Fail on regression
+      if: steps.soak.outcome == 'failure'
+      run: exit 1
+
   rollback:
+    needs:
+    - verify
+    - ensure-proof-archive
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - uses: actions/checkout@v4
-      - name: Configure kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: v1.27.3
-      - name: Install Helm
-        uses: azure/setup-helm@v3
-        with:
-          version: v3.13.0
-      - name: Run rollback
-        env:
-          PROM_URL: ${{ vars.PROMETHEUS_URL }}
-          NAMESPACE: ${{ vars.K8S_NAMESPACE }}
-        run: |
-          if ! bash infra/canary/rollback.sh; then
-            helm rollback canary --namespace "$NAMESPACE"
-          fi
+    - uses: actions/checkout@v4
+    - name: Configure kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: v1.27.3
+    - name: Install Helm
+      uses: azure/setup-helm@v3
+      with:
+        version: v3.13.0
+    - name: Run rollback
+      env:
+        PROM_URL: ${{ vars.PROMETHEUS_URL }}
+        NAMESPACE: ${{ vars.K8S_NAMESPACE }}
+      run: |
+        if ! bash infra/canary/rollback.sh; then
+          helm rollback canary --namespace "$NAMESPACE"
+        fi
+
+  spectator-privacy:
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log
+    needs:
+    - ensure-proof-archive

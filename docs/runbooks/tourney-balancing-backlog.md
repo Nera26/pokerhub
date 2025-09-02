@@ -1,6 +1,10 @@
 # Tourney Balancing Backlog Runbook
+<!-- Update service IDs in this file if PagerDuty services change -->
 
 Resolve backlogs in the tournament balancer to keep seating timely and fair.
+
+## Dashboard
+- Grafana: [Tourney Balancer](../analytics-dashboards.md)
 
 ## Detection
 - `tourneyBalanceLag` metric exceeds 30 s.
@@ -20,9 +24,13 @@ Resolve backlogs in the tournament balancer to keep seating timely and fair.
 - Players seated within 10 s over the next 5 m.
 - `tourneyBalanceLag` metric drops below 5 s.
 
-## Escalation
-- PagerDuty: pokerhub-eng
+## PagerDuty Escalation
+- Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->
 - Slack: #ops
 
 ## Drill
 - Exercised via monthly chaos drill (`.github/workflows/chaos-drill.yml`).
+
+## See Also
+- [Tournament Handbook](../handbook/tournament-handbook.md)
+- [Game Engine Spec](../game-engine-spec.md)

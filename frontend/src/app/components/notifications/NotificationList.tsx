@@ -20,7 +20,7 @@ import {
 
 const initialNotifications: Notification[] = [
   {
-    id: 1,
+    id: '1',
     type: 'bonus',
     title: 'Welcome Bonus Activated!',
     message: 'Your $100 welcome bonus has been credited. Start playing now!',
@@ -28,7 +28,7 @@ const initialNotifications: Notification[] = [
     read: false,
   },
   {
-    id: 2,
+    id: '2',
     type: 'tournament',
     title: 'Tournament Winner',
     message:
@@ -37,7 +37,7 @@ const initialNotifications: Notification[] = [
     read: true,
   },
   {
-    id: 3,
+    id: '3',
     type: 'system',
     title: 'System Maintenance',
     message: 'Scheduled maintenance on July 1st from 2:00 AM to 4:00 AM UTC.',
@@ -70,7 +70,7 @@ export default function NotificationList() {
     isLoading: listLoading,
     error: listError,
   } = useNotifications({
-    initialData: { notifications: initialNotifications, balance: 0 },
+    initialData: { notifications: initialNotifications },
     refetchInterval: 20000,
   });
   const notifications = notificationsData?.notifications ?? [];
@@ -81,7 +81,7 @@ export default function NotificationList() {
   const markRead = useMarkRead();
 
   const handleMarkAllRead = () => markAllRead.mutate();
-  const handleItemClick = (id: number) => markRead.mutate(id);
+  const handleItemClick = (id: string) => markRead.mutate(id);
 
   const filtered = useMemo(
     () =>

@@ -12,14 +12,23 @@ spec:
           containers:
             - name: drill
               image: ghcr.io/pokerhub/infra-tools:latest
-              command: ["/bin/bash", "/scripts/tests/drill-failover.sh"]
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  set -euo pipefail
+                  if ! command -v gcloud >/dev/null 2>&1; then
+                    apt-get update && apt-get install -y google-cloud-cli >/dev/null 2>&1
+                  fi
+                  gcloud auth activate-service-account --key-file /var/secrets/gcloud/key.json
+                  /scripts/tests/drill-failover.sh
               env:
                 - name: PG_INSTANCE_ID
                   value: primary-pg
                 - name: PRIMARY_REGION
-                  value: us-west-2
+                  value: us-west2
                 - name: SECONDARY_REGION
-                  value: us-east-1
+                  value: us-east1
                 - name: PGUSER
                   valueFrom:
                     secretKeyRef:
@@ -34,3 +43,11 @@ spec:
                   value: postgres
                 - name: WAL_ARCHIVE_BUCKET
                   value: pg-wal-archive
+              volumeMounts:
+                - name: gcloud-key
+                  mountPath: /var/secrets/gcloud
+                  readOnly: true
+          volumes:
+            - name: gcloud-key
+              secret:
+                secretName: gcloud-service-account

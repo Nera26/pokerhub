@@ -1,11 +1,18 @@
 name: pg-restore-smoke
+concurrency:
+  group: "pg-restore-smoke"
+  cancel-in-progress: true
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+  - cron: '*/30 * * * *'
   workflow_dispatch:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   restore:
     runs-on: ubuntu-latest
     services:
@@ -14,51 +21,82 @@ jobs:
         env:
           POSTGRES_PASSWORD: postgres
         ports:
-          - 5432:5432
+        - 5432:5432
         options: >-
           --health-cmd pg_isready -U postgres
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
-      - name: Install clients
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client awscli
-      - name: Restore latest backup
-        run: bash infra/scripts/pg-restore-smoke.sh | tee restore.log
-        env:
-          PG_BACKUP_S3_URI: ${{ vars.PG_BACKUP_S3_URI }}
-          PGHOST: localhost
-          PGUSER: postgres
-          PGPASSWORD: postgres
-          PGDATABASE: postgres
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
-      - name: Check metrics
-        run: |
-          source restore.metrics
-          echo "Restore duration: $RESTORE_DURATION_SECONDS"; \
-          echo "Snapshot age: $SNAPSHOT_AGE_SECONDS"; \
-          if [ "$RESTORE_DURATION_SECONDS" -gt 1800 ]; then \
-            echo "Restore duration exceeds 30 minutes" >&2; exit 1; fi; \
-          if [ "$SNAPSHOT_AGE_SECONDS" -gt 300 ]; then \
-            echo "Snapshot age exceeds 5 minutes" >&2; exit 1; fi
-      - name: Upload artifacts
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: pg-restore-smoke
-          path: |
-            restore.log
-            restore.metrics
-      - name: Notify Slack on failure
-        if: failure()
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          payload: |
-            { "text": "Postgres restore smoke failed for ${GITHUB_REPOSITORY}@${GITHUB_SHA}" }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    - uses: actions/checkout@v4
+    - uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+    - uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+    - name: Install Postgres client
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y postgresql-client
+    - name: Restore latest backup
+      run: bash infra/scripts/pg-restore-smoke.sh | tee restore.log
+      env:
+        PG_BACKUP_GCS_URI: ${{ vars.PG_BACKUP_GCS_URI }}
+        PGHOST: localhost
+        PGUSER: postgres
+        PGPASSWORD: postgres
+        PGDATABASE: postgres
+    - name: Check metrics
+      run: |
+        source restore.metrics
+        echo "Restore duration: $RESTORE_DURATION_SECONDS"; \
+        echo "Snapshot age: $SNAPSHOT_AGE_SECONDS"; \
+        if [ "$RESTORE_DURATION_SECONDS" -gt 1800 ]; then \
+          echo "Restore duration exceeds 30 minutes" >&2; exit 1; fi; \
+        if [ "$SNAPSHOT_AGE_SECONDS" -gt 300 ]; then \
+          echo "Snapshot age exceeds 5 minutes" >&2; exit 1; fi
+    - name: Publish metrics to Cloud Monitoring
+      run: |
+        source restore.metrics
+        gcloud monitoring metrics write custom.googleapis.com/dr/rto "$RESTORE_DURATION_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+        gcloud monitoring metrics write custom.googleapis.com/dr/rpo "$SNAPSHOT_AGE_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+        gcloud monitoring metrics write custom.googleapis.com/dr/restore_duration "$RESTORE_DURATION_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+        gcloud monitoring metrics write custom.googleapis.com/dr/snapshot_age "$SNAPSHOT_AGE_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+    - name: Upload artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: restore-${{ github.sha }}
+        path: |
+          restore.log
+          restore.metrics
+    - name: Notify Slack on failure
+      if: failure()
+      uses: slackapi/slack-github-action@v1.24.0
+      with:
+        payload: |
+          { "text": "Postgres restore smoke failed for ${GITHUB_REPOSITORY}@${GITHUB_SHA}" }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    needs:
+    - check-proof-archive
+  soak-metrics:
+    needs:
+    - restore
+    - check-proof-archive
+    if: ${{ always() }}
+    uses: ./.github/workflows/soak-metrics.yml
+    secrets: inherit
+
+  spectator-privacy:
+    needs:
+    - restore
+    - soak-metrics
+    - check-proof-archive
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: restore.log

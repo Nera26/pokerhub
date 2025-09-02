@@ -9,4 +9,4 @@ clickhouse:
 
 sinks:
   clickhouse: ../clickhouse-sink.yaml
-  s3: ../s3-sink.yaml
+  gcs: ../gcs-sink.yaml

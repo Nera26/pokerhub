@@ -1,14 +1,19 @@
 import { HandLog, HandLogEntry } from '../hand-log';
-import { HandStateMachine, GameAction, GameState } from '../state-machine';
-import { SettlementJournal } from '../settlement';
+import {
+  HandStateMachine,
+  GameAction,
+  GameStateInternal,
+} from '../state-machine';
+import { SettlementJournal, recordDeltas } from '../settlement';
 import { WalletService } from '../../wallet/wallet.service';
-import { evaluateHand } from '../hand-evaluator';
+import { SettlementService } from '../../wallet/settlement.service';
 import { randomUUID } from 'crypto';
 import { HandRNG } from '../rng';
 import { Repository } from 'typeorm';
 import { Hand } from '../../database/entities/hand.entity';
 import { EventPublisher } from '../../events/events.service';
-import { resolveRake } from '../rake';
+import { mkdirSync, writeFileSync } from 'fs';
+import path from 'path';
 
 /**
  * GameEngine orchestrates the poker hand state machine, keeping
@@ -31,6 +36,7 @@ export class GameEngine {
       bigBlind: number;
     },
     private readonly wallet?: WalletService,
+    private readonly settlementSvc?: SettlementService,
     private readonly handRepo?: Repository<Hand>,
     private readonly events?: EventPublisher,
     private readonly tableId?: string,
@@ -88,6 +94,7 @@ export class GameEngine {
       bigBlind: 2,
     },
     wallet?: WalletService,
+    settlementSvc?: SettlementService,
     handRepo?: Repository<Hand>,
     events?: EventPublisher,
     tableId?: string,
@@ -97,6 +104,7 @@ export class GameEngine {
       playerIds,
       config,
       wallet,
+      settlementSvc,
       handRepo,
       events,
       tableId,
@@ -128,7 +136,7 @@ export class GameEngine {
     return this.handId;
   }
 
-  applyAction(action: GameAction): GameState {
+  applyAction(action: GameAction): GameStateInternal {
     // Use a safe deep clone (structuredClone is available in modern runtimes)
     const preState = structuredClone(this.machine.getState());
     let state = this.machine.apply(action);
@@ -153,11 +161,11 @@ export class GameEngine {
     return postState;
   }
 
-  getState(): GameState {
+  getState(): GameStateInternal {
     return this.machine.getState();
   }
 
-  getPublicState(): GameState {
+  getPublicState(): GameStateInternal {
     const state = structuredClone(this.machine.getState());
     // Strip private info (hole cards, deck)
     for (const player of state.players as unknown as Array<Record<string, unknown>>) {
@@ -185,10 +193,11 @@ export class GameEngine {
    * We preserve blinds/stack config and stake, but intentionally
    * do NOT pass wallet/handRepo/events/tableId to avoid side effects.
    */
-  replayHand(): GameState {
+  replayHand(): GameStateInternal {
     const replay = new GameEngine(
       this.machine.getState().players.map((p) => p.id),
       this.config,
+      undefined,
       undefined,
       undefined,
       undefined,
@@ -214,91 +223,45 @@ export class GameEngine {
       if (existing?.settled) return;
     }
 
-    // Prefer communityCards but accept legacy 'board'
-    const board: number[] =
-      (state as any).communityCards ??
-      (state as any).board ??
-      [];
+    const entries = recordDeltas(state, this.initialStacks, this.settlement);
 
-    // Score hands (robust to evaluation errors)
-    const scores = new Map<string, number>();
-    for (const p of active) {
-      const hole: number[] = (p as any).cards ?? (p as any).holeCards ?? [];
-      let score = 0;
-      try {
-        score = evaluateHand([...hole, ...board]);
-      } catch {
-        score = 0;
-      }
-      scores.set(p.id, score);
-    }
-
-    // Build pots (supporting side pots)
-    const pots =
-      state.sidePots.length > 0
-        ? [...state.sidePots]
-        : [
-            {
-              amount: state.pot,
-              players: active.map((p) => p.id),
-              contributions: Object.fromEntries(active.map((p) => [p.id, 0])),
-            },
-          ];
-
-    // Apply rake to the main pot only (standard room behavior)
-    let totalPot = pots.reduce((s, p) => s + p.amount, 0);
-    let rake = 0;
-    if (this.wallet) {
-      rake = resolveRake(totalPot, this.stake);
-      if (pots.length > 0) {
-        pots[0].amount = Math.max(0, pots[0].amount - rake);
-      } else {
-        totalPot = Math.max(0, totalPot - rake);
-      }
-    }
-
-    // Distribute pots to winners
-    for (const pot of pots) {
-      const contenders = active.filter((p) => pot.players.includes(p.id));
-      if (contenders.length === 0) continue;
-
-      const best = Math.max(...contenders.map((p) => scores.get(p.id)!));
-      const winners = contenders.filter((p) => scores.get(p.id) === best);
-      const share = Math.floor(pot.amount / winners.length);
-
-      for (const w of winners) w.stack += share;
-
-      const remainder = pot.amount - share * winners.length;
-      if (remainder > 0) winners[0].stack += remainder;
-    }
-
-    state.pot = 0;
-
-    // Compute deltas vs initial stacks; settle wallet reservations
+    const street = state.street;
+    let idx = 0;
     let totalLoss = 0;
-    for (const player of state.players) {
-      const initial = this.initialStacks.get(player.id) ?? 0;
-      const delta = player.stack - initial;
-
-      this.settlement.record({ playerId: player.id, delta });
-
-      const loss = Math.max(initial - player.stack, 0);
-      const refund = initial - loss; // amount to roll back from reservation
+    for (const { playerId, delta } of entries) {
+      const initial = this.initialStacks.get(playerId) ?? 0;
+      const loss = delta < 0 ? -delta : 0;
+      const refund = initial - loss;
 
       if (this.wallet && refund > 0) {
-        await this.wallet.rollback(player.id, refund, this.handId, 'USD');
+        const key = `${this.handId}#${street}#${idx}`;
+        await this.settlementSvc?.reserve(this.handId, street, idx);
+        await this.wallet.rollback(playerId, refund, this.handId, 'USD', key);
+        idx++;
       }
 
       totalLoss += loss;
     }
 
     if (this.wallet && totalLoss > 0) {
-      await this.wallet.commit(this.handId, totalLoss, rake, 'USD');
+      const key = `${this.handId}#${street}#${idx}`;
+      await this.settlementSvc?.reserve(this.handId, street, idx);
+      await this.wallet.commit(this.handId, totalLoss, 0, 'USD', key);
     }
 
     // Finalize proof and persist final hand log
     const proof = this.rng.reveal();
     this.log.recordProof(proof);
+
+    try {
+      const dir = path.resolve(process.cwd(), '..', 'storage', 'proofs');
+      mkdirSync(dir, { recursive: true });
+      const file = path.join(dir, `${this.handId}.json`);
+      writeFileSync(file, JSON.stringify(proof));
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('failed to write proof file', err);
+    }
 
     if (this.handRepo) {
       await this.handRepo.save({
@@ -313,20 +276,28 @@ export class GameEngine {
       } as any);
     }
 
-    // Emit end event for primary pot winners (if any listeners)
-    const mainPotPlayers = pots[0]?.players ?? active.map((p) => p.id);
-    const bestMain = Math.max(...mainPotPlayers.map((id) => scores.get(id) ?? 0));
-    const mainWinners = mainPotPlayers.filter(
-      (id) => (scores.get(id) ?? 0) === bestMain,
-    );
+    const winners = entries
+      .filter((e) => e.delta > 0)
+      .map((e) => e.playerId);
+
+    this.events?.emit('hand.settle', {
+      handId: this.handId,
+      tableId: this.tableId,
+      playerIds: entries.map((e) => e.playerId),
+      deltas: entries.map((e) => e.delta),
+      stake: this.stake,
+    });
 
     this.events?.emit('hand.end', {
       handId: this.handId,
-      winners: mainWinners,
+      winners,
       tableId: this.tableId,
       stake: this.stake,
     });
   }
 }
 
-export type { GameAction, GameState } from '../state-machine';
+export type {
+  GameAction,
+  GameStateInternal as InternalGameState,
+} from '../state-machine';

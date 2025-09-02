@@ -2,6 +2,7 @@ import { run } from '../../src/leaderboard/rebuild';
 import { LeaderboardService } from '../../src/leaderboard/leaderboard.service';
 import type { Cache } from 'cache-manager';
 import { createClient, ClickHouseClient } from '@clickhouse/client';
+import { ConfigService } from '@nestjs/config';
 
 class MockCache {
   private store = new Map<string, any>();
@@ -43,7 +44,7 @@ class ClickHouseAnalytics {
 }
 
 describe('leaderboard rebuild CLI benchmark', () => {
-  it('completes within configured duration', async () => {
+  it('rebuilds 30 days within 30 minutes', async () => {
     jest.useFakeTimers();
     const cache = new MockCache();
     const analytics = new ClickHouseAnalytics();
@@ -51,16 +52,17 @@ describe('leaderboard rebuild CLI benchmark', () => {
       cache as unknown as Cache,
       { find: jest.fn() } as any,
       analytics as any,
+      new ConfigService(),
     );
     const { durationMs } = await run({
-      days: 1,
+      days: 30,
       benchmark: true,
-      players: 5,
-      sessions: 10,
-      assertDurationMs: 60_000,
+      players: 50,
+      sessions: 200,
+      assertDurationMs: 30 * 60 * 1000,
       service,
     });
-    expect(durationMs).toBeLessThan(60_000);
+    expect(durationMs).toBeLessThan(30 * 60 * 1000);
     await analytics.close();
     jest.useRealTimers();
   });

@@ -1,0 +1,68 @@
+name: test-pipeline
+
+on:
+  workflow_dispatch:
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: ./scripts/test-stages.sh unit
+
+  property:
+    runs-on: ubuntu-latest
+    needs: unit
+    continue-on-error: ${{ github.ref != 'refs/heads/main' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: ./scripts/test-stages.sh property
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: property
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: ./scripts/test-stages.sh e2e
+
+  load:
+    runs-on: ubuntu-latest
+    needs: e2e
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: grafana/setup-k6@v1
+      - run: ./scripts/test-stages.sh load
+
+  chaos:
+    runs-on: ubuntu-latest
+    needs: load
+    continue-on-error: ${{ github.ref != 'refs/heads/main' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: grafana/setup-k6@v1
+      - run: ./scripts/test-stages.sh chaos
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chaos-summary
+          path: chaos-summary.json

@@ -9,7 +9,6 @@ export interface NewUser {
   username: string;
   email: string;
   password: string;
-  balance: number;
   status: string;
 }
 
@@ -17,14 +16,7 @@ export interface UpdateUser {
   id: number;
   name: string;
   email: string;
-  balance: number;
   status: string;
-}
-
-export interface BalanceParams {
-  amount: number;
-  action: 'add' | 'remove' | 'freeze';
-  notes: string;
 }
 
 export async function createUser(newUser: NewUser): Promise<MessageResponse> {
@@ -58,21 +50,6 @@ export async function toggleUserBan(userId: number): Promise<MessageResponse> {
     serverFetch(`${getBaseUrl()}/api/users/${userId}/ban`, {
       method: 'POST',
       credentials: 'include',
-    }),
-    MessageResponseSchema,
-  );
-}
-
-export async function updateUserBalance(
-  userId: number,
-  params: BalanceParams,
-): Promise<MessageResponse> {
-  return handleResponse(
-    serverFetch(`${getBaseUrl()}/api/users/${userId}/balance`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(params),
     }),
     MessageResponseSchema,
   );

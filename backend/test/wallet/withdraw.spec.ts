@@ -8,44 +8,16 @@ import { EventPublisher } from '../../src/events/events.service';
 import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
 import { KycService } from '../../src/wallet/kyc.service';
 import { SettlementJournal } from '../../src/wallet/settlement-journal.entity';
-import type Redis from 'ioredis';
+import { MockRedis } from '../utils/mock-redis';
 
 describe('WalletService withdraw', () => {
   let dataSource: DataSource;
   let service: WalletService;
   let kyc: KycService;
   const events = { emit: jest.fn() } as unknown as EventPublisher;
-  let redisStore: Record<string, number> = {};
-  const redis = {
-    incr: (key: string): Promise<number> => {
-      redisStore[key] = (redisStore[key] ?? 0) + 1;
-      return Promise.resolve(redisStore[key]);
-    },
-    incrby: (key: string, value: number): Promise<number> => {
-      redisStore[key] = (redisStore[key] ?? 0) + value;
-      return Promise.resolve(redisStore[key]);
-    },
-    decrby: (key: string, value: number): Promise<number> => {
-      redisStore[key] = (redisStore[key] ?? 0) - value;
-      return Promise.resolve(redisStore[key]);
-    },
-    expire: (): Promise<void> => Promise.resolve(),
-    set: (
-      key: string,
-      value: string,
-      mode: string,
-      _ex: string,
-      _ttl: number,
-    ): Promise<string | null> => {
-      if (mode === 'NX' && redisStore[key] !== undefined)
-        return Promise.resolve(null);
-      redisStore[key] = Number(value);
-      return Promise.resolve('OK');
-    },
-  } as unknown as Redis;
+  let redis: MockRedis;
   const provider = {
     initiate3DS: jest.fn().mockResolvedValue({ id: 'tx' }),
-    getStatus: jest.fn().mockResolvedValue('approved'),
   } as unknown as PaymentProviderService;
 
   beforeAll(async () => {
@@ -76,34 +48,16 @@ describe('WalletService withdraw', () => {
       synchronize: true,
     }) as DataSource;
     await dataSource.initialize();
-    const accountRepo = dataSource.getRepository(Account);
-    const journalRepo = dataSource.getRepository(JournalEntry);
-    const disbRepo = dataSource.getRepository(Disbursement);
-    const settleRepo = dataSource.getRepository(SettlementJournal);
     kyc = {
       validate: jest.fn().mockResolvedValue(undefined),
       isVerified: jest.fn().mockResolvedValue(true),
     } as unknown as KycService;
-    service = new WalletService(
-      accountRepo,
-      journalRepo,
-      disbRepo,
-      settleRepo,
-      events,
-      redis,
-      provider,
-      kyc,
-    );
-    (
-      service as unknown as { enqueueDisbursement: jest.Mock }
-    ).enqueueDisbursement = jest.fn();
   });
 
   beforeEach(async () => {
-    redisStore = {};
+    redis = new MockRedis();
     (events.emit as jest.Mock).mockClear();
     (provider.initiate3DS as jest.Mock).mockResolvedValue({ id: 'tx' });
-    (provider.getStatus as jest.Mock).mockResolvedValue('approved');
     const accountRepo = dataSource.getRepository(Account);
     const journalRepo = dataSource.getRepository(JournalEntry);
     const disbRepo = dataSource.getRepository(Disbursement);
@@ -128,6 +82,19 @@ describe('WalletService withdraw', () => {
         currency: 'USD',
       },
     ]);
+    service = new WalletService(
+      accountRepo,
+      journalRepo,
+      disbRepo,
+      settleRepo,
+      events,
+      redis,
+      provider,
+      kyc,
+    );
+    (
+      service as unknown as { enqueueDisbursement: jest.Mock }
+    ).enqueueDisbursement = jest.fn();
   });
 
   afterAll(async () => {
@@ -180,34 +147,6 @@ describe('WalletService withdraw', () => {
     ).rejects.toThrow('Rate limit exceeded');
   });
 
-  it('marks disbursement complete only once', async () => {
-    await service.withdraw(
-      'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-      100,
-      'dev2',
-      '3.3.3.3',
-      'USD',
-    );
-    const disbRepo = dataSource.getRepository(Disbursement);
-    const disb = await disbRepo.findOneByOrFail({
-      accountId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    });
-    await service.processDisbursement(
-      'evt1',
-      disb.idempotencyKey,
-      'payout',
-      'approved',
-    );
-    await service.processDisbursement(
-      'evt1',
-      disb.idempotencyKey,
-      'payout',
-      'approved',
-    );
-    const updated = await disbRepo.findOneByOrFail({ id: disb.id });
-    expect(updated.status).toBe('completed');
-    expect(updated.completedAt).toBeTruthy();
-  });
 
   it('flags and rejects withdrawals exceeding daily limits', async () => {
     process.env.WALLET_DAILY_WITHDRAW_LIMIT = '200';
@@ -237,25 +176,55 @@ describe('WalletService withdraw', () => {
         currency: 'USD',
       }),
     );
-    const key = Object.keys(redisStore).find((k) =>
-      k.startsWith('wallet:withdraw'),
-    );
-    expect(redisStore[key!]).toBe(150);
+    const [key] = await redis.keys('wallet:withdraw*');
+    expect(parseInt((await redis.get(key)) ?? '0', 10)).toBe(150);
     delete process.env.WALLET_DAILY_WITHDRAW_LIMIT;
   });
 
-  it('aborts risky withdrawals', async () => {
-    (provider.initiate3DS as jest.Mock).mockResolvedValueOnce({ id: 'risk' });
-    (provider.getStatus as jest.Mock).mockResolvedValueOnce('risky');
-    await expect(
-      service.withdraw(
-        'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-        100,
-        'd9',
-        '9.9.9.9',
-        'USD',
-      ),
-    ).rejects.toThrow('Transaction flagged as risky');
+  it('commits on challenge success', async () => {
+    const challenge = await service.withdraw(
+      'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      100,
+      'dev2',
+      '3.3.3.3',
+      'USD',
+    );
+    await service.confirm3DS({
+      eventId: 'evt1',
+      idempotencyKey: 'idem1',
+      providerTxnId: challenge.id,
+      status: 'approved',
+    });
+    const accountRepo = dataSource.getRepository(Account);
+    const user = await accountRepo.findOneByOrFail({
+      id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    });
+    expect(user.balance).toBe(900);
+    const disbRepo = dataSource.getRepository(Disbursement);
+    expect(await disbRepo.count()).toBe(1);
+  });
+
+  it('ignores failed withdrawals', async () => {
+    const challenge = await service.withdraw(
+      'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      100,
+      'd9',
+      '9.9.9.9',
+      'USD',
+    );
+    await service.confirm3DS({
+      eventId: 'evt2',
+      idempotencyKey: 'idem2',
+      providerTxnId: challenge.id,
+      status: 'chargeback',
+    });
+    const accountRepo = dataSource.getRepository(Account);
+    const user = await accountRepo.findOneByOrFail({
+      id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    });
+    expect(user.balance).toBe(1000);
+    const disbRepo = dataSource.getRepository(Disbursement);
+    expect(await disbRepo.count()).toBe(0);
     const jRepo = dataSource.getRepository(JournalEntry);
     expect(await jRepo.count()).toBe(0);
   });

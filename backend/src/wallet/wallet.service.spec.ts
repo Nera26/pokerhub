@@ -52,7 +52,10 @@ describe('WalletService reserve/commit/rollback flow', () => {
     const disbRepo = dataSource.getRepository(Disbursement);
     const settleRepo = dataSource.getRepository(SettlementJournal);
     const provider = {} as unknown as PaymentProviderService;
-    const kyc = { validate: jest.fn() } as unknown as KycService;
+    const kyc = {
+      validate: jest.fn(),
+      getDenialReason: jest.fn().mockResolvedValue(undefined),
+    } as unknown as KycService;
     const settleSvc = new SettlementService(settleRepo);
     service = new WalletService(
       accountRepo,
@@ -178,4 +181,31 @@ describe('WalletService reserve/commit/rollback flow', () => {
     },
     20000,
   );
+
+  it('reports credit balance separately', async () => {
+    const repo = dataSource.getRepository(Account);
+    const accountId = '22222222-2222-2222-2222-222222222222';
+    await repo.save({
+      id: accountId,
+      name: 'creditUser',
+      balance: 150,
+      creditBalance: 50,
+      currency: 'USD',
+    });
+    const status = await service.status(accountId);
+    expect(status).toEqual({
+      kycVerified: false,
+      denialReason: undefined,
+      realBalance: 100,
+      creditBalance: 50,
+    });
+    const tx = await service.transactions(accountId);
+    expect(tx.realBalance).toBe(100);
+    expect(tx.creditBalance).toBe(50);
+    expect(tx.transactions).toHaveLength(0);
+    const pending = await service.pending(accountId);
+    expect(pending.realBalance).toBe(100);
+    expect(pending.creditBalance).toBe(50);
+    expect(pending.transactions).toHaveLength(0);
+  });
 });

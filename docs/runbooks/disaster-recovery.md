@@ -1,48 +1,55 @@
 # Disaster Recovery Runbook
+<!-- Update service IDs in this file if PagerDuty services change -->
+
+## Dashboard
+- Grafana: [Disaster Recovery](../analytics-dashboards.md)
 
 ## Objectives
 - **Recovery Time Objective (RTO)**: 30 minutes
 - **Recovery Point Objective (RPO)**: 5 minutes
 
+## Metrics & Alerts
+- `custom.googleapis.com/dr/rto` – Recovery time in seconds (alert if > 1800)
+- `custom.googleapis.com/dr/rpo_snapshot` – Snapshot RPO in seconds (alert if > 300)
+- `custom.googleapis.com/dr/rpo_wal` – WAL RPO in seconds (alert if > 300)
+
 ## Backup Strategy
-- AWS Backup schedules hourly Postgres snapshots and copies them to `${SECONDARY_REGION}`.
-- WAL segments are archived every 5 minutes to `s3://${WAL_ARCHIVE_BUCKET}` and replicated cross-region for PITR.
-- Kubernetes CronJobs `pg-snapshot-replication` and `redis-snapshot-replication` copy Postgres and Redis snapshots to `${SECONDARY_REGION}`.
-- A GCP Cloud Scheduler job triggers cross-cloud snapshot copies to `${SECONDARY_REGION}`.
+- Cloud SQL schedules hourly Postgres snapshots and copies them to `${SECONDARY_REGION}`.
+- WAL segments are archived every 5 minutes to `gs://${WAL_ARCHIVE_BUCKET}` and replicated cross-region for PITR.
+- Kubernetes CronJobs `pg-snapshot-replication`, `redis-snapshot-replication`, and `clickhouse-snapshot-replication` use `gcloud`/`gsutil` to copy Cloud SQL, Memorystore, and Cloud Storage backups to `${SECONDARY_REGION}`. Set `PG_INSTANCE_ID`, `REDIS_INSTANCE_ID`, and `BACKUP_BUCKET` accordingly.
+- A Cloud Scheduler job triggers cross-cloud snapshot copies to `${SECONDARY_REGION}`.
 - Cross-region read replicas continuously replicate changes.
-- Kubernetes CronJobs `postgres-backup` and `redis-backup` upload encrypted archives to `s3://${ARCHIVE_BUCKET}`.
+- Kubernetes CronJobs `postgres-backup` and `redis-backup` upload encrypted archives to `gs://${ARCHIVE_BUCKET}`.
 
 ## Recovery Steps
 1. If the primary region is unavailable, run the failover script to promote replicas and update DNS:
    ```bash
    SECONDARY_REGION=${SECONDARY_REGION} \
-   PG_REPLICA_ID=${DB_REPLICA_ID} \
-   REDIS_REPLICA_ID=${REDIS_REPLICA_ID} \
-   ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID} \
+   SQL_REPLICA_INSTANCE=${SQL_REPLICA_INSTANCE} \
+   MEMORYSTORE_INSTANCE=${MEMORYSTORE_INSTANCE} \
+   CLOUD_DNS_ZONE=${CLOUD_DNS_ZONE} \
    DB_RECORD_NAME=db.example.com \
    REDIS_RECORD_NAME=redis.example.com \
+   PROJECT_ID=${PROJECT_ID} \
    bash infra/disaster-recovery/failover.sh
    ```
 2. For data corruption, restore Postgres to a specific point in time:
    ```bash
-   aws rds restore-db-instance-to-point-in-time \
-    --source-db-instance-identifier ${DB_PRIMARY_ID} \
-    --target-db-instance-identifier pg-dr-restore \
-    --use-latest-restorable-time \
-    --region ${SECONDARY_REGION}
+   gcloud beta sql instances restore-pitr pg-dr-restore \
+     --restore-instance=${DB_PRIMARY_ID} \
+     --point-in-time=latest \
+     --project=${PROJECT_ID}
    ```
 3. Restore ClickHouse from replicated backup:
    ```bash
-   aws s3 sync s3://${CLICKHOUSE_BACKUP_BUCKET}-dr/ /var/lib/clickhouse/backup \
-     --region ${SECONDARY_REGION}
+   gsutil -m rsync gs://${CLICKHOUSE_BACKUP_BUCKET}-dr/ /var/lib/clickhouse/backup
    clickhouse-backup restore --config /etc/clickhouse-backup.yaml latest
    ```
 4. Restore the Redis snapshot:
    ```bash
-   aws elasticache restore-replication-group-from-snapshot \
-     --replication-group-id redis-dr-restore \
-     --snapshot-name redis-dr-snapshot \
-     --region ${SECONDARY_REGION}
+   gcloud redis instances import redis-dr-restore \
+     --region ${SECONDARY_REGION} \
+     --input-uri=gs://redis-dr-snapshot.rdb
    ```
 5. Update application configuration to point to the promoted or restored endpoints.
 6. Verify application health before resuming traffic.
@@ -56,7 +63,7 @@ snapshot and capture recovery metrics.
 PG_PRIMARY_ID=<db-instance-id> \
 PGUSER=<db-user> \
 PGPASSWORD=<db-pass> \
-SECONDARY_REGION=<aws-region> \
+SECONDARY_REGION=<gcp-region> \
 bash infra/disaster-recovery/restore-latest.sh
 ```
 
@@ -72,14 +79,14 @@ region and validate RTO/RPO.
 
 ```bash
 PG_INSTANCE_ID=<db-instance-id> \
-SECONDARY_REGION=<aws-region> \
+SECONDARY_REGION=<gcp-region> \
 PGUSER=<db-user> \
 PGPASSWORD=<db-pass> \
 WAL_ARCHIVE_BUCKET=<wal-archive-bucket> \
 bash infra/disaster-recovery/drill.sh
 ```
 
-The script writes `drill.metrics` containing `RTO_SECONDS` and `RPO_SECONDS`.
+The script writes `drill.metrics` containing `RTO_SECONDS` and `RPO_SECONDS`. Metrics are archived to `gs://dr-metrics/{run_id}/drill.metrics` and linked below.
 Confirm **RPO ≤ 300s** and **RTO ≤ 1800s**. Set `KEEP_INSTANCE=true` to retain
 the restored instance for inspection.
 
@@ -88,27 +95,65 @@ the restored instance for inspection.
 Run the automated failover drill to measure restore time and data loss.
 
 ```bash
-PG_SNAPSHOT_ID=<snapshot-id> \
+PG_BACKUP_ID=<backup-id> \
 CLICKHOUSE_SNAPSHOT=<snapshot-file> \
 SECONDARY_REGION=<region> \
+PROJECT_ID=<project-id> \
 bash infra/disaster-recovery/tests/failover.sh
 ```
 
 The script logs metrics and writes `failover.metrics` containing
-`RTO_SECONDS` and `RPO_SECONDS` for tracking.
+`RTO_SECONDS` and `RPO_SECONDS` for tracking. The `failover-drill` workflow uploads both `failover.log` and `failover.metrics` to `gs://dr-metrics/failover/<timestamp>/` for auditing and links the archive in Slack.
 
 ## Automated Drill
 
 The `dr-drill` GitHub Actions workflow runs weekly to spin up a standby
 cluster in `${SECONDARY_REGION}` and measure time to service readiness.
 It validates snapshot freshness and WAL shipping to ensure **RPO ≤ 5 min**
-and **RTO ≤ 30 min**. Failures trigger a PagerDuty alert to `pokerhub-eng`.
+and **RTO ≤ 30 min**. Failures trigger a PagerDuty alert to `pokerhub-eng` (ID: PENG012).
+
+The `failover-drill` workflow exercises a full regional failover and must
+succeed at least once every 7 days. The `workflow-sla` CI job checks the
+latest run and fails if it is older than 7 days or the run did not
+complete successfully.
+If the workflow fails, an issue is automatically created with the contents of
+`drill.metrics`. Resolve the issue by:
+
+1. Reviewing the metrics to see which objective was exceeded.
+2. Rerunning `infra/disaster-recovery/drill.sh` to reproduce and isolate the fault.
+3. Fixing any underlying infrastructure or configuration problems.
+4. Closing the issue once the drill succeeds within targets.
+
+### DR Trend Metrics
+
+- The `dr-trends` job in `ci.yml` aggregates RTO/RPO results from recent drills
+  and uploads a `dr-trends.json` artifact on every PR.
+- `dr-trends.json` contains `latest`, `average`, and `trend` sections for
+  `rto`, `rpoSnap`, and `rpoWal` (all in seconds).
+- The job fails if any value exceeds **RTO > 1800s** or **RPO > 300s**, blocking
+  merges until metrics are within objectives.
+
+To inspect the metrics:
+
+1. Open the PR's **dr-trends** workflow job and download the `dr-trends` artifact.
+2. Review `dr-trends.json`:
+   - `latest` shows the most recent drill's measurements.
+   - `average` is the mean across all recorded drills.
+   - `trend` is the difference between the latest values and the previous average.
+3. If `latest` or `average` values exceed objectives, run
+   `infra/disaster-recovery/drill.sh` to reproduce and address the regression
+   before merging.
 
 ### Recent Drill Results
-- 2025-08-30: `drill.sh` failed locally because `aws` CLI was not available; RTO/RPO metrics were not captured. Install AWS CLI and configure credentials with `aws configure` before rerunning.
+<!-- DR_DRILL_RESULTS -->
+- 2025-08-30: `drill.sh` failed locally because `gcloud` CLI was not available; RTO/RPO metrics were not captured. Install the Google Cloud CLI and configure credentials before rerunning.
 
-## Escalation
-- PagerDuty: pokerhub-eng
+### Recent Failover Results
+<!-- DR_FAILOVER_RESULTS -->
+Results from the monthly failover drill are appended automatically by the `dr-failover-monthly` workflow.
+
+## PagerDuty Escalation
+- Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->
 - Slack: #ops
 
 ## Verification

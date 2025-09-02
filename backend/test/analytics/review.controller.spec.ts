@@ -4,38 +4,7 @@ import request from 'supertest';
 import { ReviewController } from '../../src/analytics/review.controller';
 import { CollusionService } from '../../src/analytics/collusion.service';
 import { AdminGuard } from '../../src/auth/admin.guard';
-
-class MockRedis {
-  sets = new Map<string, Set<string>>();
-  hashes = new Map<string, Record<string, string>>();
-  lists = new Map<string, string[]>();
-  async sadd(key: string, value: string) {
-    if (!this.sets.has(key)) this.sets.set(key, new Set());
-    this.sets.get(key)!.add(value);
-  }
-  async smembers(key: string) {
-    return Array.from(this.sets.get(key) ?? []);
-  }
-  async hset(key: string, obj: Record<string, string>) {
-    if (!this.hashes.has(key)) this.hashes.set(key, {});
-    Object.assign(this.hashes.get(key)!, obj);
-  }
-  async hget(key: string, field: string) {
-    return this.hashes.get(key)?.[field] ?? null;
-  }
-  async hgetall(key: string) {
-    return this.hashes.get(key) ?? {};
-  }
-  async rpush(key: string, value: string) {
-    if (!this.lists.has(key)) this.lists.set(key, []);
-    this.lists.get(key)!.push(value);
-  }
-  async lrange(key: string, start: number, stop: number) {
-    const arr = this.lists.get(key) ?? [];
-    if (stop === -1) return arr.slice(start);
-    return arr.slice(start, stop + 1);
-  }
-}
+import { MockRedis } from '../utils/mock-redis';
 
 describe('ReviewController', () => {
   let app: INestApplication;

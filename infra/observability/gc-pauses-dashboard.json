@@ -1,0 +1,31 @@
+{
+  "dashboard": {
+    "title": "GC Pauses",
+    "labels": {
+      "pagerduty_service": "pokerhub-eng",
+      "runbook": "docs/runbooks/gc-pauses.md"
+    },
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "GC Pause P99",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.99, rate(process_runtime_gc_pause_seconds_bucket[5m]))"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Total GC Pause",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "sum(rate(process_runtime_gc_pause_seconds_sum[5m]))"
+          }
+        ]
+      }
+    ]
+  }
+}

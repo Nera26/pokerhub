@@ -1,0 +1,22 @@
+{
+  "dashboard": {
+    "uid": "queue-saturation",
+    "title": "Queue Saturation",
+    "labels": {
+      "pagerduty_service": "pokerhub-eng",
+      "runbook": "docs/runbooks/queue-saturation.md"
+    },
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "Queue Lag",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "sum(queue_lag_seconds)"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -5,6 +5,14 @@ services:
       - "${BACKEND_PORT}:3000"
     volumes:
       - ./backend:/app
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - GCP_PROJECT=${GCP_PROJECT}
+      - GCS_BUCKET=${GCS_BUCKET}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
+      - GCS_EMULATOR_HOST=${GCS_EMULATOR_HOST}
 
   db:
     ports:
@@ -21,6 +29,6 @@ services:
       - "5672:5672"
       - "15672:15672"
 
-  localstack:
+  storage:
     ports:
-      - "${LOCALSTACK_PORT}:4566"
+      - "4443:4443"

@@ -14,6 +14,7 @@ Copy the root `.env.example` to `.env` and update values. Core variables:
 DATABASE_URL=postgres://user:pass@host:5432/pokerhub
 REDIS_URL=redis://host:6379
 JWT_SECRET=dev-secret
+GATEWAY_GLOBAL_LIMIT=30 # max actions per 10s across all sockets
 ```
 Additional options exist for storage, telemetry and message queues (see `.env.example`).
 
@@ -34,6 +35,18 @@ npm run start:prod
 
 ```bash
 npm test
+```
+
+## Game State Recovery
+
+The WebSocket gateway periodically persists table snapshots to Postgres in the
+`game_state` table. On startup, the latest snapshot is loaded before applying
+pending diffs from Redis, allowing games to resume after a crash or Redis loss.
+
+Run migrations to create the table:
+
+```bash
+npm run migration:run
 ```
 
 ## Shared Contracts & Frontend Integration

@@ -23,6 +23,8 @@ import { AnalyticsService } from '../../src/analytics/analytics.service';
 import { EventPublisher } from '../../src/events/events.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Hand } from '../../src/database/entities/hand.entity';
+import { MockRedis } from '../utils/mock-redis';
+import { GameState } from '../../src/database/entities/game-state.entity';
 
 function waitForConnect(socket: Socket): Promise<void> {
   return new Promise((resolve) => socket.on('connect', () => resolve()));
@@ -45,15 +47,8 @@ describe('GameGateway frame ack', () => {
         { provide: AnalyticsService, useValue: { recordGameEvent: jest.fn() } },
         { provide: EventPublisher, useValue: { emit: jest.fn() } },
         { provide: getRepositoryToken(Hand), useValue: { findOne: jest.fn() } },
-        {
-          provide: 'REDIS_CLIENT',
-          useValue: {
-            incr: async () => 1,
-            expire: async () => 1,
-            exists: async () => 0,
-            set: async () => 'OK',
-          },
-        },
+        { provide: getRepositoryToken(GameState), useValue: { find: jest.fn(), save: jest.fn() } },
+        { provide: 'REDIS_CLIENT', useClass: MockRedis },
       ],
     }).compile();
 

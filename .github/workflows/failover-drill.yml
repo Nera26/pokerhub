@@ -1,52 +1,92 @@
 name: failover-drill
+concurrency:
+  group: "failover-drill"
+  cancel-in-progress: true
 
 on:
   schedule:
-    - cron: '0 4 * * *'
+  - cron: '0 4 * * *'
   workflow_dispatch:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   failover:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
-      - name: Run failover drill
-        run: bash infra/disaster-recovery/tests/failover.sh | tee failover.log
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          PG_SNAPSHOT_ID: ${{ vars.PG_SNAPSHOT_ID }}
-          CLICKHOUSE_SNAPSHOT: ${{ vars.CLICKHOUSE_SNAPSHOT }}
-          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
-      - name: Check RTO/RPO
-        run: |
-          source failover.metrics
-          echo "Start: $START_TIME"
-          echo "End: $END_TIME"
-          echo "RTO: $RTO_SECONDS seconds"
-          echo "RPO: $RPO_SECONDS seconds"
-          if [ "$RTO_SECONDS" -gt 1800 ]; then
-            echo "RTO exceeds 30 minutes" >&2
-            exit 1
-          fi
-          if [ "$RPO_SECONDS" -gt 300 ]; then
-            echo "RPO exceeds 5 minutes" >&2
-            exit 1
-          fi
-      - name: Upload logs
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: failover-log
-          path: |
-            failover.log
-            failover.metrics
-      - name: Notify Slack on failure
-        if: failure()
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          payload: |
-            { "text": "Failover drill failed for ${GITHUB_REPOSITORY}@${GITHUB_SHA}" }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    - uses: actions/checkout@v4
+    - uses: google-github-actions/auth@v2
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+    - uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ vars.GCP_PROJECT_ID }}
+    - name: Run failover drill
+      run: bash infra/disaster-recovery/tests/failover.sh | tee failover.log
+      env:
+        PG_SNAPSHOT_ID: ${{ vars.PG_SNAPSHOT_ID }}
+        CLICKHOUSE_SNAPSHOT: ${{ vars.CLICKHOUSE_SNAPSHOT }}
+        SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+    - name: Check RTO/RPO
+      run: |
+        source failover.metrics
+        echo "Start: $START_TIME"
+        echo "End: $END_TIME"
+        echo "RTO: $RTO_SECONDS seconds"
+        echo "RPO: $RPO_SECONDS seconds"
+        if [ "$RTO_SECONDS" -gt 1800 ]; then
+          echo "RTO exceeds 30 minutes" >&2
+          exit 1
+        fi
+        if [ "$RPO_SECONDS" -gt 300 ]; then
+          echo "RPO exceeds 5 minutes" >&2
+          exit 1
+        fi
+    - name: Publish metrics to Cloud Monitoring
+      run: |
+        source failover.metrics
+        gcloud monitoring metrics write custom.googleapis.com/dr/rto "$RTO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+        gcloud monitoring metrics write custom.googleapis.com/dr/rpo "$RPO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+    - name: Archive failover artifacts to GCS
+      id: archive
+      if: always()
+      env:
+        BUCKET: ${{ vars.DR_METRICS_BUCKET }}
+      run: |
+        ts="$(date -u +"%Y%m%dT%H%M%SZ")"
+        prefix="failover/$ts"
+        gcloud storage cp failover.log "gs://$BUCKET/$prefix/failover.log"
+        gcloud storage cp failover.metrics "gs://$BUCKET/$prefix/failover.metrics"
+        url="https://storage.googleapis.com/$BUCKET/$prefix"
+        echo "url=$url" >> "$GITHUB_OUTPUT"
+    - name: Upload logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: failover-log
+        path: |
+          failover.log
+          failover.metrics
+    - name: Notify Slack
+      if: always()
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        LOG_URL: ${{ steps.archive.outputs.url }}
+      run: |
+        source failover.metrics
+        payload=$(jq -n --arg rto "$RTO_SECONDS" --arg rpo "$RPO_SECONDS" --arg url "$LOG_URL" --arg status "${{ job.status }}" '{text: "Failover drill \($status)\nRTO: \($rto)s\nRPO: \($rpo)s\nLogs: \($url)"}')
+        curl -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK_URL" --fail
+
+    needs:
+    - check-proof-archive
+  spectator-privacy:
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log
+    needs:
+    - check-proof-archive

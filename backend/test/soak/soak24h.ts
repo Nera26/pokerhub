@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
+import { performance } from 'perf_hooks';
 
 import { GameGateway } from '../../src/game/game.gateway';
 import { ClockService } from '../../src/game/clock.service';
@@ -16,6 +17,7 @@ if (files.length === 0) {
 
 // Capture GC pause durations from --trace-gc output
 const gcPauses: number[] = [];
+const latencies: number[] = [];
 const origWrite = process.stderr.write.bind(process.stderr);
 (process.stderr as unknown as { write: typeof process.stderr.write }).write = (
   chunk: any,
@@ -37,6 +39,8 @@ class DummyAnalytics {
 
 class DummyRepo {
   async save(): Promise<void> {}
+  async find(): Promise<any[]> { return []; }
+  async findOne(): Promise<any> { return null; }
 }
 
 class DummyRedis {
@@ -102,6 +106,7 @@ class InMemoryRooms {
       undefined,
       undefined,
       undefined,
+      undefined,
       tableId,
     );
     this.rooms.set(tableId, new InMemoryRoom(engine));
@@ -127,6 +132,7 @@ async function run() {
     new DummyAnalytics() as any,
     new ClockService(),
     new DummyRepo() as any,
+    new DummyRepo() as any,
     new DummyRedis() as any,
   );
 
@@ -151,12 +157,14 @@ async function run() {
       for (const line of lines) {
         const entry = JSON.parse(line);
         const action = entry[1];
+        const start = performance.now();
         await gateway.handleAction(client, {
           ...action,
           tableId,
           version: action.version ?? '1',
           actionId: randomUUID(),
         });
+        latencies.push(performance.now() - start);
 
         if (Date.now() >= nextLog) {
           const heapMb = process.memoryUsage().heapUsed / 1024 / 1024;
@@ -173,19 +181,35 @@ async function run() {
   const growth = (endHeap - startHeap) / startHeap;
 
   gcPauses.sort((a, b) => a - b);
-  const p95Index = Math.floor(gcPauses.length * 0.95);
-  const p95 = gcPauses[p95Index] || 0;
+  latencies.sort((a, b) => a - b);
+  const percentile = (arr: number[], p: number) => {
+    if (arr.length === 0) return 0;
+    const idx = Math.floor(arr.length * p);
+    return arr[Math.min(idx, arr.length - 1)];
+  };
+  const latencyP50 = percentile(latencies, 0.5);
+  const latencyP95 = percentile(latencies, 0.95);
+  const latencyP99 = percentile(latencies, 0.99);
+  const gcP50 = percentile(gcPauses, 0.5);
+  const gcP95 = percentile(gcPauses, 0.95);
+  const gcP99 = percentile(gcPauses, 0.99);
 
   if (growth > 0.01) {
     console.error(`Memory growth ${(growth * 100).toFixed(2)}% exceeds 1%`);
     process.exit(1);
   }
 
-  if (p95 > 50) {
-    console.error(`GC pause p95 ${p95.toFixed(2)}ms exceeds 50ms`);
+  if (gcP95 > 50) {
+    console.error(`GC pause p95 ${gcP95.toFixed(2)}ms exceeds 50ms`);
     process.exit(1);
   }
 
+  console.log(
+    `Latency p50 ${latencyP50.toFixed(2)}ms p95 ${latencyP95.toFixed(2)}ms p99 ${latencyP99.toFixed(2)}ms`,
+  );
+  console.log(
+    `GC pause p50 ${gcP50.toFixed(2)}ms p95 ${gcP95.toFixed(2)}ms p99 ${gcP99.toFixed(2)}ms`,
+  );
   console.log('Soak test passed: memory stable and GC pauses within limits');
 }
 

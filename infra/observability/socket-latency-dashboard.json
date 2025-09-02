@@ -1,0 +1,42 @@
+{
+  "dashboard": {
+    "uid": "socket-latency",
+    "title": "Socket Latency",
+    "labels": {
+      "pagerduty_service": "pokerhub-sre",
+      "runbook": "docs/runbooks/action-ack-latency.md"
+    },
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "Action ACK Latency P95",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(socket_action_ack_latency_ms_bucket[5m])) by (le))"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Frame Retries",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "sum(rate(frame_retries_total[5m]))"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Frames Dropped",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "sum(rate(frames_dropped_total[5m]))"
+          }
+        ]
+      }
+    ]
+  }
+}

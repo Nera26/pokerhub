@@ -1,4 +1,5 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { EventEmitter } from 'node:events';
 
 interface PlayerTimer {
@@ -14,11 +15,13 @@ interface PlayerTimer {
 export class ClockService extends EventEmitter implements OnModuleDestroy {
   private readonly handle: NodeJS.Timeout;
   private readonly timers = new Map<string, PlayerTimer>();
+  private readonly actionTimeoutMs: number;
 
-  constructor() {
+  constructor(@Optional() private readonly config: ConfigService = new ConfigService()) {
     super();
     this.handle = setInterval(() => this.tick(), 1_000);
     this.handle.unref();
+    this.actionTimeoutMs = this.config.get<number>('game.actionTimeoutMs', 30_000);
   }
 
   /** Returns current monotonic time in nanoseconds. */
@@ -35,7 +38,12 @@ export class ClockService extends EventEmitter implements OnModuleDestroy {
    * Start or replace an action timer for a player at a specific table. When
    * the deadline is reached the provided callback is executed.
    */
-  setTimer(playerId: string, tableId: string, ms: number, action: () => void): void {
+  setTimer(
+    playerId: string,
+    tableId: string,
+    action: () => void,
+    ms = this.actionTimeoutMs,
+  ): void {
     const deadline = this.now() + BigInt(ms) * 1_000_000n;
     this.timers.set(this.key(playerId, tableId), { deadline, action });
   }

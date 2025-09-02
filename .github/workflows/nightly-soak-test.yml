@@ -1,0 +1,46 @@
+name: nightly-soak-test
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
+
+  soak-test:
+    needs: [check-proof-archive]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: grafana/setup-k6@v1
+      - name: Run soak test
+        run: npm run soak:test
+      - name: Check thresholds
+        run: ./load/check-thresholds.sh load/results/soak-summary.json
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT }}
+      - name: Write latency metric
+        run: |
+          p95=$(jq -r '.metrics.ack_latency["p(95)"] // .metrics.ws_latency["p(95)"] // 0' load/results/soak-summary.json)
+          gcloud monitoring metrics write custom.googleapis.com/soak_test/latency "$p95" --labels build_sha=${{ github.sha }},run_id=${{ github.run_id }}
+      - name: Upload summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: soak-summary
+          path: load/results/soak-summary.json
+
+  spectator-privacy:
+    needs: [soak-test, check-proof-archive]
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: load/results/soak-summary.json

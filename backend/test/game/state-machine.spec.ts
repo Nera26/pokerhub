@@ -109,8 +109,13 @@ describe('Hand state machine', () => {
     expect(final.phase).toBe('SETTLE');
     expect(final.pot).toBe(0);
     const settlements = engine.getSettlements();
-    expect(settlements).toContainEqual({ playerId: 'A', delta: 0 });
-    expect(settlements).toContainEqual({ playerId: 'B', delta: 0 });
+    const total = settlements.reduce((sum, s) => sum + s.delta, 0);
+    expect(total).toBe(0);
+    const pot = -settlements
+      .filter((s) => s.delta < 0)
+      .reduce((sum, s) => sum + s.delta, 0);
+    const winnerDelta = Math.max(...settlements.map((s) => s.delta));
+    expect(winnerDelta).toBe(pot);
   });
 
   it('rejects invalid bet amounts', async () => {

@@ -15,6 +15,13 @@ export const HandEndEvent = z.object({
   winners: z.array(z.string().uuid()).optional(),
 });
 
+export const HandSettleEvent = z.object({
+  handId: z.string().uuid(),
+  tableId: z.string().uuid().optional(),
+  playerIds: z.array(z.string().uuid()),
+  deltas: z.array(z.number()),
+});
+
 export const WalletMovementEvent = z.object({
   accountId: z.string().uuid(),
   amount: z.number(),
@@ -51,6 +58,10 @@ export const TournamentEliminateEvent = z.object({
   payout: z.number().optional(),
 });
 
+export const TournamentCancelEvent = z.object({
+  tournamentId: z.string().uuid(),
+});
+
 export const WalletReserveEvent = z.object({
   accountId: z.string().uuid(),
   amount: z.number(),
@@ -63,6 +74,18 @@ export const WalletCommitEvent = z.object({
   amount: z.number(),
   rake: z.number(),
   currency: z.string(),
+});
+
+export const WalletRollbackEvent = z.object({
+  accountId: z.string().uuid(),
+  amount: z.number(),
+  refId: z.string(),
+  currency: z.string(),
+});
+
+export const AuthLoginEvent = z.object({
+  userId: z.string().uuid(),
+  ts: z.number().int(),
 });
 
 export const AntiCheatWalletEvent = z.object({
@@ -94,9 +117,22 @@ export const WalletVelocityLimitEvent = z.object({
   value: z.number(),
 });
 
+export const WalletChargebackFlagEvent = z.object({
+  accountId: z.string().uuid(),
+  deviceId: z.string(),
+  count: z.number(),
+  limit: z.number(),
+});
+
+export const WalletReconcileMismatchEvent = z.object({
+  date: z.string(),
+  total: z.number(),
+});
+
 export const EventSchemas = {
   "hand.start": HandStartEvent,
   "hand.end": HandEndEvent,
+  "hand.settle": HandSettleEvent,
   "wallet.credit": WalletMovementEvent,
   "wallet.debit": WalletMovementEvent,
   "action.bet": ActionBetEvent,
@@ -104,15 +140,21 @@ export const EventSchemas = {
   "action.fold": ActionFoldEvent,
   "tournament.register": TournamentRegisterEvent,
   "tournament.eliminate": TournamentEliminateEvent,
+  "tournament.cancel": TournamentCancelEvent,
   "wallet.reserve": WalletReserveEvent,
+  "wallet.rollback": WalletRollbackEvent,
   "wallet.commit": WalletCommitEvent,
+  "auth.login": AuthLoginEvent,
   "antiCheat.flag": AntiCheatFlagEvent,
   "wallet.velocity.limit": WalletVelocityLimitEvent,
+  "wallet.reconcile.mismatch": WalletReconcileMismatchEvent,
+  "wallet.chargeback_flag": WalletChargebackFlagEvent,
 } as const;
 
 export type Events = {
   "hand.start": z.infer<typeof HandStartEvent>;
   "hand.end": z.infer<typeof HandEndEvent>;
+  "hand.settle": z.infer<typeof HandSettleEvent>;
   "wallet.credit": z.infer<typeof WalletMovementEvent>;
   "wallet.debit": z.infer<typeof WalletMovementEvent>;
   "action.bet": z.infer<typeof ActionBetEvent>;
@@ -120,10 +162,15 @@ export type Events = {
   "action.fold": z.infer<typeof ActionFoldEvent>;
   "tournament.register": z.infer<typeof TournamentRegisterEvent>;
   "tournament.eliminate": z.infer<typeof TournamentEliminateEvent>;
+  "tournament.cancel": z.infer<typeof TournamentCancelEvent>;
   "wallet.reserve": z.infer<typeof WalletReserveEvent>;
+  "wallet.rollback": z.infer<typeof WalletRollbackEvent>;
   "wallet.commit": z.infer<typeof WalletCommitEvent>;
+  "auth.login": z.infer<typeof AuthLoginEvent>;
   "antiCheat.flag": z.infer<typeof AntiCheatFlagEvent>;
   "wallet.velocity.limit": z.infer<typeof WalletVelocityLimitEvent>;
+  "wallet.reconcile.mismatch": z.infer<typeof WalletReconcileMismatchEvent>;
+  "wallet.chargeback_flag": z.infer<typeof WalletChargebackFlagEvent>;
 };
 
 export type EventName = keyof Events;

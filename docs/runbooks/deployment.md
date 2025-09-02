@@ -1,6 +1,14 @@
 # Deployment Runbook
+<!-- Update service IDs in this file if PagerDuty services change -->
 
 Use this runbook to roll out a new release using a guarded canary.
+
+## Dashboard
+- Grafana: [Action ACK Latency](../analytics-dashboards.md#action-ack-latency)
+- Grafana: [Error Rate](../analytics-dashboards.md#error-rate)
+
+## PagerDuty Escalation
+- Service: `pokerhub-sre` (ID: PSRE789)
 
 ## Trigger
 
@@ -10,7 +18,7 @@ Use this runbook to roll out a new release using a guarded canary.
 ## Monitor
 
 1. The workflow polls Prometheus each minute for `game_action_ack_latency_ms` p95 and HTTP error rate.
-2. If latency rises above 120 ms or errors exceed 0.05 % (per [slo.md](../slo.md)), the script triggers `helm rollback` and the workflow fails.
+2. If latency rises above 120 ms or errors exceed 0.05 % (configurable via `$ERROR_RATE_THRESHOLD`), `scripts/rollback.sh` rolls back the canary and the workflow fails.
 3. When both metrics stay within SLO for the full window, the canary is promoted to 100 %.
 
 ## Observability

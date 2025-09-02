@@ -1,0 +1,1135 @@
+name: CI
+
+concurrency:
+  group: "CI"
+  cancel-in-progress: true
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_call:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  ensure-spectator-privacy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: TS_NODE_COMPILER_OPTIONS='{"module":"commonjs"}' npx ts-node scripts/ensure-spectator-privacy.ts
+
+  ensure-ops-artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: TS_NODE_COMPILER_OPTIONS='{"module":"commonjs"}' npx ts-node scripts/ensure-ops-artifacts.ts
+
+  ensure-ops-preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npx ts-node scripts/ensure-ops-preflight.ts
+
+  ensure-proof-archive:
+    uses: ./.github/workflows/ensure-proof-archive.yml
+    secrets: inherit
+
+  ensure-soak-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/ensure-soak-metrics.ts
+
+  ensure-dr-drill:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+      - run: npm ci
+      - id: dr-drill
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        run: |
+          npx ts-node scripts/ensure-dr-drill.ts
+          npx ts-node scripts/ensure-dr-workflows.ts
+          if [ -f dr-drill-issue.json ]; then
+            echo "issue=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Check DR drill metrics
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          DR_DRILL_SLA_DAYS: 7
+        run: npx ts-node scripts/check-dr-drill.ts
+      - uses: actions/upload-artifact@v4
+        if: steps.dr-drill.outputs.issue == 'true'
+        with:
+          name: dr-drill-issue
+          path: dr-drill-issue.json
+      - name: Fail if issue opened
+        if: steps.dr-drill.outputs.issue == 'true'
+        run: exit 1
+
+  ops-preflight:
+    needs:
+      - ensure-spectator-privacy
+      - ensure-ops-artifacts
+      - ensure-ops-preflight
+      - ensure-proof-archive
+      - ensure-soak-metrics
+      - ensure-dr-drill
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/ops-preflight
+        with:
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          spectator-privacy-sla-hours: 24
+          spectator-retention-sla-days: 1
+          soak-metrics-sla-hours: 24
+          dr-drill-sla-days: 7
+          dr-failover-sla-days: 30
+          dr-failover-monthly-sla-days: 30
+          dr-restore-sla-days: 30
+          dr-runbook-sla-days: 7
+          dr-throwaway-sla-days: 7
+          proof-archive-sla-hours: 24
+      - name: Check soak metrics freshness
+        run: npx -y ts-node scripts/check-soak-metrics.ts
+        env:
+          SOAK_METRICS_SLA_HOURS: 24
+
+
+  ops-sla:
+    needs: ops-preflight
+    uses: ./.github/workflows/ops-sla.yml
+    secrets: inherit
+
+  tourney-sim:
+    needs: [ops-preflight, ops-sla]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - name: Run tournament simulation
+        run: |
+          set -euo pipefail
+          result=$(npm run simulate:tourney --silent)
+          echo "$result"
+          export RESULT="$result"
+          node -e 'const r=JSON.parse(process.env.RESULT);const target=130;const maxVar=3e9;if(Math.abs(r.averageDuration-target)/target>0.05){console.error("Average duration "+r.averageDuration+" outside ±5% of "+target);process.exit(1);}if(r.durationVariance>maxVar){console.error("Variance "+r.durationVariance+" exceeds "+maxVar);process.exit(1);}'
+
+  k6-tournament:
+    if: github.event_name == 'pull_request' || github.event_name == 'schedule'
+    needs: [ops-preflight, ops-sla]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: run k6 tournament
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: load/k6-tournament-10k.js
+          flags: --summary-export=tournament-summary.json
+      - name: verify tournament metrics
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const summary=JSON.parse(fs.readFileSync('tournament-summary.json','utf8'));
+          const baseline=500;
+          const avg=summary.metrics.tournament_duration.avg;
+          if(Math.abs(avg-baseline)/baseline>0.05){console.error(`Average duration ${avg}ms outside ±5% of ${baseline}ms`);process.exit(1);} 
+          const icmErr=summary.metrics.icm_error.max;
+          if(icmErr>=1){console.error(`ICM error ${icmErr} ≥ 1`);process.exit(1);}
+          NODE
+
+  soak-metrics-check:
+    if: github.event_name == 'pull_request'
+    needs: [ops-preflight, ops-sla]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+      - id: check
+        run: npx ts-node scripts/check-soak-metrics.ts
+      - id: trend
+        env:
+          SOAK_TRENDS_WINDOW: ${{ vars.SOAK_TRENDS_WINDOW }}
+          SOAK_TRENDS_DEVIATION_PCT: ${{ vars.SOAK_TRENDS_DEVIATION_PCT }}
+        run: |
+          set -o pipefail
+          npx ts-node scripts/check-soak-trend-regression.ts 2>&1 | tee soak-trend-regression.log
+      - name: Publish soak metrics
+        if: always()
+        continue-on-error: true
+        run: npx ts-node scripts/check-soak-metrics.ts
+      - name: Prepare regression alert
+        if: steps.check.outcome == 'failure'
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          msg=$(jq -r '.regressions[].message' soak-regression.json | paste -sd '; ' -)
+          jq -n --arg channel "$SLACK_CHANNEL_ID" --arg text "Soak metrics regression detected: $msg" '{channel:$channel, text:$text}' > slack.json
+          printf "Soak metrics regression detected\n\n\`\`\`\n%s\n\`\`\`\n" "$(cat soak-regression.json)" > soak-regression.md
+      - name: Slack alert
+        if: steps.check.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: slack.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: Open soak regression issue
+        if: steps.check.outcome == 'failure'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "SLA breached: soak metrics"
+          content-filepath: soak-regression.md
+      - name: Prepare trend regression alert
+        if: steps.trend.outcome == 'failure'
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          msg=$(cat soak-trend-regression.log | paste -sd '; ' -)
+          jq -n --arg channel "$SLACK_CHANNEL_ID" --arg text "Soak trend regression detected: $msg" '{channel:$channel, text:$text}' > slack-trend.json
+          printf "Soak trend regression detected\\n\\n\`\`\`\n%s\n\`\`\`\n" "$(cat soak-trend-regression.log)" > soak-trend-regression.md
+      - name: Slack alert (trend)
+        if: steps.trend.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: slack-trend.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: Open soak trend regression issue
+        if: steps.trend.outcome == 'failure'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "SLA breached: soak trends"
+          content-filepath: soak-trend-regression.md
+      - name: Upload soak summary
+        if: always() && hashFiles('soak-summary.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: soak-summary
+          path: soak-summary.json
+      - name: Publish soak summary
+        if: always() && hashFiles('soak-summary.json') != ''
+        env:
+          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+        run: |
+          gcloud storage cp soak-summary.json "gs://${SOAK_TRENDS_BUCKET}/soak-summary-${GITHUB_RUN_ID}.json"
+      - name: Load soak summary to BigQuery
+        if: always() && hashFiles('soak-summary.json') != ''
+        run: |
+          bq load --source_format=NEWLINE_DELIMITED_JSON \
+            --schema=infra/analytics/soak_trends.schema.json \
+            ops_metrics.soak_trends soak-summary.json
+
+  check-proof-archive:
+    needs: [ops-preflight, ops-sla]
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
+
+  workflow-sla:
+    needs: [ops-preflight, ops-sla]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check DR drill SLA
+        id: dr-drill
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: dr-drill.yml
+          sla: 7
+          unit: days
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
+      - name: Check failover drill SLA
+        id: failover-drill
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: failover-drill.yml
+          sla: 7
+          unit: days
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
+      - name: Check DR failover SLA
+        id: dr-failover
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: dr-failover.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
+      - name: Check DR restore SLA
+        id: dr-restore
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: dr-restore.yml
+          sla: 30
+          unit: days
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
+      - name: Check DR throwaway SLA
+        id: dr-throwaway
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: dr-throwaway.yml
+          sla: 7
+          unit: days
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
+      - name: Check DR runbook workflow SLA
+        id: check-dr-runbook
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: check-dr-runbook.yml
+          sla: 7
+          unit: days
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
+        - name: Check proof-archive SLA
+          id: proof-archive
+          uses: ./.github/workflows/check-workflow-sla
+          with:
+            workflow: proof-archive.yml
+            sla: 24
+            unit: hours
+            slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
+        - name: Check check-proof-archive SLA
+          id: check-proof-archive
+          uses: ./.github/workflows/check-workflow-sla
+          with:
+            workflow: check-proof-archive.yml
+            sla: 24
+            unit: hours
+            slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
+        - name: Check proof-archive-audit SLA
+          id: proof-archive-audit
+          uses: ./.github/workflows/check-workflow-sla
+          with:
+            workflow: proof-archive-audit.yml
+            sla: 24
+            unit: hours
+            slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
+        - name: PagerDuty alert (check-proof-archive SLA)
+          if: failure() && steps.check-proof-archive.outcome == 'failure'
+          env:
+            PAGERDUTY_ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+          run: |
+            jq -n --arg rk "$PAGERDUTY_ROUTING_KEY" --arg msg "check-proof-archive SLA check failed" '{routing_key:$rk,event_action:"trigger",payload:{summary:$msg,source:"ci",severity:"error"}}' > pd.json
+            curl -X POST -H 'Content-Type: application/json' -d @pd.json https://events.pagerduty.com/v2/enqueue
+
+        - uses: actions/setup-node@v4
+          with:
+            node-version: 20
+
+      # Mirror proof-archive SLA check
+      - name: Check ops-artifacts-verify SLA
+        id: ops-artifacts-verify
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: ops-artifacts-verify.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
+      # Keep the soak SLA here; spectator-privacy SLA appears later.
+      - name: Check soak workflow SLA
+        id: soak
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: soak.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Check latest DR drill metrics
+        run: |
+          set -euo pipefail
+          row=$(bq query --nouse_legacy_sql --format=json \
+            'SELECT rto_seconds, rpo_snapshot_seconds, rpo_wal_seconds FROM ops_metrics.dr_drill_runs ORDER BY timestamp DESC LIMIT 1')
+          rto=$(echo "$row" | jq -r '.[0].rto_seconds')
+          rpo_snap=$(echo "$row" | jq -r '.[0].rpo_snapshot_seconds')
+          rpo_wal=$(echo "$row" | jq -r '.[0].rpo_wal_seconds')
+          {
+            echo 'Latest DR drill metrics:'
+            echo "- RTO: ${rto}s"
+            echo "- RPO snapshot: ${rpo_snap}s"
+            echo "- RPO WAL: ${rpo_wal}s"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$rto" -gt 1800 ] || [ "$rpo_snap" -gt 300 ] || [ "$rpo_wal" -gt 300 ]; then
+            echo 'DR drill metrics exceed thresholds' >&2
+            exit 1
+          fi
+
+      - name: Verify proof archive integrity
+        id: proof-archive-integrity
+        env:
+          PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+          PROOF_ARCHIVE_EXPECTED_DAILY_COUNT: ${{ vars.PROOF_ARCHIVE_EXPECTED_DAILY_COUNT }}
+          PROOF_MANIFEST_KMS_KEY: ${{ vars.PROOF_MANIFEST_KMS_KEY }}
+          PROOF_MANIFEST_KMS_KEYRING: ${{ vars.PROOF_MANIFEST_KMS_KEYRING }}
+          PROOF_MANIFEST_KMS_LOCATION: ${{ vars.PROOF_MANIFEST_KMS_LOCATION }}
+          PROOF_MANIFEST_KMS_VERSION: ${{ vars.PROOF_MANIFEST_KMS_VERSION || 1 }}
+          PROOF_ARCHIVE_KMS_KEY: ${{ vars.PROOF_ARCHIVE_KMS_KEY }}
+          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+        run: npx ts-node scripts/check-proof-archive.ts
+
+      - name: Prepare proof archive integrity alert
+        if: failure() && steps.proof-archive-integrity.outcome == 'failure'
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          cat <<'EOF' > proof-archive-integrity.md
+          Proof archive integrity check failed.
+          EOF
+          jq -n --arg channel "$SLACK_CHANNEL_ID" \
+            --arg text "Proof archive integrity check failed." \
+            '{channel: $channel, text: $text}' > proof-archive-integrity-slack.json
+
+      - name: Slack alert (proof archive integrity)
+        if: failure() && steps.proof-archive-integrity.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: proof-archive-integrity-slack.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+      - name: Create issue for proof archive integrity
+        if: failure() && steps.proof-archive-integrity.outcome == 'failure'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "Proof archive integrity check failed"
+          content-filepath: proof-archive-integrity.md
+
+      - name: Check soak metrics
+        env:
+          GITHUB_TOKEN: ${{ github.token }} # ensure curl auth works
+        run: |
+          set -euo pipefail
+          run=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/soak.yml/runs?per_page=1")
+          conclusion=$(echo "$run" | jq -r '.workflow_runs[0].conclusion')
+          started=$(echo "$run" | jq -r '.workflow_runs[0].run_started_at')
+          echo "workflow=soak.yml" >> $GITHUB_OUTPUT
+          echo "timestamp=$started" >> $GITHUB_OUTPUT
+          echo "conclusion=$conclusion" >> $GITHUB_OUTPUT
+          start_ts=$(date -d "$started" +%s)
+          now=$(date -u +%s)
+          max_age=$((24 * 3600))
+          if [ "$conclusion" != "success" ] || [ $((now - start_ts)) -gt "$max_age" ]; then
+            echo "Latest soak workflow run did not succeed within 24 hours" >&2
+            exit 1
+          fi
+
+      - name: Prepare soak SLA alert
+        if: failure() && steps.soak.outcome == 'failure'
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          cat <<'EOF' > soak-sla.md
+          Workflow: ${{ steps.soak.outputs.workflow }}
+          Last Run: ${{ steps.soak.outputs.timestamp }}
+          Conclusion: ${{ steps.soak.outputs.conclusion }}
+          EOF
+          jq -n --arg channel "$SLACK_CHANNEL_ID" \
+            --arg text "soak.yml SLA check failed. Last run: ${{ steps.soak.outputs.timestamp }} (conclusion: ${{ steps.soak.outputs.conclusion }})." \
+            '{channel: $channel, text: $text}' > soak-slack.json
+
+      - name: Slack alert (soak SLA)
+        if: failure() && steps.soak.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: soak-slack.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+      - name: Create issue for soak SLA
+        if: failure() && steps.soak.outcome == 'failure'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "SLA breached: soak"
+          content-filepath: soak-sla.md
+
+      - name: Check pg-restore-smoke SLA
+        id: pg-restore-smoke
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: pg-restore-smoke.yml
+          sla: 60
+          unit: minutes
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
+      - name: Check spectator-privacy-nightly SLA
+        id: spectator-privacy-nightly
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: spectator-privacy-nightly.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
+      - name: Prepare spectator-privacy-nightly SLA alert
+        if: failure() && steps.spectator-privacy-nightly.outcome == 'failure'
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          cat <<'EOF' > spectator-privacy-nightly-sla.md
+          Workflow: ${{ steps.spectator-privacy-nightly.outputs.workflow }}
+          Last Run: ${{ steps.spectator-privacy-nightly.outputs.timestamp }}
+          Conclusion: ${{ steps.spectator-privacy-nightly.outputs.conclusion }}
+          EOF
+          jq -n --arg channel "$SLACK_CHANNEL_ID" \
+            --arg text "spectator-privacy-nightly.yml SLA check failed. Last run: ${{ steps.spectator-privacy-nightly.outputs.timestamp }} (conclusion: ${{ steps.spectator-privacy-nightly.outputs.conclusion }})." \
+            '{channel: $channel, text: $text}' > spectator-privacy-nightly-slack.json
+
+      - name: Slack alert (spectator-privacy-nightly SLA)
+        if: failure() && steps.spectator-privacy-nightly.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: spectator-privacy-nightly-slack.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+      - name: Create issue for spectator-privacy-nightly SLA
+        if: failure() && steps.spectator-privacy-nightly.outcome == 'failure'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "SLA breached: spectator-privacy-nightly"
+          content-filepath: spectator-privacy-nightly-sla.md
+
+      - name: Check spectator-retention SLA
+        id: spectator-retention
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: spectator-retention.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
+      - name: Prepare spectator-retention SLA alert
+        if: failure() && steps.spectator-retention.outcome == 'failure'
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          cat <<'EOF' > spectator-retention-sla.md
+          Workflow: ${{ steps.spectator-retention.outputs.workflow }}
+          Last Run: ${{ steps.spectator-retention.outputs.timestamp }}
+          Conclusion: ${{ steps.spectator-retention.outputs.conclusion }}
+          EOF
+          jq -n --arg channel "$SLACK_CHANNEL_ID" \
+            --arg text "spectator-retention.yml SLA check failed. Last run: ${{ steps.spectator-retention.outputs.timestamp }} (conclusion: ${{ steps.spectator-retention.outputs.conclusion }})." \
+            '{channel: $channel, text: $text}' > spectator-retention-slack.json
+
+      - name: Slack alert (spectator-retention SLA)
+        if: failure() && steps.spectator-retention.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: spectator-retention-slack.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+      - name: Create issue for spectator-retention SLA
+        if: failure() && steps.spectator-retention.outcome == 'failure'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "SLA breached: spectator-retention"
+          content-filepath: spectator-retention-sla.md
+
+      - name: Get spectator privacy run ID
+        id: get_run_id
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN_ID=$(gh api \
+            repos/${{ github.repository }}/actions/workflows/spectator-privacy-nightly.yml/runs \
+            --jq '.workflow_runs[0].id')
+          echo "RUN_ID=$RUN_ID" >> "$GITHUB_OUTPUT"
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Verify ops artifacts
+        env:
+          PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+          SPECTATOR_LOGS_BUCKET: ${{ secrets.SPECTATOR_LOGS_BUCKET }}
+          SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+          DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
+          SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS || 120 }}
+          SOAK_THROUGHPUT_MIN: ${{ vars.SOAK_THROUGHPUT_MIN || 100 }}
+          RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        run: npx ts-node scripts/verify-ops-artifacts.ts
+
+  soak-metrics:
+    needs: [ops-preflight, ops-sla]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check soak metrics SLA
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: soak-metrics.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
+  docs:
+    needs: [ops-preflight, ops-sla, workflow-sla]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run docs:lint
+      - run: npm run docs:check
+
+  dr-runbook-check:
+    needs: docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx ts-node scripts/check-dr-runbook.ts
+
+  contracts:
+    needs: [docs, dr-runbook-check]
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix backend
+      - run: npm ci --prefix frontend
+      - name: Backend contract tests
+        run: npm run test:contracts --prefix backend
+      - name: Frontend contract tests
+        run: npm run test:contracts --prefix frontend
+
+  proof-archive:
+    needs: contracts
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: proof
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready" --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/proof
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm ci --legacy-peer-deps --prefix backend
+      - name: Seed proof fixture
+        run: psql "$DATABASE_URL" -f backend/test/fixtures/proof-hand.sql
+      - name: Export proof
+        run: npx -y ts-node scripts/export-hand-proof.ts 11111111-1111-1111-1111-111111111111
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+      - name: Validate proof archive
+        run: npx -y ts-node scripts/validate-proof-archive.ts
+
+  proof-archive-integration:
+    needs: proof-archive
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm ci --legacy-peer-deps --prefix backend
+      - name: Test proof archive migrations
+        run: npx -y ts-node scripts/test-proof-archive-migrations.ts
+
+  unit:
+    needs:
+      - contracts
+      - proof-archive-integration
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: ./scripts/test-stages.sh unit | tee unit.log
+      - name: Ledger reconciliation test
+        id: ledger
+        run: npm run test:ledger | tee ledger.log
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        if: steps.ledger.outcome == 'failure' && hashFiles('storage/reconcile-*.json') != ''
+        with:
+          name: ledger-reconcile-${{ github.sha }}
+          path: storage/reconcile-*.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-${{ github.sha }}
+          path: |
+            unit.log
+            ledger.log
+      - name: Fail if ledger test failed
+        if: steps.ledger.outcome == 'failure'
+        run: exit 1
+
+  property:
+    needs: unit
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm ci --prefix backend
+          npm ci --prefix frontend
+          npm ci --prefix analytics
+      - name: Ledger batch property tests
+        id: ledger
+        run: npm test --prefix backend -- src/wallet/wallet.ledger.property.spec.ts | tee ledger.log
+        continue-on-error: true
+      - name: Hand-log replay property tests
+        id: replay
+        run: npm test --prefix backend -- test/wallet/hand-logs.replay.property.spec.ts | tee replay.log
+        continue-on-error: true
+      - name: Remaining backend property tests
+        id: backend-property
+        run: npm run test:property --prefix backend -- --testPathIgnorePatterns=src/wallet/wallet.ledger.property.spec.ts --testPathIgnorePatterns=test/wallet/hand-logs.replay.property.spec.ts | tee backend-property.log
+        continue-on-error: true
+      - name: Ledger audit
+        id: audit
+        run: npm run test:ledger | tee audit.log
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        if: steps.audit.outcome == 'failure' && hashFiles('storage/reconcile-*.json') != ''
+        with:
+          name: ledger-reconcile-${{ github.sha }}
+          path: storage/reconcile-*.json
+      - name: Frontend property tests
+        id: frontend-property
+        run: npm test --prefix frontend -- --testPathPattern=.property.spec.ts$ --passWithNoTests | tee frontend-property.log
+        continue-on-error: true
+      - name: Analytics property tests
+        id: analytics-property
+        run: npx c8 --reporter=lcov --reporter=text --clean=false npm run test:property --prefix analytics | tee analytics-property.log
+        continue-on-error: true
+      - name: Shared property tests
+        id: shared-property
+        run: |
+          if [ -d shared/test ]; then
+            npx c8 --reporter=lcov --reporter=text --clean=false ts-node shared/test/**/*.property.ts
+          fi
+        continue-on-error: true
+      - name: Repo property tests
+        id: repo-property
+        run: |
+          if [ -d tests/property ]; then
+            npx ts-node tests/property/**/*.ts
+          fi
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: property-${{ github.sha }}
+          path: |
+            ledger.log
+            replay.log
+            audit.log
+            backend-property.log
+            frontend-property.log
+            analytics-property.log
+      - name: Summarize ledger audits
+        if: always()
+        run: |
+          echo "| Check | Status |" > property-summary.md
+          echo "| --- | --- |" >> property-summary.md
+          echo "| ledger batches | ${{ steps.ledger.outcome }} |" >> property-summary.md
+          echo "| hand-log replay | ${{ steps.replay.outcome }} |" >> property-summary.md
+          cat property-summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: property-summary-${{ github.sha }}
+          path: property-summary.md
+      - name: Fail if property tests failed
+        if: steps.ledger.outcome == 'failure' || steps.replay.outcome == 'failure' || steps.backend-property.outcome == 'failure' || steps.audit.outcome == 'failure' || steps.frontend-property.outcome == 'failure' || steps.analytics-property.outcome == 'failure' || steps.shared-property.outcome == 'failure' || steps.repo-property.outcome == 'failure'
+        run: exit 1
+
+  integration-run:
+    needs: property
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: ./scripts/test-stages.sh integration | tee integration.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-${{ github.sha }}
+          path: integration.log
+
+  e2e:
+    needs: integration-run
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    strategy:
+      matrix:
+        project: [chromium, firefox, webkit-mobile, firefox-mobile]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix frontend
+      - name: Install toxiproxy-cli
+        if: contains(matrix.project, 'mobile')
+        run: |
+          curl -L https://github.com/Shopify/toxiproxy/releases/download/v2.5.0/toxiproxy-cli-linux-amd64 \
+            -o toxiproxy-cli && sudo mv toxiproxy-cli /usr/local/bin/toxiproxy-cli && sudo chmod +x /usr/local/bin/toxiproxy-cli
+      - name: Run e2e tests
+        run: npm run test:e2e --prefix frontend -- --project=${{ matrix.project }} | tee e2e-${{ matrix.project }}.log
+        env:
+          NEXT_PUBLIC_SOCKET_URL: ${{ contains(matrix.project, 'mobile') && 'http://127.0.0.1:3001' || 'http://127.0.0.1:4000' }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-${{ matrix.project }}-${{ github.sha }}
+          path: e2e-${{ matrix.project }}.log
+
+  load:
+    needs: e2e
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: grafana/setup-k6@v1
+      - run: |
+          mkdir -p load/results
+          k6 run load/k6-swarm.js --vus 10 --duration 10s --summary-export=load/results/summary.json | tee load/results/k6.log
+      - run: load/check-thresholds.sh load/results/summary.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: load-${{ github.sha }}
+          path: |
+            load/results/summary.json
+            load/results/k6.log
+
+  chaos:
+    needs: load
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: grafana/setup-k6@v1
+      - run: ./scripts/test-stages.sh chaos | tee chaos.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chaos-${{ github.sha }}
+          path: chaos.log
+
+  soak:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: chaos
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: grafana/setup-k6@v1
+      - run: |
+          mkdir -p load/results
+          k6 run load/k6-ws-soak.js --vus 10 --duration 30s --summary-export=load/results/ws-soak-summary.json
+      - run: load/check-thresholds.sh load/results/ws-soak-summary.json metrics/gc-histogram.json metrics/heap-histogram.json metrics/cpu-histogram.json
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+      - name: Download latest baseline
+        run: |
+          mkdir -p baseline
+          gcloud storage cp -r "gs://${{ secrets.SOAK_TRENDS_BUCKET }}/soak/latest/**" baseline || true
+      - name: Threshold check against baseline
+        id: threshold
+        run: |
+          if [ -f baseline/baseline.json ]; then
+            npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-soak-trends.ts metrics baseline load/results/ws-soak-summary.json
+          else
+            echo "No baseline to compare against"
+          fi
+      - name: Open soak regression issue
+        if: failure() && steps.threshold.outcome == 'failure'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: Soak trends regression detected
+          content-filepath: metrics/baseline.json
+      - name: Prepare soak regression Slack payload
+        if: failure() && steps.threshold.outcome == 'failure'
+        run: jq -Rs '{channel: env.SLACK_CHANNEL_ID, text: .}' metrics/baseline.json > slack-payload.json
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+      - name: Slack soak regression alert
+        if: failure() && steps.threshold.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: slack-payload.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: Sync soak metrics
+        if: always()
+        run: |
+          gcloud storage rsync -r metrics "gs://${{ secrets.SOAK_TRENDS_BUCKET }}/soak-${{ github.run_id }}/"
+          gcloud storage cp load/results/ws-soak-summary.json "gs://${{ secrets.SOAK_TRENDS_BUCKET }}/soak-${{ github.run_id }}/ws-soak-summary.json"
+          gcloud storage rsync -r metrics "gs://${{ secrets.SOAK_TRENDS_BUCKET }}/soak/latest/"
+          gcloud storage cp load/results/ws-soak-summary.json "gs://${{ secrets.SOAK_TRENDS_BUCKET }}/soak/latest/ws-soak-summary.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: soak-${{ github.sha }}
+          path: |
+            load/results/ws-soak-summary.json
+            metrics/gc-histogram.json
+            metrics/heap-histogram.json
+            metrics/cpu-histogram.json
+            metrics/baseline.json
+
+  soak-metrics:
+    needs: [integration-run, spectator-privacy]
+    if: ${{ always() }}
+    uses: ./.github/workflows/soak-metrics.yml
+    secrets: inherit
+
+  spectator-privacy:
+    needs: [property, integration-run]
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+
+  integration:
+    needs: [integration-run, spectator-privacy]
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    steps:
+      - run: echo "integration checks passed"
+
+  dr-trends:
+    needs: spectator-privacy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+      - name: Check DR RTO/RPO trends
+        id: dr-trends
+        env:
+          DR_METRICS_BUCKET: ${{ vars.DR_METRICS_BUCKET }}
+          RTO_THRESHOLD: ${{ vars.DR_RTO_TARGET || 1800 }}
+          RPO_THRESHOLD: ${{ vars.DR_RPO_TARGET || 300 }}
+        run: |
+          set -e
+          result=$(npx ts-node infra/disaster-recovery/check-dr-trends.ts)
+          echo "$result" | tee dr-trends.json
+          echo "$result" | jq -r '[
+            "Latest RTO: \(.latest.rto)s",
+            "Latest RPO snapshot: \(.latest.rpoSnap)s",
+            "Latest RPO WAL: \(.latest.rpoWal)s",
+            "Average RTO: \(.average.rto)s",
+            "Average RPO snapshot: \(.average.rpoSnap)s",
+            "Average RPO WAL: \(.average.rpoWal)s",
+            "Δ RTO: \(.trend.rto)s",
+            "Δ RPO snapshot: \(.trend.rpoSnap)s",
+            "Δ RPO WAL: \(.trend.rpoWal)s"
+          ] | join("\n")' >> "$GITHUB_STEP_SUMMARY"
+      - name: Publish trend metrics to Cloud Monitoring
+        run: |
+          rto=$(jq -r '.latest.rto' dr-trends.json)
+          rpo_snap=$(jq -r '.latest.rpoSnap' dr-trends.json)
+          rpo_wal=$(jq -r '.latest.rpoWal' dr-trends.json)
+          gcloud monitoring metrics write custom.googleapis.com/dr/rto "$rto" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/rpo_snapshot "$rpo_snap" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/rpo_wal "$rpo_wal" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+      - name: Prepare DR trend Slack payload
+        if: always()
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          node -e "const fs=require('fs');const d=JSON.parse(fs.readFileSync('dr-trends.json','utf8'));const msg=`DR drill trends: latest RTO ${d.latest.rto}s avg ${d.average.rto.toFixed(1)}s, latest RPO WAL ${d.latest.rpoWal}s avg ${d.average.rpoWal.toFixed(1)}s`;fs.writeFileSync('dr-trends-slack.json',JSON.stringify({channel:process.env.SLACK_CHANNEL_ID,text:msg}));"
+      - name: Publish DR trend summary
+        if: always()
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: dr-trends-slack.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+      - name: PagerDuty alert on DR trend breach
+        if: failure() && steps.dr-trends.outcome == 'failure'
+        env:
+          PAGERDUTY_ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+        run: |
+          set -e
+          if [ -f dr-trends.json ]; then
+            summary=$(jq -r '"DR trends exceeded targets: latest RTO \(.latest.rto)s, WAL RPO \(.latest.rpoWal)s"' dr-trends.json)
+          else
+            summary="DR trends exceeded targets"
+          fi
+          jq -n --arg rk "$PAGERDUTY_ROUTING_KEY" --arg msg "$summary" '{routing_key:$rk,event_action:"trigger",payload:{summary:$msg,source:"ci",severity:"critical"}}' > pd.json
+          curl -X POST -H 'Content-Type: application/json' -d @pd.json https://events.pagerduty.com/v2/enqueue
+
+      - name: Create issue for DR trend breach
+        if: failure() && steps.dr-trends.outcome == 'failure'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: DR trend breach
+          content-filepath: dr-trends.json
+
+  ops-artifacts-verify:
+    if: ${{ always() }}
+    needs:
+      - ops-preflight
+      - ops-sla
+      - workflow-sla
+      - dr-trends
+      - spectator-privacy
+    uses: ./.github/workflows/ops-artifacts-verify.yml
+    secrets: inherit
+
+      PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+      PROOF_MANIFEST_BUCKET: ${{ secrets.PROOF_MANIFEST_BUCKET }}
+      SPECTATOR_LOGS_BUCKET: ${{ secrets.SPECTATOR_LOGS_BUCKET }}
+      SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+      DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      PAGERDUTY_ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+      SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}

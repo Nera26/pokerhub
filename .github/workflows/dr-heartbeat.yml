@@ -1,0 +1,62 @@
+name: dr-heartbeat
+concurrency:
+  group: "dr-heartbeat"
+  cancel-in-progress: true
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+jobs:
+  dr-heartbeat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm ci
+      - name: Check DR heartbeat
+        id: heartbeat
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if ! out=$(npx ts-node scripts/check-dr-heartbeat.ts 2>&1 | tee dr-heartbeat.log); then
+            echo "$out" >&2
+            echo "error=${out//$'\n'/ }" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          echo "message=$out" >> $GITHUB_OUTPUT
+      - name: Notify Slack on failure
+        if: failure() && steps.heartbeat.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            { "text": "DR heartbeat stale: ${{ steps.heartbeat.outputs.error }}" }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      - name: PagerDuty alert on failure
+        if: failure() && steps.heartbeat.outcome == 'failure'
+        env:
+          ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+        run: |
+          curl -X POST https://events.pagerduty.com/v2/enqueue \
+            -H 'Content-Type: application/json' \
+            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"DR heartbeat stale","source":"github-actions","severity":"error"}}'
+
+  spectator-privacy:
+    needs: dr-heartbeat
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log
+
+  check-proof-archive:
+    needs: spectator-privacy
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit

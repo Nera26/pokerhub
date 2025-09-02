@@ -27,6 +27,16 @@ function ensureSocket(): Socket {
       }
     });
 
+    socket.on(
+      'server:StateDelta',
+      (delta: { tick?: number; version?: string }) => {
+        if (delta.version !== EVENT_SCHEMA_VERSION) return;
+        if (typeof delta.tick === 'number') {
+          lastTick = delta.tick;
+        }
+      },
+    );
+
     socket.on('server:Clock', (serverNow: number) => {
       setServerTime(serverNow);
     });
@@ -48,6 +58,7 @@ export function getGameSocket(): Socket {
 export function disconnectGameSocket(): void {
   if (socket) {
     socket.off('state');
+    socket.off('server:StateDelta');
     socket.off('server:Clock');
     socket.off('connect');
     disconnectSocket('game');
@@ -98,8 +109,12 @@ function emitWithAck(
       }
     };
 
+    const baseDelay = 2000;
+    const maxDelay = 8000;
+
     const send = () => {
       s.emit(event, fullPayload);
+      const delay = Math.min(baseDelay * 2 ** attempts, maxDelay);
       timer = setTimeout(() => {
         if (attempts < retries) {
           attempts++;
@@ -107,7 +122,7 @@ function emitWithAck(
         } else {
           fail();
         }
-      }, 2000);
+      }, delay);
     };
 
     s.on(ackEvent, handler);
@@ -115,10 +130,10 @@ function emitWithAck(
   });
 }
 
-export function sendAction(action: GameActionPayload) {
+export function sendAction(action: GameActionPayload, retries = 1) {
   const payload = { version: EVENT_SCHEMA_VERSION, ...action };
   GameActionSchema.parse(payload);
-  return emitWithAck('action', payload, 'action:ack');
+  return emitWithAck('action', payload, 'action:ack', retries);
 }
 
 export const join = () => emitWithAck('join', {}, 'join:ack');

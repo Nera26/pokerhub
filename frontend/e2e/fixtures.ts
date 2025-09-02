@@ -12,9 +12,20 @@ export const test = base.extend({
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
-          players: [{ id: 1, name: 'Neo', chips: 42000 }],
-        }),
+        body: JSON.stringify([
+          {
+            playerId: 'neo',
+            rank: 1,
+            points: 100,
+            rd: 40,
+            volatility: 0.06,
+            net: 50,
+            bb100: 10,
+            hours: 1,
+            roi: 1,
+            finishes: { 1: 1 },
+          },
+        ]),
       });
     });
 
@@ -22,7 +33,12 @@ export const test = base.extend({
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ balance: 123456 }),
+        body: JSON.stringify({
+          kycVerified: true,
+          denialReason: null,
+          realBalance: 123456,
+          creditBalance: 0,
+        }),
       });
     });
 
@@ -30,7 +46,7 @@ export const test = base.extend({
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ notifications: [], balance: 0 }),
+        body: JSON.stringify({ notifications: [] }),
       });
     });
 

@@ -1,6 +1,10 @@
 # Stuck Hand Runbook
+<!-- Update service IDs in this file if PagerDuty services change -->
 
 When a hand fails to advance to the next state, use this guide to restore normal play.
+
+## Dashboard
+- Grafana: [Stuck Hand](../analytics-dashboards.md)
 
 ## Detection
 - Hand timer exceeds expected duration.
@@ -26,8 +30,8 @@ When a hand fails to advance to the next state, use this guide to restore normal
 - Monitor the table for one full orbit to ensure timers fire correctly.
 - Check `handAdvanceDuration` metric returns to baseline in Grafana.
 
-## Escalation
-- PagerDuty: pokerhub-eng
+## PagerDuty Escalation
+- Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->
 - Slack: #ops
 
 ## Drill

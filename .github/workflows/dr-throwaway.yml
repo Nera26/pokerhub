@@ -1,66 +1,115 @@
 name: dr-throwaway
+concurrency:
+  group: "dr-throwaway"
+  cancel-in-progress: true
 
 on:
+  schedule:
+  - cron: '0 2 * * 1'
   workflow_dispatch:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   dr-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
-      - name: Run failover test
-        run: bash infra/disaster-recovery/tests/failover.sh | tee failover.log
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          PG_SNAPSHOT_ID: ${{ vars.PG_SNAPSHOT_ID }}
-          CLICKHOUSE_SNAPSHOT: ${{ vars.CLICKHOUSE_SNAPSHOT }}
-          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
-      - name: Check failover RTO/RPO
-        run: |
-          source failover.metrics
-          echo "Failover start: $START_TIME"
-          echo "Failover end: $END_TIME"
-          echo "Failover RTO: $RTO_SECONDS seconds"
-          echo "Failover RPO: $RPO_SECONDS seconds"
-          if [ "$RTO_SECONDS" -gt 1800 ]; then
-            echo "Failover RTO exceeds 30 minutes" >&2
-            exit 1
-          fi
-          if [ "$RPO_SECONDS" -gt 300 ]; then
-            echo "Failover RPO exceeds 5 minutes" >&2
-            exit 1
-          fi
-      - name: Run backup restore test
-        run: bash infra/disaster-recovery/tests/restore-backup.sh | tee restore.log
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          PG_SNAPSHOT_ID: ${{ vars.PG_SNAPSHOT_ID }}
-          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
-      - name: Check restore RTO/RPO
-        run: |
-          source restore-backup.metrics
-          echo "Restore start: $START_TIME"
-          echo "Restore end: $END_TIME"
-          echo "Restore RTO: $RTO_SECONDS seconds"
-          echo "Restore RPO: $RPO_SECONDS seconds"
-          if [ "$RTO_SECONDS" -gt 1800 ]; then
-            echo "Restore RTO exceeds 30 minutes" >&2
-            exit 1
-          fi
-          if [ "$RPO_SECONDS" -gt 300 ]; then
-            echo "Restore RPO exceeds 5 minutes" >&2
-            exit 1
-          fi
-      - name: Upload logs
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: dr-throwaway
-          path: |
-            failover.log
-            failover.metrics
-            restore.log
-            restore-backup.metrics
+    - uses: actions/checkout@v4
+    - uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+    - uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+    - name: Run failover test
+      run: bash infra/disaster-recovery/tests/failover.sh | tee failover.log
+      env:
+        PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        PG_BACKUP_ID: ${{ vars.PG_BACKUP_ID }}
+        CLICKHOUSE_SNAPSHOT: ${{ vars.CLICKHOUSE_SNAPSHOT }}
+        SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+    - name: Check failover RTO/RPO
+      run: |
+        source failover.metrics
+        echo "Failover start: $START_TIME"
+        echo "Failover end: $END_TIME"
+        echo "Failover RTO: $RTO_SECONDS seconds"
+        echo "Failover RPO: $RPO_SECONDS seconds"
+        if [ "$RTO_SECONDS" -gt 1800 ]; then
+          echo "Failover RTO exceeds 30 minutes" >&2
+          exit 1
+        fi
+        if [ "$RPO_SECONDS" -gt 300 ]; then
+          echo "Failover RPO exceeds 5 minutes" >&2
+          exit 1
+        fi
+    - name: Publish failover metrics to Cloud Monitoring
+      run: |
+        source failover.metrics
+        gcloud monitoring metrics write custom.googleapis.com/dr/rto "$RTO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+        gcloud monitoring metrics write custom.googleapis.com/dr/rpo "$RPO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+    - name: Run backup restore test
+      run: bash infra/disaster-recovery/tests/restore-backup.sh | tee 
+        restore.log
+      env:
+        PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        PG_BACKUP_ID: ${{ vars.PG_BACKUP_ID }}
+        SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+    - name: Check restore RTO/RPO
+      run: |
+        source restore-backup.metrics
+        echo "Restore start: $START_TIME"
+        echo "Restore end: $END_TIME"
+        echo "Restore RTO: $RTO_SECONDS seconds"
+        echo "Restore RPO: $RPO_SECONDS seconds"
+        if [ "$RTO_SECONDS" -gt 1800 ]; then
+          echo "Restore RTO exceeds 30 minutes" >&2
+          exit 1
+        fi
+        if [ "$RPO_SECONDS" -gt 300 ]; then
+          echo "Restore RPO exceeds 5 minutes" >&2
+          exit 1
+        fi
+    - name: Publish restore metrics to Cloud Monitoring
+      run: |
+        source restore-backup.metrics
+        gcloud monitoring metrics write custom.googleapis.com/dr/rto "$RTO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+        gcloud monitoring metrics write custom.googleapis.com/dr/rpo "$RPO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+    - name: Upload failover log
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: failover-${{ github.sha }}
+        path: failover.log
+
+    - name: Upload restore log
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: restore-${{ github.sha }}
+        path: restore.log
+
+    - name: Upload metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: dr-throwaway-metrics-${{ github.sha }}
+        path: |
+          failover.metrics
+          restore-backup.metrics
+
+    needs:
+    - check-proof-archive
+  spectator-privacy:
+    needs:
+    - dr-tests
+    - check-proof-archive
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: failover.log restore.log

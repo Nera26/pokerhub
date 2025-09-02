@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: pokerhub-backend
+    static_configs:
+      - targets: ['backend:9464']
+
+rule_files:
+  - alerts.yml
+  - table-action-rate.rules.yml

@@ -12,13 +12,13 @@ export interface VerificationJob {
   verificationId: string;
   accountId: string;
   name: string;
+  birthdate: string;
   ip: string;
 }
 
 @Injectable()
 export class KycService {
-  private readonly blockedCountries = ['IR', 'KP', 'SY', 'CU', 'RU', 'BY'];
-
+  private readonly blockedCountries: string[];
   private readonly sanctionedNames = ['bad actor'];
 
   private queue?: Queue;
@@ -42,7 +42,17 @@ export class KycService {
     @InjectRepository(Account)
     private readonly accounts: Repository<Account>,
     private readonly config: ConfigService,
-  ) {}
+  ) {
+    this.blockedCountries =
+      this.config.get<string[]>('kyc.blockedCountries') ?? [
+        'IR',
+        'KP',
+        'SY',
+        'CU',
+        'RU',
+        'BY',
+      ];
+  }
 
   private async getQueue(): Promise<Queue> {
     if (this.queue) return this.queue;
@@ -59,6 +69,7 @@ export class KycService {
   async requestVerification(
     accountId: string,
     name: string,
+    birthdate: string,
     ip: string,
   ): Promise<KycVerification> {
     const record = await this.verifications.save({
@@ -71,12 +82,22 @@ export class KycService {
       verificationId: record.id,
       accountId,
       name,
+      birthdate,
       ip,
     } as VerificationJob);
     return record;
   }
 
-  async runChecks(name: string, ip: string): Promise<{ country: string }> {
+  private async isPoliticallyExposed(name: string): Promise<boolean> {
+    const pepList = ['famous politician'];
+    return pepList.includes(name.toLowerCase());
+  }
+
+  async runChecks(
+    name: string,
+    ip: string,
+    birthdate: string,
+  ): Promise<{ country: string }> {
     const country = await this.provider.getCountry(ip);
     if (this.blockedCountries.includes(country)) {
       throw new Error('Blocked jurisdiction');
@@ -84,6 +105,14 @@ export class KycService {
     const lowered = name.toLowerCase();
     if (this.sanctionedNames.includes(lowered)) {
       throw new Error('Sanctioned individual');
+    }
+    const ageMs = Date.now() - new Date(birthdate).getTime();
+    const age = ageMs / (1000 * 60 * 60 * 24 * 365.25);
+    if (age < 18) {
+      throw new Error('Underage');
+    }
+    if (await this.isPoliticallyExposed(name)) {
+      throw new Error('Politically exposed person');
     }
     return { country };
   }
@@ -136,7 +165,11 @@ export class KycService {
       id: job.verificationId,
     });
     try {
-      const { country } = await this.runChecks(job.name, job.ip);
+      const { country } = await this.runChecks(
+        job.name,
+        job.ip,
+        job.birthdate,
+      );
       const apiUrl = this.config.get<string>('kyc.apiUrl');
       const apiKey = this.config.get<string>('kyc.apiKey');
 

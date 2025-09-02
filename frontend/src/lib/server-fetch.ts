@@ -11,15 +11,36 @@ export async function serverFetch(
     }
     if (url.includes('/api/leaderboard')) {
       return new Response(
-        JSON.stringify({ players: [{ id: 1, name: 'Neo', chips: 42000 }] }),
+        JSON.stringify([
+          {
+            playerId: 'neo',
+            rank: 1,
+            points: 100,
+            rd: 40,
+            volatility: 0.06,
+            net: 50,
+            bb100: 10,
+            hours: 1,
+            roi: 1,
+            finishes: { 1: 1 },
+          },
+        ]),
         { status: 200, headers: { 'Content-Type': 'application/json' } },
       );
     }
     if (url.includes('/api/wallet')) {
-      return new Response(JSON.stringify({ balance: 123456 }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({
+          kycVerified: true,
+          denialReason: null,
+          realBalance: 123456,
+          creditBalance: 0,
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
     }
     if (url.includes('/api/tables')) {
       return new Response(
@@ -45,10 +66,7 @@ export async function serverFetch(
     }
     if (url.includes('/api/notifications')) {
       return new Response(
-        JSON.stringify({
-          notifications: [],
-          balance: 0,
-        }),
+        JSON.stringify({ notifications: [] }),
         { status: 200, headers: { 'Content-Type': 'application/json' } },
       );
     }

@@ -23,7 +23,6 @@ type Props = {
     username: string;
     email: string;
     password: string;
-    balance: number;
     status: UserStatus;
     avatar?: string;
   }) => void;
@@ -34,7 +33,6 @@ export default function AddUserModal({ isOpen, onClose, onAdd }: Props) {
     username: z.string().min(1, 'Username is required'),
     email: z.string().email('Invalid email'),
     password: z.string().min(1, 'Password is required'),
-    balance: z.number().nonnegative('Balance must be at least 0'),
     status: z.enum(['Active', 'Frozen', 'Banned']),
     avatar: z.string().optional(),
   });
@@ -54,7 +52,6 @@ export default function AddUserModal({ isOpen, onClose, onAdd }: Props) {
       username: '',
       email: '',
       password: '',
-      balance: 0,
       status: 'Active',
       avatar:
         'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg',
@@ -114,16 +111,6 @@ export default function AddUserModal({ isOpen, onClose, onAdd }: Props) {
           label="Password"
           error={errors.password?.message}
           {...register('password')}
-        />
-
-        <Input
-          id="balance"
-          type="number"
-          step="0.01"
-          placeholder="0.00"
-          label="Starting Balance"
-          error={errors.balance?.message}
-          {...register('balance', { valueAsNumber: true })}
         />
 
         <div>

@@ -3,6 +3,7 @@ import { LeaderboardService } from '../src/leaderboard/leaderboard.service';
 import { updateRating } from '../src/leaderboard/rating';
 import { promises as fs } from 'fs';
 import { join } from 'path';
+import { ConfigService } from '@nestjs/config';
 
 class MockCache {
   private store = new Map<string, any>();
@@ -54,6 +55,7 @@ describe('leaderboard rebuild', () => {
             cache as any,
             { find: jest.fn() } as any,
             analytics as any,
+            new ConfigService(),
           );
 
           const scores = new Map<
@@ -61,10 +63,14 @@ describe('leaderboard rebuild', () => {
             {
               sessions: Set<string>;
               rating: number;
+              rd: number;
+              volatility: number;
               net: number;
               bb: number;
               hands: number;
               duration: number;
+              buyIn: number;
+              finishes: Record<number, number>;
             }
           >();
           for (const ev of events) {
@@ -73,21 +79,37 @@ describe('leaderboard rebuild', () => {
               {
                 sessions: new Set<string>(),
                 rating: 0,
+                rd: 350,
+                volatility: 0.06,
                 net: 0,
                 bb: 0,
                 hands: 0,
                 duration: 0,
+                buyIn: 0,
+                finishes: {},
               };
             entry.sessions.add(ev.sessionId);
             const ageDays = (now - ev.ts) / DAY_MS;
-            entry.rating = updateRating(entry.rating, ev.points, ageDays, {
-              kFactor: 0.5,
-              decay: 0.95,
-            });
+            const result = ev.points > 0 ? 1 : ev.points < 0 ? 0 : 0.5;
+            const updated = updateRating(
+              { rating: entry.rating, rd: entry.rd, volatility: entry.volatility },
+              [{ rating: 0, rd: 350, score: result }],
+              ageDays,
+            );
+            entry.rating = updated.rating;
+            entry.rd = updated.rd;
+            entry.volatility = updated.volatility;
             entry.net += ev.net;
             entry.bb += ev.bb;
             entry.hands += ev.hands;
             entry.duration += ev.duration;
+            if (typeof (ev as any).buyIn === 'number') {
+              entry.buyIn += (ev as any).buyIn as number;
+            }
+            if (typeof (ev as any).finish === 'number') {
+              const f = (ev as any).finish as number;
+              entry.finishes[f] = (entry.finishes[f] ?? 0) + 1;
+            }
             scores.set(ev.playerId, entry);
           }
           const expected = [...scores.entries()]
@@ -100,13 +122,17 @@ describe('leaderboard rebuild', () => {
               playerId: id,
               rank: idx + 1,
               points: v.rating,
+              rd: v.rd,
+              volatility: v.volatility,
               net: v.net,
               bb100: v.hands ? (v.bb / v.hands) * 100 : 0,
               hours: v.duration / 3600000,
+              roi: v.buyIn ? v.net / v.buyIn : 0,
+              finishes: v.finishes,
             }))
             .slice(0, 100);
 
-          await (service as any).rebuildWithEvents(events, { kFactor: 0.5 });
+          await (service as any).rebuildWithEvents(events);
           const top = await service.getTopPlayers();
           expect(top).toEqual(expected);
         },
@@ -150,6 +176,7 @@ describe('leaderboard rebuild', () => {
             cache1 as any,
             { find: jest.fn() } as any,
             analytics1 as any,
+            new ConfigService(),
           );
           await (service1 as any).rebuildWithEvents(events);
           const top1 = await service1.getTopPlayers();
@@ -160,10 +187,9 @@ describe('leaderboard rebuild', () => {
             cache2 as any,
             { find: jest.fn() } as any,
             analytics2 as any,
+            new ConfigService(),
           );
-          await (service2 as any).rebuildWithEvents([...events].reverse(), {
-            kFactor: 0.5,
-          });
+          await (service2 as any).rebuildWithEvents([...events].reverse());
           const top2 = await service2.getTopPlayers();
           expect(top1).toEqual(top2);
         },
@@ -179,6 +205,7 @@ describe('leaderboard rebuild', () => {
       cache as any,
       { find: jest.fn() } as any,
       analytics as any,
+      new ConfigService(),
     );
 
     const dir = join(process.cwd(), 'storage', 'events');

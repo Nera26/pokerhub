@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Tooltip from '../ui/Tooltip';
 import Button from '../ui/Button';
+import Input from '../ui/Input';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons/faTimes';
 
@@ -13,7 +14,11 @@ export interface DepositModalContentProps {
   /** Called when the modal close icon or backdrop is clicked */
   onClose: () => void;
   /** Called when user confirms they have sent the deposit */
-  onConfirm: () => void;
+  onConfirm: (payload: {
+    amount: number;
+    deviceId: string;
+    currency: string;
+  }) => void;
   /** Bank name (displayed in instructions) */
   bankName?: string;
   /** Account name */
@@ -36,6 +41,15 @@ export default function DepositModalContent({
   countdownStart = 10,
 }: DepositModalContentProps) {
   const depositSchema = z.object({
+    amount: z
+      .string()
+      .refine(
+        (val) => {
+          const num = Number(val);
+          return val !== '' && !Number.isNaN(num) && num > 0;
+        },
+        { message: 'Enter a valid amount' },
+      ),
     confirm: z
       .boolean()
       .refine((v) => v, { message: 'Please confirm the deposit' }),
@@ -45,10 +59,11 @@ export default function DepositModalContent({
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isValid },
   } = useForm<DepositForm>({
     resolver: zodResolver(depositSchema),
-    defaultValues: { confirm: false },
+    defaultValues: { amount: '', confirm: false },
+    mode: 'onChange',
   });
 
   const [countdown, setCountdown] = useState(countdownStart);
@@ -76,7 +91,22 @@ export default function DepositModalContent({
     }
   };
 
-  const onSubmit = handleSubmit(() => onConfirm());
+  const getDeviceId = () => {
+    let id = localStorage.getItem('deviceId');
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem('deviceId', id);
+    }
+    return id;
+  };
+
+  const onSubmit = handleSubmit((data) =>
+    onConfirm({
+      amount: Number(data.amount),
+      deviceId: getDeviceId(),
+      currency: 'USD',
+    }),
+  );
 
   return (
     <form
@@ -96,6 +126,18 @@ export default function DepositModalContent({
         >
           <FontAwesomeIcon icon={faTimes} />
         </button>
+      </div>
+
+      {/* Amount Input */}
+      <div className="mb-4">
+        <Input
+          id="deposit-amount"
+          label="Enter Amount (USD)"
+          type="number"
+          placeholder="0.00"
+          error={errors.amount?.message}
+          {...register('amount')}
+        />
       </div>
 
       {/* Instructions */}
@@ -144,7 +186,7 @@ export default function DepositModalContent({
         type="submit"
         variant="primary"
         className="w-full uppercase py-3 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
-        disabled={countdown > 0}
+        disabled={countdown > 0 || !isValid}
       >
         {countdown > 0 ? `Waiting ${countdown}s…` : "I've Sent the Deposit"}
       </Button>

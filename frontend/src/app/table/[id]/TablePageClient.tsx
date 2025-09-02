@@ -45,6 +45,12 @@ export default function TablePageClient({ tableId }: { tableId: string }) {
     );
   }
 
+  if (!data.stateAvailable) {
+    return (
+      <p className="text-center mt-8">Table state unavailable.</p>
+    );
+  }
+
   if (data.players.length === 0) {
     return <p className="text-center mt-8">No players at this table.</p>;
   }

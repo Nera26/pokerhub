@@ -1,0 +1,17 @@
+version: 1
+jobs:
+  - name: shared_ip_flags
+    query: ../../backend/src/analytics/collusion.queries.ts#sharedIpFlags
+    schedule: hourly
+  - name: chip_dumping_flags
+    query: ../../backend/src/analytics/collusion.queries.ts#chipDumpingFlags
+    schedule: hourly
+  - name: synchronized_bet_flags
+    query: ../../backend/src/analytics/collusion.queries.ts#synchronizedBetFlags
+    schedule: daily
+sinks:
+  - type: clickhouse
+    table: collusion_alerts
+    notify: reviewers
+  - type: clickhouse
+    table: collusion_audit

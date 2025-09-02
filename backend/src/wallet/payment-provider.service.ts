@@ -1,7 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
 import type { ProviderCallback } from '../schemas/wallet';
 import { metrics } from '@opentelemetry/api';
+import { Queue, Worker } from 'bullmq';
+import Redis from 'ioredis';
 
 export type ProviderStatus = 'approved' | 'risky' | 'chargeback';
 
@@ -14,8 +16,10 @@ export class PaymentProviderService {
   private readonly apiKey = process.env.STRIPE_API_KEY ?? '';
   private readonly baseUrl = 'https://api.stripe.com/v1';
 
-  private readonly webhookEvents = new Map<string, ProviderCallback>();
-  private retryQueue: Array<() => Promise<void>> = [];
+  private handlers = new Map<string, (event: ProviderCallback) => Promise<void>>();
+  private retryQueue?: Queue;
+  private retryWorker?: Worker;
+  private draining: Promise<void> = Promise.resolve();
 
   private static readonly meter = metrics.getMeter('wallet');
   private static readonly retriesExhausted =
@@ -30,9 +34,10 @@ export class PaymentProviderService {
   private failures = 0;
   private circuitOpenUntil = 0;
 
-  constructor() {
-    // Periodically attempt to drain the retry queue. Using unref so tests can exit.
-    setInterval(() => this.processRetryQueue(), 1_000).unref?.();
+  constructor(@Inject('REDIS_CLIENT') private readonly redis: Redis) {}
+
+  private redisKey(idempotencyKey: string) {
+    return `provider:webhook:${idempotencyKey}`;
   }
 
   private authHeaders() {
@@ -42,34 +47,81 @@ export class PaymentProviderService {
     };
   }
 
+  registerHandler(key: string, handler: (event: ProviderCallback) => Promise<void>): void {
+    this.handlers.set(key, handler);
+  }
+
+  private async initQueue(): Promise<void> {
+    if (this.retryQueue) return;
+    const connection = {
+      host: process.env.REDIS_HOST ?? 'localhost',
+      port: Number(process.env.REDIS_PORT ?? 6379),
+    };
+    this.retryQueue = new Queue('provider-webhook-retry', { connection });
+    this.retryWorker = new Worker(
+      'provider-webhook-retry',
+      async (job) => {
+        const { event, handlerKey } = job.data as {
+          event: ProviderCallback;
+          handlerKey: string;
+        };
+        const handler = this.handlers.get(handlerKey);
+        if (!handler) throw new Error(`Missing handler for ${handlerKey}`);
+        await handler(event);
+        await this.redis.del(this.redisKey(event.idempotencyKey));
+      },
+      { connection },
+    );
+    this.retryWorker.on('failed', (job) => void job.retry());
+  }
+
+  async drainQueue(): Promise<void> {
+    await this.initQueue();
+    const queue = this.retryQueue!;
+    const failed = await queue.getFailed();
+    for (const job of failed) {
+      await job.retry();
+    }
+    this.draining = (async () => {
+      while (true) {
+        const counts = await queue.getJobCounts('waiting', 'delayed', 'active');
+        if (counts.waiting + counts.delayed + counts.active === 0) break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
+    })();
+    await this.draining;
+  }
+
   /**
    * Persist a webhook event by its idempotency key and execute the handler.
    * If the handler fails, the callback is queued for retry.
    */
   async handleWebhook(
     event: ProviderCallback,
-    handler: () => Promise<void>,
+    handlerKey: string,
   ): Promise<void> {
-    if (this.webhookEvents.has(event.idempotencyKey)) return;
-    this.webhookEvents.set(event.idempotencyKey, event);
+    await this.initQueue();
+    await this.draining;
+    const key = this.redisKey(event.idempotencyKey);
+    const stored = await this.redis.set(
+      key,
+      JSON.stringify(event),
+      'NX',
+      'EX',
+      60 * 60,
+    );
+    if (stored === null) return;
+    const handler = this.handlers.get(handlerKey);
+    if (!handler) throw new Error(`Missing handler for ${handlerKey}`);
     try {
-      await handler();
-      this.webhookEvents.delete(event.idempotencyKey);
+      await handler(event);
+      await this.redis.del(key);
     } catch {
-      this.retryQueue.push(handler);
-    }
-  }
-
-  private async processRetryQueue(): Promise<void> {
-    if (this.retryQueue.length === 0) return;
-    const queue = this.retryQueue;
-    this.retryQueue = [];
-    for (const job of queue) {
-      try {
-        await job();
-      } catch {
-        this.retryQueue.push(job);
-      }
+      await this.retryQueue!.add(
+        'retry',
+        { event, handlerKey },
+        { jobId: event.idempotencyKey },
+      );
     }
   }
 
@@ -154,6 +206,32 @@ export class PaymentProviderService {
       default:
         return 'chargeback';
     }
+  }
+
+  async confirm3DS(payload: unknown): Promise<void> {
+    const type = (payload as { type?: string })?.type;
+    if (!type || !type.startsWith('payment_intent.')) {
+      throw new Error('invalid event type');
+    }
+    const intent = (payload as any)?.data?.object as
+      | { id: string; status?: string; metadata?: { idempotencyKey?: string } }
+      | undefined;
+    if (!intent?.id) {
+      throw new Error('invalid event payload');
+    }
+    const status: ProviderStatus =
+      intent.status === 'succeeded'
+        ? 'approved'
+        : intent.status === 'requires_action'
+          ? 'risky'
+          : 'chargeback';
+    const event: ProviderCallback = {
+      eventId: (payload as { id?: string }).id ?? intent.id,
+      idempotencyKey: intent.metadata?.idempotencyKey ?? intent.id,
+      providerTxnId: intent.id,
+      status,
+    };
+    await this.handleWebhook(event, '3ds');
   }
 
   verifySignature(payload: string, signature: string): boolean {

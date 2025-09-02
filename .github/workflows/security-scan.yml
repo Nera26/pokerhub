@@ -1,26 +1,61 @@
 name: Security Scan
+concurrency:
+  group: "Security Scan"
+  cancel-in-progress: true
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+  - cron: '0 0 * * *'
   workflow_dispatch:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   zap-baseline:
     runs-on: ubuntu-latest
     steps:
-      - name: OWASP ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.14.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          target: ${{ secrets.DEV_SERVER_URL }}
-          allow_issue_writing: false
-          cmd_options: '-a -J zap-report.json'
-      - name: Fail on ASVS L2 or high findings
-        run: |
-          if jq '.site[].alerts[] | select((.riskcode | tonumber) >= 2)' zap-report.json | grep -q .; then
-            echo 'High/critical or ASVS L2 vulnerabilities found'
-            exit 1
-          else
-            echo 'No ASVS L2 or high findings'
-          fi
+    - name: OWASP ZAP Baseline Scan
+      uses: zaproxy/action-baseline@v0.14.0
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        target: ${{ secrets.DEV_SERVER_URL }}
+        allow_issue_writing: false
+        cmd_options: '-a -J zap-report.json'
+    - name: Fail on ASVS L2 or high findings
+      run: |
+        if jq '.site[].alerts[] | select((.riskcode | tonumber) >= 2)' zap-report.json | grep -q .; then
+          echo 'High/critical or ASVS L2 vulnerabilities found'
+          exit 1
+        else
+          echo 'No ASVS L2 or high findings'
+        fi
+
+    needs:
+    - check-proof-archive
+  trivy-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build backend image
+      run: docker build -t backend ./backend
+    - name: Scan backend image
+      uses: aquasecurity/trivy-action@0.33.0
+      with:
+        image-ref: backend
+        format: table
+        exit-code: '1'
+        ignore-unfixed: true
+        severity: HIGH,CRITICAL
+
+    needs:
+    - check-proof-archive
+  spectator-privacy:
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log
+    needs:
+    - check-proof-archive

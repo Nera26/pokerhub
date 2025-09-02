@@ -1,0 +1,105 @@
+name: k6-scenarios
+
+on:
+  schedule:
+  - cron: '0 2 * * *'
+  - cron: '0 3 * * *'
+  push:
+    paths:
+    - 'load/**'
+    - '.github/workflows/k6-scenarios.yml'
+  pull_request:
+    paths:
+    - 'load/**'
+    - '.github/workflows/k6-scenarios.yml'
+  workflow_dispatch:
+
+jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
+  run:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+        - scenario: 10k-chaos
+          script: load/scenarios/10k-chaos.sh
+          summary: k6-summary.json
+          metrics: k6-metrics.json
+          summary_artifact: k6-summary
+          metrics_artifact: k6-metrics
+          logs: k6-summary.json
+        - scenario: latency-threshold
+          script: load/scenarios/latency-threshold.sh
+          summary: summary.json
+          metrics: metrics.json
+          summary_artifact: summary
+          metrics_artifact: metrics
+          logs: summary.json metrics.json
+        - scenario: soak-clickhouse
+          script: load/scenarios/soak-clickhouse.sh
+          summary: soak-summary.json
+          metrics: soak-metrics.json
+          summary_artifact: soak-summary
+          metrics_artifact: soak-metrics
+          logs: soak-summary.json soak-metrics.json
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+    - name: Install k6 and Artillery
+      run: npm install -g k6 artillery
+    - name: Run scenario
+      run: ${{ matrix.script }}
+      env:
+        CLICKHOUSE_DSN: ${{ secrets.CLICKHOUSE_DSN }}
+    - name: Upload summary
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.summary_artifact }}-${{ github.sha }}
+        path: ${{ matrix.summary }}
+    - name: Upload metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.metrics_artifact }}-${{ github.sha }}
+        path: ${{ matrix.metrics }}
+
+    needs:
+    - check-proof-archive
+  soak-metrics:
+    needs:
+    - run
+    - check-proof-archive
+    if: ${{ always() }}
+    uses: ../soak-metrics.yml
+    secrets: inherit
+
+  scenario-privacy:
+    needs:
+    - run
+    - check-proof-archive
+    strategy:
+      matrix:
+        include:
+        - logs: k6-summary.json
+        - logs: summary.json metrics.json
+        - logs: soak-summary.json soak-metrics.json
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    with:
+      logs: ${{ matrix.logs }}
+    secrets: inherit
+
+  spectator-privacy:
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log
+    needs:
+    - check-proof-archive

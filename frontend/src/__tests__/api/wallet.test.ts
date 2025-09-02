@@ -1,6 +1,13 @@
 /** @jest-environment node */
 
-import { reserve, commit, rollback, withdraw, getStatus } from '@/lib/api/wallet';
+import {
+  reserve,
+  commit,
+  rollback,
+  deposit,
+  withdraw,
+  getStatus,
+} from '@/lib/api/wallet';
 import { serverFetch } from '@/lib/server-fetch';
 
 jest.mock('@/lib/server-fetch', () => ({
@@ -8,14 +15,8 @@ jest.mock('@/lib/server-fetch', () => ({
 }));
 
 describe('wallet api', () => {
-  it('handles reserve/commit/rollback/withdraw', async () => {
+  it('handles reserve/commit/rollback/deposit/withdraw', async () => {
     (serverFetch as jest.Mock)
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({ message: 'ok' }),
-      })
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -43,12 +44,41 @@ describe('wallet api', () => {
           realBalance: 20,
           creditBalance: 10,
         }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({
+          kycVerified: true,
+          realBalance: 10,
+          creditBalance: 5,
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({
+          kycVerified: true,
+          realBalance: 20,
+          creditBalance: 10,
+        }),
       });
 
     await expect(reserve(10, 'USD')).resolves.toEqual({ message: 'ok' });
     await expect(commit(10, 'USD')).resolves.toEqual({ message: 'ok' });
     await expect(rollback(10, 'USD')).resolves.toEqual({ message: 'ok' });
-    await expect(withdraw(10, 'd1', 'USD')).resolves.toEqual({ message: 'ok' });
+    await expect(deposit('u1', 10, 'd1', 'USD')).resolves.toEqual({
+      kycVerified: true,
+      realBalance: 20,
+      creditBalance: 10,
+    });
+    await expect(withdraw('u1', 10, 'd1', 'USD')).resolves.toEqual({
+      kycVerified: true,
+      realBalance: 10,
+      creditBalance: 5,
+    });
     await expect(getStatus()).resolves.toEqual({
       kycVerified: true,
       realBalance: 20,

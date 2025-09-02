@@ -3,6 +3,8 @@ import { writeHandLedger } from '../src/wallet/hand-ledger';
 import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
 import { randomUUID } from 'crypto';
+import { promises as fs } from 'fs';
+import path from 'path';
 import { Account } from '../src/wallet/account.entity';
 import { JournalEntry } from '../src/wallet/journal-entry.entity';
 import { Disbursement } from '../src/wallet/disbursement.entity';
@@ -12,6 +14,7 @@ import { PaymentProviderService } from '../src/wallet/payment-provider.service';
 import { KycService } from '../src/wallet/kyc.service';
 import { SettlementJournal } from '../src/wallet/settlement-journal.entity';
 import type { Street } from '../src/game/state-machine';
+import { MockRedis } from './utils/mock-redis';
 
 jest.setTimeout(20000);
 
@@ -27,6 +30,14 @@ describe('hand ledger journal property', () => {
     '00000000-0000-0000-0000-000000000003',
   ];
   const events: EventPublisher = { emit: jest.fn() } as any;
+
+  async function writeFailure(data: unknown) {
+    const dir = path.join(__dirname, '../../storage');
+    await fs.mkdir(dir, { recursive: true });
+    const today = new Date().toISOString().slice(0, 10);
+    const file = path.join(dir, `reconcile-${today}.json`);
+    await fs.writeFile(file, JSON.stringify(data, null, 2));
+  }
 
   async function setup() {
     const db = newDb();
@@ -60,7 +71,7 @@ describe('hand ledger journal property', () => {
     const journalRepo = dataSource.getRepository(JournalEntry);
     const disbRepo = dataSource.getRepository(Disbursement);
     const settleRepo = dataSource.getRepository(SettlementJournal);
-    const redis: any = { incr: jest.fn().mockResolvedValue(0), expire: jest.fn() };
+    const redis = new MockRedis();
     const provider = { initiate3DS: jest.fn(), getStatus: jest.fn() } as unknown as PaymentProviderService;
     const kyc = { validate: jest.fn().mockResolvedValue(undefined) } as unknown as KycService;
     const service = new WalletService(
@@ -111,9 +122,19 @@ describe('hand ledger journal property', () => {
         try {
           for (const settlements of batches) {
             const key = randomUUID();
-            await writeHandLedger(service, key, 'river' as Street, 0, settlements);
+            await writeHandLedger(
+              service,
+              dataSource,
+              key,
+              'river' as Street,
+              0,
+              settlements,
+            );
             const entries = await journalRepo.find();
             const total = entries.reduce((sum, e) => sum + Number(e.amount), 0);
+            if (total !== 0) {
+              await writeFailure({ kind: 'spec', batches, settlements, entries, total });
+            }
             expect(total).toBe(0);
           }
         } finally {

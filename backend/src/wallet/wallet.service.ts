@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, ForbiddenException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { createHash, randomUUID } from 'crypto';
@@ -13,10 +13,15 @@ import type { Queue } from 'bullmq';
 import {
   PaymentProviderService,
   ProviderStatus,
+  ProviderChallenge,
 } from './payment-provider.service';
 import { KycService } from './kyc.service';
 import { SettlementService } from './settlement.service';
+import { AnalyticsService } from '../analytics/analytics.service';
+import { ChargebackMonitor } from './chargeback.service';
 import type { Street } from '../game/state-machine';
+import { GeoIpService } from '../auth/geoip.service';
+import type { ProviderCallback } from '../schemas/wallet';
 
 interface Movement {
   account: Account;
@@ -41,6 +46,7 @@ export class WalletService {
     'wallet_transaction_duration_ms',
     { description: 'Duration of wallet operations', unit: 'ms' },
   );
+
   constructor(
     @InjectRepository(Account) private readonly accounts: Repository<Account>,
     @InjectRepository(JournalEntry)
@@ -54,6 +60,9 @@ export class WalletService {
     private readonly provider: PaymentProviderService,
     private readonly kyc: KycService,
     private readonly settlementSvc: SettlementService,
+    @Optional() private readonly analytics?: AnalyticsService,
+    @Optional() private readonly chargebacks?: ChargebackMonitor,
+    @Optional() private readonly geo?: GeoIpService,
   ) {}
 
   private payoutQueue?: Queue;
@@ -73,6 +82,10 @@ export class WalletService {
   protected async enqueueDisbursement(id: string, currency: string): Promise<void> {
     const queue = await this.getQueue();
     await queue.add('payout', { id, currency });
+  }
+
+  private challengeKey(id: string) {
+    return `wallet:3ds:${id}`;
   }
 
   private buildHash(
@@ -308,8 +321,8 @@ export class WalletService {
     return {
       kycVerified: account.kycVerified,
       denialReason,
-      realBalance: account.balance,
-      creditBalance: 0,
+      realBalance: account.balance - account.creditBalance,
+      creditBalance: account.creditBalance,
     };
   }
 
@@ -327,6 +340,58 @@ export class WalletService {
     const key = `wallet:webhook:${eventId}`;
     const res = await this.redis.set(key, '1', 'NX', 'EX', 60 * 60 * 24);
     return res === null;
+  }
+
+  async confirm3DS(event: ProviderCallback): Promise<void> {
+    if (await this.isDuplicateWebhook(event.eventId)) return;
+    const stored = await this.redis.get(this.challengeKey(event.providerTxnId));
+    if (!stored) return;
+    await this.redis.del(this.challengeKey(event.providerTxnId));
+    const { op, accountId, amount, currency } = JSON.parse(stored) as {
+      op: 'deposit' | 'withdraw';
+      accountId: string;
+      amount: number;
+      currency: string;
+    };
+    const user = await this.accounts.findOneByOrFail({ id: accountId, currency });
+    const house = await this.accounts.findOneByOrFail({
+      name: 'house',
+      currency,
+    });
+    const ref = randomUUID();
+    if (op === 'deposit') {
+      if (event.status === 'approved') {
+        await this.record(
+          'deposit',
+          ref,
+          [
+            { account: house, amount: -amount },
+            { account: user, amount },
+          ],
+          { providerTxnId: event.providerTxnId, providerStatus: event.status },
+        );
+      }
+    } else if (op === 'withdraw') {
+      if (event.status === 'approved') {
+        await this.record(
+          'withdraw',
+          ref,
+          [
+            { account: user, amount: -amount },
+            { account: house, amount },
+          ],
+          { providerTxnId: event.providerTxnId, providerStatus: event.status },
+        );
+        const disb = await this.disbursements.save({
+          id: randomUUID(),
+          accountId,
+          amount,
+          idempotencyKey: randomUUID(),
+          status: 'pending',
+        });
+        await this.enqueueDisbursement(disb.id, currency);
+      }
+    }
   }
 
   async processDisbursement(
@@ -465,55 +530,103 @@ export class WalletService {
 
     if (hourlyCountLimit < Infinity) {
       const key = `wallet:${op}:${accountId}:h:count`;
-      const count = await this.redis.incr(key);
-      if (count === 1) await this.redis.expire(key, 60 * 60);
-      if (count > hourlyCountLimit) {
-        await this.redis.decr(key);
-        await this.events.emit('wallet.velocity.limit', {
-          accountId,
-          operation: op,
-          type: 'count',
-          window: 'hour',
-          limit: hourlyCountLimit,
-          value: count,
-        });
-        throw new Error('Velocity limit exceeded');
+      let rolledBack = false;
+      try {
+        const count = await this.redis.incr(key);
+        if (count === 1) {
+          const ok = await this.redis.expire(key, 60 * 60);
+          if (ok !== 1) {
+            rolledBack = true;
+            await this.redis.decr(key);
+            throw new Error('Failed to set expiry');
+          }
+        }
+        if (count > hourlyCountLimit) {
+          rolledBack = true;
+          await this.redis.decr(key);
+          await this.events.emit('wallet.velocity.limit', {
+            accountId,
+            operation: op,
+            type: 'count',
+            window: 'hour',
+            limit: hourlyCountLimit,
+            value: count,
+          });
+          throw new Error('Velocity limit exceeded');
+        }
+      } catch (err) {
+        if (!rolledBack) {
+          await this.redis.decr(key);
+        }
+        throw err;
       }
     }
 
     if (hourlyAmountLimit < Infinity) {
       const key = `wallet:${op}:${accountId}:h:amount`;
-      const total = await this.redis.incrby(key, amount);
-      if (total === amount) await this.redis.expire(key, 60 * 60);
-      if (total > hourlyAmountLimit) {
-        await this.redis.decrby(key, amount);
-        await this.events.emit('wallet.velocity.limit', {
-          accountId,
-          operation: op,
-          type: 'amount',
-          window: 'hour',
-          limit: hourlyAmountLimit,
-          value: total,
-        });
-        throw new Error('Velocity limit exceeded');
+      let rolledBack = false;
+      try {
+        const total = await this.redis.incrby(key, amount);
+        if (total === amount) {
+          const ok = await this.redis.expire(key, 60 * 60);
+          if (ok !== 1) {
+            rolledBack = true;
+            await this.redis.decrby(key, amount);
+            throw new Error('Failed to set expiry');
+          }
+        }
+        if (total > hourlyAmountLimit) {
+          rolledBack = true;
+          await this.redis.decrby(key, amount);
+          await this.events.emit('wallet.velocity.limit', {
+            accountId,
+            operation: op,
+            type: 'amount',
+            window: 'hour',
+            limit: hourlyAmountLimit,
+            value: total,
+          });
+          throw new Error('Velocity limit exceeded');
+        }
+      } catch (err) {
+        if (!rolledBack) {
+          await this.redis.decrby(key, amount);
+        }
+        throw err;
       }
     }
 
     if (dailyCountLimit < Infinity) {
       const key = `wallet:${op}:${accountId}:d:count`;
-      const count = await this.redis.incr(key);
-      if (count === 1) await this.redis.expire(key, 24 * 60 * 60);
-      if (count > dailyCountLimit) {
-        await this.redis.decr(key);
-        await this.events.emit('wallet.velocity.limit', {
-          accountId,
-          operation: op,
-          type: 'count',
-          window: 'day',
-          limit: dailyCountLimit,
-          value: count,
-        });
-        throw new Error('Velocity limit exceeded');
+      let rolledBack = false;
+      try {
+        const count = await this.redis.incr(key);
+        if (count === 1) {
+          const ok = await this.redis.expire(key, 24 * 60 * 60);
+          if (ok !== 1) {
+            rolledBack = true;
+            await this.redis.decr(key);
+            throw new Error('Failed to set expiry');
+          }
+        }
+        if (count > dailyCountLimit) {
+          rolledBack = true;
+          await this.redis.decr(key);
+          await this.events.emit('wallet.velocity.limit', {
+            accountId,
+            operation: op,
+            type: 'count',
+            window: 'day',
+            limit: dailyCountLimit,
+            value: count,
+          });
+          throw new Error('Velocity limit exceeded');
+        }
+      } catch (err) {
+        if (!rolledBack) {
+          await this.redis.decr(key);
+        }
+        throw err;
       }
     }
   }
@@ -524,13 +637,16 @@ export class WalletService {
     deviceId: string,
     ip: string,
     currency: string,
-  ): Promise<void> {
+  ): Promise<ProviderChallenge> {
     return WalletService.tracer.startActiveSpan(
       'wallet.withdraw',
       async (span) => {
         const start = Date.now();
         WalletService.txnCounter.add(1, { operation: 'withdraw' });
         try {
+          if (this.geo && !this.geo.isAllowed(ip)) {
+            throw new ForbiddenException('Country not allowed');
+          }
           const user = await this.accounts.findOneByOrFail({ id: accountId, currency });
           if (!(await this.kyc.isVerified(accountId, ip))) {
             throw new Error('KYC required');
@@ -541,45 +657,15 @@ export class WalletService {
           await this.checkVelocity('withdraw', deviceId, ip);
           await this.enforceVelocity('withdraw', accountId, amount);
           await this.enforceDailyLimit('withdraw', accountId, amount, currency);
-          const house = await this.accounts.findOneByOrFail({ name: 'house', currency });
           const challenge = await this.provider.initiate3DS(accountId, amount);
-          const status: ProviderStatus = await this.provider.getStatus(
-            challenge.id,
+          await this.redis.set(
+            this.challengeKey(challenge.id),
+            JSON.stringify({ op: 'withdraw', accountId, amount, currency }),
+            'EX',
+            600,
           );
-          if (status === 'risky') {
-            throw new Error('Transaction flagged as risky');
-          }
-          const ref = randomUUID();
-          await this.record(
-            'withdraw',
-            ref,
-            [
-              { account: user, amount: -amount },
-              { account: house, amount },
-            ],
-            { providerTxnId: challenge.id, providerStatus: status },
-          );
-          if (status === 'chargeback') {
-            await this.record(
-              'withdraw_reversal',
-              `${ref}:reversal`,
-              [
-                { account: user, amount },
-                { account: house, amount: -amount },
-              ],
-              { providerTxnId: challenge.id, providerStatus: 'chargeback' },
-            );
-          } else {
-            const disb = await this.disbursements.save({
-              id: randomUUID(),
-              accountId,
-              amount,
-              idempotencyKey: randomUUID(),
-              status: 'pending',
-            });
-            await this.enqueueDisbursement(disb.id, currency);
-          }
           span.setStatus({ code: SpanStatusCode.OK });
+          return challenge;
         } catch (err) {
           span.recordException(err as Error);
           span.setStatus({ code: SpanStatusCode.ERROR });
@@ -600,13 +686,16 @@ export class WalletService {
     deviceId: string,
     ip: string,
     currency: string,
-  ): Promise<void> {
+  ): Promise<ProviderChallenge> {
     return WalletService.tracer.startActiveSpan(
       'wallet.deposit',
       async (span) => {
         const start = Date.now();
         WalletService.txnCounter.add(1, { operation: 'deposit' });
         try {
+          if (this.geo && !this.geo.isAllowed(ip)) {
+            throw new ForbiddenException('Country not allowed');
+          }
           await this.checkVelocity('deposit', deviceId, ip);
           await this.enforceVelocity('deposit', accountId, amount);
           const user = await this.accounts.findOneByOrFail({ id: accountId, currency });
@@ -614,36 +703,31 @@ export class WalletService {
             throw new Error('KYC required');
           }
           await this.enforceDailyLimit('deposit', accountId, amount, currency);
-          const house = await this.accounts.findOneByOrFail({ name: 'house', currency });
+          const cb = await this.chargebacks?.check(accountId, deviceId);
+          if (cb?.flagged) {
+            await this.analytics?.emit('wallet.chargeback_flag', {
+              accountId,
+              deviceId,
+              count:
+                cb.accountCount >= cb.accountLimit
+                  ? cb.accountCount
+                  : cb.deviceCount,
+              limit:
+                cb.accountCount >= cb.accountLimit
+                  ? cb.accountLimit
+                  : cb.deviceLimit,
+            });
+            throw new Error('Chargeback threshold exceeded');
+          }
           const challenge = await this.provider.initiate3DS(accountId, amount);
-          const status: ProviderStatus = await this.provider.getStatus(
-            challenge.id,
+          await this.redis.set(
+            this.challengeKey(challenge.id),
+            JSON.stringify({ op: 'deposit', accountId, amount, currency }),
+            'EX',
+            600,
           );
-          if (status === 'risky') {
-            throw new Error('Transaction flagged as risky');
-          }
-          const ref = randomUUID();
-          await this.record(
-            'deposit',
-            ref,
-            [
-              { account: house, amount: -amount },
-              { account: user, amount },
-            ],
-            { providerTxnId: challenge.id, providerStatus: status },
-          );
-          if (status === 'chargeback') {
-            await this.record(
-              'deposit_reversal',
-              `${ref}:reversal`,
-              [
-                { account: house, amount },
-                { account: user, amount: -amount },
-              ],
-              { providerTxnId: challenge.id, providerStatus: 'chargeback' },
-            );
-          }
           span.setStatus({ code: SpanStatusCode.OK });
+          return challenge;
         } catch (err) {
           span.recordException(err as Error);
           span.setStatus({ code: SpanStatusCode.ERROR });
@@ -665,8 +749,8 @@ export class WalletService {
     });
     const account = await this.accounts.findOneByOrFail({ id: accountId });
     return {
-      realBalance: account.balance,
-      creditBalance: 0,
+      realBalance: account.balance - account.creditBalance,
+      creditBalance: account.creditBalance,
       transactions: entries.map((e) => ({
         id: e.id,
         type: e.refType,
@@ -685,8 +769,8 @@ export class WalletService {
     });
     const account = await this.accounts.findOneByOrFail({ id: accountId });
     return {
-      realBalance: account.balance,
-      creditBalance: 0,
+      realBalance: account.balance - account.creditBalance,
+      creditBalance: account.creditBalance,
       transactions: disbs.map((d) => ({
         id: d.id,
         type: 'withdraw',

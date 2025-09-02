@@ -1,28 +1,80 @@
+# Requires secrets for Slack notifications:
+#   SLACK_BOT_TOKEN – bot token used to post messages
+#   SLACK_CHANNEL_ID – ID of the operations channel
 name: dr-drill
+concurrency:
+  group: "dr-drill"
+  cancel-in-progress: true
 
 on:
-  schedule:
-    - cron: '0 2 * * 1'
   workflow_dispatch:
+  workflow_call:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
+  preflight:
+    needs: [check-proof-archive]
+    runs-on: ubuntu-latest
+    env:
+      DR_DRILL_SLA_DAYS: 7
+      DR_FAILOVER_SLA_DAYS: 30
+      DR_RESTORE_SLA_DAYS: 30
+      DR_RUNBOOK_SLA_DAYS: 7
+      DR_THROWAWAY_SLA_DAYS: 7
+      SOAK_SLA_HOURS: 24
+      SPECTATOR_RETENTION_SLA_DAYS: 1
+    steps:
+      - uses: ./.github/actions/ops-preflight
+        with:
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          spectator-retention-sla-days: ${{ env.SPECTATOR_RETENTION_SLA_DAYS }}
+          soak-metrics-sla-hours: ${{ env.SOAK_SLA_HOURS }}
+          dr-drill-sla-days: ${{ env.DR_DRILL_SLA_DAYS }}
+          dr-failover-sla-days: ${{ env.DR_FAILOVER_SLA_DAYS }}
+          dr-restore-sla-days: ${{ env.DR_RESTORE_SLA_DAYS }}
+          dr-runbook-sla-days: ${{ env.DR_RUNBOOK_SLA_DAYS }}
+          dr-throwaway-sla-days: ${{ env.DR_THROWAWAY_SLA_DAYS }}
   drill:
+    needs: [preflight, check-proof-archive]
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
 
       - name: Run disaster recovery drill
-        run: bash infra/disaster-recovery/drill.sh
+        run: bash infra/disaster-recovery/drill.sh | tee dr-drill.log
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
           PG_INSTANCE_ID: ${{ vars.PG_INSTANCE_ID }}
           SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
           PGUSER: ${{ vars.PGUSER }}
           PGPASSWORD: ${{ secrets.PGPASSWORD }}
           PGDATABASE: postgres
           WAL_ARCHIVE_BUCKET: ${{ vars.WAL_ARCHIVE_BUCKET }}
+          DR_METRICS_BUCKET: ${{ vars.DR_METRICS_BUCKET }}
+          REPLICATION_LAG_THRESHOLD_SECONDS: 900
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Run restore health check
+        run: npx -y ts-node infra/disaster-recovery/tests/restore.test.ts
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          PG_SNAPSHOT_ID: ${{ vars.PG_SNAPSHOT_ID }}
+          PG_BACKUP_ID: ${{ vars.PG_SNAPSHOT_ID }}
+          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
 
       - name: Parse metrics
         id: metrics
@@ -31,6 +83,80 @@ jobs:
           echo "rto=$RTO_SECONDS" >> "$GITHUB_OUTPUT"
           echo "rpo_snap=$RPO_SNAPSHOT_SECONDS" >> "$GITHUB_OUTPUT"
           echo "rpo_wal=$RPO_WAL_SECONDS" >> "$GITHUB_OUTPUT"
+          echo "failover=$FAILOVER_SECONDS" >> "$GITHUB_OUTPUT"
+          echo "primary_restore=$PRIMARY_RESTORE_SECONDS" >> "$GITHUB_OUTPUT"
+          echo "metrics_repl=$METRICS_REPLICATION_LAG_SECONDS" >> "$GITHUB_OUTPUT"
+          echo "wal_repl=$WAL_REPLICATION_LAG_SECONDS" >> "$GITHUB_OUTPUT"
+
+      - name: Check RTO/RPO objectives
+        env:
+          RTO: ${{ steps.metrics.outputs.rto }}
+          RPO_SNAP: ${{ steps.metrics.outputs.rpo_snap }}
+          RPO_WAL: ${{ steps.metrics.outputs.rpo_wal }}
+          FAILOVER: ${{ steps.metrics.outputs.failover }}
+          PRIMARY_RESTORE: ${{ steps.metrics.outputs.primary_restore }}
+          METRICS_REPL: ${{ steps.metrics.outputs.metrics_repl }}
+          WAL_REPL: ${{ steps.metrics.outputs.wal_repl }}
+          RTO_TARGET: 1800
+          RPO_TARGET: 300
+          REPL_TARGET: 900
+        run: |
+          {
+            echo "### DR Drill Metrics"
+            echo "- RTO: ${RTO}s (target ≤ ${RTO_TARGET}s)"
+            echo "- RPO (snapshot): ${RPO_SNAP}s (target ≤ ${RPO_TARGET}s)"
+            echo "- RPO (WAL): ${RPO_WAL}s (target ≤ ${RPO_TARGET}s)"
+            echo "- Failover: ${FAILOVER}s"
+            echo "- Primary restore: ${PRIMARY_RESTORE}s"
+            echo "- Metrics bucket replication lag: ${METRICS_REPL}s (target ≤ ${REPL_TARGET}s)"
+            echo "- WAL bucket replication lag: ${WAL_REPL}s (target ≤ ${REPL_TARGET}s)"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$RTO" -gt "$RTO_TARGET" ] || [ "$RPO_SNAP" -gt "$RPO_TARGET" ] || [ "$RPO_WAL" -gt "$RPO_TARGET" ] || [ "$METRICS_REPL" -gt "$REPL_TARGET" ] || [ "$WAL_REPL" -gt "$REPL_TARGET" ]; then
+            echo "RTO/RPO/replication objectives exceeded" >&2
+            exit 1
+          fi
+
+      - name: Upload metrics to GCS
+        id: upload_metrics
+        if: success()
+        env:
+          BUCKET: ${{ vars.DR_METRICS_BUCKET }}
+        run: |
+          uri="gs://$BUCKET/${GITHUB_RUN_ID}/drill.metrics"
+          gcloud storage cp drill.metrics "$uri"
+          url="https://storage.googleapis.com/$BUCKET/${GITHUB_RUN_ID}/drill.metrics"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare drill run summary
+        if: success()
+        run: |
+          ts=$(date --iso-8601=seconds)
+          rto=${{ steps.metrics.outputs.rto }}
+          rpo_snap=${{ steps.metrics.outputs.rpo_snap }}
+          rpo_wal=${{ steps.metrics.outputs.rpo_wal }}
+          failover=${{ steps.metrics.outputs.failover }}
+          primary_restore=${{ steps.metrics.outputs.primary_restore }}
+          metrics_repl=${{ steps.metrics.outputs.metrics_repl }}
+          wal_repl=${{ steps.metrics.outputs.wal_repl }}
+          cat > dr-drill-run.json <<EOF
+          {
+            "run_id": "${GITHUB_RUN_ID}",
+            "timestamp": "$ts",
+            "rto_seconds": $rto,
+            "rpo_snapshot_seconds": $rpo_snap,
+            "rpo_wal_seconds": $rpo_wal,
+            "failover_seconds": $failover,
+            "primary_restore_seconds": $primary_restore,
+            "metrics_replication_lag_seconds": $metrics_repl,
+            "wal_replication_lag_seconds": $wal_repl
+          }
+          EOF
+
+      - name: Load drill metrics to BigQuery
+        if: success()
+        run: |
+          bq --project_id=${{ vars.GCP_PROJECT_ID }} load --source_format=NEWLINE_DELIMITED_JSON \
+            --time_partitioning_field timestamp ops_metrics.dr_drill_runs dr-drill-run.json infra/analytics/dr_drill_runs.schema.json
 
       - name: Publish drill results
         if: success()
@@ -38,20 +164,45 @@ jobs:
           RTO: ${{ steps.metrics.outputs.rto }}
           RPO_SNAP: ${{ steps.metrics.outputs.rpo_snap }}
           RPO_WAL: ${{ steps.metrics.outputs.rpo_wal }}
+          FAILOVER: ${{ steps.metrics.outputs.failover }}
+          PRIMARY_RESTORE: ${{ steps.metrics.outputs.primary_restore }}
+          METRICS_URL: ${{ steps.upload_metrics.outputs.url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ts=$(date --iso-8601=seconds)
-          perl -0 -i -pe "s/<!-- DR_DRILL_RESULTS -->/<!-- DR_DRILL_RESULTS -->\n- $ts: RTO ${RTO}s, snapshot RPO ${RPO_SNAP}s, WAL RPO ${RPO_WAL}s/" docs/runbooks/disaster-recovery.md
+          perl -0 -i -pe "s/<!-- DR_DRILL_RESULTS -->/<!-- DR_DRILL_RESULTS -->\n- $ts: [metrics]($METRICS_URL) – RTO ${RTO}s, snapshot RPO ${RPO_SNAP}s, WAL RPO ${RPO_WAL}s, failover ${FAILOVER}s, primary restore ${PRIMARY_RESTORE}s/" docs/runbooks/disaster-recovery.md
           git config user.name github-actions
           git config user.email actions@github.com
           git commit -am "chore(dr): record drill results" && git push
 
+      - name: Upload drill log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dr-drill-${{ github.sha }}
+          path: dr-drill.log
+
       - name: Upload metrics
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: dr-drill
+          name: dr-drill-metrics-${{ github.sha }}
           path: drill.metrics
+
+      - name: Publish metrics to Cloud Monitoring
+        if: success()
+        env:
+          RTO: ${{ steps.metrics.outputs.rto }}
+          RPO_SNAP: ${{ steps.metrics.outputs.rpo_snap }}
+          RPO_WAL: ${{ steps.metrics.outputs.rpo_wal }}
+          FAILOVER: ${{ steps.metrics.outputs.failover }}
+          PRIMARY_RESTORE: ${{ steps.metrics.outputs.primary_restore }}
+        run: |
+          gcloud monitoring metrics write custom.googleapis.com/dr/rto "$RTO" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/rpo_snapshot "$RPO_SNAP" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/rpo_wal "$RPO_WAL" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/failover "$FAILOVER" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/primary_restore "$PRIMARY_RESTORE" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
 
       - name: PagerDuty alert on failure
         if: failure()
@@ -61,3 +212,33 @@ jobs:
           curl -X POST https://events.pagerduty.com/v2/enqueue \
             -H 'Content-Type: application/json' \
             -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"DR drill failed","source":"github-actions","severity":"error"}}'
+
+      - name: Create GitHub issue on failure
+        if: failure()
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: DR drill failure
+          content-filepath: drill.metrics
+
+      - name: Prepare Slack alert
+        if: failure()
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: tail -n 40 dr-drill.log | jq -Rs '{channel: env.SLACK_CHANNEL_ID, text: "DR drill failed:\n" + .}' > dr-drill-slack.json
+
+      - name: Slack alert (DR drill)
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: dr-drill-slack.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+  spectator-privacy:
+    needs: [drill, check-proof-archive]
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: dr-drill.log

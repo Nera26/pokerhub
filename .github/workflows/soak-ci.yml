@@ -1,0 +1,41 @@
+name: soak-ci
+
+on:
+  pull_request:
+    paths:
+      - 'load/**'
+      - '.github/workflows/soak-ci.yml'
+
+jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
+  soak:
+    runs-on: ubuntu-latest
+    needs: check-proof-archive
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run soak script
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: load/soak.js
+          flags: >-
+            --vus 10
+            --duration 1m
+            --summary-export=soak-ci-summary.json
+      - name: Upload summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: soak-ci-summary
+          path: soak-ci-summary.json
+  spectator-privacy:
+    if: ${{ always() }}
+    needs:
+      - soak
+      - check-proof-archive
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: soak-ci-summary.json

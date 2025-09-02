@@ -1,10 +1,22 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { RateLimitGuard } from '../routes/rate-limit.guard';
 import { TournamentService } from './tournament.service';
+import { AuthGuard } from '../auth/auth.guard';
 import type {
   CalculatePrizesRequest,
   CalculatePrizesResponse,
   HotPatchLevelRequest,
+  RegisterRequest,
+  WithdrawRequest,
+  TournamentScheduleRequest,
 } from '../schemas/tournament';
 
 @UseGuards(RateLimitGuard)
@@ -17,12 +29,35 @@ export class TournamentController {
     return this.service.list();
   }
 
+  @Get(':id')
+  get(@Param('id') id: string) {
+    return this.service.get(id);
+  }
+
   @Post(':id/register')
-  register(@Param('id') id: string, @Body('userId') userId: string) {
-    return this.service.register(id, userId);
+  @UseGuards(AuthGuard)
+  register(@Param('id') id: string, @Body() body: RegisterRequest) {
+    return this.service.register(id, body.userId);
+  }
+
+  @Post(':id/withdraw')
+  @UseGuards(AuthGuard)
+  @HttpCode(200)
+  async withdraw(@Param('id') id: string, @Body() body: WithdrawRequest) {
+    await this.service.withdraw(id, body.userId);
+    return { message: 'tournament withdrawal' };
+  }
+
+  @Post(':id/cancel')
+  @UseGuards(AuthGuard)
+  @HttpCode(200)
+  async cancel(@Param('id') id: string) {
+    await this.service.cancel(id);
+    return { message: 'tournament cancelled' };
   }
 
   @Post(':id/prizes')
+  @UseGuards(AuthGuard)
   calculatePrizes(
     @Param('id') id: string,
     @Body() body: CalculatePrizesRequest,
@@ -34,6 +69,7 @@ export class TournamentController {
   }
 
   @Post(':id/levels/hot-patch')
+  @UseGuards(AuthGuard)
   hotPatchLevel(
     @Param('id') id: string,
     @Body() body: HotPatchLevelRequest,
@@ -44,5 +80,30 @@ export class TournamentController {
       body.smallBlind,
       body.bigBlind,
     );
+  }
+
+  @Post(':id/schedule')
+  @UseGuards(AuthGuard)
+  @HttpCode(200)
+  async schedule(
+    @Param('id') id: string,
+    @Body() body: TournamentScheduleRequest,
+  ) {
+    await this.service.scheduleTournament(id, {
+      registration: {
+        open: new Date(body.registration.open),
+        close: new Date(body.registration.close),
+      },
+      structure: body.structure.map((s) => ({
+        level: s.level,
+        durationMinutes: s.durationMinutes,
+      })),
+      breaks: (body.breaks ?? []).map((b) => ({
+        start: new Date(b.start),
+        durationMs: b.durationMs,
+      })),
+      start: new Date(body.startTime),
+    });
+    return { message: 'tournament scheduled' };
   }
 }

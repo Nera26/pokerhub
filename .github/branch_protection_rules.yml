@@ -1,0 +1,23 @@
+- pattern: main
+  required_status_checks:
+    - ci
+    - "ci / dr-runbook"
+    - "ci / dr-trends"
+    - "ci / dr-trends (failure)"
+    - "ci / workflow-sla"
+    - "ci / ops-sla"
+    - "ci / ensure-dr-drill"
+    - "ci / soak-metrics"
+    - contracts
+    - "deploy / preflight"
+    - "deploy / deploy"
+    - "deploy / spectator-privacy"
+    - check-proof-archive
+    - "ci / ops-artifacts-verify"
+    - spectator-retention
+    - spectator-privacy
+    - "ci / spectator-privacy"
+    - "release / spectator-privacy"
+    - "soak-test / spectator-privacy"
+    - soak
+    - dr-heartbeat

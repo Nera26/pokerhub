@@ -1,0 +1,62 @@
+{
+  "dashboard": {
+    "uid": "service-slos",
+    "title": "Service SLOs",
+    "labels": {
+      "pagerduty_service": "pokerhub-sre",
+      "runbook": "docs/runbooks/error-budget-policy.md"
+    },
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "HTTP API p99 Latency",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_duration_seconds_bucket[5m])) by (le))"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "WebSocket p95 Latency",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(socket_message_latency_ms_bucket[5m])) by (le))"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Action ACK p95 Latency",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(game_action_ack_latency_ms_bucket[5m])) by (le))"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Wallet Transactions Rate",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "sum(rate(wallet_transactions_total[5m]))"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Service Availability",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "avg_over_time(service_availability_ratio[30d])"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "dashboard": {
+    "uid": "error-rates",
+    "title": "Error Rates",
+    "labels": {
+      "pagerduty_service": "pokerhub-sre",
+      "runbook": "docs/runbooks/error-rates.md"
+    },
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "Error Rate",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(app_errors_total[5m])"
+          }
+        ]
+      }
+    ]
+  }
+}

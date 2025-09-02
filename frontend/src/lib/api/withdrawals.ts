@@ -2,19 +2,24 @@
 import { getBaseUrl } from '@/lib/base-url';
 import { handleResponse } from './client';
 import { serverFetch } from '@/lib/server-fetch';
-import { MessageResponse, MessageResponseSchema } from '@shared/types';
+import {
+  MessageResponse,
+  MessageResponseSchema,
+  WithdrawalDecisionRequest,
+} from '@shared/types';
 export type { ApiError } from './client';
 
 export async function approveWithdrawal(
   user: string,
   comment: string,
 ): Promise<MessageResponse> {
+  const body: WithdrawalDecisionRequest = { comment };
   return handleResponse(
     serverFetch(`${getBaseUrl()}/api/withdrawals/${user}/approve`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ comment }),
+      body: JSON.stringify(body),
     }),
     MessageResponseSchema,
   );
@@ -24,12 +29,13 @@ export async function rejectWithdrawal(
   user: string,
   comment: string,
 ): Promise<MessageResponse> {
+  const body: WithdrawalDecisionRequest = { comment };
   return handleResponse(
     serverFetch(`${getBaseUrl()}/api/withdrawals/${user}/reject`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ comment }),
+      body: JSON.stringify(body),
     }),
     MessageResponseSchema,
   );

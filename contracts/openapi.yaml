@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 1.2.0
+  version: 1.6.0
 paths:
   /status:
     get:
@@ -33,9 +33,31 @@ paths:
           description: Invalid credentials
         '429':
           description: Too many login attempts
+  /auth/register:
+    post:
+      summary: Register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /auth/logout:
     post:
       summary: Logout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
       responses:
         '200':
           description: Logged out
@@ -43,6 +65,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid token
   /auth/request-reset:
     post:
       summary: Request password reset
@@ -91,6 +131,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+  /notifications:
+    get:
+      summary: Get notifications
+      responses:
+        '200':
+          description: Notifications list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationsResponse'
+  /notifications/mark-all:
+    post:
+      summary: Mark all notifications as read
+      responses:
+        '200':
+          description: Marked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+  /notifications/{id}:
+    post:
+      summary: Mark a notification as read
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Marked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
   /tables:
     get:
       summary: Get lobby tables
@@ -103,6 +179,23 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Table'
+    post:
+      summary: Create table
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTableRequest'
+      responses:
+        '200':
+          description: Created table
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Table'
+      security:
+        - bearerAuth: []
   /tables/{id}:
     get:
       summary: Get table data
@@ -119,6 +212,81 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TableData'
+        '404':
+          description: Table not found
+    put:
+      summary: Update table
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTableRequest'
+      security:
+        - bearerAuth: []
+    delete:
+      summary: Delete table
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Table deleted
+      security:
+        - bearerAuth: []
+
+  /tables/{id}/chat:
+    get:
+      summary: Get table chat messages
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Chat messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatMessage'
+    post:
+      summary: Send chat message
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendChatMessageRequest'
+      responses:
+        '204':
+          description: Message sent
+        '200':
+          description: Updated table
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Table'
+      security:
+        - bearerAuth: []
   /game/action:
     post:
       summary: Perform a game action
@@ -138,6 +306,8 @@ paths:
   /wallet/{id}/reserve:
     post:
       summary: Reserve funds in wallet
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -160,6 +330,8 @@ paths:
   /wallet/{id}/commit:
     post:
       summary: Commit reserved funds
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -182,6 +354,8 @@ paths:
   /wallet/{id}/rollback:
     post:
       summary: Roll back reserved funds
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -201,9 +375,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+  /wallet/{id}/deposit:
+    post:
+      summary: Deposit funds
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepositRequest'
+      responses:
+        '200':
+          description: Deposit challenge
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderChallenge'
   /wallet/{id}/withdraw:
     post:
       summary: Withdraw funds
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -226,6 +426,8 @@ paths:
   /wallet/{id}/kyc:
     post:
       summary: Trigger KYC verification
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -242,6 +444,8 @@ paths:
   /wallet/{id}/status:
     get:
       summary: Get wallet status
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -258,6 +462,8 @@ paths:
   /wallet/{id}/transactions:
     get:
       summary: List wallet transactions
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -274,6 +480,8 @@ paths:
   /wallet/{id}/pending:
     get:
       summary: List pending wallet transactions
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -303,6 +511,50 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+  /withdrawals/{user}/approve:
+    post:
+      summary: Approve withdrawal
+      parameters:
+        - in: path
+          name: user
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WithdrawalDecisionRequest'
+      responses:
+        '200':
+          description: Withdrawal approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /withdrawals/{user}/reject:
+    post:
+      summary: Reject withdrawal
+      parameters:
+        - in: path
+          name: user
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WithdrawalDecisionRequest'
+      responses:
+        '200':
+          description: Withdrawal rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /tournaments:
     get:
       summary: List tournaments
@@ -313,6 +565,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TournamentList'
+  /tournaments/{id}:
+    get:
+      summary: Get tournament
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tournament detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TournamentDetail'
   /tournaments/{id}/register:
     post:
       summary: Register for tournament
@@ -335,6 +603,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+      security:
+        - bearerAuth: []
   /tournaments/{id}/withdraw:
     post:
       summary: Withdraw from tournament
@@ -349,7 +619,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TournamentRegisterRequest'
+              $ref: '#/components/schemas/TournamentWithdrawRequest'
       responses:
         '200':
           description: Tournament withdrawal
@@ -357,6 +627,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+      security:
+        - bearerAuth: []
+  /tournaments/{id}/cancel:
+    post:
+      summary: Cancel tournament
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tournament cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+      security:
+        - bearerAuth: []
   /tournaments/{id}/schedule:
     post:
       summary: Schedule tournament
@@ -379,6 +669,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+      security:
+        - bearerAuth: []
   /tournaments/{id}/prizes:
     post:
       summary: Calculate prize distribution
@@ -400,7 +692,9 @@ paths:
           content:
             application/json:
               schema:
-              $ref: '#/components/schemas/CalculatePrizesResponse'
+                $ref: '#/components/schemas/CalculatePrizesResponse'
+      security:
+        - bearerAuth: []
   /tournaments/{id}/levels/hot-patch:
     post:
       summary: Hot patch blind level
@@ -423,6 +717,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+      security:
+        - bearerAuth: []
   /leaderboard:
     get:
       summary: Get leaderboard
@@ -436,6 +732,8 @@ paths:
   /leaderboard/rebuild:
     post:
       summary: Rebuild leaderboard
+      security:
+        - bearerAuth: []
       parameters:
         - in: query
           name: days
@@ -452,8 +750,6 @@ paths:
   /hands/{id}/proof:
     get:
       summary: Get stored RNG proof for a hand
-      security:
-        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -469,6 +765,33 @@ paths:
                 $ref: '#/components/schemas/HandProof'
         '404':
           description: Hand not found
+
+  /hands/proofs:
+    get:
+      summary: List stored RNG proofs
+      parameters:
+        - in: query
+          name: from
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: to
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: ids
+          schema:
+            type: string
+            description: Comma separated hand IDs
+      responses:
+        '200':
+          description: Proofs for hands
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HandProofs'
 
   /hands/{id}/log:
     get:
@@ -489,7 +812,7 @@ paths:
               schema:
                 type: string
 
-  /hands/{id}/state/{actionIndex}:
+  /hands/{id}/state/{index}:
     get:
       summary: Reconstruct hand state at action index
       parameters:
@@ -499,7 +822,7 @@ paths:
           schema:
             type: string
         - in: path
-          name: actionIndex
+          name: index
           required: true
           schema:
             type: integer
@@ -509,27 +832,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HandStateResponse'
-  /review/sessions:
-    get:
-      summary: List flagged sessions
-      responses:
-        '200':
-          description: Flagged sessions
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FlaggedSessionsResponse'
-  /admin/flagged-sessions:
-    get:
-      summary: List flagged sessions
-      responses:
-        '200':
-          description: Flagged sessions
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FlaggedSessionsResponse'
+                $ref: '#/components/schemas/GameState'
   /analytics/collusion/flagged:
     get:
       summary: List collusion flagged sessions
@@ -605,30 +908,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/KycDenialResponse'
-  /review/sessions/{id}/{action}:
-    post:
-      summary: Apply review action
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: action
-          required: true
-          schema:
-            $ref: '#/components/schemas/ReviewAction'
-      responses:
-        '200':
-          description: Action applied
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MessageResponse'
   /users:
     post:
       summary: Create user
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -643,6 +927,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
   /users/{id}:
+    get:
+      summary: Get user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
     put:
       summary: Update user
       parameters:
@@ -657,6 +958,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateUserRequest'
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: Updated user
@@ -679,6 +982,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/BanUserRequest'
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: Banned user
@@ -686,28 +991,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
-  /users/{id}/balance:
-    post:
-      summary: Adjust user balance
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BalanceAdjustmentRequest'
-      responses:
-        '200':
-          description: Updated balance
-          content:
-            application/json:
-              schema:
-              $ref: '#/components/schemas/User'
 
   /feature-flags:
     get:
@@ -745,6 +1028,94 @@ paths:
     delete:
       summary: Delete feature flag
       parameters:
+        - in: path
+          name: key
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Flag deleted
+
+  /feature-flags/room/{tableId}/{key}:
+    put:
+      summary: Set room feature flag
+      parameters:
+        - in: path
+          name: tableId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: key
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeatureFlagRequest'
+      responses:
+        '200':
+          description: Flag set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureFlag'
+    delete:
+      summary: Delete room feature flag
+      parameters:
+        - in: path
+          name: tableId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: key
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Flag deleted
+
+  /feature-flags/tourney/{tourneyId}/{key}:
+    put:
+      summary: Set tournament feature flag
+      parameters:
+        - in: path
+          name: tourneyId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: key
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeatureFlagRequest'
+      responses:
+        '200':
+          description: Flag set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureFlag'
+    delete:
+      summary: Delete tournament feature flag
+      parameters:
+        - in: path
+          name: tourneyId
+          required: true
+          schema:
+            type: string
         - in: path
           name: key
           required: true
@@ -801,6 +1172,20 @@ components:
           type: string
       required:
         - message
+    WithdrawalDecisionRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+      required:
+        - comment
+    RefreshRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+      required:
+        - refreshToken
     RequestResetRequest:
       type: object
       properties:
@@ -854,6 +1239,24 @@ components:
         - amount
         - deviceId
         - currency
+    DepositRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+        deviceId:
+          type: string
+        currency:
+          type: string
+      required:
+        - amount
+        - deviceId
+        - currency
+    ProviderChallenge:
+      type: object
+      properties:
+        id:
+          type: string
     ProviderCallback:
       type: object
       properties:
@@ -981,13 +1384,6 @@ components:
       properties:
         reason:
           type: string
-    BalanceAdjustmentRequest:
-      type: object
-      properties:
-        amount:
-          type: number
-      required:
-        - amount
     User:
       type: object
       properties:
@@ -999,13 +1395,10 @@ components:
           type: string
         banned:
           type: boolean
-        balance:
-          type: number
       required:
         - id
         - username
         - banned
-        - balance
     GameAction:
       oneOf:
         - $ref: '#/components/schemas/PostBlindAction'
@@ -1017,6 +1410,17 @@ components:
         - $ref: '#/components/schemas/NextAction'
       discriminator:
         propertyName: type
+    GameStateDelta:
+      type: object
+      properties:
+        version:
+          type: string
+          enum: ['1']
+        tick:
+          type: number
+        delta:
+          type: object
+      required: [version, tick, delta]
     PostBlindAction:
       type: object
       properties:
@@ -1134,6 +1538,9 @@ components:
           type: number
         prizePool:
           type: number
+        state:
+          type: string
+          enum: [REG_OPEN, RUNNING, PAUSED, FINISHED, CANCELLED]
         pko:
           $ref: '#/components/schemas/PkoOptions'
         rebuys:
@@ -1155,19 +1562,43 @@ components:
         - title
         - buyIn
         - prizePool
+        - state
         - players
         - registered
+    TournamentDetail:
+      allOf:
+        - $ref: '#/components/schemas/Tournament'
+        - type: object
+          properties:
+            registration:
+              type: object
+              properties:
+                open:
+                  type: string
+                  format: date-time
+                  nullable: true
+                close:
+                  type: string
+                  format: date-time
+                  nullable: true
     TournamentList:
       type: array
       items:
         $ref: '#/components/schemas/Tournament'
-    TournamentRegisterRequest:
-      type: object
-      properties:
-        userId:
-          type: string
-      required:
-        - userId
+  TournamentRegisterRequest:
+    type: object
+    properties:
+      userId:
+        type: string
+    required:
+      - userId
+  TournamentWithdrawRequest:
+    type: object
+    properties:
+      userId:
+        type: string
+    required:
+      - userId
     Table:
       type: object
       properties:
@@ -1227,6 +1658,71 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Table'
+    CreateTableRequest:
+      type: object
+      properties:
+        tableName:
+          type: string
+        gameType:
+          type: string
+          enum: [texas, omaha, allin, tournaments]
+        stakes:
+          type: object
+          properties:
+            small:
+              type: number
+            big:
+              type: number
+        startingStack:
+          type: number
+        players:
+          type: object
+          properties:
+            max:
+              type: number
+        buyIn:
+          type: object
+          properties:
+            min:
+              type: number
+            max:
+              type: number
+      required:
+        - tableName
+        - gameType
+        - stakes
+        - startingStack
+        - players
+        - buyIn
+    UpdateTableRequest:
+      type: object
+      properties:
+        tableName:
+          type: string
+        gameType:
+          type: string
+          enum: [texas, omaha, allin, tournaments]
+        stakes:
+          type: object
+          properties:
+            small:
+              type: number
+            big:
+              type: number
+        startingStack:
+          type: number
+        players:
+          type: object
+          properties:
+            max:
+              type: number
+        buyIn:
+          type: object
+          properties:
+            min:
+              type: number
+            max:
+              type: number
     Player:
       type: object
       properties:
@@ -1286,6 +1782,16 @@ components:
         - avatar
         - text
         - time
+    SendChatMessageRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+        text:
+          type: string
+      required:
+        - userId
+        - text
     TableData:
       type: object
       properties:
@@ -1307,6 +1813,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChatMessage'
+        stateAvailable:
+          type: boolean
       required:
         - smallBlind
         - bigBlind
@@ -1374,55 +1882,89 @@ components:
       startTime:
         type: string
         format: date-time
+      registration:
+        type: object
+        properties:
+          open:
+            type: string
+            format: date-time
+          close:
+            type: string
+            format: date-time
+        required:
+          - open
+          - close
+      structure:
+        type: array
+        items:
+          type: object
+          properties:
+            level:
+              type: integer
+            durationMinutes:
+              type: integer
+          required:
+            - level
+            - durationMinutes
+      breaks:
+        type: array
+        items:
+          type: object
+          properties:
+            start:
+              type: string
+              format: date-time
+            durationMs:
+              type: integer
+          required:
+            - start
+            - durationMs
     required:
       - startTime
-
-    LeaderboardResponse:
-      type: array
-      items:
-        $ref: '#/components/schemas/LeaderboardEntry'
-    ReviewAction:
-      type: string
-      enum: [warn, restrict, ban]
-    ReviewActionRequest:
-      type: object
-      properties:
-        action:
-          $ref: '#/components/schemas/ReviewAction'
-      required: [action]
-    ReviewStatus:
-      type: string
-      enum: [flagged, warn, restrict, ban]
-    FlaggedSession:
-      type: object
-      properties:
-        id:
+      - registration
+      - structure
+  ReviewAction:
+    type: string
+    enum: [warn, restrict, ban]
+  ReviewActionRequest:
+    type: object
+    properties:
+      action:
+        $ref: '#/components/schemas/ReviewAction'
+    required: [action]
+  ReviewStatus:
+    type: string
+    enum: [flagged, warn, restrict, ban]
+  FlaggedSession:
+    type: object
+    properties:
+      id:
+        type: string
+      users:
+        type: array
+        items:
           type: string
-        users:
-          type: array
-          items:
-            type: string
-        status:
-          $ref: '#/components/schemas/ReviewStatus'
-      required: [id, users, status]
-    FlaggedSessionsResponse:
-      type: array
-      items:
-        $ref: '#/components/schemas/FlaggedSession'
-    ReviewActionLog:
-      type: object
-      properties:
-        action:
-          $ref: '#/components/schemas/ReviewAction'
-        timestamp:
-          type: integer
-        reviewerId:
-          type: string
-      required: [action, timestamp, reviewerId]
-    ReviewActionLogsResponse:
-      type: array
-      items:
-        $ref: '#/components/schemas/ReviewActionLog'
+      status:
+        $ref: '#/components/schemas/ReviewStatus'
+    required: [id, users, status]
+  FlaggedSessionsResponse:
+    type: array
+    items:
+      $ref: '#/components/schemas/FlaggedSession'
+  ReviewActionLog:
+    type: object
+    properties:
+      action:
+        $ref: '#/components/schemas/ReviewAction'
+      timestamp:
+        type: integer
+      reviewerId:
+        type: string
+    required: [action, timestamp, reviewerId]
+  ReviewActionLogsResponse:
+    type: array
+    items:
+      $ref: '#/components/schemas/ReviewActionLog'
   HotPatchLevelRequest:
     type: object
     properties:
@@ -1450,19 +1992,33 @@ components:
         type: integer
       points:
         type: number
+      rd:
+        type: number
+      volatility:
+        type: number
       net:
         type: number
       bb100:
         type: number
       hours:
         type: number
+      roi:
+        type: number
+      finishes:
+        type: object
+        additionalProperties:
+          type: integer
     required:
       - playerId
       - rank
       - points
+      - rd
+      - volatility
       - net
       - bb100
       - hours
+      - roi
+      - finishes
   HandProof:
     type: object
     description: Commitment, seed and nonce proving deck fairness for a hand.
@@ -1477,9 +2033,54 @@ components:
       - seed
       - nonce
       - commitment
-  HandStateResponse:
+  HandProofs:
+    type: array
+    items:
+      type: object
+      properties:
+        id:
+          type: string
+        proof:
+          $ref: '#/components/schemas/HandProof'
+      required:
+        - id
+        - proof
+  GameStatePlayer:
     type: object
     properties:
+      id:
+        type: string
+      stack:
+        type: number
+      folded:
+        type: boolean
+      bet:
+        type: number
+      allIn:
+        type: boolean
+      holeCards:
+        type: array
+        items:
+          type: number
+        minItems: 2
+        maxItems: 2
+    required:
+      - id
+      - stack
+      - folded
+      - bet
+      - allIn
+  GameState:
+    type: object
+    properties:
+      version:
+        type: string
+        enum: ['1']
+      tick:
+        type: integer
+      phase:
+        type: string
+        enum: [WAIT_BLINDS, DEAL, BETTING_ROUND, SHOWDOWN, SETTLE, NEXT_HAND]
       street:
         type: string
         enum: [preflop, flop, turn, river, showdown]
@@ -1496,38 +2097,34 @@ components:
               type: array
               items:
                 type: string
+            contributions:
+              type: object
+              additionalProperties:
+                type: number
           required:
             - amount
             - players
+            - contributions
       currentBet:
         type: number
       players:
         type: array
         items:
-          type: object
-          properties:
-            id:
-              type: string
-            stack:
-              type: number
-            folded:
-              type: boolean
-            bet:
-              type: number
-            allIn:
-              type: boolean
-          required:
-            - id
-            - stack
-            - folded
-            - bet
-            - allIn
+          $ref: '#/components/schemas/GameStatePlayer'
+      communityCards:
+        type: array
+        items:
+          type: number
     required:
+      - version
+      - tick
+      - phase
       - street
       - pot
       - sidePots
       - currentBet
       - players
+      - communityCards
     
     FeatureFlagRequest:
       type: object
@@ -1550,3 +2147,35 @@ components:
       type: object
       additionalProperties:
         type: boolean
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        title:
+          type: string
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        read:
+          type: boolean
+      required:
+        - id
+        - type
+        - title
+        - message
+        - timestamp
+        - read
+    NotificationsResponse:
+      type: object
+      properties:
+        notifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+      required:
+        - notifications

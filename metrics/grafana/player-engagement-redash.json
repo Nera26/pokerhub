@@ -1,0 +1,7 @@
+{
+  "name": "Player Engagement",
+  "query": "SELECT date, dau, mau, reg_to_dep FROM engagement_metrics ORDER BY date DESC",
+  "options": {
+    "parameters": []
+  }
+}

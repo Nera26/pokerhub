@@ -1,0 +1,22 @@
+{
+  "dashboard": {
+    "uid": "service-uptime",
+    "title": "Service Uptime",
+    "labels": {
+      "pagerduty_service": "pokerhub-sre",
+      "runbook": "docs/runbooks/service-uptime.md"
+    },
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "30d Availability",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "avg_over_time(service_availability_ratio[30d])"
+          }
+        ]
+      }
+    ]
+  }
+}

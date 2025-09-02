@@ -1,45 +1,84 @@
 name: restore-nightly
+concurrency:
+  group: "restore-nightly"
+  cancel-in-progress: true
 
 on:
   schedule:
-    - cron: '30 1 * * *'
+  - cron: '30 1 * * *'
   workflow_dispatch:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   restore:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-      - name: Run snapshot restore test
-        run: npx -y ts-node infra/disaster-recovery/tests/restore.test.ts | tee restore.log
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          PG_SNAPSHOT_ID: ${{ vars.PG_SNAPSHOT_ID }}
-          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
-      - name: Check restore RTO/RPO
-        run: |
-          source infra/disaster-recovery/tests/restore-backup.metrics
-          echo "Restore start: $START_TIME"
-          echo "Restore end: $END_TIME"
-          echo "Restore RTO: $RTO_SECONDS seconds"
-          echo "Restore RPO: $RPO_SECONDS seconds"
-          if [ "$RTO_SECONDS" -gt 1800 ]; then
-            echo "Restore RTO exceeds 30 minutes" >&2
-            exit 1
-          fi
-          if [ "$RPO_SECONDS" -gt 300 ]; then
-            echo "Restore RPO exceeds 5 minutes" >&2
-            exit 1
-          fi
-      - name: Upload logs
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: restore-nightly
-          path: |
-            restore.log
-            infra/disaster-recovery/tests/restore-backup.metrics
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
+    - uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+    - uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+    - name: Run snapshot restore test
+      run: npx -y ts-node infra/disaster-recovery/tests/restore.test.ts | tee 
+        restore.log
+      env:
+        PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        PG_BACKUP_ID: ${{ vars.PG_BACKUP_ID }}
+        SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+    - name: Check restore RTO/RPO
+      run: |
+        source infra/disaster-recovery/tests/restore-backup.metrics
+        echo "Restore start: $START_TIME"
+        echo "Restore end: $END_TIME"
+        echo "Restore RTO: $RTO_SECONDS seconds"
+        echo "Restore RPO: $RPO_SECONDS seconds"
+        if [ "$RTO_SECONDS" -gt 1800 ]; then
+          echo "Restore RTO exceeds 30 minutes" >&2
+          exit 1
+        fi
+        if [ "$RPO_SECONDS" -gt 300 ]; then
+          echo "Restore RPO exceeds 5 minutes" >&2
+          exit 1
+        fi
+    - name: Publish metrics to Cloud Monitoring
+      run: |
+        source infra/disaster-recovery/tests/restore-backup.metrics
+        gcloud monitoring metrics write custom.googleapis.com/dr/rto "$RTO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+        gcloud monitoring metrics write custom.googleapis.com/dr/rpo "$RPO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+    - name: Upload logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: restore-${{ github.sha }}
+        path: |
+          restore.log
+          infra/disaster-recovery/tests/restore-backup.metrics
+
+    needs:
+    - check-proof-archive
+  soak-metrics:
+    needs:
+    - restore
+    - check-proof-archive
+    if: ${{ always() }}
+    uses: ./.github/workflows/soak-metrics.yml
+    secrets: inherit
+
+  spectator-privacy:
+    needs:
+    - restore
+    - soak-metrics
+    - check-proof-archive
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: restore.log

@@ -1,0 +1,15 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  name: gcs-sink
+spec:
+  class: io.confluent.connect.gcs.GcsSinkConnector
+  tasksMax: 1
+  config:
+    topics: hand,wallet,tourney,auth
+    gcs.bucket.name: analytics-events
+    format.class: io.confluent.connect.gcs.format.json.JsonFormat
+    partitioner.class: io.confluent.connect.storage.partitioner.TimeBasedPartitioner
+    path.format: 'YYYY/MM/DD'
+    locale: en
+    timezone: UTC

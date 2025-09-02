@@ -1,0 +1,7 @@
+# Ignore performance metrics outputs
+*
+!.gitignore
+!alert-routes.md
+!gateway-metrics.md
+!grafana/
+!grafana/**

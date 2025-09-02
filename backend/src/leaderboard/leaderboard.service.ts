@@ -1,10 +1,11 @@
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { metrics } from '@opentelemetry/api';
+import { ConfigService } from '@nestjs/config';
 import { User } from '../database/entities/user.entity';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { updateRating } from './rating';
@@ -33,13 +34,24 @@ export class LeaderboardService {
         unit: 'mb',
       },
     );
+  private static readonly rebuildExceeded =
+    LeaderboardService.meter.createCounter(
+      'leaderboard_rebuild_exceeded',
+      {
+        description: 'Total leaderboard rebuilds exceeding duration threshold',
+      },
+    );
+
+  private readonly rebuildMaxMs: number;
 
   constructor(
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
     @InjectRepository(User) private readonly _userRepo: Repository<User>,
     private readonly analytics: AnalyticsService,
+    config: ConfigService,
   ) {
+    this.rebuildMaxMs = config.get<number>('LEADERBOARD_REBUILD_MAX_MS', 30 * 60 * 1000);
     setInterval(
       () => {
         void this.rebuild();
@@ -53,9 +65,13 @@ export class LeaderboardService {
       playerId: string;
       rank: number;
       points: number;
+      rd: number;
+      volatility: number;
       net: number;
       bb100: number;
       hours: number;
+      roi: number;
+      finishes: Record<number, number>;
     }[]
   > {
     const cached = await this.cache.get<
@@ -63,9 +79,13 @@ export class LeaderboardService {
         playerId: string;
         rank: number;
         points: number;
+        rd: number;
+        volatility: number;
         net: number;
         bb100: number;
         hours: number;
+        roi: number;
+        finishes: Record<number, number>;
       }[]
     >(this.cacheKey);
     if (cached) {
@@ -85,28 +105,34 @@ export class LeaderboardService {
     options: {
       days?: number;
       minSessions?: number | ((playerId: string) => number);
-      decay?: number | ((playerId: string) => number);
-      kFactor?: number | ((playerId: string) => number);
     } = {},
   ): Promise<void> {
-    const { days = 30, minSessions, decay, kFactor } = options;
+    const { days = 30, minSessions } = options;
     const since = Date.now() - days * DAY_MS;
     const events = await this.analytics.rangeStream('analytics:game', since);
-    await this.rebuildWithEvents(events, { minSessions, decay, kFactor });
+    await this.rebuildWithEvents(events, { minSessions });
   }
 
   async rebuildFromEvents(
     days: number,
+    maxDurationMs = this.rebuildMaxMs,
   ): Promise<{ durationMs: number; memoryMb: number }> {
     const start = Date.now();
+    const rssBefore = process.memoryUsage().rss;
     const now = start;
     const base = join(process.cwd(), 'storage', 'events');
     const events = this.loadEvents(days, base, now);
     await this.rebuildWithEvents(events);
     const durationMs = Date.now() - start;
-    const memoryMb = process.memoryUsage().rss / 1024 / 1024;
+    const memoryMb = (process.memoryUsage().rss - rssBefore) / 1024 / 1024;
     LeaderboardService.rebuildEventsDuration.record(durationMs);
     LeaderboardService.rebuildEventsMemory.record(memoryMb);
+    if (durationMs > maxDurationMs) {
+      LeaderboardService.rebuildExceeded.add(1);
+      throw new Error(
+        `Rebuild exceeded ${maxDurationMs}ms (took ${durationMs}ms)`,
+      );
+    }
     await this.analytics.ingest('leaderboard_rebuild', {
       duration_ms: durationMs,
       memory_mb: memoryMb,
@@ -144,31 +170,29 @@ export class LeaderboardService {
     events: Iterable<unknown>,
     options: {
       minSessions?: number | ((playerId: string) => number);
-      decay?: number | ((playerId: string) => number);
-      kFactor?: number | ((playerId: string) => number);
     } = {},
   ): Promise<void> {
-    const { minSessions = 10, decay = 0.95, kFactor = 0.5 } = options;
+    const { minSessions = 10 } = options;
     const now = Date.now();
     const scores = new Map<
       string,
       {
         sessions: Set<string>;
         rating: number;
+        rd: number;
+        volatility: number;
         net: number;
         bb: number;
         hands: number;
         duration: number;
+        buyIn: number;
+        finishes: Record<number, number>;
       }
     >();
 
     const minSessionsFn =
       typeof minSessions === 'function' ? minSessions : () => minSessions;
-    const decayFn = typeof decay === 'function' ? decay : () => decay;
-    const kFactorFn = typeof kFactor === 'function' ? kFactor : () => kFactor;
     const minSessionsCache = new Map<string, number>();
-    const decayCache = new Map<string, number>();
-    const kFactorCache = new Map<string, number>();
 
     for (const ev of events) {
       const {
@@ -179,6 +203,8 @@ export class LeaderboardService {
         bb = 0,
         hands = 0,
         duration = 0,
+        buyIn = 0,
+        finish,
         ts = now,
       } = ev as {
         playerId: string;
@@ -188,6 +214,8 @@ export class LeaderboardService {
         bb?: number;
         hands?: number;
         duration?: number;
+        buyIn?: number;
+        finish?: number;
         ts?: number;
       };
       const entry =
@@ -195,31 +223,39 @@ export class LeaderboardService {
         {
           sessions: new Set<string>(),
           rating: 0,
+          rd: 350,
+          volatility: 0.06,
           net: 0,
           bb: 0,
           hands: 0,
           duration: 0,
+          buyIn: 0,
+          finishes: {},
         };
       entry.sessions.add(sessionId);
       const ageDays = (now - ts) / DAY_MS;
-      let playerDecay = decayCache.get(playerId);
-      if (playerDecay === undefined) {
-        playerDecay = decayFn(playerId);
-        decayCache.set(playerId, playerDecay);
+      let playerMin = minSessionsCache.get(playerId);
+      if (playerMin === undefined) {
+        playerMin = minSessionsFn(playerId);
+        minSessionsCache.set(playerId, playerMin);
       }
-      let playerK = kFactorCache.get(playerId);
-      if (playerK === undefined) {
-        playerK = kFactorFn(playerId);
-        kFactorCache.set(playerId, playerK);
-      }
-      entry.rating = updateRating(entry.rating, points, ageDays, {
-        kFactor: playerK,
-        decay: playerDecay,
-      });
+      const result = points > 0 ? 1 : points < 0 ? 0 : 0.5;
+      const updated = updateRating(
+        { rating: entry.rating, rd: entry.rd, volatility: entry.volatility },
+        [{ rating: 0, rd: 350, score: result }],
+        ageDays,
+      );
+      entry.rating = updated.rating;
+      entry.rd = updated.rd;
+      entry.volatility = updated.volatility;
       entry.net += net;
       entry.bb += bb;
       entry.hands += hands;
       entry.duration += duration;
+      entry.buyIn += buyIn;
+      if (typeof finish === 'number') {
+        entry.finishes[finish] = (entry.finishes[finish] ?? 0) + 1;
+      }
       scores.set(playerId, entry);
     }
 
@@ -240,9 +276,13 @@ export class LeaderboardService {
         playerId: id,
         rank: idx + 1,
         points: v.rating,
+        rd: v.rd,
+        volatility: v.volatility,
         net: v.net,
         bb100: v.hands ? (v.bb / v.hands) * 100 : 0,
         hours: v.duration / 3600000,
+        roi: v.buyIn ? v.net / v.buyIn : 0,
+        finishes: v.finishes,
       }))
       .slice(0, 100);
 
@@ -257,9 +297,13 @@ export class LeaderboardService {
       playerId: string;
       rank: number;
       points: number;
+      rd: number;
+      volatility: number;
       net: number;
       bb100: number;
       hours: number;
+      roi: number;
+      finishes: Record<number, number>;
     }[]
   > {
     const cached = await this.cache.get<
@@ -270,8 +314,52 @@ export class LeaderboardService {
         net: number;
         bb100: number;
         hours: number;
+        roi: number;
+        finishes: Record<number, number>;
       }[]
     >(this.dataKey);
-    return cached ?? [];
+    if (cached) {
+      return cached;
+    }
+
+    const rows = await this.analytics.select<{
+        playerId: string;
+        rank: number;
+        points: number;
+        rd: number;
+        volatility: number;
+        net: number;
+        bb100: number;
+        hours: number;
+        roi: number;
+        finishes?: any;
+    }>(
+      'SELECT playerId, rank, points, rd, volatility, net, bb100, hours, roi, finishes FROM leaderboard ORDER BY rank LIMIT 100',
+    );
+    const ids = rows.map((r) => r.playerId);
+    const existing = await this._userRepo.find({
+      where: { id: In(ids), banned: false },
+      select: ['id'],
+    });
+    const allowed = new Set(existing.map((u) => u.id));
+    const top = rows
+      .filter((r) => allowed.has(r.playerId))
+      .map((r, idx) => ({
+        playerId: r.playerId,
+        rank: idx + 1,
+        points: r.points,
+        rd: r.rd,
+        volatility: r.volatility,
+        net: r.net,
+        bb100: r.bb100,
+        hours: r.hours,
+        roi: r.roi,
+        finishes:
+          typeof r.finishes === 'string'
+            ? (JSON.parse(r.finishes) as Record<number, number>)
+            : (r.finishes ?? {}),
+      }));
+    await this.cache.set(this.dataKey, top);
+    return top;
   }
 }

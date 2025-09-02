@@ -1,78 +1,243 @@
----
-"on":
+on:
   workflow_dispatch:
+  workflow_call:
   schedule:
-    - cron: '0 0 * * *'
+  - cron: '0 0 * * *'
 
 name: soak-test
+concurrency:
+  group: "soak-test"
+  cancel-in-progress: true
 
 jobs:
-  soak:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
+  preflight:
+    runs-on: ubuntu-latest
+    env:
+      DR_DRILL_SLA_DAYS: 7
+      DR_FAILOVER_SLA_DAYS: 30
+      DR_RESTORE_SLA_DAYS: 30
+      DR_RUNBOOK_SLA_DAYS: 7
+      DR_THROWAWAY_SLA_DAYS: 7
+      SOAK_SLA_HOURS: 24
+      SPECTATOR_RETENTION_SLA_DAYS: 1
+    steps:
+    - uses: ./.github/actions/ops-preflight
+      with:
+        slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+        spectator-retention-sla-days: ${{ env.SPECTATOR_RETENTION_SLA_DAYS }}
+        soak-metrics-sla-hours: ${{ env.SOAK_SLA_HOURS }}
+        dr-drill-sla-days: ${{ env.DR_DRILL_SLA_DAYS }}
+        dr-failover-sla-days: ${{ env.DR_FAILOVER_SLA_DAYS }}
+        dr-restore-sla-days: ${{ env.DR_RESTORE_SLA_DAYS }}
+        dr-runbook-sla-days: ${{ env.DR_RUNBOOK_SLA_DAYS }}
+        dr-throwaway-sla-days: ${{ env.DR_THROWAWAY_SLA_DAYS }}
+    needs:
+    - check-proof-archive
+  soak-run:
+    needs:
+    - preflight
+    - check-proof-archive
     runs-on: ubuntu-latest
     timeout-minutes: 1440
     env:
       METRICS_URL: http://localhost:3000/metrics
+      SOAK_LATENCY_P95_MS: 120
+      SOAK_THROUGHPUT_MIN: 100
+      SOAK_TRENDS_MAX_PCT: ${{ vars.SOAK_TRENDS_MAX_PCT || 20 }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Install toxiproxy CLI
-        run: |
-          TOXI_VER=v2.5.0
-          TOXI_BASE=https://github.com/Shopify/toxiproxy/releases/download/$TOXI_VER
-          curl -sSL $TOXI_BASE/toxiproxy-cli-linux-amd64 \
-            -o /usr/local/bin/toxiproxy-cli
-          chmod +x /usr/local/bin/toxiproxy-cli
-      - name: Start toxiproxy
-        run: |
-          docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 \
-            ghcr.io/shopify/toxiproxy
-      - name: Configure toxiproxy
-        run: load/toxiproxy-soak.sh
-        env:
-          PROXY_PORT: 3001
-          UPSTREAM: localhost:3000
-      - name: Start GC/heap collector
-        run: |
-          load/collect-gc-heap.sh &
-          echo $! > collector.pid
-        env:
-          GRAFANA_PUSH_URL: ${{ secrets.GRAFANA_PUSH_URL }}
-      - name: Run k6 soak test
-        uses: grafana/k6-action@v0.2.0
-        with:
-          filename: load/k6-ws-soak.js
-          flags: >-
-            --summary-export=soak-summary.json
-            -o experimental-prometheus-rw=${{ secrets.GRAFANA_PROM_URL }}
-      - name: Stop GC/heap collector
-        if: always()
-        run: kill $(cat collector.pid)
-      - name: Stop toxiproxy
-        if: always()
-        run: docker rm -f toxiproxy
-      - name: Upload summary
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: soak-summary
-          path: soak-summary.json
-      - name: Upload GC metrics
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: gc-heap-metrics
-          path: gc-heap-metrics.log
+    - uses: actions/checkout@v4
+    - name: Install toxiproxy CLI
+      run: |
+        TOXI_VER=v2.5.0
+        TOXI_BASE=https://github.com/Shopify/toxiproxy/releases/download/$TOXI_VER
+        curl -sSL $TOXI_BASE/toxiproxy-cli-linux-amd64 \
+          -o /usr/local/bin/toxiproxy-cli
+        chmod +x /usr/local/bin/toxiproxy-cli
+    - name: Start toxiproxy
+      run: |
+        docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 \
+          ghcr.io/shopify/toxiproxy
+    - name: Configure toxiproxy
+      run: load/toxiproxy-soak.sh
+      env:
+        PROXY_PORT: 3001
+        UPSTREAM: localhost:3000
+    - name: Start GC/heap collector
+      run: |
+        load/collect-gc-heap.sh &
+        echo $! > collector.pid
+      env:
+        GRAFANA_PUSH_URL: ${{ secrets.GRAFANA_PUSH_URL }}
+        STATS_FILE: gc-rss-stats.json
+    - name: Run k6 soak test
+      uses: grafana/k6-action@v0.2.0
+      with:
+        filename: load/k6-ws-soak.js
+        flags: >-
+          --summary-export=soak-summary.json
+          -o experimental-prometheus-rw=${{ secrets.GRAFANA_PROM_URL }}
+    - name: Check soak thresholds
+      run: ./load/check-thresholds.sh soak-summary.json
+    - name: Convert soak summary to CSV
+      run: |
+        echo "metric,p95,rate,count,value" > soak-summary.csv
+        jq -r '.metrics | to_entries[] | [
+          .key,
+          (.value["p(95)"] // ""),
+          (.value.rate // ""),
+          (.value.count // ""),
+          (.value.value // "")
+        ] | @csv' soak-summary.json >> soak-summary.csv
+    - uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+    - uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ secrets.GCP_PROJECT }}
+    - name: Write soak metrics to Cloud Monitoring
+      run: |
+        p95=$(jq -r '.metrics.ws_latency["p(95)"] // .metrics.ack_latency["p(95)"] // 0' soak-summary.json)
+        throughput=$(jq -r '.metrics.ws_msgs_sent.rate // 0' soak-summary.json)
+        gcloud monitoring metrics write custom.googleapis.com/soak/latency "${p95}" \
+          --labels build_sha=${{ github.sha }},run_id=${{ github.run_id }}
+        gcloud monitoring metrics write custom.googleapis.com/soak/throughput "${throughput}" \
+          --labels build_sha=${{ github.sha }},run_id=${{ github.run_id }}
+    - name: Prepare soak run summary
+      run: |
+        ts=$(date --iso-8601=seconds)
+        jq -n --arg run_id "${GITHUB_RUN_ID}" --arg ts "$ts" --arg sha "${GITHUB_SHA}" \
+          --argjson p95 "$(jq -r '.metrics.ws_latency[\"p(95)\"] // .metrics.ack_latency[\"p(95)\"] // 0' soak-summary.json)" \
+          --argjson thr "$(jq -r '.metrics.ws_msgs_sent.rate // 0' soak-summary.json)" \
+          '{run_id:$run_id,timestamp:$ts,build_sha:$sha,latency_p95_ms:$p95,throughput:$thr}' \
+          > soak-run.json
+    - name: Load soak metrics to BigQuery
+      run: |
+        bq --project_id=${{ secrets.GCP_PROJECT }} load --source_format=NEWLINE_DELIMITED_JSON \
+          --time_partitioning_field timestamp ops_metrics.soak_runs soak-run.json infra/analytics/soak_runs.schema.json
+    - name: Analyze soak trends
+      run: npx ts-node --compiler-options '{"module":"commonjs"}'
+        scripts/analyze-soak-trends.ts metrics
+      env:
+        SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
+        SOAK_TRENDS_MAX_PCT: ${{ vars.SOAK_TRENDS_MAX_PCT || 20 }}
+    - name: Open soak regression issue
+      if: failure()
+      uses: peter-evans/create-issue-from-file@v4
+      with:
+        title: Soak trends regression detected
+        content-filepath: metrics/baseline.json
+    - name: Sync soak metrics
+      if: always()
+      run: |
+        run_uri="gs://${{ secrets.SOAK_TRENDS_BUCKET }}/soak-${{ github.run_id }}/"
+        gcloud storage rsync -r metrics "$run_uri"
+        latest_uri="gs://${{ secrets.SOAK_TRENDS_BUCKET }}/soak/latest/"
+        gcloud storage cp \
+          soak-summary.json \
+          soak-summary.csv \
+          metrics/baseline.json \
+          metrics/trend-delta.json \
+          metrics/latency-histogram.json \
+          metrics/gc-histogram.json \
+          metrics/heap-histogram.json \
+          "$latest_uri"
+    - name: Check soak metrics
+      id: check-metrics
+      if: always()
+      run: npx ts-node scripts/check-soak-metrics.ts
+    - name: Create soak regression issue
+      if: failure() && steps.check-metrics.outcome == 'failure'
+      uses: peter-evans/create-issue-from-file@v4
+      with:
+        title: "SLA breached: soak metrics"
+        content-filepath: soak-regression.json
+    - name: PagerDuty soak regression alert
+      if: failure() && steps.check-metrics.outcome == 'failure'
+      env:
+        ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+      run: |
+        if jq -e '.regressions[] | select(.level=="critical")' soak-regression.json >/dev/null; then
+          curl -X POST https://events.pagerduty.com/v2/enqueue \
+            -H 'Content-Type: application/json' \
+            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Critical soak regression detected","source":"github-actions","severity":"error"}}'
+        fi
+    - name: Publish soak metrics
+      if: always()
+      run: |
+        p95=$(jq -r '.metrics.ws_latency["p(95)"] // .metrics.ack_latency["p(95)"] // 0' soak-summary.json)
+        p99=$(jq -r '.metrics.ws_latency["p(99)"] // .metrics.ack_latency["p(99)"] // 0' soak-summary.json)
+        err=$(jq -r '.metrics.error_rate.rate * 100' soak-summary.json)
+        {
+          echo "### Soak Test Metrics"
+          echo ""
+          echo "- Latency p95: ${p95} ms"
+          echo "- Latency p99: ${p99} ms"
+          printf '- Error rate: %.2f%%\n' "${err}"
+        } >> "$GITHUB_STEP_SUMMARY"
+    - name: Stop GC/heap collector
+      if: always()
+      run: |
+        pid=$(cat collector.pid)
+        kill $pid || true
+        wait $pid
+    - name: Verify GC/RSS metrics
+      if: always()
+      run: npx ts-node scripts/verify-soak-metrics.ts gc-rss-stats.json
+    - name: Stop toxiproxy
+      if: always()
+      run: docker rm -f toxiproxy
+    - name: Upload summary
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: soak-summary
+        path: |
+          soak-summary.json
+          metrics/baseline.json
+          metrics/trend-delta.json
+    - name: Upload GC metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: gc-heap-metrics
+        path: gc-heap-metrics.log
 
   gateway-soak:
+    needs:
+    - preflight
+    - check-proof-archive
     runs-on: ubuntu-latest
     timeout-minutes: 1440
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Install backend deps
-        working-directory: backend
-        run: npm ci
-      - name: Run GameGateway soak test
-        working-directory: backend
-        run: node --trace-gc -r ts-node/register test/soak/soak24h.ts
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+    - name: Install backend deps
+      working-directory: backend
+      run: npm ci
+    - name: Run GameGateway soak test
+      working-directory: backend
+      run: node --trace-gc -r ts-node/register test/soak/soak24h.ts
+
+  spectator-privacy:
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log
+    needs:
+    - check-proof-archive
+    - soak-run
+    - gateway-soak
+
+  soak:
+    needs: [soak-run, gateway-soak, spectator-privacy]
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    steps:
+    - run: echo "soak checks passed"

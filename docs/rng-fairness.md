@@ -1,10 +1,27 @@
-# RNG Fairness Protocol
+# RNG Fairness Whitepaper
 
-To ensure every deck is provably fair, PokerHub uses a commit–reveal scheme backed by deterministic shuffling.
+**Version:** 1.0.0
+**Last Updated:** 2025-08-30
+
+This whitepaper documents the random number generation approach used by PokerHub
+and the controls that keep card dealing verifiably fair. The RNG is seeded with
+high‑entropy sources, audited by independent firms, and subjected to continuous
+statistical testing.
+
+## Seeding Strategy
+
+- The backend combines `crypto.randomBytes` output with entropy from OS sources
+  such as `/dev/urandom` and hardware RNGs where available.
+- Seeds are rotated for every hand and mixed with a 16‑byte nonce to prevent
+  reuse or prediction.
+- A server master seed is refreshed on startup and periodically reseeded to
+  guard against entropy pool exhaustion.
 
 ## Seed and Nonce Generation
-- Before a hand starts the server draws a 32‑byte `seed` and 16‑byte `nonce` using Node's `crypto.randomBytes`.
-- Both values live only in server memory until reveal and are never sent to clients mid-hand.
+- Before a hand starts the server draws a 32‑byte `seed` and 16‑byte `nonce`
+  using Node's `crypto.randomBytes`.
+- Both values live only in server memory until reveal and are never sent to
+  clients mid-hand.
 
 ## Commit–Reveal
 1. Compute `commitment = sha256(seed || nonce)`.
@@ -57,7 +74,7 @@ curl /hands/<handId>/proof # { seed, nonce, commitment }
 2. Run the verifier with the returned values:
 
 ```sh
-npx ts-node backend/src/game/verify.ts <seed> <nonce> [commitment]
+npx ts-node shared/verify/index.ts <seed> <nonce> [commitment]
 ```
 
 3. Recompute `sha256(seed || nonce)` and confirm it matches the published `commitment`.
@@ -66,10 +83,10 @@ npx ts-node backend/src/game/verify.ts <seed> <nonce> [commitment]
 
 ### CLI verification
 
-A convenience script fetches the hand log, extracts the embedded proof and checks the deck order:
+A convenience script fetches the hand's proof and log to validate the deck order:
 
 ```sh
-npx ts-node scripts/verify-hand.ts <handId> [baseUrl]
+bin/verify-hand <handId> [baseUrl]
 ```
 
 It verifies the commitment and asserts that the recorded deck matches the
@@ -106,3 +123,72 @@ npx ts-node scripts/export-hand-proof.ts <handId>
 ```
 
 The script also prints the same object to stdout for quick inspection.
+
+### Verifying a hand via CLI
+
+You can validate any completed hand directly against the API:
+
+```sh
+bin/verify-proof <handId> [--base <url>]
+```
+
+The command fetches `/hands/{id}/proof` and the associated hand log, recomputes
+the deck from the revealed seed and reports whether it matches the recorded
+order. It exits with code `1` on failure.
+
+## Manual Verification
+
+The proof can also be checked directly from the command line:
+
+```sh
+npx ts-node scripts/verify-proof.ts <seed> <nonce> <commitment>
+```
+
+The script prints `valid` if the commitment matches `sha256(seed || nonce)` and
+`invalid` otherwise.
+
+## Independent Audits
+
+PokerHub engages external security firms annually to review the RNG
+implementation and reproduce the shuffling process. Audit reports are published
+to regulators and summarized for players in transparency reports.
+
+## Statistical Testing
+
+Every release of the RNG library undergoes automated test batteries including:
+
+- Chi‑squared frequency tests
+- Runs and serial correlation tests
+- Dieharder and NIST SP 800‑22 suites
+
+Results are stored alongside build artifacts and reviewed for regressions. Any
+anomalies trigger an engineering investigation before deployment.
+
+
+## Incident Response
+
+If RNG manipulation or bias is suspected:
+
+1. Pause affected tables and snapshot current `seed` and `nonce` values.
+2. Export hand logs and proofs for external verification.
+3. Initiate the [Suspected Fraud](./security/incident-response.md#suspected-fraud) workflow.
+
+## Return to Player (RTP)
+
+*Return to Player* measures the proportion of wagered funds that players win
+back over time. Because PokerHub offers peer‑to‑peer poker, the theoretical RTP
+is close to 100% minus the house rake. The RNG does not manipulate outcomes; it
+simply provides an unpredictable deck so that skill and bankroll management
+determine results.
+
+- **Cash Games** – RTP = `(total returns to players − rake) / total wagers`.
+- **Tournaments** – RTP = `(prize pool / total buy‑ins)` where the prize pool is
+  buy‑ins minus fees. Published structures ensure transparency before play
+  begins.
+
+Operations reviews RTP reports monthly to confirm that effective returns align
+with advertised structures and regulatory expectations.
+
+## Revision History
+- 2025-08-30: initial version with commit–reveal protocol and RTP details
+

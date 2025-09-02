@@ -1,0 +1,27 @@
+{
+  "title": "100k Replay Overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "ACK latency p95",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(ack_latency_bucket[1m])) by (le))",
+          "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "GC pause p95",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(gc_pause_ms_bucket[1m])) by (le))",
+          "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}
+        }
+      ]
+    }
+  ]
+}

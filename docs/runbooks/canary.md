@@ -1,6 +1,14 @@
 # Canary Deployment Runbook
+<!-- Update service IDs in this file if PagerDuty services change -->
 
 Use this runbook to release a canary and watch its SLO health.
+
+## Dashboard
+- Grafana: [Action ACK Latency](../analytics-dashboards.md#action-ack-latency)
+- Grafana: [Error Rate](../analytics-dashboards.md#error-rate)
+
+## PagerDuty Escalation
+- Service: `pokerhub-sre` (ID: PSRE789)
 
 ## Trigger
 

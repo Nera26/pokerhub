@@ -2,6 +2,8 @@ import crypto from 'crypto';
 import fc from 'fast-check';
 import { GameEngine, GameAction } from './engine';
 import { hashCommitment, verifyProof } from './rng';
+import { existsSync, readFileSync, unlinkSync } from 'fs';
+import path from 'path';
 
 const players = ['p1', 'p2'];
 const config = { startingStack: 100, smallBlind: 1, bigBlind: 2 };
@@ -53,23 +55,61 @@ describe('GameEngine hand lifecycle', () => {
     }
     await new Promise((r) => setImmediate(r));
 
-    const state = engine.getState();
+    let state = engine.getState();
     expect(state.phase).toBe('SETTLE');
     expect(engine.getSettlements()).toEqual([
       { playerId: 'A', delta: 2 },
       { playerId: 'B', delta: -2 },
     ]);
 
+    state = engine.applyAction({ type: 'next' });
+    expect(state.phase).toBe('NEXT_HAND');
+    expect(state.pot).toBe(0);
+    expect(state.communityCards).toHaveLength(0);
+    for (const p of state.players) {
+      expect(p.folded).toBe(false);
+      expect(p.bet).toBe(0);
+      expect(p.allIn).toBe(false);
+      expect(p.holeCards).toBeUndefined();
+    }
+
     expect(wallet.reserve).toHaveBeenCalledTimes(2);
-    expect(wallet.rollback).toHaveBeenCalledWith('A', 100, handId, 'USD');
-    expect(wallet.rollback).toHaveBeenCalledWith('B', 98, handId, 'USD');
-    expect(wallet.commit).toHaveBeenCalledWith(handId, 2, 0, 'USD');
+    expect(wallet.rollback).toHaveBeenCalledWith(
+      'A',
+      100,
+      handId,
+      'USD',
+      `${handId}#preflop#0`,
+    );
+    expect(wallet.rollback).toHaveBeenCalledWith(
+      'B',
+      98,
+      handId,
+      'USD',
+      `${handId}#preflop#1`,
+    );
+    expect(wallet.commit).toHaveBeenCalledWith(
+      handId,
+      2,
+      0,
+      'USD',
+      `${handId}#preflop#2`,
+    );
 
     const proof = engine.getHandProof()!;
     expect(verifyProof(proof)).toBe(true);
     expect(proof.commitment).toBe(
       hashCommitment(Buffer.alloc(32, 1), Buffer.alloc(16, 2)),
     );
+
+    const file = path.resolve(
+      process.cwd(),
+      '../storage/proofs',
+      `${handId}.json`,
+    );
+    expect(existsSync(file)).toBe(true);
+    expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual(proof);
+    unlinkSync(file);
 
     spy.mockRestore();
   });

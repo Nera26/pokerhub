@@ -1,6 +1,10 @@
 # RTO and RPO Procedures
+<!-- Update service IDs in this file if PagerDuty services change -->
 
 Document the steps to meet recovery objectives during regional outages.
+
+## Dashboard
+- Grafana: [Disaster Recovery](../analytics-dashboards.md)
 
 ## Objectives
 - **RTO**: 30 minutes to full service restoration.
@@ -28,6 +32,6 @@ Document the steps to meet recovery objectives during regional outages.
 3. Review `drill.metrics` for `RTO_SECONDS` and `RPO_SECONDS`; target **RTO ≤ 1800s** and **RPO ≤ 300s**.
 4. Raise a PagerDuty incident if thresholds are exceeded or scripts fail.
 
-## Escalation
-- PagerDuty: pokerhub-eng
+## PagerDuty Escalation
+- Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->
 - Slack: #ops

@@ -1,0 +1,133 @@
+name: k6-100k-chaos
+concurrency:
+  group: "k6-100k-chaos"
+  cancel-in-progress: true
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
+  chaos:
+    needs: [check-proof-archive]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install k6 and Artillery
+        run: npm install -g k6 artillery
+      - name: Run chaos load
+        run: ./load/run-10k-chaos.sh --sockets 80000 --packet-loss 0.05 --jitter 200
+        env:
+          TABLES: 10000
+          RNG_SEED: ${{ github.run_id }}
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+      - name: Resolve metrics dir
+        run: echo "METRICS_DIR=$(readlink -f load/metrics/latest)" >> $GITHUB_ENV
+      - name: Analyze chaos trends
+        run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/analyze-chaos-trends.ts "$METRICS_DIR"
+        env:
+          CHAOS_TRENDS_BUCKET: ${{ secrets.CHAOS_TRENDS_BUCKET }}
+      - name: Sync metrics to GCS
+        if: always()
+        run: gcloud storage cp --recursive "$METRICS_DIR" "gs://${{ secrets.CHAOS_TRENDS_BUCKET }}/$(basename "$METRICS_DIR")/"
+      - name: Upload k6 summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-summary-${{ github.sha }}
+          path: load/metrics/latest/k6-summary.json
+      - name: Upload k6 metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-metrics-${{ github.sha }}
+          path: load/metrics/latest/k6-metrics.json
+      - name: Upload metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-100k-chaos-${{ github.run_id }}
+          path: load/metrics/latest
+          retention-days: 7
+      - name: Upload baseline
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chaos-baseline-${{ github.run_id }}
+          path: load/metrics/latest/baseline.json
+          retention-days: 7
+      - name: Update chaos summary
+        if: always()
+        run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/update-chaos-summary.ts load/metrics/100k-chaos-sample
+      - name: Commit chaos summary
+        if: always()
+        run: |
+          if git status --porcelain docs/load-testing.md | grep .; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -am "chore(docs): update chaos summary"
+            git push
+          else
+            echo "No chaos summary changes"
+          fi
+      - name: Artifact info
+        if: always()
+        run: echo "Metrics artifact: k6-100k-chaos-${{ github.run_id }}" >> "$GITHUB_STEP_SUMMARY"
+
+  soak-metrics:
+    needs: chaos
+    if: ${{ always() }}
+    uses: ../soak-metrics.yml
+    secrets: inherit
+  replay:
+    needs: chaos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install k6
+        run: npm install -g k6
+      - name: Download chaos metrics
+        uses: actions/download-artifact@v4
+        with:
+          name: k6-100k-chaos-${{ github.run_id }}
+          path: load/metrics/base
+      - name: Run deterministic replay
+        run: ./load/run-100k-chaos.sh --replay load/metrics/base
+      - name: Upload replay metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-100k-replay-${{ github.run_id }}
+          path: load/metrics/base/replay
+          retention-days: 7
+
+  spectator-privacy:
+    needs: replay
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    with:
+      logs: baseline.json
+    secrets: inherit
+
+  spectator-privacy:
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log

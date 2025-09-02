@@ -1,0 +1,81 @@
+name: spectator-retention
+concurrency:
+  group: "spectator-retention"
+  cancel-in-progress: true
+
+on:
+  schedule:
+  - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
+  spectator-retention:
+    runs-on: ubuntu-latest
+    env:
+      SPECTATOR_PRIVACY_BUCKET: ${{ secrets.SPECTATOR_PRIVACY_BUCKET || 
+        vars.SPECTATOR_PRIVACY_BUCKET }}
+      SPECTATOR_PRIVACY_MIN_RETENTION_DAYS: ${{ 
+        secrets.SPECTATOR_PRIVACY_MIN_RETENTION_DAYS || 
+        vars.SPECTATOR_PRIVACY_MIN_RETENTION_DAYS }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+    - run: npm ci --legacy-peer-deps
+    - uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER 
+          || vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ${{ secrets.GCP_SERVICE_ACCOUNT || 
+          vars.GCP_SERVICE_ACCOUNT }}
+    - uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
+    - name: Check spectator bucket retention
+      id: check
+      run: |
+        set +e
+        out=$(npx -y ts-node scripts/check-spectator-retention.ts 2>&1)
+        status=$?
+        echo "$out"
+        echo "$out" >> "$GITHUB_STEP_SUMMARY"
+        printf '%s\n' "$out" > retention.log
+        exit $status
+    - name: Prepare spectator retention alert
+      if: failure()
+      env:
+        SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+      run: |
+        jq -n --arg channel "$SLACK_CHANNEL_ID" --rawfile text retention.log \
+          '{channel: $channel, text: $text}' > spectator-retention-slack.json
+        cp retention.log spectator-retention-alert.md
+    - name: Slack spectator retention alert
+      if: failure()
+      uses: slackapi/slack-github-action@v1
+      with:
+        method: chat.postMessage
+        payload-file-path: spectator-retention-slack.json
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+    - name: Create issue for spectator retention
+      if: failure()
+      uses: peter-evans/create-issue-from-file@v4
+      with:
+        title: "SLA breached: spectator-retention"
+        content-filepath: spectator-retention-alert.md
+
+    needs:
+    - check-proof-archive
+  spectator-privacy:
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log
+    needs:
+    - check-proof-archive

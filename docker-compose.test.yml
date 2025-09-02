@@ -27,7 +27,7 @@ services:
     volumes:
       - ./load:/scripts
     command: >
-      run --summary-export=ack-summary.json k6-game-actions.js
+      ./test/run.sh --summary-export=ack-summary.json k6-game-actions.js
     environment:
       - WS_URL=ws://backend:3000/game
       - SOCKETS=11000

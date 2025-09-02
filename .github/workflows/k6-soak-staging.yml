@@ -1,30 +1,58 @@
 name: k6-soak-staging
+concurrency:
+  group: "k6-soak-staging"
+  cancel-in-progress: true
 
 on:
   schedule:
-    - cron: '0 1 * * *'
+  - cron: '0 1 * * *'
   workflow_dispatch:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   http-soak:
     runs-on: ubuntu-latest
     timeout-minutes: 1440
     steps:
-      - uses: actions/checkout@v4
-      - name: Run HTTP soak test
-        uses: grafana/k6-action@v0.2.0
-        env:
-          BASE_URL: https://staging.pokerhub
-          GRAFANA_PUSH_URL: ${{ secrets.GRAFANA_PUSH_URL }}
-        with:
-          filename: infra/tests/load/k6-soak.js
-          flags: >-
-            --summary-export=soak-summary.json
-            -o experimental-prometheus-rw=${{ secrets.GRAFANA_PROM_URL }}
-      - name: Upload artifacts
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: k6-soak-staging
-          path: soak-summary.json
+    - uses: actions/checkout@v4
+    - name: Run HTTP soak test
+      uses: grafana/k6-action@v0.2.0
+      env:
+        BASE_URL: https://staging.pokerhub
+        GRAFANA_PUSH_URL: ${{ secrets.GRAFANA_PUSH_URL }}
+      with:
+        filename: infra/tests/load/k6-soak.js
+        flags: >-
+          --summary-export=soak-summary.json
+          -o experimental-prometheus-rw=${{ secrets.GRAFANA_PROM_URL }}
+    - name: Upload soak summary
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: soak-summary-${{ github.sha }}
+        path: soak-summary.json
+
+    needs:
+    - check-proof-archive
+  soak-metrics:
+    needs:
+    - http-soak
+    - check-proof-archive
+    if: ${{ always() }}
+    uses: ../soak-metrics.yml
+    secrets: inherit
+
+  spectator-privacy:
+    needs:
+    - http-soak
+    - check-proof-archive
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    with:
+      logs: soak-summary.json
+    secrets: inherit
+
 

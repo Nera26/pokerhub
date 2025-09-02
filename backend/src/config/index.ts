@@ -1,6 +1,6 @@
 export { default as databaseConfig } from './database.config';
 export { default as redisConfig } from './redis.config';
-export { default as s3Config } from './s3.config';
+export { default as gcsConfig } from './gcs.config';
 export { default as loggingConfig } from './logging.config';
 export { default as analyticsConfig } from './analytics.config';
 export { default as telemetryConfig } from './telemetry.config';
@@ -8,3 +8,6 @@ export { default as rabbitmqConfig } from './rabbitmq.config';
 export { default as authConfig } from './auth.config';
 export { default as rateLimitConfig } from './rate-limit.config';
 export { default as kycConfig } from './kyc.config';
+export { default as geoConfig } from './geo.config';
+export { default as gameConfig } from './game.config';
+export { default as tournamentConfig } from './tournament.config';

@@ -1,43 +1,106 @@
 name: backup-restore
+concurrency:
+  group: "backup-restore"
+  cancel-in-progress: true
 
 on:
   schedule:
-    - cron: '0 5 * * *'
+  - cron: '0 5 * * *'
   workflow_dispatch:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
+  preflight:
+    runs-on: ubuntu-latest
+    env:
+      DR_DRILL_SLA_DAYS: 7
+      DR_FAILOVER_SLA_DAYS: 30
+      DR_RESTORE_SLA_DAYS: 30
+      DR_RUNBOOK_SLA_DAYS: 7
+      DR_THROWAWAY_SLA_DAYS: 7
+      SOAK_SLA_HOURS: 24
+      SPECTATOR_RETENTION_SLA_DAYS: 1
+    steps:
+    - uses: ./.github/actions/ops-preflight
+      with:
+        slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+        spectator-retention-sla-days: ${{ env.SPECTATOR_RETENTION_SLA_DAYS }}
+        soak-metrics-sla-hours: ${{ env.SOAK_SLA_HOURS }}
+        dr-drill-sla-days: ${{ env.DR_DRILL_SLA_DAYS }}
+        dr-failover-sla-days: ${{ env.DR_FAILOVER_SLA_DAYS }}
+        dr-restore-sla-days: ${{ env.DR_RESTORE_SLA_DAYS }}
+        dr-runbook-sla-days: ${{ env.DR_RUNBOOK_SLA_DAYS }}
+        dr-throwaway-sla-days: ${{ env.DR_THROWAWAY_SLA_DAYS }}
+    needs:
+    - check-proof-archive
   restore:
+    needs:
+    - preflight
+    - check-proof-archive
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
-      - name: Run backup restore test
-        run: bash infra/disaster-recovery/tests/restore-backup.sh | tee restore.log
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          PG_SNAPSHOT_ID: ${{ vars.PG_SNAPSHOT_ID }}
-          SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
-      - name: Publish metrics
-        run: |
-          source restore-backup.metrics
-          cat <<METRICS | curl --data-binary @- ${{ vars.PUSHGATEWAY_URL }}/metrics/job/backup-restore
-          dr_backup_restore_rto_seconds $RTO_SECONDS
-          dr_backup_restore_rpo_seconds $RPO_SECONDS
-          METRICS
-      - name: Upload logs
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: backup-restore
-          path: |
-            restore.log
-            restore-backup.metrics
-      - name: Notify Slack on failure
-        if: failure()
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          payload: |
-            { "text": "Backup restore test failed for ${GITHUB_REPOSITORY}@${GITHUB_SHA}" }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    - uses: actions/checkout@v4
+    - uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+    - uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+    - name: Run backup restore test
+      run: bash infra/disaster-recovery/tests/restore-backup.sh | tee 
+        restore.log
+      env:
+        PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        PG_BACKUP_ID: ${{ vars.PG_BACKUP_ID }}
+        SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+    - name: Publish metrics
+      run: |
+        source restore-backup.metrics
+        cat <<METRICS | curl --data-binary @- ${{ vars.PUSHGATEWAY_URL }}/metrics/job/backup-restore
+        dr_backup_restore_rto_seconds $RTO_SECONDS
+        dr_backup_restore_rpo_seconds $RPO_SECONDS
+        METRICS
+    - name: Publish metrics to Cloud Monitoring
+      run: |
+        source restore-backup.metrics
+        gcloud monitoring metrics write custom.googleapis.com/dr/rto "$RTO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+        gcloud monitoring metrics write custom.googleapis.com/dr/rpo "$RPO_SECONDS" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+    - name: Upload logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: restore-${{ github.sha }}
+        path: |
+          restore.log
+          restore-backup.metrics
+    - name: Notify Slack on failure
+      if: failure()
+      uses: slackapi/slack-github-action@v1.24.0
+      with:
+        payload: |
+          { "text": "Backup restore test failed for ${GITHUB_REPOSITORY}@${GITHUB_SHA}" }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  soak-metrics:
+    needs:
+    - restore
+    - check-proof-archive
+    if: ${{ always() }}
+    uses: ./.github/workflows/soak-metrics.yml
+    secrets: inherit
+
+  spectator-privacy:
+    needs:
+    - restore
+    - soak-metrics
+    - check-proof-archive
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: restore.log

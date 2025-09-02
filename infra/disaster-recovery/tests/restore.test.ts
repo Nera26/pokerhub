@@ -4,8 +4,9 @@ import { strict as assert } from 'node:assert';
 
 const env = {
   ...process.env,
+  PROJECT_ID: process.env.PROJECT_ID || 'test-project',
   SECONDARY_REGION: process.env.SECONDARY_REGION || 'us-east-2',
-  PG_SNAPSHOT_ID: process.env.PG_SNAPSHOT_ID || 'pg-dr-snapshot'
+  PG_BACKUP_ID: process.env.PG_BACKUP_ID || 'pg-backup-id'
 };
 
 // run the restore script which writes RPO metrics

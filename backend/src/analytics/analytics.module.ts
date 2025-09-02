@@ -4,8 +4,9 @@ import { AnalyticsService } from './analytics.service';
 import { EtlService } from './etl.service';
 import { RedisModule } from '../redis/redis.module';
 import { CollusionService } from './collusion.service';
+import { CollusionQueryService } from './collusion.queries';
 import { ReviewController } from './review.controller';
-import { FlaggedSessionJob } from './flagged-session.job';
+import { CollusionController } from './collusion.controller';
 import { AdminController } from '../routes/admin.controller';
 import { WalletModule } from '../wallet/wallet.module';
 import { AuthModule } from '../auth/auth.module';
@@ -17,14 +18,14 @@ import { StorageModule } from '../storage/storage.module';
     AnalyticsService,
     EtlService,
     CollusionService,
-    FlaggedSessionJob,
+    CollusionQueryService,
   ],
   exports: [
     AnalyticsService,
     EtlService,
     CollusionService,
-    FlaggedSessionJob,
+    CollusionQueryService,
   ],
-  controllers: [ReviewController, AdminController],
+  controllers: [ReviewController, CollusionController, AdminController],
 })
 export class AnalyticsModule {}

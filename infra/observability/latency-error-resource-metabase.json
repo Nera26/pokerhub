@@ -1,0 +1,18 @@
+{
+  "name": "Latency & Error Overview",
+  "cards": [
+    {
+      "name": "HTTP p95 Latency",
+      "query": "SELECT percentile(latency_ms, 95) FROM http_metrics"
+    },
+    {
+      "name": "Request Error Rate",
+      "query": "SELECT sum(errors)/sum(requests) FROM http_metrics"
+    },
+    {
+      "name": "CPU Usage",
+      "query": "SELECT avg(cpu_percent) FROM host_metrics"
+    }
+  ]
+}
+

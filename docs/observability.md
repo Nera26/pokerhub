@@ -34,6 +34,20 @@ The script spawns ~180 actions/min per table and exports the `ack_latency` metri
 - Prometheus UI: <http://localhost:9090>
 - Grafana UI: <http://localhost:3000> (import `load/grafana-ack-latency.json`)
 
+### GC Pause & Heap Growth
+
+Run `load/collect-gc-heap.sh` alongside the soak test to sample
+`process.memoryUsage()` and event‑loop lag.  In Grafana, create panels with the
+following Prometheus queries to visualize these samples:
+
+- p95 GC pause: `histogram_quantile(0.95, rate(nodejs_gc_duration_seconds_bucket[5m]))`
+- Heap used bytes: `nodejs_heap_size_used_bytes`
+
+The soak harness records p50/p95/p99 ACK latency as well as GC pause and RSS
+samples. It exits non‑zero if latency exceeds 60 ms (p50), 120 ms (p95) or
+200 ms (p99), if heap usage grows by more than 1 % or if the p95 GC pause
+exceeds 50 ms.
+
 ### Stake Level Metrics
 
 The nightly analytics job populates ClickHouse tables with stake-level VPIP,
@@ -51,10 +65,10 @@ aggregates and receive alerts when thresholds are crossed.
 
 ### Player Analytics
 
-Import `infrastructure/observability/player-analytics-dashboard.json` into
+Import `infra/observability/player-analytics-dashboard.json` into
 Grafana for DAU/MAU trends, rake curves, and stake-level VPIP/PFR/Pot
 visualizations. Metabase cards for the same metrics live in
-`infrastructure/observability/metabase-dashboard.json`.
+`infra/observability/metabase-dashboard.json`.
 
 ## OpenTelemetry
 Metrics can also be shipped via OTLP:
@@ -62,16 +76,120 @@ Metrics can also be shipped via OTLP:
 k6 run --vus 50 --duration 1m --out otlp --otlp-endpoint http://localhost:4318 load/k6-table-actions.js
 ```
 
+## Backend Telemetry
+
+The backend `LoggingModule` boots OpenTelemetry through an `OtelProvider` that
+configures the NodeSDK with OTLP trace and metric exporters as well as a
+Prometheus scrape endpoint.  Instrumentations for Redis, Postgres and Socket.IO
+are enabled so traces span cache calls, database queries and WebSocket message
+handlers.
+
+Exporter endpoints are driven by environment variables:
+
+```
+OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4318/v1/traces
+OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=http://collector:4318/v1/metrics
+OTEL_EXPORTER_PROMETHEUS_PORT=9464
+```
+
+Shutting down the Nest application triggers the provider to gracefully flush
+and stop the SDK.
+
+### Example Trace Diagrams
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant G as API Gateway
+    participant B as Game Service
+    participant D as Database
+    C->>G: POST /action
+    G->>B: span(action.request)
+    B->>D: span(db.query)
+    D-->>B: rows
+    B-->>G: span(action.response)
+    G-->>C: 200 OK
+```
+
+```mermaid
+graph TD
+    subgraph RoomWorker
+        A[HandleAction] --> B[PersistEvent]
+        B --> C[PublishQueue]
+    end
+    C -->|async| Q[QueueConsumer]
+    Q --> D[UpdateState]
+```
+
 ## Production Dashboards & Alerts
 
 ![SLO Dashboard](images/slo-dashboard.svg)
 
-The Grafana SLO dashboard tracks HTTP API p99 latency, WebSocket p95 latency,
-action ACK p95 latency, wallet transaction throughput, and service availability.
+The Grafana SLO dashboard tracks:
+
+- HTTP API p99 latency – <https://grafana.pokerhub.example/d/http-api-latency> (`pokerhub-sre`)
+- WebSocket p95 latency – <https://grafana.pokerhub.example/d/websocket-latency> (`pokerhub-sre`)
+- Action ACK p95 latency – <https://grafana.pokerhub.example/d/socket-latency> (`pokerhub-sre`)
+- Socket connect success – <https://grafana.pokerhub.example/d/socket-connects> (`pokerhub-sre`)
+- Request error rate – <https://grafana.pokerhub.example/d/error-rates> (`pokerhub-sre`)
+- Queue saturation – <https://grafana.pokerhub.example/d/queue-saturation> (`pokerhub-eng`)
+- Frontend route latency – <https://grafana.pokerhub.example/d/frontend-route-latency> (`pokerhub-eng`)
+- Service availability – <https://grafana.pokerhub.example/d/service-uptime> (`pokerhub-sre`)
+
 Prometheus evaluates these objectives and sends violations to the
 `pokerhub-sre` PagerDuty service.
 
+See [SLOs](SLOs.md) for targets and [error-budget procedures](error-budget-procedures.md) for freeze and rollback thresholds. Import `infra/observability/alerts-overview-grafana.json` for a Grafana summary of active burn rates, or `infra/observability/alerts-overview-metabase.json` for a Metabase view of the same data.
+
+Production deployments expose these views at:
+
+- Grafana SLO overview: <https://grafana.pokerhub.example/d/slo/slo-overview>
+- Metabase Alerts Overview: <https://metabase.pokerhub.example/dashboard/42-alerts>
+- PagerDuty escalation policies:
+  - SRE: <https://pokerhub.pagerduty.com/escalation_policies/PABC123>
+  - Engineering: <https://pokerhub.pagerduty.com/escalation_policies/PDEF456>
+  - Ops: <https://pokerhub.pagerduty.com/escalation_policies/PGHI789>
+
+### Runbooks
+
+Individual metric runbooks provide dashboard links and PagerDuty escalation details. See the [runbook index](runbooks/index.md) for the full list:
+
+- [HTTP API Latency](runbooks/http-api-latency.md) ([Grafana JSON](../infra/observability/http-api-latency-dashboard.json))
+- [WebSocket Latency](runbooks/websocket-latency.md) ([Grafana JSON](../infra/observability/websocket-latency-dashboard.json))
+- [Action ACK Latency](runbooks/action-ack-latency.md) ([Grafana JSON](../infra/observability/socket-latency-dashboard.json))
+- [Wallet Throughput](runbooks/wallet-throughput.md) ([Grafana JSON](../infra/observability/wallet-throughput-dashboard.json))
+- [Socket Connect Success](runbooks/socket-connect-success.md) ([Grafana JSON](../infra/observability/socket-connects-dashboard.json))
+- [Error Rates](runbooks/error-rates.md) ([Grafana JSON](../infra/observability/error-rates-dashboard.json))
+- [Service Uptime](runbooks/service-uptime.md) ([Grafana JSON](../infra/observability/service-uptime-dashboard.json))
+- [Queue Saturation](runbooks/queue-saturation.md) ([Grafana JSON](../infra/observability/queue-lag-dashboard.json))
+- [Telemetry Pipeline](runbooks/telemetry-pipeline.md) ([Grafana JSON](../infra/observability/latency-error-resource-dashboard.json))
+- [Security Incident Response](security/incident-response.md)
+
 ![Alert Routing](images/alert-routing.svg)
+
+## WebSocket Queue Metrics
+
+The game and spectator gateways instrument their outbound queues and rate
+limits with the following metrics:
+
+- `ws_outbound_queue_depth` – observable gauge reporting the current queue
+  depth for each socket.
+- `ws_outbound_queue_max` – observable gauge capturing the maximum depth per
+  socket between scrapes.
+- `ws_outbound_dropped_total` – counter incremented when a message is dropped
+  because the queue limit was hit.
+- `game_action_global_count` – observable gauge tracking the total number of
+  actions processed within the global rate‑limit window.
+
+`ws_outbound_queue_threshold` and `game_action_global_limit` are exported as
+gauges to surface the configured alert cutoffs.  Operations should trigger an
+alert when `ws_outbound_queue_max` remains above
+`ws_outbound_queue_threshold` for more than five minutes or when
+`global_limit_exceeded` exceeds 5 % of `game_action_global_count` over the same
+window.
+
+These metrics surface saturation and dropped messages before they impact game
+play, and drive the alert rules below.
 
 ## Rate Limit Alerts
 
@@ -107,7 +225,7 @@ scrape_configs:
 
 Alertmanager evaluates latency and request error SLOs using fast (1 h) and
 slow (6 h) burn rate windows. These rules live under
-`infrastructure/prometheus/alerts.yml`:
+`infra/prometheus/alerts.yml`:
 
 ```yaml
 groups:

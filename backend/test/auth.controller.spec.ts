@@ -6,25 +6,32 @@ import { AuthService } from '../src/auth/auth.service';
 import { SessionService } from '../src/session/session.service';
 import { LoginResponseSchema } from '@shared/types';
 import { ConfigService } from '@nestjs/config';
+import { MockRedis } from './utils/mock-redis';
+import { AnalyticsService } from '../src/analytics/analytics.service';
+import { GeoIpService } from '../src/auth/geoip.service';
+import { AuthRateLimitMiddleware } from '../src/auth/rate-limit.middleware';
+import * as bcrypt from 'bcrypt';
+import { UserRepository } from '../src/users/user.repository';
+import { EmailService } from '../src/auth/email.service';
 
-class MockRedis {
-  store = new Map<string, any>();
-  incr(key: string) {
-    const val = (this.store.get(key) ?? 0) + 1;
-    this.store.set(key, val);
-    return val;
+class InMemoryUserRepository {
+  private users: any[] = [];
+  create(data: any) {
+    return { id: String(this.users.length + 1), ...data };
   }
-  expire(key: string, _ttl: number) {
-    return 0;
+  async save(user: any) {
+    this.users.push(user);
+    return user;
   }
-  set(key: string, value: string) {
-    this.store.set(key, value);
+  async findOne(opts: any) {
+    const email = opts?.where?.email;
+    return this.users.find((u) => u.email === email) ?? null;
   }
-  get(key: string) {
-    return this.store.get(key) ?? null;
-  }
-  del(key: string) {
-    this.store.delete(key);
+}
+
+class MockEmailService {
+  async sendResetCode() {
+    // noop
   }
 }
 
@@ -36,6 +43,7 @@ class MockConfigService {
       'auth.refreshTtl': 3600,
       'rateLimit.window': 60,
       'rateLimit.max': 5,
+      'geo.allowedCountries': [],
     };
     return map[key] ?? def;
   }
@@ -50,12 +58,24 @@ describe('AuthController', () => {
       providers: [
         AuthService,
         SessionService,
+        GeoIpService,
+        AuthRateLimitMiddleware,
         { provide: 'REDIS_CLIENT', useClass: MockRedis },
         { provide: ConfigService, useClass: MockConfigService },
+        { provide: AnalyticsService, useValue: { emit: jest.fn() } },
+        { provide: UserRepository, useClass: InMemoryUserRepository },
+        { provide: EmailService, useClass: MockEmailService },
       ],
     }).compile();
 
     app = moduleRef.createNestApplication();
+    const rateLimit = app.get(AuthRateLimitMiddleware);
+    app.use(rateLimit.use.bind(rateLimit));
+    const repo = app.get<UserRepository>(UserRepository);
+    const hash = await bcrypt.hash('secret', 10);
+    await repo.save(
+      repo.create({ email: 'user@example.com', password: hash, username: 'user@example.com' }),
+    );
     await app.init();
   });
 

@@ -44,17 +44,26 @@ describe('emitWithAck', () => {
     jest.clearAllMocks();
   });
 
-  it('retries once before resolving on ack', async () => {
-    const promise = sendAction({
-      type: 'bet',
-      tableId: 't',
-      playerId: 'p',
-      amount: 1,
-    });
+  it('retries with exponential backoff before resolving on ack', async () => {
+    const promise = sendAction(
+      {
+        type: 'bet',
+        tableId: 't',
+        playerId: 'p',
+        amount: 1,
+      },
+      2,
+    );
 
     expect(mockSocket.emit).toHaveBeenCalledTimes(1);
     jest.advanceTimersByTime(2000);
     expect(mockSocket.emit).toHaveBeenCalledTimes(2);
+
+    // second retry should wait longer than the first
+    jest.advanceTimersByTime(3999);
+    expect(mockSocket.emit).toHaveBeenCalledTimes(2);
+    jest.advanceTimersByTime(1);
+    expect(mockSocket.emit).toHaveBeenCalledTimes(3);
 
     const actionId = mockSocket.emit.mock.calls[0][1].actionId;
     handlers['action:ack'][0]({ actionId });
@@ -63,14 +72,17 @@ describe('emitWithAck', () => {
   });
 
   it('rejects after retries and clears pending', async () => {
-    const promise = sendAction({
-      type: 'bet',
-      tableId: 't',
-      playerId: 'p',
-      amount: 1,
-    });
+    const promise = sendAction(
+      {
+        type: 'bet',
+        tableId: 't',
+        playerId: 'p',
+        amount: 1,
+      },
+      1,
+    );
 
-    jest.advanceTimersByTime(4000);
+    jest.advanceTimersByTime(6000);
 
     await expect(promise).rejects.toThrow('No ACK received');
     expect(dispatchGlobalError).toHaveBeenCalledWith(

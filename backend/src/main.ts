@@ -3,27 +3,23 @@ import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
-import { setupTelemetry, shutdownTelemetry } from './telemetry/telemetry';
 import { WalletService } from './wallet/wallet.service';
 import { scheduleReconcileJob } from './wallet/reconcile.job';
+import { EventPublisher } from './events/events.service';
+import {
+  setupTelemetry,
+  shutdownTelemetry,
+  telemetryMiddleware,
+} from './telemetry/telemetry';
 
 async function bootstrap() {
-  setupTelemetry();
+  await setupTelemetry();
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
+  app.get(Logger).log('Telemetry initialized');
 
   app.use(cookieParser());
-  app.use((req, res, next) => {
-    const original = res.cookie.bind(res);
-    res.cookie = (name: string, value: any, options: any = {}) =>
-      original(name, value, {
-        sameSite: 'strict',
-        httpOnly: true,
-        secure: true,
-        ...options,
-      });
-    next();
-  });
+  app.use(telemetryMiddleware);
 
   app.use(
     helmet({
@@ -39,7 +35,11 @@ async function bootstrap() {
   );
 
   await app.listen(process.env.PORT ?? 3000);
-  scheduleReconcileJob(app.get(WalletService), app.get(Logger));
+  scheduleReconcileJob(
+    app.get(WalletService),
+    app.get(Logger),
+    app.get(EventPublisher),
+  );
 
   const shutdown = async () => {
     await app.close();

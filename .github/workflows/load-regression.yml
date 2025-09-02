@@ -4,68 +4,239 @@ on:
   workflow_dispatch:
 
 jobs:
-  tables-10k:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
+  preflight:
     runs-on: ubuntu-latest
+    env:
+      DR_DRILL_SLA_DAYS: 7
+      DR_FAILOVER_SLA_DAYS: 30
+      DR_RESTORE_SLA_DAYS: 30
+      DR_THROWAWAY_SLA_DAYS: 7
+      SOAK_SLA_HOURS: 24
     steps:
-      - uses: actions/checkout@v4
-      - name: Run 10k table scenario
-        uses: grafana/k6-action@v0.2.0
-        with:
-          filename: load/k6-10k-tables.js
-          flags: --summary-export=10k-summary.json
-      - name: Check thresholds
-        run: ./load/check-thresholds.sh 10k-summary.json
-      - name: Upload summary
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: tables-10k-summary
-          path: 10k-summary.json
+    - uses: ./.github/actions/ops-preflight
+      with:
+        slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+        soak-metrics-sla-hours: ${{ env.SOAK_SLA_HOURS }}
+        dr-drill-sla-days: ${{ env.DR_DRILL_SLA_DAYS }}
+        dr-failover-sla-days: ${{ env.DR_FAILOVER_SLA_DAYS }}
+        dr-restore-sla-days: ${{ env.DR_RESTORE_SLA_DAYS }}
+        dr-throwaway-sla-days: ${{ env.DR_THROWAWAY_SLA_DAYS }}
+
+    needs:
+    - check-proof-archive
+  tables-10k:
+    needs:
+    - preflight
+    - check-proof-archive
+    runs-on: ubuntu-latest
+    env:
+      PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+      PROOF_ARCHIVE_EXPECTED_DAILY_COUNT: ${{ 
+        vars.PROOF_ARCHIVE_EXPECTED_DAILY_COUNT }}
+      PROOF_ARCHIVE_KMS_KEY: ${{ vars.PROOF_ARCHIVE_KMS_KEY }}
+      PROOF_MANIFEST_KMS_KEY: ${{ vars.PROOF_MANIFEST_KMS_KEY }}
+      PROOF_MANIFEST_KMS_KEYRING: ${{ vars.PROOF_MANIFEST_KMS_KEYRING }}
+      PROOF_MANIFEST_KMS_LOCATION: ${{ vars.PROOF_MANIFEST_KMS_LOCATION }}
+      PROOF_MANIFEST_KMS_VERSION: ${{ vars.PROOF_MANIFEST_KMS_VERSION || 1 }}
+      SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER
+        || vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT || 
+        vars.GCP_SERVICE_ACCOUNT }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Run 10k table scenario
+      uses: grafana/k6-action@v0.2.0
+      with:
+        filename: load/k6-10k-tables.js
+        flags: --summary-export=10k-summary.json
+    - name: Check thresholds
+      run: ./load/check-thresholds.sh 10k-summary.json
+    - uses: ./.github/actions/spectator-privacy-check
+    - uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ${{ env.GCP_SERVICE_ACCOUNT }}
+    - uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ env.GCP_PROJECT_ID }}
+    - run: npx ts-node scripts/check-proof-archive.ts
+    - name: Verify sanitized logs
+      run: |
+        if rg -i "userId|tableSecret|sessionToken|email|ipAddress|authToken" backend-tests.log frontend-tests.log; then
+          echo "PII found in logs" >&2
+          exit 1
+        fi
+    - name: Upload sanitized logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: tables-10k-logs
+        path: |
+          backend-tests.log
+          frontend-tests.log
+    - name: Upload summary
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: tables-10k-summary
+        path: 10k-summary.json
 
   packet-loss:
+    needs:
+    - preflight
+    - check-proof-archive
     runs-on: ubuntu-latest
+    env:
+      PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+      PROOF_ARCHIVE_EXPECTED_DAILY_COUNT: ${{ 
+        vars.PROOF_ARCHIVE_EXPECTED_DAILY_COUNT }}
+      PROOF_ARCHIVE_KMS_KEY: ${{ vars.PROOF_ARCHIVE_KMS_KEY }}
+      PROOF_MANIFEST_KMS_KEY: ${{ vars.PROOF_MANIFEST_KMS_KEY }}
+      PROOF_MANIFEST_KMS_KEYRING: ${{ vars.PROOF_MANIFEST_KMS_KEYRING }}
+      PROOF_MANIFEST_KMS_LOCATION: ${{ vars.PROOF_MANIFEST_KMS_LOCATION }}
+      PROOF_MANIFEST_KMS_VERSION: ${{ vars.PROOF_MANIFEST_KMS_VERSION || 1 }}
+      SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER
+        || vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT || 
+        vars.GCP_SERVICE_ACCOUNT }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Run packet loss scenario
-        uses: grafana/k6-action@v0.2.0
-        with:
-          filename: load/k6-ws-packet-loss.js
-          flags: --summary-export=packet-summary.json
-      - name: Check thresholds
-        run: ./load/check-thresholds.sh packet-summary.json
-      - name: Upload summary
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: packet-loss-summary
-          path: packet-summary.json
+    - uses: actions/checkout@v4
+    - name: Run packet loss scenario
+      uses: grafana/k6-action@v0.2.0
+      with:
+        filename: load/k6-ws-packet-loss.js
+        flags: --summary-export=packet-summary.json
+    - name: Check thresholds
+      run: ./load/check-thresholds.sh packet-summary.json
+    - uses: ./.github/actions/spectator-privacy-check
+    - uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ${{ env.GCP_SERVICE_ACCOUNT }}
+    - uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ env.GCP_PROJECT_ID }}
+    - run: npx ts-node scripts/check-proof-archive.ts
+    - name: Verify sanitized logs
+      run: |
+        if rg -i "userId|tableSecret|sessionToken|email|ipAddress|authToken" backend-tests.log frontend-tests.log; then
+          echo "PII found in logs" >&2
+          exit 1
+        fi
+    - name: Upload sanitized logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: packet-loss-logs
+        path: |
+          backend-tests.log
+          frontend-tests.log
+    - name: Upload summary
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: packet-loss-summary
+        path: packet-summary.json
 
   chaos-regression:
+    needs:
+    - preflight
+    - check-proof-archive
     runs-on: ubuntu-latest
+    env:
+      PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
+      PROOF_ARCHIVE_EXPECTED_DAILY_COUNT: ${{ 
+        vars.PROOF_ARCHIVE_EXPECTED_DAILY_COUNT }}
+      PROOF_ARCHIVE_KMS_KEY: ${{ vars.PROOF_ARCHIVE_KMS_KEY }}
+      PROOF_MANIFEST_KMS_KEY: ${{ vars.PROOF_MANIFEST_KMS_KEY }}
+      PROOF_MANIFEST_KMS_KEYRING: ${{ vars.PROOF_MANIFEST_KMS_KEYRING }}
+      PROOF_MANIFEST_KMS_LOCATION: ${{ vars.PROOF_MANIFEST_KMS_LOCATION }}
+      PROOF_MANIFEST_KMS_VERSION: ${{ vars.PROOF_MANIFEST_KMS_VERSION || 1 }}
+      SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER
+        || vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT || 
+        vars.GCP_SERVICE_ACCOUNT }}
     strategy:
       matrix:
         scenario:
-          - network-latency.yaml
-          - pod-kill.yaml
+        - network-latency.yaml
+        - pod-kill.yaml
     steps:
-      - uses: actions/checkout@v4
-      - name: Create kind cluster
-        uses: helm/kind-action@v1.8.0
-      - name: Apply chaos scenario
-        uses: chaos-mesh/chaos-mesh-action@master
-        env:
-          CFG_FILE: infra/tests/load/chaos/${{ matrix.scenario }}
-          CHAOS_MESH_VERSION: v2.6.0
-      - name: Run k6 chaos scenario
-        uses: grafana/k6-action@v0.2.0
-        with:
-          filename: load/k6-10k-tables.js
-          flags: --summary-export=chaos-${{ matrix.scenario }}.json
-      - name: Check thresholds
-        run: ./load/check-thresholds.sh chaos-${{ matrix.scenario }}.json
-      - name: Upload summary
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: chaos-${{ matrix.scenario }}-summary
-          path: chaos-${{ matrix.scenario }}.json
+    - uses: actions/checkout@v4
+    - name: Create kind cluster
+      uses: helm/kind-action@v1.8.0
+    - name: Apply chaos scenario
+      uses: chaos-mesh/chaos-mesh-action@master
+      env:
+        CFG_FILE: infra/tests/load/chaos/${{ matrix.scenario }}
+        CHAOS_MESH_VERSION: v2.6.0
+    - name: Run k6 chaos scenario
+      uses: grafana/k6-action@v0.2.0
+      with:
+        filename: load/k6-10k-tables.js
+        flags: --summary-export=chaos-${{ matrix.scenario }}.json
+    - name: Check thresholds
+      run: ./load/check-thresholds.sh chaos-${{ matrix.scenario }}.json
+    - uses: ./.github/actions/spectator-privacy-check
+    - uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ${{ env.GCP_SERVICE_ACCOUNT }}
+    - uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ env.GCP_PROJECT_ID }}
+    - run: npx ts-node scripts/check-proof-archive.ts
+    - name: Verify sanitized logs
+      run: |
+        if rg -i "userId|tableSecret|sessionToken|email|ipAddress|authToken" backend-tests.log frontend-tests.log; then
+          echo "PII found in logs" >&2
+          exit 1
+        fi
+    - name: Upload sanitized logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: chaos-${{ matrix.scenario }}-logs
+        path: |
+          backend-tests.log
+          frontend-tests.log
+    - name: Upload summary
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: chaos-${{ matrix.scenario }}-summary
+        path: chaos-${{ matrix.scenario }}.json
+
+  soak-metrics:
+    needs:
+    - tables-10k
+    - packet-loss
+    - chaos-regression
+    - check-proof-archive
+    if: ${{ always() }}
+    uses: ./.github/workflows/soak-metrics.yml
+    secrets: inherit
+
+  spectator-privacy:
+    needs:
+    - tables-10k
+    - packet-loss
+    - chaos-regression
+    - soak-metrics
+    - check-proof-archive
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    with:
+      logs: backend-tests.log frontend-tests.log
+    secrets: inherit
+

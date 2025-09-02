@@ -13,7 +13,7 @@ import { Request, Response, NextFunction } from 'express';
 import {
   databaseConfig,
   redisConfig,
-  s3Config,
+  gcsConfig,
   loggingConfig,
   analyticsConfig,
   telemetryConfig,
@@ -21,17 +21,15 @@ import {
   authConfig,
   rateLimitConfig,
   kycConfig,
+  geoConfig,
+  gameConfig,
+  tournamentConfig,
 } from './config';
 import { validationSchema } from './config/env.validation';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { API_CONTRACT_VERSION } from '@shared/constants';
-
-// User management (new endpoints)
-import { UsersController } from './routes/users.controller';
-import { UsersService } from './users/users.service';
-import { UserRepository } from './users/user.repository';
 
 // Infra / features
 import { MessagingModule } from './messaging/messaging.module';
@@ -44,8 +42,11 @@ import { LoggingModule } from './logging/logging.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { TournamentModule } from './tournament/tournament.module';
 import { WalletModule } from './wallet/wallet.module';
+import { WithdrawalsModule } from './withdrawals/withdrawals.module';
 import { AuthModule } from './auth/auth.module';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
+import { UsersModule } from './users/users.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 class SecurityHeadersMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
@@ -54,18 +55,23 @@ class SecurityHeadersMiddleware implements NestMiddleware {
       'Strict-Transport-Security',
       'max-age=31536000; includeSubDomains',
     );
-    const current = res.getHeader('Set-Cookie');
-    const cookies = Array.isArray(current)
-      ? current
-      : current
-        ? [current as string]
-        : [];
-    res.setHeader(
-      'Set-Cookie',
-      cookies.map((c) =>
-        c.includes('SameSite') ? c : `${c}; SameSite=Strict`,
-      ),
-    );
+
+    const original = res.setHeader.bind(res);
+    res.setHeader = (name: string, value: any) => {
+      if (name.toLowerCase() === 'set-cookie') {
+        const cookies = Array.isArray(value) ? value : [value];
+        value = cookies.map((c: string) => {
+          const lower = c.toLowerCase();
+          let cookie = c;
+          if (!lower.includes('samesite')) cookie += '; SameSite=Strict';
+          if (!lower.includes('httponly')) cookie += '; HttpOnly';
+          if (!lower.includes('secure')) cookie += '; Secure';
+          return cookie;
+        });
+      }
+      original(name, value);
+    };
+
     next();
   }
 }
@@ -75,10 +81,10 @@ class SecurityHeadersMiddleware implements NestMiddleware {
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema,
-      load: [
+  load: [
         databaseConfig,
         redisConfig,
-        s3Config,
+        gcsConfig,
         loggingConfig,
         analyticsConfig,
         telemetryConfig,
@@ -86,6 +92,9 @@ class SecurityHeadersMiddleware implements NestMiddleware {
         authConfig,
         rateLimitConfig,
         kycConfig,
+        geoConfig,
+        gameConfig,
+        tournamentConfig,
       ],
     }),
 
@@ -124,14 +133,15 @@ class SecurityHeadersMiddleware implements NestMiddleware {
     AnalyticsModule,
     TournamentModule,
     WalletModule,
+    WithdrawalsModule,
     AuthModule,
     FeatureFlagsModule,
+    UsersModule,
+    NotificationsModule,
   ],
-  controllers: [AppController, UsersController],
+  controllers: [AppController],
   providers: [
     AppService,
-    UsersService,
-    UserRepository,
     {
       provide: 'API_CONTRACT_VERSION',
       useValue: API_CONTRACT_VERSION,

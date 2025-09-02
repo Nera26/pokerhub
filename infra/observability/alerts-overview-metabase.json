@@ -1,0 +1,30 @@
+{
+  "name": "Alerts Overview",
+  "description": "Metabase cards summarizing active alerts.",
+  "cards": [
+    {
+      "name": "Uptime SLO Violation",
+      "query": "SELECT value FROM ALERTS WHERE alertname='UptimeSLOViolation' AND alertstate='firing'"
+    },
+    {
+      "name": "Action ACK Latency SLO Violation",
+      "query": "SELECT value FROM ALERTS WHERE alertname='ActionAckLatencySLOViolation' AND alertstate='firing'"
+    },
+    {
+      "name": "HTTP API Latency SLO Violation",
+      "query": "SELECT value FROM ALERTS WHERE alertname='HttpApiLatencySLOViolation' AND alertstate='firing'"
+    },
+    {
+      "name": "WebSocket Latency SLO Violation",
+      "query": "SELECT value FROM ALERTS WHERE alertname='WebSocketLatencySLOViolation' AND alertstate='firing'"
+    },
+    {
+      "name": "Fast Error Budget Burn",
+      "query": "SELECT value FROM ALERTS WHERE alertname='ErrorBudgetBurnRateFast' AND alertstate='firing'"
+    },
+    {
+      "name": "Slow Error Budget Burn",
+      "query": "SELECT value FROM ALERTS WHERE alertname='ErrorBudgetBurnRateSlow' AND alertstate='firing'"
+    }
+  ]
+}

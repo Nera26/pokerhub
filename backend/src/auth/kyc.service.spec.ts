@@ -8,14 +8,21 @@ import type { ConfigService } from '@nestjs/config';
 describe('KycService', () => {
   it('blocks users from restricted countries', async () => {
     const provider: CountryProvider = {
-      getCountry: () => Promise.resolve('IR'),
+      getCountry: () => Promise.resolve('US'),
+    };
+    const config: Partial<ConfigService> = {
+      get: (key: string) =>
+        key === 'kyc.blockedCountries' ? ['US'] : undefined,
     };
     const service = new KycService(
       provider,
       {} as unknown as Repository<KycVerification>,
       {} as unknown as Repository<Account>,
+      config as ConfigService,
     );
-    await expect(service.runChecks('good', '1.1.1.1')).rejects.toThrow(
+    await expect(
+      service.runChecks('good', '1.1.1.1', '1990-01-01'),
+    ).rejects.toThrow(
       'Blocked jurisdiction',
     );
   });
@@ -24,14 +31,59 @@ describe('KycService', () => {
     const provider: CountryProvider = {
       getCountry: () => Promise.resolve('GB'),
     };
+    const config: Partial<ConfigService> = {
+      get: (key: string) =>
+        key === 'kyc.blockedCountries' ? [] : undefined,
+    };
     const service = new KycService(
       provider,
       {} as unknown as Repository<KycVerification>,
       {} as unknown as Repository<Account>,
+      config as ConfigService,
     );
-    await expect(service.runChecks('Bad Actor', '1.1.1.1')).rejects.toThrow(
+    await expect(
+      service.runChecks('Bad Actor', '1.1.1.1', '1990-01-01'),
+    ).rejects.toThrow(
       'Sanctioned individual',
     );
+  });
+
+  it('blocks underage users', async () => {
+    const provider: CountryProvider = {
+      getCountry: () => Promise.resolve('GB'),
+    };
+    const config: Partial<ConfigService> = {
+      get: (key: string) =>
+        key === 'kyc.blockedCountries' ? [] : undefined,
+    };
+    const service = new KycService(
+      provider,
+      {} as unknown as Repository<KycVerification>,
+      {} as unknown as Repository<Account>,
+      config as ConfigService,
+    );
+    await expect(
+      service.runChecks('Young User', '1.1.1.1', '2010-01-01'),
+    ).rejects.toThrow('Underage');
+  });
+
+  it('blocks politically exposed persons', async () => {
+    const provider: CountryProvider = {
+      getCountry: () => Promise.resolve('GB'),
+    };
+    const config: Partial<ConfigService> = {
+      get: (key: string) =>
+        key === 'kyc.blockedCountries' ? [] : undefined,
+    };
+    const service = new KycService(
+      provider,
+      {} as unknown as Repository<KycVerification>,
+      {} as unknown as Repository<Account>,
+      config as ConfigService,
+    );
+    await expect(
+      service.runChecks('Famous Politician', '1.1.1.1', '1990-01-01'),
+    ).rejects.toThrow('Politically exposed person');
   });
 
   it('marks verification failed when provider denies', async () => {
@@ -71,6 +123,7 @@ describe('KycService', () => {
       verificationId: 'v1',
       accountId: 'a1',
       name: 'user',
+      birthdate: '1990-01-01',
       ip: '1.1.1.1',
     });
     expect(verifications.save).toHaveBeenCalledWith(
@@ -114,6 +167,7 @@ describe('KycService', () => {
         verificationId: 'v1',
         accountId: 'a1',
         name: 'user',
+        birthdate: '1990-01-01',
         ip: '1.1.1.1',
       }),
     ).rejects.toThrow(
@@ -167,6 +221,7 @@ describe('KycService', () => {
           verificationId: 'v1',
           accountId: 'a1',
           name: 'user',
+          birthdate: '1990-01-01',
           ip: '1.1.1.1',
         }),
       ).rejects.toThrow(
@@ -179,6 +234,7 @@ describe('KycService', () => {
         verificationId: 'v1',
         accountId: 'a1',
         name: 'user',
+        birthdate: '1990-01-01',
         ip: '1.1.1.1',
       }),
     ).rejects.toThrow('KYC provider circuit breaker open');

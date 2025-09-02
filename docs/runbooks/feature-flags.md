@@ -1,6 +1,13 @@
 # Feature Flags Runbook
+<!-- Update service IDs in this file if PagerDuty services change -->
 
 This runbook covers operational procedures for managing feature flags in PokerHub.
+
+## Dashboard
+- Metabase: [Feature Flags](../analytics-dashboards.md)
+
+## PagerDuty Escalation
+- Service: `pokerhub-eng` (ID: PENG012) <!-- Update ID if PagerDuty service changes -->
 
 ## Listing Flags
 
@@ -26,6 +33,23 @@ curl -X PUT https://api.pokerhub.local/feature-flags/settlement \
 
 ```bash
 curl -X DELETE https://api.pokerhub.local/feature-flags/dealing
+```
+
+### Scoped Flags
+
+```bash
+# disable dealing on a specific table
+curl -X PUT https://api.pokerhub.local/feature-flags/room/TABLE_ID/dealing \
+  -H 'Content-Type: application/json' \
+  -d '{"value": false}'
+
+# disable settlement for a specific tournament
+curl -X PUT https://api.pokerhub.local/feature-flags/tourney/TOURNEY_ID/settlement \
+  -H 'Content-Type: application/json' \
+  -d '{"value": false}'
+
+# remove a room flag
+curl -X DELETE https://api.pokerhub.local/feature-flags/room/TABLE_ID/dealing
 ```
 
 ## Frontend Cache

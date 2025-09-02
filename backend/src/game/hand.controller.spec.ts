@@ -67,5 +67,107 @@ describe('HandController', () => {
 
     if (existsSync(file)) unlinkSync(file);
   });
+
+  it('reconstructs state at index', async () => {
+    const state = {
+      phase: 'DEAL',
+      street: 'preflop',
+      pot: 0,
+      sidePots: [],
+      currentBet: 0,
+      players: [
+        {
+          id: 'u1',
+          stack: 1000,
+          folded: false,
+          bet: 0,
+          allIn: false,
+          holeCards: [1, 2],
+        },
+        {
+          id: 'u2',
+          stack: 1000,
+          folded: false,
+          bet: 0,
+          allIn: false,
+          holeCards: [3, 4],
+        },
+      ],
+      deck: [],
+      communityCards: [],
+    } as any;
+    const file = join(process.cwd(), '../storage/hand-logs', 'hand-state.jsonl');
+    const entry = [0, { type: 'start' }, state, state];
+    writeFileSync(file, `${JSON.stringify(entry)}\n`);
+
+    await request(app.getHttpServer())
+      .get('/hands/hand-state/state/0')
+      .set('Authorization', auth('u1'))
+      .expect(200)
+      .expect({
+        version: '1',
+        tick: 1,
+        phase: 'DEAL',
+        street: 'preflop',
+        pot: 0,
+        sidePots: [],
+        currentBet: 0,
+        players: [
+          {
+            id: 'u1',
+            stack: 1000,
+            folded: false,
+            bet: 0,
+            allIn: false,
+            holeCards: [1, 2],
+          },
+          {
+            id: 'u2',
+            stack: 1000,
+            folded: false,
+            bet: 0,
+            allIn: false,
+          },
+        ],
+        communityCards: [],
+      });
+
+    if (existsSync(file)) unlinkSync(file);
+  });
+
+  it('returns 404 for missing state', async () => {
+    const state = {
+      phase: 'DEAL',
+      street: 'preflop',
+      pot: 0,
+      sidePots: [],
+      currentBet: 0,
+      players: [
+        {
+          id: 'u1',
+          stack: 1000,
+          folded: false,
+          bet: 0,
+          allIn: false,
+        },
+      ],
+      deck: [],
+      communityCards: [],
+    } as any;
+    const file = join(
+      process.cwd(),
+      '../storage/hand-logs',
+      'hand-state-missing.jsonl',
+    );
+    const entry = [0, { type: 'start' }, state, state];
+    writeFileSync(file, `${JSON.stringify(entry)}\n`);
+
+    await request(app.getHttpServer())
+      .get('/hands/hand-state-missing/state/5')
+      .set('Authorization', auth('u1'))
+      .expect(404);
+
+    if (existsSync(file)) unlinkSync(file);
+  });
 });
 

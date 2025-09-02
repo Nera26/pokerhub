@@ -1,13 +1,55 @@
 # Milestone Plan
 
-This roadmap outlines eight major steps for PokerHub's development.
+**Version:** 1.1.0
+**Last Updated:** 2025-10-05
 
-1. **Hand Engine v1** – implement the initial version of the engine that deals cards, evaluates hands, and resolves pots.
-2. **Socket Reliability** – harden WebSocket connections with reconnection logic, heartbeats, and message ordering.
-3. **RNG Commit–Reveal** – ensure fair randomness with a cryptographic commit–reveal scheme for shuffles.
-4. **Wallet & Rake** – integrate on-chain/off-chain wallets, handle deposits/withdrawals, and apply rake policies.
-5. **Tournament Core** – build tournament structures, table balancing, and progression logic.
-6. **Leaderboards** – surface player rankings across cash games and tournaments.
-7. **Observability** – add metrics, tracing, and alerting to monitor system health.
-8. **Scale & Chaos** – stress test the platform and introduce chaos engineering to validate resilience.
+This roadmap links major features to their performance and compliance objectives.
 
+| # | Feature | Release Date | Owner | SLO Target | Compliance Goal |
+|---|---------|--------------|-------|------------|----------------|
+| 1 | Hand Engine v1 | 2025-09-15 | Game Engine Team | 99% action ACKs < 250 ms | Fair dealing via RNG proofs |
+| 2 | Socket Reliability | 2025-10-01 | Infrastructure | 99% successful connects | Availability reporting for regulators |
+| 3 | RNG Commit–Reveal | 2025-10-15 | Provably Fair Team | 99.95% service uptime | Auditable shuffle integrity |
+| 4 | Wallet & Rake | 2025-11-01 | Payments Team | 99.95% service uptime | KYC/AML adherence |
+| 5 | Tournament Core | 2025-11-15 | Tournament Team | 99% action ACKs < 250 ms | Transparent payout structures |
+| 6 | Leaderboards | 2025-12-01 | Growth Team | 99.95% service uptime | GDPR data export readiness |
+| 7 | Observability | 2025-12-15 | SRE Team | 99.95% service uptime | SOC 2 monitoring controls |
+| 8 | Scale & Chaos | 2026-01-15 | SRE Team | 99.95% service uptime | Resilience evidence for licensing |
+
+## Timeline
+```mermaid
+gantt
+  dateFormat  YYYY-MM-DD
+  title  PokerHub Milestones
+  section Features
+  Hand_Engine_v1      :2025-09-15, 1d
+  Socket_Reliability  :2025-10-01, 1d
+  RNG_Commit-Reveal   :2025-10-15, 1d
+  Wallet_&_Rake       :2025-11-01, 1d
+  Tournament_Core     :2025-11-15, 1d
+  Leaderboards        :2025-12-01, 1d
+  Observability       :2025-12-15, 1d
+  Scale_&_Chaos       :2026-01-15, 1d
+```
+
+## Implementation Links
+- **Milestone 1:** [`backend/src/game`](../backend/src/game)
+- **Milestone 2:** [`backend/src/game/game.gateway.ts`](../backend/src/game/game.gateway.ts) and [`load/k6-ws-packet-loss.js`](../load/k6-ws-packet-loss.js)
+- **Milestone 3:** [`backend/src/game/rng.ts`](../backend/src/game/rng.ts)
+- **Milestone 4:** [`backend/src/wallet`](../backend/src/wallet)
+- **Milestone 5:** [`backend/src/tournament`](../backend/src/tournament)
+- **Milestone 6:** [`backend/src/leaderboard`](../backend/src/leaderboard)
+- **Milestone 7:** [`infra/monitoring`](../infra/monitoring)
+- **Milestone 8:** [`load`](../load) and [`docs/runbooks/disaster-recovery.md`](./runbooks/disaster-recovery.md)
+
+## Linked Documents
+- [Game Engine Specification](./game-engine-spec.md) – state machine reference for Milestone 1.
+- [RNG & RTP Fairness](./rng-fairness.md) – commit–reveal and RTP policies for Milestone 3.
+- [Tournament Handbook](./handbook/tournament-handbook.md) – formats, payouts, and examples for Milestone 5.
+- [Reconciliation Guide](./handbook/reconciliation-guide.md) – ledger checks and dispute workflow for Milestone 4.
+
+## Revision History
+- 2025-10-05: add timeline diagram and bump version
+- 4c23e7c: initial roadmap
+- 2025-01-04: link milestones to SLO and compliance goals
+- 2025-08-30: add release dates, owners, and version metadata

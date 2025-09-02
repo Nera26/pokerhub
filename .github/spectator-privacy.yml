@@ -1,0 +1,118 @@
+name: spectator-privacy
+
+on:
+  workflow_call:
+    inputs:
+      logs:
+        description: Space-separated list of log files to process
+        required: true
+        type: string
+    secrets:
+      GCP_WORKLOAD_IDENTITY_PROVIDER:
+        required: true
+      GCP_SERVICE_ACCOUNT:
+        required: true
+      GCP_PROJECT_ID:
+        required: true
+      SPECTATOR_LOGS_BUCKET:
+        required: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  spectator-privacy:
+    runs-on: ubuntu-latest
+    env:
+      SPECTATOR_LOGS_BUCKET: ${{ secrets.SPECTATOR_LOGS_BUCKET }}
+      LOGS: ${{ inputs.logs }}
+      PROD_LOG_SCAN: ${{ env.PROD_LOG_SCAN || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER || vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT || vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
+      - name: Download log artifacts
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for log in $LOGS; do
+            base="${log%.*}"
+            gh run download $GITHUB_RUN_ID --name "$base-${GITHUB_SHA}" --dir . || true
+          done
+      - uses: ./.github/actions/spectator-privacy-check
+      - name: Resolve log files
+        run: |
+          EXISTING=""
+          for log in $LOGS; do
+            if [ -f "$log" ]; then
+              EXISTING="$EXISTING $log"
+            fi
+          done
+          echo "LOGS=$EXISTING" >> $GITHUB_ENV
+      - name: Fetch prod spectator logs
+        if: env.PROD_LOG_SCAN == 'true'
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
+        run: |
+          FILES=$(npx ts-node scripts/fetch-prod-logs.ts)
+          echo "LOGS=$LOGS $FILES" >> $GITHUB_ENV
+      - name: Sanitize logs
+        if: always()
+        run: npx ts-node scripts/sanitize-spectator-logs.ts $LOGS
+      - name: DLP scan logs
+        if: always()
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }}
+        run: npx ts-node scripts/dlp-scan.ts $LOGS
+      - name: Write run success metric
+        if: always()
+        run: |
+          gcloud monitoring metrics write \
+            custom.googleapis.com/spectator_privacy/run_success 1 \
+            --project=${{ secrets.GCP_PROJECT_ID || vars.GCP_PROJECT_ID }} \
+            --labels=run_id=${{ github.run_id }},commit_sha=${{ github.sha }}
+      - name: Verify sanitized logs
+        if: always()
+        run: |
+          if [ -n "$LOGS" ] && rg -i "userId|tableSecret|sessionToken|email|ipAddress|authToken" $LOGS; then
+            echo "PII found in logs" >&2
+            exit 1
+          fi
+      - name: Slack spectator privacy alert
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          slack-message: Spectator privacy scan failed for run ${{ github.run_id }}
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: Create issue for spectator privacy failure
+        if: failure()
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: Spectator privacy failure
+          content-filepath: dlp-scan.json
+      - name: Copy logs to spectator bucket
+        if: always()
+        run: |
+          gsutil cp $LOGS dlp-scan.json gs://$SPECTATOR_LOGS_BUCKET/${{ github.run_id }}/
+      - name: Gather logs
+        if: always()
+        run: |
+          mkdir -p spectator-privacy
+          if [ -n "$LOGS" ]; then cp $LOGS spectator-privacy/; fi
+          cp dlp-scan.json spectator-privacy/
+      - name: Upload logs as artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spectator-privacy-logs
+          path: spectator-privacy
+          retention-days: 14

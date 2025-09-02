@@ -3,7 +3,7 @@ import pathlib
 import yaml
 
 root = pathlib.Path(__file__).resolve().parents[2]
-kong_path = root / "infrastructure" / "api-gateway" / "kong.yml"
+kong_path = root / "infra" / "api-gateway" / "kong.yml"
 with kong_path.open() as f:
     data = yaml.safe_load(f)
 

@@ -18,15 +18,23 @@ describe('TournamentService algorithms', () => {
   let seatsRepo: any;
   let tablesRepo: any;
   let rooms: any;
+  let flags: any;
+  let events: any;
+  let wallet: any;
+  let balance: number;
 
   function createRepo<T extends { id: string }>(initial: T[] = []) {
     const items = new Map(initial.map((i) => [i.id, i]));
     return {
+      create: jest.fn((obj: T) => obj),
       find: jest.fn(async () => Array.from(items.values())),
       findOne: jest.fn(async ({ where: { id } }) => items.get(id)),
       save: jest.fn(async (obj: T) => {
         items.set(obj.id, obj);
         return obj;
+      }),
+      remove: jest.fn(async (obj: T) => {
+        items.delete(obj.id);
       }),
     };
   }
@@ -41,7 +49,7 @@ describe('TournamentService algorithms', () => {
       {
         id: 't1',
         title: 'Daily Free Roll',
-        buyIn: 0,
+        buyIn: 100,
         prizePool: 1000,
         maxPlayers: 100,
         state: TournamentState.REG_OPEN,
@@ -51,6 +59,17 @@ describe('TournamentService algorithms', () => {
     seatsRepo = createRepo<Seat>();
     tablesRepo = { find: jest.fn() };
     rooms = { get: jest.fn() };
+    flags = { get: jest.fn(), getTourney: jest.fn() };
+    events = { emit: jest.fn() };
+    balance = 1000;
+    wallet = {
+      reserve: jest.fn(async (_id: string, amount: number) => {
+        balance -= amount;
+      }),
+      rollback: jest.fn(async (_id: string, amount: number) => {
+        balance += amount;
+      }),
+    };
     service = new TournamentService(
       tournamentsRepo as Repository<Tournament>,
       seatsRepo as Repository<Seat>,
@@ -59,7 +78,39 @@ describe('TournamentService algorithms', () => {
       rooms,
       new RebuyService(),
       new PkoService(),
+      flags,
+      events,
+      undefined,
+      wallet,
     );
+  });
+
+  describe('registration flow', () => {
+    it('registers and withdraws a player', async () => {
+      tablesRepo.find.mockResolvedValue([
+        { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
+      ]);
+      const seat = await service.register('t1', 'u1');
+      expect(wallet.reserve).toHaveBeenCalledWith('u1', 100, 't1', 'USD');
+      expect(events.emit).toHaveBeenCalledWith('wallet.reserve', {
+        accountId: 'u1',
+        amount: 100,
+        refId: 't1',
+        currency: 'USD',
+      });
+      expect(balance).toBe(900);
+      (seatsRepo.findOne as any).mockResolvedValue(seat);
+      await service.withdraw('t1', 'u1');
+      expect(wallet.rollback).toHaveBeenCalledWith('u1', 100, 't1', 'USD');
+      expect(events.emit).toHaveBeenCalledWith('wallet.rollback', {
+        accountId: 'u1',
+        amount: 100,
+        refId: 't1',
+        currency: 'USD',
+      });
+      expect(balance).toBe(1000);
+      expect(seatsRepo.remove).toHaveBeenCalledWith(seat);
+    });
   });
 
   describe('balanceTables', () => {
@@ -116,6 +167,22 @@ describe('TournamentService algorithms', () => {
       expect(await service.getState('t1')).toBe(TournamentState.PAUSED);
       await service.finish('t1');
       expect(await service.getState('t1')).toBe(TournamentState.FINISHED);
+    });
+
+    it('cancels from open state and emits event', async () => {
+      await service.cancel('t1');
+      expect(await service.getState('t1')).toBe(TournamentState.CANCELLED);
+      expect(events.emit).toHaveBeenCalledWith('tournament.cancel', {
+        tournamentId: 't1',
+      });
+    });
+
+    it('rejects cancel after finish', async () => {
+      await service.start('t1');
+      await service.finish('t1');
+      await expect(service.cancel('t1')).rejects.toThrow(
+        'Invalid transition from FINISHED to CANCELLED',
+      );
     });
   });
 

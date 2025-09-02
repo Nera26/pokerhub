@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import type Redis from 'ioredis';
 import { Repository } from 'typeorm';
 import {
   Tournament,
@@ -20,14 +21,17 @@ import {
   CalculatePrizeOptions,
 } from './pko.service';
 import { FeatureFlagsService } from '../feature-flags/feature-flags.service';
+import { EventPublisher } from '../events/events.service';
+import { WalletService } from '../wallet/wallet.service';
 
 @Injectable()
-export class TournamentService {
+export class TournamentService implements OnModuleInit {
   private currentLevels = new Map<string, number>();
   private patchedLevels = new Map<
     string,
     Map<number, { smallBlind: number; bigBlind: number }>
   >();
+  private bubbleAnnounced = new Set<string>();
   constructor(
     @InjectRepository(Tournament)
     private readonly tournaments: Repository<Tournament>,
@@ -40,10 +44,64 @@ export class TournamentService {
     private readonly rebuys: RebuyService,
     private readonly pko: PkoService,
     private readonly flags: FeatureFlagsService,
+    private readonly events: EventPublisher,
+    @Optional() @Inject('REDIS_CLIENT') private readonly redis?: Redis,
+    @Optional() private readonly wallet?: WalletService,
   ) {}
+
+  async onModuleInit(): Promise<void> {
+    if (!this.redis) return;
+    const levelKeys = await this.redis.keys('tournament:*:currentLevel');
+    if (levelKeys.length) {
+      const values = await this.redis.mget(levelKeys);
+      for (let i = 0; i < levelKeys.length; i++) {
+        const key = levelKeys[i];
+        const value = values[i];
+        if (value !== null) {
+          const tournamentId = key.split(':')[1];
+          this.currentLevels.set(tournamentId, Number(value));
+        }
+      }
+    }
+    const patchKeys = await this.redis.keys('tournament:*:patchedLevels');
+    for (const key of patchKeys) {
+      const value = await this.redis.get(key);
+      if (!value) continue;
+      const tournamentId = key.split(':')[1];
+      const parsed = JSON.parse(value) as Record<string, {
+        smallBlind: number;
+        bigBlind: number;
+      }>;
+      const levelMap = new Map<number, { smallBlind: number; bigBlind: number }>();
+      for (const [lvl, blinds] of Object.entries(parsed)) {
+        levelMap.set(Number(lvl), blinds);
+      }
+      this.patchedLevels.set(tournamentId, levelMap);
+    }
+  }
 
   async list(): Promise<Tournament[]> {
     return this.tournaments.find();
+  }
+
+  async get(id: string) {
+    const t = await this.getEntity(id);
+    const playerCount = await this.seats.count({
+      where: { table: { tournament: { id } } } as any,
+    });
+    return {
+      id: t.id,
+      title: t.title,
+      buyIn: t.buyIn,
+      prizePool: t.prizePool,
+      state: t.state,
+      players: { current: playerCount, max: t.maxPlayers },
+      registered: false,
+      registration: {
+        open: t.registrationOpen ?? null,
+        close: t.registrationClose ?? null,
+      },
+    };
   }
 
   async getState(id: string): Promise<TournamentState | undefined> {
@@ -79,7 +137,7 @@ export class TournamentService {
   }
 
   async start(id: string): Promise<void> {
-    const t = await this.get(id);
+    const t = await this.getEntity(id);
     if (t.state !== TournamentState.REG_OPEN) {
       throw new Error(`Invalid transition from ${t.state} to RUNNING`);
     }
@@ -88,7 +146,7 @@ export class TournamentService {
   }
 
   async pause(id: string): Promise<void> {
-    const t = await this.get(id);
+    const t = await this.getEntity(id);
     if (t.state !== TournamentState.RUNNING) {
       throw new Error(`Invalid transition from ${t.state} to PAUSED`);
     }
@@ -97,7 +155,7 @@ export class TournamentService {
   }
 
   async resume(id: string): Promise<void> {
-    const t = await this.get(id);
+    const t = await this.getEntity(id);
     if (t.state !== TournamentState.PAUSED) {
       throw new Error(`Invalid transition from ${t.state} to RUNNING`);
     }
@@ -106,7 +164,7 @@ export class TournamentService {
   }
 
   async finish(id: string): Promise<void> {
-    const t = await this.get(id);
+    const t = await this.getEntity(id);
     if (
       t.state !== TournamentState.RUNNING &&
       t.state !== TournamentState.PAUSED
@@ -115,6 +173,35 @@ export class TournamentService {
     }
     t.state = TournamentState.FINISHED;
     await this.tournaments.save(t);
+  }
+
+  async cancel(id: string): Promise<void> {
+    const t = await this.getEntity(id);
+    if (
+      t.state !== TournamentState.REG_OPEN &&
+      t.state !== TournamentState.RUNNING &&
+      t.state !== TournamentState.PAUSED
+    ) {
+      throw new Error(`Invalid transition from ${t.state} to CANCELLED`);
+    }
+    t.state = TournamentState.CANCELLED;
+    await this.tournaments.save(t);
+    if (this.wallet) {
+      const seats = await this.seats.find({
+        where: { table: { tournament: { id } } } as any,
+        relations: ['user'],
+      });
+      for (const seat of seats) {
+        await this.wallet.rollback(seat.user.id, t.buyIn, id, 'USD');
+        await this.events.emit('wallet.rollback', {
+          accountId: seat.user.id,
+          amount: t.buyIn,
+          refId: id,
+          currency: 'USD',
+        });
+      }
+    }
+    await this.events.emit('tournament.cancel', { tournamentId: id });
   }
 
   async canRebuy(stack: number, threshold: number): Promise<boolean> {
@@ -128,21 +215,25 @@ export class TournamentService {
     return this.rebuys.apply(stack, chips, cost);
   }
 
-  async settleBounty(currentBounty: number) {
-    if ((await this.flags.get('settlement')) === false) {
+  async settleBounty(currentBounty: number, tournamentId?: string) {
+    if (
+      (await this.flags.get('settlement')) === false ||
+      (tournamentId &&
+        (await this.flags.getTourney(tournamentId, 'settlement')) === false)
+    ) {
       return { playerAward: 0, newBounty: currentBounty };
     }
     return this.pko.settleBounty(currentBounty);
   }
 
-  private async get(id: string): Promise<Tournament> {
+  private async getEntity(id: string): Promise<Tournament> {
     const t = await this.tournaments.findOne({ where: { id } });
     if (!t) throw new Error(`Tournament ${id} not found`);
     return t;
   }
 
   private async setState(id: string, state: TournamentState): Promise<void> {
-    const t = await this.get(id);
+    const t = await this.getEntity(id);
     t.state = state;
     await this.tournaments.save(t);
   }
@@ -183,6 +274,10 @@ export class TournamentService {
    */
   async handleLevelUp(tournamentId: string, level: number): Promise<void> {
     this.currentLevels.set(tournamentId, level);
+    await this.redis?.set(
+      `tournament:${tournamentId}:currentLevel`,
+      level.toString(),
+    );
   }
 
   getCurrentLevel(tournamentId: string): number {
@@ -205,6 +300,17 @@ export class TournamentService {
       this.patchedLevels.set(tournamentId, levels);
     }
     levels.set(level, { smallBlind, bigBlind });
+    await this.redis?.set(
+      `tournament:${tournamentId}:patchedLevels`,
+      JSON.stringify(
+        Object.fromEntries(
+          Array.from(levels.entries()).map(([lvl, blinds]) => [
+            lvl.toString(),
+            blinds,
+          ]),
+        ),
+      ),
+    );
   }
 
   getHotPatchedLevel(
@@ -217,7 +323,7 @@ export class TournamentService {
   }
 
   async register(tournamentId: string, userId: string): Promise<Seat> {
-    const t = await this.get(tournamentId);
+    const t = await this.getEntity(tournamentId);
     const now = new Date();
     const regOpen = t.state === TournamentState.REG_OPEN;
     const lateReg =
@@ -226,6 +332,15 @@ export class TournamentService {
       now < t.registrationClose;
     if (!regOpen && !lateReg) {
       throw new Error('registration closed');
+    }
+    if (this.wallet) {
+      await this.wallet.reserve(userId, t.buyIn, tournamentId, 'USD');
+      await this.events.emit('wallet.reserve', {
+        accountId: userId,
+        amount: t.buyIn,
+        refId: tournamentId,
+        currency: 'USD',
+      });
     }
     const tables = await this.tables.find({
       where: { tournament: { id: tournamentId } },
@@ -246,6 +361,29 @@ export class TournamentService {
       lastMovedHand: 0,
     });
     return this.seats.save(seat);
+  }
+
+  async withdraw(tournamentId: string, userId: string): Promise<void> {
+    const t = await this.getEntity(tournamentId);
+    const seat = await this.seats.findOne({
+      where: {
+        table: { tournament: { id: tournamentId } } as any,
+        user: { id: userId } as any,
+      },
+      relations: ['table', 'user'],
+    });
+    if (seat) {
+      if (this.wallet) {
+        await this.wallet.rollback(userId, t.buyIn, tournamentId, 'USD');
+        await this.events.emit('wallet.rollback', {
+          accountId: userId,
+          amount: t.buyIn,
+          refId: tournamentId,
+          currency: 'USD',
+        });
+      }
+      await this.seats.remove(seat);
+    }
   }
 
   async balanceTournament(
@@ -278,6 +416,19 @@ export class TournamentService {
           recentlyMoved.set(playerId, currentHand);
           await this.seats.save(seat);
         }
+      }
+    }
+    if (this.redis) {
+      const key = `tourney:${tournamentId}:lastMoved`;
+      if (recentlyMoved.size === 0) {
+        await this.redis.del(key);
+      } else {
+        await this.redis.hset(
+          key,
+          Object.fromEntries(
+            Array.from(recentlyMoved.entries()).map(([k, v]) => [k, v.toString()]),
+          ),
+        );
       }
     }
   }
@@ -344,6 +495,29 @@ export class TournamentService {
     remainder?: number;
   } {
     return calculatePrizesFn(prizePool, payouts, opts);
+  }
+
+  /**
+   * Detect when the field has reached the bubble (one spot from payouts).
+   * Emits a `tournament.bubble` event the first time this occurs.
+   */
+  async detectBubble(
+    tournamentId: string,
+    remainingPlayers: number,
+    payoutThreshold: number,
+  ): Promise<boolean> {
+    if (
+      remainingPlayers !== payoutThreshold ||
+      this.bubbleAnnounced.has(tournamentId)
+    ) {
+      return false;
+    }
+    this.bubbleAnnounced.add(tournamentId);
+    await this.events.emit('tournament.bubble', {
+      tournamentId,
+      remainingPlayers,
+    });
+    return true;
   }
 
   /**

@@ -1,15 +1,15 @@
 import { createWriteStream, mkdirSync, WriteStream } from 'fs';
 import { once } from 'events';
 import { join } from 'path';
-import { GameAction, GameState } from './state-machine';
+import { GameAction, GameStateInternal } from './state-machine';
 import type { HandProof } from './rng';
 
 // [index, action, preState, postState, proof]
 export type HandLogEntry = [
   number,
   GameAction,
-  GameState,
-  GameState,
+  GameStateInternal,
+  GameStateInternal,
   HandProof?,
 ];
 
@@ -44,7 +44,11 @@ export class HandLog {
     });
   }
 
-  record(action: GameAction, preState: GameState, postState: GameState) {
+  record(
+    action: GameAction,
+    preState: GameStateInternal,
+    postState: GameStateInternal,
+  ) {
     const index = this.entries.length;
     const entry: HandLogEntry = [
       index,
@@ -96,7 +100,7 @@ export class HandLog {
     };
   }
 
-  reconstruct(index: number): GameState | undefined {
+  reconstruct(index: number): GameStateInternal | undefined {
     const entry = this.entries[index];
     return entry ? structuredClone(entry[3]) : undefined;
   }

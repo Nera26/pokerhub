@@ -1,0 +1,31 @@
+{
+  "dashboard": {
+    "title": "Room CPU and Memory",
+    "labels": {
+      "pagerduty_service": "pokerhub-sre",
+      "runbook": "docs/runbooks/room-worker-resources.md"
+    },
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "Room CPU Usage",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "sum(rate(container_cpu_usage_seconds_total{container=\"room\"}[1m]))"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Room Memory Usage",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "sum(container_memory_usage_bytes{container=\"room\"})"
+          }
+        ]
+      }
+    ]
+  }
+}

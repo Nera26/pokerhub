@@ -8,10 +8,11 @@ import {
   Header,
   StreamableFile,
   Req,
+  Query,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createReadStream } from 'fs';
-import { readFile } from 'fs/promises';
+import { readFile, readdir, stat } from 'fs/promises';
 import { Readable } from 'stream';
 import { join } from 'path';
 import { Repository } from 'typeorm';
@@ -19,9 +20,17 @@ import { ConfigService } from '@nestjs/config';
 import jwt from 'jsonwebtoken';
 import type { Request } from 'express';
 import { Hand } from '../database/entities/hand.entity';
-import { HandProofResponse as HandProofResponseSchema } from '../schemas/hands';
-import type { HandProofResponse } from '../schemas/hands';
+import {
+  HandProofResponse as HandProofResponseSchema,
+  HandProofsResponse as HandProofsResponseSchema,
+} from '../schemas/hands';
+import type {
+  HandProofResponse,
+  HandProofsResponse,
+} from '../schemas/hands';
 import { HandLog } from './hand-log';
+import { sanitize } from './state-sanitize';
+import { GameStateSchema, type GameState } from '@shared/types';
 
 @Controller('hands')
 export class HandController {
@@ -83,6 +92,55 @@ export class HandController {
     return participants;
   }
 
+  @Get('proofs')
+  async listProofs(
+    @Req() req: Request,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('ids') ids?: string,
+  ): Promise<HandProofsResponse> {
+    const { isAdmin } = this.verifyToken(req.headers['authorization']);
+    if (!isAdmin) {
+      throw new ForbiddenException();
+    }
+
+    const dir = join(process.cwd(), '../storage/proofs');
+    let files: string[] = [];
+    try {
+      files = await readdir(dir);
+    } catch {
+      return [];
+    }
+
+    const fromMs = from ? Number(from) : undefined;
+    const toMs = to ? Number(to) : undefined;
+    const idSet = ids ? new Set(ids.split(',')) : undefined;
+
+    const proofs: HandProofsResponse = [];
+
+    for (const file of files) {
+      if (!file.endsWith('.json')) continue;
+      const id = file.slice(0, -5);
+      if (idSet && !idSet.has(id)) continue;
+
+      const filepath = join(dir, file);
+      try {
+        const stats = await stat(filepath);
+        const mtime = stats.mtimeMs;
+        if (fromMs && mtime < fromMs) continue;
+        if (toMs && mtime > toMs) continue;
+
+        const raw = await readFile(filepath, 'utf8');
+        const proof = HandProofResponseSchema.parse(JSON.parse(raw));
+        proofs.push({ id, proof });
+      } catch {
+        continue;
+      }
+    }
+
+    return HandProofsResponseSchema.parse(proofs);
+  }
+
   @Get(':id/proof')
   async getProof(
     @Param('id') id: string,
@@ -125,6 +183,61 @@ export class HandController {
     }
 
     return HandProofResponseSchema.parse(proof);
+  }
+
+  @Get(':id/state/:index')
+  async getState(
+    @Param('id') id: string,
+    @Param('index') indexParam: string,
+    @Req() req: Request,
+  ): Promise<GameState> {
+    const { userId, isAdmin } = this.verifyToken(req.headers['authorization']);
+    const participants = await this.getParticipants(id);
+    if (!isAdmin && !participants.has(userId)) {
+      throw new ForbiddenException();
+    }
+
+    const index = Number(indexParam);
+    if (!Number.isInteger(index) || index < 0) {
+      throw new NotFoundException('state not found');
+    }
+
+    const file = join(process.cwd(), '../storage/hand-logs', `${id}.jsonl`);
+    let raw: string | undefined;
+    try {
+      raw = await readFile(file, 'utf8');
+    } catch {
+      const hand = await this.hands.findOne({ where: { id } });
+      if (!hand) {
+        throw new NotFoundException('log not found');
+      }
+      raw = hand.log;
+    }
+
+    const log = new HandLog();
+    for (const line of raw.trim().split('\n')) {
+      if (!line) continue;
+      try {
+        const parsed = JSON.parse(line);
+        if (Array.isArray(parsed)) {
+          (log as any).entries.push(parsed);
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    const state = log.reconstruct(index);
+    if (!state) {
+      throw new NotFoundException('state not found');
+    }
+
+    const payload = {
+      version: '1',
+      ...sanitize(state, userId),
+      tick: index + 1,
+    } as GameState;
+    return GameStateSchema.parse(payload);
   }
 
   @Get(':id/log')

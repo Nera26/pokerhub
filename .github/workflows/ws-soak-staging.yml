@@ -1,45 +1,63 @@
 name: ws-soak-staging
+concurrency:
+  group: "ws-soak-staging"
+  cancel-in-progress: true
 
 on:
   schedule:
-    - cron: '0 2 * * *'
+  - cron: '0 2 * * *'
   workflow_dispatch:
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   ws-soak:
     runs-on: ubuntu-latest
     timeout-minutes: 1440
     steps:
-      - uses: actions/checkout@v4
-      - name: Start GC/heap collector
-        run: |
-          load/collect-gc-heap.sh & echo $! > collector.pid
-        env:
-          METRICS_URL: https://staging.pokerhub/metrics
-          GRAFANA_PUSH_URL: ${{ secrets.GRAFANA_PUSH_URL }}
-          GC_THRESHOLD: 50
-          CPU_THRESHOLD: 80
-      - name: Run WebSocket soak test
-        uses: grafana/k6-action@v0.2.0
-        env:
-          WS_URL: ws://staging.pokerhub
-          SOCKETS: 80000
-          PACKET_LOSS: 0.05
-          METRICS_URL: https://staging.pokerhub/metrics
-          GRAFANA_PUSH_URL: ${{ secrets.GRAFANA_PUSH_URL }}
-        with:
-          filename: load/k6-ws-soak.js
-          flags: >-
-            --summary-export=ws-soak-summary.json
-            -o experimental-prometheus-rw=${{ secrets.GRAFANA_PROM_URL }}
-      - name: Stop collector
-        if: always()
-        run: kill $(cat collector.pid)
-      - name: Upload artifacts
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: ws-soak-staging
-          path: |
-            ws-soak-summary.json
-            gc-heap-metrics.log
+    - uses: actions/checkout@v4
+    - name: Start GC/heap collector
+      run: |
+        load/collect-gc-heap.sh & echo $! > collector.pid
+      env:
+        METRICS_URL: https://staging.pokerhub/metrics
+        GRAFANA_PUSH_URL: ${{ secrets.GRAFANA_PUSH_URL }}
+        GC_THRESHOLD: 50
+        CPU_THRESHOLD: 80
+    - name: Run WebSocket soak test
+      uses: grafana/k6-action@v0.2.0
+      env:
+        WS_URL: ws://staging.pokerhub
+        SOCKETS: 80000
+        PACKET_LOSS: 0.05
+        METRICS_URL: https://staging.pokerhub/metrics
+        GRAFANA_PUSH_URL: ${{ secrets.GRAFANA_PUSH_URL }}
+      with:
+        filename: load/k6-ws-soak.js
+        flags: >-
+          --summary-export=ws-soak-summary.json
+          -o experimental-prometheus-rw=${{ secrets.GRAFANA_PROM_URL }}
+    - name: Stop collector
+      if: always()
+      run: kill $(cat collector.pid)
+    - name: Upload artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ws-soak-staging
+        path: |
+          ws-soak-summary.json
+          gc-heap-metrics.log
+
+    needs:
+    - check-proof-archive
+  spectator-privacy:
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+    with:
+      logs: backend-tests.log frontend-tests.log integration.log property.log
+    needs:
+    - check-proof-archive

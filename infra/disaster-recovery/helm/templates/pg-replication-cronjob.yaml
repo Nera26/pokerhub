@@ -21,5 +21,9 @@ spec:
                 - /bin/sh
                 - -c
                 - >-
-                  echo "Replicating Postgres snapshot for $PG_INSTANCE_ID to $SECONDARY_REGION";
-                  # Placeholder for aws rds create-db-snapshot && copy-db-snapshot
+                  set -euo pipefail;
+                  echo "Creating backup for $PG_INSTANCE_ID";
+                  gcloud sql backups create --instance=$PG_INSTANCE_ID;
+                  BACKUP_ID=$(gcloud sql backups list --instance=$PG_INSTANCE_ID --sort-by=~startTime --limit=1 --format='value(id)');
+                  echo "Copying backup $BACKUP_ID to $SECONDARY_REGION";
+                  gcloud beta sql backups copy $BACKUP_ID --instance=$PG_INSTANCE_ID --backup-region=$SECONDARY_REGION;

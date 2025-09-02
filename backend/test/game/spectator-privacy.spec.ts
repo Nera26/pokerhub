@@ -28,13 +28,13 @@ class DummyRoom extends EventEmitter {
   );
 
   async getPublicState() {
-    return this.engine.getPublicState();
+    return this.engine.getState();
   }
 
   deal() {
     this.engine.applyAction({ type: 'postBlind', playerId: 'p1', amount: 1 } as any);
     this.engine.applyAction({ type: 'postBlind', playerId: 'p2', amount: 2 } as any);
-    this.emit('state', this.engine.getPublicState());
+    this.emit('state', this.engine.getState());
   }
 }
 
@@ -64,7 +64,7 @@ describe('SpectatorGateway privacy over WebSocket', () => {
     await app.close();
   });
 
-  it('omits hole cards from emitted states', async () => {
+  it('omits private cards from emitted states', async () => {
     const client = io(url, { transports: ['websocket'], query: { tableId: 't1' } });
     const states: any[] = [];
     client.on('state', (s) => states.push(s));
@@ -77,8 +77,10 @@ describe('SpectatorGateway privacy over WebSocket', () => {
 
     expect(states.length).toBeGreaterThanOrEqual(2);
     for (const s of states) {
+      expect(s.deck).toBeUndefined();
       for (const player of s.players as Array<Record<string, unknown>>) {
         expect(player.holeCards).toBeUndefined();
+        expect(player.cards).toBeUndefined();
       }
     }
   });

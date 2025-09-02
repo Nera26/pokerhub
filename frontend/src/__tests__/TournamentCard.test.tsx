@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import TournamentCard from '@/app/components/tournaments/TournamentCard';
 import Page from '@/app/tournaments/page';
 import { fetchTournaments } from '@/lib/api/lobby';
+import { AuthProvider } from '@/context/AuthContext';
 
 jest.mock('@/lib/api/lobby', () => ({
   ...jest.requireActual('@/lib/api/lobby'),
@@ -110,7 +111,9 @@ describe('Tournament page', () => {
     const client = new QueryClient();
     render(
       <QueryClientProvider client={client}>
-        <Page />
+        <AuthProvider>
+          <Page />
+        </AuthProvider>
       </QueryClientProvider>,
     );
 

@@ -1,12 +1,40 @@
 # Test Strategy
 
+## Property-Based Tests
+
+Property-based tests leverage [`fast-check`](https://github.com/dubzzz/fast-check) to exercise game logic across a large range of generated inputs. They run in the dedicated **property** stage of the CI pipeline (see `.github/workflows/ci.yml`) and help surface edge-case bugs early.
+
+### Running locally
+
+```bash
+npm test --prefix backend -- test/game/.*\.property\.spec\.ts
+```
+
 ## CI Load Checks
 
-The `k6-swarm-ws` workflow in `.github/workflows/k6-swarm-ws.yml` runs `load/k6-swarm.js` and `load/k6-ws-packet-loss.js` against the staging cluster. It records `ack_latency` and `ws_latency` histograms and fails if p95 latency or error rates breach thresholds.
+The `load` stage of `.github/workflows/ci.yml` runs `load/k6-swarm.js` against the staging cluster. `load/check-thresholds.sh` fails the build if p95 acknowledgement latency or error rates breach thresholds. A scheduled soak test is handled separately by `.github/workflows/soak.yml`.
+
+## Socket Load Harness
+
+`tests/performance/socket-load.ts` simulates websocket clients performing actions across many tables. It records per-table latency and action rates and exports a TPS metric via OpenTelemetry.
+
+### Running
+
+```bash
+docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 ghcr.io/shopify/toxiproxy
+TABLES=10000 SOCKETS=80000 npm run perf:socket-load
+```
+
+The test writes metrics to `metrics/table-metrics.json` and fails when:
+
+- p50 ACK latency > 40 ms
+- p95 ACK latency > 120 ms
+- p99 ACK latency > 200 ms
+- average actions per table per minute < 150
 
 ## Table Action Load Test
 
-The `infra/tests/load/k6-table-actions.js` script simulates action traffic across 10k tables. It records an `ack_latency` histogram for each action acknowledgement.
+The `infra/tests/load/k6-table-actions.js` script simulates action traffic across 10k tables. It records an `ack_latency` histogram for each action acknowledgement and enforces latency and throughput thresholds: p50 ≤ 40 ms, p95 ≤ 120 ms, p99 ≤ 200 ms and >150 actions per minute. k6 fails the run if any threshold is breached.
 
 ### Running in CI
 
@@ -62,3 +90,15 @@ Run with `--log-format json` to capture custom metrics:
 - `gc_pause_ms` – p95 should stay below 50 ms.
 
 Breaching these thresholds indicates memory or GC regressions requiring investigation.
+
+## Tournament
+
+The `backend/tests/performance/tournament-10k.ts` script seeds 10 k players and runs the tournament scheduler and table balancer end-to-end. It asserts the total runtime stays within 5 % of a warmed baseline and that final payouts align with Independent Chip Model results within one chip.
+
+`npm test --prefix backend` also runs `backend/test/tournament/mega-sim.spec.ts`, which loads the documented blind structures to simulate a 10 k-player MTT. The test converts elapsed execution time to minutes using the handbook's 130‑minute target and asserts the result stays within ±5 % while comparing final payouts against `calculateIcmPayouts`.
+
+### Running locally
+
+```bash
+npx ts-node -P backend/tsconfig.json backend/tests/performance/tournament-10k.ts
+```

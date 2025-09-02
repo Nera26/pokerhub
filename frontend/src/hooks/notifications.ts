@@ -65,8 +65,8 @@ export function useMarkAllRead() {
 export function useMarkRead() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => markNotificationRead(id),
-    onMutate: async (id: number) => {
+    mutationFn: (id: string) => markNotificationRead(id),
+    onMutate: async (id: string) => {
       await queryClient.cancelQueries({ queryKey: ['notifications'] });
       const previous = queryClient.getQueryData<NotificationsResponse>([
         'notifications',

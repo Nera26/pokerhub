@@ -1,5 +1,5 @@
 import { HandLog } from './hand-log';
-import { GameAction, GameState } from './state-machine';
+import { GameAction, GameStateInternal } from './state-machine';
 import type { HandProof } from './rng';
 import { existsSync, readFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
@@ -13,7 +13,7 @@ describe('HandLog', () => {
       { id: 'B', stack: 100, folded: false, bet: 0, allIn: false },
     ];
 
-    const s0: GameState = {
+    const s0: GameStateInternal = {
       phase: 'BETTING_ROUND',
       street: 'preflop',
       pot: 0,
@@ -25,14 +25,14 @@ describe('HandLog', () => {
     };
 
     const a1: GameAction = { type: 'bet', playerId: 'A', amount: 5 };
-    const s1: GameState = structuredClone(s0);
+    const s1: GameStateInternal = structuredClone(s0);
     s1.players[0].stack -= 5;
     s1.players[0].bet = 5;
     s1.pot = 5;
     s1.currentBet = 5;
 
     const a2: GameAction = { type: 'call', playerId: 'B', amount: 5 };
-    const s2: GameState = structuredClone(s1);
+    const s2: GameStateInternal = structuredClone(s1);
     s2.players[1].stack -= 5;
     s2.players[1].bet = 5;
     s2.pot = 10;
@@ -49,7 +49,7 @@ describe('HandLog', () => {
     const path = join(process.cwd(), '../storage/hand-logs', `${handId}.jsonl`);
     if (existsSync(path)) unlinkSync(path);
     const log = new HandLog(handId, 'c');
-    const s0: GameState = {
+    const s0: GameStateInternal = {
       phase: 'BETTING_ROUND',
       street: 'preflop',
       pot: 0,

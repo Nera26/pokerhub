@@ -3,29 +3,59 @@ name: k6 tournament 10k
 on:
   push:
     paths:
-      - 'load/k6/k6-tournament-10k.js'
-      - '.github/workflows/k6-tournament-10k.yml'
+    - 'load/k6/k6-tournament-10k.js'
+    - '.github/workflows/k6-tournament-10k.yml'
   pull_request:
     paths:
-      - 'load/k6/k6-tournament-10k.js'
-      - '.github/workflows/k6-tournament-10k.yml'
+    - 'load/k6/k6-tournament-10k.js'
+    - '.github/workflows/k6-tournament-10k.yml'
 
 jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
   tournament:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
-      - name: run tournament 10k
-        uses: grafana/k6-action@v0.2.0
-        with:
-          filename: load/k6/k6-tournament-10k.js
-          flags: --summary-export=tournament-summary.json --out json=tournament-metrics.json
-      - name: upload artifacts
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: k6-tournament-10k
-          path: |
-            tournament-summary.json
-            tournament-metrics.json
+    - uses: actions/checkout@v4
+    - name: run tournament 10k
+      uses: grafana/k6-action@v0.2.0
+      with:
+        filename: load/k6/k6-tournament-10k.js
+        flags: --summary-export=tournament-summary.json --out 
+          json=tournament-metrics.json
+    - name: Upload tournament summary
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: tournament-summary-${{ github.sha }}
+        path: tournament-summary.json
+    - name: Upload tournament metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: tournament-metrics-${{ github.sha }}
+        path: tournament-metrics.json
+
+    needs:
+    - check-proof-archive
+  soak-metrics:
+    needs:
+    - tournament
+    - check-proof-archive
+    if: ${{ always() }}
+    uses: ../soak-metrics.yml
+    secrets: inherit
+
+  spectator-privacy:
+    needs:
+    - tournament
+    - check-proof-archive
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    with:
+      logs: tournament-summary.json tournament-metrics.json
+    secrets: inherit
+

@@ -5,6 +5,7 @@ import {
   NestModule,
   MiddlewareConsumer,
   RequestMethod,
+  forwardRef,
 } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -13,6 +14,8 @@ import { GbgProvider } from './providers/gbg.provider';
 import { TruliooProvider } from './providers/trulioo.provider';
 import { Account } from '../wallet/account.entity';
 import { KycVerification } from '../database/entities/kycVerification.entity';
+import { User } from '../database/entities/user.entity';
+import { UserRepository } from '../users/user.repository';
 import { CountryProvider } from './providers/country-provider';
 import { startKycWorker } from './kyc.worker';
 import { AuthController } from './auth.controller';
@@ -22,6 +25,9 @@ import { AuthGuard } from './auth.guard';
 import { AdminGuard } from './admin.guard';
 import { AuthRateLimitMiddleware } from './rate-limit.middleware';
 import { SecurityHeadersMiddleware } from './security.middleware';
+import { AnalyticsModule } from '../analytics/analytics.module';
+import { GeoIpService } from './geoip.service';
+import { EmailService } from './email.service';
 
 @Injectable()
 class KycWorker implements OnModuleInit {
@@ -47,8 +53,9 @@ function providerFactory(config: ConfigService): CountryProvider {
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([Account, KycVerification]),
+    TypeOrmModule.forFeature([Account, KycVerification, User]),
     SessionModule,
+    forwardRef(() => AnalyticsModule),
   ],
   providers: [
     {
@@ -61,9 +68,12 @@ function providerFactory(config: ConfigService): CountryProvider {
     AuthService,
     AuthGuard,
     AdminGuard,
+    GeoIpService,
+    UserRepository,
+    EmailService,
   ],
   controllers: [AuthController],
-  exports: [KycService, AuthGuard, AdminGuard],
+  exports: [KycService, AuthGuard, AdminGuard, GeoIpService],
 })
 export class AuthModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

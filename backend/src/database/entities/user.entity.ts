@@ -16,14 +16,17 @@ export class User {
   @Column()
   username: string;
 
+  @Column({ unique: true, nullable: true })
+  email?: string;
+
+  @Column({ nullable: true })
+  password?: string;
+
   @Column({ nullable: true })
   avatarKey?: string;
 
   @Column({ default: false })
   banned: boolean;
-
-  @Column({ type: 'integer', default: 0 })
-  balance: number;
 
   @ManyToMany(() => Table, (table) => table.players)
   tables: Table[];

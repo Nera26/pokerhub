@@ -23,6 +23,8 @@ import { AnalyticsService } from '../../src/analytics/analytics.service';
 import { EventPublisher } from '../../src/events/events.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Hand } from '../../src/database/entities/hand.entity';
+import { MockRedis } from '../utils/mock-redis';
+import { GameState } from '../../src/database/entities/game-state.entity';
 
 function waitForConnect(socket: Socket): Promise<void> {
   return new Promise((resolve) => socket.on('connect', () => resolve()));
@@ -44,7 +46,6 @@ describe('GameGateway reconnect', () => {
   let url: string;
 
   beforeAll(async () => {
-    const store = new Map<string, string>();
     const moduleRef = await Test.createTestingModule({
       providers: [
         GameGateway,
@@ -53,29 +54,8 @@ describe('GameGateway reconnect', () => {
         { provide: AnalyticsService, useValue: { recordGameEvent: jest.fn() } },
         { provide: EventPublisher, useValue: { emit: jest.fn() } },
         { provide: getRepositoryToken(Hand), useValue: { findOne: jest.fn() } },
-        {
-          provide: 'REDIS_CLIENT',
-          useValue: {
-            incr: async () => 1,
-            expire: async () => 1,
-            exists: async (key: string) => (store.has(key) ? 1 : 0),
-            set: async (key: string, value: string, _mode: string, _ttl: number) => {
-              store.set(key, value);
-              return 'OK';
-            },
-            multi: () => {
-              const results: [null, number][] = [];
-              const chain = {
-                incr: (_k: string) => {
-                  results.push([null, results.length + 1]);
-                  return chain;
-                },
-                exec: async () => results,
-              };
-              return chain;
-            },
-          },
-        },
+        { provide: getRepositoryToken(GameState), useValue: { find: jest.fn(), save: jest.fn() } },
+        { provide: 'REDIS_CLIENT', useClass: MockRedis },
       ],
     }).compile();
 

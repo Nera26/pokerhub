@@ -1,0 +1,10 @@
+{
+  "name": "100k Replay Latency",
+  "dataset_query": {
+    "database": 1,
+    "type": "native",
+    "native": {"query": "SELECT * FROM ack_latency"}
+  },
+  "display": "line",
+  "visualization_settings": {}
+}

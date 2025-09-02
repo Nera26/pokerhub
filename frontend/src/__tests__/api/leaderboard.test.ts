@@ -14,14 +14,58 @@ describe('leaderboard api', () => {
       status: 200,
       headers: { get: () => 'application/json' },
       json: async () => [
-        { playerId: 'alice', rank: 1, points: 100, net: 10, bb100: 5, hours: 2 },
-        { playerId: 'bob', rank: 2, points: 90, net: 8, bb100: 4, hours: 1.5 },
+        {
+          playerId: 'alice',
+          rank: 1,
+          points: 100,
+          rd: 40,
+          volatility: 0.06,
+          net: 10,
+          bb100: 5,
+          hours: 2,
+          roi: 0.2,
+          finishes: { 1: 1 },
+        },
+        {
+          playerId: 'bob',
+          rank: 2,
+          points: 90,
+          rd: 40,
+          volatility: 0.06,
+          net: 8,
+          bb100: 4,
+          hours: 1.5,
+          roi: -0.1,
+          finishes: { 2: 1 },
+        },
       ],
     });
 
     await expect(fetchLeaderboard()).resolves.toEqual([
-      { playerId: 'alice', rank: 1, points: 100, net: 10, bb100: 5, hours: 2 },
-      { playerId: 'bob', rank: 2, points: 90, net: 8, bb100: 4, hours: 1.5 },
+      {
+        playerId: 'alice',
+        rank: 1,
+        points: 100,
+        rd: 40,
+        volatility: 0.06,
+        net: 10,
+        bb100: 5,
+        hours: 2,
+        roi: 0.2,
+        finishes: { 1: 1 },
+      },
+      {
+        playerId: 'bob',
+        rank: 2,
+        points: 90,
+        rd: 40,
+        volatility: 0.06,
+        net: 8,
+        bb100: 4,
+        hours: 1.5,
+        roi: -0.1,
+        finishes: { 2: 1 },
+      },
     ]);
   });
 });

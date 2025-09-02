@@ -17,11 +17,12 @@ async function run(options: RebuildOptions = {}): Promise<{
 }> {
   const days = options.days ?? 30;
   let app: INestApplicationContext | undefined;
-  const service = options.service ?? (await (async () => {
-    const { AppModule } = await import('../app.module');
-    app = await NestFactory.createApplicationContext(AppModule);
-    return app.get(LeaderboardService);
-  })());
+  const service: LeaderboardService = options.service ??
+    (await (async () => {
+      const { AppModule } = await import('../app.module');
+      app = await NestFactory.createApplicationContext(AppModule);
+      return app.get(LeaderboardService);
+    })());
 
   try {
     if (options.benchmark) {
@@ -32,28 +33,15 @@ async function run(options: RebuildOptions = {}): Promise<{
       await writeSyntheticEvents(days, players, sessions);
     }
 
-    const memStart = process.memoryUsage().rss / 1024 / 1024;
-    const { durationMs, memoryMb: finalMemMb } =
-      await service.rebuildFromEvents(days);
-    const memoryMb = finalMemMb - memStart;
+    const { durationMs, memoryMb } = await service.rebuildFromEvents(
+      days,
+      options.assertDurationMs,
+    );
     console.log(
       `Rebuild complete in ${(durationMs / 1000).toFixed(1)}s (\u0394RSS ${memoryMb.toFixed(
         1,
       )}MB)`,
     );
-
-    if (days === 30 && durationMs > 30 * 60 * 1000) {
-      throw new Error(
-        `30-day rebuild exceeded 30min (took ${durationMs}ms)`,
-      );
-    }
-
-    if (options.assertDurationMs && durationMs > options.assertDurationMs) {
-      throw new Error(
-        `Rebuild exceeded ${options.assertDurationMs}ms (took ${durationMs}ms)`,
-      );
-    }
-
     return { durationMs, memoryMb };
   } finally {
     await app?.close();

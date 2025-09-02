@@ -1,0 +1,18 @@
+{
+  "title": "Latency Dashboard",
+  "schemaVersion": 30,
+  "version": 1,
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Request Duration p95",
+      "datasource": "Cloud Monitoring",
+      "targets": [
+        {
+          "query": "fetch custom.googleapis.com/soak/latency | group_by [], [p95_latency: percentile(value.latency,95)]"
+        }
+      ]
+    }
+  ]
+}
