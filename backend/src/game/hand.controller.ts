@@ -10,6 +10,7 @@ import {
   Req,
   Query,
 } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createReadStream } from 'fs';
 import { readFile, readdir, stat } from 'fs/promises';
@@ -32,6 +33,7 @@ import { HandLog } from './hand-log';
 import { sanitize } from './state-sanitize';
 import { GameStateSchema, type GameState } from '@shared/types';
 
+@ApiTags('hands')
 @Controller('hands')
 export class HandController {
   constructor(
@@ -93,6 +95,8 @@ export class HandController {
   }
 
   @Get('proofs')
+  @ApiOperation({ summary: 'List hand proofs' })
+  @ApiResponse({ status: 200, description: 'Proofs list' })
   async listProofs(
     @Req() req: Request,
     @Query('from') from?: string,
@@ -142,6 +146,8 @@ export class HandController {
   }
 
   @Get(':id/proof')
+  @ApiOperation({ summary: 'Get proof for hand' })
+  @ApiResponse({ status: 200, description: 'Proof data' })
   async getProof(
     @Param('id') id: string,
     @Req() req: Request,
@@ -186,6 +192,8 @@ export class HandController {
   }
 
   @Get(':id/state/:index')
+  @ApiOperation({ summary: 'Get game state at index' })
+  @ApiResponse({ status: 200, description: 'Game state' })
   async getState(
     @Param('id') id: string,
     @Param('index') indexParam: string,
@@ -242,6 +250,8 @@ export class HandController {
 
   @Get(':id/log')
   @Header('Content-Type', 'text/plain')
+  @ApiOperation({ summary: 'Get raw hand log' })
+  @ApiResponse({ status: 200, description: 'Log file' })
   async getLog(
     @Param('id') id: string,
     @Req() req: Request,

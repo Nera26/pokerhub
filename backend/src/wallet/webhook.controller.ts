@@ -7,11 +7,13 @@ import {
   BadRequestException,
   Inject,
 } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import type { Redis } from 'ioredis';
 import { WalletService } from './wallet.service';
 import { PaymentProviderService } from './payment-provider.service';
 
+@ApiTags('wallet')
 @Controller('wallet/provider')
 export class WebhookController {
   constructor(
@@ -24,6 +26,8 @@ export class WebhookController {
   }
 
   @Post('callback')
+  @ApiOperation({ summary: 'Handle provider callback' })
+  @ApiResponse({ status: 200, description: 'Event processed' })
   async callback(@Req() req: Request, @Body() body: unknown) {
     const eventId = req.headers['x-event-id'] as string | undefined;
     if (!eventId) {

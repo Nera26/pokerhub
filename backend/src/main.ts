@@ -11,6 +11,7 @@ import {
   shutdownTelemetry,
   telemetryMiddleware,
 } from './telemetry/telemetry';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
   await setupTelemetry();
@@ -33,6 +34,13 @@ async function bootstrap() {
       hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
     }),
   );
+
+  const config = new DocumentBuilder()
+    .setTitle('PokerHub API')
+    .setVersion('2.5.0')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs', app, document);
 
   await app.listen(process.env.PORT ?? 3000);
   scheduleReconcileJob(

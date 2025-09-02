@@ -11,6 +11,7 @@ import {
   ParseUUIDPipe,
   UseGuards,
 } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ZodError } from 'zod';
 import {
   TableSchema,
@@ -30,6 +31,7 @@ import { ChatService } from '../game/chat.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 
+@ApiTags('tables')
 @Controller('tables')
 export class TablesController {
   constructor(
@@ -38,12 +40,16 @@ export class TablesController {
   ) {}
 
   @Get()
+  @ApiOperation({ summary: 'List tables' })
+  @ApiResponse({ status: 200, description: 'Array of tables' })
   async list(): Promise<TableList> {
     const res = await this.tables.getTables();
     return TableListSchema.parse(res);
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get table by id' })
+  @ApiResponse({ status: 200, description: 'Table details' })
   async get(
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<TableData> {
@@ -53,6 +59,8 @@ export class TablesController {
 
   @Post()
   @UseGuards(AuthGuard, AdminGuard)
+  @ApiOperation({ summary: 'Create a table' })
+  @ApiResponse({ status: 201, description: 'Table created' })
   async create(@Body() body: CreateTableRequest): Promise<Table> {
     try {
       const parsed = CreateTableSchema.parse(body);
@@ -68,6 +76,8 @@ export class TablesController {
 
   @Put(':id')
   @UseGuards(AuthGuard, AdminGuard)
+  @ApiOperation({ summary: 'Update table' })
+  @ApiResponse({ status: 200, description: 'Table updated' })
   async update(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: UpdateTableRequest,
@@ -87,6 +97,8 @@ export class TablesController {
   @Delete(':id')
   @UseGuards(AuthGuard, AdminGuard)
   @HttpCode(204)
+  @ApiOperation({ summary: 'Delete table' })
+  @ApiResponse({ status: 204, description: 'Table deleted' })
   async remove(
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<void> {
@@ -94,6 +106,8 @@ export class TablesController {
   }
 
   @Get(':id/chat')
+  @ApiOperation({ summary: 'Get recent chat messages' })
+  @ApiResponse({ status: 200, description: 'Chat messages' })
   async getChat(
     @Param('id', new ParseUUIDPipe()) id: string,
   ) {
@@ -104,6 +118,8 @@ export class TablesController {
   @Post(':id/chat')
   @UseGuards(AuthGuard)
   @HttpCode(204)
+  @ApiOperation({ summary: 'Send chat message' })
+  @ApiResponse({ status: 204, description: 'Message sent' })
   async sendChat(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: any,
