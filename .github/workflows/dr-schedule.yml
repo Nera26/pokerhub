@@ -17,9 +17,15 @@ jobs:
     if: ${{ always() }}
     uses: ./.github/workflows/check-proof-archive.yml
     secrets: inherit
+  dr-sla:
+    needs: check-proof-archive
+    uses: ./.github/workflows/dr-sla.yml
+    secrets: inherit
+    with:
+      dr-drill-sla-days: 30
 
   dr-drill:
-    needs: check-proof-archive
+    needs: [dr-sla, check-proof-archive]
     uses: ./.github/workflows/dr-drill.yml
     secrets: inherit
 
@@ -55,7 +61,7 @@ jobs:
     secrets: inherit
 
   spectator-privacy:
-    needs: dr-failover
+    needs: [dr-failover, dr-sla, check-proof-archive]
     if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     with:

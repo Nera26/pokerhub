@@ -13,6 +13,12 @@ jobs:
     if: ${{ always() }}
     uses: ./.github/workflows/check-proof-archive.yml
     secrets: inherit
+  dr-sla:
+    needs: check-proof-archive
+    uses: ./.github/workflows/dr-sla.yml
+    secrets: inherit
+    with:
+      dr-drill-sla-days: 30
   restore-latest:
     runs-on: ubuntu-latest
     steps:
@@ -51,9 +57,11 @@ jobs:
           -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Latest backup restore failed","source":"github-actions","severity":"error","custom_details":{"runbook":"https://github.com/Nera26/pokerhub/blob/main/docs/runbooks/disaster-recovery.md"}}}'
 
     needs:
+    - dr-sla
     - check-proof-archive
   soak-metrics:
     needs:
+    - dr-sla
     - restore-latest
     - check-proof-archive
     if: ${{ always() }}
@@ -62,6 +70,7 @@ jobs:
 
   spectator-privacy:
     needs:
+    - dr-sla
     - restore-latest
     - soak-metrics
     - check-proof-archive

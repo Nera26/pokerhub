@@ -13,6 +13,12 @@ jobs:
     if: ${{ always() }}
     uses: ./.github/workflows/check-proof-archive.yml
     secrets: inherit
+  dr-sla:
+    needs: check-proof-archive
+    uses: ./.github/workflows/dr-sla.yml
+    secrets: inherit
+    with:
+      dr-drill-sla-days: 30
   monthly-failover:
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -108,9 +114,11 @@ jobs:
           https://events.pagerduty.com/v2/enqueue
 
     needs:
+    - dr-sla
     - check-proof-archive
   spectator-privacy:
     needs:
+    - dr-sla
     - monthly-failover
     - check-proof-archive
     if: ${{ always() }}

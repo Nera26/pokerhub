@@ -13,6 +13,12 @@ jobs:
     if: ${{ always() }}
     uses: ./.github/workflows/check-proof-archive.yml
     secrets: inherit
+  dr-sla:
+    needs: check-proof-archive
+    uses: ./.github/workflows/dr-sla.yml
+    secrets: inherit
+    with:
+      dr-drill-sla-days: 30
   restore:
     runs-on: ubuntu-latest
     steps:
@@ -63,9 +69,11 @@ jobs:
           infra/disaster-recovery/tests/restore-backup.metrics
 
     needs:
+    - dr-sla
     - check-proof-archive
   soak-metrics:
     needs:
+    - dr-sla
     - restore
     - check-proof-archive
     if: ${{ always() }}
@@ -74,6 +82,7 @@ jobs:
 
   spectator-privacy:
     needs:
+    - dr-sla
     - restore
     - soak-metrics
     - check-proof-archive

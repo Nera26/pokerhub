@@ -21,8 +21,14 @@ jobs:
     if: ${{ always() }}
     uses: ./.github/workflows/check-proof-archive.yml
     secrets: inherit
+  dr-sla:
+    needs: check-proof-archive
+    uses: ./.github/workflows/dr-sla.yml
+    secrets: inherit
+    with:
+      dr-drill-sla-days: 30
   dr-trends:
-    needs: [check-proof-archive]
+    needs: [dr-sla, check-proof-archive]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -101,6 +107,6 @@ jobs:
 
   spectator-privacy:
     if: ${{ always() }}
-    needs: [dr-trends, check-proof-archive]
+    needs: [dr-sla, dr-trends, check-proof-archive]
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
