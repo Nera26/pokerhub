@@ -258,12 +258,47 @@ export interface paths {
           "application/json": components["schemas"]["UpdateTableRequest"];
         };
       };
+    };
+  };
+  "/tables/{id}/chat": {
+    /** Get table chat messages */
+    get: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Chat messages */
+        200: {
+          content: {
+            "application/json": components["schemas"]["ChatMessage"][];
+          };
+        };
+      };
+    };
+    /** Send chat message */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["SendChatMessageRequest"];
+        };
+      };
       responses: {
         /** @description Updated table */
         200: {
           content: {
             "application/json": components["schemas"]["Table"];
           };
+        };
+        /** @description Message sent */
+        204: {
+          content: never;
         };
       };
     };
@@ -900,6 +935,22 @@ export interface paths {
     };
   };
   "/users/{id}": {
+    /** Get user */
+    get: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description User found */
+        200: {
+          content: {
+            "application/json": components["schemas"]["User"];
+          };
+        };
+      };
+    };
     /** Update user */
     put: {
       parameters: {
