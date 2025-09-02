@@ -26,7 +26,8 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - run: TS_NODE_COMPILER_OPTIONS='{"module":"commonjs"}' npx ts-node scripts/ensure-spectator-privacy.ts
+      - name: Spectator privacy compliance
+        run: TS_NODE_COMPILER_OPTIONS='{"module":"commonjs"}' npx ts-node scripts/ensure-spectator-privacy.ts
 
   ensure-ops-artifacts:
     runs-on: ubuntu-latest
