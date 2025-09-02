@@ -530,8 +530,7 @@ jobs:
       logs: deployment.log
 
   proof-archive:
-    needs: deploy
-    if: ${{ always() }}
+    needs: spectator-privacy
     uses: ./.github/workflows/proof-archive.yml
     secrets:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -540,13 +539,11 @@ jobs:
       PAGERDUTY_ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
 
   soak:
-    needs: deploy
-    if: ${{ always() }}
+    needs: spectator-privacy
     uses: ./.github/workflows/soak.yml
     secrets: inherit
 
   soak-metrics:
-    needs: soak
-    if: ${{ always() }}
+    needs: [spectator-privacy, soak]
     uses: ./.github/workflows/soak-metrics.yml
     secrets: inherit

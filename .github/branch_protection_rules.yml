@@ -15,7 +15,7 @@
     - check-proof-archive
     - "ci / ops-artifacts-verify"
     - spectator-retention
-    - spectator-privacy
+    - spectator-privacy # enforce privacy checks
     - "ci / spectator-privacy"
     - "release / spectator-privacy"
     - "soak-test / spectator-privacy"
