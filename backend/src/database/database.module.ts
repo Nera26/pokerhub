@@ -9,6 +9,7 @@ import { AntiCheatFlag } from './entities/antiCheatFlag.entity';
 import { KycVerification } from './entities/kycVerification.entity';
 import { Seat } from './entities/seat.entity';
 import { ChatMessage } from './entities/chatMessage.entity';
+import { Leaderboard } from './entities/leaderboard.entity';
 
 const entities = [
   User,
@@ -18,6 +19,7 @@ const entities = [
   AntiCheatFlag,
   KycVerification,
   ChatMessage,
+  Leaderboard,
 ];
 let dataSource: DataSource;
 

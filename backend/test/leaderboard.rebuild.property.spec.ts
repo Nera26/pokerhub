@@ -51,9 +51,15 @@ describe('leaderboard rebuild', () => {
           }));
           const cache = new MockCache();
           const analytics = { ingest: jest.fn(), rangeStream: jest.fn() };
+          const repo = {
+            clear: jest.fn(),
+            insert: jest.fn(),
+            find: jest.fn().mockResolvedValue([]),
+          } as any;
           const service = new LeaderboardService(
             cache as any,
             { find: jest.fn() } as any,
+            repo,
             analytics as any,
             new ConfigService(),
           );
@@ -172,9 +178,15 @@ describe('leaderboard rebuild', () => {
 
           const cache1 = new MockCache();
           const analytics1 = { ingest: jest.fn(), rangeStream: jest.fn() };
+          const repo1 = {
+            clear: jest.fn(),
+            insert: jest.fn(),
+            find: jest.fn().mockResolvedValue([]),
+          } as any;
           const service1 = new LeaderboardService(
             cache1 as any,
             { find: jest.fn() } as any,
+            repo1,
             analytics1 as any,
             new ConfigService(),
           );
@@ -183,9 +195,15 @@ describe('leaderboard rebuild', () => {
 
           const cache2 = new MockCache();
           const analytics2 = { ingest: jest.fn(), rangeStream: jest.fn() };
+          const repo2 = {
+            clear: jest.fn(),
+            insert: jest.fn(),
+            find: jest.fn().mockResolvedValue([]),
+          } as any;
           const service2 = new LeaderboardService(
             cache2 as any,
             { find: jest.fn() } as any,
+            repo2,
             analytics2 as any,
             new ConfigService(),
           );
@@ -201,9 +219,15 @@ describe('leaderboard rebuild', () => {
   it('rebuildFromEvents completes within SLA for 30 days', async () => {
     const cache = new MockCache();
     const analytics = { ingest: jest.fn(), rangeStream: jest.fn() };
+    const repo = {
+      clear: jest.fn(),
+      insert: jest.fn(),
+      find: jest.fn().mockResolvedValue([]),
+    } as any;
     const service = new LeaderboardService(
       cache as any,
       { find: jest.fn() } as any,
+      repo,
       analytics as any,
       new ConfigService(),
     );
