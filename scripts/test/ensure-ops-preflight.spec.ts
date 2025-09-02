@@ -15,12 +15,12 @@ function runScript(dir: string) {
   }
 }
 
-test('passes when workflow uses ops-preflight action', () => {
+test('passes when workflow uses ops-preflight action with always condition', () => {
   const dir = mkdtempSync(join(tmpdir(), 'wf-'));
   mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
   writeFileSync(
     join(dir, '.github', 'workflows', 'ci.yml'),
-    `on: push\njobs:\n  build:\n    uses: ./.github/actions/ops-preflight\n`,
+    `on: push\njobs:\n  build:\n    steps:\n    - if: \${{ always() }}\n      uses: ./.github/actions/ops-preflight\n`,
   );
   const exitMock = mock.method(process, 'exit');
   runScript(dir);
@@ -34,6 +34,26 @@ test('fails when workflow missing ops-preflight action', () => {
   writeFileSync(
     join(dir, '.github', 'workflows', 'ci.yml'),
     `on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n`,
+  );
+  const exitMock = mock.method(process, 'exit', (code?: number) => {
+    throw new Error(String(code));
+  });
+  let err: Error | undefined;
+  try {
+    runScript(dir);
+  } catch (e) {
+    err = e as Error;
+  }
+  assert.equal(err?.message, '1');
+  exitMock.mock.restore();
+});
+
+test('fails when ops-preflight step missing always condition', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'wf-'));
+  mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
+  writeFileSync(
+    join(dir, '.github', 'workflows', 'ci.yml'),
+    `on: push\njobs:\n  build:\n    steps:\n    - uses: ./.github/actions/ops-preflight\n`,
   );
   const exitMock = mock.method(process, 'exit', (code?: number) => {
     throw new Error(String(code));
