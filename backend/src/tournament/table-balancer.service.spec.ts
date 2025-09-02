@@ -1,6 +1,7 @@
 import { TableBalancerService } from './table-balancer.service';
 import type { Repository } from 'typeorm';
 import type Redis from 'ioredis';
+import { ConfigService } from '@nestjs/config';
 import { Table } from '../database/entities/table.entity';
 type TournamentService = {
   balanceTournament(
@@ -48,10 +49,11 @@ function createSinglePlayerService(moved: string[]): Partial<TournamentService> 
     balanceTournament(
       _tournamentId: string,
       currentHand: number,
-      _avoidWithin: number,
+      avoidWithin: number,
       recentlyMoved: Map<string, number>,
     ): Promise<void> {
-      if (!recentlyMoved.has('p1')) {
+      const last = recentlyMoved.get('p1') ?? -Infinity;
+      if (currentHand - last >= avoidWithin) {
         moved.push('p1');
         recentlyMoved.set('p1', currentHand);
       }
@@ -155,10 +157,13 @@ describe('TableBalancerService', () => {
 
     const original = process.env.TOURNAMENT_AVOID_WITHIN;
     process.env.TOURNAMENT_AVOID_WITHIN = '3';
+    const config = new ConfigService({ tournament: { avoidWithin: 3 } });
 
     const service = new TableBalancerService(
       repo,
       tournamentService as any,
+      undefined,
+      config,
     );
 
     expect((service as unknown as { defaultAvoidWithin: number }).defaultAvoidWithin).toBe(3);

@@ -55,11 +55,12 @@ flowchart LR
 ## Operational Controls
 
 - Tournament endpoints are protected by a configurable rate limit guard.
-- Table balancing persists seat moves and skips players moved within the last
-  few hands. Configure the window with `tournament.avoidWithin` (env
-  `TOURNAMENT_AVOID_WITHIN`, default 10). For example, with
-  `TOURNAMENT_AVOID_WITHIN=5`, a player moved on hand 42 will not be
-  rebalanced again until hand 47. The seat records `lastMovedHand` so the
+- Table balancing records each player's `lastMovedHand` and consults it on
+  every rebalance. Players are skipped when `currentHand - lastMovedHand` is
+  less than the configurable window. Set this window with
+  `tournament.avoidWithin` (env `TOURNAMENT_AVOID_WITHIN`, default 10). For
+  example, with `TOURNAMENT_AVOID_WITHIN=5`, a player moved on hand 42 will not
+  be rebalanced again until hand 47. The seat records `lastMovedHand` so the
   avoidance window survives restarts.
 
   | Hand | Event                             | Effect                       |

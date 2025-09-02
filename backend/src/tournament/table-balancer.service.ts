@@ -22,13 +22,10 @@ export class TableBalancerService {
     @Optional() @Inject('REDIS_CLIENT') private readonly redis?: Redis,
     @Optional() private readonly config: ConfigService = new ConfigService(),
   ) {
-    this.defaultAvoidWithin =
-      this.config.get<number>('tournament.avoidWithin') ??
-      parseInt(
-        process.env.TOURNAMENT_AVOID_WITHIN ??
-          DEFAULT_AVOID_WITHIN.toString(),
-        10,
-      );
+    this.defaultAvoidWithin = this.config.get<number>(
+      'tournament.avoidWithin',
+      DEFAULT_AVOID_WITHIN,
+    );
   }
 
   /**
@@ -61,30 +58,35 @@ export class TableBalancerService {
     const min = Math.min(...counts);
     if (max - min > 1) {
       let recentlyMoved: Map<string, number>;
-      if (this.redis) {
-        recentlyMoved = new Map();
-        const key = `tourney:${tournamentId}:lastMoved`;
-        const entries = await this.redis.hgetall(key);
-        for (const [playerId, hand] of Object.entries(entries)) {
-          const parsed = parseInt(hand, 10);
-          if (!Number.isNaN(parsed)) {
-            recentlyMoved.set(playerId, parsed);
+      if (currentHand > 0) {
+        if (this.redis) {
+          recentlyMoved = new Map();
+          const key = `tourney:${tournamentId}:lastMoved`;
+          const entries = await this.redis.hgetall(key);
+          for (const [playerId, hand] of Object.entries(entries)) {
+            const parsed = parseInt(hand, 10);
+            if (!Number.isNaN(parsed)) {
+              recentlyMoved.set(playerId, parsed);
+            }
           }
+        } else {
+          recentlyMoved =
+            this.localRecentlyMoved.get(tournamentId) ??
+            new Map<string, number>();
         }
-      } else {
-        recentlyMoved =
-          this.localRecentlyMoved.get(tournamentId) ?? new Map<string, number>();
-      }
-      for (const tbl of tables) {
-        for (const seat of tbl.seats) {
-          const last = seat.lastMovedHand ?? 0;
-          if (currentHand > 0 && currentHand - last < avoidWithin) {
-            const prev = recentlyMoved.get(seat.user.id) ?? -Infinity;
-            if (last > prev) {
-              recentlyMoved.set(seat.user.id, last);
+        for (const tbl of tables) {
+          for (const seat of tbl.seats) {
+            const last = seat.lastMovedHand ?? 0;
+            if (last > 0) {
+              const prev = recentlyMoved.get(seat.user.id) ?? -Infinity;
+              if (last > prev) {
+                recentlyMoved.set(seat.user.id, last);
+              }
             }
           }
         }
+      } else {
+        recentlyMoved = new Map<string, number>();
       }
 
       await this.tournamentService.balanceTournament(

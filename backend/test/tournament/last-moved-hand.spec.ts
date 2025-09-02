@@ -26,13 +26,16 @@ describe('TableBalancerService lastMovedHand persistence', () => {
     const items = new Map(seats.map((s) => [s.id, s]));
     return {
       find: jest.fn(async () => Array.from(items.values())),
-      save: jest.fn(async (seat: Seat) => {
-        tables.forEach((tbl) => {
-          tbl.seats = tbl.seats.filter((s) => s.id !== seat.id);
+      save: jest.fn(async (seat: Seat | Seat[]) => {
+        const arr = Array.isArray(seat) ? seat : [seat];
+        arr.forEach((s) => {
+          tables.forEach((tbl) => {
+            tbl.seats = tbl.seats.filter((se) => se.id !== s.id);
+          });
+          s.table.seats.push(s);
+          items.set(s.id, s);
         });
-        seat.table.seats.push(seat);
-        items.set(seat.id, seat);
-        return seat;
+        return seat as any;
       }),
     } as unknown as Repository<Seat>;
   }
