@@ -112,12 +112,15 @@ describe('TournamentScheduler', () => {
     const serviceDeps = {
       tournaments: { find: jest.fn(), findOne: jest.fn(), save: jest.fn() } as any,
       seats: {
-        save: jest.fn(async (seat: Seat) => {
-          tables.forEach((t) => {
-            t.seats = t.seats.filter((s) => s.id !== seat.id);
-          });
-          seat.table.seats.push(seat);
-          return seat;
+        save: jest.fn(async (seat: Seat | Seat[]) => {
+          const arr = Array.isArray(seat) ? seat : [seat];
+          for (const s of arr) {
+            tables.forEach((t) => {
+              t.seats = t.seats.filter((seat) => seat.id !== s.id);
+            });
+            s.table.seats.push(s);
+          }
+          return Array.isArray(seat) ? arr : arr[0];
         }),
       } as any,
       tables: { find: jest.fn(async () => tables) } as any,

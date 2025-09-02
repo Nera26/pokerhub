@@ -79,7 +79,9 @@ export class TableBalancerService {
       const updated = new Map<string, number>();
       for (const tbl of tables) {
         for (const seat of tbl.seats) {
-          updated.set(seat.user.id, seat.lastMovedHand ?? 0);
+          if (seat.lastMovedHand) {
+            updated.set(seat.user.id, seat.lastMovedHand);
+          }
         }
       }
       recentlyMoved = updated;

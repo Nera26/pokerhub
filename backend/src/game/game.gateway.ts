@@ -944,7 +944,7 @@ export class GameGateway
 
   private getRateLimitKey(client: GameSocket): string {
     const auth = client.handshake?.auth as SocketData | undefined;
-    const userId = client.data.userId ?? auth?.userId;
+    const userId = client.data?.userId ?? auth?.userId;
     if (userId) {
       return `${this.actionCounterKey}:${userId}`;
     }
@@ -954,22 +954,22 @@ export class GameGateway
     const ip =
       xff?.split(',')[0].trim() ??
       client.handshake?.address ??
-      (client.conn as { remoteAddress?: string }).remoteAddress ??
+      (client.conn as { remoteAddress?: string } | undefined)?.remoteAddress ??
       client.id;
     return `${this.actionCounterKey}:${ip}`;
   }
 
   private getClientMeta(client: GameSocket) {
     const auth = client.handshake?.auth as SocketData | undefined;
-    const userId = client.data.userId ?? auth?.userId;
-    const deviceId = client.data.deviceId ?? auth?.deviceId;
+    const userId = client.data?.userId ?? auth?.userId;
+    const deviceId = client.data?.deviceId ?? auth?.deviceId;
     const xff = client.handshake?.headers?.['x-forwarded-for'] as
       | string
       | undefined;
     const ip =
       xff?.split(',')[0].trim() ??
       client.handshake?.address ??
-      (client.conn as { remoteAddress?: string }).remoteAddress ??
+      (client.conn as { remoteAddress?: string } | undefined)?.remoteAddress ??
       client.id;
     return { userId, deviceId, ip };
   }
