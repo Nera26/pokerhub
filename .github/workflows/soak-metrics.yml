@@ -16,6 +16,15 @@ jobs:
     secrets: inherit
   check:
     runs-on: ubuntu-latest
+    env:
+      SOAK_LATENCY_P50_MS: ${{ vars.SOAK_LATENCY_P50_MS }}
+      SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS }}
+      SOAK_LATENCY_P99_MS: ${{ vars.SOAK_LATENCY_P99_MS }}
+      SOAK_THROUGHPUT_MIN: ${{ vars.SOAK_THROUGHPUT_MIN }}
+      SOAK_GC_P95_MS: ${{ vars.SOAK_GC_P95_MS }}
+      SOAK_RSS_GROWTH_PCT: ${{ vars.SOAK_RSS_GROWTH_PCT }}
+      SOAK_TRENDS_WINDOW: ${{ vars.SOAK_TRENDS_WINDOW }}
+      SOAK_TRENDS_DEVIATION_PCT: ${{ vars.SOAK_TRENDS_DEVIATION_PCT }}
     steps:
     - uses: actions/checkout@v4
     - uses: google-github-actions/auth@v2
@@ -25,21 +34,15 @@ jobs:
     - uses: google-github-actions/setup-gcloud@v2
       with:
         project_id: ${{ vars.GCP_PROJECT_ID }}
-    - id: check
-      run: npx ts-node scripts/check-soak-metrics.ts
     - id: trend
-      env:
-        SOAK_TRENDS_WINDOW: ${{ vars.SOAK_TRENDS_WINDOW }}
-        SOAK_TRENDS_DEVIATION_PCT: ${{ vars.SOAK_TRENDS_DEVIATION_PCT }}
       run: |
         set -o pipefail
         npx ts-node scripts/check-soak-trend-regression.ts 2>&1 | tee soak-trend-regression.log
     - name: Analyze soak trends
       run: npx ts-node scripts/analyze-soak-trends.ts metrics/
-    - name: Publish soak metrics
+    - id: check
       if: always()
-      continue-on-error: true
-      run: npx ts-node scripts/check-soak-metrics.ts
+      run: node scripts/check-soak-metrics.ts
     - name: Prepare regression alert
       if: steps.check.outcome == 'failure'
       env:
