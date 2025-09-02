@@ -11,10 +11,10 @@ export class Hand {
   @Column()
   commitment!: string;
 
-  @Column({ nullable: true })
+  @Column('varchar', { nullable: true })
   seed!: string | null;
 
-  @Column({ nullable: true })
+  @Column('varchar', { nullable: true })
   nonce!: string | null;
 
   @Column({ default: false })

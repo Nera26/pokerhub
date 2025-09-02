@@ -7,6 +7,9 @@ import { Seat } from './entities/seat.entity';
 import { Account } from '../wallet/account.entity';
 import { JournalEntry } from '../wallet/journal-entry.entity';
 import { SettlementJournal } from '../wallet/settlement-journal.entity';
+import { Disbursement } from '../wallet/disbursement.entity';
+import { Notification } from '../notifications/notification.entity';
+import { WithdrawalDecision } from '../withdrawals/withdrawal-decision.entity';
 import { Hand } from './entities/hand.entity';
 import { AntiCheatFlag } from './entities/antiCheatFlag.entity';
 import { KycVerification } from './entities/kycVerification.entity';
@@ -24,6 +27,9 @@ export const AppDataSource = new DataSource({
     Account,
     JournalEntry,
     SettlementJournal,
+    Disbursement,
+    Notification,
+    WithdrawalDecision,
     Hand,
     AntiCheatFlag,
     KycVerification,

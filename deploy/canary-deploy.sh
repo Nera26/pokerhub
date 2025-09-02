@@ -20,6 +20,9 @@ echo "Deploying canary ${CANARY_DEPLOYMENT} with image ${IMAGE}"
 kubectl set image deployment/"${CANARY_DEPLOYMENT}" "${APP_NAME}"="${IMAGE}" -n "$NAMESPACE"
 kubectl rollout status deployment/"${CANARY_DEPLOYMENT}" -n "$NAMESPACE" --timeout=60s
 
+echo "Running database migrations"
+kubectl exec deployment/"${CANARY_DEPLOYMENT}" -n "$NAMESPACE" -- npm run migration:run
+
 echo "Verifying canary health"
 kubectl run "${APP_NAME}"-probe --rm -i --restart=Never --image=curlimages/curl:8.6.0 -n "$NAMESPACE" -- \
   curl -fsS "$HEALTH_CHECK_URL"
