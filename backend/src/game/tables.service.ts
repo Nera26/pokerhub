@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Table as TableEntity } from '../database/entities/table.entity';
+import { User } from '../database/entities/user.entity';
 import { RoomManager } from './room.service';
 import { ChatService } from './chat.service';
 import type {
@@ -16,6 +17,8 @@ export class TablesService {
   constructor(
     @InjectRepository(TableEntity)
     private readonly tables: Repository<TableEntity>,
+    @InjectRepository(User)
+    private readonly users: Repository<User>,
     private readonly rooms: RoomManager,
     private readonly chat: ChatService,
   ) {}
@@ -41,15 +44,21 @@ export class TablesService {
       const state = await room.getPublicState();
       pot = state.pot;
       communityCards = state.communityCards.map((c) => this.cardToString(c));
-      players = state.players.map((p, idx) => ({
-        id: idx + 1,
-        username: p.id,
-        avatar: '',
-        chips: p.stack,
-        committed: p.bet,
-        isFolded: p.folded,
-        isAllIn: p.allIn,
-      }));
+      const userIds = state.players.map((p) => p.id);
+      const userEntities = await this.users.findBy({ id: In(userIds) });
+      const userMap = new Map(userEntities.map((u) => [u.id, u]));
+      players = state.players.map((p, idx) => {
+        const user = userMap.get(p.id);
+        return {
+          id: idx + 1,
+          username: user?.username ?? p.id,
+          avatar: user?.avatarKey ?? '',
+          chips: p.stack,
+          committed: p.bet,
+          isFolded: p.folded,
+          isAllIn: p.allIn,
+        };
+      });
       chatMessages = await this.chat.getRecentMessages(id);
     } catch {
       // Fallback to empty state if room not available or state fetch fails
