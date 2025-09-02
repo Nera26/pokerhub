@@ -49,7 +49,7 @@
     "@opentelemetry/instrumentation-http": "0.203.0",
     "@opentelemetry/instrumentation-runtime-node": "0.17.1",
     "@opentelemetry/sdk-logs": "0.203.0",
-    "@opentelemetry/sdk-metrics": "0.203.0",
+    "@opentelemetry/sdk-metrics": "1.9.0",
     "@opentelemetry/sdk-node": "0.203.0",
     "@tanstack/react-query": "^5.80.7",
     "@tanstack/react-virtual": "^3.13.9",
@@ -131,6 +131,18 @@
     "typescript": "^5",
     "vite": "^7.1.3",
     "vitest": "^3.2.4"
+  },
+  "overrides": {
+    "@opentelemetry/api": "1.9.0",
+    "@opentelemetry/api-logs": "0.203.0",
+    "@opentelemetry/exporter-logs-otlp-http": "0.203.0",
+    "@opentelemetry/exporter-metrics-otlp-http": "0.203.0",
+    "@opentelemetry/exporter-prometheus": "0.203.0",
+    "@opentelemetry/exporter-trace-otlp-http": "0.203.0",
+    "@opentelemetry/instrumentation-runtime-node": "0.17.1",
+    "@opentelemetry/sdk-logs": "0.203.0",
+    "@opentelemetry/sdk-metrics": "1.9.0",
+    "@opentelemetry/sdk-node": "0.203.0"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

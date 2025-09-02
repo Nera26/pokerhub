@@ -23,13 +23,16 @@ describe('TableBalancerService integration', () => {
     const items = new Map(seats.map((s) => [s.id, s]));
     return {
       find: jest.fn(async () => Array.from(items.values())),
-      save: jest.fn(async (seat: Seat) => {
-        tables.forEach((tbl) => {
-          tbl.seats = tbl.seats.filter((s) => s.id !== seat.id);
-        });
-        seat.table.seats.push(seat);
-        items.set(seat.id, seat);
-        return seat;
+      save: jest.fn(async (seat: Seat | Seat[]) => {
+        const arr = Array.isArray(seat) ? seat : [seat];
+        for (const s of arr) {
+          tables.forEach((tbl) => {
+            tbl.seats = tbl.seats.filter((seat) => seat.id !== s.id);
+          });
+          s.table.seats.push(s);
+          items.set(s.id, s);
+        }
+        return Array.isArray(seat) ? arr : arr[0];
       }),
     } as Repository<Seat>;
   }

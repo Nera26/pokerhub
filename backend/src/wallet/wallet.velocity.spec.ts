@@ -36,6 +36,10 @@ describe('WalletService velocity limits', () => {
       return val;
     }),
     expire: jest.fn(async () => 1),
+    set: jest.fn(async (key: string, value: string, _mode?: string, _ttl?: number) => {
+      redisStore.set(key, Number(value));
+      return 'OK';
+    }),
   };
   const provider: any = {
     initiate3DS: jest.fn().mockResolvedValue({ id: 'tx' }),
