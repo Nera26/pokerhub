@@ -1,29 +1,10 @@
 #!/usr/bin/env ts-node
-import { readdirSync, readFileSync, Dirent } from 'fs';
-import { join } from 'path';
-
-function collectYamlFiles(dir: string): string[] {
-  const entries: Dirent[] = readdirSync(dir, { withFileTypes: true });
-  let files: string[] = [];
-
-  for (const entry of entries) {
-    const fullPath = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      files = files.concat(collectYamlFiles(fullPath));
-    } else if (
-      entry.isFile() &&
-      (entry.name.endsWith('.yml') || entry.name.endsWith('.yaml'))
-    ) {
-      files.push(fullPath);
-    }
-  }
-
-  return files;
-}
+import { readFileSync } from 'fs';
+import { collectWorkflowDirs, collectYamlFiles } from './ensure-spectator-privacy';
 
 function main() {
-  const workflowsDir = join(process.cwd(), '.github', 'workflows');
-  const files = collectYamlFiles(workflowsDir);
+  const workflowDirs = collectWorkflowDirs(process.cwd());
+  const files = workflowDirs.flatMap(collectYamlFiles);
   const missingIf: string[] = [];
   const missingMetrics: string[] = [];
   const CONDITION = '${{ always() }}';
