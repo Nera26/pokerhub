@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Param, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  UseGuards,
+  Req,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { StatusResponse } from '@shared/types';
@@ -23,7 +31,7 @@ export class NotificationsController {
 
   @Post(':id')
   async markOne(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Req() req: Request,
   ): Promise<StatusResponse> {
     await this.notifications.markRead(id, req.userId);

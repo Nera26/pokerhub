@@ -92,5 +92,13 @@ describe('Notifications', () => {
     expect(res.body.notifications).toHaveLength(1);
     expect(res.body.notifications[0].message).toBe('hello');
   });
+
+  it('returns 400 for invalid id on mark-one', async () => {
+    await request(app.getHttpServer())
+      .post('/notifications/not-a-uuid')
+      .set('Authorization', 'Bearer user')
+      .send({})
+      .expect(400);
+  });
 });
 
