@@ -181,7 +181,7 @@ describe('Deposit callback', () => {
       id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
     });
     expect(userAfter.balance).toBe(50);
-    expect(events.emit).toHaveBeenCalledTimes(2);
+    expect(events.emit).toHaveBeenCalledTimes(3);
     expect(provider.confirm3DS).toHaveBeenCalledTimes(1);
   });
 });

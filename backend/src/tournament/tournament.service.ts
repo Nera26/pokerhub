@@ -199,6 +199,11 @@ export class TournamentService implements OnModuleInit {
           refId: id,
           currency: 'USD',
         });
+        await this.events.emit('notification.create', {
+          userId: seat.user.id,
+          type: 'tournament',
+          message: `Tournament ${t.title} cancelled`,
+        });
       }
     }
     await this.events.emit('tournament.cancel', { tournamentId: id });

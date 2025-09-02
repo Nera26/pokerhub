@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { NotificationTypeSchema } from "./types";
 
 // Increment on breaking changes to websocket event frames
 export const EVENT_SCHEMA_VERSION = '1';
@@ -129,6 +130,12 @@ export const WalletReconcileMismatchEvent = z.object({
   total: z.number(),
 });
 
+export const NotificationCreateEvent = z.object({
+  userId: z.string().uuid(),
+  type: NotificationTypeSchema,
+  message: z.string(),
+});
+
 export const EventSchemas = {
   "hand.start": HandStartEvent,
   "hand.end": HandEndEvent,
@@ -149,6 +156,7 @@ export const EventSchemas = {
   "wallet.velocity.limit": WalletVelocityLimitEvent,
   "wallet.reconcile.mismatch": WalletReconcileMismatchEvent,
   "wallet.chargeback_flag": WalletChargebackFlagEvent,
+  "notification.create": NotificationCreateEvent,
 } as const;
 
 export type Events = {
@@ -171,6 +179,7 @@ export type Events = {
   "wallet.velocity.limit": z.infer<typeof WalletVelocityLimitEvent>;
   "wallet.reconcile.mismatch": z.infer<typeof WalletReconcileMismatchEvent>;
   "wallet.chargeback_flag": z.infer<typeof WalletChargebackFlagEvent>;
+  "notification.create": z.infer<typeof NotificationCreateEvent>;
 };
 
 export type EventName = keyof Events;
