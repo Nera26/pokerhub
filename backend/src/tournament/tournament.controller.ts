@@ -31,8 +31,8 @@ export class TournamentController {
   }
 
   @Get(':id')
-  get(@Param('id') id: string) {
-    return this.service.get(id);
+  get(@Param('id') id: string, @Req() req: Request) {
+    return this.service.get(id, req.userId);
   }
 
   @Post(':id/register')
