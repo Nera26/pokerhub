@@ -9,6 +9,7 @@ import {
   BadRequestException,
   HttpCode,
   ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { ZodError } from 'zod';
 import {
@@ -26,6 +27,7 @@ import {
 import { ChatMessagesSchema, SendChatMessageRequestSchema } from '../schemas/chat';
 import { TablesService } from '../game/tables.service';
 import { ChatService } from '../game/chat.service';
+import { AuthGuard } from '../auth/auth.guard';
 
 @Controller('tables')
 export class TablesController {
@@ -49,6 +51,7 @@ export class TablesController {
   }
 
   @Post()
+  @UseGuards(AuthGuard)
   async create(@Body() body: CreateTableRequest): Promise<Table> {
     try {
       const parsed = CreateTableSchema.parse(body);
@@ -63,6 +66,7 @@ export class TablesController {
   }
 
   @Put(':id')
+  @UseGuards(AuthGuard)
   async update(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: UpdateTableRequest,
@@ -80,6 +84,7 @@ export class TablesController {
   }
 
   @Delete(':id')
+  @UseGuards(AuthGuard)
   @HttpCode(204)
   async remove(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -96,6 +101,7 @@ export class TablesController {
   }
 
   @Post(':id/chat')
+  @UseGuards(AuthGuard)
   @HttpCode(204)
   async sendChat(
     @Param('id', new ParseUUIDPipe()) id: string,
