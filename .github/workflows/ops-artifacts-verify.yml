@@ -40,6 +40,8 @@ jobs:
       PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
       PROOF_MANIFEST_BUCKET: ${{ secrets.PROOF_MANIFEST_BUCKET }}
       PROOF_MANIFEST_MIN_RETENTION_DAYS: 365
+      PROOF_ARCHIVE_MIN_RETENTION_DAYS: ${{ vars.PROOF_ARCHIVE_MIN_RETENTION_DAYS }}
+      PROOF_ARCHIVE_REPLICATION_LAG_THRESHOLD_SECONDS: ${{ vars.PROOF_ARCHIVE_REPLICATION_LAG_THRESHOLD_SECONDS }}
       PROOF_MANIFEST_KMS_KEY: ${{ vars.PROOF_MANIFEST_KMS_KEY }}
       PROOF_MANIFEST_KMS_KEYRING: ${{ vars.PROOF_MANIFEST_KMS_KEYRING }}
       PROOF_MANIFEST_KMS_LOCATION: ${{ vars.PROOF_MANIFEST_KMS_LOCATION }}
@@ -82,13 +84,15 @@ jobs:
         run: npx -y ts-node scripts/check-proof-archive-retention.ts
         env:
           PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
-          PROOF_ARCHIVE_MIN_RETENTION_DAYS: 365
 
       - name: Check proof archive replication
         run: npx -y ts-node scripts/check-proof-archive-replication.ts
         env:
           PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
           SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
+
+      - name: Check proof archive metrics
+        run: npx -y ts-node scripts/check-proof-archive-metrics.ts
 
       - name: Get spectator privacy run ID
         id: get_run_id
@@ -151,7 +155,7 @@ jobs:
           content-filepath: ops-artifacts-alert.md
 
   spectator-privacy:
-    if: ${{ always() }}
+    needs: check-proof-archive
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:
