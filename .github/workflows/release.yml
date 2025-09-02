@@ -89,3 +89,9 @@ jobs:
     if: ${{ always() }}
     steps:
       - run: echo "publish docs checks passed"
+
+  check-proof-archive:
+    needs: publish-docs
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
