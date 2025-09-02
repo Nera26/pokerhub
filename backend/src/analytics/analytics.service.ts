@@ -137,6 +137,7 @@ const ParquetSchemas: Record<string, ParquetSchema> = {
   'hand.start': HandStartSchema,
   'hand.end': HandEndSchema,
   'hand.settle': HandSettleSchema,
+  'leaderboard.hand_settled': HandSettleSchema,
   'wallet.credit': WalletMovementSchema,
   'wallet.debit': WalletMovementSchema,
   'action.bet': ActionAmountSchema,

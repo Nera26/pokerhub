@@ -17,6 +17,21 @@ export class LeaderboardService {
   private readonly cacheKey = 'leaderboard:hot';
   private readonly dataKey = 'leaderboard:data';
   private readonly ttl = 30; // seconds
+  private scores = new Map<
+    string,
+    {
+      sessions: Set<string>;
+      rating: number;
+      rd: number;
+      volatility: number;
+      net: number;
+      bb: number;
+      hands: number;
+      duration: number;
+      buyIn: number;
+      finishes: Record<number, number>;
+    }
+  >();
   private static readonly meter = metrics.getMeter('leaderboard');
   private static readonly rebuildEventsDuration =
     LeaderboardService.meter.createHistogram(
@@ -139,6 +154,66 @@ export class LeaderboardService {
       ts: Date.now(),
     });
     return { durationMs, memoryMb };
+  }
+
+  async handleHandSettled(event: {
+    playerIds: string[];
+    deltas: number[];
+  }): Promise<void> {
+    event.playerIds.forEach((playerId, idx) => {
+      const delta = event.deltas[idx] ?? 0;
+      const entry =
+        this.scores.get(playerId) ??
+        {
+          sessions: new Set<string>(),
+          rating: 0,
+          rd: 350,
+          volatility: 0.06,
+          net: 0,
+          bb: 0,
+          hands: 0,
+          duration: 0,
+          buyIn: 0,
+          finishes: {},
+        };
+      const result = delta > 0 ? 1 : delta < 0 ? 0 : 0.5;
+      const updated = updateRating(
+        { rating: entry.rating, rd: entry.rd, volatility: entry.volatility },
+        [{ rating: 0, rd: 350, score: result }],
+        0,
+      );
+      entry.rating = updated.rating;
+      entry.rd = updated.rd;
+      entry.volatility = updated.volatility;
+      entry.net += delta;
+      entry.bb += delta;
+      entry.hands += 1;
+      this.scores.set(playerId, entry);
+    });
+
+    const leaders = [...this.scores.entries()]
+      .sort((a, b) => {
+        const diff = b[1].rating - a[1].rating;
+        return diff !== 0 ? diff : a[0].localeCompare(b[0]);
+      })
+      .map(([id, v], idx) => ({
+        playerId: id,
+        rank: idx + 1,
+        points: v.rating,
+        rd: v.rd,
+        volatility: v.volatility,
+        net: v.net,
+        bb100: v.hands ? (v.bb / v.hands) * 100 : 0,
+        hours: v.duration / 3600000,
+        roi: v.buyIn ? v.net / v.buyIn : 0,
+        finishes: v.finishes,
+      }))
+      .slice(0, 100);
+
+    await Promise.all([
+      this.cache.set(this.dataKey, leaders),
+      this.cache.set(this.cacheKey, leaders, { ttl: this.ttl }),
+    ]);
   }
 
   private loadEvents(
@@ -286,6 +361,7 @@ export class LeaderboardService {
       }))
       .slice(0, 100);
 
+    this.scores = scores;
     await Promise.all([
       this.cache.set(this.dataKey, leaders),
       this.cache.set(this.cacheKey, leaders, { ttl: this.ttl }),
