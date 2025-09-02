@@ -1,1 +1,1 @@
-export const API_CONTRACT_VERSION = '2.4.0';
+export const API_CONTRACT_VERSION = '2.5.0';

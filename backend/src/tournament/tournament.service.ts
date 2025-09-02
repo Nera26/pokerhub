@@ -84,11 +84,17 @@ export class TournamentService implements OnModuleInit {
     return this.tournaments.find();
   }
 
-  async get(id: string) {
+  async get(id: string, userId?: string) {
     const t = await this.getEntity(id);
     const playerCount = await this.seats.count({
       where: { table: { tournament: { id } } } as any,
     });
+    let registered = false;
+    if (userId) {
+      registered = await this.seats.exists({
+        where: { table: { tournament: { id } }, user: { id: userId } } as any,
+      });
+    }
     return {
       id: t.id,
       title: t.title,
@@ -97,7 +103,7 @@ export class TournamentService implements OnModuleInit {
       prizePool: t.prizePool,
       state: t.state,
       players: { current: playerCount, max: t.maxPlayers },
-      registered: false,
+      registered,
       registration: {
         open: t.registrationOpen ?? null,
         close: t.registrationClose ?? null,
