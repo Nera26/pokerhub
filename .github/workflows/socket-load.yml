@@ -44,15 +44,9 @@ jobs:
         PACKET_LOSS: 0
         METRICS_URL: http://localhost:3000/metrics
     - name: Check backpressure
-      run: npx ts-node scripts/check-backpressure.ts
+      run: node -r ts-node/register scripts/check-backpressure.ts
       env:
-        TABLES: 5
-        SOCKETS: 20
-        ACTIONS_PER_CLIENT: 5
-        LATENCY_MS: 10
-        JITTER_MS: 5
-        PACKET_LOSS: 0
-        METRICS_URL: http://localhost:3000/metrics
+        WS_QUEUE_DEPTH_THRESHOLD: ${{ vars.WS_QUEUE_DEPTH_THRESHOLD || 80 }}
     - name: Upload metrics
       if: always()
       uses: actions/upload-artifact@v4

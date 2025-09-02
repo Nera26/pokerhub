@@ -1,5 +1,4 @@
 #!/usr/bin/env ts-node
-import { spawnSync } from 'child_process';
 import fs from 'fs';
 
 interface BackpressureMetrics {
@@ -9,22 +8,9 @@ interface BackpressureMetrics {
   globalLimitExceeded: number;
 }
 
-const child = spawnSync('ts-node', ['tests/performance/socket-load.ts'], {
-  stdio: 'inherit',
-  env: {
-    ...process.env,
-    ACK_P50_MS: String(1e9),
-    ACK_P95_MS: String(1e9),
-    ACK_P99_MS: String(1e9),
-    TPS_LIMIT: String(0),
-  },
-});
-
-if (child.status !== 0) {
-  process.exit(child.status ?? 1);
-}
-
-const metrics = JSON.parse(fs.readFileSync('metrics/backpressure.json', 'utf8')) as BackpressureMetrics;
+const metrics = JSON.parse(
+  fs.readFileSync('metrics/backpressure.json', 'utf8'),
+) as BackpressureMetrics;
 const queueLimit = Number(process.env.WS_QUEUE_DEPTH_THRESHOLD || 80);
 
 const errors: string[] = [];

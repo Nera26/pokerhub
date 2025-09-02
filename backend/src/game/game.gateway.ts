@@ -163,6 +163,7 @@ export class GameGateway
   private static readonly globalActionCount =
     GameGateway.meter.createObservableGauge?.('game_action_global_count', {
       description: 'Global action count within rate-limit window',
+      unit: 'actions',
     }) ?? noopGauge;
   private static readonly frameRetries = GameGateway.meter.createCounter(
     'frame_retries_total',
