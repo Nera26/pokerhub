@@ -256,18 +256,49 @@ jobs:
     if: github.event_name == 'pull_request'
     needs: [ops-preflight, ops-sla]
     runs-on: ubuntu-latest
+    services:
+      toxiproxy:
+        image: ghcr.io/shopify/toxiproxy:2.5.0
+        ports:
+          - 8474:8474
+          - 3001:3001
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
       - run: npm ci
+      - name: Start test server
+        run: |
+          node -e "const { Server } = require('socket.io'); const http = require('http'); const server = http.createServer(); const io = new Server(server); io.on('connection', (s) => { s.on('join', () => {}); s.on('action', (_, cb) => cb()); }); server.listen(3000);" &
+          sleep 1
+      - name: Generate ws latency metrics
+        run: |
+          npx ts-node tests/performance/socket-load.ts
+          node -e "const fs=require('fs');const h=JSON.parse(fs.readFileSync('metrics/latency-hist.json','utf8'));const t=JSON.parse(fs.readFileSync('metrics/table-metrics.json','utf8'));fs.writeFileSync('metrics/ws-latency.json',JSON.stringify({p50:h.p50,p95:h.p95,p99:h.p99,throughput:t.averageActionsPerMin}));"
+        env:
+          TABLES: 5
+          SOCKETS: 20
+          ACTIONS_PER_CLIENT: 5
+          LATENCY_MS: 10
+          JITTER_MS: 5
+          PACKET_LOSS: 0
+          ACK_P50_MS: 1000000000
+          ACK_P95_MS: 1000000000
+          ACK_P99_MS: 1000000000
+          TPS_LIMIT: 0
       - run: npx ts-node scripts/check-latency.ts
         env:
           LATENCY_P50_MS: ${{ vars.LATENCY_P50_MS }}
           LATENCY_P95_MS: ${{ vars.LATENCY_P95_MS }}
           LATENCY_P99_MS: ${{ vars.LATENCY_P99_MS }}
           THROUGHPUT_MIN: ${{ vars.THROUGHPUT_MIN }}
+      - name: Upload ws latency metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ws-latency-metrics
+          path: metrics/
 
   soak-metrics-check:
     if: github.event_name == 'pull_request'
@@ -345,12 +376,14 @@ jobs:
         with:
           title: "SLA breached: soak trends"
           content-filepath: soak-trend-regression.md
-      - name: Upload soak summary
-        if: always() && hashFiles('soak-summary.json') != ''
+      - name: Upload soak summaries
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: soak-summary
-          path: soak-summary.json
+          name: soak-metrics
+          path: |
+            soak-summary.json
+            soak-regression.json
       - name: Publish soak summary
         if: always() && hashFiles('soak-summary.json') != ''
         env:

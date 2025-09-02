@@ -8,9 +8,12 @@ interface LatencyMetrics {
   throughput: number;
 }
 
-const metrics = JSON.parse(
-  fs.readFileSync('metrics/ws-latency.json', 'utf8'),
-) as LatencyMetrics;
+const file = 'metrics/ws-latency.json';
+if (!fs.existsSync(file)) {
+  console.error(`metrics file ${file} not found`);
+  process.exit(1);
+}
+const metrics = JSON.parse(fs.readFileSync(file, 'utf8')) as LatencyMetrics;
 
 const maxP50 = Number(process.env.LATENCY_P50_MS || 50);
 const maxP95 = Number(process.env.LATENCY_P95_MS || 120);
