@@ -355,6 +355,8 @@ jobs:
           SOAK_GC_P95_MS: ${{ vars.SOAK_GC_P95_MS }}
           SOAK_RSS_GROWTH_PCT: ${{ vars.SOAK_RSS_GROWTH_PCT }}
         run: npx ts-node scripts/check-soak-metrics.ts
+      - name: Ensure soak summary
+        run: test -f soak-summary.json
       - id: trend
         env:
           SOAK_TRENDS_WINDOW: ${{ vars.SOAK_TRENDS_WINDOW }}
@@ -450,6 +452,8 @@ jobs:
           SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS }}
           SOAK_THROUGHPUT_MIN: ${{ vars.SOAK_THROUGHPUT_MIN }}
           SOAK_METRICS_SLA_HOURS: ${{ vars.SOAK_METRICS_SLA_HOURS }}
+      - name: Ensure soak summary
+        run: test -f soak-summary.json
       - name: Upload soak metrics
         if: always()
         uses: actions/upload-artifact@v4
