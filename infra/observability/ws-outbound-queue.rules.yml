@@ -11,6 +11,14 @@ groups:
           pagerduty_service: pokerhub-sre
         annotations:
           summary: "WebSocket outbound queue depth above threshold"
+      - alert: WsOutboundQueueUtilizationHigh
+        expr: max(ws_outbound_queue_utilization) > 0.8
+        for: 2m
+        labels:
+          severity: warning
+          pagerduty_service: pokerhub-sre
+        annotations:
+          summary: "WebSocket outbound queue utilization above 80%"
       - alert: WsOutboundQueueLimitExceeded
         expr: max(ws_outbound_queue_depth) > max(ws_outbound_queue_limit)
         for: 1m

@@ -62,11 +62,14 @@ describe('GameGateway outbound queue metrics', () => {
   let GameGateway: any;
   let depthCb: ((r: any) => void) | undefined;
   let maxCb: ((r: any) => void) | undefined;
+  let utilCb: ((r: any) => void) | undefined;
   let dropMock: jest.Mock;
+  let rateHitMock: jest.Mock;
 
   beforeEach(() => {
     jest.resetModules();
     dropMock = jest.fn();
+    rateHitMock = jest.fn();
 
     let size = 0;
     const pQueueMock = jest.fn().mockImplementation(() => ({
@@ -88,6 +91,8 @@ describe('GameGateway outbound queue metrics', () => {
       createHistogram: jest.fn(() => ({ record: jest.fn() })),
       createCounter: jest.fn((name: string) => {
         if (name === 'ws_outbound_dropped_total') return { add: dropMock };
+        if (name === 'ws_outbound_rate_limit_hits_total')
+          return { add: rateHitMock };
         return { add: jest.fn() };
       }),
       createObservableGauge: jest
@@ -105,6 +110,14 @@ describe('GameGateway outbound queue metrics', () => {
             return {
               addCallback: (cb: any) => {
                 maxCb = cb;
+              },
+              removeCallback: jest.fn(),
+            };
+          }
+          if (name === 'ws_outbound_queue_utilization') {
+            return {
+              addCallback: (cb: any) => {
+                utilCb = cb;
               },
               removeCallback: jest.fn(),
             };
@@ -149,10 +162,14 @@ describe('GameGateway outbound queue metrics', () => {
       depthCb?.({ observe: observeDepth });
       const observeMax = jest.fn();
       maxCb?.({ observe: observeMax });
+      const observeUtil = jest.fn();
+      utilCb?.({ observe: observeUtil });
 
       expect(observeDepth).toHaveBeenCalledWith(2, { socketId: 'c1' });
       expect(observeMax).toHaveBeenCalledWith(2, { socketId: 'c1' });
+      expect(observeUtil).toHaveBeenCalledWith(1, { socketId: 'c1' });
       expect(dropMock).toHaveBeenCalledWith(1, { socketId: 'c1' });
+      expect(rateHitMock).toHaveBeenCalledWith(1, { socketId: 'c1' });
     } finally {
       await rooms.onModuleDestroy();
     }

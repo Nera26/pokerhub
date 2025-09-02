@@ -61,6 +61,13 @@ groups:
           severity: warning
         annotations:
           summary: "WebSocket messages dropped"
+      - alert: SpectatorRateLimitExceeded
+        expr: rate(spectator_rate_limit_hits_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Spectator WebSocket rate limit exceeded"
       - alert: PerSocketRateLimitExceeded
         expr: sum(rate(per_socket_limit_exceeded[5m])) / sum(rate(game_action_global_count[5m])) > 0.05
         for: 5m
