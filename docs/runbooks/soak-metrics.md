@@ -16,6 +16,7 @@ Key soak test outputs are exported to Cloud Monitoring for long-term visibility.
 ## Thresholds
 
 - Latency p95: **≤120 ms**
+- Latency p99: **≤200 ms**
 - Throughput: **≥150 actions/min**
 - GC pause p95: **≤50 ms**
 - RSS growth over 24h: **<1%**

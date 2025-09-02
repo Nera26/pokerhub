@@ -216,7 +216,7 @@ uploaded.
 
 - [Game Engine Overview](docs/game-engine.md) – state transitions, message schemas, and timers.
 - [RNG Fairness Whitepaper](docs/rng-fairness.md) – seed generation and commit–reveal verification.
-- [Runbooks](docs/runbooks/) – operational playbooks for stuck hands, orphaned reservations, and more.
+- [Runbooks](docs/runbooks/) – operational playbooks for stuck hands, orphaned reservations, and more. See [Soak Metrics](docs/runbooks/soak-metrics.md) and [Performance Metrics](docs/runbooks/perf-metrics.md) for CI metric thresholds.
 - [Accounting Book](docs/accounting-book.md) – ledger schema and reconciliation jobs.
 - [Wallet Reconciliation Guide](docs/player/wallet-reconciliation.md) – verify wallet balances against the ledger.
 - [RNG Commit–Reveal Whitepaper](docs/player/rng-whitepaper.md) – public audit proofs and seed retention policies.
