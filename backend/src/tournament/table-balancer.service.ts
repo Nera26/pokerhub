@@ -76,7 +76,7 @@ export class TableBalancerService {
       }
 
       for (const [playerId, last] of recentlyMoved) {
-        if (currentHand - last > avoidWithin) {
+        if (currentHand - last >= avoidWithin) {
           recentlyMoved.delete(playerId);
         }
       }
