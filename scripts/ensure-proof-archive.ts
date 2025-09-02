@@ -1,15 +1,36 @@
 #!/usr/bin/env ts-node
-import { readdirSync, readFileSync, Dirent } from 'fs';
+import {
+  readdirSync,
+  readFileSync,
+  Dirent,
+  existsSync,
+} from 'fs';
 import { join, relative } from 'path';
 
-function collectYamlFiles(root: string, dir: string = root): string[] {
+function collectWorkflowDirs(dir: string): string[] {
+  const entries: Dirent[] = readdirSync(dir, { withFileTypes: true });
+  let dirs: string[] = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    if (entry.name === 'node_modules' || entry.name === '.git') continue;
+    const fullPath = join(dir, entry.name);
+    if (entry.name === '.github') {
+      const wf = join(fullPath, 'workflows');
+      if (existsSync(wf)) dirs.push(wf);
+    }
+    dirs = dirs.concat(collectWorkflowDirs(fullPath));
+  }
+  return dirs;
+}
+
+function collectYamlFiles(dir: string): string[] {
   const entries: Dirent[] = readdirSync(dir, { withFileTypes: true });
   let files: string[] = [];
 
   for (const entry of entries) {
     const fullPath = join(dir, entry.name);
     if (entry.isDirectory()) {
-      files = files.concat(collectYamlFiles(root, fullPath));
+      files = files.concat(collectYamlFiles(fullPath));
     } else if (
       entry.isFile() &&
       (entry.name.endsWith('.yml') || entry.name.endsWith('.yaml'))
@@ -22,8 +43,8 @@ function collectYamlFiles(root: string, dir: string = root): string[] {
 }
 
 function main() {
-  const workflowsDir = join(process.cwd(), '.github', 'workflows');
-  const files = collectYamlFiles(workflowsDir);
+  const workflowDirs = collectWorkflowDirs(process.cwd());
+  const files = workflowDirs.flatMap(collectYamlFiles);
   const missingWorkflows: string[] = [];
   const missingConditions: string[] = [];
 
