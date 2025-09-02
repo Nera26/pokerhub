@@ -915,9 +915,8 @@ jobs:
       - name: Ledger audit
         id: ledger-audit
         run: npm run audit:ledger --prefix backend | tee audit.log
-        continue-on-error: true
       - uses: actions/upload-artifact@v4
-        if: steps.ledger-audit.outcome == 'failure' && hashFiles('storage/reconcile-*.json') != ''
+        if: always() && steps.ledger-audit.outcome == 'failure' && hashFiles('storage/reconcile-*.json') != ''
         with:
           name: ledger-reconcile-${{ github.sha }}
           path: storage/reconcile-*.json
@@ -926,6 +925,9 @@ jobs:
         with:
           name: ledger-audit-summary-${{ github.sha }}
           path: storage/ledger-audit/summary.json
+      - name: Fail if ledger audit failed
+        if: steps.ledger-audit.outcome != 'success'
+        run: exit 1
       - name: Frontend property tests
         id: frontend-property
         run: npm test --prefix frontend -- --testPathPattern=.property.spec.ts$ --passWithNoTests | tee frontend-property.log
@@ -970,7 +972,7 @@ jobs:
           name: property-summary-${{ github.sha }}
           path: property-summary.md
       - name: Fail if property tests failed
-        if: steps.ledger-audit.outcome == 'failure' || steps.backend-property.outcome == 'failure' || steps.frontend-property.outcome == 'failure' || steps.analytics-property.outcome == 'failure' || steps.shared-property.outcome == 'failure' || steps.repo-property.outcome == 'failure'
+        if: steps.backend-property.outcome == 'failure' || steps.frontend-property.outcome == 'failure' || steps.analytics-property.outcome == 'failure' || steps.shared-property.outcome == 'failure' || steps.repo-property.outcome == 'failure'
         run: exit 1
 
   integration-run:
