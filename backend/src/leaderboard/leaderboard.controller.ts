@@ -5,9 +5,12 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { LeaderboardService } from './leaderboard.service';
 import { LeaderboardRebuildQuerySchema } from '../schemas/leaderboard';
+import { AuthGuard } from '../auth/auth.guard';
+import { AdminGuard } from '../auth/admin.guard';
 
 @Controller('leaderboard')
 export class LeaderboardController {
@@ -19,6 +22,7 @@ export class LeaderboardController {
   }
 
   @Post('rebuild')
+  @UseGuards(AuthGuard, AdminGuard)
   @HttpCode(HttpStatus.ACCEPTED)
   rebuild(@Query() query: unknown) {
     const { days } = LeaderboardRebuildQuerySchema.parse(query);

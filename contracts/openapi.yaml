@@ -732,6 +732,8 @@ paths:
   /leaderboard/rebuild:
     post:
       summary: Rebuild leaderboard
+      security:
+        - bearerAuth: []
       parameters:
         - in: query
           name: days
