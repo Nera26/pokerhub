@@ -89,3 +89,10 @@ SCRIPT
         with:
           title: "Spectator logs bucket policy violation"
           content-filepath: spectator-bucket-audit-alert.md
+  spectator-privacy:
+    if: ${{ always() }}
+    needs:
+      - spectator-bucket-audit
+      - check-proof-archive
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
