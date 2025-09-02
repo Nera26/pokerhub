@@ -39,9 +39,9 @@ Refer to [Error Budget Procedures](../error-budget-procedures.md) when saturatio
 
 ## CI Regression Check
 `scripts/check-backpressure.ts` runs the socket-load harness and fails when
-`ws_outbound_queue_depth` exceeds 80 messages or when global action counters hit
-their configured limit. The job writes `metrics/backpressure.json` for
-inspection.
+`ws_outbound_queue_depth` exceeds the `WS_QUEUE_DEPTH_THRESHOLD` (80 by
+default) or when global action counters hit their configured limit. The job
+writes `metrics/backpressure.json` for inspection.
 
 ## Verification
 - Queue depth returns to normal operating levels.

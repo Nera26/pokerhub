@@ -5,11 +5,20 @@ import { join } from 'path';
 const yaml = require('js-yaml');
 
 function collectWorkflowDirs(root: string): string[] {
-  const dirs = [
-    join(root, '.github/workflows'),
-    join(root, '.github'), // fallback if someone placed ymls directly here
-  ];
-  return dirs.filter((d) => existsSync(d) && statSync(d).isDirectory());
+  const dirs: string[] = [];
+  function walk(dir: string) {
+    const ghDir = join(dir, '.github');
+    const wfDir = join(ghDir, 'workflows');
+    if (existsSync(wfDir) && statSync(wfDir).isDirectory()) dirs.push(wfDir);
+    if (existsSync(ghDir) && statSync(ghDir).isDirectory()) dirs.push(ghDir);
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory() && !entry.name.startsWith('.')) {
+        walk(join(dir, entry.name));
+      }
+    }
+  }
+  walk(root);
+  return dirs;
 }
 
 function collectYamlFiles(dir: string): string[] {
