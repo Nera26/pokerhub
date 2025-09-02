@@ -199,9 +199,15 @@ describe('Wallet ledger invariants', () => {
             const user = await accountRepo.findOneByOrFail({ id: userId });
             user.balance += 1;
             await accountRepo.save(user);
-            await expect(
-              runInTmp(() => runReconcile(service, events)),
-            ).rejects.toThrow('wallet reconciliation discrepancies');
+            await runInTmp(async () => {
+              await expect(runReconcile(service, events)).rejects.toThrow(
+                'wallet reconciliation discrepancies',
+              );
+              const dir = path.join(process.cwd(), '../storage');
+              const today = new Date().toISOString().slice(0, 10);
+              const file = path.join(dir, `reconcile-${today}.json`);
+              expect(fs.existsSync(file)).toBe(true);
+            });
           },
         ),
       { numRuns: 25 },
