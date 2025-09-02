@@ -7,7 +7,9 @@ import {
   Get,
   UseGuards,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
+import { ZodError } from 'zod';
 import { RateLimitGuard } from './rate-limit.guard';
 import { AuthGuard } from '../auth/auth.guard';
 import { WalletService } from '../wallet/wallet.service';
@@ -24,14 +26,9 @@ import {
   PendingTransactionsResponseSchema,
   type WalletTransactionsResponse,
   type PendingTransactionsResponse,
+  TxSchema,
+  type TxRequest,
 } from '../schemas/wallet';
-
-interface TxDto {
-  amount: number;
-  tx: string;
-  rake?: number;
-  currency: string;
-}
 
 @UseGuards(AuthGuard, RateLimitGuard)
 @Controller('wallet')
@@ -50,34 +47,58 @@ export class WalletController {
   @Post(':id/reserve')
   async reserve(
     @Param('id') id: string,
-    @Body() body: TxDto,
+    @Body() body: TxRequest,
     @Req() req: Request,
   ) {
     this.ensureOwner(req, id);
-    await this.wallet.reserve(id, body.amount, body.tx, body.currency);
-    return { message: 'reserved' };
+    try {
+      const parsed = TxSchema.parse(body);
+      await this.wallet.reserve(id, parsed.amount, parsed.tx, parsed.currency);
+      return { message: 'reserved' };
+    } catch (err) {
+      if (err instanceof ZodError) {
+        throw new BadRequestException(err.errors);
+      }
+      throw err;
+    }
   }
 
   @Post(':id/commit')
   async commit(
     @Param('id') id: string,
-    @Body() body: TxDto,
+    @Body() body: TxRequest,
     @Req() req: Request,
   ) {
     this.ensureOwner(req, id);
-    await this.wallet.commit(body.tx, body.amount, body.rake ?? 0, body.currency);
-    return { message: 'committed' };
+    try {
+      const parsed = TxSchema.parse(body);
+      await this.wallet.commit(parsed.tx, parsed.amount, parsed.rake ?? 0, parsed.currency);
+      return { message: 'committed' };
+    } catch (err) {
+      if (err instanceof ZodError) {
+        throw new BadRequestException(err.errors);
+      }
+      throw err;
+    }
   }
 
   @Post(':id/rollback')
   async rollback(
     @Param('id') id: string,
-    @Body() body: TxDto,
+    @Body() body: TxRequest,
     @Req() req: Request,
   ) {
     this.ensureOwner(req, id);
-    await this.wallet.rollback(id, body.amount, body.tx, body.currency);
-    return { message: 'rolled back' };
+    try {
+      const parsed = TxSchema.parse(body);
+      await this.wallet.rollback(id, parsed.amount, parsed.tx, parsed.currency);
+      return { message: 'rolled back' };
+    } catch (err) {
+      if (err instanceof ZodError) {
+        throw new BadRequestException(err.errors);
+      }
+      throw err;
+    }
   }
 
   @Post(':id/withdraw')
