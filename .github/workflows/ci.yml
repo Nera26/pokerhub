@@ -103,6 +103,10 @@ jobs:
       - run: npx ts-node scripts/ensure-dr-workflows.ts
         env:
           GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          DR_FAILOVER_SLA_DAYS: ${{ vars.DR_FAILOVER_SLA_DAYS || '' }}
+          DR_RESTORE_SLA_DAYS: ${{ vars.DR_RESTORE_SLA_DAYS || '' }}
+          DR_THROWAWAY_SLA_DAYS: ${{ vars.DR_THROWAWAY_SLA_DAYS || '' }}
+          DR_DRILL_SLA_DAYS: ${{ vars.DR_DRILL_SLA_DAYS || '' }}
 
   ensure-dr-drill:
     runs-on: ubuntu-latest
@@ -1116,7 +1120,7 @@ jobs:
       - run: echo "integration checks passed"
 
   dr-trends:
-    needs: spectator-privacy
+    needs: [ensure-dr-workflows, spectator-privacy]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -1199,6 +1203,7 @@ jobs:
       - ops-preflight
       - ops-sla
       - workflow-sla
+      - ensure-dr-workflows
       - dr-trends # gate on DR trend health
       - spectator-privacy
       - check-proof-archive
