@@ -20,7 +20,7 @@ test('passes when soak job has downstream soak-metrics job', () => {
   mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
   writeFileSync(
     join(dir, '.github', 'workflows', 'ci.yml'),
-    `on: push\njobs:\n  soak:\n    if: \${{ always() }}\n    uses: ./.github/workflows/soak.yml\n  soak-metrics:\n    needs: soak\n    if: \${{ always() }}\n    uses: ./.github/workflows/soak-metrics.yml\n`,
+    `on: push\njobs:\n  soak:\n    uses: ./.github/workflows/soak.yml\n    if: \${{ always() }} # comment\n  soak-metrics:\n    if: \${{ always() }}\n    needs:\n      - soak # comment\n    uses: ./.github/workflows/soak-metrics.yml\n`,
   );
   const exitMock = mock.method(process, 'exit');
   runScript(dir);
@@ -33,7 +33,7 @@ test('fails when soak job missing soak-metrics job', () => {
   mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
   writeFileSync(
     join(dir, '.github', 'workflows', 'ci.yml'),
-    `on: push\njobs:\n  soak:\n    if: \${{ always() }}\n    uses: ./.github/workflows/soak.yml\n`,
+    `on: push\n# no metrics job\njobs:\n  soak:\n    uses: ./.github/workflows/soak.yml\n    if: \${{ always() }}\n`,
   );
   const exitMock = mock.method(process, 'exit', (code?: number) => {
     throw new Error(String(code));

@@ -20,7 +20,7 @@ test('passes when spectator-privacy job has always condition', () => {
   mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
   writeFileSync(
     join(dir, '.github', 'workflows', 'ci.yml'),
-    `on: push\njobs:\n  spectator-privacy:\n    if: \${{ always() }}\n    uses: ./.github/workflows/spectator-privacy.yml\n`,
+    `on: push\njobs:\n  spectator-privacy:\n    uses: ./.github/workflows/spectator-privacy.yml # comment\n    if: \${{ always() }}\n`,
   );
   const exitMock = mock.method(process, 'exit');
   runScript(dir);
@@ -33,7 +33,7 @@ test('fails when spectator-privacy job missing always condition', () => {
   mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
   writeFileSync(
     join(dir, '.github', 'workflows', 'ci.yml'),
-    `on: push\njobs:\n  spectator-privacy:\n    uses: ./.github/workflows/spectator-privacy.yml\n`,
+    `on: push\n# missing always\njobs:\n  spectator-privacy:\n    uses: ./.github/workflows/spectator-privacy.yml\n`,
   );
   const exitMock = mock.method(process, 'exit', (code?: number) => {
     throw new Error(String(code));
@@ -53,7 +53,7 @@ test('fails when nested workflow directory missing spectator-privacy job', () =>
   mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
   writeFileSync(
     join(dir, '.github', 'workflows', 'root.yml'),
-    `on: push\njobs:\n  spectator-privacy:\n    if: \${{ always() }}\n    uses: ./.github/workflows/spectator-privacy.yml\n`,
+    `on: push\njobs:\n  spectator-privacy:\n    if: \${{ always() }} # root comment\n    uses: ./.github/workflows/spectator-privacy.yml\n`,
   );
   mkdirSync(join(dir, 'frontend', '.github', 'workflows'), { recursive: true });
   writeFileSync(

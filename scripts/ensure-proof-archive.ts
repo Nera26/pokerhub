@@ -1,6 +1,8 @@
 #!/usr/bin/env ts-node
 import { readdirSync, readFileSync, Dirent } from 'fs';
 import { join, relative } from 'path';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const yaml = require('js-yaml');
 
 function collectYamlFiles(root: string, dir: string = root): string[] {
   const entries: Dirent[] = readdirSync(dir, { withFileTypes: true });
@@ -26,43 +28,44 @@ function main() {
   const files = collectYamlFiles(workflowsDir);
   const missingWorkflows: string[] = [];
   const missingConditions: string[] = [];
+  const CONDITION = /\$\{\{\s*always\(\)\s*\}\}/;
 
   for (const file of files) {
     const content = readFileSync(file, 'utf-8');
-    if (!/^\s*(?:['"])?on(?:['"])?:/m.test(content)) continue;
+    let doc: any;
+    try {
+      doc = yaml.load(content);
+    } catch {
+      continue;
+    }
+    if (!doc || typeof doc !== 'object' || !doc.on) continue;
 
-    const hasCheck = content.includes('check-proof-archive');
-    const hasArchive = content.includes('proof-archive');
+    const jobs: Record<string, any> = doc.jobs ?? {};
+    let hasCheck = false;
+    for (const [name, job] of Object.entries<any>(jobs)) {
+      const uses: string | undefined = job?.uses;
+      if (
+        name === 'check-proof-archive' ||
+        name === 'proof-archive' ||
+        (typeof uses === 'string' &&
+          (uses.includes('check-proof-archive') ||
+            uses.includes('proof-archive')))
+      ) {
+        hasCheck = true;
+        const ifCond = String(job.if ?? '');
+        if (!CONDITION.test(ifCond)) {
+          const rel = relative(process.cwd(), file);
+          missingConditions.push(`${rel}:${name}`);
+        }
+      }
+    }
 
     if (
       !file.endsWith('check-proof-archive.yml') &&
       !file.endsWith('proof-archive.yml') &&
-      !hasCheck &&
-      !hasArchive
+      !hasCheck
     ) {
-      const rel = relative(process.cwd(), file);
-      missingWorkflows.push(rel);
-    }
-
-    const jobRegex = /^([ \t]*)(check-proof-archive|proof-archive):/gm;
-    let match: RegExpExecArray | null;
-    while ((match = jobRegex.exec(content)) !== null) {
-      const indent = match[1];
-      const rest = content.slice(match.index + match[0].length);
-      const lines = rest.split('\n');
-      let hasIfAlways = false;
-      for (const line of lines) {
-        if (line.trim() === '') continue;
-        if (!line.startsWith(indent + '  ')) break;
-        if (line.trim().startsWith('if:') && line.includes('${{ always() }}')) {
-          hasIfAlways = true;
-          break;
-        }
-      }
-      if (!hasIfAlways) {
-        const rel = relative(process.cwd(), file);
-        missingConditions.push(`${rel}:${match[2]}`);
-      }
+      missingWorkflows.push(relative(process.cwd(), file));
     }
   }
 
