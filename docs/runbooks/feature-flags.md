@@ -3,6 +3,10 @@
 
 This runbook covers operational procedures for managing feature flags in PokerHub.
 
+All endpoints require an admin JWT in the `Authorization` header. Set an
+environment variable `ADMIN_TOKEN` with a valid token before running the
+commands below.
+
 ## Dashboard
 - Metabase: [Feature Flags](../analytics-dashboards.md)
 
@@ -12,7 +16,8 @@ This runbook covers operational procedures for managing feature flags in PokerHu
 ## Listing Flags
 
 ```bash
-curl https://api.pokerhub.local/feature-flags
+curl https://api.pokerhub.local/feature-flags \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 ## Enabling or Disabling a Flag
@@ -21,18 +26,21 @@ curl https://api.pokerhub.local/feature-flags
 # enable dealing
 curl -X PUT https://api.pokerhub.local/feature-flags/dealing \
   -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   -d '{"value": true}'
 
 # disable settlement
 curl -X PUT https://api.pokerhub.local/feature-flags/settlement \
   -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   -d '{"value": false}'
 ```
 
 ## Removing a Flag
 
 ```bash
-curl -X DELETE https://api.pokerhub.local/feature-flags/dealing
+curl -X DELETE https://api.pokerhub.local/feature-flags/dealing \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 ### Scoped Flags
@@ -41,15 +49,18 @@ curl -X DELETE https://api.pokerhub.local/feature-flags/dealing
 # disable dealing on a specific table
 curl -X PUT https://api.pokerhub.local/feature-flags/room/TABLE_ID/dealing \
   -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   -d '{"value": false}'
 
 # disable settlement for a specific tournament
 curl -X PUT https://api.pokerhub.local/feature-flags/tourney/TOURNEY_ID/settlement \
   -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   -d '{"value": false}'
 
 # remove a room flag
-curl -X DELETE https://api.pokerhub.local/feature-flags/room/TABLE_ID/dealing
+curl -X DELETE https://api.pokerhub.local/feature-flags/room/TABLE_ID/dealing \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 ## Frontend Cache
