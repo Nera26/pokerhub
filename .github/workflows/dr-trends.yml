@@ -1,0 +1,95 @@
+name: dr-trends
+
+on:
+  workflow_call:
+    secrets:
+      GCP_WORKLOAD_IDENTITY_PROVIDER:
+        required: true
+      GCP_SERVICE_ACCOUNT:
+        required: true
+      GCP_PROJECT_ID:
+        required: true
+      SLACK_CHANNEL_ID:
+        required: false
+      SLACK_BOT_TOKEN:
+        required: false
+      PAGERDUTY_ROUTING_KEY:
+        required: false
+
+jobs:
+  dr-trends:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+      - name: Check DR RTO/RPO trends
+        id: dr-trends
+        env:
+          DR_METRICS_BUCKET: ${{ vars.DR_METRICS_BUCKET }}
+          RTO_THRESHOLD: ${{ vars.DR_RTO_TARGET || 1800 }}
+          RPO_THRESHOLD: ${{ vars.DR_RPO_TARGET || 300 }}
+        run: |
+          set -e
+          result=$(npx ts-node infra/disaster-recovery/check-dr-trends.ts)
+          echo "$result" | tee dr-trends.json
+          echo "$result" | jq -r '[
+            "Latest RTO: \(.latest.rto)s",
+            "Latest RPO snapshot: \(.latest.rpoSnap)s",
+            "Latest RPO WAL: \(.latest.rpoWal)s",
+            "Average RTO: \(.average.rto)s",
+            "Average RPO snapshot: \(.average.rpoSnap)s",
+            "Average RPO WAL: \(.average.rpoWal)s",
+            "Δ RTO: \(.trend.rto)s",
+            "Δ RPO snapshot: \(.trend.rpoSnap)s",
+            "Δ RPO WAL: \(.trend.rpoWal)s"
+          ] | join("\n")' >> "$GITHUB_STEP_SUMMARY"
+      - name: Publish trend metrics to Cloud Monitoring
+        run: |
+          rto=$(jq -r '.latest.rto' dr-trends.json)
+          rpo_snap=$(jq -r '.latest.rpoSnap' dr-trends.json)
+          rpo_wal=$(jq -r '.latest.rpoWal' dr-trends.json)
+          gcloud monitoring metrics write custom.googleapis.com/dr/rto "$rto" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/rpo_snapshot "$rpo_snap" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/dr/rpo_wal "$rpo_wal" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+      - name: Prepare DR trend Slack payload
+        if: always()
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          node -e "const fs=require('fs');const d=JSON.parse(fs.readFileSync('dr-trends.json','utf8'));const msg=`DR drill trends: latest RTO ${d.latest.rto}s avg ${d.average.rto.toFixed(1)}s, latest RPO WAL ${d.latest.rpoWal}s avg ${d.average.rpoWal.toFixed(1)}s`;fs.writeFileSync('dr-trends-slack.json',JSON.stringify({channel:process.env.SLACK_CHANNEL_ID,text:msg}));"
+      - name: Publish DR trend summary
+        if: always()
+        uses: slackapi/slack-github-action@v1
+        with:
+          method: chat.postMessage
+          payload-file-path: dr-trends-slack.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: PagerDuty alert on DR trend breach
+        if: failure() && steps.dr-trends.outcome == 'failure'
+        env:
+          PAGERDUTY_ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+        run: |
+          set -e
+          if [ -f dr-trends.json ]; then
+            summary=$(jq -r '"DR trends exceeded targets: latest RTO \(.latest.rto)s, WAL RPO \(.latest.rpoWal)s"' dr-trends.json)
+          else
+            summary="DR trends exceeded targets"
+          fi
+          jq -n --arg rk "$PAGERDUTY_ROUTING_KEY" --arg msg "$summary" '{routing_key:$rk,event_action:"trigger",payload:{summary:$msg,source:"dr-trends",severity:"critical"}}' > pd.json
+          curl -X POST -H 'Content-Type: application/json' -d @pd.json https://events.pagerduty.com/v2/enqueue
+      - name: Create issue for DR trend breach
+        if: failure() && steps.dr-trends.outcome == 'failure'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: DR trend breach
+          content-filepath: dr-trends.json

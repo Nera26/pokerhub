@@ -34,20 +34,26 @@ jobs:
         env:
           SOAK_METRICS_SLA_HOURS: ${{ env.SOAK_SLA_HOURS }}
 
-  ops-artifacts-verify:
+  dr-trends:
     needs: preflight
+    uses: ./.github/workflows/dr-trends.yml
+    secrets: inherit
+
+  ops-artifacts-verify:
+    needs: [preflight, dr-trends]
     if: ${{ always() }}
     uses: ./.github/workflows/ops-artifacts-verify.yml
     secrets: inherit
 
   ensure-proof-archive:
-    needs: preflight
+    needs: [preflight, dr-trends]
     uses: ./.github/workflows/ensure-proof-archive.yml
     secrets: inherit
 
   publish-docs-run:
     needs:
       - preflight
+      - dr-trends
       - ops-artifacts-verify
       - ensure-proof-archive
     if: ${{ always() }}
