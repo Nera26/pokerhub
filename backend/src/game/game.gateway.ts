@@ -744,12 +744,16 @@ export class GameGateway
     }
     GameGateway.globalActionCount.record(global);
     if (global > this.globalLimit) {
-      GameGateway.globalLimitExceeded.add(1);
+      GameGateway.globalLimitExceeded.add(1, {
+        socketId: client.id,
+      } as Attributes);
       this.enqueue(client, 'server:Error', 'rate limit exceeded');
       return true;
     }
     if (count > 30) {
-      GameGateway.perSocketLimitExceeded.add(1);
+      GameGateway.perSocketLimitExceeded.add(1, {
+        socketId: client.id,
+      } as Attributes);
       client.emit('server:Error', 'rate limit exceeded');
       return true;
     }

@@ -2,6 +2,21 @@
 
 The game WebSocket gateway exposes metrics for outbound queue health and rate limits.
 
+## Metrics
+
+- `ws_outbound_queue_depth` – histogram of per-socket queue depth each time a
+  message is enqueued.
+- `ws_outbound_queue_max` – observable gauge exporting the peak queue depth per
+  socket within a scrape window.
+- `ws_outbound_queue_threshold` – observable gauge exposing the configured
+  queue depth threshold used for alerts.
+- `ws_outbound_dropped_total` – counter of messages dropped when a socket queue
+  is full.
+- `per_socket_limit_exceeded` – counter tagged with `socketId` for actions
+  rejected due to the per-socket rate limit.
+- `global_limit_exceeded` – counter tagged with `socketId` for actions rejected
+  due to the global rate limit.
+
 ## Dashboards
 
 - **Queue Saturation** – Grafana dashboard `queue-saturation` visualizes
@@ -11,7 +26,8 @@ The game WebSocket gateway exposes metrics for outbound queue health and rate li
 
 ## Alert Rules
 
-- **HighOutboundQueueDepth** – fires when `ws_outbound_queue_max` ≥ 80 for 5 m.
+- **HighOutboundQueueDepth** – fires when `ws_outbound_queue_max` exceeds
+  `ws_outbound_queue_threshold` for 5 m.
 - **DroppedWsMessages** – fires when `ws_outbound_dropped_total` > 0 for 1 m.
 - **GlobalRateLimitExceeded** – fires when the ratio of
   `global_limit_exceeded` to `game_action_global_count` exceeds 5% over 5 m.

@@ -128,7 +128,7 @@ describe('GameGateway outbound queue metrics', () => {
 
       expect(depthMock).toHaveBeenNthCalledWith(1, 1, { socketId: 'c1' });
       expect(depthMock).toHaveBeenNthCalledWith(2, 2, { socketId: 'c1' });
-      expect(dropMock).toHaveBeenCalledTimes(1);
+      expect(dropMock).toHaveBeenCalledWith(1, { socketId: 'c1' });
     } finally {
       await rooms.onModuleDestroy();
     }
