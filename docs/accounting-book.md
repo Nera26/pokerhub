@@ -55,6 +55,7 @@ See the [Reconciliation Guide](./handbook/reconciliation-guide.md) for the end-t
 - For each batch `WalletService.reconcile()` must return no discrepancies and the totals must sum to zero.
 - Any failing case writes the offending batch and report to `storage/wallet-reconcile-failure.json` and fails CI, ensuring ledger integrity.
 - Additional property tests (`backend/test/wallet.ledger.property.ts`) verify that arbitrary transaction batches net to zero and that hand logs can be replayed to produce identical journal entries.  On failure the offending sequence is written to `storage/reconcile-YYYY-MM-DD.json` for investigation.
+- Run `npm run audit:ledger` locally to execute these ledger invariants; any imbalance writes the failing sequence to `storage/reconcile-YYYY-MM-DD.json`.
 
 ## KYC Provider Configuration
 
