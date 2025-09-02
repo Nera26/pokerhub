@@ -737,11 +737,25 @@ jobs:
           node-version: 20
           cache: npm
       - run: ./scripts/test-stages.sh unit | tee unit.log
+      - name: Ledger reconciliation test
+        id: ledger
+        run: npm run test:ledger | tee ledger.log
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        if: steps.ledger.outcome == 'failure' && hashFiles('storage/reconcile-*.json') != ''
+        with:
+          name: ledger-reconcile-${{ github.sha }}
+          path: storage/reconcile-*.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: unit-${{ github.sha }}
-          path: unit.log
+          path: |
+            unit.log
+            ledger.log
+      - name: Fail if ledger test failed
+        if: steps.ledger.outcome == 'failure'
+        run: exit 1
 
   property:
     needs: unit
@@ -773,8 +787,13 @@ jobs:
         continue-on-error: true
       - name: Ledger audit
         id: audit
-        run: npm run audit:ledger --prefix backend | tee audit.log
+        run: npm run test:ledger | tee audit.log
         continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        if: steps.audit.outcome == 'failure' && hashFiles('storage/reconcile-*.json') != ''
+        with:
+          name: ledger-reconcile-${{ github.sha }}
+          path: storage/reconcile-*.json
       - name: Frontend property tests
         id: frontend-property
         run: npm test --prefix frontend -- --testPathPattern=.property.spec.ts$ --passWithNoTests | tee frontend-property.log
