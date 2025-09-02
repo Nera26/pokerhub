@@ -1,6 +1,6 @@
 import http from 'k6/http';
 import { Trend } from 'k6/metrics';
-import swarm, { options as swarmOptions } from './k6-swarm.js';
+import swarm, { options as swarmOptions, handleSummary as swarmSummary } from './k6-swarm.js';
 
 export const options = {
   ...swarmOptions,
@@ -16,7 +16,20 @@ const RSS_GROWTH = new Trend('rss_growth');
 const GC_PAUSE = new Trend('gc_pause');
 
 export default swarm;
-export { handleSummary } from './k6-swarm.js';
+
+export function handleSummary(data) {
+  const summary = swarmSummary(data);
+  const gcP95 = data.metrics.gc_pause?.values?.['p(95)'] || 0;
+  const rssP95 = data.metrics.rss_growth?.values?.['p(95)'] || 0;
+  return {
+    ...summary,
+    'load/results/soak-metrics.json': JSON.stringify(
+      { gcPauseP95: gcP95, rssGrowthP95: rssP95 },
+      null,
+      2,
+    ),
+  };
+}
 
 export function setup() {
   const url = __ENV.METRICS_URL;
