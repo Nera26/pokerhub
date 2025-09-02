@@ -1149,6 +1149,7 @@ jobs:
       - workflow-sla
       - dr-trends # gate on DR trend health
       - spectator-privacy
+      - soak-metrics
     uses: ./.github/workflows/ops-artifacts-verify.yml
     secrets: inherit
 

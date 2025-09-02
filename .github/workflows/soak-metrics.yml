@@ -34,17 +34,28 @@ jobs:
     - uses: google-github-actions/setup-gcloud@v2
       with:
         project_id: ${{ vars.GCP_PROJECT_ID }}
-    - id: trend
-      run: |
-        set -o pipefail
-        npx ts-node scripts/check-soak-trend-regression.ts 2>&1 | tee soak-trend-regression.log
-    - name: Analyze soak trends
-      run: npx ts-node scripts/analyze-soak-trends.ts metrics/
-    - id: check
-      if: always()
-      run: node scripts/check-soak-metrics.ts
-    - name: Prepare regression alert
-      if: steps.check.outcome == 'failure'
+      - id: trend
+        run: |
+          set -o pipefail
+          npx ts-node scripts/check-soak-trend-regression.ts 2>&1 | tee soak-trend-regression.log
+      - name: Analyze soak trends
+        run: npx ts-node scripts/analyze-soak-trends.ts metrics/
+      - name: Publish soak trend metrics to Cloud Monitoring
+        if: always() && github.event_name == 'schedule'
+        run: |
+          lat_p95=$(jq -r '.latency.p95' metrics/baseline.json)
+          throughput=$(jq -r '.throughput' metrics/baseline.json)
+          lat_delta=$(jq -r '.latency.p95' metrics/trend-delta.json)
+          thr_delta=$(jq -r '.throughput' metrics/trend-delta.json)
+          gcloud monitoring metrics write custom.googleapis.com/soak/latency_p95 "$lat_p95" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/soak/throughput "$throughput" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/soak/latency_p95_delta "$lat_delta" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+          gcloud monitoring metrics write custom.googleapis.com/soak/throughput_delta "$thr_delta" --labels=run_id=${GITHUB_RUN_ID},commit_sha=${GITHUB_SHA}
+      - id: check
+        if: always()
+        run: node scripts/check-soak-metrics.ts
+      - name: Prepare regression alert
+        if: steps.check.outcome == 'failure'
       env:
         SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
       run: |
@@ -54,16 +65,24 @@ jobs:
     - name: Slack alert
       if: steps.check.outcome == 'failure'
       uses: slackapi/slack-github-action@v1
-      with:
-        method: chat.postMessage
-        payload-file-path: slack.json
-      env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-    - name: Open soak regression issue
-      if: steps.check.outcome == 'failure'
-      uses: peter-evans/create-issue-from-file@v4
-      with:
-        title: "SLA breached: soak metrics"
+        with:
+          method: chat.postMessage
+          payload-file-path: slack.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: PagerDuty alert
+        if: steps.check.outcome == 'failure'
+        env:
+          PAGERDUTY_ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+        run: |
+          msg=$(jq -r '.regressions[].message' soak-regression.json | paste -sd '; ' -)
+          jq -n --arg rk "$PAGERDUTY_ROUTING_KEY" --arg msg "$msg" '{routing_key:$rk,event_action:"trigger",payload:{summary:$msg,source:"soak-metrics",severity:"critical"}}' > pd.json
+          curl -X POST -H 'Content-Type: application/json' -d @pd.json https://events.pagerduty.com/v2/enqueue
+      - name: Open soak regression issue
+        if: steps.check.outcome == 'failure'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "SLA breached: soak metrics"
         content-filepath: soak-regression.md
     - name: Prepare trend regression alert
       if: steps.trend.outcome == 'failure'
@@ -79,13 +98,21 @@ jobs:
       with:
         method: chat.postMessage
         payload-file-path: slack-trend.json
-      env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-    - name: Open soak trend regression issue
-      if: steps.trend.outcome == 'failure'
-      uses: peter-evans/create-issue-from-file@v4
-      with:
-        title: "SLA breached: soak trends"
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: PagerDuty alert (trend)
+        if: steps.trend.outcome == 'failure'
+        env:
+          PAGERDUTY_ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+        run: |
+          msg=$(cat soak-trend-regression.log | paste -sd '; ' -)
+          jq -n --arg rk "$PAGERDUTY_ROUTING_KEY" --arg msg "$msg" '{routing_key:$rk,event_action:"trigger",payload:{summary:$msg,source:"soak-metrics",severity:"critical"}}' > pd-trend.json
+          curl -X POST -H 'Content-Type: application/json' -d @pd-trend.json https://events.pagerduty.com/v2/enqueue
+      - name: Open soak trend regression issue
+        if: steps.trend.outcome == 'failure'
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "SLA breached: soak trends"
         content-filepath: soak-trend-regression.md
     - name: Upload soak summary
       if: always() && hashFiles('soak-summary.json') != ''
