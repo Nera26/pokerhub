@@ -133,8 +133,12 @@ export const GAME_ACTION_ACK_LATENCY_MS = 'game_action_ack_latency_ms';
 export const GAME_STATE_BROADCAST_LATENCY_MS =
   'game_state_broadcast_latency_ms';
 
-export const WS_OUTBOUND_QUEUE_ALERT_THRESHOLD = 80;
-export const GAME_ACTION_GLOBAL_LIMIT = 30;
+export const WS_OUTBOUND_QUEUE_ALERT_THRESHOLD = Number(
+  process.env.WS_OUTBOUND_QUEUE_ALERT_THRESHOLD ?? '80',
+);
+export const GAME_ACTION_GLOBAL_LIMIT = Number(
+  process.env.GATEWAY_GLOBAL_LIMIT ?? '30',
+);
 
 @WebSocketGateway({ namespace: 'game' })
 export class GameGateway
@@ -397,19 +401,13 @@ export class GameGateway
   private readonly queueLimit = Number(
     process.env.GATEWAY_QUEUE_LIMIT ?? '100',
   );
-  private readonly queueThreshold = Number(
-    process.env.WS_OUTBOUND_QUEUE_ALERT_THRESHOLD ??
-      WS_OUTBOUND_QUEUE_ALERT_THRESHOLD.toString(),
-  );
+  private readonly queueThreshold = WS_OUTBOUND_QUEUE_ALERT_THRESHOLD;
   private readonly maxQueueSizes = new Map<string, number>();
   private globalActionCountValue = 0;
 
   private readonly actionCounterKey = 'game:action_counter';
   private readonly globalActionCounterKey = 'game:action_counter:global';
-  private readonly globalLimit = Number(
-    process.env.GATEWAY_GLOBAL_LIMIT ??
-      GAME_ACTION_GLOBAL_LIMIT.toString(),
-  );
+  private readonly globalLimit = GAME_ACTION_GLOBAL_LIMIT;
 
   private readonly frameAcks = new Map<string, Map<string, FrameInfo>>();
   private readonly maxFrameAttempts = 5;
