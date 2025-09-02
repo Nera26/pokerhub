@@ -1,4 +1,4 @@
-import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
+import { CACHE_MANAGER, Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
@@ -13,7 +13,7 @@ import { updateRating } from './rating';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
-export class LeaderboardService {
+export class LeaderboardService implements OnModuleInit {
   private readonly cacheKey = 'leaderboard:hot';
   private readonly dataKey = 'leaderboard:data';
   private readonly ttl = 30; // seconds
@@ -73,6 +73,10 @@ export class LeaderboardService {
       },
       24 * 60 * 60 * 1000,
     );
+  }
+
+  async onModuleInit(): Promise<void> {
+    await this.rebuild();
   }
 
   async getTopPlayers(): Promise<
