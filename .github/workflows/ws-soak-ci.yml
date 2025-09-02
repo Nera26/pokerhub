@@ -35,12 +35,36 @@ jobs:
           name: ws-soak-summary
           path: ws-soak-summary.json
 
+  soak-metrics:
+    needs:
+      - ws-soak
+      - check-proof-archive
+    if: ${{ always() }}
+    uses: ../soak-metrics.yml
+    secrets: inherit
+
   spectator-privacy:
     if: ${{ always() }}
     needs:
       - ws-soak
+      - soak-metrics
       - check-proof-archive
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
     with:
       logs: ws-soak-summary.json
+
+  check-soak-metrics:
+    needs:
+      - soak-metrics
+      - spectator-privacy
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - run: npx -y ts-node scripts/check-soak-metrics.ts
+    - name: Upload soak summary
+      if: always() && hashFiles('soak-summary.json') != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: soak-summary-${{ github.sha }}
+        path: soak-summary.json

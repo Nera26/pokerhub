@@ -87,10 +87,26 @@ jobs:
     needs:
     - k6
     - chaos
+    - soak-metrics
     - check-proof-archive
     if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     with:
       logs: summary.json metrics.json
     secrets: inherit
+
+  check-soak-metrics:
+    needs:
+    - soak-metrics
+    - spectator-privacy
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - run: npx -y ts-node scripts/check-soak-metrics.ts
+    - name: Upload soak summary
+      if: always() && hashFiles('soak-summary.json') != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: soak-summary-${{ github.sha }}
+        path: soak-summary.json
 
