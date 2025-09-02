@@ -5,7 +5,7 @@ export async function startPendingDepositWorker(wallet: WalletService) {
   new bull.Worker(
     'pending-deposit',
     async (job) => {
-      await wallet.markActionRequiredIfPending(job.data.id);
+      await wallet.markActionRequiredIfPending(job.data.id, job.id);
     },
     {
       connection: {

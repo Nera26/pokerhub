@@ -899,11 +899,15 @@ export class WalletService {
     return { reference: deposit.reference };
   }
 
-  async markActionRequiredIfPending(id: string): Promise<void> {
+  async markActionRequiredIfPending(id: string, jobId: string): Promise<void> {
     const dep = await this.pendingDeposits.findOneBy({ id });
     if (dep && dep.status === 'pending' && !dep.actionRequired) {
       dep.actionRequired = true;
       await this.pendingDeposits.save(dep);
+      await this.events.emit('admin.deposit.pending', {
+        depositId: id,
+        jobId,
+      });
     }
   }
 

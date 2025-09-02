@@ -27,6 +27,11 @@ describe('Pending deposits', () => {
     const db = newDb();
     db.public.registerFunction({ name: 'version', returns: 'text', implementation: () => 'pg-mem' });
     db.public.registerFunction({
+      name: 'current_database',
+      returns: 'text',
+      implementation: () => 'pg-mem',
+    });
+    db.public.registerFunction({
       name: 'uuid_generate_v4',
       returns: 'text',
       implementation: () => userId,
@@ -92,5 +97,21 @@ describe('Pending deposits', () => {
       'wallet.deposit.rejected',
       expect.objectContaining({ depositId: deposit.id }),
     );
+  });
+
+  it('marks action required and emits admin event', async () => {
+    const res = await service.initiateBankTransfer(userId, 25, 'USD');
+    const deposit = await dataSource
+      .getRepository(PendingDeposit)
+      .findOneByOrFail({ reference: res.reference });
+    await service.markActionRequiredIfPending(deposit.id, 'job-123');
+    const updated = await dataSource
+      .getRepository(PendingDeposit)
+      .findOneByOrFail({ id: deposit.id });
+    expect(updated.actionRequired).toBe(true);
+    expect(events.emit).toHaveBeenCalledWith('admin.deposit.pending', {
+      depositId: deposit.id,
+      jobId: 'job-123',
+    });
   });
 });
