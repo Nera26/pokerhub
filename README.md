@@ -160,11 +160,12 @@ The deployment workflow runs an operations preflight using
 variables so the checks can run:
 
 - **Secrets**
-  - `GCP_SA_KEY` – service account JSON for GCP API access.
   - `PROOF_ARCHIVE_BUCKET` – Cloud Storage bucket holding proof archives.
   - `SLACK_CHANNEL_ID` – Slack channel that receives soak metrics alerts.
   - `SLACK_BOT_TOKEN` – Bot token used to post soak metric notifications.
 - **Variables**
+  - `GCP_WORKLOAD_IDENTITY_PROVIDER` – full resource name of the workload identity provider.
+  - `GCP_SERVICE_ACCOUNT` – email of the service account to impersonate.
   - `SOAK_TRENDS_BUCKET`
   - `SOAK_LATENCY_P95_MS`
   - `SOAK_THROUGHPUT_MIN`
@@ -177,6 +178,8 @@ variables so the checks can run:
   - `PROOF_MANIFEST_KMS_KEYRING`
   - `PROOF_MANIFEST_KMS_LOCATION`
   - `PROOF_MANIFEST_KMS_VERSION`
+
+Authentication uses Workload Identity Federation; no service-account JSON key is required.
 
 The `ci / soak-metrics` status check uses these settings to ensure soak metrics
 are up to date before merge.
