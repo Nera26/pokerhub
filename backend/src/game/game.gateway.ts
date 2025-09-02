@@ -40,6 +40,14 @@ import PQueue from 'p-queue';
 import { sanitize } from './state-sanitize';
 import { diff } from './state-diff';
 
+const noopGauge = {
+  addCallback() {},
+  removeCallback() {},
+} as {
+  addCallback(cb: (r: ObservableResult) => void): void;
+  removeCallback(cb: (r: ObservableResult) => void): void;
+};
+
 interface AckPayload {
   actionId: string;
   duplicate?: boolean;
@@ -176,6 +184,65 @@ export class GameGateway
     },
   );
 
+  private static readonly ackLatencySamples: number[] = [];
+  private static readonly stateLatencySamples: number[] = [];
+  private static readonly actionTimestamps: number[] = [];
+  private static readonly MAX_SAMPLES = 1000;
+
+  private static readonly ackLatencyP50 =
+    GameGateway.meter.createObservableGauge?.(
+      'game_action_ack_latency_p50_ms',
+      {
+        description: 'p50 latency from action receipt to ACK',
+        unit: 'ms',
+      },
+    ) ?? noopGauge;
+  private static readonly ackLatencyP95 =
+    GameGateway.meter.createObservableGauge?.(
+      'game_action_ack_latency_p95_ms',
+      {
+        description: 'p95 latency from action receipt to ACK',
+        unit: 'ms',
+      },
+    ) ?? noopGauge;
+  private static readonly ackLatencyP99 =
+    GameGateway.meter.createObservableGauge?.(
+      'game_action_ack_latency_p99_ms',
+      {
+        description: 'p99 latency from action receipt to ACK',
+        unit: 'ms',
+      },
+    ) ?? noopGauge;
+  private static readonly actionThroughput =
+    GameGateway.meter.createObservableGauge?.('game_action_throughput', {
+      description: 'Game actions processed per second',
+      unit: 'actions/s',
+    }) ?? noopGauge;
+  private static readonly stateLatencyP50 =
+    GameGateway.meter.createObservableGauge?.(
+      'game_state_broadcast_latency_p50_ms',
+      {
+        description: 'p50 latency from action receipt to state broadcast',
+        unit: 'ms',
+      },
+    ) ?? noopGauge;
+  private static readonly stateLatencyP95 =
+    GameGateway.meter.createObservableGauge?.(
+      'game_state_broadcast_latency_p95_ms',
+      {
+        description: 'p95 latency from action receipt to state broadcast',
+        unit: 'ms',
+      },
+    ) ?? noopGauge;
+  private static readonly stateLatencyP99 =
+    GameGateway.meter.createObservableGauge?.(
+      'game_state_broadcast_latency_p99_ms',
+      {
+        description: 'p99 latency from action receipt to state broadcast',
+        unit: 'ms',
+      },
+    ) ?? noopGauge;
+
   private static readonly outboundQueueDepth =
     GameGateway.meter.createHistogram('ws_outbound_queue_depth', {
       description: 'Depth of outbound WebSocket message queue',
@@ -224,6 +291,38 @@ export class GameGateway
     GameGateway.meter.createCounter('ws_outbound_dropped_total', {
       description: 'Messages dropped due to full outbound queue',
     });
+
+  static {
+    GameGateway.ackLatencyP50.addCallback((r) =>
+      r.observe(GameGateway.percentile(GameGateway.ackLatencySamples, 50)),
+    );
+    GameGateway.ackLatencyP95.addCallback((r) =>
+      r.observe(GameGateway.percentile(GameGateway.ackLatencySamples, 95)),
+    );
+    GameGateway.ackLatencyP99.addCallback((r) =>
+      r.observe(GameGateway.percentile(GameGateway.ackLatencySamples, 99)),
+    );
+    GameGateway.stateLatencyP50.addCallback((r) =>
+      r.observe(GameGateway.percentile(GameGateway.stateLatencySamples, 50)),
+    );
+    GameGateway.stateLatencyP95.addCallback((r) =>
+      r.observe(GameGateway.percentile(GameGateway.stateLatencySamples, 95)),
+    );
+    GameGateway.stateLatencyP99.addCallback((r) =>
+      r.observe(GameGateway.percentile(GameGateway.stateLatencySamples, 99)),
+    );
+    GameGateway.actionThroughput.addCallback((r) => {
+      const now = Date.now();
+      const cutoff = now - 1000;
+      while (
+        GameGateway.actionTimestamps.length &&
+        GameGateway.actionTimestamps[0] < cutoff
+      ) {
+        GameGateway.actionTimestamps.shift();
+      }
+      r.observe(GameGateway.actionTimestamps.length);
+    });
+  }
 
   private readonly actionHashKey = 'game:action';
   private readonly actionRetentionMs = 24 * 60 * 60 * 1000; // 24h
@@ -597,14 +696,42 @@ export class GameGateway
   }
 
   private recordStateLatency(start: number, tableId: string) {
-    GameGateway.stateLatency.record(Date.now() - start, { tableId });
+    const latency = Date.now() - start;
+    GameGateway.stateLatency.record(latency, { tableId });
+    GameGateway.addSample(GameGateway.stateLatencySamples, latency);
   }
 
   private recordAckLatency(start: number, tableId: string) {
-    GameGateway.ackLatency.record(Date.now() - start, {
+    const latency = Date.now() - start;
+    GameGateway.ackLatency.record(latency, {
       event: 'action',
       tableId,
     });
+    GameGateway.addSample(GameGateway.ackLatencySamples, latency);
+    GameGateway.recordAction(Date.now());
+  }
+
+  private static addSample(arr: number[], value: number) {
+    arr.push(value);
+    if (arr.length > GameGateway.MAX_SAMPLES) arr.shift();
+  }
+
+  private static recordAction(ts: number) {
+    GameGateway.actionTimestamps.push(ts);
+    const cutoff = ts - 1000;
+    while (
+      GameGateway.actionTimestamps.length &&
+      GameGateway.actionTimestamps[0] < cutoff
+    ) {
+      GameGateway.actionTimestamps.shift();
+    }
+  }
+
+  private static percentile(arr: number[], p: number): number {
+    if (arr.length === 0) return 0;
+    const sorted = [...arr].sort((a, b) => a - b);
+    const idx = Math.floor((p / 100) * (sorted.length - 1));
+    return sorted[idx];
   }
 
   private enqueue<K extends keyof ServerToClientEvents>(
