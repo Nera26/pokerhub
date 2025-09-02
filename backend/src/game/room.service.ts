@@ -116,6 +116,14 @@ class WorkerHost extends EventEmitter {
 class RoomWorker extends EventEmitter {
   private static readonly meter = metrics.getMeter('game');
 
+  private static readonly noopGauge = {
+    addCallback() {},
+    removeCallback() {},
+  } as {
+    addCallback(cb: (r: ObservableResult) => void): void;
+    removeCallback(cb: (r: ObservableResult) => void): void;
+  };
+
   // Observable gauge: follower lag (applied - confirmed)
   private static readonly followerLag =
     RoomWorker.meter.createObservableGauge?.('room_follower_lag', {
@@ -140,16 +148,39 @@ class RoomWorker extends EventEmitter {
       add() {},
     } as { add(n: number, attrs?: Record<string, unknown>): void });
 
+  private static readonly globalActionCount =
+    RoomWorker.meter.createObservableGauge?.('game_action_global_count', {
+      description: 'Global action count within rate-limit window',
+    }) ?? RoomWorker.noopGauge;
+
+  private static readonly globalActionLimitGauge =
+    RoomWorker.meter.createObservableGauge?.('game_action_global_limit', {
+      description: 'Configured global action limit within rate-limit window',
+    }) ?? RoomWorker.noopGauge;
+
+  private static globalActionCountValue = 0;
+
   private primary: WorkerHost;
   private follower?: WorkerHost;
   private heartbeat?: NodeJS.Timeout;
   private lastConfirmed = 0;
   private applied = 0;
+  private readonly globalLimit = Number(
+    process.env.GATEWAY_GLOBAL_LIMIT ?? '30',
+  );
 
   private readonly observeLag = (result: ObservableResult) => {
     result.observe(this.applied - this.lastConfirmed, {
       tableId: this.tableId,
     } as any);
+  };
+
+  private readonly reportGlobalActionCount = (result: ObservableResult) => {
+    result.observe(RoomWorker.globalActionCountValue);
+  };
+
+  private readonly reportGlobalActionLimit = (result: ObservableResult) => {
+    result.observe(this.globalLimit);
   };
 
   constructor(
@@ -164,6 +195,8 @@ class RoomWorker extends EventEmitter {
     this.primary.on('state', (s) => this.emit('state', s));
     this.primary.on('exit', () => void this.promoteFollower());
     RoomWorker.followerLag.addCallback(this.observeLag);
+    RoomWorker.globalActionCount.addCallback(this.reportGlobalActionCount);
+    RoomWorker.globalActionLimitGauge.addCallback(this.reportGlobalActionLimit);
     void this.syncFollower();
     this.startHeartbeat();
   }
@@ -209,6 +242,7 @@ class RoomWorker extends EventEmitter {
     const state = await this.primary.apply(action);
     this.applied++;
     this.lastConfirmed = this.applied;
+    RoomWorker.globalActionCountValue++;
     return state;
   }
 
@@ -233,6 +267,10 @@ class RoomWorker extends EventEmitter {
     await this.primary.terminate();
     if (this.follower) await this.follower.terminate();
     RoomWorker.followerLag.removeCallback(this.observeLag);
+    RoomWorker.globalActionCount.removeCallback(this.reportGlobalActionCount);
+    RoomWorker.globalActionLimitGauge.removeCallback(
+      this.reportGlobalActionLimit,
+    );
     this.removeAllListeners();
   }
 }

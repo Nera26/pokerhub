@@ -1,0 +1,29 @@
+{
+  "dashboard": {
+    "title": "WebSocket Queue",
+    "labels": {
+      "pagerduty_service": "pokerhub-sre",
+      "runbook": "docs/runbooks/websocket-latency.md"
+    },
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "Outbound queue depth",
+        "datasource": "Prometheus",
+        "targets": [
+          { "expr": "max(ws_outbound_queue_depth)" }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Global action count vs limit",
+        "datasource": "Prometheus",
+        "targets": [
+          { "expr": "game_action_global_count" },
+          { "expr": "game_action_global_limit" }
+        ]
+      }
+    ]
+  }
+}
+
