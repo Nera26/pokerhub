@@ -25,6 +25,13 @@ jobs:
 
     needs:
     - check-proof-archive
+  soak-metrics:
+    needs:
+    - check
+    - check-proof-archive
+    if: ${{ always() }}
+    uses: ../soak-metrics.yml
+    secrets: inherit
   spectator-privacy:
     if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
@@ -32,4 +39,20 @@ jobs:
     with:
       logs: backend-tests.log frontend-tests.log integration.log property.log
     needs:
+    - check
+    - soak-metrics
     - check-proof-archive
+  check-soak-metrics:
+    needs:
+    - soak-metrics
+    - spectator-privacy
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - run: npx -y ts-node scripts/check-soak-metrics.ts
+    - name: Upload soak summary
+      if: always() && hashFiles('soak-summary.json') != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: soak-summary-${{ github.sha }}
+        path: soak-summary.json
