@@ -107,6 +107,23 @@ describe('UsersController (e2e)', () => {
       .expect(404);
   });
 
+  it('gets a user', async () => {
+    const create = await request(app.getHttpServer())
+      .post('/users')
+      .send({ username: 'dave' });
+    const id = create.body.id;
+    const res = await request(app.getHttpServer())
+      .get(`/users/${id}`)
+      .expect(200);
+    expect(res.body.username).toBe('dave');
+  });
+
+  it('returns 404 for missing user', async () => {
+    await request(app.getHttpServer())
+      .get('/users/00000000-0000-0000-0000-000000000001')
+      .expect(404);
+  });
+
   it('bans a user', async () => {
     const create = await request(app.getHttpServer())
       .post('/users')

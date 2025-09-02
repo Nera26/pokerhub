@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 1.5.0
+  version: 1.6.0
 paths:
   /status:
     get:
@@ -260,7 +260,6 @@ paths:
       responses:
         '204':
           description: Message sent
-      responses:
         '200':
           description: Updated table
           content:
@@ -884,6 +883,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
   /users/{id}:
+    get:
+      summary: Get user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
     put:
       summary: Update user
       parameters:

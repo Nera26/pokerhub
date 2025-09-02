@@ -605,3 +605,6 @@ export const BanUserSchema = z.object({
   reason: z.string().optional(),
 });
 export type BanUserRequest = z.infer<typeof BanUserSchema>;
+
+export const GetUserResponseSchema = UserSchema;
+export type GetUserResponse = z.infer<typeof GetUserResponseSchema>;
