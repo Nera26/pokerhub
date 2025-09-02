@@ -102,6 +102,8 @@ export type PendingTransactionsResponse = z.infer<
 export const BankTransferDepositRequestSchema = z.object({
   amount: z.number().int().positive(),
   currency: CurrencySchema,
+  deviceId: z.string(),
+  ip: z.string().optional(),
 });
 export type BankTransferDepositRequest = z.infer<
   typeof BankTransferDepositRequestSchema

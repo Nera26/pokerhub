@@ -71,7 +71,13 @@ describe('Pending deposits', () => {
   });
 
   it('confirms deposit and credits account', async () => {
-    const res = await service.initiateBankTransfer(userId, 100, 'USD');
+    const res = await service.initiateBankTransfer(
+      userId,
+      100,
+      'dev1',
+      '1.1.1.1',
+      'USD',
+    );
     const deposit = await dataSource.getRepository(PendingDeposit).findOneByOrFail({ reference: res.reference });
     await service.confirmPendingDeposit(deposit.id, 'admin');
     const accountRepo = dataSource.getRepository(Account);
@@ -83,7 +89,13 @@ describe('Pending deposits', () => {
   });
 
   it('rejects deposit and notifies', async () => {
-    const res = await service.initiateBankTransfer(userId, 50, 'USD');
+    const res = await service.initiateBankTransfer(
+      userId,
+      50,
+      'dev2',
+      '1.1.1.2',
+      'USD',
+    );
     const deposit = await dataSource.getRepository(PendingDeposit).findOneByOrFail({ reference: res.reference });
     await service.rejectPendingDeposit(deposit.id, 'admin', 'bad');
     const updated = await dataSource.getRepository(PendingDeposit).findOneByOrFail({ id: deposit.id });
