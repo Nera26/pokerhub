@@ -45,6 +45,20 @@ Every business action writes equal and opposite `JournalEntry` rows so that the 
 2. The job `backend/src/wallet/reconcile.job.ts` runs daily at 00:00 UTC, scans prior-day hand and tournament logs, and writes a report to `storage/reconcile-YYYY-MM-DD.json`.
 3. Any mismatched account or non‑zero log total causes the job to fail and emit a `wallet.reconcile.mismatch` alert for investigation.
 
+## Local Ledger Audits
+
+Property-based tests check that accounting invariants hold over random batches and that hand logs can be replayed deterministically.
+
+```bash
+# Ledger batches sum to zero and reconcile with logs
+npm test --prefix backend -- src/wallet/wallet.ledger.property.spec.ts
+
+# Hand-log replay consistency
+npm test --prefix backend -- test/wallet/hand-logs.replay.property.spec.ts
+```
+
+Failures write details to `storage/reconcile-YYYY-MM-DD.json` for debugging.
+
 ## 3-D Secure & Chargebacks
 
 Deposits and withdrawals initiate a 3‑D Secure challenge with the payment provider before any journal entry is recorded. The resulting provider transaction id and final status are persisted on each `JournalEntry`.
