@@ -5,9 +5,7 @@ import {
   MessageResponseSchema,
   WithdrawRequestSchema,
   DepositRequestSchema,
-  ProviderChallengeSchema,
   type MessageResponse,
-  type ProviderChallenge,
   WalletStatusResponseSchema,
   type WalletStatusResponse,
   WalletTransactionsResponseSchema,
@@ -56,31 +54,41 @@ export function rollback(
 }
 
 export function withdraw(
+  playerId: string,
   amount: number,
   deviceId: string,
   currency: string,
   opts: { signal?: AbortSignal } = {},
-) {
+): Promise<WalletStatusResponse> {
   const payload = WithdrawRequestSchema.parse({ amount, deviceId, currency });
-  return apiClient('/api/wallet/withdraw', MessageResponseSchema, {
-    method: 'POST',
-    body: payload,
-    signal: opts.signal,
-  });
+  return apiClient(
+    `/api/wallet/${playerId}/withdraw`,
+    WalletStatusResponseSchema,
+    {
+      method: 'POST',
+      body: payload,
+      signal: opts.signal,
+    },
+  );
 }
 
 export function deposit(
+  playerId: string,
   amount: number,
   deviceId: string,
   currency: string,
   opts: { signal?: AbortSignal } = {},
-): Promise<ProviderChallenge> {
+): Promise<WalletStatusResponse> {
   const payload = DepositRequestSchema.parse({ amount, deviceId, currency });
-  return apiClient('/api/wallet/deposit', ProviderChallengeSchema, {
-    method: 'POST',
-    body: payload,
-    signal: opts.signal,
-  });
+  return apiClient(
+    `/api/wallet/${playerId}/deposit`,
+    WalletStatusResponseSchema,
+    {
+      method: 'POST',
+      body: payload,
+      signal: opts.signal,
+    },
+  );
 }
 
 export function getStatus(

@@ -39,13 +39,21 @@ describe('wallet api', () => {
         ok: true,
         status: 200,
         headers: { get: () => 'application/json' },
-        json: async () => ({ id: 'ch' }),
+        json: async () => ({
+          kycVerified: true,
+          realBalance: 20,
+          creditBalance: 10,
+        }),
       })
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
         headers: { get: () => 'application/json' },
-        json: async () => ({ message: 'ok' }),
+        json: async () => ({
+          kycVerified: true,
+          realBalance: 10,
+          creditBalance: 5,
+        }),
       })
       .mockResolvedValueOnce({
         ok: true,
@@ -61,8 +69,16 @@ describe('wallet api', () => {
     await expect(reserve(10, 'USD')).resolves.toEqual({ message: 'ok' });
     await expect(commit(10, 'USD')).resolves.toEqual({ message: 'ok' });
     await expect(rollback(10, 'USD')).resolves.toEqual({ message: 'ok' });
-    await expect(deposit(10, 'd1', 'USD')).resolves.toEqual({ id: 'ch' });
-    await expect(withdraw(10, 'd1', 'USD')).resolves.toEqual({ message: 'ok' });
+    await expect(deposit('u1', 10, 'd1', 'USD')).resolves.toEqual({
+      kycVerified: true,
+      realBalance: 20,
+      creditBalance: 10,
+    });
+    await expect(withdraw('u1', 10, 'd1', 'USD')).resolves.toEqual({
+      kycVerified: true,
+      realBalance: 10,
+      creditBalance: 5,
+    });
     await expect(getStatus()).resolves.toEqual({
       kycVerified: true,
       realBalance: 20,

@@ -14,7 +14,13 @@ import WithdrawModalContent from '@/app/components/wallet/WithdrawModalContent';
 import ToastNotification, {
   ToastType,
 } from '@/app/components/ui/ToastNotification';
-import { getStatus, fetchTransactions, fetchPending } from '@/lib/api/wallet';
+import {
+  getStatus,
+  fetchTransactions,
+  fetchPending,
+  deposit,
+  withdraw,
+} from '@/lib/api/wallet';
 import { startKyc } from '@/lib/api/kyc';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
@@ -84,17 +90,45 @@ export default function WalletPage() {
   // Deposit handlers
   const openDepositModal = () => setIsDepositModalOpen(true);
   const closeDepositModal = () => setIsDepositModalOpen(false);
-  const handleDepositConfirm = () => {
+  interface WalletPayload {
+    amount: number;
+    deviceId: string;
+    currency: string;
+  }
+
+  const handleDepositConfirm = async ({
+    amount,
+    deviceId,
+    currency,
+  }: WalletPayload) => {
     closeDepositModal();
-    showToast('Deposit under review, you’ll be notified soon');
+    try {
+      const res = await deposit(playerId, amount, deviceId, currency);
+      setBalances(res.realBalance, res.creditBalance);
+      showToast('Deposit under review, you’ll be notified soon');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Deposit failed';
+      showToast(message, 'error');
+    }
   };
 
   // Withdraw handlers
   const openWithdrawModal = () => setIsWithdrawModalOpen(true);
   const closeWithdrawModal = () => setIsWithdrawModalOpen(false);
-  const handleWithdrawConfirm = (amount: number) => {
+  const handleWithdrawConfirm = async ({
+    amount,
+    deviceId,
+    currency,
+  }: WalletPayload) => {
     closeWithdrawModal();
-    showToast(`Withdraw request of $${amount.toFixed(2)} sent`);
+    try {
+      const res = await withdraw(playerId, amount, deviceId, currency);
+      setBalances(res.realBalance, res.creditBalance);
+      showToast(`Withdraw request of $${amount.toFixed(2)} sent`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Withdraw failed';
+      showToast(message, 'error');
+    }
   };
 
   const handleVerify = () => {
