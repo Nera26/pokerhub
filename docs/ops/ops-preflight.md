@@ -61,11 +61,11 @@ Secrets
 SLACK_BOT_TOKEN – used by check-workflow-sla
  to send alerts.
 
-GCP_SA_KEY – service-account JSON for DR and spectator-privacy metric checks (Cloud Monitoring API).
-
 Repository / Environment Vars
 
 vars.GCP_PROJECT_ID – GCP project containing DR & spectator privacy metrics.
+vars.GCP_WORKLOAD_IDENTITY_PROVIDER – full resource name of the workload identity provider.
+vars.GCP_SERVICE_ACCOUNT – email of the service account to impersonate.
 
 vars.DR_METRICS_BUCKET – GCS bucket holding DR drill metrics / trend files.
 
@@ -87,7 +87,7 @@ PROOF_ARCHIVE_BUCKET – GCS bucket to audit for proof archive retention & repli
 
 vars.SECONDARY_REGION – expected secondary region for proof archive replication.
 
-The service account must have permission to read Cloud Monitoring time-series data (e.g., roles/monitoring.viewer) and access GCS buckets for soak/DR/proof artifacts.
+Authentication uses Workload Identity Federation; no service-account JSON key is required. The service account must have permission to read Cloud Monitoring time-series data (e.g., roles/monitoring.viewer) and access GCS buckets for soak/DR/proof artifacts.
 
 Behavior on failure
 

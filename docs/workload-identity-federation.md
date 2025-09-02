@@ -20,5 +20,4 @@ Workflows authenticate with these variables:
     workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
     service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
 ```
-
-The `GCP_SA_KEY` secret is no longer required and has been removed.
+No service-account JSON key secret is required.
