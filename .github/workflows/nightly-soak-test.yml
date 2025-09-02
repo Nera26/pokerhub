@@ -32,7 +32,7 @@ jobs:
           gcloud monitoring metrics write custom.googleapis.com/soak_test/latency "$p95" --labels build_sha=${{ github.sha }},run_id=${{ github.run_id }}
       - name: Upload summary
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: soak-summary
           path: load/results/soak-summary.json

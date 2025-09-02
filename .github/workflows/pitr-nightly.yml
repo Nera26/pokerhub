@@ -33,7 +33,7 @@ jobs:
         SECONDARY_REGION: ${{ vars.SECONDARY_REGION }}
     - name: Upload logs
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: pitr-nightly
         path: pitr-nightly.log

@@ -44,7 +44,7 @@ jobs:
       run: kill $(cat collector.pid)
     - name: Upload artifacts
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ws-soak-staging
         path: |
