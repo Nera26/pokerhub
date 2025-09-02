@@ -1,6 +1,6 @@
 # Tournament Handbook
 
-**Version:** 1.2.2
+**Version:** 1.2.3
 **Last Updated:** 2025-10-12
 **Changelog:** [CHANGELOG](./CHANGELOG.md)
 
@@ -56,9 +56,10 @@ flowchart LR
 
 - Tournament endpoints are protected by a configurable rate limit guard.
 - Table balancing persists seat moves and skips players moved within the last
-  few hands. The window is controlled by `TOURNAMENT_AVOID_WITHIN` (default 10).
-  For example, with `TOURNAMENT_AVOID_WITHIN=5`, a player moved on hand 42 will
-  not be rebalanced again until at least hand 48.
+  few hands. Configure the window with `tournament.avoidWithin` (env
+  `TOURNAMENT_AVOID_WITHIN`, default 10). For example, with
+  `TOURNAMENT_AVOID_WITHIN=5`, a player moved on hand 42 will not be
+  rebalanced again until at least hand 48.
 - Blind levels may be hot patched during play with director approval.
 
 ## ICM Payouts
@@ -91,6 +92,7 @@ ICM calculations round expectations so the total error is less than one chip.
 Tournament ledger entries must be verified daily. Follow the [reconciliation procedure](../accounting-book.md#reconciliation-procedure) to confirm balances.
 
 ## Changelog
+- **1.2.3** – 2025-10-12 – Clarify `tournament.avoidWithin` configuration key.
 - **1.2.2** – 2025-10-12 – Document configurable avoidance window for table
   rebalancing with examples.
 - **1.2.1** – 2025-10-11 – Record seat moves to prevent double rebalancing
