@@ -28,6 +28,18 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm test --prefix backend
+      - name: Audit ledger
+        id: audit-ledger
+        run: npm run audit:ledger --prefix backend
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        if: steps.audit-ledger.outcome == 'failure'
+        with:
+          name: reconcile
+          path: storage/reconcile-*.json
+      - name: Fail on ledger audit
+        if: steps.audit-ledger.outcome == 'failure'
+        run: exit 1
       - run: npm test --prefix frontend
   ensure-spectator-privacy:
     runs-on: ubuntu-latest

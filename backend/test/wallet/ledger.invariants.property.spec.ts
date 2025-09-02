@@ -189,19 +189,29 @@ describe('Wallet ledger invariants', () => {
               if (rollbackAmt > 0) {
                 await service.rollback(userId, rollbackAmt, ref, 'USD');
               }
+              const entries = await journalRepo.find({ where: { refId: ref } });
+              const total = entries.reduce((s, e) => s + Number(e.amount), 0);
+              expect(total).toBe(0);
             }
 
-            const total = await service.totalBalance();
-            expect(total).toBe(0);
+            const balanceTotal = await service.totalBalance();
+            expect(balanceTotal).toBe(0);
 
             await runInTmp(() => runReconcile(service, events));
 
             const user = await accountRepo.findOneByOrFail({ id: userId });
             user.balance += 1;
             await accountRepo.save(user);
-            await expect(
-              runInTmp(() => runReconcile(service, events)),
-            ).rejects.toThrow('wallet reconciliation discrepancies');
+            await runInTmp(async () => {
+              await expect(runReconcile(service, events)).rejects.toThrow(
+                'wallet reconciliation discrepancies',
+              );
+              const dir = path.resolve(process.cwd(), '..', 'storage');
+              const files = fs
+                .readdirSync(dir)
+                .filter((f) => f.startsWith('reconcile-'));
+              expect(files.length).toBeGreaterThan(0);
+            });
           },
         ),
       { numRuns: 25 },

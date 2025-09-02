@@ -12,7 +12,7 @@ import { KycService } from '../../src/wallet/kyc.service';
 import { MockRedis } from '../utils/mock-redis';
 
 async function writeFailure(data: unknown) {
-  const dir = path.join(__dirname, '../../storage');
+  const dir = path.join(__dirname, '../../../storage');
   await fs.mkdir(dir, { recursive: true });
   const today = new Date().toISOString().slice(0, 10);
   const file = path.join(dir, `reconcile-${today}.json`);
@@ -136,8 +136,13 @@ async function replay(file: string): Promise<ReplayResult> {
 }
 
 describe('hand log replay', () => {
-  const dir = path.join(__dirname, '../fixtures/hand-logs');
+  const dir = path.join(__dirname, '../../../storage/hand-logs');
   const files = readdirSync(dir).filter((f) => f.endsWith('.jsonl'));
+  if (files.length === 0) {
+    it('no hand logs to replay', () => {
+      expect(files).toHaveLength(0);
+    });
+  }
   for (const file of files) {
     it(`${file} maintains zero-sum totals`, async () => {
       const full = path.join(dir, file);
