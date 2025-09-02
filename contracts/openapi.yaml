@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 1.6.0
+  version: 2.3.0
 paths:
   /status:
     get:
@@ -131,6 +131,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+  /dashboard/metrics:
+    get:
+      summary: Get dashboard metrics
+      responses:
+        '200':
+          description: Dashboard metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardMetricsResponse'
   /notifications:
     get:
       summary: Get notifications
@@ -1172,6 +1182,16 @@ components:
           type: string
       required:
         - message
+    DashboardMetricsResponse:
+      type: object
+      properties:
+        online:
+          type: number
+        revenue:
+          type: number
+      required:
+        - online
+        - revenue
     WithdrawalDecisionRequest:
       type: object
       properties:

@@ -40,8 +40,59 @@ jobs:
           SOAK_RSS_GROWTH_PCT: ${{ vars.SOAK_RSS_GROWTH_PCT || 1 }}
         run: npx -y ts-node scripts/check-soak-metrics.ts
 
+  dr-drill-sla:
+    needs: check-proof-archive
+    runs-on: ubuntu-latest
+    env:
+      DR_DRILL_SLA_DAYS: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --legacy-peer-deps
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+      - name: Check DR drill metrics
+        run: npx ts-node scripts/check-dr-drill.ts
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          DR_DRILL_SLA_DAYS: ${{ env.DR_DRILL_SLA_DAYS }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --legacy-peer-deps
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+      - id: check
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          DR_DRILL_SLA_DAYS: ${{ env.DR_DRILL_SLA_DAYS }}
+        run: npx ts-node scripts/check-dr-drill.ts
+      - name: Slack alert on DR drill SLA failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            { "text": "DR drill SLA check failed for ${{ github.repository }}@${{ github.sha }}" }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
   preflight:
-    needs: [check-proof-archive, check-soak-metrics]
+    needs: [check-proof-archive, dr-drill-sla]
     runs-on: ubuntu-latest
     env:
       DR_DRILL_SLA_DAYS: 7
@@ -66,11 +117,6 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
-      - name: Check DR drill metrics
-        run: npx ts-node scripts/check-dr-drill.ts
-        env:
-          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          DR_DRILL_SLA_DAYS: ${{ env.DR_DRILL_SLA_DAYS }}
 
       # Composite preflight (kept)
       - uses: ./.github/actions/ops-preflight

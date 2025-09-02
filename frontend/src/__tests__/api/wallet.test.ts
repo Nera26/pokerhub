@@ -66,9 +66,9 @@ describe('wallet api', () => {
         }),
       });
 
-    await expect(reserve(10, 'USD')).resolves.toEqual({ message: 'ok' });
-    await expect(commit(10, 'USD')).resolves.toEqual({ message: 'ok' });
-    await expect(rollback(10, 'USD')).resolves.toEqual({ message: 'ok' });
+    await expect(reserve('u1', 10, 'USD')).resolves.toEqual({ message: 'ok' });
+    await expect(commit('u1', 10, 'USD')).resolves.toEqual({ message: 'ok' });
+    await expect(rollback('u1', 10, 'USD')).resolves.toEqual({ message: 'ok' });
     await expect(deposit('u1', 10, 'd1', 'USD')).resolves.toEqual({
       kycVerified: true,
       realBalance: 20,
@@ -79,7 +79,7 @@ describe('wallet api', () => {
       realBalance: 10,
       creditBalance: 5,
     });
-    await expect(getStatus()).resolves.toEqual({
+    await expect(getStatus('u1')).resolves.toEqual({
       kycVerified: true,
       realBalance: 20,
       creditBalance: 10,

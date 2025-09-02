@@ -4,6 +4,7 @@ Investigates slow WebSocket message delivery or ACKs.
 
 ## Dashboard
 - Grafana: [WebSocket Latency](../../infra/observability/websocket-latency-dashboard.json)
+- Grafana: [WebSocket Queue](../../infra/observability/ws-outbound-queue-dashboard.json)
 
 ## Alert Rule
 - `WebSocketLatencySLOViolation` in [alerts.yml](../../infra/observability/alerts.yml)
@@ -18,6 +19,22 @@ Investigates slow WebSocket message delivery or ACKs.
 3. Restart or scale socket servers if latency remains high.
 
 Refer to [Error Budget Procedures](../error-budget-procedures.md) when burn alerts trigger.
+
+## Backpressure
+
+The gateway enforces backpressure to protect itself from slow consumers:
+
+- `ws_outbound_queue_depth` tracks pending messages per socket. Compare with
+  `ws_outbound_queue_threshold` (warning) and `ws_outbound_queue_limit`
+  (hard cap). Beyond the limit, frames are dropped and `ws_outbound_dropped_total`
+  increments.
+- `game_action_global_count` reports the aggregate action rate. When it exceeds
+  `game_action_global_limit`, additional actions are rejected and
+  `global_limit_exceeded` is incremented.
+
+Sustained breaches indicate overloaded clients or abusive behavior. Throttle or
+disconnect offending sessions and consider scaling out additional gateway
+instances.
 
 ## CI Regression Check
 

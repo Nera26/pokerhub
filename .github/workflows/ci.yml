@@ -26,7 +26,8 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - run: TS_NODE_COMPILER_OPTIONS='{"module":"commonjs"}' npx ts-node scripts/ensure-spectator-privacy.ts
+      - name: Spectator privacy compliance
+        run: TS_NODE_COMPILER_OPTIONS='{"module":"commonjs"}' npx ts-node scripts/ensure-spectator-privacy.ts
 
   ensure-ops-artifacts:
     runs-on: ubuntu-latest
@@ -47,6 +48,16 @@ jobs:
           node-version: 20
       - run: npm ci
       - run: npx ts-node scripts/ensure-ops-preflight.ts
+
+  ensure-proof-archive-workflows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: TS_NODE_COMPILER_OPTIONS='{"module":"commonjs"}' npx ts-node scripts/ensure-proof-archive.ts
 
   ensure-proof-archive:
     uses: ./.github/workflows/ensure-proof-archive.yml
@@ -91,11 +102,6 @@ jobs:
           if [ -f dr-drill-issue.json ]; then
             echo "issue=true" >> "$GITHUB_OUTPUT"
           fi
-      - name: Check DR drill metrics
-        env:
-          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          DR_DRILL_SLA_DAYS: 7
-        run: npx ts-node scripts/check-dr-drill.ts
       - uses: actions/upload-artifact@v4
         if: steps.dr-drill.outputs.issue == 'true'
         with:
@@ -105,14 +111,45 @@ jobs:
         if: steps.dr-drill.outputs.issue == 'true'
         run: exit 1
 
+  dr-drill-sla:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+      - id: check
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          DR_DRILL_SLA_DAYS: 7
+        run: npx ts-node scripts/check-dr-drill.ts
+      - name: Slack alert on DR drill SLA failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            { "text": "DR drill SLA check failed for ${{ github.repository }}@${{ github.sha }}" }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
   ops-preflight:
     needs:
       - ensure-spectator-privacy
       - ensure-ops-artifacts
       - ensure-ops-preflight
+      - ensure-proof-archive-workflows
       - ensure-proof-archive
       - ensure-soak-metrics
       - ensure-dr-drill
+      - dr-drill-sla
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -781,27 +818,24 @@ jobs:
           npm ci --prefix backend
           npm ci --prefix frontend
           npm ci --prefix analytics
-      - name: Ledger batch property tests
-        id: ledger
-        run: npm test --prefix backend -- src/wallet/wallet.ledger.property.spec.ts | tee ledger.log
-        continue-on-error: true
-      - name: Hand-log replay property tests
-        id: replay
-        run: npm test --prefix backend -- test/wallet/hand-logs.replay.property.spec.ts | tee replay.log
-        continue-on-error: true
       - name: Remaining backend property tests
         id: backend-property
         run: npm run test:property --prefix backend -- --testPathIgnorePatterns=src/wallet/wallet.ledger.property.spec.ts --testPathIgnorePatterns=test/wallet/hand-logs.replay.property.spec.ts | tee backend-property.log
         continue-on-error: true
       - name: Ledger audit
-        id: audit
-        run: npm run test:ledger | tee audit.log
+        id: ledger-audit
+        run: npm run audit:ledger | tee audit.log
         continue-on-error: true
       - uses: actions/upload-artifact@v4
-        if: steps.audit.outcome == 'failure' && hashFiles('storage/reconcile-*.json') != ''
+        if: steps.ledger-audit.outcome == 'failure' && hashFiles('storage/reconcile-*.json') != ''
         with:
           name: ledger-reconcile-${{ github.sha }}
           path: storage/reconcile-*.json
+      - uses: actions/upload-artifact@v4
+        if: always() && hashFiles('storage/ledger-audit/summary.json') != ''
+        with:
+          name: ledger-audit-summary-${{ github.sha }}
+          path: storage/ledger-audit/summary.json
       - name: Frontend property tests
         id: frontend-property
         run: npm test --prefix frontend -- --testPathPattern=.property.spec.ts$ --passWithNoTests | tee frontend-property.log
@@ -829,8 +863,6 @@ jobs:
         with:
           name: property-${{ github.sha }}
           path: |
-            ledger.log
-            replay.log
             audit.log
             backend-property.log
             frontend-property.log
@@ -840,8 +872,7 @@ jobs:
         run: |
           echo "| Check | Status |" > property-summary.md
           echo "| --- | --- |" >> property-summary.md
-          echo "| ledger batches | ${{ steps.ledger.outcome }} |" >> property-summary.md
-          echo "| hand-log replay | ${{ steps.replay.outcome }} |" >> property-summary.md
+          echo "| ledger audit | ${{ steps.ledger-audit.outcome }} |" >> property-summary.md
           cat property-summary.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
@@ -849,7 +880,7 @@ jobs:
           name: property-summary-${{ github.sha }}
           path: property-summary.md
       - name: Fail if property tests failed
-        if: steps.ledger.outcome == 'failure' || steps.replay.outcome == 'failure' || steps.backend-property.outcome == 'failure' || steps.audit.outcome == 'failure' || steps.frontend-property.outcome == 'failure' || steps.analytics-property.outcome == 'failure' || steps.shared-property.outcome == 'failure' || steps.repo-property.outcome == 'failure'
+        if: steps.ledger-audit.outcome == 'failure' || steps.backend-property.outcome == 'failure' || steps.frontend-property.outcome == 'failure' || steps.analytics-property.outcome == 'failure' || steps.shared-property.outcome == 'failure' || steps.repo-property.outcome == 'failure'
         run: exit 1
 
   integration-run:

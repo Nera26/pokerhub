@@ -14,6 +14,7 @@ See [disaster recovery metrics](ops/disaster-recovery.md) and [runbook](runbooks
 - Cadence: Mondays at 02:00 UTC; targets **RTO ≤ 1800 s**, **RPO ≤ 300 s**, and replication lag **≤ 900 s**.
 - On failure, review drill logs, page `pokerhub-eng`, and rerun after remediation.
 - CI enforces presence of `dr-drill`, `dr-failover`, or `check-dr-runbook` jobs with `if: ${{ always() }}` via [`scripts/ensure-dr-drill.ts`](../scripts/ensure-dr-drill.ts).
+- Verify Cloud Monitoring metric `custom.googleapis.com/dr/run_success`; a recent value of `1` indicates the latest drill succeeded. If the metric is missing or older than the SLA (default 30 days), treat it as stale and escalate.
 
 ## Spectator Log Sanitization & DLP Scanning
 - Reusable workflow [`.github/workflows/spectator-privacy.yml`](../.github/workflows/spectator-privacy.yml) fetches logs, runs [`scripts/sanitize-spectator-logs.ts`](../scripts/sanitize-spectator-logs.ts), and scans with [`scripts/dlp-scan.ts`](../scripts/dlp-scan.ts).

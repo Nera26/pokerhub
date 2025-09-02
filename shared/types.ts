@@ -32,6 +32,12 @@ export const MessageResponseSchema = z.object({
 });
 export type MessageResponse = z.infer<typeof MessageResponseSchema>;
 
+export const DashboardMetricsSchema = z.object({
+  online: z.number(),
+  revenue: z.number(),
+});
+export type DashboardMetrics = z.infer<typeof DashboardMetricsSchema>;
+
 /** ---- Withdrawals ---- */
 export const WithdrawalDecisionRequestSchema = z.object({
   comment: z.string(),
