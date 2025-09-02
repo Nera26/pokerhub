@@ -1,4 +1,13 @@
-import { Controller, Get, Put, Delete, Param, Body, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Put,
+  Delete,
+  Param,
+  Body,
+  BadRequestException,
+  UseGuards,
+} from '@nestjs/common';
 import { FeatureFlagsService } from './feature-flags.service';
 import {
   FeatureFlagSchema,
@@ -9,7 +18,10 @@ import {
   type FeatureFlagsResponse,
 } from '../schemas/feature-flags';
 import { ZodError } from 'zod';
+import { AuthGuard } from '../auth/auth.guard';
+import { AdminGuard } from '../auth/admin.guard';
 
+@UseGuards(AuthGuard, AdminGuard)
 @Controller('feature-flags')
 export class FeatureFlagsController {
   constructor(private readonly flags: FeatureFlagsService) {}
