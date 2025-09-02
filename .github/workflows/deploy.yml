@@ -39,31 +39,28 @@ jobs:
           SOAK_GC_P95_MS: ${{ vars.SOAK_GC_P95_MS || 50 }}
           SOAK_RSS_GROWTH_PCT: ${{ vars.SOAK_RSS_GROWTH_PCT || 1 }}
         run: npx -y ts-node scripts/check-soak-metrics.ts
+      - name: Slack alert on soak metrics failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            { "text": "Soak metrics check failed for ${{ github.repository }}@${{ github.sha }}" }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      - name: PagerDuty alert on soak metrics failure
+        if: failure()
+        env:
+          ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+        run: |
+          curl -X POST https://events.pagerduty.com/v2/enqueue \
+            -H 'Content-Type: application/json' \
+            -d '{"routing_key":"'$ROUTING_KEY'","event_action":"trigger","payload":{"summary":"Soak metrics check failed during deploy","source":"github-actions","severity":"error"}}'
 
   dr-drill-sla:
-    needs: check-proof-archive
+    needs: [check-proof-archive, check-soak-metrics]
     runs-on: ubuntu-latest
     env:
       DR_DRILL_SLA_DAYS: 7
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm ci --legacy-peer-deps
-      - uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ vars.GCP_PROJECT_ID }}
-      - name: Check DR drill metrics
-        run: npx ts-node scripts/check-dr-drill.ts
-        env:
-          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          DR_DRILL_SLA_DAYS: ${{ env.DR_DRILL_SLA_DAYS }}
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -92,7 +89,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   preflight:
-    needs: [check-proof-archive, dr-drill-sla]
+    needs: [check-proof-archive, dr-drill-sla, check-soak-metrics]
     runs-on: ubuntu-latest
     env:
       DR_DRILL_SLA_DAYS: 7
@@ -104,8 +101,6 @@ jobs:
       SPECTATOR_RETENTION_SLA_DAYS: 1
     steps:
       - uses: actions/checkout@v4
-
-      # (merged from main) Node + GCP auth + DR drill check
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -117,8 +112,6 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
-
-      # Composite preflight (kept)
       - uses: ./.github/actions/ops-preflight
         with:
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
@@ -131,7 +124,7 @@ jobs:
           dr-throwaway-sla-days: ${{ env.DR_THROWAWAY_SLA_DAYS }}
 
   dr-trends:
-    needs: [check-proof-archive, preflight]
+    needs: [check-proof-archive, preflight, check-soak-metrics]
     uses: ./.github/workflows/dr-trends.yml
     secrets:
       GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
@@ -139,7 +132,12 @@ jobs:
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
 
   deploy:
-    needs: [check-proof-archive, preflight, dr-trends]
+    needs:
+      - check-proof-archive
+      - preflight
+      - dr-trends
+      - check-soak-metrics
+      - dr-drill-sla
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -325,7 +323,6 @@ jobs:
         with:
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
-
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
@@ -522,7 +519,7 @@ jobs:
           retention-days: 14
 
   spectator-privacy:
-    needs: [check-proof-archive, deploy]
+    needs: [check-proof-archive, deploy, check-soak-metrics]
     if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
@@ -530,7 +527,7 @@ jobs:
       logs: deployment.log
 
   proof-archive:
-    needs: [check-proof-archive, deploy]
+    needs: [check-proof-archive, deploy, check-soak-metrics, spectator-privacy]
     if: ${{ always() }}
     uses: ./.github/workflows/proof-archive.yml
     secrets:
@@ -540,13 +537,13 @@ jobs:
       PAGERDUTY_ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
 
   soak:
-    needs: [check-proof-archive, deploy]
+    needs: [check-proof-archive, deploy, check-soak-metrics, spectator-privacy]
     if: ${{ always() }}
     uses: ./.github/workflows/soak.yml
     secrets: inherit
 
   soak-metrics:
-    needs: [check-proof-archive, soak]
+    needs: [check-proof-archive, soak, check-soak-metrics, spectator-privacy]
     if: ${{ always() }}
     uses: ./.github/workflows/soak-metrics.yml
     secrets: inherit

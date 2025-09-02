@@ -144,4 +144,35 @@ describe('TableBalancerService avoidWithin', () => {
       expect(seat.lastMovedHand).toBe(10);
     },
   );
+
+  it('moves a player once avoidWithin hands have elapsed', () => {
+    const service = new TournamentService(
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+    );
+    const tables = [
+      ['p1', 'p2'],
+      [] as string[],
+    ];
+    const recentlyMoved = new Map<string, number>([
+      ['p1', 0],
+      ['p2', 5],
+    ]);
+
+    const balanced = service.balanceTables(
+      tables,
+      recentlyMoved,
+      5,
+      5,
+    );
+    expect(balanced[0]).not.toContain('p1');
+    expect(balanced[1]).toContain('p1');
+    expect(recentlyMoved.get('p1')).toBe(5);
+  });
 });

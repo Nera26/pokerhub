@@ -22,7 +22,9 @@ export interface TableMainProps {
   handNumber: string;
   soundEnabled: boolean;
   chatMessages: ChatMessage[];
-  onSendMessage: (text: string) => void;
+  tableId: string;
+  heroId: string;
+  onSendMessage?: (text: string) => void;
   onToggleSound: () => void;
   onSitOut: () => void;
   onLeave: () => void;
@@ -45,6 +47,8 @@ const TableMain = forwardRef<TableMainHandle, TableMainProps>(
       handNumber,
       soundEnabled,
       chatMessages,
+      tableId,
+      heroId,
       onSendMessage,
       onToggleSound,
       onSitOut,
@@ -73,6 +77,8 @@ const TableMain = forwardRef<TableMainHandle, TableMainProps>(
 
         <SidePanel
           isOpen={sideOpen}
+          tableId={tableId}
+          heroId={heroId}
           chatMessages={chatMessages}
           onSendMessage={onSendMessage}
           onToggleSound={onToggleSound}

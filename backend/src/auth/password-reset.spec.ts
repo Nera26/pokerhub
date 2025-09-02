@@ -12,6 +12,7 @@ import { AuthRateLimitMiddleware } from './rate-limit.middleware';
 import * as bcrypt from 'bcrypt';
 import { UserRepository } from '../users/user.repository';
 import { EmailService } from './email.service';
+import { MetricsWriterService } from '../metrics/metrics-writer.service';
 
 class InMemoryUserRepository {
   private users: any[] = [];
@@ -67,6 +68,7 @@ describe('Password reset flow', () => {
         { provide: AnalyticsService, useValue: { emit: jest.fn() } },
         { provide: UserRepository, useClass: InMemoryUserRepository },
         { provide: EmailService, useClass: MockEmailService },
+        MetricsWriterService,
       ],
     }).compile();
 

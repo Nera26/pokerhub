@@ -466,7 +466,7 @@ export class TournamentService implements OnModuleInit {
       let player: string | undefined;
       for (let i = result[maxIdx].length - 1; i >= 0; i--) {
         const p = result[maxIdx][i];
-        if (currentHand - (recentlyMoved.get(p) ?? -Infinity) > avoidWithin) {
+        if (currentHand - (recentlyMoved.get(p) ?? -Infinity) >= avoidWithin) {
           player = p;
           result[maxIdx].splice(i, 1);
           break;

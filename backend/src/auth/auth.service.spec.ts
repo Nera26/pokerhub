@@ -6,6 +6,7 @@ import type { ConfigService } from '@nestjs/config';
 import type { AnalyticsService } from '../analytics/analytics.service';
 import type { UserRepository } from '../users/user.repository';
 import type { EmailService } from './email.service';
+import type { MetricsWriterService } from '../metrics/metrics-writer.service';
 
 describe('AuthService register', () => {
   it('throws ConflictException when email exists', async () => {
@@ -24,6 +25,7 @@ describe('AuthService register', () => {
       {} as unknown as AnalyticsService,
       repo as unknown as UserRepository,
       {} as unknown as EmailService,
+      {} as unknown as MetricsWriterService,
     );
 
     await service.register('test@example.com', 'secret');

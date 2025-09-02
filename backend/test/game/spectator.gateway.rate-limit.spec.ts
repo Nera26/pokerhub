@@ -5,10 +5,13 @@ describe('SpectatorGateway rate limiting', () => {
   let droppedMock: jest.Mock;
   let rateMock: jest.Mock;
   let queueResolvers: Array<() => void>;
+  let depthCb: ((r: any) => void) | undefined;
+  let utilCb: ((r: any) => void) | undefined;
 
   const createClient = () => {
     const disconnectHandlers: Array<() => void> = [];
     return {
+      id: 'c1',
       handshake: { query: { tableId: 't1' } },
       join: jest.fn(),
       emit: jest.fn(),
@@ -59,6 +62,28 @@ describe('SpectatorGateway rate limiting', () => {
         }
         return { add: jest.fn() };
       }),
+      createHistogram: jest.fn(() => ({ record: jest.fn() })),
+      createObservableGauge: jest
+        .fn()
+        .mockImplementation((name: string) => {
+          if (name === 'ws_outbound_queue_depth') {
+            return {
+              addCallback: (cb: any) => {
+                depthCb = cb;
+              },
+              removeCallback: jest.fn(),
+            };
+          }
+          if (name === 'ws_outbound_queue_utilization') {
+            return {
+              addCallback: (cb: any) => {
+                utilCb = cb;
+              },
+              removeCallback: jest.fn(),
+            };
+          }
+          return { addCallback: jest.fn(), removeCallback: jest.fn() };
+        }),
     }));
     jest.doMock('@opentelemetry/api', () => ({ metrics: { getMeter: getMeterMock } }));
     jest.doMock('../../src/game/room.service', () => ({ RoomManager: jest.fn() }));
@@ -89,6 +114,12 @@ describe('SpectatorGateway rate limiting', () => {
     queueResolvers.shift()?.();
     room.emit('state', { n: 1, players: [] });
     room.emit('state', { n: 2, players: [] });
+
+    const observeDepth = jest.fn();
+    depthCb?.({ observe: observeDepth });
+    const observeUtil = jest.fn();
+    utilCb?.({ observe: observeUtil });
+
     queueResolvers.shift()?.();
     await new Promise((r) => setImmediate(r));
 
@@ -101,5 +132,7 @@ describe('SpectatorGateway rate limiting', () => {
     ]);
     expect(rateMock).toHaveBeenCalledTimes(1);
     expect(droppedMock).toHaveBeenCalledTimes(1);
+    expect(observeDepth).toHaveBeenCalledWith(1, { socketId: 'c1' });
+    expect(observeUtil).toHaveBeenCalledWith(1, { socketId: 'c1' });
   });
 });

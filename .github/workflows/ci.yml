@@ -213,10 +213,27 @@ jobs:
           const summary=JSON.parse(fs.readFileSync('tournament-summary.json','utf8'));
           const baseline=500;
           const avg=summary.metrics.tournament_duration.avg;
-          if(Math.abs(avg-baseline)/baseline>0.05){console.error(`Average duration ${avg}ms outside ±5% of ${baseline}ms`);process.exit(1);} 
+          if(Math.abs(avg-baseline)/baseline>0.05){console.error(`Average duration ${avg}ms outside ±5% of ${baseline}ms`);process.exit(1);}
           const icmErr=summary.metrics.icm_error.max;
           if(icmErr>=1){console.error(`ICM error ${icmErr} ≥ 1`);process.exit(1);}
           NODE
+
+  latency-check:
+    if: github.event_name == 'pull_request'
+    needs: [ops-preflight, ops-sla]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npx ts-node scripts/check-latency.ts
+        env:
+          LATENCY_P50_MS: ${{ vars.LATENCY_P50_MS }}
+          LATENCY_P95_MS: ${{ vars.LATENCY_P95_MS }}
+          LATENCY_P99_MS: ${{ vars.LATENCY_P99_MS }}
+          THROUGHPUT_MIN: ${{ vars.THROUGHPUT_MIN }}
 
   soak-metrics-check:
     if: github.event_name == 'pull_request'
@@ -232,6 +249,9 @@ jobs:
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
       - id: check
+        env:
+          SOAK_GC_P95_MS: ${{ vars.SOAK_GC_P95_MS }}
+          SOAK_RSS_GROWTH_PCT: ${{ vars.SOAK_RSS_GROWTH_PCT }}
         run: npx ts-node scripts/check-soak-metrics.ts
       - id: trend
         env:
@@ -243,6 +263,9 @@ jobs:
       - name: Publish soak metrics
         if: always()
         continue-on-error: true
+        env:
+          SOAK_GC_P95_MS: ${{ vars.SOAK_GC_P95_MS }}
+          SOAK_RSS_GROWTH_PCT: ${{ vars.SOAK_RSS_GROWTH_PCT }}
         run: npx ts-node scripts/check-soak-metrics.ts
       - name: Prepare regression alert
         if: steps.check.outcome == 'failure'
@@ -820,7 +843,7 @@ jobs:
           npm ci --prefix analytics
       - name: Remaining backend property tests
         id: backend-property
-        run: npm run test:property --prefix backend -- --testPathIgnorePatterns=src/wallet/wallet.ledger.property.spec.ts --testPathIgnorePatterns=test/wallet/hand-logs.replay.property.spec.ts | tee backend-property.log
+        run: npm run test:property --prefix backend -- --testPathIgnorePatterns=test/wallet.ledger.property.spec.ts --testPathIgnorePatterns=test/wallet/hand-logs.replay.property.spec.ts | tee backend-property.log
         continue-on-error: true
       - name: Ledger audit
         id: ledger-audit
@@ -1141,18 +1164,18 @@ jobs:
         with:
           title: DR trend breach
           content-filepath: dr-trends.json
-
   ops-artifacts-verify:
-    if: ${{ always() }}
     needs:
       - ops-preflight
       - ops-sla
       - workflow-sla
-      - dr-trends
+      - dr-trends # gate on DR trend health
       - spectator-privacy
       - check-proof-archive
+      - soak-metrics
     uses: ./.github/workflows/ops-artifacts-verify.yml
     secrets: inherit
+
 
       PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
       PROOF_MANIFEST_BUCKET: ${{ secrets.PROOF_MANIFEST_BUCKET }}
