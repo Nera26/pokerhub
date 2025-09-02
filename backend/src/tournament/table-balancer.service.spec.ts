@@ -2,7 +2,14 @@ import { TableBalancerService } from './table-balancer.service';
 import type { Repository } from 'typeorm';
 import type Redis from 'ioredis';
 import { Table } from '../database/entities/table.entity';
-import { TournamentService } from './tournament.service';
+type TournamentService = {
+  balanceTournament(
+    tournamentId: string,
+    currentHand: number,
+    avoidWithin: number,
+    recentlyMoved: Map<string, number>,
+  ): Promise<void>;
+};
 
 function createTablesRepository(
   players: string[][],
@@ -60,9 +67,7 @@ describe('TableBalancerService', () => {
       ['p1', 'p2'],
       [],
     ]) as Repository<Table>;
-    const tournamentService = createTournamentService(
-      moved,
-    ) as TournamentService;
+    const tournamentService = createTournamentService(moved);
     const store = new Map<string, string>([['p1', '1']]);
     const redis = {
       hgetall: (key: string) => {
@@ -80,7 +85,11 @@ describe('TableBalancerService', () => {
         return Promise.resolve(1);
       },
     } as unknown as Redis;
-    const service = new TableBalancerService(repo, tournamentService, redis);
+    const service = new TableBalancerService(
+      repo,
+      tournamentService as any,
+      redis,
+    );
     await service.rebalanceIfNeeded('t1', 5);
     expect(moved).toEqual(['p2']);
     expect(store.get('p1')).toBe('1');
@@ -93,10 +102,11 @@ describe('TableBalancerService', () => {
       ['p1', 'p2'],
       [],
     ]) as Repository<Table>;
-    const tournamentService = createTournamentService(
-      moved,
-    ) as TournamentService;
-    const service = new TableBalancerService(repo, tournamentService);
+    const tournamentService = createTournamentService(moved);
+    const service = new TableBalancerService(
+      repo,
+      tournamentService as any,
+    );
     (
       service as unknown as {
         localRecentlyMoved: Map<string, Map<string, number>>;
@@ -119,10 +129,11 @@ describe('TableBalancerService', () => {
       ['p1', 'p2'],
       [],
     ]) as Repository<Table>;
-    const tournamentService = createSinglePlayerService(
-      moved,
-    ) as TournamentService;
-    const service = new TableBalancerService(repo, tournamentService);
+    const tournamentService = createSinglePlayerService(moved);
+    const service = new TableBalancerService(
+      repo,
+      tournamentService as any,
+    );
 
     await service.rebalanceIfNeeded('t1', 0, 2);
     expect(moved).toEqual(['p1']);
@@ -132,5 +143,42 @@ describe('TableBalancerService', () => {
 
     await service.rebalanceIfNeeded('t1', 2, 2);
     expect(moved).toEqual(['p1', 'p1']);
+  });
+
+  it('waits avoidWithin hands based on TOURNAMENT_AVOID_WITHIN before moving again', async () => {
+    const moved: string[] = [];
+    const repo = createTablesRepository([
+      ['p1', 'p2'],
+      [],
+    ]) as Repository<Table>;
+    const tournamentService = createSinglePlayerService(moved);
+
+    const original = process.env.TOURNAMENT_AVOID_WITHIN;
+    process.env.TOURNAMENT_AVOID_WITHIN = '3';
+
+    const service = new TableBalancerService(
+      repo,
+      tournamentService as any,
+    );
+
+    expect((service as unknown as { defaultAvoidWithin: number }).defaultAvoidWithin).toBe(3);
+
+    try {
+      await service.rebalanceIfNeeded('t1', 0);
+      await service.rebalanceIfNeeded('t1', 1);
+      await service.rebalanceIfNeeded('t1', 2);
+      await service.rebalanceIfNeeded('t1', 3);
+      await service.rebalanceIfNeeded('t1', 4);
+      await service.rebalanceIfNeeded('t1', 5);
+      await service.rebalanceIfNeeded('t1', 6);
+
+      expect(moved).toEqual(['p1', 'p1', 'p1']);
+    } finally {
+      if (original === undefined) {
+        delete process.env.TOURNAMENT_AVOID_WITHIN;
+      } else {
+        process.env.TOURNAMENT_AVOID_WITHIN = original;
+      }
+    }
   });
 });
