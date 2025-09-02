@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { trace } from '@opentelemetry/api';
 import { CreateUserRequest, UpdateUserRequest, User } from '../schemas/users';
 import { UserRepository } from './user.repository';
+import { QueryFailedError } from 'typeorm';
 
 @Injectable()
 export class UsersService {
@@ -13,15 +14,26 @@ export class UsersService {
     return UsersService.tracer.startActiveSpan(
       'users.create',
       async (span) => {
-        const user = this.users.create({
-          username: data.username,
-          avatarKey: data.avatarKey,
-          banned: false,
-        });
-        const saved = await this.users.save(user);
-        span.setAttribute('user.id', saved.id);
-        span.end();
-        return saved;
+        try {
+          const user = this.users.create({
+            username: data.username,
+            avatarKey: data.avatarKey,
+            banned: false,
+          });
+          const saved = await this.users.save(user);
+          span.setAttribute('user.id', saved.id);
+          span.end();
+          return saved;
+        } catch (err) {
+          span.end();
+          if (
+            err instanceof QueryFailedError &&
+            (err as any).driverError?.code === '23505'
+          ) {
+            throw new ConflictException('User already exists');
+          }
+          throw err;
+        }
       },
     );
   }
