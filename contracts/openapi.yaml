@@ -413,7 +413,31 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProviderChallenge'
+              $ref: '#/components/schemas/ProviderChallenge'
+  /wallet/{id}/deposit/bank-transfer:
+    post:
+      summary: Initiate bank transfer deposit
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankTransferDepositRequest'
+      responses:
+        '200':
+          description: Deposit reference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankTransferDepositResponse'
   /wallet/{id}/withdraw:
     post:
       summary: Withdraw funds
@@ -953,6 +977,54 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/KycDenialResponse'
+  /admin/deposits:
+    get:
+      summary: List pending deposits
+      responses:
+        '200':
+          description: Pending deposits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingDepositsResponse'
+  /admin/deposits/{id}/confirm:
+    post:
+      summary: Confirm pending deposit
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deposit confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /admin/deposits/{id}/reject:
+    post:
+      summary: Reject pending deposit
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepositDecisionRequest'
+      responses:
+        '200':
+          description: Deposit rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /users:
     post:
       summary: Create user
@@ -1358,6 +1430,23 @@ components:
         - amount
         - deviceId
         - currency
+    BankTransferDepositRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+        currency:
+          type: string
+      required:
+        - amount
+        - currency
+    BankTransferDepositResponse:
+      type: object
+      properties:
+        reference:
+          type: string
+      required:
+        - reference
     ProviderChallenge:
       type: object
       properties:
@@ -1469,6 +1558,63 @@ components:
         - realBalance
         - creditBalance
         - transactions
+    PendingDeposit:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        amount:
+          type: number
+        reference:
+          type: string
+        status:
+          type: string
+          enum: [pending, confirmed, rejected]
+        actionRequired:
+          type: boolean
+        confirmedBy:
+          type: string
+        confirmedAt:
+          type: string
+          format: date-time
+        rejectedBy:
+          type: string
+        rejectedAt:
+          type: string
+          format: date-time
+        rejectionReason:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - amount
+        - reference
+        - status
+        - actionRequired
+        - createdAt
+        - updatedAt
+    PendingDepositsResponse:
+      type: object
+      properties:
+        deposits:
+          type: array
+          items:
+            $ref: '#/components/schemas/PendingDeposit'
+      required:
+        - deposits
+    DepositDecisionRequest:
+      type: object
+      properties:
+        reason:
+          type: string
     CreateUserRequest:
       type: object
       properties:

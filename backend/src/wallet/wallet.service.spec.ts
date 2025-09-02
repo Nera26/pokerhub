@@ -4,6 +4,7 @@ import { Account } from './account.entity';
 import { JournalEntry } from './journal-entry.entity';
 import { Disbursement } from './disbursement.entity';
 import { SettlementJournal } from './settlement-journal.entity';
+import { PendingDeposit } from './pending-deposit.entity';
 import { WalletService } from './wallet.service';
 import { EventPublisher } from '../events/events.service';
 import { PaymentProviderService } from './payment-provider.service';
@@ -41,7 +42,13 @@ describe('WalletService reserve/commit/rollback flow', () => {
     });
     dataSource = db.adapters.createTypeormDataSource({
       type: 'postgres',
-      entities: [Account, JournalEntry, Disbursement, SettlementJournal],
+      entities: [
+        Account,
+        JournalEntry,
+        Disbursement,
+        SettlementJournal,
+        PendingDeposit,
+      ],
       synchronize: true,
     }) as DataSource;
     await dataSource.initialize();
@@ -51,6 +58,7 @@ describe('WalletService reserve/commit/rollback flow', () => {
     const redis: any = { incr: jest.fn(), expire: jest.fn() };
     const disbRepo = dataSource.getRepository(Disbursement);
     const settleRepo = dataSource.getRepository(SettlementJournal);
+    const pendingRepo = dataSource.getRepository(PendingDeposit);
     const provider = {} as unknown as PaymentProviderService;
     const kyc = {
       validate: jest.fn(),
@@ -62,12 +70,14 @@ describe('WalletService reserve/commit/rollback flow', () => {
       journalRepo,
       disbRepo,
       settleRepo,
+      pendingRepo,
       events,
       redis,
       provider,
       kyc,
       settleSvc,
     );
+    (service as any).pendingQueue = { add: jest.fn() };
 
     await accountRepo.save([
       {

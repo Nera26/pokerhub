@@ -136,6 +136,12 @@ export const NotificationCreateEvent = z.object({
   message: z.string(),
 });
 
+export const WalletDepositRejectedEvent = z.object({
+  accountId: z.string().uuid(),
+  depositId: z.string().uuid(),
+  reason: z.string().optional(),
+});
+
 export const EventSchemas = {
   "hand.start": HandStartEvent,
   "hand.end": HandEndEvent,
@@ -158,6 +164,7 @@ export const EventSchemas = {
   "wallet.reconcile.mismatch": WalletReconcileMismatchEvent,
   "wallet.chargeback_flag": WalletChargebackFlagEvent,
   "notification.create": NotificationCreateEvent,
+  "wallet.deposit.rejected": WalletDepositRejectedEvent,
 } as const;
 
 export type Events = {
@@ -182,6 +189,7 @@ export type Events = {
   "wallet.reconcile.mismatch": z.infer<typeof WalletReconcileMismatchEvent>;
   "wallet.chargeback_flag": z.infer<typeof WalletChargebackFlagEvent>;
   "notification.create": z.infer<typeof NotificationCreateEvent>;
+  "wallet.deposit.rejected": z.infer<typeof WalletDepositRejectedEvent>;
 };
 
 export type EventName = keyof Events;

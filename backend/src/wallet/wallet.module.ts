@@ -15,9 +15,12 @@ import { RateLimitGuard } from '../routes/rate-limit.guard';
 import { EventsModule } from '../events/events.module';
 import { RedisModule } from '../redis/redis.module';
 import { startPayoutWorker } from './payout.worker';
+import { startPendingDepositWorker } from './pending-deposit.worker';
 import { PaymentProviderService } from './payment-provider.service';
 import { KycService } from './kyc.service';
 import { GeoIpService } from '../auth/geoip.service';
+import { PendingDeposit } from './pending-deposit.entity';
+import { AdminDepositsController } from '../routes/admin-deposits.controller';
 
 @Injectable()
 class PayoutWorker implements OnModuleInit {
@@ -29,6 +32,16 @@ class PayoutWorker implements OnModuleInit {
   }
 }
 
+@Injectable()
+class PendingDepositWorker implements OnModuleInit {
+  constructor(private readonly wallet: WalletService) {}
+
+  async onModuleInit() {
+    if (process.env.NODE_ENV === 'test') return;
+    await startPendingDepositWorker(this.wallet);
+  }
+}
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -36,6 +49,7 @@ class PayoutWorker implements OnModuleInit {
       JournalEntry,
       Disbursement,
       SettlementJournal,
+      PendingDeposit,
     ]),
     EventsModule,
     RedisModule,
@@ -45,6 +59,7 @@ class PayoutWorker implements OnModuleInit {
   providers: [
     WalletService,
     PayoutWorker,
+    PendingDepositWorker,
     PaymentProviderService,
     KycService,
     SettlementService,
@@ -52,7 +67,7 @@ class PayoutWorker implements OnModuleInit {
     ChargebackMonitor,
     GeoIpService,
   ],
-  controllers: [WalletController, WebhookController],
+  controllers: [WalletController, WebhookController, AdminDepositsController],
   exports: [WalletService, KycService, SettlementService],
 })
 export class WalletModule {}
