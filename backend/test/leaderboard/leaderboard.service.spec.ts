@@ -232,6 +232,17 @@ describe('LeaderboardService', () => {
     expect(minSessionsFn).toHaveBeenCalledTimes(2);
   });
 
+  it('updates standings after hand settlement event', async () => {
+    await service.handleHandSettled({
+      playerIds: ['A', 'B'],
+      deltas: [2, -2],
+    });
+    const top = await service.getTopPlayers();
+    expect(top.map((p) => p.playerId)).toEqual(['A', 'B']);
+    expect(top[0].net).toBe(2);
+    expect(top[1].net).toBe(-2);
+  });
+
   it('rebuild is deterministic regardless of event order', async () => {
     const now = Date.now();
     const events = [

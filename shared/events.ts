@@ -133,6 +133,7 @@ export const EventSchemas = {
   "hand.start": HandStartEvent,
   "hand.end": HandEndEvent,
   "hand.settle": HandSettleEvent,
+  "leaderboard.hand_settled": HandSettleEvent,
   "wallet.credit": WalletMovementEvent,
   "wallet.debit": WalletMovementEvent,
   "action.bet": ActionBetEvent,
@@ -155,6 +156,7 @@ export type Events = {
   "hand.start": z.infer<typeof HandStartEvent>;
   "hand.end": z.infer<typeof HandEndEvent>;
   "hand.settle": z.infer<typeof HandSettleEvent>;
+  "leaderboard.hand_settled": z.infer<typeof HandSettleEvent>;
   "wallet.credit": z.infer<typeof WalletMovementEvent>;
   "wallet.debit": z.infer<typeof WalletMovementEvent>;
   "action.bet": z.infer<typeof ActionBetEvent>;

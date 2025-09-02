@@ -288,6 +288,13 @@ export class GameEngine {
       stake: this.stake,
     });
 
+    this.events?.emit('leaderboard.hand_settled', {
+      handId: this.handId,
+      tableId: this.tableId,
+      playerIds: entries.map((e) => e.playerId),
+      deltas: entries.map((e) => e.delta),
+    });
+
     this.events?.emit('hand.end', {
       handId: this.handId,
       winners,
