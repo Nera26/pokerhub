@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
 import { SessionService } from '../session/session.service';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
@@ -22,6 +22,10 @@ export class AuthService {
   ) {}
 
   async register(email: string, password: string) {
+    const existing = await this.users.findOne({ where: { email } });
+    if (existing) {
+      throw new ConflictException('User with this email already exists');
+    }
     const hash = await bcrypt.hash(password, 10);
     const user = this.users.create({
       email,
