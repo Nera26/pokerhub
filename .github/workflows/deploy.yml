@@ -11,6 +11,16 @@ permissions:
   id-token: write
 
 jobs:
+  ensure-soak-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --legacy-peer-deps
+      - run: TS_NODE_COMPILER_OPTIONS='{"module":"commonjs"}' npx ts-node scripts/ensure-soak-metrics.ts
+
   check-proof-archive:
     if: ${{ always() }}
     uses: ./.github/workflows/check-proof-archive.yml
@@ -39,6 +49,8 @@ jobs:
           SOAK_GC_P95_MS: ${{ vars.SOAK_GC_P95_MS || 50 }}
           SOAK_RSS_GROWTH_PCT: ${{ vars.SOAK_RSS_GROWTH_PCT || 1 }}
         run: npx -y ts-node scripts/check-soak-metrics.ts
+      - name: Ensure soak summary
+        run: test -f soak-summary.json
       - name: Slack alert on soak metrics failure
         if: failure()
         uses: slackapi/slack-github-action@v1.24.0
@@ -89,7 +101,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   preflight:
-    needs: [check-proof-archive, dr-drill-sla, check-soak-metrics]
+    needs: [check-proof-archive, dr-drill-sla, check-soak-metrics, ensure-soak-metrics]
     runs-on: ubuntu-latest
     env:
       DR_DRILL_SLA_DAYS: 7

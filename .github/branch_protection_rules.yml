@@ -8,6 +8,7 @@
     - "ci / ops-sla"
     - "ci / ensure-dr-drill"
     - "ci / soak-metrics"
+    - "soak-metrics / check"
     - contracts
     - "deploy / preflight"
     - "deploy / deploy"
