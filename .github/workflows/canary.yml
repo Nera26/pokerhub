@@ -6,9 +6,9 @@ on:
     branches: [main]
 
 jobs:
-  check-proof-archive:
+  ensure-proof-archive:
     if: ${{ always() }}
-    uses: ./.github/workflows/check-proof-archive.yml
+    uses: ./.github/workflows/ensure-proof-archive.yml
     secrets: inherit
   preflight:
     runs-on: ubuntu-latest
@@ -35,11 +35,11 @@ jobs:
         proof-archive-sla-hours: ${{ env.PROOF_ARCHIVE_SLA_HOURS }}
 
     needs:
-    - check-proof-archive
+    - ensure-proof-archive
   canary:
     needs:
     - preflight
-    - check-proof-archive
+    - ensure-proof-archive
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -85,4 +85,4 @@ jobs:
     with:
       logs: backend-tests.log frontend-tests.log integration.log property.log
     needs:
-    - check-proof-archive
+    - ensure-proof-archive
