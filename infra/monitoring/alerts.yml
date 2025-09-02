@@ -48,7 +48,7 @@ groups:
         annotations:
           summary: "Dropped frames detected"
       - alert: HighOutboundQueueDepth
-        expr: max_over_time(ws_outbound_queue_max[5m]) > 80
+        expr: max_over_time(ws_outbound_queue_max[5m]) > max(ws_outbound_queue_threshold)
         for: 5m
         labels:
           severity: warning

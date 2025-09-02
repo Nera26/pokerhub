@@ -116,8 +116,20 @@ describe('GameGateway rate limits', () => {
     );
 
     try {
-      const fast: any = { id: 'c1', emit: jest.fn() };
-      const slow: any = { id: 'c2', emit: jest.fn() };
+      const fast: any = {
+        id: 'c1',
+        emit: jest.fn(),
+        data: {},
+        conn: { remoteAddress: '1.1.1.1' },
+        handshake: {},
+      };
+      const slow: any = {
+        id: 'c2',
+        emit: jest.fn(),
+        data: {},
+        conn: { remoteAddress: '2.2.2.2' },
+        handshake: {},
+      };
 
       for (let i = 0; i < 31; i++) {
         await gateway.handleJoin(fast, { actionId: `a${i}` });
@@ -129,7 +141,7 @@ describe('GameGateway rate limits', () => {
 
       expect(fastErrors.length).toBe(1);
       expect(slowErrors.length).toBe(0);
-      expect(perSocketMock).toHaveBeenCalledTimes(1);
+      expect(perSocketMock).toHaveBeenCalledWith(1, { socketId: 'c1' });
       expect(globalMock).not.toHaveBeenCalled();
     } finally {
       await rooms.onModuleDestroy();
@@ -151,6 +163,9 @@ describe('GameGateway rate limits', () => {
       const clients = Array.from({ length: 6 }, (_, i) => ({
         id: `c${i}`,
         emit: jest.fn(),
+        data: {},
+        conn: { remoteAddress: `10.0.0.${i}` },
+        handshake: {},
       } as any));
 
       for (let i = 0; i < 5; i++) {
@@ -160,7 +175,7 @@ describe('GameGateway rate limits', () => {
 
       const errors = clients[5].emit.mock.calls.filter(([ev]: any[]) => ev === 'server:Error');
       expect(errors.length).toBe(1);
-      expect(globalMock).toHaveBeenCalledTimes(1);
+      expect(globalMock).toHaveBeenCalledWith(1, { socketId: 'c5' });
       expect(globalCountMock).toHaveBeenCalledTimes(6);
       expect(globalCountMock).toHaveBeenLastCalledWith(6);
     } finally {
