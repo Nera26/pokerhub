@@ -1,13 +1,20 @@
 #!/usr/bin/env ts-node
-import { readdirSync, readFileSync, Dirent } from 'fs';
+import { readdirSync, readFileSync, Dirent, existsSync, statSync } from 'fs';
 import { join } from 'path';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const yaml = require('js-yaml');
 
-function collectYamlFiles(dir: string): string[] {
-  const entries: Dirent[] = readdirSync(dir, { withFileTypes: true });
-  let files: string[] = [];
+function collectWorkflowDirs(root: string): string[] {
+  const dirs = [
+    join(root, '.github/workflows'),
+    join(root, '.github'), // fallback if someone placed ymls directly here
+  ];
+  return dirs.filter((d) => existsSync(d) && statSync(d).isDirectory());
+}
 
+function collectYamlFiles(dir: string): string[] {
+  let files: string[] = [];
+  const entries: Dirent[] = readdirSync(dir, { withFileTypes: true });
   for (const entry of entries) {
     const fullPath = join(dir, entry.name);
     if (entry.isDirectory()) {
@@ -19,19 +26,19 @@ function collectYamlFiles(dir: string): string[] {
       files.push(fullPath);
     }
   }
-
   return files;
 }
 
 function main() {
-  const workflowsDir = join(process.cwd(), '.github', 'workflows');
-  const files = collectYamlFiles(workflowsDir);
+  const workflowDirs = collectWorkflowDirs(process.cwd());
+  const files = workflowDirs.flatMap(collectYamlFiles);
   const missingIf: string[] = [];
   const missingMetrics: string[] = [];
   const CONDITION = /\$\{\{\s*always\(\)\s*\}\}/;
 
   for (const file of files) {
     if (file.endsWith('soak-metrics.yml') || file.endsWith('soak.yml')) continue;
+
     const content = readFileSync(file, 'utf-8');
     let doc: any;
     try {

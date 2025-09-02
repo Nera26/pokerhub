@@ -8,7 +8,7 @@ async function main() {
   fs.mkdirSync(outputDir, { recursive: true });
   const outputFile = path.join(outputDir, 'summary.json');
   const testPaths = [
-    path.join(root, 'test/ledger/wallet.ledger.property.spec.ts'),
+    path.join(root, 'test/wallet/ledger.invariants.property.spec.ts'),
     path.join(root, 'test/wallet/hand-logs.replay.property.spec.ts'),
   ];
 

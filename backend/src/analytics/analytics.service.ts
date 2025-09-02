@@ -231,6 +231,32 @@ export class AnalyticsService {
     };
   }
 
+  async getAuditSummary() {
+    if (this.client) {
+      const res = await this.client.query({
+        query:
+          "SELECT count() AS total, countIf(type='Error') AS errors, countIf(type='Login') AS logins FROM audit_log",
+        format: 'JSONEachRow',
+      });
+      const [row] = (await res.json()) as any[];
+      return {
+        total: Number(row.total) || 0,
+        errors: Number(row.errors) || 0,
+        logins: Number(row.logins) || 0,
+      };
+    }
+
+    const entries = await this.redis.lrange('audit-logs', 0, -1);
+    let errors = 0;
+    let logins = 0;
+    for (const e of entries) {
+      const { type } = JSON.parse(e);
+      if (type === 'Error') errors++;
+      if (type === 'Login') logins++;
+    }
+    return { total: entries.length, errors, logins };
+  }
+
   async ingest(table: string, data: Record<string, any>) {
     if (!this.client) {
       this.logger.warn('No ClickHouse client configured');

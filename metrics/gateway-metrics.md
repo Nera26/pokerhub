@@ -14,6 +14,8 @@ The game WebSocket gateway exposes metrics for outbound queue health and rate li
   is full.
 - `game_action_global_count` – observable gauge tracking the number of actions
   processed within the global rate‑limit window.
+- `game_action_global_limit` – observable gauge exposing the configured global
+  action limit.
 - `per_socket_limit_exceeded` – counter tagged with `socketId` for actions
   rejected due to the per-socket rate limit.
 - `global_limit_exceeded` – counter tagged with `socketId` for actions rejected
@@ -23,6 +25,17 @@ The game WebSocket gateway exposes metrics for outbound queue health and rate li
   latency percentiles.
 - `http_request_throughput` – observable gauge reporting per‑second HTTP
   request throughput.
+
+### Threshold interpretation
+
+`ws_outbound_queue_threshold` reflects the configured alert boundary for queue
+depth. When `ws_outbound_queue_depth` approaches this value, sockets are close
+to saturation and may start dropping frames. The global action limit is exposed
+via the `game_action_global_limit` gauge; a rising `global_limit_exceeded`
+counter indicates actions are being rejected beyond this rate. The high-traffic
+regression test [`backend/test/game/outbound-queue.threshold.spec.ts`]
+(../backend/test/game/outbound-queue.threshold.spec.ts) parses these metrics and fails if
+either value exceeds its threshold.
 
 ## Dashboards
 

@@ -62,6 +62,13 @@ export const AuditLogsResponseSchema = z.object({
 });
 export type AuditLogsResponse = z.infer<typeof AuditLogsResponseSchema>;
 
+export const AuditSummarySchema = z.object({
+  total: z.number().int(),
+  errors: z.number().int(),
+  logins: z.number().int(),
+});
+export type AuditSummary = z.infer<typeof AuditSummarySchema>;
+
 /** ---- Withdrawals ---- */
 export const WithdrawalDecisionRequestSchema = z.object({
   comment: z.string(),

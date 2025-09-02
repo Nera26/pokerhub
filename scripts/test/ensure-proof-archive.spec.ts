@@ -60,3 +60,28 @@ test('fails when workflow omits proof-archive verification', () => {
   assert.equal(err?.message, '1');
   exitMock.mock.restore();
 });
+
+test('fails when nested workflow directory missing proof-archive job', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'wf-'));
+  mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
+  writeFileSync(
+    join(dir, '.github', 'workflows', 'root.yml'),
+    `on: push\njobs:\n  check-proof-archive:\n    if: \${{ always() }}\n    uses: ./.github/workflows/check-proof-archive.yml\n`,
+  );
+  mkdirSync(join(dir, 'frontend', '.github', 'workflows'), { recursive: true });
+  writeFileSync(
+    join(dir, 'frontend', '.github', 'workflows', 'ci.yml'),
+    `on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps: []\n`,
+  );
+  const exitMock = mock.method(process, 'exit', (code?: number) => {
+    throw new Error(String(code));
+  });
+  let err: Error | undefined;
+  try {
+    runScript(dir);
+  } catch (e) {
+    err = e as Error;
+  }
+  assert.equal(err?.message, '1');
+  exitMock.mock.restore();
+});

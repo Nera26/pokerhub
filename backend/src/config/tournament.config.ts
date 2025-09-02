@@ -1,5 +1,7 @@
 import { registerAs } from '@nestjs/config';
 
+export const DEFAULT_AVOID_WITHIN = 10;
+
 export default registerAs('tournament', () => ({
   /**
    * Number of hands a player must wait before being eligible to move again
@@ -8,6 +10,9 @@ export default registerAs('tournament', () => ({
    */
   avoidWithin: Math.max(
     0,
-    parseInt(process.env.TOURNAMENT_AVOID_WITHIN ?? '10', 10),
+    parseInt(
+      process.env.TOURNAMENT_AVOID_WITHIN ?? DEFAULT_AVOID_WITHIN.toString(),
+      10,
+    ),
   ),
 }));

@@ -47,3 +47,30 @@ test('fails when soak job missing soak-metrics job', () => {
   assert.equal(err?.message, '1');
   exitMock.mock.restore();
 });
+
+test('fails when nested workflow directory missing soak-metrics job', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'wf-'));
+  // Root workflow with valid soak and metrics to ensure failure comes from nested dir
+  mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
+  writeFileSync(
+    join(dir, '.github', 'workflows', 'root.yml'),
+    `on: push\njobs:\n  soak:\n    if: \${{ always() }}\n    uses: ./.github/workflows/soak.yml\n  soak-metrics:\n    needs: soak\n    if: \${{ always() }}\n    uses: ./.github/workflows/soak-metrics.yml\n`,
+  );
+  // Nested workflow missing soak-metrics job
+  mkdirSync(join(dir, 'frontend', '.github', 'workflows'), { recursive: true });
+  writeFileSync(
+    join(dir, 'frontend', '.github', 'workflows', 'ci.yml'),
+    `on: push\njobs:\n  soak:\n    if: \${{ always() }}\n    uses: ./.github/workflows/soak.yml\n`,
+  );
+  const exitMock = mock.method(process, 'exit', (code?: number) => {
+    throw new Error(String(code));
+  });
+  let err: Error | undefined;
+  try {
+    runScript(dir);
+  } catch (e) {
+    err = e as Error;
+  }
+  assert.equal(err?.message, '1');
+  exitMock.mock.restore();
+});

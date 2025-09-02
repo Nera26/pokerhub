@@ -913,6 +913,19 @@ export interface paths {
       };
     };
   };
+  "/analytics/summary": {
+    /** Get audit log summary */
+    get: {
+      responses: {
+        /** @description Audit log summary */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AuditSummaryResponse"];
+          };
+        };
+      };
+    };
+  };
   "/analytics/collusion/flagged": {
     /** List collusion flagged sessions */
     get: {
@@ -1235,6 +1248,11 @@ export interface components {
     AuditLogsResponse: {
       logs: components["schemas"]["AuditLogEntry"][];
       nextCursor?: number | null;
+    };
+    AuditSummaryResponse: {
+      total: number;
+      errors: number;
+      logins: number;
     };
     WithdrawalDecisionRequest: {
       comment: string;
