@@ -23,6 +23,9 @@ echo "Deploying canary $APP_NAME$CANARY_SUFFIX with image tag $IMAGE_TAG"
 kubectl set image deployment/${APP_NAME}${CANARY_SUFFIX} ${APP_NAME}=${ARTIFACT_REGISTRY}/${APP_NAME}:${IMAGE_TAG} -n "$NAMESPACE"
 kubectl rollout status deployment/${APP_NAME}${CANARY_SUFFIX} -n "$NAMESPACE" --timeout=60s
 
+echo "Running database migrations"
+kubectl exec deployment/${APP_NAME}${CANARY_SUFFIX} -n "$NAMESPACE" -- npm run migration:run
+
 # basic health check
 if ! kubectl run ${APP_NAME}-probe --rm -i --restart=Never --image=curlimages/curl:8.6.0 -n "$NAMESPACE" -- \
   curl -fsS http://${APP_NAME}${CANARY_SUFFIX}:80/health; then

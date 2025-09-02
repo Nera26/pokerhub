@@ -26,5 +26,8 @@ if [[ -z "$HEALTH" ]]; then
 fi
 export HEALTH_CHECK_URL="$HEALTH"
 
+# Run database migrations before deployment
+npm --prefix backend run migration:run
+
 # Run canary deployment with built-in health checks and automatic rollback
 bash infra/scripts/canary-deploy.sh
