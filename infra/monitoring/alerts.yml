@@ -69,7 +69,7 @@ groups:
         annotations:
           summary: "Per-socket rate limit frequently exceeded"
       - alert: GlobalRateLimitExceeded
-        expr: sum(rate(global_limit_exceeded[5m])) / sum(rate(game_action_global_count[5m])) > 0.05
+        expr: sum(rate(global_limit_exceeded[5m])) > 0.05 * sum(rate(game_action_global_count[5m]))
         for: 5m
         labels:
           severity: warning

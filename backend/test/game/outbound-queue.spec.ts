@@ -61,6 +61,7 @@ class DummyRepo {
 describe('GameGateway outbound queue metrics', () => {
   let GameGateway: any;
   let depthCb: ((r: any) => void) | undefined;
+  let maxCb: ((r: any) => void) | undefined;
   let dropMock: jest.Mock;
 
   beforeEach(() => {
@@ -96,6 +97,14 @@ describe('GameGateway outbound queue metrics', () => {
             return {
               addCallback: (cb: any) => {
                 depthCb = cb;
+              },
+              removeCallback: jest.fn(),
+            };
+          }
+          if (name === 'ws_outbound_queue_max') {
+            return {
+              addCallback: (cb: any) => {
+                maxCb = cb;
               },
               removeCallback: jest.fn(),
             };
@@ -136,10 +145,13 @@ describe('GameGateway outbound queue metrics', () => {
       (gateway as any).enqueue(client, 'state', {});
       (gateway as any).enqueue(client, 'state', {});
       (gateway as any).enqueue(client, 'state', {});
-      const observe = jest.fn();
-      depthCb?.({ observe });
+      const observeDepth = jest.fn();
+      depthCb?.({ observe: observeDepth });
+      const observeMax = jest.fn();
+      maxCb?.({ observe: observeMax });
 
-      expect(observe).toHaveBeenCalledWith(2, { socketId: 'c1' });
+      expect(observeDepth).toHaveBeenCalledWith(2, { socketId: 'c1' });
+      expect(observeMax).toHaveBeenCalledWith(2, { socketId: 'c1' });
       expect(dropMock).toHaveBeenCalledWith(1, { socketId: 'c1' });
     } finally {
       await rooms.onModuleDestroy();
