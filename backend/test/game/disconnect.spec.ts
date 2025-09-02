@@ -8,6 +8,7 @@ import { Hand } from '../../src/database/entities/hand.entity';
 import { RoomManager } from '../../src/game/room.service';
 import { EventEmitter } from 'events';
 import { MockRedis } from '../utils/mock-redis';
+import { GameState } from '../../src/database/entities/game-state.entity';
 
 class MockSocket extends EventEmitter {
   id = Math.random().toString(36).slice(2);
@@ -47,6 +48,7 @@ describe('GameGateway disconnect dedupe', () => {
         { provide: AnalyticsService, useValue: { recordGameEvent: jest.fn() } },
         { provide: EventPublisher, useValue: { emit: jest.fn() } },
         { provide: getRepositoryToken(Hand), useValue: { findOne: jest.fn() } },
+        { provide: getRepositoryToken(GameState), useValue: { find: jest.fn(), save: jest.fn() } },
         { provide: RoomManager, useValue: { get: () => room } },
         { provide: 'REDIS_CLIENT', useClass: MockRedis },
       ],

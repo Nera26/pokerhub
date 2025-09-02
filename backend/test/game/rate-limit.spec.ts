@@ -62,6 +62,10 @@ class DummyRepo {
   async findOne() {
     return null;
   }
+  async find() {
+    return [];
+  }
+  async save() {}
 }
 
 describe('GameGateway rate limits', () => {
@@ -118,6 +122,7 @@ describe('GameGateway rate limits', () => {
       new DummyAnalytics() as any,
       new ClockService(),
       new DummyRepo() as any,
+      new DummyRepo() as any,
       new DummyRedis() as any,
     );
 
@@ -161,6 +166,7 @@ describe('GameGateway rate limits', () => {
       rooms,
       new DummyAnalytics() as any,
       new ClockService(),
+      new DummyRepo() as any,
       new DummyRepo() as any,
       new DummyRedis() as any,
     );

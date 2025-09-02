@@ -21,6 +21,7 @@ import { FeatureFlagsService } from '../feature-flags/feature-flags.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Hand } from '../database/entities/hand.entity';
+import { GameState } from '../database/entities/game-state.entity';
 
 import {
   GameActionSchema,
@@ -328,6 +329,8 @@ export class GameGateway
   private readonly tickKey = 'game:tick';
 
   private readonly states: Map<string, InternalGameState> = new Map();
+  private readonly lastSnapshot = new Map<string, number>();
+  private readonly snapshotInterval = 50;
 
   private readonly queues = new Map<string, PQueue>();
   private readonly queueLimit = Number(
@@ -389,6 +392,8 @@ export class GameGateway
     @Optional()
     @InjectRepository(Hand)
     private readonly hands: Repository<Hand>,
+    @InjectRepository(GameState)
+    private readonly gameStates: Repository<GameState>,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
     @Optional() private readonly collusion?: CollusionService,
     @Optional() private readonly flags?: FeatureFlagsService,
@@ -419,6 +424,14 @@ export class GameGateway
   }
 
   private async restoreState() {
+    const snaps = await this.gameStates.find({ order: { tick: 'DESC' } });
+    for (const snap of snaps) {
+      if (!this.states.has(snap.tableId)) {
+        this.states.set(snap.tableId, snap.state as InternalGameState);
+        if (snap.tick > this.tick) this.tick = snap.tick;
+      }
+    }
+
     const storedTick = await this.redis.get(this.tickKey);
     if (storedTick) this.tick = Number(storedTick);
     const keys = await this.redis.keys(`${this.stateKeyPrefix}:*`);
@@ -436,6 +449,17 @@ export class GameGateway
           } catch {}
         }
       });
+    }
+  }
+
+  private async maybeSnapshot(
+    tableId: string,
+    state: InternalGameState,
+  ): Promise<void> {
+    const last = this.lastSnapshot.get(tableId) ?? 0;
+    if (this.tick - last >= this.snapshotInterval) {
+      await this.gameStates.save({ tableId, tick: this.tick, state });
+      this.lastSnapshot.set(tableId, this.tick);
     }
   }
 
@@ -563,20 +587,21 @@ export class GameGateway
     this.recordStateLatency(start, tableId);
 
     const prev = this.states.get(tableId);
-    const delta = diff(prev, state);
-    this.states.set(tableId, state);
-    await this.redis.set(
-      `${this.stateKeyPrefix}:${tableId}`,
-      JSON.stringify(state),
-    );
-    await this.redis.set(this.tickKey, this.tick.toString());
-    if (this.server) {
-      this.server.emit('server:StateDelta', {
-        version: '1',
-        tick: this.tick,
-        delta,
-      });
-    }
+      const delta = diff(prev, state);
+      this.states.set(tableId, state);
+      await this.redis.set(
+        `${this.stateKeyPrefix}:${tableId}`,
+        JSON.stringify(state),
+      );
+      await this.redis.set(this.tickKey, this.tick.toString());
+      await this.maybeSnapshot(tableId, state);
+      if (this.server) {
+        this.server.emit('server:StateDelta', {
+          version: '1',
+          tick: this.tick,
+          delta,
+        });
+      }
 
     if (this.server?.of) {
       // Send sanitized state to spectators as well
@@ -969,6 +994,7 @@ export class GameGateway
         JSON.stringify(state),
       );
       await this.redis.set(this.tickKey, this.tick.toString());
+      await this.maybeSnapshot(tableId, state);
       this.server.to(tableId).emit('state', payload);
       this.server.to(tableId).emit('server:StateDelta', {
         version: '1',

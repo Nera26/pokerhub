@@ -24,7 +24,7 @@ describe('GameGateway frame retry', () => {
     const { ClockService } = require('../../src/game/clock.service');
 
     class DummyAnalytics { async recordGameEvent() {} }
-    class DummyRepo { async findOne() { return null; } }
+    class DummyRepo { async findOne() { return null; } async find() { return []; } async save() {} }
     class DummyRedis {
       async incr() { return 1; }
       async expire() { return 1; }
@@ -38,6 +38,7 @@ describe('GameGateway frame retry', () => {
       new RoomManager() as any,
       new DummyAnalytics() as any,
       new ClockService(),
+      new DummyRepo() as any,
       new DummyRepo() as any,
       new DummyRedis() as any,
     );

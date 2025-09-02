@@ -11,6 +11,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Hand } from '../../src/database/entities/hand.entity';
 import { GameEngine, GameAction } from '../../src/game/engine';
 import { MockRedis } from '../utils/mock-redis';
+import { GameState } from '../../src/database/entities/game-state.entity';
 
 jest.mock('p-queue', () => ({
   __esModule: true,
@@ -85,6 +86,7 @@ describe('Spectator privacy with GameGateway', () => {
         { provide: RoomManager, useValue: { get: () => room } },
         { provide: AnalyticsService, useValue: { recordGameEvent: jest.fn() } },
         { provide: getRepositoryToken(Hand), useValue: { findOne: jest.fn() } },
+        { provide: getRepositoryToken(GameState), useValue: { find: jest.fn(), save: jest.fn() } },
         { provide: 'REDIS_CLIENT', useClass: MockRedis },
       ],
     }).compile();

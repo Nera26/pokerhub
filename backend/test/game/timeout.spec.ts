@@ -8,6 +8,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Hand } from '../../src/database/entities/hand.entity';
 import { MockRedis } from '../utils/mock-redis';
 import { ConfigService } from '@nestjs/config';
+import { GameState } from '../../src/database/entities/game-state.entity';
 
 describe('player timeout', () => {
   it('folds player only at their table', async () => {
@@ -32,6 +33,7 @@ describe('player timeout', () => {
         { provide: AnalyticsService, useValue: { recordGameEvent: jest.fn() } },
         { provide: EventPublisher, useValue: { emit: jest.fn() } },
         { provide: getRepositoryToken(Hand), useValue: {} },
+        { provide: getRepositoryToken(GameState), useValue: { find: jest.fn(), save: jest.fn() } },
         { provide: 'REDIS_CLIENT', useClass: MockRedis },
       ],
     }).compile();
