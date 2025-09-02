@@ -1,33 +1,16 @@
-#!/usr/bin/env ts-node
-import { spawnSync } from 'child_process';
-import fs from 'fs';
+#!/usr/bin/env node
+const fs = require('fs');
 
-interface BackpressureMetrics {
-  maxQueueDepth: number;
-  gameActionGlobalCount: number;
-  gameActionGlobalLimit: number;
-  globalLimitExceeded: number;
+const file = 'metrics/backpressure.json';
+if (!fs.existsSync(file)) {
+  console.error(`metrics file ${file} not found`);
+  process.exit(1);
 }
 
-const child = spawnSync('ts-node', ['tests/performance/socket-load.ts'], {
-  stdio: 'inherit',
-  env: {
-    ...process.env,
-    ACK_P50_MS: String(1e9),
-    ACK_P95_MS: String(1e9),
-    ACK_P99_MS: String(1e9),
-    TPS_LIMIT: String(0),
-  },
-});
-
-if (child.status !== 0) {
-  process.exit(child.status ?? 1);
-}
-
-const metrics = JSON.parse(fs.readFileSync('metrics/backpressure.json', 'utf8')) as BackpressureMetrics;
+const metrics = JSON.parse(fs.readFileSync(file, 'utf8'));
 const queueLimit = Number(process.env.WS_QUEUE_DEPTH_THRESHOLD || 80);
 
-const errors: string[] = [];
+const errors = [];
 if (metrics.maxQueueDepth > queueLimit) {
   errors.push(`queue depth ${metrics.maxQueueDepth} exceeds ${queueLimit}`);
 }

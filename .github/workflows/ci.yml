@@ -287,55 +287,27 @@ jobs:
           ACK_P95_MS: 1000000000
           ACK_P99_MS: 1000000000
           TPS_LIMIT: 0
+          METRICS_URL: http://localhost:3000/metrics
       - run: npx ts-node scripts/check-latency.ts
         env:
           LATENCY_P50_MS: ${{ vars.LATENCY_P50_MS }}
           LATENCY_P95_MS: ${{ vars.LATENCY_P95_MS }}
           LATENCY_P99_MS: ${{ vars.LATENCY_P99_MS }}
           THROUGHPUT_MIN: ${{ vars.THROUGHPUT_MIN }}
-      - name: Upload ws latency metrics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ws-latency-metrics
-          path: metrics/
-
-  backpressure-check:
-    if: github.event_name == 'pull_request'
-    needs: [ops-preflight, ops-sla]
-    runs-on: ubuntu-latest
-    services:
-      toxiproxy:
-        image: ghcr.io/shopify/toxiproxy:2.5.0
-        ports:
-          - 8474:8474
-          - 3001:3001
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm ci
-      - name: Start test server
-        run: |
-          node -e "const { Server } = require('socket.io'); const http = require('http'); const server = http.createServer(); const io = new Server(server); io.on('connection', (s) => { s.on('join', () => {}); s.on('action', (_, cb) => cb()); }); server.listen(3000);" &
-          sleep 1
-      - run: npx ts-node scripts/check-backpressure.ts
+      - run: node scripts/check-backpressure.ts
         env:
-          TABLES: 5
-          SOCKETS: 20
-          ACTIONS_PER_CLIENT: 5
-          LATENCY_MS: 10
-          JITTER_MS: 5
-          PACKET_LOSS: 0
-          METRICS_URL: http://localhost:3000/metrics
           WS_QUEUE_DEPTH_THRESHOLD: ${{ vars.WS_QUEUE_DEPTH_THRESHOLD || 80 }}
-      - name: Upload backpressure metrics
+      - name: Upload ws metrics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ws-backpressure-metrics
-          path: metrics/backpressure.json
+          name: ws-metrics
+          path: |
+            metrics/latency-hist.json
+            metrics/seeds.json
+            metrics/memory-gc.json
+            metrics/table-metrics.json
+            metrics/backpressure.json
 
   soak-metrics-check:
     if: github.event_name == 'pull_request'
