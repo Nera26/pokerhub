@@ -21,3 +21,4 @@
     - "soak-test / spectator-privacy"
     - soak
     - dr-heartbeat
+    - dr-drill-schedule

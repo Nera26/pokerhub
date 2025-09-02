@@ -1,0 +1,34 @@
+name: dr-drill-schedule
+concurrency:
+  group: "dr-drill-schedule"
+  cancel-in-progress: true
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  check-proof-archive:
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
+
+  dr-drill:
+    needs: check-proof-archive
+    uses: ./.github/workflows/dr-drill.yml
+    secrets: inherit
+
+  dr-failover:
+    needs: dr-drill
+    uses: ./.github/workflows/dr-failover.yml
+    secrets: inherit
+
+  dr-restore:
+    needs: dr-failover
+    uses: ./.github/workflows/dr-restore.yml
+    secrets: inherit

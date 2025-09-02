@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   schedule:
   - cron: '0 4 1 * *'
+  workflow_call:
 
 jobs:
   check-proof-archive:

@@ -19,6 +19,7 @@ function main() {
     { name: 'dr-restore', env: 'DR_RESTORE_SLA_DAYS', defaultSla: 30 },
     { name: 'dr-throwaway', env: 'DR_THROWAWAY_SLA_DAYS', defaultSla: 30 },
     { name: 'dr-drill', env: 'DR_DRILL_SLA_DAYS', defaultSla: 30 },
+    { name: 'dr-drill-schedule', env: 'DR_DRILL_SCHEDULE_SLA_DAYS', defaultSla: 7 },
   ];
 
   for (const { name, env, defaultSla } of checks) {
