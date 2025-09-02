@@ -8,6 +8,9 @@ import {
   BadRequestException,
   ParseUUIDPipe,
   HttpCode,
+  UseGuards,
+  Req,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ZodError } from 'zod';
 import {
@@ -21,8 +24,12 @@ import {
   type User,
 } from '../schemas/users';
 import { UsersService } from '../users/users.service';
+import { AuthGuard } from '../auth/auth.guard';
+import { AdminGuard } from '../auth/admin.guard';
+import type { Request } from 'express';
 
 @Controller('users')
+@UseGuards(AuthGuard)
 export class UsersController {
   constructor(private readonly users: UsersService) {}
 
@@ -34,6 +41,7 @@ export class UsersController {
   }
 
   @Post()
+  @UseGuards(AdminGuard)
   async create(@Body() body: CreateUserRequest): Promise<User> {
     try {
       const parsed = CreateUserSchema.parse(body);
@@ -50,8 +58,13 @@ export class UsersController {
   @Get(':id')
   async findById(
     @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() req: Request,
   ): Promise<User> {
     try {
+      const requesterId = (req as any).userId as string;
+      if (requesterId !== id) {
+        throw new ForbiddenException();
+      }
       const user = await this.users.findById(id);
       return this.parseUser(user);
     } catch (err) {
@@ -66,8 +79,13 @@ export class UsersController {
   async update(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: UpdateUserRequest,
+    @Req() req: Request,
   ): Promise<User> {
     try {
+      const requesterId = (req as any).userId as string;
+      if (requesterId !== id) {
+        throw new ForbiddenException();
+      }
       const parsed = UpdateUserSchema.parse(body);
       const updated = await this.users.update(id, parsed);
       return this.parseUser(updated);
@@ -81,6 +99,7 @@ export class UsersController {
 
   @Post(':id/ban')
   @HttpCode(200)
+  @UseGuards(AdminGuard)
   async ban(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: BanUserRequest,
