@@ -36,6 +36,10 @@ jobs:
         npx ts-node scripts/check-soak-trend-regression.ts 2>&1 | tee soak-trend-regression.log
     - name: Analyze soak trends
       run: npx ts-node scripts/analyze-soak-trends.ts metrics/
+    - name: Publish soak metrics
+      if: always()
+      continue-on-error: true
+      run: npx ts-node scripts/check-soak-metrics.ts
     - name: Prepare regression alert
       if: steps.check.outcome == 'failure'
       env:

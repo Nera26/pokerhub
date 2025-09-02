@@ -134,6 +134,14 @@ try {
     `gcloud monitoring metrics write custom.googleapis.com/soak/throughput ${latestThr} ` +
       `--labels build_sha=${process.env.GITHUB_SHA},run_id=${process.env.GITHUB_RUN_ID}`,
   );
+  execSync(
+    `gcloud monitoring metrics write custom.googleapis.com/soak/gc_pause_p95_ms ${latestGc} ` +
+      `--labels build_sha=${process.env.GITHUB_SHA},run_id=${process.env.GITHUB_RUN_ID}`,
+  );
+  execSync(
+    `gcloud monitoring metrics write custom.googleapis.com/soak/rss_delta_pct ${latestRss} ` +
+      `--labels build_sha=${process.env.GITHUB_SHA},run_id=${process.env.GITHUB_RUN_ID}`,
+  );
 } catch (err) {
   console.error('Failed to write Cloud Monitoring metrics');
   console.error(err);
