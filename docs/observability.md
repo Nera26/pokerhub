@@ -169,17 +169,24 @@ Individual metric runbooks provide dashboard links and PagerDuty escalation deta
 
 ## WebSocket Queue Metrics
 
-The game and spectator gateways instrument their outbound queues with the
-following metrics:
+The game and spectator gateways instrument their outbound queues and rate
+limits with the following metrics:
 
-- `ws_outbound_queue_depth` – histogram recording the per-socket queue depth
-  for every enqueued frame.
+- `ws_outbound_queue_depth` – observable gauge reporting the current queue
+  depth for each socket.
 - `ws_outbound_queue_max` – observable gauge capturing the maximum depth per
   socket between scrapes.
 - `ws_outbound_dropped_total` – counter incremented when a message is dropped
   because the queue limit was hit.
-- `game_action_global_count` – histogram tracking the total number of actions
-  within the global rate-limit window.
+- `game_action_global_count` – observable gauge tracking the total number of
+  actions processed within the global rate‑limit window.
+
+`ws_outbound_queue_threshold` and `game_action_global_limit` are exported as
+gauges to surface the configured alert cutoffs.  Operations should trigger an
+alert when `ws_outbound_queue_max` remains above
+`ws_outbound_queue_threshold` for more than five minutes or when
+`global_limit_exceeded` exceeds 5 % of `game_action_global_count` over the same
+window.
 
 These metrics surface saturation and dropped messages before they impact game
 play, and drive the alert rules below.

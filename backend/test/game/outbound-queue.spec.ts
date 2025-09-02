@@ -56,12 +56,11 @@ class DummyRepo {
 
 describe('GameGateway outbound queue metrics', () => {
   let GameGateway: any;
-  let depthMock: jest.Mock;
+  let depthCb: ((r: any) => void) | undefined;
   let dropMock: jest.Mock;
 
   beforeEach(() => {
     jest.resetModules();
-    depthMock = jest.fn();
     dropMock = jest.fn();
 
     let size = 0;
@@ -81,17 +80,24 @@ describe('GameGateway outbound queue metrics', () => {
     jest.doMock('p-queue', () => ({ __esModule: true, default: pQueueMock }));
 
     const getMeterMock = jest.fn(() => ({
-      createHistogram: jest.fn((name: string) => {
-        if (name === 'ws_outbound_queue_depth') return { record: depthMock };
-        return { record: jest.fn() };
-      }),
+      createHistogram: jest.fn(() => ({ record: jest.fn() })),
       createCounter: jest.fn((name: string) => {
         if (name === 'ws_outbound_dropped_total') return { add: dropMock };
         return { add: jest.fn() };
       }),
       createObservableGauge: jest
         .fn()
-        .mockReturnValue({ addCallback: jest.fn(), removeCallback: jest.fn() }),
+        .mockImplementation((name: string) => {
+          if (name === 'ws_outbound_queue_depth') {
+            return {
+              addCallback: (cb: any) => {
+                depthCb = cb;
+              },
+              removeCallback: jest.fn(),
+            };
+          }
+          return { addCallback: jest.fn(), removeCallback: jest.fn() };
+        }),
     }));
     jest.doMock('@opentelemetry/api', () => ({
       metrics: { getMeter: getMeterMock },
@@ -109,7 +115,7 @@ describe('GameGateway outbound queue metrics', () => {
     delete process.env.GATEWAY_QUEUE_LIMIT;
   });
 
-  it('drops frames and records queue depth when saturated', async () => {
+  it('drops frames and reports queue depth when saturated', async () => {
     process.env.GATEWAY_QUEUE_LIMIT = '2';
     const rooms = new RoomManager();
     const gateway = new GameGateway(
@@ -125,9 +131,10 @@ describe('GameGateway outbound queue metrics', () => {
       (gateway as any).enqueue(client, 'state', {});
       (gateway as any).enqueue(client, 'state', {});
       (gateway as any).enqueue(client, 'state', {});
+      const observe = jest.fn();
+      depthCb?.({ observe });
 
-      expect(depthMock).toHaveBeenNthCalledWith(1, 1, { socketId: 'c1' });
-      expect(depthMock).toHaveBeenNthCalledWith(2, 2, { socketId: 'c1' });
+      expect(observe).toHaveBeenCalledWith(2, { socketId: 'c1' });
       expect(dropMock).toHaveBeenCalledWith(1, { socketId: 'c1' });
     } finally {
       await rooms.onModuleDestroy();
