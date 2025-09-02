@@ -49,6 +49,16 @@ jobs:
       - run: npm ci
       - run: npx ts-node scripts/ensure-ops-preflight.ts
 
+  ensure-proof-archive-workflows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: TS_NODE_COMPILER_OPTIONS='{"module":"commonjs"}' npx ts-node scripts/ensure-proof-archive.ts
+
   ensure-proof-archive:
     uses: ./.github/workflows/ensure-proof-archive.yml
     secrets: inherit
@@ -134,6 +144,7 @@ jobs:
       - ensure-spectator-privacy
       - ensure-ops-artifacts
       - ensure-ops-preflight
+      - ensure-proof-archive-workflows
       - ensure-proof-archive
       - ensure-soak-metrics
       - ensure-dr-drill

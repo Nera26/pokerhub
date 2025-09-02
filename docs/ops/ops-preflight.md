@@ -6,7 +6,16 @@ The ops-preflight composite action centralizes operational gates used across dep
 
 All repository workflows must invoke the spectator-privacy reusable workflow (`uses: ./.github/workflows/spectator-privacy.yml`). The CI job `ensure-spectator-privacy` runs `scripts/ensure-spectator-privacy.ts` and exits non-zero if a workflow omits the job or lacks the `if: ${{ always() }}` guard.
 
+All workflows under `.github/workflows` must include a `check-proof-archive` or `proof-archive` job with `if: ${{ always() }}` to publish proof artifacts even on failure. `scripts/ensure-proof-archive.ts` enforces this in CI.
+
 Workflows that call `.github/workflows/soak.yml` or `.github/workflows/soak-metrics.yml` must include `if: ${{ always() }}` so soak metrics are published even when preceding jobs fail. The `scripts/ensure-soak-metrics.ts` check enforces this.
+
+Proof Archive Enforcement
+
+Every workflow under `.github/workflows` must run `check-proof-archive` or `proof-archive` with `if: ${{ always() }}`. The CI job `ensure-proof-archive-workflows` runs `scripts/ensure-proof-archive.ts` to verify compliance. If the check fails:
+
+1. Add `uses: ./.github/workflows/check-proof-archive.yml` (or `proof-archive.yml`) to the workflow.
+2. Ensure the job includes `if: ${{ always() }}` so proof artifacts upload even when previous steps fail.
 
 Spectator privacy
 
