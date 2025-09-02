@@ -38,7 +38,7 @@ describe('TableBalancerService avoidWithin', () => {
   }
 
   test.each([false, true])(
-    'does not move the same player twice within default window (redis=%s)',
+    'avoids moving the same player twice across rapid rebalances (redis=%s)',
     async (useRedis) => {
       const redis = useRedis ? (new MockRedis() as unknown as Redis) : undefined;
       const config = new ConfigService({ tournament: { avoidWithin: 5 } });
@@ -105,9 +105,11 @@ describe('TableBalancerService avoidWithin', () => {
 
       await balancer.rebalanceIfNeeded('t1', 10);
       const initialSecond = new Set(players2);
-      const movedFirst = tables[1].seats
-        .map((s) => s.user.id)
-        .find((id) => !initialSecond.has(id))!;
+      const movedFirstSeat = tables[1].seats.find(
+        (s) => !initialSecond.has(s.user.id),
+      )!;
+      const movedFirst = movedFirstSeat.user.id;
+      expect(movedFirstSeat.lastMovedHand).toBe(10);
 
       ['p7', 'p8'].forEach((id) => {
         const seat: Seat = {
@@ -120,8 +122,26 @@ describe('TableBalancerService avoidWithin', () => {
         tables[1].seats.push(seat);
       });
 
+      await balancer.rebalanceIfNeeded('t1', 11);
+      let seat = tables[1].seats.find((s) => s.user.id === movedFirst)!;
+      expect(seat.table.id).toBe('tbl2');
+      expect(seat.lastMovedHand).toBe(10);
+
+      ['p9', 'p10'].forEach((id) => {
+        const seat: Seat = {
+          id: `s${seatId++}`,
+          table: tables[1],
+          user: { id } as any,
+          position: tables[1].seats.length,
+          lastMovedHand: 0,
+        } as Seat;
+        tables[1].seats.push(seat);
+      });
+
       await balancer.rebalanceIfNeeded('t1', 12);
-      expect(tables[1].seats.map((s) => s.user.id)).toContain(movedFirst);
+      seat = tables[1].seats.find((s) => s.user.id === movedFirst)!;
+      expect(seat.table.id).toBe('tbl2');
+      expect(seat.lastMovedHand).toBe(10);
     },
   );
 });

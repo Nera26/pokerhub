@@ -2,6 +2,9 @@
 
 All notable changes to tournament rules and reconciliation processes are documented in this file.
 
+## 2025-10-12
+- Clarified `tournament.avoidWithin` configuration in the Tournament Handbook v1.2.3.
+
 ## 2025-10-05
 - Linked RNG Whitepaper and Accounting Book from handbook documents.
 - Expanded reconciliation guide with accounting schema references.
