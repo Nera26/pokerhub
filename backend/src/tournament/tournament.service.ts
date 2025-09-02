@@ -84,6 +84,26 @@ export class TournamentService implements OnModuleInit {
     return this.tournaments.find();
   }
 
+  async get(id: string) {
+    const t = await this.getEntity(id);
+    const playerCount = await this.seats.count({
+      where: { table: { tournament: { id } } } as any,
+    });
+    return {
+      id: t.id,
+      title: t.title,
+      buyIn: t.buyIn,
+      prizePool: t.prizePool,
+      state: t.state,
+      players: { current: playerCount, max: t.maxPlayers },
+      registered: false,
+      registration: {
+        open: t.registrationOpen ?? null,
+        close: t.registrationClose ?? null,
+      },
+    };
+  }
+
   async getState(id: string): Promise<TournamentState | undefined> {
     return (await this.tournaments.findOne({ where: { id } }))?.state;
   }
@@ -117,7 +137,7 @@ export class TournamentService implements OnModuleInit {
   }
 
   async start(id: string): Promise<void> {
-    const t = await this.get(id);
+    const t = await this.getEntity(id);
     if (t.state !== TournamentState.REG_OPEN) {
       throw new Error(`Invalid transition from ${t.state} to RUNNING`);
     }
@@ -126,7 +146,7 @@ export class TournamentService implements OnModuleInit {
   }
 
   async pause(id: string): Promise<void> {
-    const t = await this.get(id);
+    const t = await this.getEntity(id);
     if (t.state !== TournamentState.RUNNING) {
       throw new Error(`Invalid transition from ${t.state} to PAUSED`);
     }
@@ -135,7 +155,7 @@ export class TournamentService implements OnModuleInit {
   }
 
   async resume(id: string): Promise<void> {
-    const t = await this.get(id);
+    const t = await this.getEntity(id);
     if (t.state !== TournamentState.PAUSED) {
       throw new Error(`Invalid transition from ${t.state} to RUNNING`);
     }
@@ -144,7 +164,7 @@ export class TournamentService implements OnModuleInit {
   }
 
   async finish(id: string): Promise<void> {
-    const t = await this.get(id);
+    const t = await this.getEntity(id);
     if (
       t.state !== TournamentState.RUNNING &&
       t.state !== TournamentState.PAUSED
@@ -156,7 +176,7 @@ export class TournamentService implements OnModuleInit {
   }
 
   async cancel(id: string): Promise<void> {
-    const t = await this.get(id);
+    const t = await this.getEntity(id);
     if (
       t.state !== TournamentState.REG_OPEN &&
       t.state !== TournamentState.RUNNING &&
@@ -206,14 +226,14 @@ export class TournamentService implements OnModuleInit {
     return this.pko.settleBounty(currentBounty);
   }
 
-  private async get(id: string): Promise<Tournament> {
+  private async getEntity(id: string): Promise<Tournament> {
     const t = await this.tournaments.findOne({ where: { id } });
     if (!t) throw new Error(`Tournament ${id} not found`);
     return t;
   }
 
   private async setState(id: string, state: TournamentState): Promise<void> {
-    const t = await this.get(id);
+    const t = await this.getEntity(id);
     t.state = state;
     await this.tournaments.save(t);
   }
@@ -303,7 +323,7 @@ export class TournamentService implements OnModuleInit {
   }
 
   async register(tournamentId: string, userId: string): Promise<Seat> {
-    const t = await this.get(tournamentId);
+    const t = await this.getEntity(tournamentId);
     const now = new Date();
     const regOpen = t.state === TournamentState.REG_OPEN;
     const lateReg =
@@ -344,7 +364,7 @@ export class TournamentService implements OnModuleInit {
   }
 
   async withdraw(tournamentId: string, userId: string): Promise<void> {
-    const t = await this.get(tournamentId);
+    const t = await this.getEntity(tournamentId);
     const seat = await this.seats.findOne({
       where: {
         table: { tournament: { id: tournamentId } } as any,
