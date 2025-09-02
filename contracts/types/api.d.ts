@@ -822,6 +822,14 @@ export interface paths {
             "application/json": components["schemas"]["HandProof"];
           };
         };
+        /** @description Unauthorized */
+        401: {
+          content: never;
+        };
+        /** @description Forbidden */
+        403: {
+          content: never;
+        };
         /** @description Hand not found */
         404: {
           content: never;
@@ -880,7 +888,26 @@ export interface paths {
         /** @description Reconstructed hand state */
         200: {
           content: {
-            "application/json": components["schemas"]["GameState"];
+            "application/json": unknown;
+          };
+        };
+      };
+    };
+  };
+  "/analytics/logs": {
+    /** List system audit logs */
+    get: {
+      parameters: {
+        query?: {
+          cursor?: number;
+          limit?: number;
+        };
+      };
+      responses: {
+        /** @description Audit logs */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AuditLogsResponse"];
           };
         };
       };
@@ -1194,6 +1221,20 @@ export interface components {
     DashboardMetricsResponse: {
       online: number;
       revenue: number;
+    };
+    AuditLogEntry: {
+      id: number;
+      /** Format: date-time */
+      timestamp: string;
+      /** @enum {string} */
+      type: "Login" | "Table Event" | "Broadcast" | "Error";
+      description: string;
+      user: string;
+      ip: string;
+    };
+    AuditLogsResponse: {
+      logs: components["schemas"]["AuditLogEntry"][];
+      nextCursor?: number | null;
     };
     WithdrawalDecisionRequest: {
       comment: string;
