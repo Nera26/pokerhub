@@ -396,6 +396,31 @@ jobs:
           bq load --source_format=NEWLINE_DELIMITED_JSON \
             --schema=infra/analytics/soak_trends.schema.json \
             ops_metrics.soak_trends soak-summary.json
+  soak-perf-metrics:
+    needs: [ops-preflight, ops-sla]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+      - run: npx ts-node scripts/check-soak-metrics.ts
+        env:
+          SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS }}
+          SOAK_THROUGHPUT_MIN: ${{ vars.SOAK_THROUGHPUT_MIN }}
+          SOAK_METRICS_SLA_HOURS: ${{ vars.SOAK_METRICS_SLA_HOURS }}
+      - name: Upload soak metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: soak-metrics
+          path: |
+            soak-summary.json
+            soak-regression.json
 
   check-proof-archive:
     needs: [ops-preflight, ops-sla]
@@ -1268,6 +1293,7 @@ jobs:
       - spectator-privacy-metric-check
       - check-proof-archive
       - soak-metrics
+      - soak-perf-metrics
     uses: ./.github/workflows/ops-artifacts-verify.yml
     secrets: inherit
 
