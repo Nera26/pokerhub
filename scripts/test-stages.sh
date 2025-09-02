@@ -6,7 +6,7 @@ run_unit() {
   npm ci --prefix backend
   npm ci --prefix frontend
   npm run lint --prefix backend
-  npm test --prefix backend -- --testPathIgnorePatterns=.property.spec.ts$
+  npm test --prefix backend -- --testPathIgnorePatterns=.property.spec.ts$|.integration.spec.ts$
   npm run lint --prefix frontend
   npm test --prefix frontend
   npx -y @redocly/openapi-cli@latest lint contracts/openapi.yaml
@@ -34,6 +34,7 @@ run_property() {
 run_integration() {
   npm ci
   npm run test:e2e --prefix backend
+  npm test --prefix backend -- --testPathPattern=.integration.spec.ts$
   npm run test:e2e:integration --prefix frontend
 }
 

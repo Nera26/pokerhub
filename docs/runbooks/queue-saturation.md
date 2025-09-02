@@ -5,7 +5,11 @@ Handle situations where message queues accumulate a backlog faster than consumer
 ## Monitoring
 - Grafana: [Queue Saturation](https://grafana.pokerhub.example/d/queue-saturation) (UID `queue-saturation`)
 - Metabase: [Latency & Error Overview](https://metabase.pokerhub.example/dashboard/latency-error-overview)
-- Prometheus metric `ws_outbound_queue_depth` (histogram, labeled by `socketId`) and `ws_outbound_queue_max` gauge for peak per-socket backlog.
+- Prometheus metrics:
+  - `ws_outbound_queue_depth` histogram (labeled by `socketId`)
+  - `ws_outbound_queue_max` gauge for peak per-socket backlog
+  - `ws_outbound_queue_limit` gauge for configured queue capacity
+  - `game_action_global_limit` gauge for cluster-wide action rate limit
 
 ## Detection
 - Rising queue depth metrics or alerts.
@@ -13,6 +17,11 @@ Handle situations where message queues accumulate a backlog faster than consumer
 - Dashboard shows message age exceeding 30 s.
 - `queueLag` metric remains above 10 s for 5 m.
 - `ws_outbound_queue_max` > 80 for 1 m.
+- `game_action_global_limit` (=30 actions/10 s by default) approached or exceeded.
+
+## Configured Limits
+- `ws_outbound_queue_limit` = 100 messages per socket (drops beyond this)
+- `game_action_global_limit` = 30 actions per 10 s cluster-wide
 
 ## When to page
 Page according to the [SLO error-budget policy](../SLOs.md#error-budget-handling) when queue lag burns budget faster than thresholds.
