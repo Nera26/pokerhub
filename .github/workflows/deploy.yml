@@ -16,8 +16,32 @@ jobs:
     uses: ./.github/workflows/check-proof-archive.yml
     secrets: inherit
 
+  check-soak-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --legacy-peer-deps
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+      - name: Check soak metrics
+        env:
+          SOAK_METRICS_SLA_HOURS: 24
+          SOAK_LATENCY_P95_MS: ${{ vars.SOAK_LATENCY_P95_MS || 120 }}
+          SOAK_THROUGHPUT_MIN: ${{ vars.SOAK_THROUGHPUT_MIN || 100 }}
+          SOAK_GC_P95_MS: ${{ vars.SOAK_GC_P95_MS || 50 }}
+          SOAK_RSS_GROWTH_PCT: ${{ vars.SOAK_RSS_GROWTH_PCT || 1 }}
+        run: npx -y ts-node scripts/check-soak-metrics.ts
+
   preflight:
-    needs: check-proof-archive
+    needs: [check-proof-archive, check-soak-metrics]
     runs-on: ubuntu-latest
     env:
       DR_DRILL_SLA_DAYS: 7
@@ -59,12 +83,6 @@ jobs:
           dr-restore-sla-days: ${{ env.DR_RESTORE_SLA_DAYS }}
           dr-runbook-sla-days: ${{ env.DR_RUNBOOK_SLA_DAYS }}
           dr-throwaway-sla-days: ${{ env.DR_THROWAWAY_SLA_DAYS }}
-
-      # Soak freshness check (kept)
-      - name: Check soak metrics freshness
-        run: npx -y ts-node scripts/check-soak-metrics.ts
-        env:
-          SOAK_METRICS_SLA_HOURS: ${{ env.SOAK_SLA_HOURS }}
 
   dr-trends:
     needs: preflight

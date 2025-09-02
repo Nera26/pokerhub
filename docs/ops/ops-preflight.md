@@ -16,15 +16,15 @@ Spectator retention
 
 spectator-retention workflow freshness
 
-Soak metrics
+Soak Metrics SLA
 
-Workflow/artifact SLA freshness
+Deployments are blocked if soak performance data is stale or breaches thresholds.
+The `check-soak-metrics` job runs `scripts/check-soak-metrics.ts` and fails when:
 
-Performance thresholds: p95 latency and minimum throughput
-
-Stale soak metrics older than **soak-metrics-sla-hours** (24 h default) block releases. `scripts/check-soak-metrics.ts`
-asserts the latest run meets **latency p95 ≤ 120 ms**, **throughput ≥ `SOAK_THROUGHPUT_MIN`**,
-and **GC pause p95 ≤ 50 ms**.
+- the latest soak run is older than **24 h**
+- latency p95 exceeds **120 ms**
+- throughput drops below **`SOAK_THROUGHPUT_MIN`**
+- GC pause p95 exceeds **50 ms**
 
 Presence of trend artifacts
 

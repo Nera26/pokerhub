@@ -53,6 +53,7 @@ jobs:
     secrets: inherit
 
   ensure-soak-metrics:
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -60,7 +61,7 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - run: npx ts-node --compiler-options '{"module":"commonjs"}' scripts/ensure-soak-metrics.ts
+      - run: TS_NODE_COMPILER_OPTIONS='{"module":"commonjs"}' npx ts-node scripts/ensure-soak-metrics.ts
 
   ensure-dr-drill:
     runs-on: ubuntu-latest
