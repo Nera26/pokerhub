@@ -1098,17 +1098,20 @@ jobs:
           node-version: 20
           cache: npm
       - uses: grafana/setup-k6@v1
-      - run: |
-          mkdir -p load/results
-          k6 run load/k6-swarm.js --vus 10 --duration 10s --summary-export=load/results/summary.json | tee load/results/k6.log
-      - run: load/check-thresholds.sh load/results/summary.json
+      - run: npm ci
+      - name: Run swarm scenario
+        run: SOCKETS=10 TABLES=10 DURATION=10s npm run load:swarm
+      - name: Run soak harness
+        run: SOCKETS=10 TABLES=10 npm run soak:test -- --duration 30s
+      - run: node scripts/verify-latency.mjs
+      - run: load/check-thresholds.sh load/results/soak-summary.json metrics/gc-histogram.json metrics/heap-histogram.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: load-${{ github.sha }}
           path: |
-            load/results/summary.json
-            load/results/k6.log
+            load/results/*.json
+            metrics/*.json
 
   chaos:
     needs: load
