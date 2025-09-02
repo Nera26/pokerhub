@@ -6,5 +6,8 @@ export default registerAs('tournament', () => ({
    * during table balancing. Accessible as `tournament.avoidWithin` and
    * configurable via the `TOURNAMENT_AVOID_WITHIN` environment variable.
    */
-  avoidWithin: parseInt(process.env.TOURNAMENT_AVOID_WITHIN ?? '10', 10),
+  avoidWithin: Math.max(
+    0,
+    parseInt(process.env.TOURNAMENT_AVOID_WITHIN ?? '10', 10),
+  ),
 }));

@@ -70,4 +70,5 @@ export const validationSchema = Joi.object({
   GC_P95_MS: Joi.number().integer().optional(),
   METRICS_PORT: Joi.number().integer().optional(),
   RAKE_CONFIG: Joi.string().optional(),
+  TOURNAMENT_AVOID_WITHIN: Joi.number().integer().min(0).optional(),
 });

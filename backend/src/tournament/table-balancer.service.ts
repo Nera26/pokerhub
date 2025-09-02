@@ -13,14 +13,6 @@ import { TournamentService } from './tournament.service';
  */
 @Injectable()
 export class TableBalancerService {
-  /**
-   * Fallback store for `recentlyMoved` when Redis is unavailable. Maps
-   * tournament id → map of player id → last moved hand.
-   */
-  private readonly localRecentlyMoved = new Map<
-    string,
-    Map<string, number>
-  >();
   private readonly defaultAvoidWithin: number;
   constructor(
     @InjectRepository(Table) private readonly tables: Repository<Table>,
@@ -48,7 +40,7 @@ export class TableBalancerService {
     avoidWithin = avoidWithin ?? this.defaultAvoidWithin;
     const tables = await this.tables.find({
       where: { tournament: { id: tournamentId } },
-      relations: ['seats'],
+      relations: ['seats', 'seats.user'],
     });
     if (tables.length === 0) return false;
     const counts = tables.map((t) => t.seats.length);
@@ -63,21 +55,13 @@ export class TableBalancerService {
     const max = Math.max(...counts);
     const min = Math.min(...counts);
     if (max - min > 1) {
-      const key = `tourney:${tournamentId}:lastMoved`;
-      let recentlyMoved = new Map<string, number>();
-      if (this.redis) {
-        const data = await this.redis.hgetall(key);
-        recentlyMoved = new Map(
-          Object.entries(data).map(([k, v]) => [k, Number(v)]),
-        );
-      } else {
-        recentlyMoved =
-          this.localRecentlyMoved.get(tournamentId) ?? new Map<string, number>();
-      }
-
-      for (const [playerId, last] of recentlyMoved) {
-        if (currentHand - last >= avoidWithin) {
-          recentlyMoved.delete(playerId);
+      const recentlyMoved = new Map<string, number>();
+      for (const tbl of tables) {
+        for (const seat of tbl.seats) {
+          const last = seat.lastMovedHand ?? 0;
+          if (currentHand > 0 && currentHand - last < avoidWithin) {
+            recentlyMoved.set(seat.user.id, last);
+          }
         }
       }
 
@@ -87,25 +71,6 @@ export class TableBalancerService {
         avoidWithin,
         recentlyMoved,
       );
-
-      if (this.redis) {
-        if (recentlyMoved.size === 0) {
-          await this.redis.del(key);
-        } else {
-          await this.redis.hset(
-            key,
-            Object.fromEntries(
-              Array.from(recentlyMoved.entries()).map(([k, v]) => [k, v.toString()]),
-            ),
-          );
-        }
-      } else {
-        if (recentlyMoved.size === 0) {
-          this.localRecentlyMoved.delete(tournamentId);
-        } else {
-          this.localRecentlyMoved.set(tournamentId, recentlyMoved);
-        }
-      }
 
       return true;
     }
