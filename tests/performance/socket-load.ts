@@ -283,6 +283,34 @@ async function primaryMain(replay?: RunSeeds) {
         JSON.stringify({ averageActionsPerMin: avgActionsPerMin, tables: tableMetrics }, null, 2),
       );
 
+      const metricsUrl = process.env.METRICS_URL;
+      if (metricsUrl) {
+        try {
+          const res = await (globalThis as any).fetch(metricsUrl);
+          const text = await res.text();
+          const parseMetric = (name: string) => {
+            const regex = new RegExp(`^${name}(?:\\{[^}]*\\})?\\s+(\\d+(?:\\.\\d+)?)$`, 'gm');
+            const values: number[] = [];
+            let m: RegExpExecArray | null;
+            while ((m = regex.exec(text))) values.push(Number(m[1]));
+            return values;
+          };
+          const depths = parseMetric('ws_outbound_queue_depth');
+          const globalCount = parseMetric('game_action_global_count')[0] ?? 0;
+          const globalLimit = parseMetric('game_action_global_limit')[0] ?? 0;
+          const globalExceeded = parseMetric('global_limit_exceeded').reduce((s, v) => s + v, 0);
+          const backpressure = {
+            maxQueueDepth: depths.length ? Math.max(...depths) : 0,
+            gameActionGlobalCount: globalCount,
+            gameActionGlobalLimit: globalLimit,
+            globalLimitExceeded: globalExceeded,
+          };
+          fs.writeFileSync(`${METRICS_DIR}/backpressure.json`, JSON.stringify(backpressure, null, 2));
+        } catch (err) {
+          console.error('Failed to record backpressure metrics', err);
+        }
+      }
+
       const tpsHist = meter.createHistogram("actions_per_min", {
         description: "Average actions per table per minute",
       });
