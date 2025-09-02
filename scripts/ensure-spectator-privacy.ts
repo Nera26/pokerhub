@@ -10,7 +10,10 @@ function collectYamlFiles(dir: string): string[] {
     const fullPath = join(dir, entry.name);
     if (entry.isDirectory()) {
       files = files.concat(collectYamlFiles(fullPath));
-    } else if (entry.isFile() && entry.name.endsWith('.yml')) {
+    } else if (
+      entry.isFile() &&
+      (entry.name.endsWith('.yml') || entry.name.endsWith('.yaml'))
+    ) {
       files.push(fullPath);
     }
   }
