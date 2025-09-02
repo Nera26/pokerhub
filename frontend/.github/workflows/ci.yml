@@ -7,7 +7,42 @@ on:
     branches: [main]
 
 jobs:
+  spectator-privacy:
+    if: ${{ always() }}
+    uses: ./.github/workflows/spectator-privacy.yml
+    secrets: inherit
+
+  check-proof-archive:
+    if: ${{ always() }}
+    needs: spectator-privacy
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
+
+  # Optional: gate builds with ops-preflight when production deploys run from this workflow
+  ops-preflight:
+    if: false # set condition for production deploys
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/ops-preflight
+        with:
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          spectator-privacy-sla-hours: 24
+          spectator-retention-sla-days: 1
+          soak-metrics-sla-hours: 24
+          dr-drill-sla-days: 7
+          dr-failover-sla-days: 30
+          dr-failover-monthly-sla-days: 30
+          dr-restore-sla-days: 30
+          dr-runbook-sla-days: 7
+          dr-throwaway-sla-days: 7
+          proof-archive-sla-hours: 24
+
   build:
+    needs:
+      - spectator-privacy
+      - check-proof-archive
+      # - ops-preflight # uncomment to gate build for production deploys
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
