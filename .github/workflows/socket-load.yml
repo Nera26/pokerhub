@@ -33,8 +33,8 @@ jobs:
       run: |
         node -e "const { Server } = require('socket.io'); const http = require('http'); const server = http.createServer(); const io = new Server(server); io.on('connection', (s) => { s.on('join', () => {}); s.on('action', (_, cb) => cb()); }); server.listen(3000);" &
         sleep 1
-    - name: Run socket load
-      run: npm run perf:socket-load
+    - name: Verify socket performance
+      run: npx ts-node scripts/verify-perf.ts
       env:
         TABLES: 5
         SOCKETS: 20

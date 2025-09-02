@@ -184,18 +184,9 @@ jobs:
         pid=$(cat collector.pid)
         kill $pid || true
         wait $pid
-    - name: Check GC/RSS metrics
+    - name: Verify GC/RSS metrics
       if: always()
-      run: |
-        stats=$(cat gc-rss-stats.json)
-        rss=$(jq '.rssGrowthPercent' <<<"$stats")
-        gc=$(jq '.gcPauseP95Ms' <<<"$stats")
-        if (( $(echo "$rss >= 1" | bc -l) )); then
-          echo "RSS growth ${rss}% exceeds 1%"; exit 1;
-        fi
-        if (( $(echo "$gc > 50" | bc -l) )); then
-          echo "GC pause p95 ${gc}ms exceeds 50ms"; exit 1;
-        fi
+      run: npx ts-node scripts/verify-soak-metrics.ts gc-rss-stats.json
     - name: Stop toxiproxy
       if: always()
       run: docker rm -f toxiproxy
