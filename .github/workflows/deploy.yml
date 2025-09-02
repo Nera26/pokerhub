@@ -62,7 +62,7 @@ jobs:
       GCP_SERVICE_ACCOUNT: ${{ vars.GCP_SERVICE_ACCOUNT }}
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
 
-  deploy:
+  deploy-run:
     needs: [preflight, dr-trends]
     runs-on: ubuntu-latest
     environment: production
@@ -446,7 +446,7 @@ jobs:
           retention-days: 14
 
   spectator-privacy:
-    needs: deploy
+    needs: deploy-run
     if: ${{ always() }}
     uses: ./.github/workflows/spectator-privacy.yml
     secrets: inherit
@@ -454,7 +454,7 @@ jobs:
       logs: deployment.log
 
   proof-archive:
-    needs: deploy
+    needs: [deploy-run, spectator-privacy]
     if: ${{ always() }}
     uses: ./.github/workflows/proof-archive.yml
     secrets:
@@ -464,7 +464,7 @@ jobs:
       PAGERDUTY_ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
 
   soak:
-    needs: deploy
+    needs: [deploy-run, spectator-privacy]
     if: ${{ always() }}
     uses: ./.github/workflows/soak.yml
     secrets: inherit
@@ -474,3 +474,10 @@ jobs:
     if: ${{ always() }}
     uses: ./.github/workflows/soak-metrics.yml
     secrets: inherit
+
+  deploy:
+    needs: [proof-archive, soak-metrics, spectator-privacy]
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    steps:
+      - run: echo "deploy checks passed"
