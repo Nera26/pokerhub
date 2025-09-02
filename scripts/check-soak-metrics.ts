@@ -69,6 +69,16 @@ if (rows.length === 0) {
 }
 
 const latest = rows[0];
+if (
+  latest.latency_p50_ms == null ||
+  latest.latency_p95_ms == null ||
+  latest.latency_p99_ms == null ||
+  latest.throughput == null ||
+  latest.gc_pause_p95_ms == null ||
+  latest.rss_delta_pct == null
+) {
+  writeAndExit([{ level: 'critical', message: 'Missing metrics in BigQuery result' }]);
+}
 const latestTs = Date.parse(latest.timestamp);
 const ageHours = (Date.now() - latestTs) / 3.6e6;
 if (ageHours > maxAgeHours) {
