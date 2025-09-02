@@ -15,6 +15,8 @@ test('succeeds when metrics are within thresholds', () => {
   const cwd = process.cwd();
   process.chdir(dir);
 
+  process.env.SOAK_METRICS_SLA_HOURS = '100000';
+
   const rows = [
     {
       timestamp: '2024-01-02T00:00:00Z',
@@ -73,6 +75,7 @@ test('fails when latency, throughput, or gc pause exceed thresholds', () => {
   process.chdir(dir);
 
   process.env.SOAK_THROUGHPUT_MIN = '1';
+  process.env.SOAK_METRICS_SLA_HOURS = '100000';
 
   const rows = [
     {

@@ -22,6 +22,7 @@ jobs:
       PROOF_ARCHIVE_SLA_HOURS: 24
       SOAK_SLA_HOURS: 24
     steps:
+    - uses: actions/checkout@v4
     - uses: ./.github/actions/ops-preflight
       with:
         slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
@@ -33,6 +34,10 @@ jobs:
         dr-runbook-sla-days: ${{ env.DR_RUNBOOK_SLA_DAYS }}
         dr-throwaway-sla-days: ${{ env.DR_THROWAWAY_SLA_DAYS }}
         proof-archive-sla-hours: ${{ env.PROOF_ARCHIVE_SLA_HOURS }}
+    - name: Check soak metrics freshness
+      run: npx -y ts-node scripts/check-soak-metrics.ts
+      env:
+        SOAK_METRICS_SLA_HOURS: ${{ env.SOAK_SLA_HOURS }}
 
     needs:
     - check-proof-archive

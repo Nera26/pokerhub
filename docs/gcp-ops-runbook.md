@@ -25,6 +25,7 @@ See [spectator privacy metrics](ops/spectator-privacy.md) for metric definitions
 ## Continuous Soak Metrics Ingestion
 - Nightly workflow [`.github/workflows/soak-metrics.yml`](../.github/workflows/soak-metrics.yml) loads soak run stats to BigQuery.
 - [`scripts/check-soak-metrics.ts`](../scripts/check-soak-metrics.ts) enforces **latency p95 ≤ 120 ms**, **throughput ≥ `SOAK_THROUGHPUT_MIN`**, and **GC pause p95 ≤ 50 ms**.
+- Deployments require a soak-metrics entry newer than **24 h**; stale data triggers a failing preflight check.
 - When thresholds regress or data is missing, page `pokerhub-sre` and consult `runbooks/soak-testing.md`.
 
 See [ops metrics](ops/metrics.md) for table schema and thresholds.

@@ -84,6 +84,7 @@ runs:
         SOAK_TRENDS_BUCKET: ${{ env.SOAK_TRENDS_BUCKET }}
         SOAK_LATENCY_P95_MS: ${{ env.SOAK_LATENCY_P95_MS }}
         SOAK_THROUGHPUT_MIN: ${{ env.SOAK_THROUGHPUT_MIN }}
+        SOAK_METRICS_SLA_HOURS: ${{ inputs.soak-metrics-sla-hours }}
     - name: Check DR drill SLA
       uses: ./.github/workflows/check-workflow-sla
       with:

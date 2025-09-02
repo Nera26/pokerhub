@@ -43,6 +43,7 @@ const maxGcPause = Number(process.env.SOAK_GC_P95_MS || 50);
 const maxRssGrowth = Number(process.env.SOAK_RSS_GROWTH_PCT || 1);
 const windowSize = Number(process.env.SOAK_TRENDS_WINDOW || 7);
 const deviationPct = Number(process.env.SOAK_TRENDS_DEVIATION_PCT || 20);
+const maxAgeHours = Number(process.env.SOAK_METRICS_SLA_HOURS || 24);
 
 let rows: {
   timestamp: string;
@@ -65,6 +66,28 @@ try {
 
 if (rows.length === 0) {
   writeAndExit([{ level: 'critical', message: 'No soak runs in BigQuery' }]);
+}
+
+const latest = rows[0];
+const latestTs = Date.parse(latest.timestamp);
+const ageHours = (Date.now() - latestTs) / 3.6e6;
+if (ageHours > maxAgeHours) {
+  writeAndExit(
+    [
+      {
+        level: 'critical',
+        message: `Latest soak run ${ageHours.toFixed(1)}h old exceeds ${maxAgeHours}h SLA`,
+      },
+    ],
+    {
+      latencyP50: latest.latency_p50_ms,
+      latencyP95: latest.latency_p95_ms,
+      latencyP99: latest.latency_p99_ms,
+      throughput: latest.throughput,
+      gcPauseP95: latest.gc_pause_p95_ms,
+      rssGrowthPct: latest.rss_delta_pct,
+    },
+  );
 }
 
 const p50s = rows.map((r) => r.latency_p50_ms);

@@ -22,6 +22,10 @@ Workflow/artifact SLA freshness
 
 Performance thresholds: p95 latency and minimum throughput
 
+Stale soak metrics older than **soak-metrics-sla-hours** (24 h default) block releases. `scripts/check-soak-metrics.ts`
+asserts the latest run meets **latency p95 ≤ 120 ms**, **throughput ≥ `SOAK_THROUGHPUT_MIN`**,
+and **GC pause p95 ≤ 50 ms**.
+
 Presence of trend artifacts
 
 Disaster recovery drills
