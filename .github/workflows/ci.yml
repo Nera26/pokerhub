@@ -91,11 +91,6 @@ jobs:
           if [ -f dr-drill-issue.json ]; then
             echo "issue=true" >> "$GITHUB_OUTPUT"
           fi
-      - name: Check DR drill metrics
-        env:
-          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          DR_DRILL_SLA_DAYS: 7
-        run: npx ts-node scripts/check-dr-drill.ts
       - uses: actions/upload-artifact@v4
         if: steps.dr-drill.outputs.issue == 'true'
         with:
@@ -105,6 +100,35 @@ jobs:
         if: steps.dr-drill.outputs.issue == 'true'
         run: exit 1
 
+  dr-drill-sla:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+      - id: check
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          DR_DRILL_SLA_DAYS: 7
+        run: npx ts-node scripts/check-dr-drill.ts
+      - name: Slack alert on DR drill SLA failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            { "text": "DR drill SLA check failed for ${{ github.repository }}@${{ github.sha }}" }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
   ops-preflight:
     needs:
       - ensure-spectator-privacy
@@ -113,6 +137,7 @@ jobs:
       - ensure-proof-archive
       - ensure-soak-metrics
       - ensure-dr-drill
+      - dr-drill-sla
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
