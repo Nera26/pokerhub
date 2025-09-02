@@ -23,6 +23,7 @@ import {
   kycConfig,
   geoConfig,
   gameConfig,
+  tournamentConfig,
 } from './config';
 import { validationSchema } from './config/env.validation';
 
@@ -80,7 +81,7 @@ class SecurityHeadersMiddleware implements NestMiddleware {
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema,
-      load: [
+  load: [
         databaseConfig,
         redisConfig,
         gcsConfig,
@@ -93,6 +94,7 @@ class SecurityHeadersMiddleware implements NestMiddleware {
         kycConfig,
         geoConfig,
         gameConfig,
+        tournamentConfig,
       ],
     }),
 
