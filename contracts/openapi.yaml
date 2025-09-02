@@ -210,6 +210,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TableData'
+        '404':
+          description: Table not found
     put:
       summary: Update table
       parameters:
@@ -1763,6 +1765,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChatMessage'
+        stateAvailable:
+          type: boolean
       required:
         - smallBlind
         - bigBlind

@@ -156,6 +156,50 @@ export interface paths {
       };
     };
   };
+  "/notifications": {
+    /** Get notifications */
+    get: {
+      responses: {
+        /** @description Notifications list */
+        200: {
+          content: {
+            "application/json": components["schemas"]["NotificationsResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/notifications/mark-all": {
+    /** Mark all notifications as read */
+    post: {
+      responses: {
+        /** @description Marked */
+        200: {
+          content: {
+            "application/json": components["schemas"]["StatusResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/notifications/{id}": {
+    /** Mark a notification as read */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Marked */
+        200: {
+          content: {
+            "application/json": components["schemas"]["StatusResponse"];
+          };
+        };
+      };
+    };
+  };
   "/tables": {
     /** Get lobby tables */
     get: {
@@ -200,6 +244,10 @@ export interface paths {
             "application/json": components["schemas"]["TableData"];
           };
         };
+        /** @description Table not found */
+        404: {
+          content: never;
+        };
       };
     };
     /** Update table */
@@ -214,12 +262,47 @@ export interface paths {
           "application/json": components["schemas"]["UpdateTableRequest"];
         };
       };
+    };
+  };
+  "/tables/{id}/chat": {
+    /** Get table chat messages */
+    get: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Chat messages */
+        200: {
+          content: {
+            "application/json": components["schemas"]["ChatMessage"][];
+          };
+        };
+      };
+    };
+    /** Send chat message */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["SendChatMessageRequest"];
+        };
+      };
       responses: {
         /** @description Updated table */
         200: {
           content: {
             "application/json": components["schemas"]["Table"];
           };
+        };
+        /** @description Message sent */
+        204: {
+          content: never;
         };
       };
     };
@@ -461,6 +544,52 @@ export interface paths {
       };
     };
   };
+  "/withdrawals/{user}/approve": {
+    /** Approve withdrawal */
+    post: {
+      parameters: {
+        path: {
+          user: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["WithdrawalDecisionRequest"];
+        };
+      };
+      responses: {
+        /** @description Withdrawal approved */
+        200: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/withdrawals/{user}/reject": {
+    /** Reject withdrawal */
+    post: {
+      parameters: {
+        path: {
+          user: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["WithdrawalDecisionRequest"];
+        };
+      };
+      responses: {
+        /** @description Withdrawal rejected */
+        200: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
   "/tournaments": {
     /** List tournaments */
     get: {
@@ -469,6 +598,24 @@ export interface paths {
         200: {
           content: {
             "application/json": components["schemas"]["TournamentList"];
+          };
+        };
+      };
+    };
+  };
+  "/tournaments/{id}": {
+    /** Get tournament */
+    get: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Tournament detail */
+        200: {
+          content: {
+            "application/json": components["schemas"]["TournamentDetail"];
           };
         };
       };
@@ -698,20 +845,20 @@ export interface paths {
       };
     };
   };
-  "/hands/{id}/state/{actionIndex}": {
+  "/hands/{id}/state/{index}": {
     /** Reconstruct hand state at action index */
     get: {
       parameters: {
         path: {
           id: string;
-          actionIndex: number;
+          index: number;
         };
       };
       responses: {
         /** @description Reconstructed hand state */
         200: {
           content: {
-            "application/json": components["schemas"]["HandStateResponse"];
+            "application/json": components["schemas"]["GameState"];
           };
         };
       };
@@ -810,6 +957,22 @@ export interface paths {
     };
   };
   "/users/{id}": {
+    /** Get user */
+    get: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description User found */
+        200: {
+          content: {
+            "application/json": components["schemas"]["User"];
+          };
+        };
+      };
+    };
     /** Update user */
     put: {
       parameters: {
@@ -845,40 +1008,16 @@ export interface paths {
           "application/json": components["schemas"]["BanUserRequest"];
         };
       };
-     responses: {
-    /** @description Banned user */
-    200: {
-      content: {
-        "application/json": components["schemas"]["User"];
-      };
-    };
-  };
-};
-  
-"/users/{id}/balance": {
-  /** Adjust user balance */
-  post: {
-    parameters: {
-      path: {
-        id: string;
-      };
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["BalanceAdjustmentRequest"];
-      };
-    };
-    responses: {
-      /** @description Updated balance */
-      200: {
-        content: {
-          "application/json": components["schemas"]["User"];
+      responses: {
+        /** @description Banned user */
+        200: {
+          content: {
+            "application/json": components["schemas"]["User"];
+          };
         };
       };
     };
   };
-};
-
   "/feature-flags": {
     /** List feature flags */
     get: {
@@ -1029,6 +1168,9 @@ export interface components {
     };
     MessageResponse: {
       message: string;
+    };
+    WithdrawalDecisionRequest: {
+      comment: string;
     };
     RefreshRequest: {
       refreshToken: string;
@@ -1206,6 +1348,14 @@ export interface components {
       };
       registered: boolean;
     };
+    TournamentDetail: components["schemas"]["Tournament"] & ({
+      registration?: {
+        /** Format: date-time */
+        open?: string | null;
+        /** Format: date-time */
+        close?: string | null;
+      };
+    });
     TournamentList: components["schemas"]["Tournament"][];
   };
   responses: never;

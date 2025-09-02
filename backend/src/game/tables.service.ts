@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Table as TableEntity } from '../database/entities/table.entity';
@@ -32,12 +32,13 @@ export class TablesService {
   async getTable(id: string): Promise<TableData> {
     const table = await this.tables.findOne({ where: { id } });
     if (!table) {
-      throw new Error('Table not found');
+      throw new NotFoundException('Table not found');
     }
     let pot = 0;
     let communityCards: string[] = [];
     let players: TableData['players'] = [];
     let chatMessages: TableData['chatMessages'] = [];
+    let stateAvailable = true;
 
     try {
       const room = this.rooms.get(id);
@@ -62,6 +63,7 @@ export class TablesService {
       chatMessages = await this.chat.getRecentMessages(id);
     } catch {
       // Fallback to empty state if room not available or state fetch fails
+      stateAvailable = false;
     }
 
     return {
@@ -71,6 +73,7 @@ export class TablesService {
       communityCards,
       players,
       chatMessages,
+      stateAvailable,
     };
   }
 

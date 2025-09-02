@@ -399,6 +399,7 @@ export const TableDataSchema = z.object({
   communityCards: z.array(z.string()),
   players: z.array(PlayerSchema),
   chatMessages: z.array(ChatMessageSchema),
+  stateAvailable: z.boolean(),
 });
 export type TableData = z.infer<typeof TableDataSchema>;
 

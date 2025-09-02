@@ -244,6 +244,10 @@ export interface paths {
             "application/json": components["schemas"]["TableData"];
           };
         };
+        /** @description Table not found */
+        404: {
+          content: never;
+        };
       };
     };
     /** Update table */
@@ -594,6 +598,24 @@ export interface paths {
         200: {
           content: {
             "application/json": components["schemas"]["TournamentList"];
+          };
+        };
+      };
+    };
+  };
+  "/tournaments/{id}": {
+    /** Get tournament */
+    get: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Tournament detail */
+        200: {
+          content: {
+            "application/json": components["schemas"]["TournamentDetail"];
           };
         };
       };
@@ -1326,6 +1348,14 @@ export interface components {
       };
       registered: boolean;
     };
+    TournamentDetail: components["schemas"]["Tournament"] & ({
+      registration?: {
+        /** Format: date-time */
+        open?: string | null;
+        /** Format: date-time */
+        close?: string | null;
+      };
+    });
     TournamentList: components["schemas"]["Tournament"][];
   };
   responses: never;
