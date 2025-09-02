@@ -21,7 +21,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "test:property": "jest --testPathPatterns=.property.spec.ts$",
+    "test:property": "jest --testPathPattern=.property.spec.ts$",
     "audit:ledger": "node scripts/audit-ledger.js && ts-node scripts/replay-ledger.ts",
     "test:contracts": "jest --testPathPatterns=.contract.spec.ts$",
     "fixtures:icm": "ts-node --transpile-only test/fixtures/icm/generate.ts",
