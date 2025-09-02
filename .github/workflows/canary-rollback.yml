@@ -124,3 +124,9 @@ jobs:
       logs: backend-tests.log frontend-tests.log integration.log property.log
     needs:
     - ensure-proof-archive
+
+  check-proof-archive:
+    needs: [rollback, spectator-privacy]
+    if: ${{ always() }}
+    uses: ./.github/workflows/check-proof-archive.yml
+    secrets: inherit
