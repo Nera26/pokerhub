@@ -895,8 +895,33 @@ export class WalletService {
       actionRequired: false,
     });
     const queue = await this.getPendingQueue();
-    await queue.add('check', { id: deposit.id }, { delay: 10_000 });
+    await queue.add('check', { id: deposit.id }, { delay: 10_000, jobId: deposit.id });
     return { reference: deposit.reference };
+  }
+
+  async cancelPendingDeposit(
+    userId: string,
+    depositId: string,
+  ): Promise<void> {
+    const deposit = await this.pendingDeposits.findOneBy({
+      id: depositId,
+      userId,
+    });
+    if (!deposit || deposit.status !== 'pending') return;
+
+    deposit.status = 'rejected';
+    deposit.rejectedBy = userId;
+    deposit.rejectedAt = new Date();
+    deposit.actionRequired = false;
+    await this.pendingDeposits.save(deposit);
+
+    try {
+      const queue = await this.getPendingQueue();
+      const job = await queue.getJob(depositId);
+      if (job) await job.remove();
+    } catch {
+      // ignore
+    }
   }
 
   async markActionRequiredIfPending(id: string): Promise<void> {

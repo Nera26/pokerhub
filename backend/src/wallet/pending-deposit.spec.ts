@@ -14,6 +14,7 @@ import { SettlementService } from './settlement.service';
 describe('Pending deposits', () => {
   let dataSource: DataSource;
   let service: WalletService;
+  let removeJob: jest.Mock;
   const events: EventPublisher = { emit: jest.fn() } as any;
   const redis: any = {
     incr: jest.fn(),
@@ -58,7 +59,11 @@ describe('Pending deposits', () => {
       kyc,
       settleSvc,
     );
-    (service as any).pendingQueue = { add: jest.fn() };
+    removeJob = jest.fn();
+    (service as any).pendingQueue = {
+      add: jest.fn(),
+      getJob: jest.fn().mockResolvedValue({ remove: removeJob }),
+    };
 
     await accountRepo.save([
       { id: userId, name: 'user', balance: 0, currency: 'USD' },
@@ -92,5 +97,26 @@ describe('Pending deposits', () => {
       'wallet.deposit.rejected',
       expect.objectContaining({ depositId: deposit.id }),
     );
+  });
+
+  it('cancels deposit and prevents action required/listing', async () => {
+    const res = await service.initiateBankTransfer(userId, 75, 'USD');
+    const deposit = await dataSource
+      .getRepository(PendingDeposit)
+      .findOneByOrFail({ reference: res.reference });
+    await service.cancelPendingDeposit(userId, deposit.id);
+    expect((service as any).pendingQueue.getJob).toHaveBeenCalledWith(deposit.id);
+    expect(removeJob).toHaveBeenCalled();
+    const updated = await dataSource
+      .getRepository(PendingDeposit)
+      .findOneByOrFail({ id: deposit.id });
+    expect(updated.status).toBe('rejected');
+    await service.markActionRequiredIfPending(deposit.id);
+    const after = await dataSource
+      .getRepository(PendingDeposit)
+      .findOneByOrFail({ id: deposit.id });
+    expect(after.actionRequired).toBe(false);
+    const list = await service.listPendingDeposits();
+    expect(list.find((d) => d.id === deposit.id)).toBeUndefined();
   });
 });
