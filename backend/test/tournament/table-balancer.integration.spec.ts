@@ -4,8 +4,6 @@ import { Repository } from 'typeorm';
 import { Table } from '../../src/database/entities/table.entity';
 import { Seat } from '../../src/database/entities/seat.entity';
 import { Tournament, TournamentState } from '../../src/database/entities/tournament.entity';
-import type Redis from 'ioredis';
-import { MockRedis } from '../utils/mock-redis';
 
 describe('TableBalancerService integration', () => {
   function createTournamentRepo(initial: Tournament[]): any {
@@ -169,7 +167,6 @@ describe('TableBalancerService integration', () => {
   });
 
   it('persists avoidance window across service restart', async () => {
-    const redis = new MockRedis() as unknown as Redis;
     const tables: Table[] = [
       { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
       { id: 'tbl2', seats: [], tournament: { id: 't1' } as Tournament } as Table,
@@ -218,12 +215,8 @@ describe('TableBalancerService integration', () => {
       tablesRepo,
       scheduler,
       rooms,
-      undefined,
-      undefined,
-      undefined,
-      redis,
     );
-    const balancer = new TableBalancerService(tablesRepo, service, redis);
+    const balancer = new TableBalancerService(tablesRepo, service);
 
     await balancer.rebalanceIfNeeded('t1', 10, 5);
     const initialSecondTable = new Set(players2);
@@ -250,12 +243,8 @@ describe('TableBalancerService integration', () => {
       tablesRepo,
       scheduler,
       rooms,
-      undefined,
-      undefined,
-      undefined,
-      redis,
     );
-    const balancer2 = new TableBalancerService(tablesRepo, service2, redis);
+    const balancer2 = new TableBalancerService(tablesRepo, service2);
 
     await balancer2.rebalanceIfNeeded('t1', 12, 5);
 

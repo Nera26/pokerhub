@@ -15,36 +15,25 @@ describe('table balancer repeat move property', () => {
   );
 
   it('avoids moving the same player twice within N hands', async () => {
-    const fakeRedis = () => {
-      const store = new Map<string, Record<string, string>>();
-      return {
-        async hgetall(key: string) {
-          return store.get(key) ?? {};
-        },
-        async hset(key: string, values: Record<string, string>) {
-          const existing = store.get(key) ?? {};
-          store.set(key, { ...existing, ...values });
-        },
-        async del(key: string) {
-          store.delete(key);
-        },
-      } as any;
-    };
-
     await fc.assert(
       fc.asyncProperty(
         fc.array(fc.integer({ min: 1, max: 9 }), { minLength: 2, maxLength: 5 }),
         fc.integer({ min: 1, max: 20 }),
         fc.array(fc.nat(20), { minLength: 1, maxLength: 20 }),
-        fc.boolean(),
-        async (sizes, avoidWithin, eliminations, useRedis) => {
+        async (sizes, avoidWithin, eliminations) => {
           const total = sizes.reduce((a, b) => a + b, 0);
           const ids = Array.from({ length: total }, (_, i) => `p${i}`);
           const tables: string[][] = sizes.map((s) => ids.splice(0, s));
+          const seatLastMoved = new Map<string, number>();
 
           const repo = {
             find: async () =>
-              tables.map((t) => ({ seats: t.map((p) => ({ user: { id: p } })) })),
+              tables.map((t) => ({
+                seats: t.map((p) => ({
+                  user: { id: p },
+                  lastMovedHand: seatLastMoved.get(p) ?? 0,
+                })),
+              })),
           } as any;
 
           const balancer = new TableBalancerService(
@@ -67,7 +56,6 @@ describe('table balancer repeat move property', () => {
                 for (const b of balanced) tables.push([...b]);
               },
             } as any,
-            useRedis ? fakeRedis() : undefined,
           );
 
           const lastMoved = new Map<string, number>();
@@ -90,6 +78,7 @@ describe('table balancer repeat move property', () => {
                     const last = lastMoved.get(p) ?? -Infinity;
                     expect(hand - last).toBeGreaterThanOrEqual(avoidWithin);
                     lastMoved.set(p, hand);
+                    seatLastMoved.set(p, hand);
                   }
                 }
               }
