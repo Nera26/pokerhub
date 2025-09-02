@@ -26,7 +26,11 @@ import {
 } from '@opentelemetry/sdk-logs';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 
-import type { Counter } from '@opentelemetry/api';
+import type {
+  Counter,
+  Histogram,
+  ObservableResult,
+} from '@opentelemetry/api';
 import { LogRecordProcessor, LogRecord } from '@opentelemetry/sdk-logs';
 import type { Request, Response, NextFunction } from 'express';
 
@@ -34,6 +38,42 @@ let sdk: NodeSDK | undefined;
 let meterProvider: MeterProvider | undefined;
 let loggerProvider: LoggerProvider | undefined;
 let requestCounter: Counter | undefined;
+let requestDuration: Histogram | undefined;
+const requestLatencies: number[] = [];
+const requestTimestamps: number[] = [];
+const MAX_SAMPLES = 1000;
+
+const noopGauge = {
+  addCallback() {},
+  removeCallback() {},
+} as {
+  addCallback(cb: (r: ObservableResult) => void): void;
+  removeCallback(cb: (r: ObservableResult) => void): void;
+};
+let reqP50 = noopGauge;
+let reqP95 = noopGauge;
+let reqP99 = noopGauge;
+let reqThroughput = noopGauge;
+
+function addSample(arr: number[], value: number) {
+  arr.push(value);
+  if (arr.length > MAX_SAMPLES) arr.shift();
+}
+
+function recordTimestamp(ts: number) {
+  requestTimestamps.push(ts);
+  const cutoff = ts - 1000;
+  while (requestTimestamps.length && requestTimestamps[0] < cutoff) {
+    requestTimestamps.shift();
+  }
+}
+
+function percentile(arr: number[], p: number): number {
+  if (arr.length === 0) return 0;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const idx = Math.floor((p / 100) * (sorted.length - 1));
+  return sorted[idx];
+}
 
 export function setupTelemetry(): Promise<void> {
   if (sdk) return Promise.resolve();
@@ -78,6 +118,41 @@ export function setupTelemetry(): Promise<void> {
   });
   requestCounter = meter.createCounter('http_requests_total', {
     description: 'Total HTTP requests received',
+  });
+  requestDuration = meter.createHistogram('http_request_duration_ms', {
+    description: 'HTTP request duration',
+    unit: 'ms',
+  });
+  reqP50 =
+    meter.createObservableGauge?.('http_request_duration_p50_ms', {
+      description: 'p50 HTTP request latency',
+      unit: 'ms',
+    }) ?? noopGauge;
+  reqP95 =
+    meter.createObservableGauge?.('http_request_duration_p95_ms', {
+      description: 'p95 HTTP request latency',
+      unit: 'ms',
+    }) ?? noopGauge;
+  reqP99 =
+    meter.createObservableGauge?.('http_request_duration_p99_ms', {
+      description: 'p99 HTTP request latency',
+      unit: 'ms',
+    }) ?? noopGauge;
+  reqThroughput =
+    meter.createObservableGauge?.('http_request_throughput', {
+      description: 'HTTP request throughput per second',
+      unit: 'req/s',
+    }) ?? noopGauge;
+  reqP50.addCallback((r) => r.observe(percentile(requestLatencies, 50)));
+  reqP95.addCallback((r) => r.observe(percentile(requestLatencies, 95)));
+  reqP99.addCallback((r) => r.observe(percentile(requestLatencies, 99)));
+  reqThroughput.addCallback((r) => {
+    const now = Date.now();
+    const cutoff = now - 1000;
+    while (requestTimestamps.length && requestTimestamps[0] < cutoff) {
+      requestTimestamps.shift();
+    }
+    r.observe(requestTimestamps.length);
   });
 
   class LogCounterProcessor implements LogRecordProcessor {
@@ -126,12 +201,22 @@ export function telemetryMiddleware(
   res: Response,
   next: NextFunction,
 ) {
+  const start = Date.now();
   res.on('finish', () => {
+    const route = req.route?.path ?? req.path;
+    const duration = Date.now() - start;
     requestCounter?.add(1, {
       method: req.method,
-      route: req.route?.path ?? req.path,
+      route,
       status: res.statusCode,
     });
+    requestDuration?.record(duration, {
+      method: req.method,
+      route,
+      status: res.statusCode,
+    });
+    addSample(requestLatencies, duration);
+    recordTimestamp(Date.now());
   });
   next();
 }

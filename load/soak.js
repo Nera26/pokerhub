@@ -16,6 +16,7 @@ const RSS_GROWTH = new Trend('rss_growth');
 const GC_PAUSE = new Trend('gc_pause');
 
 export default swarm;
+export { handleSummary } from './k6-swarm.js';
 
 export function setup() {
   const url = __ENV.METRICS_URL;
