@@ -8,6 +8,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { RateLimitGuard } from '../routes/rate-limit.guard';
 import { TournamentService } from './tournament.service';
 import { AuthGuard } from '../auth/auth.guard';
@@ -21,22 +22,29 @@ import type {
 import type { Request } from 'express';
 
 @UseGuards(RateLimitGuard)
+@ApiTags('tournaments')
 @Controller('tournaments')
 export class TournamentController {
   constructor(private readonly service: TournamentService) {}
 
   @Get()
+  @ApiOperation({ summary: 'List tournaments' })
+  @ApiResponse({ status: 200, description: 'Tournament list' })
   list() {
     return this.service.list();
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get tournament by id' })
+  @ApiResponse({ status: 200, description: 'Tournament details' })
   get(@Param('id') id: string, @Req() req: Request) {
     return this.service.get(id, req.userId);
   }
 
   @Post(':id/register')
   @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Register for tournament' })
+  @ApiResponse({ status: 200, description: 'Registration accepted' })
   register(@Param('id') id: string, @Req() req: Request) {
     return this.service.register(id, req.userId);
   }
@@ -44,6 +52,8 @@ export class TournamentController {
   @Post(':id/withdraw')
   @UseGuards(AuthGuard)
   @HttpCode(200)
+  @ApiOperation({ summary: 'Withdraw from tournament' })
+  @ApiResponse({ status: 200, description: 'Withdrawn from tournament' })
   async withdraw(@Param('id') id: string, @Req() req: Request) {
     await this.service.withdraw(id, req.userId);
     return { message: 'tournament withdrawal' };
@@ -52,6 +62,8 @@ export class TournamentController {
   @Post(':id/cancel')
   @UseGuards(AuthGuard, AdminGuard)
   @HttpCode(200)
+  @ApiOperation({ summary: 'Cancel tournament' })
+  @ApiResponse({ status: 200, description: 'Tournament cancelled' })
   async cancel(@Param('id') id: string) {
     await this.service.cancel(id);
     return { message: 'tournament cancelled' };
@@ -59,6 +71,8 @@ export class TournamentController {
 
   @Post(':id/prizes')
   @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Calculate prize distribution' })
+  @ApiResponse({ status: 200, description: 'Prize calculation result' })
   calculatePrizes(
     @Param('id') id: string,
     @Body() body: CalculatePrizesRequest,
@@ -71,6 +85,8 @@ export class TournamentController {
 
   @Post(':id/levels/hot-patch')
   @UseGuards(AuthGuard, AdminGuard)
+  @ApiOperation({ summary: 'Hot patch tournament level' })
+  @ApiResponse({ status: 200, description: 'Level patched' })
   hotPatchLevel(
     @Param('id') id: string,
     @Body() body: HotPatchLevelRequest,
@@ -86,6 +102,8 @@ export class TournamentController {
   @Post(':id/schedule')
   @UseGuards(AuthGuard, AdminGuard)
   @HttpCode(200)
+  @ApiOperation({ summary: 'Schedule tournament' })
+  @ApiResponse({ status: 200, description: 'Tournament scheduled' })
   async schedule(
     @Param('id') id: string,
     @Body() body: TournamentScheduleRequest,

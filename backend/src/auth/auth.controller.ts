@@ -8,6 +8,7 @@ import {
   UnauthorizedException,
   Req,
 } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ZodError } from 'zod';
 import {
   LoginRequest,
@@ -28,6 +29,7 @@ import {
 import { AuthService } from './auth.service';
 import { GeoIpService } from './geoip.service';
 import { Request } from 'express';
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -37,6 +39,8 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(200)
+  @ApiOperation({ summary: 'User login' })
+  @ApiResponse({ status: 200, description: 'Returns access token' })
   async login(
     @Body() body: LoginRequest,
     @Req() req: Request,
@@ -58,6 +62,8 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(200)
+  @ApiOperation({ summary: 'Register new user' })
+  @ApiResponse({ status: 200, description: 'Registration successful' })
   async register(@Body() body: RegisterRequest): Promise<MessageResponse> {
     try {
       const parsed = RegisterRequestSchema.parse(body);
@@ -73,6 +79,8 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(200)
+  @ApiOperation({ summary: 'Refresh access token' })
+  @ApiResponse({ status: 200, description: 'Returns refreshed access token' })
   async refresh(@Body() body: RefreshRequest): Promise<LoginResponse> {
     try {
       const parsed = RefreshRequestSchema.parse(body);
@@ -89,6 +97,8 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(200)
+  @ApiOperation({ summary: 'Logout user' })
+  @ApiResponse({ status: 200, description: 'Logged out' })
   async logout(@Body() body: RefreshRequest): Promise<MessageResponse> {
     try {
       const parsed = RefreshRequestSchema.parse(body);
@@ -104,6 +114,8 @@ export class AuthController {
 
   @Post('request-reset')
   @HttpCode(200)
+  @ApiOperation({ summary: 'Request password reset' })
+  @ApiResponse({ status: 200, description: 'Reset requested' })
   async requestReset(
     @Body() body: RequestResetRequest,
   ): Promise<MessageResponse> {
@@ -121,6 +133,8 @@ export class AuthController {
 
   @Post('verify-reset-code')
   @HttpCode(200)
+  @ApiOperation({ summary: 'Verify password reset code' })
+  @ApiResponse({ status: 200, description: 'Code verified' })
   async verifyResetCode(
     @Body() body: VerifyResetCodeRequest,
   ): Promise<MessageResponse> {
@@ -139,6 +153,8 @@ export class AuthController {
 
   @Post('reset-password')
   @HttpCode(200)
+  @ApiOperation({ summary: 'Reset password using code' })
+  @ApiResponse({ status: 200, description: 'Password reset' })
   async resetPassword(
     @Body() body: ResetPasswordRequest,
   ): Promise<MessageResponse> {

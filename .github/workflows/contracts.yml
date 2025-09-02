@@ -35,6 +35,9 @@ jobs:
     - name: Install backend deps
       run: npm ci
       working-directory: backend
+    - name: Generate Swagger spec
+      run: npm run openapi:generate
+      working-directory: backend
     - name: Leaderboard rebuild SLA test
       run: npm test -- test/leaderboard.rebuild.property.spec.ts
       working-directory: backend

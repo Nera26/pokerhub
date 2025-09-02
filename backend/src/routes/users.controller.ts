@@ -12,6 +12,7 @@ import {
   Req,
   ForbiddenException,
 } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ZodError } from 'zod';
 import {
   CreateUserSchema,
@@ -28,6 +29,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import type { Request } from 'express';
 
+@ApiTags('users')
 @Controller('users')
 @UseGuards(AuthGuard)
 export class UsersController {
@@ -42,6 +44,8 @@ export class UsersController {
 
   @Post()
   @UseGuards(AdminGuard)
+  @ApiOperation({ summary: 'Create a new user' })
+  @ApiResponse({ status: 201, description: 'User created' })
   async create(@Body() body: CreateUserRequest): Promise<User> {
     try {
       const parsed = CreateUserSchema.parse(body);
@@ -56,6 +60,8 @@ export class UsersController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get user by id' })
+  @ApiResponse({ status: 200, description: 'The user' })
   async findById(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Req() req: Request,
@@ -75,6 +81,8 @@ export class UsersController {
   }
 
   @Put(':id')
+  @ApiOperation({ summary: 'Update user' })
+  @ApiResponse({ status: 200, description: 'Updated user' })
   async update(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: UpdateUserRequest,
@@ -98,6 +106,8 @@ export class UsersController {
   @Post(':id/ban')
   @HttpCode(200)
   @UseGuards(AdminGuard)
+  @ApiOperation({ summary: 'Ban a user' })
+  @ApiResponse({ status: 200, description: 'User banned' })
   async ban(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: BanUserRequest,

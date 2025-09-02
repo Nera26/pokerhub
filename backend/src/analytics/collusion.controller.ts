@@ -5,12 +5,14 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CollusionService } from './collusion.service';
 import { AnalyticsService } from './analytics.service';
 import { ReviewActionSchema } from '../schemas/review';
 import { AdminGuard } from '../auth/admin.guard';
 
 @UseGuards(AdminGuard)
+@ApiTags('collusion')
 @Controller('analytics/collusion')
 export class CollusionController {
   constructor(
@@ -19,6 +21,8 @@ export class CollusionController {
   ) {}
 
   @Post(':sessionId/:action')
+  @ApiOperation({ summary: 'Record collusion action' })
+  @ApiResponse({ status: 200, description: 'Action recorded' })
   async record(
     @Param('sessionId') sessionId: string,
     @Param('action') action: string,

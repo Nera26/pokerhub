@@ -9,6 +9,7 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ZodError } from 'zod';
 import { RateLimitGuard } from './rate-limit.guard';
 import { AuthGuard } from '../auth/auth.guard';
@@ -31,6 +32,7 @@ import {
 } from '../schemas/wallet';
 
 @UseGuards(AuthGuard, RateLimitGuard)
+@ApiTags('wallet')
 @Controller('wallet')
 export class WalletController {
   constructor(
@@ -45,6 +47,8 @@ export class WalletController {
   }
 
   @Post(':id/reserve')
+  @ApiOperation({ summary: 'Reserve funds' })
+  @ApiResponse({ status: 200, description: 'Funds reserved' })
   async reserve(
     @Param('id') id: string,
     @Body() body: TxRequest,
@@ -64,6 +68,8 @@ export class WalletController {
   }
 
   @Post(':id/commit')
+  @ApiOperation({ summary: 'Commit reserved funds' })
+  @ApiResponse({ status: 200, description: 'Funds committed' })
   async commit(
     @Param('id') id: string,
     @Body() body: TxRequest,
@@ -83,6 +89,8 @@ export class WalletController {
   }
 
   @Post(':id/rollback')
+  @ApiOperation({ summary: 'Rollback reserved funds' })
+  @ApiResponse({ status: 200, description: 'Funds rolled back' })
   async rollback(
     @Param('id') id: string,
     @Body() body: TxRequest,
@@ -102,6 +110,8 @@ export class WalletController {
   }
 
   @Post(':id/withdraw')
+  @ApiOperation({ summary: 'Withdraw funds' })
+  @ApiResponse({ status: 200, description: 'Withdrawal accepted' })
   async withdraw(
     @Param('id') id: string,
     @Body() body: WithdrawRequest,
@@ -125,6 +135,8 @@ export class WalletController {
   }
 
   @Post(':id/deposit')
+  @ApiOperation({ summary: 'Deposit funds' })
+  @ApiResponse({ status: 200, description: 'Deposit initiated' })
   async deposit(
     @Param('id') id: string,
     @Body() body: DepositRequest,
@@ -148,6 +160,8 @@ export class WalletController {
   }
 
   @Post(':id/kyc')
+  @ApiOperation({ summary: 'Verify KYC' })
+  @ApiResponse({ status: 200, description: 'KYC verification started' })
   async verify(@Param('id') id: string, @Req() req: Request) {
     this.ensureOwner(req, id);
     await this.kyc.verify(id);
@@ -155,6 +169,8 @@ export class WalletController {
   }
 
   @Get(':id/status')
+  @ApiOperation({ summary: 'Get wallet status' })
+  @ApiResponse({ status: 200, description: 'Wallet status' })
   async status(
     @Param('id') id: string,
     @Req() req: Request,
@@ -165,6 +181,8 @@ export class WalletController {
   }
 
   @Get(':id/transactions')
+  @ApiOperation({ summary: 'List wallet transactions' })
+  @ApiResponse({ status: 200, description: 'Transaction list' })
   async transactions(
     @Param('id') id: string,
     @Req() req: Request,
@@ -175,6 +193,8 @@ export class WalletController {
   }
 
   @Get(':id/pending')
+  @ApiOperation({ summary: 'List pending transactions' })
+  @ApiResponse({ status: 200, description: 'Pending transactions' })
   async pending(
     @Param('id') id: string,
     @Req() req: Request,

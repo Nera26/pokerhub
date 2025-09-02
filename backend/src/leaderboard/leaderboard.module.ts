@@ -8,6 +8,16 @@ import { User } from '../database/entities/user.entity';
 import { Leaderboard } from '../database/entities/leaderboard.entity';
 import { AnalyticsModule } from '../analytics/analytics.module';
 
+@Injectable()
+class RebuildWorker implements OnModuleInit {
+  constructor(private readonly leaderboard: LeaderboardService) {}
+
+  async onModuleInit() {
+    if (process.env.NODE_ENV === 'test') return;
+    await startLeaderboardRebuildWorker(this.leaderboard);
+  }
+}
+
 @Module({
   imports: [
     RedisModule,
@@ -19,13 +29,3 @@ import { AnalyticsModule } from '../analytics/analytics.module';
   exports: [LeaderboardService],
 })
 export class LeaderboardModule {}
-
-@Injectable()
-class RebuildWorker implements OnModuleInit {
-  constructor(private readonly leaderboard: LeaderboardService) {}
-
-  async onModuleInit() {
-    if (process.env.NODE_ENV === 'test') return;
-    await startLeaderboardRebuildWorker(this.leaderboard);
-  }
-}
