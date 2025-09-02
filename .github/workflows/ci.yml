@@ -83,6 +83,9 @@ jobs:
         with:
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
       - run: npm ci
       - id: dr-drill
         env:
@@ -93,6 +96,11 @@ jobs:
           if [ -f dr-drill-issue.json ]; then
             echo "issue=true" >> "$GITHUB_OUTPUT"
           fi
+      - name: Check DR drill metrics
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          DR_DRILL_SLA_DAYS: 7
+        run: npx ts-node scripts/check-dr-drill.ts
       - uses: actions/upload-artifact@v4
         if: steps.dr-drill.outputs.issue == 'true'
         with:
