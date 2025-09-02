@@ -18,8 +18,12 @@ export interface WithdrawModalContentProps {
   accountHolder: string;
   /** Called to close the modal */
   onClose: () => void;
-  /** Called with the amount when user confirms withdrawal */
-  onConfirm: (amount: number) => void;
+  /** Called when user confirms withdrawal */
+  onConfirm: (payload: {
+    amount: number;
+    deviceId: string;
+    currency: string;
+  }) => void;
 }
 
 const withdrawSchema = (availableBalance: number) =>
@@ -58,7 +62,22 @@ export default function WithdrawModalContent({
     mode: 'onChange',
   });
 
-  const submit = handleSubmit((data) => onConfirm(Number(data.amount)));
+  const getDeviceId = () => {
+    let id = localStorage.getItem('deviceId');
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem('deviceId', id);
+    }
+    return id;
+  };
+
+  const submit = handleSubmit((data) =>
+    onConfirm({
+      amount: Number(data.amount),
+      deviceId: getDeviceId(),
+      currency: 'USD',
+    }),
+  );
 
   return (
     <div className="max-h-[90vh] overflow-y-auto">
