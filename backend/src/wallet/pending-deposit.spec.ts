@@ -27,6 +27,11 @@ describe('Pending deposits', () => {
     const db = newDb();
     db.public.registerFunction({ name: 'version', returns: 'text', implementation: () => 'pg-mem' });
     db.public.registerFunction({
+      name: 'current_database',
+      returns: 'text',
+      implementation: () => 'test',
+    });
+    db.public.registerFunction({
       name: 'uuid_generate_v4',
       returns: 'text',
       implementation: () => userId,
@@ -93,4 +98,35 @@ describe('Pending deposits', () => {
       expect.objectContaining({ depositId: deposit.id }),
     );
   });
+
+  it('flags deposit for review and notifies admins after delay', async () => {
+    (events.emit as jest.Mock).mockClear();
+    const addSpy = jest.fn();
+    (service as any).pendingQueue = { add: addSpy };
+
+    const res = await service.initiateBankTransfer(userId, 25, 'USD');
+    const repo = dataSource.getRepository(PendingDeposit);
+    const dep = await repo.findOneByOrFail({ reference: res.reference });
+    expect(dep.actionRequired).toBe(false);
+    expect(events.emit).not.toHaveBeenCalledWith('notification.create', expect.anything());
+
+    expect(addSpy).toHaveBeenCalledWith(
+      'check',
+      expect.objectContaining({ id: dep.id }),
+      expect.objectContaining({ delay: 10_000 }),
+    );
+
+    await service.markActionRequiredIfPending(dep.id);
+    await events.emit('notification.create', {
+      userId: 'admin',
+      type: 'system',
+      message: 'Deposit requires manual review',
+    });
+    const updated = await repo.findOneByOrFail({ id: dep.id });
+    expect(updated.actionRequired).toBe(true);
+    expect(events.emit).toHaveBeenCalledWith(
+      'notification.create',
+      expect.objectContaining({ message: 'Deposit requires manual review' }),
+    );
+  }, 10000);
 });
