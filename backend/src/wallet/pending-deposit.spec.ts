@@ -28,6 +28,11 @@ describe('Pending deposits', () => {
     const db = newDb();
     db.public.registerFunction({ name: 'version', returns: 'text', implementation: () => 'pg-mem' });
     db.public.registerFunction({
+      name: 'current_database',
+      returns: 'text',
+      implementation: () => 'pg-mem',
+    });
+    db.public.registerFunction({
       name: 'uuid_generate_v4',
       returns: 'text',
       implementation: () => userId,
@@ -111,8 +116,36 @@ describe('Pending deposits', () => {
     );
   });
 
+  it('marks action required and emits admin event', async () => {
+    const res = await service.initiateBankTransfer(
+      userId,
+      25,
+      'dev3',
+      '1.1.1.3',
+      'USD',
+    );
+    const deposit = await dataSource
+      .getRepository(PendingDeposit)
+      .findOneByOrFail({ reference: res.reference });
+    await service.markActionRequiredIfPending(deposit.id, 'job-123');
+    const updated = await dataSource
+      .getRepository(PendingDeposit)
+      .findOneByOrFail({ id: deposit.id });
+    expect(updated.actionRequired).toBe(true);
+    expect(events.emit).toHaveBeenCalledWith('admin.deposit.pending', {
+      depositId: deposit.id,
+      jobId: 'job-123',
+    });
+  });
+
   it('cancels deposit and prevents action required/listing', async () => {
-    const res = await service.initiateBankTransfer(userId, 75, 'USD');
+    const res = await service.initiateBankTransfer(
+      userId,
+      75,
+      'dev4',
+      '1.1.1.4',
+      'USD',
+    );
     const deposit = await dataSource
       .getRepository(PendingDeposit)
       .findOneByOrFail({ reference: res.reference });
