@@ -16,6 +16,7 @@ import { EventsModule } from '../events/events.module';
 import { RedisModule } from '../redis/redis.module';
 import { startPayoutWorker } from './payout.worker';
 import { startPendingDepositWorker } from './pending-deposit.worker';
+import { AdminDepositGateway } from './admin-deposit.gateway';
 import { PaymentProviderService } from './payment-provider.service';
 import { KycService } from './kyc.service';
 import { GeoIpService } from '../auth/geoip.service';
@@ -60,6 +61,7 @@ class PendingDepositWorker implements OnModuleInit {
     WalletService,
     PayoutWorker,
     PendingDepositWorker,
+    AdminDepositGateway,
     PaymentProviderService,
     KycService,
     SettlementService,

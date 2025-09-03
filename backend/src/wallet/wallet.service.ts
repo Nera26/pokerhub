@@ -880,32 +880,69 @@ export class WalletService {
     };
   }
 
-  async initiateBankTransfer(
-    accountId: string,
-    amount: number,
-    currency: string,
-  ): Promise<{ reference: string }> {
-    await this.accounts.findOneByOrFail({ id: accountId, currency });
-    const deposit = await this.pendingDeposits.save({
-      id: randomUUID(),
-      userId: accountId,
-      amount,
-      reference: randomUUID(),
-      status: 'pending',
-      actionRequired: false,
-    });
-    const queue = await this.getPendingQueue();
-    await queue.add('check', { id: deposit.id }, { delay: 10_000 });
-    return { reference: deposit.reference };
+async initiateBankTransfer(
+  accountId: string,
+  amount: number,
+  deviceId: string,
+  ip: string,
+  currency: string,
+): Promise<{ reference: string }> {
+  await this.checkVelocity('deposit', deviceId, ip);
+  await this.enforceVelocity('deposit', accountId, amount);
+  await this.accounts.findOneByOrFail({ id: accountId, currency });
+  if (!(await this.kyc.isVerified(accountId, ip))) {
+    throw new Error('KYC required');
   }
+  await this.enforceDailyLimit('deposit', accountId, amount, currency);
+  const deposit = await this.pendingDeposits.save({
+    id: randomUUID(),
+    userId: accountId,
+    amount,
+    reference: randomUUID(),
+    status: 'pending',
+    actionRequired: false,
+  });
+  const queue = await this.getPendingQueue();
+  await queue.add('check', { id: deposit.id }, { delay: 10_000, jobId: deposit.id });
+  return { reference: deposit.reference };
+}
 
-  async markActionRequiredIfPending(id: string): Promise<void> {
-    const dep = await this.pendingDeposits.findOneBy({ id });
-    if (dep && dep.status === 'pending' && !dep.actionRequired) {
-      dep.actionRequired = true;
-      await this.pendingDeposits.save(dep);
-    }
+async cancelPendingDeposit(
+  userId: string,
+  depositId: string,
+): Promise<void> {
+  const deposit = await this.pendingDeposits.findOneBy({
+    id: depositId,
+    userId,
+  });
+  if (!deposit || deposit.status !== 'pending') return;
+
+  deposit.status = 'rejected';
+  deposit.rejectedBy = userId;
+  deposit.rejectedAt = new Date();
+  deposit.actionRequired = false;
+  await this.pendingDeposits.save(deposit);
+
+  try {
+    const queue = await this.getPendingQueue();
+    const job = await queue.getJob(depositId);
+    if (job) await job.remove();
+  } catch {
+    // ignore queue errors
   }
+}
+
+async markActionRequiredIfPending(id: string, jobId?: string): Promise<void> {
+  const dep = await this.pendingDeposits.findOneBy({ id });
+  if (dep && dep.status === 'pending' && !dep.actionRequired) {
+    dep.actionRequired = true;
+    await this.pendingDeposits.save(dep);
+    const payload: { depositId: string; jobId?: string } = { depositId: id };
+    if (jobId) payload.jobId = jobId;
+    await this.events.emit('admin.deposit.pending', payload);
+  }
+}
+
 
   async listPendingDeposits() {
     return this.pendingDeposits.find({
