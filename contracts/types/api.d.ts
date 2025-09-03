@@ -1369,6 +1369,8 @@ export interface components {
     BankTransferDepositRequest: {
       amount: number;
       currency: string;
+      deviceId: string;
+      ip?: string;
     };
     BankTransferDepositResponse: {
       reference: string;

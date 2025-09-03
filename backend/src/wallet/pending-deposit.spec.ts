@@ -14,6 +14,7 @@ import { SettlementService } from './settlement.service';
 describe('Pending deposits', () => {
   let dataSource: DataSource;
   let service: WalletService;
+  let removeJob: jest.Mock;
   const events: EventPublisher = { emit: jest.fn() } as any;
   const redis: any = {
     incr: jest.fn(),
@@ -63,7 +64,11 @@ describe('Pending deposits', () => {
       kyc,
       settleSvc,
     );
-    (service as any).pendingQueue = { add: jest.fn() };
+    removeJob = jest.fn();
+    (service as any).pendingQueue = {
+      add: jest.fn(),
+      getJob: jest.fn().mockResolvedValue({ remove: removeJob }),
+    };
 
     await accountRepo.save([
       { id: userId, name: 'user', balance: 0, currency: 'USD' },
@@ -76,7 +81,13 @@ describe('Pending deposits', () => {
   });
 
   it('confirms deposit and credits account', async () => {
-    const res = await service.initiateBankTransfer(userId, 100, 'USD');
+    const res = await service.initiateBankTransfer(
+      userId,
+      100,
+      'dev1',
+      '1.1.1.1',
+      'USD',
+    );
     const deposit = await dataSource.getRepository(PendingDeposit).findOneByOrFail({ reference: res.reference });
     await service.confirmPendingDeposit(deposit.id, 'admin');
     const accountRepo = dataSource.getRepository(Account);
@@ -88,7 +99,13 @@ describe('Pending deposits', () => {
   });
 
   it('rejects deposit and notifies', async () => {
-    const res = await service.initiateBankTransfer(userId, 50, 'USD');
+    const res = await service.initiateBankTransfer(
+      userId,
+      50,
+      'dev2',
+      '1.1.1.2',
+      'USD',
+    );
     const deposit = await dataSource.getRepository(PendingDeposit).findOneByOrFail({ reference: res.reference });
     await service.rejectPendingDeposit(deposit.id, 'admin', 'bad');
     const updated = await dataSource.getRepository(PendingDeposit).findOneByOrFail({ id: deposit.id });
@@ -100,7 +117,13 @@ describe('Pending deposits', () => {
   });
 
   it('marks action required and emits admin event', async () => {
-    const res = await service.initiateBankTransfer(userId, 25, 'USD');
+    const res = await service.initiateBankTransfer(
+      userId,
+      25,
+      'dev3',
+      '1.1.1.3',
+      'USD',
+    );
     const deposit = await dataSource
       .getRepository(PendingDeposit)
       .findOneByOrFail({ reference: res.reference });
@@ -113,5 +136,32 @@ describe('Pending deposits', () => {
       depositId: deposit.id,
       jobId: 'job-123',
     });
+  });
+
+  it('cancels deposit and prevents action required/listing', async () => {
+    const res = await service.initiateBankTransfer(
+      userId,
+      75,
+      'dev4',
+      '1.1.1.4',
+      'USD',
+    );
+    const deposit = await dataSource
+      .getRepository(PendingDeposit)
+      .findOneByOrFail({ reference: res.reference });
+    await service.cancelPendingDeposit(userId, deposit.id);
+    expect((service as any).pendingQueue.getJob).toHaveBeenCalledWith(deposit.id);
+    expect(removeJob).toHaveBeenCalled();
+    const updated = await dataSource
+      .getRepository(PendingDeposit)
+      .findOneByOrFail({ id: deposit.id });
+    expect(updated.status).toBe('rejected');
+    await service.markActionRequiredIfPending(deposit.id);
+    const after = await dataSource
+      .getRepository(PendingDeposit)
+      .findOneByOrFail({ id: deposit.id });
+    expect(after.actionRequired).toBe(false);
+    const list = await service.listPendingDeposits();
+    expect(list.find((d) => d.id === deposit.id)).toBeUndefined();
   });
 });

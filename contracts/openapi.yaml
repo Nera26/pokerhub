@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.5.0
+  version: 2.6.0
 paths:
   /status:
     get:
@@ -438,6 +438,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BankTransferDepositResponse'
+  /wallet/{id}/deposit/{depositId}:
+    delete:
+      summary: Cancel pending deposit
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: depositId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deposit cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /wallet/{id}/withdraw:
     post:
       summary: Withdraw funds
@@ -1437,9 +1460,14 @@ components:
           type: number
         currency:
           type: string
+        deviceId:
+          type: string
+        ip:
+          type: string
       required:
         - amount
         - currency
+        - deviceId
     BankTransferDepositResponse:
       type: object
       properties:
