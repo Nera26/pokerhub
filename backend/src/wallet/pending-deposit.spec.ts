@@ -30,7 +30,7 @@ describe('Pending deposits', () => {
     db.public.registerFunction({
       name: 'current_database',
       returns: 'text',
-      implementation: () => 'pg-mem',
+      implementation: () => 'test',
     });
     db.public.registerFunction({
       name: 'uuid_generate_v4',
@@ -50,8 +50,9 @@ describe('Pending deposits', () => {
     const settleRepo = dataSource.getRepository(SettlementJournal);
     const pendingRepo = dataSource.getRepository(PendingDeposit);
     const provider = {} as unknown as PaymentProviderService;
-    const kyc = {} as unknown as KycService;
+    const kyc = { isVerified: jest.fn().mockResolvedValue(true) } as unknown as KycService;
     const settleSvc = new SettlementService(settleRepo);
+
     service = new WalletService(
       accountRepo,
       journalRepo,
@@ -64,6 +65,7 @@ describe('Pending deposits', () => {
       kyc,
       settleSvc,
     );
+
     removeJob = jest.fn();
     (service as any).pendingQueue = {
       add: jest.fn(),
@@ -81,33 +83,27 @@ describe('Pending deposits', () => {
   });
 
   it('confirms deposit and credits account', async () => {
-    const res = await service.initiateBankTransfer(
-      userId,
-      100,
-      'dev1',
-      '1.1.1.1',
-      'USD',
-    );
+    const res = await service.initiateBankTransfer(userId, 100, 'dev1', '1.1.1.1', 'USD');
     const deposit = await dataSource.getRepository(PendingDeposit).findOneByOrFail({ reference: res.reference });
+
     await service.confirmPendingDeposit(deposit.id, 'admin');
+
     const accountRepo = dataSource.getRepository(Account);
     const user = await accountRepo.findOneByOrFail({ id: userId });
     expect(user.balance).toBe(100);
+
+    // idempotent
     await service.confirmPendingDeposit(deposit.id, 'admin');
     const userAgain = await accountRepo.findOneByOrFail({ id: userId });
     expect(userAgain.balance).toBe(100);
   });
 
   it('rejects deposit and notifies', async () => {
-    const res = await service.initiateBankTransfer(
-      userId,
-      50,
-      'dev2',
-      '1.1.1.2',
-      'USD',
-    );
+    const res = await service.initiateBankTransfer(userId, 50, 'dev2', '1.1.1.2', 'USD');
     const deposit = await dataSource.getRepository(PendingDeposit).findOneByOrFail({ reference: res.reference });
+
     await service.rejectPendingDeposit(deposit.id, 'admin', 'bad');
+
     const updated = await dataSource.getRepository(PendingDeposit).findOneByOrFail({ id: deposit.id });
     expect(updated.status).toBe('rejected');
     expect(events.emit).toHaveBeenCalledWith(
@@ -116,51 +112,50 @@ describe('Pending deposits', () => {
     );
   });
 
-  it('marks action required and emits admin event', async () => {
-    const res = await service.initiateBankTransfer(
-      userId,
-      25,
-      'dev3',
-      '1.1.1.3',
-      'USD',
+  it('flags deposit for review with queue delay and emits admin event', async () => {
+    (events.emit as jest.Mock).mockClear();
+    const addSpy = jest.spyOn((service as any).pendingQueue, 'add');
+
+    const res = await service.initiateBankTransfer(userId, 25, 'dev3', '1.1.1.3', 'USD');
+    const repo = dataSource.getRepository(PendingDeposit);
+    const dep = await repo.findOneByOrFail({ reference: res.reference });
+
+    // not action-required initially
+    expect(dep.actionRequired).toBe(false);
+
+    // queued with expected delay
+    expect(addSpy).toHaveBeenCalledWith(
+      'check',
+      expect.objectContaining({ id: dep.id }),
+      expect.objectContaining({ delay: 10_000 }),
     );
-    const deposit = await dataSource
-      .getRepository(PendingDeposit)
-      .findOneByOrFail({ reference: res.reference });
-    await service.markActionRequiredIfPending(deposit.id, 'job-123');
-    const updated = await dataSource
-      .getRepository(PendingDeposit)
-      .findOneByOrFail({ id: deposit.id });
+
+    // mark and verify event emission + persisted state
+    await service.markActionRequiredIfPending(dep.id, 'job-123');
+    const updated = await repo.findOneByOrFail({ id: dep.id });
     expect(updated.actionRequired).toBe(true);
     expect(events.emit).toHaveBeenCalledWith('admin.deposit.pending', {
-      depositId: deposit.id,
+      depositId: dep.id,
       jobId: 'job-123',
     });
   });
 
   it('cancels deposit and prevents action required/listing', async () => {
-    const res = await service.initiateBankTransfer(
-      userId,
-      75,
-      'dev4',
-      '1.1.1.4',
-      'USD',
-    );
-    const deposit = await dataSource
-      .getRepository(PendingDeposit)
-      .findOneByOrFail({ reference: res.reference });
+    const res = await service.initiateBankTransfer(userId, 75, 'dev4', '1.1.1.4', 'USD');
+    const deposit = await dataSource.getRepository(PendingDeposit).findOneByOrFail({ reference: res.reference });
+
     await service.cancelPendingDeposit(userId, deposit.id);
+
     expect((service as any).pendingQueue.getJob).toHaveBeenCalledWith(deposit.id);
     expect(removeJob).toHaveBeenCalled();
-    const updated = await dataSource
-      .getRepository(PendingDeposit)
-      .findOneByOrFail({ id: deposit.id });
+
+    const updated = await dataSource.getRepository(PendingDeposit).findOneByOrFail({ id: deposit.id });
     expect(updated.status).toBe('rejected');
+
     await service.markActionRequiredIfPending(deposit.id);
-    const after = await dataSource
-      .getRepository(PendingDeposit)
-      .findOneByOrFail({ id: deposit.id });
+    const after = await dataSource.getRepository(PendingDeposit).findOneByOrFail({ id: deposit.id });
     expect(after.actionRequired).toBe(false);
+
     const list = await service.listPendingDeposits();
     expect(list.find((d) => d.id === deposit.id)).toBeUndefined();
   });
