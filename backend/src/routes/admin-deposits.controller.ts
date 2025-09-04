@@ -5,12 +5,10 @@ import {
   Param,
   Body,
   Req,
-  BadRequestException,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import type { Request } from 'express';
-import { ZodError } from 'zod';
 import { WalletService } from '../wallet/wallet.service';
 import {
   PendingDepositsResponseSchema,
@@ -50,19 +48,12 @@ export class AdminDepositsController {
     @Body() body: DepositDecisionRequest,
     @Req() req: Request,
   ) {
-    try {
-      const parsed = DepositDecisionRequestSchema.parse(body);
-      await this.wallet.rejectPendingDeposit(
-        id,
-        req.userId ?? 'admin',
-        parsed.reason,
-      );
-      return { message: 'rejected' };
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
-    }
+    const parsed = DepositDecisionRequestSchema.parse(body);
+    await this.wallet.rejectPendingDeposit(
+      id,
+      req.userId ?? 'admin',
+      parsed.reason,
+    );
+    return { message: 'rejected' };
   }
 }

@@ -906,9 +906,12 @@ async initiateBankTransfer(
   });
   const queue = await this.getPendingQueue();
   await queue.add('check', { id: deposit.id }, { delay: 10_000, jobId: deposit.id });
-  const bankName = process.env.BANK_NAME ?? 'Bank of Poker';
-  const accountNumber = process.env.BANK_ACCOUNT_NUMBER ?? '0000000000';
-  const routingCode = process.env.BANK_ROUTING_CODE ?? '000000';
+  const bankName = process.env.BANK_NAME;
+  const accountNumber = process.env.BANK_ACCOUNT_NUMBER;
+  const routingCode = process.env.BANK_ROUTING_CODE;
+  if (!bankName || !accountNumber || !routingCode) {
+    throw new Error('Bank transfer configuration missing');
+  }
   return {
     reference: deposit.reference,
     bank: { bankName, accountNumber, routingCode },
@@ -930,6 +933,18 @@ async cancelPendingDeposit(
   deposit.rejectedAt = new Date();
   deposit.actionRequired = false;
   await this.pendingDeposits.save(deposit);
+
+  await this.events.emit('notification.create', {
+    userId: deposit.userId,
+    type: 'system',
+    message: 'Deposit cancelled',
+  });
+  await this.events.emit('wallet.deposit.rejected', {
+    accountId: deposit.userId,
+    depositId: deposit.id,
+    currency: deposit.currency,
+    reason: 'cancelled',
+  });
 
   try {
     const queue = await this.getPendingQueue();

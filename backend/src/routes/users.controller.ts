@@ -4,13 +4,13 @@ import {
   Put,
   Get,
   Body,
-  BadRequestException,
+  Param,
   ParseUUIDPipe,
   HttpCode,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ZodError } from 'zod';
 import {
   CreateUserSchema,
   type CreateUserRequest,
@@ -25,6 +25,7 @@ import { UsersService } from '../users/users.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { SelfGuard, UserIdParam } from '../auth/self.guard';
+import { ZodError } from 'zod';
 
 @ApiTags('users')
 @Controller('users')
@@ -114,6 +115,4 @@ export class UsersController {
       throw err;
     }
   }
-
 }
-

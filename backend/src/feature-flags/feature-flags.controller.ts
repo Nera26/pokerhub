@@ -5,7 +5,6 @@ import {
   Delete,
   Param,
   Body,
-  BadRequestException,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -18,7 +17,6 @@ import {
   type FeatureFlag,
   type FeatureFlagsResponse,
 } from '../schemas/feature-flags';
-import { ZodError } from 'zod';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 
@@ -43,16 +41,9 @@ export class FeatureFlagsController {
     @Param('key') key: string,
     @Body() body: FeatureFlagRequest,
   ): Promise<FeatureFlag> {
-    try {
-      const parsed = FeatureFlagRequestSchema.parse(body);
-      const flag = await this.flags.set(key, parsed.value);
-      return FeatureFlagSchema.parse(flag);
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
-    }
+    const parsed = FeatureFlagRequestSchema.parse(body);
+    const flag = await this.flags.set(key, parsed.value);
+    return FeatureFlagSchema.parse(flag);
   }
 
   @Delete(':key')
@@ -70,16 +61,9 @@ export class FeatureFlagsController {
     @Param('key') key: string,
     @Body() body: FeatureFlagRequest,
   ): Promise<FeatureFlag> {
-    try {
-      const parsed = FeatureFlagRequestSchema.parse(body);
-      const flag = await this.flags.setRoom(tableId, key, parsed.value);
-      return FeatureFlagSchema.parse(flag);
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
-    }
+    const parsed = FeatureFlagRequestSchema.parse(body);
+    const flag = await this.flags.setRoom(tableId, key, parsed.value);
+    return FeatureFlagSchema.parse(flag);
   }
 
   @Delete('room/:tableId/:key')
@@ -100,16 +84,9 @@ export class FeatureFlagsController {
     @Param('key') key: string,
     @Body() body: FeatureFlagRequest,
   ): Promise<FeatureFlag> {
-    try {
-      const parsed = FeatureFlagRequestSchema.parse(body);
-      const flag = await this.flags.setTourney(tourneyId, key, parsed.value);
-      return FeatureFlagSchema.parse(flag);
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
-    }
+    const parsed = FeatureFlagRequestSchema.parse(body);
+    const flag = await this.flags.setTourney(tourneyId, key, parsed.value);
+    return FeatureFlagSchema.parse(flag);
   }
 
   @Delete('tourney/:tourneyId/:key')
