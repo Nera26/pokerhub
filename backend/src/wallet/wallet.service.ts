@@ -886,7 +886,7 @@ async initiateBankTransfer(
   deviceId: string,
   ip: string,
   currency: string,
-): Promise<{ reference: string }> {
+): Promise<{ reference: string; bank: { bankName: string; accountNumber: string; routingCode: string } }> {
   await this.checkVelocity('deposit', deviceId, ip);
   await this.enforceVelocity('deposit', accountId, amount);
   await this.accounts.findOneByOrFail({ id: accountId, currency });
@@ -904,7 +904,13 @@ async initiateBankTransfer(
   });
   const queue = await this.getPendingQueue();
   await queue.add('check', { id: deposit.id }, { delay: 10_000, jobId: deposit.id });
-  return { reference: deposit.reference };
+  const bankName = process.env.BANK_NAME ?? 'Bank of Poker';
+  const accountNumber = process.env.BANK_ACCOUNT_NUMBER ?? '0000000000';
+  const routingCode = process.env.BANK_ROUTING_CODE ?? '000000';
+  return {
+    reference: deposit.reference,
+    bank: { bankName, accountNumber, routingCode },
+  };
 }
 
 async cancelPendingDeposit(

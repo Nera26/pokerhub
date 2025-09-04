@@ -35,6 +35,7 @@ export type MessageResponse = z.infer<typeof MessageResponseSchema>;
 export {
   BankTransferDepositRequestSchema,
   BankTransferDepositResponseSchema,
+  BankDetailsSchema,
   PendingDepositSchema,
   PendingDepositsResponseSchema,
   DepositDecisionRequestSchema,
@@ -42,6 +43,7 @@ export {
 export type {
   BankTransferDepositRequest,
   BankTransferDepositResponse,
+  BankDetails,
   PendingDeposit,
   PendingDepositsResponse,
   DepositDecisionRequest,

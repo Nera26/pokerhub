@@ -1468,13 +1468,29 @@ components:
         - amount
         - currency
         - deviceId
+    BankDetails:
+      type: object
+      properties:
+        bankName:
+          type: string
+        accountNumber:
+          type: string
+        routingCode:
+          type: string
+      required:
+        - bankName
+        - accountNumber
+        - routingCode
     BankTransferDepositResponse:
       type: object
       properties:
         reference:
           type: string
+        bank:
+          $ref: '#/components/schemas/BankDetails'
       required:
         - reference
+        - bank
     ProviderChallenge:
       type: object
       properties:

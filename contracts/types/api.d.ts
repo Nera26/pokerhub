@@ -476,6 +476,25 @@ export interface paths {
       };
     };
   };
+  "/wallet/{id}/deposit/{depositId}": {
+    /** Cancel pending deposit */
+    delete: {
+      parameters: {
+        path: {
+          id: string;
+          depositId: string;
+        };
+      };
+      responses: {
+        /** @description Deposit cancelled */
+        200: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
   "/wallet/{id}/withdraw": {
     /** Withdraw funds */
     post: {
@@ -1372,8 +1391,14 @@ export interface components {
       deviceId: string;
       ip?: string;
     };
+    BankDetails: {
+      bankName: string;
+      accountNumber: string;
+      routingCode: string;
+    };
     BankTransferDepositResponse: {
       reference: string;
+      bank: components["schemas"]["BankDetails"];
     };
     ProviderChallenge: {
       id?: string;

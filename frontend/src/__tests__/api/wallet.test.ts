@@ -5,6 +5,7 @@ import {
   commit,
   rollback,
   deposit,
+  initiateBankTransfer,
   withdraw,
   getStatus,
 } from '@/lib/api/wallet';
@@ -50,6 +51,19 @@ describe('wallet api', () => {
         status: 200,
         headers: { get: () => 'application/json' },
         json: async () => ({
+          reference: 'ref1',
+          bank: {
+            bankName: 'Bank',
+            accountNumber: '123',
+            routingCode: '456',
+          },
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({
           kycVerified: true,
           realBalance: 10,
           creditBalance: 5,
@@ -73,6 +87,16 @@ describe('wallet api', () => {
       kycVerified: true,
       realBalance: 20,
       creditBalance: 10,
+    });
+    await expect(
+      initiateBankTransfer('u1', 10, 'd1', 'USD'),
+    ).resolves.toEqual({
+      reference: 'ref1',
+      bank: {
+        bankName: 'Bank',
+        accountNumber: '123',
+        routingCode: '456',
+      },
     });
     await expect(withdraw('u1', 10, 'd1', 'USD')).resolves.toEqual({
       kycVerified: true,

@@ -18,7 +18,7 @@ import {
   getStatus,
   fetchTransactions,
   fetchPending,
-  deposit,
+  initiateBankTransfer,
   withdraw,
 } from '@/lib/api/wallet';
 import { startKyc } from '@/lib/api/kyc';
@@ -96,19 +96,24 @@ export default function WalletPage() {
     currency: string;
   }
 
-  const handleDepositConfirm = async ({
+  const handleBankTransfer = async ({
     amount,
     deviceId,
     currency,
   }: WalletPayload) => {
-    closeDepositModal();
     try {
-      const res = await deposit(playerId, amount, deviceId, currency);
-      setBalances(res.realBalance, res.creditBalance);
-      showToast('Deposit under review, you’ll be notified soon');
+      const res = await initiateBankTransfer(
+        playerId,
+        amount,
+        deviceId,
+        currency,
+      );
+      showToast('Deposit initiated. Follow the instructions.');
+      return res;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Deposit failed';
       showToast(message, 'error');
+      throw err;
     }
   };
 
@@ -224,7 +229,7 @@ export default function WalletPage() {
       <Modal isOpen={isDepositModalOpen} onClose={closeDepositModal}>
         <DepositModalContent
           onClose={closeDepositModal}
-          onConfirm={handleDepositConfirm}
+          onInitiate={handleBankTransfer}
         />
       </Modal>
 
