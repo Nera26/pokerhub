@@ -21,6 +21,18 @@ The project provides a Docker setup for the full stack:
 
 ### Quick Start
 
+Run the helper script to provision environment variables, start Docker services,
+and execute the test suite:
+
+```bash
+./scripts/quickstart.sh
+```
+
+The script verifies required dependencies (`docker-compose` and `npm`), copies
+`.env.example` to `.env` if needed, starts the containers, and runs `npm test`.
+
+If you prefer to perform the steps manually:
+
 1. Copy the example environment file and adjust values as needed:
 
    ```bash
