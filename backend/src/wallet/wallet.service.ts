@@ -890,46 +890,89 @@ async initiateBankTransfer(
   deviceId: string,
   ip: string,
   currency: string,
-): Promise<{ reference: string; bank: { bankName: string; accountNumber: string; routingCode: string } }> {
-  await this.checkVelocity('deposit', deviceId, ip);
-  await this.enforceVelocity('deposit', accountId, amount);
-  await this.accounts.findOneByOrFail({ id: accountId, currency });
-  if (!(await this.kyc.isVerified(accountId, ip))) {
-    throw new Error('KYC required');
+  idempotencyKey?: string,
+): Promise<{
+  reference: string;
+  bank: { bankName: string; accountNumber: string; routingCode: string };
+}> {
+  let redisKey: string | undefined;
+
+  try {
+    // Idempotency: return cached response or acquire a short lock
+    if (idempotencyKey) {
+      redisKey = `wallet:idemp:${idempotencyKey}`;
+      const existing = await this.redis.get(redisKey);
+      if (existing && existing !== 'LOCK') {
+        return JSON.parse(existing);
+      }
+      const lock = await this.redis.set(redisKey, 'LOCK', 'NX', 'EX', 600);
+      if (lock === null) {
+        const cached = await this.redis.get(redisKey);
+        if (cached && cached !== 'LOCK') {
+          return JSON.parse(cached);
+        }
+        throw new Error('Duplicate request in progress');
+      }
+    }
+
+    await this.checkVelocity('deposit', deviceId, ip);
+    await this.enforceVelocity('deposit', accountId, amount);
+    await this.accounts.findOneByOrFail({ id: accountId, currency });
+
+    if (!(await this.kyc.isVerified(accountId, ip))) {
+      throw new Error('KYC required');
+    }
+
+    await this.enforceDailyLimit('deposit', accountId, amount, currency);
+
+    const deposit = await this.pendingDeposits.save({
+      id: randomUUID(),
+      userId: accountId,
+      amount,
+      currency,
+      reference: randomUUID(),
+      status: 'pending',
+      actionRequired: false,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    });
+
+    // Enqueue follow-up check with cleanup options
+    const queue = await this.getPendingQueue();
+    await queue.add(
+      'check',
+      { id: deposit.id },
+      {
+        delay: 10_000,
+        jobId: deposit.id,
+        removeOnComplete: true,
+        removeOnFail: true,
+      },
+    );
+
+    const bankName = process.env.BANK_NAME;
+    const accountNumber = process.env.BANK_ACCOUNT_NUMBER;
+    const routingCode = process.env.BANK_ROUTING_CODE;
+    if (!bankName || !accountNumber || !routingCode) {
+      throw new Error('Bank transfer configuration missing');
+    }
+
+    const res = {
+      reference: deposit.reference,
+      bank: { bankName, accountNumber, routingCode },
+    };
+
+    if (redisKey) {
+      await this.redis.set(redisKey, JSON.stringify(res), 'EX', 600);
+    }
+    return res;
+  } catch (err) {
+    if (redisKey) {
+      await this.redis.del(redisKey);
+    }
+    throw err;
   }
-  await this.enforceDailyLimit('deposit', accountId, amount, currency);
-  const deposit = await this.pendingDeposits.save({
-    id: randomUUID(),
-    userId: accountId,
-    amount,
-    currency,
-    reference: randomUUID(),
-    status: 'pending',
-    actionRequired: false,
-    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-  });
-  const queue = await this.getPendingQueue();
-  await queue.add(
-    'check',
-    { id: deposit.id },
-    {
-      delay: 10_000,
-      jobId: deposit.id,
-      removeOnComplete: true,
-      removeOnFail: true,
-    },
-  );
-  const bankName = process.env.BANK_NAME;
-  const accountNumber = process.env.BANK_ACCOUNT_NUMBER;
-  const routingCode = process.env.BANK_ROUTING_CODE;
-  if (!bankName || !accountNumber || !routingCode) {
-    throw new Error('Bank transfer configuration missing');
-  }
-  return {
-    reference: deposit.reference,
-    bank: { bankName, accountNumber, routingCode },
-  };
 }
+
 
 async cancelPendingDeposit(
   userId: string,
@@ -992,7 +1035,7 @@ async rejectExpiredPendingDeposits(): Promise<void> {
 
   async listPendingDeposits() {
     return this.pendingDeposits.find({
-      where: { status: 'pending' },
+      where: { status: 'pending', actionRequired: true },
       order: { createdAt: 'ASC' },
     });
   }

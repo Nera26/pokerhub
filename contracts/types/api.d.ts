@@ -1390,6 +1390,7 @@ export interface components {
       currency: string;
       deviceId: string;
       ip?: string;
+      idempotencyKey?: string;
     };
     BankDetails: {
       bankName: string;

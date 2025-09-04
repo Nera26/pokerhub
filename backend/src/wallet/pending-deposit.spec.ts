@@ -170,6 +170,10 @@ describe('Pending deposits', () => {
 
     // not action-required initially
     expect(dep.actionRequired).toBe(false);
+    // not listed until action required
+    expect(
+      (await service.listPendingDeposits()).find((d) => d.id === dep.id),
+    ).toBeUndefined();
 
     // queued with expected delay
     expect(addSpy).toHaveBeenCalledWith(
@@ -182,6 +186,8 @@ describe('Pending deposits', () => {
     await service.markActionRequiredIfPending(dep.id, 'job-123');
     const updated = await repo.findOneByOrFail({ id: dep.id });
     expect(updated.actionRequired).toBe(true);
+    const listed = await service.listPendingDeposits();
+    expect(listed.find((d) => d.id === dep.id)).toBeDefined();
     expect(events.emit).toHaveBeenCalledWith('admin.deposit.pending', {
       depositId: dep.id,
       jobId: 'job-123',
