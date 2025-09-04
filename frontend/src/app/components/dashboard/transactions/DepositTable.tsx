@@ -1,11 +1,10 @@
-import { useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faImage, faComment } from '@fortawesome/free-solid-svg-icons';
-import { useVirtualizer } from '@tanstack/react-virtual';
 
 import StatusPill, { toStatus } from './StatusPill';
 import type { DepositReq } from './types';
+import useTransactionVirtualizer from './useTransactionVirtualizer';
 import useRenderCount from '@/hooks/useRenderCount';
 
 interface Props {
@@ -24,27 +23,8 @@ export default function DepositTable({
   onViewReceipt,
 }: Props) {
   useRenderCount('DepositTable');
-  const parentRef = useRef<HTMLDivElement>(null);
-  const sortedDeposits = useMemo(
-    () => [...deposits].sort((a, b) => a.date.localeCompare(b.date)),
-    [deposits],
-  );
-  // useVirtualizer keeps deposit rows efficient; tests assert data-index attributes
-  const real = useVirtualizer({
-    count: sortedDeposits.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 56,
-    initialRect: { width: 0, height: 400 },
-  });
-  const rowVirtualizer =
-    process.env.NODE_ENV === 'test'
-      ? {
-          getVirtualItems: () =>
-            sortedDeposits.map((_, index) => ({ index, start: index * 56 })),
-          getTotalSize: () => sortedDeposits.length * 56,
-          measureElement: () => {},
-        }
-      : real;
+  const { parentRef, sortedItems: sortedDeposits, rowVirtualizer } =
+    useTransactionVirtualizer(deposits);
   return (
     <section>
       <div className="bg-card-bg p-6 rounded-2xl card-shadow">

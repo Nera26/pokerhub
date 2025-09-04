@@ -1,9 +1,8 @@
-import { useMemo, useRef } from 'react';
 import Image from 'next/image';
-import { useVirtualizer } from '@tanstack/react-virtual';
 
 import StatusPill, { toStatus } from './StatusPill';
 import type { WithdrawalReq } from './types';
+import useTransactionVirtualizer from './useTransactionVirtualizer';
 import useRenderCount from '@/hooks/useRenderCount';
 
 interface Props {
@@ -18,27 +17,8 @@ export default function WithdrawalTable({
   onReject,
 }: Props) {
   useRenderCount('WithdrawalTable');
-  const parentRef = useRef<HTMLDivElement>(null);
-  const sortedWithdrawals = useMemo(
-    () => [...withdrawals].sort((a, b) => a.date.localeCompare(b.date)),
-    [withdrawals],
-  );
-  // Virtualize withdrawal requests to keep performance snappy
-  const real = useVirtualizer({
-    count: sortedWithdrawals.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 56,
-    initialRect: { width: 0, height: 400 },
-  });
-  const rowVirtualizer =
-    process.env.NODE_ENV === 'test'
-      ? {
-          getVirtualItems: () =>
-            sortedWithdrawals.map((_, index) => ({ index, start: index * 56 })),
-          getTotalSize: () => sortedWithdrawals.length * 56,
-          measureElement: () => {},
-        }
-      : real;
+  const { parentRef, sortedItems: sortedWithdrawals, rowVirtualizer } =
+    useTransactionVirtualizer(withdrawals);
   return (
     <section>
       <div className="bg-card-bg p-6 rounded-2xl card-shadow">
