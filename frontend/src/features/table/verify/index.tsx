@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { fetchHandLog, fetchVerifiedHandProof } from '@/lib/api/hands';
-import { revealDeck } from '@/lib/verify';
+import { revealDeck } from '@/lib/verifyProof';
 import type { HandProof } from '@shared/types';
 
 export default function VerifyPage() {
