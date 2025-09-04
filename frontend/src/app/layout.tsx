@@ -17,6 +17,7 @@ import LanguageSelector from './components/common/LanguageSelector';
 import { buildMetadata } from '@/lib/metadata';
 import PerformanceMonitor from './PerformanceMonitor';
 import { env, IS_E2E } from '@/lib/env';
+import ContractMismatchNotice from '@/components/ContractMismatchNotice';
 
 const meta = buildMetadata();
 
@@ -76,6 +77,7 @@ export default async function RootLayout({
           <ReactQueryProvider>
             <ApiErrorProvider>
               <GlobalErrorBoundary>{children}</GlobalErrorBoundary>
+              <ContractMismatchNotice />
             </ApiErrorProvider>
           </ReactQueryProvider>
           {env.NODE_ENV === 'production' && !IS_E2E && <PerformanceMonitor />}
