@@ -29,6 +29,9 @@ describe('Pending deposits', () => {
   const userId = '11111111-1111-1111-1111-111111111111';
 
   beforeAll(async () => {
+    process.env.BANK_NAME = 'Test Bank';
+    process.env.BANK_ACCOUNT_NUMBER = '123456789';
+    process.env.BANK_ROUTING_CODE = '987654';
     const db = newDb();
     db.public.registerFunction({ name: 'version', returns: 'text', implementation: () => 'pg-mem' });
     db.public.registerFunction({
