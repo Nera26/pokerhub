@@ -4,7 +4,9 @@ import { faDownload } from '@fortawesome/free-solid-svg-icons';
 
 import StatusPill, { toStatus } from './StatusPill';
 import type { Txn } from './types';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import TransactionHistoryTable, {
+  Column,
+} from '@/app/components/common/TransactionHistoryTable';
 
 const usd = (n: number) =>
   (n < 0 ? '-' : n > 0 ? '+' : '') + '$' + Math.abs(n).toLocaleString();
@@ -16,13 +18,56 @@ interface Props {
 }
 
 export default function TransactionHistory({ log, pageInfo, onExport }: Props) {
-  const parentRef = React.useRef<HTMLDivElement>(null);
-  const rowVirtualizer = useVirtualizer({
-    count: log.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 52,
-    initialRect: { width: 0, height: 400 },
-  });
+  const columns: Column<Txn>[] = [
+    {
+      header: 'Date & Time',
+      headerClassName: 'text-left py-3 px-2 text-text-secondary',
+      cell: (t) => t.datetime,
+      cellClassName: 'py-3 px-2 text-text-secondary',
+    },
+    {
+      header: 'Action',
+      headerClassName: 'text-left py-3 px-2 text-text-secondary',
+      cell: (t) => t.action,
+      cellClassName: 'py-3 px-2',
+    },
+    {
+      header: 'Amount',
+      headerClassName: 'text-left py-3 px-2 text-text-secondary',
+      cell: (t) => (
+        <span
+          className={
+            t.amount > 0
+              ? 'text-accent-green'
+              : t.amount < 0
+                ? 'text-danger-red'
+                : ''
+          }
+        >
+          {usd(t.amount)}
+        </span>
+      ),
+      cellClassName: 'py-3 px-2 font-semibold',
+    },
+    {
+      header: 'Performed By',
+      headerClassName: 'text-left py-3 px-2 text-text-secondary',
+      cell: (t) => t.by,
+      cellClassName: 'py-3 px-2',
+    },
+    {
+      header: 'Notes',
+      headerClassName: 'text-left py-3 px-2 text-text-secondary',
+      cell: (t) => t.notes,
+      cellClassName: 'py-3 px-2 text-text-secondary',
+    },
+    {
+      header: 'Status',
+      headerClassName: 'text-left py-3 px-2 text-text-secondary',
+      cell: (t) => <StatusPill status={toStatus(t.status)} />,
+      cellClassName: 'py-3 px-2',
+    },
+  ];
 
   return (
     <section>
@@ -64,116 +109,15 @@ export default function TransactionHistory({ log, pageInfo, onExport }: Props) {
           </div>
         </div>
 
-        <div ref={parentRef} className="overflow-auto max-h-96">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-dark">
-                <th className="text-left py-3 px-2 text-text-secondary">
-                  Date &amp; Time
-                </th>
-                <th className="text-left py-3 px-2 text-text-secondary">
-                  Action
-                </th>
-                <th className="text-left py-3 px-2 text-text-secondary">
-                  Amount
-                </th>
-                <th className="text-left py-3 px-2 text-text-secondary">
-                  Performed By
-                </th>
-                <th className="text-left py-3 px-2 text-text-secondary">
-                  Notes
-                </th>
-                <th className="text-left py-3 px-2 text-text-secondary">
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody
-              style={
-                rowVirtualizer.getVirtualItems().length > 0
-                  ? {
-                      height: rowVirtualizer.getTotalSize(),
-                      position: 'relative',
-                    }
-                  : undefined
-              }
-            >
-              {rowVirtualizer.getVirtualItems().length > 0
-                ? rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                    const t = log[virtualRow.index];
-                    return (
-                      <tr
-                        key={virtualRow.index}
-                        ref={rowVirtualizer.measureElement}
-                        data-index={virtualRow.index}
-                        className="border-b border-dark hover:bg-hover-bg"
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          width: '100%',
-                          transform: `translateY(${virtualRow.start}px)`,
-                        }}
-                      >
-                        <td className="py-3 px-2 text-text-secondary">
-                          {t.datetime}
-                        </td>
-                        <td className="py-3 px-2">{t.action}</td>
-                        <td
-                          className={
-                            'py-3 px-2 font-semibold ' +
-                            (t.amount > 0
-                              ? 'text-accent-green'
-                              : t.amount < 0
-                                ? 'text-danger-red'
-                                : '')
-                          }
-                        >
-                          {usd(t.amount)}
-                        </td>
-                        <td className="py-3 px-2">{t.by}</td>
-                        <td className="py-3 px-2 text-text-secondary">
-                          {t.notes}
-                        </td>
-                        <td className="py-3 px-2">
-                          <StatusPill status={toStatus(t.status)} />
-                        </td>
-                      </tr>
-                    );
-                  })
-                : log.map((t, i) => (
-                    <tr
-                      key={i}
-                      className="border-b border-dark hover:bg-hover-bg"
-                    >
-                      <td className="py-3 px-2 text-text-secondary">
-                        {t.datetime}
-                      </td>
-                      <td className="py-3 px-2">{t.action}</td>
-                      <td
-                        className={
-                          'py-3 px-2 font-semibold ' +
-                          (t.amount > 0
-                            ? 'text-accent-green'
-                            : t.amount < 0
-                              ? 'text-danger-red'
-                              : '')
-                        }
-                      >
-                        {usd(t.amount)}
-                      </td>
-                      <td className="py-3 px-2">{t.by}</td>
-                      <td className="py-3 px-2 text-text-secondary">
-                        {t.notes}
-                      </td>
-                      <td className="py-3 px-2">
-                        <StatusPill status={toStatus(t.status)} />
-                      </td>
-                    </tr>
-                  ))}
-            </tbody>
-          </table>
-        </div>
+        <TransactionHistoryTable
+          data={log}
+          columns={columns}
+          getRowKey={(_, i) => i}
+          estimateSize={52}
+          containerClassName="overflow-auto max-h-96"
+          tableClassName="w-full text-sm"
+          rowClassName="border-b border-dark hover:bg-hover-bg"
+        />
 
         <div className="flex justify-between items-center mt-4">
           <span className="text-text-secondary text-sm">{pageInfo}</span>
@@ -199,3 +143,4 @@ export default function TransactionHistory({ log, pageInfo, onExport }: Props) {
     </section>
   );
 }
+
