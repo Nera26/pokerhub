@@ -4,8 +4,8 @@ import { join } from 'path';
 import { LeaderboardService } from '../src/leaderboard/leaderboard.service';
 import { startLeaderboardRebuildWorker } from '../src/leaderboard/rebuild.worker';
 
-// Allow local bullmq stub in this directory
-process.env.NODE_PATH = __dirname;
+// Use test helper bullmq stub
+process.env.NODE_PATH = join(__dirname, '../test/utils');
 require('module').Module._initPaths();
 
 const DAY_MS = 24 * 60 * 60 * 1000;
