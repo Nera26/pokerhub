@@ -7,20 +7,6 @@ import { IS_E2E } from '@/lib/env';
 
 const PRECACHE_URLS = ['/', '/offline', '/favicon.ico'];
 
-export async function queueMutation(url: string, init: RequestInit) {
-  if (navigator.onLine) {
-    return fetch(url, init);
-  }
-
-  const registration = await navigator.serviceWorker.ready;
-  registration.active?.postMessage({
-    type: 'QUEUE_MUTATION',
-    payload: { url, init },
-  });
-
-  return undefined;
-}
-
 export default function ServiceWorker() {
   const t = useTranslations('serviceWorker');
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(
