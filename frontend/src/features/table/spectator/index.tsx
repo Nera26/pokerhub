@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { GameState } from '@shared/types';
+import { readPlayers, readCommunityCards } from '@shared/state';
 import Board from '@/app/table/[id]/Board';
 import Seats from '@/app/table/[id]/Seats';
 import { subscribeToTable, disconnectSpectatorSocket } from '@/lib/spectator-socket';
@@ -21,8 +22,8 @@ export default function SpectatorTable({ tableId }: SpectatorProps) {
     };
   }, [tableId]);
 
-  const players = ((state as any)?.players ?? []) as any[];
-  const communityCards = ((state as any)?.communityCards ?? []) as string[];
+  const players = readPlayers(state);
+  const communityCards = readCommunityCards(state);
 
   return (
     <div className="p-4 space-y-4">
