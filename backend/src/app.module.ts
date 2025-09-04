@@ -9,6 +9,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { Request, Response, NextFunction } from 'express';
+import { APP_FILTER } from '@nestjs/core';
 
 import {
   databaseConfig,
@@ -30,6 +31,7 @@ import { validationSchema } from './config/env.validation';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { API_CONTRACT_VERSION } from '@shared/constants';
+import { ZodExceptionFilter } from './common/zod-exception.filter';
 
 // Infra / features
 import { MessagingModule } from './messaging/messaging.module';
@@ -147,6 +149,10 @@ class SecurityHeadersMiddleware implements NestMiddleware {
     {
       provide: 'API_CONTRACT_VERSION',
       useValue: API_CONTRACT_VERSION,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: ZodExceptionFilter,
     },
   ],
 })

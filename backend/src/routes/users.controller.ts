@@ -5,7 +5,6 @@ import {
   Get,
   Param,
   Body,
-  BadRequestException,
   ParseUUIDPipe,
   HttpCode,
   UseGuards,
@@ -13,7 +12,6 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ZodError } from 'zod';
 import {
   CreateUserSchema,
   type CreateUserRequest,
@@ -47,16 +45,9 @@ export class UsersController {
   @ApiOperation({ summary: 'Create a new user' })
   @ApiResponse({ status: 201, description: 'User created' })
   async create(@Body() body: CreateUserRequest): Promise<User> {
-    try {
-      const parsed = CreateUserSchema.parse(body);
-      const created = await this.users.create(parsed);
-      return this.parseUser(created);
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
-    }
+    const parsed = CreateUserSchema.parse(body);
+    const created = await this.users.create(parsed);
+    return this.parseUser(created);
   }
 
   @Get(':id')
@@ -66,18 +57,11 @@ export class UsersController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Req() req: Request,
   ): Promise<User> {
-    try {
-      if (req.userId !== id) {
-        throw new ForbiddenException();
-      }
-      const user = await this.users.findById(id);
-      return this.parseUser(user);
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
+    if (req.userId !== id) {
+      throw new ForbiddenException();
     }
+    const user = await this.users.findById(id);
+    return this.parseUser(user);
   }
 
   @Put(':id')
@@ -88,19 +72,12 @@ export class UsersController {
     @Body() body: UpdateUserRequest,
     @Req() req: Request,
   ): Promise<User> {
-    try {
-      if (req.userId !== id) {
-        throw new ForbiddenException();
-      }
-      const parsed = UpdateUserSchema.parse(body);
-      const updated = await this.users.update(id, parsed);
-      return this.parseUser(updated);
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
+    if (req.userId !== id) {
+      throw new ForbiddenException();
     }
+    const parsed = UpdateUserSchema.parse(body);
+    const updated = await this.users.update(id, parsed);
+    return this.parseUser(updated);
   }
 
   @Post(':id/ban')
@@ -112,16 +89,9 @@ export class UsersController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: BanUserRequest,
   ): Promise<User> {
-    try {
-      BanUserSchema.parse(body ?? {});
-      const banned = await this.users.ban(id);
-      return this.parseUser(banned);
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
-    }
+    BanUserSchema.parse(body ?? {});
+    const banned = await this.users.ban(id);
+    return this.parseUser(banned);
   }
 
 }
