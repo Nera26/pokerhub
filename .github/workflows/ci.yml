@@ -26,6 +26,7 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
+      - run: npx eslint .
       - run: npm test
       - run: npm test --prefix backend
       - run: npm test --prefix frontend
