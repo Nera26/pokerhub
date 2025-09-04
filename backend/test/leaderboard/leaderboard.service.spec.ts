@@ -4,6 +4,7 @@ import { promises as fs } from 'fs';
 import { join } from 'path';
 import { ConfigService } from '@nestjs/config';
 import { writeSyntheticEvents } from './synthetic-events';
+import { LeaderboardResponseSchema } from '@shared/types';
 
 class MockCache {
   store = new Map<string, any>();
@@ -120,6 +121,7 @@ describe('LeaderboardService', () => {
     await service.rebuild({ days: 30, minSessions: 1 });
     await cache.del('leaderboard:hot');
     const top = await service.getTopPlayers();
+    LeaderboardResponseSchema.parse(top);
     expect(top).toEqual([
       {
         playerId: 'alice',

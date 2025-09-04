@@ -10,6 +10,7 @@ import { User } from '../database/entities/user.entity';
 import { Leaderboard } from '../database/entities/leaderboard.entity';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { updateRating } from './rating';
+import type { LeaderboardEntry } from '@shared/types';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -144,34 +145,8 @@ export class LeaderboardService implements OnModuleInit {
     ]);
   }
 
-  async getTopPlayers(): Promise<
-    {
-      playerId: string;
-      rank: number;
-      points: number;
-      rd: number;
-      volatility: number;
-      net: number;
-      bb100: number;
-      hours: number;
-      roi: number;
-      finishes: Record<number, number>;
-    }[]
-  > {
-    const cached = await this.cache.get<
-      {
-        playerId: string;
-        rank: number;
-        points: number;
-        rd: number;
-        volatility: number;
-        net: number;
-        bb100: number;
-        hours: number;
-        roi: number;
-        finishes: Record<number, number>;
-      }[]
-    >(this.cacheKey);
+  async getTopPlayers(): Promise<LeaderboardEntry[]> {
+    const cached = await this.cache.get<LeaderboardEntry[]>(this.cacheKey);
     if (cached) {
       return cached;
     }
@@ -393,32 +368,8 @@ export class LeaderboardService implements OnModuleInit {
     await this.persist();
   }
 
-  private async fetchTopPlayers(): Promise<
-    {
-      playerId: string;
-      rank: number;
-      points: number;
-      rd: number;
-      volatility: number;
-      net: number;
-      bb100: number;
-      hours: number;
-      roi: number;
-      finishes: Record<number, number>;
-    }[]
-  > {
-    const cached = await this.cache.get<
-      {
-        playerId: string;
-        rank: number;
-        points: number;
-        net: number;
-        bb100: number;
-        hours: number;
-        roi: number;
-        finishes: Record<number, number>;
-      }[]
-    >(this.dataKey);
+  private async fetchTopPlayers(): Promise<LeaderboardEntry[]> {
+    const cached = await this.cache.get<LeaderboardEntry[]>(this.dataKey);
     if (cached) {
       return cached;
     }
@@ -433,7 +384,7 @@ export class LeaderboardService implements OnModuleInit {
       select: ['id'],
     });
     const allowed = new Set(existing.map((u) => u.id));
-    const top = rows
+    const top: LeaderboardEntry[] = rows
       .filter((r) => allowed.has(r.playerId))
       .map((r) => ({
         playerId: r.playerId,
