@@ -6,7 +6,7 @@ import {
   HANDS_PER_LEVEL,
   MS_PER_MINUTE_SCALED,
   simulateTournament,
-} from '../../backend/src/tournament/simulator.ts';
+} from './utils/simulator.ts';
 
 interface Level {
   level: number;
