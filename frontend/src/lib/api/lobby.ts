@@ -2,7 +2,7 @@ import { z, type ZodType } from 'zod';
 import { getBaseUrl } from '@/lib/base-url';
 import { handleResponse, ApiError } from './client';
 import { serverFetch } from '@/lib/server-fetch';
-import type { components } from '@/types/api';
+import type { components } from '@contracts/api';
 import {
   TableSchema,
   TournamentSchema,

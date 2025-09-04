@@ -12,6 +12,7 @@
     "lint": "eslint .",
     "pretypecheck": "npm run contracts:generate --prefix ..",
     "typecheck": "tsc --noEmit",
+    "pretest": "npm run contracts:generate --prefix ..",
     "pretest:e2e": "cross-env PLAYWRIGHT_DOWNLOAD_HOST=https://playwright.azureedge.net playwright install --with-deps",
     "pretest:a11y": "cross-env PLAYWRIGHT_DOWNLOAD_HOST=https://playwright.azureedge.net playwright install --with-deps",
     "test": "cross-env NEXT_PUBLIC_E2E=0 jest --coverage",

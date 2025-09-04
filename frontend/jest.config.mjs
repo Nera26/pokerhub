@@ -11,6 +11,7 @@ const customJestConfig = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@shared/(.*)$': '<rootDir>/../shared/$1',
+    '^@contracts/(.*)$': '<rootDir>/../contracts/types/$1',
   },
   modulePaths: ['<rootDir>/node_modules'],
   testPathIgnorePatterns: ['<rootDir>/e2e/', '<rootDir>/deprecated/'],
