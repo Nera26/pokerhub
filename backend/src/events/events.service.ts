@@ -4,32 +4,34 @@ import { metrics } from '@opentelemetry/api';
 import { Kafka, Producer } from 'kafkajs';
 import { EventName, EventSchemas, Events } from '@shared/events';
 
+type FailedEvent = {
+  [K in EventName]: { name: K; payload: Events[K] };
+}[EventName];
+
 @Injectable()
 export class EventPublisher implements OnModuleDestroy {
   private readonly producer: Producer;
   private readonly logger = new Logger(EventPublisher.name);
 
   private static readonly meter = metrics.getMeter('events');
-  private static readonly publishFailures =
-    EventPublisher.meter.createCounter('event_publish_failures_total', {
+  private static readonly publishFailures = EventPublisher.meter.createCounter(
+    'event_publish_failures_total',
+    {
       description: 'Number of events that failed to publish after retries',
-    });
+    },
+  );
 
   private failures = 0;
   private circuitOpenUntil = 0;
-  private readonly failedEvents: {
-    name: EventName;
-    payload: Events[EventName];
-  }[] = [];
+  private readonly failedEvents: FailedEvent[] = [];
 
   constructor(config: ConfigService, producer?: Producer) {
     if (producer) {
       this.producer = producer;
     } else {
-      const brokers =
-        config.get<string>('analytics.kafkaBrokers')?.split(',') ?? [
-          'localhost:9092',
-        ];
+      const brokers = config
+        .get<string>('analytics.kafkaBrokers')
+        ?.split(',') ?? ['localhost:9092'];
       const kafka = new Kafka({ brokers });
       this.producer = kafka.producer();
       void this.producer.connect();
@@ -73,17 +75,19 @@ export class EventPublisher implements OnModuleDestroy {
       lastError instanceof Error ? lastError.message : String(lastError);
     this.logger.error(`Failed to publish ${name}: ${message}`);
     this.failedEvents.push({ name, payload: data });
-    throw new Error(`Failed to publish event ${name} after ${retries} attempts: ${message}`);
+    throw new Error(
+      `Failed to publish event ${name} after ${retries} attempts: ${message}`,
+    );
   }
 
-  getFailedEvents() {
+  getFailedEvents(): FailedEvent[] {
     return this.failedEvents;
   }
 
   async replayFailed(): Promise<void> {
     for (const evt of [...this.failedEvents]) {
       try {
-        await this.emit(evt.name, evt.payload as any);
+        await this.emit(evt.name, evt.payload);
         const index = this.failedEvents.indexOf(evt);
         if (index >= 0) this.failedEvents.splice(index, 1);
       } catch {
