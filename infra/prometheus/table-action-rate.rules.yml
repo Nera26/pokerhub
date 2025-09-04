@@ -1,7 +1,0 @@
-# Recording rule for per-table action throughput
----
-groups:
-  - name: table-action-rate
-    rules:
-      - record: table_actions_per_minute
-        expr: rate(actions_per_table_total[1m]) * 60
