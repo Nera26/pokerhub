@@ -1,11 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import LeaderboardPage from '@/features/leaderboard';
+import LeaderboardBase from '@/components/leaderboard/LeaderboardBase';
 import { fetchLeaderboard } from '@/lib/api/leaderboard';
 
 jest.mock('@/lib/api/leaderboard');
 
-describe('LeaderboardPage', () => {
+describe('LeaderboardBase', () => {
   it('renders data from server', async () => {
     (fetchLeaderboard as jest.Mock).mockResolvedValue([
       {
@@ -28,11 +28,10 @@ describe('LeaderboardPage', () => {
 
     render(
       <QueryClientProvider client={client}>
-        <LeaderboardPage />
+        <LeaderboardBase />
       </QueryClientProvider>,
     );
 
     expect(await screen.findByText('alice')).toBeInTheDocument();
   });
 });
-

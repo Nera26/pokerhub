@@ -4,10 +4,8 @@ import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons/faArrowsRotate';
 import LeaderboardTabs, { TimeFilter } from '@/app/components/leaderboard/LeaderboardTabs';
-import LeaderboardTable from '@/app/components/leaderboard/LeaderboardTable';
 import ToastNotification, { ToastType } from '@/app/components/ui/ToastNotification';
-import { useQuery } from '@tanstack/react-query';
-import { fetchLeaderboard } from '@/lib/api/leaderboard';
+import LeaderboardBase from '@/components/leaderboard/LeaderboardBase';
 import type { LeaderboardEntry } from '@shared/types';
 
 type ModeFilter = 'cash' | 'tournament';
@@ -18,11 +16,6 @@ export default function LeaderboardPage() {
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<ToastType>('success');
-
-  const { data } = useQuery({
-    queryKey: ['leaderboard'],
-    queryFn: ({ signal }) => fetchLeaderboard({ signal }),
-  });
 
   const handleRowClick = (player: LeaderboardEntry) => {
     setToastMessage(`👋 You clicked on ${player.playerId}`);
@@ -92,7 +85,7 @@ export default function LeaderboardPage() {
 
         {/* Leaderboard Table */}
         <section className="bg-card-bg rounded-2xl p-6 overflow-x-auto">
-          <LeaderboardTable data={data ?? []} onPlayerClick={handleRowClick} />
+          <LeaderboardBase onPlayerClick={handleRowClick} />
         </section>
       </div>
 
