@@ -196,41 +196,6 @@
 
 /* 5) Components */
 @layer components {
-  /* ---- Buttons (alert style) ---- */
-  .btn-alert-red {
-    color: #fff;
-    padding: 4px 10px;
-    border-radius: var(--radius-xl);
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    background: rgba(255, 255, 255, 0.06);
-    font-weight: 600;
-    font-size: 12px;
-    transition:
-      background 0.2s,
-      box-shadow 0.2s;
-  }
-  .btn-alert-red:hover {
-    background: rgba(255, 255, 255, 0.12);
-    box-shadow: 0 0 15px 5px rgba(255, 77, 79, 0.25);
-  }
-
-  .btn-alert-yellow {
-    color: #000;
-    padding: 4px 10px;
-    border-radius: var(--radius-xl);
-    border: 1px solid rgba(0, 0, 0, 0.25);
-    background: rgba(0, 0, 0, 0.06);
-    font-weight: 600;
-    font-size: 12px;
-    transition:
-      background 0.2s,
-      box-shadow 0.2s;
-  }
-  .btn-alert-yellow:hover {
-    background: rgba(0, 0, 0, 0.12);
-    box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.25);
-  }
-
   .alert-row {
     padding: 1rem;
     border-radius: var(--radius-xl);
