@@ -11,12 +11,12 @@ import { ParquetSchema, ParquetWriter } from 'parquetjs-lite';
 import { PassThrough } from 'stream';
 import path from 'path';
 import { promises as fs } from 'fs';
-import {
-  analyzeCollusion,
+import { analyzeCollusion } from '../../../analytics/anti-collusion';
+import type {
   Session as CollusionSession,
   Transfer as CollusionTransfer,
   BetEvent as CollusionBetEvent,
-} from '../../../analytics/anti-collusion';
+} from '@shared/analytics';
 
 const HandStartSchema = new ParquetSchema({
   handId: { type: 'UTF8' },

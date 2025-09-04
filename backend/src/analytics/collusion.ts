@@ -2,16 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { detectChipDump } from './collusion.model';
 import { AnalyticsService } from './analytics.service';
 import { CollusionService } from './collusion.service';
+import type { Transfer } from '@shared/analytics';
 
 export interface PlayerSession {
   userId: string;
   ips: string[];
-}
-
-export interface Transfer {
-  from: string;
-  to: string;
-  amount: number;
 }
 
 interface GameEvent {
