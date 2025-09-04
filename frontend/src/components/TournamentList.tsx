@@ -7,7 +7,7 @@ import useVirtualizedList from '@/hooks/useVirtualizedList';
 export interface TournamentListProps<T extends Tournament> {
   tournaments: T[];
   hidden: boolean;
-  renderActions: (t: T) => ReactNode;
+  renderActions?: (t: T) => ReactNode;
   renderExtras?: (t: T) => ReactNode;
 }
 
@@ -83,7 +83,7 @@ export default function TournamentList<T extends Tournament>({
                       <p className="text-text-secondary text-sm">
                         {t.players.current}/{t.players.max} players
                       </p>
-                      {renderActions(t)}
+                      {renderActions?.(t)}
                     </div>
                   </li>
                 );
@@ -113,7 +113,7 @@ export default function TournamentList<T extends Tournament>({
                     <p className="text-text-secondary text-sm">
                       {t.players.current}/{t.players.max} players
                     </p>
-                    {renderActions(t)}
+                    {renderActions?.(t)}
                   </div>
                 </li>
               ))}

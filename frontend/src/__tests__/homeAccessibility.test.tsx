@@ -4,7 +4,7 @@ import LiveTableCard, {
   type LiveTableCardProps,
 } from '@/app/components/home/LiveTableCard';
 import CashGameList from '@/app/components/home/CashGameList';
-import TournamentList from '@/app/components/home/TournamentList';
+import TournamentList from '@/components/TournamentList';
 import useVirtualizedList from '@/hooks/useVirtualizedList';
 import type { Table, Tournament } from '@/hooks/useLobbyData';
 import { GameType } from '@/types/game-type';

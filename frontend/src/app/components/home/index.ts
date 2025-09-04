@@ -2,6 +2,5 @@ export { default as TopCTAs } from './TopCTAs';
 export { default as GameTabs } from './GameTabs';
 export type { GameType } from '@/types/game-type';
 export { default as CashGameList } from './CashGameList';
-export { default as TournamentList } from './TournamentList';
 export { default as HomeLoadingSkeleton } from './HomeLoadingSkeleton';
 export { default as LiveTableCard } from './LiveTableCard';
