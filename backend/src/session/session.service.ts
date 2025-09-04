@@ -96,4 +96,24 @@ export class SessionService {
       },
     );
   }
+
+  async revokeAll(userId: string): Promise<void> {
+    return SessionService.tracer.startActiveSpan(
+      'session.revokeAll',
+      async (span) => {
+        span.setAttribute('user.id', userId);
+        const keys = await this.redis.keys(`${this.refreshPrefix}*`);
+        let revoked = 0;
+        for (const key of keys) {
+          const value = await this.redis.get(key);
+          if (value === userId) {
+            await this.redis.del(key);
+            revoked++;
+          }
+        }
+        SessionService.tokensRevoked.add(revoked);
+        span.end();
+      },
+    );
+  }
 }

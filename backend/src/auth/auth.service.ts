@@ -143,6 +143,7 @@ export class AuthService {
     if (!user) return false;
     user.password = await bcrypt.hash(password, 10);
     await this.users.save(user);
+    await this.sessions.revokeAll(user.id);
     await this.redis.del(`${this.resetPrefix}${email}`);
     return true;
   }
