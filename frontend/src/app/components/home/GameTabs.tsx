@@ -1,6 +1,4 @@
 'use client';
-
-import React from 'react';
 import { GameType } from '@/types/game-type';
 
 interface GameTabsProps {
