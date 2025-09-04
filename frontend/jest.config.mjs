@@ -13,7 +13,7 @@ const customJestConfig = {
     '^@shared/(.*)$': '<rootDir>/../shared/$1',
   },
   modulePaths: ['<rootDir>/node_modules'],
-  testPathIgnorePatterns: ['<rootDir>/e2e/'],
+  testPathIgnorePatterns: ['<rootDir>/e2e/', '<rootDir>/deprecated/'],
   transformIgnorePatterns: ['node_modules/(?!(next-intl|intl-messageformat)/)'],
   collectCoverage: true,
   collectCoverageFrom: [
