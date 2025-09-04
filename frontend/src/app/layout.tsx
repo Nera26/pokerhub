@@ -10,7 +10,8 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from '@vercel/analytics/next';
 import NextTopLoader from 'nextjs-toploader';
 import ReactQueryProvider from './ReactQueryProvider';
-import { GlobalErrorBoundary } from './error';
+import ErrorBoundary from './components/ui/ErrorBoundary';
+import ErrorFallback from './components/ui/ErrorFallback';
 import { ApiErrorProvider } from '@/hooks/useApiError';
 import ServiceWorker from './ServiceWorker';
 import LanguageSelector from './components/common/LanguageSelector';
@@ -76,7 +77,13 @@ export default async function RootLayout({
           />
           <ReactQueryProvider>
             <ApiErrorProvider>
-              <GlobalErrorBoundary>{children}</GlobalErrorBoundary>
+              <ErrorBoundary
+                fallback={
+                  <ErrorFallback onRetry={() => window.location.reload()} />
+                }
+              >
+                {children}
+              </ErrorBoundary>
               <ContractMismatchNotice />
             </ApiErrorProvider>
           </ReactQueryProvider>

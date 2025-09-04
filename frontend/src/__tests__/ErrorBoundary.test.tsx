@@ -1,17 +1,18 @@
 import { render, screen } from '@testing-library/react';
-import { GlobalErrorBoundary } from '../app/error';
+import ErrorBoundary from '../app/components/ui/ErrorBoundary';
+import ErrorFallback from '../app/components/ui/ErrorFallback';
 import type { JSX } from 'react';
 
 function Bomb(): JSX.Element {
   throw new Error('boom');
 }
 
-describe('GlobalErrorBoundary', () => {
+describe('ErrorBoundary', () => {
   it('renders fallback when child throws', () => {
     render(
-      <GlobalErrorBoundary>
+      <ErrorBoundary fallback={<ErrorFallback onRetry={() => {}} />}>
         <Bomb />
-      </GlobalErrorBoundary>,
+      </ErrorBoundary>,
     );
     expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
     expect(
