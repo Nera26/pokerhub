@@ -14,7 +14,7 @@ export class AuthRateLimitMiddleware implements NestMiddleware {
     const window = this.config.get<number>('rateLimit.window', 60);
     const max = this.config.get<number>('rateLimit.max', 5);
     const deviceId = (req.headers['x-device-id'] as string) ?? 'unknown';
-    const ip = req.ip ?? (req.connection as any).remoteAddress ?? 'unknown';
+    const ip = req.ip ?? req.socket.remoteAddress ?? 'unknown';
     const key = `rl:${req.path}:${ip}:${deviceId}`;
 
     const count = await this.redis.incr(key);
