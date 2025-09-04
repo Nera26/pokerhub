@@ -12,6 +12,7 @@ export async function startPayoutWorker(wallet: WalletService) {
         host: process.env.REDIS_HOST ?? 'localhost',
         port: Number(process.env.REDIS_PORT ?? 6379),
       },
+      removeOnComplete: { count: 1000 },
     },
   );
 }

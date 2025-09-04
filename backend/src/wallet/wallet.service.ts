@@ -99,7 +99,11 @@ export class WalletService {
 
   protected async enqueueDisbursement(id: string, currency: string): Promise<void> {
     const queue = await this.getQueue();
-    await queue.add('payout', { id, currency });
+    await queue.add(
+      'payout',
+      { id, currency },
+      { removeOnComplete: true, removeOnFail: true },
+    );
   }
 
   private challengeKey(id: string) {
@@ -887,9 +891,14 @@ async initiateBankTransfer(
   ip: string,
   currency: string,
   idempotencyKey?: string,
-): Promise<{ reference: string; bank: { bankName: string; accountNumber: string; routingCode: string } }> {
+): Promise<{
+  reference: string;
+  bank: { bankName: string; accountNumber: string; routingCode: string };
+}> {
   let redisKey: string | undefined;
+
   try {
+    // Idempotency: return cached response or acquire a short lock
     if (idempotencyKey) {
       redisKey = `wallet:idemp:${idempotencyKey}`;
       const existing = await this.redis.get(redisKey);
@@ -905,13 +914,17 @@ async initiateBankTransfer(
         throw new Error('Duplicate request in progress');
       }
     }
+
     await this.checkVelocity('deposit', deviceId, ip);
     await this.enforceVelocity('deposit', accountId, amount);
     await this.accounts.findOneByOrFail({ id: accountId, currency });
+
     if (!(await this.kyc.isVerified(accountId, ip))) {
       throw new Error('KYC required');
     }
+
     await this.enforceDailyLimit('deposit', accountId, amount, currency);
+
     const deposit = await this.pendingDeposits.save({
       id: randomUUID(),
       userId: accountId,
@@ -922,29 +935,44 @@ async initiateBankTransfer(
       actionRequired: false,
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     });
+
+    // Enqueue follow-up check with cleanup options
     const queue = await this.getPendingQueue();
-    await queue.add('check', { id: deposit.id }, { delay: 10_000, jobId: deposit.id });
+    await queue.add(
+      'check',
+      { id: deposit.id },
+      {
+        delay: 10_000,
+        jobId: deposit.id,
+        removeOnComplete: true,
+        removeOnFail: true,
+      },
+    );
+
     const bankName = process.env.BANK_NAME;
     const accountNumber = process.env.BANK_ACCOUNT_NUMBER;
     const routingCode = process.env.BANK_ROUTING_CODE;
     if (!bankName || !accountNumber || !routingCode) {
       throw new Error('Bank transfer configuration missing');
     }
+
     const res = {
       reference: deposit.reference,
       bank: { bankName, accountNumber, routingCode },
     };
+
     if (redisKey) {
       await this.redis.set(redisKey, JSON.stringify(res), 'EX', 600);
     }
     return res;
   } catch (err) {
-    if (idempotencyKey) {
-      await this.redis.del(`wallet:idemp:${idempotencyKey}`);
+    if (redisKey) {
+      await this.redis.del(redisKey);
     }
     throw err;
   }
 }
+
 
 async cancelPendingDeposit(
   userId: string,
