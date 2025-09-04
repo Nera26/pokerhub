@@ -9,6 +9,10 @@
 - [Reconciliation Guide](docs/handbook/reconciliation-guide.md) – ledger verification and dispute workflow.
 - [Documentation Index](docs/index.md)
 
+## Deprecated Artifacts
+
+Historical files removed from active development are stored under [`deprecated/`](deprecated/). These artifacts are retained for long-term reference only.
+
 ## Development Environment
 
 The project provides a Docker setup for the full stack:
