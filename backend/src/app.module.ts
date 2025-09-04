@@ -2,12 +2,12 @@ import {
   MiddlewareConsumer,
   Module,
   NestModule,
-  NestMiddleware,
 } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { ThrottlerModule } from '@nestjs/throttler';
+import helmet from 'helmet';
 import { Request, Response, NextFunction } from 'express';
 import { APP_FILTER } from '@nestjs/core';
 
@@ -50,34 +50,7 @@ import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { UsersModule } from './users/users.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { MetricsModule } from './metrics/metrics.module';
-
-class SecurityHeadersMiddleware implements NestMiddleware {
-  use(req: Request, res: Response, next: NextFunction) {
-    res.setHeader('Content-Security-Policy', "default-src 'self'");
-    res.setHeader(
-      'Strict-Transport-Security',
-      'max-age=31536000; includeSubDomains',
-    );
-
-    const original = res.setHeader.bind(res);
-    res.setHeader = (name: string, value: any) => {
-      if (name.toLowerCase() === 'set-cookie') {
-        const cookies = Array.isArray(value) ? value : [value];
-        value = cookies.map((c: string) => {
-          const lower = c.toLowerCase();
-          let cookie = c;
-          if (!lower.includes('samesite')) cookie += '; SameSite=Strict';
-          if (!lower.includes('httponly')) cookie += '; HttpOnly';
-          if (!lower.includes('secure')) cookie += '; Secure';
-          return cookie;
-        });
-      }
-      original(name, value);
-    };
-
-    next();
-  }
-}
+import { cookieSecurity } from './common/cookie-security.middleware';
 
 @Module({
   imports: [
@@ -158,6 +131,21 @@ class SecurityHeadersMiddleware implements NestMiddleware {
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(SecurityHeadersMiddleware).forRoutes('*');
+    consumer
+      .apply(
+        helmet({
+          contentSecurityPolicy: {
+            directives: {
+              defaultSrc: ["'self'"],
+            },
+          },
+          hsts: {
+            maxAge: 31536000,
+            includeSubDomains: true,
+          },
+        }),
+        cookieSecurity,
+      )
+      .forRoutes('*');
   }
 }
