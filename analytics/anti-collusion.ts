@@ -1,21 +1,9 @@
-import { detectSharedIP, detectChipDumping, detectSynchronizedBetting } from "./anti_collusion/heuristics.js";
-
-export interface Session {
-  playerId: string;
-  ip: string;
-}
-
-export interface Transfer {
-  from: string;
-  to: string;
-  amount: number;
-}
-
-export interface BetEvent {
-  handId: string;
-  playerId: string;
-  timeMs: number;
-}
+import {
+  detectSharedIP,
+  detectChipDumping,
+  detectSynchronizedBetting,
+} from "./anti_collusion/heuristics.js";
+import type { Session, Transfer, BetEvent } from "../shared/analytics";
 
 export interface AntiCollusionReport {
   sharedIPs: ReturnType<typeof detectSharedIP>;
