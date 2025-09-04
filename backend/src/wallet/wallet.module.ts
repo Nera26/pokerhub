@@ -22,6 +22,7 @@ import { KycService } from './kyc.service';
 import { GeoIpService } from '../auth/geoip.service';
 import { PendingDeposit } from './pending-deposit.entity';
 import { AdminDepositsController } from '../routes/admin-deposits.controller';
+import { BankReconciliationController } from '../routes/bank-reconciliation.controller';
 import { BankReconciliationService } from './bank-reconciliation.service';
 
 @Injectable()
@@ -71,7 +72,12 @@ class PendingDepositWorker implements OnModuleInit {
     GeoIpService,
     BankReconciliationService,
   ],
-  controllers: [WalletController, WebhookController, AdminDepositsController],
+  controllers: [
+    WalletController,
+    WebhookController,
+    AdminDepositsController,
+    BankReconciliationController,
+  ],
   exports: [WalletService, KycService, SettlementService, BankReconciliationService],
 })
 export class WalletModule {}

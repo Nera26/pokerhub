@@ -39,6 +39,8 @@ export {
   PendingDepositSchema,
   PendingDepositsResponseSchema,
   DepositDecisionRequestSchema,
+  BankReconciliationEntrySchema,
+  BankReconciliationRequestSchema,
 } from '../backend/src/schemas/wallet';
 export type {
   BankTransferDepositRequest,
@@ -47,6 +49,8 @@ export type {
   PendingDeposit,
   PendingDepositsResponse,
   DepositDecisionRequest,
+  BankReconciliationEntry,
+  BankReconciliationRequest,
 } from '../backend/src/schemas/wallet';
 
 export const DashboardMetricsSchema = z.object({

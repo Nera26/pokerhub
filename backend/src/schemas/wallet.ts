@@ -157,3 +157,18 @@ export const DepositDecisionRequestSchema = z.object({
 export type DepositDecisionRequest = z.infer<
   typeof DepositDecisionRequestSchema
 >;
+
+export const BankReconciliationEntrySchema = z.object({
+  reference: z.string(),
+  amount: z.number().int().positive(),
+});
+export type BankReconciliationEntry = z.infer<
+  typeof BankReconciliationEntrySchema
+>;
+
+export const BankReconciliationRequestSchema = z.object({
+  entries: z.array(BankReconciliationEntrySchema),
+});
+export type BankReconciliationRequest = z.infer<
+  typeof BankReconciliationRequestSchema
+>;
