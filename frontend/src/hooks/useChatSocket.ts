@@ -5,14 +5,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Socket } from 'socket.io-client';
 import { getSocket, disconnectSocket } from '@/app/utils/socket';
 import type { Message } from '@/app/components/common/chat/types';
-import { IS_E2E } from '@/lib/env';
+import { env } from '@/lib/env';
 
 export type ChatStatus = 'connecting' | 'connected' | 'error';
 
 export default function useChatSocket() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [status, setStatus] = useState<ChatStatus>(
-    IS_E2E ? 'connected' : 'connecting',
+    env.IS_E2E ? 'connected' : 'connecting',
   );
   const [queryError, setQueryError] = useState<Error | null>(null);
   const queryClient = useQueryClient();
@@ -29,7 +29,7 @@ export default function useChatSocket() {
   }, []);
 
   useEffect(() => {
-    if (IS_E2E) return;
+    if (env.IS_E2E) return;
 
     const s = getSocket({
       onConnect: () => setStatus('connected'),

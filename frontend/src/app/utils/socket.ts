@@ -4,7 +4,7 @@
 // Utility for managing socket.io connections in the browser only
 import { io, type Socket, type Manager } from 'socket.io-client';
 import type { Packet } from 'socket.io-parser';
-import { env, IS_E2E } from '@/lib/env';
+import { env } from '@/lib/env';
 
 const SOCKET_URL = env.NEXT_PUBLIC_SOCKET_URL ?? 'http://localhost:4000';
 
@@ -48,7 +48,7 @@ interface SocketOptions {
 }
 
 export function getSocket(options: SocketOptions = {}): BrowserSocket {
-  if (IS_E2E) {
+  if (env.IS_E2E) {
     return {
       on: () => void 0,
       off: () => void 0,
