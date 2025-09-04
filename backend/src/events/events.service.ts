@@ -29,9 +29,19 @@ export class EventPublisher implements OnModuleDestroy {
     if (producer) {
       this.producer = producer;
     } else {
-      const brokers = config
-        .get<string>('analytics.kafkaBrokers')
-        ?.split(',') ?? ['localhost:9092'];
+      const brokersConfig = config.get<string>('analytics.kafkaBrokers');
+      let brokers =
+        brokersConfig && brokersConfig.trim().length > 0
+          ? brokersConfig.split(',').map((s) => s.trim()).filter(Boolean)
+          : undefined;
+
+      if (!brokers || brokers.length === 0) {
+        this.logger.warn(
+          'Missing analytics.kafkaBrokers configuration; defaulting to localhost:9092',
+        );
+        brokers = ['localhost:9092'];
+      }
+
       const kafka = new Kafka({ brokers });
       this.producer = kafka.producer();
       void this.producer.connect();
@@ -49,6 +59,7 @@ export class EventPublisher implements OnModuleDestroy {
     let lastError: unknown;
     const retries = 3;
     const backoff = 100;
+
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         await this.producer.send({
@@ -59,14 +70,15 @@ export class EventPublisher implements OnModuleDestroy {
         return;
       } catch (err) {
         lastError = err;
-        if (attempt === retries) break;
-        await new Promise((r) => setTimeout(r, backoff * 2 ** (attempt - 1)));
+        if (attempt < retries) {
+          await new Promise((r) => setTimeout(r, backoff * 2 ** (attempt - 1)));
+        }
       }
     }
 
     this.failures += 1;
     if (this.failures >= 5) {
-      this.circuitOpenUntil = Date.now() + 30_000;
+      this.circuitOpenUntil = Date.now() + 30_000; // 30s
       this.failures = 0;
     }
 
@@ -74,7 +86,7 @@ export class EventPublisher implements OnModuleDestroy {
     const message =
       lastError instanceof Error ? lastError.message : String(lastError);
     this.logger.error(`Failed to publish ${name}: ${message}`);
-    this.failedEvents.push({ name, payload: data });
+    this.failedEvents.push({ name, payload: data as any });
     throw new Error(
       `Failed to publish event ${name} after ${retries} attempts: ${message}`,
     );
@@ -87,7 +99,7 @@ export class EventPublisher implements OnModuleDestroy {
   async replayFailed(): Promise<void> {
     for (const evt of [...this.failedEvents]) {
       try {
-        await this.emit(evt.name, evt.payload);
+        await this.emit(evt.name, evt.payload as any);
         const index = this.failedEvents.indexOf(evt);
         if (index >= 0) this.failedEvents.splice(index, 1);
       } catch {
@@ -97,7 +109,8 @@ export class EventPublisher implements OnModuleDestroy {
     }
   }
 
-  async onModuleDestroy() {
+  async onModuleDestroy(): Promise<void> {
     await this.producer.disconnect();
   }
 }
+

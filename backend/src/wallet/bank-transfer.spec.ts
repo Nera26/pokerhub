@@ -15,7 +15,7 @@ describe('WalletService initiateBankTransfer checks', () => {
   let dataSource: DataSource;
   let service: WalletService;
   const events: EventPublisher = { emit: jest.fn() } as any;
-  const redisStore = new Map<string, number>();
+  const redisStore = new Map<string, any>();
   const redis: any = {
     incr: jest.fn(async (key: string) => {
       const val = (redisStore.get(key) ?? 0) + 1;
@@ -33,7 +33,16 @@ describe('WalletService initiateBankTransfer checks', () => {
       redisStore.set(key, val);
       return val;
     }),
-    set: jest.fn(),
+    set: jest.fn(async (key: string, value: string, mode?: string) => {
+      if (mode === 'NX' && redisStore.has(key)) return null;
+      redisStore.set(key, value);
+      return 'OK';
+    }),
+    get: jest.fn(async (key: string) => redisStore.get(key) ?? null),
+    del: jest.fn(async (key: string) => {
+      const existed = redisStore.delete(key);
+      return existed ? 1 : 0;
+    }),
   };
   const provider = {} as unknown as PaymentProviderService;
   const kyc: any = { isVerified: jest.fn() } as KycService;
@@ -141,5 +150,32 @@ describe('WalletService initiateBankTransfer checks', () => {
     await expect(
       service.initiateBankTransfer(userId, 10, 'dev', '1.1.1.1', 'USD'),
     ).rejects.toThrow('Bank transfer configuration missing');
+  });
+
+  it('returns same response for repeated idempotent requests', async () => {
+    kyc.isVerified.mockResolvedValue(true);
+    const repo = dataSource.getRepository(PendingDeposit);
+    const before = await repo.count();
+    const first = await service.initiateBankTransfer(
+      userId,
+      10,
+      'dev',
+      '1.1.1.1',
+      'USD',
+      'idem-key',
+    );
+    const mid = await repo.count();
+    const second = await service.initiateBankTransfer(
+      userId,
+      10,
+      'dev',
+      '1.1.1.1',
+      'USD',
+      'idem-key',
+    );
+    const after = await repo.count();
+    expect(second).toEqual(first);
+    expect(mid).toBe(before + 1);
+    expect(after).toBe(mid);
   });
 });
