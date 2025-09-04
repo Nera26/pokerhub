@@ -14,6 +14,13 @@ const { EventPublisher } = require('../../src/events/events.service');
 describe('EventPublisher', () => {
   const payload = { handId: randomUUID(), players: [randomUUID()] };
 
+  it('throws when kafka brokers config missing', () => {
+    const config: any = { get: () => undefined };
+    expect(() => new EventPublisher(config)).toThrow(
+      'Missing analytics.kafkaBrokers configuration',
+    );
+  });
+
   it('retries sending events before succeeding', async () => {
     const send = jest
       .fn()
