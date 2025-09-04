@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   HttpCode,
@@ -9,7 +8,6 @@ import {
   Req,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ZodError } from 'zod';
 import {
   LoginRequest,
   LoginRequestSchema,
@@ -45,19 +43,12 @@ export class AuthController {
     @Body() body: LoginRequest,
     @Req() req: Request,
   ): Promise<LoginResponse> {
-    try {
-      const ip = (req.headers['x-forwarded-for'] as string) || req.ip;
-      if (!this.geo.isAllowed(ip)) throw new ForbiddenException('Country not allowed');
-      const parsed = LoginRequestSchema.parse(body);
-      const tokens = await this.auth.login(parsed.email, parsed.password);
-      if (!tokens) throw new UnauthorizedException('Invalid credentials');
-      return { token: tokens.accessToken };
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
-    }
+    const ip = (req.headers['x-forwarded-for'] as string) || req.ip;
+    if (!this.geo.isAllowed(ip)) throw new ForbiddenException('Country not allowed');
+    const parsed = LoginRequestSchema.parse(body);
+    const tokens = await this.auth.login(parsed.email, parsed.password);
+    if (!tokens) throw new UnauthorizedException('Invalid credentials');
+    return { token: tokens.accessToken };
   }
 
   @Post('register')
@@ -65,16 +56,9 @@ export class AuthController {
   @ApiOperation({ summary: 'Register new user' })
   @ApiResponse({ status: 200, description: 'Registration successful' })
   async register(@Body() body: RegisterRequest): Promise<MessageResponse> {
-    try {
-      const parsed = RegisterRequestSchema.parse(body);
-      await this.auth.register(parsed.email, parsed.password);
-      return { message: 'registered' };
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
-    }
+    const parsed = RegisterRequestSchema.parse(body);
+    await this.auth.register(parsed.email, parsed.password);
+    return { message: 'registered' };
   }
 
   @Post('refresh')
@@ -82,17 +66,10 @@ export class AuthController {
   @ApiOperation({ summary: 'Refresh access token' })
   @ApiResponse({ status: 200, description: 'Returns refreshed access token' })
   async refresh(@Body() body: RefreshRequest): Promise<LoginResponse> {
-    try {
-      const parsed = RefreshRequestSchema.parse(body);
-      const tokens = await this.auth.refresh(parsed.refreshToken);
-      if (!tokens) throw new UnauthorizedException('Invalid token');
-      return { token: tokens.accessToken };
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
-    }
+    const parsed = RefreshRequestSchema.parse(body);
+    const tokens = await this.auth.refresh(parsed.refreshToken);
+    if (!tokens) throw new UnauthorizedException('Invalid token');
+    return { token: tokens.accessToken };
   }
 
   @Post('logout')
@@ -100,16 +77,9 @@ export class AuthController {
   @ApiOperation({ summary: 'Logout user' })
   @ApiResponse({ status: 200, description: 'Logged out' })
   async logout(@Body() body: RefreshRequest): Promise<MessageResponse> {
-    try {
-      const parsed = RefreshRequestSchema.parse(body);
-      await this.auth.logout(parsed.refreshToken);
-      return { message: 'logged out' };
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
-    }
+    const parsed = RefreshRequestSchema.parse(body);
+    await this.auth.logout(parsed.refreshToken);
+    return { message: 'logged out' };
   }
 
   @Post('request-reset')
@@ -120,17 +90,10 @@ export class AuthController {
     @Body() body: RequestResetRequest,
     @Req() req: Request,
   ): Promise<MessageResponse> {
-    try {
-      const parsed = RequestResetSchema.parse(body);
-      const ip = (req.headers['x-forwarded-for'] as string) || req.ip;
-      await this.auth.requestPasswordReset(parsed.email, ip);
-      return { message: 'reset requested' };
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
-    }
+    const parsed = RequestResetSchema.parse(body);
+    const ip = (req.headers['x-forwarded-for'] as string) || req.ip;
+    await this.auth.requestPasswordReset(parsed.email, ip);
+    return { message: 'reset requested' };
   }
 
   @Post('verify-reset-code')
@@ -140,17 +103,10 @@ export class AuthController {
   async verifyResetCode(
     @Body() body: VerifyResetCodeRequest,
   ): Promise<MessageResponse> {
-    try {
-      const parsed = VerifyResetCodeSchema.parse(body);
-      const ok = await this.auth.verifyResetCode(parsed.email, parsed.code);
-      if (!ok) throw new UnauthorizedException('Invalid code');
-      return { message: 'code verified' };
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
-    }
+    const parsed = VerifyResetCodeSchema.parse(body);
+    const ok = await this.auth.verifyResetCode(parsed.email, parsed.code);
+    if (!ok) throw new UnauthorizedException('Invalid code');
+    return { message: 'code verified' };
   }
 
   @Post('reset-password')
@@ -160,20 +116,13 @@ export class AuthController {
   async resetPassword(
     @Body() body: ResetPasswordRequest,
   ): Promise<MessageResponse> {
-    try {
-      const parsed = ResetPasswordSchema.parse(body);
-      const ok = await this.auth.resetPassword(
-        parsed.email,
-        parsed.code,
-        parsed.password,
-      );
-      if (!ok) throw new UnauthorizedException('Invalid code');
-      return { message: 'password reset' };
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
-    }
+    const parsed = ResetPasswordSchema.parse(body);
+    const ok = await this.auth.resetPassword(
+      parsed.email,
+      parsed.code,
+      parsed.password,
+    );
+    if (!ok) throw new UnauthorizedException('Invalid code');
+    return { message: 'password reset' };
   }
 }

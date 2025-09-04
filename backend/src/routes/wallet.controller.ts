@@ -8,10 +8,8 @@ import {
   Delete,
   UseGuards,
   ForbiddenException,
-  BadRequestException,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ZodError } from 'zod';
 import { RateLimitGuard } from './rate-limit.guard';
 import { AuthGuard } from '../auth/auth.guard';
 import { WalletService } from '../wallet/wallet.service';
@@ -59,16 +57,9 @@ export class WalletController {
     @Req() req: Request,
   ) {
     this.ensureOwner(req, id);
-    try {
-      const parsed = TxSchema.parse(body);
-      await this.wallet.reserve(id, parsed.amount, parsed.tx, parsed.currency);
-      return { message: 'reserved' };
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
-    }
+    const parsed = TxSchema.parse(body);
+    await this.wallet.reserve(id, parsed.amount, parsed.tx, parsed.currency);
+    return { message: 'reserved' };
   }
 
   @Post(':id/commit')
@@ -80,16 +71,9 @@ export class WalletController {
     @Req() req: Request,
   ) {
     this.ensureOwner(req, id);
-    try {
-      const parsed = TxSchema.parse(body);
-      await this.wallet.commit(parsed.tx, parsed.amount, parsed.rake ?? 0, parsed.currency);
-      return { message: 'committed' };
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
-    }
+    const parsed = TxSchema.parse(body);
+    await this.wallet.commit(parsed.tx, parsed.amount, parsed.rake ?? 0, parsed.currency);
+    return { message: 'committed' };
   }
 
   @Post(':id/rollback')
@@ -101,16 +85,9 @@ export class WalletController {
     @Req() req: Request,
   ) {
     this.ensureOwner(req, id);
-    try {
-      const parsed = TxSchema.parse(body);
-      await this.wallet.rollback(id, parsed.amount, parsed.tx, parsed.currency);
-      return { message: 'rolled back' };
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
-    }
+    const parsed = TxSchema.parse(body);
+    await this.wallet.rollback(id, parsed.amount, parsed.tx, parsed.currency);
+    return { message: 'rolled back' };
   }
 
   @Post(':id/withdraw')
@@ -175,22 +152,15 @@ export class WalletController {
     @Req() req: Request,
   ) {
     this.ensureOwner(req, id);
-    try {
-      const parsed = BankTransferDepositRequestSchema.parse(body);
-      const res = await this.wallet.initiateBankTransfer(
-        id,
-        parsed.amount,
-        parsed.deviceId,
-        parsed.ip ?? req.ip,
-        parsed.currency,
-      );
-      return BankTransferDepositResponseSchema.parse(res);
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
-    }
+    const parsed = BankTransferDepositRequestSchema.parse(body);
+    const res = await this.wallet.initiateBankTransfer(
+      id,
+      parsed.amount,
+      parsed.deviceId,
+      parsed.ip ?? req.ip,
+      parsed.currency,
+    );
+    return BankTransferDepositResponseSchema.parse(res);
   }
 
   @Delete(':id/deposit/:depositId')

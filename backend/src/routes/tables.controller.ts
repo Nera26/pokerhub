@@ -6,13 +6,11 @@ import {
   Delete,
   Param,
   Body,
-  BadRequestException,
   HttpCode,
   ParseUUIDPipe,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ZodError } from 'zod';
 import {
   TableSchema,
   TableListSchema,
@@ -62,16 +60,9 @@ export class TablesController {
   @ApiOperation({ summary: 'Create a table' })
   @ApiResponse({ status: 201, description: 'Table created' })
   async create(@Body() body: CreateTableRequest): Promise<Table> {
-    try {
-      const parsed = CreateTableSchema.parse(body);
-      const created = await this.tables.createTable(parsed);
-      return TableSchema.parse(created);
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
-    }
+    const parsed = CreateTableSchema.parse(body);
+    const created = await this.tables.createTable(parsed);
+    return TableSchema.parse(created);
   }
 
   @Put(':id')
@@ -82,16 +73,9 @@ export class TablesController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: UpdateTableRequest,
   ): Promise<Table> {
-    try {
-      const parsed = UpdateTableSchema.parse(body);
-      const updated = await this.tables.updateTable(id, parsed);
-      return TableSchema.parse(updated);
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
-    }
+    const parsed = UpdateTableSchema.parse(body);
+    const updated = await this.tables.updateTable(id, parsed);
+    return TableSchema.parse(updated);
   }
 
   @Delete(':id')
@@ -124,14 +108,7 @@ export class TablesController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: any,
   ): Promise<void> {
-    try {
-      const parsed = SendChatMessageRequestSchema.parse(body);
-      await this.chat.appendMessage(id, parsed.userId, parsed.text);
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors);
-      }
-      throw err;
-    }
+    const parsed = SendChatMessageRequestSchema.parse(body);
+    await this.chat.appendMessage(id, parsed.userId, parsed.text);
   }
 }
