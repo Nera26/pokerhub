@@ -14,7 +14,7 @@ const customJestConfig = {
     '^@contracts/(.*)$': '<rootDir>/../contracts/types/$1',
   },
   modulePaths: ['<rootDir>/node_modules'],
-  testPathIgnorePatterns: ['<rootDir>/e2e/', '<rootDir>/deprecated/'],
+  testPathIgnorePatterns: ['<rootDir>/e2e/'],
   transformIgnorePatterns: ['node_modules/(?!(next-intl|intl-messageformat)/)'],
   collectCoverage: true,
   collectCoverageFrom: [

@@ -33,7 +33,6 @@
     "**/*.stories.ts",
     "**/*.stories.tsx",
     "vitest.config.ts",
-    "vitest.shims.d.ts",
-    "src/deprecated"
+    "vitest.shims.d.ts"
   ]
 }
