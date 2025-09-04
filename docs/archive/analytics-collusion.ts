@@ -1,4 +1,15 @@
-import { chipDumpingScore, PlayerSession, Transfer } from '../collusion';
+import { chipDumpingScore } from '../collusion';
+
+interface PlayerSession {
+  userId: string;
+  ips: string[];
+}
+
+interface Transfer {
+  from: string;
+  to: string;
+  amount: number;
+}
 
 /**
  * @deprecated Legacy collusion heuristics retained for reference.
