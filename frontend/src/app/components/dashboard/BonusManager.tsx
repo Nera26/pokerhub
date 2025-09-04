@@ -569,7 +569,7 @@ export default function BonusManager() {
           <CardTitle>Edit Bonus</CardTitle>
           <button
             onClick={() => setEditOpen(false)}
-            className="text-text-secondary hover:text-primary"
+            className="text-text-secondary hover:text-text-primary"
             aria-label="Close"
           >
             <FontAwesomeIcon icon={faTimes} className="text-xl" />
@@ -698,7 +698,7 @@ export default function BonusManager() {
             </button>
             <button
               onClick={confirmPause}
-              className="flex-1 bg-danger-red hover:brightness-110 py-3 rounded-xl font-semibold text-primary transition-colors"
+              className="flex-1 bg-danger-red hover:brightness-110 py-3 rounded-xl font-semibold text-text-primary transition-colors"
             >
               Confirm Pause
             </button>
@@ -730,7 +730,7 @@ export default function BonusManager() {
             </button>
             <button
               onClick={confirmResume}
-              className="flex-1 bg-accent-green hover-glow-green py-3 rounded-xl font-semibold text-primary transition-colors"
+              className="flex-1 bg-accent-green hover-glow-green py-3 rounded-xl font-semibold text-text-primary transition-colors"
             >
               Confirm Resume
             </button>

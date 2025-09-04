@@ -90,7 +90,7 @@ export default function Sidebar({
                 aria-current={isActive ? 'page' : undefined}
                 className={`w-full flex items-center gap-3 rounded-xl px-3 py-2 text-left transition
                 ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-hover-bg'}
-                ${isActive ? 'bg-accent-yellow text-black font-semibold' : 'text-secondary hover:text-primary'}
+                ${isActive ? 'bg-accent-yellow text-black font-semibold' : 'text-text-secondary hover:text-text-primary'}
               `}
               >
                 <span
@@ -100,7 +100,7 @@ export default function Sidebar({
                 >
                   <FontAwesomeIcon
                     icon={it.icon}
-                    className={`${isActive ? 'text-black' : 'text-secondary'}`}
+                    className={`${isActive ? 'text-black' : 'text-text-secondary'}`}
                   />
                 </span>
                 <span className="font-medium">{it.label}</span>

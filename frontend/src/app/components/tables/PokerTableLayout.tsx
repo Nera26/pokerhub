@@ -106,7 +106,7 @@ export default function PokerTableLayout({
   const { main: mainPot, sidePots } = calculateSidePots(players, potNow);
 
   return (
-    <div className="bg-dark-bg text-text-primary min-h-screen">
+    <div className="bg-primary-bg text-text-primary min-h-screen">
       <TopBar
         tableId={tableId}
         smallBlind={smallBlind}
@@ -137,7 +137,7 @@ export default function PokerTableLayout({
                 ? 'bg-danger-red text-white border-danger-red'
                 : t.variant === 'success'
                   ? 'bg-accent-green text-white border-accent-green'
-                  : 'bg-card-bg/90 border-border-color')
+                  : 'bg-card-bg/90 border-border-dark')
             }
           >
             {t.message}

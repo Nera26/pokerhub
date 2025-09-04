@@ -63,7 +63,7 @@ export function ApiErrorProvider({ children }: { children: ReactNode }) {
                 ? 'bg-danger-red text-white border-danger-red'
                 : t.variant === 'success'
                   ? 'bg-accent-green text-white border-accent-green'
-                  : 'bg-card-bg/90 border-border-color')
+                  : 'bg-card-bg/90 border-border-dark')
             }
           >
             {t.message}

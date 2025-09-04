@@ -82,7 +82,7 @@ export default function SidePanel({
 
   return (
     <div
-      className={`fixed right-0 top-0 h-full w-full sm:w-80 bg-card-bg border-l border-border-color transform transition-transform duration-200 ease-out ${
+      className={`fixed right-0 top-0 h-full w-full sm:w-80 bg-card-bg border-l border-border-dark transform transition-transform duration-200 ease-out ${
         isOpen ? 'translate-x-0' : 'translate-x-full'
       }`}
     >
@@ -101,7 +101,7 @@ export default function SidePanel({
             className={`px-3 py-1 rounded-xl text-sm border ${
               tab === 'history'
                 ? 'border-accent-yellow text-accent-yellow'
-                : 'border-border-color text-text-secondary'
+                : 'border-border-dark text-text-secondary'
             }`}
             onClick={() => switchTab('history')}
             onKeyDown={onTabKey}
@@ -116,7 +116,7 @@ export default function SidePanel({
             className={`px-3 py-1 rounded-xl text-sm border ${
               tab === 'chat'
                 ? 'border-accent-yellow text-accent-yellow'
-                : 'border-border-color text-text-secondary'
+                : 'border-border-dark text-text-secondary'
             }`}
             onClick={() => switchTab('chat')}
             onKeyDown={onTabKey}
@@ -131,7 +131,7 @@ export default function SidePanel({
             className={`px-3 py-1 rounded-xl text-sm border ${
               tab === 'notes'
                 ? 'border-accent-yellow text-accent-yellow'
-                : 'border-border-color text-text-secondary'
+                : 'border-border-dark text-text-secondary'
             }`}
             onClick={() => switchTab('notes')}
             onKeyDown={onTabKey}
@@ -173,7 +173,7 @@ export default function SidePanel({
           id="chat-panel"
           role="tabpanel"
           aria-labelledby="chat-tab"
-          className="h-[calc(100%-210px)] p-4 border-t border-border-color flex flex-col"
+          className="h-[calc(100%-210px)] p-4 border-t border-border-dark flex flex-col"
         >
           <div className="flex-1 overflow-y-auto space-y-2 text-sm mb-4">
             {messages.map((msg) => (
@@ -225,7 +225,7 @@ export default function SidePanel({
       )}
 
       {/* Quick Actions */}
-      <div className="p-4 border-t border-border-color">
+      <div className="p-4 border-t border-border-dark">
         <h3 className="font-bold mb-3">Quick Actions</h3>
         <div className="space-y-2">
           <Button

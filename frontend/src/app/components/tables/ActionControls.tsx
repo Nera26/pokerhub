@@ -155,7 +155,7 @@ export function BetInput({
             max={maxTotal}
             value={sliderTotal}
             onChange={(e) => setTotal(Number(e.target.value))}
-            className="w-full h-2 bg-dark-bg rounded-lg appearance-none cursor-pointer"
+            className="w-full h-2 bg-primary-bg rounded-lg appearance-none cursor-pointer"
             list="bet-ticks"
             aria-label="Bet amount"
           />
@@ -168,7 +168,7 @@ export function BetInput({
           </Button>
 
           <input
-            className="w-24 sm:w-28 bg-dark-bg border border-border-dark rounded-xl px-2 py-1 text-right"
+            className="w-24 sm:w-28 bg-primary-bg border border-border-dark rounded-xl px-2 py-1 text-right"
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
             onBlur={onTypedBlur}

@@ -14,7 +14,7 @@ export interface InputProps
 }
 
 const baseStyles =
-  'bg-primary-bg text-text-primary border border-border-dark rounded-xl p-3 placeholder-text-secondary text-body-sm focus:outline-none focus-glow-yellow focus:border-accent-yellow';
+  'bg-primary-bg text-text-primary border border-border-dark rounded-xl p-3 placeholder-text-text-secondary text-body-sm focus:outline-none focus-glow-yellow focus:border-accent-yellow';
 
 export const Input: React.FC<InputProps> = ({
   fullWidth = true,

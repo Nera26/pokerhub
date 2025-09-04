@@ -425,23 +425,14 @@
   .bg-primary-bg {
     background-color: var(--color-primary-bg);
   }
-  .bg-dark-bg {
-    background-color: var(--color-primary-bg);
-  } /* alias */
   .bg-card-bg {
     background-color: var(--color-card-bg);
   }
   .bg-hover-bg {
     background-color: var(--color-hover-bg);
   }
-  .text-primary {
-    color: var(--color-text-primary);
-  }
   .text-text-primary {
     color: var(--color-text-primary);
-  }
-  .text-secondary {
-    color: var(--color-text-secondary);
   }
   .text-text-secondary {
     color: var(--color-text-secondary);
@@ -475,9 +466,6 @@
   .border-dark {
     border-color: var(--color-border-dark);
   }
-  .border-border-color {
-    border-color: var(--color-border-dark);
-  } /* alias */
 
   /* Radius */
   .rounded-xl {

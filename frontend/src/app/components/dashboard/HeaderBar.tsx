@@ -22,7 +22,7 @@ export default function HeaderBar() {
 
           {/* Avatar */}
           <div className="w-10 h-10 rounded-full bg-hover-bg border border-dark grid place-items-center">
-            <Icon name="userCircle" className="w-6 h-6 text-secondary" />
+            <Icon name="userCircle" className="w-6 h-6 text-text-secondary" />
           </div>
         </div>
       </div>

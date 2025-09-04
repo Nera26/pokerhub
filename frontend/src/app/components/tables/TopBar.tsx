@@ -36,7 +36,7 @@ export default function TopBar({
   onToggleSidePanel,
 }: TopBarProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-3 border-b border-border-color pt-[env(safe-area-inset-top)] sm:px-6 sm:py-4">
+    <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-3 border-b border-border-dark pt-[env(safe-area-inset-top)] sm:px-6 sm:py-4">
       <div className="flex flex-wrap items-center gap-4 md:gap-6">
         <button
           onClick={onGoBack}
