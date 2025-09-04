@@ -6,21 +6,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBell } from '@fortawesome/free-solid-svg-icons/faBell';
 import { faGift } from '@fortawesome/free-solid-svg-icons/faGift';
 import { faTrophy } from '@fortawesome/free-solid-svg-icons/faTrophy';
+import { timeAgo } from '@/lib/time';
 
 export interface NotificationItemProps {
   notification: Notification;
   onClick?: (id: string) => void;
-}
-
-// Helper to format elapsed time
-function timeAgo(date: Date): string {
-  const diff = Date.now() - date.getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
 }
 
 export default function NotificationItem({

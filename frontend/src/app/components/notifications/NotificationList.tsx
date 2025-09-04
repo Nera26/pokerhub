@@ -1,15 +1,12 @@
 'use client';
 
 import { useState, useRef, useMemo } from 'react';
-import Tooltip from '../ui/Tooltip';
 import Button from '../ui/Button';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faGift } from '@fortawesome/free-solid-svg-icons/faGift';
-import { faTrophy } from '@fortawesome/free-solid-svg-icons/faTrophy';
-import { faBell } from '@fortawesome/free-solid-svg-icons/faBell';
 import { faCheck } from '@fortawesome/free-solid-svg-icons/faCheck';
 import useRenderCount from '@/hooks/useRenderCount';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import NotificationItem from './NotificationItem';
 import {
   useNotifications,
   useMarkAllRead,
@@ -51,16 +48,6 @@ const filters: { label: string; value: NotificationType | 'all' }[] = [
   { label: 'Bonuses', value: 'bonus' },
   { label: 'System', value: 'system' },
 ];
-
-function timeAgo(date: Date) {
-  const diff = Date.now() - date.getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
 
 export default function NotificationList() {
   useRenderCount('NotificationList');
@@ -159,12 +146,6 @@ export default function NotificationList() {
                   key={n.id}
                   ref={virtualizer.measureElement}
                   data-index={virtualRow.index}
-                  className={`flex items-start gap-4 p-5 rounded-2xl transition-opacity duration-200 hover:opacity-90 ${
-                    n.read
-                      ? 'bg-card-bg'
-                      : 'bg-card-bg border-l-4 border-accent-yellow shadow-lg'
-                  }`}
-                  onClick={() => handleItemClick(n.id)}
                   style={{
                     position: 'absolute',
                     top: 0,
@@ -173,39 +154,10 @@ export default function NotificationList() {
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
                 >
-                  <div className="text-xl text-text-secondary">
-                    <FontAwesomeIcon
-                      icon={
-                        n.type === 'bonus'
-                          ? faGift
-                          : n.type === 'tournament'
-                            ? faTrophy
-                            : faBell
-                      }
-                      className={
-                        n.type === 'system'
-                          ? 'text-danger-red'
-                          : 'text-accent-yellow'
-                      }
-                    />
-                  </div>
-                  <div className="flex-grow">
-                    <div className="flex justify-between items-start mb-1">
-                      <h3
-                        className={`font-semibold ${
-                          n.read ? 'text-text-secondary' : 'text-text-primary'
-                        }`}
-                      >
-                        {n.title}
-                      </h3>
-                      <Tooltip text={n.timestamp.toLocaleString()}>
-                        <span className="text-text-secondary text-sm">
-                          {timeAgo(n.timestamp)}
-                        </span>
-                      </Tooltip>
-                    </div>
-                    <p className="text-text-secondary text-sm">{n.message}</p>
-                  </div>
+                  <NotificationItem
+                    notification={n}
+                    onClick={handleItemClick}
+                  />
                 </div>
               );
             })}
