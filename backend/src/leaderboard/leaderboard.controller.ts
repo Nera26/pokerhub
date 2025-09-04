@@ -10,6 +10,7 @@ import {
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { LeaderboardService } from './leaderboard.service';
 import { LeaderboardRebuildQuerySchema } from '../schemas/leaderboard';
+import type { LeaderboardEntry } from '@shared/types';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 
@@ -21,7 +22,7 @@ export class LeaderboardController {
   @Get()
   @ApiOperation({ summary: 'Get leaderboard' })
   @ApiResponse({ status: 200, description: 'Top players' })
-  getLeaderboard() {
+  getLeaderboard(): Promise<LeaderboardEntry[]> {
     return this.leaderboardService.getTopPlayers();
   }
 
