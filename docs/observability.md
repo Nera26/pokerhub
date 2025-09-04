@@ -32,7 +32,7 @@ The script spawns ~180 actions/min per table and exports the `ack_latency` metri
 
 ## Dashboards
 - Prometheus UI: <http://localhost:9090>
-- Grafana UI: <http://localhost:3000> (import `load/grafana-ack-latency.json`)
+ - Grafana UI: <http://localhost:3000> (import `infra/monitoring/grafana-action-ack-latency.json`)
 
 ### GC Pause & Heap Growth
 
@@ -60,7 +60,7 @@ SELECT * FROM stake_pot ORDER BY stake;
 SELECT * FROM stake_action_latency ORDER BY stake;
 ```
 
-Import `load/grafana-stake-metrics.json` into Grafana to visualize these
+Import `infra/monitoring/grafana-stake-metrics.json` into Grafana to visualize these
 aggregates and receive alerts when thresholds are crossed.
 
 ### Player Analytics
