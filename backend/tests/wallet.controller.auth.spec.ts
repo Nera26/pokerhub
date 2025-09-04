@@ -8,6 +8,7 @@ import { KycService } from '../src/wallet/kyc.service';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { SessionService } from '../src/session/session.service';
 import { RateLimitGuard } from '../src/routes/rate-limit.guard';
+import { SelfGuard } from '../src/auth/self.guard';
 
 describe('WalletController auth', () => {
   let app: INestApplication;
@@ -21,6 +22,7 @@ describe('WalletController auth', () => {
         { provide: KycService, useValue: {} },
         { provide: SessionService, useValue: { verifyAccessToken: () => 'user1' } },
         AuthGuard,
+        SelfGuard,
       ],
     })
       .overrideGuard(RateLimitGuard)

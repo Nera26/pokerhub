@@ -18,6 +18,7 @@ import { UsersController } from '../src/routes/users.controller';
 import { UserRepository } from '../src/users/user.repository';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
+import { SelfGuard } from '../src/auth/self.guard';
 import { User } from '../src/database/entities/user.entity';
 import { Table } from '../src/database/entities/table.entity';
 import { Seat } from '../src/database/entities/seat.entity';
@@ -96,6 +97,8 @@ describe('UsersController (e2e)', () => {
           return false;
         },
       })
+      .overrideGuard(SelfGuard)
+      .useClass(SelfGuard)
       .compile();
     service = moduleFixture.get(UsersService);
     await service.reset();

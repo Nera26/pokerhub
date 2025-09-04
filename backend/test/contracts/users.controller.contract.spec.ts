@@ -5,6 +5,7 @@ import { UsersController } from '../../src/routes/users.controller';
 import { UsersService } from '../../src/users/users.service';
 import { AuthGuard } from '../../src/auth/auth.guard';
 import { AdminGuard } from '../../src/auth/admin.guard';
+import { SelfGuard } from '../../src/auth/self.guard';
 import { CreateUserRequest, User, UserSchema } from '../../src/schemas/users';
 
 describe('Contract: UsersController', () => {
@@ -57,6 +58,8 @@ describe('Contract: UsersController', () => {
           return false;
         },
       })
+      .overrideGuard(SelfGuard)
+      .useClass(SelfGuard)
       .compile();
 
     app = moduleRef.createNestApplication();

@@ -5,6 +5,7 @@ import { UsersController } from '../src/routes/users.controller';
 import { UsersService } from '../src/users/users.service';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
+import { SelfGuard } from '../src/auth/self.guard';
 
 describe('UsersController ID validation', () => {
   let app: INestApplication;
@@ -48,6 +49,8 @@ describe('UsersController ID validation', () => {
           return false;
         },
       })
+      .overrideGuard(SelfGuard)
+      .useValue({ canActivate: () => true })
       .compile();
 
     app = moduleRef.createNestApplication();

@@ -6,6 +6,7 @@ import { WalletService } from '../src/wallet/wallet.service';
 import { KycService } from '../src/wallet/kyc.service';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { RateLimitGuard } from '../src/routes/rate-limit.guard';
+import { SelfGuard } from '../src/auth/self.guard';
 
 describe('WalletController validation', () => {
   let app: INestApplication;
@@ -17,6 +18,7 @@ describe('WalletController validation', () => {
       providers: [
         { provide: WalletService, useValue: wallet },
         { provide: KycService, useValue: {} },
+        SelfGuard,
       ],
     })
       .overrideGuard(AuthGuard)

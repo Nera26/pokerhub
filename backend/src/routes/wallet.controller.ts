@@ -7,11 +7,12 @@ import {
   Get,
   Delete,
   UseGuards,
-  ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { RateLimitGuard } from './rate-limit.guard';
 import { AuthGuard } from '../auth/auth.guard';
+import { SelfGuard } from '../auth/self.guard';
 import { WalletService } from '../wallet/wallet.service';
 import { KycService } from '../wallet/kyc.service';
 import type { Request } from 'express';
@@ -32,8 +33,9 @@ import {
   TxSchema,
   type TxRequest,
 } from '../schemas/wallet';
+import { ZodError } from 'zod';
 
-@UseGuards(AuthGuard, RateLimitGuard)
+@UseGuards(AuthGuard, RateLimitGuard, SelfGuard)
 @ApiTags('wallet')
 @Controller('wallet')
 export class WalletController {
@@ -42,38 +44,44 @@ export class WalletController {
     private readonly kyc: KycService,
   ) {}
 
-  private ensureOwner(req: Request, id: string) {
-    if (req.userId !== id) {
-      throw new ForbiddenException();
-    }
-  }
-
   @Post(':id/reserve')
   @ApiOperation({ summary: 'Reserve funds' })
   @ApiResponse({ status: 200, description: 'Funds reserved' })
   async reserve(
     @Param('id') id: string,
     @Body() body: TxRequest,
-    @Req() req: Request,
+    @Req() _req: Request,
   ) {
-    this.ensureOwner(req, id);
-    const parsed = TxSchema.parse(body);
-    await this.wallet.reserve(id, parsed.amount, parsed.tx, parsed.currency);
-    return { message: 'reserved' };
+    try {
+      const parsed = TxSchema.parse(body);
+      await this.wallet.reserve(id, parsed.amount, parsed.tx, parsed.currency);
+      return { message: 'reserved' };
+    } catch (err) {
+      if (err instanceof ZodError) {
+        throw new BadRequestException(err.errors);
+      }
+      throw err;
+    }
   }
 
   @Post(':id/commit')
   @ApiOperation({ summary: 'Commit reserved funds' })
   @ApiResponse({ status: 200, description: 'Funds committed' })
   async commit(
-    @Param('id') id: string,
+    @Param('id') _id: string,
     @Body() body: TxRequest,
-    @Req() req: Request,
+    @Req() _req: Request,
   ) {
-    this.ensureOwner(req, id);
-    const parsed = TxSchema.parse(body);
-    await this.wallet.commit(parsed.tx, parsed.amount, parsed.rake ?? 0, parsed.currency);
-    return { message: 'committed' };
+    try {
+      const parsed = TxSchema.parse(body);
+      await this.wallet.commit(parsed.tx, parsed.amount, parsed.rake ?? 0, parsed.currency);
+      return { message: 'committed' };
+    } catch (err) {
+      if (err instanceof ZodError) {
+        throw new BadRequestException(err.errors);
+      }
+      throw err;
+    }
   }
 
   @Post(':id/rollback')
@@ -82,12 +90,18 @@ export class WalletController {
   async rollback(
     @Param('id') id: string,
     @Body() body: TxRequest,
-    @Req() req: Request,
+    @Req() _req: Request,
   ) {
-    this.ensureOwner(req, id);
-    const parsed = TxSchema.parse(body);
-    await this.wallet.rollback(id, parsed.amount, parsed.tx, parsed.currency);
-    return { message: 'rolled back' };
+    try {
+      const parsed = TxSchema.parse(body);
+      await this.wallet.rollback(id, parsed.amount, parsed.tx, parsed.currency);
+      return { message: 'rolled back' };
+    } catch (err) {
+      if (err instanceof ZodError) {
+        throw new BadRequestException(err.errors);
+      }
+      throw err;
+    }
   }
 
   @Post(':id/withdraw')
@@ -98,21 +112,27 @@ export class WalletController {
     @Body() body: WithdrawRequest,
     @Req() req: Request,
   ) {
-    this.ensureOwner(req, id);
-    const parsed = WithdrawSchema.parse(body);
-    const idempotencyKey =
-      typeof (body as any).idempotencyKey === 'string'
-        ? (body as any).idempotencyKey
-        : undefined;
-    await this.wallet.withdraw(
-      id,
-      parsed.amount,
-      parsed.deviceId,
-      req.ip,
-      parsed.currency,
-      idempotencyKey,
-    );
-    return { message: 'withdrawn' };
+    try {
+      const parsed = WithdrawSchema.parse(body);
+      const idempotencyKey =
+        typeof (body as any).idempotencyKey === 'string'
+          ? (body as any).idempotencyKey
+          : undefined;
+      await this.wallet.withdraw(
+        id,
+        parsed.amount,
+        parsed.deviceId,
+        req.ip,
+        parsed.currency,
+        idempotencyKey,
+      );
+      return { message: 'withdrawn' };
+    } catch (err) {
+      if (err instanceof ZodError) {
+        throw new BadRequestException(err.errors);
+      }
+      throw err;
+    }
   }
 
   @Post(':id/deposit')
@@ -123,21 +143,27 @@ export class WalletController {
     @Body() body: DepositRequest,
     @Req() req: Request,
   ) {
-    this.ensureOwner(req, id);
-    const parsed = DepositSchema.parse(body);
-    const idempotencyKey =
-      typeof (body as any).idempotencyKey === 'string'
-        ? (body as any).idempotencyKey
-        : undefined;
-    const challenge = await this.wallet.deposit(
-      id,
-      parsed.amount,
-      parsed.deviceId,
-      req.ip,
-      parsed.currency,
-      idempotencyKey,
-    );
-    return challenge;
+    try {
+      const parsed = DepositSchema.parse(body);
+      const idempotencyKey =
+        typeof (body as any).idempotencyKey === 'string'
+          ? (body as any).idempotencyKey
+          : undefined;
+      const challenge = await this.wallet.deposit(
+        id,
+        parsed.amount,
+        parsed.deviceId,
+        req.ip,
+        parsed.currency,
+        idempotencyKey,
+      );
+      return challenge;
+    } catch (err) {
+      if (err instanceof ZodError) {
+        throw new BadRequestException(err.errors);
+      }
+      throw err;
+    }
   }
 
   @Post(':id/deposit/bank-transfer')
@@ -151,16 +177,22 @@ export class WalletController {
     @Body() body: BankTransferDepositRequest,
     @Req() req: Request,
   ) {
-    this.ensureOwner(req, id);
-    const parsed = BankTransferDepositRequestSchema.parse(body);
-    const res = await this.wallet.initiateBankTransfer(
-      id,
-      parsed.amount,
-      parsed.deviceId,
-      parsed.ip ?? req.ip,
-      parsed.currency,
-    );
-    return BankTransferDepositResponseSchema.parse(res);
+    try {
+      const parsed = BankTransferDepositRequestSchema.parse(body);
+      const res = await this.wallet.initiateBankTransfer(
+        id,
+        parsed.amount,
+        parsed.deviceId,
+        parsed.ip ?? req.ip,
+        parsed.currency,
+      );
+      return BankTransferDepositResponseSchema.parse(res);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        throw new BadRequestException(err.errors);
+      }
+      throw err;
+    }
   }
 
   @Delete(':id/deposit/:depositId')
@@ -169,9 +201,8 @@ export class WalletController {
   async cancelDeposit(
     @Param('id') id: string,
     @Param('depositId') depositId: string,
-    @Req() req: Request,
+    @Req() _req: Request,
   ) {
-    this.ensureOwner(req, id);
     await this.wallet.cancelPendingDeposit(id, depositId);
     return { message: 'cancelled' };
   }
@@ -179,8 +210,7 @@ export class WalletController {
   @Post(':id/kyc')
   @ApiOperation({ summary: 'Verify KYC' })
   @ApiResponse({ status: 200, description: 'KYC verification started' })
-  async verify(@Param('id') id: string, @Req() req: Request) {
-    this.ensureOwner(req, id);
+  async verify(@Param('id') id: string, @Req() _req: Request) {
     await this.kyc.verify(id);
     return { message: 'verified' };
   }
@@ -190,9 +220,8 @@ export class WalletController {
   @ApiResponse({ status: 200, description: 'Wallet status' })
   async status(
     @Param('id') id: string,
-    @Req() req: Request,
+    @Req() _req: Request,
   ): Promise<WalletStatusResponse> {
-    this.ensureOwner(req, id);
     const res = await this.wallet.status(id);
     return WalletStatusSchema.parse(res);
   }
@@ -202,9 +231,8 @@ export class WalletController {
   @ApiResponse({ status: 200, description: 'Transaction list' })
   async transactions(
     @Param('id') id: string,
-    @Req() req: Request,
+    @Req() _req: Request,
   ): Promise<WalletTransactionsResponse> {
-    this.ensureOwner(req, id);
     const res = await this.wallet.transactions(id);
     return WalletTransactionsResponseSchema.parse(res);
   }
@@ -214,9 +242,8 @@ export class WalletController {
   @ApiResponse({ status: 200, description: 'Pending transactions' })
   async pending(
     @Param('id') id: string,
-    @Req() req: Request,
+    @Req() _req: Request,
   ): Promise<PendingTransactionsResponse> {
-    this.ensureOwner(req, id);
     const res = await this.wallet.pending(id);
     return PendingTransactionsResponseSchema.parse(res);
   }
