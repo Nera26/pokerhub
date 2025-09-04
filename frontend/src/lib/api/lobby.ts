@@ -1,7 +1,5 @@
 import { z, type ZodType } from 'zod';
-import { getBaseUrl } from '@/lib/base-url';
-import { handleResponse, ApiError } from './client';
-import { serverFetch } from '@/lib/server-fetch';
+import { apiClient, ApiError } from './client';
 import type { components } from '@contracts/api';
 import {
   TableSchema,
@@ -21,28 +19,14 @@ export async function fetchLobbyData<T>(
   schema: ZodType<T>,
   { signal }: { signal?: AbortSignal } = {},
 ): Promise<T> {
-  const baseUrl = getBaseUrl();
   try {
-    const res = await serverFetch(`${baseUrl}/api/${endpoint}`, {
-      credentials: 'include',
-      signal,
-    });
-    if (!res.ok) {
-      const details = await res.text().catch(() => undefined);
-      throw {
-        status: res.status,
-        message: res.statusText,
-        details,
-      } as ApiError;
-    }
-    return await handleResponse(res, schema);
+    return await apiClient(`/api/${endpoint}`, schema, { signal });
   } catch (err) {
-    if (err instanceof Error) {
-      throw {
-        message: `Failed to fetch ${endpoint}: ${err.message}`,
-      } as ApiError;
+    const apiErr = err as ApiError;
+    if (apiErr.status !== undefined) {
+      throw apiErr;
     }
-    throw err as ApiError;
+    throw { message: `Failed to fetch ${endpoint}: ${apiErr.message}` } as ApiError;
   }
 }
 
@@ -50,28 +34,18 @@ export async function getTables({
   signal,
 }: {
   signal?: AbortSignal;
-  } = {}): Promise<components['schemas']['Table'][]> {
-  const baseUrl = getBaseUrl();
+} = {}): Promise<components['schemas']['Table'][]> {
   try {
-    const res = await serverFetch(`${baseUrl}/api/tables`, {
-      credentials: 'include',
-      cache: 'no-store',
+    return await apiClient('/api/tables', z.array(TableSchema), {
       signal,
+      cache: 'no-store',
     });
-    if (!res.ok) {
-      const details = await res.text().catch(() => undefined);
-      throw {
-        status: res.status,
-        message: res.statusText,
-        details,
-      } as ApiError;
-    }
-    return await handleResponse(res, z.array(TableSchema));
   } catch (err) {
-    if (err instanceof Error) {
-      throw { message: `Failed to fetch tables: ${err.message}` } as ApiError;
+    const apiErr = err as ApiError;
+    if (apiErr.status !== undefined) {
+      throw apiErr;
     }
-    throw err as ApiError;
+    throw { message: `Failed to fetch tables: ${apiErr.message}` } as ApiError;
   }
 }
 
@@ -111,24 +85,18 @@ export async function registerTournament(
   id: string,
   { signal }: { signal?: AbortSignal } = {},
 ): Promise<MessageResponse> {
-  const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/api/tournaments/${id}/register`, {
+  return apiClient(`/api/tournaments/${id}/register`, MessageResponseSchema, {
     method: 'POST',
-    credentials: 'include',
     signal,
   });
-  return handleResponse(res, MessageResponseSchema);
 }
 
 export async function withdrawTournament(
   id: string,
   { signal }: { signal?: AbortSignal } = {},
 ): Promise<MessageResponse> {
-  const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/api/tournaments/${id}/withdraw`, {
+  return apiClient(`/api/tournaments/${id}/withdraw`, MessageResponseSchema, {
     method: 'POST',
-    credentials: 'include',
     signal,
   });
-  return handleResponse(res, MessageResponseSchema);
 }

@@ -1,6 +1,4 @@
-import { getBaseUrl } from '@/lib/base-url';
-import { handleResponse } from './client';
-import { serverFetch } from '@/lib/server-fetch';
+import { apiClient } from './client';
 export type { ApiError } from './client';
 import type { components } from '@contracts/api';
 import { LoginResponseSchema, MessageResponseSchema } from '@shared/types';
@@ -9,52 +7,35 @@ export async function login(
   email: string,
   password: string,
 ): Promise<components['schemas']['LoginResponse']> {
-  return handleResponse(
-    serverFetch(`${getBaseUrl()}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ email, password }),
-    }),
-    LoginResponseSchema,
-  );
+  return apiClient('/api/auth/login', LoginResponseSchema, {
+    method: 'POST',
+    body: { email, password },
+  });
 }
 
 export async function logout(): Promise<components['schemas']['MessageResponse']> {
-  return handleResponse(
-    serverFetch(`${getBaseUrl()}/api/auth/logout`, {
-      method: 'POST',
-      credentials: 'include',
-    }),
-    MessageResponseSchema,
-  );
+  return apiClient('/api/auth/logout', MessageResponseSchema, {
+    method: 'POST',
+  });
 }
 
 export async function requestPasswordReset(
   email: string,
 ): Promise<components['schemas']['MessageResponse']> {
-  return handleResponse(
-    serverFetch(`${getBaseUrl()}/api/auth/request-reset`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
-    }),
-    MessageResponseSchema,
-  );
+  return apiClient('/api/auth/request-reset', MessageResponseSchema, {
+    method: 'POST',
+    body: { email },
+  });
 }
 
 export async function verifyResetCode(
   email: string,
   code: string,
 ): Promise<components['schemas']['MessageResponse']> {
-  return handleResponse(
-    serverFetch(`${getBaseUrl()}/api/auth/verify-reset-code`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, code }),
-    }),
-    MessageResponseSchema,
-  );
+  return apiClient('/api/auth/verify-reset-code', MessageResponseSchema, {
+    method: 'POST',
+    body: { email, code },
+  });
 }
 
 export async function resetPassword(
@@ -62,12 +43,8 @@ export async function resetPassword(
   code: string,
   password: string,
 ): Promise<components['schemas']['MessageResponse']> {
-  return handleResponse(
-    serverFetch(`${getBaseUrl()}/api/auth/reset-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, code, password }),
-    }),
-    MessageResponseSchema,
-  );
+  return apiClient('/api/auth/reset-password', MessageResponseSchema, {
+    method: 'POST',
+    body: { email, code, password },
+  });
 }

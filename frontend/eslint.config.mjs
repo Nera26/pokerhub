@@ -16,7 +16,6 @@ const eslintConfig = [
       'playwright.config.ts',
       'public/**',
       '.next/**',
-      'server/**',
       'test-results/**',
       'scripts/**',
       'coverage/**',

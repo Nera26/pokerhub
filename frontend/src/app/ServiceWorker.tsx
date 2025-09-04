@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import Button from './components/ui/Button';
-import { IS_E2E } from '@/lib/env';
+import { env } from '@/lib/env';
 
 const PRECACHE_URLS = ['/', '/offline', '/favicon.ico'];
 
@@ -24,7 +24,7 @@ export default function ServiceWorker() {
   const handleDismiss = () => setIsUpdateAvailable(false);
 
   useEffect(() => {
-    if (IS_E2E || !('serviceWorker' in navigator)) return;
+    if (env.IS_E2E || !('serviceWorker' in navigator)) return;
 
     const onLoad = () => {
       navigator.serviceWorker
@@ -74,7 +74,7 @@ export default function ServiceWorker() {
     };
   }, []);
 
-  if (IS_E2E) return null;
+  if (env.IS_E2E) return null;
 
   return (
     <>

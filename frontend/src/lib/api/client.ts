@@ -66,17 +66,19 @@ export async function apiClient<T>(
     method?: string;
     body?: unknown;
     signal?: AbortSignal;
+    headers?: Record<string, string>;
+    cache?: RequestCache;
   } = {},
 ): Promise<T> {
   const baseUrl = getBaseUrl();
   const token = useAuthStore.getState().token;
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { ...(opts.headers ?? {}) };
 
-  if (token) {
+  if (token && !headers.Authorization) {
     headers.Authorization = `Bearer ${token}`;
   }
   if (opts.body !== undefined) {
-    headers['content-type'] = 'application/json';
+    headers['content-type'] = headers['content-type'] ?? 'application/json';
   }
 
   const res = serverFetch(`${baseUrl}${path}`, {
@@ -85,6 +87,7 @@ export async function apiClient<T>(
     headers,
     ...(opts.body !== undefined && { body: JSON.stringify(opts.body) }),
     ...(opts.signal && { signal: opts.signal }),
+    ...(opts.cache && { cache: opts.cache }),
   });
   return handleResponse(res, schema);
 }
@@ -142,10 +145,14 @@ export async function handleResponse<T>(
       }
     } else if (hasText) {
       const text = await (res as { text: () => Promise<string> }).text();
-      if (text.length > 0) {
-        throw { message: 'Invalid server response' } as ApiError;
+      if (res.ok) {
+        if (text.length > 0) {
+          throw { message: 'Invalid server response' } as ApiError;
+        }
+      } else {
+        data = text;
       }
-    } else {
+    } else if (res.ok) {
       throw { message: 'Invalid server response' } as ApiError;
     }
   }

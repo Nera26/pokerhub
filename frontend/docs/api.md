@@ -42,4 +42,4 @@
 | stack    | Int      | Player's chips      |
 | joinedAt | DateTime | Defaults to now     |
 
-Schema and migration instructions are defined in `server/models/schema.prisma` and `server/README.md`.
+Schema and migration instructions are maintained in the backend service's documentation.
