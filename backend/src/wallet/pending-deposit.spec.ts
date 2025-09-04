@@ -18,6 +18,7 @@ describe('Pending deposits', () => {
   const events: EventPublisher = { emit: jest.fn() } as any;
   const redis: any = {
     incr: jest.fn(),
+    incrby: jest.fn().mockResolvedValue(0),
     expire: jest.fn(),
     set: jest.fn().mockResolvedValue('1'),
     del: jest.fn(),
@@ -84,7 +85,10 @@ describe('Pending deposits', () => {
 
   it('confirms deposit and credits account', async () => {
     const res = await service.initiateBankTransfer(userId, 100, 'dev1', '1.1.1.1', 'USD');
-    const deposit = await dataSource.getRepository(PendingDeposit).findOneByOrFail({ reference: res.reference });
+    const deposit = await dataSource
+      .getRepository(PendingDeposit)
+      .findOneByOrFail({ reference: res.reference });
+    expect(deposit.currency).toBe('USD');
 
     await service.confirmPendingDeposit(deposit.id, 'admin');
 
@@ -108,7 +112,7 @@ describe('Pending deposits', () => {
     expect(updated.status).toBe('rejected');
     expect(events.emit).toHaveBeenCalledWith(
       'wallet.deposit.rejected',
-      expect.objectContaining({ depositId: deposit.id }),
+      expect.objectContaining({ depositId: deposit.id, currency: 'USD' }),
     );
   });
 

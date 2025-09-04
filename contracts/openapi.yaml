@@ -1595,6 +1595,8 @@ components:
           type: string
         amount:
           type: number
+        currency:
+          type: string
         reference:
           type: string
         status:
@@ -1624,6 +1626,7 @@ components:
         - id
         - userId
         - amount
+        - currency
         - reference
         - status
         - actionRequired

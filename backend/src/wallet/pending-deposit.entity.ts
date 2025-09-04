@@ -18,6 +18,9 @@ export class PendingDeposit {
   @Column({ type: 'int' })
   amount: number;
 
+  @Column({ length: 3 })
+  currency: string;
+
   @Column()
   @Index({ unique: true })
   reference: string;

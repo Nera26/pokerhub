@@ -898,6 +898,7 @@ async initiateBankTransfer(
     id: randomUUID(),
     userId: accountId,
     amount,
+    currency,
     reference: randomUUID(),
     status: 'pending',
     actionRequired: false,
@@ -958,10 +959,13 @@ async markActionRequiredIfPending(id: string, jobId?: string): Promise<void> {
     try {
       const deposit = await this.pendingDeposits.findOneBy({ id });
       if (!deposit || deposit.status !== 'pending') return;
-      const user = await this.accounts.findOneByOrFail({ id: deposit.userId });
+      const user = await this.accounts.findOneByOrFail({
+        id: deposit.userId,
+        currency: deposit.currency,
+      });
       const house = await this.accounts.findOneByOrFail({
         name: 'house',
-        currency: user.currency,
+        currency: deposit.currency,
       });
       await this.record('deposit', deposit.id, [
         { account: house, amount: -deposit.amount },
@@ -1004,6 +1008,7 @@ async markActionRequiredIfPending(id: string, jobId?: string): Promise<void> {
       await this.events.emit('wallet.deposit.rejected', {
         accountId: deposit.userId,
         depositId: deposit.id,
+        currency: deposit.currency,
         reason,
       });
     } finally {

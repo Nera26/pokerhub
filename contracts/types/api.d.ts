@@ -476,6 +476,25 @@ export interface paths {
       };
     };
   };
+  "/wallet/{id}/deposit/{depositId}": {
+    /** Cancel pending deposit */
+    delete: {
+      parameters: {
+        path: {
+          id: string;
+          depositId: string;
+        };
+      };
+      responses: {
+        /** @description Deposit cancelled */
+        200: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
   "/wallet/{id}/withdraw": {
     /** Withdraw funds */
     post: {
@@ -1427,6 +1446,7 @@ export interface components {
       id: string;
       userId: string;
       amount: number;
+      currency: string;
       reference: string;
       /** @enum {string} */
       status: "pending" | "confirmed" | "rejected";
