@@ -185,6 +185,7 @@ export class WalletController {
         parsed.deviceId,
         parsed.ip ?? req.ip,
         parsed.currency,
+        parsed.idempotencyKey,
       );
       return BankTransferDepositResponseSchema.parse(res);
     } catch (err) {

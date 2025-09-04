@@ -1470,6 +1470,8 @@ components:
           type: string
         ip:
           type: string
+        idempotencyKey:
+          type: string
       required:
         - amount
         - currency
