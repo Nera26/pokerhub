@@ -118,10 +118,12 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Reset requested' })
   async requestReset(
     @Body() body: RequestResetRequest,
+    @Req() req: Request,
   ): Promise<MessageResponse> {
     try {
       const parsed = RequestResetSchema.parse(body);
-      await this.auth.requestPasswordReset(parsed.email);
+      const ip = (req.headers['x-forwarded-for'] as string) || req.ip;
+      await this.auth.requestPasswordReset(parsed.email, ip);
       return { message: 'reset requested' };
     } catch (err) {
       if (err instanceof ZodError) {
