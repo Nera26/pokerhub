@@ -41,11 +41,23 @@ jest.mock('../src/tournament/tournament.module', () => ({
 jest.mock('../src/wallet/wallet.module', () => ({
   WalletModule: class WalletModule {},
 }));
+jest.mock('../src/withdrawals/withdrawals.module', () => ({
+  WithdrawalsModule: class WithdrawalsModule {},
+}));
+jest.mock('../src/users/users.module', () => ({
+  UsersModule: class UsersModule {},
+}));
+jest.mock('../src/notifications/notifications.module', () => ({
+  NotificationsModule: class NotificationsModule {},
+}));
 jest.mock('../src/auth/auth.module', () => ({
   AuthModule: class AuthModule {},
 }));
 jest.mock('../src/feature-flags/feature-flags.module', () => ({
   FeatureFlagsModule: class FeatureFlagsModule {},
+}));
+jest.mock('../src/metrics/metrics.module', () => ({
+  MetricsModule: class MetricsModule {},
 }));
 import { AppModule } from './../src/app.module';
 import testDataSource from './utils/test-datasource';
@@ -88,5 +100,11 @@ describe('AppController (e2e)', () => {
       .get('/')
       .expect(200)
       .expect('Hello World!');
+  });
+
+  it('applies security headers', async () => {
+    const res = await request(app.getHttpServer()).get('/');
+    expect(res.headers['content-security-policy']).toContain("default-src 'self'");
+    expect(res.headers['strict-transport-security']).toContain('max-age=31536000');
   });
 });
