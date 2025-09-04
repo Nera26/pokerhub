@@ -4,4 +4,5 @@ dist
 !.env.example
 
 hand-log
+*.log
 

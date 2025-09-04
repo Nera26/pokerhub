@@ -1,7 +1,0 @@
-
-> backend@0.0.1 test
-> jest --runInBand --testTimeout=300000
-
-PASS src/wallet/wallet.ledger.property.spec.ts (26.018 s)
-PASS test/tournament/tournament.service.spec.ts
-Terminate batch job (Y/N)? Terminate batch job (Y/N)? Terminate batch job (Y/N)? 
