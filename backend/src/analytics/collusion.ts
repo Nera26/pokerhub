@@ -4,11 +4,6 @@ import { AnalyticsService } from './analytics.service';
 import { CollusionService } from './collusion.service';
 import type { Transfer } from '@shared/analytics';
 
-export interface PlayerSession {
-  userId: string;
-  ips: string[];
-}
-
 interface GameEvent {
   sessionId: string;
   userId: string;
