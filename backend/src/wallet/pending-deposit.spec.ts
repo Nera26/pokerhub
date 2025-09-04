@@ -83,7 +83,10 @@ describe('Pending deposits', () => {
     await dataSource.destroy();
   });
 
-  it('confirms deposit and credits account', async () => {
+  it('confirms deposit, removes job and credits account without re-triggering events', async () => {
+    (service as any).pendingQueue.getJob.mockClear();
+    removeJob.mockClear();
+
     const res = await service.initiateBankTransfer(userId, 100, 'dev1', '1.1.1.1', 'USD');
     const deposit = await dataSource
       .getRepository(PendingDeposit)
@@ -91,6 +94,9 @@ describe('Pending deposits', () => {
     expect(deposit.currency).toBe('USD');
 
     await service.confirmPendingDeposit(deposit.id, 'admin');
+
+    expect((service as any).pendingQueue.getJob).toHaveBeenCalledWith(deposit.id);
+    expect(removeJob).toHaveBeenCalled();
 
     const accountRepo = dataSource.getRepository(Account);
     const user = await accountRepo.findOneByOrFail({ id: userId });
@@ -100,6 +106,12 @@ describe('Pending deposits', () => {
     await service.confirmPendingDeposit(deposit.id, 'admin');
     const userAgain = await accountRepo.findOneByOrFail({ id: userId });
     expect(userAgain.balance).toBe(100);
+
+    (events.emit as jest.Mock).mockClear();
+    await service.markActionRequiredIfPending(deposit.id, 'job-x');
+    const after = await dataSource.getRepository(PendingDeposit).findOneByOrFail({ id: deposit.id });
+    expect(after.actionRequired).toBe(false);
+    expect(events.emit).not.toHaveBeenCalled();
   });
 
   it('rejects deposit and notifies', async () => {

@@ -941,10 +941,11 @@ async cancelPendingDeposit(
 }
 
 async markActionRequiredIfPending(id: string, jobId?: string): Promise<void> {
-  const dep = await this.pendingDeposits.findOneBy({ id });
-  if (dep && dep.status === 'pending' && !dep.actionRequired) {
-    dep.actionRequired = true;
-    await this.pendingDeposits.save(dep);
+  const res = await this.pendingDeposits.update(
+    { id, status: 'pending', actionRequired: false },
+    { actionRequired: true },
+  );
+  if (res.affected && res.affected > 0) {
     const payload: { depositId: string; jobId?: string } = { depositId: id };
     if (jobId) payload.jobId = jobId;
     await this.events.emit('admin.deposit.pending', payload);
@@ -993,6 +994,13 @@ async rejectExpiredPendingDeposits(): Promise<void> {
       deposit.actionRequired = false;
       await this.pendingDeposits.save(deposit);
     } finally {
+      try {
+        const queue = await this.getPendingQueue();
+        const job = await queue.getJob(id);
+        if (job) await job.remove();
+      } catch {
+        // ignore queue errors
+      }
       await this.redis.del(lockKey);
     }
   }
