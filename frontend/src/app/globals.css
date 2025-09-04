@@ -373,19 +373,6 @@
     color: #111827;
   }
 
-  /* ---- Dealer chip ---- */
-  .dealer-chip {
-    width: 28px;
-    height: 28px;
-    border-radius: 9999px;
-    background: var(--color-accent-yellow);
-    color: #000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.35);
-  }
 
   /* ---- Range slider look (Raise amount) ---- */
   input[type='range'] {
