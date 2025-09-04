@@ -10,14 +10,19 @@ export function useTableState(tableId?: string) {
   const queryClient = useQueryClient();
   const queryKey = ['table', tableId ?? 'local'] as const;
 
-  const applyDelta = (target: any, delta: any): any => {
-    if (!delta || typeof delta !== 'object') return delta;
-    const result: any = Array.isArray(target) ? [...(target ?? [])] : { ...(target ?? {}) };
-    for (const [key, value] of Object.entries(delta)) {
+  const applyDelta = <T extends Partial<TableState>>(target: T, delta: Partial<T>): T => {
+    if (!delta || typeof delta !== 'object') return delta as T;
+    const result: T = Array.isArray(target)
+      ? ([...(target ?? [])] as unknown as T)
+      : ({ ...(target ?? {}) } as T);
+    for (const [key, value] of Object.entries(delta) as [keyof T, Partial<T[keyof T]>][]) {
       if (value && typeof value === 'object' && !Array.isArray(value)) {
-        result[key] = applyDelta(result[key], value);
+        (result as Record<string, unknown>)[key as string] = applyDelta(
+          (result as Record<string, unknown>)[key as string] as Partial<TableState>,
+          value,
+        );
       } else {
-        result[key] = value as any;
+        (result as Record<string, unknown>)[key as string] = value as unknown;
       }
     }
     return result;
@@ -41,9 +46,17 @@ export function useTableState(tableId?: string) {
     };
   }, [socket, queryClient, queryKey]);
 
+  const initialState: TableState = {
+    handId: '',
+    seats: [],
+    pot: { main: 0, sidePots: [] },
+    street: 'pre',
+  };
+
   return useQuery<TableState>({
     queryKey,
-    queryFn: async () => undefined as unknown as TableState,
+    queryFn: async () => initialState,
     enabled: false,
+    initialData: initialState,
   });
 }
