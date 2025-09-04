@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { GameState } from '@shared/types';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
+import { readPlayers, readCommunityCards } from '@shared/state';
 import useGameSocket from '@/hooks/useGameSocket';
 import Seats from './Seats';
 import Board from './Board';
@@ -107,8 +108,8 @@ export default function TablePage({ params }: PageProps) {
     );
   };
 
-  const players: GameState['players'] = state?.players ?? [];
-  const communityCards: string[] = (state?.communityCards ?? []).map(String);
+  const players = readPlayers(state);
+  const communityCards = readCommunityCards(state);
 
   return (
     <div className="p-4 space-y-4">
@@ -124,4 +125,3 @@ export default function TablePage({ params }: PageProps) {
     </div>
   );
 }
-

@@ -1,13 +1,14 @@
 'use client';
 
-interface Player {
-  id: string;
-  stack: number;
-  bet?: number;
-  folded?: boolean;
-}
+import type { GameState } from '@shared/types';
 
-export default function Seats({ players }: { players: Player[] }) {
+type Player = GameState['players'][number];
+
+export default function Seats({
+  players,
+}: {
+  players: Player[];
+}) {
   if (!players.length) {
     return <p data-testid="no-players">No players</p>;
   }
