@@ -10,6 +10,9 @@ import { EventPublisher } from '../events/events.service';
 import { PaymentProviderService } from './payment-provider.service';
 import { KycService } from './kyc.service';
 import { SettlementService } from './settlement.service';
+import { AdminDepositsController } from '../routes/admin-deposits.controller';
+
+jest.setTimeout(20000);
 
 describe('Pending deposits', () => {
   let dataSource: DataSource;
@@ -162,5 +165,45 @@ describe('Pending deposits', () => {
 
     const list = await service.listPendingDeposits();
     expect(list.find((d) => d.id === deposit.id)).toBeUndefined();
+  });
+
+  it('emits admin notification after delay and confirms deposit via controller', async () => {
+    (events.emit as jest.Mock).mockClear();
+
+    const jobs = new Set<string>();
+    (service as any).pendingQueue = {
+      add: jest.fn(async (_name: string, data: any, opts: any) => {
+        const jobId = opts?.jobId ?? data.id;
+        jobs.add(jobId);
+      }),
+      getJob: jest.fn(async (id: string) => (jobs.has(id) ? { id } : null)),
+    };
+
+    const accountRepo = dataSource.getRepository(Account);
+    const start = await accountRepo.findOneByOrFail({ id: userId });
+
+    const res = await service.initiateBankTransfer(userId, 20, 'dev5', '1.1.1.5', 'USD');
+    const deposit = await dataSource
+      .getRepository(PendingDeposit)
+      .findOneByOrFail({ reference: res.reference });
+
+    expect(events.emit).not.toHaveBeenCalled();
+
+    // simulate check after >10s delay
+    await service.markActionRequiredIfPending(deposit.id, deposit.id);
+    jobs.delete(deposit.id);
+
+    expect(events.emit).toHaveBeenCalledWith('admin.deposit.pending', {
+      depositId: deposit.id,
+      jobId: deposit.id,
+    });
+
+    const controller = new AdminDepositsController(service);
+    await controller.confirm(deposit.id, { userId: 'admin' } as any);
+
+    const user = await accountRepo.findOneByOrFail({ id: userId });
+    expect(user.balance).toBe(start.balance + 20);
+
+    expect(await (service as any).pendingQueue.getJob(deposit.id)).toBeNull();
   });
 });
