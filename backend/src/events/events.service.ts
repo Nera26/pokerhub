@@ -26,10 +26,13 @@ export class EventPublisher implements OnModuleDestroy {
     if (producer) {
       this.producer = producer;
     } else {
-      const brokers =
-        config.get<string>('analytics.kafkaBrokers')?.split(',') ?? [
-          'localhost:9092',
-        ];
+      const brokersConfig = config.get<string>('analytics.kafkaBrokers');
+      if (!brokersConfig) {
+        const msg = 'Missing analytics.kafkaBrokers configuration';
+        this.logger.error(msg);
+        throw new Error(msg);
+      }
+      const brokers = brokersConfig.split(',');
       const kafka = new Kafka({ brokers });
       this.producer = kafka.producer();
       void this.producer.connect();
