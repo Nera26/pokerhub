@@ -20,9 +20,7 @@ import { AuthGuard } from '../../src/auth/auth.guard';
 import { RateLimitGuard } from '../../src/routes/rate-limit.guard';
 import { SelfGuard } from '../../src/auth/self.guard';
 import { AdminGuard } from '../../src/auth/admin.guard';
-// Reference worker to ensure test stays aligned with worker behavior
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { startPendingDepositWorker } from '../../src/wallet/pending-deposit.worker';
+// Coupled with pending-deposit.worker.ts; keep this test in sync with worker logic.
 
 /**
  * Integration test of bank transfer deposit via WalletController:
