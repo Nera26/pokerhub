@@ -7,13 +7,13 @@ import {
   Get,
   Delete,
   UseGuards,
-  ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ZodError } from 'zod';
 import { RateLimitGuard } from './rate-limit.guard';
 import { AuthGuard } from '../auth/auth.guard';
+import { SelfGuard } from '../auth/self.guard';
 import { WalletService } from '../wallet/wallet.service';
 import { KycService } from '../wallet/kyc.service';
 import type { Request } from 'express';
@@ -35,7 +35,7 @@ import {
   type TxRequest,
 } from '../schemas/wallet';
 
-@UseGuards(AuthGuard, RateLimitGuard)
+@UseGuards(AuthGuard, RateLimitGuard, SelfGuard)
 @ApiTags('wallet')
 @Controller('wallet')
 export class WalletController {
@@ -43,12 +43,6 @@ export class WalletController {
     private readonly wallet: WalletService,
     private readonly kyc: KycService,
   ) {}
-
-  private ensureOwner(req: Request, id: string) {
-    if (req.userId !== id) {
-      throw new ForbiddenException();
-    }
-  }
 
   @Post(':id/reserve')
   @ApiOperation({ summary: 'Reserve funds' })
@@ -58,7 +52,6 @@ export class WalletController {
     @Body() body: TxRequest,
     @Req() req: Request,
   ) {
-    this.ensureOwner(req, id);
     try {
       const parsed = TxSchema.parse(body);
       await this.wallet.reserve(id, parsed.amount, parsed.tx, parsed.currency);
@@ -79,7 +72,6 @@ export class WalletController {
     @Body() body: TxRequest,
     @Req() req: Request,
   ) {
-    this.ensureOwner(req, id);
     try {
       const parsed = TxSchema.parse(body);
       await this.wallet.commit(parsed.tx, parsed.amount, parsed.rake ?? 0, parsed.currency);
@@ -100,7 +92,6 @@ export class WalletController {
     @Body() body: TxRequest,
     @Req() req: Request,
   ) {
-    this.ensureOwner(req, id);
     try {
       const parsed = TxSchema.parse(body);
       await this.wallet.rollback(id, parsed.amount, parsed.tx, parsed.currency);
@@ -121,7 +112,6 @@ export class WalletController {
     @Body() body: WithdrawRequest,
     @Req() req: Request,
   ) {
-    this.ensureOwner(req, id);
     const parsed = WithdrawSchema.parse(body);
     const idempotencyKey =
       typeof (body as any).idempotencyKey === 'string'
@@ -146,7 +136,6 @@ export class WalletController {
     @Body() body: DepositRequest,
     @Req() req: Request,
   ) {
-    this.ensureOwner(req, id);
     const parsed = DepositSchema.parse(body);
     const idempotencyKey =
       typeof (body as any).idempotencyKey === 'string'
@@ -174,7 +163,6 @@ export class WalletController {
     @Body() body: BankTransferDepositRequest,
     @Req() req: Request,
   ) {
-    this.ensureOwner(req, id);
     try {
       const parsed = BankTransferDepositRequestSchema.parse(body);
       const res = await this.wallet.initiateBankTransfer(
@@ -201,7 +189,6 @@ export class WalletController {
     @Param('depositId') depositId: string,
     @Req() req: Request,
   ) {
-    this.ensureOwner(req, id);
     await this.wallet.cancelPendingDeposit(id, depositId);
     return { message: 'cancelled' };
   }
@@ -210,7 +197,6 @@ export class WalletController {
   @ApiOperation({ summary: 'Verify KYC' })
   @ApiResponse({ status: 200, description: 'KYC verification started' })
   async verify(@Param('id') id: string, @Req() req: Request) {
-    this.ensureOwner(req, id);
     await this.kyc.verify(id);
     return { message: 'verified' };
   }
@@ -222,7 +208,6 @@ export class WalletController {
     @Param('id') id: string,
     @Req() req: Request,
   ): Promise<WalletStatusResponse> {
-    this.ensureOwner(req, id);
     const res = await this.wallet.status(id);
     return WalletStatusSchema.parse(res);
   }
@@ -234,7 +219,6 @@ export class WalletController {
     @Param('id') id: string,
     @Req() req: Request,
   ): Promise<WalletTransactionsResponse> {
-    this.ensureOwner(req, id);
     const res = await this.wallet.transactions(id);
     return WalletTransactionsResponseSchema.parse(res);
   }
@@ -246,7 +230,6 @@ export class WalletController {
     @Param('id') id: string,
     @Req() req: Request,
   ): Promise<PendingTransactionsResponse> {
-    this.ensureOwner(req, id);
     const res = await this.wallet.pending(id);
     return PendingTransactionsResponseSchema.parse(res);
   }

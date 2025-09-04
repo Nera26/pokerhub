@@ -3,14 +3,11 @@ import {
   Post,
   Put,
   Get,
-  Param,
   Body,
   BadRequestException,
   ParseUUIDPipe,
   HttpCode,
   UseGuards,
-  Req,
-  ForbiddenException,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ZodError } from 'zod';
@@ -27,7 +24,7 @@ import {
 import { UsersService } from '../users/users.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
-import type { Request } from 'express';
+import { SelfGuard, UserIdParam } from '../auth/self.guard';
 
 @ApiTags('users')
 @Controller('users')
@@ -60,16 +57,13 @@ export class UsersController {
   }
 
   @Get(':id')
+  @UseGuards(SelfGuard)
   @ApiOperation({ summary: 'Get user by id' })
   @ApiResponse({ status: 200, description: 'The user' })
   async findById(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Req() req: Request,
+    @UserIdParam('id', new ParseUUIDPipe()) id: string,
   ): Promise<User> {
     try {
-      if (req.userId !== id) {
-        throw new ForbiddenException();
-      }
       const user = await this.users.findById(id);
       return this.parseUser(user);
     } catch (err) {
@@ -81,17 +75,14 @@ export class UsersController {
   }
 
   @Put(':id')
+  @UseGuards(SelfGuard)
   @ApiOperation({ summary: 'Update user' })
   @ApiResponse({ status: 200, description: 'Updated user' })
   async update(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @UserIdParam('id', new ParseUUIDPipe()) id: string,
     @Body() body: UpdateUserRequest,
-    @Req() req: Request,
   ): Promise<User> {
     try {
-      if (req.userId !== id) {
-        throw new ForbiddenException();
-      }
       const parsed = UpdateUserSchema.parse(body);
       const updated = await this.users.update(id, parsed);
       return this.parseUser(updated);

@@ -23,6 +23,7 @@ import { SessionModule } from '../session/session.module';
 import { AuthService } from './auth.service';
 import { AuthGuard } from './auth.guard';
 import { AdminGuard } from './admin.guard';
+import { SelfGuard } from './self.guard';
 import { AuthRateLimitMiddleware } from './rate-limit.middleware';
 import { SecurityHeadersMiddleware } from './security.middleware';
 import { AnalyticsModule } from '../analytics/analytics.module';
@@ -73,9 +74,10 @@ function providerFactory(config: ConfigService): CountryProvider {
     GeoIpService,
     UserRepository,
     EmailService,
+    SelfGuard,
   ],
   controllers: [AuthController],
-  exports: [KycService, AuthGuard, AdminGuard, GeoIpService],
+  exports: [KycService, AuthGuard, AdminGuard, GeoIpService, SelfGuard],
 })
 export class AuthModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
