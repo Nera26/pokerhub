@@ -12,5 +12,5 @@ To independently verify a shuffle:
 
 ## Test Vectors
 
-Reference test vectors for the RNG implementation are archived in [`archive/rng/vectors.json`](../../archive/rng/vectors.json).
+Reference test vectors for the RNG implementation are stored in [`deprecated/rng/vectors.json`](../../deprecated/rng/vectors.json).
 
