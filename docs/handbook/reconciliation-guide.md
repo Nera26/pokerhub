@@ -1,7 +1,7 @@
 # Reconciliation Guide
 
-**Version:** 1.3.0
-**Last Updated:** 2025-10-10
+**Version:** 1.3.1
+**Last Updated:** 2025-10-12
 
 This guide explains how wallet ledgers stay consistent and how disputes are resolved. Tournament flows are covered in the [Tournament Handbook v1.2.0](./tournament-handbook.md) and engine behavior in the [Game Engine Specification v1.3.0](../game-engine-spec.md). Operational steps are detailed in the [Wallet Reconciliation Runbook](../runbooks/wallet-reconciliation.md). The ledger schema is documented in the [Accounting Book](../accounting-book.md), and deck randomness is verified in the [RNG Whitepaper](../player/rng-whitepaper.md). Upcoming ledger enhancements are listed in the [Milestone Roadmap](../roadmap.md).
 
@@ -87,6 +87,15 @@ cat storage/reconcile-2025-08-30.json | jq '.[] | select(.delta != 0)'
 
 Deposit provider reports $50, but journal shows $40 credit. Create a $10 corrective entry and note the discrepancy.
 
+## Admin Deposit Review
+
+1. `GET /admin/deposits` lists all pending deposits with `actionRequired = true`.
+2. To resolve each entry, admins call either:
+   - `POST /admin/deposits/{id}/confirm` – credits the player's account and debits the house. The service sets `confirmedBy` and `confirmedAt`, clears `actionRequired`, acquires a Redis lock (`wallet:pending:{id}:lock`), writes ledger entries, and removes any matching job from the BullMQ `pending-deposit` queue.
+   - `POST /admin/deposits/{id}/reject` – marks the deposit rejected (optionally with a reason) and clears `actionRequired`. A Redis lock guards the operation, but no ledger entries are created and the queue job is left to expire.
+
+These endpoints ensure that only reviewed bank transfers credit player balances and that each decision leaves an auditable trail.
+
 ## Dispute Workflow
 
 1. **Intake** – Support logs a ticket with account id, timeframe, and evidence.
@@ -115,6 +124,7 @@ Deposit provider reports $50, but journal shows $40 credit. Create a $10 correct
 - Reports older than one year move to cold storage but remain retrievable for regulators.
 
 ## Changelog
+- **1.3.1** – 2025-10-12 – Document admin deposit review endpoints and queue side effects.
 - **1.3.0** – 2025-10-10 – Document currency and hash fields; clarify dispute
   workflow.
 - **1.2.1** – 2025-10-05 – Linked RNG Whitepaper and Accounting Book.
@@ -122,4 +132,4 @@ Deposit provider reports $50, but journal shows $40 credit. Create a $10 correct
 - **1.1.0** – 2025-10-05 – Added CLI walkthrough and version metadata.
 - **1.0.0** – 2025-08-30 – Initial coverage with buy-ins/payouts reconciliation, flow diagram, and audit trail details.
 ---
-_Last reviewed: 2025-10-10 by Nera26_
+_Last reviewed: 2025-10-12 by Nera26_
