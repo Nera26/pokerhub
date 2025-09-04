@@ -1,6 +1,4 @@
-import { getBaseUrl } from '@/lib/base-url';
-import { handleResponse } from './client';
-import { serverFetch } from '@/lib/server-fetch';
+import { apiClient } from './client';
 import { z } from 'zod';
 export { join, bet, buyIn, sitOut, rebuy } from '@/lib/socket';
 import {
@@ -39,74 +37,53 @@ export async function fetchTable(
   id: string,
   { signal }: { signal?: AbortSignal } = {},
 ): Promise<TableData> {
-  const baseUrl = getBaseUrl();
-  const res = serverFetch(`${baseUrl}/api/tables/${id}`, {
-    credentials: 'include',
+  return apiClient(`/api/tables/${id}`, TableDataSchema, {
     signal,
     cache: 'no-store',
   });
-  return handleResponse(res, TableDataSchema);
 }
 
 export async function fetchChatMessages(
   id: string,
   { signal }: { signal?: AbortSignal } = {},
 ): Promise<ChatMessagesResponse> {
-  const baseUrl = getBaseUrl();
-  const res = serverFetch(`${baseUrl}/api/tables/${id}/chat`, {
-    credentials: 'include',
+  return apiClient(`/api/tables/${id}/chat`, ChatMessagesResponseSchema, {
     signal,
     cache: 'no-store',
   });
-  return handleResponse(res, ChatMessagesResponseSchema);
 }
 
 export async function sendChatMessage(
   id: string,
   body: SendChatMessageRequest,
 ): Promise<void> {
-  const baseUrl = getBaseUrl();
-  const res = serverFetch(`${baseUrl}/api/tables/${id}/chat`, {
+  await apiClient(`/api/tables/${id}/chat`, z.void(), {
     method: 'POST',
-    credentials: 'include',
-    body: JSON.stringify(body),
-    headers: { 'Content-Type': 'application/json' },
+    body,
   });
-  await handleResponse(res, z.void());
 }
 
 export async function createTable(
   body: CreateTableRequest,
 ): Promise<Table> {
-  const baseUrl = getBaseUrl();
-  const res = serverFetch(`${baseUrl}/api/tables`, {
+  return apiClient('/api/tables', TableSchema, {
     method: 'POST',
-    credentials: 'include',
-    body: JSON.stringify(body),
-    headers: { 'Content-Type': 'application/json' },
+    body,
   });
-  return handleResponse(res, TableSchema);
 }
 
 export async function updateTable(
   id: string,
   body: UpdateTableRequest,
 ): Promise<Table> {
-  const baseUrl = getBaseUrl();
-  const res = serverFetch(`${baseUrl}/api/tables/${id}`, {
+  return apiClient(`/api/tables/${id}`, TableSchema, {
     method: 'PUT',
-    credentials: 'include',
-    body: JSON.stringify(body),
-    headers: { 'Content-Type': 'application/json' },
+    body,
   });
-  return handleResponse(res, TableSchema);
 }
 
 export async function deleteTable(id: string): Promise<void> {
-  const baseUrl = getBaseUrl();
-  const res = serverFetch(`${baseUrl}/api/tables/${id}`, {
+  await apiClient(`/api/tables/${id}`, z.void(), {
     method: 'DELETE',
-    credentials: 'include',
   });
-  await handleResponse(res, z.void());
 }

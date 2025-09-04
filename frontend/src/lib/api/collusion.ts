@@ -1,6 +1,4 @@
-import { getBaseUrl } from '@/lib/base-url';
-import { handleResponse } from './client';
-import { serverFetch } from '@/lib/server-fetch';
+import { apiClient } from './client';
 export type { ApiError } from './client';
 import {
   FlaggedSessionsResponse,
@@ -20,15 +18,10 @@ export async function listFlaggedSessions(
 ): Promise<FlaggedSessionsResponse> {
   const params = new URLSearchParams({ page: page.toString() });
   if (status) params.set('status', status);
-  return handleResponse(
-    serverFetch(
-      `${getBaseUrl()}/api/analytics/collusion/flagged?${params.toString()}`,
-      {
-        credentials: 'include',
-        headers: { Authorization: `Bearer ${token}` },
-      },
-    ),
+  return apiClient(
+    `/api/analytics/collusion/flagged?${params.toString()}`,
     FlaggedSessionsResponseSchema,
+    { headers: { Authorization: `Bearer ${token}` } },
   );
 }
 
@@ -36,12 +29,10 @@ export async function getActionHistory(
   id: string,
   token: string,
 ): Promise<ReviewActionLogsResponse> {
-  return handleResponse(
-    serverFetch(`${getBaseUrl()}/api/analytics/collusion/${id}/audit`, {
-      credentials: 'include',
-      headers: { Authorization: `Bearer ${token}` },
-    }),
+  return apiClient(
+    `/api/analytics/collusion/${id}/audit`,
     ReviewActionLogsResponseSchema,
+    { headers: { Authorization: `Bearer ${token}` } },
   );
 }
 
@@ -50,12 +41,9 @@ export async function applyAction(
   action: ReviewAction,
   token: string,
 ): Promise<MessageResponse> {
-  return handleResponse(
-    serverFetch(`${getBaseUrl()}/api/analytics/collusion/${id}/${action}`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { Authorization: `Bearer ${token}` },
-    }),
+  return apiClient(
+    `/api/analytics/collusion/${id}/${action}`,
     MessageResponseSchema,
+    { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
   );
 }
