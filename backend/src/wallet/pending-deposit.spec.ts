@@ -186,19 +186,35 @@ describe('Pending deposits', () => {
   });
 
   it('cancels deposit and prevents action required/listing', async () => {
+    (events.emit as jest.Mock).mockClear();
+
     const res = await service.initiateBankTransfer(userId, 75, 'dev4', '1.1.1.4', 'USD');
-    const deposit = await dataSource.getRepository(PendingDeposit).findOneByOrFail({ reference: res.reference });
+    const deposit = await dataSource
+      .getRepository(PendingDeposit)
+      .findOneByOrFail({ reference: res.reference });
 
     await service.cancelPendingDeposit(userId, deposit.id);
 
     expect((service as any).pendingQueue.getJob).toHaveBeenCalledWith(deposit.id);
     expect(removeJob).toHaveBeenCalled();
+    expect(events.emit).toHaveBeenCalledWith(
+      'notification.create',
+      expect.objectContaining({ userId, message: 'Deposit cancelled' }),
+    );
+    expect(events.emit).toHaveBeenCalledWith(
+      'wallet.deposit.rejected',
+      expect.objectContaining({ depositId: deposit.id, currency: 'USD' }),
+    );
 
-    const updated = await dataSource.getRepository(PendingDeposit).findOneByOrFail({ id: deposit.id });
+    const updated = await dataSource
+      .getRepository(PendingDeposit)
+      .findOneByOrFail({ id: deposit.id });
     expect(updated.status).toBe('rejected');
 
     await service.markActionRequiredIfPending(deposit.id);
-    const after = await dataSource.getRepository(PendingDeposit).findOneByOrFail({ id: deposit.id });
+    const after = await dataSource
+      .getRepository(PendingDeposit)
+      .findOneByOrFail({ id: deposit.id });
     expect(after.actionRequired).toBe(false);
 
     const list = await service.listPendingDeposits();
