@@ -99,7 +99,11 @@ export class WalletService {
 
   protected async enqueueDisbursement(id: string, currency: string): Promise<void> {
     const queue = await this.getQueue();
-    await queue.add('payout', { id, currency });
+    await queue.add(
+      'payout',
+      { id, currency },
+      { removeOnComplete: true, removeOnFail: true },
+    );
   }
 
   private challengeKey(id: string) {
@@ -905,7 +909,16 @@ async initiateBankTransfer(
     expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
   });
   const queue = await this.getPendingQueue();
-  await queue.add('check', { id: deposit.id }, { delay: 10_000, jobId: deposit.id });
+  await queue.add(
+    'check',
+    { id: deposit.id },
+    {
+      delay: 10_000,
+      jobId: deposit.id,
+      removeOnComplete: true,
+      removeOnFail: true,
+    },
+  );
   const bankName = process.env.BANK_NAME;
   const accountNumber = process.env.BANK_ACCOUNT_NUMBER;
   const routingCode = process.env.BANK_ROUTING_CODE;

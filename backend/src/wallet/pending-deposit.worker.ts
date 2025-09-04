@@ -11,7 +11,7 @@ export async function startPendingDepositWorker(wallet: WalletService) {
     async (job) => {
       await wallet.markActionRequiredIfPending(job.data.id, job.id);
     },
-    { connection },
+    { connection, removeOnComplete: { count: 1000 } },
   );
 
   const expireQueue = new bull.Queue('pending-deposit-expire', { connection });
@@ -31,6 +31,6 @@ export async function startPendingDepositWorker(wallet: WalletService) {
     async () => {
       await wallet.rejectExpiredPendingDeposits();
     },
-    { connection },
+    { connection, removeOnComplete: { count: 1000 } },
   );
 }
