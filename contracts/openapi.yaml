@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.6.0
+  version: 2.7.0
 paths:
   /status:
     get:
@@ -1054,6 +1054,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+  /admin/deposits/reconcile:
+    post:
+      summary: Reconcile bank deposits
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankReconciliationRequest'
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+          text/csv:
+            schema:
+              type: string
+      responses:
+        '200':
+          description: Reconciliation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /users:
     post:
       summary: Create user
@@ -1674,6 +1702,25 @@ components:
       properties:
         reason:
           type: string
+    BankReconciliationEntry:
+      type: object
+      properties:
+        reference:
+          type: string
+        amount:
+          type: integer
+      required:
+        - reference
+        - amount
+    BankReconciliationRequest:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/BankReconciliationEntry'
+      required:
+        - entries
     CreateUserRequest:
       type: object
       properties:
