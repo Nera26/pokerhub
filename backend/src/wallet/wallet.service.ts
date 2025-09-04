@@ -931,6 +931,18 @@ async cancelPendingDeposit(
   deposit.actionRequired = false;
   await this.pendingDeposits.save(deposit);
 
+  await this.events.emit('notification.create', {
+    userId: deposit.userId,
+    type: 'system',
+    message: 'Deposit cancelled',
+  });
+  await this.events.emit('wallet.deposit.rejected', {
+    accountId: deposit.userId,
+    depositId: deposit.id,
+    currency: deposit.currency,
+    reason: 'cancelled',
+  });
+
   try {
     const queue = await this.getPendingQueue();
     const job = await queue.getJob(depositId);
