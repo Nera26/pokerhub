@@ -1,7 +1,5 @@
 import { z } from 'zod';
 
-export const IS_E2E = process.env.NEXT_PUBLIC_E2E === '1';
-
 const envSchema = z
   .object({
     NODE_ENV: z

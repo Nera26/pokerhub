@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { onCLS, onINP, onLCP, Metric } from 'web-vitals';
-import { IS_E2E } from '@/lib/env';
+import { env } from '@/lib/env';
 
 const THRESHOLDS = {
   INP: 150,
@@ -25,7 +25,7 @@ function sendMetric(metric: Metric, overThreshold: boolean) {
 
 export default function PerformanceMonitor() {
   useEffect(() => {
-    if (process.env.NODE_ENV !== 'production' || IS_E2E) return;
+    if (process.env.NODE_ENV !== 'production' || env.IS_E2E) return;
 
     const handle = (metric: Metric) => {
       const limit = THRESHOLDS[metric.name as keyof typeof THRESHOLDS];
