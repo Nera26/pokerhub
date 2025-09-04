@@ -3,12 +3,17 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { TopCTAs, GameTabs } from '../components/home';
-import { useTables, useTournaments } from '@/hooks/useLobbyData';
+import { useTables, useTournaments, type Tournament } from '@/hooks/useLobbyData';
 import { useApiError } from '@/hooks/useApiError';
 import InlineError from '../components/ui/InlineError';
 import { GameType } from '@/types/game-type';
 import type { CashGameListProps } from '../components/home/CashGameList';
-import type { TournamentListProps } from '@/features/site/tournament/TournamentList';
+import type { TournamentListProps } from '@/components/TournamentList';
+
+interface TournamentWithBreak extends Tournament {
+  nextBreak?: string;
+  breakDurationMs?: number;
+}
 
 const ChatPlaceholder = () => (
   <div className="fixed bottom-4 right-4 h-12 w-12 rounded-full bg-card-bg animate-pulse" />
@@ -37,8 +42,10 @@ if (CashGameList.displayName === 'DynamicMock') {
   CashGameList = require('../components/home/CashGameList').default;
 }
 
-let TournamentList: React.ComponentType<TournamentListProps> =
-  dynamic<TournamentListProps>(
+let TournamentList: React.ComponentType<
+  TournamentListProps<TournamentWithBreak>
+> =
+  dynamic<TournamentListProps<TournamentWithBreak>>(
     () => import('@/features/site/tournament/TournamentList'),
     {
       loading: () => (
