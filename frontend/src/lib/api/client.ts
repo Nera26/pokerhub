@@ -4,6 +4,7 @@ import { ServiceStatusResponseSchema } from '@shared/types';
 import { getBaseUrl } from '@/lib/base-url';
 import { serverFetch } from '@/lib/server-fetch';
 import { useAuthStore } from '@/app/store/authStore';
+import { dispatchContractMismatch } from '@/components/ContractMismatchNotice';
 
 /**
  * Error thrown by API helpers when a request fails or returns an unexpected body.
@@ -47,9 +48,7 @@ export async function checkApiContractVersion(): Promise<void> {
     const [backendMajor] = contractVersion.split('.');
     const [frontendMajor] = API_CONTRACT_VERSION.split('.');
     if (backendMajor !== frontendMajor) {
-      if (typeof window !== 'undefined') {
-        window.alert('Please upgrade your app.');
-      }
+      dispatchContractMismatch();
       throw new Error('API contract version mismatch');
     }
   } catch (err) {
