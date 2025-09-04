@@ -89,7 +89,7 @@ describe('wallet api', () => {
       creditBalance: 10,
     });
     await expect(
-      initiateBankTransfer('u1', 10, 'd1', 'USD'),
+      initiateBankTransfer('u1', 10, 'd1', 'USD', 'idem1'),
     ).resolves.toEqual({
       reference: 'ref1',
       bank: {

@@ -116,12 +116,14 @@ export function initiateBankTransfer(
   amount: number,
   deviceId: string,
   currency: string,
+  idempotencyKey?: string,
   opts: { signal?: AbortSignal } = {},
 ) {
   const payload = BankTransferDepositRequestSchema.parse({
     amount,
     deviceId,
     currency,
+    idempotencyKey,
   });
   return apiClient(
     `/api/wallet/${playerId}/deposit/bank-transfer`,

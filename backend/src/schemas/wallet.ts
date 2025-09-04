@@ -104,6 +104,7 @@ export const BankTransferDepositRequestSchema = z.object({
   currency: CurrencySchema,
   deviceId: z.string(),
   ip: z.string().optional(),
+  idempotencyKey: z.string().optional(),
 });
 export type BankTransferDepositRequest = z.infer<
   typeof BankTransferDepositRequestSchema
