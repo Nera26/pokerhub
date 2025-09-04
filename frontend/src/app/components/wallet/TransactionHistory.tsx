@@ -3,8 +3,10 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faReceipt } from '@fortawesome/free-solid-svg-icons/faReceipt';
-import { useVirtualizer } from '@tanstack/react-virtual';
 import useRenderCount from '@/hooks/useRenderCount';
+import TransactionHistoryTable, {
+  Column,
+} from '@/app/components/common/TransactionHistoryTable';
 
 export interface Transaction {
   id: string;
@@ -41,131 +43,67 @@ export default function TransactionHistory({
     return `${amt >= 0 ? '+' : '-'}$${formatted}`;
   };
 
-  const parentRef = React.useRef<HTMLDivElement>(null);
-  const rowVirtualizer = useVirtualizer({
-    count: transactions.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 56,
-    initialRect: { width: 0, height: 400 },
-  });
+  const columns: Column<Transaction>[] = [
+    {
+      header: 'Type',
+      headerClassName:
+        'text-left p-4 font-semibold text-text-secondary text-sm uppercase',
+      cell: (tx) => tx.type,
+      cellClassName: 'p-4 text-text-primary text-sm',
+    },
+    {
+      header: 'Amount',
+      headerClassName:
+        'text-left p-4 font-semibold text-text-secondary text-sm uppercase',
+      cell: (tx) => (
+        <span
+          className={`font-medium text-sm ${
+            tx.amount >= 0 ? 'text-accent-green' : 'text-danger-red'
+          }`}
+        >
+          {formatAmount(tx.amount)}
+        </span>
+      ),
+      cellClassName: 'p-4',
+    },
+    {
+      header: 'Date & Time',
+      headerClassName:
+        'text-left p-4 font-semibold text-text-secondary text-sm uppercase',
+      cell: (tx) => tx.date,
+      cellClassName: 'p-4 text-text-secondary text-sm',
+    },
+    {
+      header: 'Status',
+      headerClassName:
+        'text-left p-4 font-semibold text-text-secondary text-sm uppercase',
+      cell: (tx) => (
+        <span
+          className={`${
+            statusStyles[tx.status] ?? 'bg-border-dark text-text-secondary'
+          } px-2 py-1 rounded-md font-medium`}
+        >
+          {tx.status}
+        </span>
+      ),
+      cellClassName: 'p-4 text-sm',
+    },
+  ];
 
   return (
     <section id="transaction-history-section">
       <h2 className="text-xl sm:text-2xl font-bold text-text-primary mb-4">
         Transaction History
       </h2>
-      <div
-        ref={parentRef}
-        className="bg-card-bg rounded-2xl overflow-auto w-full max-h-96"
-      >
-        {transactions.length > 0 ? (
-          <table className="w-full min-w-[600px]">
-            <thead className="border-b border-border-dark">
-              <tr>
-                <th className="text-left p-4 font-semibold text-text-secondary text-sm uppercase">
-                  Type
-                </th>
-                <th className="text-left p-4 font-semibold text-text-secondary text-sm uppercase">
-                  Amount
-                </th>
-                <th className="text-left p-4 font-semibold text-text-secondary text-sm uppercase">
-                  Date &amp; Time
-                </th>
-                <th className="text-left p-4 font-semibold text-text-secondary text-sm uppercase">
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody
-              style={
-                rowVirtualizer.getVirtualItems().length > 0
-                  ? {
-                      height: rowVirtualizer.getTotalSize(),
-                      position: 'relative',
-                    }
-                  : undefined
-              }
-            >
-              {rowVirtualizer.getVirtualItems().length > 0
-                ? rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                    const tx = transactions[virtualRow.index];
-                    return (
-                      <tr
-                        key={tx.id}
-                        ref={rowVirtualizer.measureElement}
-                        data-index={virtualRow.index}
-                        className="border-b border-border-dark hover:bg-hover-bg transition-colors duration-200"
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          width: '100%',
-                          transform: `translateY(${virtualRow.start}px)`,
-                        }}
-                      >
-                        <td className="p-4 text-text-primary text-sm">
-                          {tx.type}
-                        </td>
-                        <td
-                          className={`p-4 font-medium text-sm ${
-                            tx.amount >= 0
-                              ? 'text-accent-green'
-                              : 'text-danger-red'
-                          }`}
-                        >
-                          {formatAmount(tx.amount)}
-                        </td>
-                        <td className="p-4 text-text-secondary text-sm">
-                          {tx.date}
-                        </td>
-                        <td className="p-4 text-sm">
-                          <span
-                            className={`${
-                              statusStyles[tx.status] ??
-                              'bg-border-dark text-text-secondary'
-                            } px-2 py-1 rounded-md font-medium`}
-                          >
-                            {tx.status}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })
-                : transactions.map((tx) => (
-                    <tr
-                      key={tx.id}
-                      className="border-b border-border-dark hover:bg-hover-bg transition-colors duration-200"
-                    >
-                      <td className="p-4 text-text-primary text-sm">
-                        {tx.type}
-                      </td>
-                      <td
-                        className={`p-4 font-medium text-sm ${
-                          tx.amount >= 0
-                            ? 'text-accent-green'
-                            : 'text-danger-red'
-                        }`}
-                      >
-                        {formatAmount(tx.amount)}
-                      </td>
-                      <td className="p-4 text-text-secondary text-sm">
-                        {tx.date}
-                      </td>
-                      <td className="p-4 text-sm">
-                        <span
-                          className={`${
-                            statusStyles[tx.status] ??
-                            'bg-border-dark text-text-secondary'
-                          } px-2 py-1 rounded-md font-medium`}
-                        >
-                          {tx.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-            </tbody>
-          </table>
-        ) : (
+      <TransactionHistoryTable
+        data={transactions}
+        columns={columns}
+        getRowKey={(tx) => tx.id}
+        estimateSize={56}
+        containerClassName="bg-card-bg rounded-2xl overflow-auto w-full max-h-96"
+        tableClassName="w-full min-w-[600px]"
+        rowClassName="border-b border-border-dark hover:bg-hover-bg transition-colors duration-200"
+        noDataMessage={
           <div className="p-[20px] text-center text-text-secondary">
             <FontAwesomeIcon
               icon={faReceipt}
@@ -173,8 +111,9 @@ export default function TransactionHistory({
             />
             <p>No transaction history found.</p>
           </div>
-        )}
-      </div>
+        }
+      />
     </section>
   );
 }
+
