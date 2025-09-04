@@ -9,9 +9,9 @@
 - [Reconciliation Guide](docs/handbook/reconciliation-guide.md) – ledger verification and dispute workflow.
 - [Documentation Index](docs/index.md)
 
-## Deprecated Artifacts
+## Archived Artifacts
 
-Historical files removed from active development are stored under [`deprecated/`](deprecated/). These artifacts are retained for long-term reference only.
+Historical files removed from active development are stored under [`archive/`](archive/). The former `deprecated/` directory has been removed; artifacts are retained for long-term reference only.
 
 ## Development Environment
 
