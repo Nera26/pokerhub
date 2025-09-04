@@ -63,5 +63,3 @@ export function diff<T>(prev: T | undefined, curr: T): Partial<T> {
   return {} as Partial<T>;
 }
 
-export const stateDiff = diff;
-

@@ -1,4 +1,6 @@
 /* istanbul ignore file */
+import { standardDeck } from '@shared/deck';
+
 export function hexToBytes(hex: string): Uint8Array {
   const bytes = new Uint8Array(hex.length / 2);
   for (let i = 0; i < bytes.length; i++) {
@@ -47,10 +49,6 @@ export async function shuffle<T>(items: T[], seed: Uint8Array): Promise<T[]> {
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
-}
-
-export function standardDeck(): number[] {
-  return Array.from({ length: 52 }, (_, i) => i);
 }
 
 export interface HandProof {

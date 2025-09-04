@@ -1,5 +1,6 @@
 import type { HandProof } from '../types';
 import { webcrypto as nodeCrypto } from 'crypto';
+import { standardDeck } from '../deck';
 
 const subtle =
   globalThis.crypto?.subtle ?? nodeCrypto.subtle;
@@ -52,10 +53,6 @@ export async function shuffle<T>(items: T[], seed: Uint8Array): Promise<T[]> {
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
-}
-
-export function standardDeck(): number[] {
-  return Array.from({ length: 52 }, (_, i) => i);
 }
 
 export async function verifyProof(proof: HandProof): Promise<boolean> {

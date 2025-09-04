@@ -1,4 +1,5 @@
 import { randomBytes, createHash } from 'crypto';
+import { standardDeck } from '@shared/deck';
 
 /**
  * Hash seed||nonce using sha256.
@@ -38,12 +39,9 @@ export function shuffle<T>(items: T[], seed: Buffer): T[] {
   return arr;
 }
 
-export interface HandCommitment {
+export interface HandProof {
   commitment: string;
   nonce: string;
-}
-
-export interface HandProof extends HandCommitment {
   seed: string;
 }
 
@@ -89,9 +87,4 @@ export class HandRNG {
   }
 }
 
-/**
- * Utility to produce a standard 52-card deck represented by numbers 0-51.
- */
-export function standardDeck(): number[] {
-  return Array.from({ length: 52 }, (_, i) => i);
-}
+export { standardDeck };
