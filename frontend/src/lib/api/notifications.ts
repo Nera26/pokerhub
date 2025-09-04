@@ -1,7 +1,5 @@
 import { z } from 'zod';
-import { getBaseUrl } from '@/lib/base-url';
-import { handleResponse, ApiError } from './client';
-import { serverFetch } from '@/lib/server-fetch';
+import { apiClient, ApiError } from './client';
 import {
   MessageResponseSchema,
   type MessageResponse,
@@ -23,15 +21,10 @@ export type NotificationsResponse = z.infer<typeof NotificationsResponseSchema>;
 export async function fetchNotifications({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<NotificationsResponse> {
-  const baseUrl = getBaseUrl();
   try {
-    return await handleResponse(
-      serverFetch(`${baseUrl}/api/notifications`, {
-        credentials: 'include',
-        signal,
-      }),
-      NotificationsResponseSchema,
-    );
+    return await apiClient('/api/notifications', NotificationsResponseSchema, {
+      signal,
+    });
   } catch (err) {
     const message =
       err instanceof Error ? err.message : (err as ApiError).message;
@@ -40,23 +33,15 @@ export async function fetchNotifications({
 }
 
 export async function markAllNotificationsRead(): Promise<MessageResponse> {
-  return handleResponse(
-    serverFetch(`${getBaseUrl()}/api/notifications/mark-all`, {
-      method: 'POST',
-      credentials: 'include',
-    }),
-    MessageResponseSchema,
-  );
+  return apiClient('/api/notifications/mark-all', MessageResponseSchema, {
+    method: 'POST',
+  });
 }
 
 export async function markNotificationRead(id: string): Promise<MessageResponse> {
-  return handleResponse(
-    serverFetch(`${getBaseUrl()}/api/notifications/${id}`, {
-      method: 'POST',
-      credentials: 'include',
-    }),
-    MessageResponseSchema,
-  );
+  return apiClient(`/api/notifications/${id}`, MessageResponseSchema, {
+    method: 'POST',
+  });
 }
 
 export type { ApiError } from './client';

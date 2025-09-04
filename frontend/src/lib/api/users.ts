@@ -1,7 +1,5 @@
 /* istanbul ignore file */
-import { getBaseUrl } from '@/lib/base-url';
-import { handleResponse } from './client';
-import { serverFetch } from '@/lib/server-fetch';
+import { apiClient } from './client';
 import { MessageResponse, MessageResponseSchema } from '@shared/types';
 export type { ApiError } from './client';
 
@@ -20,37 +18,23 @@ export interface UpdateUser {
 }
 
 export async function createUser(newUser: NewUser): Promise<MessageResponse> {
-  return handleResponse(
-    serverFetch(`${getBaseUrl()}/api/users`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(newUser),
-    }),
-    MessageResponseSchema,
-  );
+  return apiClient('/api/users', MessageResponseSchema, {
+    method: 'POST',
+    body: newUser,
+  });
 }
 
 export async function updateUser(
   updated: UpdateUser,
 ): Promise<MessageResponse> {
-  return handleResponse(
-    serverFetch(`${getBaseUrl()}/api/users/${updated.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(updated),
-    }),
-    MessageResponseSchema,
-  );
+  return apiClient(`/api/users/${updated.id}`, MessageResponseSchema, {
+    method: 'PUT',
+    body: updated,
+  });
 }
 
 export async function toggleUserBan(userId: number): Promise<MessageResponse> {
-  return handleResponse(
-    serverFetch(`${getBaseUrl()}/api/users/${userId}/ban`, {
-      method: 'POST',
-      credentials: 'include',
-    }),
-    MessageResponseSchema,
-  );
+  return apiClient(`/api/users/${userId}/ban`, MessageResponseSchema, {
+    method: 'POST',
+  });
 }

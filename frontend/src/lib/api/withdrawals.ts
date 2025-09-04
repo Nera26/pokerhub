@@ -1,7 +1,5 @@
 /* istanbul ignore file */
-import { getBaseUrl } from '@/lib/base-url';
-import { handleResponse } from './client';
-import { serverFetch } from '@/lib/server-fetch';
+import { apiClient } from './client';
 import {
   MessageResponse,
   MessageResponseSchema,
@@ -14,15 +12,10 @@ export async function approveWithdrawal(
   comment: string,
 ): Promise<MessageResponse> {
   const body: WithdrawalDecisionRequest = { comment };
-  return handleResponse(
-    serverFetch(`${getBaseUrl()}/api/withdrawals/${user}/approve`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(body),
-    }),
-    MessageResponseSchema,
-  );
+  return apiClient(`/api/withdrawals/${user}/approve`, MessageResponseSchema, {
+    method: 'POST',
+    body,
+  });
 }
 
 export async function rejectWithdrawal(
@@ -30,58 +23,38 @@ export async function rejectWithdrawal(
   comment: string,
 ): Promise<MessageResponse> {
   const body: WithdrawalDecisionRequest = { comment };
-  return handleResponse(
-    serverFetch(`${getBaseUrl()}/api/withdrawals/${user}/reject`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(body),
-    }),
-    MessageResponseSchema,
-  );
+  return apiClient(`/api/withdrawals/${user}/reject`, MessageResponseSchema, {
+    method: 'POST',
+    body,
+  });
 }
 
 export async function reserveFunds(
   user: string,
   amount: number,
 ): Promise<MessageResponse> {
-  return handleResponse(
-    serverFetch(`${getBaseUrl()}/api/wallet/${user}/reserve`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ amount }),
-    }),
-    MessageResponseSchema,
-  );
+  return apiClient(`/api/wallet/${user}/reserve`, MessageResponseSchema, {
+    method: 'POST',
+    body: { amount },
+  });
 }
 
 export async function commitFunds(
   user: string,
   amount: number,
 ): Promise<MessageResponse> {
-  return handleResponse(
-    serverFetch(`${getBaseUrl()}/api/wallet/${user}/commit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ amount }),
-    }),
-    MessageResponseSchema,
-  );
+  return apiClient(`/api/wallet/${user}/commit`, MessageResponseSchema, {
+    method: 'POST',
+    body: { amount },
+  });
 }
 
 export async function rollbackFunds(
   user: string,
   amount: number,
 ): Promise<MessageResponse> {
-  return handleResponse(
-    serverFetch(`${getBaseUrl()}/api/wallet/${user}/rollback`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ amount }),
-    }),
-    MessageResponseSchema,
-  );
+  return apiClient(`/api/wallet/${user}/rollback`, MessageResponseSchema, {
+    method: 'POST',
+    body: { amount },
+  });
 }

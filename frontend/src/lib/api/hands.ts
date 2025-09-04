@@ -1,6 +1,6 @@
 import { getBaseUrl } from '@/lib/base-url';
 import { serverFetch } from '@/lib/server-fetch';
-import { handleResponse } from './client';
+import { apiClient } from './client';
 import { verifyProof } from '@/lib/verifyProof';
 import {
   HandProofSchema,
@@ -15,12 +15,7 @@ export async function fetchHandProof(
   id: string,
   { signal }: { signal?: AbortSignal } = {},
 ): Promise<HandProof> {
-  const baseUrl = getBaseUrl();
-  const res = serverFetch(`${baseUrl}/api/hands/${id}/proof`, {
-    credentials: 'include',
-    signal,
-  });
-  return handleResponse(res, HandProofSchema);
+  return apiClient(`/api/hands/${id}/proof`, HandProofSchema, { signal });
 }
 
 export async function fetchVerifiedHandProof(
@@ -68,13 +63,9 @@ export async function fetchHandState(
   actionIndex: number,
   { signal }: { signal?: AbortSignal } = {},
 ): Promise<HandStateResponse> {
-  const baseUrl = getBaseUrl();
-  const res = serverFetch(
-    `${baseUrl}/api/hands/${id}/state/${actionIndex}`,
-    {
-      credentials: 'include',
-      signal,
-    },
+  return apiClient(
+    `/api/hands/${id}/state/${actionIndex}`,
+    HandStateResponseSchema,
+    { signal },
   );
-  return handleResponse(res, HandStateResponseSchema);
 }
