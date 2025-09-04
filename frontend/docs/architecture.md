@@ -43,3 +43,9 @@ src/
   stories/            # Storybook stories
   types/              # TypeScript definitions
 ```
+
+## Offline Support
+
+The service worker in `public/sw.js` uses Workbox background sync to queue
+API mutations while offline. Requests to `/api/*` made with `POST`, `PUT`, or
+`DELETE` are stored and replayed automatically once connectivity returns.

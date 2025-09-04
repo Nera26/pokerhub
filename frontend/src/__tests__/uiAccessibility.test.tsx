@@ -55,6 +55,4 @@ describe('UI accessibility', () => {
     );
     expect(screen.getByRole('alert')).toBeInTheDocument();
   });
-
-  // TopProgressBar component deprecated; corresponding accessibility test removed.
 });

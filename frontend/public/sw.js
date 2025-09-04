@@ -93,10 +93,3 @@ const bgSyncPlugin = new BackgroundSyncPlugin('api-mutations', {
   );
 });
 
-self.addEventListener('message', async (event) => {
-  if (event.data?.type === 'QUEUE_MUTATION') {
-    const { url, init } = event.data.payload;
-    const request = new Request(url, init);
-    await bgSyncPlugin.queue.pushRequest({ request });
-  }
-});
