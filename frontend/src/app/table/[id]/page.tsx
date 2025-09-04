@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { GameState } from '@shared/types';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
+import { readPlayers, readCommunityCards } from '@shared/state';
 import useGameSocket from '@/hooks/useGameSocket';
 import Seats from './Seats';
 import Board from './Board';
@@ -19,17 +20,22 @@ export default function TablePage({ params }: PageProps) {
   const [status, setStatus] = useState('');
   const [lastActionId, setLastActionId] = useState<string | null>(null);
 
-  const applyDelta = (target: any, delta: any): any => {
-    if (!delta || typeof delta !== 'object') return delta;
-    const result: any = Array.isArray(target) ? [...(target ?? [])] : { ...(target ?? {}) };
-    for (const [key, value] of Object.entries(delta)) {
+  const applyDelta = <T>(target: T | null, delta: Partial<T>): T => {
+    if (!delta || typeof delta !== 'object') return delta as T;
+    const result: Record<string, unknown> | unknown[] = Array.isArray(target)
+      ? ([...(target ?? [])] as unknown[])
+      : ({ ...(target ?? {}) } as Record<string, unknown>);
+    for (const [key, value] of Object.entries(delta) as [keyof T, Partial<T[keyof T]>][]) {
       if (value && typeof value === 'object' && !Array.isArray(value)) {
-        result[key] = applyDelta(result[key], value);
+        (result as Record<string, unknown>)[key as string] = applyDelta(
+          (result as Record<string, unknown>)[key as string] as T[keyof T],
+          value,
+        );
       } else {
-        result[key] = value as any;
+        (result as Record<string, unknown>)[key as string] = value as T[keyof T];
       }
     }
-    return result;
+    return result as T;
   };
 
   // Join table and listen for state/ack/error events
@@ -96,8 +102,8 @@ export default function TablePage({ params }: PageProps) {
     );
   };
 
-  const players = ((state as any)?.players ?? []) as any[];
-  const communityCards = ((state as any)?.communityCards ?? []) as string[];
+  const players = readPlayers(state);
+  const communityCards = readCommunityCards(state);
 
   return (
     <div className="p-4 space-y-4">
