@@ -57,7 +57,7 @@ types.ts # shared DTO interfaces (imported by FE & BE)
 /.github/
 workflows/
 sync-subtrees.yml # auto-mirror frontend & backend repos
-agents.md # this file
+AGENTS.md # this file
 > Prefer **shared types** in `/shared/` and import them from both apps to minimize drift.
 
 ---
