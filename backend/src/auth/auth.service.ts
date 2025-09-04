@@ -3,6 +3,7 @@ import { SessionService } from '../session/session.service';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import * as bcrypt from 'bcrypt';
+import { randomInt, createHash, timingSafeEqual } from 'crypto';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { MetricsWriterService } from '../metrics/metrics-writer.service';
 import { UserRepository } from '../users/user.repository';
@@ -12,6 +13,7 @@ import { EmailService } from './email.service';
 export class AuthService {
   private readonly revokedPrefix = 'revoked:';
   private readonly resetPrefix = 'reset:';
+  private readonly resetReqPrefix = 'reset-req:';
 
   constructor(
     private readonly sessions: SessionService,
@@ -89,18 +91,45 @@ export class AuthService {
     await this.sessions.revoke(refreshToken);
   }
 
-  async requestPasswordReset(email: string) {
+  private hashCode(code: string): string {
+    return createHash('sha256').update(code).digest('hex');
+  }
+
+  async requestPasswordReset(email: string, ip?: string) {
     const user = await this.users.findOne({ where: { email } });
     if (!user) return;
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    const limit = this.config.get<number>('auth.resetReqLimit', 5);
+    const window = this.config.get<number>('auth.resetReqWindow', 3600);
+
+    const emailKey = `${this.resetReqPrefix}${email}`;
+    const emailCount = await this.redis.incr(emailKey);
+    if (emailCount === 1) await this.redis.expire(emailKey, window);
+    if (emailCount > limit) return;
+
+    if (ip) {
+      const ipKey = `${this.resetReqPrefix}${ip}`;
+      const ipCount = await this.redis.incr(ipKey);
+      if (ipCount === 1) await this.redis.expire(ipKey, window);
+      if (ipCount > limit) return;
+    }
+
+    const code = randomInt(100000, 1000000).toString();
     const ttl = this.config.get<number>('auth.resetTtl', 900);
-    await this.redis.set(`${this.resetPrefix}${email}`, code, 'EX', ttl);
+    const hash = this.hashCode(code);
+    await this.redis.set(`${this.resetPrefix}${email}`, hash, 'EX', ttl);
     await this.email.sendResetCode(email, code);
   }
 
   async verifyResetCode(email: string, code: string): Promise<boolean> {
     const stored = await this.redis.get(`${this.resetPrefix}${email}`);
-    return stored === code;
+    if (!stored) return false;
+    const hashed = this.hashCode(code);
+    if (stored.length !== hashed.length) return false;
+    return timingSafeEqual(
+      Buffer.from(stored, 'hex'),
+      Buffer.from(hashed, 'hex'),
+    );
   }
 
   async resetPassword(
