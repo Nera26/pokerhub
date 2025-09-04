@@ -38,4 +38,4 @@ The project uses Next.js `next/dynamic` for on-demand code splitting. Heavy or c
 ## Error Boundaries
 
 - A global error boundary lives in `src/app/error.tsx` to catch unhandled failures.
-- Each route also exports an `error.tsx` that reuses a shared `RouteError` component for localized recovery.
+- Site pages share a group-level `error.tsx` under `src/app/(site)` that reuses a shared `RouteError` component for localized recovery while preserving the common layout. All other routes fall back to the global error component.
