@@ -1003,6 +1003,8 @@ paths:
   /admin/deposits:
     get:
       summary: List pending deposits
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: Pending deposits
@@ -1013,6 +1015,8 @@ paths:
   /admin/deposits/{id}/confirm:
     post:
       summary: Confirm pending deposit
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -1029,6 +1033,8 @@ paths:
   /admin/deposits/{id}/reject:
     post:
       summary: Reject pending deposit
+      security:
+        - bearerAuth: []
       parameters:
         - in: path
           name: id
