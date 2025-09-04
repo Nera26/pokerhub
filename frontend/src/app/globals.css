@@ -163,25 +163,6 @@
   }
 
   /* Table seat states */
-  @keyframes soft-pulse {
-    0%,
-    100% {
-      opacity: 0.6;
-    }
-    50% {
-      opacity: 1;
-    }
-  }
-  @keyframes rim-sweep {
-    0% {
-      clip-path: inset(0 100% 0 0);
-      opacity: 1;
-    }
-    100% {
-      clip-path: inset(0 0 0 0);
-      opacity: 0;
-    }
-  }
   @keyframes balance-bloom {
     0%,
     100% {
