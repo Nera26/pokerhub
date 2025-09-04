@@ -1,6 +1,6 @@
 // components/common/FilterDropdown.tsx
 'use client';
-import React, { useState, useEffect, memo } from 'react';
+import { useState, useEffect } from 'react';
 import type { GameFilter, ProfitLossFilter } from '@/types/filters';
 
 interface FilterDropdownProps {
@@ -100,4 +100,4 @@ function FilterDropdown({
   );
 }
 
-export default memo(FilterDropdown);
+export default FilterDropdown;
