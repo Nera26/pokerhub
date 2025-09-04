@@ -134,7 +134,7 @@ function DashboardPage() {
   const title = titleMap[tab] ?? 'Admin Dashboard';
 
   return (
-    <div className="min-h-screen bg-primary-bg text-primary">
+    <div className="min-h-screen bg-primary-bg text-text-primary">
       {/* Header */}
       <header className="bg-card-bg border-b border-dark p-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -211,7 +211,7 @@ function DashboardPage() {
           ) : (
             <div className="bg-card-bg rounded-2xl p-8 card-shadow">
               <h3 className="text-xl font-semibold mb-2 capitalize">{tab}</h3>
-              <p className="text-secondary">This section is coming soon.</p>
+              <p className="text-text-secondary">This section is coming soon.</p>
             </div>
           )}
         </section>

@@ -37,7 +37,7 @@ export default function DashboardTabs({ tab, onChange }: DashboardTabsProps) {
               ${
                 current === t.id
                   ? 'border-accent-yellow text-accent-yellow'
-                  : 'border-transparent text-secondary hover:text-primary hover:border-hover-bg'
+                  : 'border-transparent text-text-secondary hover:text-text-primary hover:border-hover-bg'
               }`}
           >
             {t.label}

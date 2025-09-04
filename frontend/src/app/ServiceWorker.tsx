@@ -93,12 +93,12 @@ export default function ServiceWorker() {
   return (
     <>
       {isOffline && (
-        <div className="fixed bottom-4 left-4 z-50 rounded-xl bg-card-bg p-4 text-text-primary shadow-lg border border-border-color">
+        <div className="fixed bottom-4 left-4 z-50 rounded-xl bg-card-bg p-4 text-text-primary shadow-lg border border-border-dark">
           <p>{t('offlineNotice')}</p>
         </div>
       )}
       {isUpdateAvailable && (
-        <div className="fixed bottom-4 right-4 z-50 rounded-xl bg-card-bg p-4 text-text-primary shadow-lg border border-border-color">
+        <div className="fixed bottom-4 right-4 z-50 rounded-xl bg-card-bg p-4 text-text-primary shadow-lg border border-border-dark">
           <div
             role="alert"
             aria-live="assertive"

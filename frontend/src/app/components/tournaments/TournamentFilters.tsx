@@ -23,8 +23,8 @@ export default function TournamentFilters({ selected, onChange }: TournamentFilt
       {options.map(({ label, value }) => {
         const isActive = value === selected;
         const base = 'px-6 py-3 rounded-xl font-semibold text-sm transition-colors duration-200';
-        const activeClasses = 'bg-accent-yellow text-primary';
-        const inactiveClasses = 'bg-card-bg text-secondary hover:bg-hover-bg hover:text-accent-yellow';
+        const activeClasses = 'bg-accent-yellow text-text-primary';
+        const inactiveClasses = 'bg-card-bg text-text-secondary hover:bg-hover-bg hover:text-accent-yellow';
         return (
           <button
             key={value}

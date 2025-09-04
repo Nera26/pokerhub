@@ -9,7 +9,7 @@ function CardBack() {
   return (
     <div
       className={[
-        'w-full h-full rounded-xl border border-border-color/70',
+        'w-full h-full rounded-xl border border-border-dark/70',
         'bg-[linear-gradient(135deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0.02)_100%)]',
         'backdrop-blur-[0.5px] shadow-[0_6px_14px_rgba(0,0,0,0.35)]',
       ].join(' ')}
