@@ -111,6 +111,9 @@ describe('WalletService initiateBankTransfer checks', () => {
   beforeEach(() => {
     redisStore.clear();
     jest.clearAllMocks();
+    process.env.BANK_NAME = 'Test Bank';
+    process.env.BANK_ACCOUNT_NUMBER = '123456789';
+    process.env.BANK_ROUTING_CODE = '987654';
   });
 
   it('throws when KYC not verified', async () => {
@@ -128,5 +131,15 @@ describe('WalletService initiateBankTransfer checks', () => {
     await expect(
       service.initiateBankTransfer(userId, 10, 'dev', '1.1.1.1', 'USD'),
     ).rejects.toThrow('Rate limit exceeded');
+  });
+
+  it('throws when bank transfer env vars missing', async () => {
+    kyc.isVerified.mockResolvedValue(true);
+    delete process.env.BANK_NAME;
+    delete process.env.BANK_ACCOUNT_NUMBER;
+    delete process.env.BANK_ROUTING_CODE;
+    await expect(
+      service.initiateBankTransfer(userId, 10, 'dev', '1.1.1.1', 'USD'),
+    ).rejects.toThrow('Bank transfer configuration missing');
   });
 });
