@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Param, Body, Req, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Body,
+  Req,
+  BadRequestException,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { ZodError } from 'zod';
@@ -8,8 +17,11 @@ import {
   DepositDecisionRequestSchema,
   type DepositDecisionRequest,
 } from '../schemas/wallet';
+import { AuthGuard } from '../auth/auth.guard';
+import { AdminGuard } from '../auth/admin.guard';
 
 @ApiTags('admin')
+@UseGuards(AuthGuard, AdminGuard)
 @Controller('admin/deposits')
 export class AdminDepositsController {
   constructor(private readonly wallet: WalletService) {}
