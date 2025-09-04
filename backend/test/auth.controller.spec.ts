@@ -13,6 +13,7 @@ import { AuthRateLimitMiddleware } from '../src/auth/rate-limit.middleware';
 import * as bcrypt from 'bcrypt';
 import { UserRepository } from '../src/users/user.repository';
 import { EmailService } from '../src/auth/email.service';
+import { MetricsWriterService } from '../src/metrics/metrics-writer.service';
 
 class InMemoryUserRepository {
   private users: any[] = [];
@@ -65,6 +66,7 @@ describe('AuthController', () => {
         { provide: AnalyticsService, useValue: { emit: jest.fn() } },
         { provide: UserRepository, useClass: InMemoryUserRepository },
         { provide: EmailService, useClass: MockEmailService },
+        { provide: MetricsWriterService, useValue: { recordLogin: jest.fn() } },
       ],
     }).compile();
 
@@ -114,5 +116,19 @@ describe('AuthController', () => {
       .set('x-device-id', 'limit')
       .send({ email: 'user@example.com', password: 'wrong' })
       .expect(429);
+  });
+
+  it('invalidates refresh tokens after password reset', async () => {
+    const auth = app.get(AuthService);
+    const redis = app.get<MockRedis>('REDIS_CLIENT');
+    const tokens = await auth.login('user@example.com', 'secret');
+    expect(tokens).toBeTruthy();
+    await auth.requestPasswordReset('user@example.com');
+    const code = await redis.get('reset:user@example.com');
+    expect(code).toBeTruthy();
+    const ok = await auth.resetPassword('user@example.com', code!, 'new-secret');
+    expect(ok).toBe(true);
+    const rotated = await auth.refresh(tokens.refreshToken);
+    expect(rotated).toBeNull();
   });
 });
