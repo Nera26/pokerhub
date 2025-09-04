@@ -18,6 +18,27 @@ import {
   BetEvent as CollusionBetEvent,
 } from '../../../analytics/anti-collusion';
 
+interface AuditLog {
+  id: string;
+  timestamp: string;
+  type: string;
+  description: string;
+  user: string | null;
+  ip: string | null;
+}
+
+interface AuditSummaryRow {
+  total: string | number;
+  errors: string | number;
+  logins: string | number;
+}
+
+interface AuditSummary {
+  total: number;
+  errors: number;
+  logins: number;
+}
+
 const HandStartSchema = new ParquetSchema({
   handId: { type: 'UTF8' },
   tableId: { type: 'UTF8', optional: true },
@@ -208,14 +229,14 @@ export class AnalyticsService {
   }: {
     cursor?: number;
     limit?: number;
-  }) {
+  }): Promise<{ logs: AuditLog[]; nextCursor: number | null }> {
     if (this.client) {
       const res = await this.client.query({
         query: `SELECT id, ts AS timestamp, type, description, user, ip FROM audit_log ORDER BY ts DESC LIMIT {limit:UInt32} OFFSET {cursor:UInt32}`,
         query_params: { cursor, limit },
         format: 'JSONEachRow',
       });
-      const logs = (await res.json()) as any[];
+      const logs = (await res.json()) as AuditLog[];
       return {
         logs,
         nextCursor: logs.length === limit ? cursor + limit : null,
@@ -225,21 +246,21 @@ export class AnalyticsService {
     const start = cursor;
     const end = cursor + limit - 1;
     const entries = await this.redis.lrange('audit-logs', start, end);
-    const logs = entries.map((e) => JSON.parse(e));
+    const logs = entries.map((e) => JSON.parse(e) as AuditLog);
     return {
       logs,
       nextCursor: logs.length === limit ? cursor + limit : null,
     };
   }
 
-  async getAuditSummary() {
+  async getAuditSummary(): Promise<AuditSummary> {
     if (this.client) {
       const res = await this.client.query({
         query:
           "SELECT count() AS total, countIf(type='Error') AS errors, countIf(type='Login') AS logins FROM audit_log",
         format: 'JSONEachRow',
       });
-      const [row] = (await res.json()) as any[];
+      const [row] = (await res.json()) as AuditSummaryRow[];
       return {
         total: Number(row.total) || 0,
         errors: Number(row.errors) || 0,
@@ -258,7 +279,7 @@ export class AnalyticsService {
     return { total: entries.length, errors, logins };
   }
 
-  async ingest(table: string, data: Record<string, any>) {
+  async ingest<T extends Record<string, unknown>>(table: string, data: T) {
     if (!this.client) {
       this.logger.warn('No ClickHouse client configured');
       return;
@@ -271,7 +292,7 @@ export class AnalyticsService {
   }
 
   private buildSchema(record: Record<string, unknown>): ParquetSchema {
-    const fields: Record<string, any> = {};
+    const fields: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(record)) {
       if (Array.isArray(value)) {
         const first = value[0];
@@ -314,7 +335,7 @@ export class AnalyticsService {
       const chunks: Buffer[] = [];
       stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
       const writer = await ParquetWriter.openStream(schema, stream);
-      await writer.appendRow(row as Record<string, any>);
+      await writer.appendRow(row as Record<string, unknown>);
       await writer.close();
       const buffer = Buffer.concat(chunks);
       await this.gcs.uploadObject(key, buffer);
@@ -342,12 +363,12 @@ export class AnalyticsService {
         topic,
         messages: [{ value: JSON.stringify(payload) }],
       }),
-      this.ingest(event.replace('.', '_'), data as Record<string, any>),
-      this.archive(event, data as Record<string, unknown>),
+      this.ingest(event.replace('.', '_'), data),
+      this.archive(event, data),
     ]);
   }
 
-  async recordGameEvent(event: Record<string, any>) {
+  async recordGameEvent<T extends Record<string, unknown>>(event: T) {
     await this.redis.xadd(
       'analytics:game',
       '*',
@@ -380,7 +401,7 @@ export class AnalyticsService {
     }
   }
 
-  async recordTournamentEvent(event: Record<string, any>) {
+  async recordTournamentEvent<T extends Record<string, unknown>>(event: T) {
     await this.redis.xadd(
       'analytics:tournament',
       '*',
