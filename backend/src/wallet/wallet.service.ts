@@ -1,6 +1,6 @@
 import { Inject, Injectable, ForbiddenException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, LessThan } from 'typeorm';
 import { createHash, randomUUID } from 'crypto';
 import { Account } from './account.entity';
 import { JournalEntry } from './journal-entry.entity';
@@ -902,6 +902,7 @@ async initiateBankTransfer(
     reference: randomUUID(),
     status: 'pending',
     actionRequired: false,
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
   });
   const queue = await this.getPendingQueue();
   await queue.add('check', { id: deposit.id }, { delay: 10_000, jobId: deposit.id });
@@ -940,13 +941,23 @@ async cancelPendingDeposit(
 }
 
 async markActionRequiredIfPending(id: string, jobId?: string): Promise<void> {
-  const dep = await this.pendingDeposits.findOneBy({ id });
-  if (dep && dep.status === 'pending' && !dep.actionRequired) {
-    dep.actionRequired = true;
-    await this.pendingDeposits.save(dep);
+  const res = await this.pendingDeposits.update(
+    { id, status: 'pending', actionRequired: false },
+    { actionRequired: true },
+  );
+  if (res.affected && res.affected > 0) {
     const payload: { depositId: string; jobId?: string } = { depositId: id };
     if (jobId) payload.jobId = jobId;
     await this.events.emit('admin.deposit.pending', payload);
+  }
+}
+
+async rejectExpiredPendingDeposits(): Promise<void> {
+  const expired = await this.pendingDeposits.find({
+    where: { status: 'pending', expiresAt: LessThan(new Date()) },
+  });
+  for (const dep of expired) {
+    await this.rejectPendingDeposit(dep.id, 'system', 'expired');
   }
 }
 
@@ -983,6 +994,13 @@ async markActionRequiredIfPending(id: string, jobId?: string): Promise<void> {
       deposit.actionRequired = false;
       await this.pendingDeposits.save(deposit);
     } finally {
+      try {
+        const queue = await this.getPendingQueue();
+        const job = await queue.getJob(id);
+        if (job) await job.remove();
+      } catch {
+        // ignore queue errors
+      }
       await this.redis.del(lockKey);
     }
   }
@@ -1015,6 +1033,10 @@ async markActionRequiredIfPending(id: string, jobId?: string): Promise<void> {
         accountId: deposit.userId,
         depositId: deposit.id,
         currency: deposit.currency,
+        reason,
+      });
+      await this.events.emit('admin.deposit.rejected', {
+        depositId: deposit.id,
         reason,
       });
     } finally {

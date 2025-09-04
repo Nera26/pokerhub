@@ -1620,6 +1620,9 @@ components:
           enum: [pending, confirmed, rejected]
         actionRequired:
           type: boolean
+        expiresAt:
+          type: string
+          format: date-time
         confirmedBy:
           type: string
         confirmedAt:
@@ -1646,6 +1649,7 @@ components:
         - reference
         - status
         - actionRequired
+        - expiresAt
         - createdAt
         - updatedAt
     PendingDepositsResponse:
