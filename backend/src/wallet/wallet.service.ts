@@ -979,7 +979,7 @@ async rejectExpiredPendingDeposits(): Promise<void> {
 
   async listPendingDeposits() {
     return this.pendingDeposits.find({
-      where: { status: 'pending' },
+      where: { status: 'pending', actionRequired: true },
       order: { createdAt: 'ASC' },
     });
   }
