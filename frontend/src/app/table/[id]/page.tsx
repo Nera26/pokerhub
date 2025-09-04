@@ -12,25 +12,36 @@ interface PageProps {
   params: { id: string };
 }
 
+export function applyDelta(
+  target: GameState | null,
+  delta: Partial<GameState>,
+): GameState {
+  if (!delta || typeof delta !== 'object') return delta as GameState;
+  const result: GameState = Array.isArray(target)
+    ? ([...(target ?? [])] as unknown as GameState)
+    : ({ ...(target ?? {}) } as GameState);
+  for (const [key, value] of Object.entries(delta) as [
+    keyof GameState,
+    Partial<GameState[keyof GameState]>
+  ][]) {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      (result as Record<string, unknown>)[key as string] = applyDelta(
+        (result as Record<string, unknown>)[key as string] as GameState,
+        value as Partial<GameState>,
+      );
+    } else {
+      (result as Record<string, unknown>)[key as string] = value as unknown;
+    }
+  }
+  return result;
+}
+
 export default function TablePage({ params }: PageProps) {
   const tableId = params.id;
   const { socket, join, sendAction } = useGameSocket();
   const [state, setState] = useState<GameState | null>(null);
   const [status, setStatus] = useState('');
   const [lastActionId, setLastActionId] = useState<string | null>(null);
-
-  const applyDelta = (target: any, delta: any): any => {
-    if (!delta || typeof delta !== 'object') return delta;
-    const result: any = Array.isArray(target) ? [...(target ?? [])] : { ...(target ?? {}) };
-    for (const [key, value] of Object.entries(delta)) {
-      if (value && typeof value === 'object' && !Array.isArray(value)) {
-        result[key] = applyDelta(result[key], value);
-      } else {
-        result[key] = value as any;
-      }
-    }
-    return result;
-  };
 
   // Join table and listen for state/ack/error events
   useEffect(() => {
@@ -91,13 +102,13 @@ export default function TablePage({ params }: PageProps) {
         : Date.now().toString();
     setLastActionId(actionId);
     setStatus('Sending action...');
-    sendAction({ ...action, actionId }).catch((err) =>
+    sendAction({ ...action, actionId } as any).catch((err) =>
       setStatus(`Error: ${err.message}`),
     );
   };
 
-  const players = ((state as any)?.players ?? []) as any[];
-  const communityCards = ((state as any)?.communityCards ?? []) as string[];
+  const players: GameState['players'] = state?.players ?? [];
+  const communityCards: string[] = (state?.communityCards ?? []).map(String);
 
   return (
     <div className="p-4 space-y-4">
