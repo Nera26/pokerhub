@@ -993,6 +993,20 @@ async rejectExpiredPendingDeposits(): Promise<void> {
       deposit.confirmedAt = new Date();
       deposit.actionRequired = false;
       await this.pendingDeposits.save(deposit);
+      await this.events.emit('notification.create', {
+        userId: deposit.userId,
+        type: 'system',
+        message: 'Deposit confirmed',
+      });
+      await this.events.emit('wallet.deposit.confirmed', {
+        accountId: deposit.userId,
+        depositId: deposit.id,
+        amount: deposit.amount,
+        currency: deposit.currency,
+      });
+      await this.events.emit('admin.deposit.confirmed', {
+        depositId: deposit.id,
+      });
     } finally {
       try {
         const queue = await this.getPendingQueue();

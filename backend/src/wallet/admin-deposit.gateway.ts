@@ -3,7 +3,11 @@ import { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Server } from 'socket.io';
 import { Kafka, Consumer } from 'kafkajs';
 import { ConfigService } from '@nestjs/config';
-import { AdminDepositPendingEvent, AdminDepositRejectedEvent } from '@shared/events';
+import {
+  AdminDepositPendingEvent,
+  AdminDepositRejectedEvent,
+  AdminDepositConfirmedEvent,
+} from '@shared/events';
 
 @WebSocketGateway({ namespace: 'admin' })
 export class AdminDepositGateway implements OnModuleInit, OnModuleDestroy {
@@ -25,6 +29,7 @@ export class AdminDepositGateway implements OnModuleInit, OnModuleDestroy {
     await this.consumer.connect();
     await this.consumer.subscribe({ topic: 'admin.deposit.pending' });
     await this.consumer.subscribe({ topic: 'admin.deposit.rejected' });
+    await this.consumer.subscribe({ topic: 'admin.deposit.confirmed' });
     await this.consumer.run({
       eachMessage: async ({ topic, message }) => {
         if (!message.value) return;
@@ -39,6 +44,11 @@ export class AdminDepositGateway implements OnModuleInit, OnModuleDestroy {
               JSON.parse(message.value.toString()),
             );
             this.server.emit('deposit.rejected', payload);
+          } else if (topic === 'admin.deposit.confirmed') {
+            const payload = AdminDepositConfirmedEvent.parse(
+              JSON.parse(message.value.toString()),
+            );
+            this.server.emit('deposit.confirmed', payload);
           }
         } catch (err) {
           // ignore malformed events

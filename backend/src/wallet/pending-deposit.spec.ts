@@ -87,29 +87,55 @@ describe('Pending deposits', () => {
     (service as any).pendingQueue.getJob.mockClear();
     removeJob.mockClear();
 
-    const res = await service.initiateBankTransfer(userId, 100, 'dev1', '1.1.1.1', 'USD');
+    const res = await service.initiateBankTransfer(
+      userId,
+      100,
+      'dev1',
+      '1.1.1.1',
+      'USD',
+    );
     const deposit = await dataSource
       .getRepository(PendingDeposit)
       .findOneByOrFail({ reference: res.reference });
     expect(deposit.currency).toBe('USD');
 
+    (events.emit as jest.Mock).mockClear();
     await service.confirmPendingDeposit(deposit.id, 'admin');
 
     expect((service as any).pendingQueue.getJob).toHaveBeenCalledWith(deposit.id);
     expect(removeJob).toHaveBeenCalled();
+    expect(events.emit).toHaveBeenCalledWith(
+      'notification.create',
+      expect.objectContaining({ userId, message: 'Deposit confirmed' }),
+    );
+    expect(events.emit).toHaveBeenCalledWith(
+      'wallet.deposit.confirmed',
+      expect.objectContaining({
+        accountId: userId,
+        depositId: deposit.id,
+        amount: 100,
+        currency: 'USD',
+      }),
+    );
+    expect(events.emit).toHaveBeenCalledWith('admin.deposit.confirmed', {
+      depositId: deposit.id,
+    });
 
     const accountRepo = dataSource.getRepository(Account);
     const user = await accountRepo.findOneByOrFail({ id: userId });
     expect(user.balance).toBe(100);
 
     // idempotent
+    (events.emit as jest.Mock).mockClear();
     await service.confirmPendingDeposit(deposit.id, 'admin');
     const userAgain = await accountRepo.findOneByOrFail({ id: userId });
     expect(userAgain.balance).toBe(100);
+    expect(events.emit).not.toHaveBeenCalled();
 
-    (events.emit as jest.Mock).mockClear();
     await service.markActionRequiredIfPending(deposit.id, 'job-x');
-    const after = await dataSource.getRepository(PendingDeposit).findOneByOrFail({ id: deposit.id });
+    const after = await dataSource
+      .getRepository(PendingDeposit)
+      .findOneByOrFail({ id: deposit.id });
     expect(after.actionRequired).toBe(false);
     expect(events.emit).not.toHaveBeenCalled();
   });

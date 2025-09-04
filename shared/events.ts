@@ -143,6 +143,13 @@ export const WalletDepositRejectedEvent = z.object({
   reason: z.string().optional(),
 });
 
+export const WalletDepositConfirmedEvent = z.object({
+  accountId: z.string().uuid(),
+  depositId: z.string().uuid(),
+  amount: z.number(),
+  currency: z.string().length(3),
+});
+
 export const AdminDepositPendingEvent = z.object({
   depositId: z.string().uuid(),
   jobId: z.string(),
@@ -151,6 +158,10 @@ export const AdminDepositPendingEvent = z.object({
 export const AdminDepositRejectedEvent = z.object({
   depositId: z.string().uuid(),
   reason: z.string().optional(),
+});
+
+export const AdminDepositConfirmedEvent = z.object({
+  depositId: z.string().uuid(),
 });
 
 export const EventSchemas = {
@@ -176,8 +187,10 @@ export const EventSchemas = {
   "wallet.chargeback_flag": WalletChargebackFlagEvent,
   "notification.create": NotificationCreateEvent,
   "wallet.deposit.rejected": WalletDepositRejectedEvent,
+  "wallet.deposit.confirmed": WalletDepositConfirmedEvent,
   "admin.deposit.pending": AdminDepositPendingEvent,
   "admin.deposit.rejected": AdminDepositRejectedEvent,
+  "admin.deposit.confirmed": AdminDepositConfirmedEvent,
 } as const;
 
 export type Events = {
@@ -203,8 +216,10 @@ export type Events = {
   "wallet.chargeback_flag": z.infer<typeof WalletChargebackFlagEvent>;
   "notification.create": z.infer<typeof NotificationCreateEvent>;
   "wallet.deposit.rejected": z.infer<typeof WalletDepositRejectedEvent>;
+  "wallet.deposit.confirmed": z.infer<typeof WalletDepositConfirmedEvent>;
   "admin.deposit.pending": z.infer<typeof AdminDepositPendingEvent>;
   "admin.deposit.rejected": z.infer<typeof AdminDepositRejectedEvent>;
+  "admin.deposit.confirmed": z.infer<typeof AdminDepositConfirmedEvent>;
 };
 
 export type EventName = keyof Events;
