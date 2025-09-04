@@ -69,15 +69,15 @@ are exported under the [`load/metrics`](../load/metrics) directory:
 
 ## 100k socket harness
 
-`backend/tests/high-scale-harness.ts` drives 100k WebSocket clients across
+`backend/test/high-scale-harness.ts` drives 100k WebSocket clients across
 10k tables while [Toxiproxy](https://github.com/Shopify/toxiproxy) injects
 200 ms latency, 200 ms jitter and 5 % packet loss. The run records
 `latency-hist.json`, `memory-usage.json`, `gc-usage.json` and `seeds.json` for
 deterministic replay:
 
 ```bash
-ts-node backend/tests/high-scale-harness.ts
-ts-node backend/tests/replay.ts       # replay using seeds.json
+ts-node backend/test/high-scale-harness.ts
+ts-node backend/test/replay.ts       # replay using seeds.json
 ```
 
 Platform level load is exercised with `infra/tests/load/k6-100k-chaos.js` which
