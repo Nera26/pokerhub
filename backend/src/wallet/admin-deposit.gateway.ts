@@ -3,7 +3,7 @@ import { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Server } from 'socket.io';
 import { Kafka, Consumer } from 'kafkajs';
 import { ConfigService } from '@nestjs/config';
-import { AdminDepositPendingEvent } from '@shared/events';
+import { AdminDepositPendingEvent, AdminDepositRejectedEvent } from '@shared/events';
 
 @WebSocketGateway({ namespace: 'admin' })
 export class AdminDepositGateway implements OnModuleInit, OnModuleDestroy {
@@ -24,14 +24,22 @@ export class AdminDepositGateway implements OnModuleInit, OnModuleDestroy {
     this.consumer = kafka.consumer({ groupId: 'admin-deposits' });
     await this.consumer.connect();
     await this.consumer.subscribe({ topic: 'admin.deposit.pending' });
+    await this.consumer.subscribe({ topic: 'admin.deposit.rejected' });
     await this.consumer.run({
-      eachMessage: async ({ message }) => {
+      eachMessage: async ({ topic, message }) => {
         if (!message.value) return;
         try {
-          const payload = AdminDepositPendingEvent.parse(
-            JSON.parse(message.value.toString()),
-          );
-          this.server.emit('deposit.pending', payload);
+          if (topic === 'admin.deposit.pending') {
+            const payload = AdminDepositPendingEvent.parse(
+              JSON.parse(message.value.toString()),
+            );
+            this.server.emit('deposit.pending', payload);
+          } else if (topic === 'admin.deposit.rejected') {
+            const payload = AdminDepositRejectedEvent.parse(
+              JSON.parse(message.value.toString()),
+            );
+            this.server.emit('deposit.rejected', payload);
+          }
         } catch (err) {
           // ignore malformed events
         }

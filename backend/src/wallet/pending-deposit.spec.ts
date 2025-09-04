@@ -163,4 +163,26 @@ describe('Pending deposits', () => {
     const list = await service.listPendingDeposits();
     expect(list.find((d) => d.id === deposit.id)).toBeUndefined();
   });
+
+  it('auto rejects expired deposits', async () => {
+    (events.emit as jest.Mock).mockClear();
+    const res = await service.initiateBankTransfer(userId, 20, 'dev5', '1.1.1.5', 'USD');
+    const repo = dataSource.getRepository(PendingDeposit);
+    const dep = await repo.findOneByOrFail({ reference: res.reference });
+    dep.expiresAt = new Date(Date.now() - 1000);
+    await repo.save(dep);
+
+    await service.rejectExpiredPendingDeposits();
+
+    const updated = await repo.findOneByOrFail({ id: dep.id });
+    expect(updated.status).toBe('rejected');
+    expect(events.emit).toHaveBeenCalledWith(
+      'wallet.deposit.rejected',
+      expect.objectContaining({ depositId: dep.id, reason: 'expired' }),
+    );
+    expect(events.emit).toHaveBeenCalledWith(
+      'admin.deposit.rejected',
+      expect.objectContaining({ depositId: dep.id, reason: 'expired' }),
+    );
+  });
 });

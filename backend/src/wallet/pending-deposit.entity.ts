@@ -31,6 +31,9 @@ export class PendingDeposit {
   @Column({ default: false })
   actionRequired: boolean;
 
+  @Column({ type: 'timestamptz' })
+  expiresAt: Date;
+
   @Column({ nullable: true })
   confirmedBy?: string;
 

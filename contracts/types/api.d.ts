@@ -1457,6 +1457,8 @@ export interface components {
       /** @enum {string} */
       status: "pending" | "confirmed" | "rejected";
       actionRequired: boolean;
+      /** Format: date-time */
+      expiresAt: string;
       confirmedBy?: string;
       /** Format: date-time */
       confirmedAt?: string;
