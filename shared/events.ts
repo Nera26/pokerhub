@@ -139,6 +139,7 @@ export const NotificationCreateEvent = z.object({
 export const WalletDepositRejectedEvent = z.object({
   accountId: z.string().uuid(),
   depositId: z.string().uuid(),
+  currency: z.string().length(3),
   reason: z.string().optional(),
 });
 
