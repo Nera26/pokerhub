@@ -925,12 +925,14 @@ async initiateBankTransfer(
 
     await this.enforceDailyLimit('deposit', accountId, amount, currency);
 
+    const refNum = await this.redis.incr('wallet:deposit:ref');
+    const reference = `DEP${refNum.toString().padStart(5, '0')}`;
     const deposit = await this.pendingDeposits.save({
       id: randomUUID(),
       userId: accountId,
       amount,
       currency,
-      reference: randomUUID(),
+      reference,
       status: 'pending',
       actionRequired: false,
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),

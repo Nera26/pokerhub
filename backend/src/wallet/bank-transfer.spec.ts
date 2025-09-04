@@ -16,8 +16,13 @@ describe('WalletService initiateBankTransfer checks', () => {
   let service: WalletService;
   const events: EventPublisher = { emit: jest.fn() } as any;
   const redisStore = new Map<string, any>();
+  let depSeq = 0;
   const redis: any = {
     incr: jest.fn(async (key: string) => {
+      if (key === 'wallet:deposit:ref') {
+        depSeq += 1;
+        return depSeq;
+      }
       const val = (redisStore.get(key) ?? 0) + 1;
       redisStore.set(key, val);
       return val;
@@ -150,6 +155,27 @@ describe('WalletService initiateBankTransfer checks', () => {
     await expect(
       service.initiateBankTransfer(userId, 10, 'dev', '1.1.1.1', 'USD'),
     ).rejects.toThrow('Bank transfer configuration missing');
+  });
+
+  it('generates unique deposit references with prefix', async () => {
+    kyc.isVerified.mockResolvedValue(true);
+    const first = await service.initiateBankTransfer(
+      userId,
+      10,
+      'dev',
+      '1.1.1.1',
+      'USD',
+    );
+    const second = await service.initiateBankTransfer(
+      userId,
+      10,
+      'dev',
+      '1.1.1.1',
+      'USD',
+    );
+    expect(first.reference).toMatch(/^DEP\d{5}$/);
+    expect(second.reference).toMatch(/^DEP\d{5}$/);
+    expect(second.reference).not.toBe(first.reference);
   });
 
   it('returns same response for repeated idempotent requests', async () => {

@@ -19,8 +19,13 @@ describe('Pending deposits', () => {
   let service: WalletService;
   let removeJob: jest.Mock;
   const events: EventPublisher = { emit: jest.fn() } as any;
+  const redisStore = new Map<string, number>();
   const redis: any = {
-    incr: jest.fn(),
+    incr: jest.fn(async (key: string) => {
+      const val = (redisStore.get(key) ?? 0) + 1;
+      redisStore.set(key, val);
+      return val;
+    }),
     incrby: jest.fn().mockResolvedValue(0),
     expire: jest.fn(),
     set: jest.fn().mockResolvedValue('1'),
