@@ -85,7 +85,7 @@ run_soak() {
     echo "Skipping soak test (set RUN_SOAK=1 to enable)"
     return 0
   fi
-  NODE_OPTIONS=--expose-gc DURATION_MS="${DURATION_MS:-10000}" npx ts-node --compiler-options '{"module":"commonjs"}' backend/tests/soak-harness.ts
+  NODE_OPTIONS=--expose-gc DURATION_MS="${DURATION_MS:-10000}" npx ts-node --compiler-options '{"module":"commonjs"}' backend/test/soak-harness.ts
 }
 
 case "${1:-}" in
