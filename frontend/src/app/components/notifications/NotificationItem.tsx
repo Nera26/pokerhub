@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import Tooltip from '../ui/Tooltip';
 import type { Notification } from '@/lib/api/notifications';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
