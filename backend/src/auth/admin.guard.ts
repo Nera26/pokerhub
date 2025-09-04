@@ -8,22 +8,14 @@ import {
 import { ConfigService } from '@nestjs/config';
 import jwt from 'jsonwebtoken';
 import type { Socket } from 'socket.io';
+import { extractBearerToken } from './token.util';
 
 @Injectable()
 export class AdminGuard implements CanActivate {
   constructor(private readonly config: ConfigService) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const header =
-      context.getType() === 'ws'
-        ? context.switchToWs().getClient<Socket>().handshake?.headers?.[
-            'authorization'
-          ]
-        : context.switchToHttp().getRequest().headers['authorization'];
-    if (typeof header !== 'string' || !header.startsWith('Bearer ')) {
-      throw new UnauthorizedException();
-    }
-    const token = header.slice(7);
+    const token = extractBearerToken(context);
     const secrets = this.config.get<string[]>('auth.jwtSecrets', []);
     let payload: any = null;
     for (const secret of secrets) {
