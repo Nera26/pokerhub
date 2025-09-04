@@ -18,7 +18,7 @@ import { Readable } from 'stream';
 import { join } from 'path';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
-import jwt from 'jsonwebtoken';
+import jwt, { type JwtPayload } from 'jsonwebtoken';
 import type { Request } from 'express';
 import { Hand } from '../database/entities/hand.entity';
 import {
@@ -33,6 +33,11 @@ import { HandLog } from './hand-log';
 import { sanitize } from './state-sanitize';
 import { GameStateSchema, type GameState } from '@shared/types';
 
+interface JwtClaims extends JwtPayload {
+  sub: string;
+  role?: string;
+}
+
 @ApiTags('hands')
 @Controller('hands')
 export class HandController {
@@ -41,23 +46,23 @@ export class HandController {
     private readonly config: ConfigService,
   ) {}
 
-  private verifyToken(header?: string) {
+  private verifyToken(header?: string): JwtClaims {
     if (typeof header !== 'string' || !header.startsWith('Bearer ')) {
       throw new UnauthorizedException();
     }
     const token = header.slice(7);
     const secrets = this.config.get<string[]>('auth.jwtSecrets', []);
-    let payload: any = null;
+    let payload: JwtClaims | null = null;
     for (const secret of secrets) {
       try {
-        payload = jwt.verify(token, secret);
+        payload = jwt.verify(token, secret) as JwtClaims;
         break;
       } catch {
         continue;
       }
     }
     if (!payload) throw new UnauthorizedException();
-    return { userId: payload.sub as string, isAdmin: payload.role === 'admin' };
+    return payload;
   }
 
   private async getParticipants(id: string): Promise<Set<string>> {
@@ -103,8 +108,8 @@ export class HandController {
     @Query('to') to?: string,
     @Query('ids') ids?: string,
   ): Promise<HandProofsResponse> {
-    const { isAdmin } = this.verifyToken(req.headers['authorization']);
-    if (!isAdmin) {
+    const { role } = this.verifyToken(req.headers['authorization']);
+    if (role !== 'admin') {
       throw new ForbiddenException();
     }
 
@@ -152,9 +157,9 @@ export class HandController {
     @Param('id') id: string,
     @Req() req: Request,
   ): Promise<HandProofResponse> {
-    const { userId, isAdmin } = this.verifyToken(req.headers['authorization']);
+    const { sub: userId, role } = this.verifyToken(req.headers['authorization']);
     const participants = await this.getParticipants(id);
-    if (!isAdmin && !participants.has(userId)) {
+    if (role !== 'admin' && !participants.has(userId)) {
       throw new ForbiddenException();
     }
 
@@ -199,9 +204,9 @@ export class HandController {
     @Param('index') indexParam: string,
     @Req() req: Request,
   ): Promise<GameState> {
-    const { userId, isAdmin } = this.verifyToken(req.headers['authorization']);
+    const { sub: userId, role } = this.verifyToken(req.headers['authorization']);
     const participants = await this.getParticipants(id);
-    if (!isAdmin && !participants.has(userId)) {
+    if (role !== 'admin' && !participants.has(userId)) {
       throw new ForbiddenException();
     }
 
@@ -256,9 +261,9 @@ export class HandController {
     @Param('id') id: string,
     @Req() req: Request,
   ): Promise<StreamableFile> {
-    const { userId, isAdmin } = this.verifyToken(req.headers['authorization']);
+    const { sub: userId, role } = this.verifyToken(req.headers['authorization']);
     const participants = await this.getParticipants(id);
-    if (!isAdmin && !participants.has(userId)) {
+    if (role !== 'admin' && !participants.has(userId)) {
       throw new ForbiddenException();
     }
 
