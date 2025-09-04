@@ -5,10 +5,6 @@ This repository (`pokerhub`) is the **root meta repo**. It contains two synced *
 /frontend → https://github.com/Nera26/poker-frontend (Next.js UI)
 /backend → https://github.com/Nera26/pokerhub-backend (Express.js API)
 / → docs, workflows, CI, shared contracts
-
-markdown
-Copy code
-
 > ⚠️ All work flows through the **root** repo. Do **not** push directly to child repos; the root mirrors them (via CI or `git subtree push`).
 
 ---
@@ -62,10 +58,6 @@ types.ts # shared DTO interfaces (imported by FE & BE)
 workflows/
 sync-subtrees.yml # auto-mirror frontend & backend repos
 agents.md # this file
-
-yaml
-Copy code
-
 > Prefer **shared types** in `/shared/` and import them from both apps to minimize drift.
 
 ---
@@ -77,6 +69,7 @@ Copy code
 git clone https://github.com/Nera26/pokerhub.git
 cd pokerhub
 npm run pull:all            # pulls latest FE & BE from child repos (subtree)
+```
 4.2 Branching
 Feature branches: feat/<area>-<short-desc>
 
@@ -90,11 +83,11 @@ Backend: implement route + Zod schemas under /backend/src/schemas, update /contr
 Frontend: update service layer to use shared DTOs, wire UI, keep types in sync.
 
 4.4 Commit Message Convention
-pgsql
-Copy code
+```
 feat(api+ui): add /tables/{id}/min-raise and integrate lobby bet presets
 fix(ui): clamp bet input by BB increment on turn
 chore(contracts): regenerate api.d.ts from openapi.yaml
+```
 4.5 PR Requirements (must pass before merge)
 ✅ API ↔ UI contract checklist (below) checked
 
@@ -137,11 +130,10 @@ Contract version lives in /shared/constants.ts as API_CONTRACT_VERSION.
 If a change is backward-incompatible, bump MAJOR; otherwise bump MINOR.
 
 The frontend refuses to run against mismatched major versions and shows a friendly upgrade notice.
-
-ts
-Copy code
+```ts
 // /shared/constants.ts
 export const API_CONTRACT_VERSION = "2.1.0"; // MAJOR.MINOR.PATCH
+```
 7) Testing Policy
 Backend
 
@@ -163,30 +155,27 @@ Minimum bar to merge: all tests green, CI status checks required.
 
 8) Subtree Commands (for integrators)
 Pull latest from child repos
-
-bash
-Copy code
+```bash
 npm run pull:frontend   # git subtree pull --prefix frontend frontend-remote main --squash
 npm run pull:backend    # git subtree pull --prefix backend  backend-remote  main --squash
 npm run pull:all
+```
 Push changes back to child repos
-
-bash
-Copy code
+```bash
 npm run push:frontend   # git subtree push --prefix frontend frontend-remote main
 npm run push:backend    # git subtree push --prefix backend  backend-remote  main
 npm run push:all
+```
 CI auto-mirroring runs on every push to main. Token used: SUBTREE_PUSH_TOKEN.
 
 9) Code Owners & Reviews
 Define reviewers in .github/CODEOWNERS:
-
-swift
-Copy code
+```
 /frontend/ @Nera26 @FrontendTeam
 /backend/  @Nera26 @BackendTeam
 /contracts/ @Nera26 @IntegrationTeam
 /shared/   @Nera26 @IntegrationTeam
+```
 Any PR that touches contract (backend routes, schemas, /contracts, /shared) requires both FE & BE approvals.
 
 10) Breaking Change Procedure (API)
@@ -202,9 +191,7 @@ Remove old endpoint after the window; bump MAJOR.
 
 11) Quick Example (Contract-Driven)
 Backend (/backend/src/schemas/tables.ts)
-
-ts
-Copy code
+```ts
 import { z } from "zod";
 
 export const TableId = z.string().uuid();
@@ -216,15 +203,13 @@ export const GetMinRaiseResponse = z.object({
 });
 
 export type GetMinRaiseResponse = z.infer<typeof GetMinRaiseResponse>;
+```
 Shared DTO (/shared/types.ts)
-
-ts
-Copy code
+```ts
 export type { GetMinRaiseResponse } from "../backend/src/schemas/tables"; // or generate from OpenAPI
+```
 Frontend service (/frontend/src/lib/api/tables.ts)
-
-ts
-Copy code
+```ts
 import type { GetMinRaiseResponse } from "@shared/types";
 
 export async function getMinRaise(tableId: string): Promise<GetMinRaiseResponse> {
@@ -232,6 +217,7 @@ export async function getMinRaise(tableId: string): Promise<GetMinRaiseResponse>
   if (!res.ok) throw new Error("Failed to fetch min-raise");
   return (await res.json()) as GetMinRaiseResponse;
 }
+```
 This ensures the exact same type is used on both sides.
 
 12) CI Rules (root)
