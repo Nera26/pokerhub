@@ -1391,8 +1391,14 @@ export interface components {
       deviceId: string;
       ip?: string;
     };
+    BankDetails: {
+      bankName: string;
+      accountNumber: string;
+      routingCode: string;
+    };
     BankTransferDepositResponse: {
       reference: string;
+      bank: components["schemas"]["BankDetails"];
     };
     ProviderChallenge: {
       id?: string;

@@ -5,6 +5,8 @@ import {
   MessageResponseSchema,
   WithdrawRequestSchema,
   DepositRequestSchema,
+  BankTransferDepositRequestSchema,
+  BankTransferDepositResponseSchema,
   type MessageResponse,
   WalletStatusResponseSchema,
   type WalletStatusResponse,
@@ -101,6 +103,29 @@ export function deposit(
   return apiClient(
     `/api/wallet/${playerId}/deposit`,
     WalletStatusResponseSchema,
+    {
+      method: 'POST',
+      body: payload,
+      signal: opts.signal,
+    },
+  );
+}
+
+export function initiateBankTransfer(
+  playerId: string,
+  amount: number,
+  deviceId: string,
+  currency: string,
+  opts: { signal?: AbortSignal } = {},
+) {
+  const payload = BankTransferDepositRequestSchema.parse({
+    amount,
+    deviceId,
+    currency,
+  });
+  return apiClient(
+    `/api/wallet/${playerId}/deposit/bank-transfer`,
+    BankTransferDepositResponseSchema,
     {
       method: 'POST',
       body: payload,

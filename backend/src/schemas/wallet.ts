@@ -109,8 +109,16 @@ export type BankTransferDepositRequest = z.infer<
   typeof BankTransferDepositRequestSchema
 >;
 
+export const BankDetailsSchema = z.object({
+  bankName: z.string(),
+  accountNumber: z.string(),
+  routingCode: z.string(),
+});
+export type BankDetails = z.infer<typeof BankDetailsSchema>;
+
 export const BankTransferDepositResponseSchema = z.object({
   reference: z.string(),
+  bank: BankDetailsSchema,
 });
 export type BankTransferDepositResponse = z.infer<
   typeof BankTransferDepositResponseSchema
