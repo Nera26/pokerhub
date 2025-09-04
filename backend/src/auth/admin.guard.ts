@@ -1,14 +1,25 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import jwt from 'jsonwebtoken';
+import type { Socket } from 'socket.io';
 
 @Injectable()
 export class AdminGuard implements CanActivate {
   constructor(private readonly config: ConfigService) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const req = context.switchToHttp().getRequest();
-    const header = req.headers['authorization'];
+    const header =
+      context.getType() === 'ws'
+        ? context.switchToWs().getClient<Socket>().handshake?.headers?.[
+            'authorization'
+          ]
+        : context.switchToHttp().getRequest().headers['authorization'];
     if (typeof header !== 'string' || !header.startsWith('Bearer ')) {
       throw new UnauthorizedException();
     }
@@ -29,7 +40,14 @@ export class AdminGuard implements CanActivate {
     if (payload.role !== 'admin') {
       throw new ForbiddenException();
     }
-    req.userId = payload.sub;
+    if (context.getType() === 'ws') {
+      const client = context.switchToWs().getClient<Socket & { data: any }>();
+      client.data = client.data ?? {};
+      client.data.userId = payload.sub;
+    } else {
+      const req = context.switchToHttp().getRequest();
+      req.userId = payload.sub;
+    }
     return true;
   }
 }
