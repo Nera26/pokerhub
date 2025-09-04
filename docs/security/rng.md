@@ -12,5 +12,5 @@ To independently verify a shuffle:
 
 ## Test Vectors
 
-Reference test vectors for the RNG implementation are stored in [`backend/services/random/test/vectors.json`](../../backend/services/random/test/vectors.json).
+Reference test vectors for the RNG implementation are stored in [`backend/deprecated/random/test/vectors.json`](../../backend/deprecated/random/test/vectors.json).
 
