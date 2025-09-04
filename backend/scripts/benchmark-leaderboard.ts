@@ -1,12 +1,19 @@
 #!/usr/bin/env ts-node
 import { promises as fs } from 'fs';
 import { join } from 'path';
+import { Module } from 'module';
+import type { Cache } from 'cache-manager';
+import type { Repository } from 'typeorm';
+import type { ConfigService } from '@nestjs/config';
+import type { AnalyticsService } from '../src/analytics/analytics.service';
+import type { Leaderboard } from '../src/database/entities/leaderboard.entity';
+import type { User } from '../src/database/entities/user.entity';
 import { LeaderboardService } from '../src/leaderboard/leaderboard.service';
 import { startLeaderboardRebuildWorker } from '../src/leaderboard/rebuild.worker';
 
 // Use test helper bullmq stub
 process.env.NODE_PATH = join(__dirname, '../test/utils');
-require('module').Module._initPaths();
+(Module._initPaths as () => void)();
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -38,47 +45,53 @@ async function writeSyntheticEvents(
 }
 
 class MockCache {
-  private store = new Map<string, any>();
-  async get<T>(key: string): Promise<T | undefined> {
-    return this.store.get(key);
+  private store = new Map<string, unknown>();
+  get<T>(key: string): Promise<T | undefined> {
+    return Promise.resolve(this.store.get(key) as T | undefined);
   }
-  async set<T>(key: string, value: T): Promise<void> {
+  set<T>(key: string, value: T): Promise<void> {
     this.store.set(key, value);
+    return Promise.resolve();
   }
-  async del(key: string): Promise<void> {
+  del(key: string): Promise<void> {
     this.store.delete(key);
+    return Promise.resolve();
   }
 }
 
-class MockConfigService {
-  // eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-unused-vars
-  get<T>(_key: string, defaultValue: T): T {
+const mockConfig = {
+  get<T>(_: string, defaultValue: T): T {
     return defaultValue;
-  }
-}
+  },
+};
 
 async function main(): Promise<void> {
   const maxDurationMs = Number(
     process.env.LEADERBOARD_WORKER_MAX_MS ?? 30 * 60 * 1000,
   );
   await writeSyntheticEvents(30);
-  const cache = new MockCache();
-  const analytics = { ingest: async () => {}, rangeStream: async () => [] };
+  const cache = new MockCache() as unknown as Cache;
+  const analytics = {
+    ingest: () => Promise.resolve(),
+    rangeStream: () => Promise.resolve([]),
+  } as unknown as AnalyticsService;
   const repo = {
-    clear: async () => {},
-    insert: async () => {},
-    find: async () => [],
-  } as any;
+    clear: () => Promise.resolve(),
+    insert: () => Promise.resolve(),
+    find: () => Promise.resolve([]),
+  } as unknown as Repository<Leaderboard>;
   const service = new LeaderboardService(
-    cache as any,
-    { find: async () => [] } as any,
+    cache,
+    { find: () => Promise.resolve([]) } as unknown as Repository<User>,
     repo,
-    analytics as any,
-    new MockConfigService() as any,
+    analytics,
+    mockConfig as unknown as ConfigService,
   );
   const start = process.hrtime.bigint();
   await startLeaderboardRebuildWorker(service);
-  const durationMs = Number((process.hrtime.bigint() - start) / BigInt(1_000_000));
+  const durationMs = Number(
+    (process.hrtime.bigint() - start) / BigInt(1_000_000),
+  );
   console.log(`worker rebuild duration: ${durationMs}ms`);
   if (durationMs > maxDurationMs) {
     throw new Error(`Rebuild exceeded ${maxDurationMs}ms`);
