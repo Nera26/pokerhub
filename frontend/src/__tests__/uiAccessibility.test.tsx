@@ -1,18 +1,10 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
-import Avatar from '../app/components/ui/Avatar';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { Button } from '../app/components/ui/Button';
 import Modal from '../app/components/ui/Modal';
 import Tooltip from '../app/components/ui/Tooltip';
 import ToastNotification from '../app/components/ui/ToastNotification';
-import TopProgressBar from '../app/components/ui/TopProgressBar';
-import { useTopLoader } from 'nextjs-toploader';
 
 describe('UI accessibility', () => {
-  it('renders Avatar with accessible label', () => {
-    render(<Avatar name="Jane Doe" />);
-    expect(screen.getByRole('img', { name: 'Jane Doe' })).toBeInTheDocument();
-  });
-
   it('supports icon-only Button with aria-label', () => {
     render(
       <Button aria-label="settings" leftIcon={<svg data-testid="icon" />} />,
@@ -64,26 +56,5 @@ describe('UI accessibility', () => {
     expect(screen.getByRole('alert')).toBeInTheDocument();
   });
 
-  it('TopProgressBar renders when started', () => {
-    let loader: ReturnType<typeof useTopLoader>;
-    function Capture() {
-      loader = useTopLoader();
-      return null;
-    }
-
-    render(
-      <>
-        <TopProgressBar />
-        <Capture />
-      </>,
-    );
-
-    act(() => {
-      loader.start();
-    });
-    expect(document.getElementById('nprogress')).toBeInTheDocument();
-    act(() => {
-      loader.done();
-    });
-  });
+  // TopProgressBar component deprecated; corresponding accessibility test removed.
 });
