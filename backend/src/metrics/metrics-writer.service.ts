@@ -36,5 +36,3 @@ export class MetricsWriterService {
     await this.redis.incrbyfloat('metrics:revenue', amount);
   }
 }
-
-export default MetricsWriterService;
