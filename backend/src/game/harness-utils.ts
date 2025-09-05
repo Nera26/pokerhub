@@ -31,7 +31,7 @@ export interface AckTracker {
   timeout: NodeJS.Timeout;
 }
 
-export interface NetworkImpairmentOptions {
+interface NetworkImpairmentOptions {
   packetLoss: number;
   latencyMs?: number;
   jitterMs?: number;
@@ -54,7 +54,7 @@ export function setupNetworkImpairment(opts: NetworkImpairmentOptions) {
   });
 }
 
-export function createAction(tableId: string, playerId: string): GameAction {
+function createAction(tableId: string, playerId: string): GameAction {
   return {
     version: '1',
     tableId,
