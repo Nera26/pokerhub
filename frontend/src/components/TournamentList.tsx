@@ -21,12 +21,13 @@ export default function TournamentList<T extends Tournament>({
   onViewDetails,
 }: TournamentListProps<T>) {
   const parentRef = useRef<HTMLDivElement>(null);
+  const isVirtualized = tournaments.length >= 20;
+
   const virtualizer = useVirtualizedList<HTMLDivElement>({
     count: tournaments.length,
     parentRef,
     estimateSize: 280,
   });
-  const isVirtualized = tournaments.length >= 20;
 
   const mapStatus = (state: T['state']): TournamentStatus => {
     switch (state) {
@@ -52,13 +53,14 @@ export default function TournamentList<T extends Tournament>({
       <h2 className="text-xl sm:text-2xl font-bold text-text-primary mb-4 sm:mb-6">
         Tournaments
       </h2>
+
       {tournaments.length === 0 ? (
         <p>No tournaments available.</p>
       ) : (
         <div
           ref={parentRef}
-          data-testid="tournaments-list"
           className="h-96 overflow-auto"
+          data-testid="tournaments-list"
         >
           {isVirtualized ? (
             <ul
@@ -126,4 +128,3 @@ export default function TournamentList<T extends Tournament>({
     </section>
   );
 }
-
