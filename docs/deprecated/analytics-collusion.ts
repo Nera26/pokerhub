@@ -1,3 +1,9 @@
+/**
+ * @deprecated This snippet shows early collusion-detection heuristics.
+ * It originated in `docs/archive/analytics-collusion.ts` as part of the
+ * 2021 analytics prototype and was moved to `docs/deprecated` after the
+ * 2024 pipeline overhaul to preserve historical context.
+ */
 import { detectChipDump } from '../collusion';
 
 interface PlayerSession {
