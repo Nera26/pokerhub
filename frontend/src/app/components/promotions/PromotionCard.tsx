@@ -1,7 +1,6 @@
 // Motion transition: m.base
 'use client';
 
-import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGift } from '@fortawesome/free-solid-svg-icons/faGift';
 import { faKey } from '@fortawesome/free-solid-svg-icons/faKey';

@@ -1,5 +1,4 @@
 "use client";
-import React from "react";
 
 /** Minimal inline icon set to match your HTML look (no deps). */
 type IconName =

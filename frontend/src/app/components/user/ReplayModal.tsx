@@ -1,5 +1,4 @@
 'use client';
-import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBackwardStep } from '@fortawesome/free-solid-svg-icons/faBackwardStep';
 import { faPlay } from '@fortawesome/free-solid-svg-icons/faPlay';

@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { Button, type ButtonVariant, type ButtonSize } from '../Button';
 import { logger } from '@/lib/logger';

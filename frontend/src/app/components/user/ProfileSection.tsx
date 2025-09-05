@@ -1,5 +1,4 @@
 'use client';
-import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGlobe } from '@fortawesome/free-solid-svg-icons/faGlobe';
 import { faPencil } from '@fortawesome/free-solid-svg-icons/faPencil';

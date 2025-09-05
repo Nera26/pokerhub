@@ -1,7 +1,6 @@
 // Motion transition: m.base
 'use client';
 
-import React from 'react';
 import SmoothButton from '../ui/SmoothButton';
 import dynamic from 'next/dynamic';
 import { m } from '@/lib/motion';

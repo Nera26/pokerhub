@@ -1,6 +1,5 @@
 // components/user/HistoryTabs.tsx
 'use client';
-import React from 'react';
 
 interface Props {
   selected: 'game-history' | 'tournament-history' | 'transaction-history';
