@@ -10,6 +10,7 @@ import { ChargebackMonitor } from './chargeback.service';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { MetricsModule } from '../metrics/metrics.module';
 import { WalletController } from '../routes/wallet.controller';
+import { AdminController } from '../routes/admin.controller';
 import { WebhookController } from './webhook.controller';
 import { RateLimitGuard } from '../routes/rate-limit.guard';
 import { EventsModule } from '../events/events.module';
@@ -74,6 +75,7 @@ class PendingDepositWorker implements OnModuleInit {
   ],
   controllers: [
     WalletController,
+    AdminController,
     WebhookController,
     AdminDepositsController,
     BankReconciliationController,
