@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   fetchTournaments,
@@ -12,7 +12,6 @@ import BottomNav from '@/app/components/common/BottomNav';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { TournamentFilter } from '@/app/components/tournaments/TournamentFilters';
 import type { TournamentStatus } from '@/app/components/tournaments/TournamentCard';
-import useVirtualizedList from '@/hooks/useVirtualizedList';
 import useRenderCount from '@/hooks/useRenderCount';
 import ErrorBoundary from '@/app/components/ui/ErrorBoundary';
 import TournamentFilters from '@/app/components/tournaments/TournamentFilters';
@@ -20,6 +19,7 @@ import TournamentCard from '@/app/components/tournaments/TournamentCard';
 import TournamentRegisterModalContent from '@/app/components/tournaments/TournamentRegisterModalContent';
 import Modal from '@/app/components/ui/Modal';
 import ToastNotification from '@/app/components/ui/ToastNotification';
+import VirtualizedList from '@/components/VirtualizedList';
 
 interface Tournament {
   id: string;
@@ -107,14 +107,7 @@ export default function Page() {
     [tournaments, filter],
   );
 
-  // 5) virtualized list
-  const parentRef = useRef<HTMLDivElement>(null);
-  const virtualizer = useVirtualizedList<HTMLDivElement>({
-    count: visible.length,
-    parentRef,
-  });
-
-  // 6) handlers
+  // 5) handlers
   const handleRegisterClick = (id: string) => setOpenModalId(id);
   const handleModalClose = () => setOpenModalId(null);
 
@@ -153,73 +146,59 @@ export default function Page() {
           <TournamentFilters selected={filter} onChange={setFilter} />
         </ErrorBoundary>
 
-        <div ref={parentRef} className="h-96 overflow-auto">
-          {isLoading &&
-            Array.from({ length: 3 }).map((_, i) => (
+        {isLoading ? (
+          <div className="h-96 overflow-auto">
+            {Array.from({ length: 3 }).map((_, i) => (
               <div
                 key={i}
                 className="h-64 w-full rounded-2xl bg-card-bg animate-pulse"
               />
             ))}
-          {error && (
+          </div>
+        ) : error ? (
+          <div className="h-96 overflow-auto">
             <p className="text-center text-text-secondary">
               Failed to load tournaments.
             </p>
-          )}
-          {!isLoading && !error && visible.length === 0 && (
+          </div>
+        ) : visible.length === 0 ? (
+          <div className="h-96 overflow-auto">
             <p className="text-center text-text-secondary">
               No tournaments in this category.
             </p>
-          )}
-          {!isLoading && !error && visible.length > 0 && (
-            <ul
-              className="m-0 p-0 list-none"
-              style={{
-                height: `${virtualizer.getTotalSize()}px`,
-                position: 'relative',
-              }}
-            >
-              {virtualizer.getVirtualItems().map((virtualRow) => {
-                const t = visible[virtualRow.index];
-                return (
-                  <li
-                    key={t.id}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      transform: `translateY(${virtualRow.start}px)`,
-                    }}
-                    className="mb-6"
-                  >
-                    <ErrorBoundary
-                      fallback={
-                        <div className="h-64 w-full rounded-2xl bg-card-bg flex items-center justify-center">
-                          Error loading tournament.
-                        </div>
-                      }
-                    >
-                      <TournamentCard
-                        id={t.id}
-                        status={t.status}
-                        name={t.name}
-                        gameType={t.gameType}
-                        buyin={t.buyin}
-                        rebuy={t.rebuy}
-                        prizepool={t.prizepool}
-                        players={t.players}
-                        maxPlayers={t.maxPlayers}
-                        startIn={t.startIn}
-                        onRegister={handleRegisterClick}
-                      />
-                    </ErrorBoundary>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
+          </div>
+        ) : (
+          <VirtualizedList
+            items={visible}
+            className="h-96 overflow-auto"
+            virtualizationThreshold={0}
+            renderItem={(t, style) => (
+              <li key={t.id} style={style} className="mb-6">
+                <ErrorBoundary
+                  fallback={
+                    <div className="h-64 w-full rounded-2xl bg-card-bg flex items-center justify-center">
+                      Error loading tournament.
+                    </div>
+                  }
+                >
+                  <TournamentCard
+                    id={t.id}
+                    status={t.status}
+                    name={t.name}
+                    gameType={t.gameType}
+                    buyin={t.buyin}
+                    rebuy={t.rebuy}
+                    prizepool={t.prizepool}
+                    players={t.players}
+                    maxPlayers={t.maxPlayers}
+                    startIn={t.startIn}
+                    onRegister={handleRegisterClick}
+                  />
+                </ErrorBoundary>
+              </li>
+            )}
+          />
+        )}
       </main>
 
       <BottomNav />
