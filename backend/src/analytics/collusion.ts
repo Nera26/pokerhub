@@ -4,9 +4,6 @@ import { AnalyticsService } from './analytics.service';
 import { CollusionService } from './collusion.service';
 import type { Transfer } from '@shared/analytics';
 
-export { detectChipDump };
-export type { Transfer };
-
 interface GameEvent {
   sessionId: string;
   userId: string;
