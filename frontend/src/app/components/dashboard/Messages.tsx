@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,7 +18,7 @@ import {
 import { CardContent } from '../ui/Card';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
-import useVirtualizedList from '@/hooks/useVirtualizedList';
+import VirtualizedList from '@/components/VirtualizedList';
 
 type Message = {
   id: number;
@@ -86,13 +86,6 @@ export default function Messages() {
   const startIdx = (page - 1) * pageSize;
   const endIdx = Math.min(startIdx + pageSize, total);
   const pageItems = filtered.slice(startIdx, endIdx);
-
-  const parentRef = useRef<HTMLDivElement>(null);
-  const virtualizer = useVirtualizedList<HTMLDivElement>({
-    count: pageItems.length,
-    parentRef,
-    estimateSize: 88,
-  });
 
   const unread = messages.filter((m) => !m.read).length;
 
@@ -164,94 +157,79 @@ export default function Messages() {
             No results.
           </CardContent>
         ) : (
-          <div ref={parentRef} className="h-96 overflow-auto">
-            <div
-              style={{
-                height: `${virtualizer.getTotalSize()}px`,
-                position: 'relative',
-              }}
-            >
-              {virtualizer.getVirtualItems().map((virtualRow) => {
-                const m = pageItems[virtualRow.index];
-                return (
-                  <div
-                    key={m.id}
-                    className={`px-6 py-4 transition-colors transition-opacity duration-200 cursor-pointer hover:bg-hover-bg ${
-                      m.read ? 'opacity-60' : ''
-                    }`}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      transform: `translateY(${virtualRow.start}px)`,
-                    }}
-                  >
-                    <div className="grid grid-cols-12 gap-4 items-center">
-                      {/* Sender */}
-                      <div className="col-span-3 flex items-center gap-3">
-                        <div className="relative">
-                          <Image
-                            src={m.avatar}
-                            alt={m.sender}
-                            width={40}
-                            height={40}
-                            className="w-10 h-10 rounded-full"
-                          />
-                          {!m.read && (
-                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent-yellow rounded-full grid place-items-center">
-                              <div className="w-2 h-2 bg-black rounded-full" />
-                            </div>
-                          )}
+          <VirtualizedList
+            items={pageItems}
+            estimateSize={88}
+            className="h-96 overflow-auto"
+            renderItem={(m, style) => (
+              <li
+                key={m.id}
+                style={style}
+                className={`px-6 py-4 transition-colors transition-opacity duration-200 cursor-pointer hover:bg-hover-bg ${m.read ? 'opacity-60' : ''}`}
+              >
+                <div className="grid grid-cols-12 gap-4 items-center">
+                  {/* Sender */}
+                  <div className="col-span-3 flex items-center gap-3">
+                    <div className="relative">
+                      <Image
+                        src={m.avatar}
+                        alt={m.sender}
+                        width={40}
+                        height={40}
+                        className="w-10 h-10 rounded-full"
+                      />
+                      {!m.read && (
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent-yellow rounded-full grid place-items-center">
+                          <div className="w-2 h-2 bg-black rounded-full" />
                         </div>
-                        <div>
-                          <p className="font-semibold">{m.sender}</p>
-                          <p className="text-text-secondary text-xs">
-                            ID: {m.userId}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Preview */}
-                      <div className="col-span-5">
-                        <p className="text-text-primary font-medium">
-                          {m.subject}
-                        </p>
-                        <p className="text-text-secondary text-sm">
-                          {m.preview}
-                        </p>
-                      </div>
-
-                      {/* Date */}
-                      <div className="col-span-2">
-                        <p className="text-text-secondary text-sm">{m.time}</p>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="col-span-2 flex gap-2">
-                        <Button
-                          variant="chipBlue"
-                          onClick={() => openView(m)}
-                          leftIcon={<FontAwesomeIcon icon={faEye} />}
-                          aria-label="View"
-                        >
-                          View
-                        </Button>
-                        <Button
-                          variant="chipYellow"
-                          onClick={() => openReply(m)}
-                          leftIcon={<FontAwesomeIcon icon={faReply} />}
-                          aria-label="Reply"
-                        >
-                          Reply
-                        </Button>
-                      </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-semibold">{m.sender}</p>
+                      <p className="text-text-secondary text-xs">
+                        ID: {m.userId}
+                      </p>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
+
+                  {/* Preview */}
+                  <div className="col-span-5">
+                    <p className="text-text-primary font-medium">
+                      {m.subject}
+                    </p>
+                    <p className="text-text-secondary text-sm">
+                      {m.preview}
+                    </p>
+                  </div>
+
+                  {/* Date */}
+                  <div className="col-span-2">
+                    <p className="text-text-secondary text-sm">{m.time}</p>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="col-span-2 flex gap-2">
+                    <Button
+                      variant="chipBlue"
+                      onClick={() => openView(m)}
+                      leftIcon={<FontAwesomeIcon icon={faEye} />}
+                      aria-label="View"
+                    >
+                      View
+                    </Button>
+                    <Button
+                      variant="chipYellow"
+                      onClick={() => openReply(m)}
+                      leftIcon={<FontAwesomeIcon icon={faReply} />}
+                      aria-label="Reply"
+                    >
+                      Reply
+                    </Button>
+                  </div>
+                </div>
+              </li>
+            )}
+          />
         )}
 
         {/* Footer / pagination — removed border */}

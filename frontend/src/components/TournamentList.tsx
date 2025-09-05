@@ -1,8 +1,7 @@
 'use client';
 
-import { useRef } from 'react';
 import { Tournament } from '@/hooks/useLobbyData';
-import useVirtualizedList from '@/hooks/useVirtualizedList';
+import VirtualizedList from '@/components/VirtualizedList';
 import TournamentCard, {
   type TournamentStatus,
 } from '@/app/components/tournaments/TournamentCard';
@@ -20,15 +19,6 @@ export default function TournamentList<T extends Tournament>({
   onRegister,
   onViewDetails,
 }: TournamentListProps<T>) {
-  const parentRef = useRef<HTMLDivElement>(null);
-  const isVirtualized = tournaments.length >= 20;
-
-  const virtualizer = useVirtualizedList<HTMLDivElement>({
-    count: tournaments.length,
-    parentRef,
-    estimateSize: 280,
-  });
-
   const mapStatus = (state: T['state']): TournamentStatus => {
     switch (state) {
       case 'REG_OPEN':
@@ -57,73 +47,29 @@ export default function TournamentList<T extends Tournament>({
       {tournaments.length === 0 ? (
         <p>No tournaments available.</p>
       ) : (
-        <div
-          ref={parentRef}
+        <VirtualizedList
+          items={tournaments}
+          estimateSize={280}
           className="h-96 overflow-auto"
-          data-testid="tournaments-list"
-        >
-          {isVirtualized ? (
-            <ul
-              role="list"
-              className="m-0 p-0 list-none"
-              style={{
-                height: `${virtualizer.getTotalSize()}px`,
-                position: 'relative',
-              }}
-            >
-              {virtualizer.getVirtualItems().map((virtualRow) => {
-                const t = tournaments[virtualRow.index];
-                return (
-                  <li
-                    key={t.id}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      transform: `translateY(${virtualRow.start}px)`,
-                    }}
-                    className="mb-4"
-                  >
-                    <TournamentCard
-                      id={t.id}
-                      status={mapStatus(t.state)}
-                      name={t.title}
-                      gameType="Unknown"
-                      buyin={t.buyIn + (t.fee ?? 0)}
-                      rebuy="N/A"
-                      prizepool={t.prizePool}
-                      players={t.players.current}
-                      maxPlayers={t.players.max}
-                      onRegister={onRegister}
-                      onViewDetails={onViewDetails}
-                    />
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <ul role="list" className="m-0 p-0 list-none">
-              {tournaments.map((t) => (
-                <li key={t.id} className="mb-4">
-                  <TournamentCard
-                    id={t.id}
-                    status={mapStatus(t.state)}
-                    name={t.title}
-                    gameType="Unknown"
-                    buyin={t.buyIn + (t.fee ?? 0)}
-                    rebuy="N/A"
-                    prizepool={t.prizePool}
-                    players={t.players.current}
-                    maxPlayers={t.players.max}
-                    onRegister={onRegister}
-                    onViewDetails={onViewDetails}
-                  />
-                </li>
-              ))}
-            </ul>
+          testId="tournaments-list"
+          renderItem={(t, style) => (
+            <li key={t.id} style={style} className="mb-4">
+              <TournamentCard
+                id={t.id}
+                status={mapStatus(t.state)}
+                name={t.title}
+                gameType="Unknown"
+                buyin={t.buyIn + (t.fee ?? 0)}
+                rebuy="N/A"
+                prizepool={t.prizePool}
+                players={t.players.current}
+                maxPlayers={t.players.max}
+                onRegister={onRegister}
+                onViewDetails={onViewDetails}
+              />
+            </li>
           )}
-        </div>
+        />
       )}
     </section>
   );
