@@ -1,13 +1,13 @@
 import {
   detectSharedIP,
-  detectChipDumping,
+  detectChipDump,
   detectSynchronizedBetting,
-} from "./anti_collusion/heuristics.js";
+} from "../shared/analytics/collusion";
 import type { Session, Transfer, BetEvent } from "../shared/analytics";
 
 export interface AntiCollusionReport {
   sharedIPs: ReturnType<typeof detectSharedIP>;
-  chipDumping: ReturnType<typeof detectChipDumping>;
+  chipDumping: ReturnType<typeof detectChipDump>;
   synchronizedBetting: ReturnType<typeof detectSynchronizedBetting>;
 }
 
@@ -18,7 +18,7 @@ export function analyzeCollusion(data: {
 }): AntiCollusionReport {
   return {
     sharedIPs: detectSharedIP(data.sessions),
-    chipDumping: detectChipDumping(data.transfers),
+    chipDumping: detectChipDump(data.transfers),
     synchronizedBetting: detectSynchronizedBetting(data.events),
   };
 }
