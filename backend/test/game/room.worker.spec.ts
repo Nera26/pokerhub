@@ -72,7 +72,7 @@ async function setup(flags: Record<string, string | null> = {}) {
 }
 
 describe('room.worker', () => {
-  it('publishes diffs and handles snapshot ACK', async () => {
+  it('publishes states and handles snapshot ACK', async () => {
     const ctx = await setup();
     await ctx.send({
       type: 'apply',
@@ -84,9 +84,9 @@ describe('room.worker', () => {
     expect(pub.publishes.length).toBe(1);
     const [channel, payload] = pub.publishes[0];
     expect(channel).toBe('room:t:diffs');
-    const [idx, delta] = JSON.parse(payload);
+    const [idx, state] = JSON.parse(payload);
     expect(typeof idx).toBe('number');
-    expect(delta).toHaveProperty('players');
+    expect(state).toHaveProperty('players');
 
     const sub = ctx.redisInstances[1];
     sub.emit('message', sub.subs[0], '5');

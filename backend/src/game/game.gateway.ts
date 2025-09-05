@@ -39,7 +39,6 @@ import {
 } from '@opentelemetry/api';
 import PQueue from 'p-queue';
 import { sanitize } from './state-sanitize';
-import { diff } from './state-diff';
 
 const noopGauge = {
   addCallback() {},
@@ -63,12 +62,6 @@ interface GameStatePayload extends GameState {
   version: string;
 }
 
-interface GameStateDeltaPayload {
-  version: string;
-  tick: number;
-  delta: Record<string, unknown>;
-}
-
 interface ProofPayload {
   commitment: string;
   seed: string;
@@ -84,7 +77,6 @@ interface ServerToClientEvents {
   'rebuy:ack': AckPayload;
   proof: ProofPayload;
   'server:Error': string;
-  'server:StateDelta': GameStateDeltaPayload;
   'server:Clock': number;
 }
 
@@ -670,22 +662,13 @@ export class GameGateway
     this.enqueue(client, 'state', payload, true);
     this.recordStateLatency(start, tableId);
 
-    const prev = this.states.get(tableId);
-      const delta = diff(prev, state);
-      this.states.set(tableId, state);
-      await this.redis.set(
-        `${this.stateKeyPrefix}:${tableId}`,
-        JSON.stringify(state),
-      );
-      await this.redis.set(this.tickKey, this.tick.toString());
-      await this.maybeSnapshot(tableId, state);
-      if (this.server) {
-        this.server.emit('server:StateDelta', {
-          version: '1',
-          tick: this.tick,
-          delta,
-        });
-      }
+    this.states.set(tableId, state);
+    await this.redis.set(
+      `${this.stateKeyPrefix}:${tableId}`,
+      JSON.stringify(state),
+    );
+    await this.redis.set(this.tickKey, this.tick.toString());
+    await this.maybeSnapshot(tableId, state);
 
     if (this.server?.of) {
       // Send sanitized state to spectators as well
@@ -1071,8 +1054,6 @@ export class GameGateway
         tick: ++this.tick,
       };
       GameStateSchema.parse(payload);
-      const prev = this.states.get(tableId);
-      const delta = diff(prev, state);
       this.states.set(tableId, state);
       await this.redis.set(
         `${this.stateKeyPrefix}:${tableId}`,
@@ -1081,11 +1062,6 @@ export class GameGateway
       await this.redis.set(this.tickKey, this.tick.toString());
       await this.maybeSnapshot(tableId, state);
       this.server.to(tableId).emit('state', payload);
-      this.server.to(tableId).emit('server:StateDelta', {
-        version: '1',
-        tick: this.tick,
-        delta,
-      });
       if (state.phase === 'NEXT_HAND') {
         this.states.delete(tableId);
         await this.redis.del(`${this.stateKeyPrefix}:${tableId}`);
