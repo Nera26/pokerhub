@@ -17,7 +17,7 @@ Refer to [../security/anti-collusion.md](../security/anti-collusion.md) for deta
 - If no new sessions appear for more than an hour, inspect analytics worker logs and Redis connectivity.
 
 ## Scheduled Queries
-- [`CollusionQueryService`](../../backend/src/analytics/collusion.queries.ts) runs hourly ClickHouse queries for shared IP use, chip dumping and synchronized betting patterns.
+- [`CollusionQueryService`](../../backend/src/analytics/deprecated/collusion.queries.ts) runs hourly ClickHouse queries for shared IP use, chip dumping and synchronized betting patterns.
 - Query results are stored in `collusion_alerts` and surfaced on the dashboard.
 
 ## Heuristics

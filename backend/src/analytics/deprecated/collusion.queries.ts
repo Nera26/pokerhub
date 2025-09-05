@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AnalyticsService } from './analytics.service';
+import { AnalyticsService } from '../analytics.service';
 
 interface SharedIpRow {
   ip: string;
