@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import useVirtualizedList from '@/hooks/useVirtualizedList';
+import VirtualizedList from '@/components/VirtualizedList';
 import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -268,32 +268,25 @@ export default function AuditLogs() {
     return '';
   };
 
-  const parentRef = useRef<HTMLDivElement>(null);
-  const useVirtual = rows.length >= 20;
-  const virtualizer = useVirtualizedList<HTMLDivElement>({
-    count: useVirtual ? filtered.length : 0,
-    parentRef,
-    estimateSize: 56,
-  });
-
-  const virtualRows = useVirtual ? virtualizer.getVirtualItems() : [];
-  const paddingTop = virtualRows.length > 0 ? virtualRows[0].start : 0;
-  const paddingBottom =
-    virtualRows.length > 0
-      ? virtualizer.getTotalSize() - virtualRows[virtualRows.length - 1].end
-      : 0;
-
-  const renderRow = (r: AuditLogEntry, i: number) => (
-    <tr key={i} className="border-b border-dark hover:bg-hover-bg">
-      <td className="py-3 px-2 text-text-secondary">{r.timestamp}</td>
-      <td className="py-3 px-2">{r.admin}</td>
-      <td className="py-3 px-2">{r.user}</td>
-      <td className={`py-3 px-2 ${actionColor(r.action)}`}>{r.action}</td>
-      <td className="py-3 px-2">{r.description}</td>
-      <td className="py-3 px-2">
+  const renderRow = (
+    r: AuditLogEntry,
+    style: CSSProperties | undefined,
+    i: number,
+  ) => (
+    <li
+      key={i}
+      style={style}
+      className="grid grid-cols-6 border-b border-dark hover:bg-hover-bg"
+    >
+      <div className="py-3 px-2 text-text-secondary">{r.timestamp}</div>
+      <div className="py-3 px-2">{r.admin}</div>
+      <div className="py-3 px-2">{r.user}</div>
+      <div className={`py-3 px-2 ${actionColor(r.action)}`}>{r.action}</div>
+      <div className="py-3 px-2">{r.description}</div>
+      <div className="py-3 px-2">
         <StatusPill status={r.status} />
-      </td>
-    </tr>
+      </div>
+    </li>
   );
 
   return (
@@ -382,70 +375,38 @@ export default function AuditLogs() {
             </div>
           </div>
 
-          <div ref={parentRef} className="overflow-auto max-h-96">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-dark">
-                  <th
-                    className="text-left py-3 px-2 text-text-secondary cursor-pointer hover:text-accent-yellow"
-                    onClick={() => toggleSort('timestamp')}
-                  >
-                    Timestamp
-                  </th>
-                  <th
-                    className="text-left py-3 px-2 text-text-secondary cursor-pointer hover:text-accent-yellow"
-                    onClick={() => toggleSort('admin')}
-                  >
-                    Admin
-                  </th>
-                  <th className="text-left py-3 px-2 text-text-secondary">
-                    Affected User
-                  </th>
-                  <th className="text-left py-3 px-2 text-text-secondary">
-                    Action Type
-                  </th>
-                  <th className="text-left py-3 px-2 text-text-secondary">
-                    Description
-                  </th>
-                  <th className="text-left py-3 px-2 text-text-secondary">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.length === 0 ? (
-                  <tr>
-                    <td
-                      className="py-6 px-2 text-center text-text-secondary"
-                      colSpan={6}
-                    >
-                      No results
-                    </td>
-                  </tr>
-                ) : useVirtual ? (
-                  <>
-                    {paddingTop > 0 && (
-                      <tr className="border-none">
-                        <td colSpan={6} style={{ height: `${paddingTop}px` }} />
-                      </tr>
-                    )}
-                    {virtualRows.map((vr) =>
-                      renderRow(filtered[vr.index], vr.index),
-                    )}
-                    {paddingBottom > 0 && (
-                      <tr className="border-none">
-                        <td
-                          colSpan={6}
-                          style={{ height: `${paddingBottom}px` }}
-                        />
-                      </tr>
-                    )}
-                  </>
-                ) : (
-                  filtered.map((r, i) => renderRow(r, i))
-                )}
-              </tbody>
-            </table>
+          <div>
+            <div className="grid grid-cols-6 border-b border-dark text-text-secondary">
+              <button
+                className="text-left py-3 px-2 hover:text-accent-yellow"
+                onClick={() => toggleSort('timestamp')}
+              >
+                Timestamp
+              </button>
+              <button
+                className="text-left py-3 px-2 hover:text-accent-yellow"
+                onClick={() => toggleSort('admin')}
+              >
+                Admin
+              </button>
+              <div className="text-left py-3 px-2">Affected User</div>
+              <div className="text-left py-3 px-2">Action Type</div>
+              <div className="text-left py-3 px-2">Description</div>
+              <div className="text-left py-3 px-2">Status</div>
+            </div>
+            {filtered.length === 0 ? (
+              <div className="py-6 text-center text-text-secondary">
+                No results
+              </div>
+            ) : (
+              <VirtualizedList
+                items={filtered}
+                estimateSize={56}
+                className="max-h-96 overflow-auto"
+                virtualizationThreshold={20}
+                renderItem={renderRow}
+              />
+            )}
           </div>
         </div>
       </section>
