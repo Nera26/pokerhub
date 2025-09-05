@@ -23,5 +23,3 @@ export class CollusionAudit {
   @Column('jsonb', { default: () => "'[]'::jsonb" })
   history: CollusionHistoryEntry[];
 }
-
-export default CollusionAudit;
