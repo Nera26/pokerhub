@@ -6,7 +6,7 @@ import { faDownload, faFilter } from '@fortawesome/free-solid-svg-icons';
 
 import SearchBar from './SearchBar';
 import QuickStats from './QuickStats';
-import ActivityChart from './ActivityChart';
+import ActivityChart from '../charts/ActivityChart';
 import ErrorChart from './ErrorChart';
 import AuditTable from './AuditTable';
 import AdvancedFilterModal from './AdvancedFilterModal';
@@ -145,7 +145,7 @@ export default function Analytics() {
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ActivityChart />
+        <ActivityChart showContainer />
         <ErrorChart />
       </section>
 

@@ -32,7 +32,8 @@ export function useChart(
   return { ref, ready };
 }
 
-export function useActivityChart(data: number[] = [12, 8, 24, 45, 67, 89, 56]) {
+export function useActivityChart(data?: number[]) {
+  const values = data ?? [12, 8, 24, 45, 67, 89, 56];
   const config: ChartConfiguration<'line'> = useMemo(() => {
     const root = getComputedStyle(document.documentElement);
     const accent = root.getPropertyValue('--color-accent-yellow').trim();
@@ -53,7 +54,7 @@ export function useActivityChart(data: number[] = [12, 8, 24, 45, 67, 89, 56]) {
         datasets: [
           {
             label: 'Active Players',
-            data,
+            data: values,
             borderColor: accent,
             backgroundColor: hexToRgba(accent, 0.1),
             tension: 0.4,
@@ -75,7 +76,7 @@ export function useActivityChart(data: number[] = [12, 8, 24, 45, 67, 89, 56]) {
         },
       },
     };
-  }, [data]);
+  }, [values]);
 
   return useChart(config, [config]);
 }

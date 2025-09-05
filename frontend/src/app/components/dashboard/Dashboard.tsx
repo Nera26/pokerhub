@@ -13,7 +13,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import dynamic from 'next/dynamic';
 
-const ActivityLineChart = dynamic(() => import('./charts/ActivityLineChart'), {
+const ActivityChart = dynamic(() => import('./charts/ActivityChart'), {
   loading: () => (
     <div className="h-64 flex items-center justify-center text-text-secondary">
       Loading chart...
@@ -252,7 +252,7 @@ export default function Dashboard() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card title="Player Activity (24h)">
-          <ActivityLineChart data={activityDataByFilter[revFilter]} />
+          <ActivityChart data={activityDataByFilter[revFilter]} />
         </Card>
         <Card title="Revenue Breakdown">
           <RevenueDonut
