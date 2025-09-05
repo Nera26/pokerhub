@@ -1,4 +1,4 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import TournamentCard from '@/app/components/tournaments/TournamentCard';
@@ -30,7 +30,7 @@ jest.mock('@/app/components/ui/ToastNotification', () => ({
 }));
 jest.mock('@/app/components/ui/Modal', () => ({
   __esModule: true,
-  default: function ModalMock({ children }: { children: React.ReactNode }) {
+  default: function ModalMock({ children }: { children: ReactNode }) {
     return <div>{children}</div>;
   },
 }));

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import { useEffect, useState } from 'react';
 import ChipPile from '../ui/ChipPile';
 
 interface BetIndicatorProps {
@@ -9,10 +9,10 @@ interface BetIndicatorProps {
 }
 
 export default function BetIndicator({ amount, className = '' }: BetIndicatorProps) {
-  const [show, setShow] = React.useState(amount > 0);
-  const [displayAmount, setDisplayAmount] = React.useState(amount);
+  const [show, setShow] = useState(amount > 0);
+  const [displayAmount, setDisplayAmount] = useState(amount);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (amount > 0) {
       setDisplayAmount(amount);
       setShow(true);

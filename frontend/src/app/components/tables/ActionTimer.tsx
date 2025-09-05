@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import { useEffect, useState } from 'react';
 import { getServerTime } from '@/lib/server-time';
 
 interface ActionTimerProps {
@@ -9,11 +9,11 @@ interface ActionTimerProps {
 }
 
 export default function ActionTimer({ deadline }: ActionTimerProps) {
-  const [remaining, setRemaining] = React.useState(() =>
+  const [remaining, setRemaining] = useState(() =>
     Math.max(0, deadline - getServerTime()),
   );
 
-  React.useEffect(() => {
+  useEffect(() => {
     const tick = () => {
       const left = Math.max(0, deadline - getServerTime());
       setRemaining(left);

@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import { useEffect, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { useSetSeatPosition } from '../../store/tableStore';
 import useRenderCount from '../../../hooks/useRenderCount';
 import { useTableUi } from './TableUiContext';
@@ -14,7 +15,7 @@ import type { Player } from './types';
 
 export interface PlayerSeatProps {
   player: Player;
-  style?: React.CSSProperties;
+  style?: CSSProperties;
   street?: 'pre' | 'flop' | 'turn' | 'river';
   density?: 'compact' | 'default' | 'large';
 }
@@ -54,15 +55,15 @@ export default function PlayerSeat({
     typeof style?.left === 'string' ? parseFloat(style.left) : 50;
   const yPercent = typeof style?.top === 'string' ? parseFloat(style.top) : 50;
 
-  React.useEffect(() => {
+  useEffect(() => {
     setSeatPosition(player.id, { x: xPercent, y: yPercent });
   }, [player.id, xPercent, yPercent, setSeatPosition]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (player.isActive) setActiveSeat(player.id);
   }, [player.isActive, player.id, setActiveSeat]);
 
-  const [hovered, setHovered] = React.useState(false);
+  const [hovered, setHovered] = useState(false);
   const expanded = hovered || player.isActive;
 
   return (

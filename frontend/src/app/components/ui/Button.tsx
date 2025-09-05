@@ -1,6 +1,11 @@
 'use client';
 
-import React from 'react';
+import {
+  Children,
+  forwardRef,
+  type ButtonHTMLAttributes,
+  type ReactNode,
+} from 'react';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import clsx from 'clsx';
@@ -29,17 +34,17 @@ export type ButtonSize = 'sm' | 'md' | 'lg';
  * require an aria-label.
  */
 interface ButtonBaseProps
-  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
+  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   fullWidth?: boolean;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
+  leftIcon?: ReactNode;
+  rightIcon?: ReactNode;
   loading?: boolean;
 }
 
 type ButtonWithChildren = ButtonBaseProps & {
-  children: React.ReactNode;
+  children: ReactNode;
   'aria-label'?: string;
 };
 
@@ -77,7 +82,7 @@ const sizeStyles: Record<ButtonSize, string> = {
   lg: 'px-7 py-4 text-base',
 };
 
-export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
       variant = 'primary',
@@ -95,7 +100,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref,
   ) => {
     // wrap plain text so flex gap works the same everywhere
-    const normalizedChildren = React.Children.map(children, (child, i) =>
+    const normalizedChildren = Children.map(children, (child, i) =>
       typeof child === 'string' || typeof child === 'number' ? (
         <span key={i} className="inline-block">
           {child}

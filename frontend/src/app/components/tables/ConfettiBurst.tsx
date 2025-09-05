@@ -1,13 +1,13 @@
 'use client';
 
-import React from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 
 export default function ConfettiBurst({ triggerKey }: { triggerKey: number }) {
-  const [pieces, setPieces] = React.useState<
-    { id: number; dx: number; dy: number; color: string; style: React.CSSProperties }[]
+  const [pieces, setPieces] = useState<
+    { id: number; dx: number; dy: number; color: string; style: CSSProperties }[]
   >([]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!triggerKey) return;
     const count = 12;
     const base = Array.from({ length: count }, (_, i) => {

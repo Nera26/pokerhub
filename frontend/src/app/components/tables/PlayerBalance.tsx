@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export interface PlayerBalanceProps {
   balance: number;
@@ -15,17 +15,17 @@ export default function PlayerBalance({
   isAllIn,
   isWinner,
 }: PlayerBalanceProps) {
-  const prevBalance = React.useRef(balance);
-  const [delta, setDelta] = React.useState<number | null>(null);
+  const prevBalance = useRef(balance);
+  const [delta, setDelta] = useState<number | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (balance !== prevBalance.current) {
       setDelta(balance - prevBalance.current);
       prevBalance.current = balance;
     }
   }, [balance]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (delta !== null) {
       const t = setTimeout(() => setDelta(null), 450);
       return () => clearTimeout(t);
