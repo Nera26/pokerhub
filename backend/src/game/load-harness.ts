@@ -1,10 +1,11 @@
-import { io, Socket } from 'socket.io-client';
-import { createHash } from 'crypto';
-import { spawnSync } from 'child_process';
-import { performance } from 'perf_hooks';
 import { RoomManager } from './room.service';
-import type { GameAction } from '@shared/types';
 import type { InternalGameState } from './engine';
+import {
+  Histogram,
+  setupNetworkImpairment,
+  spawnBot,
+  AckTracker,
+} from './harness-utils';
 
 interface HarnessOptions {
   sockets: number;
@@ -14,28 +15,6 @@ interface HarnessOptions {
   jitterMs: number;
   ackP95: number;
   duration: number;
-}
-
-class Histogram {
-  private readonly values: number[] = [];
-
-  record(v: number) {
-    this.values.push(v);
-  }
-
-  /** Return percentile using nearest-rank. */
-  percentile(p: number): number {
-    if (this.values.length === 0) return 0;
-    const sorted = [...this.values].sort((a, b) => a - b);
-    const rank = Math.ceil((p / 100) * sorted.length) - 1;
-    return sorted[Math.max(0, Math.min(rank, sorted.length - 1))];
-  }
-}
-
-interface AckTracker {
-  start: number;
-  resolve: (ms: number) => void;
-  timeout: NodeJS.Timeout;
 }
 
 export class GameGatewayLoadHarness {
@@ -62,59 +41,9 @@ export class GameGatewayLoadHarness {
 
   /** Configure toxiproxy with loss and latency. */
   setupNetworkImpairment() {
-    spawnSync('bash', ['-c', `./load/toxiproxy.sh`], {
-      stdio: 'inherit',
-      env: {
-        ...process.env,
-        PACKET_LOSS: String(this.opts.packetLoss),
-        LATENCY_MS: String(this.opts.jitterMs),
-      },
-    });
-  }
-
-  private createAction(tableId: string, playerId: string): GameAction {
-    return {
-      version: '1',
-      tableId,
-      playerId,
-      type: 'fold',
-    } as GameAction;
-  }
-
-  /** Spawn a socket and perform one action measuring ACK latency. */
-  private spawnBot(id: number) {
-    const tableId = `table-${id % this.opts.tables}`;
-    const playerId = `player-${id}`;
-    const socket: Socket = io(this.opts.wsUrl, {
-      transports: ['websocket'],
-      query: { tableId, playerId },
-    });
-
-    socket.on('connect', () => {
-      const action = this.createAction(tableId, playerId);
-      const actionId = createHash('sha256')
-        .update(JSON.stringify(action))
-        .digest('hex');
-      const start = performance.now();
-      socket.emit('action', action);
-      const ackHandler = (ack: { actionId: string }) => {
-        const tracker = this.trackers.get(ack.actionId);
-        if (tracker) {
-          clearTimeout(tracker.timeout);
-          tracker.resolve(performance.now() - tracker.start);
-          this.trackers.delete(ack.actionId);
-        }
-      };
-      socket.on('action:ack', ackHandler);
-      const timeout = setTimeout(() => {
-        this.dropped++;
-        socket.off('action:ack', ackHandler);
-      }, 1000);
-      this.trackers.set(actionId, {
-        start,
-        resolve: (ms) => this.histogram.record(ms),
-        timeout,
-      });
+    setupNetworkImpairment({
+      packetLoss: this.opts.packetLoss,
+      latencyMs: this.opts.jitterMs,
     });
   }
 
@@ -150,7 +79,14 @@ export class GameGatewayLoadHarness {
     this.setupNetworkImpairment();
     this.memStart = process.memoryUsage().heapUsed;
     for (let i = 0; i < this.opts.sockets; i++) {
-      this.spawnBot(i);
+      spawnBot({
+        id: i,
+        tables: this.opts.tables,
+        wsUrl: this.opts.wsUrl,
+        histogram: this.histogram,
+        trackers: this.trackers,
+        onDropped: () => this.dropped++,
+      });
     }
     const killInterval = setInterval(() => {
       const target = `table-${Math.floor(Math.random() * this.opts.tables)}`;
