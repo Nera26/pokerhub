@@ -1,10 +1,3 @@
-export interface CollusionFeatures {
-  vpipCorrelation: number;
-  chipDumpScore: number;
-  timingSimilarity: number;
-  seatProximity: number;
-}
-
 export function calculateVpipCorrelation(vpipA: number[], vpipB: number[]): number {
   if (vpipA.length !== vpipB.length || vpipA.length === 0) {
     return 0;
@@ -65,19 +58,3 @@ export function calculateSeatProximity(
   return 1 / (1 + avgDiff);
 }
 
-export function buildCollusionFeatures(
-  vpipA: number[],
-  vpipB: number[],
-  transfers: { from: string; to: string; amount: number }[],
-  timesA: number[],
-  timesB: number[],
-  seatsA: number[],
-  seatsB: number[],
-): CollusionFeatures {
-  return {
-    vpipCorrelation: calculateVpipCorrelation(vpipA, vpipB),
-    chipDumpScore: detectChipDump(transfers),
-    timingSimilarity: calculateTimingSimilarity(timesA, timesB),
-    seatProximity: calculateSeatProximity(seatsA, seatsB),
-  };
-}
