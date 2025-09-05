@@ -6,12 +6,15 @@ import { useTableData } from '@/hooks/useTableData';
 import { useApiError } from '@/hooks/useApiError';
 import useGameSocket from '@/hooks/useGameSocket';
 import FairnessModal from '@/components/FairnessModal';
+import CenteredMessage from '@/components/CenteredMessage';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
 
 const PokerTableLayout = dynamic(
   () => import('../../components/tables/PokerTableLayout'),
   {
-    loading: () => <p className="text-center mt-8">Loading table...</p>,
+    loading: () => (
+      <CenteredMessage>Loading table...</CenteredMessage>
+    ),
   },
 );
 
@@ -36,23 +39,25 @@ export default function TablePageClient({ tableId }: { tableId: string }) {
   }, [socket]);
 
   if (isLoading) {
-    return <p className="text-center mt-8">Loading table...</p>;
+    return <CenteredMessage>Loading table...</CenteredMessage>;
   }
 
   if (!data) {
     return (
-      <p className="text-center mt-8">{errorMessage ?? 'Table not found.'}</p>
+      <CenteredMessage>
+        {errorMessage ?? 'Table not found.'}
+      </CenteredMessage>
     );
   }
 
   if (!data.stateAvailable) {
-    return (
-      <p className="text-center mt-8">Table state unavailable.</p>
-    );
+    return <CenteredMessage>Table state unavailable.</CenteredMessage>;
   }
 
   if (data.players.length === 0) {
-    return <p className="text-center mt-8">No players at this table.</p>;
+    return (
+      <CenteredMessage>No players at this table.</CenteredMessage>
+    );
   }
 
   return (
