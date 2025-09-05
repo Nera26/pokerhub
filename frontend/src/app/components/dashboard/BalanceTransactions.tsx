@@ -5,7 +5,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUniversity, faSpinner } from '@fortawesome/free-solid-svg-icons';
-import { TabId } from './types';
+import { TransactionTab } from './types';
 
 import Modal from '../ui/Modal';
 import ToastNotification from '../ui/ToastNotification';
@@ -78,9 +78,9 @@ function ReceiptModal({
 /* ------------------------------- Main Page ------------------------------ */
 export default function BalanceTransactions() {
   useRenderCount('BalanceTransactions');
-  const [tab, setTab] = useState<TabId>('all');
+  const [tab, setTab] = useState<TransactionTab>('all');
 
-  const filters: { id: TabId; label: string }[] = [
+  const filters: { id: TransactionTab; label: string }[] = [
     { id: 'all', label: 'All' },
     { id: 'deposits', label: 'Deposits' },
     { id: 'withdrawals', label: 'Withdrawals' },

@@ -1,15 +1,1 @@
-export type TabId =
-  | 'dashboard'
-  | 'users'
-  | 'tables'
-  | 'balance'
-  | 'logs'
-  | 'tournaments'
-  | 'bonus'
-  | 'broadcast'
-  | 'messages'
-  | 'analytics'
-  | 'all'
-  | 'deposits'
-  | 'withdrawals'
-  | 'manual';
+export type TransactionTab = 'all' | 'deposits' | 'withdrawals' | 'manual';
