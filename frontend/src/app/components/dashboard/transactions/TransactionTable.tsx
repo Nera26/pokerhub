@@ -1,8 +1,8 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
-import useTransactionVirtualizer from './useTransactionVirtualizer';
+import type { Virtualizer } from '@tanstack/react-virtual';
 import useRenderCount from '@/hooks/useRenderCount';
-import type { ReactNode } from 'react';
+import type { ReactNode, RefObject } from 'react';
 
 interface Column<T> {
   label: string;
@@ -18,22 +18,24 @@ interface Action<T> {
   ariaLabel?: string;
 }
 
-interface Props<T extends { id: string; date: string }> {
+interface Props<T extends { id: string }> {
   title: string;
   items: T[];
   columns: Column<T>[];
   actions?: Action<T>[];
+  parentRef: RefObject<HTMLDivElement>;
+  rowVirtualizer: Virtualizer<HTMLDivElement, Element>;
 }
 
-export default function TransactionTable<T extends { id: string; date: string }>({
+export default function TransactionTable<T extends { id: string }>({
   title,
   items,
   columns,
   actions,
+  parentRef,
+  rowVirtualizer,
 }: Props<T>) {
   useRenderCount('TransactionTable');
-  const { parentRef, sortedItems, rowVirtualizer } =
-    useTransactionVirtualizer(items);
   return (
     <section>
       <div className="bg-card-bg p-6 rounded-2xl card-shadow">
@@ -68,7 +70,7 @@ export default function TransactionTable<T extends { id: string; date: string }>
               }
             >
               {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                const item = sortedItems[virtualRow.index];
+                const item = items[virtualRow.index];
                 return (
                   <tr
                     key={item.id}
