@@ -75,5 +75,4 @@ if (require.main === module) {
 }
 
 export { run };
-export type { RebuildOptions };
 
