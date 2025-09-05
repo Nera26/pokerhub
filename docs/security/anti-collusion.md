@@ -37,8 +37,7 @@ Pipeline config: see [`../../infra/analytics/anti-collusion-analytics.yaml`](../
 Raw game and session events stream into an analytics warehouse where scheduled queries surface
 potential collusion for review.
 
-The scheduled SQL lives in [`CollusionQueryService`](../../backend/src/analytics/deprecated/collusion.queries.ts)
-and populates a `collusion_alerts` table used by reviewers. Supporting warehouse queries are
+Scheduled SQL queries populate a `collusion_alerts` table used by reviewers. Supporting warehouse queries are
 defined under [`../../infra/analytics/`](../../infra/analytics/).
 
 ### Example Queries
