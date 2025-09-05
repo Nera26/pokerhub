@@ -1,5 +1,5 @@
 'use client';
-import React, { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { logger } from '@/lib/logger';
 import type { GameFilter, ProfitLossFilter } from '@/types/filters';

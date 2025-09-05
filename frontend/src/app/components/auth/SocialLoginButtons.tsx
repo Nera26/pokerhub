@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGoogle, faFacebookF } from '../../icons';
 import Button, { type ButtonProps } from '../ui/Button';

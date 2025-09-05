@@ -1,5 +1,4 @@
 'use client';
-import React from 'react';
 
 type HistoryTab = 'game-history' | 'tournament-history' | 'transaction-history';
 

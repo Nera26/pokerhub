@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import ErrorBoundary from './ErrorBoundary';
-import React from 'react';
 
 interface ErrorBoundaryStoryProps {
   fallback: string;
