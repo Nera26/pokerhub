@@ -1,22 +1,24 @@
 'use client';
 
-import { useRef, ReactNode } from 'react';
+import { useRef } from 'react';
 import { Tournament } from '@/hooks/useLobbyData';
 import useVirtualizedList from '@/hooks/useVirtualizedList';
-import TournamentItem from './TournamentItem';
+import TournamentCard, {
+  type TournamentStatus,
+} from '@/app/components/tournaments/TournamentCard';
 
 export interface TournamentListProps<T extends Tournament> {
   tournaments: T[];
   hidden: boolean;
-  renderActions?: (t: T) => ReactNode;
-  renderExtras?: (t: T) => ReactNode;
+  onRegister?: (id: string) => void;
+  onViewDetails?: (id: string) => void;
 }
 
 export default function TournamentList<T extends Tournament>({
   tournaments,
   hidden,
-  renderActions,
-  renderExtras,
+  onRegister,
+  onViewDetails,
 }: TournamentListProps<T>) {
   const parentRef = useRef<HTMLDivElement>(null);
   const virtualizer = useVirtualizedList<HTMLDivElement>({
@@ -25,6 +27,20 @@ export default function TournamentList<T extends Tournament>({
     estimateSize: 280,
   });
   const isVirtualized = tournaments.length >= 20;
+
+  const mapStatus = (state: T['state']): TournamentStatus => {
+    switch (state) {
+      case 'REG_OPEN':
+        return 'upcoming';
+      case 'RUNNING':
+      case 'PAUSED':
+        return 'running';
+      case 'FINISHED':
+      case 'CANCELLED':
+      default:
+        return 'past';
+    }
+  };
 
   return (
     <section
@@ -56,11 +72,8 @@ export default function TournamentList<T extends Tournament>({
               {virtualizer.getVirtualItems().map((virtualRow) => {
                 const t = tournaments[virtualRow.index];
                 return (
-                  <TournamentItem
+                  <li
                     key={t.id}
-                    tournament={t}
-                    renderActions={renderActions}
-                    renderExtras={renderExtras}
                     style={{
                       position: 'absolute',
                       top: 0,
@@ -68,19 +81,43 @@ export default function TournamentList<T extends Tournament>({
                       width: '100%',
                       transform: `translateY(${virtualRow.start}px)`,
                     }}
-                  />
+                    className="mb-4"
+                  >
+                    <TournamentCard
+                      id={t.id}
+                      status={mapStatus(t.state)}
+                      name={t.title}
+                      gameType="Unknown"
+                      buyin={t.buyIn + (t.fee ?? 0)}
+                      rebuy="N/A"
+                      prizepool={t.prizePool}
+                      players={t.players.current}
+                      maxPlayers={t.players.max}
+                      onRegister={onRegister}
+                      onViewDetails={onViewDetails}
+                    />
+                  </li>
                 );
               })}
             </ul>
           ) : (
             <ul role="list" className="m-0 p-0 list-none">
               {tournaments.map((t) => (
-                <TournamentItem
-                  key={t.id}
-                  tournament={t}
-                  renderActions={renderActions}
-                  renderExtras={renderExtras}
-                />
+                <li key={t.id} className="mb-4">
+                  <TournamentCard
+                    id={t.id}
+                    status={mapStatus(t.state)}
+                    name={t.title}
+                    gameType="Unknown"
+                    buyin={t.buyIn + (t.fee ?? 0)}
+                    rebuy="N/A"
+                    prizepool={t.prizePool}
+                    players={t.players.current}
+                    maxPlayers={t.players.max}
+                    onRegister={onRegister}
+                    onViewDetails={onViewDetails}
+                  />
+                </li>
               ))}
             </ul>
           )}
