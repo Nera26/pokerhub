@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import Redis from 'ioredis';
 
-export interface DashboardMetrics {
+interface DashboardMetrics {
   online: number;
   revenue: number;
 }
