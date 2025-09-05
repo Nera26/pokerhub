@@ -1,50 +1,36 @@
 'use client';
 
 import { Tournament } from '@/hooks/useLobbyData';
-import TournamentListBase from '@/components/TournamentList';
+import TournamentListBase, {
+  type TournamentListProps as BaseProps,
+} from '@/components/TournamentList';
 import useRenderCount from '@/hooks/useRenderCount';
-import RegisterButton from './RegisterButton';
-import BreakTimer from './BreakTimer';
+import { registerTournament } from '@/lib/api/lobby';
 
-interface TournamentWithBreak extends Tournament {
-  nextBreak?: string;
-  breakDurationMs?: number;
-}
+export type TournamentListProps<T extends Tournament> = BaseProps<T>;
 
-export interface TournamentListProps {
-  tournaments: TournamentWithBreak[];
-  hidden: boolean;
-}
-
-export default function TournamentList({
+export default function TournamentList<T extends Tournament>({
   tournaments,
   hidden,
-}: TournamentListProps) {
+  onRegister,
+  onViewDetails,
+}: TournamentListProps<T>) {
   useRenderCount('SiteTournamentList');
+
+  const handleRegister = async (id: string) => {
+    try {
+      await registerTournament(id);
+    } catch {
+      // ignore errors for now
+    }
+  };
 
   return (
     <TournamentListBase
       tournaments={tournaments}
       hidden={hidden}
-      renderExtras={(t) => (
-        <>
-          {t.state === 'CANCELLED' && (
-            <p className="text-red-500 text-sm mb-4">Cancelled</p>
-          )}
-          {t.nextBreak && t.breakDurationMs && (
-            <p className="text-text-secondary text-sm mb-4">
-              Next break in{' '}
-              <BreakTimer
-                start={Date.parse(t.nextBreak)}
-                durationMs={t.breakDurationMs}
-              />
-            </p>
-          )}
-        </>
-      )}
-      renderActions={(t) => (
-        <RegisterButton id={t.id} initialRegistered={t.registered} />
-      )}
+      onRegister={onRegister ?? handleRegister}
+      onViewDetails={onViewDetails}
     />
   );
 }
