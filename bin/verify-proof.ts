@@ -1,56 +1,19 @@
-#!/usr/bin/env node
-const { parseArgs } = require('node:util');
-const { createHash } = require('crypto');
+#!/usr/bin/env ts-node
+import { parseArgs } from 'node:util';
+import { shuffle, standardDeck, verifyProof, hexToBytes } from '../shared/verify';
+import type { HandProof } from '../shared/types';
 
-function hashCommitment(seed, nonce) {
-  return createHash('sha256').update(seed).update(nonce).digest('hex');
-}
-
-function* prng(seed) {
-  let counter = 0;
-  while (true) {
-    const hash = createHash('sha256')
-      .update(seed)
-      .update(Buffer.from(counter.toString()))
-      .digest();
-    const rand = hash.readUInt32BE(0) / 0xffffffff;
-    counter += 1;
-    yield rand;
-  }
-}
-
-function shuffle(items, seed) {
-  const arr = items.slice();
-  const rnd = prng(seed);
-  for (let i = arr.length - 1; i > 0; i--) {
-    const r = rnd.next().value;
-    const j = Math.floor(r * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-function standardDeck() {
-  return Array.from({ length: 52 }, (_, i) => i);
-}
-
-function verifyProof(proof) {
-  const seed = Buffer.from(proof.seed, 'hex');
-  const nonce = Buffer.from(proof.nonce, 'hex');
-  return hashCommitment(seed, nonce) === proof.commitment;
-}
-
-async function verifyHandProof(handId, baseUrl) {
+export async function verifyHandProof(handId: string, baseUrl: string) {
   const proofRes = await fetch(`${baseUrl}/hands/${handId}/proof`);
   if (!proofRes.ok) throw new Error('Failed to fetch proof');
-  const proof = await proofRes.json();
+  const proof = (await proofRes.json()) as HandProof;
   if (!verifyProof(proof)) throw new Error('Invalid proof: commitment mismatch');
 
   const logRes = await fetch(`${baseUrl}/hands/${handId}/log`);
   if (!logRes.ok) throw new Error('Failed to fetch log');
   const logText = await logRes.text();
 
-  let deck;
+  let deck: number[] | undefined;
   for (const line of logText.trim().split('\n')) {
     if (!line) continue;
     if (line.startsWith('[')) {
@@ -66,8 +29,8 @@ async function verifyHandProof(handId, baseUrl) {
   }
   if (!Array.isArray(deck)) throw new Error('Deck not found in log');
 
-  const expected = shuffle(standardDeck(), Buffer.from(proof.seed, 'hex'));
-  const match = deck.length === expected.length && deck.every((v,i)=>v===expected[i]);
+  const expected = shuffle(standardDeck(), hexToBytes(proof.seed));
+  const match = deck.length === expected.length && deck.every((v, i) => v === expected[i]);
   if (!match) throw new Error('Deck mismatch');
 }
 
@@ -87,13 +50,11 @@ async function main() {
     await verifyHandProof(handId, baseUrl);
     console.log(`Proof verified for hand ${handId}`);
   } catch (err) {
-    console.error(err.message);
+    console.error((err as Error).message);
     process.exit(1);
   }
 }
 
 if (require.main === module) {
-  main();
+  void main();
 }
-
-module.exports = { verifyHandProof };

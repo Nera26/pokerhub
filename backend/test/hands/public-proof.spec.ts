@@ -5,7 +5,8 @@ import request from 'supertest';
 import { Hand } from '../../src/database/entities/hand.entity';
 import { HandsController } from '../../src/routes/hands.controller';
 import { HandLog } from '../../src/game/hand-log';
-import { HandRNG, verifyProof } from '../../src/game/rng';
+import { HandRNG } from '../../src/game/rng';
+import { verifyProof } from '@shared/verify';
 import { existsSync, unlinkSync } from 'fs';
 import { join } from 'path';
 

@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { GameEngine, GameAction } from '../../src/game/engine';
-import { hashCommitment } from '../../src/game/rng';
+import { hashCommitment } from '@shared/verify';
 
 describe('GameEngine RNG proof logging', () => {
   it('appends proof to hand log at showdown', async () => {

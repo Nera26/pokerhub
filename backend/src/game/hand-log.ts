@@ -2,7 +2,7 @@ import { createWriteStream, mkdirSync, WriteStream } from 'fs';
 import { once } from 'events';
 import { join } from 'path';
 import { GameAction, GameStateInternal } from './state-machine';
-import type { HandProof } from './rng';
+import type { HandProof } from '@shared/types';
 
 // [index, action, preState, postState, proof]
 export type HandLogEntry = [

@@ -1,6 +1,6 @@
 import { HandLog } from './hand-log';
 import { GameAction, GameStateInternal } from './state-machine';
-import type { HandProof } from './rng';
+import type { HandProof } from '@shared/types';
 import { existsSync, readFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 

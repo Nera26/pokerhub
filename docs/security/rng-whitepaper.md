@@ -10,7 +10,7 @@ This paper describes PokerHub's random number generation (RNG) system and fairne
 ## Fairness Verification
 - Game outcomes are streamed to analytics where distribution tests validate uniformity.
 - Verification jobs run nightly; results feed the [`rng_fairness`](rng-fairness.md) report.
-- Players can independently verify shuffles using `verifyProof` in [rng.ts](../../backend/src/game/rng.ts).
+ - Players can independently verify shuffles using `verifyProof` from [shared/verify](../../shared/verify/index.ts).
 
 ## Audit
 - Quarterly third-party reviews sign off on algorithms and seed handling.
