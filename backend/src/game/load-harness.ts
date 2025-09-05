@@ -17,7 +17,7 @@ interface HarnessOptions {
   duration: number;
 }
 
-export class GameGatewayLoadHarness {
+class GameGatewayLoadHarness {
   private readonly opts: HarnessOptions;
   private readonly histogram = new Histogram();
   private readonly trackers = new Map<string, AckTracker>();
