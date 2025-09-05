@@ -1,22 +1,22 @@
-import React from 'react';
+import { useRef, type Key, type ReactNode } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 
 export interface Column<T> {
-  header: React.ReactNode;
+  header: ReactNode;
   headerClassName?: string;
-  cell: (row: T) => React.ReactNode;
+  cell: (row: T) => ReactNode;
   cellClassName?: string;
 }
 
 export interface TransactionHistoryTableProps<T> {
   data: T[];
   columns: Column<T>[];
-  getRowKey?: (row: T, index: number) => React.Key;
+  getRowKey?: (row: T, index: number) => Key;
   estimateSize?: number;
   containerClassName?: string;
   tableClassName?: string;
   rowClassName?: string;
-  noDataMessage?: React.ReactNode;
+  noDataMessage?: ReactNode;
 }
 
 export default function TransactionHistoryTable<T>({
@@ -29,7 +29,7 @@ export default function TransactionHistoryTable<T>({
   rowClassName = 'border-b border-border-dark hover:bg-hover-bg transition-colors duration-200',
   noDataMessage,
 }: TransactionHistoryTableProps<T>) {
-  const parentRef = React.useRef<HTMLDivElement>(null);
+  const parentRef = useRef<HTMLDivElement>(null);
   const rowVirtualizer = useVirtualizer({
     count: data.length,
     getScrollElement: () => parentRef.current,

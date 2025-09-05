@@ -1095,6 +1095,29 @@ export interface paths {
       };
     };
   };
+  "/admin/deposits/reconcile": {
+    /** Reconcile bank deposits */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["BankReconciliationRequest"];
+          "multipart/form-data": {
+            /** Format: binary */
+            file?: string;
+          };
+          "text/csv": string;
+        };
+      };
+      responses: {
+        /** @description Reconciliation completed */
+        200: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
   "/users": {
     /** Create user */
     post: {
@@ -1477,6 +1500,13 @@ export interface components {
     };
     DepositDecisionRequest: {
       reason?: string;
+    };
+    BankReconciliationEntry: {
+      reference: string;
+      amount: number;
+    };
+    BankReconciliationRequest: {
+      entries: components["schemas"]["BankReconciliationEntry"][];
     };
     CreateUserRequest: {
       username: string;

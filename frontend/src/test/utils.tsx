@@ -1,9 +1,9 @@
 import { NextIntlClientProvider } from 'next-intl';
 import { render } from '@testing-library/react';
-import React from 'react';
+import type { ReactElement } from 'react';
 
 export function renderWithIntl(
-  ui: React.ReactElement,
+  ui: ReactElement,
   {
     locale = 'en',
     messages = {},

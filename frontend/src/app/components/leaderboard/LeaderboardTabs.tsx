@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import { useRef, type KeyboardEvent } from 'react';
 
 export type TimeFilter = 'daily' | 'weekly' | 'monthly';
 
@@ -21,10 +21,10 @@ export default function LeaderboardTabs({
   selected,
   onChange,
 }: LeaderboardTabsProps) {
-  const tabRefs = React.useRef<(HTMLButtonElement | null)[]>([]);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const handleKeyDown =
-    (index: number) => (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    (index: number) => (event: KeyboardEvent<HTMLButtonElement>) => {
       if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
         event.preventDefault();
         const direction = event.key === 'ArrowRight' ? 1 : -1;

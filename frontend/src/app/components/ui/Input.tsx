@@ -1,10 +1,9 @@
 'use client';
 
-import React from 'react';
+import type { FC, InputHTMLAttributes } from 'react';
 import { logger } from '@/lib/logger';
 
-export interface InputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   /** If true, input takes full width */
   fullWidth?: boolean;
   /** Error message to display below input. Requires `id`. */
@@ -16,7 +15,7 @@ export interface InputProps
 const baseStyles =
   'bg-primary-bg text-text-primary border border-border-dark rounded-xl p-3 placeholder-text-text-secondary text-body-sm focus:outline-none focus-glow-yellow focus:border-accent-yellow';
 
-export const Input: React.FC<InputProps> = ({
+export const Input: FC<InputProps> = ({
   fullWidth = true,
   className = '',
   error,

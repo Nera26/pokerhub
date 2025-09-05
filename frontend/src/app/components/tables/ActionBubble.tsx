@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import { useEffect, useState } from 'react';
 import BetIndicator from './BetIndicator';
 
 interface ActionBubbleProps {
@@ -13,9 +13,9 @@ export default function ActionBubble({
   lastAction,
 }: ActionBubbleProps) {
   const actionActive = committed > 0 || !!lastAction;
-  const [showAction, setShowAction] = React.useState(actionActive);
+  const [showAction, setShowAction] = useState(actionActive);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (actionActive) {
       setShowAction(true);
     } else {

@@ -1,11 +1,11 @@
-import React from 'react';
+import { useState } from 'react';
 import { render, screen, act, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Modal from '../Modal';
 
 describe('Modal', () => {
   function Wrapper() {
-    const [open, setOpen] = React.useState(false);
+    const [open, setOpen] = useState(false);
     return (
       <>
         <button onClick={() => setOpen(true)}>Open Modal</button>

@@ -1,4 +1,4 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
@@ -20,7 +20,7 @@ describe('useDashboardMetrics', () => {
     global.fetch = fetchMock as unknown as typeof fetch;
 
     const client = new QueryClient();
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
+    const wrapper = ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={client}>{children}</QueryClientProvider>
     );
 
@@ -38,7 +38,7 @@ describe('useDashboardMetrics', () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
+    const wrapper = ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={client}>{children}</QueryClientProvider>
     );
 

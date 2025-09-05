@@ -1,6 +1,13 @@
 'use client';
 
-import React from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 
 export interface TableUiContextValue {
   pendingBySeat: Record<number, number>;
@@ -8,19 +15,17 @@ export interface TableUiContextValue {
   setActiveSeat: (id: number | null) => void;
 }
 
-const TableUiContext = React.createContext<TableUiContextValue | undefined>(
-  undefined,
-);
+const TableUiContext = createContext<TableUiContextValue | undefined>(undefined);
 
-export function TableUiProvider({ children }: { children: React.ReactNode }) {
-  const [pendingBySeat] = React.useState<Record<number, number>>({});
-  const [activeSeatId, setActiveSeatId] = React.useState<number | null>(null);
+export function TableUiProvider({ children }: { children: ReactNode }) {
+  const [pendingBySeat] = useState<Record<number, number>>({});
+  const [activeSeatId, setActiveSeatId] = useState<number | null>(null);
 
-  const setActiveSeat = React.useCallback((id: number | null) => {
+  const setActiveSeat = useCallback((id: number | null) => {
     setActiveSeatId(id);
   }, []);
 
-  const value = React.useMemo(
+  const value = useMemo(
     () => ({ pendingBySeat, activeSeatId, setActiveSeat }),
     [pendingBySeat, activeSeatId, setActiveSeat],
   );
@@ -31,7 +36,7 @@ export function TableUiProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useTableUi() {
-  const ctx = React.useContext(TableUiContext);
+  const ctx = useContext(TableUiContext);
   if (!ctx) {
     throw new Error('useTableUi must be used within a TableUiProvider');
   }

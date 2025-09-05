@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
+import type { CSSProperties, HTMLAttributes } from 'react';
 import PlayingCard, { type Suit } from './PlayingCard';
 
-const motion = { div: (props: React.HTMLAttributes<HTMLDivElement>) => <div {...props} /> };
+const motion = { div: (props: HTMLAttributes<HTMLDivElement>) => <div {...props} /> };
 
 function CardBack() {
   return (
@@ -48,7 +48,7 @@ export default function CommunityCards({ cards = [] }: CommunityCardsProps) {
             <motion.div
               key={`cc-${idx}`}
               className="relative will-change-transform"
-              style={{ '--x': `${idx * 6}px`, '--delay': `${idx * 120}ms` } as React.CSSProperties}
+              style={{ '--x': `${idx * 6}px`, '--delay': `${idx * 120}ms` } as CSSProperties}
             >
               <div
                 className="relative w-[64px] h-[92px] md:w-[72px] md:h-[104px]"

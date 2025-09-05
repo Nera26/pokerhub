@@ -1,24 +1,24 @@
 'use client';
 
-import React from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import ConfettiBurst from './ConfettiBurst';
 import { useChipAnimator } from './ChipAnimator';
 import type { Player } from './types';
 
 interface WinAnimationProps {
   player: Player;
-  children: (winPulse: boolean) => React.ReactNode;
+  children: (winPulse: boolean) => ReactNode;
 }
 
 export default function WinAnimation({ player, children }: WinAnimationProps) {
   const { animateWin } = useChipAnimator();
-  const prevChips = React.useRef(player.chips);
-  const prevWinner = React.useRef<boolean | undefined>(player.isWinner);
-  const [celebrateKey, setCelebrateKey] = React.useState(0);
-  const [showGlow, setShowGlow] = React.useState(false);
-  const [winPulse, setWinPulse] = React.useState(false);
+  const prevChips = useRef(player.chips);
+  const prevWinner = useRef<boolean | undefined>(player.isWinner);
+  const [celebrateKey, setCelebrateKey] = useState(0);
+  const [showGlow, setShowGlow] = useState(false);
+  const [winPulse, setWinPulse] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     let t: NodeJS.Timeout | undefined;
     if (player.isWinner && !prevWinner.current) {
       const delta = Math.max(player.chips - prevChips.current, 0);

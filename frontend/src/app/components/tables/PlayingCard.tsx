@@ -1,4 +1,4 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 
 export type Suit = 'hearts' | 'diamonds' | 'clubs' | 'spades';
 
@@ -10,7 +10,7 @@ export interface PlayingCardProps {
   active?: boolean;
 }
 
-const suitPaths: Record<Suit, React.ReactNode> = {
+const suitPaths: Record<Suit, ReactNode> = {
   hearts: (
     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 3.5 4 5.5 4 7.04 4 8.54 4.99 9 6.17 9.46 4.99 10.96 4 12.5 4 14.5 4 16 6 16 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
   ),

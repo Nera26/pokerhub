@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { POSITION_RING } from './colorTokens';
 import PlayerAvatar from './PlayerAvatar';
 import type { Player } from './types';
@@ -17,15 +17,15 @@ export default function TimerRing({
   avatarClass,
   winPulse,
 }: TimerRingProps) {
-  const [timeLeft, setTimeLeft] = React.useState(player.timeLeft ?? 0);
-  const totalTimeRef = React.useRef(player.timeLeft ?? 0);
+  const [timeLeft, setTimeLeft] = useState(player.timeLeft ?? 0);
+  const totalTimeRef = useRef(player.timeLeft ?? 0);
 
-  React.useEffect(() => {
+  useEffect(() => {
     totalTimeRef.current = player.timeLeft ?? 0;
     setTimeLeft(player.timeLeft ?? 0);
   }, [player.timeLeft]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!player.isActive || (player.timeLeft ?? 0) <= 0) return;
     const start = getServerTime();
     const deadline = start + (player.timeLeft ?? 0);
@@ -48,12 +48,12 @@ export default function TimerRing({
   const baseRingColor = ring?.color ?? 'rgba(255,255,255,0.4)';
   const ringColor = player.isActive ? 'rgba(255,255,255,0.9)' : baseRingColor;
 
-  const avatarRingStyle: React.CSSProperties = {
+  const avatarRingStyle: CSSProperties = {
     // @ts-expect-error These may be read by PlayerAvatar
     '--ring-color': ringColor,
   };
 
-  const progressStyle: React.CSSProperties = {
+  const progressStyle: CSSProperties = {
     transform: `scale(${progress})`,
     opacity: progress,
   };
