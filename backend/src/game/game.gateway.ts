@@ -129,14 +129,14 @@ interface FrameInfo {
   timeout?: ReturnType<typeof setTimeout>;
 }
 
-export const GAME_ACTION_ACK_LATENCY_MS = 'game_action_ack_latency_ms';
-export const GAME_STATE_BROADCAST_LATENCY_MS =
+const GAME_ACTION_ACK_LATENCY_MS = 'game_action_ack_latency_ms';
+const GAME_STATE_BROADCAST_LATENCY_MS =
   'game_state_broadcast_latency_ms';
 
-export const WS_OUTBOUND_QUEUE_ALERT_THRESHOLD = Number(
+const WS_OUTBOUND_QUEUE_ALERT_THRESHOLD = Number(
   process.env.WS_OUTBOUND_QUEUE_ALERT_THRESHOLD ?? '80',
 );
-export const GAME_ACTION_GLOBAL_LIMIT = Number(
+const GAME_ACTION_GLOBAL_LIMIT = Number(
   process.env.GATEWAY_GLOBAL_LIMIT ?? '30',
 );
 
