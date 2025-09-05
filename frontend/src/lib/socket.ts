@@ -27,15 +27,6 @@ function ensureSocket(): Socket {
       }
     });
 
-    socket.on(
-      'server:StateDelta',
-      (delta: { tick?: number; version?: string }) => {
-        if (delta.version !== EVENT_SCHEMA_VERSION) return;
-        if (typeof delta.tick === 'number') {
-          lastTick = delta.tick;
-        }
-      },
-    );
 
     socket.on('server:Clock', (serverNow: number) => {
       setServerTime(serverNow);
@@ -58,7 +49,6 @@ export function getGameSocket(): Socket {
 export function disconnectGameSocket(): void {
   if (socket) {
     socket.off('state');
-    socket.off('server:StateDelta');
     socket.off('server:Clock');
     socket.off('connect');
     disconnectSocket('game');

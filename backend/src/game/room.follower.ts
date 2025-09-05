@@ -48,31 +48,13 @@ function persist(): void {
 
 loadPersisted();
 
-/**
- * Deeply applies a delta onto the target. Objects are merged recursively.
- * Arrays and primitives replace the target at that key.
- */
-function applyDelta(target: any, delta: any): any {
-  if (!delta || typeof delta !== 'object') return delta;
-  const result: any = Array.isArray(target) ? [...(target ?? [])] : { ...(target ?? {}) };
-  for (const [key, value] of Object.entries(delta)) {
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
-      result[key] = applyDelta(result[key], value);
-    } else {
-      // primitives and arrays: replace
-      result[key] = value as any;
-    }
-  }
-  return result;
-}
-
 if (redis) {
   void redis.subscribe(diffChannel);
   redis.on('message', (_channel, msg) => {
-    // Engine publishes [idx, delta]; apply onto current to produce the next state
-    const [idx, delta] = JSON.parse(msg) as [number, Partial<GameState>];
-    current = applyDelta(current, delta) as GameState;
-    log[idx] = [idx, current as GameState];
+    // Engine publishes [idx, state]; store and broadcast
+    const [idx, state] = JSON.parse(msg) as [number, GameState];
+    current = state;
+    log[idx] = [idx, current];
     persist();
     port.postMessage({ event: 'state', state: current });
   });

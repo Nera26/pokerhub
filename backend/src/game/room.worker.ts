@@ -6,7 +6,6 @@ import { GameAction, GameEngine, InternalGameState } from './engine';
 import { AppDataSource } from '../database/data-source';
 import { SettlementService } from '../wallet/settlement.service';
 import { SettlementJournal } from '../wallet/settlement-journal.entity';
-import { diff } from './state-diff';
 
 if (!parentPort) {
   throw new Error('Worker must be run as a worker thread');
@@ -33,7 +32,6 @@ sub?.on('message', (channel, msg) => {
 });
 
 let settlement: SettlementService;
-let previousState: InternalGameState | undefined;
 
 async function getSettlement() {
   if (process.env.NODE_ENV === 'test') {
@@ -135,14 +133,11 @@ async function main() {
             }
           }
 
-          let delta = diff(previousState, state);
-          previousState = state;
-
           // Emit a full-state event for local consumers
           port.postMessage({ event: 'state', state });
 
-          // Publish compact deltas over Redis for socket fan-out
-          await pub?.publish(diffChannel, JSON.stringify([idx, delta]));
+          // Publish full state over Redis for socket fan-out
+          await pub?.publish(diffChannel, JSON.stringify([idx, state]));
 
           if (dealingHalted) {
             port.postMessage({ event: 'dealingDisabled' });
@@ -153,14 +148,8 @@ async function main() {
             actionCounter.add(1, { tableId: workerData.tableId });
             idx = engine.getHandLog().slice(-1)[0]?.[0] ?? idx;
             state = engine.getPublicState();
-            delta = diff(previousState, state);
-            previousState = state;
             port.postMessage({ event: 'state', state });
-            await pub?.publish(diffChannel, JSON.stringify([idx, delta]));
-          }
-
-          if (state.phase === 'NEXT_HAND') {
-            previousState = undefined;
+            await pub?.publish(diffChannel, JSON.stringify([idx, state]));
           }
 
           if (settlementEnabled && svc) {

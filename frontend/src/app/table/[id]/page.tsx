@@ -13,30 +13,6 @@ interface PageProps {
   params: { id: string };
 }
 
-export function applyDelta(
-  target: GameState | null,
-  delta: Partial<GameState>,
-): GameState {
-  if (!delta || typeof delta !== 'object') return delta as GameState;
-  const result: GameState = Array.isArray(target)
-    ? ([...(target ?? [])] as unknown as GameState)
-    : ({ ...(target ?? {}) } as GameState);
-  for (const [key, value] of Object.entries(delta) as [
-    keyof GameState,
-    Partial<GameState[keyof GameState]>
-  ][]) {
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
-      (result as Record<string, unknown>)[key as string] = applyDelta(
-        (result as Record<string, unknown>)[key as string] as GameState,
-        value as Partial<GameState>,
-      );
-    } else {
-      (result as Record<string, unknown>)[key as string] = value as unknown;
-    }
-  }
-  return result;
-}
-
 export default function TablePage({ params }: PageProps) {
   const tableId = params.id;
   const { socket, join, sendAction } = useGameSocket();
@@ -59,13 +35,6 @@ export default function TablePage({ params }: PageProps) {
       }
       setState(s);
     };
-    const handleDelta = (d: { version: string; delta: Partial<GameState> }) => {
-      if (d.version !== EVENT_SCHEMA_VERSION) {
-        setStatus('Protocol version mismatch');
-        return;
-      }
-      setState((prev) => applyDelta(prev, d.delta));
-    };
     const handleAck = (
       ack: { actionId: string; duplicate?: boolean; version: string },
     ) => {
@@ -86,13 +55,11 @@ export default function TablePage({ params }: PageProps) {
     socket.on('state', handleState);
     socket.on('action:ack', handleAck);
     socket.on('server:Error', handleError);
-    socket.on('server:StateDelta', handleDelta);
 
     return () => {
       socket.off('state', handleState);
       socket.off('action:ack', handleAck);
       socket.off('server:Error', handleError);
-      socket.off('server:StateDelta', handleDelta);
     };
   }, [socket, join, lastActionId]);
 
