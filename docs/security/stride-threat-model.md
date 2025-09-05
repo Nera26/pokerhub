@@ -24,7 +24,7 @@ Audit logs and [anti-collusion analytics](anti-collusion.md) provide traceabilit
 
 Mitigations:
 - [`backend/src/analytics/collusion.service.ts`](../../backend/src/analytics/collusion.service.ts) stores flagged sessions for later review.
-- [`backend/src/analytics/collusion.queries.ts`](../../backend/src/analytics/collusion.queries.ts) schedules warehouse queries that persist evidence.
+- [`backend/src/analytics/deprecated/collusion.queries.ts`](../../backend/src/analytics/deprecated/collusion.queries.ts) schedules warehouse queries that persist evidence.
 
 ## Information Disclosure
 Sensitive data is encrypted in transit and at rest; access follows least privilege.
@@ -62,7 +62,7 @@ The gaps noted in earlier STRIDE reviews have been closed:
 | --- | --- | --- |
 | Spoofing | KYC verification ties accounts to verified identities, preventing impersonation | [backend/src/auth/kyc.service.ts](../../backend/src/auth/kyc.service.ts), [backend/src/auth/auth.guard.ts](../../backend/src/auth/auth.guard.ts) |
 | Tampering | The game gateway hashes and tracks actions to detect duplicates and alterations | [backend/src/game/game.gateway.ts](../../backend/src/game/game.gateway.ts), [backend/src/wallet/settlement.service.ts](../../backend/src/wallet/settlement.service.ts) |
-| Repudiation | Collusion analytics flag shared devices, IPs, and suspicious transfers for audit trails | [backend/src/analytics/collusion.service.ts](../../backend/src/analytics/collusion.service.ts), [backend/src/analytics/collusion.queries.ts](../../backend/src/analytics/collusion.queries.ts) |
+| Repudiation | Collusion analytics flag shared devices, IPs, and suspicious transfers for audit trails | [backend/src/analytics/collusion.service.ts](../../backend/src/analytics/collusion.service.ts), [backend/src/analytics/deprecated/collusion.queries.ts](../../backend/src/analytics/deprecated/collusion.queries.ts) |
 | Information Disclosure | Sanctions and country checks restrict access from high-risk regions | [backend/src/auth/auth.guard.ts](../../backend/src/auth/auth.guard.ts), [backend/src/auth/kyc.service.ts](../../backend/src/auth/kyc.service.ts) |
 | Denial of Service | Per-socket and global rate limits throttle abusive clients | [backend/src/auth/rate-limit.middleware.ts](../../backend/src/auth/rate-limit.middleware.ts), [backend/src/game/game.gateway.ts](../../backend/src/game/game.gateway.ts) |
 | Elevation of Privilege | Collusion detection and KYC workflows enforce fair play and verified access | [backend/src/analytics/collusion.service.ts](../../backend/src/analytics/collusion.service.ts), [backend/src/auth/admin.guard.ts](../../backend/src/auth/admin.guard.ts) |
