@@ -1,4 +1,4 @@
-export enum HandRank {
+enum HandRank {
   HIGH_CARD = 0,
   PAIR = 1,
   TWO_PAIR = 2,
