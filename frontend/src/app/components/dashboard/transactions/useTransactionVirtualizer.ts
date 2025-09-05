@@ -1,5 +1,18 @@
-import { useMemo, useRef } from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import { useMemo, useRef, RefObject } from 'react';
+import type { Virtualizer } from '@tanstack/react-virtual';
+import useVirtualizedList from '@/hooks/useVirtualizedList';
+import sortByDate from './sortByDate';
+
+type VirtualizerCreator = (options: {
+  count: number;
+  parentRef: RefObject<HTMLDivElement | null>;
+  estimateSize?: number;
+}) => Virtualizer<HTMLDivElement, Element>;
+
+interface Options {
+  estimateSize?: number;
+  createVirtualizer?: VirtualizerCreator;
+}
 
 /**
  * Shared virtualization logic for transaction tables.
@@ -7,27 +20,14 @@ import { useVirtualizer } from '@tanstack/react-virtual';
  */
 export default function useTransactionVirtualizer<T extends { date: string }>(
   items: T[],
+  { estimateSize = 56, createVirtualizer = (opts) => useVirtualizedList<HTMLDivElement>(opts) }: Options = {},
 ) {
   const parentRef = useRef<HTMLDivElement>(null);
-  const sortedItems = useMemo(
-    () => [...items].sort((a, b) => a.date.localeCompare(b.date)),
-    [items],
-  );
-  const real = useVirtualizer({
+  const sortedItems = useMemo(() => sortByDate(items), [items]);
+  const rowVirtualizer = createVirtualizer({
     count: sortedItems.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 56,
-    initialRect: { width: 0, height: 400 },
+    parentRef,
+    estimateSize,
   });
-  const rowVirtualizer =
-    process.env.NODE_ENV === 'test'
-      ? {
-          getVirtualItems: () =>
-            sortedItems.map((_, index) => ({ index, start: index * 56 })),
-          getTotalSize: () => sortedItems.length * 56,
-          measureElement: () => {},
-        }
-      : real;
   return { parentRef, sortedItems, rowVirtualizer } as const;
 }
-

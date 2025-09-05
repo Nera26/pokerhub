@@ -7,6 +7,23 @@ interface Options<T extends HTMLElement> {
   estimateSize?: number;
 }
 
+export function createVirtualizerStub<T extends HTMLElement>({
+  count,
+  estimateSize = 280,
+}: Options<T>): Virtualizer<T, Element> {
+  return {
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, index) => ({
+        index,
+        start: index * estimateSize,
+        end: (index + 1) * estimateSize,
+      })),
+    getTotalSize: () => count * estimateSize,
+    scrollToIndex: () => undefined,
+    measureElement: () => undefined,
+  } as unknown as Virtualizer<T, Element>;
+}
+
 export default function useVirtualizedList<T extends HTMLElement>({
   count,
   parentRef,
@@ -19,18 +36,7 @@ export default function useVirtualizedList<T extends HTMLElement>({
   });
 
   if (process.env.NODE_ENV === 'test') {
-    return {
-      ...virtualizer,
-      getVirtualItems: () =>
-        Array.from({ length: count }, (_, index) => ({
-          index,
-          start: index * estimateSize,
-          end: (index + 1) * estimateSize,
-        })),
-      getTotalSize: () => count * estimateSize,
-      scrollToIndex: () => undefined,
-      measureElement: () => undefined,
-    } as unknown as Virtualizer<T, Element>;
+    return createVirtualizerStub({ count, parentRef, estimateSize });
   }
 
   return virtualizer;

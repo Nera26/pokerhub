@@ -2,6 +2,7 @@ import Image from 'next/image';
 
 import TransactionTable from './TransactionTable';
 import StatusPill, { toStatus } from './StatusPill';
+import useTransactionVirtualizer from './useTransactionVirtualizer';
 import type { WithdrawalReq } from './types';
 import useRenderCount from '@/hooks/useRenderCount';
 
@@ -17,10 +18,12 @@ export default function WithdrawalTable({
   onReject,
 }: Props) {
   useRenderCount('WithdrawalTable');
+  const { parentRef, sortedItems, rowVirtualizer } =
+    useTransactionVirtualizer(withdrawals);
   return (
     <TransactionTable
       title="Withdrawal Requests"
-      items={withdrawals}
+      items={sortedItems}
       columns={[
         {
           label: 'Player',
@@ -79,6 +82,8 @@ export default function WithdrawalTable({
             'bg-danger-red hover:bg-red-600 px-2 py-1 rounded text-xs font-semibold',
         },
       ]}
+      parentRef={parentRef}
+      rowVirtualizer={rowVirtualizer}
     />
   );
 }

@@ -4,6 +4,7 @@ import { faImage, faComment } from '@fortawesome/free-solid-svg-icons';
 
 import TransactionTable from './TransactionTable';
 import StatusPill, { toStatus } from './StatusPill';
+import useTransactionVirtualizer from './useTransactionVirtualizer';
 import type { DepositReq } from './types';
 import useRenderCount from '@/hooks/useRenderCount';
 
@@ -23,10 +24,12 @@ export default function DepositTable({
   onViewReceipt,
 }: Props) {
   useRenderCount('DepositTable');
+  const { parentRef, sortedItems, rowVirtualizer } =
+    useTransactionVirtualizer(deposits);
   return (
     <TransactionTable
       title="Deposit Requests"
-      items={deposits}
+      items={sortedItems}
       columns={[
         {
           label: 'Player',
@@ -94,6 +97,8 @@ export default function DepositTable({
           ariaLabel: 'Add comment',
         },
       ]}
+      parentRef={parentRef}
+      rowVirtualizer={rowVirtualizer}
     />
   );
 }
