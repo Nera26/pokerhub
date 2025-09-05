@@ -1,11 +1,6 @@
 'use client';
 
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  type UseQueryOptions,
-} from '@tanstack/react-query';
+import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import {
   fetchNotifications,
   markAllNotificationsRead,
@@ -13,6 +8,7 @@ import {
   type NotificationsResponse,
 } from '@/lib/api/notifications';
 import type { ApiError } from '@/lib/api/notifications';
+import { useNotificationMutation } from './useNotificationMutation';
 
 export {
   type Notification,
@@ -33,60 +29,23 @@ export function useNotifications(
 }
 
 export function useMarkAllRead() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: markAllNotificationsRead,
-    onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: ['notifications'] });
-      const previous = queryClient.getQueryData<NotificationsResponse>([
-        'notifications',
-      ]);
-      if (previous) {
-        queryClient.setQueryData<NotificationsResponse>(['notifications'], {
-          ...previous,
-          notifications: previous.notifications.map((n) => ({
-            ...n,
-            read: true,
-          })),
-        });
-      }
-      return { previous };
-    },
-    onError: (_err, _vars, ctx) => {
-      if (ctx?.previous)
-        queryClient.setQueryData(['notifications'], ctx.previous);
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-    },
-  });
+  return useNotificationMutation(markAllNotificationsRead, (previous) => ({
+    ...previous,
+    notifications: previous.notifications.map((n) => ({
+      ...n,
+      read: true,
+    })),
+  }));
 }
 
 export function useMarkRead() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => markNotificationRead(id),
-    onMutate: async (id: string) => {
-      await queryClient.cancelQueries({ queryKey: ['notifications'] });
-      const previous = queryClient.getQueryData<NotificationsResponse>([
-        'notifications',
-      ]);
-      if (previous) {
-        queryClient.setQueryData<NotificationsResponse>(['notifications'], {
-          ...previous,
-          notifications: previous.notifications.map((n) =>
-            n.id === id ? { ...n, read: true } : n,
-          ),
-        });
-      }
-      return { previous };
-    },
-    onError: (_err, _vars, ctx) => {
-      if (ctx?.previous)
-        queryClient.setQueryData(['notifications'], ctx.previous);
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-    },
-  });
+  return useNotificationMutation(
+    (id: string) => markNotificationRead(id),
+    (previous, id) => ({
+      ...previous,
+      notifications: previous.notifications.map((n) =>
+        n.id === id ? { ...n, read: true } : n,
+      ),
+    }),
+  );
 }
