@@ -1,4 +1,4 @@
-import { detectChipDump, Transfer } from '../../src/analytics/collusion';
+import { detectChipDump, Transfer } from '@shared/analytics/collusion';
 
 describe('collusion heuristics', () => {
   it('computes chip dumping score', () => {
