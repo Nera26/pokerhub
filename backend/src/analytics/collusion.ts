@@ -4,6 +4,9 @@ import { AnalyticsService } from './analytics.service';
 import { CollusionService } from './collusion.service';
 import type { Transfer } from '@shared/analytics';
 
+export { detectChipDump };
+export type { Transfer };
+
 interface GameEvent {
   sessionId: string;
   userId: string;
@@ -11,10 +14,6 @@ interface GameEvent {
   seat: number;
   timestamp: number;
   transfer?: Transfer;
-}
-
-export function chipDumpingScore(transfers: Transfer[]): number {
-  return detectChipDump(transfers);
 }
 
 @Injectable()
@@ -70,7 +69,7 @@ export class CollusionDetectionJob {
             seatsA,
             seatsB,
           );
-          const dumpScore = chipDumpingScore(transfers);
+          const dumpScore = detectChipDump(transfers);
           const flagged =
             features.sharedDevices.length > 0 ||
             features.sharedIps.length > 0 ||
