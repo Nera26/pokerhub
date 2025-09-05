@@ -3,6 +3,7 @@
 import { useRef, ReactNode } from 'react';
 import { Tournament } from '@/hooks/useLobbyData';
 import useVirtualizedList from '@/hooks/useVirtualizedList';
+import TournamentItem from './TournamentItem';
 
 export interface TournamentListProps<T extends Tournament> {
   tournaments: T[];
@@ -55,8 +56,11 @@ export default function TournamentList<T extends Tournament>({
               {virtualizer.getVirtualItems().map((virtualRow) => {
                 const t = tournaments[virtualRow.index];
                 return (
-                  <li
+                  <TournamentItem
                     key={t.id}
+                    tournament={t}
+                    renderActions={renderActions}
+                    renderExtras={renderExtras}
                     style={{
                       position: 'absolute',
                       top: 0,
@@ -64,58 +68,19 @@ export default function TournamentList<T extends Tournament>({
                       width: '100%',
                       transform: `translateY(${virtualRow.start}px)`,
                     }}
-                    className="mb-4 bg-card-bg rounded-2xl p-[20px] flex flex-col justify-between hover:bg-hover-bg transition-colors duration-200"
-                  >
-                    <div>
-                      <h3 className="text-lg sm:text-xl font-bold text-text-primary mb-2">
-                        {t.title}
-                      </h3>
-                      <p className="text-text-secondary text-sm mb-4">
-                        Buy-in: ${t.buyIn}
-                        {t.fee ? ` + $${t.fee} fee` : ''}
-                      </p>
-                      <p className="text-text-secondary text-sm mb-4">
-                        Prize Pool: {t.prizePool}
-                      </p>
-                      {renderExtras?.(t)}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <p className="text-text-secondary text-sm">
-                        {t.players.current}/{t.players.max} players
-                      </p>
-                      {renderActions?.(t)}
-                    </div>
-                  </li>
+                  />
                 );
               })}
             </ul>
           ) : (
             <ul role="list" className="m-0 p-0 list-none">
               {tournaments.map((t) => (
-                <li
+                <TournamentItem
                   key={t.id}
-                  className="mb-4 bg-card-bg rounded-2xl p-[20px] flex flex-col justify-between hover:bg-hover-bg transition-colors duration-200"
-                >
-                  <div>
-                    <h3 className="text-lg sm:text-xl font-bold text-text-primary mb-2">
-                      {t.title}
-                    </h3>
-                    <p className="text-text-secondary text-sm mb-4">
-                      Buy-in: ${t.buyIn}
-                      {t.fee ? ` + $${t.fee} fee` : ''}
-                    </p>
-                    <p className="text-text-secondary text-sm mb-4">
-                      Prize Pool: {t.prizePool}
-                    </p>
-                    {renderExtras?.(t)}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-text-secondary text-sm">
-                      {t.players.current}/{t.players.max} players
-                    </p>
-                    {renderActions?.(t)}
-                  </div>
-                </li>
+                  tournament={t}
+                  renderActions={renderActions}
+                  renderExtras={renderExtras}
+                />
               ))}
             </ul>
           )}
