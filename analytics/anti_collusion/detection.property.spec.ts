@@ -1,12 +1,11 @@
 import { test } from 'node:test';
 import fc from 'fast-check';
 import assert from 'node:assert/strict';
-
-const {
+import {
   detectSharedIP,
-  detectChipDumping,
+  detectChipDump,
   detectSynchronizedBetting,
-} = require('./heuristics.js');
+} from '../../shared/analytics/collusion';
 
 test('detectSharedIP flags multiple players on the same IP', () => {
   fc.assert(
@@ -31,7 +30,7 @@ test('detectSharedIP flags multiple players on the same IP', () => {
   );
 });
 
-test('detectChipDumping flags over-threshold transfers', () => {
+test('detectChipDump flags imbalanced transfers', () => {
   fc.assert(
     fc.property(
       fc.array(
@@ -41,15 +40,12 @@ test('detectChipDumping flags over-threshold transfers', () => {
           amount: fc.integer({ min: 0, max: 1000 }),
         })
       ),
-      fc.integer({ min: 1, max: 1000 }),
-      (transfers, threshold) => {
+      (transfers) => {
         const from = 'colluderA';
         const to = 'colluderB';
-        transfers.push({ from, to, amount: threshold + 1 });
-        const res = detectChipDumping(transfers, threshold);
-        return res.some(
-          (r: any) => r.from === from && r.to === to && r.total > threshold
-        );
+        transfers.push({ from, to, amount: 1000 });
+        const score = detectChipDump(transfers);
+        return score > 0;
       }
     )
   );

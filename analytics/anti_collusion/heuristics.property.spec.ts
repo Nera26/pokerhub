@@ -1,12 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fc from 'fast-check';
-
-const {
+import {
   detectSharedIP,
-  detectChipDumping,
+  detectChipDump,
   detectSynchronizedBetting,
-} = require('./heuristics.js');
+} from '../../shared/analytics/collusion';
 
 test('detectSharedIP invariants', () => {
   fc.assert(
@@ -47,7 +46,7 @@ test('detectSharedIP handles repetitive sessions and empty input', () => {
   assert.deepStrictEqual(detectSharedIP(sessions), []);
 });
 
-test('detectChipDumping invariants', () => {
+test('detectChipDump returns ratio between 0 and 1', () => {
   fc.assert(
     fc.property(
       fc.array(
@@ -57,35 +56,21 @@ test('detectChipDumping invariants', () => {
           amount: fc.integer({ min: 0, max: 1e12 }),
         })
       ),
-      fc.integer({ min: 0, max: 1e12 }),
-      (transfers, threshold) => {
-        const res = detectChipDumping(transfers, threshold);
-        const map = new Map<string, number>();
-        for (const t of transfers) {
-          const key = `${t.from}->${t.to}`;
-          map.set(key, (map.get(key) || 0) + t.amount);
-        }
-        for (const { from, to, total } of res) {
-          const key = `${from}->${to}`;
-          if (map.get(key) !== total || total <= threshold) return false;
-        }
-        for (const [key, total] of map.entries()) {
-          const exists = res.some((r: any) => `${r.from}->${r.to}` === key);
-          if (total > threshold ? !exists : exists) return false;
-        }
-        return true;
+      (transfers) => {
+        const score = detectChipDump(transfers);
+        return score >= 0 && score <= 1;
       }
     )
   );
 });
 
-test('detectChipDumping handles empty input and extreme amounts', () => {
-  assert.deepStrictEqual(detectChipDumping([], 100), []);
-  const max = Number.MAX_SAFE_INTEGER;
-  const transfers = [{ from: 'a', to: 'b', amount: max }];
-  assert.deepStrictEqual(detectChipDumping(transfers, max - 1), [
-    { from: 'a', to: 'b', total: max },
-  ]);
+test('detectChipDump handles empty and balanced transfers', () => {
+  assert.strictEqual(detectChipDump([]), 0);
+  const transfers = [
+    { from: 'a', to: 'b', amount: 100 },
+    { from: 'b', to: 'a', amount: 100 },
+  ];
+  assert.strictEqual(detectChipDump(transfers), 0);
 });
 
 test('detectSynchronizedBetting invariants', () => {

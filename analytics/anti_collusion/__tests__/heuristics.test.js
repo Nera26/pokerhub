@@ -1,10 +1,11 @@
 const test = require('node:test');
 const assert = require('node:assert');
+require('ts-node/register');
 const {
   detectSharedIP,
-  detectChipDumping,
+  detectChipDump,
   detectSynchronizedBetting,
-} = require('../heuristics');
+} = require('../../../shared/analytics/collusion');
 
 test('detectSharedIP flags multiple players on same IP', () => {
   const sessions = [
@@ -17,15 +18,14 @@ test('detectSharedIP flags multiple players on same IP', () => {
   ]);
 });
 
-test('detectChipDumping aggregates transfers over threshold', () => {
+test('detectChipDump computes imbalance ratio', () => {
   const transfers = [
     { from: 'a', to: 'b', amount: 60000 },
     { from: 'a', to: 'b', amount: 50000 },
     { from: 'b', to: 'a', amount: 1000 },
   ];
-  assert.deepStrictEqual(detectChipDumping(transfers, 100000), [
-    { from: 'a', to: 'b', total: 110000 },
-  ]);
+  const score = detectChipDump(transfers);
+  assert.ok(score > 0.49);
 });
 
 test('detectSynchronizedBetting finds actions within window', () => {
