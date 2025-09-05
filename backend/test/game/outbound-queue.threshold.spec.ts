@@ -121,12 +121,8 @@ describe('GameGateway threshold monitoring', () => {
     let GameGateway: any;
     let RoomManager: any;
     let ClockService: any;
-    let WS_OUTBOUND_QUEUE_ALERT_THRESHOLD: number;
     jest.isolateModules(() => {
-      ({
-        GameGateway,
-        WS_OUTBOUND_QUEUE_ALERT_THRESHOLD,
-      } = require('../../src/game/game.gateway'));
+      ({ GameGateway } = require('../../src/game/game.gateway'));
       ({ RoomManager } = require('../../src/game/room.service'));
       ({ ClockService } = require('../../src/game/clock.service'));
     });
@@ -158,7 +154,9 @@ describe('GameGateway threshold monitoring', () => {
 
     const depths = readGauge(exporter, 'ws_outbound_queue_depth');
     const maxDepth = Math.max(...depths);
-    expect(maxDepth).toBeLessThanOrEqual(WS_OUTBOUND_QUEUE_ALERT_THRESHOLD);
+    expect(maxDepth).toBeLessThanOrEqual(
+      Number(process.env.WS_OUTBOUND_QUEUE_ALERT_THRESHOLD),
+    );
 
     const globalExceeded = readCounter(exporter, 'global_limit_exceeded');
     expect(globalExceeded).toBe(0);
