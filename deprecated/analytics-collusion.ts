@@ -2,7 +2,7 @@
  * @deprecated This snippet shows early collusion-detection heuristics.
  * It originated in `docs/archive/analytics-collusion.ts` as part of the
  * 2021 analytics prototype, moved to `docs/deprecated` after the 2024 pipeline
- * overhaul, and now lives in `/archive` for long-term reference.
+ * overhaul, and now lives in `/deprecated` for long-term reference.
  */
 import { detectChipDump } from '../shared/analytics/collusion';
 
