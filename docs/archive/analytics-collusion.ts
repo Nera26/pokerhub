@@ -1,4 +1,4 @@
-import { chipDumpingScore } from '../collusion';
+import { detectChipDump } from '../collusion';
 
 interface PlayerSession {
   userId: string;
@@ -28,6 +28,6 @@ export function isLikelyCollusion(
   chipDumpThreshold = 0.8,
 ): boolean {
   const shared = sharedIp(a, b);
-  const dumpScore = chipDumpingScore(transfers);
+  const dumpScore = detectChipDump(transfers);
   return shared || dumpScore >= chipDumpThreshold;
 }
