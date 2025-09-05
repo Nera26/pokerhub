@@ -24,7 +24,7 @@ interface HarnessOptions {
   gcP95: number;
 }
 
-export class GameGatewaySoakHarness {
+class GameGatewaySoakHarness {
   private readonly opts: HarnessOptions;
   private readonly histogram = new Histogram();
   private readonly trackers = new Map<string, AckTracker>();
