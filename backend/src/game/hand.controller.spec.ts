@@ -7,7 +7,7 @@ import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { HandController } from './hand.controller';
 import { Hand } from '../database/entities/hand.entity';
-import type { HandProof } from './rng';
+import type { HandProof } from '@shared/types';
 import { ConfigService } from '@nestjs/config';
 
 describe('HandController', () => {

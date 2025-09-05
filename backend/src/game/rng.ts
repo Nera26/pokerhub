@@ -1,60 +1,6 @@
-import { randomBytes, createHash } from 'crypto';
-
-/**
- * Hash seed||nonce using sha256.
- */
-export function hashCommitment(seed: Buffer, nonce: Buffer): string {
-  return createHash('sha256').update(seed).update(nonce).digest('hex');
-}
-
-/**
- * Deterministic pseudo-random number generator based on sha256(seed||counter).
- */
-function* prng(seed: Buffer): Generator<number> {
-  let counter = 0;
-  while (true) {
-    const hash = createHash('sha256')
-      .update(seed)
-      .update(Buffer.from(counter.toString()))
-      .digest();
-    // Use first 4 bytes for a random 32-bit integer
-    const rand = hash.readUInt32BE(0) / 0xffffffff;
-    counter += 1;
-    yield rand;
-  }
-}
-
-/**
- * Fisher-Yates shuffle using deterministic PRNG seeded with `seed`.
- */
-export function shuffle<T>(items: T[], seed: Buffer): T[] {
-  const arr = items.slice();
-  const rnd = prng(seed);
-  for (let i = arr.length - 1; i > 0; i--) {
-    const r = rnd.next().value as number;
-    const j = Math.floor(r * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-export interface HandCommitment {
-  commitment: string;
-  nonce: string;
-}
-
-export interface HandProof extends HandCommitment {
-  seed: string;
-}
-
-/**
- * Verify that a revealed seed/nonce pair matches the original commitment.
- */
-export function verifyProof(proof: HandProof): boolean {
-  const seed = Buffer.from(proof.seed, 'hex');
-  const nonce = Buffer.from(proof.nonce, 'hex');
-  return hashCommitment(seed, nonce) === proof.commitment;
-}
+import { randomBytes } from 'crypto';
+import { hashCommitment, shuffle, bytesToHex } from '@shared/verify';
+import type { HandProof } from '@shared/types';
 
 /**
  * Per-hand RNG helper implementing commit-reveal protocol.
@@ -83,15 +29,8 @@ export class HandRNG {
   reveal(): HandProof {
     return {
       commitment: this.commitment,
-      seed: this.seed.toString('hex'),
-      nonce: this.nonce.toString('hex'),
+      seed: bytesToHex(this.seed),
+      nonce: bytesToHex(this.nonce),
     };
   }
-}
-
-/**
- * Utility to produce a standard 52-card deck represented by numbers 0-51.
- */
-export function standardDeck(): number[] {
-  return Array.from({ length: 52 }, (_, i) => i);
 }

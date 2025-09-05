@@ -13,7 +13,7 @@ import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { HandController } from '../../src/game/hand.controller';
 import { Hand } from '../../src/database/entities/hand.entity';
-import type { HandProof } from '../../src/game/rng';
+import type { HandProof } from '@shared/types';
 import { ConfigService } from '@nestjs/config';
 
 describe('HandController proofs', () => {

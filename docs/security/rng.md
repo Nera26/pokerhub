@@ -7,7 +7,7 @@ PokerHub's games rely on a cryptographically secure random number generator. The
 To independently verify a shuffle:
 
 1. Retrieve the hand's seed and proof from the hand history.
-2. Run `verifyProof` in [`backend/src/game/rng.ts`](../../backend/src/game/rng.ts).
+2. Run `verifyProof` from [`shared/verify`](../../shared/verify/index.ts).
 3. Confirm the resulting deck order matches the logged hand.
 
 ## Test Vectors

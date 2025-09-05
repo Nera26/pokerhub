@@ -1,6 +1,7 @@
 #!/usr/bin/env ts-node
 import * as fs from 'fs';
-import { shuffle, standardDeck, verifyProof, HandProof } from '../src/game/rng';
+import { shuffle, standardDeck, verifyProof, hexToBytes } from '@shared/verify';
+import type { HandProof } from '@shared/types';
 import type { HandLogEntry } from '../src/game/hand-log';
 
 function usage(): void {
@@ -67,7 +68,7 @@ function main(): void {
     process.exit(1);
   }
 
-  const expected = shuffle(standardDeck(), Buffer.from(proof.seed, 'hex'));
+  const expected = shuffle(standardDeck(), hexToBytes(proof.seed));
   const players: Array<{ id: string; holeCards?: number[] }> = initialState.players || [];
 
   for (const p of players) {

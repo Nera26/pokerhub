@@ -1,5 +1,5 @@
 import fc from 'fast-check';
-import { shuffle, standardDeck } from '../../src/game/rng';
+import { shuffle, standardDeck } from '@shared/verify';
 
 describe('shuffle uniformity', () => {
   it('distributes each card roughly uniformly across positions', () => {

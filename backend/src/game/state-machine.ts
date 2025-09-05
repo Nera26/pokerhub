@@ -1,4 +1,5 @@
-import { HandRNG, standardDeck } from './rng';
+import { HandRNG } from './rng';
+import { standardDeck } from '@shared/verify';
 import { settlePots } from './settlement';
 
 export type Street = 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';

@@ -1,5 +1,5 @@
 #!/usr/bin/env ts-node
-import { verifyProof } from '../backend/src/game/rng';
+import { verifyProof } from '../shared/verify';
 
 function main() {
   const [seed, nonce, commitment] = process.argv.slice(2);

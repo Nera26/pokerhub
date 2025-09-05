@@ -3,7 +3,7 @@ import {
   hashCommitment,
   shuffle,
   standardDeck,
-} from '../../src/game/rng';
+} from '@shared/verify';
 import { verifyHandProof } from '../../../bin/verify-proof';
 
 let server: Server;
