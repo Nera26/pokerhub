@@ -194,5 +194,14 @@ describe('UsersController (e2e)', () => {
       .expect(200)
       .expect((res) => expect(res.body.banned).toBe(true));
   });
+
+  it('returns 404 for missing user ban', async () => {
+    const id = '00000000-0000-0000-0000-000000000001';
+    await request(app.getHttpServer())
+      .post(`/users/${id}/ban`)
+      .set('Authorization', 'Bearer admin')
+      .send({})
+      .expect(404);
+  });
 });
 
