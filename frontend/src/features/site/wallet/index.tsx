@@ -20,6 +20,7 @@ import {
   fetchPending,
   initiateBankTransfer,
   withdraw,
+  fetchBankAccount,
 } from '@/lib/api/wallet';
 import { startKyc } from '@/lib/api/kyc';
 import { useQuery } from '@tanstack/react-query';
@@ -74,6 +75,16 @@ export default function WalletPage() {
   // Modal state
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
+
+  const {
+    data: bankAccount,
+    isLoading: bankLoading,
+    error: bankError,
+  } = useQuery({
+    queryKey: ['wallet', playerId, 'bank'],
+    queryFn: ({ signal }) => fetchBankAccount(playerId, { signal }),
+    enabled: isWithdrawModalOpen,
+  });
 
   // Toast state
   const [toastMessage, setToastMessage] = useState('');
@@ -235,14 +246,24 @@ export default function WalletPage() {
 
       {/* Withdraw Modal */}
       <Modal isOpen={isWithdrawModalOpen} onClose={closeWithdrawModal}>
-        <WithdrawModalContent
-          availableBalance={realBalance}
-          bankAccountNumber="1234 5678 9101"
-          accountTier="Verified"
-          accountHolder="PlayerOne23"
-          onClose={closeWithdrawModal}
-          onConfirm={handleWithdrawConfirm}
-        />
+        {bankLoading ? (
+          <div className="p-5 text-center text-text-secondary">
+            Loading bank account...
+          </div>
+        ) : bankError ? (
+          <div className="p-5 text-center text-danger-red">
+            Failed to load bank account
+          </div>
+        ) : bankAccount ? (
+          <WithdrawModalContent
+            availableBalance={realBalance}
+            bankAccountNumber={bankAccount.accountNumber}
+            accountTier={bankAccount.tier}
+            accountHolder={bankAccount.holder}
+            onClose={closeWithdrawModal}
+            onConfirm={handleWithdrawConfirm}
+          />
+        ) : null}
       </Modal>
 
       {/* Toast Notification */}
