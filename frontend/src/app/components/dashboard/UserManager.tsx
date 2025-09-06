@@ -32,11 +32,11 @@ import {
   fetchUsers,
   fetchUserTransactions,
 } from '@/lib/api/users';
+import { fetchPendingWithdrawals } from '@/lib/api/withdrawals';
 import {
-  approveWithdrawal,
-  rejectWithdrawal,
-  fetchPendingWithdrawals,
-} from '@/lib/api/withdrawals';
+  useWithdrawalMutation,
+  type Withdrawal,
+} from '@/hooks/useWithdrawals';
 
 type User = {
   id: number;
@@ -47,14 +47,6 @@ type User = {
   avatar: string;
 };
 
-type Withdrawal = {
-  user: string;
-  amount: string;
-  date: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
-  bankInfo: string;
-  avatar: string;
-};
 
 export default function UserManager() {
   useRenderCount('UserManager');
@@ -252,172 +244,23 @@ export default function UserManager() {
   };
 
 
-  const approveWithdrawalMutation = useMutation({
-    mutationFn: ({
-      withdrawal,
-      comment,
-    }: {
-      withdrawal: Withdrawal;
-      comment: string;
-    }) => approveWithdrawal(withdrawal.user, comment),
-    onMutate: async ({ withdrawal, comment }) => {
-      await Promise.all([
-        queryClient.cancelQueries({ queryKey: ['withdrawals'] }),
-        queryClient.cancelQueries({ queryKey: ['users'] }),
-      ]);
-      const previousWithdrawals = queryClient.getQueryData<Withdrawal[]>([
-        'withdrawals',
-      ]);
-      const previousUsers = queryClient.getQueryData<User[]>(['users']);
-      const prevSelected = selectedWithdrawal;
-      const prevTransactions = transactionsByUser[withdrawal.user];
-      queryClient.setQueryData<Withdrawal[]>(['withdrawals'], (old) =>
-        old
-          ? old.map((w) =>
-              w.user === withdrawal.user ? { ...w, status: 'Approved' } : w,
-            )
-          : [],
-      );
-      const amt = parseFloat(withdrawal.amount.replace(/[$,]/g, ''));
-      queryClient.setQueryData<User[]>(['users'], (old) =>
-        old
-          ? old.map((u) =>
-              u.name === withdrawal.user
-                ? { ...u, balance: Math.max(0, u.balance - amt) }
-                : u,
-            )
-          : [],
-      );
-      setSelectedWithdrawal((w) =>
-        w && w.user === withdrawal.user ? { ...w, status: 'Approved' } : w,
-      );
-      setTransactionsByUser((prev) => {
-        const list = prev[withdrawal.user] ?? [];
-        const entry: TransactionEntry = {
-          date: new Date().toLocaleString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-          }),
-          action: 'Withdrawal',
-          amount: -amt,
-          performedBy: PerformedBy.Admin,
-          notes: comment || 'Withdrawal approved',
-          status: 'Completed',
-        };
-        return { ...prev, [withdrawal.user]: [entry, ...list] };
-      });
-      return {
-        previousWithdrawals,
-        previousUsers,
-        prevSelected,
-        prevTransactions,
-      };
-    },
-    onError: (_err, vars, ctx) => {
-      if (ctx?.previousWithdrawals) {
-        queryClient.setQueryData(['withdrawals'], ctx.previousWithdrawals);
-      }
-      if (ctx?.previousUsers) {
-        queryClient.setQueryData(['users'], ctx.previousUsers);
-      }
-      setSelectedWithdrawal(ctx?.prevSelected ?? null);
-      if (ctx?.prevTransactions) {
-        setTransactionsByUser((prev) => ({
-          ...prev,
-          [vars.withdrawal.user]: ctx.prevTransactions!,
-        }));
-      }
-      showToast('Failed to update withdrawal', 'error');
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['withdrawals'] });
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      setReviewModalOpen(false);
-    },
-    onSuccess: () => {
-      showToast('Withdrawal approved');
-    },
-  });
+  const withdrawalMutation = useWithdrawalMutation(
+    selectedWithdrawal,
+    setSelectedWithdrawal,
+    transactionsByUser,
+    setTransactionsByUser,
+    showToast,
+    setReviewModalOpen,
+  );
 
   const handleApproveWithdrawal = (comment: string) => {
     if (!selectedWithdrawal) return;
-    approveWithdrawalMutation.mutate({
+    withdrawalMutation.mutate({
+      action: 'approve',
       withdrawal: selectedWithdrawal,
       comment,
     });
   };
-
-  const rejectWithdrawalMutation = useMutation({
-    mutationFn: ({
-      withdrawal,
-      comment,
-    }: {
-      withdrawal: Withdrawal;
-      comment: string;
-    }) => rejectWithdrawal(withdrawal.user, comment),
-    onMutate: async ({ withdrawal, comment }) => {
-      await queryClient.cancelQueries({ queryKey: ['withdrawals'] });
-      const previousWithdrawals = queryClient.getQueryData<Withdrawal[]>([
-        'withdrawals',
-      ]);
-      const prevSelected = selectedWithdrawal;
-      const prevTransactions = transactionsByUser[withdrawal.user];
-      queryClient.setQueryData<Withdrawal[]>(['withdrawals'], (old) =>
-        old
-          ? old.map((w) =>
-              w.user === withdrawal.user ? { ...w, status: 'Rejected' } : w,
-            )
-          : [],
-      );
-      setSelectedWithdrawal((w) =>
-        w && w.user === withdrawal.user ? { ...w, status: 'Rejected' } : w,
-      );
-      setTransactionsByUser((prev) => {
-        const list = prev[withdrawal.user] ?? [];
-        const entry: TransactionEntry = {
-          date: new Date().toLocaleString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-          }),
-          action: 'Withdrawal',
-          amount: 0,
-          performedBy: PerformedBy.Admin,
-          notes: `Withdrawal rejected: ${comment}`,
-          status: 'Rejected',
-        };
-        return { ...prev, [withdrawal.user]: [entry, ...list] };
-      });
-      return { previousWithdrawals, prevSelected, prevTransactions };
-    },
-    onError: (_err, vars, ctx) => {
-      if (ctx?.previousWithdrawals) {
-        queryClient.setQueryData(['withdrawals'], ctx.previousWithdrawals);
-      }
-      setSelectedWithdrawal(ctx?.prevSelected ?? null);
-      if (ctx?.prevTransactions) {
-        setTransactionsByUser((prev) => ({
-          ...prev,
-          [vars.withdrawal.user]: ctx.prevTransactions!,
-        }));
-      }
-      showToast('Failed to update withdrawal', 'error');
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['withdrawals'] });
-      setReviewModalOpen(false);
-    },
-    onSuccess: () => {
-      showToast('Withdrawal rejected', 'error');
-    },
-  });
 
   const handleRejectWithdrawal = (comment: string) => {
     if (!comment) {
@@ -425,7 +268,8 @@ export default function UserManager() {
       return;
     }
     if (!selectedWithdrawal) return;
-    rejectWithdrawalMutation.mutate({
+    withdrawalMutation.mutate({
+      action: 'reject',
       withdrawal: selectedWithdrawal,
       comment,
     });
