@@ -1,52 +1,32 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Param,
-  Body,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller } from '@nestjs/common';
 import type { Request } from 'express';
+import AdminTransactionsBase from './admin-transactions.base';
 import { WalletService } from '../wallet/wallet.service';
 import {
   PendingWithdrawalsResponseSchema,
   WithdrawalDecisionRequestSchema,
   type WithdrawalDecisionRequest,
 } from '../schemas/withdrawals';
-import { AuthGuard } from '../auth/auth.guard';
-import { AdminGuard } from '../auth/admin.guard';
 
-@ApiTags('admin')
-@UseGuards(AuthGuard, AdminGuard)
 @Controller('admin/withdrawals')
-export class AdminWithdrawalsController {
-  constructor(private readonly wallet: WalletService) {}
+export default class AdminWithdrawalsController extends AdminTransactionsBase {
+  constructor(private readonly wallet: WalletService) {
+    super();
+  }
 
-  @Get()
-  @ApiOperation({ summary: 'List pending withdrawals' })
-  @ApiResponse({ status: 200, description: 'Pending withdrawals' })
-  async list() {
+  protected async listPending() {
     const withdrawals = await this.wallet.listPendingWithdrawals();
     return PendingWithdrawalsResponseSchema.parse({ withdrawals });
   }
 
-  @Post(':id/confirm')
-  @ApiOperation({ summary: 'Confirm pending withdrawal' })
-  @ApiResponse({ status: 200, description: 'Withdrawal confirmed' })
-  async confirm(@Param('id') id: string, @Req() req: Request) {
-    await this.wallet.confirmPendingWithdrawal(id, req.userId ?? 'admin');
-    return { message: 'confirmed' };
+  protected confirmPending(id: string, req: Request) {
+    return this.wallet.confirmPendingWithdrawal(id, req.userId ?? 'admin');
   }
 
-  @Post(':id/reject')
-  @ApiOperation({ summary: 'Reject pending withdrawal' })
-  @ApiResponse({ status: 200, description: 'Withdrawal rejected' })
-  async reject(
-    @Param('id') id: string,
-    @Body() body: WithdrawalDecisionRequest,
-    @Req() req: Request,
+  protected async rejectPending(
+    id: string,
+    body: WithdrawalDecisionRequest,
+    req: Request,
   ) {
     const parsed = WithdrawalDecisionRequestSchema.parse(body);
     await this.wallet.rejectPendingWithdrawal(
@@ -54,6 +34,5 @@ export class AdminWithdrawalsController {
       req.userId ?? 'admin',
       parsed.comment,
     );
-    return { message: 'rejected' };
   }
 }

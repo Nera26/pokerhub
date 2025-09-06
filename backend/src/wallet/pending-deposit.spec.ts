@@ -10,7 +10,7 @@ import { EventPublisher } from '../events/events.service';
 import { PaymentProviderService } from './payment-provider.service';
 import { KycService } from './kyc.service';
 import { SettlementService } from './settlement.service';
-import { AdminDepositsController } from '../routes/admin-deposits.controller';
+import AdminDepositsController from '../routes/admin-deposits.controller';
 
 jest.setTimeout(20000);
 

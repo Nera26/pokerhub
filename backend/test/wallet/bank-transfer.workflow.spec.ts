@@ -10,7 +10,7 @@ import { EventPublisher } from '../../src/events/events.service';
 import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
 import { KycService } from '../../src/wallet/kyc.service';
 import { SettlementService } from '../../src/wallet/settlement.service';
-import { AdminDepositsController } from '../../src/routes/admin-deposits.controller';
+import AdminDepositsController from '../../src/routes/admin-deposits.controller';
 
 /**
  * User initiates bank transfer -> worker flags after 10s -> admin confirms -> wallet balance increases.
