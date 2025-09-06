@@ -1,4 +1,5 @@
 /* istanbul ignore file */
+import { z } from 'zod';
 import { apiClient } from './client';
 import {
   AmountSchema,
@@ -238,6 +239,41 @@ export function rejectWithdrawal(
   return apiClient(`/api/admin/withdrawals/${id}/reject`, MessageResponseSchema, {
     method: 'POST',
     body,
+    signal: opts.signal,
+  });
+}
+
+const BalanceSchema = z.object({
+  user: z.string(),
+  avatar: z.string(),
+  balance: z.number(),
+  status: z.string(),
+  lastActivity: z.string(),
+});
+export type Balance = z.infer<typeof BalanceSchema>;
+
+export function fetchBalances(
+  opts: { signal?: AbortSignal } = {},
+): Promise<Balance[]> {
+  return apiClient(`/api/admin/balances`, z.array(BalanceSchema), {
+    signal: opts.signal,
+  });
+}
+
+const TransactionLogEntrySchema = z.object({
+  datetime: z.string(),
+  action: z.string(),
+  amount: z.number().int(),
+  by: z.string(),
+  notes: z.string(),
+  status: z.string(),
+});
+export type TransactionLogEntry = z.infer<typeof TransactionLogEntrySchema>;
+
+export function fetchTransactionsLog(
+  opts: { signal?: AbortSignal } = {},
+): Promise<TransactionLogEntry[]> {
+  return apiClient(`/api/admin/transactions`, z.array(TransactionLogEntrySchema), {
     signal: opts.signal,
   });
 }

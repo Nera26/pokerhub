@@ -11,7 +11,7 @@ describe('BalanceTransactions component states', () => {
     (useQuery as jest.Mock).mockReset();
   });
 
-  it('shows placeholder when no deposits', () => {
+  it('shows placeholders when data is empty', () => {
     (useQuery as jest.Mock)
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
@@ -21,14 +21,16 @@ describe('BalanceTransactions component states', () => {
       .mockReturnValueOnce({ data: [], isLoading: false, error: null });
     render(<BalanceTransactions />);
     expect(screen.getByText('No pending deposits.')).toBeInTheDocument();
+    expect(screen.getByText('No user balances.')).toBeInTheDocument();
+    expect(screen.getByText('No transaction history.')).toBeInTheDocument();
   });
 
-  it('shows API error message', () => {
+  it('shows API error message for transaction log', () => {
     (useQuery as jest.Mock)
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
-      .mockReturnValueOnce({ data: [], isLoading: false, error: { message: 'fail' } })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
+      .mockReturnValueOnce({ data: [], isLoading: false, error: { message: 'fail' } })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null });
     render(<BalanceTransactions />);

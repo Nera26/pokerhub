@@ -6,6 +6,8 @@ import {
   fetchPendingWithdrawals,
   confirmWithdrawal,
   rejectWithdrawal,
+  fetchBalances,
+  fetchTransactionsLog,
 } from '@/lib/api/wallet';
 import { PendingDepositsResponseSchema } from '@shared/wallet.schema';
 import {
@@ -55,6 +57,24 @@ describe('wallet admin api client', () => {
     expect(apiClientMock).toHaveBeenCalledWith(
       '/api/admin/withdrawals',
       PendingWithdrawalsResponseSchema,
+      { signal: undefined },
+    );
+  });
+
+  it('fetchBalances calls endpoint', async () => {
+    await fetchBalances();
+    expect(apiClientMock).toHaveBeenCalledWith(
+      '/api/admin/balances',
+      expect.anything(),
+      { signal: undefined },
+    );
+  });
+
+  it('fetchTransactionsLog calls endpoint', async () => {
+    await fetchTransactionsLog();
+    expect(apiClientMock).toHaveBeenCalledWith(
+      '/api/admin/transactions',
+      expect.anything(),
       { signal: undefined },
     );
   });
