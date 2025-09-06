@@ -11,11 +11,22 @@ const mockedApiClient = apiClient as jest.MockedFunction<typeof apiClient>;
 
 describe('fetchProfile', () => {
   it('returns profile data on success', async () => {
-    mockedApiClient.mockResolvedValueOnce({ experience: 42 });
+    const profile = {
+      username: 'PlayerOne23',
+      email: 'playerone23@example.com',
+      avatarUrl: 'avatar.jpg',
+      bank: '•••• 1234',
+      location: 'United States',
+      joined: '2023-01-15T00:00:00.000Z',
+      bio: 'Texas grinder',
+      experience: 42,
+      balance: 100,
+    };
+    mockedApiClient.mockResolvedValueOnce(profile);
 
-    await expect(fetchProfile()).resolves.toEqual({ experience: 42 });
+    await expect(fetchProfile()).resolves.toEqual(profile);
     expect(mockedApiClient).toHaveBeenCalledWith(
-      '/api/profile',
+      '/api/user/profile',
       expect.anything(),
       { signal: undefined },
     );
