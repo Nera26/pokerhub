@@ -3,7 +3,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { useWithdrawalMutation, type Withdrawal } from '@/hooks/useWithdrawals';
 import { approveWithdrawal, rejectWithdrawal } from '@/lib/api/withdrawals';
-import type { TransactionEntry } from '@/app/components/dashboard/TransactionHistoryModal';
 
 type User = {
   id: number;
@@ -48,14 +47,9 @@ describe('useWithdrawalMutation', () => {
     const resultHook = renderHook(() => {
       const [selectedWithdrawal, setSelectedWithdrawal] =
         useState<Withdrawal | null>(withdrawal);
-      const [transactionsByUser, setTransactionsByUser] = useState<
-        Record<string, TransactionEntry[]>
-      >({});
       const mutation = useWithdrawalMutation(
         selectedWithdrawal,
         setSelectedWithdrawal,
-        transactionsByUser,
-        setTransactionsByUser,
         showToast,
         setReviewModalOpen,
       );
@@ -63,8 +57,6 @@ describe('useWithdrawalMutation', () => {
         mutation,
         selectedWithdrawal,
         setSelectedWithdrawal,
-        transactionsByUser,
-        setTransactionsByUser,
       };
     }, { wrapper });
     return { queryClient, withdrawal, user, showToast, ...resultHook };

@@ -649,3 +649,20 @@ export type BanUserRequest = z.infer<typeof BanUserSchema>;
 
 export const GetUserResponseSchema = UserSchema;
 export type GetUserResponse = z.infer<typeof GetUserResponseSchema>;
+export const TransactionEntrySchema = z.object({
+  date: z.string(),
+  action: z.string(),
+  amount: z.number(),
+  performedBy: z.string(),
+  notes: z.string(),
+  status: z.enum(['Completed', 'Pending', 'Rejected']),
+});
+export const TransactionEntriesSchema = z.array(TransactionEntrySchema);
+export type TransactionEntry = z.infer<typeof TransactionEntrySchema>;
+export type TransactionEntries = z.infer<typeof TransactionEntriesSchema>;
+
+export const FilterOptionsSchema = z.object({
+  types: z.array(z.string()),
+  performedBy: z.array(z.string()),
+});
+export type FilterOptions = z.infer<typeof FilterOptionsSchema>;

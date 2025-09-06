@@ -18,20 +18,11 @@ import type { UserFormValues } from '../forms/UserForm';
 import EditUserModal from '../modals/EditUserModal';
 import BanUserModal from '../modals/BanUserModal';
 import ToastNotification from '../ui/ToastNotification';
-import TransactionHistoryModal, {
-  TransactionEntry,
-  PerformedBy,
-} from '../modals/TransactionHistoryModal';
+import TransactionHistoryModal from '../modals/TransactionHistoryModal';
 import useRenderCount from '@/hooks/useRenderCount';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  createUser,
-  updateUser,
-  toggleUserBan,
-  fetchUsers,
-  fetchUserTransactions,
-} from '@/lib/api/users';
+import { createUser, updateUser, toggleUserBan, fetchUsers } from '@/lib/api/users';
 import { fetchPendingWithdrawals } from '@/lib/api/withdrawals';
 import {
   useWithdrawalMutation,
@@ -71,11 +62,6 @@ export default function UserManager() {
     queryFn: ({ signal }) => fetchPendingWithdrawals({ signal }),
   });
 
-  // Transaction history
-  const [transactionsByUser, setTransactionsByUser] = useState<
-    Record<string, TransactionEntry[]>
-  >({});
-
   // Modals
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -86,7 +72,8 @@ export default function UserManager() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedWithdrawal, setSelectedWithdrawal] =
     useState<Withdrawal | null>(null);
-  const [historyUser, setHistoryUser] = useState<string>('');
+  const [historyUserId, setHistoryUserId] = useState<string>('');
+  const [historyUserName, setHistoryUserName] = useState<string>('');
 
   useEffect(() => {
     if (!selectedUser && users.length > 0) {
@@ -96,19 +83,6 @@ export default function UserManager() {
       setSelectedWithdrawal(withdrawals[0]);
     }
   }, [users, withdrawals, selectedUser, selectedWithdrawal]);
-
-  useEffect(() => {
-    if (users.length === 0) return;
-    void Promise.all(users.map((u) => fetchUserTransactions(u.id))).then(
-      (all) => {
-        const map: Record<string, TransactionEntry[]> = {};
-        all.forEach((txs, idx) => {
-          map[users[idx].name] = txs;
-        });
-        setTransactionsByUser(map);
-      },
-    );
-  }, [users]);
 
   // Toast
   const [toastOpen, setToastOpen] = useState(false);
@@ -247,8 +221,6 @@ export default function UserManager() {
   const withdrawalMutation = useWithdrawalMutation(
     selectedWithdrawal,
     setSelectedWithdrawal,
-    transactionsByUser,
-    setTransactionsByUser,
     showToast,
     setReviewModalOpen,
   );
@@ -570,7 +542,8 @@ export default function UserManager() {
                             title="Transaction History"
                             className="bg-accent-blue hover:bg-blue-600 px-3 py-1 rounded-lg text-xs font-semibold transition"
                             onClick={() => {
-                              setHistoryUser(u.name);
+                              setHistoryUserId(String(u.id));
+                              setHistoryUserName(u.name);
                               setHistoryOpen(true);
                             }}
                           >
@@ -632,8 +605,8 @@ export default function UserManager() {
       <TransactionHistoryModal
         isOpen={historyOpen}
         onClose={() => setHistoryOpen(false)}
-        userName={historyUser}
-        entries={transactionsByUser[historyUser] ?? []}
+        userName={historyUserName}
+        userId={historyUserId}
       />
 
       {/* Toast */}

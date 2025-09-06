@@ -1,9 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { approveWithdrawal, rejectWithdrawal } from '@/lib/api/withdrawals';
-import {
-  PerformedBy,
-  type TransactionEntry,
-} from '@/app/components/modals/TransactionHistoryModal';
+import { PerformedBy } from '@/app/components/modals/TransactionHistoryModal';
 
 export type Withdrawal = {
   user: string;
@@ -36,10 +33,6 @@ type User = {
 export function useWithdrawalMutation(
   selectedWithdrawal: Withdrawal | null,
   setSelectedWithdrawal: React.Dispatch<React.SetStateAction<Withdrawal | null>>,
-  transactionsByUser: Record<string, TransactionEntry[]>,
-  setTransactionsByUser: React.Dispatch<
-    React.SetStateAction<Record<string, TransactionEntry[]>>
-  >,
   showToast: (m: string, t?: 'success' | 'error') => void,
   setReviewModalOpen: (open: boolean) => void,
 ) {
@@ -69,7 +62,6 @@ export function useWithdrawalMutation(
           ? queryClient.getQueryData<User[]>(['users'])
           : undefined;
       const prevSelected = selectedWithdrawal;
-      const prevTransactions = transactionsByUser[withdrawal.user];
       queryClient.setQueryData<Withdrawal[]>(['withdrawals'], (old) =>
         old
           ? old.map((w) =>
@@ -96,34 +88,10 @@ export function useWithdrawalMutation(
           ? { ...w, status: action === 'approve' ? 'Approved' : 'Rejected' }
           : w,
       );
-      setTransactionsByUser((prev) => {
-        const list = prev[withdrawal.user] ?? [];
-        const amt = parseFloat(withdrawal.amount.replace(/[$,]/g, ''));
-        const entry: TransactionEntry = {
-          date: new Date().toLocaleString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-          }),
-          action: 'Withdrawal',
-          amount: action === 'approve' ? -amt : 0,
-          performedBy: PerformedBy.Admin,
-          notes:
-            action === 'approve'
-              ? comment || 'Withdrawal approved'
-              : `Withdrawal rejected: ${comment}`,
-          status: action === 'approve' ? 'Completed' : 'Rejected',
-        };
-        return { ...prev, [withdrawal.user]: [entry, ...list] };
-      });
       return {
         previousWithdrawals,
         previousUsers,
         prevSelected,
-        prevTransactions,
       };
     },
     onError: (_err, vars, ctx) => {
@@ -134,19 +102,14 @@ export function useWithdrawalMutation(
         queryClient.setQueryData(['users'], ctx.previousUsers);
       }
       setSelectedWithdrawal(ctx?.prevSelected ?? null);
-      if (ctx?.prevTransactions) {
-        setTransactionsByUser((prev) => ({
-          ...prev,
-          [vars.withdrawal.user]: ctx.prevTransactions!,
-        }));
-      }
       showToast('Failed to update withdrawal', 'error');
     },
-    onSettled: (_data, _err, { action }) => {
+    onSettled: (_data, _err, { action, withdrawal }) => {
       queryClient.invalidateQueries({ queryKey: ['withdrawals'] });
       if (action === 'approve') {
         queryClient.invalidateQueries({ queryKey: ['users'] });
       }
+      queryClient.invalidateQueries({ queryKey: ['userTransactions', withdrawal.user] });
       setReviewModalOpen(false);
     },
     onSuccess: (_data, { action }) => {
