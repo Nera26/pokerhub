@@ -67,31 +67,6 @@ const WalletMovementSchema = new ParquetSchema({
   currency: { type: 'UTF8' },
 });
 
-const ActionAmountSchema = new ParquetSchema({
-  handId: { type: 'UTF8' },
-  tableId: { type: 'UTF8', optional: true },
-  playerId: { type: 'UTF8' },
-  amount: { type: 'DOUBLE' },
-});
-
-const ActionFoldSchema = new ParquetSchema({
-  handId: { type: 'UTF8' },
-  tableId: { type: 'UTF8', optional: true },
-  playerId: { type: 'UTF8' },
-});
-
-const TournamentRegisterSchema = new ParquetSchema({
-  tournamentId: { type: 'UTF8' },
-  playerId: { type: 'UTF8' },
-});
-
-const TournamentEliminateSchema = new ParquetSchema({
-  tournamentId: { type: 'UTF8' },
-  playerId: { type: 'UTF8' },
-  position: { type: 'INT64', optional: true },
-  payout: { type: 'DOUBLE', optional: true },
-});
-
 const TournamentCancelSchema = new ParquetSchema({
   tournamentId: { type: 'UTF8' },
 });
@@ -162,11 +137,6 @@ const ParquetSchemas: Record<string, ParquetSchema> = {
   'leaderboard.hand_settled': HandSettleSchema,
   'wallet.credit': WalletMovementSchema,
   'wallet.debit': WalletMovementSchema,
-  'action.bet': ActionAmountSchema,
-  'action.call': ActionAmountSchema,
-  'action.fold': ActionFoldSchema,
-  'tournament.register': TournamentRegisterSchema,
-  'tournament.eliminate': TournamentEliminateSchema,
   'tournament.cancel': TournamentCancelSchema,
   'wallet.reserve': WalletReserveSchema,
   'wallet.rollback': WalletRollbackSchema,

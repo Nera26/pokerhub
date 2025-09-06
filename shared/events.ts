@@ -31,34 +31,6 @@ export const WalletMovementEvent = z.object({
   currency: z.string(),
 });
 
-const ActionBase = z.object({
-  handId: z.string().uuid(),
-  tableId: z.string().uuid().optional(),
-  playerId: z.string().uuid(),
-});
-
-export const ActionBetEvent = ActionBase.extend({
-  amount: z.number(),
-});
-
-export const ActionCallEvent = ActionBase.extend({
-  amount: z.number(),
-});
-
-export const ActionFoldEvent = ActionBase;
-
-export const TournamentRegisterEvent = z.object({
-  tournamentId: z.string().uuid(),
-  playerId: z.string().uuid(),
-});
-
-export const TournamentEliminateEvent = z.object({
-  tournamentId: z.string().uuid(),
-  playerId: z.string().uuid(),
-  position: z.number().int().positive().optional(),
-  payout: z.number().optional(),
-});
-
 export const TournamentCancelEvent = z.object({
   tournamentId: z.string().uuid(),
 });
@@ -171,11 +143,6 @@ export const EventSchemas = {
   "leaderboard.hand_settled": HandSettleEvent,
   "wallet.credit": WalletMovementEvent,
   "wallet.debit": WalletMovementEvent,
-  "action.bet": ActionBetEvent,
-  "action.call": ActionCallEvent,
-  "action.fold": ActionFoldEvent,
-  "tournament.register": TournamentRegisterEvent,
-  "tournament.eliminate": TournamentEliminateEvent,
   "tournament.cancel": TournamentCancelEvent,
   "wallet.reserve": WalletReserveEvent,
   "wallet.rollback": WalletRollbackEvent,
@@ -200,11 +167,6 @@ export type Events = {
   "leaderboard.hand_settled": z.infer<typeof HandSettleEvent>;
   "wallet.credit": z.infer<typeof WalletMovementEvent>;
   "wallet.debit": z.infer<typeof WalletMovementEvent>;
-  "action.bet": z.infer<typeof ActionBetEvent>;
-  "action.call": z.infer<typeof ActionCallEvent>;
-  "action.fold": z.infer<typeof ActionFoldEvent>;
-  "tournament.register": z.infer<typeof TournamentRegisterEvent>;
-  "tournament.eliminate": z.infer<typeof TournamentEliminateEvent>;
   "tournament.cancel": z.infer<typeof TournamentCancelEvent>;
   "wallet.reserve": z.infer<typeof WalletReserveEvent>;
   "wallet.rollback": z.infer<typeof WalletRollbackEvent>;

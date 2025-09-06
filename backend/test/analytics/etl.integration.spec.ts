@@ -55,30 +55,6 @@ describe('EtlService round-trip', () => {
       refId: '2',
       currency: 'USD',
     },
-    'action.bet': {
-      handId: '00000000-0000-4000-8000-000000000010',
-      playerId: '00000000-0000-4000-8000-000000000011',
-      amount: 10,
-    },
-    'action.call': {
-      handId: '00000000-0000-4000-8000-000000000010',
-      playerId: '00000000-0000-4000-8000-000000000012',
-      amount: 10,
-    },
-    'action.fold': {
-      handId: '00000000-0000-4000-8000-000000000010',
-      playerId: '00000000-0000-4000-8000-000000000013',
-    },
-    'tournament.register': {
-      tournamentId: '00000000-0000-4000-8000-000000000020',
-      playerId: '00000000-0000-4000-8000-000000000021',
-    },
-    'tournament.eliminate': {
-      tournamentId: '00000000-0000-4000-8000-000000000020',
-      playerId: '00000000-0000-4000-8000-000000000021',
-      position: 1,
-      payout: 1000,
-    },
     'wallet.reserve': {
       accountId: '00000000-0000-4000-8000-000000000002',
       amount: 75,
