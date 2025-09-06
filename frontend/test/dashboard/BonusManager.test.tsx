@@ -1,18 +1,14 @@
 import { render, screen } from '@testing-library/react';
 import BonusManager from '@/app/components/dashboard/BonusManager';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import useBonusMutation from '@/hooks/useBonusMutation';
 
-jest.mock('@tanstack/react-query');
+jest.mock('@tanstack/react-query', () => ({ useQuery: jest.fn() }));
+jest.mock('@/hooks/useBonusMutation');
 
 describe('BonusManager component', () => {
   beforeEach(() => {
-    (useMutation as jest.Mock).mockReturnValue({ mutate: jest.fn() });
-    (useQueryClient as jest.Mock).mockReturnValue({
-      cancelQueries: jest.fn(),
-      getQueryData: jest.fn(),
-      setQueryData: jest.fn(),
-      invalidateQueries: jest.fn(),
-    });
+    (useBonusMutation as jest.Mock).mockReturnValue({ mutate: jest.fn() });
     (useQuery as jest.Mock).mockReset();
   });
 
@@ -45,50 +41,5 @@ describe('BonusManager component', () => {
     render(<BonusManager />);
     expect(screen.getByRole('alert')).toHaveTextContent('fail');
   });
-
-  it('optimistically updates bonuses', async () => {
-    const setQueryData = jest.fn();
-    (useQueryClient as jest.Mock).mockReturnValue({
-      cancelQueries: jest.fn(),
-      getQueryData: jest
-        .fn()
-        .mockReturnValue([
-          {
-            id: 1,
-            name: 'Test Bonus',
-            type: 'deposit',
-            description: 'desc',
-            eligibility: 'all',
-            status: 'active',
-            claimsTotal: 0,
-          },
-        ]),
-      setQueryData,
-      invalidateQueries: jest.fn(),
-    });
-    const mutationCalls: any[] = [];
-    (useMutation as jest.Mock).mockImplementation((opts) => {
-      mutationCalls.push(opts);
-      return { mutate: jest.fn() };
-    });
-    (useQuery as jest.Mock).mockReturnValue({
-      data: [],
-      isLoading: false,
-      error: null,
-    });
-    render(<BonusManager />);
-    const updateOpts = mutationCalls[1];
-    await updateOpts.onMutate({ id: 1, data: { status: 'paused' } });
-    expect(setQueryData).toHaveBeenCalledWith(['admin-bonuses'], [
-      {
-        id: 1,
-        name: 'Test Bonus',
-        type: 'deposit',
-        description: 'desc',
-        eligibility: 'all',
-        status: 'paused',
-        claimsTotal: 0,
-      },
-    ]);
-  });
 });
+

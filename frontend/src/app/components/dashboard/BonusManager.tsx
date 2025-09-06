@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   fetchBonuses,
   createBonus,
@@ -12,6 +12,7 @@ import {
   deleteBonus,
   type Bonus,
 } from '@/lib/api/admin';
+import useBonusMutation from '@/hooks/useBonusMutation';
 import type { ApiError } from '@/lib/api/client';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -65,7 +66,6 @@ function isExpired(iso?: string) {
 }
 
 export default function BonusManager() {
-  const queryClient = useQueryClient();
   const {
     data: bonuses = [],
     isLoading,
@@ -119,71 +119,54 @@ export default function BonusManager() {
     type: 'success',
   });
 
-  const createMutation = useMutation({
+  const createMutation = useBonusMutation({
     mutationFn: createBonus,
-    onMutate: async (newBonus) => {
-      await queryClient.cancelQueries({ queryKey: ['admin-bonuses'] });
-      const previous =
-        queryClient.getQueryData<Bonus[]>(['admin-bonuses']) ?? [];
+    updateCache: (previous, newBonus) => {
       const optimistic: Bonus = {
         ...newBonus,
         id: Date.now(),
         claimsTotal: 0,
         claimsWeek: 0,
       } as Bonus;
-      queryClient.setQueryData(['admin-bonuses'], [optimistic, ...previous]);
-      return { previous };
+      return [optimistic, ...previous];
     },
-    onError: (_err, _newBonus, context) => {
-      queryClient.setQueryData(['admin-bonuses'], context?.previous);
-      setToast({ open: true, msg: 'Failed to create bonus', type: 'error' });
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-bonuses'] });
-    },
+    successToast: 'Promotion created',
+    errorToast: 'Failed to create bonus',
+    setToast,
   });
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<Bonus> }) =>
-      updateBonus(id, data),
-    onMutate: async ({ id, data }) => {
-      await queryClient.cancelQueries({ queryKey: ['admin-bonuses'] });
-      const previous =
-        queryClient.getQueryData<Bonus[]>(['admin-bonuses']) ?? [];
-      queryClient.setQueryData(
-        ['admin-bonuses'],
-        previous.map((b) => (b.id === id ? { ...b, ...data } : b)),
-      );
-      return { previous };
-    },
-    onError: (_err, _vars, context) => {
-      queryClient.setQueryData(['admin-bonuses'], context?.previous);
-      setToast({ open: true, msg: 'Failed to update bonus', type: 'error' });
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-bonuses'] });
-    },
+  const updateMutation = useBonusMutation<{
+    id: number;
+    data: Partial<Bonus>;
+  }>({
+    mutationFn: ({ id, data }) => updateBonus(id, data),
+    updateCache: (previous, { id, data }) =>
+      previous.map((b) => (b.id === id ? { ...b, ...data } : b)),
+    successToast: 'Changes saved',
+    errorToast: 'Failed to update bonus',
+    setToast,
   });
 
-  const deleteMutation = useMutation({
+  const deleteMutation = useBonusMutation<number>({
     mutationFn: deleteBonus,
-    onMutate: async (id: number) => {
-      await queryClient.cancelQueries({ queryKey: ['admin-bonuses'] });
-      const previous =
-        queryClient.getQueryData<Bonus[]>(['admin-bonuses']) ?? [];
-      queryClient.setQueryData(
-        ['admin-bonuses'],
-        previous.filter((b) => b.id !== id),
-      );
-      return { previous };
-    },
-    onError: (_err, _id, context) => {
-      queryClient.setQueryData(['admin-bonuses'], context?.previous);
-      setToast({ open: true, msg: 'Failed to delete bonus', type: 'error' });
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-bonuses'] });
-    },
+    updateCache: (previous, id) => previous.filter((b) => b.id !== id),
+    successToast: 'Deleted bonus',
+    errorToast: 'Failed to delete bonus',
+    setToast,
+  });
+
+  const toggleMutation = useBonusMutation<{
+    id: number;
+    status: BonusStatus;
+    name: string;
+  }>({
+    mutationFn: ({ id, status }) => updateBonus(id, { status }),
+    updateCache: (previous, { id, status }) =>
+      previous.map((b) => (b.id === id ? { ...b, status } : b)),
+    successToast: ({ status, name }) =>
+      status === 'paused' ? `Paused "${name}"` : `Resumed "${name}"`,
+    errorToast: 'Failed to update bonus',
+    setToast,
   });
 
   const filtered = useMemo(() => {
@@ -232,66 +215,42 @@ export default function BonusManager() {
 
   const saveEdit = handleEditSubmit((data) => {
     if (!selected) return;
-    updateMutation.mutate(
-      {
-        id: selected.id,
-        data: { ...data, expiryDate: data.expiryDate || undefined },
-      },
-      {
-        onSuccess: () =>
-          setToast({ open: true, msg: 'Changes saved', type: 'success' }),
-      },
-    );
+    updateMutation.mutate({
+      id: selected.id,
+      data: { ...data, expiryDate: data.expiryDate || undefined },
+    });
     setEditOpen(false);
   });
   const confirmPause = () => {
     if (!selected) return;
-    updateMutation.mutate(
-      { id: selected.id, data: { status: 'paused' } },
-      {
-        onSuccess: () =>
-          setToast({
-            open: true,
-            msg: `Paused "${selected.name}"`,
-            type: 'success',
-          }),
-      },
-    );
+    toggleMutation.mutate({
+      id: selected.id,
+      status: 'paused',
+      name: selected.name,
+    });
     setPauseOpen(false);
   };
   const confirmResume = () => {
     if (!selected) return;
-    updateMutation.mutate(
-      { id: selected.id, data: { status: 'active' } },
-      {
-        onSuccess: () =>
-          setToast({
-            open: true,
-            msg: `Resumed "${selected.name}"`,
-            type: 'success',
-          }),
-      },
-    );
+    toggleMutation.mutate({
+      id: selected.id,
+      status: 'active',
+      name: selected.name,
+    });
     setResumeOpen(false);
   };
 
   const createPromotion = handleCreateSubmit((data) => {
-    createMutation.mutate(
-      {
-        name: data.name || 'Untitled Promotion',
-        type: data.type,
-        description: data.description,
-        bonusPercent: data.bonusPercent ?? undefined,
-        maxBonusUsd: data.maxBonusUsd ?? undefined,
-        expiryDate: data.expiryDate || undefined,
-        eligibility: data.eligibility,
-        status: data.status,
-      },
-      {
-        onSuccess: () =>
-          setToast({ open: true, msg: 'Promotion created', type: 'success' }),
-      },
-    );
+    createMutation.mutate({
+      name: data.name || 'Untitled Promotion',
+      type: data.type,
+      description: data.description,
+      bonusPercent: data.bonusPercent ?? undefined,
+      maxBonusUsd: data.maxBonusUsd ?? undefined,
+      expiryDate: data.expiryDate || undefined,
+      eligibility: data.eligibility,
+      status: data.status,
+    });
     resetCreate();
   });
 
