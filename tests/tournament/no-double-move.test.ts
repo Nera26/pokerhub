@@ -114,7 +114,7 @@ test('balancer avoids moving players twice within avoidWithin hands', async () =
     }
     return originalLoad(request, parent, isMain);
   };
-  const { default: TableBalancerService } = await import(
+  const { TableBalancerService } = await import(
     '../../backend/src/tournament/table-balancer.service.ts'
   );
   Module._load = originalLoad;
