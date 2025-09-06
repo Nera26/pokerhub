@@ -15,6 +15,7 @@ import { TruliooProvider } from './providers/trulioo.provider';
 import { Account } from '../wallet/account.entity';
 import { KycVerification } from '../database/entities/kycVerification.entity';
 import { User } from '../database/entities/user.entity';
+import { Pep } from '../database/entities/pep.entity';
 import { UserRepository } from '../users/user.repository';
 import { CountryProvider } from './providers/country-provider';
 import { startKycWorker } from './kyc.worker';
@@ -55,7 +56,7 @@ function providerFactory(config: ConfigService): CountryProvider {
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([Account, KycVerification, User]),
+    TypeOrmModule.forFeature([Account, KycVerification, User, Pep]),
     SessionModule,
     forwardRef(() => AnalyticsModule),
     MetricsModule,

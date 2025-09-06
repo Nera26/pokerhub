@@ -10,6 +10,7 @@ import { KycVerification } from './entities/kycVerification.entity';
 import { Seat } from './entities/seat.entity';
 import { ChatMessage } from './entities/chatMessage.entity';
 import { Leaderboard } from './entities/leaderboard.entity';
+import { Pep } from './entities/pep.entity';
 
 const entities = [
   User,
@@ -20,6 +21,7 @@ const entities = [
   KycVerification,
   ChatMessage,
   Leaderboard,
+  Pep,
 ];
 let dataSource: DataSource;
 
