@@ -117,6 +117,18 @@ export const NotificationsResponseSchema = z.object({
 });
 export type NotificationsResponse = z.infer<typeof NotificationsResponseSchema>;
 
+/** ---- Admin Messages ---- */
+export {
+  AdminMessageSchema,
+  AdminMessagesResponseSchema,
+  ReplyMessageRequestSchema,
+} from '../backend/src/schemas/messages';
+export type {
+  AdminMessage,
+  AdminMessagesResponse,
+  ReplyMessageRequest,
+} from '../backend/src/schemas/messages';
+
 export const RefreshRequestSchema = z.object({
   refreshToken: z.string(),
 });
