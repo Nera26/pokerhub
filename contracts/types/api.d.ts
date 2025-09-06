@@ -1558,6 +1558,8 @@ export interface components {
     DashboardMetricsResponse: {
       online: number;
       revenue: number;
+      activity: number[];
+      errors: number[];
     };
     AuditLogEntry: {
       id: number;
