@@ -4,6 +4,7 @@ import type { KycVerification } from '../database/entities/kycVerification.entit
 import type { Account } from '../wallet/account.entity';
 import type { CountryProvider } from './providers/country-provider';
 import type { ConfigService } from '@nestjs/config';
+import type { Pep } from '../database/entities/pep.entity';
 
 describe('KycService', () => {
   it('blocks users from restricted countries', async () => {
@@ -19,6 +20,7 @@ describe('KycService', () => {
       {} as unknown as Repository<KycVerification>,
       {} as unknown as Repository<Account>,
       config as ConfigService,
+      {} as unknown as Repository<Pep>,
     );
     await expect(
       service.runChecks('good', '1.1.1.1', '1990-01-01'),
@@ -40,6 +42,7 @@ describe('KycService', () => {
       {} as unknown as Repository<KycVerification>,
       {} as unknown as Repository<Account>,
       config as ConfigService,
+      {} as unknown as Repository<Pep>,
     );
     await expect(
       service.runChecks('Bad Actor', '1.1.1.1', '1990-01-01'),
@@ -61,6 +64,7 @@ describe('KycService', () => {
       {} as unknown as Repository<KycVerification>,
       {} as unknown as Repository<Account>,
       config as ConfigService,
+      {} as unknown as Repository<Pep>,
     );
     await expect(
       service.runChecks('Young User', '1.1.1.1', '2010-01-01'),
@@ -75,15 +79,44 @@ describe('KycService', () => {
       get: (key: string) =>
         key === 'kyc.blockedCountries' ? [] : undefined,
     };
+    const pepRepo: Partial<Repository<Pep>> = {
+      findOneBy: jest
+        .fn()
+        .mockResolvedValue({ id: '1', name: 'famous politician' } as Pep),
+    };
     const service = new KycService(
       provider,
       {} as unknown as Repository<KycVerification>,
       {} as unknown as Repository<Account>,
       config as ConfigService,
+      pepRepo as Repository<Pep>,
     );
     await expect(
       service.runChecks('Famous Politician', '1.1.1.1', '1990-01-01'),
     ).rejects.toThrow('Politically exposed person');
+  });
+
+  it('allows non-politically exposed persons', async () => {
+    const provider: CountryProvider = {
+      getCountry: () => Promise.resolve('GB'),
+    };
+    const config: Partial<ConfigService> = {
+      get: (key: string) =>
+        key === 'kyc.blockedCountries' ? [] : undefined,
+    };
+    const pepRepo: Partial<Repository<Pep>> = {
+      findOneBy: jest.fn().mockResolvedValue(null),
+    };
+    const service = new KycService(
+      provider,
+      {} as unknown as Repository<KycVerification>,
+      {} as unknown as Repository<Account>,
+      config as ConfigService,
+      pepRepo as Repository<Pep>,
+    );
+    await expect(
+      service.runChecks('Average Joe', '1.1.1.1', '1990-01-01'),
+    ).resolves.toEqual({ country: 'GB' });
   });
 
   it('marks verification failed when provider denies', async () => {
@@ -111,6 +144,7 @@ describe('KycService', () => {
       verifications as Repository<KycVerification>,
       accounts as Repository<Account>,
       config as ConfigService,
+      {} as unknown as Repository<Pep>,
     );
     jest
       .spyOn(service, 'runChecks')
@@ -157,6 +191,7 @@ describe('KycService', () => {
       verifications as Repository<KycVerification>,
       accounts as Repository<Account>,
       config as ConfigService,
+      {} as unknown as Repository<Pep>,
     );
     jest
       .spyOn(service, 'runChecks')
@@ -209,6 +244,7 @@ describe('KycService', () => {
       verifications as Repository<KycVerification>,
       accounts as Repository<Account>,
       config as ConfigService,
+      {} as unknown as Repository<Pep>,
     );
     jest
       .spyOn(service, 'runChecks')

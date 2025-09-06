@@ -8,6 +8,7 @@ import { KycVerification } from '../database/entities/kycVerification.entity';
 import { Account } from '../wallet/account.entity';
 import { CountryProvider } from './providers/country-provider';
 import { fetchWithRetry, CircuitBreakerState } from '../common/http';
+import { Pep } from '../database/entities/pep.entity';
 
 export interface VerificationJob {
   verificationId: string;
@@ -41,6 +42,8 @@ export class KycService {
     private readonly verifications: Repository<KycVerification>,
     @InjectRepository(Account)
     private readonly accounts: Repository<Account>,
+    @InjectRepository(Pep)
+    private readonly peps: Repository<Pep>,
     private readonly config: ConfigService,
   ) {
     this.blockedCountries =
@@ -89,8 +92,8 @@ export class KycService {
   }
 
   private async isPoliticallyExposed(name: string): Promise<boolean> {
-    const pepList = ['famous politician'];
-    return pepList.includes(name.toLowerCase());
+    const match = await this.peps.findOneBy({ name: name.toLowerCase() });
+    return !!match;
   }
 
   async runChecks(
