@@ -99,6 +99,9 @@ describe('LoginForm', () => {
     });
 
     await waitFor(() => expect(mockLogin).toHaveBeenCalled());
+    expect(await screen.findByText('Bad email')).toBeInTheDocument();
+    expect(await screen.findByText('Bad password')).toBeInTheDocument();
+    expect(await screen.findByText('Invalid credentials')).toBeInTheDocument();
   });
 
   it('displays error message for unexpected failures', async () => {
