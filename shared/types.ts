@@ -53,6 +53,17 @@ export type {
   BankReconciliationRequest,
 } from '../backend/src/schemas/wallet';
 
+export {
+  PendingWithdrawalSchema,
+  PendingWithdrawalsResponseSchema,
+  WithdrawalDecisionRequestSchema,
+} from '../backend/src/schemas/withdrawals';
+export type {
+  PendingWithdrawal,
+  PendingWithdrawalsResponse,
+  WithdrawalDecisionRequest,
+} from '../backend/src/schemas/withdrawals';
+
 export const DashboardMetricsSchema = z.object({
   online: z.number(),
   revenue: z.number(),
@@ -89,15 +100,6 @@ export const AuditSummarySchema = z.object({
   logins: z.number().int(),
 });
 export type AuditSummary = z.infer<typeof AuditSummarySchema>;
-
-/** ---- Withdrawals ---- */
-export const WithdrawalDecisionRequestSchema = z.object({
-  comment: z.string(),
-});
-export type WithdrawalDecisionRequest = z.infer<
-  typeof WithdrawalDecisionRequestSchema
->;
-
 /** ---- Notifications ---- */
 export const NotificationTypeSchema = z.enum(['bonus', 'tournament', 'system']);
 export type NotificationType = z.infer<typeof NotificationTypeSchema>;

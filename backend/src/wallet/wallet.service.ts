@@ -1130,4 +1130,32 @@ async rejectExpiredPendingDeposits(): Promise<void> {
       await this.redis.del(lockKey);
     }
   }
+
+  async listPendingWithdrawals() {
+    return this.disbursements.find({
+      where: { status: 'pending' },
+      order: { createdAt: 'ASC' },
+    });
+  }
+
+  async confirmPendingWithdrawal(
+    id: string,
+    adminId: string,
+  ): Promise<void> {
+    const disb = await this.disbursements.findOneBy({ id, status: 'pending' });
+    if (!disb) return;
+    const account = await this.accounts.findOneByOrFail({ id: disb.accountId });
+    await this.requestDisbursement(disb.id, account.currency);
+  }
+
+  async rejectPendingWithdrawal(
+    id: string,
+    adminId: string,
+    comment?: string,
+  ): Promise<void> {
+    const disb = await this.disbursements.findOneBy({ id, status: 'pending' });
+    if (!disb) return;
+    await this.refundDisbursement(disb);
+    await this.disbursements.delete(disb.id);
+  }
 }

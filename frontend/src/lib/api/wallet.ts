@@ -12,8 +12,14 @@ import {
   type WalletStatusResponse,
   WalletTransactionsResponseSchema,
   PendingTransactionsResponseSchema,
+  PendingDepositsResponseSchema,
+  PendingWithdrawalsResponseSchema,
+  DepositDecisionRequestSchema,
+  WithdrawalDecisionRequestSchema,
   type WalletTransactionsResponse,
   type PendingTransactionsResponse,
+  type PendingDepositsResponse,
+  type PendingWithdrawalsResponse,
 } from '@shared/types';
 
 /* istanbul ignore next */
@@ -163,6 +169,69 @@ export function fetchPending(
   opts: { signal?: AbortSignal } = {},
 ): Promise<PendingTransactionsResponse> {
   return apiClient(`/api/wallet/${playerId}/pending`, PendingTransactionsResponseSchema, {
+    signal: opts.signal,
+  });
+}
+
+export function fetchPendingDeposits(
+  opts: { signal?: AbortSignal } = {},
+): Promise<PendingDepositsResponse> {
+  return apiClient(
+    `/api/admin/deposits`,
+    PendingDepositsResponseSchema,
+    { signal: opts.signal },
+  );
+}
+
+export function confirmDeposit(id: string, opts: { signal?: AbortSignal } = {}) {
+  return apiClient(`/api/admin/deposits/${id}/confirm`, MessageResponseSchema, {
+    method: 'POST',
+    signal: opts.signal,
+  });
+}
+
+export function rejectDeposit(
+  id: string,
+  reason: string | undefined,
+  opts: { signal?: AbortSignal } = {},
+) {
+  const body = DepositDecisionRequestSchema.parse({ reason });
+  return apiClient(`/api/admin/deposits/${id}/reject`, MessageResponseSchema, {
+    method: 'POST',
+    body,
+    signal: opts.signal,
+  });
+}
+
+export function fetchPendingWithdrawals(
+  opts: { signal?: AbortSignal } = {},
+): Promise<PendingWithdrawalsResponse> {
+  return apiClient(
+    `/api/admin/withdrawals`,
+    PendingWithdrawalsResponseSchema,
+    { signal: opts.signal },
+  );
+}
+
+export function confirmWithdrawal(
+  id: string,
+  opts: { signal?: AbortSignal } = {},
+) {
+  return apiClient(`/api/admin/withdrawals/${id}/confirm`, MessageResponseSchema, {
+    method: 'POST',
+    signal: opts.signal,
+  });
+}
+
+export function rejectWithdrawal(
+  id: string,
+  comment: string,
+  opts: { signal?: AbortSignal } = {},
+) {
+  const body = WithdrawalDecisionRequestSchema.parse({ comment });
+  return apiClient(`/api/admin/withdrawals/${id}/reject`, MessageResponseSchema, {
+    method: 'POST',
+    body,
     signal: opts.signal,
   });
 }

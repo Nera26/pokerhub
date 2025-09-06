@@ -23,6 +23,7 @@ import { KycService } from './kyc.service';
 import { GeoIpService } from '../auth/geoip.service';
 import { PendingDeposit } from './pending-deposit.entity';
 import { AdminDepositsController } from '../routes/admin-deposits.controller';
+import { AdminWithdrawalsController } from '../routes/admin-withdrawals.controller';
 import { BankReconciliationController } from '../routes/bank-reconciliation.controller';
 import { BankReconciliationService } from './bank-reconciliation.service';
 
@@ -78,6 +79,7 @@ class PendingDepositWorker implements OnModuleInit {
     AdminController,
     WebhookController,
     AdminDepositsController,
+    AdminWithdrawalsController,
     BankReconciliationController,
   ],
   exports: [WalletService, KycService, SettlementService, BankReconciliationService],

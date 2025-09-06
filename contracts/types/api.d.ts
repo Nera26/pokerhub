@@ -1184,6 +1184,52 @@ export interface paths {
       };
     };
   };
+  "/admin/withdrawals": {
+    /** List pending withdrawals */
+    get: {
+      responses: {
+        /** @description Pending withdrawals */
+        200: {
+          content: {
+            "application/json": components["schemas"]["PendingWithdrawalsResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/admin/withdrawals/{id}/confirm": {
+    /** Confirm pending withdrawal */
+    post: {
+      parameters: { path: { id: string } };
+      responses: {
+        /** @description Withdrawal confirmed */
+        200: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/admin/withdrawals/{id}/reject": {
+    /** Reject pending withdrawal */
+    post: {
+      parameters: { path: { id: string } };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["WithdrawalDecisionRequest"];
+        };
+      };
+      responses: {
+        /** @description Withdrawal rejected */
+        200: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
   "/users": {
     /** Create user */
     post: {
@@ -1580,6 +1626,19 @@ export interface components {
     };
     PendingDepositsResponse: {
       deposits: components["schemas"]["PendingDeposit"][];
+    };
+    PendingWithdrawal: {
+      id: string;
+      userId: string;
+      amount: number;
+      currency: string;
+      /** @enum {string} */
+      status: "pending" | "completed" | "rejected";
+      /** Format: date-time */
+      createdAt: string;
+    };
+    PendingWithdrawalsResponse: {
+      withdrawals: components["schemas"]["PendingWithdrawal"][];
     };
     DepositDecisionRequest: {
       reason?: string;
