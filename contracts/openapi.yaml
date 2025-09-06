@@ -1082,6 +1082,60 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+  /admin/withdrawals:
+    get:
+      summary: List pending withdrawals
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Pending withdrawals
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingWithdrawalsResponse'
+  /admin/withdrawals/{id}/confirm:
+    post:
+      summary: Confirm pending withdrawal
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Withdrawal confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /admin/withdrawals/{id}/reject:
+    post:
+      summary: Reject pending withdrawal
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WithdrawalDecisionRequest'
+      responses:
+        '200':
+          description: Withdrawal rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /users:
     post:
       summary: Create user
@@ -1697,6 +1751,39 @@ components:
             $ref: '#/components/schemas/PendingDeposit'
       required:
         - deposits
+    PendingWithdrawal:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        amount:
+          type: integer
+        currency:
+          type: string
+        status:
+          type: string
+          enum: [pending, completed, rejected]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - amount
+        - currency
+        - status
+        - createdAt
+    PendingWithdrawalsResponse:
+      type: object
+      properties:
+        withdrawals:
+          type: array
+          items:
+            $ref: '#/components/schemas/PendingWithdrawal'
+      required:
+        - withdrawals
     DepositDecisionRequest:
       type: object
       properties:

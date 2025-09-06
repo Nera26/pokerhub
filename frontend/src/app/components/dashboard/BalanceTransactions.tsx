@@ -18,7 +18,15 @@ import TransactionHistory from './transactions/TransactionHistory';
 import type { DepositReq, WithdrawalReq, Txn } from './transactions/types';
 import useRenderCount from '@/hooks/useRenderCount';
 import { useApiError } from '@/hooks/useApiError';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  fetchPendingDeposits,
+  confirmDeposit,
+  rejectDeposit,
+  fetchPendingWithdrawals,
+  confirmWithdrawal,
+  rejectWithdrawal,
+} from '@/lib/api/wallet';
 /* -------------------------------- Types -------------------------------- */
 type UserStatus = 'Active' | 'Frozen' | 'Banned';
 
@@ -94,32 +102,24 @@ export default function BalanceTransactions() {
     error: depositsError,
   } = useQuery<DepositReq[]>({
     queryKey: ['deposits'],
-    queryFn: async () => [
-      {
-        id: 'dep-001',
-        user: 'Mike_P',
-        avatar:
-          'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg',
-        amount: 500,
+    queryFn: async () => {
+      const res = await fetchPendingDeposits();
+      return res.deposits.map((d) => ({
+        id: d.id,
+        user: d.userId,
+        avatar: '',
+        amount: d.amount,
         method: 'Bank Transfer',
-        date: '2024-01-15 14:30',
-        receiptUrl:
-          'https://images.unsplash.com/photo-1517502884422-41eaead166d4?q=80&w=1200&auto=format&fit=crop',
-        status: 'Pending',
-      },
-      {
-        id: 'dep-002',
-        user: 'Sarah_K',
-        avatar:
-          'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg',
-        amount: 250,
-        method: 'Crypto',
-        date: '2024-01-15 12:15',
-        receiptUrl:
-          'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?q=80&w=1200&auto=format&fit=crop',
-        status: 'Completed',
-      },
-    ],
+        date: d.createdAt,
+        receiptUrl: undefined,
+        status:
+          d.status === 'pending'
+            ? 'Pending'
+            : d.status === 'confirmed'
+            ? 'Completed'
+            : 'Rejected',
+      }));
+    },
     staleTime: 30000,
   });
   const depositsErrorMessage = useApiError(depositsError);
@@ -129,33 +129,26 @@ export default function BalanceTransactions() {
     isLoading: withdrawalsLoading,
     error: withdrawalsError,
   } = useQuery<WithdrawalReq[]>({
-    queryKey: ['withdrawalRequests'],
-    queryFn: async () => [
-      {
-        id: 'with-001',
-        user: 'Alex_R',
-        avatar:
-          'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg',
-        amount: 750,
-        bank: 'Chase Bank',
-        masked: '****1234',
-        date: '2024-01-15 16:45',
-        comment: 'Winnings withdrawal',
-        status: 'Pending',
-      },
-      {
-        id: 'with-002',
-        user: 'John_D',
-        avatar:
-          'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-4.jpg',
-        amount: 300,
-        bank: 'Wells Fargo',
-        masked: '****5678',
-        date: '2024-01-14 20:30',
-        comment: 'Tournament prize',
-        status: 'Completed',
-      },
-    ],
+    queryKey: ['withdrawals'],
+    queryFn: async () => {
+      const res = await fetchPendingWithdrawals();
+      return res.withdrawals.map((w) => ({
+        id: w.id,
+        user: w.userId,
+        avatar: '',
+        amount: w.amount,
+        bank: '',
+        masked: '',
+        date: w.createdAt,
+        comment: '',
+        status:
+          w.status === 'pending'
+            ? 'Pending'
+            : w.status === 'completed'
+            ? 'Completed'
+            : 'Rejected',
+      }));
+    },
     staleTime: 30000,
   });
   const withdrawalsErrorMessage = useApiError(withdrawalsError);
@@ -288,6 +281,48 @@ export default function BalanceTransactions() {
   const [mbUser, setMbUser] = useState<BalanceRow | null>(null);
 
   /* -------------------------------- Actions ------------------------------- */
+  const confirmDepositMutation = useMutation({
+    mutationFn: (id: string) => confirmDeposit(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['deposits'] });
+      notify('Deposit approved successfully');
+    },
+    onError: (e: any) =>
+      notify(e?.message || 'Failed to approve deposit', 'error'),
+  });
+
+  const rejectDepositMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      rejectDeposit(id, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['deposits'] });
+      notify('Request rejected successfully');
+    },
+    onError: (e: any) =>
+      notify(e?.message || 'Failed to reject request', 'error'),
+  });
+
+  const confirmWithdrawalMutation = useMutation({
+    mutationFn: (id: string) => confirmWithdrawal(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['withdrawals'] });
+      notify('Withdrawal approved successfully');
+    },
+    onError: (e: any) =>
+      notify(e?.message || 'Failed to approve withdrawal', 'error'),
+  });
+
+  const rejectWithdrawalMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      rejectWithdrawal(id, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['withdrawals'] });
+      notify('Request rejected successfully');
+    },
+    onError: (e: any) =>
+      notify(e?.message || 'Failed to reject request', 'error'),
+  });
+
   const approveDeposit = (id: string) => {
     if (
       !confirm(
@@ -295,35 +330,7 @@ export default function BalanceTransactions() {
       )
     )
       return;
-    queryClient.setQueryData<DepositReq[]>(['deposits'], (prev) =>
-      prev
-        ? prev.map((d) => (d.id === id ? { ...d, status: 'Completed' } : d))
-        : [],
-    );
-    const d = queryClient
-      .getQueryData<DepositReq[]>(['deposits'])
-      ?.find((x) => x.id === id);
-    if (d) {
-      queryClient.setQueryData<BalanceRow[]>(['balances'], (prev) =>
-        prev
-          ? prev.map((b) =>
-              b.user === d.user ? { ...b, balance: b.balance + d.amount } : b,
-            )
-          : [],
-      );
-      queryClient.setQueryData<Txn[]>(['transactions'], (l = []) => [
-        {
-          datetime: new Date().toISOString().slice(0, 16).replace('T', ' '),
-          action: 'Deposit Approved',
-          amount: +d.amount,
-          by: 'Admin_You',
-          notes: `${d.method} confirmed`,
-          status: 'Completed',
-        },
-        ...(l ?? []),
-      ]);
-    }
-    notify('Deposit approved successfully');
+    confirmDepositMutation.mutate(id);
   };
 
   const rejectDeposit = (id: string) => {
@@ -338,37 +345,7 @@ export default function BalanceTransactions() {
       )
     )
       return;
-    queryClient.setQueryData<WithdrawalReq[]>(['withdrawalRequests'], (prev) =>
-      prev
-        ? prev.map((w) => (w.id === id ? { ...w, status: 'Completed' } : w))
-        : [],
-    );
-    const w = queryClient
-      .getQueryData<WithdrawalReq[]>(['withdrawalRequests'])
-      ?.find((x) => x.id === id);
-    if (w) {
-      queryClient.setQueryData<BalanceRow[]>(['balances'], (prev) =>
-        prev
-          ? prev.map((b) =>
-              b.user === w.user
-                ? { ...b, balance: Math.max(0, b.balance - w.amount) }
-                : b,
-            )
-          : [],
-      );
-      queryClient.setQueryData<Txn[]>(['transactions'], (l = []) => [
-        {
-          datetime: new Date().toISOString().slice(0, 16).replace('T', ' '),
-          action: 'Withdrawal Approved',
-          amount: -w.amount,
-          by: 'Admin_You',
-          notes: `${w.bank} ${w.masked}`,
-          status: 'Completed',
-        },
-        ...(l ?? []),
-      ]);
-    }
-    notify('Withdrawal approved successfully');
+    confirmWithdrawalMutation.mutate(id);
   };
 
   const rejectWithdrawal = (id: string) => {
@@ -380,57 +357,10 @@ export default function BalanceTransactions() {
     const payload = rejectPayload.current;
     if (!payload) return;
     if (payload.kind === 'deposit') {
-      queryClient.setQueryData<DepositReq[]>(['deposits'], (prev) =>
-        prev
-          ? prev.map((d) =>
-              d.id === payload.id ? { ...d, status: 'Rejected' } : d,
-            )
-          : [],
-      );
-      const d = queryClient
-        .getQueryData<DepositReq[]>(['deposits'])
-        ?.find((x) => x.id === payload.id);
-      if (d) {
-        queryClient.setQueryData<Txn[]>(['transactions'], (l = []) => [
-          {
-            datetime: new Date().toISOString().slice(0, 16).replace('T', ' '),
-            action: 'Deposit Rejected',
-            amount: 0,
-            by: 'Admin_You',
-            notes: reason,
-            status: 'Rejected',
-          },
-          ...(l ?? []),
-        ]);
-      }
+      rejectDepositMutation.mutate({ id: payload.id, reason });
     } else {
-      queryClient.setQueryData<WithdrawalReq[]>(
-        ['withdrawalRequests'],
-        (prev) =>
-          prev
-            ? prev.map((w) =>
-                w.id === payload.id ? { ...w, status: 'Rejected' } : w,
-              )
-            : [],
-      );
-      const w = queryClient
-        .getQueryData<WithdrawalReq[]>(['withdrawalRequests'])
-        ?.find((x) => x.id === payload.id);
-      if (w) {
-        queryClient.setQueryData<Txn[]>(['transactions'], (l = []) => [
-          {
-            datetime: new Date().toISOString().slice(0, 16).replace('T', ' '),
-            action: 'Withdrawal Rejected',
-            amount: 0,
-            by: 'Admin_You',
-            notes: reason,
-            status: 'Rejected',
-          },
-          ...(l ?? []),
-        ]);
-      }
+      rejectWithdrawalMutation.mutate({ id: payload.id, reason });
     }
-    notify('Request rejected successfully');
     setRejectOpen(false);
     rejectPayload.current = null;
   };
@@ -601,6 +531,8 @@ export default function BalanceTransactions() {
         </div>
       ) : depositsError ? (
         <p role="alert">{depositsErrorMessage || 'Failed to load deposits.'}</p>
+      ) : deposits.length === 0 ? (
+        <p>No pending deposits.</p>
       ) : (
         <DepositTable
           deposits={deposits}
@@ -619,6 +551,8 @@ export default function BalanceTransactions() {
         <p role="alert">
           {withdrawalsErrorMessage || 'Failed to load withdrawals.'}
         </p>
+      ) : withdrawals.length === 0 ? (
+        <p>No pending withdrawals.</p>
       ) : (
         <WithdrawalTable
           withdrawals={withdrawals}
