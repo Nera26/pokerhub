@@ -13,6 +13,7 @@ import ReactQueryProvider from './ReactQueryProvider';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import ErrorFallback from './components/ui/ErrorFallback';
 import { ApiErrorProvider } from '@/hooks/useApiError';
+import { AuthProvider } from '@/context/AuthContext';
 import ServiceWorker from './ServiceWorker';
 import LanguageSelector from './components/common/LanguageSelector';
 import { buildMetadata } from '@/lib/metadata';
@@ -76,16 +77,18 @@ export default async function RootLayout({
             showSpinner={false}
           />
           <ReactQueryProvider>
-            <ApiErrorProvider>
-              <ErrorBoundary
-                fallback={
-                  <ErrorFallback onRetry={() => window.location.reload()} />
-                }
-              >
-                {children}
-              </ErrorBoundary>
-              <ContractMismatchNotice />
-            </ApiErrorProvider>
+            <AuthProvider>
+              <ApiErrorProvider>
+                <ErrorBoundary
+                  fallback={
+                    <ErrorFallback onRetry={() => window.location.reload()} />
+                  }
+                >
+                  {children}
+                </ErrorBoundary>
+                <ContractMismatchNotice />
+              </ApiErrorProvider>
+            </AuthProvider>
           </ReactQueryProvider>
           {env.NODE_ENV === 'production' && !env.IS_E2E && <PerformanceMonitor />}
           {env.NODE_ENV === 'production' && !env.IS_E2E && <SpeedInsights />}
