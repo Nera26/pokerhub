@@ -14,6 +14,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { useAuditAlerts } from '@/hooks/useAuditAlerts';
+import { useAdminOverview } from '@/hooks/useAdminOverview';
 import type { AlertItem } from '@shared/types';
 
 // ----- Exact colors to match the HTML visual -----
@@ -35,16 +36,6 @@ type AuditLogEntry = {
   description: string;
   status: AuditStatus;
 };
-
-type AdminOverview = {
-  name: string;
-  avatar: string;
-  lastAction: string;
-  total24h: number;
-  login: string;
-  loginTitle?: string;
-};
-
 
 // ----- Pill that NEVER inherits row text colors -----
 function StatusPill({ status }: { status: AuditStatus }) {
@@ -140,26 +131,12 @@ export default function AuditLogs() {
   }, [rows, date, action, performer, user, sortBy, sortDir]);
 
   // Admin overview (click to filter)
-  const admins: AdminOverview[] = [
-    {
-      name: 'SuperAdmin',
-      avatar:
-        'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg',
-      lastAction: 'Balance adjustment - 2 mins ago',
-      total24h: 47,
-      login: '2024-01-15 08:30 - Active',
-      loginTitle: 'Device: Chrome on Windows | IP: 192.168.1.100',
-    },
-    {
-      name: 'Admin_2',
-      avatar:
-        'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg',
-      lastAction: 'Withdrawal approval - 1 hour ago',
-      total24h: 23,
-      login: '2024-01-15 14:15 - Active',
-      loginTitle: 'Device: Safari on Mac | IP: 10.0.0.50',
-    },
-  ];
+  const {
+    data: adminsData,
+    isLoading: adminsLoading,
+    error: adminsError,
+  } = useAdminOverview();
+  const admins = adminsData ?? [];
 
   // Security alerts (solid bars like your HTML screenshot)
   const {
@@ -172,11 +149,15 @@ export default function AuditLogs() {
     if (alertsData) setAlerts(alertsData);
   }, [alertsData]);
 
-  if (logsLoading || alertsLoading) {
+  if (logsLoading || alertsLoading || adminsLoading) {
     return <div aria-label="loading">Loading...</div>;
   }
-  if (logsError || alertsError) {
-    return <div role="alert">{(logsError || alertsError)?.message}</div>;
+  if (logsError || alertsError || adminsError) {
+    return (
+      <div role="alert">
+        {(logsError || alertsError || adminsError)?.message}
+      </div>
+    );
   }
   const markResolved = (id: string) =>
     setAlerts((prev) =>
@@ -395,41 +376,52 @@ export default function AuditLogs() {
                 </tr>
               </thead>
               <tbody>
-                {admins.map((a) => (
-                  <tr
-                    key={a.name}
-                    className="border-b border-dark hover:bg-hover-bg cursor-pointer"
-                    onClick={() => setValue('performer', a.name.toLowerCase())}
-                    title="Filter audit log by this admin"
-                  >
-                    <td className="py-3 px-2">
-                      <div className="flex items-center gap-2">
-                        <Image
-                          src={a.avatar}
-                          alt={a.name}
-                          width={32}
-                          height={32}
-                          className="w-8 h-8 rounded-full"
-                        />
-                        <span className="font-semibold hover:text-accent-yellow">
-                          {a.name}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-2 text-text-secondary">
-                      {a.lastAction}
-                    </td>
-                    <td className="py-3 px-2 font-semibold text-accent-green">
-                      {a.total24h}
-                    </td>
+                {admins.length === 0 ? (
+                  <tr>
                     <td
+                      colSpan={4}
                       className="py-3 px-2 text-text-secondary"
-                      title={a.loginTitle}
                     >
-                      {a.login}
+                      No admin activity
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  admins.map((a) => (
+                    <tr
+                      key={a.name}
+                      className="border-b border-dark hover:bg-hover-bg cursor-pointer"
+                      onClick={() => setValue('performer', a.name.toLowerCase())}
+                      title="Filter audit log by this admin"
+                    >
+                      <td className="py-3 px-2">
+                        <div className="flex items-center gap-2">
+                          <Image
+                            src={a.avatar}
+                            alt={a.name}
+                            width={32}
+                            height={32}
+                            className="w-8 h-8 rounded-full"
+                          />
+                          <span className="font-semibold hover:text-accent-yellow">
+                            {a.name}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-2 text-text-secondary">
+                        {a.lastAction}
+                      </td>
+                      <td className="py-3 px-2 font-semibold text-accent-green">
+                        {a.total24h}
+                      </td>
+                      <td
+                        className="py-3 px-2 text-text-secondary"
+                        title={a.loginTitle}
+                      >
+                        {a.login}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
