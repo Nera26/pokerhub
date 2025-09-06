@@ -1,7 +1,3 @@
-import dynamic from 'next/dynamic';
+import createDynamicPage from '@/app/utils/createDynamicPage';
 
-const LoginPage = dynamic(() => import('@/features/login'), {
-  loading: () => <div>Loading...</div>,
-});
-
-export default LoginPage;
+export default createDynamicPage(() => import('@/features/login'));

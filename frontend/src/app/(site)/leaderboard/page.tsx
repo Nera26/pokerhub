@@ -1,7 +1,3 @@
-import dynamic from 'next/dynamic';
+import createDynamicPage from '@/app/utils/createDynamicPage';
 
-const LeaderboardPage = dynamic(() => import('@/features/site/leaderboard'), {
-  loading: () => <div>Loading...</div>,
-});
-
-export default LeaderboardPage;
+export default createDynamicPage(() => import('@/features/site/leaderboard'));
