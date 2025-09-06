@@ -8,10 +8,12 @@ import {
   SendChatMessageRequestSchema,
   ChatMessagesResponseSchema,
   TableSchema,
+  TableListSchema,
   type TableData,
   type SendChatMessageRequest,
   type ChatMessagesResponse,
   type Table,
+  type TableList,
   type CreateTableRequest,
   type UpdateTableRequest,
 } from '@shared/types';
@@ -23,15 +25,26 @@ export {
   SendChatMessageRequestSchema,
   ChatMessagesResponseSchema,
   TableSchema,
+  TableListSchema,
 };
 export type {
   TableData,
   SendChatMessageRequest,
   ChatMessagesResponse,
   Table,
+  TableList,
   CreateTableRequest,
   UpdateTableRequest,
 };
+
+export async function fetchTables(
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<TableList> {
+  return apiClient('/api/tables', TableListSchema, {
+    signal,
+    cache: 'no-store',
+  });
+}
 
 export async function fetchTable(
   id: string,
