@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { trace } from '@opentelemetry/api';
+import { trace, Span } from '@opentelemetry/api';
 import { CreateUserRequest, UpdateUserRequest, User } from '../schemas/users';
 import { UserRepository } from './user.repository';
 import { QueryFailedError } from 'typeorm';
@@ -9,6 +9,24 @@ export class UsersService {
   private static readonly tracer = trace.getTracer('users');
 
   constructor(private readonly users: UserRepository) {}
+
+  private async withUser<T>(
+    id: string,
+    span: Span,
+    fn: (user: User) => Promise<T>,
+  ): Promise<T> {
+    span.setAttribute('user.id', id);
+    const user = await this.users.findOne({ where: { id } });
+    if (!user) {
+      span.end();
+      throw new NotFoundException('User not found');
+    }
+    try {
+      return await fn(user);
+    } finally {
+      span.end();
+    }
+  }
 
   async create(data: CreateUserRequest): Promise<User> {
     return UsersService.tracer.startActiveSpan(
@@ -57,16 +75,10 @@ export class UsersService {
     return UsersService.tracer.startActiveSpan(
       'users.update',
       async (span) => {
-        span.setAttribute('user.id', id);
-        const user = await this.users.findOne({ where: { id } });
-        if (!user) {
-          span.end();
-          throw new NotFoundException('User not found');
-        }
-        Object.assign(user, data);
-        const saved = await this.users.save(user);
-        span.end();
-        return saved;
+        return this.withUser(id, span, async (user) => {
+          Object.assign(user, data);
+          return this.users.save(user);
+        });
       },
     );
   }
@@ -75,16 +87,10 @@ export class UsersService {
     return UsersService.tracer.startActiveSpan(
       'users.ban',
       async (span) => {
-        span.setAttribute('user.id', id);
-        const user = await this.users.findOne({ where: { id } });
-        if (!user) {
-          span.end();
-          throw new NotFoundException('User not found');
-        }
-        user.banned = true;
-        const saved = await this.users.save(user);
-        span.end();
-        return saved;
+        return this.withUser(id, span, async (user) => {
+          user.banned = true;
+          return this.users.save(user);
+        });
       },
     );
   }
