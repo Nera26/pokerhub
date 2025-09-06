@@ -10,7 +10,7 @@ import {
 } from '@/hooks/useLobbyData';
 import { useApiError } from '@/hooks/useApiError';
 import InlineError from '../components/ui/InlineError';
-import { GameType } from '@/types/game-type';
+import type { GameType } from '@shared/types';
 import type { CashGameListProps } from '../components/home/CashGameList';
 import { type TournamentListProps } from '@/components/TournamentList';
 import useRenderCount from '@/hooks/useRenderCount';
