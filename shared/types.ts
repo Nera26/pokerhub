@@ -119,6 +119,27 @@ export const NotificationsResponseSchema = z.object({
 });
 export type NotificationsResponse = z.infer<typeof NotificationsResponseSchema>;
 
+/** ---- Promotions ---- */
+export const PromotionProgressSchema = z.object({
+  current: z.number(),
+  total: z.number(),
+  label: z.string(),
+  barColorClass: z.string(),
+});
+export const PromotionSchema = z.object({
+  id: z.string(),
+  category: z.string(),
+  title: z.string(),
+  description: z.string(),
+  reward: z.string(),
+  unlockText: z.string().optional(),
+  statusText: z.string().optional(),
+  progress: PromotionProgressSchema.optional(),
+});
+export type Promotion = z.infer<typeof PromotionSchema>;
+export const PromotionsResponseSchema = z.array(PromotionSchema);
+export type PromotionsResponse = z.infer<typeof PromotionsResponseSchema>;
+
 /** ---- Broadcasts ---- */
 export {
   BroadcastTypeSchema,
