@@ -24,8 +24,18 @@ import TransactionHistoryModal, {
 import useRenderCount from '@/hooks/useRenderCount';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createUser, updateUser, toggleUserBan } from '@/lib/api/users';
-import { approveWithdrawal, rejectWithdrawal } from '@/lib/api/withdrawals';
+import {
+  createUser,
+  updateUser,
+  toggleUserBan,
+  fetchUsers,
+  fetchUserTransactions,
+} from '@/lib/api/users';
+import {
+  approveWithdrawal,
+  rejectWithdrawal,
+  fetchPendingWithdrawals,
+} from '@/lib/api/withdrawals';
 
 type User = {
   id: number;
@@ -56,53 +66,7 @@ export default function UserManager() {
     error: usersError,
   } = useQuery<User[]>({
     queryKey: ['users'],
-    queryFn: async () => [
-      {
-        id: 1247,
-        name: 'Mike Peterson',
-        email: 'mike.p@email.com',
-        balance: 2847.5,
-        status: 'Active',
-        avatar:
-          'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg',
-      },
-      {
-        id: 1248,
-        name: 'Sarah Kim',
-        email: 'sarah.k@email.com',
-        balance: 1420.75,
-        status: 'Frozen',
-        avatar:
-          'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg',
-      },
-      {
-        id: 1249,
-        name: 'Alex Rodriguez',
-        email: 'alex.r@email.com',
-        balance: 5692.25,
-        status: 'Banned',
-        avatar:
-          'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg',
-      },
-      {
-        id: 1250,
-        name: 'Emma Johnson',
-        email: 'emma.j@email.com',
-        balance: 892.1,
-        status: 'Active',
-        avatar:
-          'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg',
-      },
-      {
-        id: 1251,
-        name: 'David Chen',
-        email: 'david.c@email.com',
-        balance: 3247.8,
-        status: 'Active',
-        avatar:
-          'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-4.jpg',
-      },
-    ],
+    queryFn: ({ signal }) => fetchUsers({ signal }),
   });
 
   const {
@@ -111,115 +75,13 @@ export default function UserManager() {
     error: withdrawalsError,
   } = useQuery<Withdrawal[]>({
     queryKey: ['withdrawals'],
-    queryFn: async () => [
-      {
-        user: 'Mike Peterson',
-        amount: '$200.00',
-        date: 'Dec 13, 2024',
-        status: 'Pending',
-        bankInfo: '****-****-****-1234',
-        avatar:
-          'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg',
-      },
-      {
-        user: 'Emma Johnson',
-        amount: '$150.00',
-        date: 'Dec 14, 2024',
-        status: 'Pending',
-        bankInfo: '****-****-****-5678',
-        avatar:
-          'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg',
-      },
-    ],
+    queryFn: ({ signal }) => fetchPendingWithdrawals({ signal }),
   });
 
   // Transaction history
   const [transactionsByUser, setTransactionsByUser] = useState<
     Record<string, TransactionEntry[]>
-  >({
-    'Mike Peterson': [
-      {
-        date: 'Dec 15, 2024 14:32',
-        action: 'Deposit',
-        amount: 500,
-        performedBy: PerformedBy.User,
-        notes: 'Credit card deposit',
-        status: 'Completed',
-      },
-      {
-        date: 'Dec 14, 2024 20:15',
-        action: 'Game Buy-in',
-        amount: -100,
-        performedBy: PerformedBy.User,
-        notes: "Texas Hold'em - Table #247",
-        status: 'Completed',
-      },
-      {
-        date: 'Dec 14, 2024 21:45',
-        action: 'Winnings',
-        amount: 347.5,
-        performedBy: PerformedBy.System,
-        notes: 'Tournament payout - Event #12',
-        status: 'Completed',
-      },
-      {
-        date: 'Dec 13, 2024 16:22',
-        action: 'Withdrawal',
-        amount: -200,
-        performedBy: PerformedBy.User,
-        notes: 'Bank transfer withdrawal',
-        status: 'Pending',
-      },
-      {
-        date: 'Dec 12, 2024 12:10',
-        action: 'Bonus',
-        amount: 50,
-        performedBy: PerformedBy.Admin,
-        notes: 'Welcome bonus activation',
-        status: 'Completed',
-      },
-    ],
-    'Sarah Kim': [
-      {
-        date: 'Dec 15, 2024 10:00',
-        action: 'Deposit',
-        amount: 300,
-        performedBy: PerformedBy.User,
-        notes: 'PayPal deposit',
-        status: 'Completed',
-      },
-    ],
-    'Alex Rodriguez': [
-      {
-        date: 'Dec 14, 2024 09:30',
-        action: 'Winnings',
-        amount: 692.25,
-        performedBy: PerformedBy.System,
-        notes: 'Tournament win',
-        status: 'Completed',
-      },
-    ],
-    'Emma Johnson': [
-      {
-        date: 'Dec 14, 2024 15:00',
-        action: 'Withdrawal',
-        amount: -150,
-        performedBy: PerformedBy.User,
-        notes: 'Bank transfer withdrawal',
-        status: 'Pending',
-      },
-    ],
-    'David Chen': [
-      {
-        date: 'Dec 13, 2024 11:45',
-        action: 'Admin Add',
-        amount: 200,
-        performedBy: PerformedBy.Admin,
-        notes: 'Manual adjustment',
-        status: 'Completed',
-      },
-    ],
-  });
+  >({});
 
   // Modals
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -241,6 +103,19 @@ export default function UserManager() {
       setSelectedWithdrawal(withdrawals[0]);
     }
   }, [users, withdrawals, selectedUser, selectedWithdrawal]);
+
+  useEffect(() => {
+    if (users.length === 0) return;
+    void Promise.all(users.map((u) => fetchUserTransactions(u.id))).then(
+      (all) => {
+        const map: Record<string, TransactionEntry[]> = {};
+        all.forEach((txs, idx) => {
+          map[users[idx].name] = txs;
+        });
+        setTransactionsByUser(map);
+      },
+    );
+  }, [users]);
 
   // Toast
   const [toastOpen, setToastOpen] = useState(false);
