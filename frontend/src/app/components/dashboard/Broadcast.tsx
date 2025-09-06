@@ -1,34 +1,28 @@
 'use client';
 
-import { useOptimistic, useState, useTransition } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Card, { CardContent } from '../ui/Card';
 import Button from '../ui/Button';
+import ToastNotification from '../ui/ToastNotification';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faPaperPlane,
   faSpinner,
-  faCheck,
   faWrench,
   faTrophy,
-  faInfoCircle,
   faExclamationTriangle,
-  faEye,
 } from '@fortawesome/free-solid-svg-icons';
+import { fetchBroadcasts, sendBroadcast } from '@/lib/api/broadcasts';
+import {
+  type BroadcastsResponse,
+  type SendBroadcastRequest,
+} from '@shared/types';
 
 type MsgType = 'announcement' | 'alert' | 'notice';
-
-type BroadcastItem = {
-  id: string;
-  type: MsgType;
-  text: string;
-  when: string; // e.g. "2 hours ago" or "Just now"
-  urgent?: boolean;
-  status: 'seen' | 'broadcasting';
-  seenCount: number;
-};
 
 const TYPE_ICON: Record<MsgType, string> = {
   announcement: '📢',
@@ -53,7 +47,7 @@ const broadcastSchema = z.object({
 
 type BroadcastForm = z.infer<typeof broadcastSchema>;
 
-export default function Broadcast({ online = 247 }: { online?: number }) {
+export default function Broadcast() {
   const { register, handleSubmit, watch, reset, setValue, formState } =
     useForm<BroadcastForm>({
       resolver: zodResolver(broadcastSchema),
@@ -69,42 +63,56 @@ export default function Broadcast({ online = 247 }: { online?: number }) {
   const text = watch('text');
   const count = text.length;
 
-  // button state and optimistic list handling
-  const [isPending, startTransition] = useTransition();
-  const [justSent, setJustSent] = useState(false);
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ['broadcasts'],
+    queryFn: ({ signal }) => fetchBroadcasts({ signal }),
+  });
+  const broadcasts = data?.broadcasts ?? [];
 
-  // recent items (pre-seeded to match the HTML)
-  const [items, setItems] = useState<BroadcastItem[]>([
-    {
-      id: 'i1',
-      type: 'alert',
-      text: 'Server maintenance scheduled for tonight at 2:00 AM EST. Expected downtime: 30 minutes.',
-      when: '2 hours ago',
-      status: 'seen',
-      seenCount: 247,
-    },
-    {
-      id: 'i2',
-      type: 'announcement',
-      text: 'New tournament series starting this weekend! $50K guaranteed prize pool. Register now!',
-      when: '1 day ago',
-      status: 'seen',
-      seenCount: 189,
-    },
-    {
-      id: 'i3',
-      type: 'notice',
-      text: 'New rake structure implemented for micro stakes tables. Check the updated rake chart in settings.',
-      when: '3 days ago',
-      status: 'seen',
-      seenCount: 156,
-    },
-  ]);
+  const [toast, setToast] = useState<{
+    msg: string;
+    type: 'success' | 'error';
+    open: boolean;
+  }>({ msg: '', type: 'success', open: false });
+  const notify = (msg: string, type: 'success' | 'error' = 'success') =>
+    setToast({ msg, type, open: true });
 
-  const [optimisticItems, addOptimisticItem] = useOptimistic(
-    items,
-    (state: BroadcastItem[], item: BroadcastItem) => [item, ...state],
-  );
+  const mutation = useMutation({
+    mutationFn: (values: SendBroadcastRequest) => sendBroadcast(values),
+    onMutate: async (values: SendBroadcastRequest) => {
+      await queryClient.cancelQueries({ queryKey: ['broadcasts'] });
+      const previous = queryClient.getQueryData<BroadcastsResponse>([
+        'broadcasts',
+      ]);
+      const optimistic = {
+        id: crypto.randomUUID(),
+        type: values.type,
+        text: values.text,
+        urgent: values.urgent,
+        timestamp: new Date().toISOString(),
+      };
+      queryClient.setQueryData<BroadcastsResponse>(['broadcasts'], {
+        broadcasts: previous
+          ? [optimistic, ...(previous.broadcasts ?? [])]
+          : [optimistic],
+      });
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) {
+        queryClient.setQueryData(['broadcasts'], ctx.previous);
+      }
+      notify('Failed to send broadcast', 'error');
+    },
+    onSuccess: (_data, vars) => {
+      if (vars.sound) playBeep();
+      notify('Broadcast sent');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['broadcasts'] });
+    },
+  });
 
   const previewIcon = TYPE_ICON[type];
   const previewColor = TYPE_COLOR[type];
@@ -143,27 +151,7 @@ export default function Broadcast({ online = 247 }: { online?: number }) {
   function onSubmit(values: BroadcastForm) {
     const body = values.text.trim();
     if (!body) return;
-
-    const optimistic: BroadcastItem = {
-      id: crypto.randomUUID(),
-      type: values.type,
-      text: body,
-      urgent: values.urgent,
-      when: 'Just now',
-      status: 'broadcasting',
-      seenCount: online,
-    };
-
-    addOptimisticItem(optimistic);
-
-    startTransition(async () => {
-      await new Promise((res) => setTimeout(res, 1200));
-      if (values.sound) playBeep();
-      setItems((prev) => [{ ...optimistic, status: 'seen' }, ...prev]);
-      setJustSent(true);
-      setTimeout(() => setJustSent(false), 2000);
-    });
-
+    mutation.mutate(values);
     reset({ ...values, text: '', urgent: false });
   }
 
@@ -291,24 +279,18 @@ export default function Broadcast({ online = 247 }: { online?: number }) {
                 <div className="flex items-center gap-3">
                   <Button
                     type="submit"
-                    disabled={!text.trim() || isPending}
+                    disabled={!text.trim() || mutation.isPending}
                     leftIcon={
-                      isPending ? (
+                      mutation.isPending ? (
                         <FontAwesomeIcon icon={faSpinner} spin />
-                      ) : justSent ? (
-                        <FontAwesomeIcon icon={faCheck} />
                       ) : (
                         <FontAwesomeIcon icon={faPaperPlane} />
                       )
                     }
                   >
-                    {isPending
-                      ? 'SENDING...'
-                      : justSent
-                        ? 'SENT!'
-                        : 'SEND BROADCAST'}
+                    {mutation.isPending ? 'SENDING...' : 'SEND BROADCAST'}
                   </Button>
-                  {isPending && (
+                  {mutation.isPending && (
                     <span className="text-text-secondary text-sm">
                       Saving...
                     </span>
@@ -323,17 +305,22 @@ export default function Broadcast({ online = 247 }: { online?: number }) {
       {/* recent broadcasts */}
       <section className="mt-2">
         <h3 className="text-xl font-bold mb-4">Recent Broadcasts</h3>
-        <div className="space-y-4">
-          {optimisticItems.map((it) => {
-            const color = TYPE_COLOR[it.type];
-            const icon = TYPE_ICON[it.type];
-            const urgentLeft = it.urgent ? 'border-l-4 border-danger-red' : '';
-            return (
-              <div
-                key={it.id}
-                className={`bg-card-bg p-4 rounded-xl card-shadow ${urgentLeft}`}
-              >
-                <div className="flex items-start justify-between">
+        {isLoading ? (
+          <div>Loading broadcasts...</div>
+        ) : broadcasts.length === 0 ? (
+          <div className="text-text-secondary">No broadcasts yet.</div>
+        ) : (
+          <div className="space-y-4">
+            {broadcasts.map((it) => {
+              const color = TYPE_COLOR[it.type];
+              const icon = TYPE_ICON[it.type];
+              const urgentLeft = it.urgent ? 'border-l-4 border-danger-red' : '';
+              const when = new Date(it.timestamp).toLocaleString();
+              return (
+                <div
+                  key={it.id}
+                  className={`bg-card-bg p-4 rounded-xl card-shadow ${urgentLeft}`}
+                >
                   <div className="flex items-start gap-3">
                     <div className="text-xl">{icon}</div>
                     <div>
@@ -350,32 +337,24 @@ export default function Broadcast({ online = 247 }: { online?: number }) {
                           {it.type.toUpperCase()}
                         </span>
                         <span className="text-text-secondary text-xs">
-                          • {it.when}
+                          • {when}
                         </span>
                       </div>
                       <p className="text-text-primary">{it.text}</p>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2 text-text-secondary text-sm">
-                    {it.status === 'broadcasting' ? (
-                      <>
-                        <FontAwesomeIcon icon={faInfoCircle} />
-                        <span>Broadcasting...</span>
-                      </>
-                    ) : (
-                      <>
-                        <FontAwesomeIcon icon={faEye} />
-                        <span>{it.seenCount} delivered</span>
-                      </>
-                    )}
-                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </section>
+      <ToastNotification
+        message={toast.msg}
+        type={toast.type}
+        isOpen={toast.open}
+        onClose={() => setToast((t) => ({ ...t, open: false }))}
+      />
     </div>
   );
 }
