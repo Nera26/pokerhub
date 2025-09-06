@@ -1,7 +1,3 @@
-import dynamic from 'next/dynamic';
+import createDynamicPage from '@/app/utils/createDynamicPage';
 
-const WalletPage = dynamic(() => import('@/features/site/wallet'), {
-  loading: () => <div>Loading...</div>,
-});
-
-export default WalletPage;
+export default createDynamicPage(() => import('@/features/site/wallet'));

@@ -1,7 +1,3 @@
-import dynamic from 'next/dynamic';
+import createDynamicPage from '@/app/utils/createDynamicPage';
 
-const ProfilePage = dynamic(() => import('@/features/site/profile'), {
-  loading: () => <div>Loading...</div>,
-});
-
-export default ProfilePage;
+export default createDynamicPage(() => import('@/features/site/profile'));

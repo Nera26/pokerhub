@@ -1,7 +1,3 @@
-import dynamic from 'next/dynamic';
+import createDynamicPage from '@/app/utils/createDynamicPage';
 
-const PromotionsPage = dynamic(() => import('@/features/site/promotions'), {
-  loading: () => <div>Loading...</div>,
-});
-
-export default PromotionsPage;
+export default createDynamicPage(() => import('@/features/site/promotions'));

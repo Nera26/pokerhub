@@ -1,7 +1,3 @@
-import dynamic from 'next/dynamic';
+import createDynamicPage from '@/app/utils/createDynamicPage';
 
-const NotificationPage = dynamic(() => import('@/features/site/notification'), {
-  loading: () => <div>Loading...</div>,
-});
-
-export default NotificationPage;
+export default createDynamicPage(() => import('@/features/site/notification'));
