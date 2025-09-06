@@ -18,7 +18,7 @@ import type {
   CalculatePrizesResponse,
   HotPatchLevelRequest,
   TournamentScheduleRequest,
-} from '../schemas/tournament';
+} from '@shared/types';
 import type { Request } from 'express';
 
 @UseGuards(RateLimitGuard)
@@ -87,10 +87,7 @@ export class TournamentController {
   @UseGuards(AuthGuard, AdminGuard)
   @ApiOperation({ summary: 'Hot patch tournament level' })
   @ApiResponse({ status: 200, description: 'Level patched' })
-  hotPatchLevel(
-    @Param('id') id: string,
-    @Body() body: HotPatchLevelRequest,
-  ) {
+  hotPatchLevel(@Param('id') id: string, @Body() body: HotPatchLevelRequest) {
     return this.service.hotPatchLevel(
       id,
       body.level,
