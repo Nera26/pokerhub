@@ -39,6 +39,9 @@ export {
 } from '../backend/src/schemas/users';
 export type { UserProfile } from '../backend/src/schemas/users';
 
+export { TierSchema, TiersSchema } from '../backend/src/schemas/tiers';
+export type { Tier, Tiers } from '../backend/src/schemas/tiers';
+
 export {
   PendingWithdrawalSchema,
   PendingWithdrawalsResponseSchema,

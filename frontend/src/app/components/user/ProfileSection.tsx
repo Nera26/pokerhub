@@ -5,28 +5,41 @@ import { faPencil } from '@fortawesome/free-solid-svg-icons/faPencil';
 import Tooltip from '../ui/Tooltip';
 import { Button } from '../ui/Button';
 import Image from 'next/image';
-import type { UserProfile } from '@shared/types';
+import { useQuery } from '@tanstack/react-query';
+import { fetchTiers } from '@/lib/api/tiers';
+import type { Tier, UserProfile } from '@shared/types';
 
 interface Props {
   profile: UserProfile;
   onEdit(): void;
 }
 
-const tiers = [
-  { name: 'Bronze', min: 0, max: 999 },
-  { name: 'Silver', min: 1000, max: 4999 },
-  { name: 'Gold', min: 5000, max: 9999 },
-  { name: 'Diamond', min: 10000, max: 19999 },
-  { name: 'Platinum', min: 20000, max: Infinity },
-];
+function useTiers() {
+  return useQuery<Tier[]>({
+    queryKey: ['tiers'],
+    queryFn: ({ signal }) => fetchTiers({ signal }),
+  });
+}
 
 export default function ProfileSection({ profile, onEdit }: Props) {
+  const { data: tiers, isLoading, isError } = useTiers();
+
+  if (isLoading) {
+    return <p>Loading tiers...</p>;
+  }
+
+  if (isError || !tiers) {
+    return <p>Error loading tiers</p>;
+  }
+
   const userExp = profile.experience;
-  // figure out current / next tier
-  const current = tiers.find((t) => userExp >= t.min && userExp <= t.max)!;
+  const current = tiers.find((t) => {
+    const max = t.max ?? Infinity;
+    return userExp >= t.min && userExp <= max;
+  })!;
   const nextTier = tiers[tiers.indexOf(current) + 1] || current;
   const pct =
-    current.name === 'Platinum'
+    current.max === null
       ? 100
       : Math.round(
           ((userExp - current.min) / (nextTier.min - current.min)) * 100,
@@ -98,7 +111,7 @@ export default function ProfileSection({ profile, onEdit }: Props) {
           </div>
           <p className="text-text-secondary text-xs mt-1">
             EXP: {userExp.toLocaleString()} /{' '}
-            {current.name === 'Platinum'
+            {current.max === null
               ? userExp.toLocaleString()
               : nextTier.min.toLocaleString()}
           </p>
