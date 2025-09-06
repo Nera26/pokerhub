@@ -117,6 +117,20 @@ export const NotificationsResponseSchema = z.object({
 });
 export type NotificationsResponse = z.infer<typeof NotificationsResponseSchema>;
 
+/** ---- Broadcasts ---- */
+export {
+  BroadcastTypeSchema,
+  BroadcastSchema,
+  BroadcastsResponseSchema,
+  SendBroadcastRequestSchema,
+} from '../backend/src/schemas/broadcasts';
+export type {
+  BroadcastType,
+  Broadcast,
+  BroadcastsResponse,
+  SendBroadcastRequest,
+} from '../backend/src/schemas/broadcasts';
+
 /** ---- Admin Messages ---- */
 export {
   AdminMessageSchema,

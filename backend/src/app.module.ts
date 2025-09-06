@@ -52,6 +52,7 @@ import { UsersModule } from './users/users.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { cookieSecurity } from './common/cookie-security.middleware';
+import { BroadcastsModule } from './broadcasts/broadcasts.module';
 
 @Module({
   imports: [
@@ -116,6 +117,7 @@ import { cookieSecurity } from './common/cookie-security.middleware';
     UsersModule,
     NotificationsModule,
     MetricsModule,
+    BroadcastsModule,
   ],
   controllers: [AppController, AdminMessagesController],
   providers: [

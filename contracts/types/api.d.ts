@@ -1023,6 +1023,35 @@ export interface paths {
       };
     };
   };
+  "/admin/broadcasts": {
+    /** List broadcasts */
+    get: {
+      responses: {
+        /** @description Broadcast list */
+        200: {
+          content: {
+            "application/json": components["schemas"]["BroadcastsResponse"];
+          };
+        };
+      };
+    };
+    /** Send broadcast */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["SendBroadcastRequest"];
+        };
+      };
+      responses: {
+        /** @description Broadcast sent */
+        201: {
+          content: {
+            "application/json": components["schemas"]["Broadcast"];
+          };
+        };
+      };
+    };
+  };
   "/admin/kyc/{id}/denial": {
     /** Get KYC denial reason */
     get: {

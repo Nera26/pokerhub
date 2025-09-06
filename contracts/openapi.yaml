@@ -984,6 +984,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ReviewActionLogsResponse'
+  /admin/broadcasts:
+    get:
+      summary: List broadcasts
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Broadcast list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BroadcastsResponse'
+    post:
+      summary: Send broadcast
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendBroadcastRequest'
+      responses:
+        '201':
+          description: Broadcast sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Broadcast'
   /admin/kyc/{id}/denial:
     get:
       summary: Get KYC denial reason
@@ -2606,3 +2635,54 @@ components:
             $ref: '#/components/schemas/Notification'
       required:
         - notifications
+    BroadcastType:
+      type: string
+      enum:
+        - announcement
+        - alert
+        - notice
+    Broadcast:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          $ref: '#/components/schemas/BroadcastType'
+        text:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        urgent:
+          type: boolean
+      required:
+        - id
+        - type
+        - text
+        - timestamp
+        - urgent
+    BroadcastsResponse:
+      type: object
+      properties:
+        broadcasts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Broadcast'
+      required:
+        - broadcasts
+    SendBroadcastRequest:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/BroadcastType'
+        text:
+          type: string
+        urgent:
+          type: boolean
+        sound:
+          type: boolean
+      required:
+        - type
+        - text
+        - urgent
+        - sound
