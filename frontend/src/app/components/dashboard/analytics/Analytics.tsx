@@ -13,6 +13,8 @@ import AdvancedFilterModal from './AdvancedFilterModal';
 import DetailModal from './DetailModal';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { useAuditSummary } from '@/hooks/useAuditSummary';
+import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
+import CenteredMessage from '@/components/CenteredMessage';
 import type { AuditLogEntry, AuditLogType } from '@shared/types';
 
 export default function Analytics() {
@@ -33,6 +35,7 @@ export default function Analytics() {
   const { data } = useAuditLogs();
   const logs = data?.logs ?? [];
   const { data: summary } = useAuditSummary();
+  const { data: metrics, isLoading: metricsLoading } = useDashboardMetrics();
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
@@ -145,8 +148,16 @@ export default function Analytics() {
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ActivityChart showContainer />
-        <ErrorChart />
+        {metricsLoading ? (
+          <CenteredMessage>Loading metrics...</CenteredMessage>
+        ) : (
+          <ActivityChart data={metrics?.activity} showContainer />
+        )}
+        {metricsLoading ? (
+          <CenteredMessage>Loading metrics...</CenteredMessage>
+        ) : (
+          <ErrorChart data={metrics?.errors} />
+        )}
       </section>
 
       <AuditTable

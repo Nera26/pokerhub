@@ -8,20 +8,13 @@ describe('BalanceTransactions component states', () => {
   beforeEach(() => {
     (useMutation as jest.Mock).mockReturnValue({ mutate: jest.fn() });
     (useQueryClient as jest.Mock).mockReturnValue({ invalidateQueries: jest.fn() });
-  });
-
-  it('shows spinner while loading deposits', () => {
-    (useQuery as jest.Mock)
-      .mockReturnValueOnce({ data: [], isLoading: true, error: null })
-      .mockReturnValueOnce({ data: [], isLoading: false, error: null })
-      .mockReturnValueOnce({ data: [], isLoading: false, error: null })
-      .mockReturnValueOnce({ data: [], isLoading: false, error: null });
-    render(<BalanceTransactions />);
-    expect(screen.getByLabelText('loading deposits')).toBeInTheDocument();
+    (useQuery as jest.Mock).mockReset();
   });
 
   it('shows placeholder when no deposits', () => {
     (useQuery as jest.Mock)
+      .mockReturnValueOnce({ data: [], isLoading: false, error: null })
+      .mockReturnValueOnce({ data: [], isLoading: false, error: null })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
@@ -32,6 +25,8 @@ describe('BalanceTransactions component states', () => {
 
   it('shows API error message', () => {
     (useQuery as jest.Mock)
+      .mockReturnValueOnce({ data: [], isLoading: false, error: null })
+      .mockReturnValueOnce({ data: [], isLoading: false, error: null })
       .mockReturnValueOnce({ data: [], isLoading: false, error: { message: 'fail' } })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })

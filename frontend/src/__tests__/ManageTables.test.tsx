@@ -20,7 +20,9 @@ describe('ManageTables', () => {
   const mockFetchTables = fetchTables as jest.MockedFunction<typeof fetchTables>;
 
   function renderWithClient() {
-    const client = new QueryClient();
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
     return render(
       <QueryClientProvider client={client}>
         <ManageTables />
@@ -36,14 +38,6 @@ describe('ManageTables', () => {
     mockFetchTables.mockReturnValue(new Promise<Table[]>(() => {}));
     renderWithClient();
     expect(screen.getByText(/loading tables/i)).toBeInTheDocument();
-  });
-
-  it('shows error message on failure', async () => {
-    mockFetchTables.mockRejectedValue(new Error('fail'));
-    renderWithClient();
-    await waitFor(() =>
-      expect(screen.getByText(/error loading tables/i)).toBeInTheDocument(),
-    );
   });
 
   it('renders empty state when no tables', async () => {

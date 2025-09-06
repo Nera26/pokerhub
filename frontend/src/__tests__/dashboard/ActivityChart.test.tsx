@@ -8,6 +8,19 @@ jest.mock('chart.js/auto', () => ({
 }));
 
 describe('ActivityChart', () => {
+  beforeEach(() => {
+    chartMock.mockClear();
+  });
+  it('shows loading state before chart is ready', () => {
+    render(<ActivityChart data={[1, 2, 3, 4, 5, 6, 7]} />);
+    expect(screen.getByText(/loading chart/i)).toBeInTheDocument();
+  });
+
+  it('renders a message when no data is provided', () => {
+    render(<ActivityChart />);
+    expect(screen.getByText(/no data/i)).toBeInTheDocument();
+  });
+
   it('renders with accessible name and updates when data changes', async () => {
     const { rerender } = render(
       <ActivityChart data={[1, 2, 3, 4, 5, 6, 7]} />,

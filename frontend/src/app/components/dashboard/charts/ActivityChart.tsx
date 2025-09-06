@@ -1,5 +1,6 @@
 'use client';
 
+import CenteredMessage from '@/components/CenteredMessage';
 import { useActivityChart } from '@/lib/useChart';
 
 interface ActivityChartProps {
@@ -13,6 +14,19 @@ export default function ActivityChart({
   title = 'Player Activity (24h)',
   showContainer = false,
 }: ActivityChartProps) {
+  if (!data || data.length === 0) {
+    const message = <CenteredMessage>No data</CenteredMessage>;
+    if (showContainer) {
+      return (
+        <div className="bg-card-bg p-6 rounded-2xl shadow-[0_4px_8px_rgba(0,0,0,0.3)]">
+          <h3 className="text-lg font-bold mb-4">{title}</h3>
+          {message}
+        </div>
+      );
+    }
+    return message;
+  }
+
   const { ref, ready } = useActivityChart(data);
 
   const chart = (

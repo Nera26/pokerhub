@@ -15,7 +15,12 @@ describe('useDashboardMetrics', () => {
       ok: true,
       status: 200,
       statusText: 'OK',
-      json: async () => ({ online: 5, revenue: 1234 }),
+      json: async () => ({
+        online: 5,
+        revenue: 1234,
+        activity: [1, 2],
+        errors: [3, 4],
+      }),
     } as unknown as Response);
     global.fetch = fetchMock as unknown as typeof fetch;
 
@@ -26,7 +31,12 @@ describe('useDashboardMetrics', () => {
 
     const { result } = renderHook(() => useDashboardMetrics(), { wrapper });
     await waitFor(() => expect(result.current.data).toBeDefined());
-    expect(result.current.data).toEqual({ online: 5, revenue: 1234 });
+    expect(result.current.data).toEqual({
+      online: 5,
+      revenue: 1234,
+      activity: [1, 2],
+      errors: [3, 4],
+    });
   });
 
   it('provides a meaningful error when fetch fails', async () => {
