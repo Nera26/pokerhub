@@ -1,32 +1,7 @@
 'use client';
 
 import React, { lazy, Suspense, useMemo, ReactNode } from 'react';
-import { logger } from '@/lib/logger';
-
-class ModuleErrorBoundary extends React.Component<
-  React.PropsWithChildren<{ fallback: ReactNode }>,
-  { hasError: boolean }
-> {
-  constructor(props: React.PropsWithChildren<{ fallback: ReactNode }>) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: unknown) {
-    logger.error(error);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return this.props.fallback;
-    }
-    return this.props.children;
-  }
-}
+import ErrorBoundary from '../ui/ErrorBoundary';
 
 interface DashboardModuleProps<T extends object> {
   loader: () => Promise<{ default: React.ComponentType<T> }>;
@@ -45,10 +20,10 @@ export default function DashboardModule<T extends object>({
   const resolvedProps = props ?? ({} as T);
 
   return (
-    <ModuleErrorBoundary fallback={error}>
+    <ErrorBoundary fallback={error}>
       <Suspense fallback={loading}>
         <LazyComp {...resolvedProps} />
       </Suspense>
-    </ModuleErrorBoundary>
+    </ErrorBoundary>
   );
 }

@@ -29,6 +29,7 @@ import {
 import { validationSchema } from './config/env.validation';
 
 import { AppController } from './app.controller';
+import { AdminMessagesController } from './routes/admin-messages.controller';
 import { AppService } from './app.service';
 import { API_CONTRACT_VERSION } from '@shared/constants';
 import { ZodExceptionFilter } from './common/zod-exception.filter';
@@ -118,7 +119,7 @@ import { BroadcastsModule } from './broadcasts/broadcasts.module';
     MetricsModule,
     BroadcastsModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, AdminMessagesController],
   providers: [
     AppService,
     {

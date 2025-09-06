@@ -21,8 +21,7 @@ Refer to [../security/anti-collusion.md](../security/anti-collusion.md) for deta
 - Query results are stored in `collusion_alerts` and surfaced on the dashboard.
 
 ## Heuristics
-- Detection logic originates from [analytics/anti_collusion/heuristics.js](../../analytics/anti_collusion/heuristics.js).
-- `CollusionDetectionJob` consumes these heuristics and writes matches into `collusion_alerts` for review workflows.
+`CollusionDetectionJob` writes matches into `collusion_alerts` for review workflows.
 
 ## Alerts
 - Each new entry in `collusion_alerts` emits a Slack notification and opens a Jira ticket.

@@ -1140,6 +1140,43 @@ export interface paths {
       responses: {
         /** @description Reconciliation completed */
         200: {
+          content: never;
+        };
+        "application/json": {
+          content: never;
+        };
+      };
+    };
+  };
+  "/admin/messages": {
+    /** List user messages */
+    get: {
+      responses: {
+        /** @description Messages list */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AdminMessagesResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/admin/messages/{id}/reply": {
+    /** Reply to user message */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["ReplyMessageRequest"];
+        };
+      };
+      responses: {
+        /** @description Reply sent */
+        200: {
           content: {
             "application/json": components["schemas"]["MessageResponse"];
           };
@@ -1381,6 +1418,23 @@ export interface components {
     };
     MessageResponse: {
       message: string;
+    };
+    AdminMessage: {
+      id: number;
+      sender: string;
+      userId: string;
+      avatar: string;
+      subject: string;
+      preview: string;
+      content: string;
+      time: string;
+      read: boolean;
+    };
+    AdminMessagesResponse: {
+      messages: components["schemas"]["AdminMessage"][];
+    };
+    ReplyMessageRequest: {
+      reply: string;
     };
     DashboardMetricsResponse: {
       online: number;
