@@ -1,10 +1,10 @@
 'use client';
 
 import { Tournament } from '@/hooks/useLobbyData';
-import VirtualizedList from '@/components/VirtualizedList';
 import TournamentCard, {
   type TournamentStatus,
 } from '@/app/components/tournaments/TournamentCard';
+import VirtualizedSection from '@/components/VirtualizedSection';
 
 export interface TournamentListProps<T extends Tournament> {
   tournaments: T[];
@@ -34,43 +34,34 @@ export default function TournamentList<T extends Tournament>({
   };
 
   return (
-    <section
+    <VirtualizedSection
       id="tournaments-panel"
-      role="tabpanel"
       aria-labelledby="tab-tournaments"
       hidden={hidden}
-    >
-      <h2 className="text-xl sm:text-2xl font-bold text-text-primary mb-4 sm:mb-6">
-        Tournaments
-      </h2>
-
-      {tournaments.length === 0 ? (
-        <p>No tournaments available.</p>
-      ) : (
-        <VirtualizedList
-          items={tournaments}
-          estimateSize={280}
-          className="h-96 overflow-auto"
-          testId="tournaments-list"
-          renderItem={(t, style) => (
-            <li key={t.id} style={style} className="mb-4">
-              <TournamentCard
-                id={t.id}
-                status={mapStatus(t.state)}
-                name={t.title}
-                gameType="Unknown"
-                buyin={t.buyIn + (t.fee ?? 0)}
-                rebuy="N/A"
-                prizepool={t.prizePool}
-                players={t.players.current}
-                maxPlayers={t.players.max}
-                onRegister={onRegister}
-                onViewDetails={onViewDetails}
-              />
-            </li>
-          )}
-        />
+      title="Tournaments"
+      items={tournaments}
+      listProps={{
+        estimateSize: 280,
+        className: 'h-96 overflow-auto',
+        testId: 'tournaments-list',
+      }}
+      renderItem={(t, style) => (
+        <li key={t.id} style={style} className="mb-4">
+          <TournamentCard
+            id={t.id}
+            status={mapStatus(t.state)}
+            name={t.title}
+            gameType="Unknown"
+            buyin={t.buyIn + (t.fee ?? 0)}
+            rebuy="N/A"
+            prizepool={t.prizePool}
+            players={t.players.current}
+            maxPlayers={t.players.max}
+            onRegister={onRegister}
+            onViewDetails={onViewDetails}
+          />
+        </li>
       )}
-    </section>
+    />
   );
 }
