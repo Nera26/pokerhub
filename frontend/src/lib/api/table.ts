@@ -1,6 +1,5 @@
 import { apiClient } from './client';
 import { z } from 'zod';
-export { join, bet, buyIn, sitOut, rebuy } from '@/lib/socket';
 import {
   PlayerSchema,
   ChatMessageSchema,
