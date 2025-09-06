@@ -11,7 +11,7 @@ import { ParquetSchema, ParquetWriter } from 'parquetjs-lite';
 import { PassThrough } from 'stream';
 import path from 'path';
 import { promises as fs } from 'fs';
-import { analyzeCollusion } from '../../../analytics/anti-collusion';
+import { detectSharedIP, detectSynchronizedBetting } from '@shared/analytics/collusion';
 import type {
   Session as CollusionSession,
   Transfer as CollusionTransfer,
@@ -433,26 +433,31 @@ export class AnalyticsService {
   }
 
   private async runCollusionHeuristics() {
-    const report = analyzeCollusion({
-      sessions: this.collusionSessions,
-      transfers: this.collusionTransfers,
-      events: this.collusionEvents,
-    });
-    for (const { ip, players } of report.sharedIPs) {
+    for (const { ip, players } of detectSharedIP(this.collusionSessions)) {
       await this.emitAntiCheatFlag({
         sessionId: `shared-${ip}`,
         users: players,
         features: { type: 'sharedIp', ip },
       });
     }
-    for (const { from, to, total } of report.chipDumping) {
-      await this.emitAntiCheatFlag({
-        sessionId: `dump-${from}-${to}`,
-        users: [from, to],
-        features: { type: 'chipDumping', total },
-      });
+
+    const transferTotals = new Map<string, number>();
+    for (const t of this.collusionTransfers) {
+      const key = `${t.from}-${t.to}`;
+      transferTotals.set(key, (transferTotals.get(key) || 0) + t.amount);
     }
-    for (const { handId, players } of report.synchronizedBetting) {
+    for (const [key, total] of transferTotals) {
+      if (total > 100_000) {
+        const [from, to] = key.split('-');
+        await this.emitAntiCheatFlag({
+          sessionId: `dump-${from}-${to}`,
+          users: [from, to],
+          features: { type: 'chipDumping', total },
+        });
+      }
+    }
+
+    for (const { handId, players } of detectSynchronizedBetting(this.collusionEvents)) {
       await this.emitAntiCheatFlag({
         sessionId: `sync-${handId}`,
         users: players,
