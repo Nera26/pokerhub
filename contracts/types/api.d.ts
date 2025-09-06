@@ -705,7 +705,7 @@ export interface paths {
         /** @description Tournament detail */
         200: {
           content: {
-            "application/json": components["schemas"]["TournamentDetail"];
+            "application/json": components["schemas"]["TournamentDetails"];
           };
         };
       };
@@ -1835,13 +1835,20 @@ export interface components {
       };
       registered: boolean;
     };
-    TournamentDetail: components["schemas"]["Tournament"] & ({
+    TournamentInfo: {
+      title: string;
+      description: string;
+    };
+    TournamentDetails: components["schemas"]["Tournament"] & ({
       registration?: {
         /** Format: date-time */
         open?: string | null;
         /** Format: date-time */
         close?: string | null;
       };
+      overview?: components["schemas"]["TournamentInfo"][];
+      structure?: components["schemas"]["TournamentInfo"][];
+      prizes?: components["schemas"]["TournamentInfo"][];
     });
     TournamentList: components["schemas"]["Tournament"][];
     Table: {

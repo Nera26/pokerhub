@@ -108,6 +108,29 @@ export class TournamentService implements OnModuleInit {
         open: t.registrationOpen ?? null,
         close: t.registrationClose ?? null,
       },
+      overview: [
+        {
+          title: 'Tournament Format',
+          description: "No-Limit Hold'em with 20k starting chips.",
+        },
+        {
+          title: 'Late Registration',
+          description: 'Allowed for first 2 hours, one re-entry.',
+        },
+      ],
+      structure: [
+        {
+          title: 'Blind Structure',
+          description: 'Level 1: 100/200, Level 2: 200/400, …',
+        },
+      ],
+      prizes: [
+        {
+          title: 'Prizes',
+          description:
+            '1st: 50%, 2nd: 25%, 3rd: 15%, remainder split.',
+        },
+      ],
     };
   }
 

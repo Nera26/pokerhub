@@ -326,13 +326,21 @@ export const TournamentListSchema = z.array(TournamentSchema);
 export type Tournament = z.infer<typeof TournamentSchema>;
 export type TournamentList = z.infer<typeof TournamentListSchema>;
 
-export const TournamentDetailSchema = TournamentSchema.extend({
+const TournamentInfoSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+});
+
+export const TournamentDetailsSchema = TournamentSchema.extend({
   registration: z.object({
     open: z.string().datetime().nullable(),
     close: z.string().datetime().nullable(),
   }),
+  overview: z.array(TournamentInfoSchema),
+  structure: z.array(TournamentInfoSchema),
+  prizes: z.array(TournamentInfoSchema),
 });
-export type TournamentDetail = z.infer<typeof TournamentDetailSchema>;
+export type TournamentDetails = z.infer<typeof TournamentDetailsSchema>;
 
 export const TournamentRegisterRequestSchema = z.object({});
 export type TournamentRegisterRequest = z.infer<
