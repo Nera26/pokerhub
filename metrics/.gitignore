@@ -3,5 +3,6 @@
 !.gitignore
 !alert-routes.md
 !gateway-metrics.md
+!README.md
 !grafana/
 !grafana/**
