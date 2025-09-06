@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { fetchHandLog, fetchVerifiedHandProof } from '@/lib/api/hands';
 import { revealDeck } from '@/lib/verifyProof';
 import type { HandProof } from '@shared/types';
+import ProofDetails from '@/components/hand/ProofDetails';
 
 export default function VerifyPage() {
   const search = useSearchParams();
@@ -52,28 +53,7 @@ export default function VerifyPage() {
       {loading && <p>Loading...</p>}
       {error && <p className="text-red-500">{error}</p>}
       {proof && (
-        <div className="space-y-2 break-words">
-          <div>
-            <strong>Seed:</strong> {proof.seed}
-          </div>
-          <div>
-            <strong>Nonce:</strong> {proof.nonce}
-          </div>
-          <div>
-            <strong>Commitment:</strong> {proof.commitment}
-          </div>
-          {valid !== null && (
-            <div>
-              <strong>Commitment valid:</strong> {valid ? 'yes' : 'no'}
-            </div>
-          )}
-          {deck && (
-            <div>
-              <strong>Deck:</strong>
-              <pre className="whitespace-pre-wrap break-words">{deck.join(' ')}</pre>
-            </div>
-          )}
-        </div>
+        <ProofDetails proof={proof} valid={valid ?? undefined} deck={deck} />
       )}
       {log && (
         <div className="mt-4">
