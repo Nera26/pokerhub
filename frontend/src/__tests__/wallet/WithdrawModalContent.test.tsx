@@ -39,9 +39,9 @@ describe('WithdrawModalContent', () => {
     expect(screen.getByRole('button', { name: 'Withdraw' })).toBeDisabled();
   });
 
-  it('calls onConfirm with valid amount', async () => {
-    const onConfirm = jest.fn();
+  it('calls onConfirm with valid amount and device id', async () => {
     localStorage.setItem('deviceId', 'device-123');
+    const onConfirm = jest.fn();
 
     render(<WithdrawModalContent {...baseProps} onConfirm={onConfirm} />);
 
