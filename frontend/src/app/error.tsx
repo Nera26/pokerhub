@@ -1,24 +1,15 @@
 'use client';
 
-import { useEffect } from 'react';
-import ErrorFallback from './components/ui/ErrorFallback';
-import { logger } from '@/lib/logger';
+import RouteError from './components/ui/RouteError';
 
-export default function GlobalError({
-  error,
-  reset,
-}: {
+export default function GlobalError(props: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    logger.error(error);
-  }, [error]);
-
   return (
     <html>
       <body>
-        <ErrorFallback onRetry={reset} />
+        <RouteError {...props} />
       </body>
     </html>
   );
