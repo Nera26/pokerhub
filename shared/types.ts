@@ -73,6 +73,8 @@ export type {
 export const DashboardMetricsSchema = z.object({
   online: z.number(),
   revenue: z.number(),
+  activity: z.array(z.number()).default([]),
+  errors: z.array(z.number()).default([]),
 });
 export type DashboardMetrics = z.infer<typeof DashboardMetricsSchema>;
 

@@ -44,6 +44,18 @@ jest.mock('@/hooks/useAuditSummary', () => ({
   useAuditSummary: () => ({ data: { total: 3, errors: 2, logins: 1 } }),
 }));
 
+const dashboardMetricsMock = jest.fn();
+jest.mock('@/hooks/useDashboardMetrics', () => ({
+  useDashboardMetrics: () => dashboardMetricsMock(),
+}));
+
+beforeEach(() => {
+  dashboardMetricsMock.mockReturnValue({
+    data: { online: 0, revenue: 0, activity: [1, 2, 3, 4, 5, 6, 7], errors: [1, 1, 1, 1] },
+    isLoading: false,
+  });
+});
+
 describe('Analytics filtering', () => {
   it('filters logs by search text', async () => {
     render(<Analytics />);
@@ -80,5 +92,34 @@ describe('Analytics filtering', () => {
     expect(
       screen.queryByText(/user successfully logged in/i),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe('dashboard metrics charts', () => {
+  it('shows loading state', () => {
+    dashboardMetricsMock.mockReturnValue({ data: undefined, isLoading: true });
+    render(<Analytics />);
+    expect(screen.getAllByText(/loading metrics/i)).toHaveLength(2);
+    expect(document.querySelectorAll('canvas')).toHaveLength(0);
+  });
+
+  it('shows empty state when no data', () => {
+    dashboardMetricsMock.mockReturnValue({
+      data: { online: 0, revenue: 0, activity: [], errors: [] },
+      isLoading: false,
+    });
+    render(<Analytics />);
+    expect(screen.getAllByText(/no data/i)).toHaveLength(2);
+    expect(document.querySelectorAll('canvas')).toHaveLength(0);
+  });
+
+  it('renders charts when data present', async () => {
+    dashboardMetricsMock.mockReturnValue({
+      data: { online: 0, revenue: 0, activity: [1,2,3,4,5,6,7], errors: [1,2,3,4] },
+      isLoading: false,
+    });
+    render(<Analytics />);
+    expect(document.querySelectorAll('canvas')).toHaveLength(2);
+    await screen.findByRole('img', { name: /activity/i });
   });
 });

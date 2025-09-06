@@ -29,9 +29,20 @@ async function fetchMetrics({
   }
 }
 
+interface MetricsWithDatasets extends DashboardMetrics {
+  activity: number[];
+  errors: number[];
+}
+
 export function useDashboardMetrics() {
-  return useQuery<DashboardMetrics>({
+  return useQuery<MetricsWithDatasets>({
     queryKey: ['dashboard-metrics'],
     queryFn: ({ signal }) => fetchMetrics({ signal }),
+    select: (data) => ({
+      online: data.online,
+      revenue: data.revenue,
+      activity: data.activity ?? [],
+      errors: data.errors ?? [],
+    }),
   });
 }

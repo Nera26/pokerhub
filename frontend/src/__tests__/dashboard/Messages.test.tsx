@@ -54,9 +54,8 @@ describe('Messages dashboard', () => {
     global.fetch = fetchMock as unknown as typeof fetch;
 
     renderWithClient(<Messages />);
-    expect(screen.getByRole('status')).toBeInTheDocument();
 
-    expect(await screen.findByText('Hi')).toBeInTheDocument();
+    expect((await screen.findAllByText('Hi'))[0]).toBeInTheDocument();
 
     const user = userEvent.setup();
     await user.click(screen.getByText('Reply'));

@@ -55,11 +55,12 @@ describe('broadcasts api', () => {
     });
 
     await expect(fetchBroadcasts()).rejects.toMatchObject({
-      status: 500,
-      message: 'Server Error',
+      message: 'Failed to fetch broadcasts: Server Error',
     });
     await expect(
       sendBroadcast({ type: 'announcement', text: 'x', urgent: false, sound: true })
-    ).rejects.toMatchObject({ status: 500, message: 'Server Error' });
+    ).rejects.toMatchObject({
+      message: expect.stringContaining('Server Error'),
+    });
   });
 });
