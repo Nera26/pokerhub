@@ -12,6 +12,7 @@ import HistoryTabs from '@/app/components/user/HistoryTabs';
 import FilterDropdown from '@/app/components/user/FilterDropdown';
 import HistoryList from '@/app/components/user/HistoryList';
 import { fetchProfile } from '@/lib/api/profile';
+import type { UserProfile } from '@shared/types';
 const ReplayModal = dynamic(() => import('@/app/components/user/ReplayModal'), {
   ssr: false,
 });
@@ -29,16 +30,20 @@ const EditProfileModal = dynamic(
 import ToastNotification from '@/app/components/ui/ToastNotification';
 
 export default function ProfilePage() {
-  const [userExp, setUserExp] = useState(0);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [selectedTab, setSelectedTab] = useState<
     'game-history' | 'tournament-history' | 'transaction-history'
   >('game-history');
   useEffect(() => {
     const controller = new AbortController();
     fetchProfile({ signal: controller.signal })
-      .then((data) => setUserExp(data.experience))
-      .catch((err) => logger.error('Failed to fetch profile', err))
+      .then((data) => setProfile(data))
+      .catch((err) => {
+        logger.error('Failed to fetch profile', err);
+        setError(true);
+      })
       .finally(() => setLoading(false));
     return () => controller.abort();
   }, []);
@@ -116,10 +121,14 @@ export default function ProfilePage() {
     return <p>Loading...</p>;
   }
 
+  if (error || !profile) {
+    return <p>Error loading profile</p>;
+  }
+
   return (
     <>
       <div className="container mx-auto px-4 py-8 pb-[calc(env(safe-area-inset-bottom)+72px)]">
-        <ProfileSection userExp={userExp} onEdit={openEdit} />
+        <ProfileSection profile={profile} onEdit={openEdit} />
 
         <GameStatistics onSelectTab={handleSelectTab} />
         <HistoryTabs selected={selectedTab} onChange={handleSelectTab} />

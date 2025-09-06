@@ -5,9 +5,10 @@ import { faPencil } from '@fortawesome/free-solid-svg-icons/faPencil';
 import Tooltip from '../ui/Tooltip';
 import { Button } from '../ui/Button';
 import Image from 'next/image';
+import type { UserProfile } from '@shared/types';
 
 interface Props {
-  userExp: number;
+  profile: UserProfile;
   onEdit(): void;
 }
 
@@ -19,7 +20,8 @@ const tiers = [
   { name: 'Platinum', min: 20000, max: Infinity },
 ];
 
-export default function ProfileSection({ userExp, onEdit }: Props) {
+export default function ProfileSection({ profile, onEdit }: Props) {
+  const userExp = profile.experience;
   // figure out current / next tier
   const current = tiers.find((t) => userExp >= t.min && userExp <= t.max)!;
   const nextTier = tiers[tiers.indexOf(current) + 1] || current;
@@ -42,8 +44,8 @@ export default function ProfileSection({ userExp, onEdit }: Props) {
               className="w-32 h-32 rounded-full border-4 border-accent-yellow shadow-lg cursor-pointer"
             >
               <Image
-                src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg"
-                alt="User avatar"
+                src={profile.avatarUrl}
+                alt={`${profile.username} avatar`}
                 width={128}
                 height={128}
                 sizes="128px"
@@ -58,24 +60,27 @@ export default function ProfileSection({ userExp, onEdit }: Props) {
             role="heading"
             aria-level={1}
           >
-            PlayerOne23
+            {profile.username}
           </button>
-          <p className="text-text-secondary text-sm mt-1">
-            playerone23@example.com
-          </p>
-          <p className="text-text-secondary text-sm mt-1">Bank: •••• 1234</p>
+          <p className="text-text-secondary text-sm mt-1">{profile.email}</p>
+          <p className="text-text-secondary text-sm mt-1">Bank: {profile.bank}</p>
           <p className="text-text-secondary flex items-center mt-1 text-sm">
             <FontAwesomeIcon
               icon={faGlobe}
               className="mr-2 text-accent-yellow"
             />
-            United States
+            {profile.location}
           </p>
           <p className="text-text-secondary text-xs mt-1">
-            Joined: January 15, 2023
+            Joined:{' '}
+            {new Date(profile.joined).toLocaleDateString(undefined, {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
           </p>
           <p className="text-text-secondary text-sm mt-3 max-w-xs text-center md:text-left italic">
-            "Texas grinder. Loves Omaha. Weekend warrior."
+            "{profile.bio}"
           </p>
 
           {/* Tier & EXP bar */}
@@ -110,7 +115,10 @@ export default function ProfileSection({ userExp, onEdit }: Props) {
               Current Balance
             </p>
             <p className="text-4xl font-bold text-accent-yellow mt-1">
-              $1,250.00
+              {profile.balance.toLocaleString('en-US', {
+                style: 'currency',
+                currency: 'USD',
+              })}
             </p>
             <span className="tooltip-text">View Transaction History</span>
           </button>

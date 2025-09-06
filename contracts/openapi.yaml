@@ -1249,6 +1249,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+  /user/profile:
+    get:
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
   /users:
     post:
       summary: Create user
@@ -2074,6 +2086,38 @@ components:
         - id
         - username
         - banned
+    UserProfile:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        avatarUrl:
+          type: string
+        bank:
+          type: string
+        location:
+          type: string
+        joined:
+          type: string
+          format: date-time
+        bio:
+          type: string
+        experience:
+          type: number
+        balance:
+          type: number
+      required:
+        - username
+        - email
+        - avatarUrl
+        - bank
+        - location
+        - joined
+        - bio
+        - experience
+        - balance
     GameAction:
       oneOf:
         - $ref: '#/components/schemas/PostBlindAction'

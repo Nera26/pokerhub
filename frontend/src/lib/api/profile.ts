@@ -1,15 +1,9 @@
-import { z } from 'zod';
 import { apiClient, ApiError } from './client';
+import { UserProfileSchema, type UserProfile } from '@shared/types';
 
-const ProfileResponseSchema = z.object({
-  experience: z.number(),
-});
-
-export type ProfileResponse = z.infer<typeof ProfileResponseSchema>;
-
-export async function fetchProfile({ signal }: { signal?: AbortSignal } = {}): Promise<ProfileResponse> {
+export async function fetchProfile({ signal }: { signal?: AbortSignal } = {}): Promise<UserProfile> {
   try {
-    return await apiClient('/api/profile', ProfileResponseSchema, { signal });
+    return await apiClient('/api/user/profile', UserProfileSchema, { signal });
   } catch (err) {
     const message = err instanceof Error ? err.message : (err as ApiError).message;
     throw { message: `Failed to fetch profile: ${message}` } as ApiError;

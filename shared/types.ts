@@ -35,6 +35,11 @@ export const MessageResponseSchema = z.object({
 export type MessageResponse = z.infer<typeof MessageResponseSchema>;
 
 export {
+  UserProfileSchema,
+} from '../backend/src/schemas/users';
+export type { UserProfile } from '../backend/src/schemas/users';
+
+export {
   PendingWithdrawalSchema,
   PendingWithdrawalsResponseSchema,
   WithdrawalDecisionRequestSchema,

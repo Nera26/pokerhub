@@ -1290,6 +1290,19 @@ export interface paths {
       };
     };
   };
+  "/user/profile": {
+    /** Get current user profile */
+    get: {
+      responses: {
+        /** @description User profile */
+        200: {
+          content: {
+            "application/json": components["schemas"]["UserProfile"];
+          };
+        };
+      };
+    };
+  };
   "/users": {
     /** Create user */
     post: {
@@ -1752,6 +1765,18 @@ export interface components {
       username: string;
       avatarKey?: string;
       banned: boolean;
+    };
+    UserProfile: {
+      username: string;
+      email: string;
+      avatarUrl: string;
+      bank: string;
+      location: string;
+      /** Format: date-time */
+      joined: string;
+      bio: string;
+      experience: number;
+      balance: number;
     };
     GameAction: components["schemas"]["PostBlindAction"] | components["schemas"]["BetAction"] | components["schemas"]["RaiseAction"] | components["schemas"]["CallAction"] | components["schemas"]["CheckAction"] | components["schemas"]["FoldAction"] | components["schemas"]["NextAction"];
     GameStateDelta: {
