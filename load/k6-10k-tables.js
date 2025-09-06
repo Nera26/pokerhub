@@ -2,6 +2,7 @@ import ws from 'k6/ws';
 import http from 'k6/http';
 import { Trend, Rate } from 'k6/metrics';
 import { Random } from 'https://jslib.k6.io/random/1.0.0/index.js';
+import { setupSocketProxy } from './lib/socket-stress.js';
 
 // Drive 80k sockets across 10k tables while capturing ACK latency.
 // In CI we default to a smaller scenario to avoid overwhelming runners.
@@ -24,10 +25,6 @@ export const options = {
 
 const tables = Number(__ENV.TABLES) || defaultTables;
 const seed = Number(__ENV.RNG_SEED) || 1;
-const LATENCY_MS = Number(__ENV.LATENCY_MS || 200);
-const JITTER_MS = Number(__ENV.JITTER_MS || 200);
-const PACKET_LOSS = Number(__ENV.PACKET_LOSS || 0.05);
-
 const grafanaPushUrl = __ENV.GRAFANA_PUSH_URL;
 const metricsUrl = __ENV.METRICS_URL;
 const ACK_LATENCY = new Trend('ack_latency', true);
@@ -35,47 +32,7 @@ const ERROR_RATE = new Rate('error_rate');
 const HEAP_USED = new Trend('heap_used');
 const GC_PAUSE = new Trend('gc_pause_ms', true);
 
-export function setup() {
-  const host = __ENV.TOXIPROXY_URL || 'http://localhost:8474';
-  const name = __ENV.TOXIPROXY_NAME || 'pokerhub_ws';
-  const listen = `0.0.0.0:${__ENV.PROXY_PORT || '3001'}`;
-  const upstream = __ENV.UPSTREAM || 'localhost:4000';
-  try {
-    http.del(`${host}/proxies/${name}`);
-  } catch (e) {
-    /* ignore */
-  }
-  http.post(
-    `${host}/proxies`,
-    JSON.stringify({ name, listen, upstream }),
-    { headers: { 'Content-Type': 'application/json' } },
-  );
-  try {
-    http.del(`${host}/proxies/${name}/toxics/all`);
-  } catch (e) {
-    /* ignore */
-  }
-  http.post(
-    `${host}/proxies/${name}/toxics`,
-    JSON.stringify({
-      name: 'latency',
-      type: 'latency',
-      attributes: { latency: LATENCY_MS, jitter: JITTER_MS },
-    }),
-    { headers: { 'Content-Type': 'application/json' } },
-  );
-  http.post(
-    `${host}/proxies/${name}/toxics`,
-    JSON.stringify({
-      name: 'packet_loss',
-      type: 'timeout',
-      attributes: { timeout: 1 },
-      toxicity: PACKET_LOSS,
-    }),
-    { headers: { 'Content-Type': 'application/json' } },
-  );
-  return { wsUrl: `ws://localhost:${__ENV.PROXY_PORT || '3001'}/game` };
-}
+export { setupSocketProxy as setup };
 
 export default function (data) {
   const rng = new Random(seed + __VU);

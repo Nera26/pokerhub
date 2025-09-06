@@ -1,14 +1,11 @@
 import { Trend, Rate } from 'k6/metrics';
 import { io } from 'k6/x/socket.io';
-import http from 'k6/http';
 import { Random } from 'https://jslib.k6.io/random/1.0.0/index.js';
+import { setupSocketProxy } from '../lib/socket-stress.js';
 
 // Chaos scenario targeting 80k sockets spread across 10k tables.
 const ACTIONS = JSON.parse(open('../../backend/src/game/engine/gateway.actions.json'));
 const seed = Number(__ENV.RNG_SEED) || 1;
-const LATENCY_MS = Number(__ENV.LATENCY_MS || 200);
-const JITTER_MS = Number(__ENV.JITTER_MS || 200);
-const PACKET_LOSS = Number(__ENV.PACKET_LOSS || 0.05);
 
 const LATENCY = new Trend('latency', true);
 const DROPPED_FRAMES = new Rate('dropped_frames');
@@ -22,47 +19,7 @@ export const options = {
   },
 };
 
-export function setup() {
-  const host = __ENV.TOXIPROXY_URL || 'http://localhost:8474';
-  const name = __ENV.TOXIPROXY_NAME || 'pokerhub_ws';
-  const listen = `0.0.0.0:${__ENV.PROXY_PORT || '3001'}`;
-  const upstream = __ENV.UPSTREAM || 'localhost:4000';
-  try {
-    http.del(`${host}/proxies/${name}`);
-  } catch (e) {
-    /* ignore */
-  }
-  http.post(
-    `${host}/proxies`,
-    JSON.stringify({ name, listen, upstream }),
-    { headers: { 'Content-Type': 'application/json' } },
-  );
-  try {
-    http.del(`${host}/proxies/${name}/toxics/all`);
-  } catch (e) {
-    /* ignore */
-  }
-  http.post(
-    `${host}/proxies/${name}/toxics`,
-    JSON.stringify({
-      name: 'latency',
-      type: 'latency',
-      attributes: { latency: LATENCY_MS, jitter: JITTER_MS },
-    }),
-    { headers: { 'Content-Type': 'application/json' } },
-  );
-  http.post(
-    `${host}/proxies/${name}/toxics`,
-    JSON.stringify({
-      name: 'packet_loss',
-      type: 'timeout',
-      attributes: { timeout: 1 },
-      toxicity: PACKET_LOSS,
-    }),
-    { headers: { 'Content-Type': 'application/json' } },
-  );
-  return { wsUrl: `ws://localhost:${__ENV.PROXY_PORT || '3001'}/game` };
-}
+export { setupSocketProxy as setup };
 
 export default function (data) {
   const tables = Number(__ENV.TABLES) || 10000;
