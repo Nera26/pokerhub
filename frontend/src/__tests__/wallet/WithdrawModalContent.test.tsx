@@ -1,22 +1,35 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
+jest.mock('@/app/components/wallet/AmountInput', () => {
+  const actual = jest.requireActual('@/app/components/wallet/AmountInput');
+  return {
+    __esModule: true,
+    default: jest.fn((props) => actual.default(props)),
+  };
+});
+
 import WithdrawModalContent from '@/app/components/wallet/WithdrawModalContent';
+import AmountInput from '@/app/components/wallet/AmountInput';
+
+const baseProps = {
+  availableBalance: 100,
+  bankAccountNumber: '123456789',
+  accountTier: 'Gold',
+  accountHolder: 'Jane Doe',
+  onClose: jest.fn(),
+};
 
 describe('WithdrawModalContent', () => {
-  const baseProps = {
-    availableBalance: 100,
-    bankAccountNumber: '123456789',
-    accountTier: 'Gold',
-    accountHolder: 'Jane Doe',
-    onClose: jest.fn(),
-  };
-
   beforeEach(() => {
+    (AmountInput as jest.Mock).mockClear();
     localStorage.clear();
   });
 
-  afterEach(() => {
-    localStorage.clear();
+  it('renders AmountInput', () => {
+    render(<WithdrawModalContent {...baseProps} onConfirm={jest.fn()} />);
+    expect(AmountInput).toHaveBeenCalled();
+    expect(screen.getByPlaceholderText('0.00')).toBeInTheDocument();
   });
 
   it('validates input and disables confirm for invalid amount', async () => {
@@ -59,3 +72,4 @@ describe('WithdrawModalContent', () => {
     });
   });
 });
+
