@@ -5,6 +5,7 @@ import {
   MessageResponseSchema,
   WithdrawalDecisionRequest,
 } from '@shared/types';
+import { z } from 'zod';
 export type { ApiError } from './client';
 
 export async function approveWithdrawal(
@@ -57,4 +58,23 @@ export async function rollbackFunds(
     method: 'POST',
     body: { amount },
   });
+}
+
+const WithdrawalSchema = z.object({
+  user: z.string(),
+  amount: z.string(),
+  date: z.string(),
+  status: z.enum(['Pending', 'Approved', 'Rejected']),
+  bankInfo: z.string(),
+  avatar: z.string(),
+});
+
+export async function fetchPendingWithdrawals({
+  signal,
+}: { signal?: AbortSignal } = {}) {
+  return apiClient(
+    '/api/admin/withdrawals',
+    z.array(WithdrawalSchema),
+    { signal },
+  );
 }
