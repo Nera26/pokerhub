@@ -14,6 +14,7 @@ import { Input } from '../ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import ReviewWithdrawalModal from '../modals/ReviewWithdrawalModal';
 import AddUserModal from '../modals/AddUserModal';
+import type { UserFormValues } from '../forms/UserForm';
 import EditUserModal from '../modals/EditUserModal';
 import BanUserModal from '../modals/BanUserModal';
 import ToastNotification from '../ui/ToastNotification';
@@ -293,22 +294,12 @@ export default function UserManager() {
     },
   });
 
-  const handleAddUser = (newUser: {
-    username: string;
-    email: string;
-    password: string;
-    status: string;
-  }) => {
+  const handleAddUser = (newUser: UserFormValues) => {
     addUserMutation.mutate(newUser);
   };
 
   const editUserMutation = useMutation({
-    mutationFn: (updated: {
-      id: number;
-      name: string;
-      email: string;
-      status: string;
-    }) => updateUser(updated),
+    mutationFn: (updated: { id: number; name: string; email: string; status: string }) => updateUser(updated),
     onMutate: async (updated) => {
       await queryClient.cancelQueries({ queryKey: ['users'] });
       const previous = queryClient.getQueryData<User[]>(['users']);
@@ -337,13 +328,9 @@ export default function UserManager() {
     },
   });
 
-  const handleEditUser = (updated: {
-    id: number;
-    name: string;
-    email: string;
-    status: string;
-  }) => {
-    editUserMutation.mutate(updated);
+  const handleEditUser = (updated: UserFormValues & { id: number }) => {
+    const { id, username, email, status } = updated;
+    editUserMutation.mutate({ id, name: username, email, status });
   };
   const banUserMutation = useMutation({
     mutationFn: (user: User) => toggleUserBan(user.id),
