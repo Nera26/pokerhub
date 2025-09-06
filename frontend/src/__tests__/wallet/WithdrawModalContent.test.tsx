@@ -15,6 +15,10 @@ describe('WithdrawModalContent', () => {
     localStorage.clear();
   });
 
+  afterEach(() => {
+    localStorage.clear();
+  });
+
   it('validates input and disables confirm for invalid amount', async () => {
     render(<WithdrawModalContent {...baseProps} onConfirm={jest.fn()} />);
 
@@ -38,6 +42,7 @@ describe('WithdrawModalContent', () => {
   it('calls onConfirm with valid amount and device id', async () => {
     localStorage.setItem('deviceId', 'device-123');
     const onConfirm = jest.fn();
+
     render(<WithdrawModalContent {...baseProps} onConfirm={onConfirm} />);
 
     const input = screen.getByPlaceholderText('0.00');
