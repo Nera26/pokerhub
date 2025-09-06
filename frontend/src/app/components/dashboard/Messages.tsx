@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,28 +14,16 @@ import {
   faChevronLeft,
   faChevronRight,
   faPaperPlane,
+  faSpinner,
 } from '@fortawesome/free-solid-svg-icons';
 
 import { CardContent } from '../ui/Card';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import VirtualizedList from '@/components/VirtualizedList';
-
-type Message = {
-  id: number;
-  sender: string;
-  userId: string;
-  avatar: string;
-  subject: string;
-  preview: string;
-  content: string;
-  time: string;
-  read: boolean;
-};
-
-const seed: Message[] = [
-  /* …same seed as before… */
-];
+import { fetchMessages, replyMessage } from '@/lib/api/messages';
+import type { AdminMessage, AdminMessagesResponse } from '@shared/types';
+import type { ApiError } from '@/lib/api/client';
 
 const formSchema = z.object({
   search: z.string().optional(),
@@ -48,10 +37,21 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export default function Messages() {
-  const [messages, setMessages] = useState<Message[]>(seed);
+  const queryClient = useQueryClient();
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ['adminMessages'],
+    queryFn: fetchMessages,
+  });
+  const mutation = useMutation({
+    mutationFn: ({ id, reply }: { id: number; reply: string }) =>
+      replyMessage(id, { reply }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['adminMessages'] }),
+  });
+
+  const messages = data?.messages ?? [];
   const [page, setPage] = useState(1);
-  const [viewing, setViewing] = useState<Message | null>(null);
-  const [replyTo, setReplyTo] = useState<Message | null>(null);
+  const [viewing, setViewing] = useState<AdminMessage | null>(null);
+  const [replyTo, setReplyTo] = useState<AdminMessage | null>(null);
 
   const {
     register,
@@ -89,24 +89,32 @@ export default function Messages() {
 
   const unread = messages.filter((m) => !m.read).length;
 
-  const openView = (m: Message) => {
-    setMessages((prev) =>
-      prev.map((x) => (x.id === m.id ? { ...x, read: true } : x)),
-    );
+  const markRead = (id: number) => {
+    queryClient.setQueryData(['adminMessages'], (old) => {
+      if (!old) return old;
+      return {
+        messages: old.messages.map((x: AdminMessage) =>
+          x.id === id ? { ...x, read: true } : x,
+        ),
+      } as AdminMessagesResponse;
+    });
+  };
+
+  const openView = (m: AdminMessage) => {
+    markRead(m.id);
     setViewing({ ...m, read: true });
   };
 
-  const openReply = (m: Message) => {
+  const openReply = (m: AdminMessage) => {
+    markRead(m.id);
     setReplyTo(m);
     setValue('replyText', '');
-    setMessages((prev) =>
-      prev.map((x) => (x.id === m.id ? { ...x, read: true } : x)),
-    );
   };
 
   const sendReply = () =>
     handleSubmit(({ replyText }) => {
       if (!replyTo || !replyText.trim()) return;
+      mutation.mutate({ id: replyTo.id, reply: replyText });
       setReplyTo(null);
       setValue('replyText', '');
     })();
@@ -140,6 +148,15 @@ export default function Messages() {
         </div>
       </section>
 
+      {isError && (
+        <div
+          className="bg-danger-red text-white px-4 py-2 rounded-xl"
+          role="alert"
+        >
+          {(error as ApiError)?.message || 'Failed to load messages'}
+        </div>
+      )}
+
       {/* Table */}
       <section className="bg-card-bg rounded-2xl card-shadow overflow-hidden">
         {/* Header row — removed border */}
@@ -152,9 +169,13 @@ export default function Messages() {
           </div>
         </div>
 
-        {pageItems.length === 0 ? (
+        {isLoading ? (
+          <CardContent className="text-center">
+            <FontAwesomeIcon icon={faSpinner} spin role="status" />
+          </CardContent>
+        ) : pageItems.length === 0 ? (
           <CardContent className="text-center text-text-secondary">
-            No results.
+            {total === 0 ? 'No messages.' : 'No results.'}
           </CardContent>
         ) : (
           <VirtualizedList

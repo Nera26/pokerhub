@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.7.0
+  version: 2.8.0
 paths:
   /status:
     get:
@@ -1079,6 +1079,42 @@ paths:
         '200':
           description: Reconciliation completed
           content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MessageResponse'
+  /admin/messages:
+    get:
+      summary: List user messages
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Messages list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminMessagesResponse'
+  /admin/messages/{id}/reply:
+    post:
+      summary: Reply to user message
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplyMessageRequest'
+      responses:
+        '200':
+          description: Reply sent
+          content:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
@@ -1348,6 +1384,53 @@ components:
           type: string
       required:
         - message
+    AdminMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+        sender:
+          type: string
+        userId:
+          type: string
+        avatar:
+          type: string
+        subject:
+          type: string
+        preview:
+          type: string
+        content:
+          type: string
+        time:
+          type: string
+        read:
+          type: boolean
+      required:
+        - id
+        - sender
+        - userId
+        - avatar
+        - subject
+        - preview
+        - content
+        - time
+        - read
+    AdminMessagesResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminMessage'
+      required:
+        - messages
+    ReplyMessageRequest:
+      type: object
+      properties:
+        reply:
+          type: string
+      required:
+        - reply
     DashboardMetricsResponse:
       type: object
       properties:
