@@ -12,6 +12,7 @@ import {
   faArrowUp,
 } from '@fortawesome/free-solid-svg-icons';
 import dynamic from 'next/dynamic';
+import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 
 const ActivityChart = dynamic(() => import('./charts/ActivityChart'), {
   loading: () => (
@@ -82,31 +83,25 @@ export default function Dashboard() {
   const [depFilter, setDepFilter] = useState<TimeFilter>('today');
   const [wdFilter, setWdFilter] = useState<TimeFilter>('today');
 
-  const revMap = {
-    today: { amount: '$8,947', trend: '+8% vs yesterday' },
-    week: { amount: '$34,112', trend: '+15% vs last week' },
-    month: { amount: '$118,305', trend: '+12% vs last month' },
-    all: { amount: '$358,200', trend: 'Total revenue' },
-  };
-  const depMap = {
-    today: { amount: '$2,180', trend: '+15% vs yesterday' },
-    week: { amount: '$21,380', trend: '+9% vs last week' },
-    month: { amount: '$89,420', trend: '+12% vs last month' },
-    all: { amount: '$445,280', trend: 'Total deposits' },
-  };
-  const wdMap = {
-    today: { amount: '$1,640', trend: '+8% vs yesterday' },
-    week: { amount: '$15,640', trend: '+5% vs last week' },
-    month: { amount: '$67,890', trend: '+7% vs last month' },
-    all: { amount: '$334,120', trend: 'Total withdrawals' },
-  };
+  const { data, isLoading, error } = useDashboardMetrics();
+  const metrics = (data ?? {}) as any;
 
-  const activityDataByFilter = {
-    today: [45, 23, 67, 89, 156, 234, 189],
-    week: [320, 280, 410, 520, 680, 890, 750],
-    month: [1200, 980, 1450, 1780, 2100, 2650, 2300],
-    all: [4500, 3800, 5200, 6100, 7200, 8900, 8100],
-  };
+  const formatCurrency = (v: number | undefined) =>
+    `$${(v ?? 0).toLocaleString()}`;
+
+  if (isLoading) {
+    return (
+      <div className="h-64 flex items-center justify-center">Loading dashboard...</div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-64 flex items-center justify-center text-danger-red">
+        Failed to load dashboard
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -116,8 +111,9 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-text-secondary text-sm">Active Users</p>
-              <p className="text-2xl font-bold text-accent-green">247</p>
-              <p className="text-xs text-accent-green">+12% today</p>
+              <p className="text-2xl font-bold text-accent-green">
+                {metrics.online ?? 0}
+              </p>
             </div>
             <FontAwesomeIcon
               icon={faUsers}
@@ -132,7 +128,7 @@ export default function Dashboard() {
               <p className="text-text-secondary text-sm">Revenue</p>
               <div className="flex items-center gap-2 mb-1">
                 <p className="text-2xl font-bold text-accent-yellow">
-                  {revMap[revFilter].amount}
+                  {formatCurrency(metrics.revenue?.[revFilter]?.amount)}
                 </p>
                 <select
                   value={revFilter}
@@ -148,7 +144,7 @@ export default function Dashboard() {
                 </select>
               </div>
               <p className="text-xs text-accent-yellow">
-                {revMap[revFilter].trend}
+                {metrics.revenue?.[revFilter]?.trend ?? ''}
               </p>
             </div>
             <FontAwesomeIcon
@@ -162,8 +158,14 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-text-secondary text-sm">Open Tables</p>
-              <p className="text-2xl font-bold text-accent-blue">18</p>
-              <p className="text-xs text-text-secondary">6 full</p>
+              <p className="text-2xl font-bold text-accent-blue">
+                {metrics.tables?.open ?? metrics.tables ?? 0}
+              </p>
+              {metrics.tables?.full !== undefined && (
+                <p className="text-xs text-text-secondary">
+                  {metrics.tables.full} full
+                </p>
+              )}
             </div>
             <FontAwesomeIcon
               icon={faTableCells}
@@ -176,8 +178,14 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-text-secondary text-sm">Tournaments</p>
-              <p className="text-2xl font-bold">5</p>
-              <p className="text-xs text-text-secondary">3 running</p>
+              <p className="text-2xl font-bold">
+                {metrics.tournaments?.total ?? metrics.tournaments ?? 0}
+              </p>
+              {metrics.tournaments?.running !== undefined && (
+                <p className="text-xs text-text-secondary">
+                  {metrics.tournaments.running} running
+                </p>
+              )}
             </div>
             <FontAwesomeIcon
               icon={faTrophy}
@@ -192,7 +200,7 @@ export default function Dashboard() {
               <p className="text-text-secondary text-sm">Deposits</p>
               <div className="flex items-center gap-2 mb-1">
                 <p className="text-2xl font-bold text-accent-green">
-                  {depMap[depFilter].amount}
+                  {formatCurrency(metrics.deposits?.[depFilter]?.amount)}
                 </p>
                 <select
                   value={depFilter}
@@ -208,7 +216,7 @@ export default function Dashboard() {
                 </select>
               </div>
               <p className="text-xs text-accent-green">
-                {depMap[depFilter].trend}
+                {metrics.deposits?.[depFilter]?.trend ?? ''}
               </p>
             </div>
             <FontAwesomeIcon
@@ -224,7 +232,7 @@ export default function Dashboard() {
               <p className="text-text-secondary text-sm">Withdrawals</p>
               <div className="flex items-center gap-2 mb-1">
                 <p className="text-2xl font-bold text-danger-red">
-                  {wdMap[wdFilter].amount}
+                  {formatCurrency(metrics.withdrawals?.[wdFilter]?.amount)}
                 </p>
                 <select
                   value={wdFilter}
@@ -239,7 +247,9 @@ export default function Dashboard() {
                   <option value="all">All-Time</option>
                 </select>
               </div>
-              <p className="text-xs text-danger-red">{wdMap[wdFilter].trend}</p>
+              <p className="text-xs text-danger-red">
+                {metrics.withdrawals?.[wdFilter]?.trend ?? ''}
+              </p>
             </div>
             <FontAwesomeIcon
               icon={faArrowUp}
@@ -252,20 +262,12 @@ export default function Dashboard() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card title="Player Activity (24h)">
-          <ActivityChart data={activityDataByFilter[revFilter]} />
+          <ActivityChart data={metrics.activity?.[revFilter] ?? []} />
         </Card>
         <Card title="Revenue Breakdown">
           <RevenueDonut
-            filter={revFilter}
-            onTooltipValues={(index, filter) => {
-              const values: Record<TimeFilter, [number, number, number]> = {
-                today: [5820, 2238, 889],
-                week: [22340, 8560, 3212],
-                month: [76890, 29340, 12075],
-                all: [234560, 89430, 34210],
-              };
-              return values[filter][index];
-            }}
+            data={metrics.revenueBreakdown?.[revFilter] ?? []}
+            values={metrics.revenueValues?.[revFilter] ?? []}
           />
         </Card>
       </div>

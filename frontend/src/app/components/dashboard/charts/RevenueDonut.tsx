@@ -4,25 +4,14 @@ import { useMemo } from 'react';
 import { useChart } from '@/lib/useChart';
 import type { ChartConfiguration, TooltipItem } from 'chart.js';
 
-type TimeFilter = 'today' | 'week' | 'month' | 'all';
+interface RevenueDonutProps {
+  /** Percentages for cash games, tournaments, rake */
+  data: number[];
+  /** Raw values for tooltip display */
+  values?: number[];
+}
 
-export default function RevenueDonut({
-  filter,
-  onTooltipValues,
-}: {
-  filter: TimeFilter;
-  onTooltipValues?: (index: number, filter: TimeFilter) => number;
-}) {
-  const chartData = useMemo(() => {
-    const map = {
-      today: [65, 25, 10],
-      week: [68, 22, 10],
-      month: [65, 25, 10],
-      all: [66, 25, 9],
-    };
-    return map[filter];
-  }, [filter]);
-
+export default function RevenueDonut({ data, values = [] }: RevenueDonutProps) {
   const config: ChartConfiguration<'doughnut'> = useMemo(
     () => ({
       type: 'doughnut',
@@ -30,7 +19,7 @@ export default function RevenueDonut({
         labels: ['Cash Games', 'Tournaments', 'Rake'],
         datasets: [
           {
-            data: chartData,
+            data,
             backgroundColor: [
               'var(--color-accent-green)',
               'var(--color-accent-yellow)',
@@ -56,8 +45,7 @@ export default function RevenueDonut({
             callbacks: {
               label: (ctx: TooltipItem<'doughnut'>) => {
                 const pct = ctx.parsed as number;
-                const idx = ctx.dataIndex;
-                const val = onTooltipValues ? onTooltipValues(idx, filter) : 0;
+                const val = values[ctx.dataIndex] ?? 0;
                 return `${ctx.label}: ${pct}% ($${val.toLocaleString()})`;
               },
             },
@@ -65,7 +53,7 @@ export default function RevenueDonut({
         },
       },
     }),
-    [chartData, filter, onTooltipValues],
+    [data, values],
   );
 
   const { ref, ready } = useChart(config, [config]);
