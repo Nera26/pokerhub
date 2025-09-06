@@ -1,9 +1,10 @@
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import StatusPill from '@/app/components/dashboard/transactions/StatusPill';
-import DepositTable from '@/app/components/dashboard/transactions/DepositTable';
-import WithdrawalTable from '@/app/components/dashboard/transactions/WithdrawalTable';
+import RequestTable from '@/app/components/dashboard/transactions/RequestTable';
 import TransactionHistory from '@/app/components/dashboard/transactions/TransactionHistory';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faImage, faComment } from '@fortawesome/free-solid-svg-icons';
 import type {
   DepositReq,
   WithdrawalReq,
@@ -24,7 +25,7 @@ describe('transaction components', () => {
     expect(screen.getByText('Pending')).toBeInTheDocument();
   });
 
-  it('handles DepositTable actions', async () => {
+  it('handles deposit request columns and actions', async () => {
     const deposits: DepositReq[] = [
       {
         id: '1',
@@ -43,13 +44,54 @@ describe('transaction components', () => {
     const receipt = jest.fn();
     const user = userEvent.setup();
     render(
-      <DepositTable
-        deposits={deposits}
-        onApprove={approve}
-        onReject={reject}
-        onAddComment={comment}
-        onViewReceipt={receipt}
+      <RequestTable
+        title="Deposits"
+        rows={deposits}
+        columns={[
+          { label: 'Player', render: (d) => <span>{d.user}</span> },
+          { label: 'Amount', render: (d) => <span>${d.amount}</span> },
+          { label: 'Method', render: (d) => d.method },
+          { label: 'Date', render: (d) => <span>{d.date}</span> },
+          {
+            label: 'Receipt',
+            render: (d) => (
+              <button
+                onClick={() => receipt(d.receiptUrl)}
+                title="View Receipt"
+                aria-label="View receipt"
+              >
+                <FontAwesomeIcon icon={faImage} />
+              </button>
+            ),
+          },
+        ]}
+        actions={[
+          {
+            label: 'Approve',
+            onClick: (d) => approve(d.id),
+            className: 'approve',
+          },
+          {
+            label: 'Reject',
+            onClick: (d) => reject(d.id),
+            className: 'reject',
+          },
+          {
+            icon: faComment,
+            onClick: (d) => comment(d.id),
+            className: 'comment',
+            title: 'Add Comment',
+            ariaLabel: 'Add comment',
+          },
+        ]}
       />,
+    );
+    ['Player', 'Amount', 'Method', 'Date', 'Receipt', 'Status', 'Action'].forEach(
+      (header) => {
+        expect(
+          screen.getByRole('columnheader', { name: header }),
+        ).toBeInTheDocument();
+      },
     );
     const depositUser = await screen.findByText('User');
     expect(depositUser.closest('tr')).toHaveAttribute('data-index', '0');
@@ -71,7 +113,7 @@ describe('transaction components', () => {
     expect(receipt).toHaveBeenCalled();
   });
 
-  it('handles WithdrawalTable actions', async () => {
+  it('handles withdrawal request columns and actions', async () => {
     const withdrawals: WithdrawalReq[] = [
       {
         id: 'w1',
@@ -89,11 +131,36 @@ describe('transaction components', () => {
     const reject = jest.fn();
     const user = userEvent.setup();
     render(
-      <WithdrawalTable
-        withdrawals={withdrawals}
-        onApprove={approve}
-        onReject={reject}
+      <RequestTable
+        title="Withdrawals"
+        rows={withdrawals}
+        columns={[
+          { label: 'Player', render: (w) => <span>{w.user}</span> },
+          { label: 'Amount', render: (w) => <span>${w.amount}</span> },
+          { label: 'Bank Info', render: (w) => <span>{w.bank}</span> },
+          { label: 'Date', render: (w) => <span>{w.date}</span> },
+          { label: 'Comment', render: (w) => <span>{w.comment}</span> },
+        ]}
+        actions={[
+          {
+            label: 'Approve',
+            onClick: (w) => approve(w.id),
+            className: 'approve',
+          },
+          {
+            label: 'Reject',
+            onClick: (w) => reject(w.id),
+            className: 'reject',
+          },
+        ]}
       />,
+    );
+    ['Player', 'Amount', 'Bank Info', 'Date', 'Comment', 'Status', 'Action'].forEach(
+      (header) => {
+        expect(
+          screen.getByRole('columnheader', { name: header }),
+        ).toBeInTheDocument();
+      },
     );
     const withdrawalUser = await screen.findByText('User');
     expect(withdrawalUser.closest('tr')).toHaveAttribute('data-index', '0');

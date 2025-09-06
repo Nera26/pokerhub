@@ -4,7 +4,12 @@ import { useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUniversity, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import {
+  faUniversity,
+  faSpinner,
+  faImage,
+  faComment,
+} from '@fortawesome/free-solid-svg-icons';
 import { TransactionTab } from './types';
 
 import Modal from '../ui/Modal';
@@ -12,8 +17,7 @@ import ToastNotification from '../ui/ToastNotification';
 import ManageBalanceModal from '../modals/ManageBalanceModal';
 import RejectionModal from '../modals/RejectionModal';
 import IBANManagerModal from '../modals/IBANManagerModal';
-import DepositTable from './transactions/DepositTable';
-import WithdrawalTable from './transactions/WithdrawalTable';
+import RequestTable from './transactions/RequestTable';
 import TransactionHistory from './transactions/TransactionHistory';
 import type { DepositReq, WithdrawalReq, Txn } from './transactions/types';
 import useRenderCount from '@/hooks/useRenderCount';
@@ -461,12 +465,76 @@ export default function BalanceTransactions() {
       ) : deposits.length === 0 ? (
         <p>No pending deposits.</p>
       ) : (
-        <DepositTable
-          deposits={deposits}
-          onApprove={approveDeposit}
-          onReject={rejectDeposit}
-          onAddComment={addComment}
-          onViewReceipt={openReceipt}
+        <RequestTable
+          title="Deposit Requests"
+          rows={deposits}
+          columns={[
+            {
+              label: 'Player',
+              render: (d) => (
+                <div className="flex items-center gap-2">
+                  <Image
+                    src={d.avatar}
+                    alt={d.user}
+                    width={32}
+                    height={32}
+                    className="w-8 h-8 rounded-full"
+                  />
+                  <span>{d.user}</span>
+                </div>
+              ),
+            },
+            {
+              label: 'Amount',
+              render: (d) => (
+                <span className="font-semibold text-accent-green">
+                  ${d.amount}
+                </span>
+              ),
+            },
+            { label: 'Method', render: (d) => d.method },
+            {
+              label: 'Date',
+              render: (d) => (
+                <span className="text-text-secondary">{d.date}</span>
+              ),
+            },
+            {
+              label: 'Receipt',
+              render: (d) => (
+                <button
+                  onClick={() => openReceipt(d.receiptUrl)}
+                  className="text-accent-blue hover:brightness-110"
+                  title="View Receipt"
+                  aria-label="View receipt"
+                >
+                  <FontAwesomeIcon icon={faImage} />
+                </button>
+              ),
+            },
+          ]}
+          actions={[
+            {
+              label: 'Approve',
+              onClick: (d) => approveDeposit(d.id),
+              className:
+                'bg-accent-green hover:brightness-110 px-2 py-1 rounded text-xs font-semibold',
+            },
+            {
+              label: 'Reject',
+              onClick: (d) => rejectDeposit(d.id),
+              className:
+                'bg-danger-red hover:bg-red-600 px-2 py-1 rounded text-xs font-semibold',
+            },
+            {
+              icon: faComment,
+              onClick: (d) => addComment(d.id),
+              className:
+                'bg-accent-blue hover:brightness-110 px-2 py-1 rounded text-xs',
+              title: 'Add Comment',
+              ariaLabel: 'Add comment',
+            },
+          ]}
         />
       )}
 
@@ -481,10 +549,69 @@ export default function BalanceTransactions() {
       ) : withdrawals.length === 0 ? (
         <p>No pending withdrawals.</p>
       ) : (
-        <WithdrawalTable
-          withdrawals={withdrawals}
-          onApprove={approveWithdrawal}
-          onReject={rejectWithdrawal}
+        <RequestTable
+          title="Withdrawal Requests"
+          rows={withdrawals}
+          columns={[
+            {
+              label: 'Player',
+              render: (w) => (
+                <div className="flex items-center gap-2">
+                  <Image
+                    src={w.avatar}
+                    alt={w.user}
+                    width={32}
+                    height={32}
+                    className="w-8 h-8 rounded-full"
+                  />
+                  <span>{w.user}</span>
+                </div>
+              ),
+            },
+            {
+              label: 'Amount',
+              render: (w) => (
+                <span className="font-semibold text-danger-red">
+                  ${w.amount}
+                </span>
+              ),
+            },
+            {
+              label: 'Bank Info',
+              render: (w) => (
+                <div className="text-xs">
+                  <div>{w.bank}</div>
+                  <div className="text-text-secondary">{w.masked}</div>
+                </div>
+              ),
+            },
+            {
+              label: 'Date',
+              render: (w) => (
+                <span className="text-text-secondary">{w.date}</span>
+              ),
+            },
+            {
+              label: 'Comment',
+              render: (w) => (
+                <span className="text-text-secondary">{w.comment}</span>
+              ),
+            },
+          ]}
+          actions={[
+            {
+              label: 'Approve',
+              onClick: (w) => approveWithdrawal(w.id),
+              className:
+                'bg-accent-green hover:brightness-110 px-2 py-1 rounded text-xs font-semibold',
+            },
+            {
+              label: 'Reject',
+              onClick: (w) => rejectWithdrawal(w.id),
+              className:
+                'bg-danger-red hover:bg-red-600 px-2 py-1 rounded text-xs font-semibold',
+            },
+          ]}
         />
       )}
 
