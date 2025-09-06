@@ -1,10 +1,8 @@
 /**
- * @deprecated This snippet shows early collusion-detection heuristics.
- * It originated in `docs/archive/analytics-collusion.ts` as part of the
- * 2021 analytics prototype, moved to `docs/deprecated` after the 2024 pipeline
- * overhaul, and now lives in `/deprecated` for long-term reference.
+ * Legacy collusion detection heuristics from the 2021 analytics prototype.
+ * Archived for historical reference after the 2024 pipeline overhaul.
  */
-import { detectChipDump } from '../shared/analytics/collusion';
+import { detectChipDump } from '../../shared/analytics/collusion';
 
 interface PlayerSession {
   userId: string;
@@ -17,16 +15,10 @@ interface Transfer {
   amount: number;
 }
 
-/**
- * @deprecated Legacy collusion heuristics retained for reference.
- */
 export function sharedIp(a: PlayerSession, b: PlayerSession): boolean {
   return a.ips.some((ip) => b.ips.includes(ip));
 }
 
-/**
- * @deprecated Legacy collusion heuristic retained for reference.
- */
 export function isLikelyCollusion(
   a: PlayerSession,
   b: PlayerSession,
