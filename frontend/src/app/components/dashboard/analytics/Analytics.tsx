@@ -1,8 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faDownload, faFilter } from '@fortawesome/free-solid-svg-icons';
+import { faDownload, faFilter, faTrophy } from '@fortawesome/free-solid-svg-icons';
 
 import SearchBar from './SearchBar';
 import QuickStats from './QuickStats';
@@ -15,6 +16,8 @@ import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { useAuditSummary } from '@/hooks/useAuditSummary';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import CenteredMessage from '@/components/CenteredMessage';
+import ToastNotification from '../../ui/ToastNotification';
+import { rebuildLeaderboard } from '@/lib/api/leaderboard';
 import type { AuditLogEntry, AuditLogType } from '@shared/types';
 
 export default function Analytics() {
@@ -36,6 +39,22 @@ export default function Analytics() {
   const logs = data?.logs ?? [];
   const { data: summary } = useAuditSummary();
   const { data: metrics, isLoading: metricsLoading } = useDashboardMetrics();
+
+  const [toast, setToast] = useState<{
+    msg: string;
+    type: 'success' | 'error';
+    open: boolean;
+  }>({ msg: '', type: 'success', open: false });
+  const notify = (
+    msg: string,
+    type: 'success' | 'error' = 'success',
+  ) => setToast({ msg, type, open: true });
+
+  const rebuild = useMutation({
+    mutationFn: () => rebuildLeaderboard(),
+    onSuccess: () => notify('Leaderboard rebuild started'),
+    onError: () => notify('Failed to rebuild leaderboard', 'error'),
+  });
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
@@ -127,6 +146,13 @@ export default function Analytics() {
             <FontAwesomeIcon icon={faFilter} className="mr-2" />
             Filter
           </button>
+          <button
+            onClick={() => rebuild.mutate()}
+            className="bg-accent-green hover:bg-green-600 px-4 py-2 rounded-xl font-semibold text-white flex items-center gap-2"
+          >
+            <FontAwesomeIcon icon={faTrophy} />
+            Rebuild Leaderboard
+          </button>
         </div>
       </section>
 
@@ -186,6 +212,13 @@ export default function Analytics() {
       />
 
       <DetailModal row={showDetail} onClose={() => setShowDetail(null)} />
+
+      <ToastNotification
+        message={toast.msg}
+        type={toast.type}
+        isOpen={toast.open}
+        onClose={() => setToast((t) => ({ ...t, open: false }))}
+      />
     </div>
   );
 }

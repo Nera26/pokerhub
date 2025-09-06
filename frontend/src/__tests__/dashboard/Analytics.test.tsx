@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import Analytics from '@/app/components/dashboard/analytics/Analytics';
 
@@ -49,6 +50,13 @@ jest.mock('@/hooks/useDashboardMetrics', () => ({
   useDashboardMetrics: () => dashboardMetricsMock(),
 }));
 
+function renderWithClient(ui: React.ReactElement) {
+  const client = new QueryClient();
+  return render(
+    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
+  );
+}
+
 beforeEach(() => {
   dashboardMetricsMock.mockReturnValue({
     data: { online: 0, revenue: 0, activity: [1, 2, 3, 4, 5, 6, 7], errors: [1, 1, 1, 1] },
@@ -58,7 +66,7 @@ beforeEach(() => {
 
 describe('Analytics filtering', () => {
   it('filters logs by search text', async () => {
-    render(<Analytics />);
+    renderWithClient(<Analytics />);
     const user = userEvent.setup();
     const searchInput = screen.getByPlaceholderText(
       /search by description, user, or event type/i,
@@ -79,7 +87,7 @@ describe('Analytics filtering', () => {
   });
 
   it('filters logs by type', async () => {
-    render(<Analytics />);
+    renderWithClient(<Analytics />);
     const user = userEvent.setup();
     const typeSelect = screen.getByRole('combobox');
 
@@ -98,7 +106,7 @@ describe('Analytics filtering', () => {
 describe('dashboard metrics charts', () => {
   it('shows loading state', () => {
     dashboardMetricsMock.mockReturnValue({ data: undefined, isLoading: true });
-    render(<Analytics />);
+    renderWithClient(<Analytics />);
     expect(screen.getAllByText(/loading metrics/i)).toHaveLength(2);
     expect(document.querySelectorAll('canvas')).toHaveLength(0);
   });
@@ -108,7 +116,7 @@ describe('dashboard metrics charts', () => {
       data: { online: 0, revenue: 0, activity: [], errors: [] },
       isLoading: false,
     });
-    render(<Analytics />);
+    renderWithClient(<Analytics />);
     expect(screen.getAllByText(/no data/i)).toHaveLength(2);
     expect(document.querySelectorAll('canvas')).toHaveLength(0);
   });
@@ -118,7 +126,7 @@ describe('dashboard metrics charts', () => {
       data: { online: 0, revenue: 0, activity: [1,2,3,4,5,6,7], errors: [1,2,3,4] },
       isLoading: false,
     });
-    render(<Analytics />);
+    renderWithClient(<Analytics />);
     expect(document.querySelectorAll('canvas')).toHaveLength(2);
     await screen.findByRole('img', { name: /activity/i });
   });
