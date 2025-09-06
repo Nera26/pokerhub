@@ -85,12 +85,12 @@ describe('TournamentService algorithms', () => {
     );
   });
 
-  describe('registration flow', () => {
-    it('registers and withdraws a player', async () => {
+  describe('seat assignment flow', () => {
+    it('joins and withdraws a player', async () => {
       tablesRepo.find.mockResolvedValue([
         { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
       ]);
-      const seat = await service.register('t1', 'u1');
+      const seat = await service.join('t1', 'u1');
       expect(wallet.reserve).toHaveBeenCalledWith('u1', 100, 't1', 'USD');
       expect(events.emit).toHaveBeenCalledWith('wallet.reserve', {
         accountId: 'u1',
