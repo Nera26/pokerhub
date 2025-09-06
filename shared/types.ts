@@ -41,6 +41,9 @@ export {
   DepositDecisionRequestSchema,
   BankReconciliationEntrySchema,
   BankReconciliationRequestSchema,
+  IbanResponseSchema,
+  IbanHistoryEntrySchema,
+  IbanHistoryResponseSchema,
 } from '../backend/src/schemas/wallet';
 export type {
   BankTransferDepositRequest,
@@ -51,6 +54,9 @@ export type {
   DepositDecisionRequest,
   BankReconciliationEntry,
   BankReconciliationRequest,
+  IbanResponse,
+  IbanHistoryEntry,
+  IbanHistoryResponse,
 } from '../backend/src/schemas/wallet';
 
 export {

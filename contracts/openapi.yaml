@@ -557,6 +557,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PendingTransactionsResponse'
+  /wallet/iban:
+    get:
+      summary: Get current deposit IBAN
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current IBAN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IbanResponse'
+  /wallet/iban/history:
+    get:
+      summary: Get IBAN change history
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: IBAN change history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IbanHistoryResponse'
   /wallet/provider/callback:
     post:
       summary: Payment provider callback
@@ -1920,6 +1944,50 @@ components:
             $ref: '#/components/schemas/BankReconciliationEntry'
       required:
         - entries
+    IbanResponse:
+      type: object
+      properties:
+        iban:
+          type: string
+        masked:
+          type: string
+        holder:
+          type: string
+        instructions:
+          type: string
+      required:
+        - iban
+        - masked
+        - holder
+        - instructions
+    IbanHistoryEntry:
+      type: object
+      properties:
+        date:
+          type: string
+        oldIban:
+          type: string
+        newIban:
+          type: string
+        by:
+          type: string
+        notes:
+          type: string
+      required:
+        - date
+        - oldIban
+        - newIban
+        - by
+        - notes
+    IbanHistoryResponse:
+      type: object
+      properties:
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/IbanHistoryEntry'
+      required:
+        - history
     CreateUserRequest:
       type: object
       properties:

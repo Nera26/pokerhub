@@ -26,6 +26,7 @@ import { AdminDepositsController } from '../routes/admin-deposits.controller';
 import { AdminWithdrawalsController } from '../routes/admin-withdrawals.controller';
 import { BankReconciliationController } from '../routes/bank-reconciliation.controller';
 import { BankReconciliationService } from './bank-reconciliation.service';
+import { WalletIbanController } from '../routes/wallet-iban.controller';
 
 @Injectable()
 class PayoutWorker implements OnModuleInit {
@@ -81,6 +82,7 @@ class PendingDepositWorker implements OnModuleInit {
     AdminDepositsController,
     AdminWithdrawalsController,
     BankReconciliationController,
+    WalletIbanController,
   ],
   exports: [WalletService, KycService, SettlementService, BankReconciliationService],
 })
