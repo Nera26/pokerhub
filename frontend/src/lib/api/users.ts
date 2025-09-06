@@ -60,22 +60,3 @@ export async function fetchUsers({
   );
 }
 
-const TransactionEntrySchema = z.object({
-  date: z.string(),
-  action: z.string(),
-  amount: z.number(),
-  performedBy: z.string(),
-  notes: z.string(),
-  status: z.enum(['Completed', 'Pending', 'Rejected']),
-});
-
-export async function fetchUserTransactions(
-  userId: number,
-  { signal }: { signal?: AbortSignal } = {},
-) {
-  return apiClient(
-    `/api/admin/users/${userId}/transactions`,
-    z.array(TransactionEntrySchema),
-    { signal },
-  );
-}

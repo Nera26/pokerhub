@@ -1,10 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import UserManager from '@/app/components/dashboard/UserManager';
-import {
-  fetchUsers,
-  fetchUserTransactions,
-} from '@/lib/api/users';
+import { fetchUsers } from '@/lib/api/users';
 import { fetchPendingWithdrawals } from '@/lib/api/withdrawals';
 
 jest.mock('@/lib/api/users', () => ({
@@ -12,7 +9,6 @@ jest.mock('@/lib/api/users', () => ({
   updateUser: jest.fn(),
   toggleUserBan: jest.fn(),
   fetchUsers: jest.fn(),
-  fetchUserTransactions: jest.fn(),
 }));
 
 jest.mock('@/lib/api/withdrawals', () => ({
@@ -39,7 +35,6 @@ describe('UserManager component states', () => {
   beforeEach(() => {
     (fetchUsers as jest.Mock).mockReset();
     (fetchPendingWithdrawals as jest.Mock).mockReset();
-    (fetchUserTransactions as jest.Mock).mockReset();
   });
 
   it('shows loading state', () => {
@@ -96,7 +91,6 @@ describe('UserManager component states', () => {
         avatar: 'https://example.com/a.png',
       },
     ]);
-    (fetchUserTransactions as jest.Mock).mockResolvedValueOnce([]);
     renderWithClient(<UserManager />);
     await waitFor(() =>
       expect(
