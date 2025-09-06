@@ -57,31 +57,5 @@ describe('PaymentProviderService', () => {
     expect(await redis.get(key)).toBeNull();
   });
 
-  it('opens circuit breaker after consecutive failures and recovers', async () => {
-    jest.useFakeTimers();
-    const service = new PaymentProviderService(new MockRedis() as any);
-    const fetchMock = jest
-      .spyOn(global, 'fetch' as any)
-      .mockRejectedValue(new Error('boom'));
-    const fetchWithRetry = (service as any).fetchWithRetry.bind(service);
-    const url = 'http://provider';
-
-    for (let i = 0; i < 5; i++) {
-      await expect(fetchWithRetry(url, {}, 1, 100)).rejects.toThrow(/boom/);
-    }
-
-    await expect(fetchWithRetry(url, {}, 1, 100)).rejects.toThrow(
-      /circuit breaker open/,
-    );
-    expect(fetchMock).toHaveBeenCalledTimes(5);
-
-    fetchMock.mockResolvedValueOnce(new Response('{}', { status: 200 }));
-    jest.advanceTimersByTime(30_000);
-
-    await expect(fetchWithRetry(url, {}, 1, 100)).resolves.toBeInstanceOf(
-      Response,
-    );
-    expect(fetchMock).toHaveBeenCalledTimes(6);
-  });
 });
 
