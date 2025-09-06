@@ -25,8 +25,7 @@ export class TableBalancerService {
     this.defaultAvoidWithin =
       this.config.get<number>('tournament.avoidWithin') ??
       parseInt(
-        process.env.TOURNAMENT_AVOID_WITHIN ??
-          DEFAULT_AVOID_WITHIN.toString(),
+        process.env.TOURNAMENT_AVOID_WITHIN ?? DEFAULT_AVOID_WITHIN.toString(),
         10,
       );
   }
@@ -73,7 +72,8 @@ export class TableBalancerService {
         }
       } else {
         recentlyMoved =
-          this.localRecentlyMoved.get(tournamentId) ?? new Map<string, number>();
+          this.localRecentlyMoved.get(tournamentId) ??
+          new Map<string, number>();
       }
 
       const updated = new Map<string, number>();
@@ -116,5 +116,3 @@ export class TableBalancerService {
     return false;
   }
 }
-
-export default TableBalancerService;
