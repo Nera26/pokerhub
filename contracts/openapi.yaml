@@ -1261,6 +1261,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserProfile'
+  /tiers:
+    get:
+      summary: Get tier definitions
+      responses:
+        '200':
+          description: Tier definitions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TiersResponse'
   /users:
     post:
       summary: Create user
@@ -2128,6 +2138,24 @@ components:
         - bio
         - experience
         - balance
+    Tier:
+      type: object
+      properties:
+        name:
+          type: string
+        min:
+          type: integer
+        max:
+          type: integer
+          nullable: true
+      required:
+        - name
+        - min
+        - max
+    TiersResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/Tier'
     GameAction:
       oneOf:
         - $ref: '#/components/schemas/PostBlindAction'
