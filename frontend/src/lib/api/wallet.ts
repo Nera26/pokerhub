@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { apiClient } from './client';
 import {
   AmountSchema,
-  WithdrawRequestSchema,
-  DepositRequestSchema,
+  WithdrawSchema,
+  DepositSchema,
   BankTransferDepositRequestSchema,
   BankTransferDepositResponseSchema,
   WalletStatusResponseSchema,
@@ -93,7 +93,7 @@ export function withdraw(
   currency: string,
   opts: { signal?: AbortSignal } = {},
 ): Promise<WalletStatusResponse> {
-  const payload = WithdrawRequestSchema.parse({ amount, deviceId, currency });
+  const payload = WithdrawSchema.parse({ amount, deviceId, currency });
   return apiClient(
     `/api/wallet/${playerId}/withdraw`,
     WalletStatusResponseSchema,
@@ -112,7 +112,7 @@ export function deposit(
   currency: string,
   opts: { signal?: AbortSignal } = {},
 ): Promise<WalletStatusResponse> {
-  const payload = DepositRequestSchema.parse({ amount, deviceId, currency });
+  const payload = DepositSchema.parse({ amount, deviceId, currency });
   return apiClient(
     `/api/wallet/${playerId}/deposit`,
     WalletStatusResponseSchema,
@@ -276,6 +276,24 @@ export function fetchTransactionsLog(
   return apiClient(`/api/admin/transactions`, z.array(TransactionLogEntrySchema), {
     signal: opts.signal,
   });
+}
+
+const BankAccountSchema = z.object({
+  accountNumber: z.string(),
+  tier: z.string(),
+  holder: z.string(),
+});
+export type BankAccount = z.infer<typeof BankAccountSchema>;
+
+export function fetchBankAccount(
+  playerId: string,
+  opts: { signal?: AbortSignal } = {},
+): Promise<BankAccount> {
+  return apiClient(
+    `/api/wallet/${playerId}/bank-account`,
+    BankAccountSchema,
+    { signal: opts.signal },
+  );
 }
 
 export function fetchIban(
