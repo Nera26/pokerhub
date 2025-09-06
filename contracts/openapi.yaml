@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.8.0
+  version: 2.9.0
 paths:
   /status:
     get:
@@ -1271,6 +1271,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TiersResponse'
+  /game-types:
+    get:
+      summary: List game types
+      responses:
+        '200':
+          description: Game types
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameTypeList'
   /users:
     post:
       summary: Create user
@@ -2156,6 +2166,13 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Tier'
+    GameType:
+      type: string
+      enum: [texas, omaha, allin, tournaments]
+    GameTypeList:
+      type: array
+      items:
+        $ref: '#/components/schemas/GameType'
     GameAction:
       oneOf:
         - $ref: '#/components/schemas/PostBlindAction'

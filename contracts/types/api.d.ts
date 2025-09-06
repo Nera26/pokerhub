@@ -1303,6 +1303,32 @@ export interface paths {
       };
     };
   };
+  "/tiers": {
+    /** Get tier definitions */
+    get: {
+      responses: {
+        /** @description Tier definitions */
+        200: {
+          content: {
+            "application/json": components["schemas"]["TiersResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/game-types": {
+    /** List game types */
+    get: {
+      responses: {
+        /** @description Game types */
+        200: {
+          content: {
+            "application/json": components["schemas"]["GameTypeList"];
+          };
+        };
+      };
+    };
+  };
   "/users": {
     /** Create user */
     post: {
@@ -1780,6 +1806,15 @@ export interface components {
       experience: number;
       balance: number;
     };
+    Tier: {
+      name: string;
+      min: number;
+      max: number | null;
+    };
+    TiersResponse: components["schemas"]["Tier"][];
+    /** @enum {string} */
+    GameType: "texas" | "omaha" | "allin" | "tournaments";
+    GameTypeList: components["schemas"]["GameType"][];
     GameAction: components["schemas"]["PostBlindAction"] | components["schemas"]["BetAction"] | components["schemas"]["RaiseAction"] | components["schemas"]["CallAction"] | components["schemas"]["CheckAction"] | components["schemas"]["FoldAction"] | components["schemas"]["NextAction"];
     GameStateDelta: {
       /** @enum {string} */

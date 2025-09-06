@@ -1,4 +1,13 @@
 import { z } from 'zod';
+import {
+  GameTypeSchema,
+  GameTypeListSchema,
+  type GameType,
+  type GameTypeList,
+} from '../backend/src/schemas/game-types';
+
+export { GameTypeSchema, GameTypeListSchema };
+export type { GameType, GameTypeList };
 
 export * from './wallet.schema';
 
@@ -38,6 +47,7 @@ export {
   UserProfileSchema,
 } from '../backend/src/schemas/users';
 export type { UserProfile } from '../backend/src/schemas/users';
+
 
 export { TierSchema, TiersSchema } from '../backend/src/schemas/tiers';
 export type { Tier, Tiers } from '../backend/src/schemas/tiers';
@@ -358,15 +368,6 @@ export type TournamentRegisterRequest = z.infer<
 export const TournamentWithdrawRequestSchema =
   TournamentRegisterRequestSchema;
 export type TournamentWithdrawRequest = TournamentRegisterRequest;
-
-// --- Table / Game Types ---
-export const GameTypeSchema = z.enum([
-  'texas',
-  'omaha',
-  'allin',
-  'tournaments',
-]);
-export type GameType = z.infer<typeof GameTypeSchema>;
 
 export const TableSchema = z.object({
   id: z.string(),
