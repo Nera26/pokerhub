@@ -1,6 +1,6 @@
 import dynamic from 'next/dynamic';
 
-const LeaderboardPage = dynamic(() => import('@/features/leaderboard'), {
+const LeaderboardPage = dynamic(() => import('@/features/site/leaderboard'), {
   loading: () => <div>Loading...</div>,
 });
 
