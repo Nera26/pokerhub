@@ -15,7 +15,7 @@ import { PaymentProviderService } from '../../src/wallet/payment-provider.servic
 import { KycService } from '../../src/wallet/kyc.service';
 import { SettlementService } from '../../src/wallet/settlement.service';
 import { WalletController } from '../../src/routes/wallet.controller';
-import { AdminDepositsController } from '../../src/routes/admin-deposits.controller';
+import AdminDepositsController from '../../src/routes/admin-deposits.controller';
 import { AuthGuard } from '../../src/auth/auth.guard';
 import { RateLimitGuard } from '../../src/routes/rate-limit.guard';
 import { SelfGuard } from '../../src/auth/self.guard';

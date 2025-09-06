@@ -3,7 +3,7 @@ import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 
-import { AdminDepositsController } from '../src/routes/admin-deposits.controller';
+import AdminDepositsController from '../src/routes/admin-deposits.controller';
 import { WalletService } from '../src/wallet/wallet.service';
 import { SessionService } from '../src/session/session.service';
 import { AuthGuard } from '../src/auth/auth.guard';
