@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import Modal from '../ui/Modal';
+import ConfirmModal from '../ui/ConfirmModal';
 
 const schema = z.object({
   reason: z.string().trim().min(1, 'Reason is required'),
@@ -45,8 +45,13 @@ export default function RejectionModal({
   };
 
   return (
-    <Modal isOpen={open} onClose={handleClose}>
-      <h3 className="text-lg font-bold mb-4">{title}</h3>
+    <ConfirmModal
+      isOpen={open}
+      onClose={handleClose}
+      onConfirm={submit}
+      title={title}
+      confirmText="Confirm Rejection"
+    >
       <textarea
         {...register('reason')}
         placeholder="Enter reason for rejection (required)"
@@ -55,20 +60,6 @@ export default function RejectionModal({
       {errors.reason && (
         <p className="text-red-500 text-sm mt-1">{errors.reason.message}</p>
       )}
-      <div className="flex gap-3 mt-6">
-        <button
-          onClick={submit}
-          className="flex-1 bg-danger-red hover:bg-red-600 py-2 rounded-2xl font-semibold"
-        >
-          Confirm Rejection
-        </button>
-        <button
-          onClick={handleClose}
-          className="flex-1 bg-hover-bg hover:bg-gray-600 py-2 rounded-2xl font-semibold"
-        >
-          Cancel
-        </button>
-      </div>
-    </Modal>
+    </ConfirmModal>
   );
 }

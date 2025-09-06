@@ -1,18 +1,19 @@
 import { useState } from 'react';
 import { render, screen, act, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import Modal from '../Modal';
+import ConfirmModal from '../ConfirmModal';
 
-describe('Modal', () => {
+describe('ConfirmModal', () => {
   function Wrapper() {
     const [open, setOpen] = useState(false);
     return (
       <>
         <button onClick={() => setOpen(true)}>Open Modal</button>
-        <Modal isOpen={open} onClose={() => setOpen(false)}>
-          <button>First</button>
-          <button>Second</button>
-        </Modal>
+        <ConfirmModal
+          isOpen={open}
+          onClose={() => setOpen(false)}
+          onConfirm={() => setOpen(false)}
+        />
       </>
     );
   }
@@ -21,8 +22,8 @@ describe('Modal', () => {
     const user = userEvent.setup();
     render(<Wrapper />);
     await user.click(screen.getByRole('button', { name: 'Open Modal' }));
-    const first = await screen.findByRole('button', { name: 'First' });
-    const second = screen.getByRole('button', { name: 'Second' });
+    const first = await screen.findByRole('button', { name: 'Confirm' });
+    const second = screen.getByRole('button', { name: 'Cancel' });
     const opener = screen.getByRole('button', { name: 'Open Modal' });
 
     await user.tab();
