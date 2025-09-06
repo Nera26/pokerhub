@@ -3,7 +3,7 @@
 import { Table } from '@/hooks/useLobbyData';
 import LiveTableCard from './LiveTableCard';
 import useRenderCount from '@/hooks/useRenderCount';
-import { GameType } from '@/types/game-type';
+import type { GameType } from '@shared/types';
 import VirtualizedSection from '@/components/VirtualizedSection';
 
 export interface CashGameListProps {

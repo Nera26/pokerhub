@@ -1,5 +1,5 @@
 'use client';
-import { GameType } from '@/types/game-type';
+import type { GameType } from '@shared/types';
 
 interface GameTabsProps {
   gameType: GameType;

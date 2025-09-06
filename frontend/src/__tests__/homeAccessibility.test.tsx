@@ -7,7 +7,7 @@ import CashGameList from '@/app/components/home/CashGameList';
 import TournamentList from '@/components/TournamentList';
 import useVirtualizedList from '@/hooks/useVirtualizedList';
 import type { Table, Tournament } from '@/hooks/useLobbyData';
-import { GameType } from '@/types/game-type';
+import type { GameType } from '@shared/types';
 
 jest.mock('@/hooks/useVirtualizedList');
 jest.mock('next/navigation', () => ({
