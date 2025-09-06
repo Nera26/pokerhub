@@ -11,37 +11,8 @@ import {
   useNotifications,
   useMarkAllRead,
   useMarkRead,
-  type Notification,
   type NotificationType,
 } from '@/hooks/notifications';
-
-const initialNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'bonus',
-    title: 'Welcome Bonus Activated!',
-    message: 'Your $100 welcome bonus has been credited. Start playing now!',
-    timestamp: new Date(Date.now() - 2 * 60 * 1000),
-    read: false,
-  },
-  {
-    id: '2',
-    type: 'tournament',
-    title: 'Tournament Winner',
-    message:
-      'Congratulations! You finished 3rd in the Sunday Million tournament.',
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    read: true,
-  },
-  {
-    id: '3',
-    type: 'system',
-    title: 'System Maintenance',
-    message: 'Scheduled maintenance on July 1st from 2:00 AM to 4:00 AM UTC.',
-    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    read: false,
-  },
-];
 
 const filters: { label: string; value: NotificationType | 'all' }[] = [
   { label: 'All', value: 'all' },
@@ -56,10 +27,7 @@ export default function NotificationList() {
     data: notificationsData,
     isLoading: listLoading,
     error: listError,
-  } = useNotifications({
-    initialData: { notifications: initialNotifications },
-    refetchInterval: 20000,
-  });
+  } = useNotifications({ refetchInterval: 20000 });
   const notifications = notificationsData?.notifications ?? [];
 
   const [filter, setFilter] = useState<'all' | NotificationType>('all');
@@ -112,14 +80,14 @@ export default function NotificationList() {
 
       {listError && (
         <p className="mb-4 text-danger-red text-sm">
-          Failed to load latest notifications. Showing local data.
+          Failed to load notifications.
         </p>
       )}
 
       <div ref={listParentRef} className="max-h-[600px] overflow-auto">
         {filtered.length === 0 && !listLoading && (
           <p className="text-center text-text-secondary py-6">
-            No notifications in this category.
+            No notifications found.
           </p>
         )}
 
