@@ -404,82 +404,46 @@ export class TournamentService implements OnModuleInit {
       currency: string;
     };
   }> {
+    const { currency = 'USD' } = await this.getEntity(tournamentId);
+    let result: { seat?: Seat; walletEvent?: { accountId: string; amount: number; refId: string; currency: string } } = {};
+    const manager: any = this.seats.manager as any;
+    if (manager?.transaction) {
+      await manager.transaction(async (txManager: any) => {
+        result = await this.manageSeat(
+          action,
+          { tournamentId, userId, currency },
+          txManager,
+        );
+      });
+      return result;
+    }
+
+    return this.manageSeat(action, { tournamentId, userId, currency });
+  }
+
+  private async manageSeat(
+    action: 'join' | 'withdraw',
+    opts: { tournamentId: string; userId: string; currency: string },
+    txManager?: any,
+  ): Promise<{
+    seat?: Seat;
+    walletEvent?: {
+      accountId: string;
+      amount: number;
+      refId: string;
+      currency: string;
+    };
+  }> {
+    const { tournamentId, userId, currency } = opts;
     const t = await this.getEntity(tournamentId);
+    let seat: Seat | undefined;
     let walletEvent: {
       accountId: string;
       amount: number;
       refId: string;
       currency: string;
     } | undefined;
-    let seat: Seat | undefined;
-    const currency = t.currency ?? 'USD';
-    const manager: any = this.seats.manager as any;
-    if (manager?.transaction) {
-      await manager.transaction(async (txManager: any) => {
-        if (action === 'join') {
-          if (this.wallet) {
-            await this.wallet.reserve(userId, t.buyIn, tournamentId, currency);
-            walletEvent = {
-              accountId: userId,
-              amount: t.buyIn,
-              refId: tournamentId,
-              currency,
-            };
-          }
-          const tables = await txManager.find(Table, {
-            where: { tournament: { id: tournamentId } } as any,
-            relations: ['seats'],
-          });
-          let target = tables[0];
-          let min = tables[0]?.seats.length ?? 0;
-          for (const tbl of tables) {
-            if (tbl.seats.length < min) {
-              min = tbl.seats.length;
-              target = tbl;
-            }
-          }
-          const seatRepo = txManager.getRepository(Seat);
-          seat = seatRepo.create({
-            table: target,
-            user: { id: userId } as any,
-            position: target.seats.length,
-            lastMovedHand: 0,
-          });
-          try {
-            await seatRepo.save(seat);
-          } catch (err) {
-            if (this.wallet) {
-              await this.wallet.rollback(userId, t.buyIn, tournamentId, currency);
-              walletEvent = undefined;
-            }
-            throw err;
-          }
-        } else {
-          const seatRepo = txManager.getRepository(Seat);
-          const existing = await txManager.findOne(Seat, {
-            where: {
-              table: { tournament: { id: tournamentId } } as any,
-              user: { id: userId } as any,
-            },
-            relations: ['table', 'user'],
-          });
-          if (!existing) return;
-          if (this.wallet) {
-            await this.wallet.rollback(userId, t.buyIn, tournamentId, currency);
-            walletEvent = {
-              accountId: userId,
-              amount: t.buyIn,
-              refId: tournamentId,
-              currency,
-            };
-          }
-          await seatRepo.remove(existing);
-        }
-      });
-      return { seat, walletEvent };
-    }
 
-    // Fallback for tests/mocks without transaction support
     if (action === 'join') {
       if (this.wallet) {
         await this.wallet.reserve(userId, t.buyIn, tournamentId, currency);
@@ -490,10 +454,15 @@ export class TournamentService implements OnModuleInit {
           currency,
         };
       }
-      const tables = await this.tables.find({
-        where: { tournament: { id: tournamentId } } as any,
-        relations: ['seats'],
-      });
+      const tables = txManager
+        ? await txManager.find(Table, {
+            where: { tournament: { id: tournamentId } } as any,
+            relations: ['seats'],
+          })
+        : await this.tables.find({
+            where: { tournament: { id: tournamentId } } as any,
+            relations: ['seats'],
+          });
       let target = tables[0];
       let min = tables[0]?.seats.length ?? 0;
       for (const tbl of tables) {
@@ -502,14 +471,15 @@ export class TournamentService implements OnModuleInit {
           target = tbl;
         }
       }
-      seat = this.seats.create({
+      const seatRepo = txManager ? txManager.getRepository(Seat) : this.seats;
+      seat = seatRepo.create({
         table: target,
         user: { id: userId } as any,
         position: target.seats.length,
         lastMovedHand: 0,
       });
       try {
-        await this.seats.save(seat);
+        await seatRepo.save(seat);
       } catch (err) {
         if (this.wallet) {
           await this.wallet.rollback(userId, t.buyIn, tournamentId, currency);
@@ -517,29 +487,39 @@ export class TournamentService implements OnModuleInit {
         }
         throw err;
       }
-    } else {
-      const existing = await this.seats.findOne({
-        where: {
-          table: { tournament: { id: tournamentId } } as any,
-          user: { id: userId } as any,
-        },
-        relations: ['table', 'user'],
-      });
-      if (!existing) {
-        return {};
-      }
-      if (this.wallet) {
-        await this.wallet.rollback(userId, t.buyIn, tournamentId, currency);
-        walletEvent = {
-          accountId: userId,
-          amount: t.buyIn,
-          refId: tournamentId,
-          currency,
-        };
-      }
-      await this.seats.remove(existing);
+      return { seat, walletEvent };
     }
-    return { seat, walletEvent };
+
+    const seatRepo = txManager ? txManager.getRepository(Seat) : this.seats;
+    const existing = txManager
+      ? await txManager.findOne(Seat, {
+          where: {
+            table: { tournament: { id: tournamentId } } as any,
+            user: { id: userId } as any,
+          },
+          relations: ['table', 'user'],
+        })
+      : await this.seats.findOne({
+          where: {
+            table: { tournament: { id: tournamentId } } as any,
+            user: { id: userId } as any,
+          },
+          relations: ['table', 'user'],
+        });
+    if (!existing) {
+      return {};
+    }
+    if (this.wallet) {
+      await this.wallet.rollback(userId, t.buyIn, tournamentId, currency);
+      walletEvent = {
+        accountId: userId,
+        amount: t.buyIn,
+        refId: tournamentId,
+        currency,
+      };
+    }
+    await seatRepo.remove(existing);
+    return { walletEvent };
   }
 
   async balanceTournament(
