@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { logger } from '@/lib/logger';
 import type { GameFilter, ProfitLossFilter } from '@/types/filters';
@@ -11,6 +11,7 @@ import GameStatistics from '@/app/components/user/GameStatistics';
 import HistoryTabs from '@/app/components/user/HistoryTabs';
 import FilterDropdown from '@/app/components/user/FilterDropdown';
 import HistoryList from '@/app/components/user/HistoryList';
+import { fetchProfile } from '@/lib/api/profile';
 const ReplayModal = dynamic(() => import('@/app/components/user/ReplayModal'), {
   ssr: false,
 });
@@ -28,10 +29,19 @@ const EditProfileModal = dynamic(
 import ToastNotification from '@/app/components/ui/ToastNotification';
 
 export default function ProfilePage() {
-  const [userExp] = useState(3500);
+  const [userExp, setUserExp] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState<
     'game-history' | 'tournament-history' | 'transaction-history'
   >('game-history');
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchProfile({ signal: controller.signal })
+      .then((data) => setUserExp(data.experience))
+      .catch((err) => logger.error('Failed to fetch profile', err))
+      .finally(() => setLoading(false));
+    return () => controller.abort();
+  }, []);
   const defaultFilters = useMemo(
     () => ({
       gameType: 'any' as GameFilter,
@@ -101,6 +111,10 @@ export default function ProfilePage() {
     () => setToast((t) => ({ ...t, isOpen: false })),
     [],
   );
+
+  if (loading) {
+    return <p>Loading...</p>;
+  }
 
   return (
     <>
