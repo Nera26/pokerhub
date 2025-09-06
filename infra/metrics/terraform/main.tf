@@ -22,7 +22,6 @@ resource "google_bigquery_dataset" "ops_metrics" {
 resource "google_bigquery_table" "soak_trends" {
   dataset_id = google_bigquery_dataset.ops_metrics.dataset_id
   table_id   = "soak_trends"
-  schema     = file("../../analytics/soak_trends.schema.json")
 
   time_partitioning {
     type = "DAY"
