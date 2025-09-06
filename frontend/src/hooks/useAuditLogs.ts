@@ -16,7 +16,7 @@ async function fetchLogs({
   const baseUrl = getBaseUrl();
   try {
     return await handleResponse(
-      fetch(`${baseUrl}/api/analytics/logs`, { credentials: 'include', signal }),
+      fetch(`${baseUrl}/api/admin/audit-logs`, { credentials: 'include', signal }),
       AuditLogsResponseSchema,
     );
   } catch (err) {

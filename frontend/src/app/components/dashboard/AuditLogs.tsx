@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useMemo, useState, type CSSProperties, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,6 +12,9 @@ import {
   faShieldHalved,
   faFlag,
 } from '@fortawesome/free-solid-svg-icons';
+import { useAuditLogs } from '@/hooks/useAuditLogs';
+import { useAuditAlerts } from '@/hooks/useAuditAlerts';
+import type { AlertItem } from '@shared/types';
 
 // ----- Exact colors to match the HTML visual -----
 const COLOR = {
@@ -42,14 +45,6 @@ type AdminOverview = {
   loginTitle?: string;
 };
 
-type AlertItem = {
-  id: string;
-  severity: 'danger' | 'warning';
-  title: string;
-  body: string;
-  time: string;
-  resolved?: boolean;
-};
 
 // ----- Pill that NEVER inherits row text colors -----
 function StatusPill({ status }: { status: AuditStatus }) {
@@ -88,57 +83,24 @@ export default function AuditLogs() {
 
   const { date = '', action = '', performer = '', user = '' } = watch();
 
-  // rows (mirrors the HTML demo)
-  const [rows] = useState<AuditLogEntry[]>([
-    {
-      timestamp: '2024-01-15 18:45:32',
-      admin: 'SuperAdmin',
-      user: 'Mike_P',
-      action: 'Add Balance',
-      description: 'Added $500 to user account - Deposit approval',
-      status: 'Success',
-    },
-    {
-      timestamp: '2024-01-15 17:30:15',
-      admin: 'Admin_2',
-      user: 'Alex_R',
-      action: 'Withdraw Approval',
-      description: 'Approved withdrawal of $750 to Chase Bank ****1234',
-      status: 'Success',
-    },
-    {
-      timestamp: '2024-01-15 16:20:44',
-      admin: 'System',
-      user: '-',
-      action: 'New Table Created',
-      description: "Auto-created Table #45823 - NL Hold'em $1/$2",
-      status: 'Success',
-    },
-    {
-      timestamp: '2024-01-15 15:10:22',
-      admin: 'SuperAdmin',
-      user: 'BadPlayer_X',
-      action: 'User Ban',
-      description: 'Permanent ban - Multiple violations of ToS',
-      status: 'Success',
-    },
-    {
-      timestamp: '2024-01-15 14:55:18',
-      admin: 'Admin_2',
-      user: '-',
-      action: 'Setting Change',
-      description: 'Max Buy-in changed from $1000 to $2000',
-      status: 'Warning',
-    },
-    {
-      timestamp: '2024-01-15 13:22:07',
-      admin: 'System',
-      user: 'Sarah_K',
-      action: 'Remove Balance',
-      description: 'Failed withdrawal attempt - Insufficient funds',
-      status: 'Failed',
-    },
-  ]);
+  const {
+    data: logData,
+    isLoading: logsLoading,
+    error: logsError,
+  } = useAuditLogs();
+
+  const rows = useMemo<AuditLogEntry[]>(
+    () =>
+      (logData?.logs ?? []).map((l) => ({
+        timestamp: l.timestamp,
+        admin: l.user ?? '-',
+        user: l.user ?? '-',
+        action: l.type,
+        description: l.description,
+        status: l.type === 'Error' ? 'Failed' : 'Success',
+      })),
+    [logData],
+  );
 
   // sorting
   const [sortBy, setSortBy] = useState<'timestamp' | 'admin' | null>(null);
@@ -200,29 +162,22 @@ export default function AuditLogs() {
   ];
 
   // Security alerts (solid bars like your HTML screenshot)
-  const [alerts, setAlerts] = useState<AlertItem[]>([
-    {
-      id: 'a-1',
-      severity: 'danger',
-      title: 'Bank Account Mismatch',
-      body: 'User Mike_P attempted withdrawal to unverified bank account',
-      time: '2024-01-15 18:30:22',
-    },
-    {
-      id: 'a-2',
-      severity: 'warning',
-      title: 'Multiple Login Attempts',
-      body: '5 failed login attempts for user Alex_R from different IPs',
-      time: '2024-01-15 17:45:12',
-    },
-    {
-      id: 'a-3',
-      severity: 'danger',
-      title: 'Withdrawal Over Balance',
-      body: 'User Sarah_K attempted to withdraw $1,500 with only $750 balance',
-      time: '2024-01-15 16:22:45',
-    },
-  ]);
+  const {
+    data: alertsData,
+    isLoading: alertsLoading,
+    error: alertsError,
+  } = useAuditAlerts();
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  useEffect(() => {
+    if (alertsData) setAlerts(alertsData);
+  }, [alertsData]);
+
+  if (logsLoading || alertsLoading) {
+    return <div aria-label="loading">Loading...</div>;
+  }
+  if (logsError || alertsError) {
+    return <div role="alert">{(logsError || alertsError)?.message}</div>;
+  }
   const markResolved = (id: string) =>
     setAlerts((prev) =>
       prev.map((a) => (a.id === id ? { ...a, resolved: true } : a)),
@@ -493,7 +448,10 @@ export default function AuditLogs() {
           </h3>
 
           <div className="space-y-3">
-            {alerts.map((a) => {
+            {alerts.length === 0 ? (
+              <p className="text-text-secondary">No security alerts</p>
+            ) : (
+              alerts.map((a) => {
               const isDanger = a.severity === 'danger';
 
               // classes for tinted vs resolved
@@ -553,7 +511,8 @@ export default function AuditLogs() {
                   </div>
                 </div>
               );
-            })}
+              })
+            )}
           </div>
         </div>
       </section>

@@ -1174,6 +1174,32 @@ export interface paths {
       };
     };
   };
+  "/admin/audit-logs": {
+    /** Get audit logs */
+    get: {
+      responses: {
+        /** @description Audit logs */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AuditLogsResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/admin/security-alerts": {
+    /** Get security alerts */
+    get: {
+      responses: {
+        /** @description Security alerts */
+        200: {
+          content: {
+            "application/json": components["schemas"]["SecurityAlertsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/admin/messages": {
     /** List user messages */
     get: {
@@ -1539,6 +1565,16 @@ export interface components {
       errors: number;
       logins: number;
     };
+    AlertItem: {
+      id: string;
+      /** @enum {string} */
+      severity: "danger" | "warning";
+      title: string;
+      body: string;
+      time: string;
+      resolved?: boolean;
+    };
+    SecurityAlertsResponse: components["schemas"]["AlertItem"][];
     WithdrawalDecisionRequest: {
       comment: string;
     };

@@ -106,6 +106,15 @@ export const AuditSummarySchema = z.object({
   logins: z.number().int(),
 });
 export type AuditSummary = z.infer<typeof AuditSummarySchema>;
+
+export {
+  AlertItemSchema,
+  SecurityAlertsResponseSchema,
+} from '../backend/src/schemas/analytics';
+export type {
+  AlertItem,
+  SecurityAlertsResponse,
+} from '../backend/src/schemas/analytics';
 /** ---- Notifications ---- */
 export const NotificationTypeSchema = z.enum(['bonus', 'tournament', 'system']);
 export type NotificationType = z.infer<typeof NotificationTypeSchema>;
