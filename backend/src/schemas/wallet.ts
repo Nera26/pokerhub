@@ -172,3 +172,27 @@ export const BankReconciliationRequestSchema = z.object({
 export type BankReconciliationRequest = z.infer<
   typeof BankReconciliationRequestSchema
 >;
+
+export const IbanResponseSchema = z.object({
+  iban: z.string(),
+  masked: z.string(),
+  holder: z.string(),
+  instructions: z.string(),
+});
+export type IbanResponse = z.infer<typeof IbanResponseSchema>;
+
+export const IbanHistoryEntrySchema = z.object({
+  date: z.string(),
+  oldIban: z.string(),
+  newIban: z.string(),
+  by: z.string(),
+  notes: z.string(),
+});
+export type IbanHistoryEntry = z.infer<typeof IbanHistoryEntrySchema>;
+
+export const IbanHistoryResponseSchema = z.object({
+  history: z.array(IbanHistoryEntrySchema),
+});
+export type IbanHistoryResponse = z.infer<
+  typeof IbanHistoryResponseSchema
+>;

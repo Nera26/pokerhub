@@ -20,6 +20,10 @@ import {
   type PendingTransactionsResponse,
   type PendingDepositsResponse,
   type PendingWithdrawalsResponse,
+  IbanResponseSchema,
+  IbanHistoryResponseSchema,
+  type IbanResponse,
+  type IbanHistoryResponse,
 } from '@shared/types';
 
 /* istanbul ignore next */
@@ -234,4 +238,20 @@ export function rejectWithdrawal(
     body,
     signal: opts.signal,
   });
+}
+
+export function fetchIban(
+  opts: { signal?: AbortSignal } = {},
+): Promise<IbanResponse> {
+  return apiClient(`/api/wallet/iban`, IbanResponseSchema, { signal: opts.signal });
+}
+
+export function fetchIbanHistory(
+  opts: { signal?: AbortSignal } = {},
+): Promise<IbanHistoryResponse> {
+  return apiClient(
+    `/api/wallet/iban/history`,
+    IbanHistoryResponseSchema,
+    { signal: opts.signal },
+  );
 }

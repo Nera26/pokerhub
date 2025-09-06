@@ -590,6 +590,32 @@ export interface paths {
       };
     };
   };
+  "/wallet/iban": {
+    /** Get current deposit IBAN */
+    get: {
+      responses: {
+        /** @description Current IBAN */
+        200: {
+          content: {
+            "application/json": components["schemas"]["IbanResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/wallet/iban/history": {
+    /** Get IBAN change history */
+    get: {
+      responses: {
+        /** @description IBAN change history */
+        200: {
+          content: {
+            "application/json": components["schemas"]["IbanHistoryResponse"];
+          };
+        };
+      };
+    };
+  };
   "/wallet/provider/callback": {
     /** Payment provider callback */
     post: {
@@ -1200,7 +1226,11 @@ export interface paths {
   "/admin/withdrawals/{id}/confirm": {
     /** Confirm pending withdrawal */
     post: {
-      parameters: { path: { id: string } };
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
       responses: {
         /** @description Withdrawal confirmed */
         200: {
@@ -1214,7 +1244,11 @@ export interface paths {
   "/admin/withdrawals/{id}/reject": {
     /** Reject pending withdrawal */
     post: {
-      parameters: { path: { id: string } };
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
       requestBody: {
         content: {
           "application/json": components["schemas"]["WithdrawalDecisionRequest"];
@@ -1649,6 +1683,22 @@ export interface components {
     };
     BankReconciliationRequest: {
       entries: components["schemas"]["BankReconciliationEntry"][];
+    };
+    IbanResponse: {
+      iban: string;
+      masked: string;
+      holder: string;
+      instructions: string;
+    };
+    IbanHistoryEntry: {
+      date: string;
+      oldIban: string;
+      newIban: string;
+      by: string;
+      notes: string;
+    };
+    IbanHistoryResponse: {
+      history: components["schemas"]["IbanHistoryEntry"][];
     };
     CreateUserRequest: {
       username: string;

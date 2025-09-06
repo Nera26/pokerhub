@@ -27,6 +27,9 @@ import {
   confirmWithdrawal,
   rejectWithdrawal,
 } from '@/lib/api/wallet';
+import { useIban } from '@/hooks/useIban';
+import { useIbanHistory } from '@/hooks/useIbanHistory';
+import type { IbanHistoryEntry } from '@shared/types';
 /* -------------------------------- Types -------------------------------- */
 type UserStatus = 'Active' | 'Frozen' | 'Banned';
 
@@ -36,14 +39,6 @@ type BalanceRow = {
   balance: number;
   status: UserStatus;
   lastActivity: string;
-};
-
-type IbanHistory = {
-  date: string;
-  oldIban: string;
-  newIban: string;
-  by: string;
-  notes: string;
 };
 
 /* -------------------------------- Modals -------------------------------- */
@@ -232,28 +227,13 @@ export default function BalanceTransactions() {
 
   // IBAN manager
   const [ibanMasked, setIbanMasked] = useState(true);
-  const [ibanFull, setIbanFull] = useState('DE02 5001 0517 5407 4100 72');
-  const ibanMaskDisplay = 'DE02 5001 **** **** 1234';
-  const [ibanHolder, setIbanHolder] = useState('PokerPro Gaming Ltd.');
-  const [ibanInstructions, setIbanInstructions] = useState(
-    'Transfer within 15 minutes and upload receipt immediately',
-  );
-  const [ibanHistory, setIbanHistory] = useState<IbanHistory[]>([
-    {
-      date: '2024-01-15 14:30',
-      oldIban: 'DE02 ****1234',
-      newIban: 'DE02 ****5678',
-      by: 'Admin_John',
-      notes: 'Bank maintenance update',
-    },
-    {
-      date: '2024-01-14 09:15',
-      oldIban: 'DE02 ****9876',
-      newIban: 'DE02 ****1234',
-      by: 'Admin_Sarah',
-      notes: 'Crypto bank cap limit reached',
-    },
-  ]);
+  const { data: ibanData } = useIban();
+  const ibanFull = ibanData?.iban ?? '';
+  const ibanMaskDisplay = ibanData?.masked ?? '';
+  const ibanHolder = ibanData?.holder ?? '';
+  const ibanInstructions = ibanData?.instructions ?? '';
+  const { data: ibanHistoryData } = useIbanHistory();
+  const ibanHistory: IbanHistoryEntry[] = ibanHistoryData?.history ?? [];
 
   // UI state
   const [toastOpen, setToastOpen] = useState(false);
@@ -476,20 +456,7 @@ export default function BalanceTransactions() {
     notify('CSV export started');
   };
 
-  const updateIBAN = (newIban: string, newHolder: string, notes: string) => {
-    setIbanFull(newIban);
-    setIbanHolder(newHolder);
-    setIbanInstructions(notes || 'No special instructions');
-    setIbanHistory((h) => [
-      {
-        date: new Date().toISOString().slice(0, 16).replace('T', ' '),
-        oldIban: '****',
-        newIban,
-        by: 'Admin_You',
-        notes: notes || '-',
-      },
-      ...h,
-    ]);
+  const updateIBAN = (_newIban: string, _newHolder: string, _notes: string) => {
     notify('IBAN updated successfully');
   };
 
