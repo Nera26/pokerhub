@@ -2,7 +2,12 @@ import { Controller, Get, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import { RateLimitGuard } from './rate-limit.guard';
-import { IbanResponseSchema, IbanHistoryResponseSchema, type IbanResponse, type IbanHistoryResponse } from '../schemas/wallet';
+import {
+  IbanResponseSchema,
+  IbanHistoryResponseSchema,
+  type IbanResponse,
+  type IbanHistoryResponse,
+} from '@shared/wallet.schema';
 
 @UseGuards(AuthGuard, RateLimitGuard)
 @ApiTags('wallet')

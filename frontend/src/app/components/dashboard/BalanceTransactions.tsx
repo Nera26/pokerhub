@@ -29,7 +29,7 @@ import {
 } from '@/lib/api/wallet';
 import { useIban } from '@/hooks/useIban';
 import { useIbanHistory } from '@/hooks/useIbanHistory';
-import type { IbanHistoryEntry } from '@shared/types';
+import type { IbanHistoryEntry } from '@shared/wallet.schema';
 /* -------------------------------- Types -------------------------------- */
 type UserStatus = 'Active' | 'Frozen' | 'Banned';
 

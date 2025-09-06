@@ -21,7 +21,7 @@ import { BankReconciliationService } from '../wallet/bank-reconciliation.service
 import {
   BankReconciliationRequestSchema,
   type BankReconciliationRequest,
-} from '../schemas/wallet';
+} from '@shared/wallet.schema';
 
 @ApiTags('admin')
 @UseGuards(AuthGuard, AdminGuard)

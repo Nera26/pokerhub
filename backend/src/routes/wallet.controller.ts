@@ -32,7 +32,7 @@ import {
   type PendingTransactionsResponse,
   TxSchema,
   type TxRequest,
-} from '../schemas/wallet';
+} from '@shared/wallet.schema';
 import { ZodError } from 'zod';
 
 @UseGuards(AuthGuard, RateLimitGuard, SelfGuard)

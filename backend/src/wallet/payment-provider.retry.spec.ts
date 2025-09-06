@@ -1,5 +1,5 @@
 import { PaymentProviderService } from './payment-provider.service';
-import type { ProviderCallback } from '../schemas/wallet';
+import type { ProviderCallback } from '@shared/wallet.schema';
 import Redis from 'ioredis';
 
 describe('PaymentProviderService webhook retries', () => {
