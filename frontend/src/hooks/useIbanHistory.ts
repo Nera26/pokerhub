@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { fetchIbanHistory } from '@/lib/api/wallet';
-import type { IbanHistoryResponse } from '@shared/types';
+import type { IbanHistoryResponse } from '@shared/wallet.schema';
 import type { ApiError } from '@/lib/api/client';
 
 async function getHistory({ signal }: { signal?: AbortSignal }) {

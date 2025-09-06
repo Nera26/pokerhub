@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+export * from './wallet.schema';
+
 export const StatusResponseSchema = z.object({
   status: z.string(),
 });
@@ -31,33 +33,6 @@ export const MessageResponseSchema = z.object({
   message: z.string(),
 });
 export type MessageResponse = z.infer<typeof MessageResponseSchema>;
-
-export {
-  BankTransferDepositRequestSchema,
-  BankTransferDepositResponseSchema,
-  BankDetailsSchema,
-  PendingDepositSchema,
-  PendingDepositsResponseSchema,
-  DepositDecisionRequestSchema,
-  BankReconciliationEntrySchema,
-  BankReconciliationRequestSchema,
-  IbanResponseSchema,
-  IbanHistoryEntrySchema,
-  IbanHistoryResponseSchema,
-} from '../backend/src/schemas/wallet';
-export type {
-  BankTransferDepositRequest,
-  BankTransferDepositResponse,
-  BankDetails,
-  PendingDeposit,
-  PendingDepositsResponse,
-  DepositDecisionRequest,
-  BankReconciliationEntry,
-  BankReconciliationRequest,
-  IbanResponse,
-  IbanHistoryEntry,
-  IbanHistoryResponse,
-} from '../backend/src/schemas/wallet';
 
 export {
   PendingWithdrawalSchema,
@@ -206,89 +181,6 @@ export const ResetPasswordRequestSchema = z.object({
   password: z.string(),
 });
 export type ResetPasswordRequest = z.infer<typeof ResetPasswordRequestSchema>;
-
-export const AmountSchema = z.object({
-  amount: z.number().int().positive(),
-  currency: z.string().length(3),
-});
-export type Amount = z.infer<typeof AmountSchema>;
-
-export const WithdrawRequestSchema = z.object({
-  amount: z.number().int().positive(),
-  deviceId: z.string(),
-  currency: z.string().length(3),
-});
-export type WithdrawRequest = z.infer<typeof WithdrawRequestSchema>;
-
-export const DepositRequestSchema = z.object({
-  amount: z.number().int().positive(),
-  deviceId: z.string(),
-  currency: z.string().length(3),
-});
-export type DepositRequest = z.infer<typeof DepositRequestSchema>;
-
-export const ProviderChallengeSchema = z.object({
-  id: z.string(),
-});
-export type ProviderChallenge = z.infer<typeof ProviderChallengeSchema>;
-
-export const ProviderCallbackSchema = z.object({
-  eventId: z.string(),
-  idempotencyKey: z.string(),
-  providerTxnId: z.string(),
-  status: z.enum(['approved', 'risky', 'chargeback']),
-});
-export type ProviderCallback = z.infer<typeof ProviderCallbackSchema>;
-
-export const WalletStatusResponseSchema = z.object({
-  kycVerified: z.boolean(),
-  denialReason: z.string().optional(),
-  realBalance: z.number(),
-  creditBalance: z.number(),
-});
-export type WalletStatusResponse = z.infer<typeof WalletStatusResponseSchema>;
-
-export const KycDenialResponseSchema = z.object({
-  accountId: z.string(),
-  reason: z.string().nullable(),
-});
-export type KycDenialResponse = z.infer<typeof KycDenialResponseSchema>;
-
-export const WalletTransactionSchema = z.object({
-  id: z.string(),
-  type: z.string(),
-  amount: z.number().int(),
-  currency: z.string().length(3),
-  status: z.string(),
-  createdAt: z.string().datetime(),
-});
-export type WalletTransaction = z.infer<typeof WalletTransactionSchema>;
-export const WalletTransactionsResponseSchema = z.object({
-  realBalance: z.number(),
-  creditBalance: z.number(),
-  transactions: z.array(WalletTransactionSchema),
-});
-export type WalletTransactionsResponse = z.infer<
-  typeof WalletTransactionsResponseSchema
->;
-
-export const PendingTransactionSchema = z.object({
-  id: z.string(),
-  type: z.string(),
-  amount: z.number().int(),
-  currency: z.string().length(3),
-  status: z.string(),
-  createdAt: z.string().datetime(),
-});
-export type PendingTransaction = z.infer<typeof PendingTransactionSchema>;
-export const PendingTransactionsResponseSchema = z.object({
-  realBalance: z.number(),
-  creditBalance: z.number(),
-  transactions: z.array(PendingTransactionSchema),
-});
-export type PendingTransactionsResponse = z.infer<
-  typeof PendingTransactionsResponseSchema
->;
 
 export const FeatureFlagRequestSchema = z.object({
   value: z.boolean(),

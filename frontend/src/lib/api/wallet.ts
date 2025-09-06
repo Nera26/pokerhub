@@ -2,28 +2,30 @@
 import { apiClient } from './client';
 import {
   AmountSchema,
-  MessageResponseSchema,
   WithdrawRequestSchema,
   DepositRequestSchema,
   BankTransferDepositRequestSchema,
   BankTransferDepositResponseSchema,
-  type MessageResponse,
   WalletStatusResponseSchema,
-  type WalletStatusResponse,
   WalletTransactionsResponseSchema,
   PendingTransactionsResponseSchema,
   PendingDepositsResponseSchema,
-  PendingWithdrawalsResponseSchema,
   DepositDecisionRequestSchema,
-  WithdrawalDecisionRequestSchema,
+  IbanResponseSchema,
+  IbanHistoryResponseSchema,
+  type WalletStatusResponse,
   type WalletTransactionsResponse,
   type PendingTransactionsResponse,
   type PendingDepositsResponse,
-  type PendingWithdrawalsResponse,
-  IbanResponseSchema,
-  IbanHistoryResponseSchema,
   type IbanResponse,
   type IbanHistoryResponse,
+} from '@shared/wallet.schema';
+import {
+  MessageResponseSchema,
+  PendingWithdrawalsResponseSchema,
+  WithdrawalDecisionRequestSchema,
+  type MessageResponse,
+  type PendingWithdrawalsResponse,
 } from '@shared/types';
 
 /* istanbul ignore next */

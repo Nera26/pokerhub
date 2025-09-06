@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import Button from '../ui/Button';
-import { BankTransferDepositResponse } from '@shared/types';
+import { BankTransferDepositResponse } from '@shared/wallet.schema';
 import Tooltip from '../ui/Tooltip';
 import AmountInput from './AmountInput';
 

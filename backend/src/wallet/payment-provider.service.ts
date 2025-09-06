@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
-import type { ProviderCallback } from '../schemas/wallet';
+import type { ProviderCallback } from '@shared/wallet.schema';
 import { metrics } from '@opentelemetry/api';
 import { Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';

@@ -7,8 +7,8 @@ import {
   confirmWithdrawal,
   rejectWithdrawal,
 } from '@/lib/api/wallet';
+import { PendingDepositsResponseSchema } from '@shared/wallet.schema';
 import {
-  PendingDepositsResponseSchema,
   PendingWithdrawalsResponseSchema,
   MessageResponseSchema,
 } from '@shared/types';

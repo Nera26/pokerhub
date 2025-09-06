@@ -23,7 +23,7 @@ import { MetricsWriterService } from '../metrics/metrics-writer.service';
 import { ChargebackMonitor } from './chargeback.service';
 import type { Street } from '../game/state-machine';
 import { GeoIpService } from '../auth/geoip.service';
-import type { ProviderCallback } from '../schemas/wallet';
+import type { ProviderCallback } from '@shared/wallet.schema';
 
 interface Movement {
   account: Account;

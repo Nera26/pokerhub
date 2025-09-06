@@ -1,7 +1,7 @@
 import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
-import { KycDenialResponse, KycDenialResponseSchema } from '../schemas/wallet';
+import { KycDenialResponse, KycDenialResponseSchema } from '@shared/wallet.schema';
 import {
   AuditLogsResponse,
   AuditLogsResponseSchema,

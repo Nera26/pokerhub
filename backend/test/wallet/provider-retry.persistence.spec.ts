@@ -1,6 +1,6 @@
 import { Queue } from 'bullmq';
 import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
-import type { ProviderCallback } from '../../src/schemas/wallet';
+import type { ProviderCallback } from '@shared/wallet.schema';
 import { MockRedis } from '../utils/mock-redis';
 
 describe('PaymentProviderService persistent retries', () => {

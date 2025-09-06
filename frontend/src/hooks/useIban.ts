@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { fetchIban } from '@/lib/api/wallet';
-import type { IbanResponse } from '@shared/types';
+import type { IbanResponse } from '@shared/wallet.schema';
 import type { ApiError } from '@/lib/api/client';
 
 async function getIban({ signal }: { signal?: AbortSignal }) {

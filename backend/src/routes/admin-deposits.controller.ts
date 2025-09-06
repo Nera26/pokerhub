@@ -14,7 +14,7 @@ import {
   PendingDepositsResponseSchema,
   DepositDecisionRequestSchema,
   type DepositDecisionRequest,
-} from '../schemas/wallet';
+} from '@shared/wallet.schema';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 
