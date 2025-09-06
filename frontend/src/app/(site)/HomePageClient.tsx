@@ -3,12 +3,18 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { TopCTAs, GameTabs } from '../components/home';
-import { useTables, useTournaments, type Tournament } from '@/hooks/useLobbyData';
+import {
+  useTables,
+  useTournaments,
+  type Tournament,
+} from '@/hooks/useLobbyData';
 import { useApiError } from '@/hooks/useApiError';
 import InlineError from '../components/ui/InlineError';
 import { GameType } from '@/types/game-type';
 import type { CashGameListProps } from '../components/home/CashGameList';
-import type { TournamentListProps } from '@/components/TournamentList';
+import { type TournamentListProps } from '@/components/TournamentList';
+import useRenderCount from '@/hooks/useRenderCount';
+import { registerTournament } from '@/lib/api/lobby';
 
 interface TournamentWithBreak extends Tournament {
   nextBreak?: string;
@@ -46,7 +52,7 @@ let TournamentList: React.ComponentType<
   TournamentListProps<TournamentWithBreak>
 > =
   dynamic<TournamentListProps<TournamentWithBreak>>(
-    () => import('@/features/site/tournament/TournamentList'),
+    () => import('@/components/TournamentList'),
     {
       loading: () => (
         <section
@@ -64,8 +70,15 @@ let TournamentList: React.ComponentType<
   );
 
 if (TournamentList.displayName === 'DynamicMock') {
-  TournamentList = require('@/features/site/tournament/TournamentList').default;
+  TournamentList = require('@/components/TournamentList').default;
 }
+
+const SiteTournamentList = (
+  props: TournamentListProps<TournamentWithBreak>,
+) => {
+  useRenderCount('SiteTournamentList');
+  return <TournamentList {...props} />;
+};
 
 export default function HomePageClient() {
   const [gameType, setGameType] = useState<GameType>('texas');
@@ -104,6 +117,14 @@ export default function HomePageClient() {
   }, [gameType, tables]);
 
   const showTournaments = gameType === 'tournaments';
+
+  const handleRegister = async (id: string) => {
+    try {
+      await registerTournament(id);
+    } catch {
+      // ignore errors for now
+    }
+  };
 
   return (
     <>
@@ -149,9 +170,10 @@ export default function HomePageClient() {
           </section>
         ) : (
           <>
-            <TournamentList
+            <SiteTournamentList
               tournaments={tournaments ?? []}
               hidden={!showTournaments}
+              onRegister={handleRegister}
             />
             {showTournaments && tournamentErrorMessage && (
               <InlineError message={tournamentErrorMessage} />
