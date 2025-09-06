@@ -6,6 +6,7 @@ import type { Socket } from 'socket.io-client';
 import { getSocket, disconnectSocket } from '@/app/utils/socket';
 import type { Message } from '@/app/components/common/chat/types';
 import { env } from '@/lib/env';
+import { scheduleTimeout } from './scheduleTimeout';
 
 export type ChatStatus = 'connecting' | 'connected' | 'error';
 
@@ -148,15 +149,7 @@ export default function useChatSocket() {
         ['chat', 'messages'],
         [...previous, optimistic],
       );
-      const timer = setTimeout(() => {
-        queryClient.setQueryData<Message[]>(['chat', 'messages'], (prev = []) =>
-          prev.map((m) =>
-            m.id === id ? { ...m, pending: false, error: true } : m,
-          ),
-        );
-        pendingTimers.current.delete(id);
-      }, 5000);
-      pendingTimers.current.set(id, timer);
+      scheduleTimeout(queryClient, pendingTimers.current, id);
       return { previous, id };
     },
     onError: (_err, _text, ctx) => {
@@ -185,15 +178,7 @@ export default function useChatSocket() {
       ),
     );
     socket?.emit('message', { id, text: msg.text });
-    const timer = setTimeout(() => {
-      queryClient.setQueryData<Message[]>(['chat', 'messages'], (prev = []) =>
-        prev.map((m) =>
-          m.id === id ? { ...m, pending: false, error: true } : m,
-        ),
-      );
-      pendingTimers.current.delete(id);
-    }, 5000);
-    pendingTimers.current.set(id, timer);
+    scheduleTimeout(queryClient, pendingTimers.current, id);
   };
 
   return {
