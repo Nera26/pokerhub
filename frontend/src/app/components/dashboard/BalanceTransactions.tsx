@@ -26,6 +26,8 @@ import {
   fetchPendingWithdrawals,
   confirmWithdrawal,
   rejectWithdrawal,
+  fetchBalances,
+  fetchTransactionsLog,
 } from '@/lib/api/wallet';
 import { useIban } from '@/hooks/useIban';
 import { useIbanHistory } from '@/hooks/useIbanHistory';
@@ -154,24 +156,7 @@ export default function BalanceTransactions() {
     error: usersError,
   } = useQuery<BalanceRow[]>({
     queryKey: ['balances'],
-    queryFn: async () => [
-      {
-        user: 'Mike_P',
-        avatar:
-          'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg',
-        balance: 2847,
-        status: 'Active',
-        lastActivity: '2024-01-15 18:30',
-      },
-      {
-        user: 'Sarah_K',
-        avatar:
-          'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg',
-        balance: 1420,
-        status: 'Active',
-        lastActivity: '2024-01-15 17:15',
-      },
-    ],
+    queryFn: fetchBalances,
     staleTime: 30000,
   });
   const usersErrorMessage = useApiError(usersError);
@@ -195,32 +180,7 @@ export default function BalanceTransactions() {
     error: logError,
   } = useQuery<Txn[]>({
     queryKey: ['transactions'],
-    queryFn: async () => [
-      {
-        datetime: '2024-01-15 18:45',
-        action: 'Deposit Approved',
-        amount: +500,
-        by: 'Admin_John',
-        notes: 'Bank transfer verification completed',
-        status: 'Completed',
-      },
-      {
-        datetime: '2024-01-15 16:30',
-        action: 'Manual Add',
-        amount: +100,
-        by: 'Admin_Sarah',
-        notes: 'Welcome bonus compensation',
-        status: 'Completed',
-      },
-      {
-        datetime: '2024-01-15 14:15',
-        action: 'Withdrawal Rejected',
-        amount: -750,
-        by: 'Admin_Mike',
-        notes: 'Insufficient verification documents',
-        status: 'Rejected',
-      },
-    ],
+    queryFn: fetchTransactionsLog,
     staleTime: 30000,
   });
   const logErrorMessage = useApiError(logError);
@@ -535,6 +495,8 @@ export default function BalanceTransactions() {
         </div>
       ) : usersError ? (
         <p role="alert">{usersErrorMessage || 'Failed to load users.'}</p>
+      ) : balances.length === 0 ? (
+        <p>No user balances.</p>
       ) : (
         <section>
           <div className="bg-card-bg p-6 rounded-2xl card-shadow">
@@ -654,6 +616,8 @@ export default function BalanceTransactions() {
         <p role="alert">
           {logErrorMessage || 'Failed to load transaction history.'}
         </p>
+      ) : log.length === 0 ? (
+        <p>No transaction history.</p>
       ) : (
         <TransactionHistory
           log={log}
