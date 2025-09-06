@@ -4,15 +4,15 @@ import type { components } from '@contracts/api';
 import {
   TableSchema,
   TournamentSchema,
-  TournamentDetailSchema,
+  TournamentDetailsSchema,
   type Table,
   type Tournament,
-  type TournamentDetail,
+  type TournamentDetails,
   MessageResponseSchema,
   type MessageResponse,
 } from '@shared/types';
 
-export type { Table, Tournament, TournamentDetail };
+export type { Table, Tournament, TournamentDetails };
 
 export async function fetchLobbyData<T>(
   endpoint: string,
@@ -70,13 +70,13 @@ export async function fetchTournaments({
   );
 }
 
-export async function getTournament(
+export async function fetchTournamentDetails(
   id: string,
   { signal }: { signal?: AbortSignal } = {},
-): Promise<components['schemas']['TournamentDetail']> {
-  return fetchLobbyData<components['schemas']['TournamentDetail']>(
+): Promise<components['schemas']['TournamentDetails']> {
+  return fetchLobbyData<components['schemas']['TournamentDetails']>(
     `tournaments/${id}`,
-    TournamentDetailSchema,
+    TournamentDetailsSchema,
     { signal },
   );
 }

@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   fetchTournaments,
   registerTournament,
+  fetchTournamentDetails,
   type Tournament as ApiTournament,
 } from '@/lib/api/lobby';
 import Header from '@/app/components/common/Header';
@@ -132,6 +133,23 @@ export default function Page() {
 
   const closeToast = () => setToast((t) => ({ ...t, isOpen: false }));
 
+  const {
+    data: modalData,
+    isLoading: modalLoading,
+    error: modalError,
+  } = useQuery({
+    queryKey: ['tournament', openModalId],
+    queryFn: ({ signal }) =>
+      fetchTournamentDetails(openModalId!, { signal }),
+    enabled: !!openModalId,
+  });
+
+  const modalEmpty =
+    modalData &&
+    modalData.overview.length === 0 &&
+    modalData.structure.length === 0 &&
+    modalData.prizes.length === 0;
+
   return (
     <>
       <Header />
@@ -207,37 +225,25 @@ export default function Page() {
       {openModalId && (
         <Modal isOpen onClose={handleModalClose}>
           <ErrorBoundary fallback={<div>Error loading registration.</div>}>
-            <TournamentRegisterModalContent
-              details={{
-                name: tournaments.find((t) => t.id === openModalId)!.name,
-                buyin: tournaments.find((t) => t.id === openModalId)!.buyin,
-                overview: [
-                  {
-                    title: 'Tournament Format',
-                    description: "No-Limit Hold'em with 20k starting chips.",
-                  },
-                  {
-                    title: 'Late Registration',
-                    description: 'Allowed for first 2 hours, one re-entry.',
-                  },
-                ],
-                structure: [
-                  {
-                    title: 'Blind Structure',
-                    description: 'Level 1: 100/200, Level 2: 200/400, …',
-                  },
-                ],
-                prizes: [
-                  {
-                    title: 'Prizes',
-                    description:
-                      '1st: 50%, 2nd: 25%, 3rd: 15%, remainder split.',
-                  },
-                ],
-              }}
-              onClose={handleModalClose}
-              onConfirm={() => handleConfirm(openModalId!)}
-            />
+            {modalLoading ? (
+              <div>Loading tournament...</div>
+            ) : modalError ? (
+              <div>Failed to load tournament.</div>
+            ) : !modalData || modalEmpty ? (
+              <div>No tournament details.</div>
+            ) : (
+              <TournamentRegisterModalContent
+                details={{
+                  name: modalData.title,
+                  buyin: modalData.buyIn,
+                  overview: modalData.overview,
+                  structure: modalData.structure,
+                  prizes: modalData.prizes,
+                }}
+                onClose={handleModalClose}
+                onConfirm={() => handleConfirm(openModalId!)}
+              />
+            )}
           </ErrorBoundary>
         </Modal>
       )}

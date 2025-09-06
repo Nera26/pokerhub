@@ -666,7 +666,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TournamentDetail'
+                $ref: '#/components/schemas/TournamentDetails'
   /tournaments/{id}/register:
     post:
       summary: Register for tournament
@@ -2240,7 +2240,17 @@ components:
         - state
         - players
         - registered
-    TournamentDetail:
+    TournamentInfo:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+      required:
+        - title
+        - description
+    TournamentDetails:
       allOf:
         - $ref: '#/components/schemas/Tournament'
         - type: object
@@ -2256,6 +2266,18 @@ components:
                   type: string
                   format: date-time
                   nullable: true
+            overview:
+              type: array
+              items:
+                $ref: '#/components/schemas/TournamentInfo'
+            structure:
+              type: array
+              items:
+                $ref: '#/components/schemas/TournamentInfo'
+            prizes:
+              type: array
+              items:
+                $ref: '#/components/schemas/TournamentInfo'
     TournamentList:
       type: array
       items:

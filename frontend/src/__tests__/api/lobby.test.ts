@@ -1,6 +1,6 @@
 /** @jest-environment node */
 
-import { getTables } from '@/lib/api/lobby';
+import { getTables, fetchTournamentDetails } from '@/lib/api/lobby';
 import { serverFetch } from '@/lib/server-fetch';
 
 jest.mock('@/lib/server-fetch', () => ({
@@ -53,6 +53,56 @@ describe('lobby api', () => {
       status: 500,
       message: 'Server Error',
       details: 'fail',
+    });
+  });
+
+  it('fetches tournament details', async () => {
+    (serverFetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => ({
+        id: 't1',
+        title: 'Spring Poker',
+        buyIn: 100,
+        prizePool: 1000,
+        state: 'REG_OPEN',
+        players: { current: 0, max: 100 },
+        registered: false,
+        registration: { open: null, close: null },
+        overview: [{ title: 'Format', description: 'NLH' }],
+        structure: [],
+        prizes: [],
+      }),
+    });
+
+    await expect(fetchTournamentDetails('t1')).resolves.toEqual({
+      id: 't1',
+      title: 'Spring Poker',
+      buyIn: 100,
+      prizePool: 1000,
+      state: 'REG_OPEN',
+      players: { current: 0, max: 100 },
+      registered: false,
+      registration: { open: null, close: null },
+      overview: [{ title: 'Format', description: 'NLH' }],
+      structure: [],
+      prizes: [],
+    });
+  });
+
+  it('throws ApiError when tournament details request fails', async () => {
+    (serverFetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 404,
+      statusText: 'Not Found',
+      text: async () => 'missing',
+    });
+
+    await expect(fetchTournamentDetails('x')).rejects.toEqual({
+      status: 404,
+      message: 'Not Found',
+      details: 'missing',
     });
   });
 });
