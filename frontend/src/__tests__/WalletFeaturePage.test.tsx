@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/react';
-import WalletPage from '@/features/wallet';
+import WalletPage from '@/features/site/wallet';
 import { AuthProvider } from '@/context/AuthContext';
-import { getStatus } from '@/lib/api/wallet';
+import { getStatus, fetchTransactions, fetchPending } from '@/lib/api/wallet';
 import { useAuthStore } from '@/app/store/authStore';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 jest.mock('@/lib/api/wallet');
 
@@ -18,21 +19,36 @@ describe('WalletPage', () => {
       realBalance: 200,
       creditBalance: 50,
     });
+    (fetchTransactions as jest.Mock).mockResolvedValue({
+      realBalance: 200,
+      creditBalance: 50,
+      transactions: [],
+    });
+    (fetchPending as jest.Mock).mockResolvedValue({
+      realBalance: 200,
+      creditBalance: 50,
+      transactions: [],
+    });
 
     const payload = btoa(JSON.stringify({ sub: 'u1' }));
     useAuthStore.setState({ token: `x.${payload}.y` });
 
+    const client = new QueryClient();
+
     render(
-      <AuthProvider>
-        <WalletPage />
-      </AuthProvider>,
+      <QueryClientProvider client={client}>
+        <AuthProvider>
+          <WalletPage />
+        </AuthProvider>
+      </QueryClientProvider>,
     );
 
     expect(
-      await screen.findByText(/Real Balance: 200/),
+      await screen.findByText(/Real: \$200\.00/),
     ).toBeInTheDocument();
     expect(
-      await screen.findByText(/Credit Balance: 50/),
+      await screen.findByText(/Credit: \$50\.00/),
     ).toBeInTheDocument();
   });
 });
+

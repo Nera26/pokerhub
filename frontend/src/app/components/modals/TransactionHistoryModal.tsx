@@ -4,6 +4,11 @@ import { useMemo, useState } from 'react';
 import Modal from '../ui/Modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
+import TransactionHistoryTable from '@/app/components/common/TransactionHistoryTable';
+import {
+  transactionColumns,
+  type Transaction,
+} from '../dashboard/transactions/transactionColumns';
 
 export enum PerformedBy {
   All = 'All',
@@ -74,6 +79,16 @@ export default function TransactionHistoryModal({
       data = data.filter((e) => new Date(e.date) <= new Date(applied.end));
     return data;
   }, [entries, applied]);
+
+  const tableData: Transaction[] = useMemo(
+    () =>
+      filtered.map(({ date, performedBy, ...rest }) => ({
+        datetime: date,
+        by: performedBy,
+        ...rest,
+      })),
+    [filtered],
+  );
 
   const apply = () => {
     const next = { start, end, type, by };
@@ -154,87 +169,20 @@ export default function TransactionHistoryModal({
         </button>
       </div>
 
-      {/* Table header */}
-      <div className="grid grid-cols-12 gap-4 p-3 bg-hover-bg rounded-xl mb-2">
-        <div className="col-span-2 text-sm font-semibold text-accent-blue">
-          Date &amp; Time
-        </div>
-        <div className="col-span-2 text-sm font-semibold text-accent-blue">
-          Action
-        </div>
-        <div className="col-span-2 text-sm font-semibold text-accent-blue">
-          Amount
-        </div>
-        <div className="col-span-2 text-sm font-semibold text-accent-blue">
-          Performed By
-        </div>
-        <div className="col-span-2 text-sm font-semibold text-accent-blue">
-          Notes
-        </div>
-        <div className="col-span-2 text-sm font-semibold text-accent-blue">
-          Status
-        </div>
-      </div>
-
-      {/* Rows */}
-      <div className="max-h-96 overflow-y-auto">
-        {filtered.map((t, idx) => {
-          const amountColor =
-            t.amount > 0
-              ? 'text-accent-green'
-              : t.amount < 0
-                ? 'text-danger-red'
-                : '';
-          const statusColor =
-            t.status === 'Completed'
-              ? 'bg-accent-green'
-              : t.status === 'Pending'
-                ? 'bg-accent-yellow text-black'
-                : 'bg-danger-red';
-
-          // "Dec 15, 2024 14:32" -> left column split like HTML
-          const [mon, dayComma, year, time] = t.date.split(' ');
-          const day = (dayComma || '').replace(',', '');
-
-          return (
-            <div
-              key={idx}
-              className="grid grid-cols-12 gap-4 p-3 border-b border-dark hover:bg-hover-bg"
-            >
-              <div className="col-span-2 text-sm">
-                {mon} {day}
-                <br />
-                <span className="text-text-secondary text-xs">
-                  {year} {time}
-                </span>
-              </div>
-              <div className="col-span-2 text-sm">{t.action}</div>
-              <div
-                className={`col-span-2 text-sm font-semibold ${amountColor}`}
-              >
-                {t.amount > 0 ? '+' : t.amount < 0 ? '-' : ''}$
-                {Math.abs(t.amount).toFixed(2)}
-              </div>
-              <div className="col-span-2 text-sm">{t.performedBy}</div>
-              <div className="col-span-2 text-sm text-text-secondary">
-                {t.notes}
-              </div>
-              <div className="col-span-2">
-                <span
-                  className={`${statusColor} px-2 py-1 rounded-lg text-xs font-semibold`}
-                >
-                  {t.status}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-        {filtered.length === 0 && (
+      <TransactionHistoryTable
+        data={tableData}
+        columns={transactionColumns}
+        getRowKey={(_, idx) => idx}
+        estimateSize={52}
+        containerClassName="max-h-96 overflow-auto"
+        tableClassName="w-full text-sm"
+        rowClassName="border-b border-dark hover:bg-hover-bg"
+        noDataMessage={
           <div className="p-6 text-center text-text-secondary">
             No transactions
           </div>
-        )}
-      </div>
+        }
+      />
     </Modal>
   );
 }

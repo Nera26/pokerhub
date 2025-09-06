@@ -84,6 +84,19 @@ export const AuditSummarySchema = z.object({
 });
 export type AuditSummary = z.infer<typeof AuditSummarySchema>;
 
+export const AdminOverviewSchema = z.object({
+  name: z.string(),
+  avatar: z.string(),
+  lastAction: z.string(),
+  total24h: z.number().int(),
+  login: z.string(),
+  loginTitle: z.string().optional(),
+});
+export type AdminOverview = z.infer<typeof AdminOverviewSchema>;
+
+export const AdminOverviewResponseSchema = z.array(AdminOverviewSchema);
+export type AdminOverviewResponse = z.infer<typeof AdminOverviewResponseSchema>;
+
 export {
   AlertItemSchema,
   SecurityAlertsResponseSchema,

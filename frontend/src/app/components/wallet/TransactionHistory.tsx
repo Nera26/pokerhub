@@ -3,9 +3,8 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faReceipt } from '@fortawesome/free-solid-svg-icons/faReceipt';
 import useRenderCount from '@/hooks/useRenderCount';
-import TransactionHistoryTable, {
-  Column,
-} from '@/app/components/common/TransactionHistoryTable';
+import TransactionHistoryTable from '@/app/components/common/TransactionHistoryTable';
+import { buildColumns } from './transactionColumns';
 
 export interface Transaction {
   id: string;
@@ -24,70 +23,7 @@ export default function TransactionHistory({
   transactions,
 }: TransactionHistoryProps) {
   useRenderCount('TransactionHistory');
-  // Map status to pill styles
-  const statusStyles: Record<string, string> = {
-    Completed: 'bg-accent-green/20 text-accent-green',
-    Failed: 'bg-danger-red/20 text-danger-red',
-    Processing: 'bg-accent-yellow/20 text-accent-yellow',
-    'Pending Confirmation': 'bg-accent-yellow/20 text-accent-yellow',
-    Pending: 'bg-accent-yellow/20 text-accent-yellow',
-  };
-
-  // Function to format amount
-  const formatAmount = (amt: number) => {
-    const formatted = Math.abs(amt).toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-    return `${amt >= 0 ? '+' : '-'}$${formatted}`;
-  };
-
-  const columns: Column<Transaction>[] = [
-    {
-      header: 'Type',
-      headerClassName:
-        'text-left p-4 font-semibold text-text-secondary text-sm uppercase',
-      cell: (tx) => tx.type,
-      cellClassName: 'p-4 text-text-primary text-sm',
-    },
-    {
-      header: 'Amount',
-      headerClassName:
-        'text-left p-4 font-semibold text-text-secondary text-sm uppercase',
-      cell: (tx) => (
-        <span
-          className={`font-medium text-sm ${
-            tx.amount >= 0 ? 'text-accent-green' : 'text-danger-red'
-          }`}
-        >
-          {formatAmount(tx.amount)}
-        </span>
-      ),
-      cellClassName: 'p-4',
-    },
-    {
-      header: 'Date & Time',
-      headerClassName:
-        'text-left p-4 font-semibold text-text-secondary text-sm uppercase',
-      cell: (tx) => tx.date,
-      cellClassName: 'p-4 text-text-secondary text-sm',
-    },
-    {
-      header: 'Status',
-      headerClassName:
-        'text-left p-4 font-semibold text-text-secondary text-sm uppercase',
-      cell: (tx) => (
-        <span
-          className={`${
-            statusStyles[tx.status] ?? 'bg-border-dark text-text-secondary'
-          } px-2 py-1 rounded-md font-medium`}
-        >
-          {tx.status}
-        </span>
-      ),
-      cellClassName: 'p-4 text-sm',
-    },
-  ];
+  const columns = buildColumns<Transaction>((tx) => tx.type);
 
   return (
     <section id="transaction-history-section">
