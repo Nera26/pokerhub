@@ -1,14 +1,9 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDownload } from '@fortawesome/free-solid-svg-icons';
 
-import StatusPill, { toStatus } from './StatusPill';
 import type { Txn } from './types';
-import TransactionHistoryTable, {
-  Column,
-} from '@/app/components/common/TransactionHistoryTable';
-
-const usd = (n: number) =>
-  (n < 0 ? '-' : n > 0 ? '+' : '') + '$' + Math.abs(n).toLocaleString();
+import TransactionHistoryTable from '@/app/components/common/TransactionHistoryTable';
+import { transactionColumns } from './transactionColumns';
 
 interface Props {
   log: Txn[];
@@ -17,57 +12,6 @@ interface Props {
 }
 
 export default function TransactionHistory({ log, pageInfo, onExport }: Props) {
-  const columns: Column<Txn>[] = [
-    {
-      header: 'Date & Time',
-      headerClassName: 'text-left py-3 px-2 text-text-secondary',
-      cell: (t) => t.datetime,
-      cellClassName: 'py-3 px-2 text-text-secondary',
-    },
-    {
-      header: 'Action',
-      headerClassName: 'text-left py-3 px-2 text-text-secondary',
-      cell: (t) => t.action,
-      cellClassName: 'py-3 px-2',
-    },
-    {
-      header: 'Amount',
-      headerClassName: 'text-left py-3 px-2 text-text-secondary',
-      cell: (t) => (
-        <span
-          className={
-            t.amount > 0
-              ? 'text-accent-green'
-              : t.amount < 0
-                ? 'text-danger-red'
-                : ''
-          }
-        >
-          {usd(t.amount)}
-        </span>
-      ),
-      cellClassName: 'py-3 px-2 font-semibold',
-    },
-    {
-      header: 'Performed By',
-      headerClassName: 'text-left py-3 px-2 text-text-secondary',
-      cell: (t) => t.by,
-      cellClassName: 'py-3 px-2',
-    },
-    {
-      header: 'Notes',
-      headerClassName: 'text-left py-3 px-2 text-text-secondary',
-      cell: (t) => t.notes,
-      cellClassName: 'py-3 px-2 text-text-secondary',
-    },
-    {
-      header: 'Status',
-      headerClassName: 'text-left py-3 px-2 text-text-secondary',
-      cell: (t) => <StatusPill status={toStatus(t.status)} />,
-      cellClassName: 'py-3 px-2',
-    },
-  ];
-
   return (
     <section>
       <div className="bg-card-bg p-6 rounded-2xl card-shadow">
@@ -110,7 +54,7 @@ export default function TransactionHistory({ log, pageInfo, onExport }: Props) {
 
         <TransactionHistoryTable
           data={log}
-          columns={columns}
+          columns={transactionColumns}
           getRowKey={(_, i) => i}
           estimateSize={52}
           containerClassName="overflow-auto max-h-96"
