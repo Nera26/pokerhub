@@ -2,7 +2,7 @@ import Image from 'next/image';
 
 import TransactionTable from './TransactionTable';
 import StatusPill, { toStatus } from './StatusPill';
-import useTransactionVirtualizer from './useTransactionVirtualizer';
+import useTransactionVirtualizer from '@/hooks/useTransactionVirtualizer';
 import type { WithdrawalReq } from './types';
 import useRenderCount from '@/hooks/useRenderCount';
 

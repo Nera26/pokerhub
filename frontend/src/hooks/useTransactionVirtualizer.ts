@@ -1,17 +1,13 @@
-import { useMemo, useRef, RefObject } from 'react';
+import { useMemo, useRef } from 'react';
 import type { Virtualizer } from '@tanstack/react-virtual';
-import useVirtualizedList from '@/hooks/useVirtualizedList';
-import sortByDate from './sortByDate';
-
-type VirtualizerCreator = (options: {
-  count: number;
-  parentRef: RefObject<HTMLDivElement | null>;
-  estimateSize?: number;
-}) => Virtualizer<HTMLDivElement, Element>;
+import useVirtualizedList from './useVirtualizedList';
 
 interface Options {
   estimateSize?: number;
-  createVirtualizer?: VirtualizerCreator;
+}
+
+function sortByDate<T extends { date: string }>(items: T[]): T[] {
+  return [...items].sort((a, b) => a.date.localeCompare(b.date));
 }
 
 /**
@@ -20,14 +16,15 @@ interface Options {
  */
 export default function useTransactionVirtualizer<T extends { date: string }>(
   items: T[],
-  { estimateSize = 56, createVirtualizer = (opts) => useVirtualizedList<HTMLDivElement>(opts) }: Options = {},
+  { estimateSize = 56 }: Options = {},
 ) {
   const parentRef = useRef<HTMLDivElement>(null);
   const sortedItems = useMemo(() => sortByDate(items), [items]);
-  const rowVirtualizer = createVirtualizer({
+  const rowVirtualizer: Virtualizer<HTMLDivElement, Element> = useVirtualizedList<HTMLDivElement>({
     count: sortedItems.length,
     parentRef,
     estimateSize,
   });
+
   return { parentRef, sortedItems, rowVirtualizer } as const;
 }
