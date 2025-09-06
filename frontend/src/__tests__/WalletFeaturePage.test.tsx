@@ -1,12 +1,17 @@
 import { render, screen } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import WalletPage from '@/features/wallet';
 import { AuthProvider } from '@/context/AuthContext';
 import { getStatus } from '@/lib/api/wallet';
+import { useAuthStore } from '@/app/store/authStore';
 
 jest.mock('@/lib/api/wallet');
 
 describe('WalletPage', () => {
+  afterEach(() => {
+    useAuthStore.setState({ token: null });
+    jest.clearAllMocks();
+  });
+
   it('renders balances from server', async () => {
     (getStatus as jest.Mock).mockResolvedValue({
       kycVerified: true,
@@ -14,16 +19,13 @@ describe('WalletPage', () => {
       creditBalance: 50,
     });
 
-    const client = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    });
+    const payload = btoa(JSON.stringify({ sub: 'u1' }));
+    useAuthStore.setState({ token: `x.${payload}.y` });
 
     render(
-      <QueryClientProvider client={client}>
-        <AuthProvider>
-          <WalletPage />
-        </AuthProvider>
-      </QueryClientProvider>,
+      <AuthProvider>
+        <WalletPage />
+      </AuthProvider>,
     );
 
     expect(
