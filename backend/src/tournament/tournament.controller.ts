@@ -46,7 +46,7 @@ export class TournamentController {
   @ApiOperation({ summary: 'Register for tournament' })
   @ApiResponse({ status: 200, description: 'Registration accepted' })
   register(@Param('id') id: string, @Req() req: Request) {
-    return this.service.register(id, req.userId);
+    return this.service.join(id, req.userId);
   }
 
   @Post(':id/withdraw')

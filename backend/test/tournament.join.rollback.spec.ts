@@ -6,7 +6,7 @@ import { Repository } from 'typeorm';
 import { RebuyService } from '../src/tournament/rebuy.service';
 import { PkoService } from '../src/tournament/pko.service';
 
-describe('TournamentService.register rollback', () => {
+describe('TournamentService.join rollback', () => {
   let service: TournamentService;
   let tournamentsRepo: any;
   let seatsRepo: any;
@@ -68,7 +68,7 @@ describe('TournamentService.register rollback', () => {
   });
 
   it('rolls back wallet on seat save failure', async () => {
-    await expect(service.register('t1', 'u1')).rejects.toThrow('save failed');
+    await expect(service.join('t1', 'u1')).rejects.toThrow('save failed');
     expect(wallet.rollback).toHaveBeenCalledWith('u1', 100, 't1', 'USD');
     expect(await seatsRepo.find()).toHaveLength(0);
   });
