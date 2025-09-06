@@ -4,7 +4,7 @@ import { faImage, faComment } from '@fortawesome/free-solid-svg-icons';
 
 import TransactionTable from './TransactionTable';
 import StatusPill, { toStatus } from './StatusPill';
-import useTransactionVirtualizer from './useTransactionVirtualizer';
+import useTransactionVirtualizer from '@/hooks/useTransactionVirtualizer';
 import type { DepositReq } from './types';
 import useRenderCount from '@/hooks/useRenderCount';
 
