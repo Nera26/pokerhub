@@ -5,7 +5,10 @@ import Modal from '../ui/Modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
 import TransactionHistoryTable from '@/app/components/common/TransactionHistoryTable';
-import { buildColumns } from '@/app/components/wallet/transactionColumns';
+import {
+  transactionColumns,
+  type Transaction,
+} from '../dashboard/transactions/transactionColumns';
 
 export enum PerformedBy {
   All = 'All',
@@ -77,6 +80,16 @@ export default function TransactionHistoryModal({
     return data;
   }, [entries, applied]);
 
+  const tableData: Transaction[] = useMemo(
+    () =>
+      filtered.map(({ date, performedBy, ...rest }) => ({
+        datetime: date,
+        by: performedBy,
+        ...rest,
+      })),
+    [filtered],
+  );
+
   const apply = () => {
     const next = { start, end, type, by };
     setApplied(next);
@@ -91,11 +104,6 @@ export default function TransactionHistoryModal({
       }),
     );
   };
-
-  const columns = useMemo(
-    () => buildColumns<TransactionEntry>((t) => t.action),
-    [],
-  );
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
@@ -162,8 +170,13 @@ export default function TransactionHistoryModal({
       </div>
 
       <TransactionHistoryTable
-        data={filtered}
-        columns={columns}
+        data={tableData}
+        columns={transactionColumns}
+        getRowKey={(_, idx) => idx}
+        estimateSize={52}
+        containerClassName="max-h-96 overflow-auto"
+        tableClassName="w-full text-sm"
+        rowClassName="border-b border-dark hover:bg-hover-bg"
         noDataMessage={
           <div className="p-6 text-center text-text-secondary">
             No transactions
