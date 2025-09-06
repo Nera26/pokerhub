@@ -7,6 +7,7 @@ import { metrics } from '@opentelemetry/api';
 import { KycVerification } from '../database/entities/kycVerification.entity';
 import { Account } from '../wallet/account.entity';
 import { CountryProvider } from './providers/country-provider';
+import { fetchWithRetry, CircuitBreakerState } from '../common/http';
 
 export interface VerificationJob {
   verificationId: string;
@@ -31,8 +32,7 @@ export class KycService {
     },
   );
 
-  private failures = 0;
-  private circuitOpenUntil = 0;
+  private circuitBreaker: CircuitBreakerState = { failures: 0, openUntil: 0 };
 
   constructor(
     @Inject('COUNTRY_PROVIDER')
@@ -117,49 +117,6 @@ export class KycService {
     return { country };
   }
 
-  private async fetchWithRetry(
-    url: string,
-    init: RequestInit,
-    retries = 3,
-    timeoutMs = 5_000,
-    backoffMs = 100,
-  ): Promise<Response> {
-    if (Date.now() < this.circuitOpenUntil) {
-      throw new Error('KYC provider circuit breaker open');
-    }
-    let lastError: unknown;
-    for (let attempt = 1; attempt <= retries; attempt++) {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        const res = await fetch(url, { ...init, signal: controller.signal });
-        clearTimeout(timeout);
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        this.failures = 0;
-        return res;
-      } catch (err) {
-        clearTimeout(timeout);
-        lastError = err;
-        if (attempt === retries) break;
-        const delay = backoffMs * 2 ** (attempt - 1);
-        await new Promise((r) => setTimeout(r, delay));
-      }
-    }
-    this.failures += 1;
-    if (this.failures >= 5) {
-      this.circuitOpenUntil = Date.now() + 30_000;
-      this.failures = 0;
-    }
-    KycService.retriesExhausted.add(1);
-    const message =
-      lastError instanceof Error ? lastError.message : String(lastError);
-    throw new Error(
-      `Request to ${url} failed after ${retries} attempts: ${message}`,
-    );
-  }
-
   async process(job: VerificationJob): Promise<void> {
     const record = await this.verifications.findOneByOrFail({
       id: job.verificationId,
@@ -173,23 +130,28 @@ export class KycService {
       const apiUrl = this.config.get<string>('kyc.apiUrl');
       const apiKey = this.config.get<string>('kyc.apiKey');
 
-      const response = await this.fetchWithRetry(
-        apiUrl,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            id: record.id,
-            accountId: job.accountId,
-            name: job.name,
-            ip: job.ip,
-            country,
-          }),
+      const response = await fetchWithRetry(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
         },
-      );
+        body: JSON.stringify({
+          id: record.id,
+          accountId: job.accountId,
+          name: job.name,
+          ip: job.ip,
+          country,
+        }),
+      }, {
+        onRetryExhausted: () => KycService.retriesExhausted.add(1),
+        circuitBreaker: {
+          state: this.circuitBreaker,
+          threshold: 5,
+          cooldownMs: 30_000,
+          openMessage: 'KYC provider circuit breaker open',
+        },
+      });
 
       const providerData = (await response.json()) as {
         status: string;
