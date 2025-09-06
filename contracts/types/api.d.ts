@@ -1148,6 +1148,32 @@ export interface paths {
       };
     };
   };
+  "/admin/audit-logs": {
+    /** Get audit logs */
+    get: {
+      responses: {
+        /** @description Audit logs */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AuditLogsResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/admin/security-alerts": {
+    /** Get security alerts */
+    get: {
+      responses: {
+        /** @description Security alerts */
+        200: {
+          content: {
+            "application/json": components["schemas"]["SecurityAlertsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/admin/messages": {
     /** List user messages */
     get: {
@@ -1200,7 +1226,11 @@ export interface paths {
   "/admin/withdrawals/{id}/confirm": {
     /** Confirm pending withdrawal */
     post: {
-      parameters: { path: { id: string } };
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
       responses: {
         /** @description Withdrawal confirmed */
         200: {
@@ -1214,7 +1244,11 @@ export interface paths {
   "/admin/withdrawals/{id}/reject": {
     /** Reject pending withdrawal */
     post: {
-      parameters: { path: { id: string } };
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
       requestBody: {
         content: {
           "application/json": components["schemas"]["WithdrawalDecisionRequest"];
@@ -1505,6 +1539,16 @@ export interface components {
       errors: number;
       logins: number;
     };
+    AlertItem: {
+      id: string;
+      /** @enum {string} */
+      severity: "danger" | "warning";
+      title: string;
+      body: string;
+      time: string;
+      resolved?: boolean;
+    };
+    SecurityAlertsResponse: components["schemas"]["AlertItem"][];
     WithdrawalDecisionRequest: {
       comment: string;
     };

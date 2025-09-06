@@ -31,3 +31,16 @@ export const AuditLogsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 export type AuditLogsQuery = z.infer<typeof AuditLogsQuerySchema>;
+
+export const AlertItemSchema = z.object({
+  id: z.string(),
+  severity: z.enum(['danger', 'warning']),
+  title: z.string(),
+  body: z.string(),
+  time: z.string(),
+  resolved: z.boolean().optional(),
+});
+export type AlertItem = z.infer<typeof AlertItemSchema>;
+
+export const SecurityAlertsResponseSchema = z.array(AlertItemSchema);
+export type SecurityAlertsResponse = z.infer<typeof SecurityAlertsResponseSchema>;
