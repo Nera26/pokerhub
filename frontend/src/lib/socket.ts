@@ -3,9 +3,12 @@ import { GameActionSchema, type GameActionPayload } from '@shared/types';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
 import { dispatchGlobalError } from '@/hooks/useApiError';
 import { setServerTime } from './server-time';
-import { getSocket, disconnectSocket } from '../app/utils/socket';
+import { createNamespaceSocket } from './createSocket';
 
-let socket: Socket | null = null;
+const { getSocket: getNamespaceSocket, disconnect } =
+  createNamespaceSocket('game');
+
+let initialized = false;
 let lastTick = 0;
 
 interface PendingAction {
@@ -16,43 +19,39 @@ interface PendingAction {
 
 let pending: PendingAction | null = null;
 
-function ensureSocket(): Socket {
-  if (!socket) {
-    socket = getSocket({ namespace: 'game' });
+function onConnect() {
+  const s = getNamespaceSocket();
+  if (pending) {
+    s.emit(pending.event, pending.payload);
+  }
+  s.emit('resume', { tick: lastTick });
+}
 
-    socket.on('state', (state: { tick?: number; version?: string }) => {
+export function getGameSocket(): Socket {
+  const s = getNamespaceSocket({ onConnect });
+  if (!initialized) {
+    s.on('state', (state: { tick?: number; version?: string }) => {
       if (state.version !== EVENT_SCHEMA_VERSION) return;
       if (typeof state.tick === 'number') {
         lastTick = state.tick;
       }
     });
 
-
-    socket.on('server:Clock', (serverNow: number) => {
+    s.on('server:Clock', (serverNow: number) => {
       setServerTime(serverNow);
     });
-
-    socket.on('connect', () => {
-      if (pending) {
-        socket!.emit(pending.event, pending.payload);
-      }
-      socket!.emit('resume', { tick: lastTick });
-    });
+    initialized = true;
   }
-  return socket;
-}
-
-export function getGameSocket(): Socket {
-  return ensureSocket();
+  return s;
 }
 
 export function disconnectGameSocket(): void {
-  if (socket) {
-    socket.off('state');
-    socket.off('server:Clock');
-    socket.off('connect');
-    disconnectSocket('game');
-    socket = null;
+  if (initialized) {
+    const s = getNamespaceSocket();
+    s.off('state');
+    s.off('server:Clock');
+    disconnect();
+    initialized = false;
   }
 }
 
@@ -62,7 +61,7 @@ function emitWithAck(
   ackEvent: string,
   retries = 1,
 ): Promise<void> {
-  const s = ensureSocket();
+  const s = getGameSocket();
   const actionId =
     (payload.actionId as string | undefined) ??
     (typeof crypto !== 'undefined' && 'randomUUID' in crypto
