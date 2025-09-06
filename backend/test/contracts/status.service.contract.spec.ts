@@ -3,7 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from '../../src/app.controller';
 import { AppService } from '../../src/app.service';
 import { API_CONTRACT_VERSION } from '@shared/constants';
-import { getStatus } from '../../../frontend/src/services/status';
+import { ServiceStatusResponseSchema } from '@shared/types';
 
 describe('Contract: frontend service /status', () => {
   let app: INestApplication;
@@ -27,7 +27,12 @@ describe('Contract: frontend service /status', () => {
   });
 
   it('matches shared schema', async () => {
-    const res = await getStatus(baseUrl);
-    expect(res).toEqual({ status: 'ok', contractVersion: API_CONTRACT_VERSION });
+    const res = await fetch(`${baseUrl}/status`);
+    const json = await res.json();
+    const parsed = ServiceStatusResponseSchema.parse(json);
+    expect(parsed).toEqual({
+      status: 'ok',
+      contractVersion: API_CONTRACT_VERSION,
+    });
   });
 });
