@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import WithdrawSection from '@/app/components/wallet/WithdrawSection';
+import WithdrawModalContent from '@/app/components/wallet/WithdrawModalContent';
 
-describe('WithdrawSection', () => {
+describe('WithdrawModalContent', () => {
   const baseProps = {
     availableBalance: 100,
     bankAccountNumber: '123456789',
@@ -11,8 +11,16 @@ describe('WithdrawSection', () => {
     onClose: jest.fn(),
   };
 
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
   it('validates input and disables confirm for invalid amount', async () => {
-    render(<WithdrawSection {...baseProps} onConfirm={jest.fn()} />);
+    render(<WithdrawModalContent {...baseProps} onConfirm={jest.fn()} />);
 
     const input = screen.getByPlaceholderText('0.00');
     await userEvent.type(input, '-10');
@@ -22,7 +30,7 @@ describe('WithdrawSection', () => {
   });
 
   it('shows error when amount exceeds balance', async () => {
-    render(<WithdrawSection {...baseProps} onConfirm={jest.fn()} />);
+    render(<WithdrawModalContent {...baseProps} onConfirm={jest.fn()} />);
 
     const input = screen.getByPlaceholderText('0.00');
     await userEvent.type(input, '150');
@@ -33,7 +41,9 @@ describe('WithdrawSection', () => {
 
   it('calls onConfirm with valid amount', async () => {
     const onConfirm = jest.fn();
-    render(<WithdrawSection {...baseProps} onConfirm={onConfirm} />);
+    localStorage.setItem('deviceId', 'device-123');
+
+    render(<WithdrawModalContent {...baseProps} onConfirm={onConfirm} />);
 
     const input = screen.getByPlaceholderText('0.00');
     await userEvent.type(input, '50');
@@ -42,6 +52,10 @@ describe('WithdrawSection', () => {
     expect(button).toBeEnabled();
 
     await userEvent.click(button);
-    expect(onConfirm).toHaveBeenCalledWith(50);
+    expect(onConfirm).toHaveBeenCalledWith({
+      amount: 50,
+      deviceId: 'device-123',
+      currency: 'USD',
+    });
   });
 });
