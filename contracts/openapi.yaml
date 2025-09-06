@@ -1581,9 +1581,19 @@ components:
           type: number
         revenue:
           type: number
+        activity:
+          type: array
+          items:
+            type: number
+        errors:
+          type: array
+          items:
+            type: number
       required:
         - online
         - revenue
+        - activity
+        - errors
     AuditLogEntry:
       type: object
       properties:

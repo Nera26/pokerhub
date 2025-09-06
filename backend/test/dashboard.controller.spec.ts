@@ -17,7 +17,16 @@ describe('DashboardController', () => {
         {
           provide: 'REDIS_CLIENT',
           useValue: {
-            mget: jest.fn().mockResolvedValue(['5', '1234']),
+            get: jest.fn().mockImplementation((key: string) => {
+              if (key === 'metrics:online') return Promise.resolve('5');
+              if (key === 'metrics:revenue') return Promise.resolve('1234');
+              return Promise.resolve(null);
+            }),
+            lrange: jest.fn().mockImplementation((key: string) => {
+              if (key === 'metrics:activity') return Promise.resolve(['1', '2']);
+              if (key === 'metrics:errors') return Promise.resolve(['3']);
+              return Promise.resolve([]);
+            }),
           },
         },
       ],
@@ -41,6 +50,6 @@ describe('DashboardController', () => {
       .get('/dashboard/metrics')
       .set('Authorization', 'Bearer test')
       .expect(200)
-      .expect({ online: 5, revenue: 1234 });
+      .expect({ online: 5, revenue: 1234, activity: [1, 2], errors: [3] });
   });
 });

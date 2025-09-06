@@ -3,10 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getBaseUrl } from '@/lib/base-url';
 import { handleResponse, ApiError } from '@/lib/api/client';
-import {
-  DashboardMetricsSchema,
-  type DashboardMetrics,
-} from '@shared/types';
+import { DashboardMetricsSchema, type DashboardMetrics } from '@shared/types';
 
 async function fetchMetrics({
   signal,
@@ -29,20 +26,9 @@ async function fetchMetrics({
   }
 }
 
-interface MetricsWithDatasets extends DashboardMetrics {
-  activity: number[];
-  errors: number[];
-}
-
 export function useDashboardMetrics() {
-  return useQuery<MetricsWithDatasets>({
+  return useQuery<DashboardMetrics>({
     queryKey: ['dashboard-metrics'],
     queryFn: ({ signal }) => fetchMetrics({ signal }),
-    select: (data) => ({
-      online: data.online,
-      revenue: data.revenue,
-      activity: data.activity ?? [],
-      errors: data.errors ?? [],
-    }),
   });
 }
