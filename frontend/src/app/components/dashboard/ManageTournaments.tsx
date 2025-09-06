@@ -1,6 +1,13 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  fetchAdminTournaments,
+  createAdminTournament,
+  updateAdminTournament,
+  deleteAdminTournament,
+} from '@/lib/api/admin';
 import {
   useForm,
   type FieldErrors,
@@ -60,106 +67,6 @@ const tournamentSchema = z.object({
 });
 type Tournament = z.infer<typeof tournamentSchema>;
 
-const initialData: Tournament[] = [
-  {
-    id: 1,
-    name: 'Sunday Million',
-    gameType: "Texas Hold'em",
-    buyin: 215,
-    fee: 15,
-    prizePool: 1_000_000,
-    date: '2024-12-15',
-    time: '20:00',
-    format: 'Regular',
-    seatCap: '',
-    description:
-      'Weekly flagship tournament with massive guaranteed prize pool',
-    rebuy: false,
-    addon: true,
-    status: 'running',
-  },
-  {
-    id: 2,
-    name: 'Daily Deepstack',
-    gameType: "Texas Hold'em",
-    buyin: 55,
-    fee: 5,
-    prizePool: 50_000,
-    date: '2024-12-16',
-    time: '15:00',
-    format: 'Deepstack',
-    seatCap: 1000,
-    description: '',
-    rebuy: true,
-    addon: true,
-    status: 'scheduled',
-  },
-  {
-    id: 3,
-    name: 'Turbo Knockout',
-    gameType: "Texas Hold'em",
-    buyin: 22,
-    fee: 2,
-    prizePool: 15_000,
-    date: '2024-12-16',
-    time: '18:30',
-    format: 'Turbo',
-    seatCap: '',
-    description: 'Progressive knockout tournament with bounties',
-    rebuy: false,
-    addon: false,
-    status: 'scheduled',
-  },
-  {
-    id: 4,
-    name: 'Omaha High Roller',
-    gameType: 'Omaha 4',
-    buyin: 530,
-    fee: 20,
-    prizePool: 250_000,
-    date: '2024-12-17',
-    time: '19:00',
-    format: 'Regular',
-    seatCap: 500,
-    description: '',
-    rebuy: true,
-    addon: true,
-    status: 'scheduled',
-  },
-  {
-    id: 5,
-    name: 'Micro Stakes MTT',
-    gameType: "Texas Hold'em",
-    buyin: 5.5,
-    fee: 0.5,
-    prizePool: 2_500,
-    date: '2024-12-16',
-    time: '21:15',
-    format: 'Regular',
-    seatCap: '',
-    description: '',
-    rebuy: true,
-    addon: false,
-    status: 'running',
-  },
-  {
-    id: 6,
-    name: 'Freeroll Championship',
-    gameType: "Texas Hold'em",
-    buyin: 0,
-    fee: 0,
-    prizePool: 5_000,
-    date: '2024-12-18',
-    time: '12:00',
-    format: 'Freeroll',
-    seatCap: 2000,
-    description: 'Monthly freeroll for all registered players',
-    rebuy: false,
-    addon: false,
-    status: 'cancelled',
-  },
-];
-
 function dollars(n: number) {
   return n.toLocaleString(undefined, {
     style: 'currency',
@@ -186,7 +93,15 @@ function timeLabel(hhmm: string) {
 }
 
 export default function ManageTournaments() {
-  const [rows, setRows] = useState<Tournament[]>(initialData);
+  const queryClient = useQueryClient();
+  const {
+    data: rows = [],
+    isLoading,
+    error,
+  } = useQuery<Tournament[]>({
+    queryKey: ['admin', 'tournaments'],
+    queryFn: fetchAdminTournaments,
+  });
   const [statusFilter, setStatusFilter] = useState<'all' | Status>('all');
   const [search, setSearch] = useState('');
 
@@ -258,6 +173,22 @@ export default function ManageTournaments() {
   const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   // actions
+  const create = useMutation({
+    mutationFn: (body: Tournament) => createAdminTournament(body),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['admin', 'tournaments'] }),
+  });
+  const update = useMutation({
+    mutationFn: ({ id, body }: { id: number; body: Tournament }) =>
+      updateAdminTournament(id, body),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['admin', 'tournaments'] }),
+  });
+  const remove = useMutation({
+    mutationFn: (id: number) => deleteAdminTournament(id),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['admin', 'tournaments'] }),
+  });
   const openCreate = () => {
     reset(emptyTournament);
     setSelected(null);
@@ -274,28 +205,45 @@ export default function ManageTournaments() {
   };
 
   const onCreate = (data: Tournament) => {
-    const nextId = Math.max(0, ...rows.map((r) => r.id)) + 1;
-    setRows([{ ...data, id: nextId }, ...rows]);
-    setCreateOpen(false);
-    setPage(1);
-    setToast({ open: true, msg: 'Tournament created', type: 'success' });
+    create.mutate(data, {
+      onSuccess: () => {
+        setCreateOpen(false);
+        setPage(1);
+        setToast({ open: true, msg: 'Tournament created', type: 'success' });
+      },
+      onError: () =>
+        setToast({ open: true, msg: 'Failed to create', type: 'error' }),
+    });
   };
   const onEdit = (data: Tournament) => {
     if (!selected) return;
-    setRows((prev) =>
-      prev.map((r) =>
-        r.id === selected.id ? { ...data, id: selected.id } : r,
-      ),
+    update.mutate(
+      { id: selected.id, body: data },
+      {
+        onSuccess: () => {
+          setEditOpen(false);
+          setToast({ open: true, msg: 'Changes saved', type: 'success' });
+        },
+        onError: () =>
+          setToast({ open: true, msg: 'Failed to save', type: 'error' }),
+      },
     );
-    setEditOpen(false);
-    setToast({ open: true, msg: 'Changes saved', type: 'success' });
   };
   const confirmDelete = () => {
     if (!selected) return;
-    setRows((prev) => prev.filter((r) => r.id !== selected.id));
-    setDeleteOpen(false);
-    setSelected(null);
-    setToast({ open: true, msg: 'Tournament deleted', type: 'success' });
+    remove.mutate(selected.id, {
+      onSuccess: () => {
+        setDeleteOpen(false);
+        setSelected(null);
+        setToast({
+          open: true,
+          msg: 'Tournament deleted',
+          type: 'success',
+        });
+      },
+      onError: () =>
+        setToast({ open: true, msg: 'Failed to delete', type: 'error' }),
+    });
   };
 
   const statusPill = (s: Tournament['status']) => {
@@ -349,6 +297,17 @@ export default function ManageTournaments() {
       {children}
     </button>
   );
+  if (isLoading) {
+    return <div>Loading tournaments...</div>;
+  }
+
+  if (error) {
+    return (
+      <div role="alert" className="text-red-500">
+        Failed to load tournaments.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
