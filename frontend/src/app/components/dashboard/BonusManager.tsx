@@ -4,6 +4,15 @@ import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  fetchBonuses,
+  createBonus,
+  updateBonus,
+  deleteBonus,
+  type Bonus,
+} from '@/lib/api/admin';
+import type { ApiError } from '@/lib/api/client';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faChartLine,
@@ -26,20 +35,6 @@ type BonusStatus = 'active' | 'paused';
 type StatusFilter = BonusStatus | 'all' | 'expired';
 type PromoType = 'deposit' | 'rakeback' | 'ticket' | 'rebate' | 'first-deposit';
 
-type Bonus = {
-  id: number;
-  name: string;
-  type: PromoType;
-  description: string;
-  bonusPercent?: number;
-  maxBonusUsd?: number;
-  expiryDate?: string; // YYYY-MM-DD
-  eligibility: 'all' | 'new' | 'vip' | 'active';
-  status: BonusStatus;
-  claimsTotal: number;
-  claimsWeek?: number;
-};
-
 const bonusFormSchema = z.object({
   name: z.string().min(1, 'Promotion name is required'),
   type: z.enum(['deposit', 'rakeback', 'ticket', 'rebate', 'first-deposit']),
@@ -52,57 +47,6 @@ const bonusFormSchema = z.object({
 });
 
 type BonusFormValues = z.infer<typeof bonusFormSchema>;
-
-const initialBonuses: Bonus[] = [
-  {
-    id: 1,
-    name: 'Welcome Deposit Bonus',
-    type: 'deposit',
-    description:
-      '100% match bonus up to $500 for new players on their first deposit',
-    bonusPercent: 100,
-    maxBonusUsd: 500,
-    expiryDate: '2026-12-31', // future -> matches HTML ACTIVE
-    eligibility: 'new',
-    status: 'active',
-    claimsTotal: 347,
-    claimsWeek: 42,
-  },
-  {
-    id: 2,
-    name: 'Weekly Rakeback',
-    type: 'rakeback',
-    description: '15% rakeback every Monday for VIP players',
-    bonusPercent: 15,
-    eligibility: 'vip',
-    status: 'active',
-    claimsTotal: 89,
-    claimsWeek: 18,
-  },
-  {
-    id: 3,
-    name: 'Tournament Tickets',
-    type: 'ticket',
-    description: 'Free $50 tournament entry for completing daily challenges',
-    maxBonusUsd: 50,
-    expiryDate: '2026-01-15', // bumped so it’s not EXPIRED
-    eligibility: 'all',
-    status: 'active',
-    claimsTotal: 156,
-    claimsWeek: 22,
-  },
-  {
-    id: 4,
-    name: 'Loyalty Rewards',
-    type: 'rebate',
-    description: 'Monthly bonus based on total hands played',
-    expiryDate: '2026-03-30', // bumped so it shows PAUSED (not expired)
-    eligibility: 'active',
-    status: 'paused',
-    claimsTotal: 234,
-    claimsWeek: 7,
-  },
-];
 
 function dateLabel(iso?: string) {
   if (!iso) return 'Ongoing';
@@ -121,7 +65,15 @@ function isExpired(iso?: string) {
 }
 
 export default function BonusManager() {
-  const [bonuses, setBonuses] = useState<Bonus[]>(initialBonuses);
+  const queryClient = useQueryClient();
+  const {
+    data: bonuses = [],
+    isLoading,
+    error,
+  } = useQuery<Bonus[], ApiError>({
+    queryKey: ['admin-bonuses'],
+    queryFn: ({ signal }) => fetchBonuses({ signal }),
+  });
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [search, setSearch] = useState('');
   const [editOpen, setEditOpen] = useState(false);
@@ -165,6 +117,73 @@ export default function BonusManager() {
     open: false,
     msg: '',
     type: 'success',
+  });
+
+  const createMutation = useMutation({
+    mutationFn: createBonus,
+    onMutate: async (newBonus) => {
+      await queryClient.cancelQueries({ queryKey: ['admin-bonuses'] });
+      const previous =
+        queryClient.getQueryData<Bonus[]>(['admin-bonuses']) ?? [];
+      const optimistic: Bonus = {
+        ...newBonus,
+        id: Date.now(),
+        claimsTotal: 0,
+        claimsWeek: 0,
+      } as Bonus;
+      queryClient.setQueryData(['admin-bonuses'], [optimistic, ...previous]);
+      return { previous };
+    },
+    onError: (_err, _newBonus, context) => {
+      queryClient.setQueryData(['admin-bonuses'], context?.previous);
+      setToast({ open: true, msg: 'Failed to create bonus', type: 'error' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-bonuses'] });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<Bonus> }) =>
+      updateBonus(id, data),
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['admin-bonuses'] });
+      const previous =
+        queryClient.getQueryData<Bonus[]>(['admin-bonuses']) ?? [];
+      queryClient.setQueryData(
+        ['admin-bonuses'],
+        previous.map((b) => (b.id === id ? { ...b, ...data } : b)),
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      queryClient.setQueryData(['admin-bonuses'], context?.previous);
+      setToast({ open: true, msg: 'Failed to update bonus', type: 'error' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-bonuses'] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteBonus,
+    onMutate: async (id: number) => {
+      await queryClient.cancelQueries({ queryKey: ['admin-bonuses'] });
+      const previous =
+        queryClient.getQueryData<Bonus[]>(['admin-bonuses']) ?? [];
+      queryClient.setQueryData(
+        ['admin-bonuses'],
+        previous.filter((b) => b.id !== id),
+      );
+      return { previous };
+    },
+    onError: (_err, _id, context) => {
+      queryClient.setQueryData(['admin-bonuses'], context?.previous);
+      setToast({ open: true, msg: 'Failed to delete bonus', type: 'error' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-bonuses'] });
+    },
   });
 
   const filtered = useMemo(() => {
@@ -213,55 +232,67 @@ export default function BonusManager() {
 
   const saveEdit = handleEditSubmit((data) => {
     if (!selected) return;
-    setBonuses((prev) =>
-      prev.map((x) =>
-        x.id === selected.id
-          ? { ...x, ...data, expiryDate: data.expiryDate || undefined }
-          : x,
-      ),
+    updateMutation.mutate(
+      {
+        id: selected.id,
+        data: { ...data, expiryDate: data.expiryDate || undefined },
+      },
+      {
+        onSuccess: () =>
+          setToast({ open: true, msg: 'Changes saved', type: 'success' }),
+      },
     );
     setEditOpen(false);
-    setToast({ open: true, msg: 'Changes saved', type: 'success' });
   });
   const confirmPause = () => {
     if (!selected) return;
-    setBonuses((prev) =>
-      prev.map((x) => (x.id === selected.id ? { ...x, status: 'paused' } : x)),
+    updateMutation.mutate(
+      { id: selected.id, data: { status: 'paused' } },
+      {
+        onSuccess: () =>
+          setToast({
+            open: true,
+            msg: `Paused "${selected.name}"`,
+            type: 'success',
+          }),
+      },
     );
     setPauseOpen(false);
-    setToast({ open: true, msg: `Paused "${selected.name}"`, type: 'success' });
   };
   const confirmResume = () => {
     if (!selected) return;
-    setBonuses((prev) =>
-      prev.map((x) => (x.id === selected.id ? { ...x, status: 'active' } : x)),
+    updateMutation.mutate(
+      { id: selected.id, data: { status: 'active' } },
+      {
+        onSuccess: () =>
+          setToast({
+            open: true,
+            msg: `Resumed "${selected.name}"`,
+            type: 'success',
+          }),
+      },
     );
     setResumeOpen(false);
-    setToast({
-      open: true,
-      msg: `Resumed "${selected.name}"`,
-      type: 'success',
-    });
   };
 
   const createPromotion = handleCreateSubmit((data) => {
-    const nextId = Math.max(0, ...bonuses.map((b) => b.id)) + 1;
-    const next: Bonus = {
-      id: nextId,
-      name: data.name || 'Untitled Promotion',
-      type: data.type,
-      description: data.description,
-      bonusPercent: data.bonusPercent ?? undefined,
-      maxBonusUsd: data.maxBonusUsd ?? undefined,
-      expiryDate: data.expiryDate || undefined,
-      eligibility: data.eligibility,
-      status: data.status,
-      claimsTotal: 0,
-      claimsWeek: 0,
-    };
-    setBonuses((prev) => [next, ...prev]);
+    createMutation.mutate(
+      {
+        name: data.name || 'Untitled Promotion',
+        type: data.type,
+        description: data.description,
+        bonusPercent: data.bonusPercent ?? undefined,
+        maxBonusUsd: data.maxBonusUsd ?? undefined,
+        expiryDate: data.expiryDate || undefined,
+        eligibility: data.eligibility,
+        status: data.status,
+      },
+      {
+        onSuccess: () =>
+          setToast({ open: true, msg: 'Promotion created', type: 'success' }),
+      },
+    );
     resetCreate();
-    setToast({ open: true, msg: 'Promotion created', type: 'success' });
   });
 
   const StatusPill = ({ b }: { b: Bonus }) => {
@@ -358,38 +389,11 @@ export default function BonusManager() {
             </span>
           </div>
 
-          {filtered.map((b) => (
-            <Card key={b.id} className="border border-dark">
-              <CardContent>
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1">
-                    <h4 className="text-lg font-bold mb-2">{b.name}</h4>
-                    <p className="text-text-secondary text-sm mb-3">
-                      {b.description}
-                    </p>
-                  </div>
-                  <StatusPill b={b} />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <p className="text-text-secondary text-xs">Expiry Date</p>
-                    <p className="font-semibold">{dateLabel(b.expiryDate)}</p>
-                  </div>
-                  <div>
-                    <p className="text-text-secondary text-xs">Total Claims</p>
-                    <p className="font-semibold text-accent-yellow">
-                      {b.claimsTotal.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-
-                <StatusActions b={b} />
-              </CardContent>
-            </Card>
-          ))}
-
-          {filtered.length === 0 && (
+          {isLoading ? (
+            <p>Loading bonuses...</p>
+          ) : error ? (
+            <p role="alert">{error.message}</p>
+          ) : filtered.length === 0 ? (
             <Card className="border border-dark">
               <CardContent>
                 <p className="text-text-secondary">
@@ -397,6 +401,37 @@ export default function BonusManager() {
                 </p>
               </CardContent>
             </Card>
+          ) : (
+            filtered.map((b) => (
+              <Card key={b.id} className="border border-dark">
+                <CardContent>
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex-1">
+                      <h4 className="text-lg font-bold mb-2">{b.name}</h4>
+                      <p className="text-text-secondary text-sm mb-3">
+                        {b.description}
+                      </p>
+                    </div>
+                    <StatusPill b={b} />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <p className="text-text-secondary text-xs">Expiry Date</p>
+                      <p className="font-semibold">{dateLabel(b.expiryDate)}</p>
+                    </div>
+                    <div>
+                      <p className="text-text-secondary text-xs">Total Claims</p>
+                      <p className="font-semibold text-accent-yellow">
+                        {b.claimsTotal.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+
+                  <StatusActions b={b} />
+                </CardContent>
+              </Card>
+            ))
           )}
         </section>
 
