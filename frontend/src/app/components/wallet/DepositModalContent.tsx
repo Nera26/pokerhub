@@ -5,9 +5,9 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import Button from '../ui/Button';
-import Input from '../ui/Input';
 import { BankTransferDepositResponse } from '@shared/types';
 import Tooltip from '../ui/Tooltip';
+import AmountInput from './AmountInput';
 
 export interface DepositModalContentProps {
   onClose: () => void;
@@ -119,11 +119,9 @@ export default function DepositModalContent({
       <h2 className="text-xl sm:text-2xl font-bold text-text-primary">
         Deposit via Bank Transfer
       </h2>
-      <Input
+      <AmountInput
         id="deposit-amount"
         label="Enter Amount (USD)"
-        type="number"
-        placeholder="0.00"
         error={errors.amount?.message}
         {...register('amount')}
       />

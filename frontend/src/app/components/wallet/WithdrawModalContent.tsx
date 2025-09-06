@@ -5,8 +5,8 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons/faTimes';
-import Input from '../ui/Input';
 import Button from '../ui/Button';
+import AmountInput from './AmountInput';
 
 export interface WithdrawModalContentProps {
   /** Maximum available real balance */
@@ -96,11 +96,9 @@ export default function WithdrawModalContent({
 
       {/* Amount Input */}
       <div className="mb-4">
-        <Input
+        <AmountInput
           id="withdraw-amount"
           label="Enter Amount (USD)"
-          type="number"
-          placeholder="0.00"
           error={errors.amount?.message}
           {...register('amount')}
         />
