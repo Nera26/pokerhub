@@ -18,7 +18,7 @@ import type {
   CalculatePrizesResponse,
   HotPatchLevelRequest,
   TournamentScheduleRequest,
-} from '../schemas/tournament';
+} from '@shared/types';
 import type { Request } from 'express';
 
 @UseGuards(RateLimitGuard)

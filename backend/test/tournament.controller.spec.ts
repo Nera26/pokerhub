@@ -11,7 +11,7 @@ describe('TournamentController', () => {
   let app: INestApplication;
   const svc = {
     cancel: jest.fn().mockResolvedValue(undefined),
-    register: jest.fn(),
+    join: jest.fn(),
     withdraw: jest.fn(),
     scheduleTournament: jest.fn(),
   } as Partial<TournamentService>;
@@ -67,12 +67,12 @@ describe('TournamentController', () => {
 
 
   it('registers player', async () => {
-    svc.register?.mockResolvedValue({ id: 'seat1' } as any);
+    svc.join?.mockResolvedValue({ id: 'seat1' } as any);
     await request(app.getHttpServer())
       .post('/tournaments/t1/register')
       .set('Authorization', 'Bearer u1')
       .expect(201);
-    expect(svc.register).toHaveBeenCalledWith('t1', 'u1');
+    expect(svc.join).toHaveBeenCalledWith('t1', 'u1');
   });
 
   it('withdraws player', async () => {
