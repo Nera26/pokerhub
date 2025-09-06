@@ -3,10 +3,11 @@ import userEvent from '@testing-library/user-event';
 import Page from '@/app/dashboard/page';
 
 const replace = jest.fn();
+const push = jest.fn();
 let searchParams = new URLSearchParams('?tab=users');
 
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ replace }),
+  useRouter: () => ({ replace, push }),
   usePathname: () => '/dashboard',
   useSearchParams: () => searchParams,
 }));
@@ -26,6 +27,7 @@ jest.mock('@/hooks/useDashboardMetrics', () => ({
 describe('Dashboard page', () => {
   beforeEach(() => {
     replace.mockClear();
+    push.mockClear();
     searchParams = new URLSearchParams('?tab=users');
   });
 
@@ -42,5 +44,15 @@ describe('Dashboard page', () => {
     render(<Page />);
     await user.click(screen.getByRole('button', { name: /analytics/i }));
     expect(replace).toHaveBeenCalledWith('/dashboard?tab=analytics');
+  });
+
+  it('navigates to /review', async () => {
+    const user = userEvent.setup();
+    render(<Page />);
+    const reviewBtn = await screen.findByRole('button', {
+      name: /collusion review/i,
+    });
+    await user.click(reviewBtn);
+    expect(push).toHaveBeenCalledWith('/review');
   });
 });

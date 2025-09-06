@@ -13,8 +13,10 @@ import {
   faChartBar,
   faDollarSign,
   faClipboardList,
+  faMagnifyingGlass,
 } from '@fortawesome/free-solid-svg-icons';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export type SidebarTab =
   | 'dashboard'
@@ -26,13 +28,15 @@ export type SidebarTab =
   | 'bonus'
   | 'broadcast'
   | 'messages'
-  | 'analytics';
+  | 'analytics'
+  | 'review';
 
 const items: {
   id: SidebarTab;
   label: string;
   icon: IconDefinition;
   disabled?: boolean;
+  path?: string;
 }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: faChartLine },
   { id: 'users', label: 'Manage Users', icon: faUsers },
@@ -44,6 +48,7 @@ const items: {
   { id: 'messages', label: 'Messages', icon: faEnvelope },
   { id: 'audit', label: 'Audit Logs', icon: faClipboardList },
   { id: 'analytics', label: 'Analytics', icon: faChartBar },
+  { id: 'review', label: 'Collusion Review', icon: faMagnifyingGlass, path: '/review' },
 ];
 
 interface SidebarProps {
@@ -64,9 +69,15 @@ export default function Sidebar({
   const [internalOpen, setInternalOpen] = useState(false);
   const sidebarOpen = open ?? internalOpen;
   const updateOpen = setOpen ?? setInternalOpen;
+  const router = useRouter();
 
-  const change = (id: SidebarTab, disabled?: boolean) => {
+  const change = (id: SidebarTab, disabled?: boolean, path?: string) => {
     if (disabled) return;
+    if (path) {
+      router.push(path);
+      updateOpen(false);
+      return;
+    }
     if (onChange) onChange(id);
     else setInternal(id);
     updateOpen(false);
@@ -85,7 +96,7 @@ export default function Sidebar({
             return (
               <button
                 key={it.id}
-                onClick={() => change(it.id, disabled)}
+                onClick={() => change(it.id, disabled, it.path)}
                 disabled={disabled}
                 aria-current={isActive ? 'page' : undefined}
                 className={`w-full flex items-center gap-3 rounded-xl px-3 py-2 text-left transition

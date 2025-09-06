@@ -2,6 +2,16 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Sidebar from '@/app/components/dashboard/Sidebar';
 
+const push = jest.fn();
+
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ push }),
+}));
+
+beforeEach(() => {
+  push.mockClear();
+});
+
 describe('Sidebar', () => {
   it('switches active tab when clicked', async () => {
     render(<Sidebar />);

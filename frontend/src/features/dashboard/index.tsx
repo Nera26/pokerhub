@@ -27,6 +27,7 @@ const ALL_TABS: SidebarTab[] = [
   'broadcast',
   'messages',
   'analytics',
+  'review',
 ];
 
 const titleMap: Partial<Record<SidebarTab, string>> = {
@@ -39,6 +40,7 @@ const titleMap: Partial<Record<SidebarTab, string>> = {
   bonus: 'Bonus Manager',
   broadcast: 'Broadcast Tool',
   analytics: 'Analytics',
+  review: 'Collusion Review',
 };
 
 const TAB_CONFIG: Record<
@@ -98,6 +100,11 @@ const TAB_CONFIG: Record<
     loader: () => import('@/app/components/dashboard/analytics/Analytics'),
     loading: <div>Loading analytics...</div>,
     error: <div>Error loading analytics.</div>,
+  },
+  review: {
+    loader: () => import('@/features/collusion'),
+    loading: <div>Loading review...</div>,
+    error: <div>Error loading review.</div>,
   },
 };
 
