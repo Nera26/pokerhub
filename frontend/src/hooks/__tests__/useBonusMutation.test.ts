@@ -31,6 +31,17 @@ describe('useBonusMutation', () => {
     return { setQueryData, invalidateQueries };
   }
 
+  function setupMutationMock<T>(options: any) {
+    const calls: any[] = [];
+    (useMutation as jest.Mock).mockImplementation((opts) => {
+      calls.push(opts);
+      return { mutate: jest.fn() };
+    });
+    const setToast = jest.fn();
+    renderHook(() => useBonusMutation<T>({ ...options, setToast }));
+    return { setToast, opts: calls[0] };
+  }
+
   it('handles create with cache update and rollback', async () => {
     const { setQueryData, invalidateQueries } = setupClient([]);
     const mutationCalls: any[] = [];
@@ -91,22 +102,12 @@ describe('useBonusMutation', () => {
 
   it('handles delete with cache update and rollback', async () => {
     const { setQueryData, invalidateQueries } = setupClient([baseBonus]);
-    const mutationCalls: any[] = [];
-    (useMutation as jest.Mock).mockImplementation((opts) => {
-      mutationCalls.push(opts);
-      return { mutate: jest.fn() };
+    const { setToast, opts } = setupMutationMock<number>({
+      mutationFn: jest.fn(),
+      updateCache: (prev, id) => prev.filter((b) => b.id !== id),
+      successToast: 'Deleted bonus',
+      errorToast: 'Failed to delete bonus',
     });
-    const setToast = jest.fn();
-    renderHook(() =>
-      useBonusMutation<number>({
-        mutationFn: jest.fn(),
-        updateCache: (prev, id) => prev.filter((b) => b.id !== id),
-        successToast: 'Deleted bonus',
-        errorToast: 'Failed to delete bonus',
-        setToast,
-      }),
-    );
-    const opts = mutationCalls[0];
     const ctx = await opts.onMutate(1);
     expect(setQueryData).toHaveBeenCalledWith(['admin-bonuses'], []);
     opts.onError(new Error('err'), 1, ctx);
@@ -120,23 +121,13 @@ describe('useBonusMutation', () => {
 
   it('handles toggle with dynamic success toast', async () => {
     const { setQueryData, invalidateQueries } = setupClient([baseBonus]);
-    const mutationCalls: any[] = [];
-    (useMutation as jest.Mock).mockImplementation((opts) => {
-      mutationCalls.push(opts);
-      return { mutate: jest.fn() };
+    const { setToast, opts } = setupMutationMock<{ id: number; status: string; name: string }>({
+      mutationFn: jest.fn(),
+      updateCache: (prev, { id, status }) => prev.map((b) => (b.id === id ? { ...b, status } : b)),
+      successToast: ({ status, name }) =>
+        status === 'paused' ? `Paused "${name}"` : `Resumed "${name}"`,
+      errorToast: 'Failed to update bonus',
     });
-    const setToast = jest.fn();
-    renderHook(() =>
-      useBonusMutation<{ id: number; status: string; name: string }>({
-        mutationFn: jest.fn(),
-        updateCache: (prev, { id, status }) => prev.map((b) => (b.id === id ? { ...b, status } : b)),
-        successToast: ({ status, name }) =>
-          status === 'paused' ? `Paused "${name}"` : `Resumed "${name}"`,
-        errorToast: 'Failed to update bonus',
-        setToast,
-      }),
-    );
-    const opts = mutationCalls[0];
     const vars = { id: 1, status: 'paused', name: 'Test Bonus' };
     const ctx = await opts.onMutate(vars);
     expect(setQueryData).toHaveBeenCalledWith(['admin-bonuses'], [{ ...baseBonus, status: 'paused' }]);
