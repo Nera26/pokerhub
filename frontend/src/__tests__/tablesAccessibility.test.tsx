@@ -48,6 +48,8 @@ describe('tables accessibility', () => {
     renderWithClient(
       <SidePanel
         isOpen
+        tableId=""
+        heroId=""
         chatMessages={[]}
         onSendMessage={() => {}}
         onToggleSound={() => {}}

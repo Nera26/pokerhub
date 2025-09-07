@@ -36,6 +36,12 @@ export type {
   UpdateTableRequest,
 };
 
+const HandSummarySchema = z.object({
+  id: z.string(),
+});
+export type HandSummary = z.infer<typeof HandSummarySchema>;
+export { HandSummarySchema };
+
 export async function fetchTables(
   { signal }: { signal?: AbortSignal } = {},
 ): Promise<TableList> {
@@ -60,6 +66,16 @@ export async function fetchChatMessages(
   { signal }: { signal?: AbortSignal } = {},
 ): Promise<ChatMessagesResponse> {
   return apiClient(`/api/tables/${id}/chat`, ChatMessagesResponseSchema, {
+    signal,
+    cache: 'no-store',
+  });
+}
+
+export async function fetchTableHands(
+  id: string,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<HandSummary[]> {
+  return apiClient(`/api/table/${id}/hands`, z.array(HandSummarySchema), {
     signal,
     cache: 'no-store',
   });
