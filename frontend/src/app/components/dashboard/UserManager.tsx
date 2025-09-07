@@ -38,6 +38,9 @@ type User = {
   avatar: string;
 };
 
+const DEFAULT_AVATAR =
+  'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+
 
 export default function UserManager() {
   useRenderCount('UserManager');
@@ -105,21 +108,19 @@ export default function UserManager() {
     onMutate: async (newUser) => {
       await queryClient.cancelQueries({ queryKey: ['users'] });
       const previous = queryClient.getQueryData<User[]>(['users']);
-      const id = Date.now();
-      const avatar =
-        'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg';
+      const tempId = Date.now();
       queryClient.setQueryData<User[]>(['users'], (old) => [
         ...(old ?? []),
         {
-          id,
+          id: tempId,
           name: newUser.username,
           email: newUser.email,
           balance: 0,
           status: newUser.status as User['status'],
-          avatar,
+          avatar: '',
         },
       ]);
-      return { previous };
+      return { previous, tempId };
     },
     onError: (_err, _newUser, ctx) => {
       if (ctx?.previous) {
@@ -130,7 +131,16 @@ export default function UserManager() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
-    onSuccess: () => {
+    onSuccess: (created, _newUser, ctx) => {
+      queryClient.setQueryData<User[]>(['users'], (old) =>
+        old
+          ? old.map((u) =>
+              u.id === (ctx?.tempId ?? u.id)
+                ? { ...u, ...created, avatar: created.avatar || DEFAULT_AVATAR }
+                : u,
+            )
+          : [],
+      );
       showToast('User added successfully');
     },
   });
@@ -371,7 +381,7 @@ export default function UserManager() {
                           >
                             <div className="col-span-2 flex items-center gap-3">
                               <Image
-                                src={w.avatar}
+                                src={w.avatar || DEFAULT_AVATAR}
                                 alt={w.user}
                                 width={32}
                                 height={32}
@@ -477,7 +487,7 @@ export default function UserManager() {
                         </div>
                         <div className="col-span-3 flex items-center gap-3">
                           <Image
-                            src={u.avatar}
+                            src={u.avatar || DEFAULT_AVATAR}
                             alt={u.name}
                             width={40}
                             height={40}
