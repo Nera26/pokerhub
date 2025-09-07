@@ -23,5 +23,3 @@ export function createQueryHook<T>(
   };
 }
 
-export default createQueryHook;
-
