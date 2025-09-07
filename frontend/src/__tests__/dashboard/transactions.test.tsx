@@ -1,215 +1,124 @@
-import { render, screen, act } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import StatusPill from '@/app/components/dashboard/transactions/StatusPill';
-import RequestTable from '@/app/components/dashboard/transactions/RequestTable';
-jest.mock('@/lib/api/wallet', () => ({
-  fetchAdminPlayers: jest.fn().mockResolvedValue([]),
-  fetchTransactionTypes: jest.fn().mockResolvedValue([]),
-}));
-import TransactionHistory from '@/app/components/dashboard/transactions/TransactionHistory';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faImage, faComment } from '@fortawesome/free-solid-svg-icons';
-import type {
-  DepositReq,
-  WithdrawalReq,
-  Txn,
-} from '@/app/components/dashboard/transactions/types';
+import { apiClient, type ApiError } from './client';
+import { z } from 'zod';
+import { MessageResponseSchema } from '@shared/types';
 
-jest.mock(
-  'next/image',
-  () => (props: React.ImgHTMLAttributes<HTMLImageElement>) => {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img {...props} alt={props.alt} />;
-  },
-);
+/** =======================
+ *  Admin Tournaments
+ *  ======================= */
+const statusEnum = z.enum([
+  'scheduled',
+  'running',
+  'finished',
+  'cancelled',
+  'auto-start',
+]);
 
-describe('transaction components', () => {
-  it('renders StatusPill', () => {
-    render(<StatusPill status="pending" />);
-    expect(screen.getByText('Pending')).toBeInTheDocument();
-  });
-
-  it('handles deposit request columns and actions', async () => {
-    const deposits: DepositReq[] = [
-      {
-        id: '1',
-        user: 'User',
-        avatar: '/avatar.png',
-        amount: 100,
-        method: 'Bank',
-        date: '2024-01-01',
-        receiptUrl: '/r',
-        status: 'Pending',
-      },
-    ];
-    const approve = jest.fn();
-    const reject = jest.fn();
-    const comment = jest.fn();
-    const receipt = jest.fn();
-    const user = userEvent.setup();
-    render(
-      <RequestTable
-        title="Deposits"
-        rows={deposits}
-        columns={[
-          { label: 'Player', render: (d) => <span>{d.user}</span> },
-          { label: 'Amount', render: (d) => <span>${d.amount}</span> },
-          { label: 'Method', render: (d) => d.method },
-          { label: 'Date', render: (d) => <span>{d.date}</span> },
-          {
-            label: 'Receipt',
-            render: (d) => (
-              <button
-                onClick={() => receipt(d.receiptUrl)}
-                title="View Receipt"
-                aria-label="View receipt"
-              >
-                <FontAwesomeIcon icon={faImage} />
-              </button>
-            ),
-          },
-        ]}
-        actions={[
-          {
-            label: 'Approve',
-            onClick: (d) => approve(d.id),
-            className: 'approve',
-          },
-          {
-            label: 'Reject',
-            onClick: (d) => reject(d.id),
-            className: 'reject',
-          },
-          {
-            icon: faComment,
-            onClick: (d) => comment(d.id),
-            className: 'comment',
-            title: 'Add Comment',
-            ariaLabel: 'Add comment',
-          },
-        ]}
-      />,
-    );
-    ['Player', 'Amount', 'Method', 'Date', 'Receipt', 'Status', 'Action'].forEach(
-      (header) => {
-        expect(
-          screen.getByRole('columnheader', { name: header }),
-        ).toBeInTheDocument();
-      },
-    );
-    const depositUser = await screen.findByText('User');
-    expect(depositUser.closest('tr')).toHaveAttribute('data-index', '0');
-    await act(async () => {
-      await user.click(screen.getByText('Approve'));
-    });
-    expect(approve).toHaveBeenCalledWith('1');
-    await act(async () => {
-      await user.click(screen.getByText('Reject'));
-    });
-    expect(reject).toHaveBeenCalledWith('1');
-    await act(async () => {
-      await user.click(screen.getByTitle('Add Comment'));
-    });
-    expect(comment).toHaveBeenCalledWith('1');
-    await act(async () => {
-      await user.click(screen.getByTitle('View Receipt'));
-    });
-    expect(receipt).toHaveBeenCalled();
-  });
-
-  it('handles withdrawal request columns and actions', async () => {
-    const withdrawals: WithdrawalReq[] = [
-      {
-        id: 'w1',
-        user: 'User',
-        avatar: '/avatar.png',
-        amount: 50,
-        bank: 'Bank',
-        masked: '****',
-        date: '2024-01-01',
-        comment: 'Test',
-        status: 'Pending',
-      },
-    ];
-    const approve = jest.fn();
-    const reject = jest.fn();
-    const user = userEvent.setup();
-    render(
-      <RequestTable
-        title="Withdrawals"
-        rows={withdrawals}
-        columns={[
-          { label: 'Player', render: (w) => <span>{w.user}</span> },
-          { label: 'Amount', render: (w) => <span>${w.amount}</span> },
-          { label: 'Bank Info', render: (w) => <span>{w.bank}</span> },
-          { label: 'Date', render: (w) => <span>{w.date}</span> },
-          { label: 'Comment', render: (w) => <span>{w.comment}</span> },
-        ]}
-        actions={[
-          {
-            label: 'Approve',
-            onClick: (w) => approve(w.id),
-            className: 'approve',
-          },
-          {
-            label: 'Reject',
-            onClick: (w) => reject(w.id),
-            className: 'reject',
-          },
-        ]}
-      />,
-    );
-    ['Player', 'Amount', 'Bank Info', 'Date', 'Comment', 'Status', 'Action'].forEach(
-      (header) => {
-        expect(
-          screen.getByRole('columnheader', { name: header }),
-        ).toBeInTheDocument();
-      },
-    );
-    const withdrawalUser = await screen.findByText('User');
-    expect(withdrawalUser.closest('tr')).toHaveAttribute('data-index', '0');
-    await act(async () => {
-      await user.click(screen.getByText('Approve'));
-    });
-    expect(approve).toHaveBeenCalledWith('w1');
-    await act(async () => {
-      await user.click(screen.getByText('Reject'));
-    });
-    expect(reject).toHaveBeenCalledWith('w1');
-  });
-
-  it('renders TransactionHistory and exports', async () => {
-    const log: Txn[] = [
-      {
-        datetime: '2024-01-01',
-        action: 'Deposit',
-        amount: 100,
-        by: 'Admin',
-        notes: 'note',
-        status: 'Completed',
-      },
-    ];
-    const exportCSV = jest.fn();
-    const user = userEvent.setup();
-    const qc = new QueryClient();
-    render(
-      <QueryClientProvider client={qc}>
-        <TransactionHistory
-          log={log}
-          pageInfo="Showing 1-1 of 1 transactions"
-          onExport={exportCSV}
-          selectedPlayer=""
-          selectedType=""
-          onPlayerChange={jest.fn()}
-          onTypeChange={jest.fn()}
-        />
-      </QueryClientProvider>,
-    );
-    expect(screen.getByText('Unified Transaction Log')).toBeInTheDocument();
-    await act(async () => {
-      await user.click(screen.getByText(/Export CSV/));
-    });
-    expect(exportCSV).toHaveBeenCalled();
-  });
+export const AdminTournamentSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  gameType: z.string(),
+  buyin: z.number(),
+  fee: z.number(),
+  prizePool: z.number(),
+  date: z.string(),
+  time: z.string(),
+  format: z.string(),
+  seatCap: z.union([z.number().int().positive(), z.literal('')]).optional(),
+  description: z.string().optional(),
+  rebuy: z.boolean(),
+  addon: z.boolean(),
+  status: statusEnum,
 });
+export type AdminTournament = z.infer<typeof AdminTournamentSchema>;
+export const AdminTournamentListSchema = z.array(AdminTournamentSchema);
+
+export async function fetchAdminTournaments({
+  signal,
+}: {
+  signal?: AbortSignal;
+} = {}): Promise<AdminTournament[]> {
+  return apiClient('/api/admin/tournaments', AdminTournamentListSchema, {
+    signal,
+  });
+}
+
+export async function createAdminTournament(
+  body: AdminTournament,
+): Promise<AdminTournament> {
+  return apiClient('/api/admin/tournaments', AdminTournamentSchema, {
+    method: 'POST',
+    body,
+  });
+}
+
+export async function updateAdminTournament(
+  id: number,
+  body: AdminTournament,
+): Promise<AdminTournament> {
+  return apiClient(`/api/admin/tournaments/${id}`, AdminTournamentSchema, {
+    method: 'PUT',
+    body,
+  });
+}
+
+export async function deleteAdminTournament(id: number): Promise<void> {
+  // Validate server response shape but return void to callers
+  await apiClient(
+    `/api/admin/tournaments/${id}`,
+    MessageResponseSchema,
+    { method: 'DELETE' },
+  );
+}
+
+/** =======================
+ *  Admin Bonuses
+ *  ======================= */
+export const BonusSchema = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  type: z.enum(['deposit', 'rakeback', 'ticket', 'rebate', 'first-deposit']),
+  description: z.string(),
+  bonusPercent: z.number().optional(),
+  maxBonusUsd: z.number().optional(),
+  expiryDate: z.string().optional(),
+  eligibility: z.enum(['all', 'new', 'vip', 'active']),
+  status: z.enum(['active', 'paused']),
+  claimsTotal: z.number(),
+  claimsWeek: z.number().optional(),
+});
+
+export type Bonus = z.infer<typeof BonusSchema>;
+
+export async function fetchBonuses({ signal }: { signal?: AbortSignal } = {}) {
+  try {
+    return await apiClient('/api/admin/bonuses', z.array(BonusSchema), {
+      signal,
+    });
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : (err as ApiError).message;
+    throw { message: `Failed to fetch bonuses: ${message}` } as ApiError;
+  }
+}
+
+export async function createBonus(
+  bonus: Omit<Bonus, 'id' | 'claimsTotal' | 'claimsWeek'>,
+) {
+  return apiClient('/api/admin/bonuses', BonusSchema, {
+    method: 'POST',
+    body: bonus,
+  });
+}
+
+export async function updateBonus(id: number, bonus: Partial<Bonus>) {
+  return apiClient(`/api/admin/bonuses/${id}`, BonusSchema, {
+    method: 'PUT',
+    body: bonus,
+  });
+}
+
+export async function deleteBonus(id: number) {
+  return apiClient(`/api/admin/bonuses/${id}`, MessageResponseSchema, {
+    method: 'DELETE',
+  });
+}

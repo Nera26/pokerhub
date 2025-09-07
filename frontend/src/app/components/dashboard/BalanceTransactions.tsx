@@ -436,10 +436,6 @@ export default function BalanceTransactions() {
     alert(`Loaded IBAN for reuse:\n${iban}`);
   };
 
-  const pageInfo = useMemo(
-    () => `Showing 1-10 of ${log.length.toLocaleString()} transactions`,
-    [log.length],
-  );
 
   /* --------------------------------- UI --------------------------------- */
   return (
@@ -743,34 +739,27 @@ export default function BalanceTransactions() {
         </section>
       )}
 
-      {logLoading ? (
-        <div className="flex justify-center" aria-label="loading history">
-          <FontAwesomeIcon icon={faSpinner} spin />
-        </div>
-      ) : logError ? (
-        <p role="alert">
-          {logErrorMessage || 'Failed to load transaction history.'}
-        </p>
-      ) : log.length === 0 ? (
-        <p>No transaction history.</p>
-      ) : (
-        <TransactionHistory
-          log={log}
-          pageInfo={pageInfo}
-          onExport={exportCSV}
-          selectedPlayer={playerFilter}
-          selectedType={typeFilter}
-          onPlayerChange={setPlayerFilter}
-          onTypeChange={setTypeFilter}
-        />
-      )}
+ {logLoading ? (
+  <div className="flex justify-center" aria-label="loading history">
+    <FontAwesomeIcon icon={faSpinner} spin />
+  </div>
+) : logError ? (
+  <p role="alert">
+    {logErrorMessage || 'Failed to load transaction history.'}
+  </p>
+) : log.length === 0 ? (
+  <p>No transaction history.</p>
+) : (
+  <TransactionHistory log={log} onExport={exportCSV} />
+)}
 
-      {/* Modals */}
-      <RejectionModal
-        open={rejectOpen}
-        onClose={() => setRejectOpen(false)}
-        onConfirm={confirmRejection}
-      />
+/* Modals */
+<RejectionModal
+  open={rejectOpen}
+  onClose={() => setRejectOpen(false)}
+  onConfirm={confirmRejection}
+/>
+
 
       <ReceiptModal
         open={receiptOpen}

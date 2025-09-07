@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type KeyboardEvent, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPaperPlane } from '@fortawesome/free-solid-svg-icons/faPaperPlane';
 import { faVolumeHigh } from '@fortawesome/free-solid-svg-icons/faVolumeHigh';
@@ -10,7 +11,7 @@ import Input from '../ui/Input';
 import Button from '../ui/Button';
 import type { ChatMessage } from './PokerTableLayout';
 import useGameSocket from '@/hooks/useGameSocket';
-import { sendChatMessage } from '@/lib/api/table';
+import { sendChatMessage, fetchTableHands, type HandSummary } from '@/lib/api/table';
 
 export interface SidePanelProps {
   isOpen: boolean;
@@ -41,6 +42,16 @@ export default function SidePanel({
   const [tab, setTab] = useState<TabKey>('history');
   const [messages, setMessages] = useState(chatMessages);
   const { socket } = useGameSocket();
+
+  const {
+    data: hands,
+    isLoading: handsLoading,
+    isError: handsError,
+  } = useQuery<HandSummary[]>({
+    queryKey: ['table-hands', tableId],
+    queryFn: () => fetchTableHands(tableId),
+    enabled: !!tableId,
+  });
 
   useEffect(() => {
     setMessages(chatMessages);
@@ -149,21 +160,33 @@ export default function SidePanel({
           aria-labelledby="history-tab"
           className="p-4 text-sm text-text-secondary space-y-2"
         >
-          <div className="font-semibold text-text-primary">Hand #45821</div>
-          <div className="space-y-1">
-            <div className="text-xs uppercase tracking-wider mt-2">Preflop</div>
-            <div>UTG bet $4</div>
-            <div>Hero thinking…</div>
-            <div className="text-xs uppercase tracking-wider mt-2">Flop</div>
-            <div>—</div>
-          </div>
-          <Button
-            variant="ghost"
-            className="mt-3"
-            onClick={() => onReplay?.('45821')}
-          >
-            Replay hand
-          </Button>
+          {handsLoading && (
+            <div className="text-xs text-text-secondary">Loading hands...</div>
+          )}
+          {handsError && (
+            <div className="text-xs text-text-secondary">Failed to load hands.</div>
+          )}
+          {hands && hands.length > 0 ? (
+            hands.map((hand) => (
+              <div key={hand.id} className="space-y-1">
+                <div className="font-semibold text-text-primary">
+                  Hand #{hand.id}
+                </div>
+                <Button
+                  variant="ghost"
+                  className="mt-3"
+                  onClick={() => onReplay?.(hand.id)}
+                >
+                  Replay hand
+                </Button>
+              </div>
+            ))
+          ) : (
+            !handsLoading &&
+            !handsError && (
+              <div className="text-xs text-text-secondary">No hands yet.</div>
+            )
+          )}
         </div>
       )}
 
