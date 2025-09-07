@@ -20,7 +20,15 @@ function formatAmount(amt: number) {
 
 export function buildTransactionColumns<
   T extends { amount: number; status: string; date?: string; datetime?: string }
->(getType?: (row: T) => string): Column<T>[] {
+>(
+  opts: {
+    getType?: (row: T) => string;
+    headerClassName?: string;
+    cellClassName?: string;
+  } = {},
+): Column<T>[] {
+  const { getType, headerClassName, cellClassName } = opts;
+
   const cols: Column<T>[] = [];
 
   if (getType) {
@@ -57,7 +65,11 @@ export function buildTransactionColumns<
     },
   );
 
-  return cols;
+  return cols.map((col) => ({
+    ...col,
+    headerClassName,
+    cellClassName,
+  }));
 }
 
 export type TransactionColumns<T> = ReturnType<typeof buildTransactionColumns<T>>;
