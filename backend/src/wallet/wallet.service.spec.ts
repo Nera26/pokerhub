@@ -200,7 +200,7 @@ describe('WalletService reserve/commit/rollback flow', () => {
       name: 'creditUser',
       balance: 150,
       creditBalance: 50,
-      currency: 'USD',
+      currency: 'EUR',
     });
     const status = await service.status(accountId);
     expect(status).toEqual({
@@ -208,6 +208,7 @@ describe('WalletService reserve/commit/rollback flow', () => {
       denialReason: undefined,
       realBalance: 100,
       creditBalance: 50,
+      currency: 'EUR',
     });
     const tx = await service.transactions(accountId);
     expect(tx.realBalance).toBe(100);

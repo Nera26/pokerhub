@@ -23,7 +23,10 @@ import { MetricsWriterService } from '../metrics/metrics-writer.service';
 import { ChargebackMonitor } from './chargeback.service';
 import type { Street } from '../game/state-machine';
 import { GeoIpService } from '../auth/geoip.service';
-import type { ProviderCallback } from '@shared/wallet.schema';
+import type {
+  ProviderCallback,
+  WalletStatusResponse,
+} from '@shared/wallet.schema';
 
 interface Movement {
   account: Account;
@@ -363,9 +366,7 @@ export class WalletService {
     ]);
   }
 
-  async status(
-    accountId: string,
-  ): Promise<{ kycVerified: boolean; denialReason?: string; realBalance: number; creditBalance: number }> {
+  async status(accountId: string): Promise<WalletStatusResponse> {
     const account = await this.accounts.findOneByOrFail({ id: accountId });
     const denialReason = await this.kyc.getDenialReason(accountId);
     return {
@@ -373,6 +374,7 @@ export class WalletService {
       denialReason,
       realBalance: account.balance - account.creditBalance,
       creditBalance: account.creditBalance,
+      currency: account.currency,
     };
   }
 
