@@ -52,6 +52,6 @@ describe('Dashboard transaction log', () => {
       },
     ]);
     renderWithClient(<Dashboard />);
-    expect(await screen.findByText('Alice')).toBeInTheDocument();
+    expect(await screen.findByText('Deposit')).toBeInTheDocument();
   });
 });

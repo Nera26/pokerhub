@@ -8,6 +8,8 @@ import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUsers, faCoins, faBars } from '@fortawesome/free-solid-svg-icons';
+import { useAuthStore } from '@/app/store/authStore';
+import { fetchProfile } from '@/features/site/profile/fetchProfile';
 
 import useRenderCount from '@/hooks/useRenderCount';
 import type { SidebarTab } from '@/app/components/dashboard/Sidebar';
@@ -30,6 +32,9 @@ const ALL_TABS: SidebarTab[] = [
   'analytics',
   'review',
 ];
+
+const DEFAULT_AVATAR =
+  'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
 
 const titleMap: Partial<Record<SidebarTab, string>> = {
   messages: 'Messages',
@@ -130,6 +135,8 @@ function DashboardPage() {
     return isSidebarTab(q) ? (q as SidebarTab) : 'dashboard';
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const avatarUrl = useAuthStore((s) => s.avatarUrl);
+  const setAvatarUrl = useAuthStore((s) => s.setAvatarUrl);
   const {
     data: metrics,
     error: metricsError,
@@ -146,6 +153,16 @@ function DashboardPage() {
   }, [tab, router, pathname, search]);
 
   const title = titleMap[tab] ?? 'Admin Dashboard';
+
+  useEffect(() => {
+    if (avatarUrl === null) {
+      const controller = new AbortController();
+      fetchProfile({ signal: controller.signal })
+        .then((p) => setAvatarUrl(p.avatarUrl || null))
+        .catch(() => setAvatarUrl(null));
+      return () => controller.abort();
+    }
+  }, [avatarUrl, setAvatarUrl]);
 
   return (
     <div className="min-h-screen bg-primary-bg text-text-primary">
@@ -188,7 +205,7 @@ function DashboardPage() {
               )}
             </div>
             <Image
-              src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg"
+              src={avatarUrl || DEFAULT_AVATAR}
               alt="Admin avatar"
               width={40}
               height={40}

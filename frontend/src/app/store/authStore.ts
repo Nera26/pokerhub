@@ -4,19 +4,29 @@ import { create } from 'zustand';
 
 interface AuthState {
   token: string | null;
+  avatarUrl: string | null;
   setToken: (token: string) => void;
   clearToken: () => void;
+  setAvatarUrl: (url: string | null) => void;
 }
 
 export const useAuthStore = create<AuthState>()((set) => ({
   token: null,
+  avatarUrl: null,
   setToken: (token) => set({ token }),
-  clearToken: () => set({ token: null }),
+  clearToken: () => set({ token: null, avatarUrl: null }),
+  setAvatarUrl: (url) => set({ avatarUrl: url }),
 }));
 
 export const useAuthToken = () => useAuthStore((s) => s.token);
-export const useAuthActions = (): Pick<AuthState, 'setToken' | 'clearToken'> =>
-  useAuthStore((s) => ({ setToken: s.setToken, clearToken: s.clearToken }));
+export const useAuthActions = (): Pick<
+  AuthState,
+  'setToken' | 'clearToken' | 'setAvatarUrl'
+> => useAuthStore((s) => ({
+  setToken: s.setToken,
+  clearToken: s.clearToken,
+  setAvatarUrl: s.setAvatarUrl,
+}));
 
 function decodePlayerId(token: string | null): string {
   if (!token) return '';
