@@ -643,3 +643,6 @@ export const FilterOptionsSchema = z.object({
   performedBy: z.array(z.string()),
 });
 export type FilterOptions = z.infer<typeof FilterOptionsSchema>;
+export { TransactionTypeSchema, TransactionTypesResponseSchema } from "../backend/src/schemas/transactions";
+export type { TransactionType, TransactionTypesResponse } from "../backend/src/schemas/transactions";
+

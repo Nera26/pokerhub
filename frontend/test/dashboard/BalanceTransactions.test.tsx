@@ -18,6 +18,7 @@ describe('BalanceTransactions component states', () => {
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
+      .mockReturnValueOnce({ data: [], isLoading: false, error: null })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null });
     render(<BalanceTransactions />);
     expect(screen.getByText('No pending deposits.')).toBeInTheDocument();
@@ -27,6 +28,7 @@ describe('BalanceTransactions component states', () => {
 
   it('shows API error message for transaction log', () => {
     (useQuery as jest.Mock)
+      .mockReturnValueOnce({ data: [], isLoading: false, error: null })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
