@@ -15,7 +15,11 @@ import {
   faTrophy,
   faExclamationTriangle,
 } from '@fortawesome/free-solid-svg-icons';
-import { fetchBroadcasts, sendBroadcast } from '@/lib/api/broadcasts';
+import {
+  fetchBroadcasts,
+  sendBroadcast,
+  fetchBroadcastTemplates,
+} from '@/lib/api/broadcasts';
 import {
   type BroadcastsResponse,
   type SendBroadcastRequest,
@@ -70,6 +74,13 @@ export default function Broadcast() {
   });
   const broadcasts = data?.broadcasts ?? [];
 
+  // Templates for quick insertion (maintenance/tournament)
+  const { data: templatesData } = useQuery({
+    queryKey: ['broadcast-templates'],
+    queryFn: ({ signal }) => fetchBroadcastTemplates({ signal }),
+  });
+  const templates = templatesData?.templates;
+
   const { toast, notify } = useToast();
 
   const mutation = useMutation({
@@ -112,19 +123,15 @@ export default function Broadcast() {
   const previewColor = TYPE_COLOR[type];
 
   function insertTemplate(kind: 'maintenance' | 'tournament') {
-    const msg =
-      kind === 'maintenance'
-        ? 'Server maintenance scheduled for [DATE] at [TIME]. Expected downtime: [DURATION]. We apologize for any inconvenience.'
-        : 'New tournament starting [DATE] at [TIME]! Buy-in: [AMOUNT] | Prize Pool: [PRIZE] | Register now to secure your seat!';
+    const msg = templates?.[kind];
+    if (!msg) return;
     setValue('text', msg.slice(0, MAX_LEN), { shouldValidate: true });
   }
 
   function playBeep() {
     try {
       const AC: typeof AudioContext | undefined =
-        window.AudioContext ??
-        (window as { webkitAudioContext?: typeof AudioContext })
-          .webkitAudioContext;
+        (window as any).AudioContext ?? (window as any).webkitAudioContext;
       if (!AC) return;
       const ctx = new AC();
       const osc = ctx.createOscillator();
@@ -306,8 +313,8 @@ export default function Broadcast() {
         ) : (
           <div className="space-y-4">
             {broadcasts.map((it) => {
-              const color = TYPE_COLOR[it.type];
-              const icon = TYPE_ICON[it.type];
+              const color = TYPE_COLOR[it.type as MsgType];
+              const icon = TYPE_ICON[it.type as MsgType];
               const urgentLeft = it.urgent ? 'border-l-4 border-danger-red' : '';
               const when = new Date(it.timestamp).toLocaleString();
               return (
@@ -328,7 +335,7 @@ export default function Broadcast() {
                         <span
                           className={`${color} font-semibold text-sm uppercase`}
                         >
-                          {it.type.toUpperCase()}
+                          {String(it.type).toUpperCase()}
                         </span>
                         <span className="text-text-secondary text-xs">
                           • {when}
@@ -343,6 +350,7 @@ export default function Broadcast() {
           </div>
         )}
       </section>
+
       <ToastNotification
         message={toast.msg}
         type={toast.type}

@@ -1,6 +1,10 @@
 /** @jest-environment node */
 
-import { fetchBroadcasts, sendBroadcast } from '@/lib/api/broadcasts';
+import {
+  fetchBroadcasts,
+  sendBroadcast,
+  fetchBroadcastTemplates,
+} from '@/lib/api/broadcasts';
 import { serverFetch } from '@/lib/server-fetch';
 
 jest.mock('@/lib/server-fetch', () => ({
@@ -12,7 +16,7 @@ describe('broadcasts api', () => {
     jest.resetAllMocks();
   });
 
-  it('fetches and sends broadcasts', async () => {
+  it('fetches broadcasts, templates and sends broadcast', async () => {
     (serverFetch as jest.Mock)
       .mockResolvedValueOnce({
         ok: true,
@@ -31,6 +35,14 @@ describe('broadcasts api', () => {
           urgent: false,
           timestamp: '2020-01-01T00:00:00.000Z',
         }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({
+          templates: { maintenance: 'm', tournament: 't' },
+        }),
       });
 
     await expect(fetchBroadcasts()).resolves.toEqual({ broadcasts: [] });
@@ -42,6 +54,9 @@ describe('broadcasts api', () => {
       text: 'hi',
       urgent: false,
       timestamp: '2020-01-01T00:00:00.000Z',
+    });
+    await expect(fetchBroadcastTemplates()).resolves.toEqual({
+      templates: { maintenance: 'm', tournament: 't' },
     });
   });
 
@@ -61,6 +76,9 @@ describe('broadcasts api', () => {
       sendBroadcast({ type: 'announcement', text: 'x', urgent: false, sound: true })
     ).rejects.toMatchObject({
       message: expect.stringContaining('Server Error'),
+    });
+    await expect(fetchBroadcastTemplates()).rejects.toMatchObject({
+      message: 'Failed to fetch broadcast templates: Server Error',
     });
   });
 });

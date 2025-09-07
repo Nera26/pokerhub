@@ -5,6 +5,8 @@ import {
   type Broadcast,
   type BroadcastsResponse,
   type SendBroadcastRequest,
+  BroadcastTemplatesResponseSchema,
+  type BroadcastTemplatesResponse,
 } from '@shared/types';
 
 export async function fetchBroadcasts({ signal }: { signal?: AbortSignal } = {}): Promise<BroadcastsResponse> {
@@ -18,4 +20,13 @@ export async function fetchBroadcasts({ signal }: { signal?: AbortSignal } = {})
 
 export async function sendBroadcast(body: SendBroadcastRequest): Promise<Broadcast> {
   return apiClient('/api/admin/broadcasts', BroadcastSchema, { method: 'POST', body });
+}
+
+export async function fetchBroadcastTemplates({ signal }: { signal?: AbortSignal } = {}): Promise<BroadcastTemplatesResponse> {
+  try {
+    return await apiClient('/api/broadcast/templates', BroadcastTemplatesResponseSchema, { signal });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : (err as ApiError).message;
+    throw { message: `Failed to fetch broadcast templates: ${message}` } as ApiError;
+  }
 }
