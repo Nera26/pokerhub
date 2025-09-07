@@ -19,6 +19,36 @@ export interface Action<T> {
   ariaLabel?: string;
 }
 
+interface ActionCellsProps<T> {
+  actions?: Action<T>[];
+  row: T;
+}
+
+function ActionCells<T>({ actions, row }: ActionCellsProps<T>) {
+  if (!actions || actions.length === 0) return null;
+  return (
+    <td className="py-3 px-2">
+      <div className="flex gap-1">
+        {actions.map((action, idx) => (
+          <button
+            key={idx}
+            onClick={() => action.onClick(row)}
+            className={action.className}
+            title={action.title}
+            aria-label={action.ariaLabel}
+          >
+            {action.icon ? (
+              <FontAwesomeIcon icon={action.icon} />
+            ) : (
+              action.label
+            )}
+          </button>
+        ))}
+      </div>
+    </td>
+  );
+}
+
 export interface TransactionHistoryTableProps<T> {
   data: T[];
   columns: Column<T>[];
@@ -104,27 +134,7 @@ export default function TransactionHistoryTable<T>({
                           {col.cell(row)}
                         </td>
                       ))}
-                      {actions && actions.length > 0 && (
-                        <td className="py-3 px-2">
-                          <div className="flex gap-1">
-                            {actions.map((action, idx) => (
-                              <button
-                                key={idx}
-                                onClick={() => action.onClick(row)}
-                                className={action.className}
-                                title={action.title}
-                                aria-label={action.ariaLabel}
-                              >
-                                {action.icon ? (
-                                  <FontAwesomeIcon icon={action.icon} />
-                                ) : (
-                                  action.label
-                                )}
-                              </button>
-                            ))}
-                          </div>
-                        </td>
-                      )}
+                      <ActionCells actions={actions} row={row} />
                     </tr>
                   );
                 })
@@ -138,27 +148,7 @@ export default function TransactionHistoryTable<T>({
                         {col.cell(row)}
                       </td>
                     ))}
-                    {actions && actions.length > 0 && (
-                      <td className="py-3 px-2">
-                        <div className="flex gap-1">
-                          {actions.map((action, idx) => (
-                            <button
-                              key={idx}
-                              onClick={() => action.onClick(row)}
-                              className={action.className}
-                              title={action.title}
-                              aria-label={action.ariaLabel}
-                            >
-                              {action.icon ? (
-                                <FontAwesomeIcon icon={action.icon} />
-                              ) : (
-                                action.label
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      </td>
-                    )}
+                    <ActionCells actions={actions} row={row} />
                   </tr>
                 ))}
           </tbody>
