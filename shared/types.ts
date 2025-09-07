@@ -295,6 +295,13 @@ export type GameTypeWithLabel = z.infer<typeof GameTypeWithLabelSchema>;
 export const GameTypeListSchema = z.array(GameTypeWithLabelSchema);
 export type GameTypeList = z.infer<typeof GameTypeListSchema>;
 
+export const DefaultGameTypes: GameTypeList = [
+  { id: 'texas', label: "Texas Hold'em" },
+  { id: 'omaha', label: 'Omaha' },
+  { id: 'allin', label: 'All-in or Fold' },
+  { id: 'tournaments', label: 'Tournaments' },
+];
+
 export const TournamentSchema = z.object({
   id: z.string(),
   title: z.string(),
