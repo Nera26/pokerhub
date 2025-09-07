@@ -47,10 +47,10 @@ describe('WalletPage', () => {
     );
 
     expect(
-      await screen.findByText(/Real: \$200\.00/),
+      await screen.findByText(/Real: €200\.00/),
     ).toBeInTheDocument();
     expect(
-      await screen.findByText(/Credit: \$50\.00/),
+      await screen.findByText(/Credit: €50\.00/),
     ).toBeInTheDocument();
   });
 });

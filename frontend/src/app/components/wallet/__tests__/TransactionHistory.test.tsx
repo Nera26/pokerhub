@@ -31,7 +31,7 @@ describe('TransactionHistory', () => {
         status: 'Processing',
       },
     ];
-    render(<TransactionHistory transactions={transactions} />);
+    render(<TransactionHistory transactions={transactions} currency="USD" />);
 
     expect(screen.getByText('Deposit')).toBeInTheDocument();
     expect(screen.getByText('+$50.00')).toBeInTheDocument();
@@ -45,6 +45,7 @@ describe('TransactionHistory', () => {
         transactions={[
           { id: '1', type: 'Deposit', amount: 10, date: 'Jan 1', status: 'Done' },
         ]}
+        currency="USD"
       />,
     );
     expect(buildTransactionColumns).toHaveBeenCalledWith({
@@ -52,11 +53,12 @@ describe('TransactionHistory', () => {
       headerClassName:
         'text-left p-4 font-semibold text-text-secondary text-sm uppercase',
       cellClassName: 'p-4 text-sm',
+      currency: 'USD',
     });
   });
 
   it('shows empty state when no transactions', () => {
-    render(<TransactionHistory transactions={[]} />);
+    render(<TransactionHistory transactions={[]} currency="USD" />);
     expect(
       screen.getByText('No transaction history found.'),
     ).toBeInTheDocument();

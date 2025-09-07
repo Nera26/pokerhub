@@ -11,7 +11,8 @@ describe('WalletSummary', () => {
         onDeposit={() => {}}
         onWithdraw={() => {}}
         onVerify={() => {}}
-      />,
+        currency="USD"
+      />, 
     );
     expect(screen.getByText(/KYC Status:/i)).toHaveTextContent('Verified');
   });
@@ -25,7 +26,8 @@ describe('WalletSummary', () => {
         onDeposit={() => {}}
         onWithdraw={() => {}}
         onVerify={() => {}}
-      />,
+        currency="USD"
+      />, 
     );
     expect(screen.getByText(/Verify/i)).toBeInTheDocument();
   });

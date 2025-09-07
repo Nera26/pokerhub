@@ -30,9 +30,25 @@ import { useWallet } from '@/features/wallet/useWallet';
 export default function WalletPage() {
   const { realBalance, creditBalance, playerId, setBalances } = useAuth();
   const { data: wallet } = useWallet();
-  const currency = (wallet as any)?.currency ?? 'USD';
   const [kycVerified, setKycVerified] = useState(false);
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState(wallet?.currency ?? 'USD');
+
+  useEffect(() => {
+    if (wallet?.currency) {
+      setCurrency(wallet.currency);
+    }
+  }, [wallet]);
+
+  const currencyFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+    [currency],
+  );
 
   const {
     data: pendingData,
@@ -144,7 +160,9 @@ export default function WalletPage() {
     try {
       const res = await withdraw(playerId, amount, deviceId, currency);
       setBalances(res.realBalance, res.creditBalance);
-      showToast(`Withdraw request of ${currency} ${amount.toFixed(2)} sent`);
+      showToast(
+        `Withdraw request of ${currencyFormatter.format(amount)} sent`,
+      );
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Withdraw failed';
       showToast(message, 'error');
@@ -180,6 +198,7 @@ export default function WalletPage() {
           onDeposit={openDepositModal}
           onWithdraw={openWithdrawModal}
           onVerify={handleVerify}
+          currency={currency}
         />
 
         {/* 2. Pending Transactions */}
@@ -207,7 +226,7 @@ export default function WalletPage() {
                     <p className="text-text-secondary text-sm">
                       Amount:{' '}
                       <span className="text-accent-yellow">
-                        ${tx.amount.toFixed(2)}
+                        {currencyFormatter.format(tx.amount)}
                       </span>
                     </p>
                   </div>
@@ -237,7 +256,10 @@ export default function WalletPage() {
             Failed to load transactions
           </div>
         ) : (
-          <TransactionHistory transactions={transactionHistoryData} />
+          <TransactionHistory
+            transactions={transactionHistoryData}
+            currency={currency}
+          />
         )}
       </div>
 

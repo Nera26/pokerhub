@@ -19,6 +19,8 @@ export interface WalletSummaryProps {
   onDeposit: () => void;
   /** Called when user clicks Withdraw */
   onWithdraw: () => void;
+  /** Currency code for displaying amounts */
+  currency: string;
 }
 
 export default function WalletSummary({
@@ -28,8 +30,16 @@ export default function WalletSummary({
   onDeposit,
   onWithdraw,
   onVerify,
+  currency,
 }: WalletSummaryProps) {
   const totalBalance = realBalance + creditBalance;
+  const format = (value: number) =>
+    new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
 
   return (
     <section className="bg-card-bg rounded-2xl p-8 md:p-12 mb-6 md:mb-8">
@@ -37,16 +47,16 @@ export default function WalletSummary({
         <div>
           <p className="text-text-secondary text-sm sm:text-base">Total Balance</p>
           <p className="text-3xl sm:text-4xl font-bold text-accent-yellow mb-1">
-            ${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {format(totalBalance)}
           </p>
           <p className="text-xs text-text-secondary mb-2">
             KYC Status: {kycVerified ? 'Verified' : 'Pending'}
           </p>
           <p className="text-sm sm:text-base text-text-secondary">
-            <span className="font-medium">• Real: ${realBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+            <span className="font-medium">• Real: {format(realBalance)}</span>
             &nbsp;|&nbsp;
             <Tooltip text="Credits can only be used for games and cannot be withdrawn.">
-              <span className="font-medium">• Credit: ${creditBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              <span className="font-medium">• Credit: {format(creditBalance)}</span>
             </Tooltip>
           </p>
         </div>
