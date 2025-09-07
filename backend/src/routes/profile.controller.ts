@@ -1,7 +1,7 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
-import { UserProfileSchema, type UserProfile } from '../schemas/users';
+import { UserProfileSchema, type UserProfile } from '@shared/types';
 
 @ApiTags('user')
 @Controller('user')

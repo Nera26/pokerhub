@@ -33,7 +33,7 @@ import {
   TxSchema,
   type TxRequest,
 } from '@shared/wallet.schema';
-import { ZodError } from 'zod';
+import { ZodError } from '@shared/types';
 
 @UseGuards(AuthGuard, RateLimitGuard, SelfGuard)
 @ApiTags('wallet')

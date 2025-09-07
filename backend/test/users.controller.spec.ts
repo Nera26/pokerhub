@@ -6,6 +6,7 @@ import { UsersService } from '../src/users/users.service';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
 import { SelfGuard } from '../src/auth/self.guard';
+import { UserSchema } from '@shared/types';
 
 describe('UsersController ID validation', () => {
   let app: INestApplication;
@@ -20,7 +21,12 @@ describe('UsersController ID validation', () => {
             findById: jest.fn(),
             update: jest.fn(),
             ban: jest.fn(),
-            create: jest.fn(),
+            create: jest.fn(async (dto) => ({
+              id: 'new-user',
+              username: dto.username,
+              avatarKey: dto.avatarKey,
+              banned: false,
+            })),
           },
         },
       ],
@@ -82,6 +88,16 @@ describe('UsersController ID validation', () => {
       .set('Authorization', 'Bearer admin')
       .send({})
       .expect(400);
+  });
+
+  it('creates a user using shared schema', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/users')
+      .set('Authorization', 'Bearer admin')
+      .send({ username: 'alice' })
+      .expect(201);
+    const parsed = UserSchema.parse(res.body);
+    expect(parsed.username).toBe('alice');
   });
 
 });
