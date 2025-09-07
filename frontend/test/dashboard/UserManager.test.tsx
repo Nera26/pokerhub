@@ -1,8 +1,10 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import UserManager from '@/app/components/dashboard/UserManager';
-import { fetchUsers } from '@/lib/api/users';
+import { fetchUsers, createUser } from '@/lib/api/users';
 import { fetchPendingWithdrawals } from '@/lib/api/withdrawals';
+
+let addUserHandler: (values: any) => void;
 
 jest.mock('@/lib/api/users', () => ({
   createUser: jest.fn(),
@@ -16,8 +18,10 @@ jest.mock('@/lib/api/withdrawals', () => ({
   rejectWithdrawal: jest.fn(),
   fetchPendingWithdrawals: jest.fn(),
 }));
-
-jest.mock('@/app/components/modals/AddUserModal', () => () => null);
+jest.mock('@/app/components/modals/AddUserModal', () => (props: any) => {
+  addUserHandler = props.onAdd;
+  return null;
+});
 jest.mock('@/app/components/modals/EditUserModal', () => () => null);
 jest.mock('@/app/components/modals/BanUserModal', () => () => null);
 jest.mock('@/app/components/modals/ReviewWithdrawalModal', () => () => null);
@@ -28,13 +32,17 @@ function renderWithClient(ui: React.ReactElement) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+  const utils = render(
+    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
+  );
+  return { ...utils, client };
 }
 
 describe('UserManager component states', () => {
   beforeEach(() => {
     (fetchUsers as jest.Mock).mockReset();
     (fetchPendingWithdrawals as jest.Mock).mockReset();
+    (createUser as jest.Mock).mockReset();
   });
 
   it('shows loading state', () => {
@@ -44,7 +52,7 @@ describe('UserManager component states', () => {
     (fetchPendingWithdrawals as jest.Mock).mockImplementation(
       () => new Promise(() => {}),
     );
-    renderWithClient(<UserManager />);
+    const { client } = renderWithClient(<UserManager />);
     expect(screen.getByLabelText('loading withdrawals')).toBeInTheDocument();
   });
 
@@ -98,6 +106,45 @@ describe('UserManager component states', () => {
       ).toBeInTheDocument(),
     );
     expect(screen.getByText('Pending Withdrawal Requests')).toBeInTheDocument();
+  });
+
+  it('uses avatar from API response when adding user', async () => {
+    const apiAvatar = 'https://example.com/api-avatar.png';
+    const createdUser = {
+      id: 42,
+      name: 'Jane',
+      email: 'jane@example.com',
+      balance: 0,
+      status: 'Active',
+      avatar: apiAvatar,
+    };
+    (fetchUsers as jest.Mock)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([createdUser]);
+    (fetchPendingWithdrawals as jest.Mock).mockResolvedValue([]);
+    (createUser as jest.Mock).mockResolvedValue(createdUser);
+
+    const { client } = renderWithClient(<UserManager />);
+    await waitFor(() =>
+      expect(
+        screen.getByText('Showing 1 to 0 of 0 users'),
+      ).toBeInTheDocument(),
+    );
+
+    act(() => {
+      addUserHandler({
+        username: 'Jane',
+        email: 'jane@example.com',
+        password: 'pw',
+        status: 'Active',
+        avatar: '',
+      });
+    });
+
+    await waitFor(() => {
+      const users = client.getQueryData(['users']) as any[];
+      expect(users?.[0]?.avatar).toBe(apiAvatar);
+    });
   });
 });
 

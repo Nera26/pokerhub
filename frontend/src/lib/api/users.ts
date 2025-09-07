@@ -18,8 +18,19 @@ export interface UpdateUser {
   status: string;
 }
 
-export async function createUser(newUser: NewUser): Promise<MessageResponse> {
-  return apiClient('/api/users', MessageResponseSchema, {
+// Dashboard helpers
+const DashboardUserSchema = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  email: z.string().email(),
+  balance: z.number(),
+  status: z.enum(['Active', 'Frozen', 'Banned']),
+  avatar: z.string().optional(),
+});
+export type DashboardUser = z.infer<typeof DashboardUserSchema>;
+
+export async function createUser(newUser: NewUser): Promise<DashboardUser> {
+  return apiClient('/api/users', DashboardUserSchema, {
     method: 'POST',
     body: newUser,
   });
@@ -39,16 +50,6 @@ export async function toggleUserBan(userId: number): Promise<MessageResponse> {
     method: 'POST',
   });
 }
-
-// Dashboard helpers
-const DashboardUserSchema = z.object({
-  id: z.number().int(),
-  name: z.string(),
-  email: z.string().email(),
-  balance: z.number(),
-  status: z.enum(['Active', 'Frozen', 'Banned']),
-  avatar: z.string(),
-});
 
 export async function fetchUsers({
   signal,
