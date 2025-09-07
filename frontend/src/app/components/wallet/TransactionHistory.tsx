@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faReceipt } from '@fortawesome/free-solid-svg-icons/faReceipt';
 import useRenderCount from '@/hooks/useRenderCount';
 import TransactionHistory from '@/app/components/common/TransactionHistory';
-import { buildColumns } from './transactionColumns';
+import { buildTransactionColumns } from '@/app/components/common/transactionColumns';
 
 export interface Transaction {
   id: string;
@@ -23,7 +23,12 @@ export default function WalletTransactionHistory({
   transactions,
 }: TransactionHistoryProps) {
   useRenderCount('TransactionHistory');
-  const columns = buildColumns<Transaction>((tx) => tx.type);
+  const columns = buildTransactionColumns<Transaction>({
+    getType: (tx) => tx.type,
+    headerClassName:
+      'text-left p-4 font-semibold text-text-secondary text-sm uppercase',
+    cellClassName: 'p-4 text-sm',
+  });
 
   const emptyState = (
     <div className="p-[20px] text-center text-text-secondary">
