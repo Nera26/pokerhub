@@ -1,6 +1,13 @@
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
+jest.mock('@/hooks/wallet', () => ({
+  useIban: jest.fn(),
+}));
+import { useIban } from '@/hooks/wallet';
 import DepositSection from '@/app/components/wallet/DepositSection';
+
+const mockUseIban = useIban as jest.MockedFunction<typeof useIban>;
 
 describe('DepositSection', () => {
   let intervalCb: (() => void) | undefined;
@@ -19,6 +26,18 @@ describe('DepositSection', () => {
       clipboard: { writeText: writeTextMock },
     });
     jest.spyOn(window, 'alert').mockImplementation(() => {});
+    mockUseIban.mockReturnValue({
+      data: {
+        iban: 'DE02 5001 0517 5407 4100 72',
+        masked: 'DE02 5001 **** **** 1234',
+        holder: '',
+        instructions: '',
+        updatedBy: '',
+        updatedAt: '2024-01-01T00:00:00Z',
+      },
+      isLoading: false,
+      error: null,
+    });
   });
 
   afterEach(() => {
@@ -58,11 +77,11 @@ describe('DepositSection', () => {
       <DepositSection onClose={jest.fn()} onConfirm={jest.fn()} />,
     );
 
-    const acct = screen.getByText('1234 5678 9101 1121');
+    const acct = screen.getByText('DE02 5001 **** **** 1234');
     await userEvent.click(acct);
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-      '1234 5678 9101 1121',
+      'DE02 5001 0517 5407 4100 72',
     );
     expect(window.alert).toHaveBeenCalledWith(
       'Account number copied to clipboard',
@@ -82,11 +101,31 @@ describe('DepositSection', () => {
       <DepositSection onClose={jest.fn()} onConfirm={jest.fn()} />,
     );
 
-    const acct = screen.getByText('1234 5678 9101 1121');
+    const acct = screen.getByText('DE02 5001 **** **** 1234');
     await userEvent.click(acct);
 
     expect(window.alert).toHaveBeenCalledWith('Failed to copy account number');
 
     unmount();
+  });
+
+  it('shows loading and error states', () => {
+    mockUseIban.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+    });
+    const { rerender } = render(
+      <DepositSection onClose={jest.fn()} onConfirm={jest.fn()} />,
+    );
+    expect(screen.getByText(/loading iban/i)).toBeInTheDocument();
+
+    mockUseIban.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: { message: 'oops' },
+    });
+    rerender(<DepositSection onClose={jest.fn()} onConfirm={jest.fn()} />);
+    expect(screen.getByText('oops')).toBeInTheDocument();
   });
 });
