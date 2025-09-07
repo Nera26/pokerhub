@@ -6,6 +6,7 @@ import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
 import { KycService } from '../src/wallet/kyc.service';
 import { AnalyticsService } from '../src/analytics/analytics.service';
+import { sharedSidebar } from '@shared/sidebar';
 
 describe('AdminController', () => {
   let app: INestApplication;
@@ -60,27 +61,6 @@ describe('AdminController', () => {
     await request(app.getHttpServer())
       .get('/admin/sidebar')
       .expect(200)
-      .expect([
-        { id: 'dashboard', label: 'Dashboard', icon: 'chart-line' },
-        { id: 'users', label: 'Manage Users', icon: 'users' },
-        {
-          id: 'balance',
-          label: 'Balance & Transactions',
-          icon: 'dollar-sign',
-        },
-        { id: 'tables', label: 'Manage Tables', icon: 'table-cells' },
-        { id: 'tournaments', label: 'Tournaments', icon: 'trophy' },
-        { id: 'bonus', label: 'Bonus Manager', icon: 'gift' },
-        { id: 'broadcast', label: 'Broadcast', icon: 'bullhorn' },
-        { id: 'messages', label: 'Messages', icon: 'envelope' },
-        { id: 'audit', label: 'Audit Logs', icon: 'clipboard-list' },
-        { id: 'analytics', label: 'Analytics', icon: 'chart-bar' },
-        {
-          id: 'review',
-          label: 'Collusion Review',
-          icon: 'magnifying-glass',
-          path: '/review',
-        },
-      ]);
+      .expect(sharedSidebar);
   });
 });
