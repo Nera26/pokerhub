@@ -11,6 +11,7 @@ import { ChatMessage } from '../database/entities/chatMessage.entity';
 import { GameState } from '../database/entities/game-state.entity';
 import { User } from '../database/entities/user.entity';
 import { TablesController } from '../routes/tables.controller';
+import { GameTypesController } from '../routes/game-types.controller';
 import { TablesService } from './tables.service';
 import { ChatService } from './chat.service';
 import { EventsModule } from '../events/events.module';
@@ -30,7 +31,7 @@ import { HandController } from './hand.controller';
     TablesService,
     ChatService,
   ],
-  controllers: [TablesController, HandController],
+  controllers: [TablesController, HandController, GameTypesController],
   exports: [RoomManager],
 })
 export class GameModule {}
