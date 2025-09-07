@@ -1,11 +1,15 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDownload } from '@fortawesome/free-solid-svg-icons';
 import type { ReactNode } from 'react';
-import TransactionHistoryTable, { type Column } from './TransactionHistoryTable';
+import TransactionHistoryTable, {
+  type Column,
+  type Action,
+} from './TransactionHistoryTable';
 
 export interface TransactionHistoryProps<T> {
   data: T[];
   columns: Column<T>[];
+  actions?: Action<T>[];
   onExport?: () => void;
   headerSlot?: ReactNode;
   emptyState?: ReactNode;
@@ -14,6 +18,7 @@ export interface TransactionHistoryProps<T> {
 export default function TransactionHistory<T>({
   data,
   columns,
+  actions,
   onExport,
   headerSlot,
   emptyState,
@@ -40,6 +45,7 @@ export default function TransactionHistory<T>({
         <TransactionHistoryTable
           data={data}
           columns={columns}
+          actions={actions}
           getRowKey={(_, i) => i}
           estimateSize={52}
           containerClassName="overflow-auto max-h-96"

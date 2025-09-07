@@ -1,8 +1,9 @@
-import type { ReactNode } from 'react';
-import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
-import TransactionTable from './TransactionTable';
+import { useMemo, type ReactNode } from 'react';
+import TransactionHistoryTable, {
+  type Column as TableColumn,
+  type Action as TableAction,
+} from '../../common/TransactionHistoryTable';
 import StatusPill, { toStatus } from './StatusPill';
-import useTransactionVirtualizer from '@/hooks/useTransactionVirtualizer';
 import type { StatusBadge } from './types';
 
 interface Column<T> {
@@ -10,14 +11,7 @@ interface Column<T> {
   render: (item: T) => ReactNode;
 }
 
-interface Action<T> {
-  label?: string;
-  icon?: IconDefinition;
-  onClick: (item: T) => void;
-  className: string;
-  title?: string;
-  ariaLabel?: string;
-}
+type Action<T> = TableAction<T>;
 
 interface Props<T extends { id: string; date: string; status: StatusBadge }> {
   title: string;
@@ -29,22 +23,41 @@ interface Props<T extends { id: string; date: string; status: StatusBadge }> {
 export default function RequestTable<
   T extends { id: string; date: string; status: StatusBadge }
 >({ title, rows, columns, actions }: Props<T>) {
-  const { parentRef, sortedItems, rowVirtualizer } =
-    useTransactionVirtualizer(rows);
+  const sortedItems = useMemo(
+    () => [...rows].sort((a, b) => a.date.localeCompare(b.date)),
+    [rows],
+  );
+
+  const tableColumns: TableColumn<T>[] = [
+    ...columns.map((col) => ({
+      header: col.label,
+      cell: col.render,
+      headerClassName: 'text-left py-3 px-2 text-text-secondary',
+      cellClassName: 'py-3 px-2',
+    })),
+    {
+      header: 'Status',
+      headerClassName: 'text-left py-3 px-2 text-text-secondary',
+      cell: (item) => <StatusPill status={toStatus(item.status)} />,
+      cellClassName: 'py-3 px-2',
+    },
+  ];
+
   return (
-    <TransactionTable
-      title={title}
-      items={sortedItems}
-      columns={[
-        ...columns,
-        {
-          label: 'Status',
-          render: (item) => <StatusPill status={toStatus(item.status)} />,
-        },
-      ]}
-      actions={actions}
-      parentRef={parentRef}
-      rowVirtualizer={rowVirtualizer}
-    />
+    <section>
+      <div className="bg-card-bg p-6 rounded-2xl card-shadow">
+        <h3 className="text-lg font-bold mb-4">{title}</h3>
+        <TransactionHistoryTable
+          data={sortedItems}
+          columns={tableColumns}
+          actions={actions}
+          getRowKey={(row) => row.id}
+          estimateSize={56}
+          containerClassName="overflow-x-auto max-h-96"
+          tableClassName="min-w-max w-full text-sm"
+          rowClassName="border-b border-dark hover:bg-hover-bg"
+        />
+      </div>
+    </section>
   );
 }
