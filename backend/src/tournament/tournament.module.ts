@@ -7,7 +7,6 @@ import { TournamentScheduler } from './scheduler.service';
 import { TableBalancerService } from './table-balancer.service';
 import { PkoService } from './pko.service';
 import { RebuyService } from './rebuy.service';
-import { SatelliteService } from './satellite.service';
 import { Tournament } from '../database/entities/tournament.entity';
 import { Seat } from '../database/entities/seat.entity';
 import { Table } from '../database/entities/table.entity';
@@ -28,7 +27,6 @@ import { RateLimitGuard } from '../routes/rate-limit.guard';
     TableBalancerService,
     PkoService,
     RebuyService,
-    SatelliteService,
     RateLimitGuard,
   ],
   exports: [
@@ -36,7 +34,6 @@ import { RateLimitGuard } from '../routes/rate-limit.guard';
     TableBalancerService,
     PkoService,
     RebuyService,
-    SatelliteService,
   ],
 })
 export class TournamentModule {}
