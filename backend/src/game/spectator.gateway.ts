@@ -15,6 +15,7 @@ import PQueue from 'p-queue';
 import type { InternalGameState } from './engine';
 import type { GameState } from '@shared/types';
 import { sanitize } from './state-sanitize';
+import { addSample, percentile, recordTimestamp } from './metrics.util';
 
 const noopGauge = {
   addCallback() {},
@@ -141,19 +142,13 @@ export class SpectatorGateway
 
   static {
     SpectatorGateway.latencyP50.addCallback((r) =>
-      r.observe(
-        SpectatorGateway.percentile(SpectatorGateway.latencySamples, 50),
-      ),
+      r.observe(percentile(SpectatorGateway.latencySamples, 50)),
     );
     SpectatorGateway.latencyP95.addCallback((r) =>
-      r.observe(
-        SpectatorGateway.percentile(SpectatorGateway.latencySamples, 95),
-      ),
+      r.observe(percentile(SpectatorGateway.latencySamples, 95)),
     );
     SpectatorGateway.latencyP99.addCallback((r) =>
-      r.observe(
-        SpectatorGateway.percentile(SpectatorGateway.latencySamples, 99),
-      ),
+      r.observe(percentile(SpectatorGateway.latencySamples, 99)),
     );
     SpectatorGateway.throughputGauge.addCallback((r) => {
       const now = Date.now();
@@ -167,22 +162,20 @@ export class SpectatorGateway
       const fps = SpectatorGateway.frameTimestamps.length;
       r.observe(fps);
       SpectatorGateway.throughputHist.record(fps);
-      SpectatorGateway.addSample(SpectatorGateway.throughputSamples, fps);
+      addSample(
+        SpectatorGateway.throughputSamples,
+        fps,
+        SpectatorGateway.MAX_SAMPLES,
+      );
     });
     SpectatorGateway.throughputP50.addCallback((r) =>
-      r.observe(
-        SpectatorGateway.percentile(SpectatorGateway.throughputSamples, 50),
-      ),
+      r.observe(percentile(SpectatorGateway.throughputSamples, 50)),
     );
     SpectatorGateway.throughputP95.addCallback((r) =>
-      r.observe(
-        SpectatorGateway.percentile(SpectatorGateway.throughputSamples, 95),
-      ),
+      r.observe(percentile(SpectatorGateway.throughputSamples, 95)),
     );
     SpectatorGateway.throughputP99.addCallback((r) =>
-      r.observe(
-        SpectatorGateway.percentile(SpectatorGateway.throughputSamples, 99),
-      ),
+      r.observe(percentile(SpectatorGateway.throughputSamples, 99)),
     );
   }
 
@@ -279,8 +272,12 @@ export class SpectatorGateway
       client.emit(event, payload as GameState);
       const latency = Date.now() - start;
       SpectatorGateway.stateLatency.record(latency, { socketId: id } as Attributes);
-      SpectatorGateway.addSample(SpectatorGateway.latencySamples, latency);
-      SpectatorGateway.recordFrame(Date.now());
+      addSample(
+        SpectatorGateway.latencySamples,
+        latency,
+        SpectatorGateway.MAX_SAMPLES,
+      );
+      recordTimestamp(SpectatorGateway.frameTimestamps, Date.now());
     });
     const depth = queue.size + queue.pending;
     SpectatorGateway.outboundQueueDepthHistogram.record(depth, {
@@ -292,26 +289,4 @@ export class SpectatorGateway
     );
   }
 
-  private static addSample(arr: number[], value: number) {
-    arr.push(value);
-    if (arr.length > SpectatorGateway.MAX_SAMPLES) arr.shift();
-  }
-
-  private static recordFrame(ts: number) {
-    SpectatorGateway.frameTimestamps.push(ts);
-    const cutoff = ts - 1000;
-    while (
-      SpectatorGateway.frameTimestamps.length &&
-      SpectatorGateway.frameTimestamps[0] < cutoff
-    ) {
-      SpectatorGateway.frameTimestamps.shift();
-    }
-  }
-
-  private static percentile(arr: number[], p: number): number {
-    if (arr.length === 0) return 0;
-    const sorted = [...arr].sort((a, b) => a - b);
-    const idx = Math.floor((p / 100) * (sorted.length - 1));
-    return sorted[idx];
-  }
 }

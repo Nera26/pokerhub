@@ -39,6 +39,7 @@ import {
 } from '@opentelemetry/api';
 import PQueue from 'p-queue';
 import { sanitize } from './state-sanitize';
+import { addSample, percentile, recordTimestamp } from './metrics.util';
 
 const noopGauge = {
   addCallback() {},
@@ -339,22 +340,22 @@ export class GameGateway
 
   static {
     GameGateway.ackLatencyP50.addCallback((r) =>
-      r.observe(GameGateway.percentile(GameGateway.ackLatencySamples, 50)),
+      r.observe(percentile(GameGateway.ackLatencySamples, 50)),
     );
     GameGateway.ackLatencyP95.addCallback((r) =>
-      r.observe(GameGateway.percentile(GameGateway.ackLatencySamples, 95)),
+      r.observe(percentile(GameGateway.ackLatencySamples, 95)),
     );
     GameGateway.ackLatencyP99.addCallback((r) =>
-      r.observe(GameGateway.percentile(GameGateway.ackLatencySamples, 99)),
+      r.observe(percentile(GameGateway.ackLatencySamples, 99)),
     );
     GameGateway.stateLatencyP50.addCallback((r) =>
-      r.observe(GameGateway.percentile(GameGateway.stateLatencySamples, 50)),
+      r.observe(percentile(GameGateway.stateLatencySamples, 50)),
     );
     GameGateway.stateLatencyP95.addCallback((r) =>
-      r.observe(GameGateway.percentile(GameGateway.stateLatencySamples, 95)),
+      r.observe(percentile(GameGateway.stateLatencySamples, 95)),
     );
     GameGateway.stateLatencyP99.addCallback((r) =>
-      r.observe(GameGateway.percentile(GameGateway.stateLatencySamples, 99)),
+      r.observe(percentile(GameGateway.stateLatencySamples, 99)),
     );
     GameGateway.actionThroughput.addCallback((r) => {
       const now = Date.now();
@@ -368,16 +369,20 @@ export class GameGateway
       const tps = GameGateway.actionTimestamps.length;
       r.observe(tps);
       GameGateway.throughputHist.record(tps);
-      GameGateway.addSample(GameGateway.throughputSamples, tps);
+      addSample(
+        GameGateway.throughputSamples,
+        tps,
+        GameGateway.MAX_SAMPLES,
+      );
     });
     GameGateway.actionThroughputP50.addCallback((r) =>
-      r.observe(GameGateway.percentile(GameGateway.throughputSamples, 50)),
+      r.observe(percentile(GameGateway.throughputSamples, 50)),
     );
     GameGateway.actionThroughputP95.addCallback((r) =>
-      r.observe(GameGateway.percentile(GameGateway.throughputSamples, 95)),
+      r.observe(percentile(GameGateway.throughputSamples, 95)),
     );
     GameGateway.actionThroughputP99.addCallback((r) =>
-      r.observe(GameGateway.percentile(GameGateway.throughputSamples, 99)),
+      r.observe(percentile(GameGateway.throughputSamples, 99)),
     );
   }
 
@@ -801,7 +806,11 @@ export class GameGateway
   private recordStateLatency(start: number, tableId: string) {
     const latency = Date.now() - start;
     GameGateway.stateLatency.record(latency, { tableId });
-    GameGateway.addSample(GameGateway.stateLatencySamples, latency);
+    addSample(
+      GameGateway.stateLatencySamples,
+      latency,
+      GameGateway.MAX_SAMPLES,
+    );
   }
 
   private recordAckLatency(start: number, tableId: string) {
@@ -810,32 +819,14 @@ export class GameGateway
       event: 'action',
       tableId,
     });
-    GameGateway.addSample(GameGateway.ackLatencySamples, latency);
-    GameGateway.recordAction(Date.now());
+    addSample(
+      GameGateway.ackLatencySamples,
+      latency,
+      GameGateway.MAX_SAMPLES,
+    );
+    recordTimestamp(GameGateway.actionTimestamps, Date.now());
   }
 
-  private static addSample(arr: number[], value: number) {
-    arr.push(value);
-    if (arr.length > GameGateway.MAX_SAMPLES) arr.shift();
-  }
-
-  private static recordAction(ts: number) {
-    GameGateway.actionTimestamps.push(ts);
-    const cutoff = ts - 1000;
-    while (
-      GameGateway.actionTimestamps.length &&
-      GameGateway.actionTimestamps[0] < cutoff
-    ) {
-      GameGateway.actionTimestamps.shift();
-    }
-  }
-
-  private static percentile(arr: number[], p: number): number {
-    if (arr.length === 0) return 0;
-    const sorted = [...arr].sort((a, b) => a - b);
-    const idx = Math.floor((p / 100) * (sorted.length - 1));
-    return sorted[idx];
-  }
 
   private enqueue<K extends keyof ServerToClientEvents>(
     client: GameSocket,
