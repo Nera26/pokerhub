@@ -46,6 +46,10 @@ jest.mock('@/hooks/useAuditSummary', () => ({
   useAuditSummary: () => ({ data: { total: 3, errors: 2, logins: 1 } }),
 }));
 
+jest.mock('@/lib/api/leaderboard', () => ({
+  rebuildLeaderboard: jest.fn(() => Promise.resolve()),
+}));
+
 const dashboardMetricsMock = jest.fn();
 jest.mock('@/hooks/useDashboardMetrics', () => ({
   useDashboardMetrics: () => dashboardMetricsMock(),
@@ -130,5 +134,18 @@ describe('dashboard metrics charts', () => {
     renderWithClient(<Analytics />);
     expect(document.querySelectorAll('canvas')).toHaveLength(2);
     await screen.findByRole('img', { name: /activity/i });
+  });
+});
+
+describe('leaderboard rebuild toast', () => {
+  it('shows toast when rebuild starts', async () => {
+    renderWithClient(<Analytics />);
+    const user = userEvent.setup();
+    await user.click(
+      screen.getByRole('button', { name: /rebuild leaderboard/i }),
+    );
+    expect(
+      await screen.findByText(/leaderboard rebuild started/i),
+    ).toBeInTheDocument();
   });
 });

@@ -20,7 +20,7 @@ import ToastNotification from '../../ui/ToastNotification';
 import { rebuildLeaderboard } from '@/lib/api/leaderboard';
 import type { AuditLogEntry, AuditLogType } from '@shared/types';
 import { loadTypeBadgeClasses } from './constants';
-import useToast from '../useToast';
+import useToasts from '@/hooks/useToasts';
 
 export default function Analytics() {
   const [search, setSearch] = useState('');
@@ -47,12 +47,12 @@ export default function Analytics() {
   const { data: summary } = useAuditSummary();
   const { data: metrics, isLoading: metricsLoading } = useDashboardMetrics();
 
-  const { toast, notify } = useToast();
+  const { toasts, pushToast } = useToasts();
 
   const rebuild = useMutation({
     mutationFn: () => rebuildLeaderboard(),
-    onSuccess: () => notify('Leaderboard rebuild started'),
-    onError: () => notify('Failed to rebuild leaderboard', 'error'),
+    onSuccess: () => pushToast('Leaderboard rebuild started'),
+    onError: () => pushToast('Failed to rebuild leaderboard', { variant: 'error' }),
   });
 
   const filtered = useMemo(() => {
@@ -212,12 +212,16 @@ export default function Analytics() {
 
       <DetailModal row={showDetail} onClose={() => setShowDetail(null)} />
 
-      <ToastNotification
-        message={toast.msg}
-        type={toast.type}
-        isOpen={toast.open}
-        onClose={() => notify('')}
-      />
+      {toasts.map((t) => (
+        <ToastNotification
+          key={t.id}
+          message={t.message}
+          type={t.variant === 'error' ? 'error' : 'success'}
+          isOpen
+          duration={t.duration}
+          onClose={() => {}}
+        />
+      ))}
     </div>
   );
 }

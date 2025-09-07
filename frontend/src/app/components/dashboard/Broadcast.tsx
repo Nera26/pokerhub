@@ -24,7 +24,7 @@ import {
   type BroadcastsResponse,
   type SendBroadcastRequest,
 } from '@shared/types';
-import useToast from './useToast';
+import useToasts from '@/hooks/useToasts';
 
 type MsgType = 'announcement' | 'alert' | 'notice';
 
@@ -81,7 +81,7 @@ export default function Broadcast() {
   });
   const templates = templatesData?.templates;
 
-  const { toast, notify } = useToast();
+  const { toasts, pushToast } = useToasts();
 
   const mutation = useMutation({
     mutationFn: (values: SendBroadcastRequest) => sendBroadcast(values),
@@ -108,11 +108,11 @@ export default function Broadcast() {
       if (ctx?.previous) {
         queryClient.setQueryData(['broadcasts'], ctx.previous);
       }
-      notify('Failed to send broadcast', 'error');
+      pushToast('Failed to send broadcast', { variant: 'error' });
     },
     onSuccess: (_data, vars) => {
       if (vars.sound) playBeep();
-      notify('Broadcast sent');
+      pushToast('Broadcast sent');
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['broadcasts'] });
@@ -351,12 +351,16 @@ export default function Broadcast() {
         )}
       </section>
 
-      <ToastNotification
-        message={toast.msg}
-        type={toast.type}
-        isOpen={toast.open}
-        onClose={() => notify('')}
-      />
+      {toasts.map((t) => (
+        <ToastNotification
+          key={t.id}
+          message={t.message}
+          type={t.variant === 'error' ? 'error' : 'success'}
+          isOpen
+          duration={t.duration}
+          onClose={() => {}}
+        />
+      ))}
     </div>
   );
 }
