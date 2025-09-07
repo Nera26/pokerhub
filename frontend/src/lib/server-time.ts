@@ -7,7 +7,3 @@ export function setServerTime(serverTime: number) {
 export function getServerTime(): number {
   return Date.now() + offset;
 }
-
-export function getOffset(): number {
-  return offset;
-}
