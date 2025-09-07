@@ -30,6 +30,19 @@ jest.mock('@/lib/api/admin', () => ({
     { id: 'analytics', label: 'Analytics', icon: 'chart-bar' },
   ]),
 }));
+jest.mock('@/features/site/profile/fetchProfile', () => ({
+  fetchProfile: jest.fn().mockResolvedValue({
+    username: 'Admin',
+    email: 'admin@example.com',
+    avatarUrl: '/a.png',
+    bank: '',
+    location: '',
+    joined: '2024-01-01T00:00:00Z',
+    bio: '',
+    experience: 0,
+    balance: 0,
+  }),
+}));
 
 describe('Dashboard page', () => {
   beforeEach(() => {
