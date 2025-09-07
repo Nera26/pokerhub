@@ -148,6 +148,20 @@ const ParquetSchemas: Record<string, ParquetSchema> = {
   'wallet.chargeback_flag': WalletChargebackFlagSchema,
 };
 
+function scheduleDaily(task: () => void): void {
+  const oneDay = 24 * 60 * 60 * 1000;
+  const now = new Date();
+  const next = new Date(now);
+  next.setUTCDate(now.getUTCDate() + 1);
+  next.setUTCHours(0, 0, 0, 0);
+  const delay = next.getTime() - now.getTime();
+  task();
+  setTimeout(() => {
+    task();
+    setInterval(task, oneDay);
+  }, delay);
+}
+
 @Injectable()
 export class AnalyticsService {
   private readonly client: ClickHouseClient | null;
@@ -483,16 +497,7 @@ export class AnalyticsService {
   }
 
   private scheduleEngagementMetrics() {
-    const oneDay = 24 * 60 * 60 * 1000;
-    const now = new Date();
-    const next = new Date(now);
-    next.setUTCDate(now.getUTCDate() + 1);
-    next.setUTCHours(0, 0, 0, 0);
-    const delay = next.getTime() - now.getTime();
-    setTimeout(() => {
-      void this.rebuildEngagementMetrics();
-      setInterval(() => void this.rebuildEngagementMetrics(), oneDay);
-    }, delay);
+    scheduleDaily(() => void this.rebuildEngagementMetrics());
   }
 
   async rebuildEngagementMetrics() {
@@ -559,16 +564,7 @@ export class AnalyticsService {
   }
 
   private scheduleStakeAggregates() {
-    const oneDay = 24 * 60 * 60 * 1000;
-    const now = new Date();
-    const next = new Date(now);
-    next.setUTCDate(now.getUTCDate() + 1);
-    next.setUTCHours(0, 0, 0, 0);
-    const delay = next.getTime() - now.getTime();
-    setTimeout(() => {
-      void this.rebuildStakeAggregates();
-      setInterval(() => void this.rebuildStakeAggregates(), oneDay);
-    }, delay);
+    scheduleDaily(() => void this.rebuildStakeAggregates());
   }
 
   async rebuildStakeAggregates() {
