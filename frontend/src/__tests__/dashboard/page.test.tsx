@@ -28,7 +28,6 @@ jest.mock('@/lib/api/admin', () => ({
     { id: 'dashboard', label: 'Dashboard', icon: 'chart-line' },
     { id: 'users', label: 'Users', icon: 'users' },
     { id: 'analytics', label: 'Analytics', icon: 'chart-bar' },
-    { id: 'review', label: 'Collusion Review', icon: 'magnifying-glass', path: '/review' },
   ]),
 }));
 
@@ -55,15 +54,5 @@ describe('Dashboard page', () => {
     });
     await user.click(analyticsBtn);
     expect(replace).toHaveBeenCalledWith('/dashboard?tab=analytics');
-  });
-
-  it('navigates to /review', async () => {
-    const user = userEvent.setup();
-    render(<Page />);
-    const reviewBtn = await screen.findByRole('button', {
-      name: /collusion review/i,
-    });
-    await user.click(reviewBtn);
-    expect(push).toHaveBeenCalledWith('/review');
   });
 });

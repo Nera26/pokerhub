@@ -14,12 +14,6 @@ export const sharedSidebar = [
   { id: 'messages', label: 'Messages', icon: 'envelope' },
   { id: 'audit', label: 'Audit Logs', icon: 'clipboard-list' },
   { id: 'analytics', label: 'Analytics', icon: 'chart-bar' },
-  {
-    id: 'review',
-    label: 'Collusion Review',
-    icon: 'magnifying-glass',
-    path: '/review',
-  },
 ] as const;
 
 export type SharedSidebarItem = (typeof sharedSidebar)[number];
