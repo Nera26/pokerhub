@@ -63,13 +63,15 @@ export const DashboardMetricsSchema = z.object({
 });
 export type DashboardMetrics = z.infer<typeof DashboardMetricsSchema>;
 
-export const AuditLogTypeSchema = z.enum([
+export const AUDIT_LOG_TYPES = [
   'Login',
   'Table Event',
   'Broadcast',
   'Error',
-]);
-export type AuditLogType = z.infer<typeof AuditLogTypeSchema>;
+] as const;
+
+export const AuditLogTypeSchema = z.enum(AUDIT_LOG_TYPES);
+export type AuditLogType = (typeof AUDIT_LOG_TYPES)[number];
 
 export const AuditLogEntrySchema = z.object({
   id: z.number().int(),
