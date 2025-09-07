@@ -26,7 +26,7 @@ import { validationSchema } from './config/env.validation';
 
 import { AppController } from './app.controller';
 import { AdminMessagesController } from './routes/admin-messages.controller';
-import { CtasController } from './routes/ctas.controller';
+import { CtasModule } from './ctas/ctas.module';
 import { AppService } from './app.service';
 import { API_CONTRACT_VERSION } from '@shared/constants';
 import { ZodExceptionFilter } from './common/zod-exception.filter';
@@ -115,8 +115,9 @@ import { BroadcastsModule } from './broadcasts/broadcasts.module';
     NotificationsModule,
     MetricsModule,
     BroadcastsModule,
+    CtasModule,
   ],
-  controllers: [AppController, AdminMessagesController, CtasController],
+  controllers: [AppController, AdminMessagesController],
   providers: [
     AppService,
     {
