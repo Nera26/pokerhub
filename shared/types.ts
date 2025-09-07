@@ -156,7 +156,7 @@ export const PromotionsResponseSchema = z.array(PromotionSchema);
 export type PromotionsResponse = z.infer<typeof PromotionsResponseSchema>;
 
 /** ---- Broadcasts ---- */
-export {
+export { 
   BroadcastTypeSchema,
   BroadcastSchema,
   BroadcastsResponseSchema,
@@ -168,6 +168,10 @@ export type {
   BroadcastsResponse,
   SendBroadcastRequest,
 } from '../backend/src/schemas/broadcasts';
+
+/** ---- Admin Tournaments ---- */
+export { AdminTournamentSchema } from '../backend/src/schemas/tournaments';
+export type { AdminTournament } from '../backend/src/schemas/tournaments';
 
 /** ---- Admin Messages ---- */
 export {

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.9.0
+  version: 2.10.0
 paths:
   /status:
     get:
@@ -1205,6 +1205,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+  /admin/tournaments/defaults:
+    get:
+      summary: Get default tournament values
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Default tournament values
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTournament'
   /admin/withdrawals:
     get:
       summary: List pending withdrawals
@@ -1604,6 +1616,53 @@ components:
           type: string
       required:
         - reply
+    AdminTournament:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        gameType:
+          type: string
+        buyin:
+          type: number
+        fee:
+          type: number
+        prizePool:
+          type: number
+        date:
+          type: string
+        time:
+          type: string
+        format:
+          type: string
+        seatCap:
+          oneOf:
+            - type: integer
+            - type: string
+              enum: ['']
+        description:
+          type: string
+        rebuy:
+          type: boolean
+        addon:
+          type: boolean
+        status:
+          type: string
+      required:
+        - id
+        - name
+        - gameType
+        - buyin
+        - fee
+        - prizePool
+        - date
+        - time
+        - format
+        - rebuy
+        - addon
+        - status
     DashboardMetricsResponse:
       type: object
       properties:
