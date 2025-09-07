@@ -3,6 +3,7 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import type { AuditLogType } from '@shared/types';
+import { LOG_TYPES } from './constants';
 
 interface Props {
   search: string;
@@ -41,10 +42,11 @@ export default function SearchBar({
           className="bg-primary-bg border border-dark rounded-xl px-4 py-3 text-sm"
         >
           <option value="all">All Types</option>
-          <option value="Login">Login</option>
-          <option value="Table Event">Table Event</option>
-          <option value="Broadcast">Broadcast</option>
-          <option value="Error">Error</option>
+          {LOG_TYPES.map((logType) => (
+            <option key={logType} value={logType}>
+              {logType}
+            </option>
+          ))}
         </select>
         <button
           onClick={onSubmit}
