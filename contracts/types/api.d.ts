@@ -1372,7 +1372,7 @@ export interface paths {
     /** List game types */
     get: {
       responses: {
-        /** @description Game types */
+        /** @description Array of game types with labels */
         200: {
           content: {
             "application/json": components["schemas"]["GameTypeList"];
