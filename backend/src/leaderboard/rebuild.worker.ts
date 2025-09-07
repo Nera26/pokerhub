@@ -1,5 +1,7 @@
 import { LeaderboardService } from './leaderboard.service';
 import { metrics } from '@opentelemetry/api';
+import { createQueue } from '../redis/queue';
+import { Worker } from 'bullmq';
 
 const meter = metrics.getMeter('leaderboard');
 const rebuildDuration = meter.createHistogram(
@@ -25,12 +27,7 @@ const rebuildFailure = meter.createCounter(
 export async function startLeaderboardRebuildWorker(
   leaderboard: LeaderboardService,
 ) {
-  const bull = await import('bullmq');
-  const connection = {
-    host: process.env.REDIS_HOST ?? 'localhost',
-    port: Number(process.env.REDIS_PORT ?? 6379),
-  };
-  const queue = new bull.Queue('leaderboard-rebuild', { connection });
+  const queue = await createQueue('leaderboard-rebuild');
 
   await queue.add(
     'rebuild',
@@ -43,7 +40,7 @@ export async function startLeaderboardRebuildWorker(
     },
   );
 
-  const worker = new bull.Worker(
+  const worker = new Worker(
     'leaderboard-rebuild',
     async () => {
       const start = Date.now();
@@ -62,7 +59,7 @@ export async function startLeaderboardRebuildWorker(
         throw err;
       }
     },
-    { connection },
+    { connection: queue.opts.connection },
   );
 
   await worker.waitUntilReady();

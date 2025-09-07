@@ -1,17 +1,16 @@
 import { WalletService } from './wallet.service';
+import { createQueue } from '../redis/queue';
+import { Worker } from 'bullmq';
 
 export async function startPayoutWorker(wallet: WalletService) {
-  const bull = await import('bullmq');
-  new bull.Worker(
+  const queue = await createQueue('payout');
+  new Worker(
     'payout',
     async (job) => {
       await wallet.requestDisbursement(job.data.id, job.data.currency);
     },
     {
-      connection: {
-        host: process.env.REDIS_HOST ?? 'localhost',
-        port: Number(process.env.REDIS_PORT ?? 6379),
-      },
+      connection: queue.opts.connection,
       removeOnComplete: { count: 1000 },
     },
   );
