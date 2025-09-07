@@ -326,9 +326,21 @@ export const GameStateDeltaSchema = z.object({
 });
 export type GameStateDelta = z.infer<typeof GameStateDeltaSchema>;
 
+// --- Table / Game Types ---
+export const GameTypeSchema = z.enum([
+  'texas',
+  'omaha',
+  'allin',
+  'tournaments',
+]);
+export type GameType = z.infer<typeof GameTypeSchema>;
+export const GameTypeListSchema = z.array(GameTypeSchema);
+export type GameTypeList = z.infer<typeof GameTypeListSchema>;
+
 export const TournamentSchema = z.object({
   id: z.string(),
   title: z.string(),
+  gameType: GameTypeSchema,
   buyIn: z.number(),
   fee: z.number().optional(),
   prizePool: z.number(),
@@ -364,18 +376,6 @@ export type TournamentRegisterRequest = z.infer<
 export const TournamentWithdrawRequestSchema =
   TournamentRegisterRequestSchema;
 export type TournamentWithdrawRequest = TournamentRegisterRequest;
-
-// --- Table / Game Types ---
-export const GameTypeSchema = z.enum([
-  'texas',
-  'omaha',
-  'allin',
-  'tournaments',
-]);
-export type GameType = z.infer<typeof GameTypeSchema>;
-
-export const GameTypeListSchema = z.array(GameTypeSchema);
-export type GameTypeList = z.infer<typeof GameTypeListSchema>;
 
 export const TableSchema = z.object({
   id: z.string(),

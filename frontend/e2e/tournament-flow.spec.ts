@@ -6,6 +6,8 @@ const tournamentsResponse = [
     title: 'Test Tournament',
     buyIn: 10,
     prizePool: 100,
+    state: 'REG_OPEN',
+    gameType: 'texas',
     players: { current: 0, max: 9 },
     registered: false,
   },

@@ -14,6 +14,8 @@ describe('TournamentController', () => {
     join: jest.fn(),
     withdraw: jest.fn(),
     scheduleTournament: jest.fn(),
+    list: jest.fn(),
+    get: jest.fn(),
   } as Partial<TournamentService>;
 
   beforeAll(async () => {
@@ -63,6 +65,42 @@ describe('TournamentController', () => {
       .post('/tournaments/abc/cancel')
       .set('Authorization', 'Bearer u1')
       .expect(403);
+  });
+
+  it('lists tournaments with state and gameType', async () => {
+    svc.list?.mockResolvedValue([
+      {
+        id: 't1',
+        title: 'T1',
+        buyIn: 100,
+        prizePool: 1000,
+        state: 'REG_OPEN',
+        gameType: 'texas',
+        players: { current: 0, max: 100 },
+        registered: false,
+      },
+    ]);
+    const res = await request(app.getHttpServer()).get('/tournaments').expect(200);
+    expect(res.body[0]).toMatchObject({ state: 'REG_OPEN', gameType: 'texas' });
+  });
+
+  it('gets tournament with state and gameType', async () => {
+    svc.get?.mockResolvedValue({
+      id: 't1',
+      title: 'T1',
+      buyIn: 100,
+      prizePool: 1000,
+      state: 'REG_OPEN',
+      gameType: 'texas',
+      players: { current: 0, max: 100 },
+      registered: false,
+      registration: { open: null, close: null },
+      overview: [],
+      structure: [],
+      prizes: [],
+    });
+    const res = await request(app.getHttpServer()).get('/tournaments/t1').expect(200);
+    expect(res.body).toMatchObject({ id: 't1', state: 'REG_OPEN', gameType: 'texas' });
   });
 
 

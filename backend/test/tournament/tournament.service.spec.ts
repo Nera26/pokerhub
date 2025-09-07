@@ -50,6 +50,7 @@ describe('TournamentService algorithms', () => {
         id: 't1',
         title: 'Daily Free Roll',
         buyIn: 100,
+        gameType: 'texas',
         prizePool: 1000,
         maxPlayers: 100,
         state: TournamentState.REG_OPEN,

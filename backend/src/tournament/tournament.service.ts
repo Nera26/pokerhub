@@ -100,6 +100,7 @@ export class TournamentService implements OnModuleInit {
       title: t.title,
       buyIn: t.buyIn,
       currency: t.currency,
+      gameType: t.gameType,
       prizePool: t.prizePool,
       state: t.state,
       players: { current: playerCount, max: t.maxPlayers },
