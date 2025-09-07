@@ -22,6 +22,7 @@ describe('TournamentService.join rollback', () => {
         currency: 'USD',
         maxPlayers: 100,
         state: TournamentState.REG_OPEN,
+        gameType: 'texas',
         tables: [],
       } as Tournament)),
       save: jest.fn(),

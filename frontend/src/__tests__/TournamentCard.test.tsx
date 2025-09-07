@@ -103,6 +103,8 @@ describe('Tournament page', () => {
         title: 'Spring Poker',
         buyIn: 100,
         prizePool: 1000,
+        state: 'REG_OPEN',
+        gameType: 'texas',
         players: { current: 10, max: 100 },
         registered: false,
       },

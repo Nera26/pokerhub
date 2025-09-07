@@ -2379,6 +2379,8 @@ components:
           type: string
         title:
           type: string
+        gameType:
+          $ref: '#/components/schemas/GameType'
         buyIn:
           type: number
         fee:
@@ -2407,6 +2409,7 @@ components:
       required:
         - id
         - title
+        - gameType
         - buyIn
         - prizePool
         - state

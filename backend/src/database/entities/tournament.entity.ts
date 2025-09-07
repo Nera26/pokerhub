@@ -17,6 +17,9 @@ export class Tournament {
   @Column()
   title: string;
 
+  @Column({ default: 'texas' })
+  gameType: string;
+
   @Column('int')
   buyIn: number;
 

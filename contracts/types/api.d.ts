@@ -1928,6 +1928,7 @@ export interface components {
     Tournament: {
       id: string;
       title: string;
+      gameType: components["schemas"]["GameType"];
       buyIn: number;
       fee?: number;
       prizePool: number;

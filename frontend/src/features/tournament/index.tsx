@@ -65,13 +65,21 @@ export default function Page() {
     queryFn: ({ signal }) => fetchTournaments({ signal }),
   });
 
+  const statusMap: Record<ApiTournament['state'], TournamentStatus> = {
+    REG_OPEN: 'upcoming',
+    RUNNING: 'running',
+    PAUSED: 'running',
+    FINISHED: 'past',
+    CANCELLED: 'past',
+  };
+
   const tournaments: Tournament[] = useMemo(
     () =>
       (data ?? []).map((t) => ({
         id: t.id,
-        status: 'upcoming',
+        status: statusMap[t.state],
         name: t.title,
-        gameType: "Texas Hold'em – No Limit",
+        gameType: t.gameType,
         buyin: t.buyIn,
         rebuy: t.fee ? `${t.fee} fee` : 'None',
         prizepool:

@@ -67,6 +67,7 @@ const mockTournaments = Array.from({ length: 20 }, (_, i) => ({
   fee: 0,
   prizePool: 1000,
   state: 'REG_OPEN',
+  gameType: 'texas',
   players: { current: 0, max: 100 },
   registered: false,
 }));

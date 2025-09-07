@@ -51,7 +51,7 @@ export default function TournamentList<T extends Tournament>({
             id={t.id}
             status={mapStatus(t.state)}
             name={t.title}
-            gameType="Unknown"
+            gameType={t.gameType}
             buyin={t.buyIn + (t.fee ?? 0)}
             rebuy="N/A"
             prizepool={t.prizePool}

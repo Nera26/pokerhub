@@ -14,6 +14,7 @@ function setup(useTx = false, failSave = false) {
     id: 't1',
     title: 'Daily',
     buyIn: 100,
+    gameType: 'texas',
     prizePool: 1000,
     maxPlayers: 100,
     state: TournamentState.REG_OPEN,
