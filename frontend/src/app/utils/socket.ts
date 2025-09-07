@@ -5,8 +5,10 @@
 import { io, type Socket, type Manager } from 'socket.io-client';
 import type { Packet } from 'socket.io-parser';
 import { env } from '@/lib/env';
+import { getBaseUrl } from '@/lib/base-url';
 
-const SOCKET_URL = env.NEXT_PUBLIC_SOCKET_URL ?? 'http://localhost:4000';
+const SOCKET_URL =
+  env.NEXT_PUBLIC_SOCKET_URL ?? getBaseUrl().replace(/^http/, 'ws');
 
 interface FrameAckPayload {
   frameId: string;
