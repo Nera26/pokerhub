@@ -2,7 +2,12 @@ import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import StatusPill from '@/app/components/dashboard/transactions/StatusPill';
 import RequestTable from '@/app/components/dashboard/transactions/RequestTable';
+jest.mock('@/lib/api/wallet', () => ({
+  fetchAdminPlayers: jest.fn().mockResolvedValue([]),
+  fetchTransactionTypes: jest.fn().mockResolvedValue([]),
+}));
 import TransactionHistory from '@/app/components/dashboard/transactions/TransactionHistory';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faImage, faComment } from '@fortawesome/free-solid-svg-icons';
 import type {
@@ -187,12 +192,19 @@ describe('transaction components', () => {
     ];
     const exportCSV = jest.fn();
     const user = userEvent.setup();
+    const qc = new QueryClient();
     render(
-      <TransactionHistory
-        log={log}
-        pageInfo="Showing 1-1 of 1 transactions"
-        onExport={exportCSV}
-      />,
+      <QueryClientProvider client={qc}>
+        <TransactionHistory
+          log={log}
+          pageInfo="Showing 1-1 of 1 transactions"
+          onExport={exportCSV}
+          selectedPlayer=""
+          selectedType=""
+          onPlayerChange={jest.fn()}
+          onTypeChange={jest.fn()}
+        />
+      </QueryClientProvider>,
     );
     expect(screen.getByText('Unified Transaction Log')).toBeInTheDocument();
     await act(async () => {

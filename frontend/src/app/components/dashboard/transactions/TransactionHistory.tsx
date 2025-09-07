@@ -1,17 +1,48 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDownload } from '@fortawesome/free-solid-svg-icons';
+import { useQuery } from '@tanstack/react-query';
 
 import type { Txn } from './types';
 import TransactionHistoryTable from '@/app/components/common/TransactionHistoryTable';
 import { transactionColumns } from './transactionColumns';
+import { fetchAdminPlayers, fetchTransactionTypes } from '@/lib/api/wallet';
+import { useApiError } from '@/hooks/useApiError';
 
 interface Props {
   log: Txn[];
   pageInfo: string;
   onExport: () => void;
+  selectedPlayer: string;
+  selectedType: string;
+  onPlayerChange: (playerId: string) => void;
+  onTypeChange: (type: string) => void;
 }
 
-export default function TransactionHistory({ log, pageInfo, onExport }: Props) {
+export default function TransactionHistory({
+  log,
+  pageInfo,
+  onExport,
+  selectedPlayer,
+  selectedType,
+  onPlayerChange,
+  onTypeChange,
+}: Props) {
+  const {
+    data: players = [],
+    isLoading: playersLoading,
+    error: playersError,
+  } = useQuery({ queryKey: ['adminPlayers'], queryFn: fetchAdminPlayers });
+  const {
+    data: types = [],
+    isLoading: typesLoading,
+    error: typesError,
+  } = useQuery({
+    queryKey: ['transactionTypes'],
+    queryFn: fetchTransactionTypes,
+  });
+
+  useApiError(playersError);
+  useApiError(typesError);
   return (
     <section>
       <div className="bg-card-bg p-6 rounded-2xl card-shadow">
@@ -27,19 +58,41 @@ export default function TransactionHistory({ log, pageInfo, onExport }: Props) {
                 type="date"
                 className="bg-primary-bg border border-dark rounded-2xl px-3 py-2 text-sm"
               />
-              <select className="bg-primary-bg border border-dark rounded-2xl px-3 py-2 text-sm">
-                <option>All Players</option>
-                <option>Mike_P</option>
-                <option>Sarah_K</option>
-                <option>Alex_R</option>
+              <select
+                className="bg-primary-bg border border-dark rounded-2xl px-3 py-2 text-sm"
+                value={selectedPlayer}
+                onChange={(e) => onPlayerChange(e.target.value)}
+              >
+                <option value="">All Players</option>
+                {playersLoading ? (
+                  <option disabled>Loading...</option>
+                ) : playersError ? (
+                  <option disabled>Failed to load</option>
+                ) : (
+                  players.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.username}
+                    </option>
+                  ))
+                )}
               </select>
-              <select className="bg-primary-bg border border-dark rounded-2xl px-3 py-2 text-sm">
-                <option>All Types</option>
-                <option>Deposit</option>
-                <option>Withdrawal</option>
-                <option>Manual Add</option>
-                <option>Manual Remove</option>
-                <option>Freeze</option>
+              <select
+                className="bg-primary-bg border border-dark rounded-2xl px-3 py-2 text-sm"
+                value={selectedType}
+                onChange={(e) => onTypeChange(e.target.value)}
+              >
+                <option value="">All Types</option>
+                {typesLoading ? (
+                  <option disabled>Loading...</option>
+                ) : typesError ? (
+                  <option disabled>Failed to load</option>
+                ) : (
+                  types.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
             <button

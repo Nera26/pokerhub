@@ -260,6 +260,30 @@ export function fetchBalances(
   });
 }
 
+const AdminPlayerSchema = z.object({
+  id: z.string(),
+  username: z.string(),
+});
+export type AdminPlayer = z.infer<typeof AdminPlayerSchema>;
+
+export function fetchAdminPlayers(
+  opts: { signal?: AbortSignal } = {},
+): Promise<AdminPlayer[]> {
+  return apiClient(`/api/admin/players`, z.array(AdminPlayerSchema), {
+    signal: opts.signal,
+  });
+}
+
+export function fetchTransactionTypes(
+  opts: { signal?: AbortSignal } = {},
+): Promise<string[]> {
+  return apiClient(
+    `/api/admin/transaction-types`,
+    z.array(z.string()),
+    { signal: opts.signal },
+  );
+}
+
 const TransactionLogEntrySchema = z.object({
   datetime: z.string(),
   action: z.string(),
@@ -271,11 +295,17 @@ const TransactionLogEntrySchema = z.object({
 export type TransactionLogEntry = z.infer<typeof TransactionLogEntrySchema>;
 
 export function fetchTransactionsLog(
-  opts: { signal?: AbortSignal } = {},
+  opts: { signal?: AbortSignal; playerId?: string; type?: string } = {},
 ): Promise<TransactionLogEntry[]> {
-  return apiClient(`/api/admin/transactions`, z.array(TransactionLogEntrySchema), {
-    signal: opts.signal,
-  });
+  const params = new URLSearchParams();
+  if (opts.playerId) params.set('playerId', opts.playerId);
+  if (opts.type) params.set('type', opts.type);
+  const query = params.toString();
+  return apiClient(
+    `/api/admin/transactions${query ? `?${query}` : ''}`,
+    z.array(TransactionLogEntrySchema),
+    { signal: opts.signal },
+  );
 }
 
 const BankAccountSchema = z.object({

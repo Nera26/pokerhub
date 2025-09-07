@@ -178,13 +178,21 @@ export default function BalanceTransactions() {
     initialRect: { width: 0, height: 400 },
   });
 
+  const [playerFilter, setPlayerFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+
   const {
     data: log = [],
     isLoading: logLoading,
     error: logError,
   } = useQuery<Txn[]>({
-    queryKey: ['transactions'],
-    queryFn: fetchTransactionsLog,
+    queryKey: ['transactions', playerFilter, typeFilter],
+    queryFn: ({ signal }) =>
+      fetchTransactionsLog({
+        signal,
+        playerId: playerFilter || undefined,
+        type: typeFilter || undefined,
+      }),
     staleTime: 30000,
   });
   const logErrorMessage = useApiError(logError);
@@ -750,6 +758,10 @@ export default function BalanceTransactions() {
           log={log}
           pageInfo={pageInfo}
           onExport={exportCSV}
+          selectedPlayer={playerFilter}
+          selectedType={typeFilter}
+          onPlayerChange={setPlayerFilter}
+          onTypeChange={setTypeFilter}
         />
       )}
 
