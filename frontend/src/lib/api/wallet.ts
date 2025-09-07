@@ -326,6 +326,9 @@ export function fetchBankAccount(
   );
 }
 
+/**
+ * Fetch the current deposit IBAN along with last update metadata.
+ */
 export function fetchIban(
   opts: { signal?: AbortSignal } = {},
 ): Promise<IbanResponse> {

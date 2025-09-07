@@ -26,7 +26,14 @@ describe('useIban', () => {
     const fetchMock = jest.fn<Promise<Response>, []>().mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({ iban: '', masked: '', holder: '', instructions: '' }),
+      json: async () => ({
+        iban: '',
+        masked: '',
+        holder: '',
+        instructions: '',
+        updatedBy: '',
+        updatedAt: '',
+      }),
     } as unknown as Response);
     global.fetch = fetchMock as unknown as typeof fetch;
     const client = new QueryClient();
@@ -35,7 +42,14 @@ describe('useIban', () => {
     );
     const { result } = renderHook(() => useIban(), { wrapper });
     await waitFor(() => expect(result.current.data).toBeDefined());
-    expect(result.current.data).toEqual({ iban: '', masked: '', holder: '', instructions: '' });
+    expect(result.current.data).toEqual({
+      iban: '',
+      masked: '',
+      holder: '',
+      instructions: '',
+      updatedBy: '',
+      updatedAt: '',
+    });
   });
 
   it('reports error on failure', async () => {

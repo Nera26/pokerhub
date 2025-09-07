@@ -27,6 +27,8 @@ type Props = {
   onUpdate: (iban: string, holder: string, notes: string) => void;
   history: IbanHistory[];
   onReuse: (iban: string) => void;
+  lastUpdatedBy: string;
+  lastUpdatedAt: string;
 };
 
 const ibanRegex = /^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$/;
@@ -57,6 +59,8 @@ export default function IBANManagerModal({
   onUpdate,
   history,
   onReuse,
+  lastUpdatedBy,
+  lastUpdatedAt,
 }: Props) {
   const {
     register,
@@ -127,7 +131,7 @@ export default function IBANManagerModal({
           <div className="md:col-span-2">
             <label className="text-text-secondary text-sm">Last Updated</label>
             <div className="mt-1 text-xs text-text-secondary">
-              By Admin_John on 2024-01-15 14:30
+              By {lastUpdatedBy} on {lastUpdatedAt}
             </div>
           </div>
         </div>

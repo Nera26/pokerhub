@@ -204,6 +204,8 @@ export default function BalanceTransactions() {
   const ibanMaskDisplay = ibanData?.masked ?? '';
   const ibanHolder = ibanData?.holder ?? '';
   const ibanInstructions = ibanData?.instructions ?? '';
+  const ibanUpdatedBy = ibanData?.updatedBy ?? '';
+  const ibanUpdatedAt = ibanData?.updatedAt ?? '';
   const { data: ibanHistoryData } = useIbanHistory();
   const ibanHistory: IbanHistoryEntry[] = ibanHistoryData?.history ?? [];
 
@@ -783,6 +785,8 @@ export default function BalanceTransactions() {
         masked={ibanMasked}
         holder={ibanHolder}
         instructions={ibanInstructions}
+        lastUpdatedBy={ibanUpdatedBy}
+        lastUpdatedAt={ibanUpdatedAt}
         onToggleMask={() => setIbanMasked((v) => !v)}
         onUpdate={updateIBAN}
         history={ibanHistory}
