@@ -4,7 +4,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { ThrottlerModule } from '@nestjs/throttler';
 import helmet from 'helmet';
-import { Request, Response } from 'express';
 import { APP_FILTER } from '@nestjs/core';
 
 import {
@@ -50,6 +49,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { cookieSecurity } from './common/cookie-security.middleware';
 import { BroadcastsModule } from './broadcasts/broadcasts.module';
+import { TiersModule } from './tiers/tiers.module';
 import { CtasModule } from './ctas/ctas.module';
 
 @Module({
@@ -114,13 +114,10 @@ import { CtasModule } from './ctas/ctas.module';
     NotificationsModule,
     MetricsModule,
     BroadcastsModule,
+    TiersModule,
     CtasModule,
   ],
-  controllers: [
-    AppController,
-    AdminMessagesController,
-    AdminBonusController, // add bonus options controller
-  ],
+  controllers: [AppController, AdminMessagesController, AdminBonusController],
   providers: [
     AppService,
     { provide: 'API_CONTRACT_VERSION', useValue: API_CONTRACT_VERSION },
