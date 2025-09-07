@@ -36,6 +36,7 @@ import Modal from '../ui/Modal';
 import ToastNotification from '../ui/ToastNotification';
 import Tooltip from '../ui/Tooltip';
 import BonusForm from './forms/BonusForm';
+import StatusModal from './StatusModal';
 
 type BonusStatus = 'active' | 'paused';
 type StatusFilter = BonusStatus | 'all' | 'expired';
@@ -515,69 +516,21 @@ export default function BonusManager() {
         )}
       </Modal>
 
-      {/* PAUSE */}
-      <Modal isOpen={pauseOpen} onClose={() => setPauseOpen(false)}>
-        <div className="text-center">
-          <FontAwesomeIcon
-            icon={faPause}
-            className="text-4xl text-danger-red mb-4"
-          />
-          <CardTitle>Pause Bonus</CardTitle>
-          <p className="text-text-secondary mb-6">
-            Are you sure you want to pause{' '}
-            <span className="text-accent-yellow font-semibold">
-              {selected?.name}
-            </span>
-            ?
-          </p>
-          <div className="flex gap-4">
-            <button
-              onClick={() => setPauseOpen(false)}
-              className="flex-1 border border-dark text-text-secondary hover:bg-hover-bg py-3 rounded-xl font-semibold transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={confirmPause}
-              className="flex-1 bg-danger-red hover:brightness-110 py-3 rounded-xl font-semibold text-text-primary transition-colors"
-            >
-              Confirm Pause
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* RESUME */}
-      <Modal isOpen={resumeOpen} onClose={() => setResumeOpen(false)}>
-        <div className="text-center">
-          <FontAwesomeIcon
-            icon={faPlay}
-            className="text-4xl text-accent-green mb-4"
-          />
-          <CardTitle>Resume Bonus</CardTitle>
-          <p className="text-text-secondary mb-6">
-            Are you sure you want to resume{' '}
-            <span className="text-accent-yellow font-semibold">
-              {selected?.name}
-            </span>
-            ?
-          </p>
-          <div className="flex gap-4">
-            <button
-              onClick={() => setResumeOpen(false)}
-              className="flex-1 border border-dark text-text-secondary hover:bg-hover-bg py-3 rounded-xl font-semibold transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={confirmResume}
-              className="flex-1 bg-accent-green hover-glow-green py-3 rounded-xl font-semibold text-text-primary transition-colors"
-            >
-              Confirm Resume
-            </button>
-          </div>
-        </div>
-      </Modal>
+      {/* PAUSE/RESUME STATUS MODALS */}
+      <StatusModal
+        action="pause"
+        isOpen={pauseOpen}
+        onClose={() => setPauseOpen(false)}
+        onConfirm={confirmPause}
+        bonusName={selected?.name ?? ''}
+      />
+      <StatusModal
+        action="resume"
+        isOpen={resumeOpen}
+        onClose={() => setResumeOpen(false)}
+        onConfirm={confirmResume}
+        bonusName={selected?.name ?? ''}
+      />
 
       <ToastNotification
         message={toast.msg}
