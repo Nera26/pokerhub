@@ -64,7 +64,6 @@ export type {
 } from '../backend/src/schemas/withdrawals';
 
 export {
-  SIDEBAR_TABS,
   SidebarItemSchema,
   SidebarItemsResponseSchema,
 } from '../backend/src/schemas/admin';

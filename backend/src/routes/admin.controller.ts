@@ -8,15 +8,12 @@ import {
   AlertItem,
   AlertItemSchema,
 } from '../schemas/analytics';
-import {
-  SidebarItem,
-  SidebarItemsResponseSchema,
-} from '../schemas/admin';
+import { SidebarItem, SidebarItemsResponseSchema } from '../schemas/admin';
+import { sharedSidebar } from '@shared/sidebar';
 import { KycService } from '../wallet/kyc.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
-import { AdminSidebarRepository } from './admin-sidebar.repository';
 
 @ApiTags('admin')
 @UseGuards(AuthGuard, AdminGuard)
@@ -25,7 +22,6 @@ export class AdminController {
   constructor(
     private readonly kyc: KycService,
     private readonly analytics: AnalyticsService,
-    private readonly sidebarRepo: AdminSidebarRepository,
   ) {}
 
   @Get('kyc/:id/denial')
@@ -56,7 +52,6 @@ export class AdminController {
   @ApiOperation({ summary: 'Get admin sidebar items' })
   @ApiResponse({ status: 200, description: 'Sidebar items' })
   async getSidebar(): Promise<SidebarItem[]> {
-    const items = await this.sidebarRepo.findAll();
-    return SidebarItemsResponseSchema.parse(items);
+    return SidebarItemsResponseSchema.parse(sharedSidebar);
   }
 }

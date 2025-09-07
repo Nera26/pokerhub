@@ -6,16 +6,16 @@ import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
 import { KycService } from '../src/wallet/kyc.service';
 import { AnalyticsService } from '../src/analytics/analytics.service';
-import { AdminSidebarRepository } from '../src/routes/admin-sidebar.repository';
+import { sharedSidebar } from '@shared/sidebar';
 
 describe('AdminController', () => {
   let app: INestApplication;
+
   const kyc = { getDenialReason: jest.fn() } as Partial<KycService>;
   const analytics = {
     getAuditLogs: jest.fn(),
     getSecurityAlerts: jest.fn(),
   } as Partial<AnalyticsService>;
-  const sidebarRepo = { findAll: jest.fn() } as Partial<AdminSidebarRepository>;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -23,7 +23,6 @@ describe('AdminController', () => {
       providers: [
         { provide: KycService, useValue: kyc },
         { provide: AnalyticsService, useValue: analytics },
-        { provide: AdminSidebarRepository, useValue: sidebarRepo },
       ],
     })
       .overrideGuard(AuthGuard)
@@ -59,21 +58,10 @@ describe('AdminController', () => {
       .expect([]);
   });
 
-  it('returns sidebar items', async () => {
-    (sidebarRepo.findAll as jest.Mock).mockResolvedValue([
-      { id: 'dashboard', label: 'Dashboard', icon: 'chart-line' },
-    ]);
+  it('returns sidebar items from shared module', async () => {
     await request(app.getHttpServer())
       .get('/admin/sidebar')
       .expect(200)
-      .expect([{ id: 'dashboard', label: 'Dashboard', icon: 'chart-line' }]);
-  });
-
-  it('returns empty sidebar when no items', async () => {
-    (sidebarRepo.findAll as jest.Mock).mockResolvedValue([]);
-    await request(app.getHttpServer())
-      .get('/admin/sidebar')
-      .expect(200)
-      .expect([]);
+      .expect(sharedSidebar);
   });
 });
