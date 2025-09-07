@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import useVirtualizedList from '@/hooks/useVirtualizedList';
 import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -171,11 +171,10 @@ export default function BalanceTransactions() {
   );
   const balancesParentRef = useRef<HTMLDivElement>(null);
   // Virtualize balance rows for performance; tests rely on data-index attributes
-  const balancesVirtualizer = useVirtualizer({
+  const balancesVirtualizer = useVirtualizedList<HTMLDivElement>({
     count: sortedBalances.length,
-    getScrollElement: () => balancesParentRef.current,
-    estimateSize: () => 60,
-    initialRect: { width: 0, height: 400 },
+    parentRef: balancesParentRef,
+    estimateSize: 60,
   });
 
   const [playerFilter, setPlayerFilter] = useState('');

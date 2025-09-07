@@ -1,7 +1,7 @@
 'use client';
 
 import type { Message } from './types';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import useVirtualizedList from '@/hooks/useVirtualizedList';
 
 interface ChatLogProps {
   messages: Message[];
@@ -14,20 +14,11 @@ export default function ChatLog({
   chatRef,
   retryMessage,
 }: ChatLogProps) {
-  const real = useVirtualizer({
+  const virtualizer = useVirtualizedList<HTMLDivElement>({
     count: messages.length,
-    getScrollElement: () => chatRef.current,
-    estimateSize: () => 80,
+    parentRef: chatRef,
+    estimateSize: 80,
   });
-  const virtualizer =
-    process.env.NODE_ENV === 'test'
-      ? {
-          getVirtualItems: () =>
-            messages.map((_, index) => ({ index, start: index * 80 })),
-          getTotalSize: () => messages.length * 80,
-          measureElement: () => {},
-        }
-      : real;
 
   return (
     <div ref={chatRef} className="flex-grow p-4 overflow-y-auto">

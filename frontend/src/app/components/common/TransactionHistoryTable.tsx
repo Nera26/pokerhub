@@ -1,5 +1,5 @@
-import { useRef, type Key, type ReactNode } from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import type { Key, ReactNode } from 'react';
+import useTransactionVirtualizer from '@/hooks/useTransactionVirtualizer';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 
@@ -49,7 +49,7 @@ function ActionCells<T>({ actions, row }: ActionCellsProps<T>) {
   );
 }
 
-export interface TransactionHistoryTableProps<T> {
+export interface TransactionHistoryTableProps<T extends { date: string }> {
   data: T[];
   columns: Column<T>[];
   actions?: Action<T>[];
@@ -61,7 +61,7 @@ export interface TransactionHistoryTableProps<T> {
   noDataMessage?: ReactNode;
 }
 
-export default function TransactionHistoryTable<T>({
+export default function TransactionHistoryTable<T extends { date: string }>({
   data,
   columns,
   getRowKey,
@@ -72,17 +72,12 @@ export default function TransactionHistoryTable<T>({
   rowClassName = 'border-b border-border-dark hover:bg-hover-bg transition-colors duration-200',
   noDataMessage,
 }: TransactionHistoryTableProps<T>) {
-  const parentRef = useRef<HTMLDivElement>(null);
-  const rowVirtualizer = useVirtualizer({
-    count: data.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => estimateSize,
-    initialRect: { width: 0, height: 400 },
-  });
+  const { parentRef, sortedItems, rowVirtualizer } =
+    useTransactionVirtualizer<T>(data, { estimateSize });
 
   return (
     <div ref={parentRef} className={containerClassName}>
-      {data.length > 0 ? (
+      {sortedItems.length > 0 ? (
         <table className={tableClassName}>
           <thead>
             <tr>
@@ -110,7 +105,7 @@ export default function TransactionHistoryTable<T>({
           >
             {rowVirtualizer.getVirtualItems().length > 0
               ? rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                  const row = data[virtualRow.index];
+                  const row = sortedItems[virtualRow.index];
                   return (
                     <tr
                       key={
@@ -138,7 +133,7 @@ export default function TransactionHistoryTable<T>({
                     </tr>
                   );
                 })
-              : data.map((row, index) => (
+              : sortedItems.map((row, index) => (
                   <tr
                     key={getRowKey ? getRowKey(row, index) : index}
                     className={rowClassName}

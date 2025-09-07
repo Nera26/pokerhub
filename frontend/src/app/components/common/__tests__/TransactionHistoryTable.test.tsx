@@ -4,11 +4,9 @@ import TransactionHistoryTable, {
   type Column,
   type Action,
 } from '../TransactionHistoryTable';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import useTransactionVirtualizer from '@/hooks/useTransactionVirtualizer';
 
-jest.mock('@tanstack/react-virtual', () => ({
-  useVirtualizer: jest.fn(),
-}));
+jest.mock('@/hooks/useTransactionVirtualizer');
 
 describe('TransactionHistoryTable', () => {
   interface Row {
@@ -24,19 +22,14 @@ describe('TransactionHistoryTable', () => {
       cellClassName: 'cell',
     },
   ];
-  const useVirtualizerMock = useVirtualizer as jest.Mock;
+  const useTransactionVirtualizerMock =
+    useTransactionVirtualizer as jest.Mock;
 
   beforeEach(() => {
-    useVirtualizerMock.mockReset();
+    useTransactionVirtualizerMock.mockReset();
   });
 
   it('renders actions and triggers callbacks without virtualization', async () => {
-    useVirtualizerMock.mockReturnValue({
-      getVirtualItems: () => [],
-      measureElement: jest.fn(),
-      getTotalSize: () => 0,
-    });
-
     const onView = jest.fn();
     const actions: Action<Row>[] = [
       {
@@ -46,6 +39,16 @@ describe('TransactionHistoryTable', () => {
       },
     ];
     const data: Row[] = [{ id: '1', name: 'Alice' }];
+
+    useTransactionVirtualizerMock.mockReturnValue({
+      parentRef: { current: null },
+      sortedItems: data,
+      rowVirtualizer: {
+        getVirtualItems: () => [],
+        measureElement: jest.fn(),
+        getTotalSize: () => 0,
+      },
+    });
 
     render(
       <TransactionHistoryTable
@@ -64,12 +67,6 @@ describe('TransactionHistoryTable', () => {
   });
 
   it('renders actions and triggers callbacks with virtualization', async () => {
-    useVirtualizerMock.mockReturnValue({
-      getVirtualItems: () => [{ index: 0, start: 0 }],
-      measureElement: jest.fn(),
-      getTotalSize: () => 100,
-    });
-
     const onView = jest.fn();
     const actions: Action<Row>[] = [
       {
@@ -79,6 +76,16 @@ describe('TransactionHistoryTable', () => {
       },
     ];
     const data: Row[] = [{ id: '1', name: 'Alice' }];
+
+    useTransactionVirtualizerMock.mockReturnValue({
+      parentRef: { current: null },
+      sortedItems: data,
+      rowVirtualizer: {
+        getVirtualItems: () => [{ index: 0, start: 0 }],
+        measureElement: jest.fn(),
+        getTotalSize: () => 100,
+      },
+    });
 
     render(
       <TransactionHistoryTable
