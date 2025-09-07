@@ -188,13 +188,9 @@ describe('transaction components', () => {
     const exportCSV = jest.fn();
     const user = userEvent.setup();
     render(
-      <TransactionHistory
-        log={log}
-        pageInfo="Showing 1-1 of 1 transactions"
-        onExport={exportCSV}
-      />,
+      <TransactionHistory log={log} onExport={exportCSV} />,
     );
-    expect(screen.getByText('Unified Transaction Log')).toBeInTheDocument();
+    expect(screen.getByText('Transaction History')).toBeInTheDocument();
     await act(async () => {
       await user.click(screen.getByText(/Export CSV/));
     });
