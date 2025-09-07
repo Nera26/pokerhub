@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -14,6 +15,13 @@ import {
 import dynamic from 'next/dynamic';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import MetricCard, { TimeFilter } from './MetricCard';
+import BroadcastPanel from './BroadcastPanel';
+import DashboardTransactionHistory from './transactions/TransactionHistory';
+import {
+  fetchTransactionTypes,
+  fetchTransactionsLog,
+} from '@/lib/api/wallet';
+import { useApiError } from '@/hooks/useApiError';
 
 const ActivityChart = dynamic(() => import('./charts/ActivityChart'), {
   loading: () => (
@@ -82,9 +90,30 @@ export default function Dashboard() {
   const [revFilter, setRevFilter] = useState<TimeFilter>('today');
   const [depFilter, setDepFilter] = useState<TimeFilter>('today');
   const [wdFilter, setWdFilter] = useState<TimeFilter>('today');
+  const [filterType, setFilterType] = useState<string | undefined>();
 
   const { data, isLoading, error } = useDashboardMetrics();
   const metrics = (data ?? {}) as any;
+
+  const {
+    data: log = [],
+    isLoading: logLoading,
+    error: logError,
+  } = useQuery({
+    queryKey: ['transactionsLog', filterType],
+    queryFn: ({ signal }) => fetchTransactionsLog({ signal, type: filterType }),
+  });
+  const {
+    data: types = [],
+    isLoading: typesLoading,
+    error: typesError,
+  } = useQuery({
+    queryKey: ['transactionTypes'],
+    queryFn: ({ signal }) => fetchTransactionTypes({ signal }),
+  });
+
+  useApiError(logError);
+  useApiError(typesError);
 
   const formatCurrency = (v: number | undefined) =>
     `$${(v ?? 0).toLocaleString()}`;
@@ -284,38 +313,7 @@ export default function Dashboard() {
 
         {/* Messages & Broadcast */}
         <Card title="Messages &amp; Broadcast">
-          <div className="space-y-3">
-            <div className="p-3 bg-primary-bg rounded-xl">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 bg-accent-yellow rounded-full" />
-                <span className="text-sm font-semibold">Mike_P</span>
-              </div>
-              <p className="text-xs text-text-secondary">
-                Need help with withdrawal...
-              </p>
-              <button className="text-accent-blue text-xs mt-1">Reply</button>
-            </div>
-            <div className="p-3 bg-primary-bg rounded-xl">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 bg-accent-green rounded-full" />
-                <span className="text-sm font-semibold">Sarah_K</span>
-              </div>
-              <p className="text-xs text-text-secondary">
-                Tournament question...
-              </p>
-              <button className="text-accent-blue text-xs mt-1">Reply</button>
-            </div>
-          </div>
-          <div className="mt-4 space-y-2">
-            <input
-              type="text"
-              placeholder="Broadcast message..."
-              className="w-full bg-primary-bg border border-dark rounded-xl px-3 py-2 text-sm"
-            />
-            <button className="w-full bg-accent-yellow hover:brightness-110 text-black py-2 rounded-xl font-semibold">
-              Send Broadcast
-            </button>
-          </div>
+          <BroadcastPanel />
         </Card>
       </div>
 
@@ -323,92 +321,23 @@ export default function Dashboard() {
       <Card>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold">Deposit &amp; Withdrawal Log</h3>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" className="rounded" />
-            <span className="text-text-secondary">Only show pending</span>
-          </label>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-dark">
-                <th className="text-left py-3 px-2 text-text-secondary">
-                  User
-                </th>
-                <th className="text-left py-3 px-2 text-text-secondary">
-                  Type
-                </th>
-                <th className="text-left py-3 px-2 text-text-secondary">
-                  Amount
-                </th>
-                <th className="text-left py-3 px-2 text-text-secondary">
-                  Method
-                </th>
-                <th className="text-left py-3 px-2 text-text-secondary">
-                  Date
-                </th>
-                <th className="text-left py-3 px-2 text-text-secondary">
-                  Status
-                </th>
-                <th className="text-left py-3 px-2 text-text-secondary">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b border-dark hover:bg-hover-bg">
-                <td className="py-3 px-2">Mike_P</td>
-                <td className="py-3 px-2">
-                  <span className="text-accent-green">Deposit</span>
-                </td>
-                <td className="py-3 px-2 font-semibold">$500</td>
-                <td className="py-3 px-2">QPay</td>
-                <td className="py-3 px-2 text-text-secondary">2024-01-15</td>
-                <td className="py-3 px-2">
-                  <span className="bg-accent-green/20 text-accent-green px-2 py-1 rounded-lg text-xs">
-                    Completed
-                  </span>
-                </td>
-                <td className="py-3 px-2">-</td>
-              </tr>
-              <tr className="border-b border-dark hover:bg-hover-bg">
-                <td className="py-3 px-2">Sarah_K</td>
-                <td className="py-3 px-2">
-                  <span className="text-danger-red">Withdraw</span>
-                </td>
-                <td className="py-3 px-2 font-semibold">$200</td>
-                <td className="py-3 px-2">Crypto</td>
-                <td className="py-3 px-2 text-text-secondary">2024-01-15</td>
-                <td className="py-3 px-2">
-                  <span className="bg-accent-yellow/20 text-accent-yellow px-2 py-1 rounded-lg text-xs">
-                    Pending
-                  </span>
-                </td>
-                <td className="py-3 px-2">
-                  <div className="flex gap-1">
-                    <PillBtn color="green">Approve</PillBtn>
-                    <PillBtn color="red">Reject</PillBtn>
-                  </div>
-                </td>
-              </tr>
-              <tr className="border-b border-dark hover:bg-hover-bg">
-                <td className="py-3 px-2">Alex_R</td>
-                <td className="py-3 px-2">
-                  <span className="text-danger-red">Withdraw</span>
-                </td>
-                <td className="py-3 px-2 font-semibold">$750</td>
-                <td className="py-3 px-2">Card</td>
-                <td className="py-3 px-2 text-text-secondary">2024-01-14</td>
-                <td className="py-3 px-2">
-                  <span className="bg-danger-red/20 text-danger-red px-2 py-1 rounded-lg text-xs">
-                    Failed
-                  </span>
-                </td>
-                <td className="py-3 px-2">-</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        {logLoading ? (
+          <div>Loading transactions...</div>
+        ) : logError ? (
+          <div className="text-danger-red">Failed to load transactions</div>
+        ) : log.length === 0 ? (
+          <div className="text-text-secondary">No transactions found.</div>
+        ) : (
+          <DashboardTransactionHistory
+            log={log}
+            onExport={() => {}}
+            types={types}
+            typesLoading={typesLoading}
+            typesError={typesError}
+            onTypeChange={setFilterType}
+          />
+        )}
       </Card>
     </div>
   );

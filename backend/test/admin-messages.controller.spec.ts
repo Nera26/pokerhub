@@ -48,4 +48,11 @@ describe('AdminMessagesController', () => {
       .expect(200)
       .expect({ message: 'sent' });
   });
+
+  it('returns 404 for missing message', async () => {
+    await request(app.getHttpServer())
+      .post('/admin/messages/999/reply')
+      .send({ reply: 'hello' })
+      .expect(404);
+  });
 });
