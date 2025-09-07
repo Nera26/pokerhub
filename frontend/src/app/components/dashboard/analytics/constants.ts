@@ -1,5 +1,7 @@
 import type { AuditLogType } from '@shared/types';
 
+export const LOG_TYPES: AuditLogType[] = ['Login', 'Table Event', 'Broadcast', 'Error'];
+
 export const TYPE_BADGE_CLASSES: Record<AuditLogType, string> = {
   Login: 'bg-success text-black',
   'Table Event': 'bg-accent text-black',
