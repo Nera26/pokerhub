@@ -30,36 +30,6 @@ export async function rejectWithdrawal(
   });
 }
 
-export async function reserveFunds(
-  user: string,
-  amount: number,
-): Promise<MessageResponse> {
-  return apiClient(`/api/wallet/${user}/reserve`, MessageResponseSchema, {
-    method: 'POST',
-    body: { amount },
-  });
-}
-
-export async function commitFunds(
-  user: string,
-  amount: number,
-): Promise<MessageResponse> {
-  return apiClient(`/api/wallet/${user}/commit`, MessageResponseSchema, {
-    method: 'POST',
-    body: { amount },
-  });
-}
-
-export async function rollbackFunds(
-  user: string,
-  amount: number,
-): Promise<MessageResponse> {
-  return apiClient(`/api/wallet/${user}/rollback`, MessageResponseSchema, {
-    method: 'POST',
-    body: { amount },
-  });
-}
-
 const WithdrawalSchema = z.object({
   user: z.string(),
   amount: z.string(),
