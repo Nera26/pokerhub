@@ -1,7 +1,11 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+import { newDb } from 'pg-mem';
 import request from 'supertest';
 import { BroadcastsModule } from '../src/broadcasts/broadcasts.module';
+import { BroadcastEntity } from '../src/database/entities/broadcast.entity';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
 
@@ -9,8 +13,43 @@ describe('BroadcastsController', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
+    let dataSource: DataSource;
     const moduleRef = await Test.createTestingModule({
-      imports: [BroadcastsModule],
+      imports: [
+        TypeOrmModule.forRootAsync({
+          useFactory: () => {
+            const db = newDb();
+            db.public.registerFunction({
+              name: 'version',
+              returns: 'text',
+              implementation: () => 'pg-mem',
+            });
+            db.public.registerFunction({
+              name: 'current_database',
+              returns: 'text',
+              implementation: () => 'test',
+            });
+            let seq = 1;
+            db.public.registerFunction({
+              name: 'uuid_generate_v4',
+              returns: 'text',
+              implementation: () => {
+                const id = seq.toString(16).padStart(32, '0');
+                seq++;
+                return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(16, 20)}-${id.slice(20)}`;
+              },
+            });
+            dataSource = db.adapters.createTypeormDataSource({
+              type: 'postgres',
+              entities: [BroadcastEntity],
+              synchronize: true,
+            }) as DataSource;
+            return dataSource.options;
+          },
+          dataSourceFactory: async () => dataSource.initialize(),
+        }),
+        BroadcastsModule,
+      ],
     })
       .overrideGuard(AuthGuard)
       .useValue({ canActivate: () => true })
