@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,6 +24,7 @@ import {
   type BroadcastsResponse,
   type SendBroadcastRequest,
 } from '@shared/types';
+import useToast from './useToast';
 
 type MsgType = 'announcement' | 'alert' | 'notice';
 
@@ -74,19 +74,14 @@ export default function Broadcast() {
   });
   const broadcasts = data?.broadcasts ?? [];
 
+  // Templates for quick insertion (maintenance/tournament)
   const { data: templatesData } = useQuery({
     queryKey: ['broadcast-templates'],
     queryFn: ({ signal }) => fetchBroadcastTemplates({ signal }),
   });
   const templates = templatesData?.templates;
 
-  const [toast, setToast] = useState<{
-    msg: string;
-    type: 'success' | 'error';
-    open: boolean;
-  }>({ msg: '', type: 'success', open: false });
-  const notify = (msg: string, type: 'success' | 'error' = 'success') =>
-    setToast({ msg, type, open: true });
+  const { toast, notify } = useToast();
 
   const mutation = useMutation({
     mutationFn: (values: SendBroadcastRequest) => sendBroadcast(values),
@@ -136,9 +131,7 @@ export default function Broadcast() {
   function playBeep() {
     try {
       const AC: typeof AudioContext | undefined =
-        window.AudioContext ??
-        (window as { webkitAudioContext?: typeof AudioContext })
-          .webkitAudioContext;
+        (window as any).AudioContext ?? (window as any).webkitAudioContext;
       if (!AC) return;
       const ctx = new AC();
       const osc = ctx.createOscillator();
@@ -320,8 +313,8 @@ export default function Broadcast() {
         ) : (
           <div className="space-y-4">
             {broadcasts.map((it) => {
-              const color = TYPE_COLOR[it.type];
-              const icon = TYPE_ICON[it.type];
+              const color = TYPE_COLOR[it.type as MsgType];
+              const icon = TYPE_ICON[it.type as MsgType];
               const urgentLeft = it.urgent ? 'border-l-4 border-danger-red' : '';
               const when = new Date(it.timestamp).toLocaleString();
               return (
@@ -342,7 +335,7 @@ export default function Broadcast() {
                         <span
                           className={`${color} font-semibold text-sm uppercase`}
                         >
-                          {it.type.toUpperCase()}
+                          {String(it.type).toUpperCase()}
                         </span>
                         <span className="text-text-secondary text-xs">
                           • {when}
@@ -357,11 +350,12 @@ export default function Broadcast() {
           </div>
         )}
       </section>
+
       <ToastNotification
         message={toast.msg}
         type={toast.type}
         isOpen={toast.open}
-        onClose={() => setToast((t) => ({ ...t, open: false }))}
+        onClose={() => notify('')}
       />
     </div>
   );

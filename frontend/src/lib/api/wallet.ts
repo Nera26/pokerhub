@@ -25,6 +25,8 @@ import {
   MessageResponseSchema,
   PendingWithdrawalsResponseSchema,
   WithdrawalDecisionRequestSchema,
+  TransactionTypeSchema,
+  type TransactionType,
   type MessageResponse,
   type PendingWithdrawalsResponse,
 } from '@shared/types';
@@ -276,10 +278,10 @@ export function fetchAdminPlayers(
 
 export function fetchTransactionTypes(
   opts: { signal?: AbortSignal } = {},
-): Promise<string[]> {
+): Promise<TransactionType[]> {
   return apiClient(
-    `/api/admin/transaction-types`,
-    z.array(z.string()),
+    `/api/transactions/types`,
+    z.array(TransactionTypeSchema),
     { signal: opts.signal },
   );
 }

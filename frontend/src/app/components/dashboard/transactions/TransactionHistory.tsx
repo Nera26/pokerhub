@@ -5,27 +5,33 @@ import { useQuery } from '@tanstack/react-query';
 import type { Txn } from './types';
 import TransactionHistory from '@/app/components/common/TransactionHistory';
 import { transactionColumns } from './transactionColumns';
-import { fetchAdminPlayers, fetchTransactionTypes } from '@/lib/api/wallet';
+import { fetchAdminPlayers } from '@/lib/api/wallet';
 import { useApiError } from '@/hooks/useApiError';
+import type { TransactionType } from '@shared/types';
 
 interface Props {
   log: Txn[];
   onExport: () => void;
+  types: TransactionType[];
+  typesLoading: boolean;
+  typesError: unknown;
+  onTypeChange?: (val: string) => void;
 }
 
-export default function DashboardTransactionHistory({ log, onExport }: Props) {
+export default function DashboardTransactionHistory({
+  log,
+  onExport,
+  types,
+  typesLoading,
+  typesError,
+  onTypeChange,
+}: Props) {
   // Fetch dynamic filter options
   const {
     data: players = [],
     isLoading: playersLoading,
     error: playersError,
   } = useQuery({ queryKey: ['adminPlayers'], queryFn: fetchAdminPlayers });
-
-  const {
-    data: types = [],
-    isLoading: typesLoading,
-    error: typesError,
-  } = useQuery({ queryKey: ['transactionTypes'], queryFn: fetchTransactionTypes });
 
   useApiError(playersError);
   useApiError(typesError);
@@ -68,6 +74,7 @@ export default function DashboardTransactionHistory({ log, onExport }: Props) {
         className="bg-primary-bg border border-dark rounded-2xl px-3 py-2 text-sm"
         aria-label="Filter by type"
         defaultValue=""
+        onChange={(e) => onTypeChange?.(e.target.value)}
       >
         <option value="">All Types</option>
         {typesLoading ? (
@@ -75,9 +82,9 @@ export default function DashboardTransactionHistory({ log, onExport }: Props) {
         ) : typesError ? (
           <option disabled>Failed to load</option>
         ) : (
-          types.map((t: string) => (
-            <option key={t} value={t}>
-              {t}
+          types.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.label}
             </option>
           ))
         )}

@@ -156,6 +156,19 @@ export interface paths {
       };
     };
   };
+  "/transactions/types": {
+    /** List transaction types */
+    get: {
+      responses: {
+        /** @description Transaction types */
+        200: {
+          content: {
+            "application/json": components["schemas"]["TransactionTypesResponse"];
+          };
+        };
+      };
+    };
+  };
   "/dashboard/metrics": {
     /** Get dashboard metrics */
     get: {

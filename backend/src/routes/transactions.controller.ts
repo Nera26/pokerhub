@@ -2,7 +2,11 @@ import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
-import { FilterOptionsSchema, TransactionEntriesSchema } from '@shared/types';
+import {
+  FilterOptionsSchema,
+  TransactionEntriesSchema,
+  TransactionTypesResponseSchema,
+} from '@shared/types';
 
 @ApiTags('transactions')
 @Controller()
@@ -16,6 +20,22 @@ export class TransactionsController {
       types: ['Admin Add', 'Admin Remove', 'Withdrawal', 'Deposit', 'Bonus', 'Game Buy-in', 'Winnings'],
       performedBy: ['Admin', 'User', 'System'],
     });
+  }
+
+  @Get('transactions/types')
+  @ApiOperation({ summary: 'Get transaction types' })
+  @ApiResponse({ status: 200, description: 'Transaction types' })
+  types() {
+    const types = [
+      'Admin Add',
+      'Admin Remove',
+      'Withdrawal',
+      'Deposit',
+      'Bonus',
+      'Game Buy-in',
+      'Winnings',
+    ].map((label) => ({ id: label.toLowerCase().replace(/\s+/g, '-'), label }));
+    return TransactionTypesResponseSchema.parse(types);
   }
 
   @Get('users/:id/transactions')
