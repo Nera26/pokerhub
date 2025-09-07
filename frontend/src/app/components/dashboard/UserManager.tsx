@@ -16,9 +16,9 @@ import ReviewWithdrawalModal from '../modals/ReviewWithdrawalModal';
 import AddUserModal from '../modals/AddUserModal';
 import type { UserFormValues } from '../forms/UserForm';
 import EditUserModal from '../modals/EditUserModal';
-import BanUserModal from '../modals/BanUserModal';
 import ToastNotification from '../ui/ToastNotification';
 import TransactionHistoryModal from '../modals/TransactionHistoryModal';
+import ConfirmationModal from './ConfirmationModal';
 import useRenderCount from '@/hooks/useRenderCount';
 import useVirtualizedList from '@/hooks/useVirtualizedList';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -598,11 +598,12 @@ export default function UserManager() {
         user={selectedUser ?? (users[0] as User)}
         onSave={handleEditUser}
       />
-      <BanUserModal
+      <ConfirmationModal
         isOpen={banModalOpen}
         onClose={() => setBanModalOpen(false)}
         onConfirm={handleBanUser}
         userName={selectedUser?.name ?? ''}
+        action={selectedUser?.status === 'Banned' ? 'unban' : 'ban'}
       />
       <ReviewWithdrawalModal
         isOpen={reviewModalOpen}
