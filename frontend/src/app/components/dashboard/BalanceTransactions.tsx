@@ -108,9 +108,9 @@ export default function BalanceTransactions() {
       return res.deposits.map((d) => ({
         id: d.id,
         user: d.userId,
-        avatar: '',
+        avatar: d.avatar,
         amount: d.amount,
-        method: 'Bank Transfer',
+        method: d.method,
         date: d.createdAt,
         receiptUrl: undefined,
         status:
@@ -136,10 +136,10 @@ export default function BalanceTransactions() {
       return res.withdrawals.map((w) => ({
         id: w.id,
         user: w.userId,
-        avatar: '',
+        avatar: w.avatar,
         amount: w.amount,
-        bank: '',
-        masked: '',
+        bank: w.bank,
+        maskedAccount: w.maskedAccount,
         date: w.createdAt,
         comment: '',
         status:
@@ -593,7 +593,7 @@ export default function BalanceTransactions() {
               render: (w) => (
                 <div className="text-xs">
                   <div>{w.bank}</div>
-                  <div className="text-text-secondary">{w.masked}</div>
+                  <div className="text-text-secondary">{w.maskedAccount}</div>
                 </div>
               ),
             },

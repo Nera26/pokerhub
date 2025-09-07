@@ -133,6 +133,8 @@ export const PendingDepositSchema = z.object({
   status: z.enum(['pending', 'confirmed', 'rejected']),
   actionRequired: z.boolean(),
   expiresAt: z.string().datetime(),
+  avatar: z.string(),
+  method: z.string(),
   confirmedBy: z.string().optional(),
   confirmedAt: z.string().datetime().optional(),
   rejectedBy: z.string().optional(),

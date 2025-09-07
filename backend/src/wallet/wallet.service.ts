@@ -1038,10 +1038,15 @@ async rejectExpiredPendingDeposits(): Promise<void> {
 
 
   async listPendingDeposits() {
-    return this.pendingDeposits.find({
+    const deposits = await this.pendingDeposits.find({
       where: { status: 'pending', actionRequired: true },
       order: { createdAt: 'ASC' },
     });
+    return deposits.map((d) => ({
+      ...d,
+      avatar: '',
+      method: 'Bank Transfer',
+    }));
   }
 
   async confirmPendingDeposit(id: string, adminId: string): Promise<void> {
@@ -1134,10 +1139,24 @@ async rejectExpiredPendingDeposits(): Promise<void> {
   }
 
   async listPendingWithdrawals() {
-    return this.disbursements.find({
+    const disbs = await this.disbursements.find({
       where: { status: 'pending' },
       order: { createdAt: 'ASC' },
     });
+    const accounts = await this.accounts.find({
+      where: { id: In(disbs.map((d) => d.accountId)) },
+    });
+    return disbs.map((d) => ({
+      id: d.id,
+      userId: d.accountId,
+      amount: d.amount,
+      currency: accounts.find((a) => a.id === d.accountId)?.currency ?? '',
+      status: d.status,
+      createdAt: d.createdAt,
+      avatar: '',
+      bank: '',
+      maskedAccount: '',
+    }));
   }
 
   async confirmPendingWithdrawal(

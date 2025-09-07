@@ -16,6 +16,9 @@ export const PendingWithdrawalSchema = z.object({
   currency: CurrencySchema,
   status: z.enum(['pending', 'completed', 'rejected']),
   createdAt: z.string().datetime(),
+  avatar: z.string(),
+  bank: z.string(),
+  maskedAccount: z.string(),
 });
 export type PendingWithdrawal = z.infer<typeof PendingWithdrawalSchema>;
 

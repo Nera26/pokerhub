@@ -2128,6 +2128,10 @@ components:
         expiresAt:
           type: string
           format: date-time
+        avatar:
+          type: string
+        method:
+          type: string
         confirmedBy:
           type: string
         confirmedAt:
@@ -2155,6 +2159,8 @@ components:
         - status
         - actionRequired
         - expiresAt
+        - avatar
+        - method
         - createdAt
         - updatedAt
     PendingDepositsResponse:
@@ -2183,6 +2189,12 @@ components:
         createdAt:
           type: string
           format: date-time
+        avatar:
+          type: string
+        bank:
+          type: string
+        maskedAccount:
+          type: string
       required:
         - id
         - userId
@@ -2190,6 +2202,9 @@ components:
         - currency
         - status
         - createdAt
+        - avatar
+        - bank
+        - maskedAccount
     PendingWithdrawalsResponse:
       type: object
       properties:
