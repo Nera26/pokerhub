@@ -1985,7 +1985,11 @@ export interface components {
     TableList: components["schemas"]["Table"][];
     /** @enum {string} */
     GameType: "texas" | "omaha" | "allin" | "tournaments";
-    GameTypeList: components["schemas"]["GameType"][];
+    GameTypeWithLabel: {
+      id: components["schemas"]["GameType"];
+      label: string;
+    };
+    GameTypeList: components["schemas"]["GameTypeWithLabel"][];
     CreateTableRequest: {
       tableName: string;
       /** @enum {string} */

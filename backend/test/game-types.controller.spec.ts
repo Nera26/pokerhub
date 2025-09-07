@@ -20,6 +20,11 @@ describe('GameTypesController', () => {
 
   it('returns game types', async () => {
     const res = await request(app.getHttpServer()).get('/game-types').expect(200);
-    expect(res.body).toEqual(['texas', 'omaha', 'allin', 'tournaments']);
+    expect(res.body).toEqual([
+      { id: 'texas', label: "Texas Hold'em" },
+      { id: 'omaha', label: 'Omaha' },
+      { id: 'allin', label: 'All-in or Fold' },
+      { id: 'tournaments', label: 'Tournaments' },
+    ]);
   });
 });

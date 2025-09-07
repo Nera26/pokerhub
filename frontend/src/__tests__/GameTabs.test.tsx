@@ -19,14 +19,17 @@ describe('GameTabs', () => {
       ok: true,
       status: 200,
       statusText: 'OK',
-      json: async () => ['texas', 'tournaments'],
+      json: async () => [
+        { id: 'texas', label: "Texas Hold'em" },
+        { id: 'tournaments', label: 'Tourneys' },
+      ],
     });
     const setGameType = jest.fn();
     const user = userEvent.setup();
     render(<GameTabs gameType="texas" setGameType={setGameType} />, { wrapper });
 
-    await screen.findByRole('tab', { name: /tournaments/i });
-    await user.click(screen.getByRole('tab', { name: /tournaments/i }));
+    await screen.findByRole('tab', { name: /tourneys/i });
+    await user.click(screen.getByRole('tab', { name: /tourneys/i }));
     expect(setGameType).toHaveBeenCalledWith('tournaments');
   });
 });

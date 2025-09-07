@@ -56,9 +56,17 @@ describe('useGameTypes', () => {
       ok: true,
       status: 200,
       statusText: 'OK',
-      json: async () => ['texas', 'omaha'],
+      json: async () => [
+        { id: 'texas', label: "Texas Hold'em" },
+        { id: 'omaha', label: 'Omaha' },
+      ],
     });
     const { result } = renderHook(() => useGameTypes(), { wrapper: wrapper(client) });
-    await waitFor(() => expect(result.current.data).toEqual(['texas', 'omaha']));
+    await waitFor(() =>
+      expect(result.current.data).toEqual([
+        { id: 'texas', label: "Texas Hold'em" },
+        { id: 'omaha', label: 'Omaha' },
+      ]),
+    );
   });
 });
