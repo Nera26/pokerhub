@@ -19,18 +19,18 @@ export class BroadcastsController {
   @Get()
   @ApiOperation({ summary: 'List broadcasts' })
   @ApiResponse({ status: 200, description: 'Broadcast list' })
-  list() {
-    const broadcasts = this.broadcasts.list();
+  async list() {
+    const broadcasts = await this.broadcasts.list();
     return BroadcastsResponseSchema.parse({ broadcasts });
-  }
+    }
 
   @Post()
   @HttpCode(201)
   @ApiOperation({ summary: 'Send broadcast' })
   @ApiResponse({ status: 201, description: 'Broadcast sent' })
-  send(@Body() body: SendBroadcastRequest) {
+  async send(@Body() body: SendBroadcastRequest) {
     const parsed = SendBroadcastRequestSchema.parse(body);
-    const broadcast = this.broadcasts.send(parsed);
+    const broadcast = await this.broadcasts.send(parsed);
     return BroadcastSchema.parse(broadcast);
   }
 }

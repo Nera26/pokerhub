@@ -17,6 +17,7 @@ import { ChatMessage } from './entities/chatMessage.entity';
 import { GameState } from './entities/game-state.entity';
 import { CollusionAudit } from '../analytics/collusion-audit.entity';
 import { Tier } from './entities/tier.entity';
+import { BroadcastEntity } from './entities/broadcast.entity';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -39,6 +40,7 @@ export const AppDataSource = new DataSource({
     GameState,
     CollusionAudit,
     Tier,
+    BroadcastEntity,
   ],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
 });
