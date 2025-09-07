@@ -16,5 +16,3 @@ export const sharedSidebar = [
   { id: 'analytics', label: 'Analytics', icon: 'chart-bar' },
 ] as const;
 
-export type SharedSidebarItem = (typeof sharedSidebar)[number];
-
