@@ -48,6 +48,7 @@ export const WalletStatusSchema = z.object({
   denialReason: z.string().optional(),
   realBalance: z.number(),
   creditBalance: z.number(),
+  currency: CurrencySchema,
 });
 
 export type WalletStatusResponse = z.infer<typeof WalletStatusSchema>;

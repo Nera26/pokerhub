@@ -16,16 +16,19 @@ describe('WalletPage integration', () => {
       kycVerified: true,
       realBalance: 1000,
       creditBalance: 50,
+      currency: 'EUR',
     });
     mockedFetchTransactions.mockResolvedValue({
       realBalance: 1000,
       creditBalance: 50,
       transactions: [],
+      currency: 'EUR',
     });
     mockedFetchPending.mockResolvedValue({
       realBalance: 1000,
       creditBalance: 50,
       transactions: [],
+      currency: 'EUR',
     });
 
     const client = new QueryClient();

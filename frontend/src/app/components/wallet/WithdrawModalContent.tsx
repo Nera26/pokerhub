@@ -23,6 +23,8 @@ export interface WithdrawModalContentProps {
     deviceId: string;
     currency: string;
   }) => void;
+  /** Currency code */
+  currency: string;
 }
 
 const withdrawSchema = (availableBalance: number) =>
@@ -50,6 +52,7 @@ export default function WithdrawModalContent({
   accountHolder,
   onClose,
   onConfirm,
+  currency,
 }: WithdrawModalContentProps) {
   const {
     register,
@@ -74,7 +77,7 @@ export default function WithdrawModalContent({
     onConfirm({
       amount: Number(data.amount),
       deviceId: getDeviceId(),
-      currency: 'USD',
+      currency,
     }),
   );
 
@@ -98,12 +101,12 @@ export default function WithdrawModalContent({
       <div className="mb-4">
         <AmountInput
           id="withdraw-amount"
-          label="Enter Amount (USD)"
+          label={`Enter Amount (${currency})`}
           error={errors.amount?.message}
           {...register('amount')}
         />
         <p className="text-xs text-text-secondary mt-1">
-          Available: ${availableBalance.toFixed(2)}
+          Available: {availableBalance.toFixed(2)} {currency}
         </p>
       </div>
 

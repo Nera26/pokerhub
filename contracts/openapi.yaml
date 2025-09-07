@@ -1842,10 +1842,14 @@ components:
           type: number
         creditBalance:
           type: number
+        currency:
+          type: string
+          description: ISO 4217 currency code
       required:
         - kycVerified
         - realBalance
         - creditBalance
+        - currency
     KycDenialResponse:
       type: object
       properties:

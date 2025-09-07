@@ -1679,6 +1679,7 @@ export interface components {
       denialReason?: string;
       realBalance: number;
       creditBalance: number;
+      currency: string;
     };
     KycDenialResponse: {
       accountId: string;

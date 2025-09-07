@@ -44,6 +44,7 @@ describe('wallet api', () => {
           kycVerified: true,
           realBalance: 20,
           creditBalance: 10,
+          currency: 'EUR',
         }),
       })
       .mockResolvedValueOnce({
@@ -67,6 +68,7 @@ describe('wallet api', () => {
           kycVerified: true,
           realBalance: 10,
           creditBalance: 5,
+          currency: 'EUR',
         }),
       })
       .mockResolvedValueOnce({
@@ -77,19 +79,21 @@ describe('wallet api', () => {
           kycVerified: true,
           realBalance: 20,
           creditBalance: 10,
+          currency: 'EUR',
         }),
       });
 
-    await expect(reserve('u1', 10, 'USD')).resolves.toEqual({ message: 'ok' });
-    await expect(commit('u1', 10, 'USD')).resolves.toEqual({ message: 'ok' });
-    await expect(rollback('u1', 10, 'USD')).resolves.toEqual({ message: 'ok' });
-    await expect(deposit('u1', 10, 'd1', 'USD')).resolves.toEqual({
+    await expect(reserve('u1', 10, 'EUR')).resolves.toEqual({ message: 'ok' });
+    await expect(commit('u1', 10, 'EUR')).resolves.toEqual({ message: 'ok' });
+    await expect(rollback('u1', 10, 'EUR')).resolves.toEqual({ message: 'ok' });
+    await expect(deposit('u1', 10, 'd1', 'EUR')).resolves.toEqual({
       kycVerified: true,
       realBalance: 20,
       creditBalance: 10,
+      currency: 'EUR',
     });
     await expect(
-      initiateBankTransfer('u1', 10, 'd1', 'USD', 'idem1'),
+      initiateBankTransfer('u1', 10, 'd1', 'EUR', 'idem1'),
     ).resolves.toEqual({
       reference: 'ref1',
       bank: {
@@ -98,15 +102,17 @@ describe('wallet api', () => {
         routingCode: '456',
       },
     });
-    await expect(withdraw('u1', 10, 'd1', 'USD')).resolves.toEqual({
+    await expect(withdraw('u1', 10, 'd1', 'EUR')).resolves.toEqual({
       kycVerified: true,
       realBalance: 10,
       creditBalance: 5,
+      currency: 'EUR',
     });
     await expect(getStatus('u1')).resolves.toEqual({
       kycVerified: true,
       realBalance: 20,
       creditBalance: 10,
+      currency: 'EUR',
     });
   });
 });

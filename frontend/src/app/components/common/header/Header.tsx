@@ -14,7 +14,7 @@ export default function Header() {
   const balance = wallet
     ? (wallet.realBalance / 100).toLocaleString('en-US', {
         style: 'currency',
-        currency: 'USD',
+        currency: wallet.currency,
       })
     : '$0.00';
 

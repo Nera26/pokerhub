@@ -18,16 +18,19 @@ describe('WalletPage', () => {
       kycVerified: true,
       realBalance: 200,
       creditBalance: 50,
+      currency: 'EUR',
     });
     (fetchTransactions as jest.Mock).mockResolvedValue({
       realBalance: 200,
       creditBalance: 50,
       transactions: [],
+      currency: 'EUR',
     });
     (fetchPending as jest.Mock).mockResolvedValue({
       realBalance: 200,
       creditBalance: 50,
       transactions: [],
+      currency: 'EUR',
     });
 
     const payload = btoa(JSON.stringify({ sub: 'u1' }));

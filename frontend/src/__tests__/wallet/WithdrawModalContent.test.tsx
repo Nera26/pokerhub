@@ -18,6 +18,7 @@ const baseProps = {
   accountTier: 'Gold',
   accountHolder: 'Jane Doe',
   onClose: jest.fn(),
+  currency: 'EUR',
 };
 
 describe('WithdrawModalContent', () => {
@@ -68,7 +69,7 @@ describe('WithdrawModalContent', () => {
     expect(onConfirm).toHaveBeenCalledWith({
       amount: 50,
       deviceId: 'device-123',
-      currency: 'USD',
+      currency: 'EUR',
     });
   });
 });

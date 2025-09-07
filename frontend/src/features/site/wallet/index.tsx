@@ -32,6 +32,7 @@ export default function WalletPage() {
   const { data: wallet } = useWallet();
   const currency = (wallet as any)?.currency ?? 'USD';
   const [kycVerified, setKycVerified] = useState(false);
+  const [currency, setCurrency] = useState('USD');
 
   const {
     data: pendingData,
@@ -143,7 +144,7 @@ export default function WalletPage() {
     try {
       const res = await withdraw(playerId, amount, deviceId, currency);
       setBalances(res.realBalance, res.creditBalance);
-      showToast(`Withdraw request of $${amount.toFixed(2)} sent`);
+      showToast(`Withdraw request of ${currency} ${amount.toFixed(2)} sent`);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Withdraw failed';
       showToast(message, 'error');
@@ -163,6 +164,7 @@ export default function WalletPage() {
       .then((res) => {
         setKycVerified(res.kycVerified);
         setBalances(res.realBalance, res.creditBalance);
+        setCurrency(res.currency);
       })
       .catch(() => setKycVerified(false));
   }, [playerId, setBalances]);
@@ -266,6 +268,7 @@ export default function WalletPage() {
             accountHolder={bankAccount.holder}
             onClose={closeWithdrawModal}
             onConfirm={handleWithdrawConfirm}
+            currency={currency}
           />
         ) : null}
       </Modal>

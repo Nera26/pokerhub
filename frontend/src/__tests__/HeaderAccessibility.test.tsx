@@ -46,6 +46,7 @@ describe('header notifications accessibility', () => {
               denialReason: null,
               realBalance: 10000,
               creditBalance: 0,
+              currency: 'EUR',
             }),
           } as ResponseLike;
         }
