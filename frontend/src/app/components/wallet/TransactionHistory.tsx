@@ -17,10 +17,13 @@ export interface Transaction {
 export interface TransactionHistoryProps {
   /** List of transaction records */
   transactions: Transaction[];
+  /** Currency code for displaying amounts */
+  currency: string;
 }
 
 export default function WalletTransactionHistory({
   transactions,
+  currency,
 }: TransactionHistoryProps) {
   useRenderCount('TransactionHistory');
   const columns = buildTransactionColumns<Transaction>({
@@ -28,6 +31,7 @@ export default function WalletTransactionHistory({
     headerClassName:
       'text-left p-4 font-semibold text-text-secondary text-sm uppercase',
     cellClassName: 'p-4 text-sm',
+    currency,
   });
 
   const emptyState = (

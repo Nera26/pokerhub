@@ -10,12 +10,14 @@ const statusStyles: Record<string, string> = {
   Rejected: 'bg-danger-red/20 text-danger-red',
 };
 
-function formatAmount(amt: number) {
+function formatAmount(amt: number, currency: string) {
   const formatted = Math.abs(amt).toLocaleString(undefined, {
+    style: 'currency',
+    currency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  return `${amt >= 0 ? '+' : '-'}$${formatted}`;
+  return `${amt >= 0 ? '+' : '-'}${formatted}`;
 }
 
 export function buildTransactionColumns<
@@ -25,9 +27,10 @@ export function buildTransactionColumns<
     getType?: (row: T) => string;
     headerClassName?: string;
     cellClassName?: string;
+    currency?: string;
   } = {},
 ): Column<T>[] {
-  const { getType, headerClassName, cellClassName } = opts;
+  const { getType, headerClassName, cellClassName, currency = 'USD' } = opts;
 
   const cols: Column<T>[] = [];
 
@@ -43,7 +46,7 @@ export function buildTransactionColumns<
       header: 'Amount',
       cell: (row) => (
         <span className={row.amount >= 0 ? 'text-accent-green' : 'text-danger-red'}>
-          {formatAmount(row.amount)}
+          {formatAmount(row.amount, currency)}
         </span>
       ),
     },
