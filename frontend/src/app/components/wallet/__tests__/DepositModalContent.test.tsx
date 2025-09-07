@@ -1,16 +1,16 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-jest.mock('@/app/components/wallet/AmountInput', () => {
-  const actual = jest.requireActual('@/app/components/wallet/AmountInput');
+jest.mock('../AmountInput', () => {
+  const actual = jest.requireActual('../AmountInput');
   return {
     __esModule: true,
     default: jest.fn((props) => actual.default(props)),
   };
 });
 
-import DepositModalContent from '@/app/components/wallet/DepositModalContent';
-import AmountInput from '@/app/components/wallet/AmountInput';
+import DepositModalContent from '../DepositModalContent';
+import AmountInput from '../AmountInput';
 
 const baseProps = {
   onClose: jest.fn(),
@@ -43,15 +43,14 @@ describe('DepositModalContent', () => {
 
     const input = screen.getByPlaceholderText('0.00');
     await userEvent.type(input, '-10');
-    await userEvent.click(
-      screen.getByRole('button', { name: /get instructions/i })
-    );
+    const button = screen.getByRole('button', { name: /get instructions/i });
+    await userEvent.click(button);
 
     expect(screen.getByText('Enter a valid amount')).toBeInTheDocument();
     expect(onInitiate).not.toHaveBeenCalled();
   });
 
-  it('passes currency to onInitiate and UI', async () => {
+  it('passes currency and device id to onInitiate', async () => {
     const onInitiate = jest.fn().mockResolvedValue({
       bank: {
         bankName: 'Test Bank',
@@ -78,6 +77,7 @@ describe('DepositModalContent', () => {
       expect.objectContaining({
         amount: 25,
         currency: 'EUR',
+        deviceId: 'test-device',
       }),
     );
   });

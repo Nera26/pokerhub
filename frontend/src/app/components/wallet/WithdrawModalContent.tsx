@@ -1,12 +1,8 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons/faTimes';
-import Button from '../ui/Button';
-import AmountInput from './AmountInput';
+import BankTransferForm from './BankTransferForm';
 
 export interface WithdrawModalContentProps {
   /** Maximum available real balance */
@@ -27,24 +23,6 @@ export interface WithdrawModalContentProps {
   currency: string;
 }
 
-const withdrawSchema = (availableBalance: number) =>
-  z.object({
-    amount: z
-      .string()
-      .refine(
-        (val) => {
-          const num = Number(val);
-          return val !== '' && !Number.isNaN(num) && num > 0;
-        },
-        { message: 'Enter a valid amount' },
-      )
-      .refine((val) => Number(val) <= availableBalance, {
-        message: 'Insufficient funds',
-      }),
-  });
-
-type WithdrawForm = z.infer<ReturnType<typeof withdrawSchema>>;
-
 export default function WithdrawModalContent({
   availableBalance,
   bankAccountNumber,
@@ -54,32 +32,13 @@ export default function WithdrawModalContent({
   onConfirm,
   currency,
 }: WithdrawModalContentProps) {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isValid },
-  } = useForm<WithdrawForm>({
-    resolver: zodResolver(withdrawSchema(availableBalance)),
-    defaultValues: { amount: '' },
-    mode: 'onChange',
-  });
-
-  const getDeviceId = () => {
-    let id = localStorage.getItem('deviceId');
-    if (!id) {
-      id = crypto.randomUUID();
-      localStorage.setItem('deviceId', id);
-    }
-    return id;
+  const handleSubmit = (payload: {
+    amount: number;
+    deviceId: string;
+    currency: string;
+  }) => {
+    onConfirm(payload);
   };
-
-  const submit = handleSubmit((data) =>
-    onConfirm({
-      amount: Number(data.amount),
-      deviceId: getDeviceId(),
-      currency,
-    }),
-  );
 
   return (
     <div className="max-h-[90vh] overflow-y-auto">
@@ -99,15 +58,17 @@ export default function WithdrawModalContent({
 
       {/* Amount Input */}
       <div className="mb-4">
-        <AmountInput
-          id="withdraw-amount"
-          label={`Enter Amount (${currency})`}
-          error={errors.amount?.message}
-          {...register('amount')}
-        />
-        <p className="text-xs text-text-secondary mt-1">
-          Available: {availableBalance.toFixed(2)} {currency}
-        </p>
+        <BankTransferForm
+          currency={currency}
+          submitLabel="Withdraw"
+          amountInputId="withdraw-amount"
+          onSubmit={handleSubmit}
+          maxAmount={availableBalance}
+        >
+          <p className="text-xs text-text-secondary mt-1">
+            Available: {availableBalance.toFixed(2)} {currency}
+          </p>
+        </BankTransferForm>
       </div>
 
       {/* Bank Account Info */}
@@ -123,16 +84,7 @@ export default function WithdrawModalContent({
           <span className="font-semibold">Account Holder:</span> {accountHolder}
         </p>
       </div>
-
-      {/* Confirm Withdrawal */}
-      <Button
-        variant="primary"
-        className="w-full uppercase py-3 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
-        onClick={submit}
-        disabled={!isValid}
-      >
-        Withdraw
-      </Button>
     </div>
   );
 }
+
