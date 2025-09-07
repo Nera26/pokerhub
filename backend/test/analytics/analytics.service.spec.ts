@@ -1,5 +1,19 @@
 import { AnalyticsService } from '../../src/analytics/analytics.service';
 
+jest.mock('kafkajs', () => ({
+  Kafka: jest.fn(() => ({ producer: () => ({ connect: jest.fn() }) })),
+}));
+jest.mock('@clickhouse/client', () => ({ createClient: jest.fn() }));
+
+describe('AnalyticsService', () => {
+  it('throws when kafka brokers config missing', () => {
+    const config: any = { get: () => undefined };
+    expect(() => new AnalyticsService(config, {} as any, {} as any)).toThrow(
+      'Missing analytics.kafkaBrokers configuration',
+    );
+  });
+});
+
 describe('AnalyticsService scheduling', () => {
   const oneDay = 24 * 60 * 60 * 1000;
 

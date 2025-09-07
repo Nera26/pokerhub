@@ -27,10 +27,14 @@ export class EtlService {
     private readonly analytics: AnalyticsService,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
   ) {
-    const brokers =
-      config.get<string>('analytics.kafkaBrokers')?.split(',') ?? [
-        'localhost:9092',
-      ];
+    const brokersConfig = config.get<string>('analytics.kafkaBrokers');
+    const brokers = brokersConfig
+      ?.split(',')
+      .map((s) => s.trim())
+      .filter(Boolean) ?? [];
+    if (brokers.length === 0) {
+      throw new Error('Missing analytics.kafkaBrokers configuration');
+    }
     this.kafka = new Kafka({ brokers });
     this.producer = this.kafka.producer();
     void this.producer.connect();
