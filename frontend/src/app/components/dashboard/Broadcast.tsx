@@ -16,7 +16,11 @@ import {
   faTrophy,
   faExclamationTriangle,
 } from '@fortawesome/free-solid-svg-icons';
-import { fetchBroadcasts, sendBroadcast } from '@/lib/api/broadcasts';
+import {
+  fetchBroadcasts,
+  sendBroadcast,
+  fetchBroadcastTemplates,
+} from '@/lib/api/broadcasts';
 import {
   type BroadcastsResponse,
   type SendBroadcastRequest,
@@ -70,6 +74,12 @@ export default function Broadcast() {
   });
   const broadcasts = data?.broadcasts ?? [];
 
+  const { data: templatesData } = useQuery({
+    queryKey: ['broadcast-templates'],
+    queryFn: ({ signal }) => fetchBroadcastTemplates({ signal }),
+  });
+  const templates = templatesData?.templates;
+
   const [toast, setToast] = useState<{
     msg: string;
     type: 'success' | 'error';
@@ -118,10 +128,8 @@ export default function Broadcast() {
   const previewColor = TYPE_COLOR[type];
 
   function insertTemplate(kind: 'maintenance' | 'tournament') {
-    const msg =
-      kind === 'maintenance'
-        ? 'Server maintenance scheduled for [DATE] at [TIME]. Expected downtime: [DURATION]. We apologize for any inconvenience.'
-        : 'New tournament starting [DATE] at [TIME]! Buy-in: [AMOUNT] | Prize Pool: [PRIZE] | Register now to secure your seat!';
+    const msg = templates?.[kind];
+    if (!msg) return;
     setValue('text', msg.slice(0, MAX_LEN), { shouldValidate: true });
   }
 

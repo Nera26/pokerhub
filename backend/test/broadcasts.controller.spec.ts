@@ -54,4 +54,18 @@ describe('BroadcastsController', () => {
     expect(list.body.broadcasts).toHaveLength(1);
     expect(list.body.broadcasts[0].text).toBe('Hello');
   });
+
+  it('returns broadcast templates', async () => {
+    await request(app.getHttpServer())
+      .get('/broadcast/templates')
+      .expect(200)
+      .expect({
+        templates: {
+          maintenance:
+            'Server maintenance scheduled for [DATE] at [TIME]. Expected downtime: [DURATION]. We apologize for any inconvenience.',
+          tournament:
+            'New tournament starting [DATE] at [TIME]! Buy-in: [AMOUNT] | Prize Pool: [PRIZE] | Register now to secure your seat!',
+        },
+      });
+  });
 });

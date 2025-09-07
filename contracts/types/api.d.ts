@@ -1091,6 +1091,19 @@ export interface paths {
       };
     };
   };
+  "/broadcast/templates": {
+    /** Get broadcast templates */
+    get: {
+      responses: {
+        /** @description Broadcast templates */
+        200: {
+          content: {
+            "application/json": components["schemas"]["BroadcastTemplatesResponse"];
+          };
+        };
+      };
+    };
+  };
   "/admin/kyc/{id}/denial": {
     /** Get KYC denial reason */
     get: {

@@ -159,17 +159,19 @@ export const PromotionsResponseSchema = z.array(PromotionSchema);
 export type PromotionsResponse = z.infer<typeof PromotionsResponseSchema>;
 
 /** ---- Broadcasts ---- */
-export { 
+export {
   BroadcastTypeSchema,
   BroadcastSchema,
   BroadcastsResponseSchema,
   SendBroadcastRequestSchema,
+  BroadcastTemplatesResponseSchema,
 } from '../backend/src/schemas/broadcasts';
 export type {
   BroadcastType,
   Broadcast,
   BroadcastsResponse,
   SendBroadcastRequest,
+  BroadcastTemplatesResponse,
 } from '../backend/src/schemas/broadcasts';
 
 /** ---- Admin Tournaments ---- */

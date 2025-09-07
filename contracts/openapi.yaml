@@ -1047,6 +1047,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Broadcast'
+  /broadcast/templates:
+    get:
+      summary: Get broadcast templates
+      responses:
+        '200':
+          description: Broadcast templates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BroadcastTemplatesResponse'
   /admin/kyc/{id}/denial:
     get:
       summary: Get KYC denial reason
@@ -3102,6 +3112,21 @@ components:
             $ref: '#/components/schemas/Broadcast'
       required:
         - broadcasts
+    BroadcastTemplatesResponse:
+      type: object
+      properties:
+        templates:
+          type: object
+          properties:
+            maintenance:
+              type: string
+            tournament:
+              type: string
+          required:
+            - maintenance
+            - tournament
+      required:
+        - templates
     SendBroadcastRequest:
       type: object
       properties:
