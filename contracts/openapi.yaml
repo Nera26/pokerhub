@@ -806,6 +806,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LeaderboardResponse'
+  /leaderboard/ranges:
+    get:
+      summary: Get leaderboard time ranges
+      responses:
+        '200':
+          description: Available time ranges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaderboardRangesResponse'
   /leaderboard/rebuild:
     post:
       summary: Rebuild leaderboard
@@ -2771,6 +2781,21 @@ components:
       - level
       - smallBlind
       - bigBlind
+  TimeFilter:
+    type: string
+    enum:
+      - daily
+      - weekly
+      - monthly
+  LeaderboardRangesResponse:
+    type: object
+    properties:
+      ranges:
+        type: array
+        items:
+          $ref: '#/components/schemas/TimeFilter'
+    required:
+      - ranges
   LeaderboardResponse:
     type: array
     items:

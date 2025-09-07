@@ -10,7 +10,11 @@ import { User } from '../database/entities/user.entity';
 import { Leaderboard } from '../database/entities/leaderboard.entity';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { updateRating } from './rating';
-import type { LeaderboardEntry } from '@shared/types';
+import type {
+  LeaderboardEntry,
+  LeaderboardRangesResponse,
+  TimeFilter,
+} from '@shared/types';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -19,6 +23,7 @@ export class LeaderboardService implements OnModuleInit {
   private readonly cacheKey = 'leaderboard:hot';
   private readonly dataKey = 'leaderboard:data';
   private readonly ttl = 30; // seconds
+  private readonly ranges: TimeFilter[] = ['daily', 'weekly', 'monthly'];
   private scores = new Map<
     string,
     {
@@ -77,6 +82,10 @@ export class LeaderboardService implements OnModuleInit {
       },
       24 * 60 * 60 * 1000,
     );
+  }
+
+  getRanges(): LeaderboardRangesResponse {
+    return { ranges: this.ranges };
   }
 
   async onModuleInit(): Promise<void> {

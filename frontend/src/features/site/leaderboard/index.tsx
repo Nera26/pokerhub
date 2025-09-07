@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons/faArrowsRotate';
-import LeaderboardTabs, { TimeFilter } from '@/app/components/leaderboard/LeaderboardTabs';
+import LeaderboardTabs from '@/app/components/leaderboard/LeaderboardTabs';
 import ToastNotification, { ToastType } from '@/app/components/ui/ToastNotification';
 import LeaderboardBase from '@/components/leaderboard/LeaderboardBase';
-import type { LeaderboardEntry } from '@shared/types';
+import type { LeaderboardEntry, TimeFilter } from '@shared/types';
 
 type ModeFilter = 'cash' | 'tournament';
 

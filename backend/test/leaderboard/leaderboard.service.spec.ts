@@ -90,6 +90,12 @@ describe('LeaderboardService', () => {
     jest.useRealTimers();
   });
 
+  it('returns time ranges', () => {
+    expect(service.getRanges()).toEqual({
+      ranges: ['daily', 'weekly', 'monthly'],
+    });
+  });
+
   it('returns leaderboard with points, ROI and finish counts', async () => {
     const now = Date.now();
     analytics.events = [

@@ -1,9 +1,12 @@
 /* istanbul ignore file */
-import { apiClient } from './client';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient, type ApiError } from './client';
 import {
   LeaderboardEntry,
   LeaderboardResponseSchema,
   StatusResponseSchema,
+  LeaderboardRangesResponseSchema,
+  type LeaderboardRangesResponse,
   type StatusResponse,
 } from '@shared/types';
 
@@ -21,4 +24,12 @@ export async function rebuildLeaderboard(days = 30): Promise<StatusResponse> {
     StatusResponseSchema,
     { method: 'POST' },
   );
+}
+
+export function useLeaderboardRanges() {
+  return useQuery<LeaderboardRangesResponse, ApiError>({
+    queryKey: ['leaderboard', 'ranges'],
+    queryFn: () =>
+      apiClient('/api/leaderboard/ranges', LeaderboardRangesResponseSchema),
+  });
 }
