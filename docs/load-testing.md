@@ -98,8 +98,7 @@ gh workflow run soak.yaml
 
 The workflow runs `infra/tests/load/k6-100k-chaos.js` with `DURATION=24h`,
 polling GC and heap statistics from `$MEM_URL`. It fails when
-`heap_delta_pct \u2265 1` or `gc_p95_ms > 50`. See
-[runbooks/soak-testing.md](runbooks/soak-testing.md) for triage guidance.
+`heap_delta_pct \u2265 1` or `gc_p95_ms > 50`.
 
 ### Example histogram and memory footprint
 
@@ -108,23 +107,6 @@ latency: { "p50": 35, "p95": 112, "p99": 180 }
 memory:  { "rss": 520000000, "heapUsed": 210000000 }
 gc:      { "before": {"heapUsed": 210000000}, "after": {"heapUsed": 180000000} }
 ```
-
-## Game Gateway Soak Harness
-
-`backend/src/game/soak-harness.ts` drives actions against the Game Gateway
-while periodically killing the room worker process. After each crash the
-harness reconnects, invokes `room.replay()` and asserts the reconstructed state
-matches the pre‑crash snapshot. Metrics are emitted for
-`soak_dropped_frames_total` and `soak_replay_failures_total`.
-
-Run locally:
-
-```bash
-ts-node backend/src/game/soak-harness.ts
-```
-
-Defaults (socket count, tables, duration, etc.) can be overridden via
-environment variables as described in the source file.
 
 ## Regression reports
 

@@ -29,7 +29,7 @@ See [spectator privacy metrics](ops/spectator-privacy.md) for metric definitions
 - [`scripts/check-soak-metrics.ts`](../scripts/check-soak-metrics.ts) enforces **latency p95 ≤ 120 ms**, **throughput ≥ `SOAK_THROUGHPUT_MIN`**, and **GC pause p95 ≤ 50 ms**.
 - [`scripts/ensure-soak-metrics.ts`](../scripts/ensure-soak-metrics.ts) requires workflows using `soak.yml` to have a downstream `soak-metrics` job with `if: ${{ always() }}`.
 - Deployments require a soak-metrics entry newer than **24 h**; stale data triggers a failing preflight check.
-- When thresholds regress, data is missing, or the ensure check fails, review BigQuery dataset `ops_metrics.soak_runs`, rerun the workflow, and page `pokerhub-sre` if problems remain; consult `runbooks/soak-testing.md` for deeper remediation.
+- When thresholds regress, data is missing, or the ensure check fails, review BigQuery dataset `ops_metrics.soak_runs`, rerun the workflow, and page `pokerhub-sre` if problems remain.
 
 See [ops metrics](ops/metrics.md) for table schema and thresholds.
 
