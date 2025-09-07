@@ -1239,6 +1239,19 @@ export interface paths {
       };
     };
   };
+  "/admin/sidebar": {
+    /** Get admin sidebar items */
+    get: {
+      responses: {
+        /** @description Sidebar items */
+        200: {
+          content: {
+            "application/json": components["schemas"]["SidebarItemsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/admin/messages": {
     /** List user messages */
     get: {
