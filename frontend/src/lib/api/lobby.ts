@@ -10,9 +10,11 @@ import {
   type TournamentDetails,
   MessageResponseSchema,
   type MessageResponse,
+  CTASchema,
+  type CTA,
 } from '@shared/types';
 
-export type { Table, Tournament, TournamentDetails };
+export type { Table, Tournament, TournamentDetails, CTA };
 
 export async function fetchLobbyData<T>(
   endpoint: string,
@@ -66,6 +68,18 @@ export async function fetchTournaments({
   return fetchLobbyData<components['schemas']['Tournament'][]>(
     'tournaments',
     z.array(TournamentSchema),
+    { signal },
+  );
+}
+
+export async function fetchCTAs({
+  signal,
+}: {
+  signal?: AbortSignal;
+} = {}): Promise<CTA[]> {
+  return fetchLobbyData<CTA[]>(
+    'ctas',
+    z.array(CTASchema),
     { signal },
   );
 }
