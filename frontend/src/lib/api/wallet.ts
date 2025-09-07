@@ -276,14 +276,19 @@ export function fetchAdminPlayers(
   });
 }
 
-export function fetchTransactionTypes(
+export async function fetchTransactionTypes(
   opts: { signal?: AbortSignal } = {},
 ): Promise<TransactionType[]> {
-  return apiClient(
-    `/api/transactions/types`,
-    z.array(TransactionTypeSchema),
-    { signal: opts.signal },
-  );
+  try {
+    return await apiClient(
+      `/api/transactions/types`,
+      z.array(TransactionTypeSchema),
+      { signal: opts.signal },
+    );
+  } catch (err) {
+    console.error('fetchTransactionTypes failed', err);
+    throw err;
+  }
 }
 
 const TransactionLogEntrySchema = z.object({
@@ -296,18 +301,23 @@ const TransactionLogEntrySchema = z.object({
 });
 export type TransactionLogEntry = z.infer<typeof TransactionLogEntrySchema>;
 
-export function fetchTransactionsLog(
+export async function fetchTransactionsLog(
   opts: { signal?: AbortSignal; playerId?: string; type?: string } = {},
 ): Promise<TransactionLogEntry[]> {
   const params = new URLSearchParams();
   if (opts.playerId) params.set('playerId', opts.playerId);
   if (opts.type) params.set('type', opts.type);
   const query = params.toString();
-  return apiClient(
-    `/api/admin/transactions${query ? `?${query}` : ''}`,
-    z.array(TransactionLogEntrySchema),
-    { signal: opts.signal },
-  );
+  try {
+    return await apiClient(
+      `/api/admin/transactions${query ? `?${query}` : ''}`,
+      z.array(TransactionLogEntrySchema),
+      { signal: opts.signal },
+    );
+  } catch (err) {
+    console.error('fetchTransactionsLog failed', err);
+    throw err;
+  }
 }
 
 const BankAccountSchema = z.object({
