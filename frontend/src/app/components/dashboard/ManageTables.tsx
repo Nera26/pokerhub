@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   fetchTables,
@@ -12,6 +13,7 @@ import type {
   CreateTableRequest,
   UpdateTableRequest,
 } from '@shared/types';
+import { CreateTableSchema } from '@shared/types';
 import { Button } from '../ui/Button';
 import {
   Table as UiTable,
@@ -21,9 +23,14 @@ import {
   TableHeader,
   TableRow,
 } from '../ui/Table';
+import TableModal from '../modals/TableModal';
 
 export default function ManageTables() {
   const queryClient = useQueryClient();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTable, setEditingTable] = useState<Table | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
+
   const {
     data: tables = [],
     isLoading,
@@ -35,19 +42,48 @@ export default function ManageTables() {
 
   const create = useMutation({
     mutationFn: (body: CreateTableRequest) => createTable(body),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tables'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tables'] });
+      setIsModalOpen(false);
+    },
+    onError: () => setModalError('Failed to create table'),
   });
 
   const update = useMutation({
     mutationFn: ({ id, body }: { id: string; body: UpdateTableRequest }) =>
       updateTable(id, body),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tables'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tables'] });
+      setIsModalOpen(false);
+    },
+    onError: () => setModalError('Failed to update table'),
   });
 
   const remove = useMutation({
     mutationFn: (id: string) => deleteTable(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tables'] }),
   });
+
+  const openCreateModal = () => {
+    setEditingTable(null);
+    setModalError(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (t: Table) => {
+    setEditingTable(t);
+    setModalError(null);
+    setIsModalOpen(true);
+  };
+
+  const submitTable = (values: CreateTableRequest) => {
+    const parsed = CreateTableSchema.parse(values);
+    if (editingTable) {
+      update.mutate({ id: editingTable.id, body: parsed });
+    } else {
+      create.mutate(parsed);
+    }
+  };
 
   if (isLoading) {
     return <div>Loading tables...</div>;
@@ -61,40 +97,22 @@ export default function ManageTables() {
     return (
       <div className="space-y-4">
         <p>No tables found</p>
-        <Button
-          onClick={() =>
-            create.mutate({
-              tableName: 'New Table',
-              gameType: 'texas',
-              stakes: { small: 1, big: 2 },
-              startingStack: 100,
-              players: { max: 9 },
-              buyIn: { min: 50, max: 500 },
-            })
-          }
-        >
-          Create Table
-        </Button>
+        <Button onClick={openCreateModal}>Create Table</Button>
+        <TableModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={submitTable}
+          title="Add Table"
+          submitLabel="Create Table"
+          error={modalError}
+        />
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <Button
-        onClick={() =>
-          create.mutate({
-            tableName: 'New Table',
-            gameType: 'texas',
-            stakes: { small: 1, big: 2 },
-            startingStack: 100,
-            players: { max: 9 },
-            buyIn: { min: 50, max: 500 },
-          })
-        }
-      >
-        Add Table
-      </Button>
+      <Button onClick={openCreateModal}>Add Table</Button>
 
       <UiTable>
         <TableHeader>
@@ -116,12 +134,7 @@ export default function ManageTables() {
               <TableCell className="space-x-2">
                 <Button
                   variant="secondary"
-                  onClick={() =>
-                    update.mutate({
-                      id: t.id,
-                      body: { tableName: t.tableName },
-                    })
-                  }
+                  onClick={() => openEditModal(t)}
                 >
                   Update
                 </Button>
@@ -133,6 +146,27 @@ export default function ManageTables() {
           ))}
         </TableBody>
       </UiTable>
+
+      <TableModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={submitTable}
+        title={editingTable ? 'Edit Table' : 'Add Table'}
+        submitLabel={editingTable ? 'Update Table' : 'Create Table'}
+        defaultValues={
+          editingTable
+            ? {
+                tableName: editingTable.tableName,
+                gameType: editingTable.gameType,
+                stakes: editingTable.stakes,
+                startingStack: 100,
+                players: { max: editingTable.players.max },
+                buyIn: editingTable.buyIn,
+              }
+            : undefined
+        }
+        error={modalError}
+      />
     </div>
   );
 }
