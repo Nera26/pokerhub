@@ -22,6 +22,8 @@ export class WalletIbanController {
       masked: 'DE02 5001 **** **** 1234',
       holder: 'PokerPro Gaming Ltd.',
       instructions: 'Include reference number, transfer within time limit, etc.',
+      updatedBy: 'Admin_John',
+      updatedAt: '2024-01-15T14:30:00Z',
     };
     return IbanResponseSchema.parse(res);
   }

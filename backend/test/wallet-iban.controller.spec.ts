@@ -42,6 +42,8 @@ describe('WalletIbanController', () => {
       .expect(res => {
         expect(res.body).toHaveProperty('iban');
         expect(res.body).toHaveProperty('masked');
+        expect(res.body).toHaveProperty('updatedBy');
+        expect(res.body).toHaveProperty('updatedAt');
       });
   });
 

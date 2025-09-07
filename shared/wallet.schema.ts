@@ -178,6 +178,8 @@ export const IbanResponseSchema = z.object({
   masked: z.string(),
   holder: z.string(),
   instructions: z.string(),
+  updatedBy: z.string(),
+  updatedAt: z.string().datetime(),
 });
 export type IbanResponse = z.infer<typeof IbanResponseSchema>;
 

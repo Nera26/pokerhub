@@ -2047,11 +2047,18 @@ components:
           type: string
         instructions:
           type: string
+        updatedBy:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
       required:
         - iban
         - masked
         - holder
         - instructions
+        - updatedBy
+        - updatedAt
     IbanHistoryEntry:
       type: object
       properties:

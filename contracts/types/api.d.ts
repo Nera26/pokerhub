@@ -1766,6 +1766,9 @@ export interface components {
       masked: string;
       holder: string;
       instructions: string;
+      updatedBy: string;
+      /** Format: date-time */
+      updatedAt: string;
     };
     IbanHistoryEntry: {
       date: string;
