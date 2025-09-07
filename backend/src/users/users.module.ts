@@ -6,9 +6,10 @@ import { TransactionsController } from '../routes/transactions.controller';
 import { User } from '../database/entities/user.entity';
 import { UsersService } from './users.service';
 import { UserRepository } from './user.repository';
+import { WalletModule } from '../wallet/wallet.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User])],
+  imports: [TypeOrmModule.forFeature([User]), WalletModule],
   controllers: [UsersController, ProfileController, TransactionsController],
   providers: [UsersService, UserRepository],
   exports: [UsersService],

@@ -28,6 +28,9 @@ import { BankReconciliationController } from '../routes/bank-reconciliation.cont
 import { BankReconciliationService } from './bank-reconciliation.service';
 import { WalletIbanController } from '../routes/wallet-iban.controller';
 import { AdminSidebarRepository } from '../routes/admin-sidebar.repository';
+import { TransactionType } from './transaction-type.entity';
+import { Transaction } from './transaction.entity';
+import { TransactionsService } from './transactions.service';
 
 @Injectable()
 class PayoutWorker implements OnModuleInit {
@@ -57,6 +60,8 @@ class PendingDepositWorker implements OnModuleInit {
       Disbursement,
       SettlementJournal,
       PendingDeposit,
+      TransactionType,
+      Transaction,
     ]),
     EventsModule,
     RedisModule,
@@ -76,6 +81,7 @@ class PendingDepositWorker implements OnModuleInit {
     GeoIpService,
     BankReconciliationService,
     AdminSidebarRepository,
+    TransactionsService,
   ],
   controllers: [
     WalletController,
@@ -86,6 +92,12 @@ class PendingDepositWorker implements OnModuleInit {
     BankReconciliationController,
     WalletIbanController,
   ],
-  exports: [WalletService, KycService, SettlementService, BankReconciliationService],
+  exports: [
+    WalletService,
+    KycService,
+    SettlementService,
+    BankReconciliationService,
+    TransactionsService,
+  ],
 })
 export class WalletModule {}

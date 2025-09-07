@@ -7,41 +7,34 @@ import {
   TransactionEntriesSchema,
   TransactionTypesResponseSchema,
 } from '@shared/types';
+import { TransactionsService } from '../wallet/transactions.service';
 
 @ApiTags('transactions')
 @Controller()
 @UseGuards(AuthGuard, AdminGuard)
 export class TransactionsController {
+  constructor(private readonly txService: TransactionsService) {}
   @Get('transactions/filters')
   @ApiOperation({ summary: 'Get transaction filter options' })
   @ApiResponse({ status: 200, description: 'Filter options' })
-  filters() {
-    return FilterOptionsSchema.parse({
-      types: ['Admin Add', 'Admin Remove', 'Withdrawal', 'Deposit', 'Bonus', 'Game Buy-in', 'Winnings'],
-      performedBy: ['Admin', 'User', 'System'],
-    });
+  async filters() {
+    const res = await this.txService.getFilterOptions();
+    return FilterOptionsSchema.parse(res);
   }
 
   @Get('transactions/types')
   @ApiOperation({ summary: 'Get transaction types' })
   @ApiResponse({ status: 200, description: 'Transaction types' })
-  types() {
-    const types = [
-      'Admin Add',
-      'Admin Remove',
-      'Withdrawal',
-      'Deposit',
-      'Bonus',
-      'Game Buy-in',
-      'Winnings',
-    ].map((label) => ({ id: label.toLowerCase().replace(/\s+/g, '-'), label }));
-    return TransactionTypesResponseSchema.parse(types);
+  async types() {
+    const res = await this.txService.getTransactionTypes();
+    return TransactionTypesResponseSchema.parse(res);
   }
 
   @Get('users/:id/transactions')
   @ApiOperation({ summary: 'List user transactions' })
   @ApiResponse({ status: 200, description: 'Transactions list' })
-  userTransactions(@Param('id') _id: string) {
-    return TransactionEntriesSchema.parse([]);
+  async userTransactions(@Param('id') id: string) {
+    const res = await this.txService.getUserTransactions(id);
+    return TransactionEntriesSchema.parse(res);
   }
 }

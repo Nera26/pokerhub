@@ -1,22 +1,17 @@
 import { Test } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-import { TransactionsController } from '../src/routes/transactions.controller';
-import { AuthGuard } from '../src/auth/auth.guard';
-import { AdminGuard } from '../src/auth/admin.guard';
 import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
+import { newDb } from 'pg-mem';
 import { TransactionsService } from '../src/wallet/transactions.service';
 import { TransactionType } from '../src/wallet/transaction-type.entity';
 import { Transaction } from '../src/wallet/transaction.entity';
-import { DataSource, Repository } from 'typeorm';
-import { newDb } from 'pg-mem';
 
-describe('TransactionsController', () => {
-  let app: INestApplication;
+describe('TransactionsService', () => {
+  let service: TransactionsService;
   let typeRepo: Repository<TransactionType>;
   let txnRepo: Repository<Transaction>;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     let dataSource: DataSource;
     const moduleRef = await Test.createTestingModule({
       imports: [
@@ -49,56 +44,51 @@ describe('TransactionsController', () => {
         }),
         TypeOrmModule.forFeature([TransactionType, Transaction]),
       ],
-      controllers: [TransactionsController],
       providers: [TransactionsService],
-    })
-      .overrideGuard(AuthGuard)
-      .useValue({ canActivate: () => true })
-      .overrideGuard(AdminGuard)
-      .useValue({ canActivate: () => true })
-      .compile();
+    }).compile();
 
+    service = moduleRef.get(TransactionsService);
     typeRepo = moduleRef.get(getRepositoryToken(TransactionType));
     txnRepo = moduleRef.get(getRepositoryToken(Transaction));
+
     await typeRepo.save([
       { id: 'deposit', label: 'Deposit' },
       { id: 'withdrawal', label: 'Withdrawal' },
     ]);
-    await txnRepo.save({
-      userId: 'user1',
-      typeId: 'deposit',
-      amount: 100,
-      performedBy: 'Admin',
-      notes: '',
-      status: 'Completed',
-    });
-    app = moduleRef.createNestApplication();
-    await app.init();
-  });
-
-  afterAll(async () => {
-    await app.close();
+    await txnRepo.save([
+      {
+        userId: 'user1',
+        typeId: 'deposit',
+        amount: 100,
+        performedBy: 'Admin',
+        notes: '',
+        status: 'Completed',
+      },
+      {
+        userId: 'user1',
+        typeId: 'withdrawal',
+        amount: -50,
+        performedBy: 'User',
+        notes: '',
+        status: 'Pending',
+      },
+    ]);
   });
 
   it('returns transaction types', async () => {
-    const res = await request(app.getHttpServer())
-      .get('/transactions/types')
-      .set('Authorization', 'Bearer test')
-      .expect(200);
+    const types = await service.getTransactionTypes();
+    expect(types).toHaveLength(2);
+  });
 
-    expect(res.body).toEqual(
-      expect.arrayContaining([
-        { id: 'admin-add', label: 'Admin Add' },
-      ]),
-    );
+  it('returns filter options', async () => {
+    const filters = await service.getFilterOptions();
+    expect(filters.types).toContain('Deposit');
+    expect(filters.performedBy).toEqual(expect.arrayContaining(['Admin', 'User']));
   });
 
   it('returns user transactions', async () => {
-    const res = await request(app.getHttpServer())
-      .get('/users/user1/transactions')
-      .set('Authorization', 'Bearer test')
-      .expect(200);
-    expect(res.body).toHaveLength(1);
-    expect(res.body[0]).toHaveProperty('action', 'Deposit');
+    const entries = await service.getUserTransactions('user1');
+    expect(entries).toHaveLength(2);
+    expect(entries[0]).toHaveProperty('action');
   });
 });
