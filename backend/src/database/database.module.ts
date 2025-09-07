@@ -11,6 +11,7 @@ import { Seat } from './entities/seat.entity';
 import { ChatMessage } from './entities/chatMessage.entity';
 import { Leaderboard } from './entities/leaderboard.entity';
 import { Pep } from './entities/pep.entity';
+import { Tier } from './entities/tier.entity';
 
 const entities = [
   User,
@@ -22,6 +23,7 @@ const entities = [
   ChatMessage,
   Leaderboard,
   Pep,
+  Tier,
 ];
 let dataSource: DataSource;
 

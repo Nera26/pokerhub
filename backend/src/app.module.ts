@@ -50,6 +50,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { cookieSecurity } from './common/cookie-security.middleware';
 import { BroadcastsModule } from './broadcasts/broadcasts.module';
+import { TiersModule } from './tiers/tiers.module';
 
 @Module({
   imports: [
@@ -115,6 +116,7 @@ import { BroadcastsModule } from './broadcasts/broadcasts.module';
     NotificationsModule,
     MetricsModule,
     BroadcastsModule,
+    TiersModule,
   ],
   controllers: [AppController, AdminMessagesController, CtasController],
   providers: [
