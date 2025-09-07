@@ -127,4 +127,60 @@ describe('ForgotPasswordForm', () => {
 
     expect(await screen.findByText('Network error')).toBeInTheDocument();
   });
+
+  it('calls reset APIs and shows success message', async () => {
+    mockRequest.mockResolvedValueOnce({ message: 'sent' });
+    mockVerify.mockResolvedValueOnce({ message: 'verified' });
+    mockReset.mockResolvedValueOnce({ message: 'Password reset successfully.' });
+
+    const user = userEvent.setup();
+    renderWithClient(<ForgotPasswordForm />);
+
+    await user.type(screen.getByLabelText('Email Address'), 'test@example.com');
+    await user.click(screen.getByRole('button', { name: /Send Code/i }));
+    await user.type(
+      await screen.findByLabelText('Enter 6-digit Code'),
+      '123456',
+    );
+    await user.click(screen.getByRole('button', { name: /Verify Code/i }));
+    await user.type(
+      await screen.findByLabelText('New Password'),
+      'newpass',
+    );
+    await user.type(screen.getByLabelText('Confirm Password'), 'newpass');
+    await user.click(screen.getByRole('button', { name: /Reset Password/i }));
+
+    expect(mockRequest).toHaveBeenCalledWith('test@example.com');
+    expect(mockVerify).toHaveBeenCalled();
+    expect(mockReset).toHaveBeenCalled();
+    expect(
+      await screen.findByText('Password reset successfully.'),
+    ).toBeInTheDocument();
+  });
+
+  it('shows reset error message when API fails', async () => {
+    mockRequest.mockResolvedValueOnce({ message: 'sent' });
+    mockVerify.mockResolvedValueOnce({ message: 'verified' });
+    mockReset.mockRejectedValueOnce({ message: 'Reset failed' });
+
+    const user = userEvent.setup();
+    renderWithClient(<ForgotPasswordForm />);
+
+    await user.type(screen.getByLabelText('Email Address'), 'test@example.com');
+    await user.click(screen.getByRole('button', { name: /Send Code/i }));
+    await user.type(
+      await screen.findByLabelText('Enter 6-digit Code'),
+      '123456',
+    );
+    await user.click(screen.getByRole('button', { name: /Verify Code/i }));
+    await user.type(
+      await screen.findByLabelText('New Password'),
+      'newpass',
+    );
+    await user.type(screen.getByLabelText('Confirm Password'), 'newpass');
+    await user.click(screen.getByRole('button', { name: /Reset Password/i }));
+
+    expect(mockReset).toHaveBeenCalled();
+    expect(await screen.findByText('Reset failed')).toBeInTheDocument();
+  });
 });
