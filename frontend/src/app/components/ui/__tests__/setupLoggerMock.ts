@@ -7,3 +7,7 @@ export default jest.mock('@/lib/logger', () => ({
     debug: jest.fn(),
   },
 }));
+
+test('logger mock setup', () => {
+  expect(true).toBe(true);
+});

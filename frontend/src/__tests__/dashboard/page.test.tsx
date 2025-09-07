@@ -23,6 +23,14 @@ jest.mock('@/hooks/useDashboardMetrics', () => ({
     isLoading: false,
   }),
 }));
+jest.mock('@/lib/api/admin', () => ({
+  fetchSidebarItems: jest.fn().mockResolvedValue([
+    { id: 'dashboard', label: 'Dashboard', icon: 'chart-line' },
+    { id: 'users', label: 'Users', icon: 'users' },
+    { id: 'analytics', label: 'Analytics', icon: 'chart-bar' },
+    { id: 'review', label: 'Collusion Review', icon: 'magnifying-glass', path: '/review' },
+  ]),
+}));
 
 describe('Dashboard page', () => {
   beforeEach(() => {
@@ -42,7 +50,10 @@ describe('Dashboard page', () => {
   it('syncs tab changes to URL', async () => {
     const user = userEvent.setup();
     render(<Page />);
-    await user.click(screen.getByRole('button', { name: /analytics/i }));
+    const analyticsBtn = await screen.findByRole('button', {
+      name: /analytics/i,
+    });
+    await user.click(analyticsBtn);
     expect(replace).toHaveBeenCalledWith('/dashboard?tab=analytics');
   });
 

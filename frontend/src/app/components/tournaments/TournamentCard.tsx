@@ -5,6 +5,9 @@ import SmoothButton from '../ui/SmoothButton';
 import dynamic from 'next/dynamic';
 import { m } from '@/lib/motion';
 import useRenderCount from '@/hooks/useRenderCount';
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { withdrawTournament } from '@/lib/api/lobby';
 
 const MotionDiv = dynamic(
   () => import('framer-motion').then((mod) => mod.motion.div),
@@ -38,6 +41,8 @@ export interface TournamentCardProps {
   onRegister?: (id: string) => void;
   /** View details callback (for running/past) */
   onViewDetails?: (id: string) => void;
+  /** Whether the current user is registered */
+  registered?: boolean;
 }
 
 export default function TournamentCard({
@@ -53,19 +58,42 @@ export default function TournamentCard({
   startIn,
   onRegister,
   onViewDetails,
+  registered = false,
 }: TournamentCardProps) {
   useRenderCount('TournamentCard');
   const isUpcoming = status === 'upcoming';
   const isRunning = status === 'running';
 
+  let queryClient: ReturnType<typeof useQueryClient> | undefined;
+  try {
+    queryClient = useQueryClient();
+  } catch {
+    queryClient = undefined;
+  }
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [withdrawError, setWithdrawError] = useState(false);
+
   const buttonLabel = isUpcoming
-    ? 'REGISTER NOW'
+    ? registered
+      ? 'WITHDRAW'
+      : 'REGISTER NOW'
     : isRunning
       ? 'VIEW DETAILS'
       : 'VIEW RESULTS';
 
   const handleClick = () => {
-    if (isUpcoming) onRegister?.(id);
+    if (isUpcoming) {
+      if (registered) {
+        setWithdrawing(true);
+        setWithdrawError(false);
+        withdrawTournament(id)
+          .then(() =>
+            queryClient?.invalidateQueries({ queryKey: ['tournaments'] }),
+          )
+          .catch(() => setWithdrawError(true))
+          .finally(() => setWithdrawing(false));
+      } else onRegister?.(id);
+    }
     else onViewDetails?.(id);
   };
 
@@ -123,9 +151,15 @@ export default function TournamentCard({
         variant={isUpcoming ? 'primary' : 'outline'}
         className="w-full uppercase"
         onClick={handleClick}
+        disabled={withdrawing}
       >
-        {buttonLabel}
+        {withdrawing ? '...' : buttonLabel}
       </SmoothButton>
+      {withdrawError && (
+        <p role="alert" className="text-danger-red text-sm mt-2">
+          Failed to withdraw
+        </p>
+      )}
     </MotionDiv>
   );
 }

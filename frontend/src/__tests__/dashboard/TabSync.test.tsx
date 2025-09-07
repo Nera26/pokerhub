@@ -2,6 +2,13 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Page from '@/app/dashboard/page';
 
+jest.mock('@/lib/api/admin', () => ({
+  fetchSidebarItems: jest.fn().mockResolvedValue([
+    { id: 'users', label: 'Users', icon: 'users' },
+    { id: 'analytics', label: 'Analytics', icon: 'chart-bar' },
+  ]),
+}));
+
 const replace = jest.fn();
 let searchParams = new URLSearchParams('?tab=users');
 

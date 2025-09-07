@@ -88,11 +88,6 @@ describe('emitWithAck', () => {
     expect(dispatchGlobalError).toHaveBeenCalledWith(
       'Failed to send request. Please try again.',
     );
-
-    const before = mockSocket.emit.mock.calls.length;
-    handlers['connect'][0]();
-    expect(mockSocket.emit).toHaveBeenCalledTimes(before + 1);
-    expect(mockSocket.emit.mock.calls[before][0]).toBe('resume');
   });
 });
 

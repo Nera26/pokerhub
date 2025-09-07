@@ -33,6 +33,7 @@ interface Tournament {
   players: number;
   maxPlayers: number;
   startIn?: string;
+  registered: boolean;
 }
 
 function isTournamentFilter(v: string | null): v is TournamentFilter {
@@ -88,6 +89,7 @@ export default function Page() {
             : Number(t.prizePool) || 0,
         players: t.players.current,
         maxPlayers: t.players.max,
+        registered: t.registered,
       })),
     [data],
   );
@@ -219,6 +221,7 @@ export default function Page() {
                     maxPlayers={t.maxPlayers}
                     startIn={t.startIn}
                     onRegister={handleRegisterClick}
+                    registered={t.registered}
                   />
                 </ErrorBoundary>
               </li>
