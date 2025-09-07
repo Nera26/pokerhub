@@ -40,19 +40,6 @@ const ICON_MAP: Record<string, IconDefinition> = {
   'magnifying-glass': faMagnifyingGlass,
 };
 
-const DEFAULT_ITEMS: SidebarItemWithIcon[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: faChartLine },
-  { id: 'users', label: 'Manage Users', icon: faUsers },
-  { id: 'balance', label: 'Balance & Transactions', icon: faDollarSign },
-  { id: 'tables', label: 'Manage Tables', icon: faTableCells },
-  { id: 'tournaments', label: 'Tournaments', icon: faTrophy },
-  { id: 'bonus', label: 'Bonus Manager', icon: faGift },
-  { id: 'broadcast', label: 'Broadcast', icon: faBullhorn },
-  { id: 'messages', label: 'Messages', icon: faEnvelope },
-  { id: 'audit', label: 'Audit Logs', icon: faClipboardList },
-  { id: 'analytics', label: 'Analytics', icon: faChartBar },
-  { id: 'review', label: 'Collusion Review', icon: faMagnifyingGlass, path: '/review' },
-];
 
 interface SidebarProps {
   active?: SidebarTab;
@@ -89,7 +76,6 @@ export default function Sidebar({
       )
       .catch(() => {
         setError(true);
-        setItems(DEFAULT_ITEMS);
       })
       .finally(() => setLoading(false));
   }, []);
