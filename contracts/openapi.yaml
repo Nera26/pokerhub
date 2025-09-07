@@ -204,6 +204,45 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/CTA'
+    post:
+      summary: Create CTA
+      description: Admin only
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CTA'
+      responses:
+        '200':
+          description: Created CTA
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CTA'
+  /ctas/{id}:
+    put:
+      summary: Update CTA
+      description: Admin only
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CTA'
+      responses:
+        '200':
+          description: Updated CTA
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CTA'
   /tables:
     get:
       summary: Get lobby tables

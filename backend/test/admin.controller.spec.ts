@@ -6,6 +6,7 @@ import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
 import { KycService } from '../src/wallet/kyc.service';
 import { AnalyticsService } from '../src/analytics/analytics.service';
+import { AdminSidebarRepository } from '../src/routes/admin-sidebar.repository';
 
 describe('AdminController', () => {
   let app: INestApplication;
@@ -14,6 +15,7 @@ describe('AdminController', () => {
     getAuditLogs: jest.fn(),
     getSecurityAlerts: jest.fn(),
   } as Partial<AnalyticsService>;
+  const sidebarRepo = { findAll: jest.fn() } as Partial<AdminSidebarRepository>;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -21,6 +23,7 @@ describe('AdminController', () => {
       providers: [
         { provide: KycService, useValue: kyc },
         { provide: AnalyticsService, useValue: analytics },
+        { provide: AdminSidebarRepository, useValue: sidebarRepo },
       ],
     })
       .overrideGuard(AuthGuard)
@@ -57,30 +60,20 @@ describe('AdminController', () => {
   });
 
   it('returns sidebar items', async () => {
+    (sidebarRepo.findAll as jest.Mock).mockResolvedValue([
+      { id: 'dashboard', label: 'Dashboard', icon: 'chart-line' },
+    ]);
     await request(app.getHttpServer())
       .get('/admin/sidebar')
       .expect(200)
-      .expect([
-        { id: 'dashboard', label: 'Dashboard', icon: 'chart-line' },
-        { id: 'users', label: 'Manage Users', icon: 'users' },
-        {
-          id: 'balance',
-          label: 'Balance & Transactions',
-          icon: 'dollar-sign',
-        },
-        { id: 'tables', label: 'Manage Tables', icon: 'table-cells' },
-        { id: 'tournaments', label: 'Tournaments', icon: 'trophy' },
-        { id: 'bonus', label: 'Bonus Manager', icon: 'gift' },
-        { id: 'broadcast', label: 'Broadcast', icon: 'bullhorn' },
-        { id: 'messages', label: 'Messages', icon: 'envelope' },
-        { id: 'audit', label: 'Audit Logs', icon: 'clipboard-list' },
-        { id: 'analytics', label: 'Analytics', icon: 'chart-bar' },
-        {
-          id: 'review',
-          label: 'Collusion Review',
-          icon: 'magnifying-glass',
-          path: '/review',
-        },
-      ]);
+      .expect([{ id: 'dashboard', label: 'Dashboard', icon: 'chart-line' }]);
+  });
+
+  it('returns empty sidebar when no items', async () => {
+    (sidebarRepo.findAll as jest.Mock).mockResolvedValue([]);
+    await request(app.getHttpServer())
+      .get('/admin/sidebar')
+      .expect(200)
+      .expect([]);
   });
 });

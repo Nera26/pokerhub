@@ -24,4 +24,13 @@ describe('Sidebar', () => {
     await waitFor(() => expect(mockFetch).toHaveBeenCalled());
     expect(await screen.findByText('API Users')).toBeInTheDocument();
   });
+
+  it('shows error when API fails', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('fail'));
+    render(<Sidebar open />);
+    await waitFor(() => expect(mockFetch).toHaveBeenCalled());
+    expect(
+      await screen.findByText('Failed to load sidebar'),
+    ).toBeInTheDocument();
+  });
 });

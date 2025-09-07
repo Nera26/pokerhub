@@ -238,6 +238,51 @@ export interface paths {
         };
       };
     };
+    /**
+     * Create CTA
+     * @description Admin only
+     */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["CTA"];
+        };
+      };
+      responses: {
+        /** @description Created CTA */
+        200: {
+          content: {
+            "application/json": components["schemas"]["CTA"];
+          };
+        };
+      };
+    };
+  };
+  "/ctas/{id}": {
+    /**
+     * Update CTA
+     * @description Admin only
+     */
+    put: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["CTA"];
+        };
+      };
+      responses: {
+        /** @description Updated CTA */
+        200: {
+          content: {
+            "application/json": components["schemas"]["CTA"];
+          };
+        };
+      };
+    };
   };
   "/tables": {
     /** Get lobby tables */

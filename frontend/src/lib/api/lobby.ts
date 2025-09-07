@@ -84,6 +84,29 @@ export async function fetchCTAs({
   );
 }
 
+export async function createCTA(
+  cta: CTA,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<CTA> {
+  return apiClient('/api/ctas', CTASchema, {
+    method: 'POST',
+    body: JSON.stringify(cta),
+    signal,
+  });
+}
+
+export async function updateCTA(
+  id: string,
+  cta: CTA,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<CTA> {
+  return apiClient(`/api/ctas/${id}`, CTASchema, {
+    method: 'PUT',
+    body: JSON.stringify(cta),
+    signal,
+  });
+}
+
 export async function fetchTournamentDetails(
   id: string,
   { signal }: { signal?: AbortSignal } = {},
