@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { TopCTAs, GameTabs } from '../components/home';
+import { TopCTAs, GameTabs, HomeLoadingSkeleton } from '../components/home';
 import {
   useTables,
   useTournaments,
@@ -118,6 +118,18 @@ export default function HomePageClient() {
 
   const showTournaments = gameType === 'tournaments';
 
+  if (
+    (!showTournaments && tablesLoading) ||
+    (showTournaments && tournamentsLoading)
+  ) {
+    return (
+      <>
+        <HomeLoadingSkeleton />
+        {ChatWidget ? <ChatWidget /> : <ChatPlaceholder />}
+      </>
+    );
+  }
+
   const handleRegister = async (id: string) => {
     try {
       await registerTournament(id);
@@ -132,53 +144,22 @@ export default function HomePageClient() {
         <TopCTAs />
         <GameTabs gameType={gameType} setGameType={setGameType} />
 
-        {!showTournaments && tablesLoading ? (
-          <section
-            id="cash-games-panel"
-            role="tabpanel"
-            aria-labelledby={`tab-${gameType}`}
-            className="mb-6 md:mb-8"
-          >
-            <h2 className="text-xl sm:text-2xl font-bold text-text-primary mb-4 sm:mb-6">
-              Cash Games
-            </h2>
-            <div className="h-96 w-full rounded-2xl bg-card-bg animate-pulse" />
-          </section>
-        ) : (
-          <>
-            <CashGameList
-              tables={filteredTables}
-              gameType={gameType}
-              hidden={showTournaments}
-            />
-            {!showTournaments && tableErrorMessage && (
-              <InlineError message={tableErrorMessage} />
-            )}
-          </>
+        <CashGameList
+          tables={filteredTables}
+          gameType={gameType}
+          hidden={showTournaments}
+        />
+        {!showTournaments && tableErrorMessage && (
+          <InlineError message={tableErrorMessage} />
         )}
 
-        {showTournaments && tournamentsLoading ? (
-          <section
-            id="tournaments-panel"
-            role="tabpanel"
-            aria-labelledby="tab-tournaments"
-          >
-            <h2 className="text-xl sm:text-2xl font-bold text-text-primary mb-4 sm:mb-6">
-              Tournaments
-            </h2>
-            <div className="h-96 w-full rounded-2xl bg-card-bg animate-pulse" />
-          </section>
-        ) : (
-          <>
-            <SiteTournamentList
-              tournaments={tournaments ?? []}
-              hidden={!showTournaments}
-              onRegister={handleRegister}
-            />
-            {showTournaments && tournamentErrorMessage && (
-              <InlineError message={tournamentErrorMessage} />
-            )}
-          </>
+        <SiteTournamentList
+          tournaments={tournaments ?? []}
+          hidden={!showTournaments}
+          onRegister={handleRegister}
+        />
+        {showTournaments && tournamentErrorMessage && (
+          <InlineError message={tournamentErrorMessage} />
         )}
       </main>
       {ChatWidget ? <ChatWidget /> : <ChatPlaceholder />}
