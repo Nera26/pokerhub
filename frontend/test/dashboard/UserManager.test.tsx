@@ -1,7 +1,8 @@
 import { render, screen, waitFor, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import UserManager from '@/app/components/dashboard/UserManager';
-import { fetchUsers, createUser } from '@/lib/api/users';
+import { fetchUsers, createUser, toggleUserBan } from '@/lib/api/users';
 import { fetchPendingWithdrawals } from '@/lib/api/withdrawals';
 
 let addUserHandler: (values: any) => void;
@@ -23,7 +24,6 @@ jest.mock('@/app/components/modals/AddUserModal', () => (props: any) => {
   return null;
 });
 jest.mock('@/app/components/modals/EditUserModal', () => () => null);
-jest.mock('@/app/components/modals/BanUserModal', () => () => null);
 jest.mock('@/app/components/modals/ReviewWithdrawalModal', () => () => null);
 jest.mock('@/app/components/modals/TransactionHistoryModal', () => () => null);
 jest.mock('@/app/components/ui/ToastNotification', () => () => null);
@@ -43,6 +43,7 @@ describe('UserManager component states', () => {
     (fetchUsers as jest.Mock).mockReset();
     (fetchPendingWithdrawals as jest.Mock).mockReset();
     (createUser as jest.Mock).mockReset();
+    (toggleUserBan as jest.Mock).mockReset();
   });
 
   it('shows loading state', () => {
@@ -145,6 +146,82 @@ describe('UserManager component states', () => {
       const users = client.getQueryData(['users']) as any[];
       expect(users?.[0]?.avatar).toBe(apiAvatar);
     });
+  });
+
+  it('opens and confirms ban action', async () => {
+    (fetchUsers as jest.Mock).mockResolvedValue([
+      {
+        id: 1,
+        name: 'John',
+        email: 'john@example.com',
+        balance: 0,
+        status: 'Active',
+        avatar: '',
+      },
+    ]);
+    (fetchPendingWithdrawals as jest.Mock).mockResolvedValue([]);
+    (toggleUserBan as jest.Mock).mockResolvedValue(undefined);
+
+    renderWithClient(<UserManager />);
+
+    await waitFor(() => screen.getByText('Ban'));
+    await act(async () => {
+      await userEvent.click(screen.getByText('Ban'));
+    });
+
+    expect(
+      screen.getByText('Are you sure you want to ban John?'),
+    ).toBeInTheDocument();
+
+    await act(async () => {
+      const confirmBtn = screen.getAllByText('Ban', { selector: 'button' })[1];
+      await userEvent.click(confirmBtn);
+    });
+
+    await waitFor(() => expect(toggleUserBan).toHaveBeenCalledWith(1));
+    await waitFor(() =>
+      expect(
+        screen.queryByText('Are you sure you want to ban John?'),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it('opens and confirms unban action', async () => {
+    (fetchUsers as jest.Mock).mockResolvedValue([
+      {
+        id: 2,
+        name: 'Jane',
+        email: 'jane@example.com',
+        balance: 0,
+        status: 'Banned',
+        avatar: '',
+      },
+    ]);
+    (fetchPendingWithdrawals as jest.Mock).mockResolvedValue([]);
+    (toggleUserBan as jest.Mock).mockResolvedValue(undefined);
+
+    renderWithClient(<UserManager />);
+
+    await waitFor(() => screen.getByText('Unban'));
+    await act(async () => {
+      await userEvent.click(screen.getByText('Unban'));
+    });
+
+    expect(
+      screen.getByText('Are you sure you want to unban Jane?'),
+    ).toBeInTheDocument();
+
+    await act(async () => {
+      const confirmBtn = screen.getAllByText('Unban', { selector: 'button' })[1];
+      await userEvent.click(confirmBtn);
+    });
+
+    await waitFor(() => expect(toggleUserBan).toHaveBeenCalledWith(2));
+    await waitFor(() =>
+      expect(
+        screen.queryByText('Are you sure you want to unban Jane?'),
+      ).not.toBeInTheDocument(),
+    );
   });
 });
 
