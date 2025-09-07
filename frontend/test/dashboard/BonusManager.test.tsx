@@ -13,57 +13,92 @@ describe('BonusManager component', () => {
   });
 
   it('renders bonuses on successful fetch', () => {
-    (useQuery as jest.Mock).mockReturnValue({
-      data: [
-        {
-          id: 1,
-          name: 'Test Bonus',
-          type: 'deposit',
-          description: 'desc',
-          eligibility: 'all',
-          status: 'active',
-          claimsTotal: 0,
-        },
-      ],
-      isLoading: false,
-      error: null,
+    (useQuery as jest.Mock).mockImplementation(({ queryKey }) => {
+      if (queryKey[0] === 'admin-bonus-options') {
+        return {
+          data: {
+            types: ['deposit'],
+            eligibilities: ['all'],
+            statuses: ['active'],
+          },
+          isLoading: false,
+          error: null,
+        };
+      }
+      return {
+        data: [
+          {
+            id: 1,
+            name: 'Test Bonus',
+            type: 'deposit',
+            description: 'desc',
+            eligibility: 'all',
+            status: 'active',
+            claimsTotal: 0,
+          },
+        ],
+        isLoading: false,
+        error: null,
+      };
     });
     render(<BonusManager />);
     expect(screen.getByText('Test Bonus')).toBeInTheDocument();
   });
 
   it('shows error message on fetch failure', () => {
-    (useQuery as jest.Mock).mockReturnValue({
-      data: [],
-      isLoading: false,
-      error: { message: 'fail' },
+    (useQuery as jest.Mock).mockImplementation(({ queryKey }) => {
+      if (queryKey[0] === 'admin-bonus-options') {
+        return {
+          data: {
+            types: ['deposit'],
+            eligibilities: ['all'],
+            statuses: ['active'],
+          },
+          isLoading: false,
+          error: null,
+        };
+      }
+      return { data: [], isLoading: false, error: { message: 'fail' } };
     });
     render(<BonusManager />);
     expect(screen.getByRole('alert')).toHaveTextContent('fail');
   });
 
   it('renders form fields for create and edit using BonusForm', () => {
-    (useQuery as jest.Mock).mockReturnValue({
-      data: [
-        {
-          id: 1,
-          name: 'Edit Bonus',
-          type: 'deposit',
-          description: 'desc',
-          eligibility: 'all',
-          status: 'active',
-          claimsTotal: 0,
-        },
-      ],
-      isLoading: false,
-      error: null,
+    (useQuery as jest.Mock).mockImplementation(({ queryKey }) => {
+      if (queryKey[0] === 'admin-bonus-options') {
+        return {
+          data: {
+            types: ['deposit'],
+            eligibilities: ['all'],
+            statuses: ['active'],
+          },
+          isLoading: false,
+          error: null,
+        };
+      }
+      return {
+        data: [
+          {
+            id: 1,
+            name: 'Edit Bonus',
+            type: 'deposit',
+            description: 'desc',
+            eligibility: 'all',
+            status: 'active',
+            claimsTotal: 0,
+          },
+        ],
+        isLoading: false,
+        error: null,
+      };
     });
     render(<BonusManager />);
 
     const createInput = screen.getAllByPlaceholderText('Enter promotion name...')[0];
     expect(createInput).toHaveValue('');
 
-    fireEvent.click(screen.getByText('Edit'));
+    fireEvent.click(screen.getAllByText('Edit')[0]);
     const editInput = screen.getAllByPlaceholderText('Enter promotion name...')[1];
     expect(editInput).toHaveValue('Edit Bonus');
   });

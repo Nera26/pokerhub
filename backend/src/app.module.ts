@@ -26,7 +26,7 @@ import { validationSchema } from './config/env.validation';
 
 import { AppController } from './app.controller';
 import { AdminMessagesController } from './routes/admin-messages.controller';
-import { CtasModule } from './ctas/ctas.module';
+import { AdminBonusController } from './routes/admin-bonus.controller'; // expose /admin/bonus/options
 import { AppService } from './app.service';
 import { API_CONTRACT_VERSION } from '@shared/constants';
 import { ZodExceptionFilter } from './common/zod-exception.filter';
@@ -50,6 +50,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { cookieSecurity } from './common/cookie-security.middleware';
 import { BroadcastsModule } from './broadcasts/broadcasts.module';
+import { CtasModule } from './ctas/ctas.module';
 
 @Module({
   imports: [
@@ -83,13 +84,11 @@ import { BroadcastsModule } from './broadcasts/broadcasts.module';
       }),
     }),
 
-    // Database (Postgres via TypeORM)
     TypeOrmModule.forRootAsync({
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get<string>('database.url'),
         autoLoadEntities: true,
-        // Set to true only for local/dev; keeps prod safe
         synchronize: config.get<boolean>('database.synchronize', false),
       }),
       inject: [ConfigService],
@@ -117,17 +116,15 @@ import { BroadcastsModule } from './broadcasts/broadcasts.module';
     BroadcastsModule,
     CtasModule,
   ],
-  controllers: [AppController, AdminMessagesController],
+  controllers: [
+    AppController,
+    AdminMessagesController,
+    AdminBonusController, // add bonus options controller
+  ],
   providers: [
     AppService,
-    {
-      provide: 'API_CONTRACT_VERSION',
-      useValue: API_CONTRACT_VERSION,
-    },
-    {
-      provide: APP_FILTER,
-      useClass: ZodExceptionFilter,
-    },
+    { provide: 'API_CONTRACT_VERSION', useValue: API_CONTRACT_VERSION },
+    { provide: APP_FILTER, useClass: ZodExceptionFilter },
   ],
 })
 export class AppModule implements NestModule {
@@ -136,9 +133,7 @@ export class AppModule implements NestModule {
       .apply(
         helmet({
           contentSecurityPolicy: {
-            directives: {
-              defaultSrc: ["'self'"],
-            },
+            directives: { defaultSrc: ["'self'"] },
           },
           hsts: {
             maxAge: 31536000,
