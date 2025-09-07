@@ -20,6 +20,7 @@ import ToastNotification from '../../ui/ToastNotification';
 import { rebuildLeaderboard } from '@/lib/api/leaderboard';
 import type { AuditLogEntry, AuditLogType } from '@shared/types';
 import { loadTypeBadgeClasses } from './constants';
+import useToast from '../useToast';
 
 export default function Analytics() {
   const [search, setSearch] = useState('');
@@ -46,15 +47,7 @@ export default function Analytics() {
   const { data: summary } = useAuditSummary();
   const { data: metrics, isLoading: metricsLoading } = useDashboardMetrics();
 
-  const [toast, setToast] = useState<{
-    msg: string;
-    type: 'success' | 'error';
-    open: boolean;
-  }>({ msg: '', type: 'success', open: false });
-  const notify = (
-    msg: string,
-    type: 'success' | 'error' = 'success',
-  ) => setToast({ msg, type, open: true });
+  const { toast, notify } = useToast();
 
   const rebuild = useMutation({
     mutationFn: () => rebuildLeaderboard(),
@@ -223,7 +216,7 @@ export default function Analytics() {
         message={toast.msg}
         type={toast.type}
         isOpen={toast.open}
-        onClose={() => setToast((t) => ({ ...t, open: false }))}
+        onClose={() => notify('')}
       />
     </div>
   );

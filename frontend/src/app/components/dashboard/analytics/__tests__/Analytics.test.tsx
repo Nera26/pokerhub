@@ -47,6 +47,10 @@ describe('Analytics', () => {
     await waitFor(() => {
       expect(rebuildLeaderboard).toHaveBeenCalled();
     });
+
+    expect(
+      await screen.findByText(/leaderboard rebuild started/i),
+    ).toBeInTheDocument();
   });
 });
 

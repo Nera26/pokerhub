@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,6 +20,7 @@ import {
   type BroadcastsResponse,
   type SendBroadcastRequest,
 } from '@shared/types';
+import useToast from './useToast';
 
 type MsgType = 'announcement' | 'alert' | 'notice';
 
@@ -70,13 +70,7 @@ export default function Broadcast() {
   });
   const broadcasts = data?.broadcasts ?? [];
 
-  const [toast, setToast] = useState<{
-    msg: string;
-    type: 'success' | 'error';
-    open: boolean;
-  }>({ msg: '', type: 'success', open: false });
-  const notify = (msg: string, type: 'success' | 'error' = 'success') =>
-    setToast({ msg, type, open: true });
+  const { toast, notify } = useToast();
 
   const mutation = useMutation({
     mutationFn: (values: SendBroadcastRequest) => sendBroadcast(values),
@@ -353,7 +347,7 @@ export default function Broadcast() {
         message={toast.msg}
         type={toast.type}
         isOpen={toast.open}
-        onClose={() => setToast((t) => ({ ...t, open: false }))}
+        onClose={() => notify('')}
       />
     </div>
   );
