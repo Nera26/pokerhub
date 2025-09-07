@@ -1,18 +1,21 @@
 import { render, screen, within } from '@testing-library/react';
-import HomeLoadingSkeleton from '@/app/components/home/HomeLoadingSkeleton';
+import HomePageClient from '@/app/(site)/HomePageClient';
 import LiveTableCard, {
   type LiveTableCardProps,
 } from '@/app/components/home/LiveTableCard';
 import CashGameList from '@/app/components/home/CashGameList';
 import TournamentList from '@/components/TournamentList';
 import useVirtualizedList from '@/hooks/useVirtualizedList';
+import { useTables, useTournaments } from '@/hooks/useLobbyData';
 import type { Table, Tournament } from '@/hooks/useLobbyData';
 import type { GameType } from '@shared/types';
 
 jest.mock('@/hooks/useVirtualizedList');
+jest.mock('@/hooks/useLobbyData');
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: jest.fn(), prefetch: jest.fn() }),
 }));
+jest.mock('@/app/components/common/chat/ChatWidget', () => () => <div />);
 
 describe('home accessibility', () => {
   beforeEach(() => {
@@ -37,8 +40,18 @@ describe('home accessibility', () => {
     ).toBe(true);
   });
 
-  it('HomeLoadingSkeleton marks main region busy', () => {
-    render(<HomeLoadingSkeleton />);
+  it('renders loading skeleton before data loads', () => {
+    (useTables as jest.Mock).mockReturnValue({
+      data: undefined,
+      error: null,
+      isLoading: true,
+    });
+    (useTournaments as jest.Mock).mockReturnValue({
+      data: [],
+      error: null,
+      isLoading: false,
+    });
+    render(<HomePageClient />);
     expect(screen.getByRole('main')).toHaveAttribute('aria-busy', 'true');
   });
 
