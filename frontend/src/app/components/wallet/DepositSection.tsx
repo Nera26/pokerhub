@@ -8,6 +8,7 @@ import Tooltip from '../ui/Tooltip';
 import Button from '../ui/Button';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons/faTimes';
+import { useIban } from '@/hooks/wallet';
 
 export interface DepositSectionProps {
   /** Called when user clicks close icon */
@@ -38,7 +39,7 @@ export default function DepositSection({
 
   const [countdown, setCountdown] = useState(10);
   const timerRef = useRef<number | null>(null);
-  const accountNumber = '1234 5678 9101 1121'; // should be passed or configured
+  const { data, isLoading, error } = useIban();
 
   useEffect(() => {
     // start countdown
@@ -61,8 +62,12 @@ export default function DepositSection({
   }, []);
 
   const handleCopy = async () => {
+    if (!data?.iban) {
+      alert('Failed to copy account number');
+      return;
+    }
     try {
-      await navigator.clipboard.writeText(accountNumber);
+      await navigator.clipboard.writeText(data.iban);
       alert('Account number copied to clipboard');
     } catch {
       alert('Failed to copy account number');
@@ -106,14 +111,20 @@ export default function DepositSection({
         </p>
         <p className="flex items-center">
           <span className="font-semibold">Account Number:</span>
-          <Tooltip text="Click to copy">
-            <span
-              onClick={handleCopy}
-              className="ml-2 font-medium cursor-pointer"
-            >
-              {accountNumber}
-            </span>
-          </Tooltip>
+          {isLoading ? (
+            <span className="ml-2">Loading IBAN...</span>
+          ) : error ? (
+            <span className="ml-2 text-danger-red">{error.message}</span>
+          ) : (
+            <Tooltip text="Click to copy">
+              <span
+                onClick={handleCopy}
+                className="ml-2 font-medium cursor-pointer"
+              >
+                {data?.masked}
+              </span>
+            </Tooltip>
+          )}
         </p>
         <p className="italic text-xs mt-2">
           After transfer, your balance will be updated within 1–3 minutes.
