@@ -13,6 +13,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import dynamic from 'next/dynamic';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
+import MetricCard, { TimeFilter } from './MetricCard';
 
 const ActivityChart = dynamic(() => import('./charts/ActivityChart'), {
   loading: () => (
@@ -32,7 +33,6 @@ const RevenueDonut = dynamic(() => import('./charts/RevenueDonut'), {
   ssr: false,
 });
 
-type TimeFilter = 'today' | 'week' | 'month' | 'all';
 
 // ---------- Small UI helpers ----------
 function Card({
@@ -154,109 +154,56 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        <Card className="cursor-pointer hover:bg-hover-bg transition-colors">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-text-secondary text-sm">Open Tables</p>
-              <p className="text-2xl font-bold text-accent-blue">
-                {metrics.tables?.open ?? metrics.tables ?? 0}
-              </p>
-              {metrics.tables?.full !== undefined && (
-                <p className="text-xs text-text-secondary">
-                  {metrics.tables.full} full
-                </p>
-              )}
-            </div>
-            <FontAwesomeIcon
-              icon={faTableCells}
-              className="text-3xl text-accent-blue"
-            />
-          </div>
-        </Card>
+        <MetricCard
+          className="cursor-pointer hover:bg-hover-bg transition-colors"
+          title="Open Tables"
+          value={metrics.tables?.open ?? metrics.tables ?? 0}
+          icon={faTableCells}
+          valueClassName="text-accent-blue"
+          iconClassName="text-accent-blue"
+          subtext={
+            metrics.tables?.full !== undefined
+              ? `${metrics.tables.full} full`
+              : undefined
+          }
+          subtextClassName="text-text-secondary"
+        />
 
-        <Card className="cursor-pointer hover:bg-hover-bg transition-colors">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-text-secondary text-sm">Tournaments</p>
-              <p className="text-2xl font-bold">
-                {metrics.tournaments?.total ?? metrics.tournaments ?? 0}
-              </p>
-              {metrics.tournaments?.running !== undefined && (
-                <p className="text-xs text-text-secondary">
-                  {metrics.tournaments.running} running
-                </p>
-              )}
-            </div>
-            <FontAwesomeIcon
-              icon={faTrophy}
-              className="text-3xl text-accent-yellow"
-            />
-          </div>
-        </Card>
+        <MetricCard
+          className="cursor-pointer hover:bg-hover-bg transition-colors"
+          title="Tournaments"
+          value={metrics.tournaments?.total ?? metrics.tournaments ?? 0}
+          icon={faTrophy}
+          iconClassName="text-accent-yellow"
+          subtext={
+            metrics.tournaments?.running !== undefined
+              ? `${metrics.tournaments.running} running`
+              : undefined
+          }
+          subtextClassName="text-text-secondary"
+        />
 
-        <Card className="cursor-pointer hover:bg-hover-bg transition-colors">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-text-secondary text-sm">Deposits</p>
-              <div className="flex items-center gap-2 mb-1">
-                <p className="text-2xl font-bold text-accent-green">
-                  {formatCurrency(metrics.deposits?.[depFilter]?.amount)}
-                </p>
-                <select
-                  value={depFilter}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                    setDepFilter(e.target.value as TimeFilter)
-                  }
-                  className="bg-primary-bg text-xs px-2 py-1 rounded border border-dark text-accent-green cursor-pointer"
-                >
-                  <option value="today">Today</option>
-                  <option value="week">7 Days</option>
-                  <option value="month">Month</option>
-                  <option value="all">All-Time</option>
-                </select>
-              </div>
-              <p className="text-xs text-accent-green">
-                {metrics.deposits?.[depFilter]?.trend ?? ''}
-              </p>
-            </div>
-            <FontAwesomeIcon
-              icon={faArrowDown}
-              className="text-3xl text-accent-green"
-            />
-          </div>
-        </Card>
+        <MetricCard
+          className="cursor-pointer hover:bg-hover-bg transition-colors"
+          title="Deposits"
+          value={formatCurrency(metrics.deposits?.[depFilter]?.amount)}
+          icon={faArrowDown}
+          valueClassName="text-accent-green"
+          iconClassName="text-accent-green"
+          subtext={metrics.deposits?.[depFilter]?.trend ?? ''}
+          filter={{ value: depFilter, onChange: setDepFilter }}
+        />
 
-        <Card className="cursor-pointer hover:bg-hover-bg transition-colors">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-text-secondary text-sm">Withdrawals</p>
-              <div className="flex items-center gap-2 mb-1">
-                <p className="text-2xl font-bold text-danger-red">
-                  {formatCurrency(metrics.withdrawals?.[wdFilter]?.amount)}
-                </p>
-                <select
-                  value={wdFilter}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                    setWdFilter(e.target.value as TimeFilter)
-                  }
-                  className="bg-primary-bg text-xs px-2 py-1 rounded border border-dark text-danger-red cursor-pointer"
-                >
-                  <option value="today">Today</option>
-                  <option value="week">7 Days</option>
-                  <option value="month">Month</option>
-                  <option value="all">All-Time</option>
-                </select>
-              </div>
-              <p className="text-xs text-danger-red">
-                {metrics.withdrawals?.[wdFilter]?.trend ?? ''}
-              </p>
-            </div>
-            <FontAwesomeIcon
-              icon={faArrowUp}
-              className="text-3xl text-danger-red"
-            />
-          </div>
-        </Card>
+        <MetricCard
+          className="cursor-pointer hover:bg-hover-bg transition-colors"
+          title="Withdrawals"
+          value={formatCurrency(metrics.withdrawals?.[wdFilter]?.amount)}
+          icon={faArrowUp}
+          valueClassName="text-danger-red"
+          iconClassName="text-danger-red"
+          subtext={metrics.withdrawals?.[wdFilter]?.trend ?? ''}
+          filter={{ value: wdFilter, onChange: setWdFilter }}
+        />
       </div>
 
       {/* Charts */}
