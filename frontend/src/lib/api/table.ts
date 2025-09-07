@@ -5,12 +5,10 @@ import {
   ChatMessageSchema,
   TableDataSchema,
   SendChatMessageRequestSchema,
-  ChatMessagesResponseSchema,
   TableSchema,
   TableListSchema,
   type TableData,
   type SendChatMessageRequest,
-  type ChatMessagesResponse,
   type Table,
   type TableList,
   type CreateTableRequest,
@@ -22,14 +20,12 @@ export {
   ChatMessageSchema,
   TableDataSchema,
   SendChatMessageRequestSchema,
-  ChatMessagesResponseSchema,
   TableSchema,
   TableListSchema,
 };
 export type {
   TableData,
   SendChatMessageRequest,
-  ChatMessagesResponse,
   Table,
   TableList,
   CreateTableRequest,
@@ -56,16 +52,6 @@ export async function fetchTable(
   { signal }: { signal?: AbortSignal } = {},
 ): Promise<TableData> {
   return apiClient(`/api/tables/${id}`, TableDataSchema, {
-    signal,
-    cache: 'no-store',
-  });
-}
-
-export async function fetchChatMessages(
-  id: string,
-  { signal }: { signal?: AbortSignal } = {},
-): Promise<ChatMessagesResponse> {
-  return apiClient(`/api/tables/${id}/chat`, ChatMessagesResponseSchema, {
     signal,
     cache: 'no-store',
   });
