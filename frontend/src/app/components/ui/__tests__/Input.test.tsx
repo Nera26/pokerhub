@@ -1,16 +1,7 @@
+import './setupLoggerMock';
 import { render, screen } from '@testing-library/react';
 import { Input } from '../Input';
 import { logger } from '@/lib/logger';
-
-jest.mock('@/lib/logger', () => ({
-  logger: {
-    warn: jest.fn(),
-    error: jest.fn(),
-    info: jest.fn(),
-    log: jest.fn(),
-    debug: jest.fn(),
-  },
-}));
 
 describe('Input', () => {
   it('sets aria attributes when error is present', () => {
