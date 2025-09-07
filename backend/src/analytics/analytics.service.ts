@@ -191,9 +191,14 @@ export class AnalyticsService {
     const url = config.get<string>('analytics.clickhouseUrl');
     this.client = url ? createClient({ url }) : null;
 
-    const brokers = config
-      .get<string>('analytics.kafkaBrokers')
-      ?.split(',') ?? ['localhost:9092'];
+    const brokersConfig = config.get<string>('analytics.kafkaBrokers');
+    const brokers = brokersConfig
+      ?.split(',')
+      .map((s) => s.trim())
+      .filter(Boolean) ?? [];
+    if (brokers.length === 0) {
+      throw new Error('Missing analytics.kafkaBrokers configuration');
+    }
     this.kafka = new Kafka({ brokers });
     this.producer = this.kafka.producer();
     void this.producer.connect();

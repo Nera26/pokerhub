@@ -32,7 +32,14 @@ export class NotificationsListener implements OnModuleInit, OnModuleDestroy {
     if (process.env.NODE_ENV === 'test') {
       return;
     }
-    const brokers = this.config.get<string>('analytics.kafkaBrokers')?.split(',') ?? ['localhost:9092'];
+    const brokersConfig = this.config.get<string>('analytics.kafkaBrokers');
+    const brokers = brokersConfig
+      ?.split(',')
+      .map((s) => s.trim())
+      .filter(Boolean) ?? [];
+    if (brokers.length === 0) {
+      throw new Error('Missing analytics.kafkaBrokers configuration');
+    }
     const kafka = new Kafka({ brokers });
     this.consumer = kafka.consumer({ groupId: 'notifications' });
     await this.consumer.connect();

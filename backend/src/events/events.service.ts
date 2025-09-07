@@ -30,16 +30,12 @@ export class EventPublisher implements OnModuleDestroy {
       this.producer = producer;
     } else {
       const brokersConfig = config.get<string>('analytics.kafkaBrokers');
-      let brokers =
-        brokersConfig && brokersConfig.trim().length > 0
-          ? brokersConfig.split(',').map((s) => s.trim()).filter(Boolean)
-          : undefined;
-
-      if (!brokers || brokers.length === 0) {
-        this.logger.warn(
-          'Missing analytics.kafkaBrokers configuration; defaulting to localhost:9092',
-        );
-        brokers = ['localhost:9092'];
+      const brokers = brokersConfig
+        ?.split(',')
+        .map((s) => s.trim())
+        .filter(Boolean) ?? [];
+      if (brokers.length === 0) {
+        throw new Error('Missing analytics.kafkaBrokers configuration');
       }
 
       const kafka = new Kafka({ brokers });
