@@ -75,27 +75,29 @@ export function calculateVpipCorrelation(vpipA: number[], vpipB: number[]): numb
   return denomA && denomB ? numerator / Math.sqrt(denomA * denomB) : 0;
 }
 
-export function calculateTimingSimilarity(timesA: number[], timesB: number[]): number {
-  if (timesA.length !== timesB.length || timesA.length === 0) {
+function averageDiffSimilarity(a: number[], b: number[]): number {
+  if (a.length !== b.length || a.length === 0) {
     return 0;
   }
   let diff = 0;
-  for (let i = 0; i < timesA.length; i++) {
-    diff += Math.abs(timesA[i] - timesB[i]);
+  for (let i = 0; i < a.length; i++) {
+    diff += Math.abs(a[i] - b[i]);
   }
-  const avgDiff = diff / timesA.length;
+  const avgDiff = diff / a.length;
   return 1 / (1 + avgDiff);
 }
 
-export function calculateSeatProximity(seatsA: number[], seatsB: number[]): number {
-  if (seatsA.length !== seatsB.length || seatsA.length === 0) {
-    return 0;
-  }
-  let diff = 0;
-  for (let i = 0; i < seatsA.length; i++) {
-    diff += Math.abs(seatsA[i] - seatsB[i]);
-  }
-  const avgDiff = diff / seatsA.length;
-  return 1 / (1 + avgDiff);
+export function calculateTimingSimilarity(
+  timesA: number[],
+  timesB: number[],
+): number {
+  return averageDiffSimilarity(timesA, timesB);
+}
+
+export function calculateSeatProximity(
+  seatsA: number[],
+  seatsB: number[],
+): number {
+  return averageDiffSimilarity(seatsA, seatsB);
 }
 
