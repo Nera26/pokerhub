@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TournamentController } from './tournament.controller';
+import { AdminTournamentsController } from '../routes/admin-tournaments.controller';
 import { TournamentService } from './tournament.service';
 import { TournamentScheduler } from './scheduler.service';
 import { TableBalancerService } from './table-balancer.service';
@@ -20,7 +21,7 @@ import { RateLimitGuard } from '../routes/rate-limit.guard';
     GameModule,
     FeatureFlagsModule,
   ],
-  controllers: [TournamentController],
+  controllers: [TournamentController, AdminTournamentsController],
   providers: [
     TournamentService,
     TournamentScheduler,

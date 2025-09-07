@@ -1,12 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   fetchAdminTournaments,
   createAdminTournament,
   updateAdminTournament,
   deleteAdminTournament,
+  fetchAdminTournamentDefaults,
 } from '@/lib/api/admin';
 import {
   useForm,
@@ -17,6 +18,10 @@ import {
 } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  AdminTournamentSchema,
+  type AdminTournament,
+} from '@shared/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faPlus,
@@ -49,8 +54,7 @@ import Tooltip from '../ui/Tooltip';
 
 const statusEnum = z.enum(['scheduled', 'running', 'finished', 'cancelled']);
 type Status = z.infer<typeof statusEnum>;
-const tournamentSchema = z.object({
-  id: z.number(),
+const tournamentSchema = AdminTournamentSchema.extend({
   name: z.string().min(1, 'Name is required'),
   gameType: z.string().min(1, 'Game type is required'),
   buyin: z.number().nonnegative('Buy-in must be at least 0'),
@@ -58,14 +62,8 @@ const tournamentSchema = z.object({
   prizePool: z.number().nonnegative('Prize pool must be at least 0'),
   date: z.string().min(1, 'Date is required'),
   time: z.string().min(1, 'Time is required'),
-  format: z.enum(['Regular', 'Turbo', 'Deepstack', 'Bounty', 'Freeroll']),
-  seatCap: z.union([z.number().int().positive(), z.literal('')]).optional(),
-  description: z.string().optional(),
-  rebuy: z.boolean(),
-  addon: z.boolean(),
-  status: statusEnum.or(z.literal('auto-start')),
 });
-type Tournament = z.infer<typeof tournamentSchema>;
+type Tournament = AdminTournament;
 
 function dollars(n: number) {
   return n.toLocaleString(undefined, {
@@ -126,23 +124,6 @@ export default function ManageTournaments() {
     type: 'success',
   });
 
-  // create/edit form
-  const emptyTournament: Tournament = {
-    id: 0,
-    name: '',
-    gameType: "Texas Hold'em",
-    buyin: 0,
-    fee: 0,
-    prizePool: 0,
-    date: '',
-    time: '',
-    format: 'Regular',
-    seatCap: '',
-    description: '',
-    rebuy: false,
-    addon: false,
-    status: 'scheduled',
-  };
   const {
     register,
     handleSubmit,
@@ -152,8 +133,19 @@ export default function ManageTournaments() {
     formState: { errors },
   } = useForm<Tournament>({
     resolver: zodResolver(tournamentSchema),
-    defaultValues: emptyTournament,
   });
+
+  const {
+    data: defaults,
+  } = useQuery({
+    queryKey: ['admin', 'tournaments', 'defaults'],
+    queryFn: fetchAdminTournamentDefaults,
+    enabled: createOpen,
+  });
+
+  useEffect(() => {
+    if (defaults) reset(defaults);
+  }, [defaults, reset]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -190,7 +182,6 @@ export default function ManageTournaments() {
       queryClient.invalidateQueries({ queryKey: ['admin', 'tournaments'] }),
   });
   const openCreate = () => {
-    reset(emptyTournament);
     setSelected(null);
     setCreateOpen(true);
   };

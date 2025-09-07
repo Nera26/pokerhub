@@ -856,6 +856,19 @@ export interface paths {
       };
     };
   };
+  "/leaderboard/ranges": {
+    /** Get leaderboard time ranges */
+    get: {
+      responses: {
+        /** @description Available time ranges */
+        200: {
+          content: {
+            "application/json": components["schemas"]["LeaderboardRangesResponse"];
+          };
+        };
+      };
+    };
+  };
   "/leaderboard/rebuild": {
     /** Rebuild leaderboard */
     post: {
@@ -1236,6 +1249,19 @@ export interface paths {
       };
     };
   };
+  "/admin/tournaments/defaults": {
+    /** Get default tournament values */
+    get: {
+      responses: {
+        /** @description Default tournament values */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AdminTournament"];
+          };
+        };
+      };
+    };
+  };
   "/admin/withdrawals": {
     /** List pending withdrawals */
     get: {
@@ -1581,6 +1607,22 @@ export interface components {
     ReplyMessageRequest: {
       reply: string;
     };
+    AdminTournament: {
+      id: number;
+      name: string;
+      gameType: string;
+      buyin: number;
+      fee: number;
+      prizePool: number;
+      date: string;
+      time: string;
+      format: string;
+      seatCap?: number | "";
+      description?: string;
+      rebuy: boolean;
+      addon: boolean;
+      status: string;
+    };
     DashboardMetricsResponse: {
       online: number;
       revenue: number;
@@ -1679,6 +1721,7 @@ export interface components {
       denialReason?: string;
       realBalance: number;
       creditBalance: number;
+      /** @description ISO 4217 currency code */
       currency: string;
     };
     KycDenialResponse: {

@@ -1,35 +1,16 @@
 import { apiClient, type ApiError } from './client';
 import { z } from 'zod';
-import { MessageResponseSchema } from '@shared/types';
+import {
+  MessageResponseSchema,
+  AdminTournamentSchema,
+  type AdminTournament,
+} from '@shared/types';
+export { AdminTournamentSchema } from '@shared/types';
+export type { AdminTournament } from '@shared/types';
 
 /** =======================
  *  Admin Tournaments
  *  ======================= */
-const statusEnum = z.enum([
-  'scheduled',
-  'running',
-  'finished',
-  'cancelled',
-  'auto-start',
-]);
-
-export const AdminTournamentSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  gameType: z.string(),
-  buyin: z.number(),
-  fee: z.number(),
-  prizePool: z.number(),
-  date: z.string(),
-  time: z.string(),
-  format: z.string(),
-  seatCap: z.union([z.number().int().positive(), z.literal('')]).optional(),
-  description: z.string().optional(),
-  rebuy: z.boolean(),
-  addon: z.boolean(),
-  status: statusEnum,
-});
-export type AdminTournament = z.infer<typeof AdminTournamentSchema>;
 export const AdminTournamentListSchema = z.array(AdminTournamentSchema);
 
 export async function fetchAdminTournaments({
@@ -67,6 +48,16 @@ export async function deleteAdminTournament(id: number): Promise<void> {
     `/api/admin/tournaments/${id}`,
     MessageResponseSchema,
     { method: 'DELETE' },
+  );
+}
+
+export async function fetchAdminTournamentDefaults({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<AdminTournament> {
+  return apiClient(
+    '/api/admin/tournaments/defaults',
+    AdminTournamentSchema,
+    { signal },
   );
 }
 
