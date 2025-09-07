@@ -1264,6 +1264,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminTournament'
+  /admin/bonus/options:
+    get:
+      summary: Get bonus form options
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Bonus options
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BonusOptionsResponse'
   /admin/withdrawals:
     get:
       summary: List pending withdrawals
@@ -3239,3 +3251,42 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/SidebarItem'
+    BonusOptionType:
+      type: string
+      enum:
+        - deposit
+        - rakeback
+        - ticket
+        - rebate
+        - first-deposit
+    BonusEligibility:
+      type: string
+      enum:
+        - all
+        - new
+        - vip
+        - active
+    BonusStatus:
+      type: string
+      enum:
+        - active
+        - paused
+    BonusOptionsResponse:
+      type: object
+      properties:
+        types:
+          type: array
+          items:
+            $ref: '#/components/schemas/BonusOptionType'
+        eligibilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/BonusEligibility'
+        statuses:
+          type: array
+          items:
+            $ref: '#/components/schemas/BonusStatus'
+      required:
+        - types
+        - eligibilities
+        - statuses

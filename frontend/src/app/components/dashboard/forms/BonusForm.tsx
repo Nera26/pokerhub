@@ -1,8 +1,17 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import type { FieldErrors, UseFormRegister } from 'react-hook-form';
 import Input from '../../ui/Input';
 import type { BonusFormValues } from '../BonusManager';
+import { fetchBonusOptions } from '@/lib/api/admin';
+import type { ApiError } from '@/lib/api/client';
+import {
+  BONUS_TYPES,
+  BONUS_ELIGIBILITY,
+  BONUS_STATUSES,
+  type BonusOptionsResponse,
+} from '@shared/types';
 
 export interface BonusFormProps {
   register: UseFormRegister<BonusFormValues>;
@@ -17,6 +26,37 @@ export default function BonusForm({
   defaults = {},
   statusLabel = 'Status',
 }: BonusFormProps) {
+  const {
+    data: options,
+    isLoading,
+    error,
+  } = useQuery<BonusOptionsResponse, ApiError>({
+    queryKey: ['admin-bonus-options'],
+    queryFn: ({ signal }) => fetchBonusOptions({ signal }),
+  });
+
+  const types = options?.types ?? BONUS_TYPES;
+  const eligibilities = options?.eligibilities ?? BONUS_ELIGIBILITY;
+  const statuses = options?.statuses ?? BONUS_STATUSES;
+
+  const typeLabels: Record<string, string> = {
+    deposit: 'Deposit Match',
+    rakeback: 'Rakeback',
+    ticket: 'Tournament Tickets',
+    rebate: 'Rebate',
+    'first-deposit': 'First Deposit Only',
+  };
+  const eligibilityLabels: Record<string, string> = {
+    all: 'All Players',
+    new: 'New Players Only',
+    vip: 'VIP Players Only',
+    active: 'Active Players',
+  };
+  const statusLabels: Record<string, string> = {
+    active: 'Active',
+    paused: 'Paused',
+  };
+
   return (
     <>
       <Input
@@ -38,11 +78,24 @@ export default function BonusForm({
           defaultValue={defaults.type}
           {...register('type')}
         >
-          <option value="deposit">Deposit Match</option>
-          <option value="rakeback">Rakeback</option>
-          <option value="ticket">Tournament Tickets</option>
-          <option value="rebate">Rebate</option>
-          <option value="first-deposit">First Deposit Only</option>
+          {isLoading ? (
+            <option disabled>Loading…</option>
+          ) : error ? (
+            <>
+              <option disabled>Failed to load options</option>
+              {types.map((t) => (
+                <option key={t} value={t}>
+                  {typeLabels[t] ?? t}
+                </option>
+              ))}
+            </>
+          ) : (
+            types.map((t) => (
+              <option key={t} value={t}>
+                {typeLabels[t] ?? t}
+              </option>
+            ))
+          )}
         </select>
       </div>
 
@@ -104,10 +157,24 @@ export default function BonusForm({
             defaultValue={defaults.eligibility}
             {...register('eligibility')}
           >
-            <option value="all">All Players</option>
-            <option value="new">New Players Only</option>
-            <option value="vip">VIP Players Only</option>
-            <option value="active">Active Players</option>
+            {isLoading ? (
+              <option disabled>Loading…</option>
+            ) : error ? (
+              <>
+                <option disabled>Failed to load options</option>
+                {eligibilities.map((e) => (
+                  <option key={e} value={e}>
+                    {eligibilityLabels[e] ?? e}
+                  </option>
+                ))}
+              </>
+            ) : (
+              eligibilities.map((e) => (
+                <option key={e} value={e}>
+                  {eligibilityLabels[e] ?? e}
+                </option>
+              ))
+            )}
           </select>
         </div>
 
@@ -121,8 +188,24 @@ export default function BonusForm({
             defaultValue={defaults.status}
             {...register('status')}
           >
-            <option value="active">Active</option>
-            <option value="paused">Paused</option>
+            {isLoading ? (
+              <option disabled>Loading…</option>
+            ) : error ? (
+              <>
+                <option disabled>Failed to load options</option>
+                {statuses.map((s) => (
+                  <option key={s} value={s}>
+                    {statusLabels[s] ?? s}
+                  </option>
+                ))}
+              </>
+            ) : (
+              statuses.map((s) => (
+                <option key={s} value={s}>
+                  {statusLabels[s] ?? s}
+                </option>
+              ))
+            )}
           </select>
         </div>
       </div>
