@@ -368,6 +368,9 @@ export const GameTypeSchema = z.enum([
 ]);
 export type GameType = z.infer<typeof GameTypeSchema>;
 
+export const GameTypeListSchema = z.array(GameTypeSchema);
+export type GameTypeList = z.infer<typeof GameTypeListSchema>;
+
 export const TableSchema = z.object({
   id: z.string(),
   tableName: z.string(),

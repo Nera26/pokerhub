@@ -1,19 +1,53 @@
 'use client';
 import type { GameType } from '@shared/types';
+import InlineError from '../ui/InlineError';
+import { useGameTypes } from '@/hooks/useGameTypes';
+import { useApiError } from '@/hooks/useApiError';
 
 interface GameTabsProps {
   gameType: GameType;
   setGameType: (id: GameType) => void;
 }
 
-const tabs: { id: GameType; label: string }[] = [
-  { id: 'texas', label: "Texas Hold'em" },
-  { id: 'omaha', label: 'Omaha' },
-  { id: 'allin', label: 'All-in or Fold' },
-  { id: 'tournaments', label: 'Tournaments' },
-];
+const LABELS: Record<GameType, string> = {
+  texas: "Texas Hold'em",
+  omaha: 'Omaha',
+  allin: 'All-in or Fold',
+  tournaments: 'Tournaments',
+};
 
 export default function GameTabs({ gameType, setGameType }: GameTabsProps) {
+  const { data, isLoading, error } = useGameTypes();
+  const errorMessage = useApiError(error);
+
+  if (isLoading) {
+    return (
+      <section className="mb-6 md:mb-8">
+        <p className="text-center" role="status">
+          Loading game types...
+        </p>
+      </section>
+    );
+  }
+
+  if (errorMessage) {
+    return (
+      <section className="mb-6 md:mb-8">
+        <InlineError message={errorMessage} />
+      </section>
+    );
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <section className="mb-6 md:mb-8">
+        <p className="text-center text-text-secondary">No games available</p>
+      </section>
+    );
+  }
+
+  const tabs = data.map((id) => ({ id, label: LABELS[id] ?? id }));
+
   return (
     <section className="mb-6 md:mb-8">
       <nav
