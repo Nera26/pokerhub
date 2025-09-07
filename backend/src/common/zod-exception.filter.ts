@@ -1,5 +1,10 @@
-import { ExceptionFilter, Catch, ArgumentsHost, BadRequestException } from '@nestjs/common';
-import { ZodError } from 'zod';
+import {
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  BadRequestException,
+} from '@nestjs/common';
+import { ZodError } from '@shared/types';
 
 @Catch(ZodError)
 export class ZodExceptionFilter implements ExceptionFilter {

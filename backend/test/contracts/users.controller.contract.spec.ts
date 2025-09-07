@@ -6,7 +6,7 @@ import { UsersService } from '../../src/users/users.service';
 import { AuthGuard } from '../../src/auth/auth.guard';
 import { AdminGuard } from '../../src/auth/admin.guard';
 import { SelfGuard } from '../../src/auth/self.guard';
-import { CreateUserRequest, User, UserSchema } from '../../src/schemas/users';
+import { CreateUserRequest, User, UserSchema } from '@shared/types';
 
 describe('Contract: UsersController', () => {
   let app: INestApplication;

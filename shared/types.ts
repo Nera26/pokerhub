@@ -1,4 +1,6 @@
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
+
+export { ZodError };
 
 export * from './wallet.schema';
 

@@ -1,6 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { trace, Span } from '@opentelemetry/api';
-import { CreateUserRequest, UpdateUserRequest, User } from '../schemas/users';
+import { CreateUserRequest, UpdateUserRequest, User } from '@shared/types';
 import { UserRepository } from './user.repository';
 import { QueryFailedError } from 'typeorm';
 
