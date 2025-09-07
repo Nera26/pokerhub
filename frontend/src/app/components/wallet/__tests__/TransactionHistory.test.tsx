@@ -14,7 +14,7 @@ import { buildTransactionColumns } from '@/app/components/common/transactionColu
 import TransactionHistory from '../TransactionHistory';
 
 describe('TransactionHistory', () => {
-  it('renders provided transactions', () => {
+  it('renders provided transactions without filters or export button', () => {
     const transactions = [
       {
         id: '1',
@@ -37,6 +37,8 @@ describe('TransactionHistory', () => {
     expect(screen.getByText('+$50.00')).toBeInTheDocument();
     expect(screen.getByText('Withdraw')).toBeInTheDocument();
     expect(screen.getByText('-$20.00')).toBeInTheDocument();
+    expect(screen.queryByText('Export CSV')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Start date')).not.toBeInTheDocument();
   });
 
   it('builds columns with expected options', () => {
@@ -64,3 +66,4 @@ describe('TransactionHistory', () => {
     ).toBeInTheDocument();
   });
 });
+
