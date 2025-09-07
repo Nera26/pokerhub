@@ -33,8 +33,7 @@ import {
   fetchBalances,
   fetchTransactionsLog,
 } from '@/lib/api/wallet';
-import { useIban } from '@/hooks/useIban';
-import { useIbanHistory } from '@/hooks/useIbanHistory';
+import { useIban, useIbanHistory } from '@/hooks/wallet';
 import type { IbanHistoryEntry } from '@shared/wallet.schema';
 /* -------------------------------- Types -------------------------------- */
 type UserStatus = 'Active' | 'Frozen' | 'Banned';
