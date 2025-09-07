@@ -59,6 +59,7 @@ export default function TournamentList<T extends Tournament>({
             maxPlayers={t.players.max}
             onRegister={onRegister}
             onViewDetails={onViewDetails}
+            registered={t.registered}
           />
         </li>
       )}

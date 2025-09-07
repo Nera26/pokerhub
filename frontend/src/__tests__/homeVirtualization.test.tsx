@@ -1,8 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import HomePageClient from '@/app/(site)/HomePageClient';
-import { useTables, useTournaments } from '@/hooks/useLobbyData';
+import { useTables, useTournaments, useCTAs } from '@/hooks/useLobbyData';
 
 jest.mock('@/hooks/useLobbyData');
+jest.mock('@/hooks/useGameTypes', () => ({
+  useGameTypes: () => ({ data: [{ id: 'texas', label: 'Texas' }, { id: 'tournaments', label: 'Tournaments' }], error: null, isLoading: false }),
+}));
 jest.mock('next/dynamic', () => {
   const dynamic = () => {
     const DynamicComponent = () => null;
@@ -81,6 +84,11 @@ describe('home page virtualization', () => {
     });
     (useTournaments as jest.Mock).mockReturnValue({
       data: mockTournaments,
+      error: null,
+      isLoading: false,
+    });
+    (useCTAs as jest.Mock).mockReturnValue({
+      data: [],
       error: null,
       isLoading: false,
     });

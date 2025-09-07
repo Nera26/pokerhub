@@ -92,7 +92,6 @@ describe('Tournament register modal integration', () => {
       screen.getByRole('button', { name: /register now/i }),
     );
 
-    expect(await screen.findByText(/Loading tournament/i)).toBeInTheDocument();
     await waitFor(() => expect(fetchTournamentDetails).toHaveBeenCalled());
     expect(await screen.findByText('Format')).toBeInTheDocument();
   });

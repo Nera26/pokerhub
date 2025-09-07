@@ -4,6 +4,10 @@ import userEvent from '@testing-library/user-event';
 import HomePageClient from '@/app/(site)/HomePageClient';
 import type { ResponseLike } from '@/lib/api/client';
 
+jest.mock('@/hooks/useGameTypes', () => ({
+  useGameTypes: () => ({ data: [{ id: 'tournaments', label: 'Tournaments' }, { id: 'texas', label: 'Texas' }], error: null, isLoading: false }),
+}));
+
 jest.mock('@/app/components/common/chat/ChatWidget', () => {
   const ChatWidgetMock = () => <div />;
   ChatWidgetMock.displayName = 'ChatWidgetMock';

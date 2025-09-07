@@ -6,7 +6,7 @@ import LiveTableCard, {
 import CashGameList from '@/app/components/home/CashGameList';
 import TournamentList from '@/components/TournamentList';
 import useVirtualizedList from '@/hooks/useVirtualizedList';
-import { useTables, useTournaments } from '@/hooks/useLobbyData';
+import { useTables, useTournaments, useCTAs } from '@/hooks/useLobbyData';
 import type { Table, Tournament } from '@/hooks/useLobbyData';
 import type { GameType } from '@shared/types';
 
@@ -20,6 +20,11 @@ jest.mock('@/app/components/common/chat/ChatWidget', () => () => <div />);
 describe('home accessibility', () => {
   beforeEach(() => {
     (useVirtualizedList as jest.Mock).mockReset();
+    (useCTAs as jest.Mock).mockReturnValue({
+      data: [],
+      error: null,
+      isLoading: false,
+    });
   });
   it('LiveTableCard hides overlay from assistive tech', async () => {
     const props: LiveTableCardProps = {

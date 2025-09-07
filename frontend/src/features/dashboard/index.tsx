@@ -23,6 +23,7 @@ const ALL_TABS: SidebarTab[] = [
   'audit',
   'tables',
   'tournaments',
+  'ctas',
   'bonus',
   'broadcast',
   'messages',
@@ -37,6 +38,7 @@ const titleMap: Partial<Record<SidebarTab, string>> = {
   balance: 'Balance & Transactions',
   tables: 'Manage Tables',
   tournaments: 'Manage Tournaments',
+  ctas: 'CTA Manager',
   bonus: 'Bonus Manager',
   broadcast: 'Broadcast Tool',
   analytics: 'Analytics',
@@ -80,6 +82,11 @@ const TAB_CONFIG: Record<
     loader: () => import('@/app/components/dashboard/ManageTournaments'),
     loading: <div>Loading tournaments...</div>,
     error: <div>Error loading tournaments.</div>,
+  },
+  ctas: {
+    loader: () => import('@/app/components/dashboard/CTAForm'),
+    loading: <div>Loading CTAs...</div>,
+    error: <div>Error loading CTAs.</div>,
   },
   bonus: {
     loader: () => import('@/app/components/dashboard/BonusManager'),
