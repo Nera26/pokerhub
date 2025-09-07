@@ -1,5 +1,7 @@
 import { useRef, type Key, type ReactNode } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 
 export interface Column<T> {
   header: ReactNode;
@@ -8,9 +10,19 @@ export interface Column<T> {
   cellClassName?: string;
 }
 
+export interface Action<T> {
+  label?: string;
+  icon?: IconDefinition;
+  onClick: (row: T) => void;
+  className: string;
+  title?: string;
+  ariaLabel?: string;
+}
+
 export interface TransactionHistoryTableProps<T> {
   data: T[];
   columns: Column<T>[];
+  actions?: Action<T>[];
   getRowKey?: (row: T, index: number) => Key;
   estimateSize?: number;
   containerClassName?: string;
@@ -23,6 +35,7 @@ export default function TransactionHistoryTable<T>({
   data,
   columns,
   getRowKey,
+  actions,
   estimateSize = 56,
   containerClassName = 'overflow-auto max-h-96',
   tableClassName = 'w-full',
@@ -48,6 +61,11 @@ export default function TransactionHistoryTable<T>({
                   {col.header}
                 </th>
               ))}
+              {actions && actions.length > 0 && (
+                <th className="text-left py-3 px-2 text-text-secondary">
+                  Action
+                </th>
+              )}
             </tr>
           </thead>
           <tbody
@@ -86,6 +104,27 @@ export default function TransactionHistoryTable<T>({
                           {col.cell(row)}
                         </td>
                       ))}
+                      {actions && actions.length > 0 && (
+                        <td className="py-3 px-2">
+                          <div className="flex gap-1">
+                            {actions.map((action, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => action.onClick(row)}
+                                className={action.className}
+                                title={action.title}
+                                aria-label={action.ariaLabel}
+                              >
+                                {action.icon ? (
+                                  <FontAwesomeIcon icon={action.icon} />
+                                ) : (
+                                  action.label
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })
@@ -99,6 +138,27 @@ export default function TransactionHistoryTable<T>({
                         {col.cell(row)}
                       </td>
                     ))}
+                    {actions && actions.length > 0 && (
+                      <td className="py-3 px-2">
+                        <div className="flex gap-1">
+                          {actions.map((action, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => action.onClick(row)}
+                              className={action.className}
+                              title={action.title}
+                              aria-label={action.ariaLabel}
+                            >
+                              {action.icon ? (
+                                <FontAwesomeIcon icon={action.icon} />
+                              ) : (
+                                action.label
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
           </tbody>
