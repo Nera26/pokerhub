@@ -1,20 +1,18 @@
 import { WalletService } from './wallet.service';
+import { createQueue } from '../redis/queue';
+import { Worker } from 'bullmq';
 
 export async function startPendingDepositWorker(wallet: WalletService) {
-  const bull = await import('bullmq');
-  const connection = {
-    host: process.env.REDIS_HOST ?? 'localhost',
-    port: Number(process.env.REDIS_PORT ?? 6379),
-  };
-  new bull.Worker(
+  const queue = await createQueue('pending-deposit');
+  new Worker(
     'pending-deposit',
     async (job) => {
       await wallet.markActionRequiredIfPending(job.data.id, job.id);
     },
-    { connection, removeOnComplete: { count: 1000 } },
+    { connection: queue.opts.connection, removeOnComplete: { count: 1000 } },
   );
 
-  const expireQueue = new bull.Queue('pending-deposit-expire', { connection });
+  const expireQueue = await createQueue('pending-deposit-expire');
   await expireQueue.add(
     'expire',
     {},
@@ -26,11 +24,11 @@ export async function startPendingDepositWorker(wallet: WalletService) {
     },
   );
 
-  new bull.Worker(
+  new Worker(
     'pending-deposit-expire',
     async () => {
       await wallet.rejectExpiredPendingDeposits();
     },
-    { connection, removeOnComplete: { count: 1000 } },
+    { connection: expireQueue.opts.connection, removeOnComplete: { count: 1000 } },
   );
 }

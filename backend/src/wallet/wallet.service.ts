@@ -11,6 +11,7 @@ import { EventPublisher } from '../events/events.service';
 import Redis from 'ioredis';
 import { metrics, trace, SpanStatusCode } from '@opentelemetry/api';
 import type { Queue } from 'bullmq';
+import { createQueue } from '../redis/queue';
 import {
   PaymentProviderService,
   ProviderStatus,
@@ -77,26 +78,16 @@ export class WalletService {
   private pendingQueue?: Queue;
 
   private async getQueue(): Promise<Queue> {
-    if (this.payoutQueue) return this.payoutQueue;
-    const bull = await import('bullmq');
-    this.payoutQueue = new bull.Queue('payout', {
-      connection: {
-        host: process.env.REDIS_HOST ?? 'localhost',
-        port: Number(process.env.REDIS_PORT ?? 6379),
-      },
-    });
+    if (!this.payoutQueue) {
+      this.payoutQueue = await createQueue('payout');
+    }
     return this.payoutQueue;
   }
 
   private async getPendingQueue(): Promise<Queue> {
-    if (this.pendingQueue) return this.pendingQueue;
-    const bull = await import('bullmq');
-    this.pendingQueue = new bull.Queue('pending-deposit', {
-      connection: {
-        host: process.env.REDIS_HOST ?? 'localhost',
-        port: Number(process.env.REDIS_PORT ?? 6379),
-      },
-    });
+    if (!this.pendingQueue) {
+      this.pendingQueue = await createQueue('pending-deposit');
+    }
     return this.pendingQueue;
   }
 

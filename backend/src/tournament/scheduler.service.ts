@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Queue } from 'bullmq';
+import { createQueue } from '../redis/queue';
 
 /**
  * TournamentScheduler wraps BullMQ queues for scheduling tournament events
@@ -13,15 +14,7 @@ export class TournamentScheduler {
   private async getQueue(name: string): Promise<Queue> {
     const existing = this.queues.get(name);
     if (existing) return existing;
-
-    const bull = await import('bullmq');
-    const queue = new bull.Queue(name, {
-      connection: {
-        host: process.env.REDIS_HOST ?? 'localhost',
-        port: Number(process.env.REDIS_PORT ?? 6379),
-      },
-    });
-
+    const queue = await createQueue(name);
     this.queues.set(name, queue);
     return queue;
   }
