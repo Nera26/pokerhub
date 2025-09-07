@@ -1,8 +1,7 @@
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
-import { useIban } from '@/hooks/useIban';
-import { useIbanHistory } from '@/hooks/useIbanHistory';
+import { useIban, useIbanHistory } from '@/hooks/wallet';
 import type { ApiError } from '@/lib/api/client';
 
 describe('useIban', () => {
@@ -32,7 +31,7 @@ describe('useIban', () => {
         holder: '',
         instructions: '',
         updatedBy: '',
-        updatedAt: '',
+        updatedAt: '2024-01-01T00:00:00Z',
       }),
     } as unknown as Response);
     global.fetch = fetchMock as unknown as typeof fetch;
@@ -48,7 +47,7 @@ describe('useIban', () => {
       holder: '',
       instructions: '',
       updatedBy: '',
-      updatedAt: '',
+      updatedAt: '2024-01-01T00:00:00Z',
     });
   });
 
