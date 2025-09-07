@@ -2519,10 +2519,18 @@ components:
     GameType:
       type: string
       enum: [texas, omaha, allin, tournaments]
+    GameTypeWithLabel:
+      type: object
+      required: [id, label]
+      properties:
+        id:
+          $ref: '#/components/schemas/GameType'
+        label:
+          type: string
     GameTypeList:
       type: array
       items:
-        $ref: '#/components/schemas/GameType'
+        $ref: '#/components/schemas/GameTypeWithLabel'
     CreateTableRequest:
       type: object
       properties:

@@ -1,7 +1,6 @@
-import { z } from 'zod';
 import { apiClient } from './client';
-import { GameTypeSchema, type GameType } from '@shared/types';
+import { GameTypeListSchema, type GameTypeList } from '@shared/types';
 
-export async function fetchGameTypes({ signal }: { signal?: AbortSignal } = {}): Promise<GameType[]> {
-  return apiClient('/api/game-types', z.array(GameTypeSchema), { signal });
+export async function fetchGameTypes({ signal }: { signal?: AbortSignal } = {}): Promise<GameTypeList> {
+  return apiClient('/api/game-types', GameTypeListSchema, { signal });
 }

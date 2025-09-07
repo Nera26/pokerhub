@@ -9,13 +9,6 @@ interface GameTabsProps {
   setGameType: (id: GameType) => void;
 }
 
-const LABELS: Record<GameType, string> = {
-  texas: "Texas Hold'em",
-  omaha: 'Omaha',
-  allin: 'All-in or Fold',
-  tournaments: 'Tournaments',
-};
-
 export default function GameTabs({ gameType, setGameType }: GameTabsProps) {
   const { data, isLoading, error } = useGameTypes();
   const errorMessage = useApiError(error);
@@ -46,7 +39,7 @@ export default function GameTabs({ gameType, setGameType }: GameTabsProps) {
     );
   }
 
-  const tabs = data.map((id) => ({ id, label: LABELS[id] ?? id }));
+  const tabs = data;
 
   return (
     <section className="mb-6 md:mb-8">
