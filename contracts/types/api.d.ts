@@ -226,6 +226,19 @@ export interface paths {
       };
     };
   };
+  "/ctas": {
+    /** Get lobby CTAs */
+    get: {
+      responses: {
+        /** @description CTA list */
+        200: {
+          content: {
+            "application/json": components["schemas"]["CTA"][];
+          };
+        };
+      };
+    };
+  };
   "/tables": {
     /** Get lobby tables */
     get: {
@@ -1628,6 +1641,12 @@ export interface components {
     };
     MessageResponse: {
       message: string;
+    };
+    CTA: {
+      id: string;
+      label: string;
+      href: string;
+      variant: string;
     };
     AdminMessage: {
       id: number;

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.10.1
+  version: 2.11.0
 paths:
   /status:
     get:
@@ -192,6 +192,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusResponse'
+  /ctas:
+    get:
+      summary: Get lobby CTAs
+      responses:
+        '200':
+          description: CTA list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CTA'
   /tables:
     get:
       summary: Get lobby tables
@@ -1604,6 +1616,22 @@ components:
           type: string
       required:
         - message
+    CTA:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        href:
+          type: string
+        variant:
+          type: string
+      required:
+        - id
+        - label
+        - href
+        - variant
     AdminMessage:
       type: object
       properties:

@@ -1,14 +1,10 @@
-import {
-  MiddlewareConsumer,
-  Module,
-  NestModule,
-} from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { ThrottlerModule } from '@nestjs/throttler';
 import helmet from 'helmet';
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { APP_FILTER } from '@nestjs/core';
 
 import {
@@ -30,6 +26,7 @@ import { validationSchema } from './config/env.validation';
 
 import { AppController } from './app.controller';
 import { AdminMessagesController } from './routes/admin-messages.controller';
+import { CtasController } from './routes/ctas.controller';
 import { AppService } from './app.service';
 import { API_CONTRACT_VERSION } from '@shared/constants';
 import { ZodExceptionFilter } from './common/zod-exception.filter';
@@ -59,7 +56,7 @@ import { BroadcastsModule } from './broadcasts/broadcasts.module';
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema,
-  load: [
+      load: [
         databaseConfig,
         redisConfig,
         gcsConfig,
@@ -119,7 +116,7 @@ import { BroadcastsModule } from './broadcasts/broadcasts.module';
     MetricsModule,
     BroadcastsModule,
   ],
-  controllers: [AppController, AdminMessagesController],
+  controllers: [AppController, AdminMessagesController, CtasController],
   providers: [
     AppService,
     {

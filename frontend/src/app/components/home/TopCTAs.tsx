@@ -1,17 +1,36 @@
 'use client';
 
 import Link from 'next/link';
-import Button from '../ui/Button';
+import Button, { type ButtonVariant } from '../ui/Button';
+import { useCTAs } from '@/hooks/useLobbyData';
 
 export default function TopCTAs() {
+  const { data, isLoading, error } = useCTAs();
+
+  if (isLoading) {
+    return (
+      <div className="flex gap-4 mb-6">
+        <div className="h-12 flex-1 rounded-xl bg-card-bg animate-pulse" />
+        <div className="h-12 flex-1 rounded-xl bg-card-bg animate-pulse" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="flex gap-4 mb-6">
+        <div className="h-12 flex-1 rounded-xl bg-card-bg" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex gap-4 mb-6">
-      <Link href="#cash-games-panel">
-        <Button variant="primary">Join a Live Table</Button>
-      </Link>
-      <Link href="#tournaments-panel">
-        <Button variant="outline">View Tournaments</Button>
-      </Link>
+      {data.map((cta) => (
+        <Link key={cta.id} href={cta.href}>
+          <Button variant={cta.variant as ButtonVariant}>{cta.label}</Button>
+        </Link>
+      ))}
     </div>
   );
 }

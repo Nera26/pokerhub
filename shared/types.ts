@@ -38,6 +38,13 @@ export const MessageResponseSchema = z.object({
 export type MessageResponse = z.infer<typeof MessageResponseSchema>;
 
 export {
+  CTAVariantSchema,
+  CTASchema,
+  CTAsResponseSchema,
+} from '../backend/src/schemas/ctas';
+export type { CTA, CTAsResponse } from '../backend/src/schemas/ctas';
+
+export {
   UserProfileSchema,
 } from '../backend/src/schemas/users';
 export type { UserProfile } from '../backend/src/schemas/users';
