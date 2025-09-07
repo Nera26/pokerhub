@@ -23,6 +23,4 @@ Key soak test outputs are exported to Cloud Monitoring for long-term visibility.
 
 Refer to related runbooks for remediation steps:
 
-- [Soak Testing](./soak-testing.md)
-- [Soak Harness](./soak-harness.md)
 - [GC Pauses](./gc-pauses.md)

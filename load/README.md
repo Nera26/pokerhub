@@ -16,7 +16,6 @@ This directory contains load test scripts for PokerHub.
 - `k6-chaos-swarm.js` – swarm 80 k sockets across 10 k tables; pair with `toxiproxy.sh` for 5 % loss and 200 ms jitter.
 - `k6-ws-reconnect.js` – k6 scenario validating reconnect success and ACK latency under Toxiproxy impairments.
 - `backend/src/game/load-harness.ts` – spawns bots and randomly kills `room.worker` processes, replaying table state from `HandLog` after each crash.
-- `backend/src/game/soak-harness.ts` – 24 h variant that periodically terminates random workers and asserts replay consistency.
 
 All scripts assume the server is reachable via `ws://localhost:4000/game` by default.
 
@@ -141,6 +140,4 @@ artillery run load/artillery-ws-packet-loss.yml --overrides '{"phases":[{"durati
 k6 run -e SOCKETS=100 -e TABLES=10 -e DURATION=30s load/k6-ws-soak.js
 # Load harness with random worker restarts
 npx ts-node backend/src/game/load-harness.ts
-# Soak harness with random worker restarts
-npx ts-node backend/src/game/soak-harness.ts
 ```
