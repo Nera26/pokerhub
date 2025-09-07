@@ -9,20 +9,18 @@ export const AmountSchema = z.object({
 
 export type Amount = z.infer<typeof AmountSchema>;
 
-export const WithdrawSchema = z.object({
+export const AmountDeviceSchema = z.object({
   amount: z.number().int().positive(),
   deviceId: z.string(),
   currency: CurrencySchema,
 });
 
+export type AmountDeviceRequest = z.infer<typeof AmountDeviceSchema>;
+
+export const WithdrawSchema = AmountDeviceSchema;
 export type WithdrawRequest = z.infer<typeof WithdrawSchema>;
 
-export const DepositSchema = z.object({
-  amount: z.number().int().positive(),
-  deviceId: z.string(),
-  currency: CurrencySchema,
-});
-
+export const DepositSchema = AmountDeviceSchema;
 export type DepositRequest = z.infer<typeof DepositSchema>;
 
 export const TxSchema = z.object({

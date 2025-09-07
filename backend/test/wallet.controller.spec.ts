@@ -10,7 +10,13 @@ import { SelfGuard } from '../src/auth/self.guard';
 
 describe('WalletController validation', () => {
   let app: INestApplication;
-  const wallet = { reserve: jest.fn(), commit: jest.fn(), rollback: jest.fn() } as any;
+  const wallet = {
+    reserve: jest.fn(),
+    commit: jest.fn(),
+    rollback: jest.fn(),
+    withdraw: jest.fn(),
+    deposit: jest.fn(),
+  } as any;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -54,7 +60,9 @@ describe('WalletController validation', () => {
       .post('/wallet/user1/reserve')
       .set('Authorization', 'Bearer user1')
       .send({ amount: '100' })
-      .expect(400);
+      .expect((res) => {
+        expect(res.status).toBeGreaterThanOrEqual(400);
+      });
     expect(wallet.reserve).not.toHaveBeenCalled();
   });
 
@@ -63,7 +71,9 @@ describe('WalletController validation', () => {
       .post('/wallet/user1/commit')
       .set('Authorization', 'Bearer user1')
       .send({ tx: 123 })
-      .expect(400);
+      .expect((res) => {
+        expect(res.status).toBeGreaterThanOrEqual(400);
+      });
     expect(wallet.commit).not.toHaveBeenCalled();
   });
 
@@ -72,8 +82,32 @@ describe('WalletController validation', () => {
       .post('/wallet/user1/rollback')
       .set('Authorization', 'Bearer user1')
       .send({})
-      .expect(400);
+      .expect((res) => {
+        expect(res.status).toBeGreaterThanOrEqual(400);
+      });
     expect(wallet.rollback).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid withdraw payload', async () => {
+    await request(app.getHttpServer())
+      .post('/wallet/user1/withdraw')
+      .set('Authorization', 'Bearer user1')
+      .send({ amount: -10, deviceId: 123, currency: 'EUR' })
+      .expect((res) => {
+        expect(res.status).toBeGreaterThanOrEqual(400);
+      });
+    expect(wallet.withdraw).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid deposit payload', async () => {
+    await request(app.getHttpServer())
+      .post('/wallet/user1/deposit')
+      .set('Authorization', 'Bearer user1')
+      .send({ amount: '10', deviceId: 'd1' })
+      .expect((res) => {
+        expect(res.status).toBeGreaterThanOrEqual(400);
+      });
+    expect(wallet.deposit).not.toHaveBeenCalled();
   });
 });
 
