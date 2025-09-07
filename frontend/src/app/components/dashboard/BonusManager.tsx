@@ -27,10 +27,10 @@ import {
 
 import Card, { CardContent, CardTitle } from '../ui/Card';
 import Button from '../ui/Button';
-import Input from '../ui/Input';
 import Modal from '../ui/Modal';
 import ToastNotification from '../ui/ToastNotification';
 import Tooltip from '../ui/Tooltip';
+import BonusForm from './forms/BonusForm';
 
 type BonusStatus = 'active' | 'paused';
 type StatusFilter = BonusStatus | 'all' | 'expired';
@@ -46,8 +46,18 @@ const bonusFormSchema = z.object({
   eligibility: z.enum(['all', 'new', 'vip', 'active']),
   status: z.enum(['active', 'paused']),
 });
+export type BonusFormValues = z.infer<typeof bonusFormSchema>;
 
-type BonusFormValues = z.infer<typeof bonusFormSchema>;
+const formDefaults: BonusFormValues = {
+  name: '',
+  type: 'deposit',
+  description: '',
+  bonusPercent: undefined,
+  maxBonusUsd: undefined,
+  expiryDate: '',
+  eligibility: 'all',
+  status: 'active',
+};
 
 function dateLabel(iso?: string) {
   if (!iso) return 'Ongoing';
@@ -88,16 +98,7 @@ export default function BonusManager() {
     formState: { errors: createErrors },
   } = useForm<BonusFormValues>({
     resolver: zodResolver(bonusFormSchema),
-    defaultValues: {
-      name: '',
-      type: 'deposit',
-      description: '',
-      bonusPercent: undefined,
-      maxBonusUsd: undefined,
-      expiryDate: '',
-      eligibility: 'all',
-      status: 'active',
-    },
+    defaultValues: formDefaults,
   });
 
   const {
@@ -107,6 +108,7 @@ export default function BonusManager() {
     formState: { errors: editErrors },
   } = useForm<BonusFormValues>({
     resolver: zodResolver(bonusFormSchema),
+    defaultValues: formDefaults,
   });
 
   const [toast, setToast] = useState<{
@@ -425,99 +427,12 @@ export default function BonusManager() {
           <Card className="border border-dark">
             <CardContent>
               <form className="space-y-6" onSubmit={createPromotion}>
-                <Input
-                  label="Promotion Name"
-                  placeholder="Enter promotion name..."
-                  error={createErrors.name?.message}
-                  {...registerCreate('name')}
+                <BonusForm
+                  register={registerCreate}
+                  errors={createErrors}
+                  defaults={formDefaults}
+                  statusLabel="Initial Status"
                 />
-
-                <div>
-                  <label className="block text-sm font-semibold mb-2">
-                    Promotion Type
-                  </label>
-                  <select
-                    className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 text-text-primary focus:border-accent-yellow focus:outline-none"
-                    {...registerCreate('type')}
-                  >
-                    <option value="deposit">Deposit Match</option>
-                    <option value="rakeback">Rakeback</option>
-                    <option value="ticket">Tournament Tickets</option>
-                    <option value="rebate">Rebate</option>
-                    <option value="first-deposit">First Deposit Only</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    rows={3}
-                    placeholder="Enter promotion description..."
-                    className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 text-text-primary focus:border-accent-yellow focus:outline-none resize-none"
-                    {...registerCreate('description')}
-                  />
-                  {createErrors.description && (
-                    <p className="text-xs text-danger-red mt-1">
-                      {createErrors.description.message}
-                    </p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="Bonus Amount (%)"
-                    type="number"
-                    placeholder="0"
-                    error={createErrors.bonusPercent?.message}
-                    {...registerCreate('bonusPercent', { valueAsNumber: true })}
-                  />
-                  <Input
-                    label="Max $"
-                    type="number"
-                    placeholder="0"
-                    error={createErrors.maxBonusUsd?.message}
-                    {...registerCreate('maxBonusUsd', { valueAsNumber: true })}
-                  />
-                </div>
-
-                <Input
-                  label="Expiry Date"
-                  type="date"
-                  error={createErrors.expiryDate?.message}
-                  {...registerCreate('expiryDate')}
-                />
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold mb-2">
-                      Player Eligibility
-                    </label>
-                    <select
-                      className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 text-text-primary focus:border-accent-yellow focus:outline-none"
-                      {...registerCreate('eligibility')}
-                    >
-                      <option value="all">All Players</option>
-                      <option value="new">New Players Only</option>
-                      <option value="vip">VIP Players Only</option>
-                      <option value="active">Active Players</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold mb-2">
-                      Initial Status
-                    </label>
-                    <select
-                      className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 text-text-primary focus:border-accent-yellow focus:outline-none"
-                      {...registerCreate('status')}
-                    >
-                      <option value="active">Active</option>
-                      <option value="paused">Paused</option>
-                    </select>
-                  </div>
-                </div>
 
                 <Button type="submit" className="w-full">
                   <FontAwesomeIcon icon={faPlus} />
@@ -572,93 +487,20 @@ export default function BonusManager() {
 
         {selected && (
           <form className="space-y-6" onSubmit={saveEdit}>
-            <Input
-              label="Promotion Name"
-              error={editErrors.name?.message}
-              {...registerEdit('name')}
+            <BonusForm
+              register={registerEdit}
+              errors={editErrors}
+              defaults={{
+                name: selected.name,
+                type: selected.type,
+                description: selected.description,
+                bonusPercent: selected.bonusPercent,
+                maxBonusUsd: selected.maxBonusUsd,
+                expiryDate: selected.expiryDate ?? '',
+                eligibility: selected.eligibility,
+                status: selected.status,
+              }}
             />
-
-            <div>
-              <label className="block text-sm font-semibold mb-2">Type</label>
-              <select
-                className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 text-text-primary focus:border-accent-yellow focus:outline-none"
-                {...registerEdit('type')}
-              >
-                <option value="deposit">Deposit Match</option>
-                <option value="rakeback">Rakeback</option>
-                <option value="ticket">Tournament Tickets</option>
-                <option value="rebate">Rebate</option>
-                <option value="first-deposit">First Deposit Only</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold mb-2">
-                Description
-              </label>
-              <textarea
-                rows={3}
-                className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 text-text-primary focus:border-accent-yellow focus:outline-none resize-none"
-                {...registerEdit('description')}
-              />
-              {editErrors.description && (
-                <p className="text-xs text-danger-red mt-1">
-                  {editErrors.description.message}
-                </p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="Bonus Amount (%)"
-                type="number"
-                error={editErrors.bonusPercent?.message}
-                {...registerEdit('bonusPercent', { valueAsNumber: true })}
-              />
-              <Input
-                label="Max Bonus ($)"
-                type="number"
-                error={editErrors.maxBonusUsd?.message}
-                {...registerEdit('maxBonusUsd', { valueAsNumber: true })}
-              />
-            </div>
-
-            <Input
-              label="Expiry Date"
-              type="date"
-              error={editErrors.expiryDate?.message}
-              {...registerEdit('expiryDate')}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold mb-2">
-                  Player Eligibility
-                </label>
-                <select
-                  className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 text-text-primary focus:border-accent-yellow focus:outline-none"
-                  {...registerEdit('eligibility')}
-                >
-                  <option value="all">All Players</option>
-                  <option value="new">New Players Only</option>
-                  <option value="vip">VIP Players Only</option>
-                  <option value="active">Active Players</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-2">
-                  Status
-                </label>
-                <select
-                  className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 text-text-primary focus:border-accent-yellow focus:outline-none"
-                  {...registerEdit('status')}
-                >
-                  <option value="active">Active</option>
-                  <option value="paused">Paused</option>
-                </select>
-              </div>
-            </div>
 
             <Button type="submit" className="w-full">
               <FontAwesomeIcon icon={faSave} />
