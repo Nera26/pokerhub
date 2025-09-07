@@ -1,32 +1,18 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
-import type { Socket } from 'socket.io';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { SessionService } from '../session/session.service';
-import { extractBearerToken } from './token.util';
+import { BaseAuthGuard } from './base.guard';
 
 @Injectable()
-export class AuthGuard implements CanActivate {
-  constructor(private readonly sessions: SessionService) {}
+export class AuthGuard extends BaseAuthGuard {
+  constructor(private readonly sessions: SessionService) {
+    super();
+  }
 
-  canActivate(context: ExecutionContext): boolean {
-    const token = extractBearerToken(context);
+  protected validate(token: string) {
     const userId = this.sessions.verifyAccessToken(token);
     if (!userId) {
       throw new UnauthorizedException();
     }
-
-    if (context.getType() === 'ws') {
-      const client = context.switchToWs().getClient<Socket & { data: any }>();
-      client.data = client.data ?? {};
-      client.data.userId = userId;
-    } else {
-      const req = context.switchToHttp().getRequest();
-      req.userId = userId;
-    }
-    return true;
+    return { userId };
   }
 }
