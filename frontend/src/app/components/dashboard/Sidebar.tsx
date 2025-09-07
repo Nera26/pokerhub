@@ -15,29 +15,32 @@ import {
   faClipboardList,
   faMagnifyingGlass,
 } from '@fortawesome/free-solid-svg-icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { fetchSidebarItems } from '@/lib/api/admin';
+import type { SidebarItem } from '@shared/types';
 
-export type SidebarTab =
-  | 'dashboard'
-  | 'users'
-  | 'balance'
-  | 'audit'
-  | 'tables'
-  | 'tournaments'
-  | 'bonus'
-  | 'broadcast'
-  | 'messages'
-  | 'analytics'
-  | 'review';
+export type SidebarTab = SidebarItem['id'];
 
-const items: {
-  id: SidebarTab;
-  label: string;
+interface SidebarItemWithIcon extends Omit<SidebarItem, 'icon'> {
   icon: IconDefinition;
-  disabled?: boolean;
-  path?: string;
-}[] = [
+}
+
+const ICON_MAP: Record<string, IconDefinition> = {
+  'chart-line': faChartLine,
+  users: faUsers,
+  'dollar-sign': faDollarSign,
+  'table-cells': faTableCells,
+  trophy: faTrophy,
+  gift: faGift,
+  bullhorn: faBullhorn,
+  envelope: faEnvelope,
+  'clipboard-list': faClipboardList,
+  'chart-bar': faChartBar,
+  'magnifying-glass': faMagnifyingGlass,
+};
+
+const DEFAULT_ITEMS: SidebarItemWithIcon[] = [
   { id: 'dashboard', label: 'Dashboard', icon: faChartLine },
   { id: 'users', label: 'Manage Users', icon: faUsers },
   { id: 'balance', label: 'Balance & Transactions', icon: faDollarSign },
@@ -70,6 +73,26 @@ export default function Sidebar({
   const sidebarOpen = open ?? internalOpen;
   const updateOpen = setOpen ?? setInternalOpen;
   const router = useRouter();
+  const [items, setItems] = useState<SidebarItemWithIcon[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    fetchSidebarItems()
+      .then((data) =>
+        setItems(
+          data.map((it) => ({
+            ...it,
+            icon: ICON_MAP[it.icon] ?? faChartLine,
+          })),
+        ),
+      )
+      .catch(() => {
+        setError(true);
+        setItems(DEFAULT_ITEMS);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const change = (id: SidebarTab, disabled?: boolean, path?: string) => {
     if (disabled) return;
@@ -82,12 +105,20 @@ export default function Sidebar({
     else setInternal(id);
     updateOpen(false);
   };
+  if (loading) {
+    return <div>Loading sidebar...</div>;
+  }
 
   return (
     <>
       <aside
         className={`h-full w-64 bg-card-bg border-r border-dark p-4 fixed inset-y-0 left-0 z-40 transform transition-transform md:static md:translate-x-0 md:shrink-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
+        {error && (
+          <div role="alert" className="text-red-500 mb-2">
+            Failed to load sidebar
+          </div>
+        )}
         <nav aria-label="Dashboard sidebar" className="space-y-2">
           {items.map((it) => {
             const isActive = current === it.id;

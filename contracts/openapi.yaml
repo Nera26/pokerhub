@@ -1192,6 +1192,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SecurityAlertsResponse'
+  /admin/sidebar:
+    get:
+      summary: Get admin sidebar items
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Sidebar items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SidebarItemsResponse'
   /admin/messages:
     get:
       summary: List user messages
@@ -3170,3 +3182,32 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/TransactionType'
+    SidebarItem:
+      type: object
+      properties:
+        id:
+          type: string
+          enum:
+            - dashboard
+            - users
+            - balance
+            - tables
+            - tournaments
+            - bonus
+            - broadcast
+            - messages
+            - audit
+            - analytics
+            - review
+        label:
+          type: string
+        icon:
+          type: string
+        path:
+          type: string
+        disabled:
+          type: boolean
+    SidebarItemsResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/SidebarItem'

@@ -56,6 +56,16 @@ export type {
   WithdrawalDecisionRequest,
 } from '../backend/src/schemas/withdrawals';
 
+export {
+  SIDEBAR_TABS,
+  SidebarItemSchema,
+  SidebarItemsResponseSchema,
+} from '../backend/src/schemas/admin';
+export type {
+  SidebarItem,
+  SidebarItemsResponse,
+} from '../backend/src/schemas/admin';
+
 export const DashboardMetricsSchema = z.object({
   online: z.number(),
   revenue: z.number(),

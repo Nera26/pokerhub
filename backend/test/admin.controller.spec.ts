@@ -55,4 +55,32 @@ describe('AdminController', () => {
       .expect(200)
       .expect([]);
   });
+
+  it('returns sidebar items', async () => {
+    await request(app.getHttpServer())
+      .get('/admin/sidebar')
+      .expect(200)
+      .expect([
+        { id: 'dashboard', label: 'Dashboard', icon: 'chart-line' },
+        { id: 'users', label: 'Manage Users', icon: 'users' },
+        {
+          id: 'balance',
+          label: 'Balance & Transactions',
+          icon: 'dollar-sign',
+        },
+        { id: 'tables', label: 'Manage Tables', icon: 'table-cells' },
+        { id: 'tournaments', label: 'Tournaments', icon: 'trophy' },
+        { id: 'bonus', label: 'Bonus Manager', icon: 'gift' },
+        { id: 'broadcast', label: 'Broadcast', icon: 'bullhorn' },
+        { id: 'messages', label: 'Messages', icon: 'envelope' },
+        { id: 'audit', label: 'Audit Logs', icon: 'clipboard-list' },
+        { id: 'analytics', label: 'Analytics', icon: 'chart-bar' },
+        {
+          id: 'review',
+          label: 'Collusion Review',
+          icon: 'magnifying-glass',
+          path: '/review',
+        },
+      ]);
+  });
 });
