@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.10.0
+  version: 2.10.1
 paths:
   /status:
     get:
@@ -131,6 +131,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+
+  /transactions/types:
+    get:
+      summary: List transaction types
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Transaction types
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionTypesResponse'
   /dashboard/metrics:
     get:
       summary: Get dashboard metrics
@@ -3118,3 +3131,17 @@ components:
         - text
         - urgent
         - sound
+    TransactionType:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+      required:
+        - id
+        - label
+    TransactionTypesResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/TransactionType'

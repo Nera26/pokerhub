@@ -32,6 +32,7 @@ import {
   rejectWithdrawal,
   fetchBalances,
   fetchTransactionsLog,
+  fetchTransactionTypes,
 } from '@/lib/api/wallet';
 import { useIban, useIbanHistory } from '@/hooks/wallet';
 import type { IbanHistoryEntry } from '@shared/wallet.schema';
@@ -179,6 +180,13 @@ export default function BalanceTransactions() {
 
   const [playerFilter, setPlayerFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+
+  const {
+    data: txnTypes = [],
+    isLoading: txnTypesLoading,
+    error: txnTypesError,
+  } = useQuery({ queryKey: ['transactionTypes'], queryFn: fetchTransactionTypes });
+  useApiError(txnTypesError);
 
   const {
     data: log = [],
@@ -751,7 +759,14 @@ export default function BalanceTransactions() {
 ) : log.length === 0 ? (
   <p>No transaction history.</p>
 ) : (
-  <TransactionHistory log={log} onExport={exportCSV} />
+  <TransactionHistory
+    log={log}
+    onExport={exportCSV}
+    types={txnTypes}
+    typesLoading={txnTypesLoading}
+    typesError={txnTypesError}
+    onTypeChange={setTypeFilter}
+  />
 )}
 
 /* Modals */
