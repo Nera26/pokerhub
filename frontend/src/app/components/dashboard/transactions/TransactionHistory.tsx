@@ -1,13 +1,9 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faDownload } from '@fortawesome/free-solid-svg-icons';
 import { useQuery } from '@tanstack/react-query';
-
-import type { Txn } from './types';
-import TransactionHistory from '@/app/components/common/TransactionHistory';
-import { transactionColumns } from './transactionColumns';
+import TransactionHistorySection from '@/app/components/common/TransactionHistorySection';
 import { fetchAdminPlayers } from '@/lib/api/wallet';
 import { useApiError } from '@/hooks/useApiError';
 import type { TransactionType } from '@shared/types';
+import type { Txn } from './types';
 
 interface Props {
   log: Txn[];
@@ -26,7 +22,6 @@ export default function DashboardTransactionHistory({
   typesError,
   onTypeChange,
 }: Props) {
-  // Fetch dynamic filter options
   const {
     data: players = [],
     isLoading: playersLoading,
@@ -36,8 +31,6 @@ export default function DashboardTransactionHistory({
   useApiError(playersError);
   useApiError(typesError);
 
-  // Simple local state filters (optional wiring; data is currently passed through)
-  // If you want to apply these filters, filter `log` before passing it to TransactionHistory.
   const filters = (
     <div className="flex flex-wrap gap-2 items-center">
       <input
@@ -89,23 +82,17 @@ export default function DashboardTransactionHistory({
           ))
         )}
       </select>
-
-      <button
-        onClick={onExport}
-        className="ml-auto bg-accent-blue hover:brightness-110 px-4 py-2 rounded-2xl font-semibold text-sm flex items-center gap-2"
-      >
-        <FontAwesomeIcon icon={faDownload} />
-        Export CSV
-      </button>
     </div>
   );
 
   return (
-    <TransactionHistory
+    <TransactionHistorySection
       data={log}
-      columns={transactionColumns}
+      currency="USD"
+      filters={filters}
       onExport={onExport}
-      headerSlot={filters}
+      emptyMessage="No transaction history."
     />
   );
 }
+
