@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
 import { useRef, type KeyboardEvent } from 'react';
-
-export type TimeFilter = 'daily' | 'weekly' | 'monthly';
+import { useLeaderboardRanges } from '@/lib/api/leaderboard';
+import type { TimeFilter } from '@shared/types';
 
 export interface LeaderboardTabsProps {
   /** Currently selected time filter */
@@ -11,17 +11,13 @@ export interface LeaderboardTabsProps {
   onChange: (filter: TimeFilter) => void;
 }
 
-const options: { label: string; value: TimeFilter }[] = [
-  { label: 'Daily', value: 'daily' },
-  { label: 'Weekly', value: 'weekly' },
-  { label: 'Monthly', value: 'monthly' },
-];
-
 export default function LeaderboardTabs({
   selected,
   onChange,
 }: LeaderboardTabsProps) {
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const { data, isLoading, error } = useLeaderboardRanges();
+  const options = data?.ranges ?? [];
 
   const handleKeyDown =
     (index: number) => (event: KeyboardEvent<HTMLButtonElement>) => {
@@ -29,11 +25,18 @@ export default function LeaderboardTabs({
         event.preventDefault();
         const direction = event.key === 'ArrowRight' ? 1 : -1;
         const nextIndex = (index + direction + options.length) % options.length;
-        const nextValue = options[nextIndex].value;
+        const nextValue = options[nextIndex];
         onChange(nextValue);
         tabRefs.current[nextIndex]?.focus();
       }
     };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+  if (error) {
+    return <div>Error loading ranges</div>;
+  }
 
   return (
     <div>
@@ -41,8 +44,9 @@ export default function LeaderboardTabs({
         Time Period:
       </label>
       <div className="flex space-x-2" role="tablist">
-        {options.map(({ label, value }, index) => {
+        {options.map((value, index) => {
           const isActive = value === selected;
+          const label = value.charAt(0).toUpperCase() + value.slice(1);
           const base =
             'px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-200 hover-glow-yellow';
           const activeStyles = 'bg-accent-yellow text-primary-bg';

@@ -584,6 +584,15 @@ export const LeaderboardResponseSchema = z.array(LeaderboardEntrySchema);
 export type LeaderboardEntry = z.infer<typeof LeaderboardEntrySchema>;
 export type LeaderboardResponse = z.infer<typeof LeaderboardResponseSchema>;
 
+export {
+  TimeFilterSchema,
+  LeaderboardRangesResponseSchema,
+} from '../backend/src/schemas/leaderboard';
+export type {
+  TimeFilter,
+  LeaderboardRangesResponse,
+} from '../backend/src/schemas/leaderboard';
+
 export const ReviewActionSchema = z.enum(['warn', 'restrict', 'ban']);
 export type ReviewAction = z.infer<typeof ReviewActionSchema>;
 

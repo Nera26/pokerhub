@@ -10,7 +10,10 @@ import {
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { LeaderboardService } from './leaderboard.service';
 import { LeaderboardRebuildQuerySchema } from '../schemas/leaderboard';
-import type { LeaderboardEntry } from '@shared/types';
+import type {
+  LeaderboardEntry,
+  LeaderboardRangesResponse,
+} from '@shared/types';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 
@@ -35,5 +38,12 @@ export class LeaderboardController {
     const { days } = LeaderboardRebuildQuerySchema.parse(query);
     void this.leaderboardService.rebuild({ days });
     return { status: 'ok' };
+  }
+
+  @Get('ranges')
+  @ApiOperation({ summary: 'Get leaderboard time ranges' })
+  @ApiResponse({ status: 200, description: 'Available time ranges' })
+  getRanges(): LeaderboardRangesResponse {
+    return this.leaderboardService.getRanges();
   }
 }
