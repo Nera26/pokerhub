@@ -1,5 +1,5 @@
-/* istanbul ignore file */
 import { apiClient } from './client';
+import type { ApiError } from './client';
 import {
   AdminMessagesResponse,
   AdminMessagesResponseSchema,
@@ -9,15 +9,27 @@ import {
 } from '@shared/types';
 
 export async function fetchMessages(): Promise<AdminMessagesResponse> {
-  return apiClient('/api/admin/messages', AdminMessagesResponseSchema);
+  try {
+    return await apiClient('/api/admin/messages', AdminMessagesResponseSchema);
+  } catch (err) {
+    throw err as ApiError;
+  }
 }
 
 export async function replyMessage(
   id: number,
   body: ReplyMessageRequest,
 ): Promise<MessageResponse> {
-  return apiClient(`/api/admin/messages/${id}/reply`, MessageResponseSchema, {
-    method: 'POST',
-    body,
-  });
+  try {
+    return await apiClient(
+      `/api/admin/messages/${id}/reply`,
+      MessageResponseSchema,
+      {
+        method: 'POST',
+        body,
+      },
+    );
+  } catch (err) {
+    throw err as ApiError;
+  }
 }

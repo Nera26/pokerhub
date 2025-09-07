@@ -51,6 +51,8 @@ import { cookieSecurity } from './common/cookie-security.middleware';
 import { BroadcastsModule } from './broadcasts/broadcasts.module';
 import { TiersModule } from './tiers/tiers.module';
 import { CtasModule } from './ctas/ctas.module';
+import { AdminMessagesService } from './notifications/admin-messages.service';
+import { AdminMessageEntity } from './notifications/admin-message.entity';
 
 @Module({
   imports: [
@@ -94,6 +96,8 @@ import { CtasModule } from './ctas/ctas.module';
       inject: [ConfigService],
     }),
 
+    TypeOrmModule.forFeature([AdminMessageEntity]),
+
     // Messaging / Infra
     MessagingModule,
     RedisModule,
@@ -122,6 +126,7 @@ import { CtasModule } from './ctas/ctas.module';
     AppService,
     { provide: 'API_CONTRACT_VERSION', useValue: API_CONTRACT_VERSION },
     { provide: APP_FILTER, useClass: ZodExceptionFilter },
+    AdminMessagesService,
   ],
 })
 export class AppModule implements NestModule {
