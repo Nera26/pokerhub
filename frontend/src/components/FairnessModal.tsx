@@ -7,6 +7,7 @@ import Modal from '@/app/components/ui/Modal';
 import { fetchHandProof, downloadHandProof } from '@/lib/api/hands';
 import { verifyProof } from '@/lib/verifyProof';
 import type { HandProof } from '@shared/types';
+import ProofDetails from '@/components/hand/ProofDetails';
 
 interface FairnessModalProps {
   handId: string;
@@ -54,15 +55,11 @@ export default function FairnessModal({
       {!proof && <p>Loading...</p>}
       {proof && (
         <div className="space-y-2 break-words">
-          <div>
-            <strong>Seed:</strong> {proof.seed}
-          </div>
-          <div>
-            <strong>Nonce:</strong> {proof.nonce}
-          </div>
-          <div>
-            <strong>Commitment:</strong> {proof.commitment}
-          </div>
+          <ProofDetails
+            proof={proof}
+            valid={valid ?? undefined}
+            deck={null}
+          />
           <Link
             href={`/hands/${handId}/proof`}
             className="underline text-accent-blue"
@@ -77,11 +74,6 @@ export default function FairnessModal({
           >
             Download proof JSON
           </button>
-          {valid !== null && (
-            <div>
-              <strong>Verification:</strong> {valid ? 'valid' : 'invalid'}
-            </div>
-          )}
         </div>
       )}
     </Modal>
