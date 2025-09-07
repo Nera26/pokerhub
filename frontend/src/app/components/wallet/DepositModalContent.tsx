@@ -1,13 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
 import Button from '../ui/Button';
 import { BankTransferDepositResponse } from '@shared/wallet.schema';
 import Tooltip from '../ui/Tooltip';
-import AmountInput from './AmountInput';
+import BankTransferForm from './BankTransferForm';
 
 export interface DepositModalContentProps {
   onClose: () => void;
@@ -24,48 +21,16 @@ export default function DepositModalContent({
   onInitiate,
   currency,
 }: DepositModalContentProps) {
-  const depositSchema = z.object({
-    amount: z
-      .string()
-      .refine(
-        (val) => {
-          const num = Number(val);
-          return val !== '' && !Number.isNaN(num) && num > 0;
-        },
-        { message: 'Enter a valid amount' },
-      ),
-  });
-  type DepositForm = z.infer<typeof depositSchema>;
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<DepositForm>({
-    resolver: zodResolver(depositSchema),
-    defaultValues: { amount: '' },
-    mode: 'onChange',
-  });
-
   const [details, setDetails] = useState<BankTransferDepositResponse | null>(null);
 
-  const getDeviceId = () => {
-    let id = localStorage.getItem('deviceId');
-    if (!id) {
-      id = crypto.randomUUID();
-      localStorage.setItem('deviceId', id);
-    }
-    return id;
-  };
-
-  const onSubmit = handleSubmit(async (data) => {
-    const res = await onInitiate({
-      amount: Number(data.amount),
-      deviceId: getDeviceId(),
-      currency,
-    });
+  const handleSubmit = async (payload: {
+    amount: number;
+    deviceId: string;
+    currency: string;
+  }) => {
+    const res = await onInitiate(payload);
     setDetails(res);
-  });
+  };
 
   const handleCopy = async () => {
     if (!details) return;
@@ -117,24 +82,17 @@ export default function DepositModalContent({
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4" noValidate>
+    <div className="space-y-4">
       <h2 className="text-xl sm:text-2xl font-bold text-text-primary">
         Deposit via Bank Transfer
       </h2>
-      <AmountInput
-        id="deposit-amount"
-        label={`Enter Amount (${currency})`}
-        error={errors.amount?.message}
-        {...register('amount')}
+      <BankTransferForm
+        currency={currency}
+        submitLabel="Get Instructions"
+        amountInputId="deposit-amount"
+        onSubmit={handleSubmit}
       />
-      <Button
-        type="submit"
-        variant="primary"
-        className="w-full uppercase py-3"
-      >
-        Get Instructions
-      </Button>
-    </form>
+    </div>
   );
 }
 

@@ -1,16 +1,16 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-jest.mock('@/app/components/wallet/AmountInput', () => {
-  const actual = jest.requireActual('@/app/components/wallet/AmountInput');
+jest.mock('../AmountInput', () => {
+  const actual = jest.requireActual('../AmountInput');
   return {
     __esModule: true,
     default: jest.fn((props) => actual.default(props)),
   };
 });
 
-import WithdrawModalContent from '@/app/components/wallet/WithdrawModalContent';
-import AmountInput from '@/app/components/wallet/AmountInput';
+import WithdrawModalContent from '../WithdrawModalContent';
+import AmountInput from '../AmountInput';
 
 const baseProps = {
   availableBalance: 100,
