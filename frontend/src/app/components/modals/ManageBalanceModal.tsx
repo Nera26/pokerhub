@@ -4,8 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import Modal from '../ui/Modal';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faXmark } from '@fortawesome/free-solid-svg-icons';
+import ModalHeader from './ModalHeader';
 
 type Props = {
   isOpen: boolean;
@@ -56,19 +55,10 @@ export default function ManageBalanceModal({
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose}>
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-dark px-6 py-4">
-        <h3 className="text-xl font-bold">
-          Manage Balance - {userName || 'Player'}
-        </h3>
-        <button
-          onClick={handleClose}
-          aria-label="Close"
-          className="w-9 h-9 grid place-items-center rounded-xl text-text-secondary hover:bg-hover-bg"
-        >
-          <FontAwesomeIcon icon={faXmark} />
-        </button>
-      </div>
+      <ModalHeader
+        title={`Manage Balance - ${userName || 'Player'}`}
+        onClose={handleClose}
+      />
 
       <div className="p-6 space-y-4">
         <div className="bg-primary-bg rounded-xl p-4 text-center">

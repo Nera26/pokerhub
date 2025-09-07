@@ -2,8 +2,7 @@
 
 import { useMemo } from 'react';
 import Modal from '../ui/Modal';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faXmark } from '@fortawesome/free-solid-svg-icons';
+import ModalHeader from './ModalHeader';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -56,17 +55,7 @@ export default function ReviewWithdrawalModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-dark px-6 py-4">
-        <h3 className="text-xl font-bold">Review Withdrawal Request</h3>
-        <button
-          onClick={onClose}
-          aria-label="Close"
-          className="w-9 h-9 grid place-items-center rounded-xl text-text-secondary hover:bg-hover-bg"
-        >
-          <FontAwesomeIcon icon={faXmark} />
-        </button>
-      </div>
+      <ModalHeader title="Review Withdrawal Request" onClose={onClose} />
 
       <div className="p-6 space-y-4">
         <div className="space-y-1">
