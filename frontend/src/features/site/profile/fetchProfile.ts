@@ -1,4 +1,4 @@
-import { apiClient, ApiError } from './client';
+import { apiClient, ApiError } from '@/lib/api/client';
 import { UserProfileSchema, type UserProfile } from '@shared/types';
 
 export async function fetchProfile({ signal }: { signal?: AbortSignal } = {}): Promise<UserProfile> {
@@ -10,4 +10,4 @@ export async function fetchProfile({ signal }: { signal?: AbortSignal } = {}): P
   }
 }
 
-export type { ApiError } from './client';
+export type { ApiError } from '@/lib/api/client';

@@ -1,6 +1,6 @@
 /** @jest-environment node */
 
-import { fetchProfile } from '@/lib/api/profile';
+import { fetchProfile } from './fetchProfile';
 import { apiClient, type ApiError } from '@/lib/api/client';
 
 jest.mock('@/lib/api/client', () => ({
