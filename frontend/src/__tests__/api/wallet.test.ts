@@ -15,6 +15,45 @@ jest.mock('@/lib/server-fetch', () => ({
   serverFetch: jest.fn(),
 }));
 
+jest.mock('@shared/wallet.schema', () => {
+  const { z } = require('zod');
+  const AmountSchema = z.object({
+    amount: z.number().int().positive(),
+    currency: z.string(),
+  });
+  const AmountDeviceSchema = AmountSchema.extend({ deviceId: z.string() });
+  const WalletStatusResponseSchema = z.object({
+    kycVerified: z.boolean(),
+    realBalance: z.number(),
+    creditBalance: z.number(),
+    currency: z.string(),
+  });
+  const BankDetailsSchema = z.object({
+    bankName: z.string(),
+    accountNumber: z.string(),
+    routingCode: z.string(),
+  });
+  return {
+    AmountSchema,
+    WithdrawSchema: AmountDeviceSchema,
+    DepositSchema: AmountDeviceSchema,
+    BankTransferDepositRequestSchema: AmountDeviceSchema.extend({
+      idempotencyKey: z.string().optional(),
+    }),
+    BankTransferDepositResponseSchema: z.object({
+      reference: z.string(),
+      bank: BankDetailsSchema,
+    }),
+    WalletStatusResponseSchema,
+    WalletTransactionsResponseSchema: z.any(),
+    PendingTransactionsResponseSchema: z.any(),
+    PendingDepositsResponseSchema: z.any(),
+    DepositDecisionRequestSchema: z.any(),
+    IbanResponseSchema: z.any(),
+    IbanHistoryResponseSchema: z.any(),
+  };
+});
+
 describe('wallet api', () => {
   it('handles reserve/commit/rollback/deposit/withdraw', async () => {
     (serverFetch as jest.Mock)
@@ -114,5 +153,14 @@ describe('wallet api', () => {
       creditBalance: 10,
       currency: 'EUR',
     });
+  });
+
+  it('validates deposit and withdraw payloads', () => {
+    (serverFetch as jest.Mock).mockClear();
+    expect(() => deposit('u1', -1, 'd1', 'EUR')).toThrow();
+    expect(serverFetch).not.toHaveBeenCalled();
+    (serverFetch as jest.Mock).mockClear();
+    expect(() => withdraw('u1', 10, 123 as any, 'EUR')).toThrow();
+    expect(serverFetch).not.toHaveBeenCalled();
   });
 });
