@@ -6,12 +6,12 @@ import type { IbanResponse, IbanHistoryResponse } from '@shared/wallet.schema';
 
 export const useIban = createQueryHook<IbanResponse>(
   'iban',
-  fetchIban,
+  (_client, opts) => fetchIban(opts),
   'IBAN',
 );
 
 export const useIbanHistory = createQueryHook<IbanHistoryResponse>(
   'iban-history',
-  fetchIbanHistory,
+  (_client, opts) => fetchIbanHistory(opts),
   'IBAN history',
 );

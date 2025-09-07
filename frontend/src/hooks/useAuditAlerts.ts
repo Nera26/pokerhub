@@ -1,12 +1,10 @@
 'use client';
 
+import { createQueryHook } from './useApiQuery';
 import { SecurityAlertsResponseSchema, type AlertItem } from '@shared/types';
-import useAuditQuery from './useAuditQuery';
 
-export function useAuditAlerts() {
-  return useAuditQuery<AlertItem[]>(
-    '/api/admin/security-alerts',
-    SecurityAlertsResponseSchema,
-    'audit-alerts',
-  );
-}
+export const useAuditAlerts = createQueryHook<AlertItem[]>(
+  'audit-alerts',
+  (client, opts) => client('/api/admin/security-alerts', SecurityAlertsResponseSchema, opts),
+  'audit alerts',
+);

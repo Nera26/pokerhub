@@ -1,13 +1,11 @@
 'use client';
 
+import { createQueryHook } from './useApiQuery';
 import { AuditSummarySchema, type AuditSummary } from '@shared/types';
-import useAuditQuery from './useAuditQuery';
 
-export function useAuditSummary() {
-  return useAuditQuery<AuditSummary>(
-    '/api/analytics/summary',
-    AuditSummarySchema,
-    'audit-summary',
-  );
-}
+export const useAuditSummary = createQueryHook<AuditSummary>(
+  'audit-summary',
+  (client, opts) => client('/api/analytics/summary', AuditSummarySchema, opts),
+  'audit summary',
+);
 

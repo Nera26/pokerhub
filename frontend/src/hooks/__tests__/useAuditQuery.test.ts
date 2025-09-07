@@ -4,10 +4,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuditLogs } from '../useAuditLogs';
 import { useAuditSummary } from '../useAuditSummary';
 import { useAuditAlerts } from '../useAuditAlerts';
+import { apiClient, type ApiError } from '@/lib/api/client';
 
-jest.mock('@/lib/base-url', () => ({ getBaseUrl: () => 'http://localhost' }));
+jest.mock('@/lib/api/client', () => ({
+  apiClient: jest.fn(),
+}));
 
 type Hook<T> = () => T;
+
+const mockedApiClient = apiClient as jest.MockedFunction<typeof apiClient>;
 
 const wrapper = ({ children }: { children: React.ReactNode }) => {
   const queryClient = new QueryClient({
@@ -17,10 +22,8 @@ const wrapper = ({ children }: { children: React.ReactNode }) => {
 };
 
 describe('audit hooks', () => {
-  const originalFetch = global.fetch;
-
   afterEach(() => {
-    global.fetch = originalFetch;
+    mockedApiClient.mockReset();
   });
 
   const cases = [
@@ -28,11 +31,13 @@ describe('audit hooks', () => {
       name: 'useAuditLogs',
       hook: useAuditLogs as Hook<unknown>,
       data: { logs: [], nextCursor: null },
+      path: '/api/admin/audit-logs',
     },
     {
       name: 'useAuditSummary',
       hook: useAuditSummary as Hook<unknown>,
       data: { total: 1, errors: 2, logins: 3 },
+      path: '/api/analytics/summary',
     },
     {
       name: 'useAuditAlerts',
@@ -40,32 +45,27 @@ describe('audit hooks', () => {
       data: [
         { id: '1', severity: 'danger', title: 't', body: 'b', time: 'now' },
       ],
+      path: '/api/admin/security-alerts',
     },
   ] as const;
 
-  it.each(cases)('%s resolves data', async ({ hook, data }) => {
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      headers: { get: () => 'application/json' },
-      json: async () => data,
-    }) as any;
+  it.each(cases)('%s resolves data', async ({ hook, data, path }) => {
+    mockedApiClient.mockResolvedValueOnce(data as any);
     const { result } = renderHook(() => hook(), { wrapper });
     await waitFor(() => expect(result.current.data).toEqual(data));
+    expect(mockedApiClient).toHaveBeenCalledWith(
+      path,
+      expect.anything(),
+      { signal: expect.anything() },
+    );
   });
 
   it.each(cases)('%s bubbles errors', async ({ hook }) => {
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: false,
-      status: 500,
-      statusText: 'err',
-      headers: { get: () => 'application/json' },
-      json: async () => ({ message: 'err' }),
-    }) as any;
+    mockedApiClient.mockRejectedValueOnce({ message: 'err' } as ApiError);
     const { result } = renderHook(() => hook(), { wrapper });
     await waitFor(() => {
       expect(result.current.error).toBeDefined();
-      expect((result.current.error as any).message).toContain('Failed to fetch');
+      expect((result.current.error as ApiError).message).toContain('Failed to fetch');
     });
   });
 });
