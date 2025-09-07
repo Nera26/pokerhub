@@ -72,6 +72,14 @@ export type {
   SidebarItemsResponse,
 } from '../backend/src/schemas/admin';
 
+export {
+  BONUS_TYPES,
+  BONUS_ELIGIBILITY,
+  BONUS_STATUSES,
+  BonusOptionsResponseSchema,
+} from '../backend/src/schemas/bonus';
+export type { BonusOptionsResponse } from '../backend/src/schemas/bonus';
+
 export const DashboardMetricsSchema = z.object({
   online: z.number(),
   revenue: z.number(),

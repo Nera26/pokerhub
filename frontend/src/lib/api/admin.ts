@@ -4,6 +4,8 @@ import {
   MessageResponseSchema,
   AdminTournamentSchema,
   type AdminTournament,
+  BonusOptionsResponseSchema,
+  type BonusOptionsResponse,
 } from '@shared/types';
 import { SidebarItemsResponseSchema, type SidebarItem } from '@shared/types';
 export { AdminTournamentSchema } from '@shared/types';
@@ -71,6 +73,12 @@ export async function fetchAdminTournamentDefaults({
 /** =======================
  *  Admin Bonuses
  *  ======================= */
+export async function fetchBonusOptions({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<BonusOptionsResponse> {
+  return apiClient('/api/admin/bonus/options', BonusOptionsResponseSchema, { signal });
+}
+
 export const BonusSchema = z.object({
   id: z.number().int(),
   name: z.string(),

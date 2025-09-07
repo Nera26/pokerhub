@@ -8,10 +8,7 @@ import {
   AlertItem,
   AlertItemSchema,
 } from '../schemas/analytics';
-import {
-  SidebarItem,
-  SidebarItemsResponseSchema,
-} from '../schemas/admin';
+import { SidebarItem, SidebarItemsResponseSchema } from '../schemas/admin';
 import { sharedSidebar } from '@shared/sidebar';
 import { KycService } from '../wallet/kyc.service';
 import { AnalyticsService } from '../analytics/analytics.service';
@@ -26,7 +23,6 @@ export class AdminController {
     private readonly kyc: KycService,
     private readonly analytics: AnalyticsService,
   ) {}
-
 
   @Get('kyc/:id/denial')
   @ApiOperation({ summary: 'Get KYC denial reason' })

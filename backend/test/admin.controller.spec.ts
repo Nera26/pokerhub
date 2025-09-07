@@ -10,6 +10,7 @@ import { sharedSidebar } from '@shared/sidebar';
 
 describe('AdminController', () => {
   let app: INestApplication;
+
   const kyc = { getDenialReason: jest.fn() } as Partial<KycService>;
   const analytics = {
     getAuditLogs: jest.fn(),
@@ -57,7 +58,7 @@ describe('AdminController', () => {
       .expect([]);
   });
 
-  it('returns sidebar items', async () => {
+  it('returns sidebar items from shared module', async () => {
     await request(app.getHttpServer())
       .get('/admin/sidebar')
       .expect(200)

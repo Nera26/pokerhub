@@ -29,7 +29,7 @@ describe('TransactionHistoryTable', () => {
     useTransactionVirtualizerMock.mockReset();
   });
 
-  it('renders actions and triggers callbacks without virtualization', async () => {
+  async function renderWithActions(virtualized: boolean) {
     const onView = jest.fn();
     const actions: Action<Row>[] = [
       {
@@ -44,9 +44,10 @@ describe('TransactionHistoryTable', () => {
       parentRef: { current: null },
       sortedItems: data,
       rowVirtualizer: {
-        getVirtualItems: () => [],
+        getVirtualItems: () =>
+          virtualized ? [{ index: 0, start: 0 }] : [],
         measureElement: jest.fn(),
-        getTotalSize: () => 0,
+        getTotalSize: () => (virtualized ? 100 : 0),
       },
     });
 
@@ -64,42 +65,13 @@ describe('TransactionHistoryTable', () => {
     expect(btn).toBeInTheDocument();
     await userEvent.click(btn);
     expect(onView).toHaveBeenCalledWith(data[0]);
+  }
+
+  it('renders actions and triggers callbacks without virtualization', async () => {
+    await renderWithActions(false);
   });
 
   it('renders actions and triggers callbacks with virtualization', async () => {
-    const onView = jest.fn();
-    const actions: Action<Row>[] = [
-      {
-        label: 'View',
-        onClick: onView,
-        className: 'btn',
-      },
-    ];
-    const data: Row[] = [{ id: '1', name: 'Alice' }];
-
-    useTransactionVirtualizerMock.mockReturnValue({
-      parentRef: { current: null },
-      sortedItems: data,
-      rowVirtualizer: {
-        getVirtualItems: () => [{ index: 0, start: 0 }],
-        measureElement: jest.fn(),
-        getTotalSize: () => 100,
-      },
-    });
-
-    render(
-      <TransactionHistoryTable
-        data={data}
-        columns={columns}
-        actions={actions}
-        getRowKey={(row) => row.id}
-      />,
-    );
-
-    expect(screen.getByText('Action')).toBeInTheDocument();
-    const btn = screen.getByRole('button', { name: 'View' });
-    expect(btn).toBeInTheDocument();
-    await userEvent.click(btn);
-    expect(onView).toHaveBeenCalledWith(data[0]);
+    await renderWithActions(true);
   });
 });

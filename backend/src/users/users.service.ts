@@ -1,6 +1,11 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { trace, Span } from '@opentelemetry/api';
-import { CreateUserRequest, UpdateUserRequest, User } from '@shared/types';
+import {
+  CreateUserRequest,
+  UpdateUserRequest,
+  User,
+  type UserProfile,
+} from '@shared/types';
 import { UserRepository } from './user.repository';
 import { QueryFailedError } from 'typeorm';
 
@@ -67,6 +72,27 @@ export class UsersService {
           throw new NotFoundException('User not found');
         }
         return user;
+      },
+    );
+  }
+
+  async getProfile(id: string): Promise<UserProfile> {
+    return UsersService.tracer.startActiveSpan(
+      'users.getProfile',
+      async (span) => {
+        return this.withUser(id, span, async (user) => {
+          return {
+            username: user.username,
+            email: user.email ?? '',
+            avatarUrl: user.avatarKey ?? '',
+            bank: '\u2022\u2022\u2022\u2022 1234',
+            location: 'United States',
+            joined: new Date('2023-01-15').toISOString(),
+            bio: 'Texas grinder. Loves Omaha. Weekend warrior.',
+            experience: 1234,
+            balance: 1250,
+          };
+        });
       },
     );
   }
