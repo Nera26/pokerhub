@@ -428,10 +428,6 @@ export default function BalanceTransactions() {
     alert(`Loaded IBAN for reuse:\n${iban}`);
   };
 
-  const pageInfo = useMemo(
-    () => `Showing 1-10 of ${log.length.toLocaleString()} transactions`,
-    [log.length],
-  );
 
   /* --------------------------------- UI --------------------------------- */
   return (
@@ -746,11 +742,7 @@ export default function BalanceTransactions() {
       ) : log.length === 0 ? (
         <p>No transaction history.</p>
       ) : (
-        <TransactionHistory
-          log={log}
-          pageInfo={pageInfo}
-          onExport={exportCSV}
-        />
+        <TransactionHistory log={log} onExport={exportCSV} />
       )}
 
       {/* Modals */}
