@@ -72,6 +72,27 @@ describe('ForgotPasswordForm', () => {
     expect(await screen.findByText('Code is required')).toBeInTheDocument();
   });
 
+  it('displays API code error on verification failure', async () => {
+    mockRequest.mockResolvedValueOnce({ message: '' });
+    mockVerify.mockRejectedValueOnce({
+      errors: { code: 'Invalid code' },
+      message: 'Verification failed',
+    });
+
+    const user = userEvent.setup();
+    renderWithClient(<ForgotPasswordForm />);
+
+    await user.type(screen.getByLabelText('Email Address'), 'test@example.com');
+    await user.click(screen.getByRole('button', { name: /Send Code/i }));
+    await user.type(
+      await screen.findByLabelText('Enter 6-digit Code'),
+      '123456',
+    );
+    await user.click(screen.getByRole('button', { name: /Verify Code/i }));
+
+    expect(await screen.findByText('Invalid code')).toBeInTheDocument();
+  });
+
   it('shows password mismatch error in reset step', async () => {
     mockRequest.mockResolvedValueOnce({ message: '' });
     mockVerify.mockResolvedValueOnce({ message: '' });
