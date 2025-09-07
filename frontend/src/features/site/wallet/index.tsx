@@ -25,9 +25,12 @@ import {
 import { startKyc } from '@/lib/api/kyc';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
+import { useWallet } from '@/features/wallet/useWallet';
 
 export default function WalletPage() {
   const { realBalance, creditBalance, playerId, setBalances } = useAuth();
+  const { data: wallet } = useWallet();
+  const currency = (wallet as any)?.currency ?? 'USD';
   const [kycVerified, setKycVerified] = useState(false);
 
   const {
@@ -241,6 +244,7 @@ export default function WalletPage() {
         <DepositModalContent
           onClose={closeDepositModal}
           onInitiate={handleBankTransfer}
+          currency={currency}
         />
       </Modal>
 
