@@ -10,7 +10,7 @@ interface ChipStackProps {
 }
 
 /** Tiny chip SVG used in badges and committed tags */
-export function ChipIcon({
+function ChipIcon({
   color = 'gold',
   size = 14,
   className = '',
