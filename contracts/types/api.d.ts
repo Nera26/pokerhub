@@ -1359,6 +1359,19 @@ export interface paths {
       };
     };
   };
+  "/admin/bonus/options": {
+    /** Get bonus form options */
+    get: {
+      responses: {
+        /** @description Bonus options */
+        200: {
+          content: {
+            "application/json": components["schemas"]["BonusOptionsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/admin/withdrawals": {
     /** List pending withdrawals */
     get: {
@@ -1870,6 +1883,8 @@ export interface components {
       actionRequired: boolean;
       /** Format: date-time */
       expiresAt: string;
+      avatar: string;
+      method: string;
       confirmedBy?: string;
       /** Format: date-time */
       confirmedAt?: string;
@@ -1894,6 +1909,9 @@ export interface components {
       status: "pending" | "completed" | "rejected";
       /** Format: date-time */
       createdAt: string;
+      avatar: string;
+      bank: string;
+      maskedAccount: string;
     };
     PendingWithdrawalsResponse: {
       withdrawals: components["schemas"]["PendingWithdrawal"][];

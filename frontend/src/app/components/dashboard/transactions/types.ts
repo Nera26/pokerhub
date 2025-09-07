@@ -17,7 +17,7 @@ export type WithdrawalReq = {
   avatar: string;
   amount: number;
   bank: string;
-  masked: string;
+  maskedAccount: string;
   date: string;
   comment: string;
   status: StatusBadge;

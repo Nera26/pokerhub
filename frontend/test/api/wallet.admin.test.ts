@@ -78,4 +78,45 @@ describe('wallet admin api client', () => {
       { signal: undefined },
     );
   });
+
+  it('PendingDepositsResponseSchema parses new fields', () => {
+    const sample = {
+      deposits: [
+        {
+          id: 'dep1',
+          userId: 'u1',
+          amount: 10,
+          currency: 'USD',
+          reference: 'ref',
+          status: 'pending',
+          actionRequired: true,
+          expiresAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          avatar: '',
+          method: 'bank-transfer',
+        },
+      ],
+    };
+    expect(() => PendingDepositsResponseSchema.parse(sample)).not.toThrow();
+  });
+
+  it('PendingWithdrawalsResponseSchema parses new fields', () => {
+    const sample = {
+      withdrawals: [
+        {
+          id: 'w1',
+          userId: 'u1',
+          amount: 20,
+          currency: 'USD',
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+          avatar: '',
+          bank: 'Bank',
+          maskedAccount: '****1234',
+        },
+      ],
+    };
+    expect(() => PendingWithdrawalsResponseSchema.parse(sample)).not.toThrow();
+  });
 });
