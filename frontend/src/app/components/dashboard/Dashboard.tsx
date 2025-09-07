@@ -122,37 +122,14 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        <Card>
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-text-secondary text-sm">Revenue</p>
-              <div className="flex items-center gap-2 mb-1">
-                <p className="text-2xl font-bold text-accent-yellow">
-                  {formatCurrency(metrics.revenue?.[revFilter]?.amount)}
-                </p>
-                <select
-                  value={revFilter}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                    setRevFilter(e.target.value as TimeFilter)
-                  }
-                  className="bg-primary-bg text-xs px-2 py-1 rounded border border-dark text-accent-yellow cursor-pointer"
-                >
-                  <option value="today">Today</option>
-                  <option value="week">7 Days</option>
-                  <option value="month">Month</option>
-                  <option value="all">All-Time</option>
-                </select>
-              </div>
-              <p className="text-xs text-accent-yellow">
-                {metrics.revenue?.[revFilter]?.trend ?? ''}
-              </p>
-            </div>
-            <FontAwesomeIcon
-              icon={faDollarSign}
-              className="text-3xl text-accent-yellow"
-            />
-          </div>
-        </Card>
+        <MetricCard
+          title="Revenue"
+          value={formatCurrency(metrics.revenue?.[revFilter]?.amount)}
+          icon={faDollarSign}
+          valueClassName="text-accent-yellow"
+          subtext={metrics.revenue?.[revFilter]?.trend ?? ''}
+          filter={{ value: revFilter, onChange: setRevFilter }}
+        />
 
         <MetricCard
           className="cursor-pointer hover:bg-hover-bg transition-colors"

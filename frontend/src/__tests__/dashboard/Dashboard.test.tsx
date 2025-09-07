@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import Dashboard from '@/app/components/dashboard/Dashboard';
 
 jest.mock('@/app/components/dashboard/charts/ActivityChart', () => ({
@@ -70,5 +71,33 @@ describe('Dashboard', () => {
     const revenueLabel = screen.getAllByText(/revenue/i)[0];
     expect(revenueLabel.parentElement?.textContent).toMatch(/\$100/);
     // charts are rendered via dynamic import; verifying metric usage above is sufficient
+  });
+
+  it('updates revenue when filter changes', async () => {
+    metricsMock.mockReturnValue({
+      data: {
+        online: 0,
+        tables: { open: 0, full: 0 },
+        tournaments: { total: 0, running: 0 },
+        revenue: {
+          today: { amount: 100, trend: 't' },
+          week: { amount: 200, trend: 't' },
+        },
+        deposits: { today: { amount: 0, trend: '' } },
+        withdrawals: { today: { amount: 0, trend: '' } },
+        activity: { today: [1], week: [2] },
+        revenueBreakdown: { today: [1], week: [2] },
+        revenueValues: { today: [1], week: [2] },
+      },
+      isLoading: false,
+      error: null,
+    });
+    const user = userEvent.setup();
+    renderWithClient();
+    const revenueLabel = screen.getByText(/revenue/i, { selector: 'p' });
+    const revenueCard = revenueLabel.closest('div');
+    const select = within(revenueCard!).getByRole('combobox');
+    await user.selectOptions(select, 'week');
+    expect(within(revenueCard!).getByText('$200')).toBeInTheDocument();
   });
 });
