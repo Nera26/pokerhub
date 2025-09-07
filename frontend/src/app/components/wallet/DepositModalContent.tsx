@@ -16,11 +16,13 @@ export interface DepositModalContentProps {
     deviceId: string;
     currency: string;
   }) => Promise<BankTransferDepositResponse>;
+  currency: string;
 }
 
 export default function DepositModalContent({
   onClose,
   onInitiate,
+  currency,
 }: DepositModalContentProps) {
   const depositSchema = z.object({
     amount: z
@@ -60,7 +62,7 @@ export default function DepositModalContent({
     const res = await onInitiate({
       amount: Number(data.amount),
       deviceId: getDeviceId(),
-      currency: 'USD',
+      currency,
     });
     setDetails(res);
   });
@@ -121,7 +123,7 @@ export default function DepositModalContent({
       </h2>
       <AmountInput
         id="deposit-amount"
-        label="Enter Amount (USD)"
+        label={`Enter Amount (${currency})`}
         error={errors.amount?.message}
         {...register('amount')}
       />
