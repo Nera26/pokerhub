@@ -1,19 +1,11 @@
-const { test, mock } = require('node:test');
+const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { mkdtempSync, writeFileSync, mkdirSync } = require('node:fs');
 const { tmpdir } = require('node:os');
 const { join } = require('node:path');
+const { runScript, mockExit } = require('./utils/workflow.ts');
 
-function runScript(dir: string) {
-  const cwd = process.cwd();
-  process.chdir(dir);
-  try {
-    delete require.cache[require.resolve('../ensure-soak-metrics.ts')];
-    require('../ensure-soak-metrics.ts');
-  } finally {
-    process.chdir(cwd);
-  }
-}
+const entry = require.resolve('../ensure-soak-metrics.ts');
 
 test('passes when soak job has downstream soak-metrics job', () => {
   const dir = mkdtempSync(join(tmpdir(), 'wf-'));
@@ -22,8 +14,8 @@ test('passes when soak job has downstream soak-metrics job', () => {
     join(dir, '.github', 'workflows', 'ci.yml'),
     `on: push\njobs:\n  soak:\n    uses: ./.github/workflows/soak.yml\n    if: \${{ always() }} # comment\n  soak-metrics:\n    if: \${{ always() }}\n    needs:\n      - soak # comment\n    uses: ./.github/workflows/soak-metrics.yml\n`,
   );
-  const exitMock = mock.method(process, 'exit');
-  runScript(dir);
+  const exitMock = mockExit();
+  runScript(dir, entry);
   assert.equal(exitMock.mock.calls.length, 0);
   exitMock.mock.restore();
 });
@@ -35,12 +27,10 @@ test('fails when soak job missing soak-metrics job', () => {
     join(dir, '.github', 'workflows', 'ci.yml'),
     `on: push\n# no metrics job\njobs:\n  soak:\n    uses: ./.github/workflows/soak.yml\n    if: \${{ always() }}\n`,
   );
-  const exitMock = mock.method(process, 'exit', (code?: number) => {
-    throw new Error(String(code));
-  });
+  const exitMock = mockExit();
   let err: Error | undefined;
   try {
-    runScript(dir);
+    runScript(dir, entry);
   } catch (e) {
     err = e as Error;
   }
@@ -62,12 +52,10 @@ test('fails when nested workflow directory missing soak-metrics job', () => {
     join(dir, 'frontend', '.github', 'workflows', 'ci.yml'),
     `on: push\njobs:\n  soak:\n    if: \${{ always() }}\n    uses: ./.github/workflows/soak.yml\n`,
   );
-  const exitMock = mock.method(process, 'exit', (code?: number) => {
-    throw new Error(String(code));
-  });
+  const exitMock = mockExit();
   let err: Error | undefined;
   try {
-    runScript(dir);
+    runScript(dir, entry);
   } catch (e) {
     err = e as Error;
   }

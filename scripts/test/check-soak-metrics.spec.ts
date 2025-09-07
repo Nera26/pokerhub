@@ -1,19 +1,15 @@
-const { test, mock } = require('node:test');
+const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { mkdtempSync, readFileSync, existsSync } = require('node:fs');
 const { tmpdir } = require('node:os');
 const { join } = require('node:path');
 const child_process = require('node:child_process');
+const { runScript, mockExit } = require('./utils/workflow.ts');
 
-function runScript() {
-  delete require.cache[require.resolve('../check-soak-metrics.ts')];
-  require('../check-soak-metrics.ts');
-}
+const entry = require.resolve('../check-soak-metrics.ts');
 
 test('succeeds when metrics are within thresholds', () => {
   const dir = mkdtempSync(join(tmpdir(), 'soak-'));
-  const cwd = process.cwd();
-  process.chdir(dir);
 
   process.env.SOAK_METRICS_SLA_HOURS = '100000';
 
@@ -49,30 +45,27 @@ test('succeeds when metrics are within thresholds', () => {
     throw new Error('unexpected command');
   };
 
-  const exitMock = mock.method(process, 'exit');
+  const exitMock = mockExit();
 
-  runScript();
+  runScript(dir, entry);
 
   assert.equal(exitMock.mock.calls.length, 0);
   assert.equal(gcloudCount, 4);
-  const summary = JSON.parse(readFileSync('soak-summary.json', 'utf-8'));
+  const summary = JSON.parse(readFileSync(join(dir, 'soak-summary.json'), 'utf-8'));
   assert.equal(summary.latency_p50_ms, 60);
   assert.equal(summary.latency_p95_ms, 110);
   assert.equal(summary.latency_p99_ms, 150);
   assert.equal(summary.throughput, 1.2);
   assert.equal(summary.gc_pause_p95_ms, 40);
   assert.equal(summary.rss_delta_pct, 0.22);
-  assert.ok(!existsSync('soak-regression.json'));
+  assert.ok(!existsSync(join(dir, 'soak-regression.json')));
 
   (child_process as any).execSync = originalExec;
   exitMock.mock.restore();
-  process.chdir(cwd);
 });
 
 test('fails when latency, throughput, or gc pause exceed thresholds', () => {
   const dir = mkdtempSync(join(tmpdir(), 'soak-'));
-  const cwd = process.cwd();
-  process.chdir(dir);
 
   process.env.SOAK_THROUGHPUT_MIN = '1';
   process.env.SOAK_METRICS_SLA_HOURS = '100000';
@@ -109,20 +102,18 @@ test('fails when latency, throughput, or gc pause exceed thresholds', () => {
     throw new Error('unexpected command');
   };
 
-  const exitMock = mock.method(process, 'exit', (code?: number) => {
-    throw new Error(String(code));
-  });
+  const exitMock = mockExit();
 
   let err: Error | undefined;
   try {
-    runScript();
+    runScript(dir, entry);
   } catch (e) {
     err = e as Error;
   }
 
   assert.equal(err?.message, '1');
   assert.equal(gcloudCount, 4);
-  const regression = JSON.parse(readFileSync('soak-regression.json', 'utf-8'));
+  const regression = JSON.parse(readFileSync(join(dir, 'soak-regression.json'), 'utf-8'));
   assert(
     regression.regressions.some((r: any) => r.message.includes('Latency p50 80ms exceeds 60ms')),
   );
@@ -133,14 +124,15 @@ test('fails when latency, throughput, or gc pause exceed thresholds', () => {
     regression.regressions.some((r: any) => r.message.includes('Latency p99 250ms exceeds 200ms')),
   );
   assert(regression.regressions.some((r: any) => r.message.includes('Throughput 0.5 < 1')));
-  assert(regression.regressions.some((r: any) => r.message.includes('GC pause p95 80ms exceeds 50ms')));
+  assert(
+    regression.regressions.some((r: any) => r.message.includes('GC pause p95 80ms exceeds 50ms')),
+  );
   assert(
     regression.regressions.some((r: any) => r.message.includes('RSS growth 2% exceeds 1%')),
   );
-  assert.ok(existsSync('soak-summary.json'));
+  assert.ok(existsSync(join(dir, 'soak-summary.json')));
 
   (child_process as any).execSync = originalExec;
   exitMock.mock.restore();
-  process.chdir(cwd);
   delete process.env.SOAK_THROUGHPUT_MIN;
 });
