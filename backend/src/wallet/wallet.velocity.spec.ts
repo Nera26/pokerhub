@@ -1,100 +1,12 @@
-import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
-import { Account } from './account.entity';
-import { JournalEntry } from './journal-entry.entity';
-import { Disbursement } from './disbursement.entity';
-import { SettlementJournal } from './settlement-journal.entity';
-import { WalletService } from './wallet.service';
-import { EventPublisher } from '../events/events.service';
-import { PaymentProviderService } from './payment-provider.service';
-import { KycService } from './kyc.service';
+import { setupWalletTest, WalletTestContext } from '../../test/wallet/test-utils';
 
 describe('WalletService velocity limits', () => {
-  let dataSource: DataSource;
-  let service: WalletService;
-  const events: EventPublisher = { emit: jest.fn() } as any;
-  const redisStore = new Map<string, number>();
-  const redis: any = {
-    incr: jest.fn(async (key: string) => {
-      const val = (redisStore.get(key) ?? 0) + 1;
-      redisStore.set(key, val);
-      return val;
-    }),
-    incrby: jest.fn(async (key: string, amt: number) => {
-      const val = (redisStore.get(key) ?? 0) + amt;
-      redisStore.set(key, val);
-      return val;
-    }),
-    decr: jest.fn(async (key: string) => {
-      const val = (redisStore.get(key) ?? 0) - 1;
-      redisStore.set(key, val);
-      return val;
-    }),
-    decrby: jest.fn(async (key: string, amt: number) => {
-      const val = (redisStore.get(key) ?? 0) - amt;
-      redisStore.set(key, val);
-      return val;
-    }),
-    expire: jest.fn(async () => 1),
-    set: jest.fn(async (key: string, value: string, _mode?: string, _ttl?: number) => {
-      redisStore.set(key, Number(value));
-      return 'OK';
-    }),
-  };
-  const provider: any = {
-    initiate3DS: jest.fn().mockResolvedValue({ id: 'tx' }),
-    getStatus: jest.fn().mockResolvedValue('approved'),
-  } as unknown as PaymentProviderService;
-  const kyc: any = { isVerified: jest.fn().mockResolvedValue(true) } as KycService;
+  let ctx: WalletTestContext;
   const userId = '11111111-1111-1111-1111-111111111111';
 
   beforeAll(async () => {
-    const db = newDb();
-    db.public.registerFunction({
-      name: 'version',
-      returns: 'text',
-      implementation: () => 'pg-mem',
-    });
-    db.public.registerFunction({
-      name: 'current_database',
-      returns: 'text',
-      implementation: () => 'test',
-    });
-    let seq = 1;
-    db.public.registerFunction({
-      name: 'uuid_generate_v4',
-      returns: 'text',
-      implementation: () => {
-        const id = seq.toString(16).padStart(32, '0');
-        seq++;
-        return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(16, 20)}-${id.slice(20)}`;
-      },
-    });
-    dataSource = db.adapters.createTypeormDataSource({
-      type: 'postgres',
-      entities: [Account, JournalEntry, Disbursement, SettlementJournal],
-      synchronize: true,
-    }) as DataSource;
-    await dataSource.initialize();
-
-    const accountRepo = dataSource.getRepository(Account);
-    const journalRepo = dataSource.getRepository(JournalEntry);
-    const disbRepo = dataSource.getRepository(Disbursement);
-    const settleRepo = dataSource.getRepository(SettlementJournal);
-    service = new WalletService(
-      accountRepo,
-      journalRepo,
-      disbRepo,
-      settleRepo,
-      events,
-      redis,
-      provider,
-      kyc,
-    );
-    // avoid BullMQ import in tests
-    (service as any).enqueueDisbursement = jest.fn();
-
-    await accountRepo.save([
+    ctx = await setupWalletTest();
+    await ctx.repos.account.save([
       {
         id: userId,
         name: 'user',
@@ -113,9 +25,9 @@ describe('WalletService velocity limits', () => {
   });
 
   beforeEach(async () => {
-    redisStore.clear();
+    ctx.redis.store.clear();
     jest.clearAllMocks();
-    const repo = dataSource.getRepository(Account);
+    const repo = ctx.repos.account;
     const user = await repo.findOneByOrFail({ id: userId });
     const house = await repo.findOneByOrFail({ name: 'house' });
     user.balance = 200;
@@ -124,73 +36,69 @@ describe('WalletService velocity limits', () => {
   });
 
   afterAll(async () => {
-    await dataSource.destroy();
+    await ctx.repos.dataSource.destroy();
   });
 
   it('enforces hourly deposit count limit', async () => {
     process.env.WALLET_VELOCITY_DEPOSIT_HOURLY_COUNT = '2';
-    await service.deposit(userId, 10, 'dev1', '1.1.1.1', 'USD');
-    await service.deposit(userId, 10, 'dev2', '1.1.1.2', 'USD');
+    await ctx.service.deposit(userId, 10, 'dev1', '1.1.1.1', 'USD');
+    await ctx.service.deposit(userId, 10, 'dev2', '1.1.1.2', 'USD');
     await expect(
-      service.deposit(userId, 10, 'dev3', '1.1.1.3', 'USD'),
+      ctx.service.deposit(userId, 10, 'dev3', '1.1.1.3', 'USD'),
     ).rejects.toThrow('Velocity limit exceeded');
-    expect(events.emit).toHaveBeenCalledWith(
+    expect((ctx.service as any).events.emit).toHaveBeenCalledWith(
       'wallet.velocity.limit',
       expect.objectContaining({ accountId: userId, operation: 'deposit' }),
     );
-    expect(
-      redisStore.get(`wallet:deposit:${userId}:h:count`),
-    ).toBe(2);
+    expect(ctx.redis.store.get(`wallet:deposit:${userId}:h:count`)).toBe(2);
     delete process.env.WALLET_VELOCITY_DEPOSIT_HOURLY_COUNT;
   });
 
   it('enforces hourly withdraw amount limit', async () => {
     process.env.WALLET_VELOCITY_WITHDRAW_HOURLY_AMOUNT = '100';
-    await service.withdraw(userId, 70, 'dev1', '1.1.1.1', 'USD');
+    await ctx.service.withdraw(userId, 70, 'dev1', '1.1.1.1', 'USD');
     await expect(
-      service.withdraw(userId, 40, 'dev2', '1.1.1.2', 'USD'),
+      ctx.service.withdraw(userId, 40, 'dev2', '1.1.1.2', 'USD'),
     ).rejects.toThrow('Velocity limit exceeded');
-    expect(events.emit).toHaveBeenCalledWith(
+    expect((ctx.service as any).events.emit).toHaveBeenCalledWith(
       'wallet.velocity.limit',
       expect.objectContaining({ accountId: userId, operation: 'withdraw' }),
     );
-    expect(
-      redisStore.get(`wallet:withdraw:${userId}:h:amount`),
-    ).toBe(70);
+    expect(ctx.redis.store.get(`wallet:withdraw:${userId}:h:amount`)).toBe(70);
     delete process.env.WALLET_VELOCITY_WITHDRAW_HOURLY_AMOUNT;
   });
 
   it('rolls back hourly count on redis error', async () => {
     process.env.WALLET_VELOCITY_DEPOSIT_HOURLY_COUNT = '2';
-    const originalCheck = (service as any).checkVelocity;
-    (service as any).checkVelocity = jest.fn();
-    redis.incr.mockImplementationOnce(async (key: string) => {
-      const val = (redisStore.get(key) ?? 0) + 1;
-      redisStore.set(key, val);
+    const originalCheck = (ctx.service as any).checkVelocity;
+    (ctx.service as any).checkVelocity = jest.fn();
+    ctx.redis.incr.mockImplementationOnce(async (key: string) => {
+      const val = (ctx.redis.store.get(key) ?? 0) + 1;
+      ctx.redis.store.set(key, val);
       throw new Error('boom');
     });
     await expect(
-      service.deposit(userId, 10, 'dev', '1.1.1.1', 'USD'),
+      ctx.service.deposit(userId, 10, 'dev', '1.1.1.1', 'USD'),
     ).rejects.toThrow('boom');
-    expect(redisStore.get(`wallet:deposit:${userId}:h:count`)).toBe(0);
-    (service as any).checkVelocity = originalCheck;
+    expect(ctx.redis.store.get(`wallet:deposit:${userId}:h:count`)).toBe(0);
+    (ctx.service as any).checkVelocity = originalCheck;
     delete process.env.WALLET_VELOCITY_DEPOSIT_HOURLY_COUNT;
   });
 
   it('rolls back hourly amount on redis error', async () => {
     process.env.WALLET_VELOCITY_WITHDRAW_HOURLY_AMOUNT = '100';
-    const originalCheck = (service as any).checkVelocity;
-    (service as any).checkVelocity = jest.fn();
-    redis.incrby.mockImplementationOnce(async (key: string, amt: number) => {
-      const val = (redisStore.get(key) ?? 0) + amt;
-      redisStore.set(key, val);
+    const originalCheck = (ctx.service as any).checkVelocity;
+    (ctx.service as any).checkVelocity = jest.fn();
+    ctx.redis.incrby.mockImplementationOnce(async (key: string, amt: number) => {
+      const val = (ctx.redis.store.get(key) ?? 0) + amt;
+      ctx.redis.store.set(key, val);
       throw new Error('boom');
     });
     await expect(
-      service.withdraw(userId, 10, 'dev', '1.1.1.1', 'USD'),
+      ctx.service.withdraw(userId, 10, 'dev', '1.1.1.1', 'USD'),
     ).rejects.toThrow('boom');
-    expect(redisStore.get(`wallet:withdraw:${userId}:h:amount`)).toBe(0);
-    (service as any).checkVelocity = originalCheck;
+    expect(ctx.redis.store.get(`wallet:withdraw:${userId}:h:amount`)).toBe(0);
+    (ctx.service as any).checkVelocity = originalCheck;
     delete process.env.WALLET_VELOCITY_WITHDRAW_HOURLY_AMOUNT;
   });
 });
