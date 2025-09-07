@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDownload, faFilter, faTrophy } from '@fortawesome/free-solid-svg-icons';
@@ -19,6 +19,7 @@ import CenteredMessage from '@/components/CenteredMessage';
 import ToastNotification from '../../ui/ToastNotification';
 import { rebuildLeaderboard } from '@/lib/api/leaderboard';
 import type { AuditLogEntry, AuditLogType } from '@shared/types';
+import { loadTypeBadgeClasses } from './constants';
 
 export default function Analytics() {
   const [search, setSearch] = useState('');
@@ -34,6 +35,11 @@ export default function Analytics() {
 
   const [page, setPage] = useState(1);
   const pageSize = 8;
+
+  const [, setBadgeRefresh] = useState(0);
+  useEffect(() => {
+    loadTypeBadgeClasses().finally(() => setBadgeRefresh((n) => n + 1));
+  }, []);
 
   const { data } = useAuditLogs();
   const logs = data?.logs ?? [];

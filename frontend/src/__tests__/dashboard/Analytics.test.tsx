@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import Analytics from '@/app/components/dashboard/analytics/Analytics';
+import { AUDIT_LOG_TYPES } from '@shared/types';
 
 jest.mock('chart.js/auto', () => ({
   __esModule: true,
@@ -15,7 +16,7 @@ jest.mock('@/hooks/useAuditLogs', () => ({
         {
           id: 1,
           timestamp: '2024-01-01T00:00:00Z',
-          type: 'Login',
+          type: AUDIT_LOG_TYPES[0],
           description: 'User successfully logged in',
           user: 'alice',
           ip: '1.1.1.1',
@@ -23,7 +24,7 @@ jest.mock('@/hooks/useAuditLogs', () => ({
         {
           id: 2,
           timestamp: '2024-01-01T01:00:00Z',
-          type: 'Error',
+          type: AUDIT_LOG_TYPES[3],
           description: 'Database connection timeout',
           user: 'service',
           ip: '2.2.2.2',
@@ -31,7 +32,7 @@ jest.mock('@/hooks/useAuditLogs', () => ({
         {
           id: 3,
           timestamp: '2024-01-01T02:00:00Z',
-          type: 'Error',
+          type: AUDIT_LOG_TYPES[3],
           description: 'Failed payment processing',
           user: 'bob',
           ip: '3.3.3.3',
@@ -91,7 +92,7 @@ describe('Analytics filtering', () => {
     const user = userEvent.setup();
     const typeSelect = screen.getByRole('combobox');
 
-    await user.selectOptions(typeSelect, 'Error');
+    await user.selectOptions(typeSelect, AUDIT_LOG_TYPES[3]);
 
     expect(screen.getByText(/failed payment processing/i)).toBeInTheDocument();
     expect(

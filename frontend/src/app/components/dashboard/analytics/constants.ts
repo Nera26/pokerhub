@@ -1,6 +1,8 @@
-import type { AuditLogType } from '@shared/types';
+import { AUDIT_LOG_TYPES, type AuditLogType } from '@shared/types';
+import { getBaseUrl } from '@/lib/base-url';
+import { serverFetch } from '@/lib/server-fetch';
 
-export const LOG_TYPES: AuditLogType[] = ['Login', 'Table Event', 'Broadcast', 'Error'];
+export const LOG_TYPES = AUDIT_LOG_TYPES;
 
 export const TYPE_BADGE_CLASSES: Record<AuditLogType, string> = {
   Login: 'bg-success text-black',
@@ -8,3 +10,15 @@ export const TYPE_BADGE_CLASSES: Record<AuditLogType, string> = {
   Broadcast: 'bg-info text-white',
   Error: 'bg-danger text-white',
 };
+
+export async function loadTypeBadgeClasses() {
+  try {
+    const baseUrl = getBaseUrl();
+    const res = await serverFetch(`${baseUrl}/api/admin/log-types`);
+    if (!res.ok) return;
+    const data = (await res.json()) as Record<AuditLogType, string>;
+    Object.assign(TYPE_BADGE_CLASSES, data);
+  } catch {
+    // ignore failure and keep defaults
+  }
+}
