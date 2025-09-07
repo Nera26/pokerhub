@@ -1,6 +1,7 @@
 'use client';
 
 import LoginForm from '@/app/components/auth/LoginForm';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,12 @@ export default function LoginPage() {
     >
       <h1 className="text-2xl font-bold">Login</h1>
       <LoginForm />
+      <Link
+        href="/forgot-password"
+        className="text-accent-yellow hover:underline"
+      >
+        Forgot password?
+      </Link>
     </main>
   );
 }
