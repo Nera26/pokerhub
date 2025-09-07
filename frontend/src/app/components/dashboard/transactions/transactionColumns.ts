@@ -1,18 +1,15 @@
-import React from 'react';
-import StatusPill, { toStatus } from './StatusPill';
 import type { Txn } from './types';
 import type { Column } from '@/app/components/common/TransactionHistoryTable';
+import { buildTransactionColumns } from '@/app/components/common/transactionColumns';
 
 export type Transaction = Txn;
 
-const usd = (n: number) =>
-  (n < 0 ? '-' : n > 0 ? '+' : '') + '$' + Math.abs(n).toLocaleString();
+const [amountColumn, dateColumn, statusColumn] = buildTransactionColumns<Transaction>();
 
 export const transactionColumns: Column<Transaction>[] = [
   {
-    header: 'Date & Time',
+    ...dateColumn,
     headerClassName: 'text-left py-3 px-2 text-text-secondary',
-    cell: (t) => t.datetime,
     cellClassName: 'py-3 px-2 text-text-secondary',
   },
   {
@@ -22,21 +19,8 @@ export const transactionColumns: Column<Transaction>[] = [
     cellClassName: 'py-3 px-2',
   },
   {
-    header: 'Amount',
+    ...amountColumn,
     headerClassName: 'text-left py-3 px-2 text-text-secondary',
-    cell: (t) =>
-      React.createElement(
-        'span',
-        {
-          className:
-            t.amount > 0
-              ? 'text-accent-green'
-              : t.amount < 0
-                ? 'text-danger-red'
-                : '',
-        },
-        usd(t.amount),
-      ),
     cellClassName: 'py-3 px-2 font-semibold',
   },
   {
@@ -52,10 +36,8 @@ export const transactionColumns: Column<Transaction>[] = [
     cellClassName: 'py-3 px-2 text-text-secondary',
   },
   {
-    header: 'Status',
+    ...statusColumn,
     headerClassName: 'text-left py-3 px-2 text-text-secondary',
-    cell: (t) =>
-      React.createElement(StatusPill, { status: toStatus(t.status) }),
     cellClassName: 'py-3 px-2',
   },
 ];
