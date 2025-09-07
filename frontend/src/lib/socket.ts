@@ -130,15 +130,3 @@ export const buyIn = () => emitWithAck('buy-in', {}, 'buy-in:ack');
 export const sitOut = () => emitWithAck('sitout', {}, 'sitout:ack');
 export const rebuy = () => emitWithAck('rebuy', {}, 'rebuy:ack');
 
-export const bet = (
-  tableId: string,
-  playerId: string,
-  amount: number,
-) => sendAction({ type: 'bet', tableId, playerId, amount });
-
-export const raise = (
-  tableId: string,
-  playerId: string,
-  amount: number,
-) => sendAction({ type: 'raise', tableId, playerId, amount });
-
