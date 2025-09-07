@@ -30,7 +30,6 @@
     "migration:create": "typeorm-ts-node-commonjs migration:create src/database/migrations/$npm_config_name",
     "export:proofs": "ts-node src/scripts/export-proofs.ts",
     "rebuild:leaderboard": "ts-node src/leaderboard/rebuild.ts --days=30 --assert-duration=1800000",
-    "benchmark:leaderboard": "ts-node src/leaderboard/rebuild.ts --benchmark",
     "analytics:consume": "ts-node src/analytics/consume.ts",
     "load:socket": "ts-node test/load/socket-load.ts",
     "test:soak": "node --trace-gc -r ts-node/register -r tsconfig-paths/register test/soak/soak24h.ts",
