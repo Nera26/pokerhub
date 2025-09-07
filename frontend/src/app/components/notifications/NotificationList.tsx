@@ -5,7 +5,7 @@ import Button from '../ui/Button';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck } from '@fortawesome/free-solid-svg-icons/faCheck';
 import useRenderCount from '@/hooks/useRenderCount';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import useVirtualizedList from '@/hooks/useVirtualizedList';
 import NotificationItem from './NotificationItem';
 import {
   useNotifications,
@@ -47,10 +47,10 @@ export default function NotificationList() {
   );
 
   const listParentRef = useRef<HTMLDivElement>(null);
-  const virtualizer = useVirtualizer({
+  const virtualizer = useVirtualizedList<HTMLDivElement>({
     count: filtered.length,
-    getScrollElement: () => listParentRef.current,
-    estimateSize: () => 96,
+    parentRef: listParentRef,
+    estimateSize: 96,
   });
 
   return (

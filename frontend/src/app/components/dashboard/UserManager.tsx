@@ -20,7 +20,7 @@ import BanUserModal from '../modals/BanUserModal';
 import ToastNotification from '../ui/ToastNotification';
 import TransactionHistoryModal from '../modals/TransactionHistoryModal';
 import useRenderCount from '@/hooks/useRenderCount';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import useVirtualizedList from '@/hooks/useVirtualizedList';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createUser, updateUser, toggleUserBan, fetchUsers } from '@/lib/api/users';
 import { fetchPendingWithdrawals } from '@/lib/api/withdrawals';
@@ -270,18 +270,17 @@ export default function UserManager() {
   // Virtualize pending withdrawals to keep large lists performant
   const filteredWithdrawals = useMemo(() => withdrawals, [withdrawals]);
   const withdrawalParentRef = useRef<HTMLDivElement>(null);
-  const withdrawalVirtualizer = useVirtualizer({
+  const withdrawalVirtualizer = useVirtualizedList<HTMLDivElement>({
     count: filteredWithdrawals.length,
-    getScrollElement: () => withdrawalParentRef.current,
-    estimateSize: () => 72,
-    initialRect: { width: 0, height: 400 },
+    parentRef: withdrawalParentRef,
+    estimateSize: 72,
   });
 
   const userParentRef = useRef<HTMLDivElement>(null);
-  const userVirtualizer = useVirtualizer({
+  const userVirtualizer = useVirtualizedList<HTMLDivElement>({
     count: filteredUsers.length,
-    getScrollElement: () => userParentRef.current,
-    estimateSize: () => 64,
+    parentRef: userParentRef,
+    estimateSize: 64,
   });
   const userLoading = usersLoading;
 
