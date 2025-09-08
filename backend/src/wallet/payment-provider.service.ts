@@ -47,6 +47,24 @@ export class PaymentProviderService {
     };
   }
 
+  private async request<T>(url: string, init: RequestInit): Promise<T> {
+    const res = await fetchWithRetry(
+      url,
+      init,
+      {
+        onRetryExhausted: () =>
+          PaymentProviderService.retriesExhausted.add(1),
+        circuitBreaker: {
+          state: this.circuitBreaker,
+          threshold: 5,
+          cooldownMs: 30_000,
+          openMessage: 'Payment provider circuit breaker open',
+        },
+      },
+    );
+    return (await res.json()) as T;
+  }
+
   registerHandler(key: string, handler: (event: ProviderCallback) => Promise<void>): void {
     this.handlers.set(key, handler);
   }
@@ -134,47 +152,23 @@ export class PaymentProviderService {
       currency: 'usd',
     });
     body.append('metadata[accountId]', accountId);
-    const res = await fetchWithRetry(
-      `${this.baseUrl}/payment_intents`,
-      {
-        method: 'POST',
-        headers: this.authHeaders(),
-        body,
-      },
-      {
-        onRetryExhausted: () =>
-          PaymentProviderService.retriesExhausted.add(1),
-        circuitBreaker: {
-          state: this.circuitBreaker,
-          threshold: 5,
-          cooldownMs: 30_000,
-          openMessage: 'Payment provider circuit breaker open',
-        },
-      },
-    );
-    const data = (await res.json()) as { id: string };
+    const data = await this.createPaymentIntent(body.toString());
     return { id: data.id };
   }
 
+  async createPaymentIntent(body: string): Promise<{ id: string }> {
+    return this.request(`${this.baseUrl}/payment_intents`, {
+      method: 'POST',
+      headers: this.authHeaders(),
+      body,
+    });
+  }
+
   async getStatus(id: string): Promise<ProviderStatus> {
-    const res = await fetchWithRetry(
+    const data = await this.request<{ status?: string }>(
       `${this.baseUrl}/payment_intents/${id}`,
-      {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${this.apiKey}` },
-      },
-      {
-        onRetryExhausted: () =>
-          PaymentProviderService.retriesExhausted.add(1),
-        circuitBreaker: {
-          state: this.circuitBreaker,
-          threshold: 5,
-          cooldownMs: 30_000,
-          openMessage: 'Payment provider circuit breaker open',
-        },
-      },
+      { method: 'GET', headers: { Authorization: `Bearer ${this.apiKey}` } },
     );
-    const data = (await res.json()) as { status?: string };
     switch (data.status) {
       case 'succeeded':
         return 'approved';
