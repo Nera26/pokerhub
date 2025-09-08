@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PendingDeposit } from './pending-deposit.entity';
 import { WalletService } from './wallet.service';
+import { EventPublisher } from '../events/events.service';
 
 export interface BankEntry {
   reference: string;
@@ -17,9 +18,11 @@ export class BankReconciliationService {
     @InjectRepository(PendingDeposit)
     private readonly pendingDeposits: Repository<PendingDeposit>,
     private readonly wallet: WalletService,
+    private readonly events: EventPublisher,
   ) {}
 
   async reconcile(entries: BankEntry[]): Promise<void> {
+    let totalMismatch = 0;
     for (const entry of entries) {
       const deposit = await this.pendingDeposits.findOne({
         where: {
@@ -35,7 +38,14 @@ export class BankReconciliationService {
           { reference: entry.reference, amount: entry.amount },
           'unmatched bank entry',
         );
+        totalMismatch += entry.amount;
       }
+    }
+    if (totalMismatch !== 0) {
+      await this.events.emit('wallet.reconcile.mismatch', {
+        date: new Date().toISOString().slice(0, 10),
+        total: totalMismatch,
+      });
     }
   }
 
