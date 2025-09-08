@@ -6,12 +6,7 @@ import Input from '../../ui/Input';
 import type { BonusFormValues } from '../BonusManager';
 import { fetchBonusOptions } from '@/lib/api/admin';
 import type { ApiError } from '@/lib/api/client';
-import {
-  BONUS_TYPES,
-  BONUS_ELIGIBILITY,
-  BONUS_STATUSES,
-  type BonusOptionsResponse,
-} from '@shared/types';
+import { type BonusOptionsResponse } from '@shared/types';
 
 export interface BonusFormProps {
   register: UseFormRegister<BonusFormValues>;
@@ -26,18 +21,18 @@ export default function BonusForm({
   defaults = {},
   statusLabel = 'Status',
 }: BonusFormProps) {
-  const {
-    data: options,
-    isLoading,
-    error,
-  } = useQuery<BonusOptionsResponse, ApiError>({
+  const { data: options, error } = useQuery<BonusOptionsResponse, ApiError>({
     queryKey: ['admin-bonus-options'],
     queryFn: ({ signal }) => fetchBonusOptions({ signal }),
   });
 
-  const types = options?.types ?? BONUS_TYPES;
-  const eligibilities = options?.eligibilities ?? BONUS_ELIGIBILITY;
-  const statuses = options?.statuses ?? BONUS_STATUSES;
+  if (error) {
+    return (
+      <p className="text-xs text-danger-red">Failed to load bonus options</p>
+    );
+  }
+
+  if (!options) return null;
 
   const typeLabels: Record<string, string> = {
     deposit: 'Deposit Match',
@@ -78,24 +73,11 @@ export default function BonusForm({
           defaultValue={defaults.type}
           {...register('type')}
         >
-          {isLoading ? (
-            <option disabled>Loading…</option>
-          ) : error ? (
-            <>
-              <option disabled>Failed to load options</option>
-              {types.map((t) => (
-                <option key={t} value={t}>
-                  {typeLabels[t] ?? t}
-                </option>
-              ))}
-            </>
-          ) : (
-            types.map((t) => (
-              <option key={t} value={t}>
-                {typeLabels[t] ?? t}
-              </option>
-            ))
-          )}
+          {options.types.map((t) => (
+            <option key={t} value={t}>
+              {typeLabels[t] ?? t}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -157,24 +139,11 @@ export default function BonusForm({
             defaultValue={defaults.eligibility}
             {...register('eligibility')}
           >
-            {isLoading ? (
-              <option disabled>Loading…</option>
-            ) : error ? (
-              <>
-                <option disabled>Failed to load options</option>
-                {eligibilities.map((e) => (
-                  <option key={e} value={e}>
-                    {eligibilityLabels[e] ?? e}
-                  </option>
-                ))}
-              </>
-            ) : (
-              eligibilities.map((e) => (
-                <option key={e} value={e}>
-                  {eligibilityLabels[e] ?? e}
-                </option>
-              ))
-            )}
+            {options.eligibilities.map((e) => (
+              <option key={e} value={e}>
+                {eligibilityLabels[e] ?? e}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -188,24 +157,11 @@ export default function BonusForm({
             defaultValue={defaults.status}
             {...register('status')}
           >
-            {isLoading ? (
-              <option disabled>Loading…</option>
-            ) : error ? (
-              <>
-                <option disabled>Failed to load options</option>
-                {statuses.map((s) => (
-                  <option key={s} value={s}>
-                    {statusLabels[s] ?? s}
-                  </option>
-                ))}
-              </>
-            ) : (
-              statuses.map((s) => (
-                <option key={s} value={s}>
-                  {statusLabels[s] ?? s}
-                </option>
-              ))
-            )}
+            {options.statuses.map((s) => (
+              <option key={s} value={s}>
+                {statusLabels[s] ?? s}
+              </option>
+            ))}
           </select>
         </div>
       </div>
