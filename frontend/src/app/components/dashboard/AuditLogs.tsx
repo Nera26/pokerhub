@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type CSSProperties, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,17 +16,15 @@ import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { useAuditAlerts } from '@/hooks/useAuditAlerts';
 import { useAdminOverview } from '@/hooks/useAdminOverview';
 import type { AlertItem } from '@shared/types';
-
-// ----- Exact colors to match the HTML visual -----
-const COLOR = {
-  success: 'var(--color-accent-green)',
-  warning: 'var(--color-accent-yellow)',
-  failed: 'var(--color-danger-red)',
-  alertRed: 'var(--color-danger-red)',
-  alertYellow: 'var(--color-accent-yellow)',
-};
+import StatusPill from './common/StatusPill';
 
 type AuditStatus = 'Success' | 'Warning' | 'Failed';
+
+export const auditStyles: Record<AuditStatus, string> = {
+  Success: 'bg-accent-green text-text-primary',
+  Warning: 'bg-accent-yellow text-black',
+  Failed: 'bg-danger-red text-text-primary',
+};
 
 type AuditLogEntry = {
   timestamp: string;
@@ -36,25 +34,6 @@ type AuditLogEntry = {
   description: string;
   status: AuditStatus;
 };
-
-// ----- Pill that NEVER inherits row text colors -----
-function StatusPill({ status }: { status: AuditStatus }) {
-  const style =
-    status === 'Success'
-      ? { background: COLOR.success, color: 'var(--color-text-primary)' }
-      : status === 'Warning'
-        ? { background: COLOR.warning, color: 'black' }
-        : { background: COLOR.failed, color: 'var(--color-text-primary)' };
-
-  return (
-    <span
-      className="inline-flex items-center justify-center min-w-[82px] px-2 py-1 rounded-lg text-xs font-semibold leading-none"
-      style={style}
-    >
-      {status}
-    </span>
-  );
-}
 
 export default function AuditLogs() {
   // filters
@@ -220,7 +199,7 @@ export default function AuditLogs() {
       <div className={`py-3 px-2 ${actionColor(r.action)}`}>{r.action}</div>
       <div className="py-3 px-2">{r.description}</div>
       <div className="py-3 px-2">
-        <StatusPill status={r.status} />
+        <StatusPill label={r.status} className={auditStyles[r.status]} />
       </div>
     </li>
   );
