@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -19,7 +19,7 @@ import ToastNotification from '../ui/ToastNotification';
 import TransactionHistoryModal from '../modals/TransactionHistoryModal';
 import ConfirmationModal from './ConfirmationModal';
 import useRenderCount from '@/hooks/useRenderCount';
-import useVirtualizedList from '@/hooks/useVirtualizedList';
+import VirtualizedGrid from './VirtualizedGrid';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createUser, updateUser, toggleUserBan, fetchUsers } from '@/lib/api/users';
 import { fetchPendingWithdrawals } from '@/lib/api/withdrawals';
@@ -268,19 +268,6 @@ export default function UserManager() {
 
   // Virtualize pending withdrawals to keep large lists performant
   const filteredWithdrawals = useMemo(() => withdrawals, [withdrawals]);
-  const withdrawalParentRef = useRef<HTMLDivElement>(null);
-  const withdrawalVirtualizer = useVirtualizedList<HTMLDivElement>({
-    count: filteredWithdrawals.length,
-    parentRef: withdrawalParentRef,
-    estimateSize: 72,
-  });
-
-  const userParentRef = useRef<HTMLDivElement>(null);
-  const userVirtualizer = useVirtualizedList<HTMLDivElement>({
-    count: filteredUsers.length,
-    parentRef: userParentRef,
-    estimateSize: 64,
-  });
   const userLoading = usersLoading;
 
   return (
@@ -329,92 +316,56 @@ export default function UserManager() {
             ) : withdrawalsError ? (
               <p role="alert">Failed to load withdrawals.</p>
             ) : (
-              <>
-                {/* header row */}
-                <div className="grid grid-cols-12 gap-4 p-4 border-b border-dark bg-hover-bg rounded-xl">
-                  <div className="col-span-2 text-sm font-semibold text-text-secondary">
-                    User
-                  </div>
-                  <div className="col-span-2 text-sm font-semibold text-text-secondary">
-                    Amount
-                  </div>
-                  <div className="col-span-2 text-sm font-semibold text-text-secondary">
-                    Date
-                  </div>
-                  <div className="col-span-2 text-sm font-semibold text-text-secondary">
-                    Status
-                  </div>
-                  <div className="col-span-4 text-sm font-semibold text-text-secondary">
-                    Actions
-                  </div>
-                </div>
-
-                <div
-                  ref={withdrawalParentRef}
-                  className="max-h-80 overflow-auto"
-                >
+              <VirtualizedGrid<Withdrawal>
+                items={filteredWithdrawals}
+                columns={[
+                  { label: 'User', span: 2 },
+                  { label: 'Amount', span: 2 },
+                  { label: 'Date', span: 2 },
+                  { label: 'Status', span: 2 },
+                  { label: 'Actions', span: 4 },
+                ]}
+                estimateSize={72}
+                testId="withdrawals-grid"
+                rowRenderer={(w, style) => (
                   <div
-                    style={{
-                      height: `${withdrawalVirtualizer.getTotalSize()}px`,
-                      position: 'relative',
-                    }}
+                    key={w.user}
+                    className="grid grid-cols-12 gap-4 p-4 border-b border-dark hover:bg-hover-bg transition-colors"
+                    style={style}
                   >
-                    {withdrawalVirtualizer
-                      .getVirtualItems()
-                      .map((virtualRow) => {
-                        const w = filteredWithdrawals[virtualRow.index];
-                        return (
-                          <div
-                            key={w.user}
-                            ref={withdrawalVirtualizer.measureElement}
-                            data-index={virtualRow.index}
-                            className="grid grid-cols-12 gap-4 p-4 border-b border-dark hover:bg-hover-bg transition-colors"
-                            style={{
-                              position: 'absolute',
-                              top: 0,
-                              left: 0,
-                              width: '100%',
-                              transform: `translateY(${virtualRow.start}px)`,
-                            }}
-                          >
-                            <div className="col-span-2 flex items-center gap-3">
-                              <Image
-                                src={w.avatar || DEFAULT_AVATAR}
-                                alt={w.user}
-                                width={32}
-                                height={32}
-                                loading="lazy"
-                                sizes="32px"
-                                className="w-8 h-8 rounded-full"
-                              />
-                              <span>{w.user}</span>
-                            </div>
-                            <div className="col-span-2 font-semibold">
-                              {w.amount}
-                            </div>
-                            <div className="col-span-2 text-sm">{w.date}</div>
-                            <div className="col-span-2">
-                              <span className="bg-accent-yellow text-black px-2 py-1 rounded-lg text-xs font-semibold">
-                                {w.status}
-                              </span>
-                            </div>
-                            <div className="col-span-4">
-                              <button
-                                className="bg-accent-green hover:brightness-110 px-3 py-1 rounded-lg text-xs font-semibold transition"
-                                onClick={() => {
-                                  setSelectedWithdrawal(w);
-                                  setReviewModalOpen(true);
-                                }}
-                              >
-                                Review
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
+                    <div className="col-span-2 flex items-center gap-3">
+                      <Image
+                        src={w.avatar || DEFAULT_AVATAR}
+                        alt={w.user}
+                        width={32}
+                        height={32}
+                        loading="lazy"
+                        sizes="32px"
+                        className="w-8 h-8 rounded-full"
+                      />
+                      <span>{w.user}</span>
+                    </div>
+                    <div className="col-span-2 font-semibold">{w.amount}</div>
+                    <div className="col-span-2 text-sm">{w.date}</div>
+                    <div className="col-span-2">
+                      <span className="bg-accent-yellow text-black px-2 py-1 rounded-lg text-xs font-semibold">
+                        {w.status}
+                      </span>
+                    </div>
+                    <div className="col-span-4">
+                      <button
+                        className="bg-accent-green hover:brightness-110 px-3 py-1 rounded-lg text-xs font-semibold transition"
+                        onClick={() => {
+                          setSelectedWithdrawal(w);
+                          setReviewModalOpen(true);
+                        }}
+                      >
+                        Review
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </>
+                )}
+              />
             )}
           </div>
         </CardContent>
@@ -427,144 +378,114 @@ export default function UserManager() {
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <div className="min-w-max">
-            {/* header row */}
-            <div className="grid grid-cols-12 gap-4 p-4 border-b border-dark bg-hover-bg rounded-xl">
-              <div className="col-span-1 text-sm font-semibold text-text-secondary">
-                ID
+            {userLoading ? (
+              <div className="p-4 space-y-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="h-14 bg-hover-bg rounded-xl animate-pulse" />
+                ))}
               </div>
-              <div className="col-span-3 text-sm font-semibold text-text-secondary">
-                Name
-              </div>
-              <div className="col-span-2 text-sm font-semibold text-text-secondary">
-                Balance
-              </div>
-              <div className="col-span-2 text-sm font-semibold text-text-secondary">
-                Status
-              </div>
-              <div className="col-span-4 text-sm font-semibold text-text-secondary">
-                Actions
-              </div>
-            </div>
-
-            <div ref={userParentRef} className="max-h-80 overflow-auto">
-              {userLoading ? (
-                <div className="p-4 space-y-2">
-                  {Array.from({ length: 5 }).map((_, i) => (
+            ) : (
+              <VirtualizedGrid<User>
+                items={filteredUsers}
+                columns={[
+                  { label: 'ID', span: 1 },
+                  { label: 'Name', span: 3 },
+                  { label: 'Balance', span: 2 },
+                  { label: 'Status', span: 2 },
+                  { label: 'Actions', span: 4 },
+                ]}
+                estimateSize={64}
+                testId="users-grid"
+                rowRenderer={(u, style) => {
+                  const isBanned = u.status === 'Banned';
+                  return (
                     <div
-                      key={i}
-                      className="h-14 bg-hover-bg rounded-xl animate-pulse"
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div
-                  style={{
-                    height: `${userVirtualizer.getTotalSize()}px`,
-                    position: 'relative',
-                  }}
-                >
-                  {userVirtualizer.getVirtualItems().map((virtualRow) => {
-                    const u = filteredUsers[virtualRow.index];
-                    const isBanned = u.status === 'Banned';
-                    return (
-                      <div
-                        key={u.id}
-                        ref={userVirtualizer.measureElement}
-                        data-index={virtualRow.index}
-                        className="grid grid-cols-12 gap-4 p-4 border-b border-dark hover:bg-hover-bg transition-colors"
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          width: '100%',
-                          transform: `translateY(${virtualRow.start}px)`,
-                        }}
-                      >
-                        <div className="col-span-1 text-sm text-text-secondary">
-                          #{u.id}
-                        </div>
-                        <div className="col-span-3 flex items-center gap-3">
-                          <Image
-                            src={u.avatar || DEFAULT_AVATAR}
-                            alt={u.name}
-                            width={40}
-                            height={40}
-                            loading="lazy"
-                            sizes="40px"
-                            className="w-10 h-10 rounded-full"
-                          />
-                          <div>
-                            <p className="font-semibold">{u.name}</p>
-                            <p className="text-xs text-text-secondary">
-                              {u.email}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="col-span-2 font-semibold">
-                          ${u.balance.toFixed(2)}
-                        </div>
-                        <div className="col-span-2">
-                          <span
-                            className={
-                              'px-2 py-1 rounded-lg text-xs font-semibold text-white ' +
-                              (u.status === 'Active'
-                                ? 'bg-accent-green'
-                                : u.status === 'Frozen'
-                                  ? 'bg-accent-yellow text-black'
-                                  : 'bg-danger-red')
-                            }
-                          >
-                            {u.status}
-                          </span>
-                        </div>
-
-                        {/* ACTIONS */}
-                        <div className="col-span-4 flex gap-2">
-                          <button
-                            className="bg-accent-blue hover:bg-blue-600 px-3 py-1 rounded-lg text-xs font-semibold transition"
-                            onClick={() => {
-                              setSelectedUser(u);
-                              setEditModalOpen(true);
-                            }}
-                          >
-                            Edit
-                          </button>
-
-                          <button
-                            className={
-                              (isBanned
-                                ? 'bg-accent-green hover:brightness-110 '
-                                : 'bg-danger-red hover:bg-red-600 ') +
-                              'px-3 py-1 rounded-lg text-xs font-semibold transition'
-                            }
-                            onClick={() => {
-                              setSelectedUser(u);
-                              setBanModalOpen(true);
-                            }}
-                          >
-                            {isBanned ? 'Unban' : 'Ban'}
-                          </button>
-
-                          <button
-                            aria-label="Transaction history"
-                            title="Transaction History"
-                            className="bg-accent-blue hover:bg-blue-600 px-3 py-1 rounded-lg text-xs font-semibold transition"
-                            onClick={() => {
-                              setHistoryUserId(String(u.id));
-                              setHistoryUserName(u.name);
-                              setHistoryOpen(true);
-                            }}
-                          >
-                            <FontAwesomeIcon icon={faScroll} />
-                          </button>
+                      key={u.id}
+                      className="grid grid-cols-12 gap-4 p-4 border-b border-dark hover:bg-hover-bg transition-colors"
+                      style={style}
+                    >
+                      <div className="col-span-1 text-sm text-text-secondary">
+                        #{u.id}
+                      </div>
+                      <div className="col-span-3 flex items-center gap-3">
+                        <Image
+                          src={u.avatar || DEFAULT_AVATAR}
+                          alt={u.name}
+                          width={40}
+                          height={40}
+                          loading="lazy"
+                          sizes="40px"
+                          className="w-10 h-10 rounded-full"
+                        />
+                        <div>
+                          <p className="font-semibold">{u.name}</p>
+                          <p className="text-xs text-text-secondary">{u.email}</p>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                      <div className="col-span-2 font-semibold">
+                        ${u.balance.toFixed(2)}
+                      </div>
+                      <div className="col-span-2">
+                        <span
+                          className={
+                            'px-2 py-1 rounded-lg text-xs font-semibold text-white ' +
+                            (u.status === 'Active'
+                              ? 'bg-accent-green'
+                              : u.status === 'Frozen'
+                                ? 'bg-accent-yellow text-black'
+                                : 'bg-danger-red')
+                          }
+                        >
+                          {u.status}
+                        </span>
+                      </div>
 
+                      {/* ACTIONS */}
+                      <div className="col-span-4 flex gap-2">
+                        <button
+                          className="bg-accent-blue hover:bg-blue-600 px-3 py-1 rounded-lg text-xs font-semibold transition"
+                          onClick={() => {
+                            setSelectedUser(u);
+                            setEditModalOpen(true);
+                          }}
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          className={
+                            (isBanned
+                              ? 'bg-accent-green hover:brightness-110 '
+                              : 'bg-danger-red hover:bg-red-600 ') +
+                            'px-3 py-1 rounded-lg text-xs font-semibold transition'
+                          }
+                          onClick={() => {
+                            setSelectedUser(u);
+                            setBanModalOpen(true);
+                          }}
+                        >
+                          {isBanned ? 'Unban' : 'Ban'}
+                        </button>
+
+                        <button
+                          aria-label="Transaction history"
+                          title="Transaction History"
+                          className="bg-accent-blue hover:bg-blue-600 px-3 py-1 rounded-lg text-xs font-semibold transition"
+                          onClick={() => {
+                            setHistoryUserId(String(u.id));
+                            setHistoryUserName(u.name);
+                            setHistoryOpen(true);
+                          }}
+                        >
+                          <FontAwesomeIcon icon={faScroll} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }}
+              />
+            )}
+          
             {/* Pagination chips */}
             <div className="mt-4 flex items-center justify-between">
               <p className="text-sm text-text-secondary">
