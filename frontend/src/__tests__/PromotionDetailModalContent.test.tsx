@@ -53,7 +53,10 @@ describe('PromotionDetailModalContent', () => {
     );
 
     expect(screen.getByText('Play 5 tournaments')).toBeInTheDocument();
-    expect(screen.getByText(/played 2 tournaments/)).toBeInTheDocument();
+    const progress = screen.getByText('You have currently played', {
+      exact: false,
+    });
+    expect(progress).toHaveTextContent('2');
     expect(screen.queryAllByRole('listitem')).toHaveLength(0);
   });
 
@@ -74,7 +77,10 @@ describe('PromotionDetailModalContent', () => {
       <PromotionDetailModalContent promotion={promotion} onClose={() => {}} />,
     );
 
-    expect(screen.getByText(/played 2 tournaments/)).toBeInTheDocument();
+    const progress = screen.getByText('You have currently played', {
+      exact: false,
+    });
+    expect(progress).toHaveTextContent('2');
 
     const updatedPromotion = {
       ...promotion,
@@ -88,6 +94,8 @@ describe('PromotionDetailModalContent', () => {
       />,
     );
 
-    expect(screen.getByText(/played 5 tournaments/)).toBeInTheDocument();
+    expect(
+      screen.getByText('You have currently played', { exact: false }),
+    ).toHaveTextContent('5');
   });
 });
