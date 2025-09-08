@@ -88,7 +88,7 @@ CREATE TABLE aml_audit (
 
 ## Provider Error Handling
 
-- Network failures or non-2xx responses from the verification provider are retried with exponential backoff. After three failed attempts the circuit breaker in [kyc.service.ts](../../backend/src/auth/kyc.service.ts) opens and the request is marked failed.
+- Network failures or non-2xx responses from the verification provider are retried with exponential backoff. After three failed attempts the circuit breaker in [kyc.service.ts](../../backend/src/common/kyc.service.ts) opens and the request is marked failed.
 - Provider callbacks with `rejected` or `error` statuses transition the verification to `failed` and notify compliance.
 - AML provider errors during `POST /wallet/:id/withdraw` result in the transaction being held and logged for manual review in [wallet.service.ts](../../backend/src/wallet/wallet.service.ts).
 
@@ -116,7 +116,7 @@ CREATE TABLE aml_audit (
 
 ### Retention Policies
 
-- Logs are purged after retention windows via scheduled jobs in `backend/src/auth/kyc.service.ts`.
+- Logs are purged after retention windows via scheduled jobs in `backend/src/common/kyc.service.ts`.
 - Immutable artifacts live in `storage/kyc/` with versioned buckets.
 
 ## Escalation Steps
