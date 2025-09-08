@@ -19,11 +19,12 @@ jest.mock('@/lib/api/withdrawals', () => ({
   rejectWithdrawal: jest.fn(),
   fetchPendingWithdrawals: jest.fn(),
 }));
-jest.mock('@/app/components/modals/AddUserModal', () => (props: any) => {
-  addUserHandler = props.onAdd;
+jest.mock('@/app/components/modals/UserModal', () => (props: any) => {
+  if (props.mode === 'add') {
+    addUserHandler = props.onSubmit;
+  }
   return null;
 });
-jest.mock('@/app/components/modals/EditUserModal', () => () => null);
 jest.mock('@/app/components/modals/ReviewWithdrawalModal', () => () => null);
 jest.mock('@/app/components/modals/TransactionHistoryModal', () => () => null);
 jest.mock('@/app/components/ui/ToastNotification', () => () => null);
