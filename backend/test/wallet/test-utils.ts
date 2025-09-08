@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
+import { createDataSource } from '../utils/pgMem';
 import { Account } from '../../src/wallet/account.entity';
 import { JournalEntry } from '../../src/wallet/journal-entry.entity';
 import { Disbursement } from '../../src/wallet/disbursement.entity';
@@ -58,36 +58,13 @@ export async function setupWalletTest() {
     getDenialReason: jest.fn().mockResolvedValue(undefined),
   } as KycService;
 
-  const db = newDb();
-  db.public.registerFunction({ name: 'version', returns: 'text', implementation: () => 'pg-mem' });
-  db.public.registerFunction({
-    name: 'current_database',
-    returns: 'text',
-    implementation: () => 'test',
-  });
-  let seq = 1;
-  db.public.registerFunction({
-    name: 'uuid_generate_v4',
-    returns: 'text',
-    implementation: () => {
-      const id = seq.toString(16).padStart(32, '0');
-      seq++;
-      return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(16, 20)}-${id.slice(20)}`;
-    },
-  });
-
-  const dataSource = db.adapters.createTypeormDataSource({
-    type: 'postgres',
-    entities: [
-      Account,
-      JournalEntry,
-      Disbursement,
-      SettlementJournal,
-      PendingDeposit,
-    ],
-    synchronize: true,
-  }) as DataSource;
-  await dataSource.initialize();
+  const dataSource = await createDataSource([
+    Account,
+    JournalEntry,
+    Disbursement,
+    SettlementJournal,
+    PendingDeposit,
+  ]);
 
   const accountRepo = dataSource.getRepository(Account);
   const journalRepo = dataSource.getRepository(JournalEntry);
