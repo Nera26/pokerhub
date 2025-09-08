@@ -3,7 +3,7 @@ import { io } from 'socket.io-client';
 import { execSync } from 'child_process';
 import path from 'path';
 import { z } from 'zod';
-import { verifyProof } from '../src/lib/verifyProof';
+import { verifyProof } from '@shared/verify';
 
 const HandProofResponseSchema = z.object({
   seed: z.string(),
@@ -71,7 +71,7 @@ test.describe('hand proof fairness', () => {
     const proofJson = await resp.json();
     const proof = HandProofResponseSchema.parse(proofJson);
 
-    await expect(await verifyProof(proof)).toBe(true);
+    expect(verifyProof(proof)).toBe(true);
 
     await expect(
       page.getByRole('heading', { name: 'Fairness Proof' }),

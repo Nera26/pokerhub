@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Modal from '@/app/components/ui/Modal';
 import Button from '@/app/components/ui/Button';
 import { fetchHandProof, downloadHandProof } from '@/lib/api/hands';
-import { verifyProof } from '@/lib/verifyProof';
+import { verifyProof } from '@shared/verify';
 import type { HandProof } from '@shared/types';
 import ProofDetails from '@/components/hand/ProofDetails';
 

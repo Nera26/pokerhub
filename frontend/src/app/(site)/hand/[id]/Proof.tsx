@@ -1,5 +1,5 @@
 import { fetchHandProof } from '@/lib/api/hands';
-import { verifyProof } from '@/lib/verifyProof';
+import { verifyProof } from '@shared/verify';
 import ProofDownloadButton from './ProofDownloadButton';
 import ProofDetails from '@/components/hand/ProofDetails';
 

@@ -7,12 +7,12 @@ import {
   fetchVerifiedHandProof,
 } from '@/lib/api/hands';
 import { serverFetch } from '@/lib/server-fetch';
-import { verifyProof } from '@/lib/verifyProof';
+import { verifyProof } from '@shared/verify';
 
 jest.mock('@/lib/server-fetch', () => ({
   serverFetch: jest.fn(),
 }));
-jest.mock('@/lib/verifyProof', () => ({
+jest.mock('@shared/verify', () => ({
   verifyProof: jest.fn(),
 }));
 
@@ -39,7 +39,7 @@ describe('hands api', () => {
       headers: { get: () => 'application/json' },
       json: async () => ({ seed: 'aa', nonce: 'bb', commitment: 'cc' }),
     });
-    (verifyProof as jest.Mock).mockResolvedValue(true);
+    (verifyProof as jest.Mock).mockReturnValue(true);
 
     await expect(fetchVerifiedHandProof('1')).resolves.toEqual({
       proof: { seed: 'aa', nonce: 'bb', commitment: 'cc' },
