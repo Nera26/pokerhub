@@ -66,11 +66,11 @@ export type {
 export {
   SidebarItemSchema,
   SidebarItemsResponseSchema,
-} from '../backend/src/schemas/admin';
+} from '../backend/src/schemas/sidebar';
 export type {
   SidebarItem,
   SidebarItemsResponse,
-} from '../backend/src/schemas/admin';
+} from '../backend/src/schemas/sidebar';
 
 export {
   BONUS_TYPES,

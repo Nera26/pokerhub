@@ -6,7 +6,6 @@ import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
 import { KycService } from '../src/wallet/kyc.service';
 import { AnalyticsService } from '../src/analytics/analytics.service';
-import { sharedSidebar } from '@shared/sidebar';
 
 describe('AdminController', () => {
   let app: INestApplication;
@@ -58,10 +57,4 @@ describe('AdminController', () => {
       .expect([]);
   });
 
-  it('returns sidebar items from shared module', async () => {
-    await request(app.getHttpServer())
-      .get('/admin/sidebar')
-      .expect(200)
-      .expect(sharedSidebar);
-  });
 });

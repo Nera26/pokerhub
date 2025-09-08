@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Page from '@/app/dashboard/page';
 
 const replace = jest.fn();
@@ -23,7 +24,7 @@ jest.mock('@/hooks/useDashboardMetrics', () => ({
     isLoading: false,
   }),
 }));
-jest.mock('@/lib/api/admin', () => ({
+jest.mock('@/lib/api/sidebar', () => ({
   fetchSidebarItems: jest.fn().mockResolvedValue([
     { id: 'dashboard', label: 'Dashboard', icon: 'chart-line' },
     { id: 'users', label: 'Users', icon: 'users' },
@@ -52,7 +53,14 @@ describe('Dashboard page', () => {
   });
 
   it('uses ?tab param for initial state', async () => {
-    render(<Page />);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <Page />
+      </QueryClientProvider>,
+    );
     expect(
       await screen.findByRole('button', { name: /users/i }),
     ).toHaveAttribute('aria-current', 'page');
@@ -61,7 +69,14 @@ describe('Dashboard page', () => {
 
   it('syncs tab changes to URL', async () => {
     const user = userEvent.setup();
-    render(<Page />);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <Page />
+      </QueryClientProvider>,
+    );
     const analyticsBtn = await screen.findByRole('button', {
       name: /analytics/i,
     });

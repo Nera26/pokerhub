@@ -7,7 +7,6 @@ import {
   BonusOptionsResponseSchema,
   type BonusOptionsResponse,
 } from '@shared/types';
-import { SidebarItemsResponseSchema, type SidebarItem } from '@shared/types';
 export { AdminTournamentSchema } from '@shared/types';
 export type { AdminTournament } from '@shared/types';
 
@@ -16,11 +15,6 @@ export type { AdminTournament } from '@shared/types';
  *  ======================= */
 export const AdminTournamentListSchema = z.array(AdminTournamentSchema);
 
-export async function fetchSidebarItems({
-  signal,
-}: { signal?: AbortSignal } = {}): Promise<SidebarItem[]> {
-  return apiClient('/api/admin/sidebar', SidebarItemsResponseSchema, { signal });
-}
 
 export async function fetchAdminTournaments({
   signal,

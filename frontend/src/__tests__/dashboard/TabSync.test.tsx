@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Page from '@/app/dashboard/page';
 
-jest.mock('@/lib/api/admin', () => ({
+jest.mock('@/lib/api/sidebar', () => ({
   fetchSidebarItems: jest.fn().mockResolvedValue([
     { id: 'users', label: 'Users', icon: 'users' },
     { id: 'analytics', label: 'Analytics', icon: 'chart-bar' },
@@ -58,7 +59,14 @@ describe('Dashboard tab syncing', () => {
 
   it('updates URL and visible panel when switching tabs', async () => {
     const user = userEvent.setup();
-    render(<Page />);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <Page />
+      </QueryClientProvider>,
+    );
     expect(await screen.findByText(/users panel/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /analytics/i }));

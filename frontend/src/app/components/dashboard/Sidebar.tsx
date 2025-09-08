@@ -15,13 +15,13 @@ import {
   faClipboardList,
   faMagnifyingGlass,
 } from '@fortawesome/free-solid-svg-icons';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchSidebarItems } from '@/lib/api/admin';
+import { useQuery } from '@tanstack/react-query';
+import { fetchSidebarItems } from '@/lib/api/sidebar';
 import type { SidebarItem } from '@shared/types';
-import { sharedSidebar } from '@shared/sidebar';
 
-export type SidebarTab = (typeof sharedSidebar)[number]['id'];
+export type SidebarTab = SidebarItem['id'];
 
 interface SidebarItemWithIcon extends Omit<SidebarItem, 'icon'> {
   icon: IconDefinition;
@@ -61,25 +61,15 @@ export default function Sidebar({
   const sidebarOpen = open ?? internalOpen;
   const updateOpen = setOpen ?? setInternalOpen;
   const router = useRouter();
-  const [items, setItems] = useState<SidebarItemWithIcon[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    fetchSidebarItems()
-      .then((data) =>
-        setItems(
-          data.map((it) => ({
-            ...it,
-            icon: ICON_MAP[it.icon] ?? faChartLine,
-          })),
-        ),
-      )
-      .catch(() => {
-        setError(true);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['sidebar'],
+    queryFn: ({ signal }) => fetchSidebarItems({ signal }),
+  });
+  const items: SidebarItemWithIcon[] =
+    data?.map((it) => ({
+      ...it,
+      icon: ICON_MAP[it.icon] ?? faChartLine,
+    })) ?? [];
 
   const change = (id: SidebarTab, disabled?: boolean, path?: string) => {
     if (disabled) return;
@@ -92,7 +82,7 @@ export default function Sidebar({
     else setInternal(id);
     updateOpen(false);
   };
-  if (loading) {
+  if (isLoading) {
     return <div>Loading sidebar...</div>;
   }
 
@@ -101,12 +91,15 @@ export default function Sidebar({
       <aside
         className={`h-full w-64 bg-card-bg border-r border-dark p-4 fixed inset-y-0 left-0 z-40 transform transition-transform md:static md:translate-x-0 md:shrink-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
-        {error && (
-          <div role="alert" className="text-red-500 mb-2">
-            Failed to load sidebar
-          </div>
-        )}
         <nav aria-label="Dashboard sidebar" className="space-y-2">
+          {isError && (
+            <div role="alert" className="text-red-500 mb-2">
+              Failed to load sidebar
+            </div>
+          )}
+          {items.length === 0 && !isError && (
+            <div className="text-text-secondary">No sidebar items</div>
+          )}
           {items.map((it) => {
             const isActive = current === it.id;
             const disabled = !!it.disabled;

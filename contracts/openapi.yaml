@@ -1243,9 +1243,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SecurityAlertsResponse'
-  /admin/sidebar:
+  /sidebar:
     get:
-      summary: Get admin sidebar items
+      summary: Get dashboard sidebar items
       security:
         - bearerAuth: []
       responses:
@@ -3281,18 +3281,6 @@ components:
       properties:
         id:
           type: string
-          enum:
-            - dashboard
-            - users
-            - balance
-            - tables
-            - tournaments
-            - bonus
-            - broadcast
-            - messages
-            - audit
-            - analytics
-            - review
         label:
           type: string
         icon:

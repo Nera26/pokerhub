@@ -1,8 +1,7 @@
 import { z } from 'zod';
-import { sharedSidebar } from '@shared/sidebar';
 
 export const SidebarItemSchema = z.object({
-  id: z.enum(sharedSidebar.map((s) => s.id)),
+  id: z.string(),
   label: z.string(),
   icon: z.string(),
   path: z.string().optional(),

@@ -1,7 +1,8 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Sidebar from '@/app/components/dashboard/Sidebar';
-import { fetchSidebarItems } from '@/lib/api/admin';
+import { fetchSidebarItems } from '@/lib/api/sidebar';
 
 const push = jest.fn();
 
@@ -9,9 +10,16 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({ push }),
 }));
 
-jest.mock('@/lib/api/admin', () => ({
+jest.mock('@/lib/api/sidebar', () => ({
   fetchSidebarItems: jest.fn(),
 }));
+
+function renderWithClient(ui: React.ReactElement) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+}
 
 beforeEach(() => {
   push.mockClear();
@@ -23,7 +31,7 @@ beforeEach(() => {
 
 describe('Sidebar', () => {
   it('switches active tab when clicked', async () => {
-    render(<Sidebar />);
+    renderWithClient(<Sidebar />);
     const user = userEvent.setup();
 
     await waitFor(() => expect(fetchSidebarItems).toHaveBeenCalled());
@@ -46,7 +54,7 @@ describe('Sidebar', () => {
 
   it('calls onChange handler with selected tab', async () => {
     const onChange = jest.fn();
-    render(<Sidebar active="users" onChange={onChange} />);
+    renderWithClient(<Sidebar active="users" onChange={onChange} />);
     const user = userEvent.setup();
 
     await waitFor(() => expect(fetchSidebarItems).toHaveBeenCalled());

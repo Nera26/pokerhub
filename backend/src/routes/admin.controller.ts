@@ -8,8 +8,6 @@ import {
   AlertItem,
   AlertItemSchema,
 } from '../schemas/analytics';
-import { SidebarItem, SidebarItemsResponseSchema } from '../schemas/admin';
-import { sharedSidebar } from '@shared/sidebar';
 import { KycService } from '../wallet/kyc.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { AuthGuard } from '../auth/auth.guard';
@@ -48,10 +46,4 @@ export class AdminController {
     return z.array(AlertItemSchema).parse(alerts);
   }
 
-  @Get('sidebar')
-  @ApiOperation({ summary: 'Get admin sidebar items' })
-  @ApiResponse({ status: 200, description: 'Sidebar items' })
-  async getSidebar(): Promise<SidebarItem[]> {
-    return SidebarItemsResponseSchema.parse(sharedSidebar);
-  }
 }

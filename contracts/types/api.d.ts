@@ -1297,8 +1297,8 @@ export interface paths {
       };
     };
   };
-  "/admin/sidebar": {
-    /** Get admin sidebar items */
+  "/sidebar": {
+    /** Get dashboard sidebar items */
     get: {
       responses: {
         /** @description Sidebar items */
@@ -1720,6 +1720,14 @@ export interface components {
     AdminMessagesResponse: {
       messages: components["schemas"]["AdminMessage"][];
     };
+    SidebarItem: {
+      id: string;
+      label: string;
+      icon: string;
+      path?: string;
+      disabled?: boolean;
+    };
+    SidebarItemsResponse: components["schemas"]["SidebarItem"][];
     ReplyMessageRequest: {
       reply: string;
     };
