@@ -1,7 +1,8 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import NotificationList from '@/app/components/notifications/NotificationList';
 import { fetchNotifications } from '@/lib/api/notifications';
+import { useNotificationFilters } from '@/hooks/notifications';
 
 jest.mock('@/lib/api/notifications', () => ({
   fetchNotifications: jest.fn(),
@@ -9,7 +10,17 @@ jest.mock('@/lib/api/notifications', () => ({
   markNotificationRead: jest.fn(),
 }));
 
+jest.mock('@/hooks/notifications', () => {
+  const actual = jest.requireActual('@/hooks/notifications');
+  return {
+    ...actual,
+    useNotificationFilters: jest.fn(),
+  };
+});
+
 const mockFetchNotifications = fetchNotifications as jest.MockedFunction<typeof fetchNotifications>;
+const mockUseNotificationFilters =
+  useNotificationFilters as jest.MockedFunction<typeof useNotificationFilters>;
 
 function renderWithClient() {
   const client = new QueryClient({
@@ -27,6 +38,12 @@ function renderWithClient() {
 describe('NotificationList', () => {
   beforeEach(() => {
     mockFetchNotifications.mockReset();
+    mockUseNotificationFilters.mockReset();
+    mockUseNotificationFilters.mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null,
+    } as any);
   });
 
   it('shows loading skeleton', () => {
@@ -66,5 +83,43 @@ describe('NotificationList', () => {
     });
     renderWithClient();
     await waitFor(() => expect(screen.getByText('Hello')).toBeInTheDocument());
+  });
+
+  it('filters notifications using server options', async () => {
+    mockUseNotificationFilters.mockReturnValue({
+      data: [
+        { label: 'Bonuses', value: 'bonus' },
+        { label: 'System', value: 'system' },
+      ],
+      isLoading: false,
+      error: null,
+    } as any);
+    mockFetchNotifications.mockResolvedValue({
+      notifications: [
+        {
+          id: '1',
+          type: 'bonus',
+          title: 'Bonus',
+          message: 'bonus msg',
+          timestamp: new Date(),
+          read: false,
+        },
+        {
+          id: '2',
+          type: 'system',
+          title: 'System',
+          message: 'system msg',
+          timestamp: new Date(),
+          read: false,
+        },
+      ],
+    });
+    renderWithClient();
+    await waitFor(() => expect(screen.getByText('Bonus')).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Bonuses' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'System' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'System' }));
+    expect(screen.queryByText('bonus msg')).not.toBeInTheDocument();
+    expect(screen.getByText('system msg')).toBeInTheDocument();
   });
 });

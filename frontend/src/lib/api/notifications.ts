@@ -5,6 +5,7 @@ import {
   type MessageResponse,
   NotificationSchema as NotificationBaseSchema,
   type NotificationType,
+  NotificationTypeSchema,
 } from '@shared/types';
 
 const NotificationSchema = NotificationBaseSchema.extend({
@@ -17,6 +18,12 @@ const NotificationsResponseSchema = z.object({
   notifications: z.array(NotificationSchema),
 });
 export type NotificationsResponse = z.infer<typeof NotificationsResponseSchema>;
+
+const NotificationFilterSchema = z.object({
+  label: z.string(),
+  value: NotificationTypeSchema,
+});
+export type NotificationFilter = z.infer<typeof NotificationFilterSchema>;
 
 export async function fetchNotifications({
   signal,
@@ -42,6 +49,16 @@ export async function markNotificationRead(id: string): Promise<MessageResponse>
   return apiClient(`/api/notifications/${id}`, MessageResponseSchema, {
     method: 'POST',
   });
+}
+
+export async function fetchNotificationFilters({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<NotificationFilter[]> {
+  return apiClient(
+    '/api/notifications/filters',
+    z.array(NotificationFilterSchema),
+    { signal },
+  );
 }
 
 export type { ApiError } from './client';

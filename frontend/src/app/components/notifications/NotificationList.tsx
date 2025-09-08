@@ -11,14 +11,9 @@ import {
   useNotifications,
   useMarkAllRead,
   useMarkRead,
+  useNotificationFilters,
   type NotificationType,
 } from '@/hooks/notifications';
-
-const filters: { label: string; value: NotificationType | 'all' }[] = [
-  { label: 'All', value: 'all' },
-  { label: 'Bonuses', value: 'bonus' },
-  { label: 'System', value: 'system' },
-];
 
 export default function NotificationList() {
   useRenderCount('NotificationList');
@@ -29,6 +24,16 @@ export default function NotificationList() {
     error: listError,
   } = useNotifications({ refetchInterval: 20000 });
   const notifications = notificationsData?.notifications ?? [];
+
+  const {
+    data: filterOptions,
+    isLoading: filtersLoading,
+    error: filtersError,
+  } = useNotificationFilters();
+  const filters = useMemo(
+    () => [{ label: 'All', value: 'all' as const }, ...(filterOptions ?? [])],
+    [filterOptions],
+  );
 
   const [filter, setFilter] = useState<'all' | NotificationType>('all');
 
@@ -63,19 +68,30 @@ export default function NotificationList() {
       </div>
 
       <div className="flex gap-4 mb-6 overflow-x-auto w-full">
-        {filters.map((f) => (
-          <button
-            key={f.value}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-opacity duration-200 hover:opacity-80 ${
-              filter === f.value
-                ? 'bg-accent-yellow text-primary-bg'
-                : 'bg-card-bg text-text-secondary hover:bg-hover-bg hover:text-accent-yellow'
-            }`}
-            onClick={() => setFilter(f.value)}
-          >
-            {f.label}
-          </button>
-        ))}
+        {filtersLoading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="px-4 py-2 rounded-xl bg-card-bg h-8 w-20 animate-pulse"
+            />
+          ))
+        ) : filtersError ? (
+          <p className="text-danger-red text-sm">Failed to load filters.</p>
+        ) : (
+          filters.map((f) => (
+            <button
+              key={f.value}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-opacity duration-200 hover:opacity-80 ${
+                filter === f.value
+                  ? 'bg-accent-yellow text-primary-bg'
+                  : 'bg-card-bg text-text-secondary hover:bg-hover-bg hover:text-accent-yellow'
+              }`}
+              onClick={() => setFilter(f.value)}
+            >
+              {f.label}
+            </button>
+          ))
+        )}
       </div>
 
       {listError && (

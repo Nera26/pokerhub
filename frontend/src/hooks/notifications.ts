@@ -5,7 +5,9 @@ import {
   fetchNotifications,
   markAllNotificationsRead,
   markNotificationRead,
+  fetchNotificationFilters,
   type NotificationsResponse,
+  type NotificationFilter,
 } from '@/lib/api/notifications';
 import type { ApiError } from '@/lib/api/notifications';
 import { useNotificationMutation } from './useNotificationMutation';
@@ -13,6 +15,7 @@ import { useNotificationMutation } from './useNotificationMutation';
 export {
   type Notification,
   type NotificationType,
+  type NotificationFilter,
 } from '@/lib/api/notifications';
 
 export function useNotifications(
@@ -24,6 +27,19 @@ export function useNotifications(
   return useQuery<NotificationsResponse, ApiError>({
     queryKey: ['notifications'],
     queryFn: ({ signal }) => fetchNotifications({ signal }),
+    ...options,
+  });
+}
+
+export function useNotificationFilters(
+  options?: Omit<
+    UseQueryOptions<NotificationFilter[], ApiError>,
+    'queryKey' | 'queryFn'
+  >,
+) {
+  return useQuery<NotificationFilter[], ApiError>({
+    queryKey: ['notificationFilters'],
+    queryFn: ({ signal }) => fetchNotificationFilters({ signal }),
     ...options,
   });
 }
