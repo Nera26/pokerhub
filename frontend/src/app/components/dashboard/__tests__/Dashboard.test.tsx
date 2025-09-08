@@ -1,3 +1,4 @@
+import React from 'react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -71,6 +72,30 @@ describe('Dashboard transaction log', () => {
     renderWithClient(<Dashboard />);
     expect(await screen.findByText('Deposit')).toBeInTheDocument();
   });
+
+  it('fetches next page when Next clicked', async () => {
+    const user = userEvent.setup();
+    (fetchTransactionsLog as jest.Mock)
+      .mockResolvedValueOnce([
+        {
+          datetime: '2024-01-01T00:00:00Z',
+          action: 'Deposit',
+          amount: 100,
+          by: 'Alice',
+          notes: 'note',
+          status: 'completed',
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    renderWithClient(<Dashboard />);
+    await screen.findByText('Deposit');
+    await user.click(screen.getByText('Next'));
+
+    const calls = (fetchTransactionsLog as jest.Mock).mock.calls;
+    const lastCallArgs = calls[calls.length - 1][0];
+    expect(lastCallArgs).toMatchObject({ page: 2, pageSize: 10 });
+  });
 });
 
 describe('Dashboard metrics', () => {
@@ -110,6 +135,7 @@ describe('Dashboard metrics', () => {
     expect(
       screen.getByText(/active users/i).parentElement?.textContent,
     ).toMatch(/5/);
+
     const revenueLabel = screen.getAllByText(/revenue/i)[0];
     expect(revenueLabel.parentElement?.textContent).toMatch(/\$100/);
   });
@@ -133,12 +159,15 @@ describe('Dashboard metrics', () => {
       isLoading: false,
       error: null,
     });
+
     const user = userEvent.setup();
     renderWithClient(<Dashboard />);
+
     const revenueLabel = screen.getByText(/revenue/i, { selector: 'p' });
-    const revenueCard = revenueLabel.closest('div');
-    const select = within(revenueCard!).getByRole('combobox');
+    const revenueCard = revenueLabel.closest('div')!;
+    const select = within(revenueCard).getByRole('combobox');
+
     await user.selectOptions(select, 'week');
-    expect(within(revenueCard!).getByText('$200')).toBeInTheDocument();
+    expect(within(revenueCard).getByText('$200')).toBeInTheDocument();
   });
 });

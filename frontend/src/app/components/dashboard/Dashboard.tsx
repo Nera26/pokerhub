@@ -91,6 +91,8 @@ export default function Dashboard() {
   const [depFilter, setDepFilter] = useState<TimeFilter>('today');
   const [wdFilter, setWdFilter] = useState<TimeFilter>('today');
   const [filterType, setFilterType] = useState<string | undefined>();
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   const { data, isLoading, error } = useDashboardMetrics();
   const metrics = (data ?? {}) as any;
@@ -100,8 +102,14 @@ export default function Dashboard() {
     isLoading: logLoading,
     error: logError,
   } = useQuery({
-    queryKey: ['transactionsLog', filterType],
-    queryFn: ({ signal }) => fetchTransactionsLog({ signal, type: filterType }),
+    queryKey: ['transactionsLog', filterType, page, pageSize],
+    queryFn: ({ signal }) =>
+      fetchTransactionsLog({
+        signal,
+        type: filterType,
+        page,
+        pageSize,
+      }),
   });
   const {
     data: types = [],
@@ -336,6 +344,9 @@ export default function Dashboard() {
             typesLoading={typesLoading}
             typesError={typesError}
             onTypeChange={setFilterType}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
           />
         )}
       </Card>

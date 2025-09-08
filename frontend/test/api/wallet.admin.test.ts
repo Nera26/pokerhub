@@ -73,7 +73,16 @@ describe('wallet admin api client', () => {
   it('fetchTransactionsLog calls endpoint', async () => {
     await fetchTransactionsLog();
     expect(apiClientMock).toHaveBeenCalledWith(
-      '/api/admin/transactions',
+      '/api/admin/transactions?page=1&pageSize=10',
+      expect.anything(),
+      { signal: undefined },
+    );
+  });
+
+  it('fetchTransactionsLog supports pagination params', async () => {
+    await fetchTransactionsLog({ page: 2, pageSize: 25 });
+    expect(apiClientMock).toHaveBeenCalledWith(
+      '/api/admin/transactions?page=2&pageSize=25',
       expect.anything(),
       { signal: undefined },
     );

@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDownload } from '@fortawesome/free-solid-svg-icons';
 import type { ReactNode } from 'react';
@@ -13,6 +16,9 @@ export interface TransactionHistoryProps<T> {
   onExport?: () => void;
   headerSlot?: ReactNode;
   emptyState?: ReactNode;
+  page?: number;
+  pageSize?: number;
+  onPageChange?: (page: number) => void;
 }
 
 export default function TransactionHistory<T>({
@@ -22,7 +28,27 @@ export default function TransactionHistory<T>({
   onExport,
   headerSlot,
   emptyState,
+  page: initialPage = 1,
+  pageSize: initialPageSize = 10,
+  onPageChange,
 }: TransactionHistoryProps<T>) {
+  const [page, setPage] = useState(initialPage);
+  const [pageSize] = useState(initialPageSize);
+
+  const handlePrev = () => {
+    if (page > 1) {
+      const newPage = page - 1;
+      setPage(newPage);
+      onPageChange?.(newPage);
+    }
+  };
+
+  const handleNext = () => {
+    const newPage = page + 1;
+    setPage(newPage);
+    onPageChange?.(newPage);
+  };
+
   return (
     <section>
       <div className="bg-card-bg p-6 rounded-2xl card-shadow">
@@ -56,13 +82,20 @@ export default function TransactionHistory<T>({
 
         <div className="flex justify-between items-center mt-4">
           <span className="text-text-secondary text-sm">
-            Showing {data.length} entries
+            Page {page} (showing {data.length} of {pageSize})
           </span>
           <div className="flex gap-2">
-            <button className="bg-hover-bg hover:bg-accent-yellow hover:text-black px-3 py-2 rounded-2xl text-sm">
+            <button
+              onClick={handlePrev}
+              disabled={page === 1}
+              className="bg-hover-bg hover:bg-accent-yellow hover:text-black px-3 py-2 rounded-2xl text-sm disabled:opacity-50"
+            >
               Previous
             </button>
-            <button className="bg-hover-bg hover:bg-accent-yellow hover:text-black px-3 py-2 rounded-2xl text-sm">
+            <button
+              onClick={handleNext}
+              className="bg-hover-bg hover:bg-accent-yellow hover:text-black px-3 py-2 rounded-2xl text-sm"
+            >
               Next
             </button>
           </div>
