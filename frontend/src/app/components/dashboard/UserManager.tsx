@@ -13,9 +13,8 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import ReviewWithdrawalModal from '../modals/ReviewWithdrawalModal';
-import AddUserModal from '../modals/AddUserModal';
+import UserModal from '../modals/UserModal';
 import type { UserFormValues } from '../forms/UserForm';
-import EditUserModal from '../modals/EditUserModal';
 import ToastNotification from '../ui/ToastNotification';
 import TransactionHistoryModal from '../modals/TransactionHistoryModal';
 import ConfirmationModal from './ConfirmationModal';
@@ -587,16 +586,18 @@ export default function UserManager() {
       </Card>
 
       {/* Modals */}
-      <AddUserModal
+      <UserModal
+        mode="add"
         isOpen={addModalOpen}
         onClose={() => setAddModalOpen(false)}
-        onAdd={handleAddUser}
+        onSubmit={handleAddUser}
       />
-      <EditUserModal
+      <UserModal
+        mode="edit"
         isOpen={editModalOpen}
         onClose={() => setEditModalOpen(false)}
         user={selectedUser ?? (users[0] as User)}
-        onSave={handleEditUser}
+        onSubmit={handleEditUser}
       />
       <ConfirmationModal
         isOpen={banModalOpen}
