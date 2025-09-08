@@ -7,6 +7,7 @@ This folder contains k6 load tests and Kubernetes manifests for room worker depl
 - Thresholds ensure `p95` latency < `120ms` and memory leak < `1%` via the `X-Mem-Leak` response header.
 - `k6-10k-tables.js` simulates 10k concurrent table fetches.
 - `k6-soak.js` runs a 24h soak with GC pause tracking via the `X-GC-Pause` header.
+- `k6-table-actions.js` drives table action acknowledgements and supports `CHAOS_MODE=1` to enable deterministic packet loss and extra metrics (replacing the old `k6-100k-chaos.js`).
 
 Run locally:
 ```bash

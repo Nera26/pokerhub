@@ -5,8 +5,8 @@ import path from 'path';
 
 const seedPath = process.argv[2] || path.resolve('seed.txt');
 const seed = fs.readFileSync(seedPath, 'utf-8').trim();
-const script = path.resolve('./infra/tests/load/k6-100k-chaos.js');
+const script = path.resolve('./infra/tests/load/k6-table-actions.js');
 spawnSync('k6', ['run', script], {
   stdio: 'inherit',
-  env: { ...process.env, SEED: seed },
+  env: { ...process.env, SEED: seed, CHAOS_MODE: '1' },
 });
