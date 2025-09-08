@@ -54,17 +54,11 @@ WS_URL="ws://localhost:${PROXY_PORT}/game"
 
 if [[ -n "$REPLAY_DIR" ]]; then
   SOCKETS=${SOCKETS:-100000}
-  HAND_HISTORY_FILE=${HAND_HISTORY_FILE:-}
-  if [[ -n "$HAND_HISTORY_FILE" ]]; then
-    HAND_HISTORY_FILE="$HAND_HISTORY_FILE" SOCKETS="$SOCKETS" RNG_SEED="$RNG_SEED" WS_URL="$WS_URL" \
-      k6 run "$SCRIPT_DIR/k6-100k-sockets-replay.js" \
-      --summary-export="$METRICS_DIR/k6-summary.json" \
-      --out json="$METRICS_DIR/k6-metrics.json"
-  else
-    SOCKETS="$SOCKETS" RNG_SEED="$RNG_SEED" WS_URL="$WS_URL" k6 run "$SCRIPT_DIR/k6-100k-sockets-replay.js" \
-      --summary-export="$METRICS_DIR/k6-summary.json" \
-      --out json="$METRICS_DIR/k6-metrics.json"
-  fi
+  REPLAY_FILE=${REPLAY_FILE:-}
+  REPLAY_FILE="$REPLAY_FILE" SOCKETS="$SOCKETS" RNG_SEED="$RNG_SEED" WS_URL="$WS_URL" \
+    k6 run "$SCRIPT_DIR/k6-10k-tables.js" \
+    --summary-export="$METRICS_DIR/k6-summary.json" \
+    --out json="$METRICS_DIR/k6-metrics.json"
   mv "$SCRIPT_DIR/metrics/ack-histogram.json" "$METRICS_DIR/ack-histogram.json" 2>/dev/null || true
   echo "Replay metrics written to $METRICS_DIR"
   exit 0
@@ -84,17 +78,11 @@ trap 'kill $GC_PID >/dev/null 2>&1 || true' EXIT
 
 # run k6 replay scenario
 SOCKETS=${SOCKETS:-100000}
-HAND_HISTORY_FILE=${HAND_HISTORY_FILE:-}
-if [[ -n "$HAND_HISTORY_FILE" ]]; then
-  HAND_HISTORY_FILE="$HAND_HISTORY_FILE" SOCKETS="$SOCKETS" RNG_SEED="$RNG_SEED" WS_URL="$WS_URL" \
-    k6 run "$SCRIPT_DIR/k6-100k-sockets-replay.js" \
-    --summary-export="$METRICS_DIR/k6-summary.json" \
-    --out json="$METRICS_DIR/k6-metrics.json"
-else
-  SOCKETS="$SOCKETS" RNG_SEED="$RNG_SEED" WS_URL="$WS_URL" k6 run "$SCRIPT_DIR/k6-100k-sockets-replay.js" \
-    --summary-export="$METRICS_DIR/k6-summary.json" \
-    --out json="$METRICS_DIR/k6-metrics.json"
-fi
+REPLAY_FILE=${REPLAY_FILE:-}
+REPLAY_FILE="$REPLAY_FILE" SOCKETS="$SOCKETS" RNG_SEED="$RNG_SEED" WS_URL="$WS_URL" \
+  k6 run "$SCRIPT_DIR/k6-10k-tables.js" \
+  --summary-export="$METRICS_DIR/k6-summary.json" \
+  --out json="$METRICS_DIR/k6-metrics.json"
 mv "$SCRIPT_DIR/metrics/ack-histogram.json" "$METRICS_DIR/ack-histogram.json" 2>/dev/null || true
 
 kill $GC_PID >/dev/null 2>&1 || true

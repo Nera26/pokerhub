@@ -10,6 +10,7 @@ SOCKETS=${SOCKETS:-$((TABLES * 10))}
 RNG_SEED=${RNG_SEED:-1}
 PACKET_LOSS=${PACKET_LOSS:-0}
 JITTER_MS=${JITTER_MS:-0}
+REPLAY_FILE=${REPLAY_FILE:-}
 REPLAY_DIR=""
 
 # parse flags
@@ -145,9 +146,9 @@ if command -v jq >/dev/null 2>&1; then
 fi
 
 # run 100k socket replay scenario and capture histograms
-SOCKETS="$SOCKETS" TABLES="$TABLES" RNG_SEED="$RNG_SEED" \
+REPLAY_FILE="$REPLAY_FILE" SOCKETS="$SOCKETS" TABLES="$TABLES" RNG_SEED="$RNG_SEED" \
 PACKET_LOSS="$PACKET_LOSS" JITTER_MS="$JITTER_MS" WS_URL="$WS_URL" \
-  k6 run "$SCRIPT_DIR/k6-100k-sockets-replay.js" \
+  k6 run "$SCRIPT_DIR/k6-10k-tables.js" \
   --summary-export="$METRICS_DIR/k6-summary.json" \
   --out json="$METRICS_DIR/k6-metrics.json"
 mv "$SCRIPT_DIR/metrics/ack-histogram.json" "$METRICS_DIR/ack-histogram.json" 2>/dev/null || true

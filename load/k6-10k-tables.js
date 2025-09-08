@@ -1,6 +1,8 @@
 import ws from 'k6/ws';
 import http from 'k6/http';
 import { Trend, Rate } from 'k6/metrics';
+import { sleep } from 'k6';
+import { SharedArray } from 'k6/data';
 import { Random } from 'https://jslib.k6.io/random/1.0.0/index.js';
 import { setupSocketProxy } from './lib/socket-stress.js';
 
@@ -27,6 +29,19 @@ const tables = Number(__ENV.TABLES) || defaultTables;
 const seed = Number(__ENV.RNG_SEED) || 1;
 const grafanaPushUrl = __ENV.GRAFANA_PUSH_URL;
 const metricsUrl = __ENV.METRICS_URL;
+const loss = Number(__ENV.PACKET_LOSS) || 0;
+const jitterMs = Number(__ENV.JITTER_MS) || 0;
+const replayFile = __ENV.REPLAY_FILE;
+
+const handHistories = replayFile
+  ? new SharedArray('hands', () => {
+      try {
+        return JSON.parse(open(replayFile));
+      } catch {
+        return [[]];
+      }
+    })
+  : null;
 const ACK_LATENCY = new Trend('ack_latency', true);
 const ERROR_RATE = new Rate('error_rate');
 const HEAP_USED = new Trend('heap_used');
@@ -38,21 +53,46 @@ export default function (data) {
   const rng = new Random(seed + __VU);
   const tableId = Math.floor(rng.nextFloat() * tables);
   const url = `${data.wsUrl}?table=${tableId}`;
+  const history = handHistories ? handHistories[tableId % handHistories.length] : null;
 
   ws.connect(url, function (socket) {
     let start = 0;
+    let idx = 0;
     let acked = false;
 
     socket.on('open', function () {
-      start = Date.now();
-      socket.send('action');
+      if (history) {
+        if (jitterMs > 0) sleep((rng.nextFloat() * jitterMs) / 1000);
+        start = Date.now();
+        sendNext();
+      } else {
+        start = Date.now();
+        socket.send('action');
+      }
     });
 
+    function sendNext() {
+      if (!history || idx >= history.length) {
+        socket.close();
+        return;
+      }
+      const msg = history[idx++];
+      if (rng.nextFloat() > loss) {
+        socket.send(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      }
+    }
+
     socket.on('message', function () {
-      acked = true;
-      ACK_LATENCY.add(Date.now() - start);
-      ERROR_RATE.add(0);
-      socket.close();
+      if (!acked) {
+        acked = true;
+        ACK_LATENCY.add(Date.now() - start);
+        ERROR_RATE.add(0);
+      }
+      if (history) {
+        sendNext();
+      } else {
+        socket.close();
+      }
     });
 
     socket.on('error', function (e) {
@@ -61,6 +101,7 @@ export default function (data) {
         acked = true;
       }
       console.error('socket error', e);
+      socket.close();
     });
 
     socket.setTimeout(function () {
@@ -86,7 +127,7 @@ export default function (data) {
       if (gcSum && gcCount && Number(gcCount[1]) > 0) {
         GC_PAUSE.add((Number(gcSum[1]) / Number(gcCount[1])) * 1000);
       }
-    } catch (e) {
+    } catch {
       // ignore metrics errors
     }
   }

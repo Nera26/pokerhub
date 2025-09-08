@@ -10,7 +10,7 @@ This directory contains load test scripts for PokerHub.
 - `collect-gc-heap.sh` – polls the metrics endpoint for GC pause and RSS stats, exporting p95 and growth metrics (fails if RSS grows ≥1% or GC pause p95 ≥50 ms).
 - `run-10k-chaos.sh` – orchestrates k6 and Artillery runs, capturing ACK latency, GC/heap metrics and RNG seeds under `load/metrics/`.
 - `run-ws-soak.sh` – runs the 24 h `k6-ws-soak.js` scenario and records GC pause p95 and RSS growth metrics under `load/metrics/`.
-- `k6-10k-tables.js` – k6 WebSocket scenario driving ~80 k sockets across 10 k tables, injecting packet loss and jitter while recording ACK latency. Supports deterministic replays via `RNG_SEED` and outputs histograms under `load/metrics/`.
+- `k6-10k-tables.js` – k6 WebSocket scenario driving ~80 k sockets across 10 k tables, injecting packet loss and jitter while recording ACK latency. Supports deterministic replays via `RNG_SEED` and outputs histograms under `load/metrics/`. If `REPLAY_FILE` is set, it replays socket messages from the given hand-history JSON.
 - `artillery-10k-tables.yml` – Artillery equivalent to `k6-10k-tables.js` that captures per-endpoint latency histograms.
 - `k6-10k-tables-clickhouse.js` – k6 scenario for 10k tables and 80 k sockets injecting 5% packet loss and 200 ms jitter, capturing latency histograms and error rates with metrics exported to ClickHouse and deterministic seeds.
 - `k6-chaos-swarm.js` – swarm 80 k sockets across 10 k tables; pair with `toxiproxy.sh` for 5 % loss and 200 ms jitter.
@@ -53,6 +53,7 @@ Environment variables:
 - `ACK_P95_MS` – fail if ACK latency p95 exceeds this (default `120`).
 - `ACK_P99_MS` – fail if ACK latency p99 exceeds this (default `200`).
 - `RNG_SEED` – seed for deterministic replay.
+- `REPLAY_FILE` – path to hand-history JSON for replay (optional).
 - `METRICS_URL` – HTTP endpoint returning `{ heapUsed, gcPauseP95 }` for leak/GC checks.
 
 ## Deterministic replay
