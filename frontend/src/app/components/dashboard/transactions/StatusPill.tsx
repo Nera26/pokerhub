@@ -1,4 +1,5 @@
 import type { StatusBadge } from './types';
+import StatusPillBase from '../common/StatusPill';
 
 export type Status = 'pending' | 'completed' | 'rejected';
 
@@ -12,11 +13,5 @@ export const toStatus = (s: StatusBadge): Status => s.toLowerCase() as Status;
 
 export default function StatusPill({ status }: { status: Status }) {
   const label = status[0].toUpperCase() + status.slice(1);
-  return (
-    <span
-      className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold ${STATUS_STYLES[status]}`}
-    >
-      {label}
-    </span>
-  );
+  return <StatusPillBase label={label} className={STATUS_STYLES[status]} />;
 }

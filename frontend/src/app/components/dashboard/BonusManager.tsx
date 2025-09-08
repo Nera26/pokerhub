@@ -37,10 +37,17 @@ import ToastNotification from '../ui/ToastNotification';
 import Tooltip from '../ui/Tooltip';
 import BonusForm from './forms/BonusForm';
 import StatusModal from './StatusModal';
+import StatusPill from './common/StatusPill';
 
 type BonusStatus = 'active' | 'paused';
 type StatusFilter = BonusStatus | 'all' | 'expired';
 type PromoType = (typeof BONUS_TYPES)[number];
+
+export const bonusStyles: Record<BonusStatus | 'expired', string> = {
+  active: 'bg-accent-green text-white',
+  paused: 'bg-text-secondary text-black',
+  expired: 'bg-text-secondary text-black',
+};
 
 const bonusFormSchema = z.object({
   name: z.string().min(1, 'Promotion name is required'),
@@ -262,25 +269,11 @@ export default function BonusManager() {
     resetCreate();
   });
 
-  const StatusPill = ({ b }: { b: Bonus }) => {
+  const BonusStatusPill = ({ b }: { b: Bonus }) => {
     const expired = isExpired(b.expiryDate);
-    if (expired)
-      return (
-        <span className="bg-text-secondary text-black px-3 py-1 rounded-lg text-xs font-bold">
-          EXPIRED
-        </span>
-      );
-    if (b.status === 'active')
-      return (
-        <span className="bg-accent-green text-white px-3 py-1 rounded-lg text-xs font-bold">
-          ACTIVE
-        </span>
-      );
-    return (
-      <span className="bg-text-secondary text-black px-3 py-1 rounded-lg text-xs font-bold">
-        PAUSED
-      </span>
-    );
+    const label = expired ? 'EXPIRED' : b.status.toUpperCase();
+    const className = expired ? bonusStyles.expired : bonusStyles[b.status];
+    return <StatusPill label={label} className={className} />;
   };
 
   const StatusActions = ({ b }: { b: Bonus }) => {
@@ -379,7 +372,7 @@ export default function BonusManager() {
                         {b.description}
                       </p>
                     </div>
-                    <StatusPill b={b} />
+                    <BonusStatusPill b={b} />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mb-4">
