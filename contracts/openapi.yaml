@@ -3293,19 +3293,6 @@ components:
       properties:
         id:
           type: string
-          enum:
-            - dashboard
-            - users
-            - balance
-            - tables
-            - tournaments
-            - ctas
-            - bonus
-            - broadcast
-            - messages
-            - audit
-            - analytics
-            - review
         label:
           type: string
         icon:
@@ -3320,19 +3307,6 @@ components:
         $ref: '#/components/schemas/SidebarItem'
     SidebarTab:
       type: string
-      enum:
-        - dashboard
-        - users
-        - balance
-        - tables
-        - tournaments
-        - ctas
-        - bonus
-        - broadcast
-        - messages
-        - audit
-        - analytics
-        - review
     SidebarTabsResponse:
       type: object
       properties:

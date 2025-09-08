@@ -1787,23 +1787,6 @@ export interface components {
       resolved?: boolean;
     };
     SecurityAlertsResponse: components["schemas"]["AlertItem"][];
-    SidebarTab:
-      | "dashboard"
-      | "users"
-      | "balance"
-      | "tables"
-      | "tournaments"
-      | "ctas"
-      | "bonus"
-      | "broadcast"
-      | "messages"
-      | "audit"
-      | "analytics"
-      | "review";
-    SidebarTabsResponse: {
-      tabs: components["schemas"]["SidebarTab"][];
-      titles: Record<components["schemas"]["SidebarTab"], string>;
-    };
     WithdrawalDecisionRequest: {
       comment: string;
     };
