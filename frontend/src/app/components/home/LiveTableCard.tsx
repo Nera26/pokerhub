@@ -29,6 +29,7 @@ export interface LiveTableCardProps {
   onJoin?: () => void;
   /** Optional href for navigation */
   href?: string;
+  spectateHref?: string;
   /** Optional style for virtualization */
   style?: React.CSSProperties;
 }
@@ -44,6 +45,7 @@ const LiveTableCard = forwardRef<HTMLDivElement, LiveTableCardProps>(
       createdAgo,
       onJoin,
       href,
+      spectateHref,
       style,
     },
     ref,
@@ -112,7 +114,7 @@ const LiveTableCard = forwardRef<HTMLDivElement, LiveTableCardProps>(
           </p>
         </div>
 
-        {/* Join button */}
+        {/* Actions */}
         {href ? (
           <LinkButton href={href} className="w-full uppercase">
             Join Table
@@ -125,6 +127,15 @@ const LiveTableCard = forwardRef<HTMLDivElement, LiveTableCardProps>(
           >
             Join Table
           </SmoothButton>
+        )}
+        {spectateHref && (
+          <LinkButton
+            href={spectateHref}
+            variant="outline"
+            className="w-full mt-2 uppercase"
+          >
+            Spectate
+          </LinkButton>
         )}
       </MotionArticle>
     );

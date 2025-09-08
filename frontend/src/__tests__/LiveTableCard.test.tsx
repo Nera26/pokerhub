@@ -41,6 +41,14 @@ describe('LiveTableCard', () => {
     expect(onJoin).toHaveBeenCalled();
   });
 
+  it('navigates to spectateHref', async () => {
+    render(<LiveTableCard {...baseProps} spectateHref="/table/1/spectate" />);
+    const button = await screen.findByRole('button', { name: /spectate/i });
+    await userEvent.click(button);
+    expect(push).toHaveBeenCalledWith('/table/1/spectate');
+    expect(prefetch).toHaveBeenCalledWith('/table/1/spectate');
+  });
+
   it('displays zero values without crashing', () => {
     render(
       <LiveTableCard
