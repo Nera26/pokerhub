@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { detectChipDump } from './collusion.model';
+import { detectChipDump } from '@shared/analytics/collusion';
 import { AnalyticsService } from './analytics.service';
 import { CollusionService } from './collusion.service';
 import type { Transfer } from '@shared/analytics';
