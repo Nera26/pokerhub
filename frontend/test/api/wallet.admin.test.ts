@@ -101,8 +101,8 @@ describe('wallet admin api client', () => {
     expect(() => PendingDepositsResponseSchema.parse(sample)).not.toThrow();
   });
 
-  it('PendingWithdrawalsResponseSchema parses new fields', () => {
-    const sample = {
+  it('PendingWithdrawalsResponseSchema parses with optional bankInfo', () => {
+    const withInfo = {
       withdrawals: [
         {
           id: 'w1',
@@ -114,9 +114,26 @@ describe('wallet admin api client', () => {
           avatar: '',
           bank: 'Bank',
           maskedAccount: '****1234',
+          bankInfo: 'Bank ****1234',
         },
       ],
     };
-    expect(() => PendingWithdrawalsResponseSchema.parse(sample)).not.toThrow();
+    const withoutInfo = {
+      withdrawals: [
+        {
+          id: 'w2',
+          userId: 'u2',
+          amount: 30,
+          currency: 'USD',
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+          avatar: '',
+          bank: 'Bank',
+          maskedAccount: '****5678',
+        },
+      ],
+    };
+    expect(() => PendingWithdrawalsResponseSchema.parse(withInfo)).not.toThrow();
+    expect(() => PendingWithdrawalsResponseSchema.parse(withoutInfo)).not.toThrow();
   });
 });

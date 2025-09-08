@@ -19,6 +19,7 @@ export const PendingWithdrawalSchema = z.object({
   avatar: z.string(),
   bank: z.string(),
   maskedAccount: z.string(),
+  bankInfo: z.string().optional(),
 });
 export type PendingWithdrawal = z.infer<typeof PendingWithdrawalSchema>;
 
