@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import Sidebar from '@/app/components/dashboard/Sidebar';
+import Sidebar from '../Sidebar';
 import { fetchSidebarItems } from '@/lib/api/admin';
 
 const push = jest.fn();
@@ -14,6 +14,7 @@ jest.mock('@/lib/api/admin', () => ({
 }));
 
 beforeEach(() => {
+  jest.clearAllMocks();
   push.mockClear();
   (fetchSidebarItems as jest.Mock).mockResolvedValue([
     { id: 'dashboard', label: 'Dashboard', icon: 'chart-line' },
@@ -22,6 +23,25 @@ beforeEach(() => {
 });
 
 describe('Sidebar', () => {
+  it('renders items from API', async () => {
+    (fetchSidebarItems as jest.Mock).mockResolvedValueOnce([
+      { id: 'dashboard', label: 'API Dashboard', icon: 'chart-line' },
+      { id: 'users', label: 'API Users', icon: 'users' },
+    ]);
+    render(<Sidebar open />);
+    await waitFor(() => expect(fetchSidebarItems).toHaveBeenCalled());
+    expect(await screen.findByText('API Users')).toBeInTheDocument();
+  });
+
+  it('shows error when API fails', async () => {
+    (fetchSidebarItems as jest.Mock).mockRejectedValueOnce(new Error('fail'));
+    render(<Sidebar open />);
+    await waitFor(() => expect(fetchSidebarItems).toHaveBeenCalled());
+    expect(
+      await screen.findByText('Failed to load sidebar'),
+    ).toBeInTheDocument();
+  });
+
   it('switches active tab when clicked', async () => {
     render(<Sidebar />);
     const user = userEvent.setup();
@@ -59,3 +79,4 @@ describe('Sidebar', () => {
     expect(onChange).toHaveBeenCalledWith('dashboard');
   });
 });
+
