@@ -19,6 +19,8 @@ export default function PromotionDetailModalContent({
   const { title, progress, unlockText, breakdown, eta } = promotion;
   const isProgressMode = !!progress;
   const isUnlockMode = !!unlockText && !progress;
+  const tournamentsPlayed =
+    breakdown.find((b) => b.label === 'Tournaments Played')?.value ?? 0;
 
   return (
     <>
@@ -75,7 +77,8 @@ export default function PromotionDetailModalContent({
               Progress is tracked 24/7.
             </p>
             <p className="italic text-xs mt-2">
-              You have currently played <span className="font-semibold">2</span>{' '}
+              You have currently played{' '}
+              <span className="font-semibold">{tournamentsPlayed}</span>{' '}
               tournaments this week.
             </p>
           </>

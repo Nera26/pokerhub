@@ -1643,6 +1643,16 @@ paths:
       responses:
         '204':
           description: Flag deleted
+  /promotions:
+    get:
+      summary: List promotions
+      responses:
+        '200':
+          description: Promotions list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromotionsResponse'
   /promotions/{id}:
     get:
       summary: Get promotion by id

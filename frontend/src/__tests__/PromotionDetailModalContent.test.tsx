@@ -43,7 +43,7 @@ describe('PromotionDetailModalContent', () => {
       description: 'desc',
       reward: '$100',
       unlockText: 'Play 5 tournaments',
-      breakdown: [],
+      breakdown: [{ label: 'Tournaments Played', value: 2 }],
       actionLabel: 'View',
       onAction: () => {},
     };
@@ -53,6 +53,41 @@ describe('PromotionDetailModalContent', () => {
     );
 
     expect(screen.getByText('Play 5 tournaments')).toBeInTheDocument();
-    expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
+    expect(screen.getByText(/played 2 tournaments/)).toBeInTheDocument();
+    expect(screen.queryAllByRole('listitem')).toHaveLength(0);
+  });
+
+  it('updates tournaments played when breakdown changes', () => {
+    const promotion: Promotion = {
+      id: 3,
+      category: 'weekly',
+      title: 'Tournament Tracker',
+      description: 'desc',
+      reward: '$100',
+      unlockText: 'Play 5 tournaments',
+      breakdown: [{ label: 'Tournaments Played', value: 2 }],
+      actionLabel: 'View',
+      onAction: () => {},
+    };
+
+    const { rerender } = render(
+      <PromotionDetailModalContent promotion={promotion} onClose={() => {}} />,
+    );
+
+    expect(screen.getByText(/played 2 tournaments/)).toBeInTheDocument();
+
+    const updatedPromotion = {
+      ...promotion,
+      breakdown: [{ label: 'Tournaments Played', value: 5 }],
+    };
+
+    rerender(
+      <PromotionDetailModalContent
+        promotion={updatedPromotion}
+        onClose={() => {}}
+      />,
+    );
+
+    expect(screen.getByText(/played 5 tournaments/)).toBeInTheDocument();
   });
 });
