@@ -326,17 +326,32 @@ const TransactionLogEntrySchema = z.object({
 export type TransactionLogEntry = z.infer<typeof TransactionLogEntrySchema>;
 
 export async function fetchTransactionsLog(
-  opts: { signal?: AbortSignal; playerId?: string; type?: string } = {},
+  opts: {
+    signal?: AbortSignal;
+    playerId?: string;
+    type?: string;
+    page?: number;
+    pageSize?: number;
+  } = {},
 ): Promise<TransactionLogEntry[]> {
+  const {
+    signal,
+    playerId,
+    type,
+    page = 1,
+    pageSize = 10,
+  } = opts;
   const params = new URLSearchParams();
-  if (opts.playerId) params.set('playerId', opts.playerId);
-  if (opts.type) params.set('type', opts.type);
+  if (playerId) params.set('playerId', playerId);
+  if (type) params.set('type', type);
+  params.set('page', String(page));
+  params.set('pageSize', String(pageSize));
   const query = params.toString();
   try {
     return await apiClient(
-      `/api/admin/transactions${query ? `?${query}` : ''}`,
+      `/api/admin/transactions?${query}`,
       z.array(TransactionLogEntrySchema),
-      { signal: opts.signal },
+      { signal },
     );
   } catch (err) {
     console.error('fetchTransactionsLog failed', err);

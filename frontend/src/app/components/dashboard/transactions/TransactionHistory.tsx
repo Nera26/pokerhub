@@ -12,6 +12,9 @@ interface Props {
   typesLoading: boolean;
   typesError: unknown;
   onTypeChange?: (val: string) => void;
+  page?: number;
+  pageSize?: number;
+  onPageChange?: (page: number) => void;
 }
 
 export default function DashboardTransactionHistory({
@@ -21,6 +24,9 @@ export default function DashboardTransactionHistory({
   typesLoading,
   typesError,
   onTypeChange,
+  page,
+  pageSize,
+  onPageChange,
 }: Props) {
   const {
     data: players = [],
@@ -92,6 +98,9 @@ export default function DashboardTransactionHistory({
       filters={filters}
       onExport={onExport}
       emptyMessage="No transaction history."
+      page={page}
+      pageSize={pageSize}
+      onPageChange={onPageChange}
     />
   );
 }

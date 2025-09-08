@@ -21,6 +21,9 @@ export interface TransactionHistorySectionProps<T extends TransactionLike> {
   filters?: ReactNode;
   onExport?: () => void;
   emptyMessage?: string;
+  page?: number;
+  pageSize?: number;
+  onPageChange?: (page: number) => void;
 }
 
 export default function TransactionHistorySection<T extends TransactionLike>({
@@ -29,6 +32,9 @@ export default function TransactionHistorySection<T extends TransactionLike>({
   filters,
   onExport,
   emptyMessage = 'No transaction history found.',
+  page,
+  pageSize,
+  onPageChange,
 }: TransactionHistorySectionProps<T>) {
   const columns = buildTransactionColumns<T>({
     getType: (row) => (row.type ?? (row as unknown as { action?: string }).action ?? ''),
@@ -52,6 +58,9 @@ export default function TransactionHistorySection<T extends TransactionLike>({
       headerSlot={filters}
       onExport={onExport}
       emptyState={emptyState}
+      page={page}
+      pageSize={pageSize}
+      onPageChange={onPageChange}
     />
   );
 }
