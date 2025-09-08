@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,7 +21,8 @@ import { CardContent } from '../ui/Card';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import VirtualizedList from '@/components/VirtualizedList';
-import { fetchMessages, replyMessage } from '@/lib/api/messages';
+import { replyMessage } from '@/lib/api/messages';
+import useAdminMessages from '@/hooks/useAdminMessages';
 import type { AdminMessage, AdminMessagesResponse } from '@shared/types';
 import type { ApiError } from '@/lib/api/client';
 
@@ -38,10 +39,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function Messages() {
   const queryClient = useQueryClient();
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['adminMessages'],
-    queryFn: fetchMessages,
-  });
+  const { data, isLoading, isError, error } = useAdminMessages();
   const mutation = useMutation({
     mutationFn: ({ id, reply }: { id: number; reply: string }) =>
       replyMessage(id, { reply }),
