@@ -14,7 +14,7 @@ import {
   SidebarTabsResponseSchema,
   SidebarTab,
 } from '../schemas/admin';
-import { sharedSidebar } from '@shared/sidebar';
+import { SidebarService } from '../services/sidebar.service';
 import { KycService } from '../wallet/kyc.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { AuthGuard } from '../auth/auth.guard';
@@ -27,6 +27,7 @@ export class AdminController {
   constructor(
     private readonly kyc: KycService,
     private readonly analytics: AnalyticsService,
+    private readonly sidebar: SidebarService,
   ) {}
 
   @Get('kyc/:id/denial')
@@ -57,15 +58,17 @@ export class AdminController {
   @ApiOperation({ summary: 'Get admin sidebar items' })
   @ApiResponse({ status: 200, description: 'Sidebar items' })
   async getSidebar(): Promise<SidebarItem[]> {
-    return SidebarItemsResponseSchema.parse(sharedSidebar);
+    const items = await this.sidebar.getItems();
+    return SidebarItemsResponseSchema.parse(items);
   }
 
   @Get('tabs')
   @ApiOperation({ summary: 'Get admin dashboard tabs' })
   @ApiResponse({ status: 200, description: 'Dashboard tabs' })
   async getTabs(): Promise<{ tabs: SidebarTab[]; titles: Record<SidebarTab, string> }> {
-    const tabs = sharedSidebar.map((s) => s.id) as SidebarTab[];
-    const titles = Object.fromEntries(sharedSidebar.map((s) => [s.id, s.label])) as Record<SidebarTab, string>;
+    const items = await this.sidebar.getItems();
+    const tabs = items.map((s) => s.id) as SidebarTab[];
+    const titles = Object.fromEntries(items.map((s) => [s.id, s.label])) as Record<SidebarTab, string>;
     return SidebarTabsResponseSchema.parse({ tabs, titles });
   }
 }

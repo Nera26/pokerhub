@@ -1,7 +1,6 @@
 import { z } from 'zod';
-import { sharedSidebar } from '@shared/sidebar';
 
-export const SidebarTabSchema = z.enum(sharedSidebar.map((s) => s.id));
+export const SidebarTabSchema = z.string();
 export type SidebarTab = z.infer<typeof SidebarTabSchema>;
 
 export const SidebarItemSchema = z.object({

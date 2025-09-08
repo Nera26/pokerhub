@@ -6,7 +6,8 @@ import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
 import { KycService } from '../src/wallet/kyc.service';
 import { AnalyticsService } from '../src/analytics/analytics.service';
-import { sharedSidebar } from '@shared/sidebar';
+import { SidebarService } from '../src/services/sidebar.service';
+import type { SidebarItem } from '../src/schemas/admin';
 
 describe('AdminController', () => {
   let app: INestApplication;
@@ -16,6 +17,12 @@ describe('AdminController', () => {
     getAuditLogs: jest.fn(),
     getSecurityAlerts: jest.fn(),
   } as Partial<AnalyticsService>;
+  const sidebarItems: SidebarItem[] = [
+    { id: 'dynamic', label: 'Dynamic', icon: 'chart-line' },
+  ];
+  const sidebar = {
+    getItems: jest.fn().mockResolvedValue(sidebarItems),
+  } as Partial<SidebarService>;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -23,6 +30,7 @@ describe('AdminController', () => {
       providers: [
         { provide: KycService, useValue: kyc },
         { provide: AnalyticsService, useValue: analytics },
+        { provide: SidebarService, useValue: sidebar },
       ],
     })
       .overrideGuard(AuthGuard)
@@ -58,16 +66,16 @@ describe('AdminController', () => {
       .expect([]);
   });
 
-  it('returns sidebar items from shared module', async () => {
+  it('returns sidebar items from service', async () => {
     await request(app.getHttpServer())
       .get('/admin/sidebar')
       .expect(200)
-      .expect(sharedSidebar);
+      .expect(sidebarItems);
   });
 
-  it('returns tabs and titles', async () => {
-    const tabs = sharedSidebar.map((s) => s.id);
-    const titles = Object.fromEntries(sharedSidebar.map((s) => [s.id, s.label]));
+  it('returns tabs and titles from service', async () => {
+    const tabs = sidebarItems.map((s) => s.id);
+    const titles = Object.fromEntries(sidebarItems.map((s) => [s.id, s.label]));
     await request(app.getHttpServer())
       .get('/admin/tabs')
       .expect(200)

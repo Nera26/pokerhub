@@ -19,9 +19,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { fetchSidebarItems } from '@/lib/api/admin';
 import type { SidebarItem } from '@shared/types';
-import { sharedSidebar } from '@shared/sidebar';
 
-export type SidebarTab = (typeof sharedSidebar)[number]['id'];
+export type SidebarTab = SidebarItem['id'];
 
 interface SidebarItemWithIcon extends Omit<SidebarItem, 'icon'> {
   icon: IconDefinition;
