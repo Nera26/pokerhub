@@ -16,7 +16,7 @@ export default function PromotionDetailModalContent({
   promotion,
   onClose,
 }: PromotionDetailModalContentProps) {
-  const { title, progress, unlockText } = promotion;
+  const { title, progress, unlockText, breakdown, eta } = promotion;
   const isProgressMode = !!progress;
   const isUnlockMode = !!unlockText && !progress;
 
@@ -54,16 +54,15 @@ export default function PromotionDetailModalContent({
               Tracks 100% of cash game wagers. Your current streak is:
             </p>
             <ul className="list-disc list-inside mb-2">
-              <li>
-                Cashed hands: <span className="font-semibold">$200</span>
-              </li>
-              <li>
-                Showdown wins: <span className="font-semibold">$150</span>
-              </li>
+              {breakdown.map(({ label, value }) => (
+                <li key={label}>
+                  {label}: <span className="font-semibold">${value}</span>
+                </li>
+              ))}
             </ul>
             <p className="italic text-xs">
               Keep wagering on cash games to complete the challenge. Estimated
-              time to completion: ~2 hours of average play.
+              time to completion: {eta}
             </p>
           </>
         )}

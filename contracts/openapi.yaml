@@ -1643,6 +1643,22 @@ paths:
       responses:
         '204':
           description: Flag deleted
+  /promotions/{id}:
+    get:
+      summary: Get promotion by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Promotion detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Promotion'
 components:
   securitySchemes:
     bearerAuth:
@@ -1747,6 +1763,68 @@ components:
             $ref: '#/components/schemas/AdminMessage'
       required:
         - messages
+    PromotionBreakdownItem:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: number
+      required:
+        - label
+        - value
+    PromotionProgress:
+      type: object
+      properties:
+        current:
+          type: number
+        total:
+          type: number
+        label:
+          type: string
+        barColorClass:
+          type: string
+      required:
+        - current
+        - total
+        - label
+        - barColorClass
+    Promotion:
+      type: object
+      properties:
+        id:
+          type: string
+        category:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        reward:
+          type: string
+        unlockText:
+          type: string
+        statusText:
+          type: string
+        progress:
+          $ref: '#/components/schemas/PromotionProgress'
+        breakdown:
+          type: array
+          items:
+            $ref: '#/components/schemas/PromotionBreakdownItem'
+        eta:
+          type: string
+      required:
+        - id
+        - category
+        - title
+        - description
+        - reward
+        - breakdown
+    PromotionsResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/Promotion'
     ReplyMessageRequest:
       type: object
       properties:

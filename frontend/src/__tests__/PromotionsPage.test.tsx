@@ -61,6 +61,7 @@ describe('PromotionsPage', () => {
       description: 'desc',
       reward: 'reward',
       unlockText: 'unlock',
+      breakdown: [],
     };
     mockFetchPromotions.mockResolvedValue([promotion]);
     renderWithClient();
