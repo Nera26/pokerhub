@@ -1,4 +1,4 @@
-import { KycService, VerificationJob } from './kyc.service';
+import { KycService, VerificationJob } from '../common/kyc.service';
 import type { Job } from 'bullmq';
 
 export async function startKycWorker(kyc: KycService) {
@@ -6,7 +6,7 @@ export async function startKycWorker(kyc: KycService) {
   new bull.Worker(
     'kyc',
     async (job: Job<VerificationJob>) => {
-      await kyc.process(job.data);
+      await kyc.validateJob(job.data);
     },
     {
       connection: {

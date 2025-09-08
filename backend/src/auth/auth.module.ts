@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { KycService } from './kyc.service';
+import { KycService } from '../common/kyc.service';
 import { GbgProvider } from './providers/gbg.provider';
 import { TruliooProvider } from './providers/trulioo.provider';
 import { Account } from '../wallet/account.entity';
