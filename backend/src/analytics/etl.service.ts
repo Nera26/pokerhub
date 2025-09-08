@@ -3,9 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { Producer } from 'kafkajs';
 import { createKafkaProducer } from '../common/kafka';
 import Redis from 'ioredis';
-import Ajv, { ValidateFunction } from 'ajv';
-import { zodToJsonSchema } from 'zod-to-json-schema';
-import { EventSchemas, EventName } from '@shared/events';
+import { ValidateFunction } from 'ajv';
+import { EventName } from '@shared/events';
+import { createValidators } from './validator';
 import { AnalyticsService } from './analytics.service';
 
 export async function processEntry(
@@ -48,8 +48,7 @@ export class EtlService {
     tournament: 'tourney',
     antiCheat: 'auth',
   };
-  private readonly ajv = new Ajv();
-  private readonly validators: Record<EventName, ValidateFunction> = {};
+  private readonly validators: Record<EventName, ValidateFunction>;
 
   constructor(
     config: ConfigService,
@@ -57,16 +56,8 @@ export class EtlService {
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
   ) {
     this.producer = createKafkaProducer(config);
-
-    this.ajv.addFormat(
-      'uuid',
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-    );
-    for (const [name, schema] of Object.entries(EventSchemas)) {
-      this.validators[name as EventName] = this.ajv.compile(
-        zodToJsonSchema(schema, name),
-      );
-    }
+    const { validators } = createValidators();
+    this.validators = validators;
   }
 
   async drainOnce() {
