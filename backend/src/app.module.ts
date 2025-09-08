@@ -54,6 +54,8 @@ import { TiersModule } from './tiers/tiers.module';
 import { CtasModule } from './ctas/ctas.module';
 import { AdminMessagesService } from './notifications/admin-messages.service';
 import { AdminMessageEntity } from './notifications/admin-message.entity';
+import { PromotionsService } from './promotions/promotions.service';
+import { PromotionEntity } from './database/entities/promotion.entity';
 
 @Module({
   imports: [
@@ -97,7 +99,7 @@ import { AdminMessageEntity } from './notifications/admin-message.entity';
       inject: [ConfigService],
     }),
 
-    TypeOrmModule.forFeature([AdminMessageEntity]),
+    TypeOrmModule.forFeature([AdminMessageEntity, PromotionEntity]),
 
     // Messaging / Infra
     MessagingModule,
@@ -133,6 +135,7 @@ import { AdminMessageEntity } from './notifications/admin-message.entity';
     { provide: 'API_CONTRACT_VERSION', useValue: API_CONTRACT_VERSION },
     { provide: APP_FILTER, useClass: ZodExceptionFilter },
     AdminMessagesService,
+    PromotionsService,
   ],
 })
 export class AppModule implements NestModule {
