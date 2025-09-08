@@ -5,37 +5,6 @@ export { ZodError };
 
 export * from './wallet.schema';
 
-export const StatusResponseSchema = z.object({
-  status: z.string(),
-});
-export type StatusResponse = z.infer<typeof StatusResponseSchema>;
-
-export const ServiceStatusResponseSchema = z.object({
-  status: z.string(),
-  contractVersion: z.string(),
-});
-export type ServiceStatusResponse = z.infer<
-  typeof ServiceStatusResponseSchema
->;
-
-export const LoginRequestSchema = z.object({
-  email: z.string().email(),
-  password: z.string(),
-});
-export type LoginRequest = z.infer<typeof LoginRequestSchema>;
-
-export const RegisterRequestSchema = LoginRequestSchema;
-export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
-
-export const LoginResponseSchema = z.object({
-  token: z.string(),
-});
-export type LoginResponse = z.infer<typeof LoginResponseSchema>;
-
-export const MessageResponseSchema = z.object({
-  message: z.string(),
-});
-export type MessageResponse = z.infer<typeof MessageResponseSchema>;
 
 export {
   CTAVariantSchema,
