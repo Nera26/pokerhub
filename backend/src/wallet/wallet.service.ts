@@ -1147,6 +1147,7 @@ async rejectExpiredPendingDeposits(): Promise<void> {
       avatar: '',
       bank: '',
       maskedAccount: '',
+      bankInfo: '',
     }));
   }
 

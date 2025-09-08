@@ -1979,6 +1979,7 @@ export interface components {
       avatar: string;
       bank: string;
       maskedAccount: string;
+      bankInfo?: string;
     };
     PendingWithdrawalsResponse: {
       withdrawals: components["schemas"]["PendingWithdrawal"][];

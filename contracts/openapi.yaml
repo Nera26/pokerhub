@@ -2297,6 +2297,8 @@ components:
           type: string
         maskedAccount:
           type: string
+        bankInfo:
+          type: string
       required:
         - id
         - userId

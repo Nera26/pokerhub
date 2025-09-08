@@ -7,7 +7,7 @@ export type Withdrawal = {
   amount: string;
   date: string;
   status: 'Pending' | 'Approved' | 'Rejected';
-  bankInfo: string;
+  bankInfo?: string;
   avatar: string;
 };
 

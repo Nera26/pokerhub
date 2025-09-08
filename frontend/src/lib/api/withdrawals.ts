@@ -35,7 +35,7 @@ const WithdrawalSchema = z.object({
   amount: z.string(),
   date: z.string(),
   status: z.enum(['Pending', 'Approved', 'Rejected']),
-  bankInfo: z.string(),
+  bankInfo: z.string().optional(),
   avatar: z.string(),
 });
 

@@ -70,7 +70,7 @@ export default function ReviewWithdrawalModal({
           </p>
           <p>
             <strong>Bank Info:</strong>{' '}
-            {request?.bankInfo ?? '****-****-****-1234'}
+            {request?.bankInfo ?? 'N/A'}
           </p>
         </div>
 
