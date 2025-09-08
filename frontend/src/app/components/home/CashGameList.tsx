@@ -41,6 +41,7 @@ export default function CashGameList({
             stats={table.stats}
             createdAgo={table.createdAgo}
             href={`/table/${table.id}`}
+            spectateHref={`/table/${table.id}/spectate`}
           />
         </li>
       )}
