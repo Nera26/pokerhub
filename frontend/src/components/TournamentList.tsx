@@ -53,7 +53,7 @@ export default function TournamentList<T extends Tournament>({
             name={t.title}
             gameType={t.gameType}
             buyin={t.buyIn + (t.fee ?? 0)}
-            rebuy="N/A"
+            rebuy={t.fee !== undefined ? `$${t.fee.toLocaleString()}` : 'None'}
             prizepool={t.prizePool}
             players={t.players.current}
             maxPlayers={t.players.max}
