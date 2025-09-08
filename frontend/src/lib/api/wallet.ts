@@ -14,12 +14,14 @@ import {
   DepositDecisionRequestSchema,
   IbanResponseSchema,
   IbanHistoryResponseSchema,
+  WalletReconcileMismatchesResponseSchema,
   type WalletStatusResponse,
   type WalletTransactionsResponse,
   type PendingTransactionsResponse,
   type PendingDepositsResponse,
   type IbanResponse,
   type IbanHistoryResponse,
+  type WalletReconcileMismatchesResponse,
   TransactionTabsResponseSchema,
   type TransactionTab,
 } from '@shared/wallet.schema';
@@ -190,6 +192,16 @@ export function fetchPendingDeposits(
   return apiClient(
     `/api/admin/deposits`,
     PendingDepositsResponseSchema,
+    { signal: opts.signal },
+  );
+}
+
+export function fetchWalletReconcileMismatches(
+  opts: { signal?: AbortSignal } = {},
+): Promise<WalletReconcileMismatchesResponse> {
+  return apiClient(
+    `/api/admin/wallet/reconcile/mismatches`,
+    WalletReconcileMismatchesResponseSchema,
     { signal: opts.signal },
   );
 }

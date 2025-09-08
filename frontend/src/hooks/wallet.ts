@@ -1,8 +1,16 @@
 'use client';
 
 import { createQueryHook } from './useApiQuery';
-import { fetchIban, fetchIbanHistory } from '@/lib/api/wallet';
-import type { IbanResponse, IbanHistoryResponse } from '@shared/wallet.schema';
+import {
+  fetchIban,
+  fetchIbanHistory,
+  fetchWalletReconcileMismatches,
+} from '@/lib/api/wallet';
+import type {
+  IbanResponse,
+  IbanHistoryResponse,
+  WalletReconcileMismatchesResponse,
+} from '@shared/wallet.schema';
 
 export const useIban = createQueryHook<IbanResponse>(
   'iban',
@@ -15,3 +23,10 @@ export const useIbanHistory = createQueryHook<IbanHistoryResponse>(
   (_client, opts) => fetchIbanHistory(opts),
   'IBAN history',
 );
+
+export const useWalletReconcileMismatches =
+  createQueryHook<WalletReconcileMismatchesResponse>(
+    'wallet-reconcile-mismatches',
+    (_client, opts) => fetchWalletReconcileMismatches(opts),
+    'wallet reconcile mismatches',
+  );

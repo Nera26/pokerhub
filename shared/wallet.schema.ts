@@ -174,6 +174,21 @@ export type BankReconciliationRequest = z.infer<
   typeof BankReconciliationRequestSchema
 >;
 
+export const WalletReconcileMismatchSchema = z.object({
+  date: z.string(),
+  total: z.number(),
+});
+export type WalletReconcileMismatch = z.infer<
+  typeof WalletReconcileMismatchSchema
+>;
+
+export const WalletReconcileMismatchesResponseSchema = z.object({
+  mismatches: z.array(WalletReconcileMismatchSchema),
+});
+export type WalletReconcileMismatchesResponse = z.infer<
+  typeof WalletReconcileMismatchesResponseSchema
+>;
+
 export const IbanResponseSchema = z.object({
   iban: z.string(),
   masked: z.string(),
