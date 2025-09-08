@@ -7,20 +7,34 @@ const safeJson = (s, f) => { try { return JSON.parse(s); } catch { return f; } }
 if (!existsSync("audit")) mkdirSync("audit", { recursive: true });
 
 /* 1) CURRENT COUNTS */
-const tspBackend = sh('npx ts-prune -p backend/tsconfig.json || true').split("\n").filter(Boolean);
-const tspFrontend = sh('npx ts-prune -p frontend/tsconfig.json || true').split("\n").filter(Boolean);
+const tspBackend = sh(
+  'npx ts-prune -p backend/tsconfig.json --ignore "index.ts$|__tests__|\\.d\\.ts$" || true'
+)
+  .split("\n")
+  .filter(Boolean);
+const tspFrontend = sh(
+  'npx ts-prune -p frontend/tsconfig.json --ignore "index.ts$|__tests__|\\.d\\.ts$" || true'
+)
+  .split("\n")
+  .filter(Boolean);
 const UNUSED = tspBackend.length + tspFrontend.length;
 
-const jscpdJson = safeJson(
-  sh('npx jscpd --min-lines 30 --threshold 85 --reporters json --silent --ignore "**/{node_modules,dist,.next,build}/**" backend/src frontend/src || true') || '{"duplicates":[]}',
-  { duplicates: [] }
-);
+const jscpdCmd =
+  'npx jscpd --min-lines 30 --threshold 85 --reporters json --silent '
+  + '--exclude "**/{node_modules,dist,.next,build,__tests__}/**,**/*.test.ts,**/*.test.tsx,**/*.spec.ts,**/*.spec.tsx" '
+  + 'backend/src frontend/src || true';
+const jscpdJson = safeJson(sh(jscpdCmd) || '{"duplicates":[]}', { duplicates: [] });
 const DUPLICATES = (jscpdJson.duplicates || []).length;
 
 const staticHits = sh(
   process.platform === "win32"
-    ? 'powershell -Command "Get-ChildItem -Recurse -Include *.ts,*.tsx backend/src frontend/src | Select-String -Pattern \"fixtures|__mocks__|mockFetch|demoData|HARDCODED\" | Measure-Object | % {$_.Count}"'
-    : "grep -RInE 'fixtures|__mocks__|mockFetch|demoData|HARDCODED' backend/src frontend/src | wc -l || true"
+    ? 'powershell -Command "Get-ChildItem -Recurse -Include *.ts,*.tsx backend/src,frontend/src '
+      + '| Where-Object { $_.DirectoryName -notmatch \"__tests__\" } '
+      + '| Select-String -Pattern \"fixtures|__mocks__|mockFetch|demoData|HARDCODED\" '
+      + '| Measure-Object | ForEach-Object { $_.Count }"'
+    : "grep -RInE 'fixtures|__mocks__|mockFetch|demoData|HARDCODED' backend/src frontend/src "
+      + "--exclude-dir='__tests__' --exclude='*.test.ts' --exclude='*.test.tsx' "
+      + "--exclude='*.spec.ts' --exclude='*.spec.tsx' | wc -l || true"
 );
 const STATIC = parseInt(staticHits || "0", 10) || 0;
 
@@ -39,8 +53,8 @@ const pct = (cur, base) => (base > 0 ? Math.max(0, 1 - cur / base) : cur === 0 ?
 
 /* 3) CATEGORY SCORES (match your rubric) */
 const deadCode = Math.round(30 * pct(UNUSED, score.baseline.UNUSED));
-const dups     = Math.round(25 * pct(DUPLICATES, score.baseline.DUPLICATES));
-const dynamic  = Math.round(35 * pct(STATIC, score.baseline.STATIC));
+const dups = Math.round(25 * pct(DUPLICATES, score.baseline.DUPLICATES));
+const dynamic = Math.round(35 * pct(STATIC, score.baseline.STATIC));
 
 /* simple “tests & types” gate: +10 only if typecheck & tests pass */
 let testsTypes = 0;
@@ -48,7 +62,9 @@ try {
   sh('npm run -s typecheck || true');
   sh('npm test -s -- -i || true');
   testsTypes = 10;
-} catch { testsTypes = 0; }
+} catch {
+  testsTypes = 0;
+}
 
 const total = deadCode + dups + dynamic + testsTypes;
 

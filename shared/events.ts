@@ -4,26 +4,26 @@ import { NotificationTypeSchema } from "./types";
 // Increment on breaking changes to websocket event frames
 export const EVENT_SCHEMA_VERSION = '1';
 
-export const HandStartEvent = z.object({
+const HandStartEvent = z.object({
   handId: z.string().uuid(),
   tableId: z.string().uuid().optional(),
   players: z.array(z.string().uuid()),
 });
 
-export const HandEndEvent = z.object({
+const HandEndEvent = z.object({
   handId: z.string().uuid(),
   tableId: z.string().uuid().optional(),
   winners: z.array(z.string().uuid()).optional(),
 });
 
-export const HandSettleEvent = z.object({
+const HandSettleEvent = z.object({
   handId: z.string().uuid(),
   tableId: z.string().uuid().optional(),
   playerIds: z.array(z.string().uuid()),
   deltas: z.array(z.number()),
 });
 
-export const WalletMovementEvent = z.object({
+const WalletMovementEvent = z.object({
   accountId: z.string().uuid(),
   amount: z.number(),
   refType: z.string(),
@@ -31,37 +31,37 @@ export const WalletMovementEvent = z.object({
   currency: z.string(),
 });
 
-export const TournamentCancelEvent = z.object({
+const TournamentCancelEvent = z.object({
   tournamentId: z.string().uuid(),
 });
 
-export const WalletReserveEvent = z.object({
+const WalletReserveEvent = z.object({
   accountId: z.string().uuid(),
   amount: z.number(),
   refId: z.string(),
   currency: z.string(),
 });
 
-export const WalletCommitEvent = z.object({
+const WalletCommitEvent = z.object({
   refId: z.string(),
   amount: z.number(),
   rake: z.number(),
   currency: z.string(),
 });
 
-export const WalletRollbackEvent = z.object({
+const WalletRollbackEvent = z.object({
   accountId: z.string().uuid(),
   amount: z.number(),
   refId: z.string(),
   currency: z.string(),
 });
 
-export const AuthLoginEvent = z.object({
+const AuthLoginEvent = z.object({
   userId: z.string().uuid(),
   ts: z.number().int(),
 });
 
-export const AntiCheatWalletEvent = z.object({
+const AntiCheatWalletEvent = z.object({
   accountId: z.string().uuid(),
   operation: z.enum(["deposit", "withdraw"]),
   amount: z.number(),
@@ -70,18 +70,18 @@ export const AntiCheatWalletEvent = z.object({
   currency: z.string(),
 });
 
-export const AntiCheatCollusionEvent = z.object({
+const AntiCheatCollusionEvent = z.object({
   sessionId: z.string(),
   users: z.array(z.string().uuid()),
   features: z.record(z.unknown()),
 });
 
-export const AntiCheatFlagEvent = z.union([
+const AntiCheatFlagEvent = z.union([
   AntiCheatWalletEvent,
   AntiCheatCollusionEvent,
 ]);
 
-export const WalletVelocityLimitEvent = z.object({
+const WalletVelocityLimitEvent = z.object({
   accountId: z.string().uuid(),
   operation: z.enum(["deposit", "withdraw"]),
   type: z.enum(["count", "amount"]),
@@ -90,49 +90,49 @@ export const WalletVelocityLimitEvent = z.object({
   value: z.number(),
 });
 
-export const WalletChargebackFlagEvent = z.object({
+const WalletChargebackFlagEvent = z.object({
   accountId: z.string().uuid(),
   deviceId: z.string(),
   count: z.number(),
   limit: z.number(),
 });
 
-export const WalletReconcileMismatchEvent = z.object({
+const WalletReconcileMismatchEvent = z.object({
   date: z.string(),
   total: z.number(),
 });
 
-export const NotificationCreateEvent = z.object({
+const NotificationCreateEvent = z.object({
   userId: z.string().uuid(),
   type: NotificationTypeSchema,
   message: z.string(),
 });
 
-export const WalletDepositRejectedEvent = z.object({
+const WalletDepositRejectedEvent = z.object({
   accountId: z.string().uuid(),
   depositId: z.string().uuid(),
   currency: z.string().length(3),
   reason: z.string().optional(),
 });
 
-export const WalletDepositConfirmedEvent = z.object({
+const WalletDepositConfirmedEvent = z.object({
   accountId: z.string().uuid(),
   depositId: z.string().uuid(),
   amount: z.number(),
   currency: z.string().length(3),
 });
 
-export const AdminDepositPendingEvent = z.object({
+const AdminDepositPendingEvent = z.object({
   depositId: z.string().uuid(),
   jobId: z.string(),
 });
 
-export const AdminDepositRejectedEvent = z.object({
+const AdminDepositRejectedEvent = z.object({
   depositId: z.string().uuid(),
   reason: z.string().optional(),
 });
 
-export const AdminDepositConfirmedEvent = z.object({
+const AdminDepositConfirmedEvent = z.object({
   depositId: z.string().uuid(),
 });
 
