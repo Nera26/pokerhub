@@ -3,8 +3,17 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TransactionType } from './transaction-type.entity';
 import { Transaction } from './transaction.entity';
-import { FilterOptionsSchema, TransactionEntriesSchema } from '@shared/types';
-import type { FilterOptions, TransactionEntries } from '@shared/types';
+import {
+  FilterOptionsSchema,
+  TransactionEntriesSchema,
+  TransactionLogResponseSchema,
+  TransactionLogQuerySchema,
+} from '@shared/types';
+import type {
+  FilterOptions,
+  TransactionEntries,
+  TransactionLogQuery,
+} from '@shared/types';
 import type { TransactionTab } from '@shared/wallet.schema';
 import { TransactionTypesResponseSchema } from '../schemas/transactions';
 
@@ -56,6 +65,34 @@ export class TransactionsService {
         performedBy: t.performedBy,
         notes: t.notes,
         status: t.status as 'Completed' | 'Pending' | 'Rejected',
+      })),
+    );
+  }
+
+  async getTransactionsLog(query: TransactionLogQuery) {
+    const { playerId, type, startDate, endDate, page, pageSize } =
+      TransactionLogQuerySchema.parse(query);
+    const qb = this.txRepo
+      .createQueryBuilder('t')
+      .leftJoinAndSelect('t.type', 'type')
+      .orderBy('t.createdAt', 'DESC')
+      .skip((page - 1) * pageSize)
+      .take(pageSize);
+    if (playerId) qb.andWhere('t.userId = :playerId', { playerId });
+    if (type) qb.andWhere('t.typeId = :type', { type });
+    if (startDate)
+      qb.andWhere('t.createdAt >= :startDate', { startDate: new Date(startDate) });
+    if (endDate)
+      qb.andWhere('t.createdAt <= :endDate', { endDate: new Date(endDate) });
+    const txs = await qb.getMany();
+    return TransactionLogResponseSchema.parse(
+      txs.map((t) => ({
+        datetime: t.createdAt.toISOString(),
+        action: t.type.label,
+        amount: t.amount,
+        by: t.performedBy,
+        notes: t.notes,
+        status: t.status,
       })),
     );
   }

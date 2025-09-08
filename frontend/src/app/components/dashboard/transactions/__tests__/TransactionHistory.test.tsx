@@ -1,57 +1,65 @@
-jest.mock('@tanstack/react-query', () => ({ useQuery: jest.fn() }));
-jest.mock('@/hooks/useApiError', () => ({ useApiError: jest.fn() }));
-
-import { render, screen } from '@testing-library/react';
-import { useQuery } from '@tanstack/react-query';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import TransactionHistory from '../TransactionHistory';
+import {
+  fetchTransactionsLog,
+  fetchTransactionTypes,
+  fetchAdminPlayers,
+} from '@/lib/api/wallet';
+
+jest.mock('@/lib/api/wallet', () => ({
+  fetchTransactionsLog: jest.fn(),
+  fetchTransactionTypes: jest.fn(),
+  fetchAdminPlayers: jest.fn(),
+}));
+
+function renderWithClient(ui: React.ReactElement) {
+  const client = new QueryClient();
+  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+}
 
 describe('Dashboard TransactionHistory', () => {
   beforeEach(() => {
-    (useQuery as jest.Mock).mockReturnValue({
-      data: [],
-      isLoading: false,
-      error: null,
-    });
+    (fetchTransactionTypes as jest.Mock).mockResolvedValue([]);
+    (fetchAdminPlayers as jest.Mock).mockResolvedValue([]);
   });
 
-  it('renders filters and export button', () => {
-    const log = [
+  it('shows loading state', () => {
+    (fetchTransactionsLog as jest.Mock).mockReturnValue(new Promise(() => {}));
+    renderWithClient(<TransactionHistory onExport={() => {}} />);
+    expect(screen.getByLabelText('loading history')).toBeInTheDocument();
+  });
+
+  it('shows empty state', async () => {
+    (fetchTransactionsLog as jest.Mock).mockResolvedValue([]);
+    renderWithClient(<TransactionHistory onExport={() => {}} />);
+    expect(await screen.findByText('No transaction history.')).toBeInTheDocument();
+  });
+
+  it('calls fetchTransactionsLog with type filter', async () => {
+    (fetchTransactionsLog as jest.Mock).mockResolvedValue([
       {
-        datetime: '2024-01-01',
+        datetime: '2024-01-01T00:00:00Z',
         action: 'Deposit',
         amount: 10,
         by: 'Admin',
         notes: '',
         status: 'Completed',
       },
-    ];
-    render(
-      <TransactionHistory
-        log={log}
-        onExport={() => {}}
-        types={[]}
-        typesLoading={false}
-        typesError={null}
-      />,
-    );
-    expect(screen.getByLabelText('Start date')).toBeInTheDocument();
-    expect(screen.getByLabelText('End date')).toBeInTheDocument();
-    expect(screen.getByLabelText('Filter by player')).toBeInTheDocument();
-    expect(screen.getByLabelText('Filter by type')).toBeInTheDocument();
-    expect(screen.getByText('Export CSV')).toBeInTheDocument();
-  });
+    ]);
+    renderWithClient(<TransactionHistory onExport={() => {}} />);
 
-  it('shows empty state when no transactions', () => {
-    render(
-      <TransactionHistory
-        log={[]}
-        onExport={() => {}}
-        types={[]}
-        typesLoading={false}
-        typesError={null}
-      />,
+    const select = await screen.findByLabelText('Filter by type');
+    fireEvent.change(select, { target: { value: 'deposit' } });
+
+    await waitFor(() =>
+      expect(
+        (fetchTransactionsLog as jest.Mock).mock.calls.some(
+          (c: any[]) => c[0].type === 'deposit',
+        ),
+      ).toBe(true),
     );
-    expect(screen.getByText('No transaction history.')).toBeInTheDocument();
   });
 });
 

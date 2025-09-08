@@ -804,17 +804,8 @@ export default function BalanceTransactions() {
         <p role="alert">
           {logErrorMessage || 'Failed to load transaction history.'}
         </p>
-      ) : log.length === 0 ? (
-        <p>No transaction history.</p>
       ) : (
-        <TransactionHistory
-          log={log}
-          onExport={exportCSV}
-          types={txnTypes}
-          typesLoading={txnTypesLoading}
-          typesError={txnTypesError}
-          onTypeChange={setTypeFilter}
-        />
+        <TransactionHistory onExport={exportCSV} />
       )}
 
 /* Modals */

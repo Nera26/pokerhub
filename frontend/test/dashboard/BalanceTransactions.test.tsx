@@ -4,6 +4,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useWalletReconcileMismatches } from '@/hooks/wallet';
 
 jest.mock('@tanstack/react-query');
+jest.mock('@/app/components/dashboard/transactions/TransactionHistory', () => ({
+  __esModule: true,
+  default: () => <div>History</div>,
+}));
 jest.mock('@/hooks/wallet', () => ({
   __esModule: true,
   ...jest.requireActual('@/hooks/wallet'),
@@ -35,7 +39,6 @@ describe('BalanceTransactions component states', () => {
     render(<BalanceTransactions />);
     expect(screen.getByText('No pending deposits.')).toBeInTheDocument();
     expect(screen.getByText('No user balances.')).toBeInTheDocument();
-    expect(screen.getByText('No transaction history.')).toBeInTheDocument();
   });
 
   it('shows API error message for transaction log', () => {
