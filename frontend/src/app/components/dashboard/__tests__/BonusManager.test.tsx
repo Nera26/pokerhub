@@ -1,13 +1,20 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import BonusManager from '../BonusManager';
-import { fetchBonuses, updateBonus, createBonus, deleteBonus } from '@/lib/api/admin';
+import {
+  fetchBonuses,
+  updateBonus,
+  createBonus,
+  deleteBonus,
+  fetchBonusOptions,
+} from '@/lib/api/admin';
 
 jest.mock('@/lib/api/admin', () => ({
   fetchBonuses: jest.fn(),
   createBonus: jest.fn(),
   updateBonus: jest.fn(),
   deleteBonus: jest.fn(),
+  fetchBonusOptions: jest.fn(),
 }));
 
 function renderWithClient(ui: React.ReactElement) {
@@ -20,6 +27,11 @@ function renderWithClient(ui: React.ReactElement) {
 describe('BonusManager status toggle', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (fetchBonusOptions as jest.Mock).mockResolvedValue({
+      types: ['deposit'],
+      eligibilities: ['all'],
+      statuses: ['active', 'paused'],
+    });
   });
 
   it('pauses a bonus and shows toast and updates status', async () => {

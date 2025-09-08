@@ -28,16 +28,15 @@ describe('BonusForm', () => {
     expect(screen.getByText('Paused')).toBeInTheDocument();
   });
 
-  it('falls back to defaults on error', () => {
+  it('shows error message when options fail to load', () => {
     (useQuery as jest.Mock).mockReturnValue({
       data: undefined,
       isLoading: false,
       error: { message: 'fail' },
     });
     render(<Wrapper />);
-    expect(screen.getAllByText('Failed to load options')[0]).toBeInTheDocument();
-    expect(screen.getByText('Deposit Match')).toBeInTheDocument();
-    expect(screen.getByText('All Players')).toBeInTheDocument();
-    expect(screen.getByText('Active')).toBeInTheDocument();
+    expect(
+      screen.getByText('Failed to load bonus options'),
+    ).toBeInTheDocument();
   });
 });
