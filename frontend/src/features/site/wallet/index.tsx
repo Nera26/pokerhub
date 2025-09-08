@@ -5,9 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHourglassHalf } from '@fortawesome/free-solid-svg-icons/faHourglassHalf';
 import WalletSummary from '@/app/components/wallet/WalletSummary';
-import TransactionHistory, {
-  Transaction,
-} from '@/app/components/wallet/TransactionHistory';
+import TransactionHistorySection from '@/app/components/common/TransactionHistorySection';
 import Modal from '@/app/components/ui/Modal';
 import DepositModalContent from '@/app/components/wallet/DepositModalContent';
 import WithdrawModalContent from '@/app/components/wallet/WithdrawModalContent';
@@ -26,6 +24,14 @@ import { startKyc } from '@/lib/api/kyc';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { useWallet } from '@/features/wallet/useWallet';
+
+interface Transaction {
+  id: string;
+  type: string;
+  amount: number;
+  date: string;
+  status: string;
+}
 
 export default function WalletPage() {
   const { realBalance, creditBalance, playerId, setBalances } = useAuth();
@@ -256,8 +262,8 @@ export default function WalletPage() {
             Failed to load transactions
           </div>
         ) : (
-          <TransactionHistory
-            transactions={transactionHistoryData}
+          <TransactionHistorySection
+            data={transactionHistoryData}
             currency={currency}
           />
         )}
