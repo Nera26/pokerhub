@@ -7,6 +7,7 @@ import {
   TransactionEntriesSchema,
   TransactionTypesResponseSchema,
 } from '@shared/types';
+import { TransactionTabsResponseSchema } from '@shared/wallet.schema';
 import { TransactionsService } from '../wallet/transactions.service';
 
 @ApiTags('transactions')
@@ -14,6 +15,13 @@ import { TransactionsService } from '../wallet/transactions.service';
 @UseGuards(AuthGuard, AdminGuard)
 export class TransactionsController {
   constructor(private readonly txService: TransactionsService) {}
+  @Get('admin/transactions/tabs')
+  @ApiOperation({ summary: 'Get transaction tabs' })
+  @ApiResponse({ status: 200, description: 'Transaction tabs' })
+  async tabs() {
+    const res = await this.txService.getTransactionTabs();
+    return TransactionTabsResponseSchema.parse(res);
+  }
   @Get('transactions/filters')
   @ApiOperation({ summary: 'Get transaction filter options' })
   @ApiResponse({ status: 200, description: 'Filter options' })

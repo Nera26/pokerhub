@@ -19,6 +19,7 @@ describe('BalanceTransactions component states', () => {
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
+      .mockReturnValueOnce({ data: [], isLoading: false, error: null })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null });
     render(<BalanceTransactions />);
     expect(screen.getByText('No pending deposits.')).toBeInTheDocument();
@@ -32,10 +33,32 @@ describe('BalanceTransactions component states', () => {
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
+      .mockReturnValueOnce({ data: [], isLoading: false, error: null })
       .mockReturnValueOnce({ data: [], isLoading: false, error: { message: 'fail' } })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null })
       .mockReturnValueOnce({ data: [], isLoading: false, error: null });
     render(<BalanceTransactions />);
     expect(screen.getByRole('alert')).toHaveTextContent('fail');
+  });
+
+  it('renders tabs from API', () => {
+    (useQuery as jest.Mock)
+      .mockReturnValueOnce({
+        data: [
+          { id: 'all', label: 'All' },
+          { id: 'manual', label: 'Manual Adjustments' },
+        ],
+        isLoading: false,
+        error: null,
+      })
+      .mockReturnValueOnce({ data: [], isLoading: false, error: null })
+      .mockReturnValueOnce({ data: [], isLoading: false, error: null })
+      .mockReturnValueOnce({ data: [], isLoading: false, error: null })
+      .mockReturnValueOnce({ data: [], isLoading: false, error: null })
+      .mockReturnValueOnce({ data: [], isLoading: false, error: null })
+      .mockReturnValueOnce({ data: [], isLoading: false, error: null })
+      .mockReturnValueOnce({ data: [], isLoading: false, error: null });
+    render(<BalanceTransactions />);
+    expect(screen.getByText('Manual Adjustments')).toBeInTheDocument();
   });
 });

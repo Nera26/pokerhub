@@ -1,1 +1,1 @@
-export type TransactionTab = 'all' | 'deposits' | 'withdrawals' | 'manual';
+export type { TransactionTab } from '@shared/wallet.schema';

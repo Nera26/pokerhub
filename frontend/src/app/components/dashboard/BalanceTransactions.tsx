@@ -32,6 +32,7 @@ import {
   rejectWithdrawal,
   fetchBalances,
   fetchTransactionsLog,
+  fetchTransactionTabs,
   fetchTransactionTypes,
 } from '@/lib/api/wallet';
 import { useIban, useIbanHistory } from '@/hooks/wallet';
@@ -88,13 +89,12 @@ function ReceiptModal({
 export default function BalanceTransactions() {
   useRenderCount('BalanceTransactions');
   const [tab, setTab] = useState<TransactionTab>('all');
-
-  const filters: { id: TransactionTab; label: string }[] = [
-    { id: 'all', label: 'All' },
-    { id: 'deposits', label: 'Deposits' },
-    { id: 'withdrawals', label: 'Withdrawals' },
-    { id: 'manual', label: 'Manual Adjustments' },
-  ];
+  const {
+    data: filters = [],
+    isLoading: tabsLoading,
+    error: tabsError,
+  } = useQuery({ queryKey: ['transaction-tabs'], queryFn: fetchTransactionTabs });
+  const tabsErrorMessage = useApiError(tabsError);
 
   const queryClient = useQueryClient();
   const {
@@ -451,20 +451,26 @@ export default function BalanceTransactions() {
       {/* Filters */}
       <section className="mb-2">
         <div className="flex gap-3">
-          {filters.map((f) => (
-            <button
-              key={f.id}
-              onClick={() => setTab(f.id)}
-              className={
-                'px-4 py-2 rounded-2xl font-semibold transition ' +
-                (tab === f.id
-                  ? 'bg-accent-yellow text-black'
-                  : 'bg-hover-bg text-text-primary hover:bg-accent-green hover:text-white')
-              }
-            >
-              {f.label}
-            </button>
-          ))}
+          {tabsLoading ? (
+            <FontAwesomeIcon icon={faSpinner} spin aria-label="loading tabs" />
+          ) : tabsError ? (
+            <p role="alert">{tabsErrorMessage || 'Failed to load tabs.'}</p>
+          ) : (
+            filters.map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setTab(f.id)}
+                className={
+                  'px-4 py-2 rounded-2xl font-semibold transition ' +
+                  (tab === f.id
+                    ? 'bg-accent-yellow text-black'
+                    : 'bg-hover-bg text-text-primary hover:bg-accent-green hover:text-white')
+                }
+              >
+                {f.label}
+              </button>
+            ))
+          )}
         </div>
       </section>
 
