@@ -88,6 +88,18 @@ describe('wallet admin api client', () => {
     );
   });
 
+  it('fetchTransactionsLog includes date filters', async () => {
+    await fetchTransactionsLog({
+      startDate: '2024-01-01',
+      endDate: '2024-01-31',
+    });
+    expect(apiClientMock).toHaveBeenCalledWith(
+      '/api/admin/transactions?startDate=2024-01-01&endDate=2024-01-31&page=1&pageSize=10',
+      expect.anything(),
+      { signal: undefined },
+    );
+  });
+
   it('PendingDepositsResponseSchema parses new fields', () => {
     const sample = {
       deposits: [

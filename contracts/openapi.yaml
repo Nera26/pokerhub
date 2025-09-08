@@ -1327,6 +1327,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BonusOptionsResponse'
+  /admin/transactions:
+    get:
+      summary: List transactions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: playerId
+          schema:
+            type: string
+        - in: query
+          name: type
+          schema:
+            type: string
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Transactions log
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionLogResponse'
   /admin/transactions/tabs:
     get:
       summary: List transaction tabs
@@ -3409,6 +3448,32 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/TransactionTab'
+    TransactionLogEntry:
+      type: object
+      properties:
+        datetime:
+          type: string
+        action:
+          type: string
+        amount:
+          type: number
+        by:
+          type: string
+        notes:
+          type: string
+        status:
+          type: string
+      required:
+        - datetime
+        - action
+        - amount
+        - by
+        - notes
+        - status
+    TransactionLogResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/TransactionLogEntry'
     SidebarItem:
       type: object
       properties:

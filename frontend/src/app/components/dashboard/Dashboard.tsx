@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -17,11 +16,6 @@ import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import MetricCard, { TimeFilter } from './MetricCard';
 import BroadcastPanel from './BroadcastPanel';
 import DashboardTransactionHistory from './transactions/TransactionHistory';
-import {
-  fetchTransactionTypes,
-  fetchTransactionsLog,
-} from '@/lib/api/wallet';
-import { useApiError } from '@/hooks/useApiError';
 
 const ActivityChart = dynamic(() => import('./charts/ActivityChart'), {
   loading: () => (
@@ -90,38 +84,8 @@ export default function Dashboard() {
   const [revFilter, setRevFilter] = useState<TimeFilter>('today');
   const [depFilter, setDepFilter] = useState<TimeFilter>('today');
   const [wdFilter, setWdFilter] = useState<TimeFilter>('today');
-  const [filterType, setFilterType] = useState<string | undefined>();
-  const [page, setPage] = useState(1);
-  const pageSize = 10;
-
   const { data, isLoading, error } = useDashboardMetrics();
   const metrics = (data ?? {}) as any;
-
-  const {
-    data: log = [],
-    isLoading: logLoading,
-    error: logError,
-  } = useQuery({
-    queryKey: ['transactionsLog', filterType, page, pageSize],
-    queryFn: ({ signal }) =>
-      fetchTransactionsLog({
-        signal,
-        type: filterType,
-        page,
-        pageSize,
-      }),
-  });
-  const {
-    data: types = [],
-    isLoading: typesLoading,
-    error: typesError,
-  } = useQuery({
-    queryKey: ['transactionTypes'],
-    queryFn: ({ signal }) => fetchTransactionTypes({ signal }),
-  });
-
-  useApiError(logError);
-  useApiError(typesError);
 
   const formatCurrency = (v: number | undefined) =>
     `$${(v ?? 0).toLocaleString()}`;
@@ -326,29 +290,8 @@ export default function Dashboard() {
       </div>
 
       {/* Transaction Log */}
-      <Card>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold">Deposit &amp; Withdrawal Log</h3>
-        </div>
-        {logLoading ? (
-          <div>Loading transactions...</div>
-        ) : logError ? (
-          <div className="text-danger-red">Failed to load transactions</div>
-        ) : log.length === 0 ? (
-          <div className="text-text-secondary">No transactions found.</div>
-        ) : (
-          <DashboardTransactionHistory
-            log={log}
-            onExport={() => {}}
-            types={types}
-            typesLoading={typesLoading}
-            typesError={typesError}
-            onTypeChange={setFilterType}
-            page={page}
-            pageSize={pageSize}
-            onPageChange={setPage}
-          />
-        )}
+      <Card title="Deposit &amp; Withdrawal Log">
+        <DashboardTransactionHistory onExport={() => {}} />
       </Card>
     </div>
   );

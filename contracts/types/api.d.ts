@@ -1385,6 +1385,29 @@ export interface paths {
       };
     };
   };
+  "/admin/transactions": {
+    /** List transactions */
+    get: {
+      parameters: {
+        query?: {
+          playerId?: string;
+          type?: string;
+          startDate?: string;
+          endDate?: string;
+          page?: number;
+          pageSize?: number;
+        };
+      };
+      responses: {
+        /** @description Transactions log */
+        200: {
+          content: {
+            "application/json": components["schemas"]["TransactionLogResponse"];
+          };
+        };
+      };
+    };
+  };
   "/admin/transactions/tabs": {
     /** List transaction tabs */
     get: {
@@ -1699,6 +1722,19 @@ export interface paths {
         /** @description Flag deleted */
         204: {
           content: never;
+        };
+      };
+    };
+  };
+  "/promotions": {
+    /** List promotions */
+    get: {
+      responses: {
+        /** @description Promotions list */
+        200: {
+          content: {
+            "application/json": components["schemas"]["PromotionsResponse"];
+          };
         };
       };
     };

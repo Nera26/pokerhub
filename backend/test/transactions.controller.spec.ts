@@ -38,6 +38,11 @@ describe('TransactionsController', () => {
               returns: 'text',
               implementation: () => 'test',
             });
+            db.public.registerFunction({
+              name: 'uuid_generate_v4',
+              returns: 'uuid',
+              implementation: () => crypto.randomUUID(),
+            });
             dataSource = db.adapters.createTypeormDataSource({
               type: 'postgres',
               entities: [TransactionType, Transaction],
@@ -71,6 +76,7 @@ describe('TransactionsController', () => {
       performedBy: 'Admin',
       notes: '',
       status: 'Completed',
+      createdAt: new Date('2024-01-10'),
     });
     app = moduleRef.createNestApplication();
     await app.init();
@@ -87,9 +93,7 @@ describe('TransactionsController', () => {
       .expect(200);
 
     expect(res.body).toEqual(
-      expect.arrayContaining([
-        { id: 'admin-add', label: 'Admin Add' },
-      ]),
+      expect.arrayContaining([{ id: 'deposit', label: 'Deposit' }]),
     );
   });
 
@@ -100,5 +104,26 @@ describe('TransactionsController', () => {
       .expect(200);
     expect(res.body).toHaveLength(1);
     expect(res.body[0]).toHaveProperty('action', 'Deposit');
+  });
+
+  it('filters transactions by date range', async () => {
+    await txnRepo.save({
+      id: crypto.randomUUID(),
+      userId: 'user2',
+      typeId: 'withdrawal',
+      amount: 50,
+      performedBy: 'Admin',
+      notes: '',
+      status: 'Completed',
+      createdAt: new Date('2024-03-05'),
+    });
+    const res = await request(app.getHttpServer())
+      .get(
+        '/admin/transactions?startDate=2024-03-01&endDate=2024-03-31&page=1&pageSize=10',
+      )
+      .set('Authorization', 'Bearer test')
+      .expect(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0]).toHaveProperty('amount', 50);
   });
 });

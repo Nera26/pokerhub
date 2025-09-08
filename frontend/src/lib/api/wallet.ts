@@ -330,6 +330,8 @@ export async function fetchTransactionsLog(
     signal?: AbortSignal;
     playerId?: string;
     type?: string;
+    startDate?: string;
+    endDate?: string;
     page?: number;
     pageSize?: number;
   } = {},
@@ -338,12 +340,16 @@ export async function fetchTransactionsLog(
     signal,
     playerId,
     type,
+    startDate,
+    endDate,
     page = 1,
     pageSize = 10,
   } = opts;
   const params = new URLSearchParams();
   if (playerId) params.set('playerId', playerId);
   if (type) params.set('type', type);
+  if (startDate) params.set('startDate', startDate);
+  if (endDate) params.set('endDate', endDate);
   params.set('page', String(page));
   params.set('pageSize', String(pageSize));
   const query = params.toString();
