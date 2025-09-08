@@ -35,7 +35,11 @@ import {
   fetchTransactionTabs,
   fetchTransactionTypes,
 } from '@/lib/api/wallet';
-import { useIban, useIbanHistory } from '@/hooks/wallet';
+import {
+  useIban,
+  useIbanHistory,
+  useWalletReconcileMismatches,
+} from '@/hooks/wallet';
 import type { IbanHistoryEntry } from '@shared/wallet.schema';
 /* -------------------------------- Types -------------------------------- */
 type UserStatus = 'Active' | 'Frozen' | 'Banned';
@@ -164,6 +168,14 @@ export default function BalanceTransactions() {
     staleTime: 30000,
   });
   const usersErrorMessage = useApiError(usersError);
+
+  const {
+    data: mismatchData,
+    isLoading: mismatchLoading,
+    error: mismatchError,
+  } = useWalletReconcileMismatches();
+  const mismatches = mismatchData?.mismatches ?? [];
+  const mismatchErrorMessage = useApiError(mismatchError);
 
   const sortedBalances = useMemo(
     () => [...balances].sort((a, b) => a.user.localeCompare(b.user)),
@@ -753,26 +765,57 @@ export default function BalanceTransactions() {
         </section>
       )}
 
- {logLoading ? (
-  <div className="flex justify-center" aria-label="loading history">
-    <FontAwesomeIcon icon={faSpinner} spin />
-  </div>
-) : logError ? (
-  <p role="alert">
-    {logErrorMessage || 'Failed to load transaction history.'}
-  </p>
-) : log.length === 0 ? (
-  <p>No transaction history.</p>
-) : (
-  <TransactionHistory
-    log={log}
-    onExport={exportCSV}
-    types={txnTypes}
-    typesLoading={txnTypesLoading}
-    typesError={txnTypesError}
-    onTypeChange={setTypeFilter}
-  />
-)}
+      <section>
+        {mismatchLoading ? (
+          <div className="flex justify-center" aria-label="loading mismatches">
+            <FontAwesomeIcon icon={faSpinner} spin />
+          </div>
+        ) : mismatchError ? (
+          <p role="alert">
+            {mismatchErrorMessage || 'Failed to load mismatches.'}
+          </p>
+        ) : mismatches.length === 0 ? (
+          <p>No mismatches.</p>
+        ) : (
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-dark">
+                <th className="py-2 px-2">Date</th>
+                <th className="py-2 px-2">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {mismatches.map((m) => (
+                <tr key={m.date} className="border-b border-dark">
+                  <td className="py-2 px-2 text-text-secondary">{m.date}</td>
+                  <td className="py-2 px-2 font-semibold">${m.total}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      {logLoading ? (
+        <div className="flex justify-center" aria-label="loading history">
+          <FontAwesomeIcon icon={faSpinner} spin />
+        </div>
+      ) : logError ? (
+        <p role="alert">
+          {logErrorMessage || 'Failed to load transaction history.'}
+        </p>
+      ) : log.length === 0 ? (
+        <p>No transaction history.</p>
+      ) : (
+        <TransactionHistory
+          log={log}
+          onExport={exportCSV}
+          types={txnTypes}
+          typesLoading={txnTypesLoading}
+          typesError={txnTypesError}
+          onTypeChange={setTypeFilter}
+        />
+      )}
 
 /* Modals */
 <RejectionModal
