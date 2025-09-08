@@ -5,8 +5,8 @@ import Redis from 'ioredis';
 import { Producer } from 'kafkajs';
 import { createKafkaProducer } from '../common/kafka';
 import Ajv, { ValidateFunction } from 'ajv';
-import { zodToJsonSchema } from 'zod-to-json-schema';
-import { EventSchemas, Events, EventName } from '@shared/events';
+import { Events, EventName } from '@shared/events';
+import { createValidators } from './validator';
 import { GcsService } from '../storage/gcs.service';
 import { ParquetSchema, ParquetWriter } from 'parquetjs-lite';
 import { PassThrough } from 'stream';
@@ -168,9 +168,8 @@ export class AnalyticsService {
   private readonly client: ClickHouseClient | null;
   private readonly logger = new Logger(AnalyticsService.name);
   private readonly producer: Producer;
-  private readonly ajv = new Ajv();
-  private readonly validators: Record<EventName, ValidateFunction> =
-    {} as Record<EventName, ValidateFunction>;
+  private readonly ajv: Ajv;
+  private readonly validators: Record<EventName, ValidateFunction>;
   private readonly topicMap: Record<string, string> = {
     hand: 'hand',
     action: 'hand',
@@ -192,17 +191,9 @@ export class AnalyticsService {
     this.client = url ? createClient({ url }) : null;
 
     this.producer = createKafkaProducer(config);
-
-    this.ajv.addFormat(
-      'uuid',
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-    );
-
-    for (const [name, schema] of Object.entries(EventSchemas)) {
-      this.validators[name as EventName] = this.ajv.compile(
-        zodToJsonSchema(schema, name),
-      );
-    }
+    const { ajv, validators } = createValidators();
+    this.ajv = ajv;
+    this.validators = validators;
 
     this.scheduleStakeAggregates();
     this.scheduleEngagementMetrics();
