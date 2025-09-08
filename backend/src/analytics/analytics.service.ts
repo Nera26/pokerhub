@@ -2,7 +2,8 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, ClickHouseClient } from '@clickhouse/client';
 import Redis from 'ioredis';
-import { Kafka, Producer } from 'kafkajs';
+import { Producer } from 'kafkajs';
+import { createKafkaProducer } from '../common/kafka';
 import Ajv, { ValidateFunction } from 'ajv';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { EventSchemas, Events, EventName } from '@shared/events';
@@ -166,7 +167,6 @@ function scheduleDaily(task: () => void): void {
 export class AnalyticsService {
   private readonly client: ClickHouseClient | null;
   private readonly logger = new Logger(AnalyticsService.name);
-  private readonly kafka: Kafka;
   private readonly producer: Producer;
   private readonly ajv = new Ajv();
   private readonly validators: Record<EventName, ValidateFunction> =
@@ -191,17 +191,7 @@ export class AnalyticsService {
     const url = config.get<string>('analytics.clickhouseUrl');
     this.client = url ? createClient({ url }) : null;
 
-    const brokersConfig = config.get<string>('analytics.kafkaBrokers');
-    const brokers = brokersConfig
-      ?.split(',')
-      .map((s) => s.trim())
-      .filter(Boolean) ?? [];
-    if (brokers.length === 0) {
-      throw new Error('Missing analytics.kafkaBrokers configuration');
-    }
-    this.kafka = new Kafka({ brokers });
-    this.producer = this.kafka.producer();
-    void this.producer.connect();
+    this.producer = createKafkaProducer(config);
 
     this.ajv.addFormat(
       'uuid',

@@ -1,6 +1,7 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Kafka, Producer } from 'kafkajs';
+import { Producer } from 'kafkajs';
+import { createKafkaProducer } from '../common/kafka';
 import Redis from 'ioredis';
 import Ajv, { ValidateFunction } from 'ajv';
 import { zodToJsonSchema } from 'zod-to-json-schema';
@@ -39,7 +40,6 @@ export async function processEntry(
 @Injectable()
 export class EtlService {
   private readonly logger = new Logger(EtlService.name);
-  private readonly kafka: Kafka;
   private readonly producer: Producer;
   private readonly topicMap: Record<string, string> = {
     game: 'hand',
@@ -56,17 +56,7 @@ export class EtlService {
     private readonly analytics: AnalyticsService,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
   ) {
-    const brokersConfig = config.get<string>('analytics.kafkaBrokers');
-    const brokers = brokersConfig
-      ?.split(',')
-      .map((s) => s.trim())
-      .filter(Boolean) ?? [];
-    if (brokers.length === 0) {
-      throw new Error('Missing analytics.kafkaBrokers configuration');
-    }
-    this.kafka = new Kafka({ brokers });
-    this.producer = this.kafka.producer();
-    void this.producer.connect();
+    this.producer = createKafkaProducer(config);
 
     this.ajv.addFormat(
       'uuid',
