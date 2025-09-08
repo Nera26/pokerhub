@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Table } from '../../src/database/entities/table.entity';
 import { Seat } from '../../src/database/entities/seat.entity';
 import { Tournament, TournamentState } from '../../src/database/entities/tournament.entity';
+import { createTablesRepository } from '../../src/tournament/test-utils';
 
 describe('TableBalancerService integration', () => {
   function createTournamentRepo(initial: Tournament[]): any {
@@ -60,7 +61,7 @@ describe('TableBalancerService integration', () => {
       }
     });
     const seatsRepo = createSeatRepo(tables);
-    const tablesRepo = { find: jest.fn(async () => tables) } as any;
+    const tablesRepo = createTablesRepository(tables) as Repository<Table>;
     const tournamentsRepo = createTournamentRepo([
       {
         id: 't1',
@@ -122,7 +123,7 @@ describe('TableBalancerService integration', () => {
       tables[1].seats.push(seat);
     });
     const seatsRepo = createSeatRepo(tables);
-    const tablesRepo = { find: jest.fn(async () => tables) } as any;
+    const tablesRepo = createTablesRepository(tables) as Repository<Table>;
     const tournamentsRepo = createTournamentRepo([
       {
         id: 't1',
@@ -198,7 +199,7 @@ describe('TableBalancerService integration', () => {
       tables[1].seats.push(seat);
     });
     const seatsRepo = createSeatRepo(tables);
-    const tablesRepo = { find: jest.fn(async () => tables) } as any;
+    const tablesRepo = createTablesRepository(tables) as Repository<Table>;
     const tournamentsRepo = createTournamentRepo([
       {
         id: 't1',
