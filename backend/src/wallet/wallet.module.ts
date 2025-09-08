@@ -19,7 +19,7 @@ import { startPayoutWorker } from './payout.worker';
 import { startPendingDepositWorker } from './pending-deposit.worker';
 import { AdminDepositGateway } from './admin-deposit.gateway';
 import { PaymentProviderService } from './payment-provider.service';
-import { KycService } from './kyc.service';
+import { KycService } from '../common/kyc.service';
 import { GeoIpService } from '../auth/geoip.service';
 import { PendingDeposit } from './pending-deposit.entity';
 import AdminDepositsController from '../routes/admin-deposits.controller';
