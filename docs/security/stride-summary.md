@@ -23,7 +23,7 @@ analytics, tournament, and wallet services.
 ## Tournament
 - **Spoofing**: Fake registrations or balancer nodes. Mitigation: signed tokens and mutual auth between workers (`backend/src/tournament/tournament.service.ts`).
 - **Tampering**: Manipulated seating or blind levels. Mitigation: versioned configs with CRC checks and consensus confirmation (`backend/src/tournament/structures`).
-- **Repudiation**: Players dispute eliminations or prizes. Mitigation: cryptographic hand history and payout logs (`backend/src/game/hand-log.ts`, `backend/src/tournament/prize.spec.ts`).
+- **Repudiation**: Players dispute eliminations or prizes. Mitigation: cryptographic hand history and payout logs (`backend/src/game/hand-log.ts`, `backend/test/tournament.prizes.property.spec.ts`).
 - **Information Disclosure**: Premature bracket or player info exposure. Mitigation: limit access, scrub spectator views, encrypt at rest (`backend/src/tournament/tournament.controller.ts`).
 - **Denial of Service**: Registration floods or worker starvation. Mitigation: sign‑up throttling and autoscaled consumers (`backend/src/auth/rate-limit.middleware.ts`, `backend/src/tournament/scheduler.service.ts`).
 - **Elevation of Privilege**: Unauthorized table control or prize overrides. Mitigation: segregated duties and least privilege enforcement (`backend/src/auth/admin.guard.ts`).
