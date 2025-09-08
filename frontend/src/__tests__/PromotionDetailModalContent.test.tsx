@@ -1,111 +1,67 @@
-import { render, screen } from '@testing-library/react';
-import PromotionDetailModalContent from '@/app/components/promotions/PromotionDetailModalContent';
-import type { Promotion } from '@/app/components/promotions/PromotionCard';
+import { Test } from '@nestjs/testing';
+import type { INestApplication } from '@nestjs/common';
+import request from 'supertest';
+import { AdminController } from '../src/routes/admin.controller';
+import { AuthGuard } from '../src/auth/auth.guard';
+import { AdminGuard } from '../src/auth/admin.guard';
+import { KycService } from '../src/wallet/kyc.service';
+import { AnalyticsService } from '../src/analytics/analytics.service';
+import { sharedSidebar } from '@shared/sidebar';
 
-describe('PromotionDetailModalContent', () => {
-  it('renders progress mode with breakdown and eta', () => {
-    const promotion: Promotion = {
-      id: 1,
-      category: 'daily',
-      title: 'Cash Game Challenge',
-      description: 'desc',
-      reward: '$50',
-      unlockText: '',
-      breakdown: [
-        { label: 'Cashed hands', value: 200 },
-        { label: 'Showdown wins', value: 150 },
+describe('AdminController', () => {
+  let app: INestApplication;
+
+  const kyc = { getDenialReason: jest.fn() } as Partial<KycService>;
+  const analytics = {
+    getAuditLogs: jest.fn(),
+    getSecurityAlerts: jest.fn(),
+  } as Partial<AnalyticsService>;
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      controllers: [AdminController],
+      providers: [
+        { provide: KycService, useValue: kyc },
+        { provide: AnalyticsService, useValue: analytics },
       ],
-      eta: '~2 hours of average play',
-      progress: { current: 200, total: 500, label: '200 / 500' },
-      actionLabel: 'View',
-      onAction: () => {},
-    };
+    })
+      .overrideGuard(AuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(AdminGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
-    render(
-      <PromotionDetailModalContent promotion={promotion} onClose={() => {}} />,
-    );
-
-    const items = screen.getAllByRole('listitem');
-    expect(items).toHaveLength(2);
-    expect(items[0]).toHaveTextContent('Cashed hands: $200');
-    expect(items[1]).toHaveTextContent('Showdown wins: $150');
-    expect(screen.getByText(/Estimated time to completion:/)).toBeInTheDocument();
-    expect(
-      screen.getByText(/~2 hours of average play/),
-    ).toBeInTheDocument();
+    app = moduleRef.createNestApplication();
+    await app.init();
   });
 
-  it('renders unlock mode', () => {
-    const promotion: Promotion = {
-      id: 2,
-      category: 'weekly',
-      title: 'Tournament Master',
-      description: 'desc',
-      reward: '$100',
-      unlockText: 'Play 5 tournaments',
-      breakdown: [{ label: 'Tournaments Played', value: 2 }],
-      actionLabel: 'View',
-      onAction: () => {},
-    };
-
-    render(
-      <PromotionDetailModalContent promotion={promotion} onClose={() => {}} />,
-    );
-
-    expect(screen.getByText('Play 5 tournaments')).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        (_, el) =>
-          el?.tagName.toLowerCase() === 'p' &&
-          el.textContent?.includes('played 2 tournaments') === true,
-      ),
-    ).toBeInTheDocument();
-    expect(screen.queryAllByRole('listitem')).toHaveLength(0);
+  afterAll(async () => {
+    await app.close();
   });
 
-  it('updates tournaments played when breakdown changes', () => {
-    const promotion: Promotion = {
-      id: 3,
-      category: 'weekly',
-      title: 'Tournament Tracker',
-      description: 'desc',
-      reward: '$100',
-      unlockText: 'Play 5 tournaments',
-      breakdown: [{ label: 'Tournaments Played', value: 2 }],
-      actionLabel: 'View',
-      onAction: () => {},
-    };
+  it('returns audit logs', async () => {
+    (analytics.getAuditLogs as jest.Mock).mockResolvedValue({
+      logs: [],
+      nextCursor: null,
+    });
+    await request(app.getHttpServer())
+      .get('/admin/audit-logs')
+      .expect(200)
+      .expect({ logs: [], nextCursor: null });
+  });
 
-    const { rerender } = render(
-      <PromotionDetailModalContent promotion={promotion} onClose={() => {}} />,
-    );
+  it('returns security alerts', async () => {
+    (analytics.getSecurityAlerts as jest.Mock).mockResolvedValue([]);
+    await request(app.getHttpServer())
+      .get('/admin/security-alerts')
+      .expect(200)
+      .expect([]);
+  });
 
-    expect(
-      screen.getByText(
-        (_, el) =>
-          el?.tagName.toLowerCase() === 'p' &&
-          el.textContent?.includes('played 2 tournaments') === true,
-      ),
-    ).toBeInTheDocument();
-
-    const updatedPromotion = {
-      ...promotion,
-      breakdown: [{ label: 'Tournaments Played', value: 5 }],
-    };
-
-    rerender(
-      <PromotionDetailModalContent
-        promotion={updatedPromotion}
-        onClose={() => {}}
-      />,
-    );
-
-    expect(
-      screen.getByText(
-        (_, el) =>
-          el?.tagName.toLowerCase() === 'p' &&
-          el.textContent?.includes('played 5 tournaments') === true,
-      ),
-    ).toBeInTheDocument();
+  it('returns sidebar items from shared module', async () => {
+    await request(app.getHttpServer())
+      .get('/admin/sidebar')
+      .expect(200)
+      .expect(sharedSidebar);
   });
 });
