@@ -7,6 +7,35 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import { EventSchemas, EventName } from '@shared/events';
 import { AnalyticsService } from './analytics.service';
 
+export async function processEntry(
+  topic: string,
+  event: string,
+  fields: string[],
+  analytics: AnalyticsService,
+  validators: Record<EventName, ValidateFunction>,
+  producer: Producer,
+  logger: Logger,
+) {
+  try {
+    const data = JSON.parse(fields[1] as string) as Record<string, unknown>;
+    const validate = validators[event as EventName];
+    if (validate && !validate(data)) {
+      logger.warn(`Invalid event ${event}: ${JSON.stringify(validate.errors)}`);
+      return;
+    }
+    await Promise.all([
+      producer.send({
+        topic,
+        messages: [{ value: JSON.stringify({ event, data }) }],
+      }),
+      analytics.ingest(event.replace('.', '_'), data),
+      analytics.archive(event, data),
+    ]);
+  } catch (err) {
+    logger.error(err);
+  }
+}
+
 @Injectable()
 export class EtlService {
   private readonly logger = new Logger(EtlService.name);
@@ -61,26 +90,15 @@ export class EtlService {
       const event = key.includes('.') ? key : `${key}.event`;
       const topic = this.topicMap[event.split('.')[0]] ?? event.split('.')[0];
       for (const [, fields] of entries) {
-        try {
-          const data = JSON.parse(fields[1] as string) as Record<string, unknown>;
-          const validate = this.validators[event as EventName];
-          if (validate && !validate(data)) {
-            this.logger.warn(
-              `Invalid event ${event}: ${this.ajv.errorsText(validate.errors)}`,
-            );
-            continue;
-          }
-          await Promise.all([
-            this.producer.send({
-              topic,
-              messages: [{ value: JSON.stringify({ event, data }) }],
-            }),
-            this.analytics.ingest(event.replace('.', '_'), data),
-            this.analytics.archive(event, data),
-          ]);
-        } catch (err) {
-          this.logger.error(err);
-        }
+        await processEntry(
+          topic,
+          event,
+          fields as string[],
+          this.analytics,
+          this.validators,
+          this.producer,
+          this.logger,
+        );
       }
     }
   }
@@ -111,26 +129,15 @@ export class EtlService {
           this.topicMap[event.split('.')[0]] ?? event.split('.')[0];
         for (const [id, fields] of entries) {
           last = id;
-          try {
-            const data = JSON.parse(fields[1] as string) as Record<string, unknown>;
-            const validate = this.validators[event as EventName];
-            if (validate && !validate(data)) {
-              this.logger.warn(
-                `Invalid event ${event}: ${this.ajv.errorsText(validate.errors)}`,
-              );
-              continue;
-            }
-            await Promise.all([
-              this.producer.send({
-                topic,
-                messages: [{ value: JSON.stringify({ event, data }) }],
-              }),
-              this.analytics.ingest(event.replace('.', '_'), data),
-              this.analytics.archive(event, data),
-            ]);
-          } catch (err) {
-            this.logger.error(err);
-          }
+          await processEntry(
+            topic,
+            event,
+            fields as string[],
+            this.analytics,
+            this.validators,
+            this.producer,
+            this.logger,
+          );
         }
         lastIds.set(stream, last);
       }
