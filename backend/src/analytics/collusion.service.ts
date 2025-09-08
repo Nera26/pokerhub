@@ -4,7 +4,7 @@ import {
   calculateVpipCorrelation,
   calculateTimingSimilarity,
   calculateSeatProximity,
-} from './collusion.model';
+} from '@shared/analytics/collusion';
 import { FlaggedSession, ReviewStatus } from '../schemas/review';
 import { AnalyticsService } from './analytics.service';
 import { InjectRepository } from '@nestjs/typeorm';

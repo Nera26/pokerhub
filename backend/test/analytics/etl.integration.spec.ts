@@ -78,7 +78,8 @@ describe('EtlService round-trip', () => {
     const redis = new MockRedis();
     const analytics = new MockAnalyticsService();
     const config = {
-      get: () => '',
+      get: (key: string) =>
+        key === 'analytics.kafkaBrokers' ? 'localhost:9092' : undefined,
     } as unknown as ConfigService;
     const service = new EtlService(config, analytics as any, redis as unknown as Redis);
 

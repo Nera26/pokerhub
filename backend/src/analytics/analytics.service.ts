@@ -203,6 +203,11 @@ export class AnalyticsService {
     this.producer = this.kafka.producer();
     void this.producer.connect();
 
+    this.ajv.addFormat(
+      'uuid',
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
+
     for (const [name, schema] of Object.entries(EventSchemas)) {
       this.validators[name as EventName] = this.ajv.compile(
         zodToJsonSchema(schema, name),

@@ -21,9 +21,22 @@ jest.mock('kafkajs', () => ({
 describe('collusion heuristics integration', () => {
   it('emits antiCheat.flag for suspicious patterns', async () => {
     const redis = new MockRedis();
-    const config = { get: () => '' } as unknown as ConfigService;
+    const config = {
+      get: (key: string) =>
+        key === 'analytics.kafkaBrokers' ? 'localhost:9092' : undefined,
+    } as unknown as ConfigService;
     const gcs = new MockGcsService();
-    const analytics = new AnalyticsService(config, redis as unknown as Redis, gcs as any);
+    jest
+      .spyOn(AnalyticsService.prototype as any, 'scheduleStakeAggregates')
+      .mockImplementation(() => undefined);
+    jest
+      .spyOn(AnalyticsService.prototype as any, 'scheduleEngagementMetrics')
+      .mockImplementation(() => undefined);
+    const analytics = new AnalyticsService(
+      config,
+      redis as unknown as Redis,
+      gcs as any,
+    );
     const spy = jest.spyOn(analytics, 'emitAntiCheatFlag');
 
     await analytics.recordCollusionSession({ playerId: 'p1', ip: '1.1.1.1' });
