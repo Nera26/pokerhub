@@ -16,14 +16,7 @@ import type { InternalGameState } from './engine';
 import type { GameState } from '@shared/types';
 import { sanitize } from './state-sanitize';
 import { addSample, percentile, recordTimestamp } from './metrics.util';
-
-const noopGauge = {
-  addCallback() {},
-  removeCallback() {},
-} as {
-  addCallback(cb: (r: ObservableResult) => void): void;
-  removeCallback(cb: (r: ObservableResult) => void): void;
-};
+import { noopGauge } from '../metrics/noopGauge';
 
 @WebSocketGateway({ namespace: 'spectate' })
 export class SpectatorGateway
