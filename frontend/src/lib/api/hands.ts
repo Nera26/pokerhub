@@ -1,7 +1,7 @@
 import { getBaseUrl } from '@/lib/base-url';
 import { serverFetch } from '@/lib/server-fetch';
 import { apiClient } from './client';
-import { verifyProof } from '@/lib/verifyProof';
+import { verifyProof } from '@shared/verify';
 import {
   HandProofSchema,
   type HandProof,
