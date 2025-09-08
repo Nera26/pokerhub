@@ -87,7 +87,7 @@ Proof saved to storage/proofs/<handId>.json
 Use the standalone verifier to check any seed and nonce against a commitment:
 
 ```sh
-npx ts-node scripts/verify-proof.ts 0x7e3 0xa9 0x5b2f...
+npx ts-node bin/verify-proof.ts 0x7e3 0xa9 0x5b2f...
 ```
 
 Expected output:

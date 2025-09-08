@@ -34,7 +34,7 @@
     "load:socket": "ts-node test/load/socket-load.ts",
     "test:soak": "node --trace-gc -r ts-node/register -r tsconfig-paths/register test/soak/soak24h.ts",
     "seed:test-credentials": "ts-node src/scripts/seed-test-credentials.ts",
-    "verify:proof": "ts-node scripts/verify-proof.ts",
+    "verify:proof": "ts-node ../bin/verify-proof.ts",
     "openapi:generate": "ts-node --transpile-only -r tsconfig-paths/register src/scripts/generate-openapi.ts"
   },
   "dependencies": {
