@@ -6,6 +6,7 @@ import {
   type ButtonHTMLAttributes,
   type ReactNode,
 } from 'react';
+import Link from 'next/link';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import clsx from 'clsx';
@@ -41,6 +42,7 @@ interface ButtonBaseProps
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
   loading?: boolean;
+  href?: string;
 }
 
 type ButtonWithChildren = ButtonBaseProps & {
@@ -82,7 +84,7 @@ const sizeStyles: Record<ButtonSize, string> = {
   lg: 'px-7 py-4 text-base',
 };
 
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonProps>(
   (
     {
       variant = 'primary',
@@ -95,6 +97,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       children,
       disabled,
       type,
+      href,
       ...props
     },
     ref,
@@ -127,9 +130,32 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       ),
     );
 
+    const content = (
+      <>
+        {leftIcon ? <span className="shrink-0">{leftIcon}</span> : null}
+        {normalizedChildren}
+        {rightIcon ? <span className="shrink-0">{rightIcon}</span> : null}
+      </>
+    );
+
+    if (href) {
+      return (
+        <Link
+          ref={ref as any}
+          href={href}
+          className={classes}
+          aria-busy={loading || undefined}
+          data-variant={variant}
+          {...props}
+        >
+          {content}
+        </Link>
+      );
+    }
+
     return (
       <button
-        ref={ref}
+        ref={ref as any}
         className={classes}
         disabled={disabled || loading}
         type={type ?? 'button'}
@@ -137,9 +163,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         data-variant={variant}
         {...props}
       >
-        {leftIcon ? <span className="shrink-0">{leftIcon}</span> : null}
-        {normalizedChildren}
-        {rightIcon ? <span className="shrink-0">{rightIcon}</span> : null}
+        {content}
       </button>
     );
   },

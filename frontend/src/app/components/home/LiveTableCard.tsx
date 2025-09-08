@@ -3,7 +3,7 @@
 
 import React, { forwardRef } from 'react';
 import SmoothButton from '../ui/SmoothButton';
-import LinkButton from '../ui/LinkButton';
+import Button from '../ui/Button';
 import dynamic from 'next/dynamic';
 import { m } from '@/lib/motion';
 
@@ -116,9 +116,9 @@ const LiveTableCard = forwardRef<HTMLDivElement, LiveTableCardProps>(
 
         {/* Actions */}
         {href ? (
-          <LinkButton href={href} className="w-full uppercase">
+          <Button href={href} className="w-full uppercase">
             Join Table
-          </LinkButton>
+          </Button>
         ) : (
           <SmoothButton
             onClick={onJoin}
@@ -129,13 +129,13 @@ const LiveTableCard = forwardRef<HTMLDivElement, LiveTableCardProps>(
           </SmoothButton>
         )}
         {spectateHref && (
-          <LinkButton
+          <Button
             href={spectateHref}
             variant="outline"
             className="w-full mt-2 uppercase"
           >
             Spectate
-          </LinkButton>
+          </Button>
         )}
       </MotionArticle>
     );
