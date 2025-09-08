@@ -19,8 +19,8 @@ describe('KycService', () => {
       provider,
       {} as unknown as Repository<KycVerification>,
       {} as unknown as Repository<Account>,
-      config as ConfigService,
       {} as unknown as Repository<Pep>,
+      config as ConfigService,
     );
     await expect(
       service.runChecks('good', '1.1.1.1', '1990-01-01'),
@@ -41,8 +41,8 @@ describe('KycService', () => {
       provider,
       {} as unknown as Repository<KycVerification>,
       {} as unknown as Repository<Account>,
-      config as ConfigService,
       {} as unknown as Repository<Pep>,
+      config as ConfigService,
     );
     await expect(
       service.runChecks('Bad Actor', '1.1.1.1', '1990-01-01'),
@@ -63,8 +63,8 @@ describe('KycService', () => {
       provider,
       {} as unknown as Repository<KycVerification>,
       {} as unknown as Repository<Account>,
-      config as ConfigService,
       {} as unknown as Repository<Pep>,
+      config as ConfigService,
     );
     await expect(
       service.runChecks('Young User', '1.1.1.1', '2010-01-01'),
@@ -88,8 +88,8 @@ describe('KycService', () => {
       provider,
       {} as unknown as Repository<KycVerification>,
       {} as unknown as Repository<Account>,
-      config as ConfigService,
       pepRepo as Repository<Pep>,
+      config as ConfigService,
     );
     await expect(
       service.runChecks('Famous Politician', '1.1.1.1', '1990-01-01'),
@@ -111,8 +111,8 @@ describe('KycService', () => {
       provider,
       {} as unknown as Repository<KycVerification>,
       {} as unknown as Repository<Account>,
-      config as ConfigService,
       pepRepo as Repository<Pep>,
+      config as ConfigService,
     );
     await expect(
       service.runChecks('Average Joe', '1.1.1.1', '1990-01-01'),
@@ -143,8 +143,8 @@ describe('KycService', () => {
       provider,
       verifications as Repository<KycVerification>,
       accounts as Repository<Account>,
-      config as ConfigService,
       {} as unknown as Repository<Pep>,
+      config as ConfigService,
     );
     jest
       .spyOn(service, 'runChecks')
@@ -190,8 +190,8 @@ describe('KycService', () => {
       provider,
       verifications as Repository<KycVerification>,
       accounts as Repository<Account>,
-      config as ConfigService,
       {} as unknown as Repository<Pep>,
+      config as ConfigService,
     );
     jest
       .spyOn(service, 'runChecks')
@@ -243,8 +243,8 @@ describe('KycService', () => {
       provider,
       verifications as Repository<KycVerification>,
       accounts as Repository<Account>,
-      config as ConfigService,
       {} as unknown as Repository<Pep>,
+      config as ConfigService,
     );
     jest
       .spyOn(service, 'runChecks')
