@@ -53,7 +53,13 @@ describe('PromotionDetailModalContent', () => {
     );
 
     expect(screen.getByText('Play 5 tournaments')).toBeInTheDocument();
-    expect(screen.getByText(/played 2 tournaments/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        (_, el) =>
+          el?.tagName.toLowerCase() === 'p' &&
+          el.textContent?.includes('played 2 tournaments') === true,
+      ),
+    ).toBeInTheDocument();
     expect(screen.queryAllByRole('listitem')).toHaveLength(0);
   });
 
@@ -74,7 +80,13 @@ describe('PromotionDetailModalContent', () => {
       <PromotionDetailModalContent promotion={promotion} onClose={() => {}} />,
     );
 
-    expect(screen.getByText(/played 2 tournaments/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        (_, el) =>
+          el?.tagName.toLowerCase() === 'p' &&
+          el.textContent?.includes('played 2 tournaments') === true,
+      ),
+    ).toBeInTheDocument();
 
     const updatedPromotion = {
       ...promotion,
@@ -88,6 +100,12 @@ describe('PromotionDetailModalContent', () => {
       />,
     );
 
-    expect(screen.getByText(/played 5 tournaments/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        (_, el) =>
+          el?.tagName.toLowerCase() === 'p' &&
+          el.textContent?.includes('played 5 tournaments') === true,
+      ),
+    ).toBeInTheDocument();
   });
 });
