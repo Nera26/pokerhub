@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import LanguageSelector from '@/app/components/common/LanguageSelector';
-import { renderWithIntl } from '../test/utils';
+import { renderWithIntl } from '../../test/utils';
 import { useRouter, useParams } from 'next/navigation';
 
 jest.mock('next/navigation', () => ({
