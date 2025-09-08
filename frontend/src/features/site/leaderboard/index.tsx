@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons/faArrowsRotate';
 import LeaderboardTabs from '@/app/components/leaderboard/LeaderboardTabs';
@@ -16,6 +17,7 @@ export default function LeaderboardPage() {
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<ToastType>('success');
+  const queryClient = useQueryClient();
 
   const handleRowClick = (player: LeaderboardEntry) => {
     setToastMessage(`👋 You clicked on ${player.playerId}`);
@@ -71,7 +73,8 @@ export default function LeaderboardPage() {
 
             <button
               className="ml-auto flex items-center space-x-2 bg-accent-blue text-primary-bg font-semibold px-4 py-2 rounded-xl hover-glow-green transition-colors duration-200"
-              onClick={() => {
+              onClick={async () => {
+                await queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
                 setToastMessage('🔄 Leaderboard refreshed');
                 setToastType('success');
                 setToastOpen(true);
