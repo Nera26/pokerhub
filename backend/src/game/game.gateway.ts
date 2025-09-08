@@ -40,14 +40,7 @@ import {
 import PQueue from 'p-queue';
 import { sanitize } from './state-sanitize';
 import { addSample, percentile, recordTimestamp } from './metrics.util';
-
-const noopGauge = {
-  addCallback() {},
-  removeCallback() {},
-} as {
-  addCallback(cb: (r: ObservableResult) => void): void;
-  removeCallback(cb: (r: ObservableResult) => void): void;
-};
+import { noopGauge } from '../metrics/noopGauge';
 
 interface AckPayload {
   actionId: string;

@@ -10,6 +10,7 @@ import { resolve } from 'path';
 import { metrics, type ObservableResult } from '@opentelemetry/api';
 import type { GameAction, InternalGameState } from './engine';
 import type Redis from 'ioredis';
+import { noopGauge } from '../metrics/noopGauge';
 
 class WorkerHost extends EventEmitter {
   private readonly worker: Worker;
@@ -116,14 +117,6 @@ class WorkerHost extends EventEmitter {
 class RoomWorker extends EventEmitter {
   private static readonly meter = metrics.getMeter('game');
 
-  private static readonly noopGauge = {
-    addCallback() {},
-    removeCallback() {},
-  } as {
-    addCallback(cb: (r: ObservableResult) => void): void;
-    removeCallback(cb: (r: ObservableResult) => void): void;
-  };
-
   // Observable gauge: follower lag (applied - confirmed)
   private static readonly followerLag =
     RoomWorker.meter.createObservableGauge?.('room_follower_lag', {
@@ -151,12 +144,12 @@ class RoomWorker extends EventEmitter {
   private static readonly globalActionCount =
     RoomWorker.meter.createObservableGauge?.('game_action_global_count', {
       description: 'Global action count within rate-limit window',
-    }) ?? RoomWorker.noopGauge;
+    }) ?? noopGauge;
 
   private static readonly globalActionLimitGauge =
     RoomWorker.meter.createObservableGauge?.('game_action_global_limit', {
       description: 'Configured global action limit within rate-limit window',
-    }) ?? RoomWorker.noopGauge;
+    }) ?? noopGauge;
 
   private static globalActionCountValue = 0;
 
