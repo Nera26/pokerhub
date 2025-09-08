@@ -1,0 +1,22 @@
+{
+  "baseline": {
+    "UNUSED": 784,
+    "DUPLICATES": 0,
+    "STATIC": 13
+  },
+  "current": {
+    "UNUSED": 784,
+    "DUPLICATES": 0,
+    "STATIC": 13,
+    "deadCode": 0,
+    "dups": 25,
+    "dynamic": 0,
+    "testsTypes": 10
+  },
+  "total": 35,
+  "notes": [
+    "UNUSED: 784 (baseline 784)",
+    "DUPLICATES: 0 (baseline 0)",
+    "STATIC: 13 (baseline 13)"
+  ]
+}

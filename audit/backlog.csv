@@ -1,0 +1,6 @@
+id,path,type,status
+1,shared/events.ts:7,unused,todo
+2,shared/events.ts:13,unused,todo
+3,shared/events.ts:19,unused,todo
+4,frontend/src/__tests__/PromotionsPage.test.tsx,static,todo
+5,frontend/src/__tests__/NotificationList.test.tsx,static,todo
