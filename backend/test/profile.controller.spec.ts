@@ -14,7 +14,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ExecutionContext, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
+import { createDataSource } from './utils/pgMem';
 import request from 'supertest';
 import { ProfileController } from '../src/routes/profile.controller';
 import { AuthGuard } from '../src/auth/auth.guard';
@@ -30,31 +30,11 @@ function createTestModule() {
   @Module({
     imports: [
       TypeOrmModule.forRootAsync({
-        useFactory: () => {
-          const db = newDb();
-          db.public.registerFunction({
-            name: 'version',
-            returns: 'text',
-            implementation: () => 'pg-mem',
-          });
-          db.public.registerFunction({
-            name: 'current_database',
-            returns: 'text',
-            implementation: () => 'test',
-          });
-          db.public.registerFunction({
-            name: 'uuid_generate_v4',
-            returns: 'text',
-            implementation: () => '00000000-0000-0000-0000-000000000000',
-          });
-          dataSource = db.adapters.createTypeormDataSource({
-            type: 'postgres',
-            entities: [User, Table, Seat, Tournament],
-            synchronize: true,
-          }) as DataSource;
+        useFactory: async () => {
+          dataSource = await createDataSource([User, Table, Seat, Tournament]);
           return dataSource.options;
         },
-        dataSourceFactory: async () => dataSource.initialize(),
+        dataSourceFactory: async () => dataSource,
       }),
       TypeOrmModule.forFeature([User, Table, Seat, Tournament]),
     ],
