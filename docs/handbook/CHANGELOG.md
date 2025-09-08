@@ -2,6 +2,9 @@
 
 All notable changes to tournament rules and reconciliation processes are documented in this file.
 
+## 2025-09-08
+- Removed `DefaultGameTypes` from shared types.
+
 ## 2025-10-12
 - Clarified `tournament.avoidWithin` configuration in the Tournament Handbook v1.2.3.
 
