@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   fetchAdminTournaments,
@@ -9,23 +9,11 @@ import {
   deleteAdminTournament,
   fetchAdminTournamentDefaults,
 } from '@/lib/api/admin';
-import {
-  useForm,
-  type FieldErrors,
-  type UseFormRegister,
-  type UseFormWatch,
-  type UseFormSetValue,
-} from 'react-hook-form';
 import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  AdminTournamentSchema,
-  type AdminTournament,
-} from '@shared/types';
+import { type AdminTournament } from '@shared/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faPlus,
-  faSave,
   faChevronLeft,
   faChevronRight,
   faSearch,
@@ -47,18 +35,10 @@ import {
 } from '../ui/Table';
 import ToastNotification from '../ui/ToastNotification';
 import TournamentRow from './TournamentRow';
+import TournamentModal from '../modals/TournamentModal';
 
 const statusEnum = z.enum(['scheduled', 'running', 'finished', 'cancelled']);
 type Status = z.infer<typeof statusEnum>;
-const tournamentSchema = AdminTournamentSchema.extend({
-  name: z.string().min(1, 'Name is required'),
-  gameType: z.string().min(1, 'Game type is required'),
-  buyin: z.number().nonnegative('Buy-in must be at least 0'),
-  fee: z.number().nonnegative('Fee must be at least 0'),
-  prizePool: z.number().nonnegative('Prize pool must be at least 0'),
-  date: z.string().min(1, 'Date is required'),
-  time: z.string().min(1, 'Time is required'),
-});
 type Tournament = AdminTournament;
 
 export default function ManageTournaments() {
@@ -96,27 +76,12 @@ export default function ManageTournaments() {
   });
 
   const {
-    register,
-    handleSubmit,
-    watch,
-    setValue,
-    reset,
-    formState: { errors },
-  } = useForm<Tournament>({
-    resolver: zodResolver(tournamentSchema),
-  });
-
-  const {
     data: defaults,
   } = useQuery({
     queryKey: ['admin', 'tournaments', 'defaults'],
     queryFn: fetchAdminTournamentDefaults,
     enabled: createOpen,
   });
-
-  useEffect(() => {
-    if (defaults) reset(defaults);
-  }, [defaults, reset]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -158,7 +123,6 @@ export default function ManageTournaments() {
   };
   const openEdit = (t: Tournament) => {
     setSelected(t);
-    reset(t);
     setEditOpen(true);
   };
   const openDelete = (t: Tournament) => {
@@ -391,72 +355,22 @@ export default function ManageTournaments() {
       </section>
 
       {/* CREATE */}
-      <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)}>
-        <div className="flex items-center justify-between mb-6">
-          <CardTitle>Create New Tournament</CardTitle>
-          <button
-            onClick={() => setCreateOpen(false)}
-            className="text-text-secondary hover:text-white text-xl"
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
-        <FormFields
-          register={register}
-          errors={errors}
-          watch={watch}
-          setValue={setValue}
-        />
-        <div className="flex justify-end gap-3 pt-4">
-          <Button
-            variant="ghost"
-            onClick={() => setCreateOpen(false)}
-            className="border border-text-secondary"
-          >
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit(onCreate)}>
-            <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            Create
-          </Button>
-        </div>
-      </Modal>
+      <TournamentModal
+        isOpen={createOpen}
+        onClose={() => setCreateOpen(false)}
+        mode="create"
+        defaultValues={defaults}
+        onSubmit={onCreate}
+      />
 
       {/* EDIT */}
-      <Modal isOpen={editOpen} onClose={() => setEditOpen(false)}>
-        <div className="flex items-center justify-between mb-6">
-          <CardTitle>Edit Tournament</CardTitle>
-          <button
-            onClick={() => setEditOpen(false)}
-            className="text-text-secondary hover:text-white text-xl"
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
-        <FormFields
-          register={register}
-          errors={errors}
-          watch={watch}
-          setValue={setValue}
-          includeStatus
-          includeDescription
-        />
-        <div className="flex justify-end gap-3 pt-4">
-          <Button
-            variant="ghost"
-            onClick={() => setEditOpen(false)}
-            className="border border-text-secondary"
-          >
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit(onEdit)}>
-            <FontAwesomeIcon icon={faSave} className="mr-2" />
-            Save Changes
-          </Button>
-        </div>
-      </Modal>
+      <TournamentModal
+        isOpen={editOpen}
+        onClose={() => setEditOpen(false)}
+        mode="edit"
+        defaultValues={selected ?? undefined}
+        onSubmit={onEdit}
+      />
 
       {/* DELETE */}
       <Modal isOpen={deleteOpen} onClose={() => setDeleteOpen(false)}>
@@ -492,168 +406,6 @@ export default function ManageTournaments() {
         isOpen={toast.open}
         onClose={() => setToast((t) => ({ ...t, open: false }))}
       />
-    </div>
-  );
-}
-
-/* ---- Extracted form fields used in Create/Edit ---- */
-function FormFields({
-  register,
-  errors,
-  watch,
-  setValue,
-  includeStatus,
-  includeDescription,
-}: {
-  register: UseFormRegister<Tournament>;
-  errors: FieldErrors<Tournament>;
-  watch: UseFormWatch<Tournament>;
-  setValue: UseFormSetValue<Tournament>;
-  includeStatus?: boolean;
-  includeDescription?: boolean;
-}) {
-  const seatCap = watch('seatCap');
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input
-          id="name"
-          label="Tournament Name"
-          error={errors.name?.message}
-          {...register('name')}
-        />
-        <div>
-          <label className="block text-text-secondary text-sm font-semibold mb-2">
-            Game Type
-          </label>
-          <select
-            className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 focus:border-accent-yellow focus:outline-none"
-            {...register('gameType')}
-          >
-            <option>Texas Hold&apos;em</option>
-            <option>Omaha 4</option>
-            <option>Omaha 6</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Input
-          id="buyin"
-          label="Buy-in ($)"
-          type="number"
-          error={errors.buyin?.message}
-          {...register('buyin', { valueAsNumber: true })}
-        />
-        <Input
-          id="fee"
-          label="Fee ($)"
-          type="number"
-          error={errors.fee?.message}
-          {...register('fee', { valueAsNumber: true })}
-        />
-        <Input
-          id="prizePool"
-          label="Prize Pool ($)"
-          type="number"
-          error={errors.prizePool?.message}
-          {...register('prizePool', { valueAsNumber: true })}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input
-          id="date"
-          label="Start Date"
-          type="date"
-          error={errors.date?.message}
-          {...register('date')}
-        />
-        <Input
-          id="time"
-          label="Start Time"
-          type="time"
-          error={errors.time?.message}
-          {...register('time')}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-text-secondary text-sm font-semibold mb-2">
-            Format
-          </label>
-          <select
-            className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 focus:border-accent-yellow focus:outline-none"
-            {...register('format')}
-          >
-            <option>Regular</option>
-            <option>Turbo</option>
-            <option>Deepstack</option>
-            <option>Bounty</option>
-            <option>Freeroll</option>
-          </select>
-        </div>
-        <Input
-          id="seatCap"
-          label="Seat Cap"
-          type="number"
-          placeholder="Optional"
-          error={errors.seatCap?.message as string | undefined}
-          value={seatCap ?? ''}
-          onChange={(e) =>
-            setValue(
-              'seatCap',
-              e.currentTarget.value === '' ? '' : Number(e.currentTarget.value),
-            )
-          }
-        />
-      </div>
-
-      {includeDescription && (
-        <div>
-          <label className="block text-text-secondary text-sm font-semibold mb-2">
-            Description / Rules
-          </label>
-          <textarea
-            rows={3}
-            placeholder="Optional"
-            className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 focus:border-accent-yellow focus:outline-none resize-none"
-            {...register('description')}
-          />
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="flex items-center gap-6">
-          <label className="flex items-center gap-2">
-            <input type="checkbox" {...register('rebuy')} />
-            <span>Rebuy Enabled</span>
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" {...register('addon')} />
-            <span>Add-on Enabled</span>
-          </label>
-        </div>
-
-        {includeStatus ? (
-          <div>
-            <label className="block text-text-secondary text-sm font-semibold mb-2">
-              Status
-            </label>
-            <select
-              className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 focus:border-accent-yellow focus:outline-none"
-              {...register('status')}
-            >
-              <option value="scheduled">Scheduled</option>
-              <option value="running">Running</option>
-              <option value="finished">Finished</option>
-            </select>
-          </div>
-        ) : (
-          <div />
-        )}
-      </div>
     </div>
   );
 }
