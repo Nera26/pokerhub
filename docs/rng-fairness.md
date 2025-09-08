@@ -141,7 +141,7 @@ order. It exits with code `1` on failure.
 The proof can also be checked directly from the command line:
 
 ```sh
-npx ts-node scripts/verify-proof.ts <seed> <nonce> <commitment>
+npx ts-node bin/verify-proof.ts <seed> <nonce> <commitment>
 ```
 
 The script prints `valid` if the commitment matches `sha256(seed || nonce)` and
