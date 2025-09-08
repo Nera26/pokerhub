@@ -66,10 +66,14 @@ export type {
 export {
   SidebarItemSchema,
   SidebarItemsResponseSchema,
+  SidebarTabSchema,
+  SidebarTabsResponseSchema,
 } from '../backend/src/schemas/admin';
 export type {
   SidebarItem,
   SidebarItemsResponse,
+  SidebarTab,
+  SidebarTabsResponse,
 } from '../backend/src/schemas/admin';
 
 export {

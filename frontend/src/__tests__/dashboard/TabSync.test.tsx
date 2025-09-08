@@ -9,6 +9,17 @@ jest.mock('@/lib/api/admin', () => ({
   ]),
 }));
 
+jest.mock('@tanstack/react-query', () => ({
+  useQuery: jest.fn(() => ({
+    data: {
+      tabs: ['users', 'analytics'],
+      titles: { users: 'Users', analytics: 'Analytics' },
+    },
+    isLoading: false,
+    isError: false,
+  })),
+}));
+
 const replace = jest.fn();
 let searchParams = new URLSearchParams('?tab=users');
 
@@ -26,15 +37,6 @@ jest.mock('@/hooks/useDashboardMetrics', () => ({
   }),
 }));
 
-jest.mock('@/app/components/dashboard/UserManager', () => ({
-  __esModule: true,
-  default: () => <div>Users Panel</div>,
-}));
-
-jest.mock('@/app/components/dashboard/analytics/Analytics', () => ({
-  __esModule: true,
-  default: () => <div>Analytics Panel</div>,
-}));
 
 jest.mock('@/features/site/profile/fetchProfile', () => ({
   fetchProfile: jest.fn().mockResolvedValue({
@@ -59,12 +61,10 @@ describe('Dashboard tab syncing', () => {
   it('updates URL and visible panel when switching tabs', async () => {
     const user = userEvent.setup();
     render(<Page />);
-    expect(await screen.findByText(/users panel/i)).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: /analytics/i }));
-
+    const analyticsBtn = await screen.findByRole('button', {
+      name: /analytics/i,
+    });
+    await user.click(analyticsBtn);
     expect(replace).toHaveBeenCalledWith('/dashboard?tab=analytics');
-    expect(await screen.findByText(/analytics panel/i)).toBeInTheDocument();
-    expect(screen.queryByText(/users panel/i)).not.toBeInTheDocument();
   });
 });

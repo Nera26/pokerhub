@@ -64,4 +64,13 @@ describe('AdminController', () => {
       .expect(200)
       .expect(sharedSidebar);
   });
+
+  it('returns tabs and titles', async () => {
+    const tabs = sharedSidebar.map((s) => s.id);
+    const titles = Object.fromEntries(sharedSidebar.map((s) => [s.id, s.label]));
+    await request(app.getHttpServer())
+      .get('/admin/tabs')
+      .expect(200)
+      .expect({ tabs, titles });
+  });
 });

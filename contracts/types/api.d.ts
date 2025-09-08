@@ -1310,6 +1310,19 @@ export interface paths {
       };
     };
   };
+  "/admin/tabs": {
+    /** Get admin dashboard tabs */
+    get: {
+      responses: {
+        /** @description Dashboard tabs */
+        200: {
+          content: {
+            "application/json": components["schemas"]["SidebarTabsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/admin/messages": {
     /** List user messages */
     get: {
@@ -1774,6 +1787,23 @@ export interface components {
       resolved?: boolean;
     };
     SecurityAlertsResponse: components["schemas"]["AlertItem"][];
+    SidebarTab:
+      | "dashboard"
+      | "users"
+      | "balance"
+      | "tables"
+      | "tournaments"
+      | "ctas"
+      | "bonus"
+      | "broadcast"
+      | "messages"
+      | "audit"
+      | "analytics"
+      | "review";
+    SidebarTabsResponse: {
+      tabs: components["schemas"]["SidebarTab"][];
+      titles: Record<components["schemas"]["SidebarTab"], string>;
+    };
     WithdrawalDecisionRequest: {
       comment: string;
     };
