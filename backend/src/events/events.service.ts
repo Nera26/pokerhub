@@ -1,7 +1,8 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { metrics } from '@opentelemetry/api';
-import { Kafka, Producer } from 'kafkajs';
+import { Producer } from 'kafkajs';
+import { createKafkaProducer } from '../common/kafka';
 import { EventName, EventSchemas, Events } from '@shared/events';
 
 type FailedEvent = {
@@ -25,23 +26,11 @@ export class EventPublisher implements OnModuleDestroy {
   private circuitOpenUntil = 0;
   private readonly failedEvents: FailedEvent[] = [];
 
-  constructor(config: ConfigService, producer?: Producer) {
-    if (producer) {
-      this.producer = producer;
-    } else {
-      const brokersConfig = config.get<string>('analytics.kafkaBrokers');
-      const brokers = brokersConfig
-        ?.split(',')
-        .map((s) => s.trim())
-        .filter(Boolean) ?? [];
-      if (brokers.length === 0) {
-        throw new Error('Missing analytics.kafkaBrokers configuration');
-      }
-
-      const kafka = new Kafka({ brokers });
-      this.producer = kafka.producer();
-      void this.producer.connect();
-    }
+  constructor(
+    config: ConfigService,
+    producer = createKafkaProducer(config),
+  ) {
+    this.producer = producer;
   }
 
   async emit<T extends EventName>(name: T, payload: Events[T]): Promise<void> {

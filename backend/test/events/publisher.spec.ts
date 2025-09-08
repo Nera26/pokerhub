@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { ConfigService } from '@nestjs/config';
 
 const addMock = jest.fn();
 const createCounterMock = jest.fn().mockReturnValue({ add: addMock });
@@ -15,7 +16,7 @@ describe('EventPublisher', () => {
   const payload = { handId: randomUUID(), players: [randomUUID()] };
 
   it('throws when kafka brokers config missing', () => {
-    const config: any = { get: () => undefined };
+    const config = new ConfigService({});
     expect(() => new EventPublisher(config)).toThrow(
       'Missing analytics.kafkaBrokers configuration',
     );
