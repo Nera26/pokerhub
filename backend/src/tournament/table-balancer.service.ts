@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { Table } from '../database/entities/table.entity';
 import { DEFAULT_AVOID_WITHIN } from '../config/tournament.config';
 import { TournamentService } from './tournament.service';
+import { saveRecentlyMoved } from './redis.util';
 
 /**
  * TableBalancerService monitors table sizes for a given tournament and
@@ -76,7 +77,7 @@ export class TableBalancerService {
           new Map<string, number>();
       }
 
-      const updated = new Map<string, number>();
+      const updated = new Map(recentlyMoved);
       for (const tbl of tables) {
         for (const seat of tbl.seats) {
           if (seat.lastMovedHand) {
@@ -93,20 +94,7 @@ export class TableBalancerService {
         recentlyMoved,
       );
       if (this.redis) {
-        const key = `tourney:${tournamentId}:lastMoved`;
-        if (recentlyMoved.size === 0) {
-          await this.redis.del(key);
-        } else {
-          await this.redis.hset(
-            key,
-            Object.fromEntries(
-              Array.from(recentlyMoved.entries()).map(([k, v]) => [
-                k,
-                v.toString(),
-              ]),
-            ),
-          );
-        }
+        await saveRecentlyMoved(this.redis, tournamentId, recentlyMoved);
       } else {
         this.localRecentlyMoved.set(tournamentId, recentlyMoved);
       }

@@ -1,6 +1,7 @@
 import { Inject, Injectable, Optional, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type Redis from 'ioredis';
+import { saveRecentlyMoved } from './redis.util';
 import { Repository } from 'typeorm';
 import {
   Tournament,
@@ -9,10 +10,7 @@ import {
 import { Seat } from '../database/entities/seat.entity';
 import { Table } from '../database/entities/table.entity';
 import { TournamentScheduler } from './scheduler.service';
-import {
-  calculateIcmPayouts as icmPayouts,
-  icmRaw,
-} from './structures/icm';
+import { calculateIcmPayouts as icmPayouts, icmRaw } from './structures/icm';
 import { RoomManager } from '../game/room.service';
 import { RebuyService } from './rebuy.service';
 import {
@@ -68,11 +66,17 @@ export class TournamentService implements OnModuleInit {
       const value = await this.redis.get(key);
       if (!value) continue;
       const tournamentId = key.split(':')[1];
-      const parsed = JSON.parse(value) as Record<string, {
-        smallBlind: number;
-        bigBlind: number;
-      }>;
-      const levelMap = new Map<number, { smallBlind: number; bigBlind: number }>();
+      const parsed = JSON.parse(value) as Record<
+        string,
+        {
+          smallBlind: number;
+          bigBlind: number;
+        }
+      >;
+      const levelMap = new Map<
+        number,
+        { smallBlind: number; bigBlind: number }
+      >();
       for (const [lvl, blinds] of Object.entries(parsed)) {
         levelMap.set(Number(lvl), blinds);
       }
@@ -128,8 +132,7 @@ export class TournamentService implements OnModuleInit {
       prizes: [
         {
           title: 'Prizes',
-          description:
-            '1st: 50%, 2nd: 25%, 3rd: 15%, remainder split.',
+          description: '1st: 50%, 2nd: 25%, 3rd: 15%, remainder split.',
         },
       ],
     };
@@ -353,9 +356,7 @@ export class TournamentService implements OnModuleInit {
   getHotPatchedLevel(
     tournamentId: string,
     level: number,
-  ):
-    | { smallBlind: number; bigBlind: number }
-    | undefined {
+  ): { smallBlind: number; bigBlind: number } | undefined {
     return this.patchedLevels.get(tournamentId)?.get(level);
   }
 
@@ -406,7 +407,15 @@ export class TournamentService implements OnModuleInit {
     };
   }> {
     const { currency = 'USD' } = await this.getEntity(tournamentId);
-    let result: { seat?: Seat; walletEvent?: { accountId: string; amount: number; refId: string; currency: string } } = {};
+    let result: {
+      seat?: Seat;
+      walletEvent?: {
+        accountId: string;
+        amount: number;
+        refId: string;
+        currency: string;
+      };
+    } = {};
     const manager: any = this.seats.manager as any;
     if (manager?.transaction) {
       await manager.transaction(async (txManager: any) => {
@@ -438,12 +447,14 @@ export class TournamentService implements OnModuleInit {
     const { tournamentId, userId, currency } = opts;
     const t = await this.getEntity(tournamentId);
     let seat: Seat | undefined;
-    let walletEvent: {
-      accountId: string;
-      amount: number;
-      refId: string;
-      currency: string;
-    } | undefined;
+    let walletEvent:
+      | {
+          accountId: string;
+          amount: number;
+          refId: string;
+          currency: string;
+        }
+      | undefined;
 
     if (action === 'join') {
       if (this.wallet) {
@@ -533,9 +544,7 @@ export class TournamentService implements OnModuleInit {
       where: { tournament: { id: tournamentId } },
       relations: ['seats', 'seats.user'],
     });
-    const tablePlayers = tables.map((t) =>
-      t.seats.map((s) => s.user.id),
-    );
+    const tablePlayers = tables.map((t) => t.seats.map((s) => s.user.id));
     const balanced = this.balanceTables(
       tablePlayers,
       recentlyMoved,
@@ -560,17 +569,7 @@ export class TournamentService implements OnModuleInit {
       await this.seats.save(movedSeats);
     }
     if (this.redis) {
-      const key = `tourney:${tournamentId}:lastMoved`;
-      if (recentlyMoved.size === 0) {
-        await this.redis.del(key);
-      } else {
-        await this.redis.hset(
-          key,
-          Object.fromEntries(
-            Array.from(recentlyMoved.entries()).map(([k, v]) => [k, v.toString()]),
-          ),
-        );
-      }
+      await saveRecentlyMoved(this.redis, tournamentId, recentlyMoved);
     }
   }
 
