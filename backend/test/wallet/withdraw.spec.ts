@@ -1,72 +1,19 @@
-import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
-import { Account } from '../../src/wallet/account.entity';
-import { JournalEntry } from '../../src/wallet/journal-entry.entity';
-import { Disbursement } from '../../src/wallet/disbursement.entity';
 import { WalletService } from '../../src/wallet/wallet.service';
 import { EventPublisher } from '../../src/events/events.service';
-import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
-import { KycService } from '../../src/wallet/kyc.service';
-import { SettlementJournal } from '../../src/wallet/settlement-journal.entity';
-import { MockRedis } from '../utils/mock-redis';
+import { setupTestWallet, WalletTestContext } from './test-setup';
 
 describe('WalletService withdraw', () => {
-  let dataSource: DataSource;
+  let ctx: WalletTestContext;
   let service: WalletService;
-  let kyc: KycService;
-  const events = { emit: jest.fn() } as unknown as EventPublisher;
-  let redis: MockRedis;
-  const provider = {
-    initiate3DS: jest.fn().mockResolvedValue({ id: 'tx' }),
-  } as unknown as PaymentProviderService;
-
-  beforeAll(async () => {
-    const db = newDb();
-    db.public.registerFunction({
-      name: 'version',
-      returns: 'text',
-      implementation: () => 'pg-mem',
-    });
-    db.public.registerFunction({
-      name: 'current_database',
-      returns: 'text',
-      implementation: () => 'test',
-    });
-    let seq = 1;
-    db.public.registerFunction({
-      name: 'uuid_generate_v4',
-      returns: 'text',
-      implementation: () => {
-        const id = seq.toString(16).padStart(32, '0');
-        seq++;
-        return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(16, 20)}-${id.slice(20)}`;
-      },
-    });
-    dataSource = db.adapters.createTypeormDataSource({
-      type: 'postgres',
-      entities: [Account, JournalEntry, Disbursement, SettlementJournal],
-      synchronize: true,
-    }) as DataSource;
-    await dataSource.initialize();
-    kyc = {
-      validate: jest.fn().mockResolvedValue(undefined),
-      isVerified: jest.fn().mockResolvedValue(true),
-    } as unknown as KycService;
-  });
+  let kyc: any;
+  let events: EventPublisher;
 
   beforeEach(async () => {
-    redis = new MockRedis();
-    (events.emit as jest.Mock).mockClear();
-    (provider.initiate3DS as jest.Mock).mockResolvedValue({ id: 'tx' });
-    const accountRepo = dataSource.getRepository(Account);
-    const journalRepo = dataSource.getRepository(JournalEntry);
-    const disbRepo = dataSource.getRepository(Disbursement);
-    const settleRepo = dataSource.getRepository(SettlementJournal);
-    await journalRepo.createQueryBuilder().delete().execute();
-    await disbRepo.createQueryBuilder().delete().execute();
-    await settleRepo.createQueryBuilder().delete().execute();
-    await accountRepo.createQueryBuilder().delete().execute();
-    await accountRepo.save([
+    ctx = await setupTestWallet();
+    service = ctx.service;
+    events = ctx.events;
+    kyc = ctx.kyc;
+    await ctx.repos.account.save([
       {
         id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
         name: 'user',
@@ -82,23 +29,10 @@ describe('WalletService withdraw', () => {
         currency: 'USD',
       },
     ]);
-    service = new WalletService(
-      accountRepo,
-      journalRepo,
-      disbRepo,
-      settleRepo,
-      events,
-      redis,
-      provider,
-      kyc,
-    );
-    (
-      service as unknown as { enqueueDisbursement: jest.Mock }
-    ).enqueueDisbursement = jest.fn();
   });
 
-  afterAll(async () => {
-    await dataSource.destroy();
+  afterEach(async () => {
+    await ctx.dataSource.destroy();
   });
 
   it('requires KYC verification', async () => {
@@ -176,8 +110,8 @@ describe('WalletService withdraw', () => {
         currency: 'USD',
       }),
     );
-    const [key] = await redis.keys('wallet:withdraw*');
-    expect(parseInt((await redis.get(key)) ?? '0', 10)).toBe(150);
+    const [key] = await ctx.redis.keys('wallet:withdraw*');
+    expect(parseInt((await ctx.redis.get(key)) ?? '0', 10)).toBe(150);
     delete process.env.WALLET_DAILY_WITHDRAW_LIMIT;
   });
 
@@ -195,13 +129,11 @@ describe('WalletService withdraw', () => {
       providerTxnId: challenge.id,
       status: 'approved',
     });
-    const accountRepo = dataSource.getRepository(Account);
-    const user = await accountRepo.findOneByOrFail({
+    const user = await ctx.repos.account.findOneByOrFail({
       id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
     });
     expect(user.balance).toBe(900);
-    const disbRepo = dataSource.getRepository(Disbursement);
-    expect(await disbRepo.count()).toBe(1);
+    expect(await ctx.repos.disbursement.count()).toBe(1);
   });
 
   it('ignores failed withdrawals', async () => {
@@ -218,14 +150,11 @@ describe('WalletService withdraw', () => {
       providerTxnId: challenge.id,
       status: 'chargeback',
     });
-    const accountRepo = dataSource.getRepository(Account);
-    const user = await accountRepo.findOneByOrFail({
+    const user = await ctx.repos.account.findOneByOrFail({
       id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
     });
     expect(user.balance).toBe(1000);
-    const disbRepo = dataSource.getRepository(Disbursement);
-    expect(await disbRepo.count()).toBe(0);
-    const jRepo = dataSource.getRepository(JournalEntry);
-    expect(await jRepo.count()).toBe(0);
+    expect(await ctx.repos.disbursement.count()).toBe(0);
+    expect(await ctx.repos.journal.count()).toBe(0);
   });
 });

@@ -1,73 +1,22 @@
-import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
 import { Account } from '../../src/wallet/account.entity';
 import { JournalEntry } from '../../src/wallet/journal-entry.entity';
-import { Disbursement } from '../../src/wallet/disbursement.entity';
 import { WalletService } from '../../src/wallet/wallet.service';
 import { EventPublisher } from '../../src/events/events.service';
-import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
-import { KycService } from '../../src/wallet/kyc.service';
-import { SettlementJournal } from '../../src/wallet/settlement-journal.entity';
-import { MockRedis } from '../utils/mock-redis';
+import {
+  setupTestWallet,
+  WalletTestContext,
+} from './test-setup';
 
 describe('WalletService transactions', () => {
-  let dataSource: DataSource;
+  let ctx: WalletTestContext;
   let service: WalletService;
-  const events: EventPublisher = { emit: jest.fn() } as any;
+  let events: EventPublisher;
 
   beforeAll(async () => {
-    const db = newDb();
-    db.public.registerFunction({
-      name: 'version',
-      returns: 'text',
-      implementation: () => 'pg-mem',
-    });
-    db.public.registerFunction({
-      name: 'current_database',
-      returns: 'text',
-      implementation: () => 'test',
-    });
-    let seq = 1;
-    db.public.registerFunction({
-      name: 'uuid_generate_v4',
-      returns: 'text',
-      implementation: () => {
-        const id = seq.toString(16).padStart(32, '0');
-        seq++;
-        return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(16, 20)}-${id.slice(20)}`;
-      },
-    });
-    dataSource = db.adapters.createTypeormDataSource({
-      type: 'postgres',
-      entities: [Account, JournalEntry, Disbursement, SettlementJournal],
-      synchronize: true,
-    }) as DataSource;
-    await dataSource.initialize();
-    const accountRepo = dataSource.getRepository(Account);
-    const journalRepo = dataSource.getRepository(JournalEntry);
-    const redis = new MockRedis();
-    const disbRepo = dataSource.getRepository(Disbursement);
-    const settleRepo = dataSource.getRepository(SettlementJournal);
-    const provider = {
-      initiate3DS: jest.fn(),
-      getStatus: jest.fn(),
-    } as unknown as PaymentProviderService;
-    const kyc = {
-      validate: jest.fn().mockResolvedValue(undefined),
-      isVerified: jest.fn().mockResolvedValue(true),
-    } as unknown as KycService;
-    service = new WalletService(
-      accountRepo,
-      journalRepo,
-      disbRepo,
-      settleRepo,
-      events,
-      redis,
-      provider,
-      kyc,
-    );
-    (service as any).enqueueDisbursement = jest.fn();
-    await accountRepo.save([
+    ctx = await setupTestWallet();
+    service = ctx.service;
+    events = ctx.events;
+    await ctx.repos.account.save([
       {
         id: '11111111-1111-1111-1111-111111111111',
         name: 'user',
@@ -102,7 +51,7 @@ describe('WalletService transactions', () => {
   });
 
   afterAll(async () => {
-    await dataSource.destroy();
+    await ctx.dataSource.destroy();
   });
 
   it('reserves and commits funds with rake and idempotency', async () => {
@@ -111,7 +60,7 @@ describe('WalletService transactions', () => {
     await service.commit(tx, 100, 5, 'USD');
     // duplicate commit should be ignored
     await service.commit(tx, 100, 5, 'USD');
-    const accounts = await dataSource.getRepository(Account).find();
+    const accounts = await ctx.repos.account.find();
     const user = accounts.find(
       (a) => a.id === '11111111-1111-1111-1111-111111111111',
     );
@@ -122,8 +71,7 @@ describe('WalletService transactions', () => {
     expect(reserve?.balance).toBe(0);
     expect(prize?.balance).toBe(95);
     expect(rake?.balance).toBe(5);
-    const journalRepo = dataSource.getRepository(JournalEntry);
-    const journals = await journalRepo.find();
+    const journals = await ctx.repos.journal.find();
     expect(journals).toHaveLength(5); // reserve 2 entries + commit 3 entries
     expect(journals.every((j) => j.currency === 'USD')).toBe(true);
     expect(
@@ -142,12 +90,10 @@ describe('WalletService transactions', () => {
     const tx = 'hand2#flop#1';
     await service.reserve('11111111-1111-1111-1111-111111111111', 50, tx, 'USD');
     await service.rollback('11111111-1111-1111-1111-111111111111', 50, tx, 'USD');
-    const user = await dataSource
-      .getRepository(Account)
-      .findOneBy({ id: '11111111-1111-1111-1111-111111111111' });
-    const reserve = await dataSource
-      .getRepository(Account)
-      .findOneBy({ name: 'reserve' });
+    const user = await ctx.repos.account.findOneBy({
+      id: '11111111-1111-1111-1111-111111111111',
+    });
+    const reserve = await ctx.repos.account.findOneBy({ name: 'reserve' });
     expect(user?.balance).toBe(900);
     expect(reserve?.balance).toBe(0);
   });
