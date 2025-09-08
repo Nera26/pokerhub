@@ -33,6 +33,11 @@ describe('TransactionsService', () => {
               returns: 'text',
               implementation: () => 'test',
             });
+            db.public.registerFunction({
+              name: 'uuid_generate_v4',
+              returns: 'uuid',
+              implementation: () => '00000000-0000-0000-0000-000000000000',
+            });
             dataSource = db.adapters.createTypeormDataSource({
               type: 'postgres',
               entities: [TransactionType, Transaction],
@@ -63,6 +68,7 @@ describe('TransactionsService', () => {
         performedBy: 'Admin',
         notes: '',
         status: 'Completed',
+        createdAt: new Date('2024-01-02'),
       },
       {
         userId: 'user1',
@@ -71,6 +77,7 @@ describe('TransactionsService', () => {
         performedBy: 'User',
         notes: '',
         status: 'Pending',
+        createdAt: new Date('2024-02-01'),
       },
     ]);
   });
@@ -99,5 +106,19 @@ describe('TransactionsService', () => {
     const entries = await service.getUserTransactions('user1');
     expect(entries).toHaveLength(2);
     expect(entries[0]).toHaveProperty('action');
+  });
+
+  it('filters transactions by date range', async () => {
+    await txnRepo.save({
+      userId: 'user2',
+      typeId: 'deposit',
+      amount: 200,
+      performedBy: 'Admin',
+      notes: '',
+      status: 'Completed',
+      createdAt: new Date('2023-01-01'),
+    });
+    const entries = await service.getTransactionsLog({ startDate: '2024-01-01' });
+    expect(entries).toHaveLength(2); // original two >= 2024?
   });
 });

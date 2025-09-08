@@ -1339,6 +1339,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TransactionTabsResponse'
+  /admin/transactions:
+    get:
+      summary: List transactions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: playerId
+          schema:
+            type: string
+        - in: query
+          name: type
+          schema:
+            type: string
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Transactions list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionEntries'
   /admin/withdrawals:
     get:
       summary: List pending withdrawals
@@ -2219,6 +2250,33 @@ components:
         - realBalance
         - creditBalance
         - transactions
+    TransactionEntry:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date-time
+        action:
+          type: string
+        amount:
+          type: number
+        performedBy:
+          type: string
+        notes:
+          type: string
+        status:
+          type: string
+      required:
+        - date
+        - action
+        - amount
+        - performedBy
+        - notes
+        - status
+    TransactionEntries:
+      type: array
+      items:
+        $ref: '#/components/schemas/TransactionEntry'
     PendingDeposit:
       type: object
       properties:

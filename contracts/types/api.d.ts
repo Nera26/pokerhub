@@ -1398,6 +1398,27 @@ export interface paths {
       };
     };
   };
+  "/admin/transactions": {
+    /** List transactions */
+    get: {
+      parameters: {
+        query?: {
+          playerId?: string;
+          type?: string;
+          startDate?: string;
+          endDate?: string;
+        };
+      };
+      responses: {
+        /** @description Transactions list */
+        200: {
+          content: {
+            "application/json": components["schemas"]["TransactionEntries"];
+          };
+        };
+      };
+    };
+  };
   "/admin/withdrawals": {
     /** List pending withdrawals */
     get: {
@@ -1703,6 +1724,19 @@ export interface paths {
       };
     };
   };
+  "/promotions": {
+    /** List promotions */
+    get: {
+      responses: {
+        /** @description Promotions list */
+        200: {
+          content: {
+            "application/json": components["schemas"]["PromotionsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/promotions/{id}": {
     /** Get promotion by id */
     get: {
@@ -1939,6 +1973,16 @@ export interface components {
       creditBalance: number;
       transactions: components["schemas"]["PendingTransaction"][];
     };
+    TransactionEntry: {
+      /** Format: date-time */
+      date: string;
+      action: string;
+      amount: number;
+      performedBy: string;
+      notes: string;
+      status: string;
+    };
+    TransactionEntries: components["schemas"]["TransactionEntry"][];
     PendingDeposit: {
       id: string;
       userId: string;

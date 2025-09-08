@@ -326,11 +326,19 @@ const TransactionLogEntrySchema = z.object({
 export type TransactionLogEntry = z.infer<typeof TransactionLogEntrySchema>;
 
 export async function fetchTransactionsLog(
-  opts: { signal?: AbortSignal; playerId?: string; type?: string } = {},
+  opts: {
+    signal?: AbortSignal;
+    playerId?: string;
+    type?: string;
+    startDate?: string;
+    endDate?: string;
+  } = {},
 ): Promise<TransactionLogEntry[]> {
   const params = new URLSearchParams();
   if (opts.playerId) params.set('playerId', opts.playerId);
   if (opts.type) params.set('type', opts.type);
+  if (opts.startDate) params.set('startDate', opts.startDate);
+  if (opts.endDate) params.set('endDate', opts.endDate);
   const query = params.toString();
   try {
     return await apiClient(

@@ -43,6 +43,49 @@ export class TransactionsService {
     ];
   }
 
+  async getTransactionsLog(
+    filters: {
+      playerId?: string;
+      type?: string;
+      startDate?: string;
+      endDate?: string;
+    },
+  ): Promise<TransactionEntries> {
+    let qb = this.txRepo
+      .createQueryBuilder('t')
+      .leftJoinAndSelect('t.type', 'type');
+
+    if (filters.playerId) {
+      qb = qb.andWhere('t.userId = :playerId', { playerId: filters.playerId });
+    }
+    if (filters.type) {
+      qb = qb.andWhere('t.typeId = :type', { type: filters.type });
+    }
+    if (filters.startDate) {
+      qb = qb.andWhere('t.createdAt >= :startDate', {
+        startDate: new Date(filters.startDate),
+      });
+    }
+    if (filters.endDate) {
+      qb = qb.andWhere('t.createdAt <= :endDate', {
+        endDate: new Date(filters.endDate),
+      });
+    }
+
+    const txs = await qb.orderBy('t.createdAt', 'DESC').getMany();
+
+    return TransactionEntriesSchema.parse(
+      txs.map((t) => ({
+        date: t.createdAt.toISOString(),
+        action: t.type.label,
+        amount: t.amount,
+        performedBy: t.performedBy,
+        notes: t.notes,
+        status: t.status as 'Completed' | 'Pending' | 'Rejected',
+      })),
+    );
+  }
+
   async getUserTransactions(userId: string): Promise<TransactionEntries> {
     const txs = await this.txRepo.find({
       where: { userId },

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
@@ -8,6 +8,10 @@ import {
   TransactionTypesResponseSchema,
 } from '@shared/types';
 import { TransactionTabsResponseSchema } from '@shared/wallet.schema';
+import {
+  TransactionsLogQuery,
+  TransactionsLogQuerySchema,
+} from '../schemas/transactions';
 import { TransactionsService } from '../wallet/transactions.service';
 
 @ApiTags('transactions')
@@ -36,6 +40,15 @@ export class TransactionsController {
   async types() {
     const res = await this.txService.getTransactionTypes();
     return TransactionTypesResponseSchema.parse(res);
+  }
+
+  @Get('admin/transactions')
+  @ApiOperation({ summary: 'List transactions' })
+  @ApiResponse({ status: 200, description: 'Transactions list' })
+  async log(@Query() query: TransactionsLogQuery) {
+    const filters = TransactionsLogQuerySchema.parse(query);
+    const res = await this.txService.getTransactionsLog(filters);
+    return TransactionEntriesSchema.parse(res);
   }
 
   @Get('users/:id/transactions')

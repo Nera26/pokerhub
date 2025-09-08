@@ -31,9 +31,7 @@ import {
   confirmWithdrawal,
   rejectWithdrawal,
   fetchBalances,
-  fetchTransactionsLog,
   fetchTransactionTabs,
-  fetchTransactionTypes,
 } from '@/lib/api/wallet';
 import {
   useIban,
@@ -189,31 +187,7 @@ export default function BalanceTransactions() {
     estimateSize: 60,
   });
 
-  const [playerFilter, setPlayerFilter] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
-
-  const {
-    data: txnTypes = [],
-    isLoading: txnTypesLoading,
-    error: txnTypesError,
-  } = useQuery({ queryKey: ['transactionTypes'], queryFn: fetchTransactionTypes });
-  useApiError(txnTypesError);
-
-  const {
-    data: log = [],
-    isLoading: logLoading,
-    error: logError,
-  } = useQuery<Txn[]>({
-    queryKey: ['transactions', playerFilter, typeFilter],
-    queryFn: ({ signal }) =>
-      fetchTransactionsLog({
-        signal,
-        playerId: playerFilter || undefined,
-        type: typeFilter || undefined,
-      }),
-    staleTime: 30000,
-  });
-  const logErrorMessage = useApiError(logError);
+  
 
   // IBAN manager
   const [ibanMasked, setIbanMasked] = useState(true);
@@ -418,34 +392,6 @@ export default function BalanceTransactions() {
       ...(l ?? []),
     ]);
     notify('Balance updated');
-  };
-
-  const exportCSV = () => {
-    const header = [
-      'Date & Time',
-      'Action',
-      'Amount',
-      'Performed By',
-      'Notes',
-      'Status',
-    ];
-    const rows = log.map((t) => [
-      t.datetime,
-      t.action,
-      (t.amount >= 0 ? '+' : '') + t.amount,
-      t.by,
-      `"${t.notes.replace(/"/g, '""')}"`,
-      t.status,
-    ]);
-    const csv = [header, ...rows].map((r) => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'transaction_log.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-    notify('CSV export started');
   };
 
   const updateIBAN = (_newIban: string, _newHolder: string, _notes: string) => {
@@ -796,26 +742,7 @@ export default function BalanceTransactions() {
         )}
       </section>
 
-      {logLoading ? (
-        <div className="flex justify-center" aria-label="loading history">
-          <FontAwesomeIcon icon={faSpinner} spin />
-        </div>
-      ) : logError ? (
-        <p role="alert">
-          {logErrorMessage || 'Failed to load transaction history.'}
-        </p>
-      ) : log.length === 0 ? (
-        <p>No transaction history.</p>
-      ) : (
-        <TransactionHistory
-          log={log}
-          onExport={exportCSV}
-          types={txnTypes}
-          typesLoading={txnTypesLoading}
-          typesError={txnTypesError}
-          onTypeChange={setTypeFilter}
-        />
-      )}
+      <TransactionHistory />
 
 /* Modals */
 <RejectionModal
