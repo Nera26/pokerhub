@@ -1,64 +1,12 @@
 import { TableBalancerService } from './table-balancer.service';
 import type { Repository } from 'typeorm';
-import type Redis from 'ioredis';
 import { Table } from '../database/entities/table.entity';
-type TournamentService = {
-  balanceTournament(
-    tournamentId: string,
-    currentHand: number,
-    avoidWithin: number,
-    recentlyMoved: Map<string, number>,
-  ): Promise<void>;
-};
-
-function createTablesRepository(
-  players: string[][],
-): Partial<Repository<Table>> {
-  return {
-    find: jest.fn().mockResolvedValue(
-      players.map((pids, i) => ({
-        id: `table${i}`,
-        seats: pids.map((id) => ({ user: { id } })),
-      })),
-    ),
-  };
-}
-
-function createTournamentService(moved: string[]): Partial<TournamentService> {
-  return {
-    balanceTournament(
-      _tournamentId: string,
-      currentHand: number,
-      _avoidWithin: number,
-      recentlyMoved: Map<string, number>,
-    ): Promise<void> {
-      const allPlayers = ['p1', 'p2'];
-      const candidate = allPlayers.find((p) => !recentlyMoved.has(p));
-      if (candidate) {
-        moved.push(candidate);
-        recentlyMoved.set(candidate, currentHand);
-      }
-      return Promise.resolve();
-    },
-  };
-}
-
-function createSinglePlayerService(moved: string[]): Partial<TournamentService> {
-  return {
-    balanceTournament(
-      _tournamentId: string,
-      currentHand: number,
-      _avoidWithin: number,
-      recentlyMoved: Map<string, number>,
-    ): Promise<void> {
-      if (!recentlyMoved.has('p1')) {
-        moved.push('p1');
-        recentlyMoved.set('p1', currentHand);
-      }
-      return Promise.resolve();
-    },
-  };
-}
+import {
+  createRedis,
+  createTablesRepository,
+  createTournamentService,
+  createSinglePlayerService,
+} from './test-utils';
 
 describe('TableBalancerService', () => {
   it('skips players moved recently using redis', async () => {
@@ -68,23 +16,7 @@ describe('TableBalancerService', () => {
       [],
     ]) as Repository<Table>;
     const tournamentService = createTournamentService(moved);
-    const store = new Map<string, string>([['p1', '1']]);
-    const redis = {
-      hgetall: (key: string) => {
-        void key;
-        return Promise.resolve(Object.fromEntries(store));
-      },
-      hset: (key: string, data: Record<string, string>) => {
-        void key;
-        for (const [k, v] of Object.entries(data)) store.set(k, v);
-        return Promise.resolve(0);
-      },
-      del: (key: string) => {
-        void key;
-        store.clear();
-        return Promise.resolve(1);
-      },
-    } as unknown as Redis;
+    const { redis, store } = createRedis({ p1: '1' });
     const service = new TableBalancerService(
       repo,
       tournamentService as any,
