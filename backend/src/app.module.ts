@@ -26,6 +26,7 @@ import { validationSchema } from './config/env.validation';
 import { AppController } from './app.controller';
 import { AdminMessagesController } from './routes/admin-messages.controller';
 import { AdminBonusController } from './routes/admin-bonus.controller'; // expose /admin/bonus/options
+import { PromotionsController } from './routes/promotions.controller';
 import { AppService } from './app.service';
 import { API_CONTRACT_VERSION } from '@shared/constants';
 import { ZodExceptionFilter } from './common/zod-exception.filter';
@@ -121,7 +122,12 @@ import { AdminMessageEntity } from './notifications/admin-message.entity';
     TiersModule,
     CtasModule,
   ],
-  controllers: [AppController, AdminMessagesController, AdminBonusController],
+  controllers: [
+    AppController,
+    AdminMessagesController,
+    AdminBonusController,
+    PromotionsController,
+  ],
   providers: [
     AppService,
     { provide: 'API_CONTRACT_VERSION', useValue: API_CONTRACT_VERSION },

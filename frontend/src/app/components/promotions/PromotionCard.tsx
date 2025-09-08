@@ -23,6 +23,8 @@ export interface Promotion {
   description: string;
   reward: string;
   unlockText: string;
+  breakdown: { label: string; value: number }[];
+  eta?: string;
   // If provided, show a progress bar: current/total and percent
   progress?: {
     current: number;

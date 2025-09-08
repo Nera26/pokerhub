@@ -172,6 +172,10 @@ export const PromotionProgressSchema = z.object({
   label: z.string(),
   barColorClass: z.string(),
 });
+export const PromotionBreakdownItemSchema = z.object({
+  label: z.string(),
+  value: z.number(),
+});
 export const PromotionSchema = z.object({
   id: z.string(),
   category: z.string(),
@@ -181,6 +185,8 @@ export const PromotionSchema = z.object({
   unlockText: z.string().optional(),
   statusText: z.string().optional(),
   progress: PromotionProgressSchema.optional(),
+  breakdown: z.array(PromotionBreakdownItemSchema),
+  eta: z.string().optional(),
 });
 export type Promotion = z.infer<typeof PromotionSchema>;
 export const PromotionsResponseSchema = z.array(PromotionSchema);

@@ -1703,6 +1703,24 @@ export interface paths {
       };
     };
   };
+  "/promotions/{id}": {
+    /** Get promotion by id */
+    get: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Promotion detail */
+        200: {
+          content: {
+            "application/json": components["schemas"]["Promotion"];
+          };
+        };
+      };
+    };
+  };
 }
 
 export type webhooks = Record<string, never>;
@@ -1746,6 +1764,29 @@ export interface components {
     AdminMessagesResponse: {
       messages: components["schemas"]["AdminMessage"][];
     };
+    PromotionBreakdownItem: {
+      label: string;
+      value: number;
+    };
+    PromotionProgress: {
+      current: number;
+      total: number;
+      label: string;
+      barColorClass: string;
+    };
+    Promotion: {
+      id: string;
+      category: string;
+      title: string;
+      description: string;
+      reward: string;
+      unlockText?: string;
+      statusText?: string;
+      progress?: components["schemas"]["PromotionProgress"];
+      breakdown: components["schemas"]["PromotionBreakdownItem"][];
+      eta?: string;
+    };
+    PromotionsResponse: components["schemas"]["Promotion"][];
     ReplyMessageRequest: {
       reply: string;
     };
