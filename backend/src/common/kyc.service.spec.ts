@@ -8,6 +8,7 @@ import type { Pep } from '../database/entities/pep.entity';
 import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Logger } from '@nestjs/common';
 
 import { Account as WalletAccount } from '../wallet/account.entity';
 import { JournalEntry } from '../wallet/journal-entry.entity';
@@ -19,16 +20,21 @@ describe('KycService common', () => {
     };
     const config: Partial<ConfigService> = {
       get: (key: string) =>
-        key === 'kyc.blockedCountries' ? ['US'] : undefined,
+        key === 'kyc.blockedCountries'
+          ? ['US']
+          : key === 'kyc.sanctionedNames'
+            ? []
+            : undefined,
     };
     const service = new KycService(
       {} as unknown as Repository<Account>,
       provider,
       {} as unknown as Repository<KycVerification>,
-      {} as unknown as Repository<Pep>,
+      undefined as unknown as Repository<Pep>,
       config as ConfigService,
       undefined,
     );
+    await service.onModuleInit();
     await expect(
       service.runChecks('good', '1.1.1.1', '1990-01-01'),
     ).rejects.toThrow('Blocked jurisdiction');
@@ -40,16 +46,21 @@ describe('KycService common', () => {
     };
     const config: Partial<ConfigService> = {
       get: (key: string) =>
-        key === 'kyc.blockedCountries' ? [] : undefined,
+        key === 'kyc.blockedCountries'
+          ? []
+          : key === 'kyc.sanctionedNames'
+            ? ['Bad Actor']
+            : undefined,
     };
     const service = new KycService(
       {} as unknown as Repository<Account>,
       provider,
       {} as unknown as Repository<KycVerification>,
-      {} as unknown as Repository<Pep>,
+      undefined as unknown as Repository<Pep>,
       config as ConfigService,
       undefined,
     );
+    await service.onModuleInit();
     await expect(
       service.runChecks('Bad Actor', '1.1.1.1', '1990-01-01'),
     ).rejects.toThrow('Sanctioned individual');
@@ -61,16 +72,21 @@ describe('KycService common', () => {
     };
     const config: Partial<ConfigService> = {
       get: (key: string) =>
-        key === 'kyc.blockedCountries' ? [] : undefined,
+        key === 'kyc.blockedCountries'
+          ? []
+          : key === 'kyc.sanctionedNames'
+            ? []
+            : undefined,
     };
     const service = new KycService(
       {} as unknown as Repository<Account>,
       provider,
       {} as unknown as Repository<KycVerification>,
-      {} as unknown as Repository<Pep>,
+      undefined as unknown as Repository<Pep>,
       config as ConfigService,
       undefined,
     );
+    await service.onModuleInit();
     await expect(
       service.runChecks('Young User', '1.1.1.1', '2010-01-01'),
     ).rejects.toThrow('Underage');
@@ -82,7 +98,11 @@ describe('KycService common', () => {
     };
     const config: Partial<ConfigService> = {
       get: (key: string) =>
-        key === 'kyc.blockedCountries' ? [] : undefined,
+        key === 'kyc.blockedCountries'
+          ? []
+          : key === 'kyc.sanctionedNames'
+            ? []
+            : undefined,
     };
     const pepRepo: Partial<Repository<Pep>> = {
       findOneBy: jest
@@ -97,6 +117,7 @@ describe('KycService common', () => {
       config as ConfigService,
       undefined,
     );
+    await service.onModuleInit();
     await expect(
       service.runChecks('Famous Politician', '1.1.1.1', '1990-01-01'),
     ).rejects.toThrow('Politically exposed person');
@@ -108,7 +129,11 @@ describe('KycService common', () => {
     };
     const config: Partial<ConfigService> = {
       get: (key: string) =>
-        key === 'kyc.blockedCountries' ? [] : undefined,
+        key === 'kyc.blockedCountries'
+          ? []
+          : key === 'kyc.sanctionedNames'
+            ? []
+            : undefined,
     };
     const pepRepo: Partial<Repository<Pep>> = {
       findOneBy: jest.fn().mockResolvedValue(null),
@@ -121,9 +146,65 @@ describe('KycService common', () => {
       config as ConfigService,
       undefined,
     );
+    await service.onModuleInit();
     await expect(
       service.runChecks('Average Joe', '1.1.1.1', '1990-01-01'),
     ).resolves.toEqual({ country: 'GB' });
+  });
+
+  it('loads restrictions on module init', async () => {
+    const provider: CountryProvider = {
+      getCountry: () => Promise.resolve('GB'),
+    };
+    const config: Partial<ConfigService> = {
+      get: (key: string) =>
+        key === 'kyc.blockedCountries'
+          ? ['US']
+          : key === 'kyc.sanctionedNames'
+            ? ['Bad Actor']
+            : undefined,
+    };
+    const service = new KycService(
+      {} as unknown as Repository<Account>,
+      provider,
+      {} as unknown as Repository<KycVerification>,
+      undefined as unknown as Repository<Pep>,
+      config as ConfigService,
+      undefined,
+    );
+    await expect(
+      service.runChecks('Bad Actor', '1.1.1.1', '1990-01-01'),
+    ).resolves.toEqual({ country: 'GB' });
+    await service.onModuleInit();
+    await expect(
+      service.runChecks('Bad Actor', '1.1.1.1', '1990-01-01'),
+    ).rejects.toThrow('Sanctioned individual');
+  });
+
+  it('falls back to empty lists when config missing', async () => {
+    const provider: CountryProvider = {
+      getCountry: () => Promise.resolve('US'),
+    };
+    const warn = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => {});
+    const service = new KycService(
+      {} as unknown as Repository<Account>,
+      provider,
+      {} as unknown as Repository<KycVerification>,
+      undefined as unknown as Repository<Pep>,
+      undefined,
+      undefined,
+    );
+    await service.onModuleInit();
+    const result = await service.runChecks(
+      'Bad Actor',
+      '1.1.1.1',
+      '1990-01-01',
+    );
+    expect(result).toEqual({ country: 'US' });
+    expect(warn).toHaveBeenCalledTimes(2);
+    warn.mockRestore();
   });
 
   describe('wallet flows', () => {
@@ -183,6 +264,7 @@ describe('KycService common', () => {
         undefined,
         cache,
       );
+      await service.onModuleInit();
     });
 
     afterAll(async () => {

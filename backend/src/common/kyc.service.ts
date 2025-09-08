@@ -1,4 +1,10 @@
-import { Inject, Injectable, Optional } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Optional,
+  Logger,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
@@ -36,9 +42,10 @@ interface GeoResult {
 }
 
 @Injectable()
-export class KycService {
-  private readonly blockedCountries: string[];
-  private readonly sanctionedNames = ['bad actor'];
+export class KycService implements OnModuleInit {
+  private blockedCountries: string[] = [];
+  private sanctionedNames: string[] = [];
+  private readonly logger = new Logger(KycService.name);
 
   private queue?: Queue;
 
@@ -70,16 +77,42 @@ export class KycService {
     @Optional()
     @Inject(CACHE_MANAGER)
     private readonly cache?: Cache,
-  ) {
-    this.blockedCountries =
-      this.config?.get<string[]>('kyc.blockedCountries') ?? [
-        'IR',
-        'KP',
-        'SY',
-        'CU',
-        'RU',
-        'BY',
-      ];
+  ) {}
+
+  private async loadListFromDb(
+    table: string,
+    column: string,
+  ): Promise<string[] | undefined> {
+    const repo: any = this.accounts;
+    if (!repo || typeof repo.query !== 'function') return undefined;
+    try {
+      const rows = await repo.query(`SELECT ${column} FROM ${table}`);
+      return rows.map((r: any) => String(r[column]));
+    } catch {
+      return undefined;
+    }
+  }
+
+  async onModuleInit(): Promise<void> {
+    let blocked = this.config?.get<string[]>('kyc.blockedCountries');
+    if (!blocked || blocked.length === 0) {
+      blocked = await this.loadListFromDb('blocked_countries', 'country');
+    }
+    if (!blocked || blocked.length === 0) {
+      this.logger.warn('No blocked countries configured; using empty list');
+      blocked = [];
+    }
+    this.blockedCountries = blocked.map((c) => c.toUpperCase());
+
+    let sanctioned = this.config?.get<string[]>('kyc.sanctionedNames');
+    if (!sanctioned || sanctioned.length === 0) {
+      sanctioned = await this.loadListFromDb('sanctioned_names', 'name');
+    }
+    if (!sanctioned || sanctioned.length === 0) {
+      this.logger.warn('No sanctioned names configured; using empty list');
+      sanctioned = [];
+    }
+    this.sanctionedNames = sanctioned.map((n) => n.toLowerCase());
   }
 
   private async getQueue(): Promise<Queue> {
