@@ -30,6 +30,21 @@ jest.mock('@/lib/api/admin', () => ({
     { id: 'analytics', label: 'Analytics', icon: 'chart-bar' },
   ]),
 }));
+
+jest.mock('@tanstack/react-query', () => ({
+  useQuery: jest.fn(() => ({
+    data: {
+      tabs: ['dashboard', 'users', 'analytics'],
+      titles: {
+        dashboard: 'Dashboard',
+        users: 'Manage Users',
+        analytics: 'Analytics',
+      },
+    },
+    isLoading: false,
+    isError: false,
+  })),
+}));
 jest.mock('@/features/site/profile/fetchProfile', () => ({
   fetchProfile: jest.fn().mockResolvedValue({
     username: 'Admin',

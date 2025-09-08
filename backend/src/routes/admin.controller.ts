@@ -8,7 +8,12 @@ import {
   AlertItem,
   AlertItemSchema,
 } from '../schemas/analytics';
-import { SidebarItem, SidebarItemsResponseSchema } from '../schemas/admin';
+import {
+  SidebarItem,
+  SidebarItemsResponseSchema,
+  SidebarTabsResponseSchema,
+  SidebarTab,
+} from '../schemas/admin';
 import { sharedSidebar } from '@shared/sidebar';
 import { KycService } from '../wallet/kyc.service';
 import { AnalyticsService } from '../analytics/analytics.service';
@@ -53,5 +58,14 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Sidebar items' })
   async getSidebar(): Promise<SidebarItem[]> {
     return SidebarItemsResponseSchema.parse(sharedSidebar);
+  }
+
+  @Get('tabs')
+  @ApiOperation({ summary: 'Get admin dashboard tabs' })
+  @ApiResponse({ status: 200, description: 'Dashboard tabs' })
+  async getTabs(): Promise<{ tabs: SidebarTab[]; titles: Record<SidebarTab, string> }> {
+    const tabs = sharedSidebar.map((s) => s.id) as SidebarTab[];
+    const titles = Object.fromEntries(sharedSidebar.map((s) => [s.id, s.label])) as Record<SidebarTab, string>;
+    return SidebarTabsResponseSchema.parse({ tabs, titles });
   }
 }

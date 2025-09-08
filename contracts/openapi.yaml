@@ -1255,6 +1255,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SidebarItemsResponse'
+  /admin/tabs:
+    get:
+      summary: Get admin dashboard tabs
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dashboard tabs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SidebarTabsResponse'
   /admin/messages:
     get:
       summary: List user messages
@@ -3287,6 +3299,7 @@ components:
             - balance
             - tables
             - tournaments
+            - ctas
             - bonus
             - broadcast
             - messages
@@ -3305,6 +3318,35 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/SidebarItem'
+    SidebarTab:
+      type: string
+      enum:
+        - dashboard
+        - users
+        - balance
+        - tables
+        - tournaments
+        - ctas
+        - bonus
+        - broadcast
+        - messages
+        - audit
+        - analytics
+        - review
+    SidebarTabsResponse:
+      type: object
+      properties:
+        tabs:
+          type: array
+          items:
+            $ref: '#/components/schemas/SidebarTab'
+        titles:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+        - tabs
+        - titles
     BonusOptionType:
       type: string
       enum:

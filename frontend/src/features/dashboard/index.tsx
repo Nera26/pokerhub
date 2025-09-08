@@ -10,45 +10,18 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUsers, faCoins, faBars } from '@fortawesome/free-solid-svg-icons';
 import { useAuthStore } from '@/app/store/authStore';
 import { fetchProfile } from '@/features/site/profile/fetchProfile';
+import { useQuery } from '@tanstack/react-query';
 
 import useRenderCount from '@/hooks/useRenderCount';
-import type { SidebarTab } from '@/app/components/dashboard/Sidebar';
+import { fetchAdminTabs } from '@/lib/api/admin';
+import type { SidebarTab } from '@shared/types';
 const Sidebar = dynamic(() => import('@/app/components/dashboard/Sidebar'), {
   loading: () => <div>Loading sidebar...</div>,
 });
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import DashboardModule from '@/app/components/dashboard/DashboardModule';
-const ALL_TABS: SidebarTab[] = [
-  'dashboard',
-  'users',
-  'balance',
-  'audit',
-  'tables',
-  'tournaments',
-  'ctas',
-  'bonus',
-  'broadcast',
-  'messages',
-  'analytics',
-  'review',
-];
-
 const DEFAULT_AVATAR =
   'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
-
-const titleMap: Partial<Record<SidebarTab, string>> = {
-  messages: 'Messages',
-  audit: 'Audit Logs',
-  users: 'Manage Users',
-  balance: 'Balance & Transactions',
-  tables: 'Manage Tables',
-  tournaments: 'Manage Tournaments',
-  ctas: 'CTA Manager',
-  bonus: 'Bonus Manager',
-  broadcast: 'Broadcast Tool',
-  analytics: 'Analytics',
-  review: 'Collusion Review',
-};
 
 const TAB_CONFIG: Record<
   SidebarTab,
@@ -120,8 +93,8 @@ const TAB_CONFIG: Record<
   },
 };
 
-function isSidebarTab(v: string | null): v is SidebarTab {
-  return !!v && (ALL_TABS as string[]).includes(v);
+function isSidebarTab(v: string | null, tabs: SidebarTab[]): v is SidebarTab {
+  return !!v && tabs.includes(v as SidebarTab);
 }
 
 function DashboardPage() {
@@ -130,10 +103,21 @@ function DashboardPage() {
   const pathname = usePathname();
   const search = useSearchParams();
 
-  const [tab, setTab] = useState<SidebarTab>(() => {
-    const q = search.get('tab');
-    return isSidebarTab(q) ? (q as SidebarTab) : 'dashboard';
+  const {
+    data: tabsData,
+    isLoading: tabsLoading,
+    isError: tabsError,
+  } = useQuery({
+    queryKey: ['admin-tabs'],
+    queryFn: ({ signal }) => fetchAdminTabs({ signal }),
   });
+
+  const tabs = tabsData?.tabs ?? [];
+  const titles = tabsData?.titles ?? {};
+
+  const [tab, setTab] = useState<SidebarTab>(
+    () => (search.get('tab') as SidebarTab) || 'dashboard',
+  );
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const avatarUrl = useAuthStore((s) => s.avatarUrl);
   const setAvatarUrl = useAuthStore((s) => s.setAvatarUrl);
@@ -143,16 +127,27 @@ function DashboardPage() {
     isLoading: metricsLoading,
   } = useDashboardMetrics();
 
+  useEffect(() => {
+    if (!tabs.length) return;
+    const q = search.get('tab');
+    if (isSidebarTab(q, tabs)) {
+      setTab(q as SidebarTab);
+    } else {
+      setTab('dashboard');
+    }
+  }, [tabs, search]);
+
   // Keep ?tab=<id> in the URL in sync with state
   useEffect(() => {
+    if (!tabs.length) return;
     const qs = new URLSearchParams(search.toString());
     if (qs.get('tab') !== tab) {
       qs.set('tab', tab);
       router.replace(`${pathname}?${qs.toString()}`);
     }
-  }, [tab, router, pathname, search]);
+  }, [tab, router, pathname, search, tabs]);
 
-  const title = titleMap[tab] ?? 'Admin Dashboard';
+  const title = titles[tab] ?? 'Admin Dashboard';
 
   useEffect(() => {
     if (avatarUrl === null) {
@@ -163,9 +158,21 @@ function DashboardPage() {
       return () => controller.abort();
     }
   }, [avatarUrl, setAvatarUrl]);
+  if (tabsLoading) {
+    return <div>Loading tabs...</div>;
+  }
+
+  if (!tabsError && tabs.length === 0) {
+    return <div>No tabs available.</div>;
+  }
 
   return (
     <div className="min-h-screen bg-primary-bg text-text-primary">
+      {tabsError && (
+        <div role="alert" className="text-red-500 p-4">
+          Error loading tabs.
+        </div>
+      )}
       {/* Header */}
       <header className="bg-card-bg border-b border-dark p-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
