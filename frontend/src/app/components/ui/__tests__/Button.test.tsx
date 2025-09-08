@@ -9,6 +9,12 @@ describe('Button', () => {
     expect(screen.getByRole('button', { name: 'Submit' })).toBeInTheDocument();
   });
 
+  it('renders as a link when href is provided', () => {
+    render(<Button href="/dashboard">Dashboard</Button>);
+    const link = screen.getByRole('link', { name: 'Dashboard' });
+    expect(link).toHaveAttribute('href', '/dashboard');
+  });
+
   it('renders icon-only usage', () => {
     render(
       <Button aria-label="settings" leftIcon={<svg data-testid="icon" />} />,

@@ -4,12 +4,6 @@ import LiveTableCard, {
   LiveTableCardProps,
 } from '@/app/components/home/LiveTableCard';
 
-const push = jest.fn();
-const prefetch = jest.fn();
-jest.mock('next/navigation', () => ({
-  useRouter: () => ({ push, prefetch }),
-}));
-
 const baseProps: LiveTableCardProps = {
   tableName: 'Test Table',
   stakes: { small: 1, big: 2 },
@@ -20,17 +14,10 @@ const baseProps: LiveTableCardProps = {
 };
 
 describe('LiveTableCard', () => {
-  beforeEach(() => {
-    push.mockClear();
-    prefetch.mockClear();
-  });
-
-  it('navigates with href', async () => {
+  it('renders link with href', async () => {
     render(<LiveTableCard {...baseProps} href="/table/1" />);
-    const button = await screen.findByRole('button', { name: /join table/i });
-    await userEvent.click(button);
-    expect(push).toHaveBeenCalledWith('/table/1');
-    expect(prefetch).toHaveBeenCalledWith('/table/1');
+    const link = await screen.findByRole('link', { name: /join table/i });
+    expect(link).toHaveAttribute('href', '/table/1');
   });
 
   it('calls onJoin when button clicked', async () => {
@@ -41,12 +28,10 @@ describe('LiveTableCard', () => {
     expect(onJoin).toHaveBeenCalled();
   });
 
-  it('navigates to spectateHref', async () => {
+  it('renders spectate link', async () => {
     render(<LiveTableCard {...baseProps} spectateHref="/table/1/spectate" />);
-    const button = await screen.findByRole('button', { name: /spectate/i });
-    await userEvent.click(button);
-    expect(push).toHaveBeenCalledWith('/table/1/spectate');
-    expect(prefetch).toHaveBeenCalledWith('/table/1/spectate');
+    const link = await screen.findByRole('link', { name: /spectate/i });
+    expect(link).toHaveAttribute('href', '/table/1/spectate');
   });
 
   it('displays zero values without crashing', () => {
