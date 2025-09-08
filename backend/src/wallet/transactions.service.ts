@@ -5,6 +5,7 @@ import { TransactionType } from './transaction-type.entity';
 import { Transaction } from './transaction.entity';
 import { FilterOptionsSchema, TransactionEntriesSchema } from '@shared/types';
 import type { FilterOptions, TransactionEntries } from '@shared/types';
+import type { TransactionTab } from '@shared/wallet.schema';
 import { TransactionTypesResponseSchema } from '../schemas/transactions';
 
 @Injectable()
@@ -31,6 +32,15 @@ export class TransactionsService {
   async getTransactionTypes() {
     const res = await this.types.find();
     return TransactionTypesResponseSchema.parse(res);
+  }
+
+  async getTransactionTabs(): Promise<TransactionTab[]> {
+    return [
+      { id: 'all', label: 'All' },
+      { id: 'deposits', label: 'Deposits' },
+      { id: 'withdrawals', label: 'Withdrawals' },
+      { id: 'manual', label: 'Manual Adjustments' },
+    ];
   }
 
   async getUserTransactions(userId: string): Promise<TransactionEntries> {

@@ -20,6 +20,8 @@ import {
   type PendingDepositsResponse,
   type IbanResponse,
   type IbanHistoryResponse,
+  TransactionTabsResponseSchema,
+  type TransactionTab,
 } from '@shared/wallet.schema';
 import {
   MessageResponseSchema,
@@ -274,6 +276,16 @@ export function fetchAdminPlayers(
   return apiClient(`/api/admin/players`, z.array(AdminPlayerSchema), {
     signal: opts.signal,
   });
+}
+
+export async function fetchTransactionTabs(
+  opts: { signal?: AbortSignal } = {},
+): Promise<TransactionTab[]> {
+  return apiClient(
+    `/api/admin/transactions/tabs`,
+    TransactionTabsResponseSchema,
+    { signal: opts.signal },
+  );
 }
 
 export async function fetchTransactionTypes(

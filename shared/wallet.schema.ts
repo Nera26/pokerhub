@@ -199,3 +199,12 @@ export const IbanHistoryResponseSchema = z.object({
 export type IbanHistoryResponse = z.infer<
   typeof IbanHistoryResponseSchema
 >;
+
+export const TransactionTabSchema = z.object({
+  id: z.enum(['all', 'deposits', 'withdrawals', 'manual']),
+  label: z.string(),
+});
+export type TransactionTab = z.infer<typeof TransactionTabSchema>;
+
+export const TransactionTabsResponseSchema = z.array(TransactionTabSchema);
+export type TransactionTabsResponse = z.infer<typeof TransactionTabsResponseSchema>;

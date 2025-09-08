@@ -80,6 +80,15 @@ describe('TransactionsService', () => {
     expect(types).toHaveLength(2);
   });
 
+  it('returns transaction tabs', async () => {
+    const tabs = await service.getTransactionTabs();
+    expect(tabs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'all', label: 'All' }),
+      ]),
+    );
+  });
+
   it('returns filter options', async () => {
     const filters = await service.getFilterOptions();
     expect(filters.types).toContain('Deposit');

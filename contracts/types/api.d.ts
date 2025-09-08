@@ -1385,6 +1385,19 @@ export interface paths {
       };
     };
   };
+  "/admin/transactions/tabs": {
+    /** List transaction tabs */
+    get: {
+      responses: {
+        /** @description Available transaction tabs */
+        200: {
+          content: {
+            "application/json": components["schemas"]["TransactionTabsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/admin/withdrawals": {
     /** List pending withdrawals */
     get: {
