@@ -593,12 +593,12 @@ export {
   TransactionLogEntrySchema,
   TransactionLogResponseSchema,
   TransactionLogQuerySchema,
-} from "../backend/src/schemas/transactions";
+} from "./transactions.schema";
 export type {
   TransactionType,
   TransactionTypesResponse,
   TransactionLogEntry,
   TransactionLogResponse,
   TransactionLogQuery,
-} from "../backend/src/schemas/transactions";
+} from "./transactions.schema";
 
