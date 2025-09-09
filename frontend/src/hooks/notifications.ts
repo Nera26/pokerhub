@@ -3,6 +3,7 @@
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import {
   fetchNotifications,
+  fetchUnreadCount,
   markAllNotificationsRead,
   markNotificationRead,
   fetchNotificationFilters,
@@ -20,13 +21,19 @@ export {
 
 export function useNotifications(
   options?: Omit<
-    UseQueryOptions<NotificationsResponse, ApiError>,
+    UseQueryOptions<NotificationsResponse & { unread: number }, ApiError>,
     'queryKey' | 'queryFn'
   >,
 ) {
-  return useQuery<NotificationsResponse, ApiError>({
+  return useQuery<NotificationsResponse & { unread: number }, ApiError>({
     queryKey: ['notifications'],
-    queryFn: ({ signal }) => fetchNotifications({ signal }),
+    queryFn: async ({ signal }) => {
+      const [list, unread] = await Promise.all([
+        fetchNotifications({ signal }),
+        fetchUnreadCount({ signal }),
+      ]);
+      return { ...list, unread: unread.count };
+    },
     ...options,
   });
 }

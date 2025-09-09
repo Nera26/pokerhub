@@ -6,6 +6,8 @@ import {
   NotificationSchema as NotificationBaseSchema,
   type NotificationType,
   NotificationTypeSchema,
+  UnreadCountResponseSchema,
+  type UnreadCountResponse,
 } from '@shared/types';
 
 const NotificationSchema = NotificationBaseSchema.extend({
@@ -59,6 +61,15 @@ export async function fetchNotificationFilters({
     z.array(NotificationFilterSchema),
     { signal },
   );
+}
+
+export async function fetchUnreadCount({ signal }: { signal?: AbortSignal } = {}): Promise<UnreadCountResponse> {
+  try {
+    return await apiClient('/api/notifications/unread', UnreadCountResponseSchema, { signal });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : (err as ApiError).message;
+    throw { message: `Failed to fetch notifications: ${message}` } as ApiError;
+  }
 }
 
 export type { ApiError } from './client';

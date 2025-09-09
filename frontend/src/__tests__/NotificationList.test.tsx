@@ -1,13 +1,14 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import NotificationList from '@/app/components/notifications/NotificationList';
-import { fetchNotifications } from '@/lib/api/notifications';
+import { fetchNotifications, fetchUnreadCount } from '@/lib/api/notifications';
 import { useNotificationFilters } from '@/hooks/notifications';
 
 jest.mock('@/lib/api/notifications', () => ({
   fetchNotifications: jest.fn(),
   markAllNotificationsRead: jest.fn(),
   markNotificationRead: jest.fn(),
+  fetchUnreadCount: jest.fn(),
 }));
 
 jest.mock('@/hooks/notifications', () => {
@@ -19,6 +20,8 @@ jest.mock('@/hooks/notifications', () => {
 });
 
 const mockFetchNotifications = fetchNotifications as jest.MockedFunction<typeof fetchNotifications>;
+const mockFetchUnreadCount =
+  fetchUnreadCount as jest.MockedFunction<typeof fetchUnreadCount>;
 const mockUseNotificationFilters =
   useNotificationFilters as jest.MockedFunction<typeof useNotificationFilters>;
 
@@ -38,12 +41,14 @@ function renderWithClient() {
 describe('NotificationList', () => {
   beforeEach(() => {
     mockFetchNotifications.mockReset();
+    mockFetchUnreadCount.mockReset();
     mockUseNotificationFilters.mockReset();
     mockUseNotificationFilters.mockReturnValue({
       data: [],
       isLoading: false,
       error: null,
     } as any);
+    mockFetchUnreadCount.mockResolvedValue({ count: 0 });
   });
 
   it('shows loading skeleton', () => {
@@ -62,6 +67,7 @@ describe('NotificationList', () => {
 
   it('renders empty state', async () => {
     mockFetchNotifications.mockResolvedValue({ notifications: [] });
+    mockFetchUnreadCount.mockResolvedValue({ count: 0 });
     renderWithClient();
     await waitFor(() =>
       expect(screen.getByText(/no notifications found/i)).toBeInTheDocument()
@@ -81,6 +87,7 @@ describe('NotificationList', () => {
         },
       ],
     });
+    mockFetchUnreadCount.mockResolvedValue({ count: 1 });
     renderWithClient();
     await waitFor(() => expect(screen.getByText('Hello')).toBeInTheDocument());
   });
@@ -114,6 +121,7 @@ describe('NotificationList', () => {
         },
       ],
     });
+    mockFetchUnreadCount.mockResolvedValue({ count: 2 });
     renderWithClient();
     await waitFor(() => expect(screen.getByText('Bonus')).toBeInTheDocument());
     expect(screen.getByRole('button', { name: 'Bonuses' })).toBeInTheDocument();

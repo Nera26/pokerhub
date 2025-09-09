@@ -195,6 +195,19 @@ export interface paths {
       };
     };
   };
+  "/notifications/unread": {
+    /** Get unread notifications count */
+    get: {
+      responses: {
+        /** @description Unread count */
+        200: {
+          content: {
+            "application/json": components["schemas"]["UnreadCountResponse"];
+          };
+        };
+      };
+    };
+  };
   "/notifications/mark-all": {
     /** Mark all notifications as read */
     post: {
@@ -1488,6 +1501,19 @@ export interface paths {
       };
     };
   };
+  "/me": {
+    /** Get current user avatar */
+    get: {
+      responses: {
+        /** @description Avatar URL */
+        200: {
+          content: {
+            "application/json": components["schemas"]["MeResponse"];
+          };
+        };
+      };
+    };
+  };
   "/tiers": {
     /** Get tier definitions */
     get: {
@@ -2077,6 +2103,9 @@ export interface components {
       bio: string;
       experience: number;
       balance: number;
+    };
+    MeResponse: {
+      avatarUrl: string;
     };
     Tier: {
       name: string;

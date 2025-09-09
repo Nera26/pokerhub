@@ -10,7 +10,7 @@ import {
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 import { AuthGuard } from '../auth/auth.guard';
-import { StatusResponse } from '@shared/types';
+import { StatusResponse, UnreadCountResponse } from '@shared/types';
 import type { Request } from 'express';
 
 @ApiTags('notifications')
@@ -25,6 +25,14 @@ export class NotificationsController {
   async getAll(@Req() req: Request) {
     const notifications = await this.notifications.findForUser(req.userId);
     return { notifications };
+  }
+
+  @Get('unread')
+  @ApiOperation({ summary: 'Get unread notifications count' })
+  @ApiResponse({ status: 200, description: 'Unread notifications count' })
+  async getUnread(@Req() req: Request): Promise<UnreadCountResponse> {
+    const count = await this.notifications.countUnread(req.userId);
+    return { count };
   }
 
   @Post('mark-all')

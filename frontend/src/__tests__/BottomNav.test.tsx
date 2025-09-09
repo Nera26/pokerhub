@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react';
 import BottomNav from '@/app/components/common/BottomNav';
 
 const mockUsePathname = jest.fn();
+const mockUseAuth = jest.fn();
+const mockUseNotifications = jest.fn();
 
 jest.mock('next/navigation', () => ({
   usePathname: () => mockUsePathname(),
@@ -31,13 +33,29 @@ jest.mock(
   },
 );
 
+jest.mock('@/context/AuthContext', () => ({
+  useAuth: () => mockUseAuth(),
+}));
+
+jest.mock('@/hooks/notifications', () => ({
+  useNotifications: () => mockUseNotifications(),
+}));
+
 describe('BottomNav', () => {
   beforeEach(() => {
     mockUsePathname.mockReset();
+    mockUseAuth.mockReset();
+    mockUseNotifications.mockReset();
   });
 
   it('activates item when pathname starts with href', () => {
     mockUsePathname.mockReturnValue('/wallet/deposit');
+    mockUseAuth.mockReturnValue({ avatarUrl: '/a.png' });
+    mockUseNotifications.mockReturnValue({
+      data: { unread: 2 },
+      isLoading: false,
+      error: null,
+    });
     render(<BottomNav />);
     const wallet = screen.getByRole('link', { name: 'Wallet' });
     expect(wallet.className).toContain('text-accent-yellow');
@@ -45,6 +63,12 @@ describe('BottomNav', () => {
 
   it('only marks lobby active on root path', () => {
     mockUsePathname.mockReturnValue('/');
+    mockUseAuth.mockReturnValue({ avatarUrl: '/a.png' });
+    mockUseNotifications.mockReturnValue({
+      data: { unread: 0 },
+      isLoading: false,
+      error: null,
+    });
     render(<BottomNav />);
     const lobby = screen.getByRole('link', { name: 'Lobby' });
     expect(lobby.className).toContain('text-accent-yellow');
@@ -55,5 +79,29 @@ describe('BottomNav', () => {
         ).not.toContain('text-accent-yellow');
       },
     );
+  });
+
+  it('shows unread badge when notifications load', () => {
+    mockUsePathname.mockReturnValue('/');
+    mockUseAuth.mockReturnValue({ avatarUrl: '/a.png' });
+    mockUseNotifications.mockReturnValue({
+      data: { unread: 5 },
+      isLoading: false,
+      error: null,
+    });
+    render(<BottomNav />);
+    expect(screen.getByText('5')).toBeInTheDocument();
+  });
+
+  it('hides badge on error', () => {
+    mockUsePathname.mockReturnValue('/');
+    mockUseAuth.mockReturnValue({ avatarUrl: '/a.png' });
+    mockUseNotifications.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error('fail'),
+    });
+    render(<BottomNav />);
+    expect(screen.queryByText('5')).not.toBeInTheDocument();
   });
 });

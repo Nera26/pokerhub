@@ -10,9 +10,17 @@ import { faTags } from '@fortawesome/free-solid-svg-icons/faTags';
 import { faTrophy } from '@fortawesome/free-solid-svg-icons/faTrophy';
 import { faBell } from '@fortawesome/free-solid-svg-icons/faBell';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
+import { useAuth } from '@/context/AuthContext';
+import { useNotifications } from '@/hooks/notifications';
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const { avatarUrl } = useAuth();
+  const {
+    data: notifData,
+    isLoading: notifLoading,
+    error: notifError,
+  } = useNotifications();
 
   const navItems: {
     href: string;
@@ -25,12 +33,17 @@ export default function BottomNav() {
     { href: '/wallet', label: 'Wallet', icon: faWallet },
     { href: '/promotions', label: 'Promotions', icon: faTags },
     { href: '/leaderboard', label: 'Leaders', icon: faTrophy },
-    { href: '/notification', label: 'Alerts', icon: faBell, badge: 3 },
+    {
+      href: '/notification',
+      label: 'Alerts',
+      icon: faBell,
+      badge:
+        !notifLoading && !notifError ? notifData?.unread : undefined,
+    },
     {
       href: '/profile',
       label: 'Profile',
-      avatar:
-        'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg',
+      avatar: avatarUrl || undefined,
     },
   ];
 

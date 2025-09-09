@@ -12,3 +12,8 @@ export const UserProfileSchema = z.object({
   balance: z.number(),
 });
 export type UserProfile = z.infer<typeof UserProfileSchema>;
+
+export const MeResponseSchema = z.object({
+  avatarUrl: z.string(),
+});
+export type MeResponse = z.infer<typeof MeResponseSchema>;

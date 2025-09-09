@@ -15,8 +15,9 @@ export type { CTA, CTAsResponse } from '../backend/src/schemas/ctas';
 
 export {
   UserProfileSchema,
+  MeResponseSchema,
 } from '../backend/src/schemas/users';
-export type { UserProfile } from '../backend/src/schemas/users';
+export type { UserProfile, MeResponse } from '../backend/src/schemas/users';
 
 export { TierSchema, TiersSchema } from '../backend/src/schemas/tiers';
 export type { Tier, Tiers } from '../backend/src/schemas/tiers';
@@ -133,6 +134,11 @@ export const NotificationsResponseSchema = z.object({
   notifications: z.array(NotificationSchema),
 });
 export type NotificationsResponse = z.infer<typeof NotificationsResponseSchema>;
+
+export const UnreadCountResponseSchema = z.object({
+  count: z.number().int().nonnegative(),
+});
+export type UnreadCountResponse = z.infer<typeof UnreadCountResponseSchema>;
 
 /** ---- Promotions ---- */
 export const PromotionProgressSchema = z.object({

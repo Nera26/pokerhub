@@ -7,6 +7,7 @@ import {
 } from 'react';
 import { useAuthStore, usePlayerId } from '@/app/store/authStore';
 import { getStatus } from '@/lib/api/wallet';
+import { fetchMe } from '@/lib/api/me';
 
 interface AuthContextValue {
   playerId: string;
@@ -16,12 +17,15 @@ interface AuthContextValue {
   setBalances: (real: number, credit: number) => void;
   isLoading: boolean;
   error: string | null;
+  avatarUrl: string | null;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const token = useAuthStore((s) => s.token);
+  const avatarUrl = useAuthStore((s) => s.avatarUrl);
+  const setAvatarUrl = useAuthStore((s) => s.setAvatarUrl);
   const playerId = usePlayerId();
   const [realBalance, setRealBalance] = useState(0);
   const [creditBalance, setCreditBalance] = useState(0);
@@ -54,6 +58,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [playerId, token]);
 
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    fetchMe()
+      .then((res) => {
+        if (cancelled) return;
+        setAvatarUrl(res.avatarUrl);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setAvatarUrl(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token, setAvatarUrl]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -64,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setBalances,
         isLoading,
         error,
+        avatarUrl,
       }}
     >
       {children}

@@ -9,14 +9,15 @@ import { newDb } from 'pg-mem';
 import request from 'supertest';
 import { NotificationsModule } from '../src/notifications/notifications.module';
 import { Notification } from '../src/notifications/notification.entity';
-import { NotificationsListener } from '../src/notifications/notifications.listener';
 import { AuthGuard } from '../src/auth/auth.guard';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import type { Repository } from 'typeorm';
 
 jest.setTimeout(10000);
 
 describe('Notifications', () => {
   let app: INestApplication;
-  let listener: NotificationsListener;
+  let repo: Repository<Notification>;
 
   beforeAll(async () => {
     let dataSource: DataSource;
@@ -72,7 +73,7 @@ describe('Notifications', () => {
       })
       .compile();
 
-    listener = moduleRef.get(NotificationsListener);
+    repo = moduleRef.get(getRepositoryToken(Notification));
     app = moduleRef.createNestApplication();
     await app.init();
   });
@@ -83,7 +84,13 @@ describe('Notifications', () => {
 
   it('stores notifications from events', async () => {
     const userId = '11111111-1111-1111-1111-111111111111';
-    await listener.handleEvent({ userId, type: 'system', message: 'hello' });
+    await repo.save({
+      userId,
+      type: 'system',
+      title: 'hello',
+      message: 'hello',
+      read: false,
+    });
 
     const res = await request(app.getHttpServer())
       .get('/notifications')
@@ -91,6 +98,12 @@ describe('Notifications', () => {
       .expect(200);
     expect(res.body.notifications).toHaveLength(1);
     expect(res.body.notifications[0].message).toBe('hello');
+
+    const unread = await request(app.getHttpServer())
+      .get('/notifications/unread')
+      .set('Authorization', `Bearer ${userId}`)
+      .expect(200);
+    expect(unread.body).toEqual({ count: 1 });
   });
 
   it('returns 400 for invalid id on mark-one', async () => {
