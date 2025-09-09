@@ -4,6 +4,8 @@ import {
   type UserProfile,
   MeResponseSchema,
   type MeResponse,
+  ProfileStatsResponseSchema,
+  type ProfileStatsResponse,
 } from '@shared/types';
 
 async function withProfileError<T>(
@@ -34,6 +36,16 @@ export function fetchMe({
   return withProfileError(
     () => apiClient('/api/me', MeResponseSchema, { signal }),
     'Failed to fetch profile',
+  );
+}
+
+export function fetchStats({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<ProfileStatsResponse> {
+  return withProfileError(
+    () =>
+      apiClient('/api/profile/stats', ProfileStatsResponseSchema, { signal }),
+    'Failed to fetch profile stats',
   );
 }
 

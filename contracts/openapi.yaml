@@ -1488,6 +1488,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserProfile'
+  /profile/stats:
+    get:
+      summary: Get profile statistics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileStatsResponse'
   /me:
     get:
       summary: Get current user avatar
@@ -2590,6 +2602,22 @@ components:
           type: string
       required:
         - avatarUrl
+    ProfileStatsResponse:
+      type: object
+      properties:
+        handsPlayed:
+          type: number
+        winRate:
+          type: number
+        tournamentsPlayed:
+          type: number
+        topThreeRate:
+          type: number
+      required:
+        - handsPlayed
+        - winRate
+        - tournamentsPlayed
+        - topThreeRate
     Tier:
       type: object
       properties:

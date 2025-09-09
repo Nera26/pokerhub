@@ -10,8 +10,13 @@ export * from './wallet.schema';
 export {
   UserProfileSchema,
   MeResponseSchema,
+  ProfileStatsResponseSchema,
 } from '../backend/src/schemas/users';
-export type { UserProfile, MeResponse } from '../backend/src/schemas/users';
+export type {
+  UserProfile,
+  MeResponse,
+  ProfileStatsResponse,
+} from '../backend/src/schemas/users';
 
 
 export {

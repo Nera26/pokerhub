@@ -5,6 +5,7 @@ import {
   UpdateUserRequest,
   User,
   type UserProfile,
+  type ProfileStatsResponse,
 } from '@shared/types';
 import { UserRepository } from './user.repository';
 import { QueryFailedError } from 'typeorm';
@@ -91,6 +92,22 @@ export class UsersService {
             bio: 'Texas grinder. Loves Omaha. Weekend warrior.',
             experience: 1234,
             balance: 1250,
+          };
+        });
+      },
+    );
+  }
+
+  async getStats(id: string): Promise<ProfileStatsResponse> {
+    return UsersService.tracer.startActiveSpan(
+      'users.getStats',
+      async (span) => {
+        return this.withUser(id, span, async () => {
+          return {
+            handsPlayed: 10582,
+            winRate: 58.3,
+            tournamentsPlayed: 127,
+            topThreeRate: 32.5,
           };
         });
       },

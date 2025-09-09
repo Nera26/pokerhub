@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersController } from '../routes/users.controller';
 import { ProfileController } from '../routes/profile.controller';
+import { ProfileStatsController } from '../routes/profile-stats.controller';
 import { TransactionsController } from '../routes/transactions.controller';
 import { MeController } from '../routes/me.controller';
 import { User } from '../database/entities/user.entity';
@@ -11,7 +12,13 @@ import { WalletModule } from '../wallet/wallet.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([User]), WalletModule],
-  controllers: [UsersController, ProfileController, TransactionsController, MeController],
+  controllers: [
+    UsersController,
+    ProfileController,
+    TransactionsController,
+    MeController,
+    ProfileStatsController,
+  ],
   providers: [UsersService, UserRepository],
   exports: [UsersService],
 })
