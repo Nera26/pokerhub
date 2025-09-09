@@ -18,6 +18,7 @@ import {
   detectSynchronizedBetting,
 } from '@shared/analytics/collusion';
 import { AlertItem } from '../schemas/analytics';
+import { AdminEvent } from '../schemas/admin';
 import type {
   Session as CollusionSession,
   Transfer as CollusionTransfer,
@@ -265,6 +266,11 @@ export class AnalyticsService {
   async getSecurityAlerts(): Promise<AlertItem[]> {
     const entries = await this.redis.lrange('security-alerts', 0, -1);
     return entries.map((e) => JSON.parse(e) as AlertItem);
+  }
+
+  async getAdminEvents(): Promise<AdminEvent[]> {
+    const entries = await this.redis.lrange('admin-events', 0, -1);
+    return entries.map((e) => JSON.parse(e) as AdminEvent);
   }
 
   async addAuditLog(entry: {

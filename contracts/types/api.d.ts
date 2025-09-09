@@ -1323,6 +1323,19 @@ export interface paths {
       };
     };
   };
+  "/admin/events": {
+    /** Get admin events */
+    get: {
+      responses: {
+        /** @description Admin events */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AdminEventsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/admin/sidebar": {
     /** Get admin sidebar items */
     get: {
@@ -1952,6 +1965,13 @@ export interface components {
       resolved?: boolean;
     };
     SecurityAlertsResponse: components["schemas"]["AlertItem"][];
+    AdminEvent: {
+      id: string;
+      title: string;
+      description: string;
+      date: string;
+    };
+    AdminEventsResponse: components["schemas"]["AdminEvent"][];
     WithdrawalDecisionRequest: {
       comment: string;
     };

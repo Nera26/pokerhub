@@ -44,6 +44,12 @@ export type {
 } from '../backend/src/schemas/admin';
 
 export {
+  AdminEventSchema,
+  AdminEventsResponseSchema,
+} from '../backend/src/schemas/admin';
+export type { AdminEvent, AdminEventsResponse } from '../backend/src/schemas/admin';
+
+export {
   BONUS_TYPES,
   BONUS_ELIGIBILITY,
   BONUS_STATUSES,

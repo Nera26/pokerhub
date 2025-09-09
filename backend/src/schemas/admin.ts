@@ -20,3 +20,14 @@ export const SidebarTabsResponseSchema = z.object({
   titles: z.record(SidebarTabSchema, z.string()),
 });
 export type SidebarTabsResponse = z.infer<typeof SidebarTabsResponseSchema>;
+
+export const AdminEventSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string(),
+  date: z.string(),
+});
+export type AdminEvent = z.infer<typeof AdminEventSchema>;
+
+export const AdminEventsResponseSchema = z.array(AdminEventSchema);
+export type AdminEventsResponse = z.infer<typeof AdminEventsResponseSchema>;
