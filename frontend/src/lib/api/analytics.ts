@@ -1,5 +1,4 @@
 import { apiClient } from './client';
-export type { ApiError } from './client';
 import { AdminOverviewResponseSchema, type AdminOverview } from '@shared/types';
 
 export async function fetchAdminOverview({
