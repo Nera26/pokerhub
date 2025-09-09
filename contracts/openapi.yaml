@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.11.0
+  version: 2.12.0
 paths:
   /status:
     get:
@@ -1544,6 +1544,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GameTypeList'
+  /languages:
+    get:
+      summary: List supported languages
+      responses:
+        '200':
+          description: Array of languages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LanguagesResponse'
   /users:
     post:
       summary: Create user
@@ -2933,6 +2943,18 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/GameTypeWithLabel'
+    Language:
+      type: object
+      required: [code, label]
+      properties:
+        code:
+          type: string
+        label:
+          type: string
+    LanguagesResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/Language'
     CreateTableRequest:
       type: object
       properties:
