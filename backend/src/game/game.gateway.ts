@@ -39,8 +39,12 @@ import {
 } from '@opentelemetry/api';
 import PQueue from 'p-queue';
 import { sanitize } from './state-sanitize';
-import { addSample, percentile, recordTimestamp } from './metrics.util';
-import { noopGauge } from '../metrics/noopGauge';
+import {
+  addSample,
+  percentile,
+  recordTimestamp,
+  createObservableGaugeSafe,
+} from './metrics.util';
 
 interface AckPayload {
   actionId: string;
@@ -146,11 +150,14 @@ export class GameGateway
       unit: 'ms',
     },
   );
-  private static readonly globalActionCount =
-    GameGateway.meter.createObservableGauge?.('game_action_global_count', {
+  private static readonly globalActionCount = createObservableGaugeSafe(
+    GameGateway.meter,
+    'game_action_global_count',
+    {
       description: 'Global action count within rate-limit window',
       unit: 'actions',
-    }) ?? noopGauge;
+    },
+  );
   private static readonly frameRetries = GameGateway.meter.createCounter(
     'frame_retries_total',
     {
@@ -180,146 +187,142 @@ export class GameGateway
   private static readonly throughputSamples: number[] = [];
   private static readonly MAX_SAMPLES = 1000;
 
-  private static readonly ackLatencyP50 =
-    GameGateway.meter.createObservableGauge?.(
-      'game_action_ack_latency_p50_ms',
-      {
-        description: 'p50 latency from action receipt to ACK',
-        unit: 'ms',
-      },
-    ) ?? noopGauge;
-  private static readonly ackLatencyP95 =
-    GameGateway.meter.createObservableGauge?.(
-      'game_action_ack_latency_p95_ms',
-      {
-        description: 'p95 latency from action receipt to ACK',
-        unit: 'ms',
-      },
-    ) ?? noopGauge;
-  private static readonly ackLatencyP99 =
-    GameGateway.meter.createObservableGauge?.(
-      'game_action_ack_latency_p99_ms',
-      {
-        description: 'p99 latency from action receipt to ACK',
-        unit: 'ms',
-      },
-    ) ?? noopGauge;
+  private static readonly ackLatencyP50 = createObservableGaugeSafe(
+    GameGateway.meter,
+    'game_action_ack_latency_p50_ms',
+    {
+      description: 'p50 latency from action receipt to ACK',
+      unit: 'ms',
+    },
+  );
+  private static readonly ackLatencyP95 = createObservableGaugeSafe(
+    GameGateway.meter,
+    'game_action_ack_latency_p95_ms',
+    {
+      description: 'p95 latency from action receipt to ACK',
+      unit: 'ms',
+    },
+  );
+  private static readonly ackLatencyP99 = createObservableGaugeSafe(
+    GameGateway.meter,
+    'game_action_ack_latency_p99_ms',
+    {
+      description: 'p99 latency from action receipt to ACK',
+      unit: 'ms',
+    },
+  );
   private static readonly throughputHist =
     GameGateway.meter.createHistogram('game_action_throughput_ps', {
       description: 'Distribution of game action throughput per second',
       unit: 'actions/s',
     });
-  private static readonly actionThroughput =
-    GameGateway.meter.createObservableGauge?.('game_action_throughput', {
+  private static readonly actionThroughput = createObservableGaugeSafe(
+    GameGateway.meter,
+    'game_action_throughput',
+    {
       description: 'Game actions processed per second',
       unit: 'actions/s',
-    }) ?? noopGauge;
-  private static readonly actionThroughputP50 =
-    GameGateway.meter.createObservableGauge?.(
-      'game_action_throughput_p50',
-      { description: 'p50 game action throughput', unit: 'actions/s' },
-    ) ?? noopGauge;
-  private static readonly actionThroughputP95 =
-    GameGateway.meter.createObservableGauge?.(
-      'game_action_throughput_p95',
-      { description: 'p95 game action throughput', unit: 'actions/s' },
-    ) ?? noopGauge;
-  private static readonly actionThroughputP99 =
-    GameGateway.meter.createObservableGauge?.(
-      'game_action_throughput_p99',
-      { description: 'p99 game action throughput', unit: 'actions/s' },
-    ) ?? noopGauge;
-  private static readonly stateLatencyP50 =
-    GameGateway.meter.createObservableGauge?.(
-      'game_state_broadcast_latency_p50_ms',
-      {
-        description: 'p50 latency from action receipt to state broadcast',
-        unit: 'ms',
-      },
-    ) ?? noopGauge;
-  private static readonly stateLatencyP95 =
-    GameGateway.meter.createObservableGauge?.(
-      'game_state_broadcast_latency_p95_ms',
-      {
-        description: 'p95 latency from action receipt to state broadcast',
-        unit: 'ms',
-      },
-    ) ?? noopGauge;
-  private static readonly stateLatencyP99 =
-    GameGateway.meter.createObservableGauge?.(
-      'game_state_broadcast_latency_p99_ms',
-      {
-        description: 'p99 latency from action receipt to state broadcast',
-        unit: 'ms',
-      },
-    ) ?? noopGauge;
+    },
+  );
+  private static readonly actionThroughputP50 = createObservableGaugeSafe(
+    GameGateway.meter,
+    'game_action_throughput_p50',
+    { description: 'p50 game action throughput', unit: 'actions/s' },
+  );
+  private static readonly actionThroughputP95 = createObservableGaugeSafe(
+    GameGateway.meter,
+    'game_action_throughput_p95',
+    { description: 'p95 game action throughput', unit: 'actions/s' },
+  );
+  private static readonly actionThroughputP99 = createObservableGaugeSafe(
+    GameGateway.meter,
+    'game_action_throughput_p99',
+    { description: 'p99 game action throughput', unit: 'actions/s' },
+  );
+  private static readonly stateLatencyP50 = createObservableGaugeSafe(
+    GameGateway.meter,
+    'game_state_broadcast_latency_p50_ms',
+    {
+      description: 'p50 latency from action receipt to state broadcast',
+      unit: 'ms',
+    },
+  );
+  private static readonly stateLatencyP95 = createObservableGaugeSafe(
+    GameGateway.meter,
+    'game_state_broadcast_latency_p95_ms',
+    {
+      description: 'p95 latency from action receipt to state broadcast',
+      unit: 'ms',
+    },
+  );
+  private static readonly stateLatencyP99 = createObservableGaugeSafe(
+    GameGateway.meter,
+    'game_state_broadcast_latency_p99_ms',
+    {
+      description: 'p99 latency from action receipt to state broadcast',
+      unit: 'ms',
+    },
+  );
 
-  private static readonly outboundQueueDepth =
-    GameGateway.meter.createObservableGauge?.('ws_outbound_queue_depth', {
+  private static readonly outboundQueueDepth = createObservableGaugeSafe(
+    GameGateway.meter,
+    'ws_outbound_queue_depth',
+    {
       description: 'Current depth of outbound WebSocket message queue',
       unit: 'messages',
-    }) ?? noopGauge;
+    },
+  );
 
-  private static readonly outboundQueueMax =
-    GameGateway.meter.createObservableGauge?.('ws_outbound_queue_max', {
+  private static readonly outboundQueueMax = createObservableGaugeSafe(
+    GameGateway.meter,
+    'ws_outbound_queue_max',
+    {
       description: 'Maximum outbound WebSocket queue depth per socket',
       unit: 'messages',
-    }) ??
-    ({
-      addCallback() {},
-      removeCallback() {},
-    } as {
-      addCallback(cb: (r: ObservableResult) => void): void;
-      removeCallback(cb: (r: ObservableResult) => void): void;
-    });
+    },
+  );
 
-  private static readonly outboundQueueThreshold =
-    GameGateway.meter.createObservableGauge?.('ws_outbound_queue_threshold', {
+  private static readonly outboundQueueThreshold = createObservableGaugeSafe(
+    GameGateway.meter,
+    'ws_outbound_queue_threshold',
+    {
       description: 'Configured alert threshold for outbound queue depth',
       unit: 'messages',
-    }) ??
-    ({
-      addCallback() {},
-      removeCallback() {},
-    } as {
-      addCallback(cb: (r: ObservableResult) => void): void;
-      removeCallback(cb: (r: ObservableResult) => void): void;
-    });
+    },
+  );
 
-  private static readonly outboundQueueLimit =
-    GameGateway.meter.createObservableGauge?.('ws_outbound_queue_limit', {
+  private static readonly outboundQueueLimit = createObservableGaugeSafe(
+    GameGateway.meter,
+    'ws_outbound_queue_limit',
+    {
       description: 'Configured max outbound WebSocket queue depth',
       unit: 'messages',
-    }) ??
-    ({
-      addCallback() {},
-      removeCallback() {},
-    } as {
-      addCallback(cb: (r: ObservableResult) => void): void;
-      removeCallback(cb: (r: ObservableResult) => void): void;
-    });
+    },
+  );
 
-  private static readonly globalActionLimitGauge =
-    GameGateway.meter.createObservableGauge?.('game_action_global_limit', {
+  private static readonly globalActionLimitGauge = createObservableGaugeSafe(
+    GameGateway.meter,
+    'game_action_global_limit',
+    {
       description: 'Configured global action limit within rate-limit window',
-    }) ??
-    ({
-      addCallback() {},
-      removeCallback() {},
-    } as {
-      addCallback(cb: (r: ObservableResult) => void): void;
-      removeCallback(cb: (r: ObservableResult) => void): void;
-    });
+    },
+  );
 
-  private static readonly outboundQueueUtilization =
-    GameGateway.meter.createObservableGauge?.('ws_outbound_queue_utilization', {
+  private static readonly outboundQueueUtilization = createObservableGaugeSafe(
+    GameGateway.meter,
+    'ws_outbound_queue_utilization',
+    {
       description: 'Outbound WebSocket queue depth as a fraction of limit',
-    }) ?? noopGauge;
+    },
+  );
 
-  private static readonly globalActionUtilization =
-    GameGateway.meter.createObservableGauge?.('game_action_global_utilization', {
+  private static readonly globalActionUtilization = createObservableGaugeSafe(
+    GameGateway.meter,
+    'game_action_global_utilization',
+    {
       description: 'Ratio of global action count to configured limit',
-    }) ?? noopGauge;
+    },
+  );
 
   private static readonly outboundQueueDropped =
     GameGateway.meter.createCounter('ws_outbound_dropped_total', {
