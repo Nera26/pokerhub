@@ -7,11 +7,15 @@ import PromotionCard, {
 } from '@/app/components/promotions/PromotionCard';
 import Modal from '@/app/components/ui/Modal';
 import PromotionDetailModalContent from '@/app/components/promotions/PromotionDetailModalContent';
-import { fetchPromotions } from '@/lib/api/promotions';
+import { fetchPromotions, claimPromotion } from '@/lib/api/promotions';
+import type { ApiError } from '@/lib/api/client';
 import type { Promotion } from '@shared/types';
 
 export default function PromotionsPage() {
   const [selected, setSelected] = useState<PromotionCardType | null>(null);
+  const [claiming, setClaiming] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
+  const [claimSuccess, setClaimSuccess] = useState(false);
   const {
     data: promotions = [],
     isLoading,
@@ -22,12 +26,34 @@ export default function PromotionsPage() {
   });
 
   const handleSelect = (promo: Promotion) => {
+    setClaimError(null);
+    setClaimSuccess(false);
     setSelected({
       ...promo,
       unlockText: promo.unlockText ?? '',
       actionLabel: 'View Details',
-      onAction: () => {},
+      onAction: async () => {
+        try {
+          setClaiming(true);
+          setClaimError(null);
+          await claimPromotion(promo.id);
+          setClaimSuccess(true);
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : (err as ApiError).message;
+          setClaimError(message);
+        } finally {
+          setClaiming(false);
+        }
+      },
     });
+  };
+
+  const closeModal = () => {
+    setSelected(null);
+    setClaimError(null);
+    setClaimSuccess(false);
+    setClaiming(false);
   };
 
   let content;
@@ -80,10 +106,14 @@ export default function PromotionsPage() {
 
         {/* Detail modal */}
         {selected && (
-          <Modal isOpen={true} onClose={() => setSelected(null)}>
+          <Modal isOpen={true} onClose={closeModal}>
             <PromotionDetailModalContent
               promotion={selected}
-              onClose={() => setSelected(null)}
+              onClose={closeModal}
+              onAction={selected.onAction}
+              isLoading={claiming}
+              error={claimError}
+              success={claimSuccess}
             />
           </Modal>
         )}

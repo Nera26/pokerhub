@@ -1,16 +1,19 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import PromotionsPage from '@/features/site/promotions';
-import { fetchPromotions } from '@/lib/api/promotions';
+import { fetchPromotions, claimPromotion } from '@/lib/api/promotions';
 import type { Promotion } from '@shared/types';
 
 jest.mock('@/lib/api/promotions', () => ({
   fetchPromotions: jest.fn(),
+  claimPromotion: jest.fn(),
 }));
 
 describe('PromotionsPage', () => {
   const mockFetchPromotions =
     fetchPromotions as jest.MockedFunction<typeof fetchPromotions>;
+  const mockClaimPromotion =
+    claimPromotion as jest.MockedFunction<typeof claimPromotion>;
 
   function renderWithClient() {
     const client = new QueryClient({
@@ -25,6 +28,7 @@ describe('PromotionsPage', () => {
 
   beforeEach(() => {
     mockFetchPromotions.mockReset();
+    mockClaimPromotion.mockReset();
   });
 
   it('shows loading skeleton', () => {
@@ -67,6 +71,59 @@ describe('PromotionsPage', () => {
     renderWithClient();
     await waitFor(() =>
       expect(screen.getByText('Promo')).toBeInTheDocument(),
+    );
+  });
+
+  it('claims promotion and shows success message', async () => {
+    const promotion: Promotion = {
+      id: '1',
+      category: 'daily',
+      title: 'Promo',
+      description: 'desc',
+      reward: 'reward',
+      unlockText: 'unlock',
+      breakdown: [],
+    };
+    mockFetchPromotions.mockResolvedValue([promotion]);
+    mockClaimPromotion.mockResolvedValue({ message: 'ok' });
+    renderWithClient();
+    const viewButton = await screen.findByRole('button', {
+      name: /view details/i,
+    });
+    fireEvent.click(viewButton);
+    const claimButton = await screen.findByRole('button', { name: /claim/i });
+    fireEvent.click(claimButton);
+    await waitFor(() =>
+      expect(mockClaimPromotion).toHaveBeenCalledWith('1'),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByText(/promotion claimed successfully/i),
+      ).toBeInTheDocument(),
+    );
+  });
+
+  it('shows error message when claim fails', async () => {
+    const promotion: Promotion = {
+      id: '1',
+      category: 'daily',
+      title: 'Promo',
+      description: 'desc',
+      reward: 'reward',
+      unlockText: 'unlock',
+      breakdown: [],
+    };
+    mockFetchPromotions.mockResolvedValue([promotion]);
+    mockClaimPromotion.mockRejectedValue({ message: 'fail' });
+    renderWithClient();
+    const viewButton = await screen.findByRole('button', {
+      name: /view details/i,
+    });
+    fireEvent.click(viewButton);
+    const claimButton = await screen.findByRole('button', { name: /claim/i });
+    fireEvent.click(claimButton);
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(/fail/i),
     );
   });
 });
