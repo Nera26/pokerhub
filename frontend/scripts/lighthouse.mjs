@@ -36,65 +36,26 @@ const waitForServer = async () => {
 try {
   await waitForServer();
 
-  const budgets = [
-    {
-      path: '/',
-      resourceCounts: [
-        { resourceType: 'script', budget: 10 },
-        { resourceType: 'total', budget: 50 },
-      ],
-      resourceSizes: [
-        { resourceType: 'script', budget: 250 },
-        { resourceType: 'total', budget: 600 },
-        { resourceType: 'image', budget: 1500 },
-      ],
-      timings: [
-        { metric: 'interactive', budget: 5000 },
-        { metric: 'first-contentful-paint', budget: 2000 },
-        { metric: 'interaction-to-next-paint', budget: 200 },
-        { metric: 'largest-contentful-paint', budget: 2500 },
-        { metric: 'cumulative-layout-shift', budget: 0.1 },
-      ],
-    },
-    {
-      path: '/login',
-      resourceCounts: [
-        { resourceType: 'script', budget: 10 },
-        { resourceType: 'total', budget: 50 },
-      ],
-      resourceSizes: [
-        { resourceType: 'script', budget: 250 },
-        { resourceType: 'total', budget: 600 },
-        { resourceType: 'image', budget: 1500 },
-      ],
-      timings: [
-        { metric: 'interactive', budget: 5000 },
-        { metric: 'first-contentful-paint', budget: 2000 },
-        { metric: 'interaction-to-next-paint', budget: 200 },
-        { metric: 'largest-contentful-paint', budget: 2500 },
-        { metric: 'cumulative-layout-shift', budget: 0.1 },
-      ],
-    },
-    {
-      path: '/dashboard',
-      resourceCounts: [
-        { resourceType: 'script', budget: 10 },
-        { resourceType: 'total', budget: 50 },
-      ],
-      resourceSizes: [
-        { resourceType: 'script', budget: 250 },
-        { resourceType: 'total', budget: 600 },
-        { resourceType: 'image', budget: 1500 },
-      ],
-      timings: [
-        { metric: 'interactive', budget: 5000 },
-        { metric: 'first-contentful-paint', budget: 2000 },
-        { metric: 'interaction-to-next-paint', budget: 200 },
-        { metric: 'largest-contentful-paint', budget: 2500 },
-        { metric: 'cumulative-layout-shift', budget: 0.1 },
-      ],
-    },
-  ];
+  const baseBudget = {
+    resourceCounts: [
+      { resourceType: 'script', budget: 10 },
+      { resourceType: 'total', budget: 50 },
+    ],
+    resourceSizes: [
+      { resourceType: 'script', budget: 250 },
+      { resourceType: 'total', budget: 600 },
+      { resourceType: 'image', budget: 1500 },
+    ],
+    timings: [
+      { metric: 'interactive', budget: 5000 },
+      { metric: 'first-contentful-paint', budget: 2000 },
+      { metric: 'interaction-to-next-paint', budget: 200 },
+      { metric: 'largest-contentful-paint', budget: 2500 },
+      { metric: 'cumulative-layout-shift', budget: 0.1 },
+    ],
+  };
+
+  const budgets = ['/', '/login', '/dashboard'].map((path) => ({ path, ...baseBudget }));
   const chrome = await chromeLauncher.launch({ chromeFlags: ['--headless'] });
   try {
     let hasFailures = false;
