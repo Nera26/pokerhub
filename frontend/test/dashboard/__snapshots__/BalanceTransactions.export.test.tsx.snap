@@ -1,0 +1,6 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`BalanceTransactions CSV export generates expected CSV 1`] = `
+"Date & Time,Action,Amount,Performed By,Notes,Status
+2024-01-01,Add Balance,+100,admin,"note",Completed"
+`;
