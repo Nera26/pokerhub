@@ -3,23 +3,12 @@ import { apiClient, ApiError } from './client';
 import {
   MessageResponseSchema,
   type MessageResponse,
-  NotificationSchema as NotificationBaseSchema,
-  type NotificationType,
   NotificationTypeSchema,
+  NotificationsResponseSchema,
+  type NotificationsResponse,
   UnreadCountResponseSchema,
   type UnreadCountResponse,
 } from '@shared/types';
-
-const NotificationSchema = NotificationBaseSchema.extend({
-  timestamp: z.coerce.date(),
-});
-export type Notification = z.infer<typeof NotificationSchema>;
-export type { NotificationType };
-
-const NotificationsResponseSchema = z.object({
-  notifications: z.array(NotificationSchema),
-});
-export type NotificationsResponse = z.infer<typeof NotificationsResponseSchema>;
 
 const NotificationFilterSchema = z.object({
   label: z.string(),
@@ -47,7 +36,9 @@ export async function markAllNotificationsRead(): Promise<MessageResponse> {
   });
 }
 
-export async function markNotificationRead(id: string): Promise<MessageResponse> {
+export async function markNotificationRead(
+  id: string,
+): Promise<MessageResponse> {
   return apiClient(`/api/notifications/${id}`, MessageResponseSchema, {
     method: 'POST',
   });
@@ -63,11 +54,18 @@ export async function fetchNotificationFilters({
   );
 }
 
-export async function fetchUnreadCount({ signal }: { signal?: AbortSignal } = {}): Promise<UnreadCountResponse> {
+export async function fetchUnreadCount({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<UnreadCountResponse> {
   try {
-    return await apiClient('/api/notifications/unread', UnreadCountResponseSchema, { signal });
+    return await apiClient(
+      '/api/notifications/unread',
+      UnreadCountResponseSchema,
+      { signal },
+    );
   } catch (err) {
-    const message = err instanceof Error ? err.message : (err as ApiError).message;
+    const message =
+      err instanceof Error ? err.message : (err as ApiError).message;
     throw { message: `Failed to fetch notifications: ${message}` } as ApiError;
   }
 }

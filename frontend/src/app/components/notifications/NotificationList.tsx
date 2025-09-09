@@ -12,8 +12,8 @@ import {
   useMarkAllRead,
   useMarkRead,
   useNotificationFilters,
-  type NotificationType,
 } from '@/hooks/notifications';
+import type { NotificationType } from '@shared/types';
 
 export default function NotificationList() {
   useRenderCount('NotificationList');
@@ -47,7 +47,10 @@ export default function NotificationList() {
     () =>
       notifications
         .filter((n) => (filter === 'all' ? true : n.type === filter))
-        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()),
+        .sort(
+          (a, b) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+        ),
     [notifications, filter],
   );
 

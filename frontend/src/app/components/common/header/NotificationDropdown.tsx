@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBell } from '@fortawesome/free-solid-svg-icons/faBell';
-import type { Notification } from '@/lib/api/notifications';
+import type { Notification } from '@shared/types';
 import useOnClickOutside from '@/hooks/useOnClickOutside';
 
 interface NotificationDropdownProps {
@@ -125,7 +125,7 @@ export default function NotificationDropdown({
                   <div className="flex-1">
                     <p className="text-sm">{n.title}</p>
                     <p className="text-xs text-text-secondary">
-                      {n.timestamp.toLocaleString()}
+                      {new Date(n.timestamp).toLocaleString()}
                     </p>
                   </div>
                 </div>
