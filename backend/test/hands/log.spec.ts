@@ -5,7 +5,7 @@ import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { HandController } from '../../src/game/hand.controller';
 import { Hand } from '../../src/database/entities/hand.entity';
-import { existsSync, unlinkSync, writeFileSync } from 'fs';
+import { existsSync, unlinkSync, writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { ConfigService } from '@nestjs/config';
 
@@ -17,8 +17,11 @@ describe('HandController log', () => {
   };
   const config = new ConfigService({ auth: { jwtSecrets: ['secret'] } });
 
-  function auth(userId: string) {
-    const token = jwt.sign({ sub: userId }, 'secret');
+  function auth(userId: string, role?: string) {
+    const token = jwt.sign(
+      { sub: userId, ...(role ? { role } : {}) },
+      'secret',
+    );
     return `Bearer ${token}`;
   }
 
@@ -49,7 +52,7 @@ describe('HandController log', () => {
   });
 
   it('falls back to database log when file missing', () => {
-    const file = join(process.cwd(), '../storage/hand-logs', 'hand1.jsonl');
+    const file = join(__dirname, '../../../storage/hand-logs', 'hand1.jsonl');
     if (existsSync(file)) unlinkSync(file);
     return request(app.getHttpServer())
       .get('/hands/hand1/log')
@@ -59,8 +62,9 @@ describe('HandController log', () => {
   });
 
   it('prefers file log when present', async () => {
-    const file = join(process.cwd(), '../storage/hand-logs', 'hand1.jsonl');
+    const file = join(__dirname, '../../../storage/hand-logs', 'hand1.jsonl');
     const logEntry = [0, { type: 'start' }, { players: [{ id: 'u1' }] }, {}];
+    mkdirSync(join(__dirname, '../../../storage/hand-logs'), { recursive: true });
     writeFileSync(file, `${JSON.stringify(logEntry)}\nfile log`);
     await request(app.getHttpServer())
       .get('/hands/hand1/log')
@@ -68,5 +72,20 @@ describe('HandController log', () => {
       .expect(200)
       .expect(`${JSON.stringify(logEntry)}\nfile log`);
     if (existsSync(file)) unlinkSync(file);
+  });
+
+  it('returns 403 for non-participant', () => {
+    return request(app.getHttpServer())
+      .get('/hands/hand1/log')
+      .set('Authorization', auth('u2'))
+      .expect(403);
+  });
+
+  it('allows admin to access log', () => {
+    return request(app.getHttpServer())
+      .get('/hands/hand1/log')
+      .set('Authorization', auth('admin', 'admin'))
+      .expect(200)
+      .expect(store.get('hand1')!.log);
   });
 });

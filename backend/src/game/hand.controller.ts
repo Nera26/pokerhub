@@ -99,6 +99,18 @@ export class HandController {
     return participants;
   }
 
+  private async assertParticipantOrAdmin(
+    id: string,
+    auth?: string,
+  ): Promise<string> {
+    const { sub: userId, role } = this.verifyToken(auth);
+    const participants = await this.getParticipants(id);
+    if (role !== 'admin' && !participants.has(userId)) {
+      throw new ForbiddenException();
+    }
+    return userId;
+  }
+
   @Get('proofs')
   @ApiOperation({ summary: 'List hand proofs' })
   @ApiResponse({ status: 200, description: 'Proofs list' })
@@ -157,18 +169,22 @@ export class HandController {
     @Param('id') id: string,
     @Req() req: Request,
   ): Promise<HandProofResponse> {
-    const { sub: userId, role } = this.verifyToken(req.headers['authorization']);
-    const participants = await this.getParticipants(id);
-    if (role !== 'admin' && !participants.has(userId)) {
-      throw new ForbiddenException();
-    }
+    await this.assertParticipantOrAdmin(id, req.headers['authorization']);
 
     const file = join(process.cwd(), '../storage/hand-logs', `${id}.jsonl`);
     let raw: string;
     try {
       raw = await readFile(file, 'utf8');
     } catch {
-      throw new NotFoundException('proof not found');
+      const hand = await this.hands.findOne({ where: { id } });
+      if (!hand || !hand.seed || !hand.nonce) {
+        throw new NotFoundException('proof not found');
+      }
+      return HandProofResponseSchema.parse({
+        commitment: hand.commitment,
+        seed: hand.seed,
+        nonce: hand.nonce,
+      });
     }
 
     const log = new HandLog();
@@ -204,11 +220,10 @@ export class HandController {
     @Param('index') indexParam: string,
     @Req() req: Request,
   ): Promise<GameState> {
-    const { sub: userId, role } = this.verifyToken(req.headers['authorization']);
-    const participants = await this.getParticipants(id);
-    if (role !== 'admin' && !participants.has(userId)) {
-      throw new ForbiddenException();
-    }
+    const userId = await this.assertParticipantOrAdmin(
+      id,
+      req.headers['authorization'],
+    );
 
     const index = Number(indexParam);
     if (!Number.isInteger(index) || index < 0) {
@@ -261,11 +276,7 @@ export class HandController {
     @Param('id') id: string,
     @Req() req: Request,
   ): Promise<StreamableFile> {
-    const { sub: userId, role } = this.verifyToken(req.headers['authorization']);
-    const participants = await this.getParticipants(id);
-    if (role !== 'admin' && !participants.has(userId)) {
-      throw new ForbiddenException();
-    }
+    await this.assertParticipantOrAdmin(id, req.headers['authorization']);
 
     const file = join(process.cwd(), '../storage/hand-logs', `${id}.jsonl`);
     try {
