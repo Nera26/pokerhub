@@ -2,13 +2,12 @@ import { Controller, Get, Param, UseGuards, Req } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
+import { FilterOptionsSchema, TransactionEntriesSchema } from '@shared/types';
 import {
-  FilterOptionsSchema,
-  TransactionEntriesSchema,
   TransactionTypesResponseSchema,
   TransactionLogResponseSchema,
   TransactionLogQuerySchema,
-} from '@shared/types';
+} from '@shared/transactions.schema';
 import { TransactionTabsResponseSchema } from '@shared/wallet.schema';
 import { TransactionsService } from '../wallet/transactions.service';
 import type { Request } from 'express';
