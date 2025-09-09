@@ -5,11 +5,6 @@ import {
   sendBroadcast,
   fetchBroadcastTemplates,
 } from '@/lib/api/broadcasts';
-import { serverFetch } from '@/lib/server-fetch';
-
-jest.mock('@/lib/server-fetch', () => ({
-  serverFetch: jest.fn(),
-}));
 
 describe('broadcasts api', () => {
   afterEach(() => {
@@ -17,7 +12,7 @@ describe('broadcasts api', () => {
   });
 
   it('fetches broadcasts, templates and sends broadcast', async () => {
-    (serverFetch as jest.Mock)
+    (fetch as jest.Mock)
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -47,7 +42,12 @@ describe('broadcasts api', () => {
 
     await expect(fetchBroadcasts()).resolves.toEqual({ broadcasts: [] });
     await expect(
-      sendBroadcast({ type: 'announcement', text: 'hi', urgent: false, sound: true })
+      sendBroadcast({
+        type: 'announcement',
+        text: 'hi',
+        urgent: false,
+        sound: true,
+      }),
     ).resolves.toEqual({
       id: '1',
       type: 'announcement',
@@ -61,7 +61,7 @@ describe('broadcasts api', () => {
   });
 
   it('throws ApiError on failure', async () => {
-    (serverFetch as jest.Mock).mockResolvedValue({
+    (fetch as jest.Mock).mockResolvedValue({
       ok: false,
       status: 500,
       statusText: 'Server Error',
@@ -73,7 +73,12 @@ describe('broadcasts api', () => {
       message: 'Failed to fetch broadcasts: Server Error',
     });
     await expect(
-      sendBroadcast({ type: 'announcement', text: 'x', urgent: false, sound: true })
+      sendBroadcast({
+        type: 'announcement',
+        text: 'x',
+        urgent: false,
+        sound: true,
+      }),
     ).rejects.toMatchObject({
       message: expect.stringContaining('Server Error'),
     });

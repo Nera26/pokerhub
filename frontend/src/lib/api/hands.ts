@@ -1,5 +1,4 @@
 import { getBaseUrl } from '@/lib/base-url';
-import { serverFetch } from '@/lib/server-fetch';
 import { apiClient } from './client';
 import { verifyProof } from '@shared/verify';
 import {
@@ -47,7 +46,7 @@ export async function fetchHandLog(
   { signal }: { signal?: AbortSignal } = {},
 ): Promise<HandLogResponse> {
   const baseUrl = getBaseUrl();
-  const res = await serverFetch(`${baseUrl}/api/hands/${id}/log`, {
+  const res = await fetch(`${baseUrl}/api/hands/${id}/log`, {
     credentials: 'include',
     signal,
   });

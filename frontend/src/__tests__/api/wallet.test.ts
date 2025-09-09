@@ -39,10 +39,6 @@ jest.mock('@shared/wallet.schema', () => {
   };
 });
 
-jest.mock('@/lib/server-fetch', () => ({
-  serverFetch: jest.fn(),
-}));
-
 import {
   reserve,
   commit,
@@ -52,12 +48,11 @@ import {
   withdraw,
   getStatus,
 } from '@/lib/api/wallet';
-import { serverFetch } from '@/lib/server-fetch';
-import { mockServerFetch } from '../utils/mockServerFetch';
+import { mockFetch } from '../utils/mockFetch';
 
 describe('wallet api', () => {
   it('handles reserve/commit/rollback/deposit/withdraw', async () => {
-    mockServerFetch(
+    mockFetch(
       { status: 200, payload: { message: 'ok' } },
       { status: 200, payload: { message: 'ok' } },
       { status: 200, payload: { message: 'ok' } },
@@ -135,11 +130,11 @@ describe('wallet api', () => {
   });
 
   it('validates deposit and withdraw payloads', () => {
-    (serverFetch as jest.Mock).mockClear();
+    (fetch as jest.Mock).mockClear();
     expect(() => deposit('u1', -1, 'd1', 'EUR')).toThrow();
-    expect(serverFetch).not.toHaveBeenCalled();
-    (serverFetch as jest.Mock).mockClear();
+    expect(fetch).not.toHaveBeenCalled();
+    (fetch as jest.Mock).mockClear();
     expect(() => withdraw('u1', 10, 123 as any, 'EUR')).toThrow();
-    expect(serverFetch).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

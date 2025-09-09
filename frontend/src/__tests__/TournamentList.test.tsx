@@ -8,7 +8,7 @@ describe('TournamentList', () => {
       {
         id: 't1',
         title: 'Test Tourney',
-        gameType: 'Holdem',
+        gameType: 'texas',
         buyIn: 100,
         fee: 10,
         prizePool: 1000,

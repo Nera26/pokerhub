@@ -1,15 +1,10 @@
 /** @jest-environment node */
 
 import { getTables, fetchTournamentDetails } from '@/lib/api/lobby';
-import { serverFetch } from '@/lib/server-fetch';
-
-jest.mock('@/lib/server-fetch', () => ({
-  serverFetch: jest.fn(),
-}));
 
 describe('lobby api', () => {
   it('fetches tables', async () => {
-    (serverFetch as jest.Mock).mockResolvedValue({
+    (fetch as jest.Mock).mockResolvedValue({
       ok: true,
       status: 200,
       headers: { get: () => 'application/json' },
@@ -42,7 +37,7 @@ describe('lobby api', () => {
   });
 
   it('throws ApiError on failure', async () => {
-    (serverFetch as jest.Mock).mockResolvedValue({
+    (fetch as jest.Mock).mockResolvedValue({
       ok: false,
       status: 500,
       statusText: 'Server Error',
@@ -57,7 +52,7 @@ describe('lobby api', () => {
   });
 
   it('fetches tournament details', async () => {
-    (serverFetch as jest.Mock).mockResolvedValue({
+    (fetch as jest.Mock).mockResolvedValue({
       ok: true,
       status: 200,
       headers: { get: () => 'application/json' },
@@ -94,7 +89,7 @@ describe('lobby api', () => {
   });
 
   it('throws ApiError when tournament details request fails', async () => {
-    (serverFetch as jest.Mock).mockResolvedValue({
+    (fetch as jest.Mock).mockResolvedValue({
       ok: false,
       status: 404,
       statusText: 'Not Found',

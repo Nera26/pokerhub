@@ -1,15 +1,10 @@
 /** @jest-environment node */
 
 import { getKycDenial, startKyc } from '@/lib/api/kyc';
-import { serverFetch } from '@/lib/server-fetch';
-
-jest.mock('@/lib/server-fetch', () => ({
-  serverFetch: jest.fn(),
-}));
 
 describe('kyc api', () => {
   it('gets denial reason', async () => {
-    (serverFetch as jest.Mock).mockResolvedValueOnce({
+    (fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
       status: 200,
       headers: { get: () => 'application/json' },
@@ -22,7 +17,7 @@ describe('kyc api', () => {
   });
 
   it('starts verification', async () => {
-    (serverFetch as jest.Mock).mockResolvedValueOnce({
+    (fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
       status: 200,
       headers: { get: () => 'application/json' },

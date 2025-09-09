@@ -1,11 +1,6 @@
 /** @jest-environment node */
 
 import { fetchTable } from '@/lib/api/table';
-import { serverFetch } from '@/lib/server-fetch';
-
-jest.mock('@/lib/server-fetch', () => ({
-  serverFetch: jest.fn(),
-}));
 
 const sampleTable = {
   smallBlind: 1,
@@ -34,7 +29,7 @@ const sampleTable = {
 
 describe('table api', () => {
   it('fetches table data', async () => {
-    (serverFetch as jest.Mock).mockResolvedValue({
+    (fetch as jest.Mock).mockResolvedValue({
       ok: true,
       status: 200,
       headers: { get: () => 'application/json' },
@@ -45,7 +40,7 @@ describe('table api', () => {
   });
 
   it('throws ApiError on failure', async () => {
-    (serverFetch as jest.Mock).mockResolvedValue({
+    (fetch as jest.Mock).mockResolvedValue({
       ok: false,
       status: 404,
       statusText: 'Not Found',

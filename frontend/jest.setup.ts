@@ -22,13 +22,20 @@ jest.mock('next/navigation', () => ({
 // Quiet noisy console output during tests; restore afterward.
 const originalError = console.error;
 const originalCount = console.count;
+const originalFetch = global.fetch;
 
 beforeAll(() => {
   console.error = () => {};
   console.count = () => {};
+  global.fetch = jest.fn();
 });
 
 afterAll(() => {
   console.error = originalError;
   console.count = originalCount;
+  global.fetch = originalFetch;
+});
+
+afterEach(() => {
+  (global.fetch as jest.Mock).mockReset();
 });

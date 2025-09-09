@@ -1,17 +1,15 @@
-import { serverFetch } from '@/lib/server-fetch';
-
 interface MockResponse {
   status: number;
   payload: unknown;
 }
 
 /**
- * Mocks `serverFetch` with the provided responses.
+ * Mocks global `fetch` with the provided responses.
  * Each call to the mocked function resolves sequentially with the
  * corresponding payload and HTTP status.
  */
-export function mockServerFetch(...responses: MockResponse[]) {
-  const mock = serverFetch as jest.Mock;
+export function mockFetch(...responses: MockResponse[]) {
+  const mock = fetch as unknown as jest.Mock;
   responses.forEach(({ status, payload }) => {
     mock.mockResolvedValueOnce({
       ok: status >= 200 && status < 300,
