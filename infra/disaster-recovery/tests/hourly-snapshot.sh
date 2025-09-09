@@ -13,8 +13,17 @@ gcloud sql backups create \
   --instance "$PG_INSTANCE_ID" \
   --project "$PROJECT_ID" >/dev/null
 
-log "Copying backup to $SECONDARY_REGION (placeholder)"
-# gcloud sql backups copy not available; implement via API or export if needed
+log "Copying backup to $SECONDARY_REGION"
+if gcloud sql backups copy "$snap" \
+  --instance "$PG_INSTANCE_ID" \
+  --project "$PROJECT_ID" \
+  --destination-region "$SECONDARY_REGION" >/dev/null; then
+  log "Backup $snap copied to $SECONDARY_REGION"
+else
+  status=$?
+  log "Failed to copy backup $snap to $SECONDARY_REGION (exit $status)"
+  exit $status
+fi
 
 log "Hourly backup completed"
 
