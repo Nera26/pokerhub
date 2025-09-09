@@ -1,6 +1,7 @@
 // components/common/FilterDropdown.tsx
 'use client';
 import { useState, useEffect } from 'react';
+import { useGameTypes } from '@/hooks/useGameTypes';
 import type { GameFilter, ProfitLossFilter } from '@/types/filters';
 
 interface FilterDropdownProps {
@@ -24,6 +25,11 @@ function FilterDropdown({
   className = '',
 }: FilterDropdownProps) {
   const [local, setLocal] = useState(filters);
+  const {
+    data: gameTypes = [],
+    isLoading: gameTypesLoading,
+    error: gameTypesError,
+  } = useGameTypes();
 
   useEffect(() => {
     setLocal(filters);
@@ -42,14 +48,23 @@ function FilterDropdown({
           <select
             className="w-full p-2 bg-primary-bg border border-border-dark rounded"
             value={local.gameType}
+            disabled={gameTypesLoading}
             onChange={(e) =>
               setLocal({ ...local, gameType: e.target.value as GameFilter })
             }
           >
             <option value="any">Any</option>
-            <option>Texas Hold'em</option>
-            <option>Omaha</option>
+            {gameTypes.map((type) => (
+              <option key={type.id} value={type.id}>
+                {type.label}
+              </option>
+            ))}
           </select>
+          {gameTypesError && (
+            <p className="mt-1 text-danger-red" role="alert">
+              Failed to load game types
+            </p>
+          )}
         </div>
         <div>
           <label className="block text-text-secondary mb-1">
