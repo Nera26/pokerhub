@@ -68,6 +68,14 @@ async function isDealingEnabled(): Promise<boolean> {
   return enabled(global) && enabled(room);
 }
 
+async function resetToWaitBlinds(engine: GameEngine): Promise<void> {
+  const st = engine.getState();
+  st.phase = 'WAIT_BLINDS';
+  st.deck = [];
+  st.communityCards = [];
+  for (const p of st.players) delete p.holeCards;
+}
+
 async function main() {
   const engine = await GameEngine.create(
     workerData.playerIds,
@@ -91,11 +99,7 @@ async function main() {
           let dealingHalted = false;
           if (beforePhase === 'WAIT_BLINDS' && engine.getState().phase === 'DEAL') {
             if (!(await isDealingEnabled())) {
-              const st = engine.getState();
-              st.phase = 'WAIT_BLINDS';
-              st.deck = [];
-              st.communityCards = [];
-              for (const p of st.players) delete p.holeCards;
+              await resetToWaitBlinds(engine);
               dealingHalted = true;
             }
           }
@@ -103,11 +107,7 @@ async function main() {
           // Auto-advance dealing to reach a betting round or showdown
           while (engine.getState().phase === 'DEAL' && !dealingHalted) {
             if (!(await isDealingEnabled())) {
-              const st = engine.getState();
-              st.phase = 'WAIT_BLINDS';
-              st.deck = [];
-              st.communityCards = [];
-              for (const p of st.players) delete p.holeCards;
+              await resetToWaitBlinds(engine);
               dealingHalted = true;
               break;
             }
