@@ -1,6 +1,10 @@
-import { render, screen, act } from '@testing-library/react';
+import { screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { setupCountdownTimers, setupClipboardMocks } from '../utils/wallet';
+import {
+  renderDepositSection,
+  setupCountdownTimers,
+  setupClipboardMocks,
+} from './helpers';
 
 jest.mock('@/hooks/wallet', () => ({
   useIban: jest.fn(),
@@ -10,7 +14,6 @@ jest.mock('@tanstack/react-query', () => ({
 }));
 import { useIban } from '@/hooks/wallet';
 import { useQuery } from '@tanstack/react-query';
-import DepositSection from '@/app/components/wallet/DepositSection';
 
 const mockUseIban = useIban as jest.MockedFunction<typeof useIban>;
 const mockUseQuery = useQuery as jest.MockedFunction<typeof useQuery>;
@@ -52,9 +55,7 @@ describe('DepositSection', () => {
 
   it('enables confirm after countdown and calls onConfirm', async () => {
     const onConfirm = jest.fn();
-    const { unmount } = render(
-      <DepositSection onClose={jest.fn()} onConfirm={onConfirm} />,
-    );
+    const { unmount } = renderDepositSection({ onConfirm });
 
     const waitingButton = screen.getByRole('button', { name: /waiting 10s/i });
     expect(waitingButton).toBeDisabled();
@@ -79,9 +80,7 @@ describe('DepositSection', () => {
   });
 
   it('copies account number to clipboard and alerts success', async () => {
-    const { unmount } = render(
-      <DepositSection onClose={jest.fn()} onConfirm={jest.fn()} />,
-    );
+    const { unmount } = renderDepositSection();
 
     const acct = screen.getByText('DE02 5001 **** **** 1234');
     await userEvent.click(acct);
@@ -98,9 +97,7 @@ describe('DepositSection', () => {
 
   it('alerts when clipboard copy fails', async () => {
     writeTextMock.mockRejectedValueOnce(new Error('fail'));
-    const { unmount } = render(
-      <DepositSection onClose={jest.fn()} onConfirm={jest.fn()} />,
-    );
+    const { unmount } = renderDepositSection();
 
     const acct = screen.getByText('DE02 5001 **** **** 1234');
     await userEvent.click(acct);
@@ -116,9 +113,7 @@ describe('DepositSection', () => {
       isLoading: true,
       error: null,
     } as any);
-    const { rerender } = render(
-      <DepositSection onClose={jest.fn()} onConfirm={jest.fn()} />,
-    );
+    const { rerender } = renderDepositSection();
     expect(screen.getByText(/loading bank details/i)).toBeInTheDocument();
 
     mockUseQuery.mockReturnValue({
@@ -126,7 +121,7 @@ describe('DepositSection', () => {
       isLoading: false,
       error: { message: 'bank oops' },
     } as any);
-    rerender(<DepositSection onClose={jest.fn()} onConfirm={jest.fn()} />);
+    rerender();
     expect(screen.getByText('bank oops')).toBeInTheDocument();
 
     mockUseIban.mockReturnValue({
@@ -134,7 +129,7 @@ describe('DepositSection', () => {
       isLoading: true,
       error: null,
     });
-    rerender(<DepositSection onClose={jest.fn()} onConfirm={jest.fn()} />);
+    rerender();
     expect(screen.getByText(/loading iban/i)).toBeInTheDocument();
 
     mockUseIban.mockReturnValue({
@@ -142,7 +137,7 @@ describe('DepositSection', () => {
       isLoading: false,
       error: { message: 'oops' },
     });
-    rerender(<DepositSection onClose={jest.fn()} onConfirm={jest.fn()} />);
+    rerender();
     expect(screen.getByText('oops')).toBeInTheDocument();
   });
 });
