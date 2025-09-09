@@ -111,6 +111,7 @@ export class HandController {
     return userId;
   }
 
+  /** Parse a JSONL hand log, capturing entries and any commitment/proof metadata. */
   private parseHandLog(raw: string): HandLog {
     const log = new HandLog();
     for (const line of raw.trim().split('\n')) {
@@ -208,7 +209,6 @@ export class HandController {
     }
 
     const log = this.parseHandLog(raw);
-
     const { proof } = log.getCommitmentAndProof();
     if (!proof) {
       throw new NotFoundException('proof not found');
@@ -248,7 +248,6 @@ export class HandController {
     }
 
     const log = this.parseHandLog(raw);
-
     const state = log.reconstruct(index);
     if (!state) {
       throw new NotFoundException('state not found');
