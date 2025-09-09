@@ -21,5 +21,9 @@ export class NotificationsService {
   async markRead(id: string, userId: string): Promise<void> {
     await this.repo.update({ id, userId }, { read: true });
   }
+
+  countUnread(userId: string): Promise<number> {
+    return this.repo.count({ where: { userId, read: false } });
+  }
 }
 
