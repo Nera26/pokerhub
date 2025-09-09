@@ -8,7 +8,9 @@ import Tooltip from '../ui/Tooltip';
 import Button from '../ui/Button';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons/faTimes';
+import { useQuery } from '@tanstack/react-query';
 import { useIban } from '@/hooks/wallet';
+import { fetchBankAccount } from '@/lib/api/wallet';
 
 export interface DepositSectionProps {
   /** Called when user clicks close icon */
@@ -40,6 +42,11 @@ export default function DepositSection({
   const [countdown, setCountdown] = useState(10);
   const timerRef = useRef<number | null>(null);
   const { data, isLoading, error } = useIban();
+  const {
+    data: bank,
+    isLoading: bankLoading,
+    error: bankError,
+  } = useQuery({ queryKey: ['bank-account'], queryFn: fetchBankAccount });
 
   useEffect(() => {
     // start countdown
@@ -98,17 +105,25 @@ export default function DepositSection({
 
       {/* Instructions */}
       <div className="bg-primary-bg rounded-xl p-4 mb-6 space-y-1 text-text-secondary text-sm">
-        <p>
-          <span className="font-semibold">Bank Name:</span> Trade &amp; Trust
-          Bank
-        </p>
-        <p>
-          <span className="font-semibold">Account Name:</span> PokerHub LLC
-        </p>
-        <p>
-          <span className="font-semibold">Bank Address:</span> Bayanzurkh
-          District, Ulaanbaatar
-        </p>
+        {bankLoading ? (
+          <p>Loading bank details...</p>
+        ) : bankError ? (
+          <p className="text-danger-red">{bankError.message}</p>
+        ) : (
+          <>
+            <p>
+              <span className="font-semibold">Bank Name:</span> {bank?.name}
+            </p>
+            <p>
+              <span className="font-semibold">Account Name:</span>{' '}
+              {bank?.accountName}
+            </p>
+            <p>
+              <span className="font-semibold">Bank Address:</span>{' '}
+              {bank?.address}
+            </p>
+          </>
+        )}
         <p className="flex items-center">
           <span className="font-semibold">Account Number:</span>
           {isLoading ? (
@@ -121,7 +136,7 @@ export default function DepositSection({
                 onClick={handleCopy}
                 className="ml-2 font-medium cursor-pointer"
               >
-                {data?.masked}
+                {bank?.masked}
               </span>
             </Tooltip>
           )}

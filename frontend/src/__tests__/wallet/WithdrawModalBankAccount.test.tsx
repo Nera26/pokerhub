@@ -77,15 +77,17 @@ describe('WalletPage withdraw modal bank account', () => {
 
   it('renders bank info on success', async () => {
     (fetchBankAccount as jest.Mock).mockResolvedValue({
-      accountNumber: '1234',
-      tier: 'Gold',
-      holder: 'Jane',
+      name: 'Trust Bank',
+      accountName: 'Jane',
+      address: 'Somewhere',
+      masked: '****1234',
     });
     setup();
     await userEvent.click(screen.getByRole('button', { name: /withdraw/i }));
     await waitFor(() => expect(fetchBankAccount).toHaveBeenCalled());
-    expect(await screen.findByText('1234')).toBeInTheDocument();
-    expect(await screen.findByText('Gold')).toBeInTheDocument();
+    expect(await screen.findByText('Trust Bank')).toBeInTheDocument();
     expect(await screen.findByText('Jane')).toBeInTheDocument();
+    expect(await screen.findByText('Somewhere')).toBeInTheDocument();
+    expect(await screen.findByText('****1234')).toBeInTheDocument();
   });
 });
