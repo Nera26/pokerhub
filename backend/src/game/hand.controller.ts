@@ -38,26 +38,6 @@ interface JwtClaims extends JwtPayload {
   role?: string;
 }
 
-function parseHandLog(raw: string, includeMeta = false): HandLog {
-  const log = new HandLog();
-  for (const line of raw.trim().split('\n')) {
-    if (!line) continue;
-    try {
-      const parsed = JSON.parse(line);
-      if (Array.isArray(parsed)) {
-        (log as any).entries.push(parsed);
-      } else if (includeMeta && parsed.commitment) {
-        log.recordCommitment(parsed.commitment);
-      } else if (includeMeta && parsed.proof) {
-        log.recordProof(parsed.proof);
-      }
-    } catch {
-      continue;
-    }
-  }
-  return log;
-}
-
 @ApiTags('hands')
 @Controller('hands')
 export class HandController {
@@ -129,6 +109,27 @@ export class HandController {
       throw new ForbiddenException();
     }
     return userId;
+  }
+
+  /** Parse a JSONL hand log, capturing entries and any commitment/proof metadata. */
+  private parseHandLog(raw: string): HandLog {
+    const log = new HandLog();
+    for (const line of raw.trim().split('\n')) {
+      if (!line) continue;
+      try {
+        const parsed = JSON.parse(line);
+        if (Array.isArray(parsed)) {
+          (log as any).entries.push(parsed);
+        } else if (parsed.commitment) {
+          log.recordCommitment(parsed.commitment);
+        } else if (parsed.proof) {
+          log.recordProof(parsed.proof);
+        }
+      } catch {
+        continue;
+      }
+    }
+    return log;
   }
 
   @Get('proofs')
@@ -207,7 +208,8 @@ export class HandController {
       });
     }
 
-    const { proof } = parseHandLog(raw, true).getCommitmentAndProof();
+    const log = this.parseHandLog(raw);
+    const { proof } = log.getCommitmentAndProof();
     if (!proof) {
       throw new NotFoundException('proof not found');
     }
@@ -245,7 +247,8 @@ export class HandController {
       raw = hand.log;
     }
 
-    const state = parseHandLog(raw).reconstruct(index);
+    const log = this.parseHandLog(raw);
+    const state = log.reconstruct(index);
     if (!state) {
       throw new NotFoundException('state not found');
     }
