@@ -1,21 +1,17 @@
-import { EventSchemas } from '@shared/events';
+import { EventSchemas, type EventName } from '@shared/events';
 import { randomUUID } from 'crypto';
+import { validateEvent } from '../../src/events';
 
 describe('event schemas', () => {
   it('validates hand.start', () => {
     const payload = { handId: randomUUID(), players: [randomUUID()] };
-    expect(() => EventSchemas['hand.start'].parse(payload)).not.toThrow();
+    expect(() => validateEvent('hand.start', payload)).not.toThrow();
   });
 
-  it('rejects invalid wallet.credit', () => {
-    expect(() =>
-      EventSchemas['wallet.credit'].parse({
-        accountId: 'no-uuid',
-        amount: '5',
-        currency: 'USD',
-        refType: 'test',
-        refId: 'ref',
-      }),
-    ).toThrow();
-  });
+  it.each(Object.keys(EventSchemas) as EventName[])(
+    'rejects invalid %s payload',
+    (name) => {
+      expect(() => validateEvent(name, {})).toThrow();
+    },
+  );
 });

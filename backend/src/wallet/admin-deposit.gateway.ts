@@ -8,11 +8,7 @@ import { Server, Socket } from 'socket.io';
 import { Kafka, Consumer } from 'kafkajs';
 import { ConfigService } from '@nestjs/config';
 import jwt from 'jsonwebtoken';
-import {
-  AdminDepositPendingEvent,
-  AdminDepositRejectedEvent,
-  AdminDepositConfirmedEvent,
-} from '@shared/events';
+import { validateEvent } from '../events';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { SessionService } from '../session/session.service';
@@ -82,20 +78,32 @@ export class AdminDepositGateway
         if (!message.value) return;
         try {
           if (topic === 'admin.deposit.pending') {
-            const payload = AdminDepositPendingEvent.parse(
+            const payload = validateEvent(
+              'admin.deposit.pending',
               JSON.parse(message.value.toString()),
             );
-            this.server.emit('deposit.pending', payload);
+            this.server.emit(
+              'deposit.pending',
+              validateEvent('admin.deposit.pending', payload),
+            );
           } else if (topic === 'admin.deposit.rejected') {
-            const payload = AdminDepositRejectedEvent.parse(
+            const payload = validateEvent(
+              'admin.deposit.rejected',
               JSON.parse(message.value.toString()),
             );
-            this.server.emit('deposit.rejected', payload);
+            this.server.emit(
+              'deposit.rejected',
+              validateEvent('admin.deposit.rejected', payload),
+            );
           } else if (topic === 'admin.deposit.confirmed') {
-            const payload = AdminDepositConfirmedEvent.parse(
+            const payload = validateEvent(
+              'admin.deposit.confirmed',
               JSON.parse(message.value.toString()),
             );
-            this.server.emit('deposit.confirmed', payload);
+            this.server.emit(
+              'deposit.confirmed',
+              validateEvent('admin.deposit.confirmed', payload),
+            );
           }
         } catch (err) {
           // ignore malformed events
