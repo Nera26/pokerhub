@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { existsSync, unlinkSync, writeFileSync } from 'fs';
+import { existsSync, unlinkSync, writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
@@ -18,8 +18,11 @@ describe('HandController proof', () => {
   };
   const config = new ConfigService({ auth: { jwtSecrets: ['secret'] } });
 
-  function auth(userId: string) {
-    const token = jwt.sign({ sub: userId }, 'secret');
+  function auth(userId: string, role?: string) {
+    const token = jwt.sign(
+      { sub: userId, ...(role ? { role } : {}) },
+      'secret',
+    );
     return `Bearer ${token}`;
   }
 
@@ -42,12 +45,14 @@ describe('HandController proof', () => {
 
   it('prefers proof from log file', async () => {
     const proof: HandProof = { seed: 'fs', nonce: 'fn', commitment: 'fc' };
-    const file = join(process.cwd(), '../storage/hand-logs', 'hand1.jsonl');
+    const dir = join(__dirname, '../../../storage/hand-logs');
+    mkdirSync(dir, { recursive: true });
+    const file = join(dir, 'hand1.jsonl');
     const logEntry = [0, { type: 'start' }, { players: [{ id: 'u1' }] }, {}];
     writeFileSync(file, `${JSON.stringify(logEntry)}\n${JSON.stringify({ proof })}\n`);
     store.set('hand1', {
       id: 'hand1',
-      log: '',
+      log: `${JSON.stringify(logEntry)}\n`,
       commitment: 'db',
       seed: 'dbs',
       nonce: 'dbn',
@@ -80,5 +85,44 @@ describe('HandController proof', () => {
       .set('Authorization', auth('u1'))
       .expect(200)
       .expect(proof);
+  });
+
+  it('returns 403 for non-participant', async () => {
+    const proof: HandProof = { seed: 's3', nonce: 'n3', commitment: 'c3' };
+    const dir = join(__dirname, '../../../storage/hand-logs');
+    mkdirSync(dir, { recursive: true });
+    const file = join(dir, 'hand3.jsonl');
+    const logEntry = [0, { type: 'start' }, { players: [{ id: 'u1' }] }, {}];
+    writeFileSync(
+      file,
+      `${JSON.stringify(logEntry)}\n${JSON.stringify({ proof })}\n`,
+    );
+
+    await request(app.getHttpServer())
+      .get('/hands/hand3/proof')
+      .set('Authorization', auth('u2'))
+      .expect(403);
+
+    if (existsSync(file)) unlinkSync(file);
+  });
+
+  it('allows admin to access proof', async () => {
+    const proof: HandProof = { seed: 's4', nonce: 'n4', commitment: 'c4' };
+    const dir = join(__dirname, '../../../storage/hand-logs');
+    mkdirSync(dir, { recursive: true });
+    const file = join(dir, 'hand4.jsonl');
+    const logEntry = [0, { type: 'start' }, { players: [{ id: 'u1' }] }, {}];
+    writeFileSync(
+      file,
+      `${JSON.stringify(logEntry)}\n${JSON.stringify({ proof })}\n`,
+    );
+
+    await request(app.getHttpServer())
+      .get('/hands/hand4/proof')
+      .set('Authorization', auth('admin', 'admin'))
+      .expect(200)
+      .expect(proof);
+
+    if (existsSync(file)) unlinkSync(file);
   });
 });
