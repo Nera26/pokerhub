@@ -1,12 +1,13 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { createQueryHook } from './useApiQuery';
 import { fetchAdminEvents } from '@/lib/api/admin';
 import type { AdminEvent } from '@shared/types';
 
-export function useAdminEvents() {
-  return useQuery<AdminEvent[]>({
-    queryKey: ['admin-events'],
-    queryFn: ({ signal }) => fetchAdminEvents({ signal }),
-  });
-}
+const useAdminEvents = createQueryHook<AdminEvent[]>(
+  'admin-events',
+  (_client, opts) => fetchAdminEvents({ signal: opts.signal }),
+  'admin events',
+);
+
+export default useAdminEvents;
