@@ -1,39 +1,13 @@
-import { NestFactory } from '@nestjs/core';
 import { Logger } from 'nestjs-pino';
-import helmet from 'helmet';
-import cookieParser from 'cookie-parser';
-import { AppModule } from './app.module';
 import { WalletService } from './wallet/wallet.service';
 import { scheduleReconcileJob } from './wallet/reconcile.job';
 import { EventPublisher } from './events/events.service';
-import {
-  setupTelemetry,
-  shutdownTelemetry,
-  telemetryMiddleware,
-} from './telemetry/telemetry';
+import { shutdownTelemetry } from './telemetry/telemetry';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { bootstrap } from './bootstrap';
 
-async function bootstrap() {
-  await setupTelemetry();
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
-  app.useLogger(app.get(Logger));
-  app.get(Logger).log('Telemetry initialized');
-
-  app.use(cookieParser());
-  app.use(telemetryMiddleware);
-
-  app.use(
-    helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          scriptSrc: ["'self'"],
-          styleSrc: ["'self'"],
-        },
-      },
-      hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
-    }),
-  );
+async function main() {
+  const app = await bootstrap();
 
   const config = new DocumentBuilder()
     .setTitle('PokerHub API')
@@ -58,4 +32,4 @@ async function bootstrap() {
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
 }
-void bootstrap();
+void main();
