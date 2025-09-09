@@ -5,7 +5,7 @@ import {
   calculateTimingSimilarity,
   calculateSeatProximity,
 } from '@shared/analytics/collusion';
-import { FlaggedSession, ReviewStatus } from '../schemas/review';
+import type { FlaggedSession, ReviewStatus } from '@shared/types';
 import { AnalyticsService } from './analytics.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
