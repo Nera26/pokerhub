@@ -23,7 +23,8 @@ interface TableWithdrawal {
 
 export default function Withdrawals() {
   const queryClient = useQueryClient();
-  const { data: withdrawals = [] } = useQuery<PendingWithdrawal[]>({
+
+  const { data: withdrawals = [], isLoading } = useQuery<PendingWithdrawal[]>({
     queryKey: ['adminWithdrawals'],
     queryFn: ({ signal }) =>
       fetchPendingWithdrawals({ signal }).then((r) => r.withdrawals),
@@ -33,7 +34,7 @@ export default function Withdrawals() {
     id: w.id,
     userId: w.userId,
     amount: w.amount,
-    bankInfo: w.bankInfo ?? `${w.bank} ${w.maskedAccount}`,
+    bankInfo: w.bankInfo ?? `${w.bank ?? ''} ${w.maskedAccount ?? ''}`.trim(),
     date: w.createdAt,
     status:
       w.status === 'pending'
@@ -49,15 +50,9 @@ export default function Withdrawals() {
 
   const columns = [
     { label: 'User', render: (w: TableWithdrawal) => w.userId },
-    {
-      label: 'Amount',
-      render: (w: TableWithdrawal) => `$${w.amount.toFixed(2)}`,
-    },
+    { label: 'Amount', render: (w: TableWithdrawal) => `$${w.amount.toFixed(2)}` },
     { label: 'Bank', render: (w: TableWithdrawal) => w.bankInfo ?? 'N/A' },
-    {
-      label: 'Date',
-      render: (w: TableWithdrawal) => new Date(w.date).toLocaleDateString(),
-    },
+    { label: 'Date', render: (w: TableWithdrawal) => new Date(w.date).toLocaleDateString() },
   ];
 
   const handleOpen = (w: TableWithdrawal) => {
@@ -71,7 +66,7 @@ export default function Withdrawals() {
     try {
       await confirmWithdrawal(selected.id);
       setModalOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['adminWithdrawals'] });
+      await queryClient.invalidateQueries({ queryKey: ['adminWithdrawals'] });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to approve withdrawal');
     }
@@ -82,7 +77,7 @@ export default function Withdrawals() {
     try {
       await rejectWithdrawal(selected.id, comment);
       setModalOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['adminWithdrawals'] });
+      await queryClient.invalidateQueries({ queryKey: ['adminWithdrawals'] });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to reject withdrawal');
     }
@@ -92,6 +87,7 @@ export default function Withdrawals() {
     <>
       <RequestTable
         title="Withdrawals"
+        loading={isLoading}
         rows={rows}
         columns={columns}
         actions={[
@@ -102,6 +98,7 @@ export default function Withdrawals() {
               'px-2 py-1 bg-accent-yellow text-black rounded hover:bg-yellow-500',
           },
         ]}
+        emptyMessage="No pending withdrawals."
       />
       {selected && (
         <ReviewWithdrawalModal
