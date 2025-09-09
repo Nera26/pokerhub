@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDownload, faFilter, faTrophy } from '@fortawesome/free-solid-svg-icons';
 
@@ -19,7 +19,7 @@ import CenteredMessage from '@/components/CenteredMessage';
 import ToastNotification from '../../ui/ToastNotification';
 import { rebuildLeaderboard } from '@/lib/api/leaderboard';
 import type { AuditLogEntry, AuditLogType } from '@shared/types';
-import { loadTypeBadgeClasses } from './constants';
+import { TYPE_BADGE_CLASSES } from './constants';
 import useToasts from '@/hooks/useToasts';
 
 export default function Analytics() {
@@ -37,18 +37,24 @@ export default function Analytics() {
   const [page, setPage] = useState(1);
   const pageSize = 8;
 
-  const [, setBadgeRefresh] = useState(0);
-  useEffect(() => {
-    loadTypeBadgeClasses().finally(() => setBadgeRefresh((n) => n + 1));
-  }, []);
+  const {
+    data: badgeClasses,
+    isLoading: badgeLoading,
+    isError: badgeError,
+  } = useQuery({
+    queryKey: ['log-type-classes'],
+    queryFn: async () => {
+      const res = await fetch('/api/admin/log-types');
+      if (!res.ok) throw new Error('Failed to load log types');
+      return (await res.json()) as Record<AuditLogType, string>;
+    },
+  });
 
   const { data } = useAuditLogs();
   const logs = data?.logs ?? [];
   const { data: summary } = useAuditSummary();
   const { data: metrics, isLoading: metricsLoading } = useDashboardMetrics();
-
   const { toasts, pushToast } = useToasts();
-
   const rebuild = useMutation({
     mutationFn: () => rebuildLeaderboard(),
     onSuccess: () => pushToast('Leaderboard rebuild started'),
@@ -83,6 +89,12 @@ export default function Analytics() {
 
     return rows.slice(0, resultLimit);
   }, [logs, search, type, userFilter, dateFrom, dateTo, resultLimit]);
+
+  if (badgeLoading)
+    return <CenteredMessage>Loading log types...</CenteredMessage>;
+  if (badgeError)
+    return <CenteredMessage>Failed to load log types</CenteredMessage>;
+  if (badgeClasses) Object.assign(TYPE_BADGE_CLASSES, badgeClasses);
 
   const total = filtered.length;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
