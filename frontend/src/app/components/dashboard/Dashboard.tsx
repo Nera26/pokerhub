@@ -1,8 +1,6 @@
 'use client';
 
-import { useState } from 'react';
 import Image from 'next/image';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faUsers,
   faDollarSign,
@@ -14,7 +12,7 @@ import {
 import dynamic from 'next/dynamic';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import { useRevenueBreakdown } from '@/hooks/useRevenueBreakdown';
-import MetricCard, { TimeFilter } from './MetricCard';
+import MetricCard from './MetricCard';
 import BroadcastPanel from './BroadcastPanel';
 import DashboardTransactionHistory from './transactions/TransactionHistory';
 
@@ -81,16 +79,13 @@ function PillBtn({
 
 // ---------- Content-only Dashboard ----------
 export default function Dashboard() {
-  const [revFilter, setRevFilter] = useState<TimeFilter>('today');
-  const [depFilter, setDepFilter] = useState<TimeFilter>('today');
-  const [wdFilter, setWdFilter] = useState<TimeFilter>('today');
   const { data, isLoading, error } = useDashboardMetrics();
   const metrics = (data ?? {}) as any;
   const {
     data: revenueStreams = [],
     isLoading: revLoading,
     error: revError,
-  } = useRevenueBreakdown(revFilter);
+  } = useRevenueBreakdown('today');
 
   const formatCurrency = (v: number | undefined) =>
     `$${(v ?? 0).toLocaleString()}`;
@@ -115,86 +110,60 @@ export default function Dashboard() {
     <div className="space-y-8">
       {/* Stat cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-text-secondary text-sm">Active Users</p>
-              <p className="text-2xl font-bold text-accent-green">
-                {metrics.online ?? 0}
-              </p>
-            </div>
-            <FontAwesomeIcon
-              icon={faUsers}
-              className="text-3xl text-accent-green"
-            />
-          </div>
-        </Card>
-
         <MetricCard
-          title="Revenue"
-          value={formatCurrency(metrics.revenue?.[revFilter]?.amount)}
+          icon={faUsers}
+          label="Active Users"
+          value={
+            <span className="text-accent-green">{metrics.online ?? 0}</span>
+          }
+        />
+        <MetricCard
           icon={faDollarSign}
-          valueClassName="text-accent-yellow"
-          subtext={metrics.revenue?.[revFilter]?.trend ?? ''}
-          filter={{ value: revFilter, onChange: setRevFilter }}
+          label="Revenue"
+          value={
+            <span className="text-accent-yellow">
+              {formatCurrency(metrics.revenue?.today?.amount)}
+            </span>
+          }
         />
-
         <MetricCard
-          className="cursor-pointer hover:bg-hover-bg transition-colors"
-          title="Open Tables"
-          value={metrics.tables?.open ?? metrics.tables ?? 0}
           icon={faTableCells}
-          valueClassName="text-accent-blue"
-          iconClassName="text-accent-blue"
-          subtext={
-            metrics.tables?.full !== undefined
-              ? `${metrics.tables.full} full`
-              : undefined
+          label="Open Tables"
+          value={
+            <span className="text-accent-blue">
+              {metrics.tables?.open ?? metrics.tables ?? 0}
+            </span>
           }
-          subtextClassName="text-text-secondary"
         />
-
         <MetricCard
-          className="cursor-pointer hover:bg-hover-bg transition-colors"
-          title="Tournaments"
-          value={metrics.tournaments?.total ?? metrics.tournaments ?? 0}
           icon={faTrophy}
-          iconClassName="text-accent-yellow"
-          subtext={
-            metrics.tournaments?.running !== undefined
-              ? `${metrics.tournaments.running} running`
-              : undefined
-          }
-          subtextClassName="text-text-secondary"
+          label="Tournaments"
+          value={metrics.tournaments?.total ?? metrics.tournaments ?? 0}
         />
-
         <MetricCard
-          className="cursor-pointer hover:bg-hover-bg transition-colors"
-          title="Deposits"
-          value={formatCurrency(metrics.deposits?.[depFilter]?.amount)}
           icon={faArrowDown}
-          valueClassName="text-accent-green"
-          iconClassName="text-accent-green"
-          subtext={metrics.deposits?.[depFilter]?.trend ?? ''}
-          filter={{ value: depFilter, onChange: setDepFilter }}
+          label="Deposits"
+          value={
+            <span className="text-accent-green">
+              {formatCurrency(metrics.deposits?.today?.amount)}
+            </span>
+          }
         />
-
         <MetricCard
-          className="cursor-pointer hover:bg-hover-bg transition-colors"
-          title="Withdrawals"
-          value={formatCurrency(metrics.withdrawals?.[wdFilter]?.amount)}
           icon={faArrowUp}
-          valueClassName="text-danger-red"
-          iconClassName="text-danger-red"
-          subtext={metrics.withdrawals?.[wdFilter]?.trend ?? ''}
-          filter={{ value: wdFilter, onChange: setWdFilter }}
+          label="Withdrawals"
+          value={
+            <span className="text-danger-red">
+              {formatCurrency(metrics.withdrawals?.today?.amount)}
+            </span>
+          }
         />
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card title="Player Activity (24h)">
-          <ActivityChart data={metrics.activity?.[revFilter] ?? []} />
+          <ActivityChart data={metrics.activity?.today ?? []} />
         </Card>
         <Card title="Revenue Breakdown">
           <RevenueDonut streams={revenueStreams} />

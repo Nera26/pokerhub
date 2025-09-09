@@ -8,6 +8,7 @@ import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUsers, faCoins, faBars } from '@fortawesome/free-solid-svg-icons';
+import MetricCard from '@/app/components/dashboard/MetricCard';
 import { useAuthStore } from '@/app/store/authStore';
 import { fetchProfile } from '@/lib/api/profile';
 import { useQuery } from '@tanstack/react-query';
@@ -187,30 +188,20 @@ function DashboardPage() {
             <h1 className="text-xl font-bold">{title}</h1>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-4 w-full sm:w-auto sm:justify-end">
-            <div className="flex items-center gap-2 bg-primary-bg px-3 py-2 rounded-xl">
-              <FontAwesomeIcon icon={faUsers} className="text-accent-green" />
-              {metricsLoading ? (
-                <span className="font-semibold">...</span>
-              ) : metricsError ? (
-                <span className="font-semibold text-red-500">Error</span>
-              ) : (
-                <span className="font-semibold">
-                  {metrics?.online ?? 0} Online
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2 bg-primary-bg px-3 py-2 rounded-xl">
-              <FontAwesomeIcon icon={faCoins} className="text-accent-yellow" />
-              {metricsLoading ? (
-                <span className="font-semibold">...</span>
-              ) : metricsError ? (
-                <span className="font-semibold text-red-500">Error</span>
-              ) : (
-                <span className="font-semibold">
-                  {`$${metrics?.revenue.toLocaleString() ?? '0'}`}
-                </span>
-              )}
-            </div>
+            <MetricCard
+              icon={faUsers}
+              label="Online"
+              value={metrics?.online ?? 0}
+              loading={metricsLoading}
+              error={metricsError}
+            />
+            <MetricCard
+              icon={faCoins}
+              label="Revenue"
+              value={`$${metrics?.revenue.toLocaleString() ?? '0'}`}
+              loading={metricsLoading}
+              error={metricsError}
+            />
             <Image
               src={avatarUrl || DEFAULT_AVATAR}
               alt="Admin avatar"
