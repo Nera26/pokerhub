@@ -66,53 +66,41 @@ describe('ChatWidget', () => {
     );
   }
 
-  it('sends message with send button', async () => {
+  function setupChatWidget() {
     renderWithClient(<ChatWidget />);
     act(() => handlers['connect'] && handlers['connect']());
-
     const user = userEvent.setup();
-    // open widget
-    await act(async () => {
-      await user.click(screen.getByRole('button'));
-    });
-    const input = screen.getByPlaceholderText('Type your message...');
-    await act(async () => {
-      await user.type(input, 'hello');
-    });
-    const sendButton = screen.getAllByRole('button')[2];
-    await act(async () => {
-      await user.click(sendButton);
-    });
+    return { user, handlers };
+  }
 
-    expect(await screen.findByText('hello')).toBeInTheDocument();
-    expect(emit).toHaveBeenCalledWith(
-      'message',
-      expect.objectContaining({ text: 'hello' }),
-    );
-  });
-
-  it('sends message with Enter key', async () => {
-    renderWithClient(<ChatWidget />);
-    act(() => handlers['connect'] && handlers['connect']());
-
-    const user = userEvent.setup();
-    await act(async () => {
-      await user.click(screen.getByRole('button'));
-    });
-    const input = screen.getByPlaceholderText('Type your message...');
-    await act(async () => {
-      await user.type(input, 'hi');
-    });
-    await act(async () => {
-      await user.keyboard('{Enter}');
-    });
-
-    expect(await screen.findByText('hi')).toBeInTheDocument();
-    expect(emit).toHaveBeenCalledWith(
-      'message',
-      expect.objectContaining({ text: 'hi' }),
-    );
-  });
+  it.each(['click', 'enter'] as const)(
+    'sends message with %s',
+    async (method) => {
+      const { user } = setupChatWidget();
+      await act(async () => {
+        await user.click(screen.getByRole('button'));
+      });
+      const input = screen.getByPlaceholderText('Type your message...');
+      await act(async () => {
+        await user.type(input, 'hello');
+      });
+      if (method === 'click') {
+        const sendButton = screen.getAllByRole('button')[2];
+        await act(async () => {
+          await user.click(sendButton);
+        });
+      } else {
+        await act(async () => {
+          await user.keyboard('{Enter}');
+        });
+      }
+      expect(await screen.findByText('hello')).toBeInTheDocument();
+      expect(emit).toHaveBeenCalledWith(
+        'message',
+        expect.objectContaining({ text: 'hello' }),
+      );
+    },
+  );
 
   it('toggles open and closed', async () => {
     renderWithClient(<ChatWidget />);
