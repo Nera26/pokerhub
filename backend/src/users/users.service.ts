@@ -9,6 +9,7 @@ import {
 } from '@shared/types';
 import { UserRepository } from './user.repository';
 import { QueryFailedError } from 'typeorm';
+import { Leaderboard } from '../database/entities/leaderboard.entity';
 
 @Injectable()
 export class UsersService {
@@ -86,12 +87,12 @@ export class UsersService {
             username: user.username,
             email: user.email ?? '',
             avatarUrl: user.avatarKey ?? '',
-            bank: '\u2022\u2022\u2022\u2022 1234',
-            location: 'United States',
-            joined: new Date('2023-01-15').toISOString(),
-            bio: 'Texas grinder. Loves Omaha. Weekend warrior.',
-            experience: 1234,
-            balance: 1250,
+            bank: user.bank ?? '',
+            location: user.location ?? '',
+            joined: user.joined?.toISOString() ?? new Date(0).toISOString(),
+            bio: user.bio ?? '',
+            experience: user.experience,
+            balance: user.balance,
           };
         });
       },
@@ -103,11 +104,30 @@ export class UsersService {
       'users.getStats',
       async (span) => {
         return this.withUser(id, span, async () => {
+          const repo = this.users.manager.getRepository(Leaderboard);
+          const lb = await repo.findOne({ where: { playerId: id } });
+          const tournamentsPlayed = lb
+            ? Object.values(lb.finishes || {}).reduce(
+                (a, b) => a + (typeof b === 'number' ? b : 0),
+                0,
+              )
+            : 0;
+          const wins = lb?.finishes?.[1] ?? 0;
+          const topThree =
+            (lb?.finishes?.[1] ?? 0) +
+            (lb?.finishes?.[2] ?? 0) +
+            (lb?.finishes?.[3] ?? 0);
+          const winRate = tournamentsPlayed
+            ? (wins / tournamentsPlayed) * 100
+            : 0;
+          const topThreeRate = tournamentsPlayed
+            ? (topThree / tournamentsPlayed) * 100
+            : 0;
           return {
-            handsPlayed: 10582,
-            winRate: 58.3,
-            tournamentsPlayed: 127,
-            topThreeRate: 32.5,
+            handsPlayed: lb?.hands ?? 0,
+            winRate,
+            tournamentsPlayed,
+            topThreeRate,
           };
         });
       },

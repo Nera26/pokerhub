@@ -16,7 +16,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { createDataSource } from './utils/pgMem';
 import request from 'supertest';
-import { ProfileController } from '../src/routes/profile.controller';
+import { ProfileStatsController } from '../src/routes/profile-stats.controller';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { UsersService } from '../src/users/users.service';
 import { UserRepository } from '../src/users/user.repository';
@@ -24,6 +24,7 @@ import { User } from '../src/database/entities/user.entity';
 import { Table } from '../src/database/entities/table.entity';
 import { Seat } from '../src/database/entities/seat.entity';
 import { Tournament } from '../src/database/entities/tournament.entity';
+import { Leaderboard } from '../src/database/entities/leaderboard.entity';
 
 function createTestModule() {
   let dataSource: DataSource;
@@ -31,29 +32,36 @@ function createTestModule() {
     imports: [
       TypeOrmModule.forRootAsync({
         useFactory: async () => {
-          dataSource = await createDataSource([User, Table, Seat, Tournament]);
+          dataSource = await createDataSource([
+            User,
+            Table,
+            Seat,
+            Tournament,
+            Leaderboard,
+          ]);
           return dataSource.options;
         },
         dataSourceFactory: async () => dataSource,
       }),
-      TypeOrmModule.forFeature([User, Table, Seat, Tournament]),
+      TypeOrmModule.forFeature([User, Table, Seat, Tournament, Leaderboard]),
     ],
-    controllers: [ProfileController],
+    controllers: [ProfileStatsController],
     providers: [UsersService, UserRepository],
   })
-  class ProfileTestModule {}
-  return ProfileTestModule;
+  class StatsTestModule {}
+  return StatsTestModule;
 }
 
-describe('ProfileController (integration)', () => {
+describe('ProfileStatsController (integration)', () => {
   let app: INestApplication;
   let repo: UserRepository;
+  let lbRepo;
   let userId: string;
 
   beforeAll(async () => {
-    const ProfileTestModule = createTestModule();
+    const StatsTestModule = createTestModule();
     const moduleRef: TestingModule = await Test.createTestingModule({
-      imports: [ProfileTestModule],
+      imports: [StatsTestModule],
     })
       .overrideGuard(AuthGuard)
       .useValue({
@@ -69,42 +77,39 @@ describe('ProfileController (integration)', () => {
     await app.init();
 
     repo = moduleRef.get(UserRepository);
-    const user = repo.create({
-      username: 'PlayerOne23',
-      email: 'playerone23@example.com',
-      avatarKey:
-        'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg',
-      banned: false,
-      bank: 'Chase 1234',
-      location: 'Canada',
-      joined: new Date('2023-01-15T00:00:00.000Z'),
-      bio: 'Texas grinder. Loves Omaha. Weekend warrior.',
-      experience: 1234,
-      balance: 1250,
-    });
+    lbRepo = moduleRef.get(DataSource).getRepository(Leaderboard);
+    const user = repo.create({ username: 'StatsUser', banned: false });
     const saved = await repo.save(user);
     userId = saved.id;
+
+    await lbRepo.save({
+      playerId: userId,
+      rank: 1,
+      rating: 1,
+      rd: 1,
+      volatility: 1,
+      net: 0,
+      bb: 0,
+      hands: 150,
+      duration: 0,
+      buyIn: 0,
+      finishes: { 1: 2, 2: 1, 3: 1, 4: 6 },
+    });
   });
 
   afterAll(async () => {
     await app.close();
   });
 
-  it('returns user profile from database', async () => {
+  it('returns aggregated stats from leaderboard', async () => {
     const res = await request(app.getHttpServer())
-      .get('/user/profile')
+      .get('/profile/stats')
       .expect(200);
     expect(res.body).toEqual({
-      username: 'PlayerOne23',
-      email: 'playerone23@example.com',
-      avatarUrl:
-        'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg',
-      bank: 'Chase 1234',
-      location: 'Canada',
-      joined: '2023-01-15T00:00:00.000Z',
-      bio: 'Texas grinder. Loves Omaha. Weekend warrior.',
-      experience: 1234,
-      balance: 1250,
+      handsPlayed: 150,
+      winRate: 20,
+      tournamentsPlayed: 10,
+      topThreeRate: 40,
     });
   });
 });
