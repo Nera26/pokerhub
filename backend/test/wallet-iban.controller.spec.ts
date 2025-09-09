@@ -6,9 +6,31 @@ import { WalletIbanController } from '../src/routes/wallet-iban.controller';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { SessionService } from '../src/session/session.service';
 import { RateLimitGuard } from '../src/routes/rate-limit.guard';
+import { WalletService } from '../src/wallet/wallet.service';
 
 describe('WalletIbanController', () => {
   let app: INestApplication;
+  const wallet: Partial<WalletService> = {
+    getDepositIban: jest.fn().mockResolvedValue({
+      iban: 'DE00',
+      masked: 'DE**',
+      holder: 'h',
+      instructions: 'i',
+      updatedBy: 'u',
+      updatedAt: new Date().toISOString(),
+    }),
+    getIbanHistory: jest.fn().mockResolvedValue({ history: [] }),
+    updateDepositIban: jest
+      .fn()
+      .mockResolvedValue({
+        iban: 'DE00',
+        masked: 'DE**',
+        holder: 'h',
+        instructions: 'i',
+        updatedBy: 'u',
+        updatedAt: new Date().toISOString(),
+      }),
+  };
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -16,6 +38,7 @@ describe('WalletIbanController', () => {
       providers: [
         { provide: SessionService, useValue: { verifyAccessToken: () => 'user1' } },
         AuthGuard,
+        { provide: WalletService, useValue: wallet },
       ],
     })
       .overrideGuard(RateLimitGuard)
@@ -55,5 +78,18 @@ describe('WalletIbanController', () => {
       .expect(res => {
         expect(Array.isArray(res.body.history)).toBe(true);
       });
+    expect(wallet.getIbanHistory).toHaveBeenCalled();
+  });
+
+  it('updates iban when posting', async () => {
+    await request(app.getHttpServer())
+      .post('/wallet/iban')
+      .set('Authorization', 'Bearer token')
+      .send({ iban: 'DE00', holder: 'h', instructions: 'i' })
+      .expect(200);
+    expect(wallet.updateDepositIban).toHaveBeenCalledWith(
+      { iban: 'DE00', holder: 'h', instructions: 'i' },
+      'user1',
+    );
   });
 });

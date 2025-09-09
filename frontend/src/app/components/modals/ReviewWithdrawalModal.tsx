@@ -21,6 +21,7 @@ type Props = {
   request: Withdrawal;
   onApprove: (comment: string) => void;
   onReject: (comment: string) => void;
+  error?: string | null;
 };
 
 const schema = z.object({
@@ -35,6 +36,7 @@ export default function ReviewWithdrawalModal({
   request,
   onApprove,
   onReject,
+  error,
 }: Props) {
   const {
     register,
@@ -56,8 +58,12 @@ export default function ReviewWithdrawalModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <ModalHeader title="Review Withdrawal Request" onClose={onClose} />
-
       <div className="p-6 space-y-4">
+        {error && (
+          <p role="alert" className="text-danger-red">
+            {error}
+          </p>
+        )}
         <div className="space-y-1">
           <p>
             <strong>User:</strong> {request?.user}
@@ -69,8 +75,7 @@ export default function ReviewWithdrawalModal({
             <strong>Request Date:</strong> {request?.date}
           </p>
           <p>
-            <strong>Bank Info:</strong>{' '}
-            {request?.bankInfo ?? 'N/A'}
+            <strong>Bank Info:</strong> {request?.bankInfo ?? 'N/A'}
           </p>
         </div>
 
