@@ -26,11 +26,16 @@ export class AdminBalanceController {
     @Body() body: AdminBalanceRequest,
     @Req() req: Request,
   ): Promise<MessageResponse> {
-    const { action, amount, currency, notes } = AdminBalanceRequestSchema.parse(body);
+    const {
+      action,
+      amount,
+      currency,
+      notes,
+    } = AdminBalanceRequestSchema.parse(body);
     await this.wallet.adminAdjustBalance(userId, action, amount, currency);
     await this.analytics.addAuditLog({
       type: 'Balance',
-      description: `${action} ${amount} ${currency} - ${notes}`,
+      description: `${action} ${amount} ${currency}${notes ? ` - ${notes}` : ''}`,
       user: req.userId ?? 'admin',
       ip: req.ip || null,
     });

@@ -2035,7 +2035,7 @@ export interface components {
       action: "add" | "remove" | "freeze";
       amount: number;
       currency: string;
-      notes: string;
+      notes?: string;
     };
     RefreshRequest: {
       refreshToken: string;
