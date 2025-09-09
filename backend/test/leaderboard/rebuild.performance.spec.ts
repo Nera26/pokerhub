@@ -1,47 +1,8 @@
 import { LeaderboardService } from '../../src/leaderboard/leaderboard.service';
 import { writeSyntheticEvents } from './synthetic-events';
-import type { Cache } from 'cache-manager';
-import { createClient, ClickHouseClient } from '@clickhouse/client';
+import { Cache } from 'cache-manager';
 import { ConfigService } from '@nestjs/config';
-
-class MockCache {
-  private store = new Map<string, any>();
-  async get<T>(key: string): Promise<T | undefined> {
-    return this.store.get(key);
-  }
-  async set<T>(key: string, value: T): Promise<void> {
-    this.store.set(key, value);
-  }
-  async del(key: string): Promise<void> {
-    this.store.delete(key);
-  }
-}
-
-class ClickHouseAnalytics {
-  private client: ClickHouseClient | null;
-  constructor() {
-    const url = process.env.CLICKHOUSE_URL;
-    this.client = url ? createClient({ url }) : null;
-  }
-  async ingest(table: string, data: Record<string, any>): Promise<void> {
-    if (!this.client) return;
-    try {
-      await this.client.insert({
-        table,
-        values: [data],
-        format: 'JSONEachRow',
-      });
-    } catch {
-      // ignore ingestion errors in tests
-    }
-  }
-  async rangeStream(): Promise<any[]> {
-    return [];
-  }
-  async close(): Promise<void> {
-    await this.client?.close();
-  }
-}
+import { MockCache, ClickHouseAnalytics } from './test-utils';
 
 describe('leaderboard rebuild performance', () => {
   it('rebuildFromEvents(30) completes under 30 minutes', async () => {
