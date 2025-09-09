@@ -2,15 +2,15 @@
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faCopy } from '@fortawesome/free-solid-svg-icons';
-import type { AuditLogEntry } from '@shared/types';
-import { TYPE_BADGE_CLASSES } from './constants';
+import type { AuditLogEntry, LogTypeClasses } from '@shared/types';
 
 interface Props {
   row: AuditLogEntry | null;
   onClose: () => void;
+  badgeClasses: LogTypeClasses;
 }
 
-export default function DetailModal({ row, onClose }: Props) {
+export default function DetailModal({ row, onClose, badgeClasses }: Props) {
   if (!row) return null;
 
   return (
@@ -43,7 +43,7 @@ export default function DetailModal({ row, onClose }: Props) {
               </label>
               <div className="bg-primary-bg p-3 rounded-xl text-sm">
                 <span
-                  className={`px-2 py-1 rounded-lg text-xs font-semibold ${TYPE_BADGE_CLASSES[row.type]}`}
+                  className={`px-2 py-1 rounded-lg text-xs font-semibold ${badgeClasses[row.type]}`}
                 >
                   {row.type}
                 </span>

@@ -6,8 +6,7 @@ import {
   faChevronLeft,
   faChevronRight,
 } from '@fortawesome/free-solid-svg-icons';
-import type { AuditLogEntry } from '@shared/types';
-import { TYPE_BADGE_CLASSES } from './constants';
+import type { AuditLogEntry, LogTypeClasses } from '@shared/types';
 import useRenderCount from '@/hooks/useRenderCount';
 
 interface Props {
@@ -18,6 +17,7 @@ interface Props {
   total: number;
   setPage: (p: number) => void;
   onView: (row: AuditLogEntry) => void;
+  badgeClasses: LogTypeClasses;
 }
 
 export default function AuditTable({
@@ -28,6 +28,7 @@ export default function AuditTable({
   total,
   setPage,
   onView,
+  badgeClasses,
 }: Props) {
   useRenderCount('AuditTable');
   return (
@@ -66,7 +67,7 @@ export default function AuditTable({
                 <td className="p-4 text-sm">{r.timestamp}</td>
                 <td className="p-4">
                   <span
-                    className={`px-2 py-1 rounded-lg text-xs font-semibold ${TYPE_BADGE_CLASSES[r.type]}`}
+                    className={`px-2 py-1 rounded-lg text-xs font-semibold ${badgeClasses[r.type]}`}
                   >
                     {r.type}
                   </span>

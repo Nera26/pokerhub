@@ -21,8 +21,12 @@ import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import CenteredMessage from '@/components/CenteredMessage';
 import ToastNotification from '../../ui/ToastNotification';
 import { rebuildLeaderboard } from '@/lib/api/leaderboard';
-import type { AuditLogEntry, AuditLogType } from '@shared/types';
-import { TYPE_BADGE_CLASSES } from './constants';
+import type {
+  AuditLogEntry,
+  AuditLogType,
+  LogTypeClasses,
+} from '@shared/types';
+import { fetchLogTypeClasses } from '@/lib/api/analytics';
 import useToasts from '@/hooks/useToasts';
 import { exportCsv } from '@/lib/exportCsv';
 
@@ -45,13 +49,9 @@ export default function Analytics() {
     data: badgeClasses,
     isLoading: badgeLoading,
     isError: badgeError,
-  } = useQuery({
+  } = useQuery<LogTypeClasses>({
     queryKey: ['log-type-classes'],
-    queryFn: async () => {
-      const res = await fetch('/api/admin/log-types');
-      if (!res.ok) throw new Error('Failed to load log types');
-      return (await res.json()) as Record<AuditLogType, string>;
-    },
+    queryFn: fetchLogTypeClasses,
   });
 
   const { data } = useAuditLogs();
@@ -99,7 +99,8 @@ export default function Analytics() {
     return <CenteredMessage>Loading log types...</CenteredMessage>;
   if (badgeError)
     return <CenteredMessage>Failed to load log types</CenteredMessage>;
-  if (badgeClasses) Object.assign(TYPE_BADGE_CLASSES, badgeClasses);
+  if (!badgeClasses || Object.keys(badgeClasses).length === 0)
+    return <CenteredMessage>No log types found</CenteredMessage>;
 
   const total = filtered.length;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
@@ -210,6 +211,7 @@ export default function Analytics() {
         total={total}
         setPage={setPage}
         onView={setShowDetail}
+        badgeClasses={badgeClasses}
       />
 
       <AdvancedFilterModal
@@ -227,7 +229,11 @@ export default function Analytics() {
         onClear={clearAdvanced}
       />
 
-      <DetailModal row={showDetail} onClose={() => setShowDetail(null)} />
+      <DetailModal
+        row={showDetail}
+        onClose={() => setShowDetail(null)}
+        badgeClasses={badgeClasses}
+      />
 
       {toasts.map((t) => (
         <ToastNotification

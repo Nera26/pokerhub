@@ -55,6 +55,10 @@ export {
 } from '../backend/src/schemas/bonus';
 export type { BonusOptionsResponse } from '../backend/src/schemas/bonus';
 
+// Analytics log types
+export const LogTypeClassesSchema = z.record(z.string());
+export type LogTypeClasses = z.infer<typeof LogTypeClassesSchema>;
+
 // Dashboard metrics (frontend-only)
 export const DashboardMetricsSchema = z.object({
   online: z.number(),

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import Analytics from '../Analytics';
 import { rebuildLeaderboard } from '@/lib/api/leaderboard';
+import { fetchLogTypeClasses } from '@/lib/api/analytics';
 
 jest.mock('../SearchBar', () => () => <div>SearchBar</div>);
 jest.mock('../QuickStats', () => () => <div>QuickStats</div>);
@@ -24,24 +25,21 @@ jest.mock('@/hooks/useDashboardMetrics', () => ({
 jest.mock('@/lib/api/leaderboard', () => ({
   rebuildLeaderboard: jest.fn(),
 }));
+jest.mock('@/lib/api/analytics', () => ({
+  fetchLogTypeClasses: jest.fn(),
+}));
 
 describe('Analytics', () => {
-  const originalFetch = global.fetch;
-
   beforeEach(() => {
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        Login: '',
-        'Table Event': '',
-        Broadcast: '',
-        Error: '',
-      }),
-    }) as unknown as typeof fetch;
+    (fetchLogTypeClasses as jest.Mock).mockResolvedValue({
+      Login: '',
+      'Table Event': '',
+      Broadcast: '',
+      Error: '',
+    });
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
     jest.resetAllMocks();
   });
 
