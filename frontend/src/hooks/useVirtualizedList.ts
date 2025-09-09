@@ -7,7 +7,7 @@ interface Options<T extends HTMLElement> {
   estimateSize?: number;
 }
 
-export function createVirtualizerStub<T extends HTMLElement>({
+function createVirtualizerStub<T extends HTMLElement>({
   count,
   estimateSize = 280,
 }: Options<T>): Virtualizer<T, Element> {
