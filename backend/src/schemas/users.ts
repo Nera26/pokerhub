@@ -17,3 +17,13 @@ export const MeResponseSchema = z.object({
   avatarUrl: z.string(),
 });
 export type MeResponse = z.infer<typeof MeResponseSchema>;
+
+export const ProfileStatsResponseSchema = z.object({
+  handsPlayed: z.number(),
+  winRate: z.number(),
+  tournamentsPlayed: z.number(),
+  topThreeRate: z.number(),
+});
+export type ProfileStatsResponse = z.infer<
+  typeof ProfileStatsResponseSchema
+>;

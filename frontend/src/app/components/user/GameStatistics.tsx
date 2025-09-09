@@ -1,4 +1,7 @@
 'use client';
+import { useQuery } from '@tanstack/react-query';
+import { fetchStats } from '@/lib/api/profile';
+import type { ProfileStatsResponse } from '@shared/types';
 
 type HistoryTab = 'game-history' | 'tournament-history' | 'transaction-history';
 
@@ -6,12 +9,45 @@ interface Props {
   onSelectTab(tab: HistoryTab): void;
 }
 
+function useProfileStats() {
+  return useQuery<ProfileStatsResponse>({
+    queryKey: ['profileStats'],
+    queryFn: ({ signal }) => fetchStats({ signal }),
+  });
+}
+
 export default function GameStatistics({ onSelectTab }: Props) {
+  const { data: stats, isLoading, isError } = useProfileStats();
+
+  if (isLoading) {
+    return <p>Loading stats...</p>;
+  }
+
+  if (isError || !stats) {
+    return <p>Error loading stats</p>;
+  }
+
   const cards: { value: string; label: string; tab: HistoryTab }[] = [
-    { value: '10,582', label: 'Hands Played', tab: 'game-history' },
-    { value: '58.3%', label: 'Win Rate', tab: 'game-history' },
-    { value: '127', label: 'Tournaments Played', tab: 'tournament-history' },
-    { value: '32.5%', label: 'Top 3 Placement', tab: 'tournament-history' },
+    {
+      value: stats.handsPlayed.toLocaleString(),
+      label: 'Hands Played',
+      tab: 'game-history',
+    },
+    {
+      value: `${stats.winRate}%`,
+      label: 'Win Rate',
+      tab: 'game-history',
+    },
+    {
+      value: stats.tournamentsPlayed.toLocaleString(),
+      label: 'Tournaments Played',
+      tab: 'tournament-history',
+    },
+    {
+      value: `${stats.topThreeRate}%`,
+      label: 'Top 3 Placement',
+      tab: 'tournament-history',
+    },
   ];
 
   return (

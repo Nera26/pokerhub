@@ -1537,6 +1537,19 @@ export interface paths {
       };
     };
   };
+  "/profile/stats": {
+    /** Get profile statistics */
+    get: {
+      responses: {
+        /** @description Profile statistics */
+        200: {
+          content: {
+            "application/json": components["schemas"]["ProfileStatsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/me": {
     /** Get current user avatar */
     get: {
@@ -2149,6 +2162,12 @@ export interface components {
     };
     MeResponse: {
       avatarUrl: string;
+    };
+    ProfileStatsResponse: {
+      handsPlayed: number;
+      winRate: number;
+      tournamentsPlayed: number;
+      topThreeRate: number;
     };
     Tier: {
       name: string;
