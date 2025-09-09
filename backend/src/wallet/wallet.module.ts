@@ -31,6 +31,7 @@ import { SidebarService } from '../services/sidebar.service';
 import { TransactionType } from './transaction-type.entity';
 import { Transaction } from './transaction.entity';
 import { TransactionsService } from './transactions.service';
+import { AdminBalanceController } from '../routes/admin-balance.controller';
 
 @Injectable()
 class PayoutWorker implements OnModuleInit {
@@ -91,6 +92,7 @@ class PendingDepositWorker implements OnModuleInit {
     AdminWithdrawalsController,
     BankReconciliationController,
     WalletIbanController,
+    AdminBalanceController,
   ],
   exports: [
     WalletService,

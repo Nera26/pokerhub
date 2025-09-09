@@ -24,6 +24,8 @@ import {
   type WalletReconcileMismatchesResponse,
   TransactionTabsResponseSchema,
   type TransactionTab,
+  AdminBalanceRequestSchema,
+  type AdminBalanceRequest,
 } from '@shared/wallet.schema';
 import {
   MessageResponseSchema,
@@ -292,6 +294,16 @@ export function fetchBalances(
 ): Promise<Balance[]> {
   return apiClient(`/api/admin/balances`, z.array(BalanceSchema), {
     signal: opts.signal,
+  });
+}
+
+export function adminAdjustBalance(
+  userId: string,
+  body: AdminBalanceRequest,
+): Promise<MessageResponse> {
+  return apiClient(`/api/admin/balance/${userId}`, MessageResponseSchema, {
+    method: 'POST',
+    body,
   });
 }
 
