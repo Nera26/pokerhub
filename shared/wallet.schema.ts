@@ -223,6 +223,14 @@ export type IbanHistoryResponse = z.infer<
   typeof IbanHistoryResponseSchema
 >;
 
+export const IbanUpdateRequestSchema = z.object({
+  iban: z.string(),
+  holder: z.string(),
+  instructions: z.string(),
+  notes: z.string().optional(),
+});
+export type IbanUpdateRequest = z.infer<typeof IbanUpdateRequestSchema>;
+
 export const TransactionTabSchema = z.object({
   id: z.enum(['all', 'deposits', 'withdrawals', 'manual']),
   label: z.string(),

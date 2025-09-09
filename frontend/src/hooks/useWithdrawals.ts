@@ -1,9 +1,20 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { approveWithdrawal, rejectWithdrawal } from '@/lib/api/withdrawals';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import {
+  approveWithdrawal,
+  rejectWithdrawal,
+  fetchPendingWithdrawals,
+} from '@/lib/api/withdrawals';
 import { PerformedBy } from '@/app/components/modals/TransactionHistoryModal';
 import type { DashboardUser, PendingWithdrawalsResponse } from '@shared/types';
 
 export type Withdrawal = PendingWithdrawalsResponse['withdrawals'][number];
+
+export function useWithdrawals() {
+  return useQuery({
+    queryKey: ['withdrawals'],
+    queryFn: ({ signal }) => fetchPendingWithdrawals({ signal }),
+  });
+}
 
 // Decide which API call to use based on action
 function mutateWithdrawal(

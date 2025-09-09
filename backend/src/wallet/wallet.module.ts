@@ -32,6 +32,8 @@ import { TransactionType } from './transaction-type.entity';
 import { Transaction } from './transaction.entity';
 import { TransactionsService } from './transactions.service';
 import { AdminBalanceController } from '../routes/admin-balance.controller';
+import { DepositIban } from './deposit-iban.entity';
+import { DepositIbanHistory } from './deposit-iban-history.entity';
 
 @Injectable()
 class PayoutWorker implements OnModuleInit {
@@ -63,6 +65,8 @@ class PendingDepositWorker implements OnModuleInit {
       PendingDeposit,
       TransactionType,
       Transaction,
+      DepositIban,
+      DepositIbanHistory,
     ]),
     EventsModule,
     RedisModule,

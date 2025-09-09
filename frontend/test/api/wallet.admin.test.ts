@@ -44,6 +44,15 @@ describe('wallet admin api client', () => {
     );
   });
 
+  it('confirmWithdrawal posts to endpoint', async () => {
+    await confirmWithdrawal('w1');
+    expect(apiClientMock).toHaveBeenCalledWith(
+      '/api/admin/withdrawals/w1/confirm',
+      MessageResponseSchema,
+      { method: 'POST', signal: undefined },
+    );
+  });
+
   it('rejectWithdrawal sends body', async () => {
     await rejectWithdrawal('abc', 'nope');
     expect(apiClientMock).toHaveBeenCalledWith(
