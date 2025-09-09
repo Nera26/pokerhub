@@ -1,7 +1,7 @@
 // src/app/dashboard/page.tsx
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import type { ReactNode, ComponentType } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
@@ -23,76 +23,6 @@ import DashboardModule from '@/app/components/dashboard/DashboardModule';
 const DEFAULT_AVATAR =
   'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
 
-const TAB_CONFIG: Record<
-  SidebarTab,
-  {
-    loader: () => Promise<{ default: ComponentType<object> }>;
-    loading: ReactNode;
-    error: ReactNode;
-  }
-> = {
-  dashboard: {
-    loader: () => import('@/app/components/dashboard/Dashboard'),
-    loading: <div>Loading dashboard...</div>,
-    error: <div>Error loading dashboard.</div>,
-  },
-  users: {
-    loader: () => import('@/app/components/dashboard/UserManager'),
-    loading: <div>Loading users...</div>,
-    error: <div>Error loading users.</div>,
-  },
-  balance: {
-    loader: () => import('@/app/components/dashboard/BalanceTransactions'),
-    loading: <div>Loading balance...</div>,
-    error: <div>Error loading balance.</div>,
-  },
-  audit: {
-    loader: () => import('@/app/components/dashboard/AuditLogs'),
-    loading: <div>Loading audit logs...</div>,
-    error: <div>Error loading audit logs.</div>,
-  },
-  tables: {
-    loader: () => import('@/app/components/dashboard/ManageTables'),
-    loading: <div>Loading tables...</div>,
-    error: <div>Error loading tables.</div>,
-  },
-  tournaments: {
-    loader: () => import('@/app/components/dashboard/ManageTournaments'),
-    loading: <div>Loading tournaments...</div>,
-    error: <div>Error loading tournaments.</div>,
-  },
-  ctas: {
-    loader: () => import('@/app/components/dashboard/CTAForm'),
-    loading: <div>Loading CTAs...</div>,
-    error: <div>Error loading CTAs.</div>,
-  },
-  bonus: {
-    loader: () => import('@/app/components/dashboard/BonusManager'),
-    loading: <div>Loading bonuses...</div>,
-    error: <div>Error loading bonuses.</div>,
-  },
-  broadcast: {
-    loader: () => import('@/app/components/dashboard/Broadcast'),
-    loading: <div>Loading broadcast...</div>,
-    error: <div>Error loading broadcast.</div>,
-  },
-  messages: {
-    loader: () => import('@/app/components/dashboard/Messages'),
-    loading: <div>Loading messages...</div>,
-    error: <div>Error loading messages.</div>,
-  },
-  analytics: {
-    loader: () => import('@/app/components/dashboard/analytics/Analytics'),
-    loading: <div>Loading analytics...</div>,
-    error: <div>Error loading analytics.</div>,
-  },
-  review: {
-    loader: () => import('@/features/collusion'),
-    loading: <div>Loading review...</div>,
-    error: <div>Error loading review.</div>,
-  },
-};
-
 function isSidebarTab(v: string | null, tabs: SidebarTab[]): v is SidebarTab {
   return !!v && tabs.includes(v as SidebarTab);
 }
@@ -111,8 +41,37 @@ function DashboardPage() {
     queryFn: ({ signal }) => fetchAdminTabs({ signal }),
   });
 
-  const tabs = tabsData?.tabs ?? [];
-  const titles = tabsData?.titles ?? {};
+  const tabItems = tabsData ?? [];
+  const tabs = tabItems.map((t) => t.id) as SidebarTab[];
+  const titles = useMemo(
+    () =>
+      Object.fromEntries(tabItems.map((t) => [t.id, t.title])) as Record<
+        SidebarTab,
+        string
+      >,
+    [tabItems],
+  );
+  const tabConfig = useMemo(
+    () =>
+      Object.fromEntries(
+        tabItems.map((t) => [
+          t.id,
+          {
+            loader: () => import(/* @vite-ignore */ t.component),
+            loading: <div>Loading {t.title.toLowerCase()}...</div>,
+            error: <div>Error loading {t.title.toLowerCase()}.</div>,
+          },
+        ]),
+      ) as Record<
+        SidebarTab,
+        {
+          loader: () => Promise<{ default: ComponentType<object> }>;
+          loading: ReactNode;
+          error: ReactNode;
+        }
+      >,
+    [tabItems],
+  );
 
   const [tab, setTab] = useState<SidebarTab>(
     () => (search.get('tab') as SidebarTab) || 'dashboard',
@@ -226,11 +185,11 @@ function DashboardPage() {
         />
 
         <section className="flex-1 p-4 sm:p-6 overflow-y-auto overflow-x-auto">
-          {TAB_CONFIG[tab] ? (
+          {tabConfig[tab] ? (
             <DashboardModule
-              loader={TAB_CONFIG[tab].loader}
-              loading={TAB_CONFIG[tab].loading}
-              error={TAB_CONFIG[tab].error}
+              loader={tabConfig[tab].loader}
+              loading={tabConfig[tab].loading}
+              error={tabConfig[tab].error}
               {...(tab === 'broadcast'
                 ? { props: { online: metrics?.online ?? 0 } }
                 : {})}

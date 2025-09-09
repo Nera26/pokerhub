@@ -17,16 +17,36 @@ beforeEach(() => {
   jest.clearAllMocks();
   push.mockClear();
   (fetchSidebarItems as jest.Mock).mockResolvedValue([
-    { id: 'dashboard', label: 'Dashboard', icon: 'chart-line' },
-    { id: 'analytics', label: 'Analytics', icon: 'chart-bar' },
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: 'chart-line',
+      component: '@/app/components/dashboard/DashboardModule',
+    },
+    {
+      id: 'analytics',
+      label: 'Analytics',
+      icon: 'chart-bar',
+      component: '@/app/components/dashboard/DashboardModule',
+    },
   ]);
 });
 
 describe('Sidebar', () => {
   it('renders items from API', async () => {
     (fetchSidebarItems as jest.Mock).mockResolvedValueOnce([
-      { id: 'dashboard', label: 'API Dashboard', icon: 'chart-line' },
-      { id: 'users', label: 'API Users', icon: 'users' },
+      {
+        id: 'dashboard',
+        label: 'API Dashboard',
+        icon: 'chart-line',
+        component: '@/app/components/dashboard/DashboardModule',
+      },
+      {
+        id: 'users',
+        label: 'API Users',
+        icon: 'users',
+        component: '@/app/components/dashboard/DashboardModule',
+      },
     ]);
     render(<Sidebar open />);
     await waitFor(() => expect(fetchSidebarItems).toHaveBeenCalled());
@@ -79,4 +99,3 @@ describe('Sidebar', () => {
     expect(onChange).toHaveBeenCalledWith('dashboard');
   });
 });
-

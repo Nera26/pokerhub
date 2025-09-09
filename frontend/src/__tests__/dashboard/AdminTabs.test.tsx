@@ -53,10 +53,13 @@ describe('Admin tabs loading', () => {
         new Promise((resolve) =>
           setTimeout(
             () =>
-              resolve({
-                tabs: ['dashboard'],
-                titles: { dashboard: 'Dashboard' },
-              }),
+              resolve([
+                {
+                  id: 'dashboard',
+                  title: 'Dashboard',
+                  component: '@/app/components/dashboard/DashboardModule',
+                },
+              ]),
             0,
           ),
         ),
@@ -70,7 +73,7 @@ describe('Admin tabs loading', () => {
 
   it('handles empty response', async () => {
     const { fetchAdminTabs } = require('@/lib/api/admin');
-    (fetchAdminTabs as jest.Mock).mockResolvedValue({ tabs: [], titles: {} });
+    (fetchAdminTabs as jest.Mock).mockResolvedValue([]);
     renderPage();
     expect(await screen.findByText(/no tabs available/i)).toBeInTheDocument();
   });

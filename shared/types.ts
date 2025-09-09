@@ -46,12 +46,13 @@ export type {
 
 export {
   SidebarItemsResponseSchema,
-  SidebarTabsResponseSchema,
+  AdminTabResponseSchema,
 } from '../backend/src/schemas/admin';
 export type {
   SidebarItem,
   SidebarTab,
-  SidebarTabsResponse,
+  AdminTab,
+  AdminTabResponse,
 } from '../backend/src/schemas/admin';
 
 export {
