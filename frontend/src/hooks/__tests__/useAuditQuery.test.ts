@@ -4,6 +4,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuditLogs } from '../useAuditLogs';
 import { useAuditSummary } from '../useAuditSummary';
 import { useAuditAlerts } from '../useAuditAlerts';
+import {
+  AuditLogsResponseSchema,
+  AuditSummarySchema,
+  SecurityAlertsResponseSchema,
+} from '@shared/types';
 import { apiClient, type ApiError } from '@/lib/api/client';
 
 jest.mock('@/lib/api/client', () => ({
@@ -18,7 +23,10 @@ const wrapper = ({ children }: { children: React.ReactNode }) => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return React.createElement(QueryClientProvider, { client: queryClient, children });
+  return React.createElement(QueryClientProvider, {
+    client: queryClient,
+    children,
+  });
 };
 
 describe('audit hooks', () => {
@@ -32,12 +40,14 @@ describe('audit hooks', () => {
       hook: useAuditLogs as Hook<unknown>,
       data: { logs: [], nextCursor: null },
       path: '/api/admin/audit-logs',
+      schema: AuditLogsResponseSchema,
     },
     {
       name: 'useAuditSummary',
       hook: useAuditSummary as Hook<unknown>,
       data: { total: 1, errors: 2, logins: 3 },
       path: '/api/analytics/summary',
+      schema: AuditSummarySchema,
     },
     {
       name: 'useAuditAlerts',
@@ -46,18 +56,17 @@ describe('audit hooks', () => {
         { id: '1', severity: 'danger', title: 't', body: 'b', time: 'now' },
       ],
       path: '/api/admin/security-alerts',
+      schema: SecurityAlertsResponseSchema,
     },
   ] as const;
 
-  it.each(cases)('%s resolves data', async ({ hook, data, path }) => {
+  it.each(cases)('%s resolves data', async ({ hook, data, path, schema }) => {
     mockedApiClient.mockResolvedValueOnce(data as any);
     const { result } = renderHook(() => hook(), { wrapper });
     await waitFor(() => expect(result.current.data).toEqual(data));
-    expect(mockedApiClient).toHaveBeenCalledWith(
-      path,
-      expect.anything(),
-      { signal: expect.anything() },
-    );
+    expect(mockedApiClient).toHaveBeenCalledWith(path, schema, {
+      signal: expect.anything(),
+    });
   });
 
   it.each(cases)('%s bubbles errors', async ({ hook }) => {
@@ -65,8 +74,9 @@ describe('audit hooks', () => {
     const { result } = renderHook(() => hook(), { wrapper });
     await waitFor(() => {
       expect(result.current.error).toBeDefined();
-      expect((result.current.error as ApiError).message).toContain('Failed to fetch');
+      expect((result.current.error as ApiError).message).toContain(
+        'Failed to fetch',
+      );
     });
   });
 });
-
