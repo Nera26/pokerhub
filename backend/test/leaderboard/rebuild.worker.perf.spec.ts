@@ -1,11 +1,13 @@
 import { startLeaderboardRebuildWorker } from '../../src/leaderboard/rebuild.worker';
 import { LeaderboardService } from '../../src/leaderboard/leaderboard.service';
-import type { Cache } from 'cache-manager';
+import { Cache } from 'cache-manager';
 import { writeSyntheticEvents } from './synthetic-events';
 import { ConfigService } from '@nestjs/config';
+import { MockCache } from './test-utils';
 
 jest.mock('bullmq', () => {
   class Queue {
+    opts = { connection: {} };
     // eslint-disable-next-line @typescript-eslint/no-unused-vars,class-methods-use-this
     async add(_name: string, _data: unknown, _opts: unknown): Promise<void> {}
   }
@@ -21,18 +23,6 @@ jest.mock('bullmq', () => {
   return { Queue, Worker };
 });
 
-class MockCache {
-  private store = new Map<string, any>();
-  async get<T>(key: string): Promise<T | undefined> {
-    return this.store.get(key);
-  }
-  async set<T>(key: string, value: T): Promise<void> {
-    this.store.set(key, value);
-  }
-  async del(key: string): Promise<void> {
-    this.store.delete(key);
-  }
-}
 
 describe('leaderboard rebuild worker performance', () => {
   it('rebuilds synthetic events within threshold', async () => {
