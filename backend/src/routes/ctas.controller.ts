@@ -15,7 +15,7 @@ import {
   CTASchema,
   type CTAsResponse,
   type CTA,
-} from '@shared/types';
+} from '../schemas/ctas';
 import { CTARepository } from '../ctas/cta.repository';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';

@@ -6,12 +6,6 @@ export { ZodError };
 export * from './wallet.schema';
 
 
-export {
-  CTAVariantSchema,
-  CTASchema,
-  CTAsResponseSchema,
-} from '../backend/src/schemas/ctas';
-export type { CTA, CTAsResponse } from '../backend/src/schemas/ctas';
 
 export {
   UserProfileSchema,

@@ -5,7 +5,7 @@ import { CtasController } from '../src/routes/ctas.controller';
 import { CTARepository } from '../src/ctas/cta.repository';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
-import type { CTA } from '@shared/types';
+import type { CTA } from '../src/schemas/ctas';
 
 class FakeCTARepository {
   private ctas: CTA[] = [];
