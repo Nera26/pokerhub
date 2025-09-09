@@ -1131,6 +1131,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BroadcastTemplatesResponse'
+  /broadcasts/types:
+    get:
+      summary: Get broadcast types
+      responses:
+        '200':
+          description: Broadcast types
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BroadcastTypesResponse'
   /admin/kyc/{id}/denial:
     get:
       summary: Get KYC denial reason
@@ -3436,6 +3446,25 @@ components:
             - tournament
       required:
         - templates
+    BroadcastTypeInfo:
+      type: object
+      properties:
+        icon:
+          type: string
+        color:
+          type: string
+      required:
+        - icon
+        - color
+    BroadcastTypesResponse:
+      type: object
+      properties:
+        types:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/BroadcastTypeInfo'
+      required:
+        - types
     SendBroadcastRequest:
       type: object
       properties:

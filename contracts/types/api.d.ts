@@ -1188,6 +1188,19 @@ export interface paths {
       };
     };
   };
+  "/broadcasts/types": {
+    /** Get broadcast types */
+    get: {
+      responses: {
+        /** @description Broadcast types */
+        200: {
+          content: {
+            "application/json": components["schemas"]["BroadcastTypesResponse"];
+          };
+        };
+      };
+    };
+  };
   "/admin/kyc/{id}/denial": {
     /** Get KYC denial reason */
     get: {

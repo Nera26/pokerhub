@@ -107,4 +107,17 @@ describe('BroadcastsController', () => {
         },
       });
   });
+
+  it('returns broadcast types', async () => {
+    await request(app.getHttpServer())
+      .get('/broadcasts/types')
+      .expect(200)
+      .expect({
+        types: {
+          announcement: { icon: '📢', color: 'text-accent-yellow' },
+          alert: { icon: '⚠️', color: 'text-danger-red' },
+          notice: { icon: 'ℹ️', color: 'text-accent-blue' },
+        },
+      });
+  });
 });
