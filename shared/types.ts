@@ -55,30 +55,6 @@ export const DashboardMetricsSchema = z.object({
   errors: z.array(z.number()),
 });
 export type DashboardMetrics = z.infer<typeof DashboardMetricsSchema>;
-
-export {
-  AUDIT_LOG_TYPES,
-  AuditLogTypeSchema,
-  AuditLogEntrySchema,
-  AuditLogsResponseSchema,
-  AuditSummarySchema,
-  AuditLogsQuerySchema,
-  AdminOverviewSchema,
-  AdminOverviewResponseSchema,
-  AlertItemSchema,
-  SecurityAlertsResponseSchema,
-} from '../backend/src/schemas/analytics';
-export type {
-  AuditLogType,
-  AuditLogEntry,
-  AuditLogsResponse,
-  AuditSummary,
-  AuditLogsQuery,
-  AdminOverview,
-  AdminOverviewResponse,
-  AlertItem,
-  SecurityAlertsResponse,
-} from '../backend/src/schemas/analytics';
 export {
   NotificationTypeSchema,
   NotificationSchema,
