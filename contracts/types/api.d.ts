@@ -691,6 +691,22 @@ export interface paths {
         };
       };
     };
+    /** Update deposit IBAN */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["IbanUpdateRequest"];
+        };
+      };
+      responses: {
+        /** @description Updated IBAN */
+        200: {
+          content: {
+            "application/json": components["schemas"]["IbanResponse"];
+          };
+        };
+      };
+    };
   };
   "/wallet/iban/history": {
     /** Get IBAN change history */
@@ -2205,6 +2221,12 @@ export interface components {
     };
     IbanHistoryResponse: {
       history: components["schemas"]["IbanHistoryEntry"][];
+    };
+    IbanUpdateRequest: {
+      iban: string;
+      holder: string;
+      instructions: string;
+      notes?: string;
     };
     CreateUserRequest: {
       username: string;

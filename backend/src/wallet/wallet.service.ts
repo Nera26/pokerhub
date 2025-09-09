@@ -7,6 +7,8 @@ import { JournalEntry } from './journal-entry.entity';
 import { Disbursement } from './disbursement.entity';
 import { SettlementJournal } from './settlement-journal.entity';
 import { PendingDeposit } from './pending-deposit.entity';
+import { DepositIban } from './deposit-iban.entity';
+import { DepositIbanHistory } from './deposit-iban-history.entity';
 import { EventPublisher } from '../events/events.service';
 import Redis from 'ioredis';
 import { metrics, trace, SpanStatusCode } from '@opentelemetry/api';
@@ -27,6 +29,9 @@ import { GeoIpService } from '../auth/geoip.service';
 import type {
   ProviderCallback,
   WalletStatusResponse,
+  IbanResponse,
+  IbanHistoryResponse,
+  IbanUpdateRequest,
 } from '@shared/wallet.schema';
 
 interface Movement {
@@ -1194,5 +1199,101 @@ async rejectExpiredPendingDeposits(): Promise<void> {
     } else if (action === 'freeze') {
       await this.reserve(userId, amount, refId, currency);
     }
+  }
+
+  private maskIban(iban: string): string {
+    const cleaned = iban.replace(/\s+/g, '');
+    const start = cleaned.slice(0, 4);
+    const end = cleaned.slice(-4);
+    const middle = cleaned.slice(4, -4).replace(/./g, '*');
+    return `${start}${middle}${end}`.replace(/(.{4})/g, '$1 ').trim();
+  }
+
+  async getDepositIban(): Promise<IbanResponse> {
+    const repo = this.accounts.manager.getRepository(DepositIban);
+    const current = await repo.findOne({ order: { updatedAt: 'DESC' } });
+    if (!current) {
+      throw new Error('IBAN not configured');
+    }
+    return {
+      iban: current.iban,
+      masked: current.masked,
+      holder: current.holder,
+      instructions: current.instructions,
+      updatedBy: current.updatedBy,
+      updatedAt: current.updatedAt.toISOString(),
+    };
+  }
+
+  async getIbanHistory(): Promise<IbanHistoryResponse> {
+    const repo = this.accounts.manager.getRepository(DepositIbanHistory);
+    const entries = await repo.find({ order: { date: 'DESC' } });
+    return {
+      history: entries.map((e) => ({
+        date: e.date.toISOString(),
+        oldIban: e.oldIban,
+        newIban: e.newIban,
+        by: e.by,
+        notes: e.notes,
+      })),
+    };
+  }
+
+  async updateDepositIban(
+    data: IbanUpdateRequest,
+    userId: string,
+  ): Promise<IbanResponse> {
+    const repo = this.accounts.manager.getRepository(DepositIban);
+    const historyRepo = this.accounts.manager.getRepository(DepositIbanHistory);
+    const now = new Date();
+    const current = await repo.findOne({});
+    if (current) {
+      await historyRepo.save({
+        oldIban: current.iban,
+        newIban: data.iban,
+        by: userId,
+        notes: data.notes ?? '',
+        date: now,
+      });
+      current.iban = data.iban;
+      current.masked = this.maskIban(data.iban);
+      current.holder = data.holder;
+      current.instructions = data.instructions;
+      current.updatedBy = userId;
+      current.updatedAt = now;
+      await repo.save(current);
+      return {
+        iban: current.iban,
+        masked: current.masked,
+        holder: current.holder,
+        instructions: current.instructions,
+        updatedBy: current.updatedBy,
+        updatedAt: current.updatedAt.toISOString(),
+      };
+    }
+    const entity = repo.create({
+      iban: data.iban,
+      masked: this.maskIban(data.iban),
+      holder: data.holder,
+      instructions: data.instructions,
+      updatedBy: userId,
+      updatedAt: now,
+    });
+    await repo.save(entity);
+    await historyRepo.save({
+      oldIban: '',
+      newIban: data.iban,
+      by: userId,
+      notes: data.notes ?? '',
+      date: now,
+    });
+    return {
+      iban: entity.iban,
+      masked: entity.masked,
+      holder: entity.holder,
+      instructions: entity.instructions,
+      updatedBy: entity.updatedBy,
+      updatedAt: entity.updatedAt.toISOString(),
+    };
   }
 }
