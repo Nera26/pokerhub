@@ -1,23 +1,8 @@
 import { test, expect } from './fixtures';
+import { mockTablesRoute, tables } from './fixtures/tables';
 
 test('navigates from home to table page', async ({ page }) => {
-  await page.route('**/api/tables', (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify([
-        {
-          id: '1',
-          tableName: 'Test Table',
-          stakes: { small: 1, big: 2 },
-          players: { current: 1, max: 6 },
-          buyIn: { min: 40, max: 200 },
-          stats: { handsPerHour: 10, avgPot: 5, rake: 1 },
-          createdAgo: '1m',
-        },
-      ]),
-    });
-  });
+  await mockTablesRoute(page);
   await page.route('**/api/tournaments', (route) => {
     route.fulfill({
       status: 200,
@@ -28,7 +13,7 @@ test('navigates from home to table page', async ({ page }) => {
 
   await page.goto('/');
   await page.getByRole('link', { name: 'Join Table' }).click();
-  await expect(page).toHaveURL('/table/1');
+  await expect(page).toHaveURL(`/table/${tables[0].id}`);
 });
 
 test('shows 404 page for unknown route', async ({ page }) => {
