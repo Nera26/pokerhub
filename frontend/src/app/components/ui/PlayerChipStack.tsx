@@ -1,6 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSpinner } from '@fortawesome/free-solid-svg-icons/faSpinner';
+import { useChipDenominations } from '@/hooks/useChipDenominations';
 
 type Size = 'sm' | 'md' | 'lg';
 
@@ -8,6 +11,8 @@ interface ChipStackProps {
   amount: number;
   size?: Size;
 }
+
+const DEFAULT_DENOMS = [1000, 100, 25] as const;
 
 /** Tiny chip SVG used in badges and committed tags */
 function ChipIcon({
@@ -49,7 +54,7 @@ function ChipIcon({
 
 /**
  * Casino-style chip stack + amount pill.
- * - Denominations: 1000 (gold), 100 (black), 25 (green)
+ * - Denominations fetched from backend with fallback
  * - Compact visual stack (auto-clamps chip count per denom)
  * - Win/loss animation: slide up (green) on increase, slide down (red) on decrease
  */
@@ -57,6 +62,16 @@ export default function PlayerChipStack({
   amount,
   size = 'sm',
 }: ChipStackProps) {
+  const { data, isLoading } = useChipDenominations();
+  const denoms = data?.denoms ?? DEFAULT_DENOMS;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center">
+        <FontAwesomeIcon icon={faSpinner} spin />
+      </div>
+    );
+  }
   const prevRef = useRef(amount);
   const [delta, setDelta] = useState(0);
   const [animKey, setAnimKey] = useState(0); // bump to retrigger CSS animations
@@ -84,20 +99,16 @@ export default function PlayerChipStack({
   // Denomination breakdown (greedy)
   const breakdown = useMemo(() => {
     let remaining = Math.max(0, Math.floor(amount));
-    const denoms = [1000, 100, 25] as const;
-    const res: Record<(typeof denoms)[number], number> = {
-      1000: 0,
-      100: 0,
-      25: 0,
-    };
+    const res: Record<number, number> = {};
     for (const d of denoms) {
+      res[d] = 0;
       if (remaining >= d) {
         res[d] = Math.floor(remaining / d);
         remaining = remaining % d;
       }
     }
     return res;
-  }, [amount]);
+  }, [amount, denoms]);
 
   // Render at most N chips per denom to keep the icon compact
   const MAX_CHIPS_PER_DENOM = 4;
@@ -130,11 +141,11 @@ export default function PlayerChipStack({
     );
   }
 
-  function chipColumn(denom: 1000 | 100 | 25) {
+  function chipColumn(denom: number, index: number) {
     const count = breakdown[denom];
     if (!count) return null;
 
-    const color = denom === 1000 ? 'gold' : denom === 100 ? 'black' : 'green';
+    const color = index === 0 ? 'gold' : index === 1 ? 'black' : 'green';
     const shown = Math.min(count, MAX_CHIPS_PER_DENOM);
     const overflow = count - shown;
 
@@ -172,9 +183,7 @@ export default function PlayerChipStack({
         <div className="flex items-center gap-2">
           {/* Chip columns */}
           <div className="flex items-end gap-1">
-            {chipColumn(1000)}
-            {chipColumn(100)}
-            {chipColumn(25)}
+            {denoms.map((d, i) => chipColumn(d, i))}
           </div>
 
           {/* Amount with slide animation */}

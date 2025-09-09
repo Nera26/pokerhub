@@ -1615,6 +1615,19 @@ export interface paths {
       };
     };
   };
+  "/config/chips": {
+    /** List chip denominations */
+    get: {
+      responses: {
+        /** @description Chip denominations */
+        200: {
+          content: {
+            "application/json": components["schemas"]["ChipDenominationsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/users": {
     /** Create user */
     post: {
@@ -2337,6 +2350,9 @@ export interface components {
       label: string;
     };
     LanguagesResponse: components["schemas"]["Language"][];
+    ChipDenominationsResponse: {
+      denoms: number[];
+    };
     CreateTableRequest: {
       tableName: string;
       /** @enum {string} */

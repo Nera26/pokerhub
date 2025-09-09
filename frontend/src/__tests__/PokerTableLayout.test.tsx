@@ -4,6 +4,13 @@ import PokerTableLayout from '@/app/components/tables/PokerTableLayout';
 import type { Player } from '@/app/components/tables/types';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+jest.mock('@/hooks/useChipDenominations', () => ({
+  useChipDenominations: () => ({
+    data: { denoms: [1000, 100, 25] },
+    isLoading: false,
+  }),
+}));
+
 describe('PokerTableLayout', () => {
   it('shows a toast when folding', async () => {
     const players: Player[] = [
