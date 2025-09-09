@@ -1,44 +1,19 @@
 import { test, expect } from '@playwright/test';
-import { io } from 'socket.io-client';
 import { execSync } from 'child_process';
 import path from 'path';
-
-async function waitFor(url: string, timeout = 60_000) {
-  const start = Date.now();
-  while (Date.now() - start < timeout) {
-    try {
-      const res = await fetch(url);
-      if (res.ok) return;
-    } catch {
-      // ignore
-    }
-    await new Promise((r) => setTimeout(r, 1_000));
-  }
-  throw new Error(`Timed out waiting for ${url}`);
-}
+import { bringUp, tearDown, recordSocketEvents } from './utils/handProof';
 
 test.describe('hand proof deck verification', () => {
   test.beforeAll(async () => {
-    execSync('docker compose -f ../../docker-compose.yml -f ../../docker-compose.test.yml up -d', {
-      stdio: 'inherit',
-      cwd: path.resolve(__dirname, '..', '..'),
-    });
-    await waitFor('http://localhost:3001');
-    await waitFor('http://localhost:3000/status');
+    await bringUp();
   });
 
   test.afterAll(() => {
-    execSync('docker compose -f ../../docker-compose.yml -f ../../docker-compose.test.yml down -v', {
-      stdio: 'inherit',
-      cwd: path.resolve(__dirname, '..', '..'),
-    });
+    tearDown();
   });
 
   test('plays hand, downloads log, and verifies deck', async ({ page }) => {
-    const socket = io('http://localhost:4000', { transports: ['websocket'] });
-    const events: Record<string, any> = {};
-    socket.on('hand.start', (d) => (events.start = d));
-    socket.on('hand.end', (d) => (events.end = d));
+    const { socket, events } = recordSocketEvents();
 
     await page.goto('/login');
     await page.fill('input[name="email"]', 'test@example.com');
@@ -64,4 +39,3 @@ test.describe('hand proof deck verification', () => {
     socket.disconnect();
   });
 });
-
