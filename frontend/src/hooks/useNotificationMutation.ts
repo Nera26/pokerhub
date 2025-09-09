@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { NotificationsResponse } from '@/lib/api/notifications';
+import type { NotificationsResponse } from '@shared/types';
 
 export function useNotificationMutation<TVariables = void>(
   mutationFn: (variables: TVariables) => Promise<unknown>,
@@ -36,4 +36,3 @@ export function useNotificationMutation<TVariables = void>(
     },
   });
 }
-

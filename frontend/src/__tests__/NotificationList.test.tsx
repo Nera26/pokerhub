@@ -19,9 +19,12 @@ jest.mock('@/hooks/notifications', () => {
   };
 });
 
-const mockFetchNotifications = fetchNotifications as jest.MockedFunction<typeof fetchNotifications>;
-const mockFetchUnreadCount =
-  fetchUnreadCount as jest.MockedFunction<typeof fetchUnreadCount>;
+const mockFetchNotifications = fetchNotifications as jest.MockedFunction<
+  typeof fetchNotifications
+>;
+const mockFetchUnreadCount = fetchUnreadCount as jest.MockedFunction<
+  typeof fetchUnreadCount
+>;
 const mockUseNotificationFilters =
   useNotificationFilters as jest.MockedFunction<typeof useNotificationFilters>;
 
@@ -34,7 +37,7 @@ function renderWithClient() {
   return render(
     <QueryClientProvider client={client}>
       <NotificationList />
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -61,7 +64,9 @@ describe('NotificationList', () => {
     mockFetchNotifications.mockRejectedValue(new Error('fail'));
     renderWithClient();
     await waitFor(() =>
-      expect(screen.getByText(/failed to load notifications/i)).toBeInTheDocument()
+      expect(
+        screen.getByText(/failed to load notifications/i),
+      ).toBeInTheDocument(),
     );
   });
 
@@ -70,7 +75,7 @@ describe('NotificationList', () => {
     mockFetchUnreadCount.mockResolvedValue({ count: 0 });
     renderWithClient();
     await waitFor(() =>
-      expect(screen.getByText(/no notifications found/i)).toBeInTheDocument()
+      expect(screen.getByText(/no notifications found/i)).toBeInTheDocument(),
     );
   });
 
@@ -82,7 +87,7 @@ describe('NotificationList', () => {
           type: 'system',
           title: 'Hello',
           message: 'world',
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
           read: false,
         },
       ],
@@ -108,7 +113,7 @@ describe('NotificationList', () => {
           type: 'bonus',
           title: 'Bonus',
           message: 'bonus msg',
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
           read: false,
         },
         {
@@ -116,7 +121,7 @@ describe('NotificationList', () => {
           type: 'system',
           title: 'System',
           message: 'system msg',
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
           read: false,
         },
       ],

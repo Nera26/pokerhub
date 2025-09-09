@@ -14,7 +14,7 @@ describe('NotificationDropdown', () => {
               type: 'system',
               title: 'First',
               message: '',
-              timestamp: new Date(),
+              timestamp: new Date().toISOString(),
               read: false,
             },
           ]}
@@ -79,7 +79,7 @@ describe('NotificationDropdown', () => {
             type: 'system',
             title: 'First',
             message: '',
-            timestamp: new Date(),
+            timestamp: new Date().toISOString(),
             read: false,
           },
           {
@@ -87,7 +87,7 @@ describe('NotificationDropdown', () => {
             type: 'system',
             title: 'Second',
             message: '',
-            timestamp: new Date(),
+            timestamp: new Date().toISOString(),
             read: false,
           },
         ]}

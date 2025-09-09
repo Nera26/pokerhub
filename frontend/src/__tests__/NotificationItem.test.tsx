@@ -7,7 +7,7 @@ describe('NotificationItem', () => {
     type: 'bonus' as const,
     title: 'Bonus Unlocked',
     message: 'You have received a bonus!',
-    timestamp: new Date(Date.now() - 60_000),
+    timestamp: new Date(Date.now() - 60_000).toISOString(),
     read: false,
   };
 

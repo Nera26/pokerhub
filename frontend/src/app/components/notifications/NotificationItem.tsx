@@ -1,7 +1,7 @@
 'use client';
 
 import Tooltip from '../ui/Tooltip';
-import type { Notification } from '@/lib/api/notifications';
+import type { Notification } from '@shared/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBell } from '@fortawesome/free-solid-svg-icons/faBell';
 import { faGift } from '@fortawesome/free-solid-svg-icons/faGift';
@@ -51,9 +51,9 @@ export default function NotificationItem({
       <div className="flex-grow">
         <div className="flex justify-between items-start mb-1">
           <h3 className={titleClasses}>{title}</h3>
-          <Tooltip text={timestamp.toLocaleString()}>
+          <Tooltip text={new Date(timestamp).toLocaleString()}>
             <span className="text-text-secondary text-sm">
-              {timeAgo(timestamp)}
+              {timeAgo(new Date(timestamp))}
             </span>
           </Tooltip>
         </div>
