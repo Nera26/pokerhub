@@ -19,6 +19,7 @@ import type {
   Transfer as CollusionTransfer,
   BetEvent as CollusionBetEvent,
 } from '@shared/analytics';
+import { runEtl } from './etl.utils';
 
 interface AuditLog {
   id: string;
@@ -171,6 +172,7 @@ export class AnalyticsService {
   private readonly ajv: Ajv;
   private readonly validators: Record<EventName, ValidateFunction>;
   private readonly topicMap: Record<string, string> = {
+    game: 'hand',
     hand: 'hand',
     action: 'hand',
     tournament: 'tourney',
@@ -326,27 +328,14 @@ export class AnalyticsService {
   }
 
   async emit<E extends EventName>(event: E, data: Events[E]) {
-    const validate = this.validators[event];
-    if (!validate(data)) {
-      this.logger.warn(
-        `Invalid event ${event}: ${this.ajv.errorsText(validate.errors)}`,
-      );
-      return;
-    }
-    const payload = { event, data };
-    const topic = this.topicMap[event.split('.')[0]];
-    if (!topic) {
-      this.logger.warn(`No topic mapping for event ${event}`);
-      return;
-    }
-    await Promise.all([
-      this.producer.send({
-        topic,
-        messages: [{ value: JSON.stringify(payload) }],
-      }),
-      this.ingest(event.replace('.', '_'), data),
-      this.archive(event, data),
-    ]);
+    await runEtl(event, data as unknown as Record<string, unknown>, {
+      analytics: this,
+      validators: this.validators,
+      producer: this.producer,
+      topicMap: this.topicMap,
+      logger: this.logger,
+      errorsText: (errors) => this.ajv.errorsText(errors),
+    });
   }
 
   async recordGameEvent<T extends Record<string, unknown>>(event: T) {
@@ -356,18 +345,14 @@ export class AnalyticsService {
       'event',
       JSON.stringify(event),
     );
-    await Promise.all([
-      this.producer.send({
-        topic: this.topicMap.hand,
-        messages: [
-          {
-            value: JSON.stringify({ event: 'game.event', data: event }),
-          },
-        ],
-      }),
-      this.ingest('game_event', event),
-      this.archive('game.event', event),
-    ]);
+    await runEtl('game.event', event, {
+      analytics: this,
+      validators: this.validators,
+      producer: this.producer,
+      topicMap: this.topicMap,
+      logger: this.logger,
+      errorsText: (errors) => this.ajv.errorsText(errors),
+    });
     if (
       'handId' in event &&
       'playerId' in event &&
@@ -389,18 +374,14 @@ export class AnalyticsService {
       'event',
       JSON.stringify(event),
     );
-    await Promise.all([
-      this.producer.send({
-        topic: this.topicMap.tournament,
-        messages: [
-          {
-            value: JSON.stringify({ event: 'tournament.event', data: event }),
-          },
-        ],
-      }),
-      this.ingest('tournament_event', event),
-      this.archive('tournament.event', event),
-    ]);
+    await runEtl('tournament.event', event, {
+      analytics: this,
+      validators: this.validators,
+      producer: this.producer,
+      topicMap: this.topicMap,
+      logger: this.logger,
+      errorsText: (errors) => this.ajv.errorsText(errors),
+    });
   }
 
   async recordCollusionSession(session: CollusionSession) {
