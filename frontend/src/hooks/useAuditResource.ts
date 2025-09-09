@@ -1,6 +1,6 @@
 'use client';
 
-import { useAuditQuery } from './useAuditQuery';
+import { createQueryHook } from './useApiQuery';
 import type { ZodSchema } from 'zod';
 import {
   SecurityAlertsResponseSchema,
@@ -11,25 +11,35 @@ import {
   type AuditSummary,
 } from '@shared/types';
 
-export const makeAuditHook =
-  <T>(key: string, path: string, schema: ZodSchema<T>) =>
-  () =>
-    useAuditQuery<T>(key, path, schema);
+export const makeAuditHook = <T>(
+  key: string,
+  path: string,
+  schema: ZodSchema<T>,
+  keyLabel: string,
+) =>
+  createQueryHook<T>(
+    key,
+    (client, opts) => client(path, schema, opts),
+    keyLabel,
+  );
 
 export const useAuditAlerts = makeAuditHook<AlertItem[]>(
   'audit-alerts',
   '/api/admin/security-alerts',
   SecurityAlertsResponseSchema,
+  'audit alerts',
 );
 
 export const useAuditLogs = makeAuditHook<AuditLogsResponse>(
   'audit-logs',
   '/api/admin/audit-logs',
   AuditLogsResponseSchema,
+  'audit logs',
 );
 
 export const useAuditSummary = makeAuditHook<AuditSummary>(
   'audit-summary',
   '/api/analytics/summary',
   AuditSummarySchema,
+  'audit summary',
 );

@@ -43,6 +43,7 @@ describe('audit hooks', () => {
       data: { logs: [], nextCursor: null },
       path: '/api/admin/audit-logs',
       schema: AuditLogsResponseSchema,
+      label: 'audit logs',
     },
     {
       name: 'useAuditSummary',
@@ -50,6 +51,7 @@ describe('audit hooks', () => {
       data: { total: 1, errors: 2, logins: 3 },
       path: '/api/analytics/summary',
       schema: AuditSummarySchema,
+      label: 'audit summary',
     },
     {
       name: 'useAuditAlerts',
@@ -59,6 +61,7 @@ describe('audit hooks', () => {
       ],
       path: '/api/admin/security-alerts',
       schema: SecurityAlertsResponseSchema,
+      label: 'audit alerts',
     },
   ] as const;
 
@@ -71,13 +74,13 @@ describe('audit hooks', () => {
     });
   });
 
-  it.each(cases)('%s bubbles errors', async ({ hook }) => {
+  it.each(cases)('%s bubbles errors', async ({ hook, label }) => {
     mockedApiClient.mockRejectedValueOnce({ message: 'err' } as ApiError);
     const { result } = renderHook(() => hook(), { wrapper });
     await waitFor(() => {
       expect(result.current.error).toBeDefined();
       expect((result.current.error as ApiError).message).toContain(
-        'Failed to fetch',
+        `Failed to fetch ${label}`,
       );
     });
   });
