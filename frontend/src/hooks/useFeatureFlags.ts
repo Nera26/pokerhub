@@ -1,29 +1,12 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api/client';
-import { FeatureFlagsResponseSchema } from '@shared/types';
-
-export interface FeatureFlags {
-  promotions: boolean;
-  leaderboard: boolean;
-}
+import { fetchFeatureFlags } from '@/lib/api/feature-flags';
+import type { FeatureFlagsResponse } from '@shared/types';
 
 export function useFeatureFlags() {
-  const { data, error, isLoading } = useQuery<FeatureFlags>({
+  return useQuery<FeatureFlagsResponse>({
     queryKey: ['feature-flags'],
-    queryFn: async ({ signal }) => {
-      const flags = await apiClient(
-        '/api/feature-flags',
-        FeatureFlagsResponseSchema,
-        { signal },
-      );
-      return {
-        promotions: flags.promotions ?? false,
-        leaderboard: flags.leaderboard ?? false,
-      };
-    },
+    queryFn: ({ signal }) => fetchFeatureFlags({ signal }),
   });
-
-  return { data, error, isLoading };
 }

@@ -12,6 +12,7 @@ import { faBell } from '@fortawesome/free-solid-svg-icons/faBell';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/hooks/notifications';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 
 export default function BottomNav() {
   const pathname = usePathname();
@@ -22,30 +23,49 @@ export default function BottomNav() {
     error: notifError,
   } = useNotifications();
 
-  const navItems: {
+  const { data: flags } = useFeatureFlags();
+
+  type NavItem = {
     href: string;
     label: string;
     icon?: IconDefinition;
     badge?: number;
     avatar?: string;
-  }[] = [
-    { href: '/', label: 'Lobby', icon: faHome },
-    { href: '/wallet', label: 'Wallet', icon: faWallet },
-    { href: '/promotions', label: 'Promotions', icon: faTags },
-    { href: '/leaderboard', label: 'Leaders', icon: faTrophy },
+  };
+
+  const items: (NavItem & { flag: string })[] = [
+    { flag: 'lobby', href: '/', label: 'Lobby', icon: faHome },
+    { flag: 'wallet', href: '/wallet', label: 'Wallet', icon: faWallet },
     {
+      flag: 'promotions',
+      href: '/promotions',
+      label: 'Promotions',
+      icon: faTags,
+    },
+    {
+      flag: 'leaderboard',
+      href: '/leaderboard',
+      label: 'Leaders',
+      icon: faTrophy,
+    },
+    {
+      flag: 'notifications',
       href: '/notification',
       label: 'Alerts',
       icon: faBell,
-      badge:
-        !notifLoading && !notifError ? notifData?.unread : undefined,
+      badge: !notifLoading && !notifError ? notifData?.unread : undefined,
     },
     {
+      flag: 'profile',
       href: '/profile',
       label: 'Profile',
       avatar: avatarUrl || undefined,
     },
   ];
+
+  const navItems: NavItem[] = items
+    .filter(({ flag }) => flags?.[flag] !== false)
+    .map(({ flag: _flag, ...item }) => item);
 
   return (
     <nav

@@ -4,6 +4,7 @@ import BottomNav from '@/app/components/common/BottomNav';
 const mockUsePathname = jest.fn();
 const mockUseAuth = jest.fn();
 const mockUseNotifications = jest.fn();
+const mockUseFeatureFlags = jest.fn();
 
 jest.mock('next/navigation', () => ({
   usePathname: () => mockUsePathname(),
@@ -41,11 +42,16 @@ jest.mock('@/hooks/notifications', () => ({
   useNotifications: () => mockUseNotifications(),
 }));
 
+jest.mock('@/hooks/useFeatureFlags', () => ({
+  useFeatureFlags: () => mockUseFeatureFlags(),
+}));
+
 describe('BottomNav', () => {
   beforeEach(() => {
     mockUsePathname.mockReset();
     mockUseAuth.mockReset();
     mockUseNotifications.mockReset();
+    mockUseFeatureFlags.mockReset();
   });
 
   it('activates item when pathname starts with href', () => {
@@ -56,6 +62,7 @@ describe('BottomNav', () => {
       isLoading: false,
       error: null,
     });
+    mockUseFeatureFlags.mockReturnValue({ data: {} });
     render(<BottomNav />);
     const wallet = screen.getByRole('link', { name: 'Wallet' });
     expect(wallet.className).toContain('text-accent-yellow');
@@ -69,6 +76,7 @@ describe('BottomNav', () => {
       isLoading: false,
       error: null,
     });
+    mockUseFeatureFlags.mockReturnValue({ data: {} });
     render(<BottomNav />);
     const lobby = screen.getByRole('link', { name: 'Lobby' });
     expect(lobby.className).toContain('text-accent-yellow');
@@ -89,6 +97,7 @@ describe('BottomNav', () => {
       isLoading: false,
       error: null,
     });
+    mockUseFeatureFlags.mockReturnValue({ data: {} });
     render(<BottomNav />);
     expect(screen.getByText('5')).toBeInTheDocument();
   });
@@ -101,7 +110,29 @@ describe('BottomNav', () => {
       isLoading: false,
       error: new Error('fail'),
     });
+    mockUseFeatureFlags.mockReturnValue({ data: {} });
     render(<BottomNav />);
     expect(screen.queryByText('5')).not.toBeInTheDocument();
+  });
+
+  it('hides nav items when flags are disabled', () => {
+    mockUsePathname.mockReturnValue('/');
+    mockUseAuth.mockReturnValue({ avatarUrl: '/a.png' });
+    mockUseNotifications.mockReturnValue({
+      data: { unread: 0 },
+      isLoading: false,
+      error: null,
+    });
+    mockUseFeatureFlags.mockReturnValue({
+      data: { promotions: false, notifications: false },
+    });
+    render(<BottomNav />);
+    expect(
+      screen.queryByRole('link', { name: 'Promotions' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: /Alerts/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Wallet' })).toBeInTheDocument();
   });
 });
