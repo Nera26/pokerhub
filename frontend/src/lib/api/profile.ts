@@ -6,28 +6,35 @@ import {
   type MeResponse,
 } from '@shared/types';
 
-export async function fetchProfile({
-  signal,
-}: { signal?: AbortSignal } = {}): Promise<UserProfile> {
+async function withProfileError<T>(
+  fn: () => Promise<T>,
+  prefix: string,
+): Promise<T> {
   try {
-    return await apiClient('/api/user/profile', UserProfileSchema, { signal });
+    return await fn();
   } catch (err) {
     const message =
       err instanceof Error ? err.message : (err as ApiError).message;
-    throw { message: `Failed to fetch profile: ${message}` } as ApiError;
+    throw { message: `${prefix}: ${message}` } as ApiError;
   }
 }
 
-export async function fetchMe({
+export function fetchProfile({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<UserProfile> {
+  return withProfileError(
+    () => apiClient('/api/user/profile', UserProfileSchema, { signal }),
+    'Failed to fetch profile',
+  );
+}
+
+export function fetchMe({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<MeResponse> {
-  try {
-    return await apiClient('/api/me', MeResponseSchema, { signal });
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : (err as ApiError).message;
-    throw { message: `Failed to fetch profile: ${message}` } as ApiError;
-  }
+  return withProfileError(
+    () => apiClient('/api/me', MeResponseSchema, { signal }),
+    'Failed to fetch profile',
+  );
 }
 
 export type { ApiError } from './client';
