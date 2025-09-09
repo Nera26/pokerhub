@@ -1,8 +1,7 @@
 #!/usr/bin/env ts-node
 import { execSync } from 'child_process';
 import * as fs from 'fs';
-
-type Regression = { level: 'critical' | 'warning'; message: string };
+import { checkSoakStats, parseLimitsFromEnv, Regression } from './lib/soakMetrics.ts';
 
 function writeAndExit(
   regressions: Regression[],
@@ -39,11 +38,10 @@ const maxLatencyP50 = Number(process.env.SOAK_LATENCY_P50_MS || 60);
 const maxLatencyP95 = Number(process.env.SOAK_LATENCY_P95_MS || 120);
 const maxLatencyP99 = Number(process.env.SOAK_LATENCY_P99_MS || 200);
 const minThroughput = Number(process.env.SOAK_THROUGHPUT_MIN || 0);
-const maxGcPause = Number(process.env.SOAK_GC_P95_MS || 50);
-const maxRssGrowth = Number(process.env.SOAK_RSS_GROWTH_PCT || 1);
 const windowSize = Number(process.env.SOAK_TRENDS_WINDOW || 7);
 const deviationPct = Number(process.env.SOAK_TRENDS_DEVIATION_PCT || 20);
 const maxAgeHours = Number(process.env.SOAK_METRICS_SLA_HOURS || 24);
+const soakLimits = parseLimitsFromEnv();
 
 let rows: {
   timestamp: string;
@@ -133,12 +131,12 @@ if (latestLatP99 > maxLatencyP99) {
 if (latestThr < minThroughput) {
   regressions.push({ level: 'critical', message: `Throughput ${latestThr} < ${minThroughput}` });
 }
-if (latestGc > maxGcPause) {
-  regressions.push({ level: 'critical', message: `GC pause p95 ${latestGc}ms exceeds ${maxGcPause}ms` });
-}
-if (latestRss > maxRssGrowth) {
-  regressions.push({ level: 'critical', message: `RSS growth ${latestRss}% exceeds ${maxRssGrowth}%` });
-}
+regressions.push(
+  ...checkSoakStats(
+    { gcPauseP95Ms: latestGc, rssGrowthPct: latestRss },
+    soakLimits,
+  ),
+);
 if (prevLat.length > 0 && latestLatP95 > avgLat * (1 + deviationPct / 100)) {
   regressions.push({
     level: 'warning',
