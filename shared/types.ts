@@ -56,57 +56,26 @@ export const DashboardMetricsSchema = z.object({
 });
 export type DashboardMetrics = z.infer<typeof DashboardMetricsSchema>;
 
-export const AUDIT_LOG_TYPES = [
-  'Login',
-  'Table Event',
-  'Broadcast',
-  'Error',
-] as const;
-
-export const AuditLogTypeSchema = z.enum(AUDIT_LOG_TYPES);
-export type AuditLogType = (typeof AUDIT_LOG_TYPES)[number];
-
-export const AuditLogEntrySchema = z.object({
-  id: z.number().int(),
-  timestamp: z.string().datetime(),
-  type: AuditLogTypeSchema,
-  description: z.string(),
-  user: z.string(),
-  ip: z.string(),
-});
-export type AuditLogEntry = z.infer<typeof AuditLogEntrySchema>;
-
-export const AuditLogsResponseSchema = z.object({
-  logs: z.array(AuditLogEntrySchema),
-  nextCursor: z.number().int().nullable().optional(),
-});
-export type AuditLogsResponse = z.infer<typeof AuditLogsResponseSchema>;
-
-export const AuditSummarySchema = z.object({
-  total: z.number().int(),
-  errors: z.number().int(),
-  logins: z.number().int(),
-});
-export type AuditSummary = z.infer<typeof AuditSummarySchema>;
-
-export const AdminOverviewSchema = z.object({
-  name: z.string(),
-  avatar: z.string(),
-  lastAction: z.string(),
-  total24h: z.number().int(),
-  login: z.string(),
-  loginTitle: z.string().optional(),
-});
-export type AdminOverview = z.infer<typeof AdminOverviewSchema>;
-
-export const AdminOverviewResponseSchema = z.array(AdminOverviewSchema);
-export type AdminOverviewResponse = z.infer<typeof AdminOverviewResponseSchema>;
-
 export {
+  AUDIT_LOG_TYPES,
+  AuditLogTypeSchema,
+  AuditLogEntrySchema,
+  AuditLogsResponseSchema,
+  AuditSummarySchema,
+  AuditLogsQuerySchema,
+  AdminOverviewSchema,
+  AdminOverviewResponseSchema,
   AlertItemSchema,
   SecurityAlertsResponseSchema,
 } from '../backend/src/schemas/analytics';
 export type {
+  AuditLogType,
+  AuditLogEntry,
+  AuditLogsResponse,
+  AuditSummary,
+  AuditLogsQuery,
+  AdminOverview,
+  AdminOverviewResponse,
   AlertItem,
   SecurityAlertsResponse,
 } from '../backend/src/schemas/analytics';

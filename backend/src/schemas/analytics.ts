@@ -1,6 +1,13 @@
 import { z } from 'zod';
 
-export const AuditLogTypeSchema = z.enum(['Login', 'Table Event', 'Broadcast', 'Error']);
+export const AUDIT_LOG_TYPES = [
+  'Login',
+  'Table Event',
+  'Broadcast',
+  'Error',
+] as const;
+
+export const AuditLogTypeSchema = z.enum(AUDIT_LOG_TYPES);
 export type AuditLogType = z.infer<typeof AuditLogTypeSchema>;
 
 export const AuditLogEntrySchema = z.object({
@@ -44,3 +51,16 @@ export type AlertItem = z.infer<typeof AlertItemSchema>;
 
 export const SecurityAlertsResponseSchema = z.array(AlertItemSchema);
 export type SecurityAlertsResponse = z.infer<typeof SecurityAlertsResponseSchema>;
+
+export const AdminOverviewSchema = z.object({
+  name: z.string(),
+  avatar: z.string(),
+  lastAction: z.string(),
+  total24h: z.number().int(),
+  login: z.string(),
+  loginTitle: z.string().optional(),
+});
+export type AdminOverview = z.infer<typeof AdminOverviewSchema>;
+
+export const AdminOverviewResponseSchema = z.array(AdminOverviewSchema);
+export type AdminOverviewResponse = z.infer<typeof AdminOverviewResponseSchema>;

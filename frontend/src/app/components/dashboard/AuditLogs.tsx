@@ -15,7 +15,7 @@ import {
 import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { useAuditAlerts } from '@/hooks/useAuditAlerts';
 import { useAdminOverview } from '@/hooks/useAdminOverview';
-import type { AlertItem } from '@shared/types';
+import type { AlertItem, AuditLogEntry } from '@shared/types';
 import StatusPill from './common/StatusPill';
 
 type AuditStatus = 'Success' | 'Warning' | 'Failed';
@@ -26,7 +26,7 @@ export const auditStyles: Record<AuditStatus, string> = {
   Failed: 'bg-danger-red text-text-primary',
 };
 
-type AuditLogEntry = {
+type AuditLogRow = {
   timestamp: string;
   admin: string;
   user: string;
@@ -59,9 +59,9 @@ export default function AuditLogs() {
     error: logsError,
   } = useAuditLogs();
 
-  const rows = useMemo<AuditLogEntry[]>(
+  const rows = useMemo<AuditLogRow[]>(
     () =>
-      (logData?.logs ?? []).map((l) => ({
+      (logData?.logs ?? []).map((l: AuditLogEntry) => ({
         timestamp: l.timestamp,
         admin: l.user ?? '-',
         user: l.user ?? '-',
@@ -184,7 +184,7 @@ export default function AuditLogs() {
   };
 
   const renderRow = (
-    r: AuditLogEntry,
+    r: AuditLogRow,
     style: CSSProperties | undefined,
     i: number,
   ) => (
@@ -357,10 +357,7 @@ export default function AuditLogs() {
               <tbody>
                 {admins.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={4}
-                      className="py-3 px-2 text-text-secondary"
-                    >
+                    <td colSpan={4} className="py-3 px-2 text-text-secondary">
                       No admin activity
                     </td>
                   </tr>
@@ -369,7 +366,9 @@ export default function AuditLogs() {
                     <tr
                       key={a.name}
                       className="border-b border-dark hover:bg-hover-bg cursor-pointer"
-                      onClick={() => setValue('performer', a.name.toLowerCase())}
+                      onClick={() =>
+                        setValue('performer', a.name.toLowerCase())
+                      }
                       title="Filter audit log by this admin"
                     >
                       <td className="py-3 px-2">
@@ -423,65 +422,65 @@ export default function AuditLogs() {
               <p className="text-text-secondary">No security alerts</p>
             ) : (
               alerts.map((a) => {
-              const isDanger = a.severity === 'danger';
+                const isDanger = a.severity === 'danger';
 
-              // classes for tinted vs resolved
-              const containerCls = [
-                'alert-row',
-                a.resolved
-                  ? 'alert-danger-solid'
+                // classes for tinted vs resolved
+                const containerCls = [
+                  'alert-row',
+                  a.resolved
+                    ? 'alert-danger-solid'
+                    : isDanger
+                      ? 'alert-danger-tint'
+                      : 'alert-yellow-tint',
+                ].join(' ');
+
+                const titleCls = a.resolved
+                  ? 'font-semibold'
                   : isDanger
-                    ? 'alert-danger-tint'
-                    : 'alert-yellow-tint',
-              ].join(' ');
+                    ? 'alert-title-danger'
+                    : 'alert-title-yellow';
 
-              const titleCls = a.resolved
-                ? 'font-semibold'
-                : isDanger
-                  ? 'alert-title-danger'
-                  : 'alert-title-yellow';
+                const iconCls = a.resolved
+                  ? 'text-white'
+                  : isDanger
+                    ? 'text-danger-red'
+                    : 'text-accent-yellow';
 
-              const iconCls = a.resolved
-                ? 'text-white'
-                : isDanger
-                  ? 'text-danger-red'
-                  : 'text-accent-yellow';
+                return (
+                  <div key={a.id} className={containerCls}>
+                    <div className="flex items-center gap-3">
+                      <FontAwesomeIcon icon={faFlag} className={iconCls} />
+                      <div className="flex-1">
+                        <p className={titleCls}>{a.title}</p>
+                        <p
+                          className={`text-sm ${a.resolved ? 'text-white' : 'text-text-secondary'}`}
+                        >
+                          {a.body}
+                        </p>
+                        <p
+                          className={`text-xs ${a.resolved ? 'text-white' : 'text-text-secondary'}`}
+                        >
+                          {a.time}
+                        </p>
+                      </div>
 
-              return (
-                <div key={a.id} className={containerCls}>
-                  <div className="flex items-center gap-3">
-                    <FontAwesomeIcon icon={faFlag} className={iconCls} />
-                    <div className="flex-1">
-                      <p className={titleCls}>{a.title}</p>
-                      <p
-                        className={`text-sm ${a.resolved ? 'text-white' : 'text-text-secondary'}`}
-                      >
-                        {a.body}
-                      </p>
-                      <p
-                        className={`text-xs ${a.resolved ? 'text-white' : 'text-text-secondary'}`}
-                      >
-                        {a.time}
-                      </p>
+                      {!a.resolved ? (
+                        <button
+                          onClick={() => markResolved(a.id)}
+                          className={
+                            isDanger
+                              ? 'bg-danger-red hover-glow-red px-3 py-1 rounded text-xs font-semibold transition-colors duration-200'
+                              : 'bg-accent-yellow hover-glow-yellow text-black px-3 py-1 rounded text-xs font-semibold transition-colors duration-200'
+                          }
+                        >
+                          Mark Resolved
+                        </button>
+                      ) : (
+                        <span className="text-xs font-semibold">Resolved</span>
+                      )}
                     </div>
-
-                    {!a.resolved ? (
-                      <button
-                        onClick={() => markResolved(a.id)}
-                        className={
-                          isDanger
-                            ? 'bg-danger-red hover-glow-red px-3 py-1 rounded text-xs font-semibold transition-colors duration-200'
-                            : 'bg-accent-yellow hover-glow-yellow text-black px-3 py-1 rounded text-xs font-semibold transition-colors duration-200'
-                        }
-                      >
-                        Mark Resolved
-                      </button>
-                    ) : (
-                      <span className="text-xs font-semibold">Resolved</span>
-                    )}
                   </div>
-                </div>
-              );
+                );
               })
             )}
           </div>
