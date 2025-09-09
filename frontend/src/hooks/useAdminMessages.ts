@@ -1,8 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
+import { createQueryHook } from './useApiQuery';
 import { fetchMessages } from '@/lib/api/messages';
+import type { AdminMessagesResponse } from '@shared/types';
 
-export function useAdminMessages() {
-  return useQuery({ queryKey: ['adminMessages'], queryFn: fetchMessages });
-}
+const useAdminMessages = createQueryHook<AdminMessagesResponse>(
+  'adminMessages',
+  () => fetchMessages(),
+  'admin messages',
+);
 
 export default useAdminMessages;
