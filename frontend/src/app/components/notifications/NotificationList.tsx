@@ -4,7 +4,6 @@ import { useState, useRef, useMemo } from 'react';
 import Button from '../ui/Button';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck } from '@fortawesome/free-solid-svg-icons/faCheck';
-import useRenderCount from '@/hooks/useRenderCount';
 import useVirtualizedList from '@/hooks/useVirtualizedList';
 import NotificationItem from './NotificationItem';
 import {
@@ -16,8 +15,6 @@ import {
 import type { NotificationType } from '@shared/types';
 
 export default function NotificationList() {
-  useRenderCount('NotificationList');
-
   const {
     data: notificationsData,
     isLoading: listLoading,

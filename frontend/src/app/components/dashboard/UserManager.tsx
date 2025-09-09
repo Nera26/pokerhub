@@ -18,7 +18,6 @@ import type { UserFormValues } from '../forms/UserForm';
 import ToastNotification from '../ui/ToastNotification';
 import TransactionHistoryModal from '../modals/TransactionHistoryModal';
 import ConfirmationModal from './ConfirmationModal';
-import useRenderCount from '@/hooks/useRenderCount';
 import VirtualizedGrid from './VirtualizedGrid';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -89,7 +88,6 @@ function AvatarImage({
 }
 
 export default function UserManager() {
-  useRenderCount('UserManager');
   const [search, setSearch] = useState('');
 
   const queryClient = useQueryClient();

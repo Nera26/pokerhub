@@ -4,7 +4,6 @@
 import SmoothButton from '../ui/SmoothButton';
 import dynamic from 'next/dynamic';
 import { m } from '@/lib/motion';
-import useRenderCount from '@/hooks/useRenderCount';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { withdrawTournament } from '@/lib/api/lobby';
@@ -60,7 +59,6 @@ export default function TournamentCard({
   onViewDetails,
   registered = false,
 }: TournamentCardProps) {
-  useRenderCount('TournamentCard');
   const isUpcoming = status === 'upcoming';
   const isRunning = status === 'running';
 
@@ -93,8 +91,7 @@ export default function TournamentCard({
           .catch(() => setWithdrawError(true))
           .finally(() => setWithdrawing(false));
       } else onRegister?.(id);
-    }
-    else onViewDetails?.(id);
+    } else onViewDetails?.(id);
   };
 
   return (

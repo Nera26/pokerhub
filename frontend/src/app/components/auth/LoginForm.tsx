@@ -9,7 +9,6 @@ import Input from '../ui/Input';
 import Button from '../ui/Button';
 import { useAuthActions } from '@/app/store/authStore';
 import { login, type ApiError } from '@/lib/api/auth';
-import useRenderCount from '@/hooks/useRenderCount';
 
 const loginSchema = z.object({
   email: z
@@ -28,7 +27,6 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginForm() {
-  useRenderCount('LoginForm');
   const router = useRouter();
   const queryClient = useQueryClient();
   const { setToken, clearToken } = useAuthActions();
