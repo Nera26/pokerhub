@@ -503,6 +503,20 @@ export class AnalyticsService {
     return (await result.json()) as T[];
   }
 
+  private async writeEngagementSnapshot(
+    dateStr: string,
+    dau: number,
+    mau: number,
+    conversion: number,
+  ) {
+    const dir = path.resolve(__dirname, '../../../storage/events');
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(
+      path.join(dir, `engagement-${dateStr}.json`),
+      JSON.stringify({ date: dateStr, dau, mau, regToDep: conversion }),
+    );
+  }
+
   private scheduleEngagementMetrics() {
     scheduleDaily(() => void this.rebuildEngagementMetrics());
   }
@@ -519,6 +533,7 @@ export class AnalyticsService {
     let mau = 0;
     let regs = 0;
     let deps = 0;
+    let conversion = 0;
     if (this.client) {
       const createTable =
         'CREATE TABLE IF NOT EXISTS engagement_metrics (date Date, dau UInt64, mau UInt64, reg_to_dep Float64) ENGINE = MergeTree() ORDER BY date';
@@ -536,18 +551,12 @@ export class AnalyticsService {
       mau = mauRow[0]?.mau ?? 0;
       regs = regRow[0]?.regs ?? 0;
       deps = depRow[0]?.deps ?? 0;
-      const conversion = regs > 0 ? deps / regs : 0;
+      conversion = regs > 0 ? deps / regs : 0;
       await this.query(
         `ALTER TABLE engagement_metrics DELETE WHERE date = '${dateStr}'`,
       );
       await this.query(
         `INSERT INTO engagement_metrics (date, dau, mau, reg_to_dep) VALUES ('${dateStr}', ${dau}, ${mau}, ${conversion})`,
-      );
-      const dir = path.resolve(__dirname, '../../../storage/events');
-      await fs.mkdir(dir, { recursive: true });
-      await fs.writeFile(
-        path.join(dir, `engagement-${dateStr}.json`),
-        JSON.stringify({ date: dateStr, dau, mau, regToDep: conversion }),
       );
     } else {
       const dayLogins = await this.rangeStream(
@@ -570,14 +579,9 @@ export class AnalyticsService {
           .filter((e: any) => e.refType === 'deposit')
           .map((e: any) => e.accountId),
       ).size;
-      const conversion = regs > 0 ? deps / regs : 0;
-      const dir = path.resolve(__dirname, '../../../storage/events');
-      await fs.mkdir(dir, { recursive: true });
-      await fs.writeFile(
-        path.join(dir, `engagement-${dateStr}.json`),
-        JSON.stringify({ date: dateStr, dau, mau, regToDep: conversion }),
-      );
+      conversion = regs > 0 ? deps / regs : 0;
     }
+    await this.writeEngagementSnapshot(dateStr, dau, mau, conversion);
     this.logger.log('Rebuilt engagement metrics');
   }
 

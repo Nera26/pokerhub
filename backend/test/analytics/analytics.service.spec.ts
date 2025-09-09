@@ -50,3 +50,41 @@ describe('AnalyticsService scheduling', () => {
     expect(service.rebuildStakeAggregates).toHaveBeenCalledTimes(3);
   });
 });
+
+describe('AnalyticsService rebuildEngagementMetrics', () => {
+  it('writes snapshot when ClickHouse client available', async () => {
+    const service: any = {
+      client: {},
+      query: jest.fn(),
+      select: jest
+        .fn()
+        .mockResolvedValueOnce([{ dau: 1 }])
+        .mockResolvedValueOnce([{ mau: 2 }])
+        .mockResolvedValueOnce([{ regs: 1 }])
+        .mockResolvedValueOnce([{ deps: 1 }]),
+      writeEngagementSnapshot: jest.fn(),
+      logger: { warn: jest.fn(), log: jest.fn() },
+    };
+    await (AnalyticsService.prototype as any).rebuildEngagementMetrics.call(
+      service,
+    );
+    expect(service.writeEngagementSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  it('writes snapshot when ClickHouse client missing', async () => {
+    const service: any = {
+      client: null,
+      rangeStream: jest
+        .fn()
+        .mockResolvedValueOnce([{ userId: 'a' }])
+        .mockResolvedValueOnce([{ userId: 'a' }])
+        .mockResolvedValueOnce([{ accountId: '1', refType: 'deposit' }]),
+      writeEngagementSnapshot: jest.fn(),
+      logger: { warn: jest.fn(), log: jest.fn() },
+    };
+    await (AnalyticsService.prototype as any).rebuildEngagementMetrics.call(
+      service,
+    );
+    expect(service.writeEngagementSnapshot).toHaveBeenCalledTimes(1);
+  });
+});
