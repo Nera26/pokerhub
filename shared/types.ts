@@ -107,7 +107,6 @@ export {
   BroadcastsResponseSchema,
   SendBroadcastRequestSchema,
   BroadcastTemplatesResponseSchema,
-  BroadcastTypeInfoSchema,
   BroadcastTypesResponseSchema,
 } from '../backend/src/schemas/broadcasts';
 export type {
@@ -116,7 +115,6 @@ export type {
   BroadcastsResponse,
   SendBroadcastRequest,
   BroadcastTemplatesResponse,
-  BroadcastTypeInfo,
   BroadcastTypesResponse,
 } from '../backend/src/schemas/broadcasts';
 
