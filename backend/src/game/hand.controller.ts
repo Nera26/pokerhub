@@ -111,6 +111,26 @@ export class HandController {
     return userId;
   }
 
+  private parseHandLog(raw: string): HandLog {
+    const log = new HandLog();
+    for (const line of raw.trim().split('\n')) {
+      if (!line) continue;
+      try {
+        const parsed = JSON.parse(line);
+        if (Array.isArray(parsed)) {
+          (log as any).entries.push(parsed);
+        } else if (parsed.commitment) {
+          log.recordCommitment(parsed.commitment);
+        } else if (parsed.proof) {
+          log.recordProof(parsed.proof);
+        }
+      } catch {
+        continue;
+      }
+    }
+    return log;
+  }
+
   @Get('proofs')
   @ApiOperation({ summary: 'List hand proofs' })
   @ApiResponse({ status: 200, description: 'Proofs list' })
@@ -187,22 +207,7 @@ export class HandController {
       });
     }
 
-    const log = new HandLog();
-    for (const line of raw.trim().split('\n')) {
-      if (!line) continue;
-      try {
-        const parsed = JSON.parse(line);
-        if (Array.isArray(parsed)) {
-          (log as any).entries.push(parsed);
-        } else if (parsed.commitment) {
-          log.recordCommitment(parsed.commitment);
-        } else if (parsed.proof) {
-          log.recordProof(parsed.proof);
-        }
-      } catch {
-        continue;
-      }
-    }
+    const log = this.parseHandLog(raw);
 
     const { proof } = log.getCommitmentAndProof();
     if (!proof) {
@@ -242,18 +247,7 @@ export class HandController {
       raw = hand.log;
     }
 
-    const log = new HandLog();
-    for (const line of raw.trim().split('\n')) {
-      if (!line) continue;
-      try {
-        const parsed = JSON.parse(line);
-        if (Array.isArray(parsed)) {
-          (log as any).entries.push(parsed);
-        }
-      } catch {
-        continue;
-      }
-    }
+    const log = this.parseHandLog(raw);
 
     const state = log.reconstruct(index);
     if (!state) {
