@@ -1,5 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
-import HomePageClient from '@/app/(site)/HomePageClient';
+import { HomePageClient } from '@/app/(site)/HomePageClient';
 import LiveTableCard, {
   type LiveTableCardProps,
 } from '@/app/components/home/LiveTableCard';
@@ -9,6 +9,8 @@ import useVirtualizedList from '@/hooks/useVirtualizedList';
 import { useTables, useTournaments, useCTAs } from '@/hooks/useLobbyData';
 import type { Table, Tournament } from '@/hooks/useLobbyData';
 import type { GameType } from '@shared/types';
+import type { CashGameListProps } from '@/app/components/home/CashGameList';
+import type { TournamentListProps } from '@/components/TournamentList';
 
 jest.mock('@/hooks/useVirtualizedList');
 jest.mock('@/hooks/useLobbyData');
@@ -56,7 +58,16 @@ describe('home accessibility', () => {
       error: null,
       isLoading: false,
     });
-    render(<HomePageClient />);
+    render(
+      <HomePageClient
+        cashGameList={(_: CashGameListProps) => (
+          <div data-testid="tables-list" />
+        )}
+        tournamentList={(_: TournamentListProps<any>) => (
+          <div data-testid="tournaments-list" />
+        )}
+      />,
+    );
     expect(screen.getByRole('main')).toHaveAttribute('aria-busy', 'true');
   });
 

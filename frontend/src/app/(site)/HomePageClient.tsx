@@ -27,8 +27,9 @@ const ChatPlaceholder = () => (
 
 let ChatWidget: React.ComponentType | null = null;
 
-let CashGameList: React.ComponentType<CashGameListProps> =
-  dynamic<CashGameListProps>(() => import('../components/home/CashGameList'), {
+const CashGameListDefault = dynamic<CashGameListProps>(
+  () => import('../components/home/CashGameList'),
+  {
     loading: () => (
       <section
         id="cash-games-panel"
@@ -42,45 +43,45 @@ let CashGameList: React.ComponentType<CashGameListProps> =
         <div className="h-96 w-full rounded-2xl bg-card-bg animate-pulse" />
       </section>
     ),
-  });
+  },
+);
 
-if (CashGameList.displayName === 'DynamicMock') {
-  CashGameList = require('../components/home/CashGameList').default;
-}
+const TournamentListDefault = dynamic<TournamentListProps<TournamentWithBreak>>(
+  () => import('@/components/TournamentList'),
+  {
+    loading: () => (
+      <section
+        id="tournaments-panel"
+        role="tabpanel"
+        aria-labelledby="tab-tournaments"
+      >
+        <h2 className="text-xl sm:text-2xl font-bold text-text-primary mb-4 sm:mb-6">
+          Tournaments
+        </h2>
+        <div className="h-96 w-full rounded-2xl bg-card-bg animate-pulse" />
+      </section>
+    ),
+  },
+);
 
-let TournamentList: React.ComponentType<
-  TournamentListProps<TournamentWithBreak>
-> =
-  dynamic<TournamentListProps<TournamentWithBreak>>(
-    () => import('@/components/TournamentList'),
-    {
-      loading: () => (
-        <section
-          id="tournaments-panel"
-          role="tabpanel"
-          aria-labelledby="tab-tournaments"
-        >
-          <h2 className="text-xl sm:text-2xl font-bold text-text-primary mb-4 sm:mb-6">
-            Tournaments
-          </h2>
-          <div className="h-96 w-full rounded-2xl bg-card-bg animate-pulse" />
-        </section>
-      ),
-    },
-  );
+export function HomePageClient({
+  cashGameList,
+  tournamentList,
+}: {
+  cashGameList?: React.ComponentType<CashGameListProps>;
+  tournamentList?: React.ComponentType<
+    TournamentListProps<TournamentWithBreak>
+  >;
+}) {
+  const CashGameList = cashGameList ?? CashGameListDefault;
+  const TournamentList = tournamentList ?? TournamentListDefault;
 
-if (TournamentList.displayName === 'DynamicMock') {
-  TournamentList = require('@/components/TournamentList').default;
-}
-
-const SiteTournamentList = (
-  props: TournamentListProps<TournamentWithBreak>,
-) => {
-  useRenderCount('SiteTournamentList');
-  return <TournamentList {...props} />;
-};
-
-export default function HomePageClient() {
+  const SiteTournamentList = (
+    props: TournamentListProps<TournamentWithBreak>,
+  ) => {
+    useRenderCount('SiteTournamentList');
+    return <TournamentList {...props} />;
+  };
   const [gameType, setGameType] = useState<GameType>('texas');
 
   useEffect(() => {

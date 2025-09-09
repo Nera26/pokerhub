@@ -7,31 +7,26 @@ import { ValidateFunction } from 'ajv';
 import { EventName } from '@shared/events';
 import { createValidators } from './validator';
 import { AnalyticsService } from './analytics.service';
+import { runEtl } from './etl.utils';
 
 export async function processEntry(
-  topic: string,
   event: string,
   fields: string[],
   analytics: AnalyticsService,
   validators: Record<EventName, ValidateFunction>,
   producer: Producer,
   logger: Logger,
+  topicMap: Record<string, string>,
 ) {
   try {
     const data = JSON.parse(fields[1] as string) as Record<string, unknown>;
-    const validate = validators[event as EventName];
-    if (validate && !validate(data)) {
-      logger.warn(`Invalid event ${event}: ${JSON.stringify(validate.errors)}`);
-      return;
-    }
-    await Promise.all([
-      producer.send({
-        topic,
-        messages: [{ value: JSON.stringify({ event, data }) }],
-      }),
-      analytics.ingest(event.replace('.', '_'), data),
-      analytics.archive(event, data),
-    ]);
+    await runEtl(event, data, {
+      analytics,
+      validators,
+      producer,
+      topicMap,
+      logger,
+    });
   } catch (err) {
     logger.error(err);
   }
@@ -69,16 +64,15 @@ export class EtlService {
     for (const [stream, entries] of res) {
       const key = stream.split(':')[1];
       const event = key.includes('.') ? key : `${key}.event`;
-      const topic = this.topicMap[event.split('.')[0]] ?? event.split('.')[0];
       for (const [, fields] of entries) {
         await processEntry(
-          topic,
           event,
           fields as string[],
           this.analytics,
           this.validators,
           this.producer,
           this.logger,
+          this.topicMap,
         );
       }
     }
@@ -106,18 +100,16 @@ export class EtlService {
         let last = lastIds.get(stream) ?? '0-0';
         const key = stream.split(':')[1];
         const event = key.includes('.') ? key : `${key}.event`;
-        const topic =
-          this.topicMap[event.split('.')[0]] ?? event.split('.')[0];
         for (const [id, fields] of entries) {
           last = id;
           await processEntry(
-            topic,
             event,
             fields as string[],
             this.analytics,
             this.validators,
             this.producer,
             this.logger,
+            this.topicMap,
           );
         }
         lastIds.set(stream, last);

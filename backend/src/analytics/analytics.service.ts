@@ -12,13 +12,17 @@ import { ParquetSchema, ParquetWriter } from 'parquetjs-lite';
 import { PassThrough } from 'stream';
 import path from 'path';
 import { promises as fs } from 'fs';
-import { detectSharedIP, detectSynchronizedBetting } from '@shared/analytics/collusion';
+import {
+  detectSharedIP,
+  detectSynchronizedBetting,
+} from '@shared/analytics/collusion';
 import { AlertItem } from '../schemas/analytics';
 import type {
   Session as CollusionSession,
   Transfer as CollusionTransfer,
   BetEvent as CollusionBetEvent,
 } from '@shared/analytics';
+import { runEtl } from './etl.utils';
 
 interface AuditLog {
   id: string;
@@ -171,6 +175,7 @@ export class AnalyticsService {
   private readonly ajv: Ajv;
   private readonly validators: Record<EventName, ValidateFunction>;
   private readonly topicMap: Record<string, string> = {
+    game: 'hand',
     hand: 'hand',
     action: 'hand',
     tournament: 'tourney',
@@ -208,7 +213,8 @@ export class AnalyticsService {
   }): Promise<{ logs: AuditLog[]; nextCursor: number | null }> {
     if (this.client) {
       const res = await this.client.query({
-        query: `SELECT id, ts AS timestamp, type, description, user, ip FROM audit_log ORDER BY ts DESC LIMIT {limit:UInt32} OFFSET {cursor:UInt32}`,
+        query:
+          'SELECT id, ts AS timestamp, type, description, user, ip FROM audit_log ORDER BY ts DESC LIMIT {limit:UInt32} OFFSET {cursor:UInt32}',
         query_params: { cursor, limit },
         format: 'JSONEachRow',
       });
@@ -308,7 +314,7 @@ export class AnalyticsService {
     const schema = ParquetSchemas[event] ?? this.buildSchema(data);
     const row =
       event === 'antiCheat.flag' && 'features' in data
-        ? { ...data, features: JSON.stringify(data.features) }
+        ? { ...data, features: JSON.stringify((data as any).features) }
         : data;
 
     try {
@@ -321,39 +327,22 @@ export class AnalyticsService {
       const buffer = Buffer.concat(chunks);
       await this.gcs.uploadObject(key, buffer);
     } catch (err) {
-      this.logger.error(`Failed to upload event ${event} to GCS`, err as Error);
+      this.logger.error(
+        `Failed to upload event ${event} to GCS`,
+        err as Error,
+      );
     }
-  }
-
-  private buildAggregation<T extends Record<string, unknown>>(
-    topic: string,
-    event: string,
-    data: T,
-  ) {
-    return [
-      this.producer.send({
-        topic,
-        messages: [{ value: JSON.stringify({ event, data }) }],
-      }),
-      this.ingest(event.replace('.', '_'), data),
-      this.archive(event, data),
-    ];
   }
 
   async emit<E extends EventName>(event: E, data: Events[E]) {
-    const validate = this.validators[event];
-    if (!validate(data)) {
-      this.logger.warn(
-        `Invalid event ${event}: ${this.ajv.errorsText(validate.errors)}`,
-      );
-      return;
-    }
-    const topic = this.topicMap[event.split('.')[0]];
-    if (!topic) {
-      this.logger.warn(`No topic mapping for event ${event}`);
-      return;
-    }
-    await Promise.all(this.buildAggregation(topic, event, data));
+    await runEtl(event, data as unknown as Record<string, unknown>, {
+      analytics: this,
+      validators: this.validators,
+      producer: this.producer,
+      topicMap: this.topicMap,
+      logger: this.logger,
+      errorsText: (errors) => this.ajv.errorsText(errors),
+    });
   }
 
   async recordGameEvent<T extends Record<string, unknown>>(event: T) {
@@ -363,18 +352,25 @@ export class AnalyticsService {
       'event',
       JSON.stringify(event),
     );
-    await Promise.all(
-      this.buildAggregation(this.topicMap.hand, 'game.event', event),
-    );
+
+    await runEtl('game.event', event, {
+      analytics: this,
+      validators: this.validators,
+      producer: this.producer,
+      topicMap: this.topicMap,
+      logger: this.logger,
+      errorsText: (errors) => this.ajv.errorsText(errors),
+    });
+
     if (
       'handId' in event &&
       'playerId' in event &&
-      typeof event.timeMs === 'number'
+      typeof (event as any).timeMs === 'number'
     ) {
       this.collusionEvents.push({
-        handId: event.handId,
-        playerId: event.playerId,
-        timeMs: event.timeMs,
+        handId: (event as any).handId,
+        playerId: (event as any).playerId,
+        timeMs: (event as any).timeMs,
       });
       await this.runCollusionHeuristics();
     }
@@ -387,9 +383,15 @@ export class AnalyticsService {
       'event',
       JSON.stringify(event),
     );
-    await Promise.all(
-      this.buildAggregation(this.topicMap.tournament, 'tournament.event', event),
-    );
+
+    await runEtl('tournament.event', event, {
+      analytics: this,
+      validators: this.validators,
+      producer: this.producer,
+      topicMap: this.topicMap,
+      logger: this.logger,
+      errorsText: (errors) => this.ajv.errorsText(errors),
+    });
   }
 
   async recordCollusionSession(session: CollusionSession) {
@@ -427,7 +429,9 @@ export class AnalyticsService {
       }
     }
 
-    for (const { handId, players } of detectSynchronizedBetting(this.collusionEvents)) {
+    for (const { handId, players } of detectSynchronizedBetting(
+      this.collusionEvents,
+    )) {
       await this.emitAntiCheatFlag({
         sessionId: `sync-${handId}`,
         users: players,
@@ -510,7 +514,9 @@ export class AnalyticsService {
       regs = regRow[0]?.regs ?? 0;
       deps = depRow[0]?.deps ?? 0;
       const conversion = regs > 0 ? deps / regs : 0;
-      await this.query(`ALTER TABLE engagement_metrics DELETE WHERE date = '${dateStr}'`);
+      await this.query(
+        `ALTER TABLE engagement_metrics DELETE WHERE date = '${dateStr}'`,
+      );
       await this.query(
         `INSERT INTO engagement_metrics (date, dau, mau, reg_to_dep) VALUES ('${dateStr}', ${dau}, ${mau}, ${conversion})`,
       );
@@ -521,14 +527,23 @@ export class AnalyticsService {
         JSON.stringify({ date: dateStr, dau, mau, regToDep: conversion }),
       );
     } else {
-      const dayLogins = await this.rangeStream('analytics:auth.login', from.getTime());
-      dau = new Set(dayLogins.map((e: any) => e.userId)).size;
-      const mauLogins = await this.rangeStream('analytics:auth.login', from.getTime() - 29 * oneDay);
-      mau = new Set(mauLogins.map((e: any) => e.userId)).size;
+      const dayLogins = await this.rangeStream(
+        'analytics:auth.login',
+        from.getTime(),
+      );
+      dau = new Set((dayLogins as any[]).map((e: any) => e.userId)).size;
+      const mauLogins = await this.rangeStream(
+        'analytics:auth.login',
+        from.getTime() - 29 * oneDay,
+      );
+      mau = new Set((mauLogins as any[]).map((e: any) => e.userId)).size;
       regs = dau;
-      const depositEvents = await this.rangeStream('analytics:wallet.credit', from.getTime());
+      const depositEvents = await this.rangeStream(
+        'analytics:wallet.credit',
+        from.getTime(),
+      );
       deps = new Set(
-        depositEvents
+        (depositEvents as any[])
           .filter((e: any) => e.refType === 'deposit')
           .map((e: any) => e.accountId),
       ).size;
