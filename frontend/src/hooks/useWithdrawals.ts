@@ -6,7 +6,7 @@ import type { DashboardUser, PendingWithdrawalsResponse } from '@shared/types';
 export type Withdrawal = PendingWithdrawalsResponse['withdrawals'][number];
 
 // Decide which API call to use based on action
-export function mutateWithdrawal(
+function mutateWithdrawal(
   action: 'approve' | 'reject',
   { withdrawal, comment }: { withdrawal: Withdrawal; comment: string },
 ) {
