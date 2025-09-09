@@ -1,10 +1,19 @@
-import { useQuery } from '@tanstack/react-query';
-import { fetchBroadcastTypes } from '@/lib/api/broadcasts';
-import type { BroadcastTypesResponse } from '@shared/types';
+import { createQueryHook } from './useApiQuery';
+import {
+  BroadcastTypesResponseSchema,
+  type BroadcastTypesResponse,
+} from '@shared/types';
+import type { apiClient } from '@/lib/api/client';
 
-export default function useBroadcastTypes() {
-  return useQuery<BroadcastTypesResponse, Error>({
-    queryKey: ['broadcast-types'],
-    queryFn: ({ signal }) => fetchBroadcastTypes({ signal }),
-  });
-}
+const fetchBroadcastTypesFn = (
+  client: typeof apiClient,
+  opts: { signal?: AbortSignal },
+) => client('/api/broadcasts/types', BroadcastTypesResponseSchema, opts);
+
+const useBroadcastTypes = createQueryHook<BroadcastTypesResponse>(
+  'broadcast-types',
+  fetchBroadcastTypesFn,
+  'broadcast types',
+);
+
+export default useBroadcastTypes;

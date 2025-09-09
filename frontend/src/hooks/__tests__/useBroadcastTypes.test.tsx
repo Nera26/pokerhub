@@ -5,6 +5,9 @@ import type { ReactNode } from 'react';
 import type { ApiError } from '@/lib/api/client';
 
 describe('useBroadcastTypes', () => {
+  it('requires no arguments', () => {
+    expect(useBroadcastTypes).toHaveLength(0);
+  });
   const wrapper = ({ children }: { children: ReactNode }) => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
