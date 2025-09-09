@@ -6,6 +6,9 @@ import {
   BONUS_TYPES,
   BONUS_ELIGIBILITY,
   BONUS_STATUSES,
+  BONUS_TYPE_LABELS,
+  BONUS_ELIGIBILITY_LABELS,
+  BONUS_STATUS_LABELS,
   BonusOptionsResponse,
   BonusOptionsResponseSchema,
 } from '../schemas/bonus';
@@ -19,9 +22,18 @@ export class AdminBonusController {
   @ApiResponse({ status: 200, description: 'Bonus options' })
   options(): BonusOptionsResponse {
     return BonusOptionsResponseSchema.parse({
-      types: BONUS_TYPES,
-      eligibilities: BONUS_ELIGIBILITY,
-      statuses: BONUS_STATUSES,
+      types: BONUS_TYPES.map((value) => ({
+        value,
+        label: BONUS_TYPE_LABELS[value],
+      })),
+      eligibilities: BONUS_ELIGIBILITY.map((value) => ({
+        value,
+        label: BONUS_ELIGIBILITY_LABELS[value],
+      })),
+      statuses: BONUS_STATUSES.map((value) => ({
+        value,
+        label: BONUS_STATUS_LABELS[value],
+      })),
     });
   }
 }

@@ -21,16 +21,21 @@ function renderWithClient(ui: React.ReactElement) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+  return render(
+    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
+  );
 }
 
 describe('BonusManager status toggle', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (fetchBonusOptions as jest.Mock).mockResolvedValue({
-      types: ['deposit'],
-      eligibilities: ['all'],
-      statuses: ['active', 'paused'],
+      types: [{ value: 'deposit', label: 'Deposit Match' }],
+      eligibilities: [{ value: 'all', label: 'All Players' }],
+      statuses: [
+        { value: 'active', label: 'Active' },
+        { value: 'paused', label: 'Paused' },
+      ],
     });
   });
 
@@ -50,7 +55,9 @@ describe('BonusManager status toggle', () => {
         claimsWeek: 0,
       },
     ];
-    (fetchBonuses as jest.Mock).mockImplementation(() => Promise.resolve(bonuses));
+    (fetchBonuses as jest.Mock).mockImplementation(() =>
+      Promise.resolve(bonuses),
+    );
     (updateBonus as jest.Mock).mockImplementation((id: number, data: any) => {
       bonuses = bonuses.map((b) => (b.id === id ? { ...b, ...data } : b));
       return Promise.resolve({});
@@ -60,7 +67,9 @@ describe('BonusManager status toggle', () => {
 
     const pauseBtn = await screen.findByRole('button', { name: /pause/i });
     fireEvent.click(pauseBtn);
-    const confirm = await screen.findByRole('button', { name: /confirm pause/i });
+    const confirm = await screen.findByRole('button', {
+      name: /confirm pause/i,
+    });
     fireEvent.click(confirm);
 
     await screen.findByText('Paused "Test Bonus"');
@@ -83,7 +92,9 @@ describe('BonusManager status toggle', () => {
         claimsWeek: 0,
       },
     ];
-    (fetchBonuses as jest.Mock).mockImplementation(() => Promise.resolve(bonuses));
+    (fetchBonuses as jest.Mock).mockImplementation(() =>
+      Promise.resolve(bonuses),
+    );
     (updateBonus as jest.Mock).mockImplementation((id: number, data: any) => {
       bonuses = bonuses.map((b) => (b.id === id ? { ...b, ...data } : b));
       return Promise.resolve({});
@@ -93,11 +104,12 @@ describe('BonusManager status toggle', () => {
 
     const resumeBtn = await screen.findByRole('button', { name: /resume/i });
     fireEvent.click(resumeBtn);
-    const confirm = await screen.findByRole('button', { name: /confirm resume/i });
+    const confirm = await screen.findByRole('button', {
+      name: /confirm resume/i,
+    });
     fireEvent.click(confirm);
 
     await screen.findByText('Resumed "Test Bonus"');
     await screen.findByRole('button', { name: /pause/i });
   });
 });
-
