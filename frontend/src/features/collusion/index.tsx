@@ -11,7 +11,7 @@ import type {
   ReviewAction,
   ReviewActionLog,
 } from '@shared/types';
-import { useAuthToken } from '@/app/store/authStore';
+import { useAuthToken, usePlayerId } from '@/app/store/authStore';
 
 function nextAction(status: FlaggedSession['status']): ReviewAction | null {
   switch (status) {
@@ -30,6 +30,7 @@ export default function CollusionReviewPage() {
   const [sessions, setSessions] = useState<FlaggedSession[]>([]);
   const [history, setHistory] = useState<Record<string, ReviewActionLog[]>>({});
   const token = useAuthToken();
+  const reviewerId = usePlayerId();
 
   useEffect(() => {
     if (!token) return;
@@ -52,19 +53,25 @@ export default function CollusionReviewPage() {
   }, [token]);
 
   const act = async (id: string, status: FlaggedSession['status']) => {
-    if (!token) return;
+    if (!token || !reviewerId) return;
     const action = nextAction(status);
     if (!action) return;
-    await applyAction(id, action, token);
+    const optimistic: ReviewActionLog = {
+      action,
+      timestamp: Date.now(),
+      reviewerId,
+    };
     setSessions((prev) =>
       prev.map((s) => (s.id === id ? { ...s, status: action } : s)),
     );
     setHistory((prev) => ({
       ...prev,
-      [id]: [
-        ...(prev[id] ?? []),
-        { action, timestamp: Date.now(), reviewerId: 'you' },
-      ],
+      [id]: [...(prev[id] ?? []), optimistic],
+    }));
+    const confirmed = await applyAction(id, action, token, reviewerId);
+    setHistory((prev) => ({
+      ...prev,
+      [id]: [...(prev[id] ?? []).slice(0, -1), confirmed],
     }));
   };
 

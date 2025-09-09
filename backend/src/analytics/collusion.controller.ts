@@ -30,15 +30,18 @@ export class CollusionController {
   ) {
     const parsed = ReviewActionSchema.parse(action);
     const reviewerId = req.userId;
-    const timestamp = Date.now();
-    await this.collusion.applyAction(sessionId, parsed, reviewerId);
+    const entry = await this.collusion.applyAction(
+      sessionId,
+      parsed,
+      reviewerId,
+    );
     await this.analytics.ingest('collusion_audit', {
       session_id: sessionId,
-      reviewer_id: reviewerId,
-      action: parsed,
-      timestamp,
+      reviewer_id: entry.reviewerId,
+      action: entry.action,
+      timestamp: entry.timestamp,
     });
-    return { message: parsed };
+    return entry;
   }
 }
 

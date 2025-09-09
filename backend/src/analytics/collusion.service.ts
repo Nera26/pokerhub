@@ -204,6 +204,7 @@ export class CollusionService {
     audit.status = action;
     audit.history.push(entry);
     await this.auditRepo.save(audit);
+    return entry;
   }
 
   async getActionHistory(sessionId: string) {
