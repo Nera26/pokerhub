@@ -725,6 +725,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TournamentList'
+  /tournaments/filters:
+    get:
+      summary: Get tournament filter options
+      responses:
+        '200':
+          description: Tournament filter options
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TournamentFilters'
   /tournaments/{id}:
     get:
       summary: Get tournament
@@ -2869,6 +2879,19 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Tournament'
+    TournamentFilter:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: string
+          enum: [active, upcoming, past]
+      required: [label, value]
+    TournamentFilters:
+      type: array
+      items:
+        $ref: '#/components/schemas/TournamentFilter'
     Table:
       type: object
       properties:

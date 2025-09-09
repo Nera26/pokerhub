@@ -12,6 +12,8 @@ import {
   type MessageResponse,
   CTASchema,
   type CTA,
+  TournamentFiltersResponseSchema,
+  type TournamentFilterOption,
 } from '@shared/types';
 
 export type { Table, Tournament, TournamentDetails, CTA };
@@ -28,7 +30,9 @@ export async function fetchLobbyData<T>(
     if (apiErr.status !== undefined) {
       throw apiErr;
     }
-    throw { message: `Failed to fetch ${endpoint}: ${apiErr.message}` } as ApiError;
+    throw {
+      message: `Failed to fetch ${endpoint}: ${apiErr.message}`,
+    } as ApiError;
   }
 }
 
@@ -53,10 +57,9 @@ export async function getTables({
 
 export async function fetchTables({
   signal,
-  }:
-    {
-      signal?: AbortSignal;
-    }): Promise<components['schemas']['Table'][]> {
+}: {
+  signal?: AbortSignal;
+}): Promise<components['schemas']['Table'][]> {
   return getTables({ signal });
 }
 
@@ -64,10 +67,20 @@ export async function fetchTournaments({
   signal,
 }: {
   signal?: AbortSignal;
-  }): Promise<components['schemas']['Tournament'][]> {
+}): Promise<components['schemas']['Tournament'][]> {
   return fetchLobbyData<components['schemas']['Tournament'][]>(
     'tournaments',
     z.array(TournamentSchema),
+    { signal },
+  );
+}
+
+export async function fetchTournamentFilters({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<TournamentFilterOption[]> {
+  return fetchLobbyData<TournamentFilterOption[]>(
+    'tournaments/filters',
+    TournamentFiltersResponseSchema,
     { signal },
   );
 }
@@ -77,11 +90,7 @@ export async function fetchCTAs({
 }: {
   signal?: AbortSignal;
 } = {}): Promise<CTA[]> {
-  return fetchLobbyData<CTA[]>(
-    'ctas',
-    z.array(CTASchema),
-    { signal },
-  );
+  return fetchLobbyData<CTA[]>('ctas', z.array(CTASchema), { signal });
 }
 
 export async function createCTA(
