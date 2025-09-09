@@ -21,7 +21,7 @@ describe('AdminDepositGateway deposit.pending', () => {
   let gateway: AdminDepositGateway;
   const events: EventPublisher = { emit: jest.fn() } as any;
   const redis: any = {
-    incr: jest.fn(),
+    incr: jest.fn().mockResolvedValue(1),
     incrby: jest.fn().mockResolvedValue(0),
     expire: jest.fn(),
     set: jest.fn().mockResolvedValue('1'),
