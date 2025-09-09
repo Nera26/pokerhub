@@ -3,6 +3,18 @@ import userEvent from '@testing-library/user-event';
 import TournamentModal from '../TournamentModal';
 import type { AdminTournament } from '@shared/types';
 
+jest.mock('@/hooks/useGameTypes', () => ({
+  useGameTypes: () => ({
+    data: [
+      { id: 'texas', label: "Texas Hold'em" },
+      { id: 'omaha', label: 'Omaha 4' },
+      { id: 'allin', label: 'Omaha 6' },
+    ],
+    isLoading: false,
+    error: null,
+  }),
+}));
+
 describe('TournamentModal', () => {
   const base: AdminTournament = {
     id: 1,
@@ -66,4 +78,3 @@ describe('TournamentModal', () => {
     );
   });
 });
-

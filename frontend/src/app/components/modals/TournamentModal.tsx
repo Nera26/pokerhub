@@ -4,15 +4,15 @@ import { useEffect } from 'react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
+import InlineError from '../ui/InlineError';
 import { CardTitle } from '../ui/Card';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faSave } from '@fortawesome/free-solid-svg-icons';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  useForm,
-  type UseFormSetValue,
-} from 'react-hook-form';
+import { useForm, type UseFormSetValue } from 'react-hook-form';
+import { useGameTypes } from '@/hooks/useGameTypes';
+import { useApiError } from '@/hooks/useApiError';
 import { AdminTournamentSchema, type AdminTournament } from '@shared/types';
 
 const tournamentSchema = AdminTournamentSchema.extend({
@@ -54,6 +54,13 @@ export default function TournamentModal({
     defaultValues,
   });
 
+  const {
+    data: gameTypes,
+    isLoading: gameTypesLoading,
+    error: gameTypesError,
+  } = useGameTypes();
+  const gameTypesErrorMessage = useApiError(gameTypesError);
+
   useEffect(() => {
     if (defaultValues) reset(defaultValues);
   }, [defaultValues, reset]);
@@ -89,14 +96,24 @@ export default function TournamentModal({
             <label className="block text-text-secondary text-sm font-semibold mb-2">
               Game Type
             </label>
-            <select
-              className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 focus:border-accent-yellow focus:outline-none"
-              {...register('gameType')}
-            >
-              <option>Texas Hold&apos;em</option>
-              <option>Omaha 4</option>
-              <option>Omaha 6</option>
-            </select>
+            {gameTypesLoading ? (
+              <p role="status">Loading game types...</p>
+            ) : gameTypesErrorMessage ? (
+              <InlineError message={gameTypesErrorMessage} />
+            ) : gameTypes && gameTypes.length > 0 ? (
+              <select
+                className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 focus:border-accent-yellow focus:outline-none"
+                {...register('gameType')}
+              >
+                {gameTypes.map((g) => (
+                  <option key={g.id} value={g.label}>
+                    {g.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="text-text-secondary">No games available</p>
+            )}
           </div>
         </div>
 
@@ -167,7 +184,9 @@ export default function TournamentModal({
             onChange={(e) =>
               (setValue as UseFormSetValue<Tournament>)(
                 'seatCap',
-                e.currentTarget.value === '' ? '' : Number(e.currentTarget.value),
+                e.currentTarget.value === ''
+                  ? ''
+                  : Number(e.currentTarget.value),
               )
             }
           />
@@ -238,4 +257,3 @@ export default function TournamentModal({
     </Modal>
   );
 }
-
