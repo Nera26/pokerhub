@@ -25,8 +25,6 @@ const ChatPlaceholder = () => (
   <div className="fixed bottom-4 right-4 h-12 w-12 rounded-full bg-card-bg animate-pulse" />
 );
 
-let ChatWidget: React.ComponentType | null = null;
-
 const CashGameListDefault = dynamic<CashGameListProps>(
   () => import('../components/home/CashGameList'),
   {
@@ -83,11 +81,12 @@ export function HomePageClient({
     return <TournamentList {...props} />;
   };
   const [gameType, setGameType] = useState<GameType>('texas');
+  const [Chat, setChat] = useState<React.ComponentType | null>(null);
 
   useEffect(() => {
     const load = () =>
-      import('../components/common/chat/ChatWidget').then(
-        (mod) => (ChatWidget = mod.default),
+      import('../components/common/chat/ChatWidget').then((mod) =>
+        setChat(() => mod.default),
       );
     if (typeof window !== 'undefined') {
       if ('requestIdleCallback' in window) {
@@ -126,7 +125,7 @@ export function HomePageClient({
     return (
       <>
         <HomeLoadingSkeleton />
-        {ChatWidget ? <ChatWidget /> : <ChatPlaceholder />}
+        {Chat ? <Chat /> : <ChatPlaceholder />}
       </>
     );
   }
@@ -163,7 +162,7 @@ export function HomePageClient({
           <InlineError message={tournamentErrorMessage} />
         )}
       </main>
-      {ChatWidget ? <ChatWidget /> : <ChatPlaceholder />}
+      {Chat ? <Chat /> : <ChatPlaceholder />}
     </>
   );
 }
