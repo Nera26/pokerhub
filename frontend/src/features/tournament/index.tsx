@@ -13,7 +13,6 @@ import BottomNav from '@/app/components/common/BottomNav';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { TournamentFilter } from '@/app/components/tournaments/TournamentFilters';
 import type { TournamentStatus } from '@/app/components/tournaments/TournamentCard';
-import useRenderCount from '@/hooks/useRenderCount';
 import ErrorBoundary from '@/app/components/ui/ErrorBoundary';
 import TournamentFilters from '@/app/components/tournaments/TournamentFilters';
 import TournamentCard from '@/app/components/tournaments/TournamentCard';
@@ -41,7 +40,6 @@ function isTournamentFilter(v: string | null): v is TournamentFilter {
 }
 
 export default function Page() {
-  useRenderCount('TournamentPage');
   const queryClient = useQueryClient();
   // 1) filter state synced with URL
   const router = useRouter();
@@ -149,8 +147,7 @@ export default function Page() {
     error: modalError,
   } = useQuery({
     queryKey: ['tournament', openModalId],
-    queryFn: ({ signal }) =>
-      fetchTournamentDetails(openModalId!, { signal }),
+    queryFn: ({ signal }) => fetchTournamentDetails(openModalId!, { signal }),
     enabled: !!openModalId,
   });
 

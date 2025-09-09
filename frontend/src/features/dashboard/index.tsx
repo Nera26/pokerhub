@@ -13,7 +13,6 @@ import { useAuthStore } from '@/app/store/authStore';
 import { fetchProfile } from '@/lib/api/profile';
 import { useQuery } from '@tanstack/react-query';
 
-import useRenderCount from '@/hooks/useRenderCount';
 import { fetchAdminTabs } from '@/lib/api/admin';
 import type { SidebarTab } from '@shared/types';
 const Sidebar = dynamic(() => import('@/app/components/dashboard/Sidebar'), {
@@ -99,7 +98,6 @@ function isSidebarTab(v: string | null, tabs: SidebarTab[]): v is SidebarTab {
 }
 
 function DashboardPage() {
-  useRenderCount('DashboardPage');
   const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams();

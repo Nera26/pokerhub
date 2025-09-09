@@ -15,7 +15,6 @@ import InlineError from '../components/ui/InlineError';
 import type { GameType } from '@shared/types';
 import type { CashGameListProps } from '../components/home/CashGameList';
 import { type TournamentListProps } from '@/components/TournamentList';
-import useRenderCount from '@/hooks/useRenderCount';
 import { registerTournament } from '@/lib/api/lobby';
 
 interface TournamentWithBreak extends Tournament {
@@ -79,7 +78,6 @@ export function HomePageClient({
   const SiteTournamentList = (
     props: TournamentListProps<TournamentWithBreak>,
   ) => {
-    useRenderCount('SiteTournamentList');
     return <TournamentList {...props} />;
   };
   const [gameType, setGameType] = useState<GameType>('texas');

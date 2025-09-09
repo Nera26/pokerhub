@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react';
 import ChatContainer from './ChatContainer';
 import useChatSocket from '@/hooks/useChatSocket';
-import useRenderCount from '@/hooks/useRenderCount';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -28,8 +27,6 @@ export default function ChatWidget() {
     defaultValues: { message: '' },
   });
   const input = watch('message');
-
-  useRenderCount('ChatWidget');
 
   useEffect(() => {
     openRef.current = open;

@@ -7,7 +7,6 @@ import {
   faChevronRight,
 } from '@fortawesome/free-solid-svg-icons';
 import type { AuditLogEntry, LogTypeClasses } from '@shared/types';
-import useRenderCount from '@/hooks/useRenderCount';
 
 interface Props {
   rows: AuditLogEntry[];
@@ -30,7 +29,6 @@ export default function AuditTable({
   onView,
   badgeClasses,
 }: Props) {
-  useRenderCount('AuditTable');
   return (
     <section className="bg-card-bg rounded-2xl shadow-[0_4px_8px_rgba(0,0,0,0.3)] overflow-hidden">
       <div className="p-6 border-b border-dark">

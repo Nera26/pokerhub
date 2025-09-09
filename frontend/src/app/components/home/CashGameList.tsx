@@ -2,7 +2,6 @@
 
 import { Table } from '@/hooks/useLobbyData';
 import LiveTableCard from './LiveTableCard';
-import useRenderCount from '@/hooks/useRenderCount';
 import type { GameType } from '@shared/types';
 import VirtualizedSection from '@/components/VirtualizedSection';
 
@@ -17,8 +16,6 @@ export default function CashGameList({
   gameType,
   hidden,
 }: CashGameListProps) {
-  useRenderCount('CashGameList');
-
   return (
     <VirtualizedSection
       id="cash-games-panel"
