@@ -24,7 +24,8 @@ import {
   type WalletReconcileMismatchesResponse,
   TransactionTabsResponseSchema,
   type TransactionTab,
-  AdminBalanceRequestSchema, // kept in case you validate before calling adminAdjustBalance
+  // Optionally validate before calling adminAdjustBalance
+  AdminBalanceRequestSchema,
   type AdminBalanceRequest,
 } from '@shared/wallet.schema';
 import {
@@ -35,6 +36,7 @@ import {
 } from '@shared/types';
 
 const MessageResponseSchema = z.object({ message: z.string() });
+
 import {
   TransactionTypeSchema,
   TransactionLogEntrySchema,
@@ -302,7 +304,7 @@ export function adminAdjustBalance(
   userId: string,
   body: AdminBalanceRequest,
 ): Promise<MessageResponse> {
-  // Optionally validate here:
+  // Optionally validate:
   // AdminBalanceRequestSchema.parse(body);
   return apiClient(`/api/admin/balance/${userId}`, MessageResponseSchema, {
     method: 'POST',
@@ -346,7 +348,6 @@ export async function fetchTransactionTypes(
       { signal: opts.signal },
     );
   } catch (err) {
-    // Surface to caller; logging kept minimal here
     console.error('fetchTransactionTypes failed', err);
     throw err;
   }
@@ -393,9 +394,10 @@ export async function fetchTransactionsLog(
 }
 
 const BankAccountSchema = z.object({
-  accountNumber: z.string(),
-  tier: z.string(),
-  holder: z.string(),
+  name: z.string(),
+  accountName: z.string(),
+  address: z.string(),
+  masked: z.string(),
 });
 export type BankAccount = z.infer<typeof BankAccountSchema>;
 

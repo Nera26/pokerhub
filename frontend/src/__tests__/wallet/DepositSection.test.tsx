@@ -5,10 +5,15 @@ import { setupCountdownTimers, setupClipboardMocks } from '../utils/wallet';
 jest.mock('@/hooks/wallet', () => ({
   useIban: jest.fn(),
 }));
+jest.mock('@tanstack/react-query', () => ({
+  useQuery: jest.fn(),
+}));
 import { useIban } from '@/hooks/wallet';
+import { useQuery } from '@tanstack/react-query';
 import DepositSection from '@/app/components/wallet/DepositSection';
 
 const mockUseIban = useIban as jest.MockedFunction<typeof useIban>;
+const mockUseQuery = useQuery as jest.MockedFunction<typeof useQuery>;
 
 describe('DepositSection', () => {
   let advanceTimers: (ticks: number) => void;
@@ -29,6 +34,16 @@ describe('DepositSection', () => {
       isLoading: false,
       error: null,
     });
+    mockUseQuery.mockReturnValue({
+      data: {
+        name: 'Trade & Trust Bank',
+        accountName: 'PokerHub LLC',
+        address: 'Bayanzurkh District, Ulaanbaatar',
+        masked: 'DE02 5001 **** **** 1234',
+      },
+      isLoading: false,
+      error: null,
+    } as any);
   });
 
   afterEach(() => {
@@ -96,14 +111,30 @@ describe('DepositSection', () => {
   });
 
   it('shows loading and error states', () => {
+    mockUseQuery.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+    } as any);
+    const { rerender } = render(
+      <DepositSection onClose={jest.fn()} onConfirm={jest.fn()} />,
+    );
+    expect(screen.getByText(/loading bank details/i)).toBeInTheDocument();
+
+    mockUseQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: { message: 'bank oops' },
+    } as any);
+    rerender(<DepositSection onClose={jest.fn()} onConfirm={jest.fn()} />);
+    expect(screen.getByText('bank oops')).toBeInTheDocument();
+
     mockUseIban.mockReturnValue({
       data: undefined,
       isLoading: true,
       error: null,
     });
-    const { rerender } = render(
-      <DepositSection onClose={jest.fn()} onConfirm={jest.fn()} />,
-    );
+    rerender(<DepositSection onClose={jest.fn()} onConfirm={jest.fn()} />);
     expect(screen.getByText(/loading iban/i)).toBeInTheDocument();
 
     mockUseIban.mockReturnValue({

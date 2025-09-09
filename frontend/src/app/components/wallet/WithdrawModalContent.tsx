@@ -8,9 +8,10 @@ export interface WithdrawModalContentProps {
   /** Maximum available real balance */
   availableBalance: number;
   /** Bank account details */
-  bankAccountNumber: string;
-  accountTier: string;
-  accountHolder: string;
+  bankName: string;
+  accountName: string;
+  bankAddress: string;
+  maskedAccountNumber: string;
   /** Called to close the modal */
   onClose: () => void;
   /** Called when user confirms withdrawal */
@@ -25,9 +26,10 @@ export interface WithdrawModalContentProps {
 
 export default function WithdrawModalContent({
   availableBalance,
-  bankAccountNumber,
-  accountTier,
-  accountHolder,
+  bankName,
+  accountName,
+  bankAddress,
+  maskedAccountNumber,
   onClose,
   onConfirm,
   currency,
@@ -74,17 +76,19 @@ export default function WithdrawModalContent({
       {/* Bank Account Info */}
       <div className="mb-6 bg-primary-bg rounded-xl p-4">
         <p className="text-text-secondary mb-1">
-          <span className="font-semibold">Bank Account Number:</span>{' '}
-          {bankAccountNumber}
+          <span className="font-semibold">Bank Name:</span> {bankName}
         </p>
         <p className="text-text-secondary mb-1">
-          <span className="font-semibold">Account Tier:</span> {accountTier}
+          <span className="font-semibold">Account Name:</span> {accountName}
+        </p>
+        <p className="text-text-secondary mb-1">
+          <span className="font-semibold">Bank Address:</span> {bankAddress}
         </p>
         <p className="text-text-secondary">
-          <span className="font-semibold">Account Holder:</span> {accountHolder}
+          <span className="font-semibold">Account Number:</span>{' '}
+          {maskedAccountNumber}
         </p>
       </div>
     </div>
   );
 }
-

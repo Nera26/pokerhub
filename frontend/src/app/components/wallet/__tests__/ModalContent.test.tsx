@@ -28,9 +28,10 @@ const depositProps = () => ({
 
 const withdrawProps = () => ({
   availableBalance: 100,
-  bankAccountNumber: '123456789',
-  accountTier: 'Gold',
-  accountHolder: 'Jane Doe',
+  bankName: 'Test Bank',
+  accountName: 'Jane Doe',
+  bankAddress: '123 Street',
+  maskedAccountNumber: '****6789',
   onClose: jest.fn(),
   onConfirm: jest.fn(),
   currency: 'EUR',
@@ -94,9 +95,7 @@ describe.each([
       const input = screen.getByPlaceholderText('0.00');
       await userEvent.type(input, '150');
       expect(screen.getByText('Insufficient funds')).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', { name: 'Withdraw' }),
-      ).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Withdraw' })).toBeDisabled();
     });
 
     it('calls onConfirm with valid amount and device id', async () => {
@@ -114,4 +113,3 @@ describe.each([
     });
   }
 });
-
