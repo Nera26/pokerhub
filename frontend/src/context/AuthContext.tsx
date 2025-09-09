@@ -7,7 +7,7 @@ import {
 } from 'react';
 import { useAuthStore, usePlayerId } from '@/app/store/authStore';
 import { getStatus } from '@/lib/api/wallet';
-import { fetchMe } from '@/lib/api/me';
+import { fetchMe } from '@/lib/api/profile';
 
 interface AuthContextValue {
   playerId: string;

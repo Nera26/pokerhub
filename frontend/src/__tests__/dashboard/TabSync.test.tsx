@@ -37,8 +37,7 @@ jest.mock('@/hooks/useDashboardMetrics', () => ({
   }),
 }));
 
-
-jest.mock('@/features/site/profile/fetchProfile', () => ({
+jest.mock('@/lib/api/profile', () => ({
   fetchProfile: jest.fn().mockResolvedValue({
     username: 'Admin',
     email: 'admin@example.com',
