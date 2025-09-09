@@ -21,6 +21,7 @@ describe('Button', () => {
     );
     const btn = screen.getByRole('button', { name: 'settings' });
     expect(btn).toBeInTheDocument();
+    expect(btn).toHaveAttribute('aria-label', 'settings');
     expect(screen.getByTestId('icon')).toBeInTheDocument();
   });
 
@@ -33,6 +34,20 @@ describe('Button', () => {
     expect(warn).toHaveBeenCalledWith(
       'Button: icon-only buttons should include an aria-label for accessibility',
     );
+  });
+
+  it('disables button and sets aria-busy when loading', () => {
+    render(<Button loading>Save</Button>);
+    const btn = screen.getByRole('button', { name: 'Save' });
+    expect(btn).toBeDisabled();
+    expect(btn).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('merges duplicate class names', () => {
+    render(<Button className="px-4">Merge</Button>);
+    const btn = screen.getByRole('button', { name: 'Merge' });
+    expect(btn.className).toContain('px-4');
+    expect(btn.className).not.toContain('px-6');
   });
 
   describe('variant and size class combinations', () => {
