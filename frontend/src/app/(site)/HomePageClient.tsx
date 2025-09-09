@@ -9,6 +9,8 @@ import {
   type Tournament,
 } from '@/hooks/useLobbyData';
 import { useApiError } from '@/hooks/useApiError';
+import useToasts from '@/hooks/useToasts';
+import ToastNotification from '../components/ui/ToastNotification';
 import InlineError from '../components/ui/InlineError';
 import type { GameType } from '@shared/types';
 import type { CashGameListProps } from '../components/home/CashGameList';
@@ -82,6 +84,8 @@ export function HomePageClient({
   };
   const [gameType, setGameType] = useState<GameType>('texas');
   const [Chat, setChat] = useState<React.ComponentType | null>(null);
+  const { toasts, pushToast } = useToasts();
+  const [registering, setRegistering] = useState(false);
 
   useEffect(() => {
     const load = () =>
@@ -131,10 +135,14 @@ export function HomePageClient({
   }
 
   const handleRegister = async (id: string) => {
+    setRegistering(true);
     try {
       await registerTournament(id);
-    } catch {
-      // ignore errors for now
+    } catch (err) {
+      pushToast(useApiError(err), { variant: 'error' });
+      return;
+    } finally {
+      setRegistering(false);
     }
   };
 
@@ -153,16 +161,31 @@ export function HomePageClient({
           <InlineError message={tableErrorMessage} />
         )}
 
-        <SiteTournamentList
-          tournaments={tournaments ?? []}
-          hidden={!showTournaments}
-          onRegister={handleRegister}
-        />
+        <div
+          aria-busy={registering}
+          className={registering ? 'pointer-events-none opacity-50' : undefined}
+        >
+          <SiteTournamentList
+            tournaments={tournaments ?? []}
+            hidden={!showTournaments}
+            onRegister={handleRegister}
+          />
+        </div>
         {showTournaments && tournamentErrorMessage && (
           <InlineError message={tournamentErrorMessage} />
         )}
       </main>
       {Chat ? <Chat /> : <ChatPlaceholder />}
+      {toasts.map((t) => (
+        <ToastNotification
+          key={t.id}
+          message={t.message}
+          type={t.variant === 'error' ? 'error' : 'success'}
+          isOpen
+          duration={t.duration}
+          onClose={() => {}}
+        />
+      ))}
     </>
   );
 }
