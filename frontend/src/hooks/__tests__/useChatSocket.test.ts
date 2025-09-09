@@ -2,10 +2,10 @@ jest.mock('../scheduleTimeout', () => ({
   scheduleTimeout: jest.fn(),
 }));
 
-import React from 'react';
-import { renderHook, act } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { act } from '@testing-library/react';
+import { QueryClient } from '@tanstack/react-query';
 import useChatSocket from '../useChatSocket';
+import { renderHookWithClient } from './utils/renderHookWithClient';
 import { scheduleTimeout } from '../scheduleTimeout';
 
 jest.mock('@/lib/env', () => ({ env: { IS_E2E: true } }));
@@ -16,9 +16,7 @@ function setupHook(messages?: any[]) {
   if (messages) {
     queryClient.setQueryData(['chat', 'messages'], messages);
   }
-  const wrapper = ({ children }: { children: React.ReactNode }) =>
-    React.createElement(QueryClientProvider, { client: queryClient, children });
-  return renderHook(() => useChatSocket(), { wrapper });
+  return renderHookWithClient(() => useChatSocket(), queryClient).result;
 }
 
 describe('useChatSocket', () => {
