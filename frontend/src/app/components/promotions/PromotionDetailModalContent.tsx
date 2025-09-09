@@ -10,11 +10,23 @@ export interface PromotionDetailModalContentProps {
   promotion: Promotion;
   /** Callback to close the modal */
   onClose: () => void;
+  /** Optional action for the promotion (e.g. claim) */
+  onAction?: () => void;
+  /** Whether an action is in progress */
+  isLoading?: boolean;
+  /** Error message from action */
+  error?: string | null;
+  /** Whether the action succeeded */
+  success?: boolean;
 }
 
 export default function PromotionDetailModalContent({
   promotion,
   onClose,
+  onAction,
+  isLoading = false,
+  error,
+  success,
 }: PromotionDetailModalContentProps) {
   const { title, progress, unlockText, breakdown, eta } = promotion;
   const isProgressMode = !!progress;
@@ -85,11 +97,28 @@ export default function PromotionDetailModalContent({
         )}
       </div>
 
-      {/* Footer with Close button */}
-      <div className="mt-6 text-right">
-        <Button variant="primary" onClick={onClose}>
-          Close
-        </Button>
+      {/* Footer with actions */}
+      <div className="mt-6 text-right space-y-2">
+        {error && (
+          <div role="alert" className="text-red-500">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div role="status" className="text-accent-green">
+            Promotion claimed successfully!
+          </div>
+        )}
+        <div className="space-x-2">
+          {onAction && !success && (
+            <Button variant="primary" onClick={onAction} disabled={isLoading}>
+              {isLoading ? 'Claiming...' : 'Claim'}
+            </Button>
+          )}
+          <Button variant="secondary" onClick={onClose}>
+            Close
+          </Button>
+        </div>
       </div>
     </>
   );
