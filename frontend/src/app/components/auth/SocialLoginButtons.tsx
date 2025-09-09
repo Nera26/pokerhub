@@ -1,7 +1,7 @@
 'use client';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faGoogle, faFacebookF } from '../../icons';
+import { faGoogle, faFacebookF } from '@fortawesome/free-brands-svg-icons';
 import Button, { type ButtonProps } from '../ui/Button';
 
 const popupOptions = 'width=500,height=600';
