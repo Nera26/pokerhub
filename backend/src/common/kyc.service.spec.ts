@@ -6,7 +6,7 @@ import type { CountryProvider } from '../auth/providers/country-provider';
 import type { ConfigService } from '@nestjs/config';
 import type { Pep } from '../database/entities/pep.entity';
 import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
+import { createInMemoryDataSource } from '../../test/utils/pgMem';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Logger } from '@nestjs/common';
 
@@ -218,33 +218,10 @@ describe('KycService common', () => {
     };
 
     beforeAll(async () => {
-      const db = newDb();
-      db.public.registerFunction({
-        name: 'version',
-        returns: 'text',
-        implementation: () => 'pg-mem',
-      });
-      db.public.registerFunction({
-        name: 'current_database',
-        returns: 'text',
-        implementation: () => 'test',
-      });
-      let seq = 1;
-      db.public.registerFunction({
-        name: 'uuid_generate_v4',
-        returns: 'text',
-        implementation: () => {
-          const id = seq.toString(16).padStart(32, '0');
-          seq++;
-          return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(16, 20)}-${id.slice(20)}`;
-        },
-      });
-      dataSource = db.adapters.createTypeormDataSource({
-        type: 'postgres',
-        entities: [WalletAccount, JournalEntry],
-        synchronize: true,
-      }) as DataSource;
-      await dataSource.initialize();
+      dataSource = await createInMemoryDataSource([
+        WalletAccount,
+        JournalEntry,
+      ]);
 
       const repo = dataSource.getRepository(WalletAccount);
       accountId = '11111111-1111-1111-1111-111111111111';
