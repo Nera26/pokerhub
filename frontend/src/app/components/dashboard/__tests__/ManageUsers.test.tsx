@@ -2,15 +2,16 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ManageUsers from '../ManageUsers';
-import { fetchBalances, adminAdjustBalance } from '@/lib/api/wallet';
+import { useDashboardUsers } from '@/hooks/useDashboardUsers';
+import { adminAdjustBalance } from '@/lib/api/wallet';
 
+jest.mock('@/hooks/useDashboardUsers');
 jest.mock('@/lib/api/wallet', () => ({
-  fetchBalances: jest.fn(),
   adminAdjustBalance: jest.fn(),
 }));
 
-const mockFetchBalances = fetchBalances as jest.MockedFunction<
-  typeof fetchBalances
+const mockUseDashboardUsers = useDashboardUsers as jest.MockedFunction<
+  typeof useDashboardUsers
 >;
 const mockAdjust = adminAdjustBalance as jest.MockedFunction<
   typeof adminAdjustBalance
@@ -29,25 +30,26 @@ function renderWithClient() {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockFetchBalances.mockResolvedValue([
-    {
-      user: 'u1',
-      avatar: '',
-      balance: 100,
-      status: 'active',
-      lastActivity: 'now',
-    },
-  ]);
-  mockAdjust.mockResolvedValue({ message: 'ok' });
+  mockUseDashboardUsers.mockReturnValue({
+    data: [{ id: 'u1', username: 'alice', balance: 100, banned: false }],
+    isLoading: false,
+    error: null,
+  } as any);
+  mockAdjust.mockResolvedValue({ message: 'ok' } as any);
 });
 
 it('submits positive adjustment', async () => {
   renderWithClient();
-  await waitFor(() => screen.getByText('u1'));
 
+  // Row is rendered
+  await waitFor(() => expect(screen.getByText('alice')).toBeInTheDocument());
+
+  // Open Adjust Balance modal
   await userEvent.click(
     screen.getByRole('button', { name: /adjust balance/i }),
   );
+
+  // Enter amount and submit (default action is "add")
   const amount = screen.getByPlaceholderText('0.00');
   await userEvent.clear(amount);
   await userEvent.type(amount, '50');
@@ -65,15 +67,20 @@ it('submits positive adjustment', async () => {
 
 it('submits negative adjustment', async () => {
   renderWithClient();
-  await waitFor(() => screen.getByText('u1'));
+
+  await waitFor(() => expect(screen.getByText('alice')).toBeInTheDocument());
 
   await userEvent.click(
     screen.getByRole('button', { name: /adjust balance/i }),
   );
+
   const amount = screen.getByPlaceholderText('0.00');
   await userEvent.clear(amount);
   await userEvent.type(amount, '20');
+
+  // Change action to "remove"
   await userEvent.selectOptions(screen.getByRole('combobox'), 'remove');
+
   await userEvent.click(screen.getByRole('button', { name: /submit/i }));
 
   await waitFor(() =>

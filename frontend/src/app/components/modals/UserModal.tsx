@@ -18,6 +18,7 @@ type Props = {
   onClose: () => void;
   user?: User;
   onSubmit: (values: UserFormValues & { id?: number }) => void;
+  error?: string | null;
 };
 
 export default function UserModal({
@@ -26,6 +27,7 @@ export default function UserModal({
   onClose,
   user,
   onSubmit,
+  error,
 }: Props) {
   const isEdit = mode === 'edit';
 
@@ -73,6 +75,11 @@ export default function UserModal({
           <FontAwesomeIcon icon={faXmark} />
         </button>
       </div>
+      {error && (
+        <p role="alert" className="mb-4 text-danger-red">
+          {error}
+        </p>
+      )}
       <UserForm
         key={isEdit ? user?.id : undefined}
         defaultValues={defaultValues}
@@ -83,7 +90,6 @@ export default function UserModal({
           } else {
             onSubmit(data);
           }
-          onClose();
         }}
         onCancel={onClose}
         showPassword={!isEdit}
@@ -95,4 +101,3 @@ export default function UserModal({
     </Modal>
   );
 }
-

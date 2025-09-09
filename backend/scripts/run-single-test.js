@@ -4,7 +4,7 @@ const path = require('path');
 const root = process.cwd();
 const config = {
   rootDir: root,
-  testMatch: [path.join(root, 'test/ledger/wallet.ledger.property.spec.ts')],
+  testMatch: [path.join(root, 'test/wallet/ledger.property.spec.ts')],
   runInBand: true,
   verbose: true,
 };

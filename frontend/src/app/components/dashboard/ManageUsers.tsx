@@ -1,97 +1,203 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  fetchBalances,
-  adminAdjustBalance,
-  type Balance,
-} from '@/lib/api/wallet';
-import AdminTableManager from './common/AdminTableManager';
-import { TableHead, TableRow, TableCell } from '../ui/Table';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useDashboardUsers } from '@/hooks/useDashboardUsers';
+import { createAdminUser } from '@/lib/api/admin';
+import { adminAdjustBalance } from '@/lib/api/wallet';
+import type { DashboardUser, CreateUserRequest } from '@shared/types';
+import { CreateUserSchema } from '@shared/types';
+import type { UserFormValues } from '../forms/UserForm';
+import BanUserModal from '../modals/BanUserModal';
+import UserModal from '../modals/UserModal';
 import ManageBalanceModal from '../modals/ManageBalanceModal';
+import { Button } from '../ui/Button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../ui/Table';
+import type { ApiError } from '@/lib/api/client';
 
 export default function ManageUsers() {
   const queryClient = useQueryClient();
-  const { data: users = [] } = useQuery<Balance[]>({
-    queryKey: ['admin', 'balances'],
-    queryFn: fetchBalances,
+  const { data: users = [], isLoading, error } = useDashboardUsers();
+
+  const [selectedUser, setSelectedUser] = useState<DashboardUser | null>(null);
+  const [isBanModalOpen, setIsBanModalOpen] = useState(false);
+
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  const [isAdjustOpen, setIsAdjustOpen] = useState(false);
+  const [adjustTarget, setAdjustTarget] = useState<DashboardUser | null>(null);
+
+  // Ban user
+  const ban = useMutation({
+    mutationFn: (id: string) => fetch(`/api/users/${id}/ban`, { method: 'POST' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard-users'] });
+      setIsBanModalOpen(false);
+      setSelectedUser(null);
+    },
   });
 
-  const [selected, setSelected] = useState<Balance | null>(null);
-  const [open, setOpen] = useState(false);
+  // Create user
+  const create = useMutation({
+    mutationFn: (body: CreateUserRequest) => createAdminUser(body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard-users'] });
+      setIsUserModalOpen(false);
+    },
+    onError: (err: ApiError) => {
+      const message = err?.errors
+        ? Object.values(err.errors).join(', ')
+        : err?.message;
+      setCreateError(message ?? 'Failed to create user');
+    },
+  });
 
+  // Adjust balance
   const adjust = useMutation({
-    mutationFn: ({
-      userId,
-      body,
-    }: {
+    mutationFn: (args: {
       userId: string;
-      body: {
-        action: 'add' | 'remove' | 'freeze';
-        amount: number;
-        currency: string;
-        notes?: string;
-      };
-    }) => adminAdjustBalance(userId, body),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['admin', 'balances'] }),
+      action: 'add' | 'remove' | 'freeze';
+      amount: number;
+      notes?: string;
+    }) =>
+      adminAdjustBalance(args.userId, {
+        action: args.action,
+        // API expects integer cents/smallest unit if that’s your convention,
+        // but previous code used integers. Keep parity with your backend:
+        amount: Math.round(args.amount),
+        currency: 'USD',
+        notes: args.notes,
+      }),
+    onSuccess: () => {
+      // Refresh users (balances) and any other balance views elsewhere
+      queryClient.invalidateQueries({ queryKey: ['dashboard-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'balances'] });
+      setIsAdjustOpen(false);
+      setAdjustTarget(null);
+    },
   });
 
-  const openModal = (u: Balance) => {
-    setSelected(u);
-    setOpen(true);
+  const openBanModal = (u: DashboardUser) => {
+    setSelectedUser(u);
+    setIsBanModalOpen(true);
   };
 
-  const handleSubmit = (
+  const openCreateModal = () => {
+    setCreateError(null);
+    setIsUserModalOpen(true);
+  };
+
+  const openAdjustModal = (u: DashboardUser) => {
+    setAdjustTarget(u);
+    setIsAdjustOpen(true);
+  };
+
+  const submitCreate = (values: UserFormValues) => {
+    const payload = CreateUserSchema.parse({
+      username: values.username,
+      avatarKey: values.avatar,
+    });
+    create.mutate(payload);
+  };
+
+  const submitAdjust = (
     amount: number,
     action: 'add' | 'remove' | 'freeze',
     notes: string,
   ) => {
-    if (!selected) return;
+    if (!adjustTarget) return;
     adjust.mutate({
-      userId: selected.user,
-      body: { action, amount: Math.round(amount), currency: 'USD', notes },
+      userId: adjustTarget.id,
+      action,
+      amount,
+      notes,
     });
   };
 
+  if (isLoading) return <div>Loading users...</div>;
+  if (error) return <div>Error loading users</div>;
+
   return (
-    <div>
-      <AdminTableManager
-        items={users}
-        header={
-          <TableRow>
-            <TableHead className="font-semibold">User</TableHead>
-            <TableHead className="font-semibold">Balance</TableHead>
-            <TableHead className="text-right font-semibold">Actions</TableHead>
-          </TableRow>
-        }
-        renderRow={(u) => (
-          <TableRow key={u.user}>
-            <TableCell>{u.user}</TableCell>
-            <TableCell>${u.balance}</TableCell>
-            <TableCell className="text-right">
-              <button
-                onClick={() => openModal(u)}
-                className="text-accent-yellow hover:underline"
-              >
-                Adjust Balance
-              </button>
-            </TableCell>
-          </TableRow>
-        )}
-        searchFilter={(u, q) => u.user.toLowerCase().includes(q)}
-        searchPlaceholder="Search users..."
-        emptyMessage="No users found."
+    <div className="space-y-4">
+      <Button onClick={openCreateModal}>Add User</Button>
+
+      {users.length === 0 ? (
+        <p>No users found</p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Username</TableHead>
+              <TableHead>Balance</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {users.map((u) => (
+              <TableRow key={u.id}>
+                <TableCell>{u.username}</TableCell>
+                <TableCell>
+                  $
+                  {Number(u.balance).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </TableCell>
+                <TableCell>{u.banned ? 'Banned' : 'Active'}</TableCell>
+                <TableCell className="text-right space-x-2">
+                  <Button variant="secondary" onClick={() => openAdjustModal(u)}>
+                    Adjust Balance
+                  </Button>
+                  <Button variant="danger" onClick={() => openBanModal(u)}>
+                    Ban
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+
+      {/* Ban modal */}
+      <BanUserModal
+        isOpen={isBanModalOpen}
+        onClose={() => {
+          setIsBanModalOpen(false);
+          setSelectedUser(null);
+        }}
+        onConfirm={() => selectedUser && ban.mutate(selectedUser.id)}
+        userName={selectedUser?.username ?? ''}
       />
 
-      {selected && (
+      {/* Create user modal */}
+      <UserModal
+        mode="add"
+        isOpen={isUserModalOpen}
+        onClose={() => setIsUserModalOpen(false)}
+        onSubmit={submitCreate}
+        error={createError}
+      />
+
+      {/* Adjust balance modal */}
+      {adjustTarget && (
         <ManageBalanceModal
-          isOpen={open}
-          onClose={() => setOpen(false)}
-          userName={selected.user}
-          currentBalance={selected.balance}
-          onSubmit={handleSubmit}
+          isOpen={isAdjustOpen}
+          onClose={() => {
+            setIsAdjustOpen(false);
+            setAdjustTarget(null);
+          }}
+          userName={adjustTarget.username}
+          currentBalance={Number(adjustTarget.balance)}
+          onSubmit={submitAdjust}
         />
       )}
     </div>

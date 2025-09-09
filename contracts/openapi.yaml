@@ -649,6 +649,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IbanResponse'
+    post:
+      summary: Update deposit IBAN
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IbanUpdateRequest'
+      responses:
+        '200':
+          description: Updated IBAN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IbanResponse'
   /wallet/iban/history:
     get:
       summary: Get IBAN change history
@@ -1370,6 +1387,23 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/DashboardUser'
+    post:
+      summary: Create user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardUser'
   /admin/tournaments/defaults:
     get:
       summary: Get default tournament values
@@ -2593,6 +2627,21 @@ components:
             $ref: '#/components/schemas/IbanHistoryEntry'
       required:
         - history
+    IbanUpdateRequest:
+      type: object
+      properties:
+        iban:
+          type: string
+        holder:
+          type: string
+        instructions:
+          type: string
+        notes:
+          type: string
+      required:
+        - iban
+        - holder
+        - instructions
     CreateUserRequest:
       type: object
       properties:

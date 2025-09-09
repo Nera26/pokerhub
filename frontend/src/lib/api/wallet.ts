@@ -14,6 +14,7 @@ import {
   DepositDecisionRequestSchema,
   IbanResponseSchema,
   IbanHistoryResponseSchema,
+  IbanUpdateRequestSchema,
   WalletReconcileMismatchesResponseSchema,
   type WalletStatusResponse,
   type WalletTransactionsResponse,
@@ -21,6 +22,7 @@ import {
   type PendingDepositsResponse,
   type IbanResponse,
   type IbanHistoryResponse,
+  type IbanUpdateRequest,
   type WalletReconcileMismatchesResponse,
   TransactionTabsResponseSchema,
   type TransactionTab,
@@ -425,6 +427,18 @@ export function fetchIbanHistory(
   opts: { signal?: AbortSignal } = {},
 ): Promise<IbanHistoryResponse> {
   return apiClient(`/api/wallet/iban/history`, IbanHistoryResponseSchema, {
+    signal: opts.signal,
+  });
+}
+
+export function updateIban(
+  data: IbanUpdateRequest,
+  opts: { signal?: AbortSignal } = {},
+): Promise<IbanResponse> {
+  const body = IbanUpdateRequestSchema.parse(data);
+  return apiClient(`/api/wallet/iban`, IbanResponseSchema, {
+    method: 'POST',
+    body,
     signal: opts.signal,
   });
 }
