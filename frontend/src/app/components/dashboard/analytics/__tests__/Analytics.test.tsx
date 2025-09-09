@@ -28,6 +28,25 @@ jest.mock('@/lib/api/leaderboard', () => ({
 }));
 
 describe('Analytics', () => {
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        Login: '',
+        'Table Event': '',
+        Broadcast: '',
+        Error: '',
+      }),
+    }) as unknown as typeof fetch;
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    jest.resetAllMocks();
+  });
+
   function renderWithClient(ui: React.ReactElement) {
     const queryClient = new QueryClient();
     return render(
@@ -40,9 +59,10 @@ describe('Analytics', () => {
 
     renderWithClient(<Analytics />);
     const user = userEvent.setup();
-    await user.click(
-      screen.getByRole('button', { name: /rebuild leaderboard/i }),
-    );
+    const button = await screen.findByRole('button', {
+      name: /rebuild leaderboard/i,
+    });
+    await user.click(button);
 
     await waitFor(() => {
       expect(rebuildLeaderboard).toHaveBeenCalled();
