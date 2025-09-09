@@ -1,4 +1,6 @@
-import { apiClient, ApiError } from './client';
+import { apiClient, ApiError, handleResponse } from './client';
+import { getBaseUrl } from '@/lib/base-url';
+import { useAuthStore } from '@/app/store/authStore';
 import {
   UserProfileSchema,
   type UserProfile,
@@ -57,6 +59,26 @@ export function fetchStats({
       apiClient('/api/profile/stats', ProfileStatsResponseSchema, { signal }),
     'Failed to fetch profile stats',
   );
+}
+
+export function updateProfile(data: FormData): Promise<UserProfile> {
+  return withProfileError(() => {
+    const baseUrl = getBaseUrl();
+    const token = useAuthStore.getState().token;
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    return handleResponse(
+      fetch(`${baseUrl}/api/user/profile`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers,
+        body: data,
+      }),
+      UserProfileSchema,
+    );
+  }, 'Failed to update profile');
 }
 
 export type { ApiError } from './client';

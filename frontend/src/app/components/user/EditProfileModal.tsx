@@ -8,6 +8,7 @@ import { faTimes } from '@fortawesome/free-solid-svg-icons/faTimes';
 import Modal from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import type { UserProfile } from '@shared/types';
 
 const editProfileSchema = z.object({
   avatar: z.any().optional(),
@@ -22,10 +23,16 @@ export type EditProfileData = z.infer<typeof editProfileSchema>;
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: EditProfileData) => void;
+  profile: UserProfile;
+  onSave: (data: FormData) => void;
 }
 
-export default function EditProfileModal({ isOpen, onClose, onSave }: Props) {
+export default function EditProfileModal({
+  isOpen,
+  onClose,
+  profile,
+  onSave,
+}: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const avatarRef = useRef<File | null>(null);
 
@@ -55,15 +62,16 @@ export default function EditProfileModal({ isOpen, onClose, onSave }: Props) {
 
   useEffect(() => {
     if (isOpen) {
+      avatarRef.current = null;
       reset({
         avatar: null,
-        username: 'PlayerOne23',
-        email: 'playerone23@example.com',
-        bank: '1234',
-        bio: '"Texas grinder. Loves Omaha. Weekend warrior."',
+        username: profile.username,
+        email: profile.email,
+        bank: profile.bank,
+        bio: profile.bio,
       });
     }
-  }, [isOpen, reset]);
+  }, [isOpen, reset, profile]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -73,9 +81,15 @@ export default function EditProfileModal({ isOpen, onClose, onSave }: Props) {
   };
 
   const onSubmit = (data: EditProfileData) => {
-    const avatar = avatarRef.current;
-    onSave({ ...data, avatar });
-    onClose();
+    const formData = new FormData();
+    if (avatarRef.current) {
+      formData.append('avatar', avatarRef.current);
+    }
+    formData.append('username', data.username);
+    formData.append('email', data.email);
+    formData.append('bank', data.bank);
+    formData.append('bio', data.bio);
+    onSave(formData);
   };
 
   const avatarFile = watch('avatar');
