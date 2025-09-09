@@ -23,22 +23,10 @@ import {
 import {
   type BroadcastsResponse,
   type SendBroadcastRequest,
+  type BroadcastType,
 } from '@shared/types';
 import useToasts from '@/hooks/useToasts';
-
-type MsgType = 'announcement' | 'alert' | 'notice';
-
-const TYPE_ICON: Record<MsgType, string> = {
-  announcement: '📢',
-  alert: '⚠️',
-  notice: 'ℹ️',
-};
-
-const TYPE_COLOR: Record<MsgType, string> = {
-  announcement: 'text-accent-yellow',
-  alert: 'text-danger-red',
-  notice: 'text-accent-blue',
-};
+import useBroadcastTypes from '@/hooks/useBroadcastTypes';
 
 const MAX_LEN = 500;
 
@@ -81,6 +69,9 @@ export default function Broadcast() {
   });
   const templates = templatesData?.templates;
 
+  const { data: typesData } = useBroadcastTypes();
+  const typeMeta = typesData?.types ?? {};
+
   const { toasts, pushToast } = useToasts();
 
   const mutation = useMutation({
@@ -119,8 +110,8 @@ export default function Broadcast() {
     },
   });
 
-  const previewIcon = TYPE_ICON[type];
-  const previewColor = TYPE_COLOR[type];
+  const previewIcon = typeMeta[type as BroadcastType]?.icon ?? '';
+  const previewColor = typeMeta[type as BroadcastType]?.color ?? '';
 
   function insertTemplate(kind: 'maintenance' | 'tournament') {
     const msg = templates?.[kind];
@@ -313,9 +304,11 @@ export default function Broadcast() {
         ) : (
           <div className="space-y-4">
             {broadcasts.map((it) => {
-              const color = TYPE_COLOR[it.type as MsgType];
-              const icon = TYPE_ICON[it.type as MsgType];
-              const urgentLeft = it.urgent ? 'border-l-4 border-danger-red' : '';
+              const color = typeMeta[it.type as BroadcastType]?.color;
+              const icon = typeMeta[it.type as BroadcastType]?.icon;
+              const urgentLeft = it.urgent
+                ? 'border-l-4 border-danger-red'
+                : '';
               const when = new Date(it.timestamp).toLocaleString();
               return (
                 <div

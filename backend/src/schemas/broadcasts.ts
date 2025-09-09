@@ -3,6 +3,12 @@ import { z } from 'zod';
 export const BroadcastTypeSchema = z.enum(['announcement', 'alert', 'notice']);
 export type BroadcastType = z.infer<typeof BroadcastTypeSchema>;
 
+export const BroadcastTypeInfoSchema = z.object({
+  icon: z.string(),
+  color: z.string(),
+});
+export type BroadcastTypeInfo = z.infer<typeof BroadcastTypeInfoSchema>;
+
 export const BroadcastSchema = z.object({
   id: z.string(),
   type: BroadcastTypeSchema,
@@ -16,6 +22,11 @@ export const BroadcastsResponseSchema = z.object({
   broadcasts: z.array(BroadcastSchema),
 });
 export type BroadcastsResponse = z.infer<typeof BroadcastsResponseSchema>;
+
+export const BroadcastTypesResponseSchema = z.object({
+  types: z.record(BroadcastTypeSchema, BroadcastTypeInfoSchema),
+});
+export type BroadcastTypesResponse = z.infer<typeof BroadcastTypesResponseSchema>;
 
 export const BroadcastTemplatesResponseSchema = z.object({
   templates: z.object({
