@@ -100,7 +100,7 @@
     "@types/express": "^5.0.3",
     "@types/jest": "^29.5.14",
     "@types/minimatch": "^6.0.0",
-    "@types/node": "^20.19.11",
+    "@types/node": "^24.3.1",
     "@types/nprogress": "^0.2.3",
     "@types/prop-types": "^15.7.15",
     "@types/react": "^19",
