@@ -325,6 +325,21 @@ export class AnalyticsService {
     }
   }
 
+  private buildAggregation<T extends Record<string, unknown>>(
+    topic: string,
+    event: string,
+    data: T,
+  ) {
+    return [
+      this.producer.send({
+        topic,
+        messages: [{ value: JSON.stringify({ event, data }) }],
+      }),
+      this.ingest(event.replace('.', '_'), data),
+      this.archive(event, data),
+    ];
+  }
+
   async emit<E extends EventName>(event: E, data: Events[E]) {
     const validate = this.validators[event];
     if (!validate(data)) {
@@ -333,20 +348,12 @@ export class AnalyticsService {
       );
       return;
     }
-    const payload = { event, data };
     const topic = this.topicMap[event.split('.')[0]];
     if (!topic) {
       this.logger.warn(`No topic mapping for event ${event}`);
       return;
     }
-    await Promise.all([
-      this.producer.send({
-        topic,
-        messages: [{ value: JSON.stringify(payload) }],
-      }),
-      this.ingest(event.replace('.', '_'), data),
-      this.archive(event, data),
-    ]);
+    await Promise.all(this.buildAggregation(topic, event, data));
   }
 
   async recordGameEvent<T extends Record<string, unknown>>(event: T) {
@@ -356,18 +363,9 @@ export class AnalyticsService {
       'event',
       JSON.stringify(event),
     );
-    await Promise.all([
-      this.producer.send({
-        topic: this.topicMap.hand,
-        messages: [
-          {
-            value: JSON.stringify({ event: 'game.event', data: event }),
-          },
-        ],
-      }),
-      this.ingest('game_event', event),
-      this.archive('game.event', event),
-    ]);
+    await Promise.all(
+      this.buildAggregation(this.topicMap.hand, 'game.event', event),
+    );
     if (
       'handId' in event &&
       'playerId' in event &&
@@ -389,18 +387,9 @@ export class AnalyticsService {
       'event',
       JSON.stringify(event),
     );
-    await Promise.all([
-      this.producer.send({
-        topic: this.topicMap.tournament,
-        messages: [
-          {
-            value: JSON.stringify({ event: 'tournament.event', data: event }),
-          },
-        ],
-      }),
-      this.ingest('tournament_event', event),
-      this.archive('tournament.event', event),
-    ]);
+    await Promise.all(
+      this.buildAggregation(this.topicMap.tournament, 'tournament.event', event),
+    );
   }
 
   async recordCollusionSession(session: CollusionSession) {
