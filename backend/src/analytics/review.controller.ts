@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CollusionService } from './collusion.service';
-import { FlaggedSessionsQuerySchema } from '../schemas/review';
+import { FlaggedSessionsQuerySchema } from '@shared/types';
 import { AdminGuard } from '../auth/admin.guard';
 
 @UseGuards(AdminGuard)

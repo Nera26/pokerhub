@@ -8,7 +8,7 @@ import {
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CollusionService } from './collusion.service';
 import { AnalyticsService } from './analytics.service';
-import { ReviewActionSchema } from '../schemas/review';
+import { ReviewActionSchema } from '@shared/types';
 import { AdminGuard } from '../auth/admin.guard';
 
 @UseGuards(AdminGuard)
