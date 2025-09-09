@@ -1,1 +1,0 @@
-export { useAuditLogs } from './useAuditResource';

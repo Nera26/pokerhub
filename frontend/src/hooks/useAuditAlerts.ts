@@ -1,1 +1,0 @@
-export { useAuditAlerts } from './useAuditResource';

@@ -16,20 +16,22 @@ export const makeAuditHook =
   () =>
     useAuditQuery<T>(key, path, schema);
 
-export const useAuditAlerts = makeAuditHook<AlertItem[]>(
+const useAuditAlerts = makeAuditHook<AlertItem[]>(
   'audit-alerts',
   '/api/admin/security-alerts',
   SecurityAlertsResponseSchema,
 );
 
-export const useAuditLogs = makeAuditHook<AuditLogsResponse>(
+const useAuditLogs = makeAuditHook<AuditLogsResponse>(
   'audit-logs',
   '/api/admin/audit-logs',
   AuditLogsResponseSchema,
 );
 
-export const useAuditSummary = makeAuditHook<AuditSummary>(
+const useAuditSummary = makeAuditHook<AuditSummary>(
   'audit-summary',
   '/api/analytics/summary',
   AuditSummarySchema,
 );
+
+export { useAuditAlerts, useAuditLogs, useAuditSummary };
