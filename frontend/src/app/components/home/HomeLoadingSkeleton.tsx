@@ -1,8 +1,20 @@
 'use client';
 
+import { useTables, useTournaments, useCTAs } from '@/hooks/useLobbyData';
+import { useGameTypes } from '@/hooks/useGameTypes';
 import SkeletonSection from './SkeletonSection';
 
 export default function HomeLoadingSkeleton() {
+  const { data: tables } = useTables();
+  const { data: tournaments } = useTournaments();
+  const { data: ctas } = useCTAs();
+  const { data: gameTypes } = useGameTypes();
+
+  const ctaCount = ctas?.length ?? 2;
+  const tabCount = gameTypes?.length ?? 4;
+  const tableCount = tables?.length ?? 3;
+  const tournamentCount = tournaments?.length ?? 3;
+
   return (
     <main
       aria-busy="true"
@@ -10,16 +22,22 @@ export default function HomeLoadingSkeleton() {
     >
       {/* Top CTAs */}
       <div className="flex gap-4 mb-6">
-        <div className="h-12 flex-1 rounded-xl bg-card-bg animate-pulse" />
-        <div className="h-12 flex-1 rounded-xl bg-card-bg animate-pulse" />
+        {Array.from({ length: ctaCount }).map((_, i) => (
+          <div
+            key={i}
+            data-testid="cta-skeleton"
+            className="h-12 flex-1 rounded-xl bg-card-bg animate-pulse"
+          />
+        ))}
       </div>
 
       {/* Game Tabs */}
       <section className="mb-6 md:mb-8">
         <div className="flex space-x-2 sm:space-x-4 overflow-x-auto pb-2">
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: tabCount }).map((_, i) => (
             <div
               key={i}
+              data-testid="tab-skeleton"
               className="h-12 w-24 sm:w-32 rounded-xl bg-card-bg animate-pulse"
             />
           ))}
@@ -27,10 +45,18 @@ export default function HomeLoadingSkeleton() {
       </section>
 
       {/* Cash Games */}
-      <SkeletonSection id="cash-games-section" layout="cash" repeat={3} />
+      <SkeletonSection
+        id="cash-games-section"
+        layout="cash"
+        repeat={tableCount}
+      />
 
       {/* Tournaments */}
-      <SkeletonSection id="tournaments-section" layout="tournament" repeat={3} />
+      <SkeletonSection
+        id="tournaments-section"
+        layout="tournament"
+        repeat={tournamentCount}
+      />
     </main>
   );
 }
