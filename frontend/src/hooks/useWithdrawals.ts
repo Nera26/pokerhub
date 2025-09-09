@@ -1,15 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { approveWithdrawal, rejectWithdrawal } from '@/lib/api/withdrawals';
 import { PerformedBy } from '@/app/components/modals/TransactionHistoryModal';
+import type { DashboardUser, PendingWithdrawalsResponse } from '@shared/types';
 
-export type Withdrawal = {
-  user: string;
-  amount: string;
-  date: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
-  bankInfo?: string;
-  avatar: string;
-};
+export type Withdrawal = PendingWithdrawalsResponse['withdrawals'][number];
 
 // Decide which API call to use based on action
 export function mutateWithdrawal(
@@ -17,22 +11,17 @@ export function mutateWithdrawal(
   { withdrawal, comment }: { withdrawal: Withdrawal; comment: string },
 ) {
   return action === 'approve'
-    ? approveWithdrawal(withdrawal.user, comment)
-    : rejectWithdrawal(withdrawal.user, comment);
+    ? approveWithdrawal(withdrawal.id, comment)
+    : rejectWithdrawal(withdrawal.id, comment);
 }
 
-type User = {
-  id: number;
-  name: string;
-  email: string;
-  balance: number;
-  status: 'Active' | 'Frozen' | 'Banned';
-  avatar: string;
-};
+type User = DashboardUser;
 
 export function useWithdrawalMutation(
   selectedWithdrawal: Withdrawal | null,
-  setSelectedWithdrawal: React.Dispatch<React.SetStateAction<Withdrawal | null>>,
+  setSelectedWithdrawal: React.Dispatch<
+    React.SetStateAction<Withdrawal | null>
+  >,
   showToast: (m: string, t?: 'success' | 'error') => void,
   setReviewModalOpen: (open: boolean) => void,
 ) {
@@ -65,18 +54,21 @@ export function useWithdrawalMutation(
       queryClient.setQueryData<Withdrawal[]>(['withdrawals'], (old) =>
         old
           ? old.map((w) =>
-              w.user === withdrawal.user
-                ? { ...w, status: action === 'approve' ? 'Approved' : 'Rejected' }
+              w.id === withdrawal.id
+                ? {
+                    ...w,
+                    status: action === 'approve' ? 'completed' : 'rejected',
+                  }
                 : w,
             )
           : [],
       );
       if (action === 'approve') {
-        const amt = parseFloat(withdrawal.amount.replace(/[$,]/g, ''));
+        const amt = withdrawal.amount;
         queryClient.setQueryData<User[]>(['users'], (old) =>
           old
             ? old.map((u) =>
-                u.name === withdrawal.user
+                u.id === withdrawal.userId
                   ? { ...u, balance: Math.max(0, u.balance - amt) }
                   : u,
               )
@@ -84,8 +76,8 @@ export function useWithdrawalMutation(
         );
       }
       setSelectedWithdrawal((w) =>
-        w && w.user === withdrawal.user
-          ? { ...w, status: action === 'approve' ? 'Approved' : 'Rejected' }
+        w && w.id === withdrawal.id
+          ? { ...w, status: action === 'approve' ? 'completed' : 'rejected' }
           : w,
       );
       return {
@@ -109,10 +101,15 @@ export function useWithdrawalMutation(
       if (action === 'approve') {
         queryClient.invalidateQueries({ queryKey: ['users'] });
       }
-      queryClient.invalidateQueries({ queryKey: ['userTransactions', withdrawal.user] });
+      queryClient.invalidateQueries({
+        queryKey: ['userTransactions', withdrawal.userId],
+      });
       setReviewModalOpen(false);
     },
-    onSuccess: (_data, { action }) => {
+    onSuccess: (data, { action }) => {
+      queryClient.setQueryData<Withdrawal[]>(['withdrawals'], (old) =>
+        old ? old.map((w) => (w.id === data.id ? data : w)) : [],
+      );
       showToast(
         action === 'approve' ? 'Withdrawal approved' : 'Withdrawal rejected',
         action === 'approve' ? 'success' : 'error',
@@ -120,4 +117,3 @@ export function useWithdrawalMutation(
     },
   });
 }
-
