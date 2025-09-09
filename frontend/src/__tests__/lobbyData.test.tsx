@@ -3,33 +3,22 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useTables, useTournaments } from '@/hooks/useLobbyData';
 import type { ApiError, ResponseLike } from '@/lib/api/client';
+import { setupLobbyCache } from './utils/lobbyCache';
 
 describe('useTables caching', () => {
-  const originalFetch = global.fetch;
   let fetchMock: jest.Mock<Promise<ResponseLike>, [string]>;
+  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
+  let cleanup: () => void;
+
   beforeEach(() => {
-    jest.useFakeTimers();
-    fetchMock = jest.fn<Promise<ResponseLike>, [string]>().mockResolvedValue({
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-      json: async () => [],
-    });
-    global.fetch = fetchMock as unknown as typeof fetch;
+    ({ fetchMock, wrapper, cleanup } = setupLobbyCache());
   });
 
   afterEach(() => {
-    jest.useRealTimers();
-    fetchMock.mockReset();
-    global.fetch = originalFetch;
+    cleanup();
   });
 
   it('serves cached data until stale time expires', async () => {
-    const client = new QueryClient();
-    const wrapper = ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
-
     const { result: first } = renderHook(() => useTables(), { wrapper });
     await waitFor(() => expect(first.current.data).toBeDefined());
     expect(fetchMock.mock.calls.length).toBe(1);
@@ -49,31 +38,19 @@ describe('useTables caching', () => {
 });
 
 describe('useTournaments caching', () => {
-  const originalFetch = global.fetch;
   let fetchMock: jest.Mock<Promise<ResponseLike>, [string]>;
+  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
+  let cleanup: () => void;
+
   beforeEach(() => {
-    jest.useFakeTimers();
-    fetchMock = jest.fn<Promise<ResponseLike>, [string]>().mockResolvedValue({
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-      json: async () => [],
-    });
-    global.fetch = fetchMock as unknown as typeof fetch;
+    ({ fetchMock, wrapper, cleanup } = setupLobbyCache());
   });
 
   afterEach(() => {
-    jest.useRealTimers();
-    fetchMock.mockReset();
-    global.fetch = originalFetch;
+    cleanup();
   });
 
   it('serves cached data until stale time expires', async () => {
-    const client = new QueryClient();
-    const wrapper = ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
-
     const { result: first } = renderHook(() => useTournaments(), { wrapper });
     await waitFor(() => expect(first.current.data).toBeDefined());
     expect(fetchMock.mock.calls.length).toBe(1);
