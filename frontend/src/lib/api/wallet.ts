@@ -428,3 +428,17 @@ export function fetchIbanHistory(
     signal: opts.signal,
   });
 }
+
+export function updateIban(
+  iban: string,
+  holder: string,
+  notes: string,
+  opts: { signal?: AbortSignal } = {},
+) {
+  return apiClient(`/api/wallet/iban`, MessageResponseSchema, {
+    method: 'POST',
+    body: { iban, holder, notes },
+    signal: opts.signal,
+  });
+}
+
