@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faWallet } from '@fortawesome/free-solid-svg-icons/faWallet';
 import { faTags } from '@fortawesome/free-solid-svg-icons/faTags';
 import { faTrophy } from '@fortawesome/free-solid-svg-icons/faTrophy';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 
 interface NavigationLinksProps {
   balance: string;
@@ -17,6 +18,8 @@ export default function NavigationLinks({
   balance,
   avatarUrl = DEFAULT_AVATAR,
 }: NavigationLinksProps) {
+  const { data } = useFeatureFlags();
+  const flags = data ?? { promotions: false, leaderboard: false };
   return (
     <>
       <Link
@@ -45,23 +48,27 @@ export default function NavigationLinks({
         <span className="font-semibold">{balance}</span>
       </Link>
 
-      <Link
-        href="/promotions"
-        prefetch
-        className="text-text-secondary hover:text-accent-yellow transition-colors duration-200 flex items-center"
-      >
-        <FontAwesomeIcon icon={faTags} className="mr-2" />
-        <span>Promotions</span>
-      </Link>
+      {flags.promotions && (
+        <Link
+          href="/promotions"
+          prefetch
+          className="text-text-secondary hover:text-accent-yellow transition-colors duration-200 flex items-center"
+        >
+          <FontAwesomeIcon icon={faTags} className="mr-2" />
+          <span>Promotions</span>
+        </Link>
+      )}
 
-      <Link
-        href="/leaderboard"
-        prefetch
-        className="text-text-secondary hover:text-accent-yellow transition-colors duration-200 flex items-center"
-      >
-        <FontAwesomeIcon icon={faTrophy} className="mr-2" />
-        <span>Leaderboard</span>
-      </Link>
+      {flags.leaderboard && (
+        <Link
+          href="/leaderboard"
+          prefetch
+          className="text-text-secondary hover:text-accent-yellow transition-colors duration-200 flex items-center"
+        >
+          <FontAwesomeIcon icon={faTrophy} className="mr-2" />
+          <span>Leaderboard</span>
+        </Link>
+      )}
     </>
   );
 }

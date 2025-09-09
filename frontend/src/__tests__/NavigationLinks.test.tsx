@@ -1,11 +1,26 @@
 import { render, screen } from '@testing-library/react';
 import NavigationLinks from '@/app/components/common/header/NavigationLinks';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
+
+jest.mock('@/hooks/useFeatureFlags');
+
+const mockUseFeatureFlags = useFeatureFlags as jest.MockedFunction<
+  typeof useFeatureFlags
+>;
 
 describe('NavigationLinks', () => {
   const cases = [
     { balance: '$100.00', avatarUrl: '/avatar1.png' },
     { balance: '$250.50', avatarUrl: '/avatar2.png' },
   ];
+
+  beforeEach(() => {
+    mockUseFeatureFlags.mockReturnValue({
+      data: { promotions: true, leaderboard: true },
+      error: undefined,
+      isLoading: false,
+    });
+  });
 
   test.each(cases)(
     'renders links and avatar correctly for %o',
@@ -39,6 +54,11 @@ describe('NavigationLinks', () => {
   );
 
   it('uses provided avatarUrl when set', () => {
+    mockUseFeatureFlags.mockReturnValue({
+      data: { promotions: false, leaderboard: false },
+      error: undefined,
+      isLoading: false,
+    });
     const avatar = 'https://example.com/avatar.png';
     render(<NavigationLinks balance="$0" avatarUrl={avatar} />);
     const img = screen.getByRole('img', { name: 'User Avatar' });
@@ -46,10 +66,45 @@ describe('NavigationLinks', () => {
   });
 
   it('falls back to default avatar when none provided', () => {
+    mockUseFeatureFlags.mockReturnValue({
+      data: { promotions: false, leaderboard: false },
+      error: undefined,
+      isLoading: false,
+    });
     render(<NavigationLinks balance="$0" />);
     const img = screen.getByRole('img', { name: 'User Avatar' });
     expect(img.getAttribute('src')).toBe(
       'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=',
     );
+  });
+
+  it('hides Promotions link when flag disabled', () => {
+    mockUseFeatureFlags.mockReturnValue({
+      data: { promotions: false, leaderboard: true },
+      error: undefined,
+      isLoading: false,
+    });
+    render(<NavigationLinks balance="$0" />);
+    expect(
+      screen.queryByRole('link', { name: /Promotions/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /Leaderboard/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('hides Leaderboard link when flag disabled', () => {
+    mockUseFeatureFlags.mockReturnValue({
+      data: { promotions: true, leaderboard: false },
+      error: undefined,
+      isLoading: false,
+    });
+    render(<NavigationLinks balance="$0" />);
+    expect(
+      screen.queryByRole('link', { name: /Leaderboard/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /Promotions/i }),
+    ).toBeInTheDocument();
   });
 });
