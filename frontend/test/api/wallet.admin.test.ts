@@ -8,6 +8,7 @@ import {
   rejectWithdrawal,
   fetchBalances,
   fetchTransactionsLog,
+  adminAdjustBalance,
 } from '@/lib/api/wallet';
 import { PendingDepositsResponseSchema } from '@shared/wallet.schema';
 import {
@@ -154,7 +155,34 @@ describe('wallet admin api client', () => {
         },
       ],
     };
-    expect(() => PendingWithdrawalsResponseSchema.parse(withInfo)).not.toThrow();
-    expect(() => PendingWithdrawalsResponseSchema.parse(withoutInfo)).not.toThrow();
+    expect(() =>
+      PendingWithdrawalsResponseSchema.parse(withInfo),
+    ).not.toThrow();
+    expect(() =>
+      PendingWithdrawalsResponseSchema.parse(withoutInfo),
+    ).not.toThrow();
+  });
+
+  it('adminAdjustBalance posts to endpoint', async () => {
+    await adminAdjustBalance('u1', {
+      action: 'add',
+      amount: 10,
+      currency: 'USD',
+      notes: 'n',
+    });
+    expect(apiClientMock).toHaveBeenCalledWith(
+      '/api/admin/balance/u1',
+      MessageResponseSchema,
+      {
+        method: 'POST',
+        body: {
+          action: 'add',
+          amount: 10,
+          currency: 'USD',
+          notes: 'n',
+        },
+        signal: undefined,
+      },
+    );
   });
 });

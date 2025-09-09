@@ -1495,6 +1495,29 @@ export interface paths {
         /** @description Withdrawal rejected */
         200: {
           content: {
+            "application/json": unknown;
+          };
+        };
+      };
+    };
+  };
+  "/admin/balance/{userId}": {
+    /** Adjust user balance */
+    post: {
+      parameters: {
+        path: {
+          userId: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["AdminBalanceRequest"];
+        };
+      };
+      responses: {
+        /** @description Balance adjusted */
+        200: {
+          content: {
             "application/json": components["schemas"]["MessageResponse"];
           };
         };
@@ -1918,6 +1941,13 @@ export interface components {
     SecurityAlertsResponse: components["schemas"]["AlertItem"][];
     WithdrawalDecisionRequest: {
       comment: string;
+    };
+    AdminBalanceRequest: {
+      /** @enum {string} */
+      action: "add" | "remove" | "freeze";
+      amount: number;
+      currency: string;
+      notes: string;
     };
     RefreshRequest: {
       refreshToken: string;

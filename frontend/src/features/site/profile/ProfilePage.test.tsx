@@ -1,10 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ProfilePage from '@/features/site/profile';
-import { fetchProfile } from './fetchProfile';
+import { fetchProfile } from '@/lib/api/profile';
 import { fetchTiers } from '@/lib/api/tiers';
 
-jest.mock('./fetchProfile');
+jest.mock('@/lib/api/profile');
 jest.mock('@/lib/api/tiers');
 jest.mock('@/app/components/user/GameStatistics', () => () => <div />);
 jest.mock('@/app/components/user/HistoryTabs', () => () => <div />);

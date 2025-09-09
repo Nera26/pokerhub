@@ -771,7 +771,6 @@ id,path,type,status
 772,frontend/src/features/site/home/index.tsx:11,unused,todo
 773,frontend/src/features/site/leaderboard/index.tsx:14,unused,todo
 774,frontend/src/features/site/notification/index.tsx:5,unused,todo
-775,frontend/src/features/site/profile/fetchProfile.ts:13,unused,todo
 776,frontend/src/features/site/profile/index.tsx:32,unused,todo
 777,frontend/src/features/site/promotions/index.tsx:13,unused,todo
 778,frontend/src/features/site/wallet/index.tsx:36,unused,todo

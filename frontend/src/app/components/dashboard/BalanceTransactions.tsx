@@ -34,6 +34,7 @@ import {
   fetchTransactionsLog,
   fetchTransactionTabs,
   fetchTransactionTypes,
+  adminAdjustBalance,
 } from '@/lib/api/wallet';
 import {
   useIban,
@@ -97,7 +98,10 @@ export default function BalanceTransactions() {
     data: filters = [],
     isLoading: tabsLoading,
     error: tabsError,
-  } = useQuery({ queryKey: ['transaction-tabs'], queryFn: fetchTransactionTabs });
+  } = useQuery({
+    queryKey: ['transaction-tabs'],
+    queryFn: fetchTransactionTabs,
+  });
   const tabsErrorMessage = useApiError(tabsError);
 
   const queryClient = useQueryClient();
@@ -121,8 +125,8 @@ export default function BalanceTransactions() {
           d.status === 'pending'
             ? 'Pending'
             : d.status === 'confirmed'
-            ? 'Completed'
-            : 'Rejected',
+              ? 'Completed'
+              : 'Rejected',
       }));
     },
     staleTime: 30000,
@@ -150,8 +154,8 @@ export default function BalanceTransactions() {
           w.status === 'pending'
             ? 'Pending'
             : w.status === 'completed'
-            ? 'Completed'
-            : 'Rejected',
+              ? 'Completed'
+              : 'Rejected',
       }));
     },
     staleTime: 30000,
@@ -196,7 +200,10 @@ export default function BalanceTransactions() {
     data: txnTypes = [],
     isLoading: txnTypesLoading,
     error: txnTypesError,
-  } = useQuery({ queryKey: ['transactionTypes'], queryFn: fetchTransactionTypes });
+  } = useQuery({
+    queryKey: ['transactionTypes'],
+    queryFn: fetchTransactionTypes,
+  });
   useApiError(txnTypesError);
 
   const {
@@ -230,8 +237,13 @@ export default function BalanceTransactions() {
   // UI state
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
-  const [toastType, setToastType] = useState<'success' | 'error'>('success');
-  const notify = (m: string, t: 'success' | 'error' = 'success') => {
+  const [toastType, setToastType] = useState<'success' | 'error' | 'loading'>(
+    'success',
+  );
+  const notify = (
+    m: string,
+    t: 'success' | 'error' | 'loading' = 'success',
+  ) => {
     setToastMsg(m);
     setToastType(t);
     setToastOpen(true);
@@ -364,6 +376,34 @@ export default function BalanceTransactions() {
     setMbOpen(true);
   };
 
+  const manageBalanceMutation = useMutation({
+    mutationFn: ({
+      userId,
+      amount,
+      action,
+      notes,
+    }: {
+      userId: string;
+      amount: number;
+      action: 'add' | 'remove' | 'freeze';
+      notes: string;
+    }) =>
+      adminAdjustBalance(userId, {
+        action,
+        amount,
+        currency: 'USD',
+        notes,
+      }),
+    onMutate: () => notify('Updating balance...', 'loading'),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['balances'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      notify(vars.action === 'freeze' ? 'Funds frozen' : 'Balance updated');
+    },
+    onError: (e: any) =>
+      notify(e?.message || 'Failed to update balance', 'error'),
+  });
+
   const onManageBalance = (
     amount: number,
     action: 'add' | 'remove' | 'freeze',
@@ -374,50 +414,12 @@ export default function BalanceTransactions() {
       notify('Please provide notes', 'error');
       return;
     }
-    if (action === 'freeze') {
-      queryClient.setQueryData<BalanceRow[]>(['balances'], (prev) =>
-        prev
-          ? prev.map((b) =>
-              b.user === mbUser.user ? { ...b, status: 'Frozen' } : b,
-            )
-          : [],
-      );
-      queryClient.setQueryData<Txn[]>(['transactions'], (l = []) => [
-        {
-          datetime: new Date().toISOString().slice(0, 16).replace('T', ' '),
-          action: 'Freeze Funds',
-          amount: 0,
-          by: 'Admin_You',
-          notes,
-          status: 'Completed',
-        },
-        ...(l ?? []),
-      ]);
-      notify('Funds frozen');
-      return;
-    }
-    const delta = action === 'add' ? amount : -amount;
-    queryClient.setQueryData<BalanceRow[]>(['balances'], (prev) =>
-      prev
-        ? prev.map((b) =>
-            b.user === mbUser.user
-              ? { ...b, balance: Math.max(0, b.balance + delta) }
-              : b,
-          )
-        : [],
-    );
-    queryClient.setQueryData<Txn[]>(['transactions'], (l = []) => [
-      {
-        datetime: new Date().toISOString().slice(0, 16).replace('T', ' '),
-        action: action === 'add' ? 'Manual Add' : 'Manual Remove',
-        amount: delta,
-        by: 'Admin_You',
-        notes,
-        status: 'Completed',
-      },
-      ...(l ?? []),
-    ]);
-    notify('Balance updated');
+    manageBalanceMutation.mutate({
+      userId: mbUser.user,
+      amount,
+      action,
+      notes,
+    });
   };
 
   const exportCSV = () => {
@@ -456,7 +458,6 @@ export default function BalanceTransactions() {
     alert(`Loaded IBAN for reuse:\n${iban}`);
   };
 
-
   /* --------------------------------- UI --------------------------------- */
   return (
     <div className="space-y-8">
@@ -485,7 +486,6 @@ export default function BalanceTransactions() {
           )}
         </div>
       </section>
-
       {depositsLoading ? (
         <div className="flex justify-center" aria-label="loading deposits">
           <FontAwesomeIcon icon={faSpinner} spin />
@@ -567,7 +567,6 @@ export default function BalanceTransactions() {
           ]}
         />
       )}
-
       {withdrawalsLoading ? (
         <div className="flex justify-center" aria-label="loading withdrawals">
           <FontAwesomeIcon icon={faSpinner} spin />
@@ -644,7 +643,6 @@ export default function BalanceTransactions() {
           ]}
         />
       )}
-
       {/* User Balance Management */}
       {balancesLoading ? (
         <div className="flex justify-center" aria-label="loading balances">
@@ -764,7 +762,6 @@ export default function BalanceTransactions() {
           </div>
         </section>
       )}
-
       <section>
         {mismatchLoading ? (
           <div className="flex justify-center" aria-label="loading mismatches">
@@ -795,7 +792,6 @@ export default function BalanceTransactions() {
           </table>
         )}
       </section>
-
       {logLoading ? (
         <div className="flex justify-center" aria-label="loading history">
           <FontAwesomeIcon icon={faSpinner} spin />
@@ -807,21 +803,17 @@ export default function BalanceTransactions() {
       ) : (
         <TransactionHistory onExport={exportCSV} />
       )}
-
-/* Modals */
-<RejectionModal
-  open={rejectOpen}
-  onClose={() => setRejectOpen(false)}
-  onConfirm={confirmRejection}
-/>
-
-
+      /* Modals */
+      <RejectionModal
+        open={rejectOpen}
+        onClose={() => setRejectOpen(false)}
+        onConfirm={confirmRejection}
+      />
       <ReceiptModal
         open={receiptOpen}
         onClose={() => setReceiptOpen(false)}
         url={receiptUrl}
       />
-
       <ManageBalanceModal
         isOpen={mbOpen}
         onClose={() => setMbOpen(false)}
@@ -829,7 +821,6 @@ export default function BalanceTransactions() {
         currentBalance={mbUser?.balance || 0}
         onSubmit={onManageBalance}
       />
-
       <IBANManagerModal
         open={ibanOpen}
         onClose={() => setIbanOpen(false)}
@@ -845,7 +836,6 @@ export default function BalanceTransactions() {
         history={ibanHistory}
         onReuse={reuseIBAN}
       />
-
       {/* Toast */}
       <ToastNotification
         isOpen={toastOpen}

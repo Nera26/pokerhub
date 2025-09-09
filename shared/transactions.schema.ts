@@ -31,4 +31,3 @@ export const TransactionLogQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(10),
 });
 export type TransactionLogQuery = z.infer<typeof TransactionLogQuerySchema>;
-
