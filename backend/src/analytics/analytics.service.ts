@@ -374,15 +374,19 @@ export class AnalyticsService {
     });
   }
 
-  async recordGameEvent<T extends Record<string, unknown>>(event: T) {
+  private async recordStream(
+    stream: string,
+    eventName: EventName,
+    event: Record<string, unknown>,
+  ) {
     await this.redis.xadd(
-      'analytics:game',
+      `analytics:${stream}`,
       '*',
       'event',
       JSON.stringify(event),
     );
 
-    await runEtl('game.event', event, {
+    await runEtl(eventName, event, {
       analytics: this,
       validators: this.validators,
       producer: this.producer,
@@ -390,6 +394,10 @@ export class AnalyticsService {
       logger: this.logger,
       errorsText: (errors) => this.ajv.errorsText(errors),
     });
+  }
+
+  async recordGameEvent<T extends Record<string, unknown>>(event: T) {
+    await this.recordStream('game', 'game.event', event);
 
     if (
       'handId' in event &&
@@ -406,21 +414,7 @@ export class AnalyticsService {
   }
 
   async recordTournamentEvent<T extends Record<string, unknown>>(event: T) {
-    await this.redis.xadd(
-      'analytics:tournament',
-      '*',
-      'event',
-      JSON.stringify(event),
-    );
-
-    await runEtl('tournament.event', event, {
-      analytics: this,
-      validators: this.validators,
-      producer: this.producer,
-      topicMap: this.topicMap,
-      logger: this.logger,
-      errorsText: (errors) => this.ajv.errorsText(errors),
-    });
+    await this.recordStream('tournament', 'tournament.event', event);
   }
 
   async recordCollusionSession(session: CollusionSession) {

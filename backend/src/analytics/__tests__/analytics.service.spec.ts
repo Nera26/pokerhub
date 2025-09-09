@@ -9,10 +9,14 @@ describe('AnalyticsService buildAggregation', () => {
       producer: { send: jest.fn().mockResolvedValue(undefined) },
       ingest: jest.fn().mockResolvedValue(undefined),
       archive: jest.fn().mockResolvedValue(undefined),
-      topicMap: { hand: 'hand-topic', tournament: 'tournament-topic' },
+      topicMap: { game: 'hand-topic', tournament: 'tournament-topic' },
       collusionEvents: [],
       runCollusionHeuristics: jest.fn(),
       buildAggregation: (AnalyticsService.prototype as any).buildAggregation,
+      recordStream: (AnalyticsService.prototype as any).recordStream,
+      validators: {},
+      ajv: { errorsText: jest.fn() },
+      logger: { warn: jest.fn() },
     };
   });
 
