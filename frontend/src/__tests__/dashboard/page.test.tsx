@@ -45,7 +45,7 @@ jest.mock('@tanstack/react-query', () => ({
     isError: false,
   })),
 }));
-jest.mock('@/features/site/profile/fetchProfile', () => ({
+jest.mock('@/lib/api/profile', () => ({
   fetchProfile: jest.fn().mockResolvedValue({
     username: 'Admin',
     email: 'admin@example.com',

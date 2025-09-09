@@ -11,7 +11,7 @@ import GameStatistics from '@/app/components/user/GameStatistics';
 import HistoryTabs from '@/app/components/user/HistoryTabs';
 import FilterDropdown from '@/app/components/user/FilterDropdown';
 import HistoryList from '@/app/components/user/HistoryList';
-import { fetchProfile } from './fetchProfile';
+import { fetchProfile } from '@/lib/api/profile';
 import type { UserProfile } from '@shared/types';
 const ReplayModal = dynamic(() => import('@/app/components/user/ReplayModal'), {
   ssr: false,
