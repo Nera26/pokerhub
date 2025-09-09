@@ -13,10 +13,8 @@ jest.mock('../AuditTable', () => () => <div>AuditTable</div>);
 jest.mock('../AdvancedFilterModal', () => () => <div>AdvancedFilterModal</div>);
 jest.mock('../DetailModal', () => () => <div>DetailModal</div>);
 
-jest.mock('@/hooks/useAuditLogs', () => ({
+jest.mock('@/hooks/useAuditResource', () => ({
   useAuditLogs: () => ({ data: { logs: [] } }),
-}));
-jest.mock('@/hooks/useAuditSummary', () => ({
   useAuditSummary: () => ({ data: {} }),
 }));
 jest.mock('@/hooks/useDashboardMetrics', () => ({
@@ -73,4 +71,3 @@ describe('Analytics', () => {
     ).toBeInTheDocument();
   });
 });
-

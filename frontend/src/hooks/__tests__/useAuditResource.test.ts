@@ -1,9 +1,11 @@
 import React from 'react';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useAuditLogs } from '../useAuditLogs';
-import { useAuditSummary } from '../useAuditSummary';
-import { useAuditAlerts } from '../useAuditAlerts';
+import {
+  useAuditLogs,
+  useAuditSummary,
+  useAuditAlerts,
+} from '../useAuditResource';
 import {
   AuditLogsResponseSchema,
   AuditSummarySchema,

@@ -3,7 +3,11 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faDownload, faFilter, faTrophy } from '@fortawesome/free-solid-svg-icons';
+import {
+  faDownload,
+  faFilter,
+  faTrophy,
+} from '@fortawesome/free-solid-svg-icons';
 
 import SearchBar from './SearchBar';
 import QuickStats from './QuickStats';
@@ -12,8 +16,7 @@ import ErrorChart from './ErrorChart';
 import AuditTable from './AuditTable';
 import AdvancedFilterModal from './AdvancedFilterModal';
 import DetailModal from './DetailModal';
-import { useAuditLogs } from '@/hooks/useAuditLogs';
-import { useAuditSummary } from '@/hooks/useAuditSummary';
+import { useAuditLogs, useAuditSummary } from '@/hooks/useAuditResource';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import CenteredMessage from '@/components/CenteredMessage';
 import ToastNotification from '../../ui/ToastNotification';
@@ -58,7 +61,8 @@ export default function Analytics() {
   const rebuild = useMutation({
     mutationFn: () => rebuildLeaderboard(),
     onSuccess: () => pushToast('Leaderboard rebuild started'),
-    onError: () => pushToast('Failed to rebuild leaderboard', { variant: 'error' }),
+    onError: () =>
+      pushToast('Failed to rebuild leaderboard', { variant: 'error' }),
   });
 
   const filtered = useMemo(() => {
@@ -78,14 +82,14 @@ export default function Analytics() {
         `${r.user}`.toLowerCase().includes(userFilter.trim().toLowerCase()),
       );
     }
-      if (dateFrom) {
-        rows = rows.filter((r) => new Date(r.timestamp) >= new Date(dateFrom));
-      }
-      if (dateTo) {
-        rows = rows.filter(
-          (r) => new Date(r.timestamp) <= new Date(dateTo + ' 23:59:59'),
-        );
-      }
+    if (dateFrom) {
+      rows = rows.filter((r) => new Date(r.timestamp) >= new Date(dateFrom));
+    }
+    if (dateTo) {
+      rows = rows.filter(
+        (r) => new Date(r.timestamp) <= new Date(dateTo + ' 23:59:59'),
+      );
+    }
 
     return rows.slice(0, resultLimit);
   }, [logs, search, type, userFilter, dateFrom, dateTo, resultLimit]);
