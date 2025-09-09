@@ -19,12 +19,8 @@ This directory contains load test scripts for PokerHub.
 
 All scripts assume the server is reachable via `ws://localhost:4000/game` by default.
 
-The `k6-100k-chaos` GitHub Actions workflow runs the `infra/tests/load/k6-table-actions.js` scenario with `CHAOS_MODE=1` nightly,
-uploads the `load/metrics/latest` contents as artifacts and syncs the
-
-timestamped metrics directory to a Google Cloud Storage (GCS) bucket for long-term trend queries.
-=======
-timestamped metrics directory to a Cloud Storage bucket for long-term trend queries.
+The `k6-100k-chaos` GitHub Actions workflow runs the `infra/tests/load/k6-table-actions.js` scenario with `CHAOS_MODE=1`
+nightly and uploads the `load/metrics/latest` contents as artifacts.
 
 
 ## Local endpoints
@@ -82,44 +78,6 @@ Artifacts written under `load/metrics/` include:
 - `artillery-latency.json` – HTTP latency histogram from Artillery.
 - `gc-heap.log` and `gc-stats.json` – raw and parsed GC/heap metrics.
 - `seed.txt` – RNG seed for deterministic replays.
-
-## Trend analysis
-
-
-Nightly chaos runs push their metrics to the Google Cloud Storage bucket
-referenced by `CHAOS_TRENDS_BUCKET`. The script
-`scripts/analyze-chaos-trends.ts` downloads the most recent baseline from that
-bucket and compares it against a given run. The build fails when ACK latency
-p95/p99 or GC pause p95 regress beyond baseline thresholds.
-
-Nightly chaos runs push their metrics to the Cloud Storage bucket referenced by
-`CHAOS_TRENDS_BUCKET`. The script `scripts/analyze-chaos-trends.ts` downloads
-the most recent baseline from that bucket and compares it against a given run.
-The build fails when ACK latency p95/p99 or GC pause p95 regress beyond
-baseline thresholds.
-
-
-Run the analysis locally against a metrics directory:
-
-```sh
-CHAOS_TRENDS_BUCKET=my-bucket \
-npx ts-node scripts/analyze-chaos-trends.ts load/metrics/<run>
-```
-
-Historical runs can be listed and downloaded via the gcloud CLI for ad‑hoc
-
-queries. Authenticate with a service account first:
-
-```sh
-gcloud auth activate-service-account --key-file /path/to/key.json
-=======
-queries:
-
-```sh
-
-gcloud storage ls gs://$CHAOS_TRENDS_BUCKET/
-gcloud storage cp -r gs://$CHAOS_TRENDS_BUCKET/20240101-000000/ load/metrics/20240101-000000
-```
 
 ## Chaos swarm run/stop
 
