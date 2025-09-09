@@ -1,4 +1,5 @@
 import { LeaderboardService } from '../../src/leaderboard/leaderboard.service';
+import { initScoreEntry, toLeaderboardEntry, updateScoreEntry } from '../../src/leaderboard/score-utils';
 import type { Cache } from 'cache-manager';
 import { promises as fs } from 'fs';
 import { join } from 'path';
@@ -357,3 +358,55 @@ describe('LeaderboardService', () => {
     await fs.rm(dir, { recursive: true, force: true });
   });
 });
+
+describe('score-utils', () => {
+  it('initializes and updates score entries', () => {
+    const entry = initScoreEntry();
+    updateScoreEntry(entry, {
+      points: 5,
+      net: 10,
+      bb: 20,
+      hands: 2,
+      duration: 60_000,
+      buyIn: 5,
+      finish: 1,
+    });
+    expect(entry.net).toBe(10);
+    expect(entry.bb).toBe(20);
+    expect(entry.hands).toBe(2);
+    expect(entry.duration).toBe(60_000);
+    expect(entry.buyIn).toBe(5);
+    expect(entry.finishes[1]).toBe(1);
+    expect(entry.rating).not.toBe(0);
+    expect(entry.rd).toBeLessThan(350);
+  });
+
+  it('formats leaderboard rows', () => {
+    const row = {
+      playerId: 'p',
+      rank: 1,
+      rating: 10,
+      rd: 5,
+      volatility: 0.1,
+      net: 20,
+      bb: 50,
+      hands: 25,
+      duration: 2 * 60 * 60 * 1000,
+      buyIn: 10,
+      finishes: { 1: 1 },
+    };
+    expect(toLeaderboardEntry(row)).toEqual({
+      playerId: 'p',
+      rank: 1,
+      points: 10,
+      rd: 5,
+      volatility: 0.1,
+      net: 20,
+      bb100: 200,
+      hours: 2,
+      roi: 2,
+      finishes: { 1: 1 },
+    });
+  });
+});
+
