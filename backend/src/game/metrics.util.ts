@@ -1,5 +1,5 @@
 import type { Meter, MetricOptions, ObservableGauge } from '@opentelemetry/api';
-import { noopGauge } from '../metrics/noopGauge';
+import { gaugeFactory } from '../metrics/gauge.factory';
 
 export function addSample(arr: number[], value: number, maxSamples = 1000): void {
   arr.push(value);
@@ -22,12 +22,9 @@ export function percentile(arr: number[], p: number): number {
 }
 
 export function createObservableGaugeSafe(
-  meter: Meter,
+  meter: Meter | undefined,
   name: string,
   options?: MetricOptions,
 ): ObservableGauge {
-  return (
-    (meter as any).createObservableGauge?.(name, options) ??
-    (noopGauge as unknown as ObservableGauge)
-  );
+  return gaugeFactory(meter, name, options);
 }
