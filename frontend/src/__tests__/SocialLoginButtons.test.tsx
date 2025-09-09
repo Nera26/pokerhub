@@ -1,5 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import SocialLoginButtons from '@/app/components/auth/SocialLoginButtons';
+import { faGoogle, faFacebookF } from '@fortawesome/free-brands-svg-icons';
 
 const popup = 'width=500,height=600';
 
@@ -28,5 +29,15 @@ describe('SocialLoginButtons', () => {
       'FacebookLogin',
       popup,
     );
+  });
+
+  it('renders social icons', () => {
+    render(<SocialLoginButtons />);
+    expect(
+      document.querySelector(`[data-icon='${faGoogle.iconName}']`),
+    ).toBeInTheDocument();
+    expect(
+      document.querySelector(`[data-icon='${faFacebookF.iconName}']`),
+    ).toBeInTheDocument();
   });
 });
