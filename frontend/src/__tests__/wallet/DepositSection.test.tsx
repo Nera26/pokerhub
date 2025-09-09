@@ -1,5 +1,6 @@
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { setupCountdownTimers, setupClipboardMocks } from '../utils/wallet';
 
 jest.mock('@/hooks/wallet', () => ({
   useIban: jest.fn(),
@@ -10,22 +11,12 @@ import DepositSection from '@/app/components/wallet/DepositSection';
 const mockUseIban = useIban as jest.MockedFunction<typeof useIban>;
 
 describe('DepositSection', () => {
-  let intervalCb: (() => void) | undefined;
+  let advanceTimers: (ticks: number) => void;
+  let writeTextMock: jest.Mock<Promise<void>, [string]>;
 
   beforeEach(() => {
-    intervalCb = undefined;
-    jest.spyOn(window, 'setInterval').mockImplementation(((
-      cb: TimerHandler,
-    ) => {
-      intervalCb = cb as () => void;
-      return 1;
-    }) as unknown as typeof setInterval);
-    jest.spyOn(window, 'clearInterval').mockImplementation(() => {});
-    const writeTextMock = jest.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, {
-      clipboard: { writeText: writeTextMock },
-    });
-    jest.spyOn(window, 'alert').mockImplementation(() => {});
+    advanceTimers = setupCountdownTimers();
+    writeTextMock = setupClipboardMocks();
     mockUseIban.mockReturnValue({
       data: {
         iban: 'DE02 5001 0517 5407 4100 72',
@@ -54,7 +45,7 @@ describe('DepositSection', () => {
     expect(waitingButton).toBeDisabled();
 
     act(() => {
-      for (let i = 0; i < 10; i++) intervalCb && intervalCb();
+      advanceTimers(10);
     });
 
     const confirmCheckbox = screen.getByRole('checkbox', {
@@ -91,12 +82,7 @@ describe('DepositSection', () => {
   });
 
   it('alerts when clipboard copy fails', async () => {
-    const clipboard = (
-      navigator.clipboard as unknown as {
-        writeText: jest.Mock<Promise<void>, [string]>;
-      }
-    ).writeText;
-    clipboard.mockRejectedValueOnce(new Error('fail'));
+    writeTextMock.mockRejectedValueOnce(new Error('fail'));
     const { unmount } = render(
       <DepositSection onClose={jest.fn()} onConfirm={jest.fn()} />,
     );
