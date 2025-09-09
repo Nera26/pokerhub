@@ -366,7 +366,6 @@ id,path,type,status
 365,backend/src/database/migrations/1700000006000-GameState.ts:3,unused,todo
 366,backend/src/database/migrations/1700000007000-AccountCreditBalance.ts:3,unused,todo
 367,backend/src/database/migrations/1756798403170-NewEntities.ts:3,unused,todo
-368,backend/src/database/migrations/1756798403181-Leaderboard.ts:3,unused,todo
 369,backend/src/database/migrations/1756798403182-Broadcasts.ts:3,unused,todo
 370,backend/src/database/migrations/1756798403182-CollusionAudit.ts:3,unused,todo
 371,backend/src/database/migrations/1756798403182-PendingDepositCurrency.ts:3,unused,todo
