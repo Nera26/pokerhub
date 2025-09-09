@@ -237,7 +237,6 @@ id,path,type,status
 236,shared/verify/index.ts:63,unused,todo
 237,backend/src/common/http.ts:6,unused,todo
 238,backend/src/common/http.ts:13,unused,todo
-239,backend/src/game/harness-utils.ts:66,unused,todo
 240,backend/src/schemas/analytics.ts:3,unused,todo
 241,backend/src/schemas/analytics.ts:4,unused,todo
 242,backend/src/schemas/analytics.ts:6,unused,todo
