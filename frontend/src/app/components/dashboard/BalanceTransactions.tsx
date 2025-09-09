@@ -20,7 +20,6 @@ import IBANManagerModal from '../modals/IBANManagerModal';
 import RequestTable from './transactions/RequestTable';
 import TransactionHistory from './transactions/TransactionHistory';
 import type { DepositReq, WithdrawalReq, Txn } from './transactions/types';
-import useRenderCount from '@/hooks/useRenderCount';
 import { useApiError } from '@/hooks/useApiError';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -93,7 +92,6 @@ function ReceiptModal({
 
 /* ------------------------------- Main Page ------------------------------ */
 export default function BalanceTransactions() {
-  useRenderCount('BalanceTransactions');
   const [tab, setTab] = useState<TransactionTab>('all');
   const {
     data: filters = [],

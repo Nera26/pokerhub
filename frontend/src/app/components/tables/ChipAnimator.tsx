@@ -17,7 +17,6 @@ import {
 } from '../../store/tableStore';
 import { useTableState } from '@/hooks/useTableState';
 import ChipPile from '../ui/ChipPile';
-import useRenderCount from '../../../hooks/useRenderCount';
 
 type Point = { x: number; y: number };
 
@@ -196,7 +195,6 @@ export default function ChipAnimator({
   children?: React.ReactNode;
   soundEnabled?: boolean;
 }) {
-  useRenderCount('ChipAnimator');
   const soundOn = soundEnabled; // component-level control
   const { data: table } = useTableState();
   const [flying, setFlying] = useState<ChipSprite[]>([]);

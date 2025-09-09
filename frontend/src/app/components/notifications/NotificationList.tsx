@@ -4,7 +4,6 @@ import { useState, useMemo } from 'react';
 import Button from '../ui/Button';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck } from '@fortawesome/free-solid-svg-icons/faCheck';
-import useRenderCount from '@/hooks/useRenderCount';
 import VirtualizedList from '@/components/VirtualizedList';
 import NotificationItem from './NotificationItem';
 import {
@@ -16,8 +15,6 @@ import {
 import type { NotificationType } from '@shared/types';
 
 export default function NotificationList() {
-  useRenderCount('NotificationList');
-
   const {
     data: notificationsData,
     isLoading: listLoading,
@@ -30,6 +27,7 @@ export default function NotificationList() {
     isLoading: filtersLoading,
     error: filtersError,
   } = useNotificationFilters();
+
   const filters = useMemo(
     () => [{ label: 'All', value: 'all' as const }, ...(filterOptions ?? [])],
     [filterOptions],

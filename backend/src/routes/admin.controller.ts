@@ -11,8 +11,8 @@ import {
 import {
   SidebarItem,
   SidebarItemsResponseSchema,
-  SidebarTabsResponseSchema,
-  SidebarTab,
+  AdminTab,
+  AdminTabResponseSchema,
   AdminEvent,
   AdminEventsResponseSchema,
 } from '../schemas/admin';
@@ -75,10 +75,13 @@ export class AdminController {
   @Get('tabs')
   @ApiOperation({ summary: 'Get admin dashboard tabs' })
   @ApiResponse({ status: 200, description: 'Dashboard tabs' })
-  async getTabs(): Promise<{ tabs: SidebarTab[]; titles: Record<SidebarTab, string> }> {
+  async getTabs(): Promise<AdminTab[]> {
     const items = await this.sidebar.getItems();
-    const tabs = items.map((s) => s.id) as SidebarTab[];
-    const titles = Object.fromEntries(items.map((s) => [s.id, s.label])) as Record<SidebarTab, string>;
-    return SidebarTabsResponseSchema.parse({ tabs, titles });
+    const tabs = items.map((s) => ({
+      id: s.id,
+      title: s.label,
+      component: s.component,
+    }));
+    return AdminTabResponseSchema.parse(tabs);
   }
 }

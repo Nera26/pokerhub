@@ -1,7 +1,6 @@
 'use client';
 
 import { ReactNode, useState, useEffect, useRef } from 'react';
-import useRenderCount from '@/hooks/useRenderCount';
 import { createPortal } from 'react-dom';
 
 export interface ModalProps {
@@ -14,7 +13,6 @@ export interface ModalProps {
 }
 
 export default function Modal({ isOpen, onClose, children }: ModalProps) {
-  useRenderCount('Modal');
   const [mounted, setMounted] = useState(isOpen);
   const [animateIn, setAnimateIn] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);

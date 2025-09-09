@@ -6,8 +6,8 @@ import {
   type AdminTournament,
   BonusOptionsResponseSchema,
   type BonusOptionsResponse,
-  SidebarTabsResponseSchema,
-  type SidebarTabsResponse,
+  AdminTabResponseSchema,
+  type AdminTabResponse,
   AdminEventsResponseSchema,
   type AdminEvent,
 } from '@shared/types';
@@ -31,8 +31,8 @@ export async function fetchSidebarItems({
 
 export async function fetchAdminTabs({
   signal,
-}: { signal?: AbortSignal } = {}): Promise<SidebarTabsResponse> {
-  return apiClient('/api/admin/tabs', SidebarTabsResponseSchema, { signal });
+}: { signal?: AbortSignal } = {}): Promise<AdminTabResponse> {
+  return apiClient('/api/admin/tabs', AdminTabResponseSchema, { signal });
 }
 
 export async function fetchAdminEvents({

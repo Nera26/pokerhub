@@ -12,7 +12,6 @@ import {
   resetPassword,
   type ApiError,
 } from '@/lib/api/auth';
-import useRenderCount from '@/hooks/useRenderCount';
 
 export interface ForgotPasswordFormProps {
   /** Called when user wants to cancel and go back to login */
@@ -45,7 +44,6 @@ function parseApiError(err: ApiError) {
 export default function ForgotPasswordForm({
   onBack,
 }: ForgotPasswordFormProps) {
-  useRenderCount('ForgotPasswordForm');
   const queryClient = useQueryClient();
 
   const step1Schema = z.object({

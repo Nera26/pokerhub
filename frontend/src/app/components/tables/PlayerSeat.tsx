@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { useSetSeatPosition } from '../../store/tableStore';
-import useRenderCount from '../../../hooks/useRenderCount';
 import { useTableUi } from './TableUiContext';
 
 import PlayerBalance from './PlayerBalance';
@@ -26,7 +25,6 @@ export default function PlayerSeat({
   street: _street = 'pre',
   density = 'default',
 }: PlayerSeatProps) {
-  useRenderCount('PlayerSeat');
   const { pendingBySeat, setActiveSeat, activeSeatId } = useTableUi();
   const optimistic = pendingBySeat[player.id] || 0;
   const setSeatPosition = useSetSeatPosition();
