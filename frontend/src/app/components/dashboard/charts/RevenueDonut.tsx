@@ -4,22 +4,26 @@ import { useMemo } from 'react';
 import { useChart } from '@/lib/useChart';
 import type { ChartConfiguration, TooltipItem } from 'chart.js';
 
-interface RevenueDonutProps {
-  /** Percentages for cash games, tournaments, rake */
-  data: number[];
-  /** Raw values for tooltip display */
-  values?: number[];
+export interface RevenueStream {
+  label: string;
+  pct: number;
+  value?: number;
 }
 
-export default function RevenueDonut({ data, values = [] }: RevenueDonutProps) {
+interface RevenueDonutProps {
+  /** Revenue streams with label, percentage and optional raw value */
+  streams: RevenueStream[];
+}
+
+export default function RevenueDonut({ streams }: RevenueDonutProps) {
   const config: ChartConfiguration<'doughnut'> = useMemo(
     () => ({
       type: 'doughnut',
       data: {
-        labels: ['Cash Games', 'Tournaments', 'Rake'],
+        labels: streams.map((s) => s.label),
         datasets: [
           {
-            data,
+            data: streams.map((s) => s.pct),
             backgroundColor: [
               'var(--color-accent-green)',
               'var(--color-accent-yellow)',
@@ -44,16 +48,17 @@ export default function RevenueDonut({ data, values = [] }: RevenueDonutProps) {
             borderWidth: 1,
             callbacks: {
               label: (ctx: TooltipItem<'doughnut'>) => {
-                const pct = ctx.parsed as number;
-                const val = values[ctx.dataIndex] ?? 0;
-                return `${ctx.label}: ${pct}% ($${val.toLocaleString()})`;
+                const stream = streams[ctx.dataIndex];
+                const pct = stream?.pct ?? 0;
+                const val = stream?.value ?? 0;
+                return `${stream?.label ?? ctx.label}: ${pct}% ($${val.toLocaleString()})`;
               },
             },
           },
         },
       },
     }),
-    [data, values],
+    [streams],
   );
 
   const { ref, ready } = useChart(config, [config]);

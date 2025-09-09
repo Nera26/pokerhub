@@ -13,6 +13,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import dynamic from 'next/dynamic';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
+import { useRevenueBreakdown } from '@/hooks/useRevenueBreakdown';
 import MetricCard, { TimeFilter } from './MetricCard';
 import BroadcastPanel from './BroadcastPanel';
 import DashboardTransactionHistory from './transactions/TransactionHistory';
@@ -34,7 +35,6 @@ const RevenueDonut = dynamic(() => import('./charts/RevenueDonut'), {
   ),
   ssr: false,
 });
-
 
 // ---------- Small UI helpers ----------
 function Card({
@@ -86,17 +86,24 @@ export default function Dashboard() {
   const [wdFilter, setWdFilter] = useState<TimeFilter>('today');
   const { data, isLoading, error } = useDashboardMetrics();
   const metrics = (data ?? {}) as any;
+  const {
+    data: revenueStreams = [],
+    isLoading: revLoading,
+    error: revError,
+  } = useRevenueBreakdown(revFilter);
 
   const formatCurrency = (v: number | undefined) =>
     `$${(v ?? 0).toLocaleString()}`;
 
-  if (isLoading) {
+  if (isLoading || revLoading) {
     return (
-      <div className="h-64 flex items-center justify-center">Loading dashboard...</div>
+      <div className="h-64 flex items-center justify-center">
+        Loading dashboard...
+      </div>
     );
   }
 
-  if (error) {
+  if (error || revError) {
     return (
       <div className="h-64 flex items-center justify-center text-danger-red">
         Failed to load dashboard
@@ -190,10 +197,7 @@ export default function Dashboard() {
           <ActivityChart data={metrics.activity?.[revFilter] ?? []} />
         </Card>
         <Card title="Revenue Breakdown">
-          <RevenueDonut
-            data={metrics.revenueBreakdown?.[revFilter] ?? []}
-            values={metrics.revenueValues?.[revFilter] ?? []}
-          />
+          <RevenueDonut streams={revenueStreams} />
         </Card>
       </div>
 

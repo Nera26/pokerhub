@@ -9,6 +9,11 @@ jest.mock('@/hooks/useDashboardMetrics', () => ({
   useDashboardMetrics: () => metricsMock(),
 }));
 
+const revenueMock = jest.fn();
+jest.mock('@/hooks/useRevenueBreakdown', () => ({
+  useRevenueBreakdown: (range: string) => revenueMock(range),
+}));
+
 jest.mock('@/app/components/dashboard/charts/ActivityChart', () => ({
   __esModule: true,
   default: ({ data }: { data: number[] }) => (
@@ -18,29 +23,41 @@ jest.mock('@/app/components/dashboard/charts/ActivityChart', () => ({
 
 jest.mock('@/app/components/dashboard/charts/RevenueDonut', () => ({
   __esModule: true,
-  default: ({ data }: { data: number[] }) => (
-    <div data-testid="revenue-donut">{data.join(',')}</div>
+  default: ({ streams }: { streams: { pct: number }[] }) => (
+    <div data-testid="revenue-donut">{streams.map((s) => s.pct).join(',')}</div>
   ),
 }));
 
 function renderWithClient(ui: React.ReactElement) {
   const client = new QueryClient();
-  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+  return render(
+    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
+  );
 }
 
 describe('Dashboard metrics', () => {
   beforeEach(() => {
     metricsMock.mockReset();
+    revenueMock.mockReset();
+    revenueMock.mockReturnValue({ data: [], isLoading: false, error: null });
   });
 
   it('shows loading state', () => {
-    metricsMock.mockReturnValue({ data: undefined, isLoading: true, error: null });
+    metricsMock.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+    });
     renderWithClient(<Dashboard />);
     expect(screen.getByText(/loading dashboard/i)).toBeInTheDocument();
   });
 
   it('shows error state', () => {
-    metricsMock.mockReturnValue({ data: undefined, isLoading: false, error: new Error('fail') });
+    metricsMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error('fail'),
+    });
     renderWithClient(<Dashboard />);
     expect(screen.getByText(/failed to load dashboard/i)).toBeInTheDocument();
   });
@@ -55,9 +72,16 @@ describe('Dashboard metrics', () => {
         deposits: { today: { amount: 50, trend: 'trend' } },
         withdrawals: { today: { amount: 25, trend: 'trend' } },
         activity: { today: [1, 2, 3] },
-        revenueBreakdown: { today: [60, 30, 10] },
-        revenueValues: { today: [6000, 3000, 1000] },
       },
+      isLoading: false,
+      error: null,
+    });
+    revenueMock.mockReturnValue({
+      data: [
+        { label: 'A', pct: 60, value: 6000 },
+        { label: 'B', pct: 30, value: 3000 },
+        { label: 'C', pct: 10, value: 1000 },
+      ],
       isLoading: false,
       error: null,
     });
@@ -83,12 +107,11 @@ describe('Dashboard metrics', () => {
         deposits: { today: { amount: 0, trend: '' } },
         withdrawals: { today: { amount: 0, trend: '' } },
         activity: { today: [1], week: [2] },
-        revenueBreakdown: { today: [1], week: [2] },
-        revenueValues: { today: [1], week: [2] },
       },
       isLoading: false,
       error: null,
     });
+    revenueMock.mockReturnValue({ data: [], isLoading: false, error: null });
 
     const user = userEvent.setup();
     renderWithClient(<Dashboard />);
@@ -101,4 +124,3 @@ describe('Dashboard metrics', () => {
     expect(within(revenueCard).getByText('$200')).toBeInTheDocument();
   });
 });
-
