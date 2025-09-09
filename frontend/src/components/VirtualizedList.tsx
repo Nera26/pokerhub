@@ -5,7 +5,11 @@ import useVirtualizedList from '@/hooks/useVirtualizedList';
 
 interface VirtualizedListProps<T> {
   items: T[];
-  renderItem: (item: T, style: CSSProperties | undefined, index: number) => ReactNode;
+  renderItem: (
+    item: T,
+    style: CSSProperties | undefined,
+    index: number,
+  ) => ReactNode;
   estimateSize?: number;
   className?: string;
   testId?: string;
@@ -29,7 +33,12 @@ export default function VirtualizedList<T>({
   const isVirtualized = items.length >= virtualizationThreshold;
 
   return (
-    <div ref={parentRef} data-testid={testId} className={className}>
+    <div
+      ref={parentRef}
+      data-testid={testId}
+      data-virtualized={isVirtualized}
+      className={className}
+    >
       {isVirtualized ? (
         <ul
           role="list"
