@@ -3,7 +3,7 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faReceipt } from '@fortawesome/free-solid-svg-icons/faReceipt';
 import type { ReactNode } from 'react';
-import TransactionHistory from './TransactionHistory';
+import TransactionHistory from '../dashboard/transactions/TransactionHistory';
 import { buildTransactionColumns } from './transactionColumns';
 
 interface TransactionLike {
@@ -37,7 +37,8 @@ export default function TransactionHistorySection<T extends TransactionLike>({
   onPageChange,
 }: TransactionHistorySectionProps<T>) {
   const columns = buildTransactionColumns<T>({
-    getType: (row) => (row.type ?? (row as unknown as { action?: string }).action ?? ''),
+    getType: (row) =>
+      row.type ?? (row as unknown as { action?: string }).action ?? '',
     headerClassName:
       'text-left p-4 font-semibold text-text-secondary text-sm uppercase',
     cellClassName: 'p-4 text-sm',
@@ -46,7 +47,10 @@ export default function TransactionHistorySection<T extends TransactionLike>({
 
   const emptyState = (
     <div className="p-[20px] text-center text-text-secondary">
-      <FontAwesomeIcon icon={faReceipt} className="text-3xl mb-2 text-accent-yellow" />
+      <FontAwesomeIcon
+        icon={faReceipt}
+        className="text-3xl mb-2 text-accent-yellow"
+      />
       <p>{emptyMessage}</p>
     </div>
   );
@@ -64,4 +68,3 @@ export default function TransactionHistorySection<T extends TransactionLike>({
     />
   );
 }
-
