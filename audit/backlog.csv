@@ -378,7 +378,6 @@ id,path,type,status
 377,backend/src/database/migrations/1756798403192-Transactions.ts:3,unused,todo
 378,frontend/next-intl.config.ts:6,unused,todo
 379,frontend/next.config.ts:55,unused,todo
-380,frontend/playwright.integration.config.ts:3,unused,todo
 381,frontend/tailwind.config.ts:38,unused,todo
 382,shared/events.ts:7,unused,todo
 383,shared/events.ts:13,unused,todo
