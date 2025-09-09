@@ -29,11 +29,15 @@ import {
   MessageResponseSchema,
   PendingWithdrawalsResponseSchema,
   WithdrawalDecisionRequestSchema,
-  TransactionTypeSchema,
-  type TransactionType,
   type MessageResponse,
   type PendingWithdrawalsResponse,
 } from '@shared/types';
+import {
+  TransactionTypeSchema,
+  TransactionLogEntrySchema,
+  type TransactionType,
+  type TransactionLogEntry,
+} from '@shared/transactions.schema';
 
 /* istanbul ignore next */
 async function postAmount(
@@ -159,9 +163,13 @@ export function getStatus(
   playerId: string,
   opts: { signal?: AbortSignal } = {},
 ): Promise<WalletStatusResponse> {
-  return apiClient(`/api/wallet/${playerId}/status`, WalletStatusResponseSchema, {
-    signal: opts.signal,
-  });
+  return apiClient(
+    `/api/wallet/${playerId}/status`,
+    WalletStatusResponseSchema,
+    {
+      signal: opts.signal,
+    },
+  );
 }
 
 export function fetchTransactions(
@@ -181,19 +189,21 @@ export function fetchPending(
   playerId: string,
   opts: { signal?: AbortSignal } = {},
 ): Promise<PendingTransactionsResponse> {
-  return apiClient(`/api/wallet/${playerId}/pending`, PendingTransactionsResponseSchema, {
-    signal: opts.signal,
-  });
+  return apiClient(
+    `/api/wallet/${playerId}/pending`,
+    PendingTransactionsResponseSchema,
+    {
+      signal: opts.signal,
+    },
+  );
 }
 
 export function fetchPendingDeposits(
   opts: { signal?: AbortSignal } = {},
 ): Promise<PendingDepositsResponse> {
-  return apiClient(
-    `/api/admin/deposits`,
-    PendingDepositsResponseSchema,
-    { signal: opts.signal },
-  );
+  return apiClient(`/api/admin/deposits`, PendingDepositsResponseSchema, {
+    signal: opts.signal,
+  });
 }
 
 export function fetchWalletReconcileMismatches(
@@ -206,7 +216,10 @@ export function fetchWalletReconcileMismatches(
   );
 }
 
-export function confirmDeposit(id: string, opts: { signal?: AbortSignal } = {}) {
+export function confirmDeposit(
+  id: string,
+  opts: { signal?: AbortSignal } = {},
+) {
   return apiClient(`/api/admin/deposits/${id}/confirm`, MessageResponseSchema, {
     method: 'POST',
     signal: opts.signal,
@@ -229,21 +242,23 @@ export function rejectDeposit(
 export function fetchPendingWithdrawals(
   opts: { signal?: AbortSignal } = {},
 ): Promise<PendingWithdrawalsResponse> {
-  return apiClient(
-    `/api/admin/withdrawals`,
-    PendingWithdrawalsResponseSchema,
-    { signal: opts.signal },
-  );
+  return apiClient(`/api/admin/withdrawals`, PendingWithdrawalsResponseSchema, {
+    signal: opts.signal,
+  });
 }
 
 export function confirmWithdrawal(
   id: string,
   opts: { signal?: AbortSignal } = {},
 ) {
-  return apiClient(`/api/admin/withdrawals/${id}/confirm`, MessageResponseSchema, {
-    method: 'POST',
-    signal: opts.signal,
-  });
+  return apiClient(
+    `/api/admin/withdrawals/${id}/confirm`,
+    MessageResponseSchema,
+    {
+      method: 'POST',
+      signal: opts.signal,
+    },
+  );
 }
 
 export function rejectWithdrawal(
@@ -252,11 +267,15 @@ export function rejectWithdrawal(
   opts: { signal?: AbortSignal } = {},
 ) {
   const body = WithdrawalDecisionRequestSchema.parse({ comment });
-  return apiClient(`/api/admin/withdrawals/${id}/reject`, MessageResponseSchema, {
-    method: 'POST',
-    body,
-    signal: opts.signal,
-  });
+  return apiClient(
+    `/api/admin/withdrawals/${id}/reject`,
+    MessageResponseSchema,
+    {
+      method: 'POST',
+      body,
+      signal: opts.signal,
+    },
+  );
 }
 
 const BalanceSchema = z.object({
@@ -315,16 +334,6 @@ export async function fetchTransactionTypes(
   }
 }
 
-const TransactionLogEntrySchema = z.object({
-  datetime: z.string(),
-  action: z.string(),
-  amount: z.number().int(),
-  by: z.string(),
-  notes: z.string(),
-  status: z.string(),
-});
-export type TransactionLogEntry = z.infer<typeof TransactionLogEntrySchema>;
-
 export async function fetchTransactionsLog(
   opts: {
     signal?: AbortSignal;
@@ -376,11 +385,9 @@ export function fetchBankAccount(
   playerId: string,
   opts: { signal?: AbortSignal } = {},
 ): Promise<BankAccount> {
-  return apiClient(
-    `/api/wallet/${playerId}/bank-account`,
-    BankAccountSchema,
-    { signal: opts.signal },
-  );
+  return apiClient(`/api/wallet/${playerId}/bank-account`, BankAccountSchema, {
+    signal: opts.signal,
+  });
 }
 
 /**
@@ -389,15 +396,15 @@ export function fetchBankAccount(
 export function fetchIban(
   opts: { signal?: AbortSignal } = {},
 ): Promise<IbanResponse> {
-  return apiClient(`/api/wallet/iban`, IbanResponseSchema, { signal: opts.signal });
+  return apiClient(`/api/wallet/iban`, IbanResponseSchema, {
+    signal: opts.signal,
+  });
 }
 
 export function fetchIbanHistory(
   opts: { signal?: AbortSignal } = {},
 ): Promise<IbanHistoryResponse> {
-  return apiClient(
-    `/api/wallet/iban/history`,
-    IbanHistoryResponseSchema,
-    { signal: opts.signal },
-  );
+  return apiClient(`/api/wallet/iban/history`, IbanHistoryResponseSchema, {
+    signal: opts.signal,
+  });
 }
