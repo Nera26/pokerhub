@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 
-export type ToastType = 'success' | 'error';
+export type ToastType = 'success' | 'error' | 'loading';
 
 export interface ToastNotificationProps {
   /** The message to display in the toast */
@@ -66,7 +66,13 @@ export default function ToastNotification({
         className={
           'min-h-12 px-6 py-3 rounded-2xl text-text-primary shadow-lg transition-opacity duration-200 flex items-center ' +
           `${animate ? 'opacity-100' : 'opacity-0'} ` +
-          `${type === 'success' ? 'bg-accent-green' : 'bg-danger-red'}`
+          `${
+            type === 'success'
+              ? 'bg-accent-green'
+              : type === 'error'
+                ? 'bg-danger-red'
+                : 'bg-accent-yellow text-black'
+          }`
         }
       >
         {message}

@@ -1171,4 +1171,28 @@ async rejectExpiredPendingDeposits(): Promise<void> {
     await this.refundDisbursement(disb);
     await this.disbursements.delete(disb.id);
   }
+
+  async adminAdjustBalance(
+    userId: string,
+    action: 'add' | 'remove' | 'freeze',
+    amount: number,
+    currency: string,
+  ): Promise<void> {
+    const user = await this.accounts.findOneByOrFail({ id: userId, currency });
+    const house = await this.accounts.findOneByOrFail({ name: 'house', currency });
+    const refId = randomUUID();
+    if (action === 'add') {
+      await this.record('admin_add', refId, [
+        { account: house, amount: -amount },
+        { account: user, amount },
+      ]);
+    } else if (action === 'remove') {
+      await this.record('admin_remove', refId, [
+        { account: user, amount: -amount },
+        { account: house, amount },
+      ]);
+    } else if (action === 'freeze') {
+      await this.reserve(userId, amount, refId, currency);
+    }
+  }
 }

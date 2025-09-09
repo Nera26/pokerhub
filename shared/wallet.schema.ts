@@ -9,6 +9,14 @@ export const AmountSchema = z.object({
 
 export type Amount = z.infer<typeof AmountSchema>;
 
+export const AdminBalanceRequestSchema = z.object({
+  action: z.enum(['add', 'remove', 'freeze']),
+  amount: z.number().int().positive(),
+  currency: CurrencySchema,
+  notes: z.string(),
+});
+export type AdminBalanceRequest = z.infer<typeof AdminBalanceRequestSchema>;
+
 export const AmountDeviceSchema = z.object({
   amount: z.number().int().positive(),
   deviceId: z.string(),

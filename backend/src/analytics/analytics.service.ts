@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, ClickHouseClient } from '@clickhouse/client';
+import { randomUUID } from 'crypto';
 import Redis from 'ioredis';
 import { Producer } from 'kafkajs';
 import { createKafkaProducer } from '../common/kafka';
@@ -264,6 +265,28 @@ export class AnalyticsService {
   async getSecurityAlerts(): Promise<AlertItem[]> {
     const entries = await this.redis.lrange('security-alerts', 0, -1);
     return entries.map((e) => JSON.parse(e) as AlertItem);
+  }
+
+  async addAuditLog(entry: {
+    type: string;
+    description: string;
+    user: string;
+    ip: string | null;
+  }): Promise<void> {
+    const log = {
+      id: randomUUID(),
+      timestamp: new Date().toISOString(),
+      ...entry,
+    };
+    await this.redis.lpush('audit-logs', JSON.stringify(log));
+    await this.redis.ltrim('audit-logs', 0, 999);
+    if (this.client) {
+      await this.client.insert({
+        table: 'audit_log',
+        values: [log],
+        format: 'JSONEachRow',
+      });
+    }
   }
 
   async ingest<T extends Record<string, unknown>>(table: string, data: T) {

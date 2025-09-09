@@ -1451,6 +1451,30 @@ paths:
           content:
             application/json:
               schema:
+              $ref: '#/components/schemas/MessageResponse'
+  /admin/balance/{userId}:
+    post:
+      summary: Adjust user balance
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminBalanceRequest'
+      responses:
+        '200':
+          description: Balance adjusted
+          content:
+            application/json:
+              schema:
                 $ref: '#/components/schemas/MessageResponse'
   /user/profile:
     get:
@@ -2062,6 +2086,23 @@ components:
           type: string
       required:
         - comment
+    AdminBalanceRequest:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [add, remove, freeze]
+        amount:
+          type: integer
+        currency:
+          type: string
+        notes:
+          type: string
+      required:
+        - action
+        - amount
+        - currency
+        - notes
     RefreshRequest:
       type: object
       properties:
