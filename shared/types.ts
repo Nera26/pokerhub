@@ -6,6 +6,15 @@ export { ZodError };
 // Wallet shared exports
 export * from './wallet.schema';
 
+// Language selector
+export const LanguageSchema = z.object({
+  code: z.string(),
+  label: z.string(),
+});
+export type Language = z.infer<typeof LanguageSchema>;
+export const LanguagesResponseSchema = z.array(LanguageSchema);
+export type LanguagesResponse = z.infer<typeof LanguagesResponseSchema>;
+
 // Backend re-exports
 export {
   UserProfileSchema,

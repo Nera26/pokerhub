@@ -1602,6 +1602,19 @@ export interface paths {
       };
     };
   };
+  "/languages": {
+    /** List supported languages */
+    get: {
+      responses: {
+        /** @description Array of languages */
+        200: {
+          content: {
+            "application/json": components["schemas"]["LanguagesResponse"];
+          };
+        };
+      };
+    };
+  };
   "/users": {
     /** Create user */
     post: {
@@ -1965,13 +1978,6 @@ export interface components {
       resolved?: boolean;
     };
     SecurityAlertsResponse: components["schemas"]["AlertItem"][];
-    AdminEvent: {
-      id: string;
-      title: string;
-      description: string;
-      date: string;
-    };
-    AdminEventsResponse: components["schemas"]["AdminEvent"][];
     WithdrawalDecisionRequest: {
       comment: string;
     };
@@ -2326,6 +2332,11 @@ export interface components {
       label: string;
     };
     GameTypeList: components["schemas"]["GameTypeWithLabel"][];
+    Language: {
+      code: string;
+      label: string;
+    };
+    LanguagesResponse: components["schemas"]["Language"][];
     CreateTableRequest: {
       tableName: string;
       /** @enum {string} */

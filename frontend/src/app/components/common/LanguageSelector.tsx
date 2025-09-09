@@ -2,10 +2,22 @@
 
 import { useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+import { fetchLanguages } from '@/lib/api/languages';
+import type { LanguagesResponse } from '@shared/types';
 
 export default function LanguageSelector() {
   const locale = useLocale();
   const router = useRouter();
+  const { data, isLoading, error } = useQuery<LanguagesResponse>({
+    queryKey: ['languages'],
+    queryFn: ({ signal }) => fetchLanguages({ signal }),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+  if (isLoading) return <div>Loading languages...</div>;
+  if (error) return <div>Error loading languages</div>;
 
   function handleChange(event: React.ChangeEvent<HTMLSelectElement>) {
     const newLocale = event.target.value;
@@ -25,8 +37,11 @@ export default function LanguageSelector() {
         value={locale}
         className="ml-4 rounded border border-accent-yellow bg-card-bg p-1 text-sm"
       >
-        <option value="en">English</option>
-        <option value="es">Español</option>
+        {data?.map((lang) => (
+          <option key={lang.code} value={lang.code}>
+            {lang.label}
+          </option>
+        ))}
       </select>
     </>
   );
