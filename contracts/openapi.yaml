@@ -3564,21 +3564,51 @@ components:
       enum:
         - active
         - paused
+    BonusTypeOption:
+      type: object
+      properties:
+        value:
+          $ref: '#/components/schemas/BonusOptionType'
+        label:
+          type: string
+      required:
+        - value
+        - label
+    BonusEligibilityOption:
+      type: object
+      properties:
+        value:
+          $ref: '#/components/schemas/BonusEligibility'
+        label:
+          type: string
+      required:
+        - value
+        - label
+    BonusStatusOption:
+      type: object
+      properties:
+        value:
+          $ref: '#/components/schemas/BonusStatus'
+        label:
+          type: string
+      required:
+        - value
+        - label
     BonusOptionsResponse:
       type: object
       properties:
         types:
           type: array
           items:
-            $ref: '#/components/schemas/BonusOptionType'
+            $ref: '#/components/schemas/BonusTypeOption'
         eligibilities:
           type: array
           items:
-            $ref: '#/components/schemas/BonusEligibility'
+            $ref: '#/components/schemas/BonusEligibilityOption'
         statuses:
           type: array
           items:
-            $ref: '#/components/schemas/BonusStatus'
+            $ref: '#/components/schemas/BonusStatusOption'
       required:
         - types
         - eligibilities

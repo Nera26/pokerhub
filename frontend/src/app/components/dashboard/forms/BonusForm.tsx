@@ -34,24 +34,6 @@ export default function BonusForm({
 
   if (!options) return null;
 
-  const typeLabels: Record<string, string> = {
-    deposit: 'Deposit Match',
-    rakeback: 'Rakeback',
-    ticket: 'Tournament Tickets',
-    rebate: 'Rebate',
-    'first-deposit': 'First Deposit Only',
-  };
-  const eligibilityLabels: Record<string, string> = {
-    all: 'All Players',
-    new: 'New Players Only',
-    vip: 'VIP Players Only',
-    active: 'Active Players',
-  };
-  const statusLabels: Record<string, string> = {
-    active: 'Active',
-    paused: 'Paused',
-  };
-
   return (
     <>
       <Input
@@ -64,7 +46,10 @@ export default function BonusForm({
       />
 
       <div>
-        <label htmlFor="bonus-type" className="block text-sm font-semibold mb-2">
+        <label
+          htmlFor="bonus-type"
+          className="block text-sm font-semibold mb-2"
+        >
           Promotion Type
         </label>
         <select
@@ -74,15 +59,18 @@ export default function BonusForm({
           {...register('type')}
         >
           {options.types.map((t) => (
-            <option key={t} value={t}>
-              {typeLabels[t] ?? t}
+            <option key={t.value} value={t.value}>
+              {t.label}
             </option>
           ))}
         </select>
       </div>
 
       <div>
-        <label htmlFor="bonus-description" className="block text-sm font-semibold mb-2">
+        <label
+          htmlFor="bonus-description"
+          className="block text-sm font-semibold mb-2"
+        >
           Description
         </label>
         <textarea
@@ -94,7 +82,9 @@ export default function BonusForm({
           {...register('description')}
         />
         {errors.description && (
-          <p className="text-xs text-danger-red mt-1">{errors.description.message}</p>
+          <p className="text-xs text-danger-red mt-1">
+            {errors.description.message}
+          </p>
         )}
       </div>
 
@@ -130,7 +120,10 @@ export default function BonusForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="eligibility" className="block text-sm font-semibold mb-2">
+          <label
+            htmlFor="eligibility"
+            className="block text-sm font-semibold mb-2"
+          >
             Player Eligibility
           </label>
           <select
@@ -140,8 +133,8 @@ export default function BonusForm({
             {...register('eligibility')}
           >
             {options.eligibilities.map((e) => (
-              <option key={e} value={e}>
-                {eligibilityLabels[e] ?? e}
+              <option key={e.value} value={e.value}>
+                {e.label}
               </option>
             ))}
           </select>
@@ -158,8 +151,8 @@ export default function BonusForm({
             {...register('status')}
           >
             {options.statuses.map((s) => (
-              <option key={s} value={s}>
-                {statusLabels[s] ?? s}
+              <option key={s.value} value={s.value}>
+                {s.label}
               </option>
             ))}
           </select>
@@ -168,4 +161,3 @@ export default function BonusForm({
     </>
   );
 }
-

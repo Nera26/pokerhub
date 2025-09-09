@@ -31,9 +31,23 @@ describe('AdminBonusController', () => {
       .get('/admin/bonus/options')
       .expect(200)
       .expect({
-        types: ['deposit', 'rakeback', 'ticket', 'rebate', 'first-deposit'],
-        eligibilities: ['all', 'new', 'vip', 'active'],
-        statuses: ['active', 'paused'],
+        types: [
+          { value: 'deposit', label: 'Deposit Match' },
+          { value: 'rakeback', label: 'Rakeback' },
+          { value: 'ticket', label: 'Tournament Tickets' },
+          { value: 'rebate', label: 'Rebate' },
+          { value: 'first-deposit', label: 'First Deposit Only' },
+        ],
+        eligibilities: [
+          { value: 'all', label: 'All Players' },
+          { value: 'new', label: 'New Players Only' },
+          { value: 'vip', label: 'VIP Players Only' },
+          { value: 'active', label: 'Active Players' },
+        ],
+        statuses: [
+          { value: 'active', label: 'Active' },
+          { value: 'paused', label: 'Paused' },
+        ],
       });
   });
 });

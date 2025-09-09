@@ -17,9 +17,9 @@ describe('BonusManager component', () => {
       if (queryKey[0] === 'admin-bonus-options') {
         return {
           data: {
-            types: ['deposit'],
-            eligibilities: ['all'],
-            statuses: ['active'],
+            types: [{ value: 'deposit', label: 'Deposit Match' }],
+            eligibilities: [{ value: 'all', label: 'All Players' }],
+            statuses: [{ value: 'active', label: 'Active' }],
           },
           isLoading: false,
           error: null,
@@ -50,9 +50,9 @@ describe('BonusManager component', () => {
       if (queryKey[0] === 'admin-bonus-options') {
         return {
           data: {
-            types: ['deposit'],
-            eligibilities: ['all'],
-            statuses: ['active'],
+            types: [{ value: 'deposit', label: 'Deposit Match' }],
+            eligibilities: [{ value: 'all', label: 'All Players' }],
+            statuses: [{ value: 'active', label: 'Active' }],
           },
           isLoading: false,
           error: null,
@@ -69,9 +69,9 @@ describe('BonusManager component', () => {
       if (queryKey[0] === 'admin-bonus-options') {
         return {
           data: {
-            types: ['deposit'],
-            eligibilities: ['all'],
-            statuses: ['active'],
+            types: [{ value: 'deposit', label: 'Deposit Match' }],
+            eligibilities: [{ value: 'all', label: 'All Players' }],
+            statuses: [{ value: 'active', label: 'Active' }],
           },
           isLoading: false,
           error: null,
@@ -95,12 +95,15 @@ describe('BonusManager component', () => {
     });
     render(<BonusManager />);
 
-    const createInput = screen.getAllByPlaceholderText('Enter promotion name...')[0];
+    const createInput = screen.getAllByPlaceholderText(
+      'Enter promotion name...',
+    )[0];
     expect(createInput).toHaveValue('');
 
     fireEvent.click(screen.getAllByText('Edit')[0]);
-    const editInput = screen.getAllByPlaceholderText('Enter promotion name...')[1];
+    const editInput = screen.getAllByPlaceholderText(
+      'Enter promotion name...',
+    )[1];
     expect(editInput).toHaveValue('Edit Bonus');
   });
 });
-
