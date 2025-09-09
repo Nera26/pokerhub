@@ -1,50 +1,46 @@
 /* istanbul ignore file */
 import { apiClient } from './client';
-import {
-  MessageResponse,
-  MessageResponseSchema,
-  WithdrawalDecisionRequest,
-} from '@shared/types';
 import { z } from 'zod';
+import {
+  PendingWithdrawalsResponseSchema,
+  type WithdrawalDecisionRequest,
+} from '@shared/types';
+
 export type { ApiError } from './client';
 
+const PendingWithdrawalSchema =
+  PendingWithdrawalsResponseSchema.shape.withdrawals.element;
+export type PendingWithdrawal = z.infer<typeof PendingWithdrawalSchema>;
+
 export async function approveWithdrawal(
-  user: string,
+  id: string,
   comment: string,
-): Promise<MessageResponse> {
+): Promise<PendingWithdrawal> {
   const body: WithdrawalDecisionRequest = { comment };
-  return apiClient(`/api/withdrawals/${user}/approve`, MessageResponseSchema, {
+  return apiClient(`/api/withdrawals/${id}/approve`, PendingWithdrawalSchema, {
     method: 'POST',
     body,
   });
 }
 
 export async function rejectWithdrawal(
-  user: string,
+  id: string,
   comment: string,
-): Promise<MessageResponse> {
+): Promise<PendingWithdrawal> {
   const body: WithdrawalDecisionRequest = { comment };
-  return apiClient(`/api/withdrawals/${user}/reject`, MessageResponseSchema, {
+  return apiClient(`/api/withdrawals/${id}/reject`, PendingWithdrawalSchema, {
     method: 'POST',
     body,
   });
 }
 
-const WithdrawalSchema = z.object({
-  user: z.string(),
-  amount: z.string(),
-  date: z.string(),
-  status: z.enum(['Pending', 'Approved', 'Rejected']),
-  bankInfo: z.string().optional(),
-  avatar: z.string(),
-});
-
 export async function fetchPendingWithdrawals({
   signal,
 }: { signal?: AbortSignal } = {}) {
-  return apiClient(
+  const res = await apiClient(
     '/api/admin/withdrawals',
-    z.array(WithdrawalSchema),
+    PendingWithdrawalsResponseSchema,
     { signal },
   );
+  return res.withdrawals;
 }
