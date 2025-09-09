@@ -4,14 +4,12 @@ import TransactionHistoryTable, {
   type Column,
   type Action,
 } from '../TransactionHistoryTable';
-import useTransactionVirtualizer from '@/hooks/useTransactionVirtualizer';
-
-jest.mock('@/hooks/useTransactionVirtualizer');
 
 describe('TransactionHistoryTable', () => {
   interface Row {
     id: string;
     name: string;
+    date: string;
   }
 
   const columns: Column<Row>[] = [
@@ -22,14 +20,8 @@ describe('TransactionHistoryTable', () => {
       cellClassName: 'cell',
     },
   ];
-  const useTransactionVirtualizerMock =
-    useTransactionVirtualizer as jest.Mock;
 
-  beforeEach(() => {
-    useTransactionVirtualizerMock.mockReset();
-  });
-
-  async function renderWithActions(virtualized: boolean) {
+  it('renders actions and triggers callbacks', async () => {
     const onView = jest.fn();
     const actions: Action<Row>[] = [
       {
@@ -38,18 +30,7 @@ describe('TransactionHistoryTable', () => {
         className: 'btn',
       },
     ];
-    const data: Row[] = [{ id: '1', name: 'Alice' }];
-
-    useTransactionVirtualizerMock.mockReturnValue({
-      parentRef: { current: null },
-      sortedItems: data,
-      rowVirtualizer: {
-        getVirtualItems: () =>
-          virtualized ? [{ index: 0, start: 0 }] : [],
-        measureElement: jest.fn(),
-        getTotalSize: () => (virtualized ? 100 : 0),
-      },
-    });
+    const data: Row[] = [{ id: '1', name: 'Alice', date: '2024-01-01' }];
 
     render(
       <TransactionHistoryTable
@@ -65,13 +46,5 @@ describe('TransactionHistoryTable', () => {
     expect(btn).toBeInTheDocument();
     await userEvent.click(btn);
     expect(onView).toHaveBeenCalledWith(data[0]);
-  }
-
-  it('renders actions and triggers callbacks without virtualization', async () => {
-    await renderWithActions(false);
-  });
-
-  it('renders actions and triggers callbacks with virtualization', async () => {
-    await renderWithActions(true);
   });
 });

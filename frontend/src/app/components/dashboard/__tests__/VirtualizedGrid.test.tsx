@@ -39,7 +39,7 @@ describe('VirtualizedGrid', () => {
           { label: 'Actions', span: 4 },
         ]}
         testId="users-grid-test"
-        rowRenderer={(u, style) => (
+        renderItem={(u, style) => (
           <div key={u.id} style={style} className="grid grid-cols-12">
             <div className="col-span-1">{u.id}</div>
             <div className="col-span-3">{u.name}</div>
@@ -77,7 +77,7 @@ describe('VirtualizedGrid', () => {
         ]}
         testId="withdrawals-grid-test"
         estimateSize={72}
-        rowRenderer={(w, style) => (
+        renderItem={(w, style) => (
           <div key={w.user} style={style} className="grid grid-cols-12">
             <div className="col-span-2">{w.user}</div>
             <div className="col-span-2">{w.amount}</div>

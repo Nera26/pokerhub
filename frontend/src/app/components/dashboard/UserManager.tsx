@@ -327,7 +327,7 @@ export default function UserManager() {
                 ]}
                 estimateSize={72}
                 testId="withdrawals-grid"
-                rowRenderer={(w, style) => (
+                renderItem={(w, style) => (
                   <div
                     key={w.user}
                     className="grid grid-cols-12 gap-4 p-4 border-b border-dark hover:bg-hover-bg transition-colors"
@@ -396,7 +396,7 @@ export default function UserManager() {
                 ]}
                 estimateSize={64}
                 testId="users-grid"
-                rowRenderer={(u, style) => {
+                renderItem={(u, style) => {
                   const isBanned = u.status === 'Banned';
                   return (
                     <div
