@@ -9,7 +9,7 @@ jest.mock('chart.js/auto', () => ({
   default: jest.fn(() => ({ destroy: jest.fn() })),
 }));
 
-jest.mock('@/hooks/useAuditLogs', () => ({
+jest.mock('@/hooks/useAuditResource', () => ({
   useAuditLogs: () => ({
     data: {
       logs: [
@@ -40,9 +40,6 @@ jest.mock('@/hooks/useAuditLogs', () => ({
       ],
     },
   }),
-}));
-
-jest.mock('@/hooks/useAuditSummary', () => ({
   useAuditSummary: () => ({ data: { total: 3, errors: 2, logins: 1 } }),
 }));
 
@@ -64,7 +61,12 @@ function renderWithClient(ui: React.ReactElement) {
 
 beforeEach(() => {
   dashboardMetricsMock.mockReturnValue({
-    data: { online: 0, revenue: 0, activity: [1, 2, 3, 4, 5, 6, 7], errors: [1, 1, 1, 1] },
+    data: {
+      online: 0,
+      revenue: 0,
+      activity: [1, 2, 3, 4, 5, 6, 7],
+      errors: [1, 1, 1, 1],
+    },
     isLoading: false,
   });
 });
@@ -128,7 +130,12 @@ describe('dashboard metrics charts', () => {
 
   it('renders charts when data present', async () => {
     dashboardMetricsMock.mockReturnValue({
-      data: { online: 0, revenue: 0, activity: [1,2,3,4,5,6,7], errors: [1,2,3,4] },
+      data: {
+        online: 0,
+        revenue: 0,
+        activity: [1, 2, 3, 4, 5, 6, 7],
+        errors: [1, 2, 3, 4],
+      },
       isLoading: false,
     });
     renderWithClient(<Analytics />);

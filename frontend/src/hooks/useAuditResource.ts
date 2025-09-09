@@ -23,23 +23,25 @@ export const makeAuditHook = <T>(
     keyLabel,
   );
 
-export const useAuditAlerts = makeAuditHook<AlertItem[]>(
+const useAuditAlerts = makeAuditHook<AlertItem[]>(
   'audit-alerts',
   '/api/admin/security-alerts',
   SecurityAlertsResponseSchema,
   'audit alerts',
 );
 
-export const useAuditLogs = makeAuditHook<AuditLogsResponse>(
+const useAuditLogs = makeAuditHook<AuditLogsResponse>(
   'audit-logs',
   '/api/admin/audit-logs',
   AuditLogsResponseSchema,
   'audit logs',
 );
 
-export const useAuditSummary = makeAuditHook<AuditSummary>(
+const useAuditSummary = makeAuditHook<AuditSummary>(
   'audit-summary',
   '/api/analytics/summary',
   AuditSummarySchema,
   'audit summary',
 );
+
+export { useAuditAlerts, useAuditLogs, useAuditSummary };
