@@ -1433,6 +1433,22 @@ export interface paths {
         };
       };
     };
+    /** Create user */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["CreateUserRequest"];
+        };
+      };
+      responses: {
+        /** @description User created */
+        201: {
+          content: {
+            "application/json": components["schemas"]["DashboardUser"];
+          };
+        };
+      };
+    };
   };
   "/admin/tournaments/defaults": {
     /** Get default tournament values */

@@ -5,16 +5,17 @@ import { AdminUsersController } from '../src/routes/admin-users.controller';
 import { UsersService } from '../src/users/users.service';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
-import { DashboardUserListSchema } from '@shared/types';
+import { DashboardUserListSchema, DashboardUserSchema } from '@shared/types';
 
 describe('AdminUsersController', () => {
   let app: INestApplication;
   const list = jest.fn();
+  const create = jest.fn();
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       controllers: [AdminUsersController],
-      providers: [{ provide: UsersService, useValue: { list } }],
+      providers: [{ provide: UsersService, useValue: { list, create } }],
     })
       .overrideGuard(AuthGuard)
       .useValue({ canActivate: () => true })
@@ -24,6 +25,10 @@ describe('AdminUsersController', () => {
 
     app = moduleRef.createNestApplication();
     await app.init();
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   afterAll(async () => {
@@ -40,5 +45,30 @@ describe('AdminUsersController', () => {
     const parsed = DashboardUserListSchema.parse(res.body);
     expect(parsed[0].username).toBe('alice');
     expect(list).toHaveBeenCalledWith(5);
+  });
+
+  it('creates user', async () => {
+    create.mockResolvedValue({
+      id: '2',
+      username: 'bob',
+      avatarKey: undefined,
+      balance: 0,
+      banned: false,
+    });
+    const res = await request(app.getHttpServer())
+      .post('/admin/users')
+      .send({ username: 'bob' })
+      .expect(201);
+    const parsed = DashboardUserSchema.parse(res.body);
+    expect(parsed.username).toBe('bob');
+    expect(create).toHaveBeenCalledWith({ username: 'bob' });
+  });
+
+  it('returns 400 on invalid data', async () => {
+    await request(app.getHttpServer())
+      .post('/admin/users')
+      .send({})
+      .expect(400);
+    expect(create).not.toHaveBeenCalled();
   });
 });
