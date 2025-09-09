@@ -1,59 +1,44 @@
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { waitFor } from '@testing-library/react';
 import useBroadcastTypes from '../useBroadcastTypes';
-import type { ReactNode } from 'react';
 import type { ApiError } from '@/lib/api/client';
+import {
+  renderHookWithClient,
+  mockFetchLoading,
+  mockFetchSuccess,
+  mockFetchError,
+} from './utils/renderHookWithClient';
 
 describe('useBroadcastTypes', () => {
-  it('requires no arguments', () => {
-    expect(useBroadcastTypes).toHaveLength(0);
-  });
-  const wrapper = ({ children }: { children: ReactNode }) => {
-    const client = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    });
-    return (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
-  };
-
   afterEach(() => {
     jest.resetAllMocks();
   });
 
+  it('requires no arguments', () => {
+    expect(useBroadcastTypes).toHaveLength(0);
+  });
+
   it('reports loading state', () => {
-    global.fetch = jest.fn(
-      () => new Promise(() => {}),
-    ) as unknown as typeof fetch;
-    const { result } = renderHook(() => useBroadcastTypes(), { wrapper });
+    mockFetchLoading();
+    const { result } = renderHookWithClient(() => useBroadcastTypes());
     expect(result.current.isLoading).toBe(true);
   });
 
   it('returns types on success', async () => {
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        types: {
-          announcement: { icon: '📢', color: 'text-accent-yellow' },
-        },
-      }),
-    }) as unknown as typeof fetch;
+    mockFetchSuccess({
+      types: {
+        announcement: { icon: '📢', color: 'text-accent-yellow' },
+      },
+    });
 
-    const { result } = renderHook(() => useBroadcastTypes(), { wrapper });
+    const { result } = renderHookWithClient(() => useBroadcastTypes());
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.types.announcement.icon).toBe('📢');
   });
 
   it('exposes error state', async () => {
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: false,
-      status: 500,
-      statusText: 'Server error',
-      json: async () => ({ message: 'fail' }),
-    }) as unknown as typeof fetch;
+    mockFetchError('fail');
 
-    const { result } = renderHook(() => useBroadcastTypes(), { wrapper });
+    const { result } = renderHookWithClient(() => useBroadcastTypes());
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect((result.current.error as ApiError).message).toBe(
       'Failed to fetch broadcast types: fail',

@@ -1,6 +1,4 @@
-import React from 'react';
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { waitFor } from '@testing-library/react';
 import {
   useAuditLogs,
   useAuditSummary,
@@ -12,6 +10,7 @@ import {
   SecurityAlertsResponseSchema,
 } from '@shared/types';
 import { apiClient, type ApiError } from '@/lib/api/client';
+import { renderHookWithClient } from './utils/renderHookWithClient';
 
 jest.mock('@/lib/api/client', () => ({
   apiClient: jest.fn(),
@@ -20,16 +19,6 @@ jest.mock('@/lib/api/client', () => ({
 type Hook<T> = () => T;
 
 const mockedApiClient = apiClient as jest.MockedFunction<typeof apiClient>;
-
-const wrapper = ({ children }: { children: React.ReactNode }) => {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return React.createElement(QueryClientProvider, {
-    client: queryClient,
-    children,
-  });
-};
 
 describe('audit hooks', () => {
   afterEach(() => {
@@ -67,7 +56,7 @@ describe('audit hooks', () => {
 
   it.each(cases)('%s resolves data', async ({ hook, data, path, schema }) => {
     mockedApiClient.mockResolvedValueOnce(data as any);
-    const { result } = renderHook(() => hook(), { wrapper });
+    const { result } = renderHookWithClient(() => hook());
     await waitFor(() => expect(result.current.data).toEqual(data));
     expect(mockedApiClient).toHaveBeenCalledWith(path, schema, {
       signal: expect.anything(),
@@ -76,7 +65,7 @@ describe('audit hooks', () => {
 
   it.each(cases)('%s bubbles errors', async ({ hook, label }) => {
     mockedApiClient.mockRejectedValueOnce({ message: 'err' } as ApiError);
-    const { result } = renderHook(() => hook(), { wrapper });
+    const { result } = renderHookWithClient(() => hook());
     await waitFor(() => {
       expect(result.current.error).toBeDefined();
       expect((result.current.error as ApiError).message).toContain(
