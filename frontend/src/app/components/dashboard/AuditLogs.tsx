@@ -15,7 +15,8 @@ import {
 import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { useAuditAlerts } from '@/hooks/useAuditAlerts';
 import { useAdminOverview } from '@/hooks/useAdminOverview';
-import type { AlertItem, AuditLogEntry } from '@shared/types';
+import { useAdminEvents } from '@/hooks/useAdminEvents';
+import type { AlertItem, AuditLogEntry, AdminEvent } from '@shared/types';
 import StatusPill from './common/StatusPill';
 
 type AuditStatus = 'Success' | 'Warning' | 'Failed';
@@ -128,13 +129,20 @@ export default function AuditLogs() {
     if (alertsData) setAlerts(alertsData);
   }, [alertsData]);
 
-  if (logsLoading || alertsLoading || adminsLoading) {
+  const {
+    data: eventsData,
+    isLoading: eventsLoading,
+    error: eventsError,
+  } = useAdminEvents();
+  const events = eventsData ?? [];
+
+  if (logsLoading || alertsLoading || adminsLoading || eventsLoading) {
     return <div aria-label="loading">Loading...</div>;
   }
-  if (logsError || alertsError || adminsError) {
+  if (logsError || alertsError || adminsError || eventsError) {
     return (
       <div role="alert">
-        {(logsError || alertsError || adminsError)?.message}
+        {(logsError || alertsError || adminsError || eventsError)?.message}
       </div>
     );
   }
@@ -487,10 +495,10 @@ export default function AuditLogs() {
         </div>
       </section>
 
-      {/* Additional Content */}
+      {/* Admin Events */}
       <section>
         <div className="bg-card-bg p-6 rounded-2xl card-shadow">
-          <h3 className="text-lg font-bold mb-4">Additional Content</h3>
+          <h3 className="text-lg font-bold mb-4">Admin Events</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -507,16 +515,24 @@ export default function AuditLogs() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b border-dark hover:bg-hover-bg">
-                  <td className="py-3 px-2">Event 1</td>
-                  <td className="py-3 px-2">Description of Event 1</td>
-                  <td className="py-3 px-2">2024-01-15</td>
-                </tr>
-                <tr className="border-b border-dark hover:bg-hover-bg">
-                  <td className="py-3 px-2">Event 2</td>
-                  <td className="py-3 px-2">Description of Event 2</td>
-                  <td className="py-3 px-2">2024-01-16</td>
-                </tr>
+                {events.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="py-3 px-2 text-text-secondary">
+                      No events
+                    </td>
+                  </tr>
+                ) : (
+                  events.map((e: AdminEvent) => (
+                    <tr
+                      key={e.id}
+                      className="border-b border-dark hover:bg-hover-bg"
+                    >
+                      <td className="py-3 px-2">{e.title}</td>
+                      <td className="py-3 px-2">{e.description}</td>
+                      <td className="py-3 px-2">{e.date}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

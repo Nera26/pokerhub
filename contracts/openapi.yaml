@@ -1263,6 +1263,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SecurityAlertsResponse'
+  /admin/events:
+    get:
+      summary: Get admin events
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Admin events
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminEventsResponse'
   /admin/sidebar:
     get:
       summary: Get admin sidebar items
@@ -3642,6 +3654,26 @@ components:
       required:
         - tabs
         - titles
+    AdminEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        date:
+          type: string
+      required:
+        - id
+        - title
+        - description
+        - date
+    AdminEventsResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/AdminEvent'
     BonusOptionType:
       type: string
       enum:

@@ -8,6 +8,8 @@ import {
   type BonusOptionsResponse,
   SidebarTabsResponseSchema,
   type SidebarTabsResponse,
+  AdminEventsResponseSchema,
+  type AdminEvent,
 } from '@shared/types';
 import { SidebarItemsResponseSchema, type SidebarItem } from '@shared/types';
 export { AdminTournamentSchema } from '@shared/types';
@@ -21,13 +23,21 @@ export const AdminTournamentListSchema = z.array(AdminTournamentSchema);
 export async function fetchSidebarItems({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<SidebarItem[]> {
-  return apiClient('/api/admin/sidebar', SidebarItemsResponseSchema, { signal });
+  return apiClient('/api/admin/sidebar', SidebarItemsResponseSchema, {
+    signal,
+  });
 }
 
 export async function fetchAdminTabs({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<SidebarTabsResponse> {
   return apiClient('/api/admin/tabs', SidebarTabsResponseSchema, { signal });
+}
+
+export async function fetchAdminEvents({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<AdminEvent[]> {
+  return apiClient('/api/admin/events', AdminEventsResponseSchema, { signal });
 }
 
 export async function fetchAdminTournaments({
@@ -61,21 +71,17 @@ export async function updateAdminTournament(
 
 export async function deleteAdminTournament(id: number): Promise<void> {
   // Validate server response shape but return void to callers
-  await apiClient(
-    `/api/admin/tournaments/${id}`,
-    MessageResponseSchema,
-    { method: 'DELETE' },
-  );
+  await apiClient(`/api/admin/tournaments/${id}`, MessageResponseSchema, {
+    method: 'DELETE',
+  });
 }
 
 export async function fetchAdminTournamentDefaults({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<AdminTournament> {
-  return apiClient(
-    '/api/admin/tournaments/defaults',
-    AdminTournamentSchema,
-    { signal },
-  );
+  return apiClient('/api/admin/tournaments/defaults', AdminTournamentSchema, {
+    signal,
+  });
 }
 
 /** =======================
@@ -84,7 +90,9 @@ export async function fetchAdminTournamentDefaults({
 export async function fetchBonusOptions({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<BonusOptionsResponse> {
-  return apiClient('/api/admin/bonus/options', BonusOptionsResponseSchema, { signal });
+  return apiClient('/api/admin/bonus/options', BonusOptionsResponseSchema, {
+    signal,
+  });
 }
 
 export const BonusSchema = z.object({

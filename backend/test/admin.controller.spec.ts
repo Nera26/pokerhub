@@ -16,6 +16,7 @@ describe('AdminController', () => {
   const analytics = {
     getAuditLogs: jest.fn(),
     getSecurityAlerts: jest.fn(),
+    getAdminEvents: jest.fn(),
   } as Partial<AnalyticsService>;
   const sidebarItems: SidebarItem[] = [
     { id: 'dynamic', label: 'Dynamic', icon: 'chart-line' },
@@ -62,6 +63,14 @@ describe('AdminController', () => {
     (analytics.getSecurityAlerts as jest.Mock).mockResolvedValue([]);
     await request(app.getHttpServer())
       .get('/admin/security-alerts')
+      .expect(200)
+      .expect([]);
+  });
+
+  it('returns admin events', async () => {
+    (analytics.getAdminEvents as jest.Mock).mockResolvedValue([]);
+    await request(app.getHttpServer())
+      .get('/admin/events')
       .expect(200)
       .expect([]);
   });

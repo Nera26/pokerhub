@@ -13,6 +13,8 @@ import {
   SidebarItemsResponseSchema,
   SidebarTabsResponseSchema,
   SidebarTab,
+  AdminEvent,
+  AdminEventsResponseSchema,
 } from '../schemas/admin';
 import { SidebarService } from '../services/sidebar.service';
 import { KycService } from '../wallet/kyc.service';
@@ -52,6 +54,14 @@ export class AdminController {
   async securityAlerts(): Promise<AlertItem[]> {
     const alerts = await this.analytics.getSecurityAlerts();
     return z.array(AlertItemSchema).parse(alerts);
+  }
+
+  @Get('events')
+  @ApiOperation({ summary: 'Get admin events' })
+  @ApiResponse({ status: 200, description: 'Admin events' })
+  async events(): Promise<AdminEvent[]> {
+    const ev = await this.analytics.getAdminEvents();
+    return AdminEventsResponseSchema.parse(ev);
   }
 
   @Get('sidebar')
