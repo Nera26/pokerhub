@@ -3,10 +3,10 @@ import { GameActionSchema } from './schemas/game';
 
 export { ZodError };
 
+// Wallet shared exports
 export * from './wallet.schema';
 
-
-
+// Backend re-exports
 export {
   UserProfileSchema,
   MeResponseSchema,
@@ -48,6 +48,7 @@ export {
 } from '../backend/src/schemas/bonus';
 export type { BonusOptionsResponse } from '../backend/src/schemas/bonus';
 
+// Dashboard metrics (frontend-only)
 export const DashboardMetricsSchema = z.object({
   online: z.number(),
   revenue: z.number(),
@@ -55,6 +56,7 @@ export const DashboardMetricsSchema = z.object({
   errors: z.array(z.number()),
 });
 export type DashboardMetrics = z.infer<typeof DashboardMetricsSchema>;
+
 export {
   NotificationTypeSchema,
   NotificationSchema,
@@ -131,12 +133,13 @@ export type {
   ReplyMessageRequest,
 } from '../backend/src/schemas/messages';
 
+// Auth refresh
 export const RefreshRequestSchema = z.object({
   refreshToken: z.string(),
 });
 export type RefreshRequest = z.infer<typeof RefreshRequestSchema>;
 
-
+// Password reset
 export const RequestResetRequestSchema = z.object({
   email: z.string().email(),
 });
@@ -157,6 +160,7 @@ export const ResetPasswordRequestSchema = z.object({
 });
 export type ResetPasswordRequest = z.infer<typeof ResetPasswordRequestSchema>;
 
+// Feature flags
 export const FeatureFlagRequestSchema = z.object({
   value: z.boolean(),
 });
@@ -171,10 +175,12 @@ export type FeatureFlag = z.infer<typeof FeatureFlagSchema>;
 export const FeatureFlagsResponseSchema = z.record(z.boolean());
 export type FeatureFlagsResponse = z.infer<typeof FeatureFlagsResponseSchema>;
 
+// Game actions
 export { GameActionSchema } from './schemas/game';
 export type { GameAction } from './schemas/game';
 export type GameActionPayload = z.infer<typeof GameActionSchema>;
 
+// Game state
 export const GameStatePlayerSchema = z.object({
   id: z.string(),
   stack: z.number(),
@@ -236,6 +242,7 @@ export type GameTypeWithLabel = z.infer<typeof GameTypeWithLabelSchema>;
 export const GameTypeListSchema = z.array(GameTypeWithLabelSchema);
 export type GameTypeList = z.infer<typeof GameTypeListSchema>;
 
+// Tournaments (frontend)
 export const TournamentSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -276,6 +283,7 @@ export const TournamentWithdrawRequestSchema =
   TournamentRegisterRequestSchema;
 export type TournamentWithdrawRequest = TournamentRegisterRequest;
 
+// Tables
 export const TableSchema = z.object({
   id: z.string(),
   tableName: z.string(),
@@ -307,6 +315,7 @@ export type CreateTableRequest = z.infer<typeof CreateTableSchema>;
 export const UpdateTableSchema = CreateTableSchema.partial();
 export type UpdateTableRequest = z.infer<typeof UpdateTableSchema>;
 
+// Players / Chat
 export const PlayerSchema = z.object({
   id: z.number(),
   username: z.string(),
@@ -381,8 +390,7 @@ export const HandStateResponseSchema = z.object({
 });
 export type HandStateResponse = z.infer<typeof HandStateResponseSchema>;
 
-// Commitment, seed and nonce proving deck fairness for a hand
-// Used by GET /hands/:id/proof
+// Fairness proof
 export const HandProofSchema = z.object({
   seed: z.string(),
   nonce: z.string(),
@@ -401,10 +409,7 @@ export const HandProofsResponseSchema = z.array(
 );
 export type HandProofsResponse = z.infer<typeof HandProofsResponseSchema>;
 
-// Raw JSONL hand history
-export const HandLogResponseSchema = z.string();
-export type HandLogResponse = z.infer<typeof HandLogResponseSchema>;
-
+// Rebuy / PKO options
 export const RebuyOptionsSchema = z.object({
   cost: z.number().int().positive(),
   chips: z.number().int().positive(),
@@ -417,6 +422,7 @@ export const PkoOptionsSchema = z.object({
 });
 export type PkoOptions = z.infer<typeof PkoOptionsSchema>;
 
+// Prize calculations
 export const CalculatePrizesRequestSchema = z.object({
   prizePool: z.number().int().nonnegative(),
   payouts: z.array(z.number()).nonempty(),
@@ -440,6 +446,7 @@ export type CalculatePrizesResponse = z.infer<
   typeof CalculatePrizesResponseSchema
 >;
 
+// Tournament scheduling
 export const TournamentScheduleRequestSchema = z.object({
   startTime: z.string().datetime(),
   registration: z.object({
@@ -473,6 +480,7 @@ export const HotPatchLevelRequestSchema = z.object({
 });
 export type HotPatchLevelRequest = z.infer<typeof HotPatchLevelRequestSchema>;
 
+// Leaderboard (backend shared)
 export const LeaderboardEntrySchema = z.object({
   playerId: z.string(),
   rank: z.number().int().positive(),
@@ -519,6 +527,7 @@ export type {
   ReviewActionLogsResponse,
 } from '../backend/src/schemas/review';
 
+// Users (frontend)
 export const UserSchema = z.object({
   id: z.string(),
   username: z.string(),
@@ -546,6 +555,8 @@ export type BanUserRequest = z.infer<typeof BanUserSchema>;
 
 export const GetUserResponseSchema = UserSchema;
 export type GetUserResponse = z.infer<typeof GetUserResponseSchema>;
+
+// Transaction entries (frontend modal)
 export const TransactionEntrySchema = z.object({
   date: z.string(),
   action: z.string(),
@@ -563,18 +574,19 @@ export const FilterOptionsSchema = z.object({
   performedBy: z.array(z.string()),
 });
 export type FilterOptions = z.infer<typeof FilterOptionsSchema>;
+
+/** ---- Transactions (shared) ---- */
 export {
   TransactionTypeSchema,
   TransactionTypesResponseSchema,
   TransactionLogEntrySchema,
   TransactionLogResponseSchema,
   TransactionLogQuerySchema,
-} from "./transactions.schema";
+} from './transactions.schema';
 export type {
   TransactionType,
   TransactionTypesResponse,
   TransactionLogEntry,
   TransactionLogResponse,
   TransactionLogQuery,
-} from "./transactions.schema";
-
+} from './transactions.schema';

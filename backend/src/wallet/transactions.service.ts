@@ -6,16 +6,15 @@ import { Transaction } from './transaction.entity';
 import {
   FilterOptionsSchema,
   TransactionEntriesSchema,
+} from '@shared/types';
+import type { FilterOptions, TransactionEntries } from '@shared/types';
+import {
   TransactionLogResponseSchema,
   TransactionLogQuerySchema,
-} from '@shared/types';
-import type {
-  FilterOptions,
-  TransactionEntries,
-  TransactionLogQuery,
-} from '@shared/types';
+  TransactionTypesResponseSchema,
+  type TransactionLogQuery,
+} from '@shared/transactions.schema';
 import type { TransactionTab } from '@shared/wallet.schema';
-import { TransactionTypesResponseSchema } from '../schemas/transactions';
 
 @Injectable()
 export class TransactionsService {
