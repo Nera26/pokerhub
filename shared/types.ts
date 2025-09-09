@@ -469,6 +469,27 @@ export const BanUserSchema = z.object({
 });
 export type BanUserRequest = z.infer<typeof BanUserSchema>;
 
+export const DashboardUserSchema = z.object({
+  id: z.string(),
+  username: z.string(),
+  avatarKey: z.string().optional(),
+  balance: z.number(),
+  banned: z.boolean(),
+});
+export const DashboardUserListSchema = z.array(DashboardUserSchema);
+export type DashboardUser = z.infer<typeof DashboardUserSchema>;
+export type DashboardUserList = z.infer<typeof DashboardUserListSchema>;
+
+export const AdminUsersQuerySchema = z.object({
+  limit: z.coerce.number().int().positive().optional(),
+});
+export type AdminUsersQuery = z.infer<typeof AdminUsersQuerySchema>;
+
+export const TableListQuerySchema = z.object({
+  status: z.enum(['active']).optional(),
+});
+export type TableListQuery = z.infer<typeof TableListQuerySchema>;
+
 
 // Transaction entries (frontend modal)
 const TransactionEntrySchema = z.object({

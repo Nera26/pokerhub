@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersController } from '../routes/users.controller';
+import { AdminUsersController } from '../routes/admin-users.controller';
 import { ProfileController } from '../routes/profile.controller';
 import { ProfileStatsController } from '../routes/profile-stats.controller';
 import { TransactionsController } from '../routes/transactions.controller';
@@ -14,6 +15,7 @@ import { WalletModule } from '../wallet/wallet.module';
   imports: [TypeOrmModule.forFeature([User]), WalletModule],
   controllers: [
     UsersController,
+    AdminUsersController,
     ProfileController,
     TransactionsController,
     MeController,

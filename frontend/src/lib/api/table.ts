@@ -38,10 +38,12 @@ const HandSummarySchema = z.object({
 export type HandSummary = z.infer<typeof HandSummarySchema>;
 export { HandSummarySchema };
 
-export async function fetchTables(
-  { signal }: { signal?: AbortSignal } = {},
-): Promise<TableList> {
-  return apiClient('/api/tables', TableListSchema, {
+export async function fetchTables({
+  signal,
+  status,
+}: { signal?: AbortSignal; status?: string } = {}): Promise<TableList> {
+  const query = status ? `?status=${encodeURIComponent(status)}` : '';
+  return apiClient(`/api/tables${query}`, TableListSchema, {
     signal,
     cache: 'no-store',
   });
@@ -77,9 +79,7 @@ export async function sendChatMessage(
   });
 }
 
-export async function createTable(
-  body: CreateTableRequest,
-): Promise<Table> {
+export async function createTable(body: CreateTableRequest): Promise<Table> {
   return apiClient('/api/tables', TableSchema, {
     method: 'POST',
     body,

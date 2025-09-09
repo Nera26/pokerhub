@@ -9,6 +9,7 @@ import {
   HttpCode,
   ParseUUIDPipe,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
@@ -26,6 +27,8 @@ import {
 import { ChatMessagesSchema, SendChatMessageRequestSchema } from '../schemas/chat';
 import { TablesService } from '../game/tables.service';
 import { ChatService } from '../game/chat.service';
+import { TableListQuerySchema } from '@shared/types';
+import type { Request } from 'express';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 
@@ -40,8 +43,9 @@ export class TablesController {
   @Get()
   @ApiOperation({ summary: 'List tables' })
   @ApiResponse({ status: 200, description: 'Array of tables' })
-  async list(): Promise<TableList> {
-    const res = await this.tables.getTables();
+  async list(@Req() req: Request): Promise<TableList> {
+    const { status } = TableListQuerySchema.parse(req.query);
+    const res = await this.tables.getTables(status);
     return TableListSchema.parse(res);
   }
 

@@ -12,6 +12,7 @@ import {
   type AdminEvent,
 } from '@shared/types';
 import { SidebarItemsResponseSchema, type SidebarItem } from '@shared/types';
+import { DashboardUserSchema, type DashboardUser } from '@shared/types';
 export { AdminTournamentSchema } from '@shared/types';
 export type { AdminTournament } from '@shared/types';
 
@@ -38,6 +39,17 @@ export async function fetchAdminEvents({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<AdminEvent[]> {
   return apiClient('/api/admin/events', AdminEventsResponseSchema, { signal });
+}
+
+export async function fetchDashboardUsers({
+  signal,
+  limit = 5,
+}: { signal?: AbortSignal; limit?: number } = {}): Promise<DashboardUser[]> {
+  return apiClient(
+    `/api/admin/users?limit=${limit}`,
+    z.array(DashboardUserSchema),
+    { signal },
+  );
 }
 
 export async function fetchAdminTournaments({
