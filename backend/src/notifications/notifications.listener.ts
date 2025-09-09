@@ -8,11 +8,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Kafka, Consumer } from 'kafkajs';
+import { Consumer } from 'kafkajs';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { Notification } from './notification.entity';
 import { NotificationCreateEvent } from '@shared/events';
+import { createKafkaConsumer } from '../common/kafka';
 
 /**
  * Consumes `notification.create` events and persists them to the database.
@@ -32,17 +33,10 @@ export class NotificationsListener implements OnModuleInit, OnModuleDestroy {
     if (process.env.NODE_ENV === 'test') {
       return;
     }
-    const brokersConfig = this.config.get<string>('analytics.kafkaBrokers');
-    const brokers = brokersConfig
-      ?.split(',')
-      .map((s) => s.trim())
-      .filter(Boolean) ?? [];
-    if (brokers.length === 0) {
-      throw new Error('Missing analytics.kafkaBrokers configuration');
-    }
-    const kafka = new Kafka({ brokers });
-    this.consumer = kafka.consumer({ groupId: 'notifications' });
-    await this.consumer.connect();
+    this.consumer = await createKafkaConsumer(
+      this.config,
+      'notifications',
+    );
     await this.consumer.subscribe({ topic: 'notification.create' });
     await this.consumer.run({
       autoCommit: false,

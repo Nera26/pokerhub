@@ -5,13 +5,14 @@ import {
 } from '@nestjs/websockets';
 import { OnModuleDestroy, OnModuleInit, UseGuards } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
-import { Kafka, Consumer } from 'kafkajs';
+import { Consumer } from 'kafkajs';
 import { ConfigService } from '@nestjs/config';
 import jwt from 'jsonwebtoken';
 import { validateEvent } from '../events';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { SessionService } from '../session/session.service';
+import { createKafkaConsumer } from '../common/kafka';
 
 @UseGuards(AuthGuard, AdminGuard)
 @WebSocketGateway({ namespace: 'admin' })
@@ -59,17 +60,10 @@ export class AdminDepositGateway
 
   async onModuleInit(): Promise<void> {
     if (process.env.NODE_ENV === 'test') return;
-    const brokersConfig = this.config.get<string>('analytics.kafkaBrokers');
-    const brokers = brokersConfig
-      ?.split(',')
-      .map((s) => s.trim())
-      .filter(Boolean) ?? [];
-    if (brokers.length === 0) {
-      throw new Error('Missing analytics.kafkaBrokers configuration');
-    }
-    const kafka = new Kafka({ brokers });
-    this.consumer = kafka.consumer({ groupId: 'admin-deposits' });
-    await this.consumer.connect();
+    this.consumer = await createKafkaConsumer(
+      this.config,
+      'admin-deposits',
+    );
     await this.consumer.subscribe({ topic: 'admin.deposit.pending' });
     await this.consumer.subscribe({ topic: 'admin.deposit.rejected' });
     await this.consumer.subscribe({ topic: 'admin.deposit.confirmed' });
