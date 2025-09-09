@@ -30,6 +30,16 @@ export function fetchProfile({
   );
 }
 
+export function fetchUserProfile(
+  id: string,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<UserProfile> {
+  return withProfileError(
+    () => apiClient(`/api/user/${id}/profile`, UserProfileSchema, { signal }),
+    'Failed to fetch user profile',
+  );
+}
+
 export function fetchMe({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<MeResponse> {

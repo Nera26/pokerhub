@@ -1,12 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons/faArrowsRotate';
 import LeaderboardTabs from '@/app/components/leaderboard/LeaderboardTabs';
-import ToastNotification, { ToastType } from '@/app/components/ui/ToastNotification';
+import ToastNotification, {
+  ToastType,
+} from '@/app/components/ui/ToastNotification';
 import LeaderboardBase from '@/components/leaderboard/LeaderboardBase';
+import { fetchUserProfile } from '@/lib/api/profile';
 import type { LeaderboardEntry, TimeFilter } from '@shared/types';
 
 type ModeFilter = 'cash' | 'tournament';
@@ -18,11 +22,20 @@ export default function LeaderboardPage() {
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<ToastType>('success');
   const queryClient = useQueryClient();
+  const router = useRouter();
 
-  const handleRowClick = (player: LeaderboardEntry) => {
-    setToastMessage(`👋 You clicked on ${player.playerId}`);
-    setToastType('success');
+  const handleRowClick = async (player: LeaderboardEntry) => {
+    setToastMessage('Loading profile...');
+    setToastType('loading');
     setToastOpen(true);
+    try {
+      await fetchUserProfile(player.playerId);
+      router.push(`/profile/${player.playerId}`);
+    } catch {
+      setToastMessage('Failed to load profile');
+      setToastType('error');
+      setToastOpen(true);
+    }
   };
 
   return (
@@ -39,7 +52,10 @@ export default function LeaderboardPage() {
         {/* Filters */}
         <section className="mb-6 bg-card-bg rounded-2xl p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-8 space-y-4 sm:space-y-0">
-            <LeaderboardTabs selected={selectedTime} onChange={setSelectedTime} />
+            <LeaderboardTabs
+              selected={selectedTime}
+              onChange={setSelectedTime}
+            />
 
             <div className="sm:ml-8">
               <label className="block text-sm font-medium text-text-secondary mb-2">
@@ -74,7 +90,9 @@ export default function LeaderboardPage() {
             <button
               className="ml-auto flex items-center space-x-2 bg-accent-blue text-primary-bg font-semibold px-4 py-2 rounded-xl hover-glow-green transition-colors duration-200"
               onClick={async () => {
-                await queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
+                await queryClient.invalidateQueries({
+                  queryKey: ['leaderboard'],
+                });
                 setToastMessage('🔄 Leaderboard refreshed');
                 setToastType('success');
                 setToastOpen(true);
@@ -102,4 +120,3 @@ export default function LeaderboardPage() {
     </>
   );
 }
-
