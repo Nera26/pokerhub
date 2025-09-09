@@ -20,7 +20,7 @@ jest.mock('@/app/components/dashboard/DashboardModule', () => ({
   default: () => null,
 }));
 
-jest.mock('@/features/site/profile/fetchProfile', () => ({
+jest.mock('@/lib/api/profile', () => ({
   fetchProfile: jest.fn().mockResolvedValue({ avatarUrl: '/a.png' }),
 }));
 
@@ -30,7 +30,9 @@ jest.mock('@/lib/api/admin', () => ({
 }));
 
 function renderPage() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return render(
     <QueryClientProvider client={client}>
       <Page />
@@ -61,7 +63,9 @@ describe('Admin tabs loading', () => {
     );
     renderPage();
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { name: /dashboard/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: /dashboard/i }),
+    ).toBeInTheDocument();
   });
 
   it('handles empty response', async () => {
@@ -76,6 +80,8 @@ describe('Admin tabs loading', () => {
     (fetchAdminTabs as jest.Mock).mockRejectedValue(new Error('fail'));
     renderPage();
     expect(await screen.findByText(/error loading tabs/i)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /admin dashboard/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /admin dashboard/i }),
+    ).toBeInTheDocument();
   });
 });

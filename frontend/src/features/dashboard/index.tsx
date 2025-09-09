@@ -9,7 +9,7 @@ import dynamic from 'next/dynamic';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUsers, faCoins, faBars } from '@fortawesome/free-solid-svg-icons';
 import { useAuthStore } from '@/app/store/authStore';
-import { fetchProfile } from '@/features/site/profile/fetchProfile';
+import { fetchProfile } from '@/lib/api/profile';
 import { useQuery } from '@tanstack/react-query';
 
 import useRenderCount from '@/hooks/useRenderCount';
@@ -249,7 +249,9 @@ function DashboardPage() {
           ) : (
             <div className="bg-card-bg rounded-2xl p-8 card-shadow">
               <h3 className="text-xl font-semibold mb-2 capitalize">{tab}</h3>
-              <p className="text-text-secondary">This section is coming soon.</p>
+              <p className="text-text-secondary">
+                This section is coming soon.
+              </p>
             </div>
           )}
         </section>
