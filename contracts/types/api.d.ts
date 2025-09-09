@@ -300,6 +300,11 @@ export interface paths {
   "/tables": {
     /** Get lobby tables */
     get: {
+      parameters: {
+        query?: {
+          status?: "active";
+        };
+      };
       responses: {
         /** @description Tables list */
         200: {
@@ -1369,7 +1374,7 @@ export interface paths {
         /** @description Dashboard tabs */
         200: {
           content: {
-            "application/json": components["schemas"]["SidebarTabsResponse"];
+            "application/json": components["schemas"]["AdminTabResponse"];
           };
         };
       };
@@ -1406,6 +1411,24 @@ export interface paths {
         200: {
           content: {
             "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/admin/users": {
+    /** List users */
+    get: {
+      parameters: {
+        query?: {
+          limit?: number;
+        };
+      };
+      responses: {
+        /** @description Users list */
+        200: {
+          content: {
+            "application/json": components["schemas"]["DashboardUser"][];
           };
         };
       };
@@ -2198,6 +2221,13 @@ export interface components {
       id: string;
       username: string;
       avatarKey?: string;
+      banned: boolean;
+    };
+    DashboardUser: {
+      id: string;
+      username: string;
+      avatarKey?: string;
+      balance: number;
       banned: boolean;
     };
     UserProfile: {

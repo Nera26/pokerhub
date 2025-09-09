@@ -7,6 +7,7 @@ export const SidebarItemSchema = z.object({
   id: SidebarTabSchema,
   label: z.string(),
   icon: z.string(),
+  component: z.string(),
   path: z.string().optional(),
   disabled: z.boolean().optional(),
 });
@@ -15,11 +16,15 @@ export type SidebarItem = z.infer<typeof SidebarItemSchema>;
 export const SidebarItemsResponseSchema = z.array(SidebarItemSchema);
 export type SidebarItemsResponse = z.infer<typeof SidebarItemsResponseSchema>;
 
-export const SidebarTabsResponseSchema = z.object({
-  tabs: z.array(SidebarTabSchema),
-  titles: z.record(SidebarTabSchema, z.string()),
+export const AdminTabSchema = z.object({
+  id: SidebarTabSchema,
+  title: z.string(),
+  component: z.string(),
 });
-export type SidebarTabsResponse = z.infer<typeof SidebarTabsResponseSchema>;
+export type AdminTab = z.infer<typeof AdminTabSchema>;
+
+export const AdminTabResponseSchema = z.array(AdminTabSchema);
+export type AdminTabResponse = z.infer<typeof AdminTabResponseSchema>;
 
 export const AdminEventSchema = z.object({
   id: z.string(),

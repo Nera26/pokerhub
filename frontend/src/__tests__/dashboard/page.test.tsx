@@ -25,22 +25,46 @@ jest.mock('@/hooks/useDashboardMetrics', () => ({
 }));
 jest.mock('@/lib/api/admin', () => ({
   fetchSidebarItems: jest.fn().mockResolvedValue([
-    { id: 'dashboard', label: 'Dashboard', icon: 'chart-line' },
-    { id: 'users', label: 'Users', icon: 'users' },
-    { id: 'analytics', label: 'Analytics', icon: 'chart-bar' },
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: 'chart-line',
+      component: '@/app/components/dashboard/DashboardModule',
+    },
+    {
+      id: 'users',
+      label: 'Users',
+      icon: 'users',
+      component: '@/app/components/dashboard/DashboardModule',
+    },
+    {
+      id: 'analytics',
+      label: 'Analytics',
+      icon: 'chart-bar',
+      component: '@/app/components/dashboard/DashboardModule',
+    },
   ]),
 }));
 
 jest.mock('@tanstack/react-query', () => ({
   useQuery: jest.fn(() => ({
-    data: {
-      tabs: ['dashboard', 'users', 'analytics'],
-      titles: {
-        dashboard: 'Dashboard',
-        users: 'Manage Users',
-        analytics: 'Analytics',
+    data: [
+      {
+        id: 'dashboard',
+        title: 'Dashboard',
+        component: '@/app/components/dashboard/DashboardModule',
       },
-    },
+      {
+        id: 'users',
+        title: 'Manage Users',
+        component: '@/app/components/dashboard/DashboardModule',
+      },
+      {
+        id: 'analytics',
+        title: 'Analytics',
+        component: '@/app/components/dashboard/DashboardModule',
+      },
+    ],
     isLoading: false,
     isError: false,
   })),

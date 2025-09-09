@@ -19,7 +19,12 @@ describe('AdminController', () => {
     getAdminEvents: jest.fn(),
   } as Partial<AnalyticsService>;
   const sidebarItems: SidebarItem[] = [
-    { id: 'dynamic', label: 'Dynamic', icon: 'chart-line' },
+    {
+      id: 'dynamic',
+      label: 'Dynamic',
+      icon: 'chart-line',
+      component: 'dynamic-component',
+    },
   ];
   const sidebar = {
     getItems: jest.fn().mockResolvedValue(sidebarItems),
@@ -82,12 +87,15 @@ describe('AdminController', () => {
       .expect(sidebarItems);
   });
 
-  it('returns tabs and titles from service', async () => {
-    const tabs = sidebarItems.map((s) => s.id);
-    const titles = Object.fromEntries(sidebarItems.map((s) => [s.id, s.label]));
+  it('returns tabs with components from service', async () => {
+    const tabs = sidebarItems.map((s) => ({
+      id: s.id,
+      title: s.label,
+      component: s.component,
+    }));
     await request(app.getHttpServer())
       .get('/admin/tabs')
       .expect(200)
-      .expect({ tabs, titles });
+      .expect(tabs);
   });
 });

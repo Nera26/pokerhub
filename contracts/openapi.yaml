@@ -1314,7 +1314,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SidebarTabsResponse'
+                $ref: '#/components/schemas/AdminTabResponse'
   /admin/messages:
     get:
       summary: List user messages
@@ -3736,6 +3736,8 @@ components:
           type: string
         icon:
           type: string
+        component:
+          type: string
         path:
           type: string
         disabled:
@@ -3746,20 +3748,23 @@ components:
         $ref: '#/components/schemas/SidebarItem'
     SidebarTab:
       type: string
-    SidebarTabsResponse:
+    AdminTab:
       type: object
       properties:
-        tabs:
-          type: array
-          items:
-            $ref: '#/components/schemas/SidebarTab'
-        titles:
-          type: object
-          additionalProperties:
-            type: string
+        id:
+          $ref: '#/components/schemas/SidebarTab'
+        title:
+          type: string
+        component:
+          type: string
       required:
-        - tabs
-        - titles
+        - id
+        - title
+        - component
+    AdminTabResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/AdminTab'
     AdminEvent:
       type: object
       properties:
