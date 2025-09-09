@@ -1,10 +1,12 @@
 'use client';
 
-import { createQueryHook } from './useApiQuery';
+import { useAuditQuery } from './useAuditQuery';
 import { AuditLogsResponseSchema, type AuditLogsResponse } from '@shared/types';
 
-export const useAuditLogs = createQueryHook<AuditLogsResponse>(
-  'audit-logs',
-  (client, opts) => client('/api/admin/audit-logs', AuditLogsResponseSchema, opts),
-  'audit logs',
-);
+export function useAuditLogs() {
+  return useAuditQuery<AuditLogsResponse>(
+    'audit-logs',
+    '/api/admin/audit-logs',
+    AuditLogsResponseSchema,
+  );
+}
