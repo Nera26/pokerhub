@@ -41,4 +41,13 @@ describe('AdminBalanceController', () => {
     expect(wallet.adminAdjustBalance).toHaveBeenCalledWith('u1', 'add', 10, 'USD');
     expect(analytics.addAuditLog).toHaveBeenCalled();
   });
+
+  it('removes balance and records audit without notes', async () => {
+    await request(app.getHttpServer())
+      .post('/admin/balance/u1')
+      .send({ action: 'remove', amount: 5, currency: 'USD' })
+      .expect(200);
+    expect(wallet.adminAdjustBalance).toHaveBeenCalledWith('u1', 'remove', 5, 'USD');
+    expect(analytics.addAuditLog).toHaveBeenCalled();
+  });
 });

@@ -2215,7 +2215,6 @@ components:
         - action
         - amount
         - currency
-        - notes
     RefreshRequest:
       type: object
       properties:

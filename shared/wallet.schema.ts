@@ -13,7 +13,7 @@ export const AdminBalanceRequestSchema = z.object({
   action: z.enum(['add', 'remove', 'freeze']),
   amount: z.number().int().positive(),
   currency: CurrencySchema,
-  notes: z.string(),
+  notes: z.string().optional(),
 });
 export type AdminBalanceRequest = z.infer<typeof AdminBalanceRequestSchema>;
 

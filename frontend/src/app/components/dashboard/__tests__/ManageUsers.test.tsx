@@ -3,49 +3,92 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ManageUsers from '../ManageUsers';
 import { useDashboardUsers } from '@/hooks/useDashboardUsers';
+import { adminAdjustBalance } from '@/lib/api/wallet';
 
 jest.mock('@/hooks/useDashboardUsers');
+jest.mock('@/lib/api/wallet', () => ({
+  adminAdjustBalance: jest.fn(),
+}));
 
-function renderWithClient(ui: React.ReactElement) {
+const mockUseDashboardUsers = useDashboardUsers as jest.MockedFunction<
+  typeof useDashboardUsers
+>;
+const mockAdjust = adminAdjustBalance as jest.MockedFunction<
+  typeof adminAdjustBalance
+>;
+
+function renderWithClient() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
-    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
+    <QueryClientProvider client={client}>
+      <ManageUsers />
+    </QueryClientProvider>,
   );
 }
 
-describe('ManageUsers', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockUseDashboardUsers.mockReturnValue({
+    data: [{ id: 'u1', username: 'alice', balance: 100, banned: false }],
+    isLoading: false,
+    error: null,
+  } as any);
+  mockAdjust.mockResolvedValue({ message: 'ok' } as any);
+});
 
-  it('opens ban modal and posts ban request', async () => {
-    (useDashboardUsers as jest.Mock).mockReturnValue({
-      data: [{ id: '1', username: 'alice', balance: 0, banned: false }],
-      isLoading: false,
-      error: null,
-    });
+it('submits positive adjustment', async () => {
+  renderWithClient();
 
-    const fetchMock = jest
-      .spyOn(global, 'fetch')
-      .mockResolvedValue({ ok: true } as Response);
+  // Row is rendered
+  await waitFor(() => expect(screen.getByText('alice')).toBeInTheDocument());
 
-    renderWithClient(<ManageUsers />);
+  // Open Adjust Balance modal
+  await userEvent.click(
+    screen.getByRole('button', { name: /adjust balance/i }),
+  );
 
-    await userEvent.click(screen.getByRole('button', { name: /ban/i }));
+  // Enter amount and submit (default action is "add")
+  const amount = screen.getByPlaceholderText('0.00');
+  await userEvent.clear(amount);
+  await userEvent.type(amount, '50');
+  await userEvent.click(screen.getByRole('button', { name: /submit/i }));
 
-    expect(
-      screen.getByText(/are you sure you want to ban alice/i),
-    ).toBeInTheDocument();
+  await waitFor(() =>
+    expect(mockAdjust).toHaveBeenCalledWith('u1', {
+      action: 'add',
+      amount: 50,
+      currency: 'USD',
+      notes: '',
+    }),
+  );
+});
 
-    await userEvent.click(screen.getByText('Confirm'));
+it('submits negative adjustment', async () => {
+  renderWithClient();
 
-    await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/users/1/ban',
-        expect.objectContaining({ method: 'POST' }),
-      ),
-    );
-  });
+  await waitFor(() => expect(screen.getByText('alice')).toBeInTheDocument());
+
+  await userEvent.click(
+    screen.getByRole('button', { name: /adjust balance/i }),
+  );
+
+  const amount = screen.getByPlaceholderText('0.00');
+  await userEvent.clear(amount);
+  await userEvent.type(amount, '20');
+
+  // Change action to "remove"
+  await userEvent.selectOptions(screen.getByRole('combobox'), 'remove');
+
+  await userEvent.click(screen.getByRole('button', { name: /submit/i }));
+
+  await waitFor(() =>
+    expect(mockAdjust).toHaveBeenCalledWith('u1', {
+      action: 'remove',
+      amount: 20,
+      currency: 'USD',
+      notes: '',
+    }),
+  );
 });
