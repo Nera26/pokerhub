@@ -9,6 +9,14 @@ import {
 } from './utils/renderHookWithClient';
 
 describe('useBroadcastTypes', () => {
+  afterEach(() => {
+    jest.resetAllMocks();
+  });
+
+  it('requires no arguments', () => {
+    expect(useBroadcastTypes).toHaveLength(0);
+  });
+
   it('reports loading state', () => {
     mockFetchLoading();
     const { result } = renderHookWithClient(() => useBroadcastTypes());
