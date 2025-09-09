@@ -20,12 +20,10 @@ export type {
 
 
 export {
-  PendingWithdrawalSchema,
   PendingWithdrawalsResponseSchema,
   WithdrawalDecisionRequestSchema,
 } from '../backend/src/schemas/withdrawals';
 export type {
-  PendingWithdrawal,
   PendingWithdrawalsResponse,
   WithdrawalDecisionRequest,
 } from '../backend/src/schemas/withdrawals';
