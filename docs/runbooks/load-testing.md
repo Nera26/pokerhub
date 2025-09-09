@@ -72,9 +72,8 @@ Each chaos harness run produces a timestamped directory under
   the collector log.
 - `seed.txt`, `packet-loss.txt`, `jitter-ms.txt` – parameters for replay.
 
-The latest run is available via the `load/metrics/latest` symlink and the
-GitHub workflow publishes this directory as an artifact and syncs it to the
-`CHAOS_TRENDS_BUCKET` for historical trend analysis.
+The latest run is available via the `load/metrics/latest` symlink, and the
+GitHub workflow publishes this directory as an artifact.
 
 ## 10k Table Load
 
