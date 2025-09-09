@@ -10,7 +10,7 @@ import { resolve } from 'path';
 import { metrics, type ObservableResult } from '@opentelemetry/api';
 import type { GameAction, InternalGameState } from './engine';
 import type Redis from 'ioredis';
-import { noopGauge } from '../metrics/noopGauge';
+import { createObservableGaugeSafe } from './metrics.util';
 
 class WorkerHost extends EventEmitter {
   private readonly worker: Worker;
@@ -118,18 +118,14 @@ class RoomWorker extends EventEmitter {
   private static readonly meter = metrics.getMeter('game');
 
   // Observable gauge: follower lag (applied - confirmed)
-  private static readonly followerLag =
-    RoomWorker.meter.createObservableGauge?.('room_follower_lag', {
+  private static readonly followerLag = createObservableGaugeSafe(
+    RoomWorker.meter,
+    'room_follower_lag',
+    {
       description: 'Number of actions the follower is behind the primary',
       unit: 'actions',
-    }) ??
-    ({
-      addCallback() {},
-      removeCallback() {},
-    } as {
-      addCallback(cb: (r: ObservableResult) => void): void;
-      removeCallback(cb: (r: ObservableResult) => void): void;
-    });
+    },
+  );
 
   // Up/Down counter: in-flight actions awaiting follower confirmation
   private static readonly actionLag =
@@ -141,15 +137,21 @@ class RoomWorker extends EventEmitter {
       add() {},
     } as { add(n: number, attrs?: Record<string, unknown>): void });
 
-  private static readonly globalActionCount =
-    RoomWorker.meter.createObservableGauge?.('game_action_global_count', {
+  private static readonly globalActionCount = createObservableGaugeSafe(
+    RoomWorker.meter,
+    'game_action_global_count',
+    {
       description: 'Global action count within rate-limit window',
-    }) ?? noopGauge;
+    },
+  );
 
-  private static readonly globalActionLimitGauge =
-    RoomWorker.meter.createObservableGauge?.('game_action_global_limit', {
+  private static readonly globalActionLimitGauge = createObservableGaugeSafe(
+    RoomWorker.meter,
+    'game_action_global_limit',
+    {
       description: 'Configured global action limit within rate-limit window',
-    }) ?? noopGauge;
+    },
+  );
 
   private static globalActionCountValue = 0;
 

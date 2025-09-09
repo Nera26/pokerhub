@@ -15,8 +15,12 @@ import PQueue from 'p-queue';
 import type { InternalGameState } from './engine';
 import type { GameState } from '@shared/types';
 import { sanitize } from './state-sanitize';
-import { addSample, percentile, recordTimestamp } from './metrics.util';
-import { noopGauge } from '../metrics/noopGauge';
+import {
+  addSample,
+  percentile,
+  recordTimestamp,
+  createObservableGaugeSafe,
+} from './metrics.util';
 
 @WebSocketGateway({ namespace: 'spectate' })
 export class SpectatorGateway
@@ -35,22 +39,22 @@ export class SpectatorGateway
     { description: 'Number of spectator rate limit hits' },
   );
 
-  private static readonly outboundQueueDepthGauge =
-    SpectatorGateway.meter.createObservableGauge?.(
-      'ws_outbound_queue_depth',
-      {
-        description: 'Current depth of outbound WebSocket message queue',
-        unit: 'messages',
-      },
-    ) ?? noopGauge;
+  private static readonly outboundQueueDepthGauge = createObservableGaugeSafe(
+    SpectatorGateway.meter,
+    'ws_outbound_queue_depth',
+    {
+      description: 'Current depth of outbound WebSocket message queue',
+      unit: 'messages',
+    },
+  );
 
-  private static readonly outboundQueueUtilization =
-    SpectatorGateway.meter.createObservableGauge?.(
-      'ws_outbound_queue_utilization',
-      {
-        description: 'Outbound WebSocket queue depth as a fraction of limit',
-      },
-    ) ?? noopGauge;
+  private static readonly outboundQueueUtilization = createObservableGaugeSafe(
+    SpectatorGateway.meter,
+    'ws_outbound_queue_utilization',
+    {
+      description: 'Outbound WebSocket queue depth as a fraction of limit',
+    },
+  );
 
   private static readonly outboundQueueDepthHistogram =
     SpectatorGateway.meter.createHistogram(
@@ -61,18 +65,14 @@ export class SpectatorGateway
       },
     );
 
-  private static readonly outboundQueueMax =
-    SpectatorGateway.meter.createObservableGauge?.('ws_outbound_queue_max', {
+  private static readonly outboundQueueMax = createObservableGaugeSafe(
+    SpectatorGateway.meter,
+    'ws_outbound_queue_max',
+    {
       description: 'Maximum outbound WebSocket queue depth per socket',
       unit: 'messages',
-    }) ??
-    ({
-      addCallback() {},
-      removeCallback() {},
-    } as {
-      addCallback(cb: (r: ObservableResult) => void): void;
-      removeCallback(cb: (r: ObservableResult) => void): void;
-    });
+    },
+  );
 
   private static readonly outboundQueueDropped =
     SpectatorGateway.meter.createCounter('ws_outbound_dropped_total', {
@@ -97,41 +97,44 @@ export class SpectatorGateway
   private static readonly throughputSamples: number[] = [];
   private static readonly MAX_SAMPLES = 1000;
 
-  private static readonly latencyP50 =
-    SpectatorGateway.meter.createObservableGauge?.(
-      'spectator_state_latency_p50_ms',
-      { description: 'p50 spectator state latency', unit: 'ms' },
-    ) ?? noopGauge;
-  private static readonly latencyP95 =
-    SpectatorGateway.meter.createObservableGauge?.(
-      'spectator_state_latency_p95_ms',
-      { description: 'p95 spectator state latency', unit: 'ms' },
-    ) ?? noopGauge;
-  private static readonly latencyP99 =
-    SpectatorGateway.meter.createObservableGauge?.(
-      'spectator_state_latency_p99_ms',
-      { description: 'p99 spectator state latency', unit: 'ms' },
-    ) ?? noopGauge;
-  private static readonly throughputGauge =
-    SpectatorGateway.meter.createObservableGauge?.('spectator_throughput', {
+  private static readonly latencyP50 = createObservableGaugeSafe(
+    SpectatorGateway.meter,
+    'spectator_state_latency_p50_ms',
+    { description: 'p50 spectator state latency', unit: 'ms' },
+  );
+  private static readonly latencyP95 = createObservableGaugeSafe(
+    SpectatorGateway.meter,
+    'spectator_state_latency_p95_ms',
+    { description: 'p95 spectator state latency', unit: 'ms' },
+  );
+  private static readonly latencyP99 = createObservableGaugeSafe(
+    SpectatorGateway.meter,
+    'spectator_state_latency_p99_ms',
+    { description: 'p99 spectator state latency', unit: 'ms' },
+  );
+  private static readonly throughputGauge = createObservableGaugeSafe(
+    SpectatorGateway.meter,
+    'spectator_throughput',
+    {
       description: 'Spectator frames processed per second',
       unit: 'frames/s',
-    }) ?? noopGauge;
-  private static readonly throughputP50 =
-    SpectatorGateway.meter.createObservableGauge?.(
-      'spectator_throughput_p50',
-      { description: 'p50 spectator throughput', unit: 'frames/s' },
-    ) ?? noopGauge;
-  private static readonly throughputP95 =
-    SpectatorGateway.meter.createObservableGauge?.(
-      'spectator_throughput_p95',
-      { description: 'p95 spectator throughput', unit: 'frames/s' },
-    ) ?? noopGauge;
-  private static readonly throughputP99 =
-    SpectatorGateway.meter.createObservableGauge?.(
-      'spectator_throughput_p99',
-      { description: 'p99 spectator throughput', unit: 'frames/s' },
-    ) ?? noopGauge;
+    },
+  );
+  private static readonly throughputP50 = createObservableGaugeSafe(
+    SpectatorGateway.meter,
+    'spectator_throughput_p50',
+    { description: 'p50 spectator throughput', unit: 'frames/s' },
+  );
+  private static readonly throughputP95 = createObservableGaugeSafe(
+    SpectatorGateway.meter,
+    'spectator_throughput_p95',
+    { description: 'p95 spectator throughput', unit: 'frames/s' },
+  );
+  private static readonly throughputP99 = createObservableGaugeSafe(
+    SpectatorGateway.meter,
+    'spectator_throughput_p99',
+    { description: 'p99 spectator throughput', unit: 'frames/s' },
+  );
 
   static {
     SpectatorGateway.latencyP50.addCallback((r) =>
