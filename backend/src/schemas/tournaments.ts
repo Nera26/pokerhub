@@ -18,3 +18,23 @@ export const AdminTournamentSchema = z.object({
 });
 
 export type AdminTournament = z.infer<typeof AdminTournamentSchema>;
+
+export const TournamentFilterSchema = z.enum([
+  'active',
+  'upcoming',
+  'past',
+]);
+export type TournamentFilter = z.infer<typeof TournamentFilterSchema>;
+
+export const TournamentFilterOptionSchema = z.object({
+  label: z.string(),
+  value: TournamentFilterSchema,
+});
+export type TournamentFilterOption = z.infer<typeof TournamentFilterOptionSchema>;
+
+export const TournamentFiltersResponseSchema = z.array(
+  TournamentFilterOptionSchema,
+);
+export type TournamentFiltersResponse = z.infer<
+  typeof TournamentFiltersResponseSchema
+>;

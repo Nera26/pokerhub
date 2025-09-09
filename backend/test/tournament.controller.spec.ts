@@ -16,6 +16,7 @@ describe('TournamentController', () => {
     scheduleTournament: jest.fn(),
     list: jest.fn(),
     get: jest.fn(),
+    getFilterOptions: jest.fn(),
   } as Partial<TournamentService>;
 
   beforeAll(async () => {
@@ -82,6 +83,19 @@ describe('TournamentController', () => {
     ]);
     const res = await request(app.getHttpServer()).get('/tournaments').expect(200);
     expect(res.body[0]).toMatchObject({ state: 'REG_OPEN', gameType: 'texas' });
+  });
+
+  it('returns tournament filter options', async () => {
+    svc.getFilterOptions?.mockResolvedValue([
+      { label: 'Active', value: 'active' },
+      { label: 'Upcoming', value: 'upcoming' },
+    ]);
+    const res = await request(app.getHttpServer())
+      .get('/tournaments/filters')
+      .expect(200);
+    expect(res.body).toEqual(
+      expect.arrayContaining([{ label: 'Active', value: 'active' }]),
+    );
   });
 
   it('gets tournament with state and gameType', async () => {

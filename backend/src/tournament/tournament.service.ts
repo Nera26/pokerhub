@@ -21,6 +21,10 @@ import {
 import { FeatureFlagsService } from '../feature-flags/feature-flags.service';
 import { EventPublisher } from '../events/events.service';
 import { WalletService } from '../wallet/wallet.service';
+import {
+  TournamentFiltersResponseSchema,
+  type TournamentFilterOption,
+} from '@shared/types';
 
 @Injectable()
 export class TournamentService implements OnModuleInit {
@@ -86,6 +90,14 @@ export class TournamentService implements OnModuleInit {
 
   async list(): Promise<Tournament[]> {
     return this.tournaments.find();
+  }
+
+  async getFilterOptions(): Promise<TournamentFilterOption[]> {
+    return TournamentFiltersResponseSchema.parse([
+      { label: 'Active', value: 'active' },
+      { label: 'Upcoming', value: 'upcoming' },
+      { label: 'Past', value: 'past' },
+    ]);
   }
 
   async get(id: string, userId?: string) {

@@ -777,6 +777,19 @@ export interface paths {
       };
     };
   };
+  "/tournaments/filters": {
+    /** Get tournament filter options */
+    get: {
+      responses: {
+        /** @description Tournament filter options */
+        200: {
+          content: {
+            "application/json": components["schemas"]["TournamentFilters"];
+          };
+        };
+      };
+    };
+  };
   "/tournaments/{id}": {
     /** Get tournament */
     get: {
@@ -2313,6 +2326,12 @@ export interface components {
       prizes?: components["schemas"]["TournamentInfo"][];
     });
     TournamentList: components["schemas"]["Tournament"][];
+    TournamentFilter: {
+      label: string;
+      /** @enum {string} */
+      value: "active" | "upcoming" | "past";
+    };
+    TournamentFilters: components["schemas"]["TournamentFilter"][];
     Table: {
       id: string;
       tableName: string;

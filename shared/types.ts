@@ -128,9 +128,19 @@ export type {
   BroadcastTypesResponse,
 } from '../backend/src/schemas/broadcasts';
 
-/** ---- Admin Tournaments ---- */
-export { AdminTournamentSchema } from '../backend/src/schemas/tournaments';
-export type { AdminTournament } from '../backend/src/schemas/tournaments';
+/** ---- Tournaments ---- */
+export {
+  AdminTournamentSchema,
+  TournamentFilterSchema,
+  TournamentFilterOptionSchema,
+  TournamentFiltersResponseSchema,
+} from '../backend/src/schemas/tournaments';
+export type {
+  AdminTournament,
+  TournamentFilter,
+  TournamentFilterOption,
+  TournamentFiltersResponse,
+} from '../backend/src/schemas/tournaments';
 
 /** ---- Admin Messages ---- */
 export {

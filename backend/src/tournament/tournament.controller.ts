@@ -20,6 +20,7 @@ import type {
   TournamentScheduleRequest,
 } from '@shared/types';
 import type { Request } from 'express';
+import { TournamentFiltersResponseSchema } from '@shared/types';
 
 @UseGuards(RateLimitGuard)
 @ApiTags('tournaments')
@@ -32,6 +33,14 @@ export class TournamentController {
   @ApiResponse({ status: 200, description: 'Tournament list' })
   list() {
     return this.service.list();
+  }
+
+  @Get('filters')
+  @ApiOperation({ summary: 'Get tournament filter options' })
+  @ApiResponse({ status: 200, description: 'Filter options' })
+  async filters() {
+    const res = await this.service.getFilterOptions();
+    return TournamentFiltersResponseSchema.parse(res);
   }
 
   @Get(':id')
