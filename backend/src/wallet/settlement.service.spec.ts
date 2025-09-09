@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
+import { createInMemoryDataSource } from '../../test/utils/pgMem';
 import { SettlementJournal } from './settlement-journal.entity';
 import { SettlementService } from './settlement.service';
 import type { Street } from '../game/state-machine';
@@ -12,33 +12,15 @@ describe('SettlementService', () => {
   let repo: Repository<SettlementJournal>;
 
   beforeAll(async () => {
-    const db = newDb();
-    db.public.registerFunction({
-      name: 'version',
-      returns: 'text',
-      implementation: () => 'pg-mem',
-    });
-    db.public.registerFunction({
-      name: 'current_database',
-      returns: 'text',
-      implementation: () => 'test',
-    });
-    db.public.registerFunction({
-      name: 'uuid_generate_v4',
-      returns: 'text',
-      implementation: () => '00000000-0000-0000-0000-000000000000',
-    });
-    const dataSource = db.adapters.createTypeormDataSource({
-      type: 'postgres',
-      entities: [SettlementJournal],
-      synchronize: true,
-    }) as DataSource;
+    const dataSource: DataSource = await createInMemoryDataSource([
+      SettlementJournal,
+    ]);
 
     module = await Test.createTestingModule({
       imports: [
         TypeOrmModule.forRootAsync({
           useFactory: () => dataSource.options,
-          dataSourceFactory: async () => dataSource.initialize(),
+          dataSourceFactory: async () => dataSource,
         }),
         TypeOrmModule.forFeature([SettlementJournal]),
       ],
