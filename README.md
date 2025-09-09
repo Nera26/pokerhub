@@ -100,6 +100,17 @@ npm run push:backend    # git subtree push --prefix backend backend-remote main
 npm run push:all        # push both subtrees
 ```
 
+### Code Quality
+
+Static analysis scripts help keep the repository tidy:
+
+```bash
+npm run lint:unused   # report unused TypeScript exports
+npm run lint:dup      # detect copy/paste code
+```
+
+Both commands scan `frontend/`, `backend/`, and `shared/` and run in CI to prevent regressions.
+
 ## Infrastructure
 
 Infrastructure manifests, dashboards, and operational scripts live under
