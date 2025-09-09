@@ -1387,6 +1387,23 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/DashboardUser'
+    post:
+      summary: Create user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardUser'
   /admin/tournaments/defaults:
     get:
       summary: Get default tournament values

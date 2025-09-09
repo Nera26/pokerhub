@@ -13,6 +13,7 @@ import {
 } from '@shared/types';
 import { SidebarItemsResponseSchema, type SidebarItem } from '@shared/types';
 import { DashboardUserSchema, type DashboardUser } from '@shared/types';
+import type { CreateUserRequest } from '@shared/types';
 export { AdminTournamentSchema } from '@shared/types';
 export type { AdminTournament } from '@shared/types';
 
@@ -50,6 +51,15 @@ export async function fetchDashboardUsers({
     z.array(DashboardUserSchema),
     { signal },
   );
+}
+
+export async function createAdminUser(
+  body: CreateUserRequest,
+): Promise<DashboardUser> {
+  return apiClient('/api/admin/users', DashboardUserSchema, {
+    method: 'POST',
+    body,
+  });
 }
 
 export async function fetchAdminTournaments({
