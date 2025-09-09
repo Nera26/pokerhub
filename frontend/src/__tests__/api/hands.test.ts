@@ -58,6 +58,17 @@ describe('hands api', () => {
     await expect(fetchHandLog('1')).resolves.toBe('line\n');
   });
 
+  it('throws on non-ok hand log response', async () => {
+    (serverFetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: 'Server Error',
+      text: async () => 'boom',
+    });
+
+    await expect(fetchHandLog('1')).rejects.toThrow('Failed to fetch hand log');
+  });
+
   it('fetches hand state', async () => {
     (serverFetch as jest.Mock).mockResolvedValue({
       ok: true,
