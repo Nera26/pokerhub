@@ -12,6 +12,8 @@ import {
 import dynamic from 'next/dynamic';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import { useRevenueBreakdown } from '@/hooks/useRevenueBreakdown';
+import { useDashboardUsers } from '@/hooks/useDashboardUsers';
+import { useActiveTables } from '@/hooks/useActiveTables';
 import MetricCard from './MetricCard';
 import BroadcastPanel from './BroadcastPanel';
 import DashboardTransactionHistory from './transactions/TransactionHistory';
@@ -33,6 +35,8 @@ const RevenueDonut = dynamic(() => import('./charts/RevenueDonut'), {
   ),
   ssr: false,
 });
+
+const DEFAULT_AVATAR = '/default-avatar.svg';
 
 // ---------- Small UI helpers ----------
 function Card({
@@ -86,6 +90,16 @@ export default function Dashboard() {
     isLoading: revLoading,
     error: revError,
   } = useRevenueBreakdown('today');
+  const {
+    data: recentUsers = [],
+    isLoading: usersLoading,
+    error: usersError,
+  } = useDashboardUsers();
+  const {
+    data: activeTables = [],
+    isLoading: tablesLoading,
+    error: tablesError,
+  } = useActiveTables();
 
   const formatCurrency = (v: number | undefined) =>
     `$${(v ?? 0).toLocaleString()}`;
@@ -174,46 +188,42 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* User Management */}
         <Card title="User Management">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-primary-bg rounded-xl">
-              <div className="flex items-center gap-3">
-                <Image
-                  src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg"
-                  alt="Mike"
-                  width={32}
-                  height={32}
-                  className="w-8 h-8 rounded-full"
-                />
-                <div>
-                  <p className="text-sm font-semibold">Mike_P</p>
-                  <p className="text-sm font-bold">$2,847</p>
+          {usersLoading ? (
+            <div>Loading users...</div>
+          ) : usersError ? (
+            <div>Failed to load users</div>
+          ) : recentUsers.length === 0 ? (
+            <div>No users found</div>
+          ) : (
+            <div className="space-y-3">
+              {recentUsers.map((u) => (
+                <div
+                  key={u.id}
+                  className="flex items-center justify-between p-3 bg-primary-bg rounded-xl"
+                >
+                  <div className="flex items-center gap-3">
+                    <Image
+                      src={u.avatarKey || DEFAULT_AVATAR}
+                      alt={u.username}
+                      width={32}
+                      height={32}
+                      className="w-8 h-8 rounded-full"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold">{u.username}</p>
+                      <p className="text-sm font-bold">
+                        ${u.balance?.toLocaleString() ?? 0}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <PillBtn color="blue">Edit</PillBtn>
+                    <PillBtn color="red">Ban</PillBtn>
+                  </div>
                 </div>
-              </div>
-              <div className="flex gap-2">
-                <PillBtn color="blue">Edit</PillBtn>
-                <PillBtn color="red">Ban</PillBtn>
-              </div>
+              ))}
             </div>
-            <div className="flex items-center justify-between p-3 bg-primary-bg rounded-xl">
-              <div className="flex items-center gap-3">
-                <Image
-                  src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg"
-                  alt="Sarah"
-                  width={32}
-                  height={32}
-                  className="w-8 h-8 rounded-full"
-                />
-                <div>
-                  <p className="text-sm font-semibold">Sarah_K</p>
-                  <p className="text-sm font-bold">$1,420</p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <PillBtn color="blue">Edit</PillBtn>
-                <PillBtn color="red">Ban</PillBtn>
-              </div>
-            </div>
-          </div>
+          )}
           <button className="w-full mt-4 bg-accent-green hover:brightness-110 py-2 rounded-xl font-semibold">
             View All Users
           </button>
@@ -221,36 +231,33 @@ export default function Dashboard() {
 
         {/* Active Tables */}
         <Card title="Active Tables">
-          <div className="space-y-3">
-            <div className="p-3 bg-primary-bg rounded-xl">
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-semibold">Table #45821</span>
-                <span className="text-accent-green text-sm font-bold">9/9</span>
-              </div>
-              <p className="text-sm text-text-secondary mb-2">
-                NL Hold'em • $1/$2
-              </p>
-              <div className="flex gap-2">
-                <PillBtn color="blue">Config</PillBtn>
-                <PillBtn color="red">Close</PillBtn>
-              </div>
+          {tablesLoading ? (
+            <div>Loading tables...</div>
+          ) : tablesError ? (
+            <div>Failed to load tables</div>
+          ) : activeTables.length === 0 ? (
+            <div>No active tables</div>
+          ) : (
+            <div className="space-y-3">
+              {activeTables.map((t) => (
+                <div key={t.id} className="p-3 bg-primary-bg rounded-xl">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-semibold">{t.tableName}</span>
+                    <span className="text-accent-green text-sm font-bold">
+                      {t.players.current}/{t.players.max}
+                    </span>
+                  </div>
+                  <p className="text-sm text-text-secondary mb-2">
+                    {`${t.gameType} • $${t.stakes.small}/${t.stakes.big}`}
+                  </p>
+                  <div className="flex gap-2">
+                    <PillBtn color="blue">Config</PillBtn>
+                    <PillBtn color="red">Close</PillBtn>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="p-3 bg-primary-bg rounded-xl">
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-semibold">Table #45822</span>
-                <span className="text-accent-yellow text-sm font-bold">
-                  6/9
-                </span>
-              </div>
-              <p className="text-sm text-text-secondary mb-2">
-                NL Hold'em • $2/$5
-              </p>
-              <div className="flex gap-2">
-                <PillBtn color="blue">Config</PillBtn>
-                <PillBtn color="red">Close</PillBtn>
-              </div>
-            </div>
-          </div>
+          )}
           <button className="w-full mt-4 bg-accent-green hover:brightness-110 py-2 rounded-xl font-semibold">
             Create New Table
           </button>

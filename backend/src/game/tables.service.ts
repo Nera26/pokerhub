@@ -23,10 +23,14 @@ export class TablesService {
     private readonly chat: ChatService,
   ) {}
 
-  async getTables(): Promise<TableDto[]> {
+  async getTables(status?: string): Promise<TableDto[]> {
     const now = Date.now();
     const all = await this.tables.find();
-    return all.map((t) => this.toDto(t, now));
+    const filtered =
+      status === 'active'
+        ? all.filter((t) => t.playersCurrent > 0)
+        : all;
+    return filtered.map((t) => this.toDto(t, now));
   }
 
   async getTable(id: string): Promise<TableData> {

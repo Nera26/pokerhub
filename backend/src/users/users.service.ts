@@ -158,6 +158,20 @@ export class UsersService {
     );
   }
 
+  async list(limit?: number): Promise<User[]> {
+    return UsersService.tracer.startActiveSpan(
+      'users.list',
+      async (span) => {
+        const users = await this.users.find({
+          order: { joined: 'DESC' },
+          take: limit,
+        });
+        span.end();
+        return users;
+      },
+    );
+  }
+
   async reset() {
     return UsersService.tracer.startActiveSpan('users.reset', async (span) => {
       await this.users

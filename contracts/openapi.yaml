@@ -256,6 +256,12 @@ paths:
   /tables:
     get:
       summary: Get lobby tables
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [active]
       responses:
         '200':
           description: Tables list
@@ -1345,6 +1351,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+  /admin/users:
+    get:
+      summary: List users
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Users list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DashboardUser'
   /admin/tournaments/defaults:
     get:
       summary: Get default tournament values
@@ -2604,6 +2629,24 @@ components:
       required:
         - id
         - username
+        - banned
+    DashboardUser:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        avatarKey:
+          type: string
+        balance:
+          type: integer
+        banned:
+          type: boolean
+      required:
+        - id
+        - username
+        - balance
         - banned
     UserProfile:
       type: object

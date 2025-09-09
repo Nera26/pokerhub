@@ -80,6 +80,14 @@ describe('TablesController', () => {
     expect(parsed[0].tableName).toBe('Test Table');
   });
 
+  it('filters by active status', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/tables?status=active')
+      .expect(200);
+    const parsed = TableListSchema.parse(res.body);
+    expect(parsed).toHaveLength(0);
+  });
+
   it('returns table data', async () => {
     const res = await request(app.getHttpServer())
       .get(`/tables/${tableId}`)
