@@ -24,10 +24,12 @@ describe('collusion api', () => {
       ok: true,
       status: 200,
       headers: { get: () => 'application/json' },
-      json: async () => ({ message: 'warn' }),
+      json: async () => ({ action: 'warn', timestamp: 1, reviewerId: 'r1' }),
     });
-    await expect(applyAction('s1', 'warn', 'token')).resolves.toEqual({
-      message: 'warn',
+    await expect(applyAction('s1', 'warn', 'token', 'r1')).resolves.toEqual({
+      action: 'warn',
+      timestamp: 1,
+      reviewerId: 'r1',
     });
   });
 

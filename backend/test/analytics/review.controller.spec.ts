@@ -76,9 +76,10 @@ describe('ReviewController', () => {
   it('transitions session statuses via actions', async () => {
     await service.flagSession('s1', ['a', 'b'], {});
 
-    await request(app.getHttpServer())
+    const warnRes = await request(app.getHttpServer())
       .post('/analytics/collusion/s1/warn')
       .expect(201);
+    expect(warnRes.body).toMatchObject({ action: 'warn', reviewerId: 'admin1' });
     let res = await request(app.getHttpServer())
       .get('/analytics/collusion/flagged?status=warn')
       .expect(200);

@@ -3,12 +3,13 @@ export type { ApiError } from './client';
 import {
   FlaggedSessionsResponse,
   FlaggedSessionsResponseSchema,
-  MessageResponse,
-  MessageResponseSchema,
   ReviewAction,
   ReviewStatus,
   ReviewActionLogsResponse,
   ReviewActionLogsResponseSchema,
+  ReviewActionLog,
+  ReviewActionLogSchema,
+  MessageResponseSchema,
 } from '@shared/types';
 
 export async function listFlaggedSessions(
@@ -36,14 +37,27 @@ export async function getActionHistory(
   );
 }
 
+const ReviewActionResponseSchema = ReviewActionLogSchema.or(
+  MessageResponseSchema,
+);
+
 export async function applyAction(
   id: string,
   action: ReviewAction,
   token: string,
-): Promise<MessageResponse> {
-  return apiClient(
+  reviewerId: string,
+): Promise<ReviewActionLog> {
+  const res = await apiClient(
     `/api/analytics/collusion/${id}/${action}`,
-    MessageResponseSchema,
+    ReviewActionResponseSchema,
     { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
   );
+  if ('reviewerId' in res && 'timestamp' in res) {
+    return res;
+  }
+  return {
+    action: res.message as ReviewAction,
+    reviewerId,
+    timestamp: Date.now(),
+  };
 }

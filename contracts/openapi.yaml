@@ -1075,7 +1075,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MessageResponse'
+                $ref: '#/components/schemas/ReviewActionLog'
   /analytics/collusion/{sessionId}/audit:
     get:
       summary: Get collusion review action history

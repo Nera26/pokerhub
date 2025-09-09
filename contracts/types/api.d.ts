@@ -1122,7 +1122,7 @@ export interface paths {
         /** @description Action applied */
         200: {
           content: {
-            "application/json": components["schemas"]["MessageResponse"];
+            "application/json": components["schemas"]["ReviewActionLog"];
           };
         };
       };
