@@ -2,7 +2,7 @@ const { test, mock } = require('node:test');
 const assert = require('node:assert/strict');
 const { writeFileSync, mkdirSync } = require('node:fs');
 const { join } = require('node:path');
-const { runScript } = require('./utils/workflow-helper.ts');
+const { runScript } = require('./utils/workflow.ts');
 
 const script = require.resolve('../ensure-ops-preflight.ts');
 
