@@ -9,7 +9,12 @@ import { ConfigService } from '@nestjs/config';
 import { User } from '../database/entities/user.entity';
 import { Leaderboard } from '../database/entities/leaderboard.entity';
 import { AnalyticsService } from '../analytics/analytics.service';
-import { updateRating } from './rating';
+import {
+  initScoreEntry,
+  toLeaderboardEntry,
+  updateScoreEntry,
+  type ScoreEntry,
+} from './score-utils';
 import type {
   LeaderboardEntry,
   LeaderboardRangesResponse,
@@ -24,21 +29,7 @@ export class LeaderboardService implements OnModuleInit {
   private readonly dataKey = 'leaderboard:data';
   private readonly ttl = 30; // seconds
   private readonly ranges: TimeFilter[] = ['daily', 'weekly', 'monthly'];
-  private scores = new Map<
-    string,
-    {
-      sessions: Set<string>;
-      rating: number;
-      rd: number;
-      volatility: number;
-      net: number;
-      bb: number;
-      hands: number;
-      duration: number;
-      buyIn: number;
-      finishes: Record<number, number>;
-    }
-  >();
+  private scores = new Map<string, ScoreEntry>();
   private static readonly meter = metrics.getMeter('leaderboard');
   private static readonly rebuildEventsDuration =
     LeaderboardService.meter.createHistogram(
@@ -95,18 +86,20 @@ export class LeaderboardService implements OnModuleInit {
       return;
     }
     for (const row of existing) {
-      this.scores.set(row.playerId, {
-        sessions: new Set<string>(),
-        rating: row.rating,
-        rd: row.rd,
-        volatility: row.volatility,
-        net: row.net,
-        bb: row.bb,
-        hands: row.hands,
-        duration: row.duration,
-        buyIn: row.buyIn,
-        finishes: row.finishes ?? {},
-      });
+      this.scores.set(
+        row.playerId,
+        initScoreEntry({
+          rating: row.rating,
+          rd: row.rd,
+          volatility: row.volatility,
+          net: row.net,
+          bb: row.bb,
+          hands: row.hands,
+          duration: row.duration,
+          buyIn: row.buyIn,
+          finishes: row.finishes ?? {},
+        }),
+      );
     }
   }
 
@@ -135,18 +128,7 @@ export class LeaderboardService implements OnModuleInit {
       await this._leaderboardRepo.insert(rows);
     }
 
-    const leaders = rows.slice(0, 100).map((r) => ({
-      playerId: r.playerId,
-      rank: r.rank,
-      points: r.rating,
-      rd: r.rd,
-      volatility: r.volatility,
-      net: r.net,
-      bb100: r.hands ? (r.bb / r.hands) * 100 : 0,
-      hours: r.duration / 3600000,
-      roi: r.buyIn ? r.net / r.buyIn : 0,
-      finishes: r.finishes,
-    }));
+    const leaders = rows.slice(0, 100).map(toLeaderboardEntry);
 
     await Promise.all([
       this.cache.set(this.dataKey, leaders),
@@ -215,32 +197,13 @@ export class LeaderboardService implements OnModuleInit {
   }): Promise<void> {
     event.playerIds.forEach((playerId, idx) => {
       const delta = event.deltas[idx] ?? 0;
-      const entry =
-        this.scores.get(playerId) ??
-        {
-          sessions: new Set<string>(),
-          rating: 0,
-          rd: 350,
-          volatility: 0.06,
-          net: 0,
-          bb: 0,
-          hands: 0,
-          duration: 0,
-          buyIn: 0,
-          finishes: {},
-        };
-      const result = delta > 0 ? 1 : delta < 0 ? 0 : 0.5;
-      const updated = updateRating(
-        { rating: entry.rating, rd: entry.rd, volatility: entry.volatility },
-        [{ rating: 0, rd: 350, score: result }],
-        0,
-      );
-      entry.rating = updated.rating;
-      entry.rd = updated.rd;
-      entry.volatility = updated.volatility;
-      entry.net += delta;
-      entry.bb += delta;
-      entry.hands += 1;
+      const entry = this.scores.get(playerId) ?? initScoreEntry();
+      updateScoreEntry(entry, {
+        points: delta,
+        net: delta,
+        bb: delta,
+        hands: 1,
+      });
       this.scores.set(playerId, entry);
     });
     await this.persist();
@@ -279,21 +242,7 @@ export class LeaderboardService implements OnModuleInit {
   ): Promise<void> {
     const { minSessions = 10 } = options;
     const now = Date.now();
-    const scores = new Map<
-      string,
-      {
-        sessions: Set<string>;
-        rating: number;
-        rd: number;
-        volatility: number;
-        net: number;
-        bb: number;
-        hands: number;
-        duration: number;
-        buyIn: number;
-        finishes: Record<number, number>;
-      }
-    >();
+    const scores = new Map<string, ScoreEntry>();
 
     const minSessionsFn =
       typeof minSessions === 'function' ? minSessions : () => minSessions;
@@ -323,20 +272,7 @@ export class LeaderboardService implements OnModuleInit {
         finish?: number;
         ts?: number;
       };
-      const entry =
-        scores.get(playerId) ??
-        {
-          sessions: new Set<string>(),
-          rating: 0,
-          rd: 350,
-          volatility: 0.06,
-          net: 0,
-          bb: 0,
-          hands: 0,
-          duration: 0,
-          buyIn: 0,
-          finishes: {},
-        };
+      const entry = scores.get(playerId) ?? initScoreEntry();
       entry.sessions.add(sessionId);
       const ageDays = (now - ts) / DAY_MS;
       let playerMin = minSessionsCache.get(playerId);
@@ -344,23 +280,16 @@ export class LeaderboardService implements OnModuleInit {
         playerMin = minSessionsFn(playerId);
         minSessionsCache.set(playerId, playerMin);
       }
-      const result = points > 0 ? 1 : points < 0 ? 0 : 0.5;
-      const updated = updateRating(
-        { rating: entry.rating, rd: entry.rd, volatility: entry.volatility },
-        [{ rating: 0, rd: 350, score: result }],
+      updateScoreEntry(entry, {
+        points,
+        net,
+        bb,
+        hands,
+        duration,
+        buyIn,
+        finish,
         ageDays,
-      );
-      entry.rating = updated.rating;
-      entry.rd = updated.rd;
-      entry.volatility = updated.volatility;
-      entry.net += net;
-      entry.bb += bb;
-      entry.hands += hands;
-      entry.duration += duration;
-      entry.buyIn += buyIn;
-      if (typeof finish === 'number') {
-        entry.finishes[finish] = (entry.finishes[finish] ?? 0) + 1;
-      }
+      });
       scores.set(playerId, entry);
     }
 
@@ -395,18 +324,7 @@ export class LeaderboardService implements OnModuleInit {
     const allowed = new Set(existing.map((u) => u.id));
     const top: LeaderboardEntry[] = rows
       .filter((r) => allowed.has(r.playerId))
-      .map((r) => ({
-        playerId: r.playerId,
-        rank: r.rank,
-        points: r.rating,
-        rd: r.rd,
-        volatility: r.volatility,
-        net: r.net,
-        bb100: r.hands ? (r.bb / r.hands) * 100 : 0,
-        hours: r.duration / 3600000,
-        roi: r.buyIn ? r.net / r.buyIn : 0,
-        finishes: r.finishes ?? {},
-      }));
+      .map(toLeaderboardEntry);
     await this.cache.set(this.dataKey, top);
     return top;
   }
