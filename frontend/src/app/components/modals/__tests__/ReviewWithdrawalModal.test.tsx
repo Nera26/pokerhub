@@ -6,6 +6,7 @@ const baseProps = {
   onClose: jest.fn(),
   onApprove: jest.fn(),
   onReject: jest.fn(),
+  error: null,
 };
 
 describe('ReviewWithdrawalModal', () => {
@@ -28,5 +29,21 @@ describe('ReviewWithdrawalModal', () => {
     };
     render(<ReviewWithdrawalModal {...baseProps} request={request} />);
     expect(screen.getByText('N/A')).toBeInTheDocument();
+  });
+
+  it('displays error message when provided', () => {
+    const request = {
+      user: 'John',
+      amount: '$10',
+      date: '2024-01-01',
+    };
+    render(
+      <ReviewWithdrawalModal
+        {...baseProps}
+        error="Backend error"
+        request={request}
+      />,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('Backend error');
   });
 });
