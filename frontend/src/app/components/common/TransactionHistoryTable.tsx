@@ -1,5 +1,5 @@
-import { useMemo, useRef, type Key, type ReactNode } from 'react';
-import useVirtualizedList from '@/hooks/useVirtualizedList';
+import { useMemo, type Key, type ReactNode } from 'react';
+import VirtualizedList from '@/components/VirtualizedList';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 
@@ -72,19 +72,13 @@ export default function TransactionHistoryTable<T extends { date: string }>({
   rowClassName = 'border-b border-border-dark hover:bg-hover-bg transition-colors duration-200',
   noDataMessage,
 }: TransactionHistoryTableProps<T>) {
-  const parentRef = useRef<HTMLDivElement>(null);
   const sortedItems = useMemo(
     () => [...data].sort((a, b) => a.date.localeCompare(b.date)),
     [data],
   );
-  const rowVirtualizer = useVirtualizedList<HTMLDivElement>({
-    count: sortedItems.length,
-    parentRef,
-    estimateSize,
-  });
 
   return (
-    <div ref={parentRef} className={containerClassName}>
+    <div>
       {sortedItems.length > 0 ? (
         <table className={tableClassName}>
           <thead>
@@ -101,65 +95,32 @@ export default function TransactionHistoryTable<T extends { date: string }>({
               )}
             </tr>
           </thead>
-          <tbody
-            style={
-              rowVirtualizer.getVirtualItems().length > 0
-                ? {
-                    height: rowVirtualizer.getTotalSize(),
-                    position: 'relative',
-                  }
-                : undefined
-            }
-          >
-            {rowVirtualizer.getVirtualItems().length > 0
-              ? rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                  const row = sortedItems[virtualRow.index];
-                  return (
-                    <tr
-                      key={
-                        getRowKey
-                          ? getRowKey(row, virtualRow.index)
-                          : virtualRow.index
-                      }
-                      ref={rowVirtualizer.measureElement}
-                      data-index={virtualRow.index}
-                      className={rowClassName}
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        transform: `translateY(${virtualRow.start}px)`,
-                      }}
-                    >
-                      {columns.map((col, i) => (
-                        <td key={i} className={col.cellClassName}>
-                          {col.cell(row)}
-                        </td>
-                      ))}
-                      <ActionCells actions={actions} row={row} />
-                    </tr>
-                  );
-                })
-              : sortedItems.map((row, index) => (
-                  <tr
-                    key={getRowKey ? getRowKey(row, index) : index}
-                    className={rowClassName}
-                  >
-                    {columns.map((col, i) => (
-                      <td key={i} className={col.cellClassName}>
-                        {col.cell(row)}
-                      </td>
-                    ))}
-                    <ActionCells actions={actions} row={row} />
-                  </tr>
-                ))}
+          <tbody>
+            <VirtualizedList
+              items={sortedItems}
+              estimateSize={estimateSize}
+              className={containerClassName}
+              renderItem={(row, style, index) => (
+                <tr
+                  key={getRowKey ? getRowKey(row, index) : index}
+                  data-index={index}
+                  className={rowClassName}
+                  style={style}
+                >
+                  {columns.map((col, i) => (
+                    <td key={i} className={col.cellClassName}>
+                      {col.cell(row)}
+                    </td>
+                  ))}
+                  <ActionCells actions={actions} row={row} />
+                </tr>
+              )}
+            />
           </tbody>
         </table>
       ) : (
-        noDataMessage ?? null
+        (noDataMessage ?? null)
       )}
     </div>
   );
 }
-

@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
-import useVirtualizedList from '@/hooks/useVirtualizedList';
+import { useMemo, useState, useRef } from 'react';
+import VirtualizedGrid from './VirtualizedGrid';
 import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -184,13 +184,6 @@ export default function BalanceTransactions() {
     () => [...balances].sort((a, b) => a.user.localeCompare(b.user)),
     [balances],
   );
-  const balancesParentRef = useRef<HTMLDivElement>(null);
-  // Virtualize balance rows for performance; tests rely on data-index attributes
-  const balancesVirtualizer = useVirtualizedList<HTMLDivElement>({
-    count: sortedBalances.length,
-    parentRef: balancesParentRef,
-    estimateSize: 60,
-  });
 
   const [playerFilter, setPlayerFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
@@ -657,100 +650,66 @@ export default function BalanceTransactions() {
                 Manage IBAN
               </button>
             </div>
-            <div ref={balancesParentRef} className="overflow-auto max-h-80">
-              <table className="min-w-max w-full text-sm">
-                <thead>
-                  <tr className="border-b border-dark">
-                    <th className="text-left py-3 px-2 text-text-secondary">
-                      Player
-                    </th>
-                    <th className="text-left py-3 px-2 text-text-secondary">
-                      Current Balance
-                    </th>
-                    <th className="text-left py-3 px-2 text-text-secondary">
-                      Status
-                    </th>
-                    <th className="text-left py-3 px-2 text-text-secondary">
-                      Last Activity
-                    </th>
-                    <th className="text-left py-3 px-2 text-text-secondary">
-                      Action
-                    </th>
-                  </tr>
-                </thead>
-                <tbody
-                  style={
-                    balancesLoading
-                      ? undefined
-                      : {
-                          height: `${balancesVirtualizer.getTotalSize()}px`,
-                          position: 'relative',
-                        }
-                  }
-                >
-                  {balancesLoading
-                    ? Array.from({ length: 5 }).map((_, i) => (
-                        <tr key={i} className="border-b border-dark">
-                          <td colSpan={5} className="py-3 px-2">
-                            <div className="h-6 bg-hover-bg rounded animate-pulse" />
-                          </td>
-                        </tr>
-                      ))
-                    : balancesVirtualizer
-                        .getVirtualItems()
-                        .map((virtualRow) => {
-                          const b = sortedBalances[virtualRow.index];
-                          return (
-                            <tr
-                              key={b.user}
-                              ref={balancesVirtualizer.measureElement}
-                              data-index={virtualRow.index}
-                              className="border-b border-dark hover:bg-hover-bg"
-                              style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                width: '100%',
-                                transform: `translateY(${virtualRow.start}px)`,
-                              }}
-                            >
-                              <td className="py-3 px-2">
-                                <div className="flex items-center gap-2">
-                                  <Image
-                                    src={b.avatar}
-                                    alt={b.user}
-                                    width={32}
-                                    height={32}
-                                    className="w-8 h-8 rounded-full"
-                                  />
-                                  <span>{b.user}</span>
-                                </div>
-                              </td>
-                              <td className="py-3 px-2 font-semibold text-accent-green">
-                                ${b.balance.toLocaleString()}
-                              </td>
-                              <td className="py-3 px-2">
-                                <span className="bg-accent-green text-white px-2 py-1 rounded-lg text-xs">
-                                  {b.status}
-                                </span>
-                              </td>
-                              <td className="py-3 px-2 text-text-secondary">
-                                {b.lastActivity}
-                              </td>
-                              <td className="py-3 px-2">
-                                <button
-                                  onClick={() => openManageBalance(b)}
-                                  className="bg-accent-yellow hover:brightness-110 text-black px-3 py-1 rounded text-xs font-semibold"
-                                >
-                                  Manage Balance
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                </tbody>
-              </table>
-            </div>
+            {balancesLoading ? (
+              <div className="overflow-auto max-h-80">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-6 bg-hover-bg rounded animate-pulse mb-2"
+                  />
+                ))}
+              </div>
+            ) : (
+              <VirtualizedGrid
+                items={sortedBalances}
+                columns={[
+                  { label: 'Player', span: 3 },
+                  { label: 'Current Balance', span: 2 },
+                  { label: 'Status', span: 2 },
+                  { label: 'Last Activity', span: 3 },
+                  { label: 'Action', span: 2 },
+                ]}
+                estimateSize={60}
+                renderItem={(b, style, index) => (
+                  <div
+                    key={b.user}
+                    style={style}
+                    data-index={index}
+                    className="grid grid-cols-12 border-b border-dark hover:bg-hover-bg"
+                  >
+                    <div className="col-span-3 py-3 px-2 flex items-center gap-2">
+                      <Image
+                        src={b.avatar}
+                        alt={b.user}
+                        width={32}
+                        height={32}
+                        className="w-8 h-8 rounded-full"
+                      />
+                      <span>{b.user}</span>
+                    </div>
+                    <div className="col-span-2 py-3 px-2 font-semibold text-accent-green">
+                      ${b.balance.toLocaleString()}
+                    </div>
+                    <div className="col-span-2 py-3 px-2">
+                      <span className="bg-accent-green text-white px-2 py-1 rounded-lg text-xs">
+                        {b.status}
+                      </span>
+                    </div>
+                    <div className="col-span-3 py-3 px-2 text-text-secondary">
+                      {b.lastActivity}
+                    </div>
+                    <div className="col-span-2 py-3 px-2">
+                      <button
+                        onClick={() => openManageBalance(b)}
+                        className="bg-accent-yellow hover:brightness-110 text-black px-3 py-1 rounded text-xs font-semibold"
+                      >
+                        Manage Balance
+                      </button>
+                    </div>
+                  </div>
+                )}
+              />
+            )}
           </div>
         </section>
       )}

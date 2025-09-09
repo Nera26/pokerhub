@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useRef, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import Button from '../ui/Button';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck } from '@fortawesome/free-solid-svg-icons/faCheck';
-import useVirtualizedList from '@/hooks/useVirtualizedList';
+import VirtualizedList from '@/components/VirtualizedList';
 import NotificationItem from './NotificationItem';
 import {
   useNotifications,
@@ -27,6 +27,7 @@ export default function NotificationList() {
     isLoading: filtersLoading,
     error: filtersError,
   } = useNotificationFilters();
+
   const filters = useMemo(
     () => [{ label: 'All', value: 'all' as const }, ...(filterOptions ?? [])],
     [filterOptions],
@@ -50,13 +51,6 @@ export default function NotificationList() {
         ),
     [notifications, filter],
   );
-
-  const listParentRef = useRef<HTMLDivElement>(null);
-  const virtualizer = useVirtualizedList<HTMLDivElement>({
-    count: filtered.length,
-    parentRef: listParentRef,
-    estimateSize: 96,
-  });
 
   return (
     <div className="max-w-4xl mx-auto p-6 overflow-x-hidden">
@@ -100,7 +94,7 @@ export default function NotificationList() {
         </p>
       )}
 
-      <div ref={listParentRef} className="max-h-[600px] overflow-auto">
+      <div>
         {filtered.length === 0 && !listLoading && (
           <p className="text-center text-text-secondary py-6">
             No notifications found.
@@ -117,35 +111,16 @@ export default function NotificationList() {
             ))}
           </div>
         ) : filtered.length > 0 ? (
-          <div
-            style={{
-              height: `${virtualizer.getTotalSize()}px`,
-              position: 'relative',
-            }}
-          >
-            {virtualizer.getVirtualItems().map((virtualRow) => {
-              const n = filtered[virtualRow.index];
-              return (
-                <div
-                  key={n.id}
-                  ref={virtualizer.measureElement}
-                  data-index={virtualRow.index}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  <NotificationItem
-                    notification={n}
-                    onClick={handleItemClick}
-                  />
-                </div>
-              );
-            })}
-          </div>
+          <VirtualizedList
+            items={filtered}
+            estimateSize={96}
+            className="max-h-[600px] overflow-auto"
+            renderItem={(n, style) => (
+              <li key={n.id} style={style}>
+                <NotificationItem notification={n} onClick={handleItemClick} />
+              </li>
+            )}
+          />
         ) : null}
       </div>
 

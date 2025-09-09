@@ -1,9 +1,16 @@
 'use client';
 
-import { useRef, type ReactNode, type CSSProperties } from 'react';
+import {
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+  type ReactNode,
+  type CSSProperties,
+  type HTMLAttributes,
+} from 'react';
 import useVirtualizedList from '@/hooks/useVirtualizedList';
 
-interface VirtualizedListProps<T> {
+interface VirtualizedListProps<T> extends HTMLAttributes<HTMLDivElement> {
   items: T[];
   renderItem: (
     item: T,
@@ -16,15 +23,20 @@ interface VirtualizedListProps<T> {
   virtualizationThreshold?: number;
 }
 
-export default function VirtualizedList<T>({
-  items,
-  renderItem,
-  estimateSize = 280,
-  className,
-  testId,
-  virtualizationThreshold = 20,
-}: VirtualizedListProps<T>) {
+function VirtualizedListInner<T>(
+  {
+    items,
+    renderItem,
+    estimateSize = 280,
+    className,
+    testId,
+    virtualizationThreshold = 20,
+    ...divProps
+  }: VirtualizedListProps<T>,
+  ref: React.Ref<HTMLDivElement>,
+) {
   const parentRef = useRef<HTMLDivElement>(null);
+  useImperativeHandle(ref, () => parentRef.current as HTMLDivElement);
   const virtualizer = useVirtualizedList<HTMLDivElement>({
     count: items.length,
     parentRef,
@@ -38,6 +50,7 @@ export default function VirtualizedList<T>({
       data-testid={testId}
       data-virtualized={isVirtualized}
       className={className}
+      {...divProps}
     >
       {isVirtualized ? (
         <ul
@@ -71,3 +84,8 @@ export default function VirtualizedList<T>({
   );
 }
 
+const VirtualizedList = forwardRef(VirtualizedListInner) as <T>(
+  props: VirtualizedListProps<T> & { ref?: React.Ref<HTMLDivElement> },
+) => React.ReactElement | null;
+
+export default VirtualizedList;
