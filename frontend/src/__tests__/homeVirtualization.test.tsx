@@ -1,19 +1,20 @@
 import { render, screen } from '@testing-library/react';
-import HomePageClient from '@/app/(site)/HomePageClient';
+import { HomePageClient } from '@/app/(site)/HomePageClient';
 import { useTables, useTournaments, useCTAs } from '@/hooks/useLobbyData';
+import type { CashGameListProps } from '@/app/components/home/CashGameList';
+import type { TournamentListProps } from '@/components/TournamentList';
 
 jest.mock('@/hooks/useLobbyData');
 jest.mock('@/hooks/useGameTypes', () => ({
-  useGameTypes: () => ({ data: [{ id: 'texas', label: 'Texas' }, { id: 'tournaments', label: 'Tournaments' }], error: null, isLoading: false }),
+  useGameTypes: () => ({
+    data: [
+      { id: 'texas', label: 'Texas' },
+      { id: 'tournaments', label: 'Tournaments' },
+    ],
+    error: null,
+    isLoading: false,
+  }),
 }));
-jest.mock('next/dynamic', () => {
-  const dynamic = () => {
-    const DynamicComponent = () => null;
-    DynamicComponent.displayName = 'DynamicMock';
-    return DynamicComponent;
-  };
-  return dynamic;
-});
 jest.mock('next/link', () => {
   const LinkMock = ({ children }: { children: React.ReactNode }) => (
     <>{children}</>
@@ -93,7 +94,23 @@ describe('home page virtualization', () => {
       isLoading: false,
     });
 
-    render(<HomePageClient />);
+    const CashGameList = ({ tables }: CashGameListProps) => (
+      <div data-testid="tables-list">
+        <div style={{ height: `${tables.length * 280}px` }} />
+      </div>
+    );
+    const TournamentList = ({ tournaments }: TournamentListProps<any>) => (
+      <div data-testid="tournaments-list">
+        <div style={{ height: `${tournaments.length * 280}px` }} />
+      </div>
+    );
+
+    render(
+      <HomePageClient
+        cashGameList={CashGameList}
+        tournamentList={TournamentList}
+      />,
+    );
 
     const tablesList = screen.getByTestId('tables-list')
       .firstChild as HTMLElement;

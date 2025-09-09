@@ -1,16 +1,8 @@
 import { render, screen } from '@testing-library/react';
-import HomePageClient from '@/app/(site)/HomePageClient';
+import { HomePageClient } from '@/app/(site)/HomePageClient';
 import { useTables, useTournaments } from '@/hooks/useLobbyData';
 
 jest.mock('@/hooks/useLobbyData');
-jest.mock('next/dynamic', () => {
-  const dynamic = () => {
-    const DynamicComponent = () => null;
-    DynamicComponent.displayName = 'DynamicMock';
-    return DynamicComponent;
-  };
-  return dynamic;
-});
 jest.mock('@/app/components/common/chat/ChatWidget', () => () => <div />);
 
 describe('HomePageClient loading', () => {
@@ -25,7 +17,14 @@ describe('HomePageClient loading', () => {
       error: null,
       isLoading: false,
     });
-    render(<HomePageClient />);
+    const CashGameList = () => <div data-testid="tables-list" />;
+    const TournamentList = () => <div data-testid="tournaments-list" />;
+    render(
+      <HomePageClient
+        cashGameList={CashGameList}
+        tournamentList={TournamentList}
+      />,
+    );
     expect(screen.getByRole('main')).toHaveAttribute('aria-busy', 'true');
     expect(document.getElementById('cash-games-section')).toBeInTheDocument();
   });

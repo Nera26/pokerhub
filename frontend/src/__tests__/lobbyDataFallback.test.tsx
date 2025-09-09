@@ -1,11 +1,20 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import HomePageClient from '@/app/(site)/HomePageClient';
+import { HomePageClient } from '@/app/(site)/HomePageClient';
 import type { ResponseLike } from '@/lib/api/client';
+import type { CashGameListProps } from '@/app/components/home/CashGameList';
+import type { TournamentListProps } from '@/components/TournamentList';
 
 jest.mock('@/hooks/useGameTypes', () => ({
-  useGameTypes: () => ({ data: [{ id: 'tournaments', label: 'Tournaments' }, { id: 'texas', label: 'Texas' }], error: null, isLoading: false }),
+  useGameTypes: () => ({
+    data: [
+      { id: 'tournaments', label: 'Tournaments' },
+      { id: 'texas', label: 'Texas' },
+    ],
+    error: null,
+    isLoading: false,
+  }),
 }));
 
 jest.mock('@/app/components/common/chat/ChatWidget', () => {
@@ -42,7 +51,14 @@ describe('lobby data fallback messages', () => {
 
     render(
       <QueryClientProvider client={client}>
-        <HomePageClient />
+        <HomePageClient
+          cashGameList={(_: CashGameListProps) => (
+            <div data-testid="tables-list" />
+          )}
+          tournamentList={(_: TournamentListProps<any>) => (
+            <div data-testid="tournaments-list" />
+          )}
+        />
       </QueryClientProvider>,
     );
 
@@ -72,7 +88,14 @@ describe('lobby data fallback messages', () => {
 
     render(
       <QueryClientProvider client={client}>
-        <HomePageClient />
+        <HomePageClient
+          cashGameList={(_: CashGameListProps) => (
+            <div data-testid="tables-list" />
+          )}
+          tournamentList={(_: TournamentListProps<any>) => (
+            <div data-testid="tournaments-list" />
+          )}
+        />
       </QueryClientProvider>,
     );
 
