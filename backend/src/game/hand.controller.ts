@@ -38,6 +38,26 @@ interface JwtClaims extends JwtPayload {
   role?: string;
 }
 
+function parseHandLog(raw: string, includeMeta = false): HandLog {
+  const log = new HandLog();
+  for (const line of raw.trim().split('\n')) {
+    if (!line) continue;
+    try {
+      const parsed = JSON.parse(line);
+      if (Array.isArray(parsed)) {
+        (log as any).entries.push(parsed);
+      } else if (includeMeta && parsed.commitment) {
+        log.recordCommitment(parsed.commitment);
+      } else if (includeMeta && parsed.proof) {
+        log.recordProof(parsed.proof);
+      }
+    } catch {
+      continue;
+    }
+  }
+  return log;
+}
+
 @ApiTags('hands')
 @Controller('hands')
 export class HandController {
@@ -187,24 +207,7 @@ export class HandController {
       });
     }
 
-    const log = new HandLog();
-    for (const line of raw.trim().split('\n')) {
-      if (!line) continue;
-      try {
-        const parsed = JSON.parse(line);
-        if (Array.isArray(parsed)) {
-          (log as any).entries.push(parsed);
-        } else if (parsed.commitment) {
-          log.recordCommitment(parsed.commitment);
-        } else if (parsed.proof) {
-          log.recordProof(parsed.proof);
-        }
-      } catch {
-        continue;
-      }
-    }
-
-    const { proof } = log.getCommitmentAndProof();
+    const { proof } = parseHandLog(raw, true).getCommitmentAndProof();
     if (!proof) {
       throw new NotFoundException('proof not found');
     }
@@ -242,20 +245,7 @@ export class HandController {
       raw = hand.log;
     }
 
-    const log = new HandLog();
-    for (const line of raw.trim().split('\n')) {
-      if (!line) continue;
-      try {
-        const parsed = JSON.parse(line);
-        if (Array.isArray(parsed)) {
-          (log as any).entries.push(parsed);
-        }
-      } catch {
-        continue;
-      }
-    }
-
-    const state = log.reconstruct(index);
+    const state = parseHandLog(raw).reconstruct(index);
     if (!state) {
       throw new NotFoundException('state not found');
     }
