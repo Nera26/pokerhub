@@ -1,8 +1,9 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { fetchMessages } from '@/lib/api/messages';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { fetchMessages, sendBroadcast } from '@/lib/api/messages';
 import { useApiError } from '@/hooks/useApiError';
+import { useState } from 'react';
 
 export default function BroadcastPanel() {
   const { data, isLoading, error } = useQuery({
@@ -10,7 +11,17 @@ export default function BroadcastPanel() {
     queryFn: fetchMessages,
   });
 
-  useApiError(error);
+  const [text, setText] = useState('');
+  const {
+    mutate: broadcast,
+    isLoading: isSending,
+    error: sendError,
+  } = useMutation({
+    mutationFn: sendBroadcast,
+    onSuccess: () => setText(''),
+  });
+
+  useApiError(error || sendError);
 
   const messages = data?.messages ?? [];
 
@@ -40,10 +51,21 @@ export default function BroadcastPanel() {
         <input
           type="text"
           placeholder="Broadcast message..."
+          value={text}
+          onChange={(e) => setText(e.target.value)}
           className="w-full bg-primary-bg border border-dark rounded-xl px-3 py-2 text-sm"
         />
-        <button className="w-full bg-accent-yellow hover:brightness-110 text-black py-2 rounded-xl font-semibold">
-          Send Broadcast
+        {sendError && (
+          <div className="text-danger-red text-sm">
+            Failed to send broadcast
+          </div>
+        )}
+        <button
+          onClick={() => broadcast(text)}
+          disabled={isSending || text === ''}
+          className="w-full bg-accent-yellow hover:brightness-110 text-black py-2 rounded-xl font-semibold disabled:opacity-50"
+        >
+          {isSending ? 'Sending...' : 'Send Broadcast'}
         </button>
       </div>
     </>

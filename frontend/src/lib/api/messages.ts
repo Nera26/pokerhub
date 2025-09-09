@@ -6,6 +6,8 @@ import {
   ReplyMessageRequest,
   MessageResponse,
   MessageResponseSchema,
+  StatusResponse,
+  StatusResponseSchema,
 } from '@shared/types';
 
 export async function fetchMessages(): Promise<AdminMessagesResponse> {
@@ -27,6 +29,21 @@ export async function replyMessage(
       {
         method: 'POST',
         body,
+      },
+    );
+  } catch (err) {
+    throw err as ApiError;
+  }
+}
+
+export async function sendBroadcast(message: string): Promise<StatusResponse> {
+  try {
+    return await apiClient(
+      '/api/admin/messages/broadcast',
+      StatusResponseSchema,
+      {
+        method: 'POST',
+        body: { message },
       },
     );
   } catch (err) {
