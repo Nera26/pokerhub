@@ -113,3 +113,44 @@ describe('BonusManager status toggle', () => {
     await screen.findByRole('button', { name: /pause/i });
   });
 });
+
+describe('BonusManager table manager', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('filters and paginates bonuses', async () => {
+    const bonuses = Array.from({ length: 6 }, (_, i) => ({
+      id: i + 1,
+      name: `Promo ${i + 1}`,
+      type: 'deposit',
+      description: `desc ${i + 1}`,
+      bonusPercent: 10,
+      maxBonusUsd: 100,
+      expiryDate: undefined,
+      eligibility: 'all',
+      status: 'active',
+      claimsTotal: 0,
+      claimsWeek: 0,
+    }));
+    (fetchBonuses as jest.Mock).mockResolvedValue(bonuses);
+
+    renderWithClient(<BonusManager />);
+
+    // first page renders first 5 rows
+    await screen.findByText('Promo 1');
+    expect(screen.queryByText('Promo 6')).not.toBeInTheDocument();
+
+    // go to next page
+    fireEvent.click(screen.getByRole('button', { name: /next page/i }));
+    await screen.findByText('Promo 6');
+
+    // search filters results
+    const searchInput = screen.getByPlaceholderText('Search promotions...');
+    fireEvent.change(searchInput, { target: { value: 'Promo 3' } });
+    await waitFor(() =>
+      expect(screen.getByText('Promo 3')).toBeInTheDocument(),
+    );
+    expect(screen.queryByText('Promo 6')).not.toBeInTheDocument();
+  });
+});
