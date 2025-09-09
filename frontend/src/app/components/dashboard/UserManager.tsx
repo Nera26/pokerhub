@@ -21,12 +21,14 @@ import ConfirmationModal from './ConfirmationModal';
 import useRenderCount from '@/hooks/useRenderCount';
 import VirtualizedGrid from './VirtualizedGrid';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createUser, updateUser, toggleUserBan, fetchUsers } from '@/lib/api/users';
-import { fetchPendingWithdrawals } from '@/lib/api/withdrawals';
 import {
-  useWithdrawalMutation,
-  type Withdrawal,
-} from '@/hooks/useWithdrawals';
+  createUser,
+  updateUser,
+  toggleUserBan,
+  fetchUsers,
+} from '@/lib/api/users';
+import { fetchPendingWithdrawals } from '@/lib/api/withdrawals';
+import { useWithdrawalMutation, type Withdrawal } from '@/hooks/useWithdrawals';
 
 type User = {
   id: number;
@@ -37,9 +39,54 @@ type User = {
   avatar: string;
 };
 
-const DEFAULT_AVATAR =
-  'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+const DEFAULT_AVATAR = '/default-avatar.svg';
 
+function AvatarImage({
+  src,
+  alt,
+  size,
+}: {
+  src: string | null | undefined;
+  alt: string;
+  size: number;
+}) {
+  const [imgSrc, setImgSrc] = useState(src || DEFAULT_AVATAR);
+  const [loading, setLoading] = useState(true);
+
+  return (
+    <div
+      className="relative"
+      style={{ width: size, height: size }}
+      data-testid="avatar-wrapper"
+    >
+      {loading && (
+        <FontAwesomeIcon
+          icon={faSpinner}
+          className="absolute inset-0 m-auto animate-spin text-text-secondary"
+          data-testid="avatar-loading"
+        />
+      )}
+      <Image
+        src={imgSrc}
+        alt={alt}
+        width={size}
+        height={size}
+        loading="lazy"
+        sizes={`${size}px`}
+        className={`rounded-full ${loading ? 'invisible' : 'visible'}`}
+        onLoad={() => setLoading(false)}
+        onError={() => {
+          if (imgSrc !== DEFAULT_AVATAR) {
+            setImgSrc(DEFAULT_AVATAR);
+            setLoading(true);
+          } else {
+            setLoading(false);
+          }
+        }}
+      />
+    </div>
+  );
+}
 
 export default function UserManager() {
   useRenderCount('UserManager');
@@ -149,7 +196,12 @@ export default function UserManager() {
   };
 
   const editUserMutation = useMutation({
-    mutationFn: (updated: { id: number; name: string; email: string; status: string }) => updateUser(updated),
+    mutationFn: (updated: {
+      id: number;
+      name: string;
+      email: string;
+      status: string;
+    }) => updateUser(updated),
     onMutate: async (updated) => {
       await queryClient.cancelQueries({ queryKey: ['users'] });
       const previous = queryClient.getQueryData<User[]>(['users']);
@@ -225,7 +277,6 @@ export default function UserManager() {
     if (!selectedUser) return;
     banUserMutation.mutate(selectedUser);
   };
-
 
   const withdrawalMutation = useWithdrawalMutation(
     selectedWithdrawal,
@@ -334,15 +385,7 @@ export default function UserManager() {
                     style={style}
                   >
                     <div className="col-span-2 flex items-center gap-3">
-                      <Image
-                        src={w.avatar || DEFAULT_AVATAR}
-                        alt={w.user}
-                        width={32}
-                        height={32}
-                        loading="lazy"
-                        sizes="32px"
-                        className="w-8 h-8 rounded-full"
-                      />
+                      <AvatarImage src={w.avatar} alt={w.user} size={32} />
                       <span>{w.user}</span>
                     </div>
                     <div className="col-span-2 font-semibold">{w.amount}</div>
@@ -381,7 +424,10 @@ export default function UserManager() {
             {userLoading ? (
               <div className="p-4 space-y-2">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="h-14 bg-hover-bg rounded-xl animate-pulse" />
+                  <div
+                    key={i}
+                    className="h-14 bg-hover-bg rounded-xl animate-pulse"
+                  />
                 ))}
               </div>
             ) : (
@@ -408,18 +454,12 @@ export default function UserManager() {
                         #{u.id}
                       </div>
                       <div className="col-span-3 flex items-center gap-3">
-                        <Image
-                          src={u.avatar || DEFAULT_AVATAR}
-                          alt={u.name}
-                          width={40}
-                          height={40}
-                          loading="lazy"
-                          sizes="40px"
-                          className="w-10 h-10 rounded-full"
-                        />
+                        <AvatarImage src={u.avatar} alt={u.name} size={40} />
                         <div>
                           <p className="font-semibold">{u.name}</p>
-                          <p className="text-xs text-text-secondary">{u.email}</p>
+                          <p className="text-xs text-text-secondary">
+                            {u.email}
+                          </p>
                         </div>
                       </div>
                       <div className="col-span-2 font-semibold">
@@ -485,7 +525,7 @@ export default function UserManager() {
                 }}
               />
             )}
-          
+
             {/* Pagination chips */}
             <div className="mt-4 flex items-center justify-between">
               <p className="text-sm text-text-secondary">

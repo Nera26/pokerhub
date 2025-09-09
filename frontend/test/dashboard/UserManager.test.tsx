@@ -1,4 +1,10 @@
-import { render, screen, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  act,
+  fireEvent,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import UserManager from '@/app/components/dashboard/UserManager';
@@ -48,9 +54,7 @@ describe('UserManager component states', () => {
   });
 
   it('shows loading state', () => {
-    (fetchUsers as jest.Mock).mockImplementation(
-      () => new Promise(() => {}),
-    );
+    (fetchUsers as jest.Mock).mockImplementation(() => new Promise(() => {}));
     (fetchPendingWithdrawals as jest.Mock).mockImplementation(
       () => new Promise(() => {}),
     );
@@ -74,9 +78,7 @@ describe('UserManager component states', () => {
     (fetchPendingWithdrawals as jest.Mock).mockResolvedValue([]);
     renderWithClient(<UserManager />);
     await waitFor(() =>
-      expect(
-        screen.getByText('Showing 1 to 0 of 0 users'),
-      ).toBeInTheDocument(),
+      expect(screen.getByText('Showing 1 to 0 of 0 users')).toBeInTheDocument(),
     );
   });
 
@@ -103,9 +105,7 @@ describe('UserManager component states', () => {
     ]);
     renderWithClient(<UserManager />);
     await waitFor(() =>
-      expect(
-        screen.getByText('Showing 1 to 1 of 1 users'),
-      ).toBeInTheDocument(),
+      expect(screen.getByText('Showing 1 to 1 of 1 users')).toBeInTheDocument(),
     );
     expect(screen.getByText('Pending Withdrawal Requests')).toBeInTheDocument();
   });
@@ -128,9 +128,7 @@ describe('UserManager component states', () => {
 
     const { client } = renderWithClient(<UserManager />);
     await waitFor(() =>
-      expect(
-        screen.getByText('Showing 1 to 0 of 0 users'),
-      ).toBeInTheDocument(),
+      expect(screen.getByText('Showing 1 to 0 of 0 users')).toBeInTheDocument(),
     );
 
     act(() => {
@@ -147,6 +145,33 @@ describe('UserManager component states', () => {
       const users = client.getQueryData(['users']) as any[];
       expect(users?.[0]?.avatar).toBe(apiAvatar);
     });
+  });
+
+  it('falls back to default avatar on image error', async () => {
+    (fetchUsers as jest.Mock).mockResolvedValue([
+      {
+        id: 1,
+        name: 'Broken',
+        email: 'broken@example.com',
+        balance: 0,
+        status: 'Active',
+        avatar: 'https://example.com/broken.png',
+      },
+    ]);
+    (fetchPendingWithdrawals as jest.Mock).mockResolvedValue([]);
+
+    renderWithClient(<UserManager />);
+
+    const img = await screen.findByRole('img', { name: 'Broken' });
+    expect(img.getAttribute('src')).toContain('broken.png');
+
+    act(() => {
+      fireEvent.error(img);
+    });
+
+    await waitFor(() =>
+      expect(img.getAttribute('src')).toContain('default-avatar.svg'),
+    );
   });
 
   it('opens and confirms ban action', async () => {
@@ -213,7 +238,9 @@ describe('UserManager component states', () => {
     ).toBeInTheDocument();
 
     await act(async () => {
-      const confirmBtn = screen.getAllByText('Unban', { selector: 'button' })[1];
+      const confirmBtn = screen.getAllByText('Unban', {
+        selector: 'button',
+      })[1];
       await userEvent.click(confirmBtn);
     });
 
@@ -225,4 +252,3 @@ describe('UserManager component states', () => {
     );
   });
 });
-
