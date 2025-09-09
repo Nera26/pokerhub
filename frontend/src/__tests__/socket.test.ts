@@ -5,7 +5,7 @@ jest.mock('@/hooks/useApiError', () => ({
 }));
 
 import { dispatchGlobalError } from '@/hooks/useApiError';
-import { sendAction, disconnectGameSocket } from '@/lib/socket';
+import { initNamespaceSocket } from '@/lib/socket-base';
 
 const mockSocket = {
   on: jest.fn((event: string, handler: (payload?: any) => void) => {
@@ -28,6 +28,8 @@ jest.mock('@/app/utils/socket', () => ({
   disconnectSocket: jest.fn(),
 }));
 
+const { emitWithAck, disconnect } = initNamespaceSocket('game');
+
 describe('emitWithAck', () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -40,20 +42,12 @@ describe('emitWithAck', () => {
 
   afterEach(() => {
     jest.useRealTimers();
-    disconnectGameSocket();
+    disconnect();
     jest.clearAllMocks();
   });
 
   it('retries with exponential backoff before resolving on ack', async () => {
-    const promise = sendAction(
-      {
-        type: 'bet',
-        tableId: 't',
-        playerId: 'p',
-        amount: 1,
-      },
-      2,
-    );
+    const promise = emitWithAck('action', {}, 'action:ack', 2);
 
     expect(mockSocket.emit).toHaveBeenCalledTimes(1);
     jest.advanceTimersByTime(2000);
@@ -71,16 +65,8 @@ describe('emitWithAck', () => {
     await expect(promise).resolves.toBeUndefined();
   });
 
-  it('rejects after retries and clears pending', async () => {
-    const promise = sendAction(
-      {
-        type: 'bet',
-        tableId: 't',
-        playerId: 'p',
-        amount: 1,
-      },
-      1,
-    );
+  it('rejects after retries and reports error', async () => {
+    const promise = emitWithAck('action', {}, 'action:ack', 1);
 
     jest.advanceTimersByTime(6000);
 
@@ -90,4 +76,3 @@ describe('emitWithAck', () => {
     );
   });
 });
-

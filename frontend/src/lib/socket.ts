@@ -1,12 +1,14 @@
 import type { Socket } from 'socket.io-client';
 import { GameActionSchema, type GameActionPayload } from '@shared/types';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
-import { dispatchGlobalError } from '@/hooks/useApiError';
 import { setServerTime } from './server-time';
-import { createNamespaceSocket } from './createSocket';
+import { initNamespaceSocket } from './socket-base';
 
-const { getSocket: getNamespaceSocket, disconnect } =
-  createNamespaceSocket('game');
+const {
+  getSocket: getNamespaceSocket,
+  disconnect,
+  emitWithAck,
+} = initNamespaceSocket('game');
 
 let initialized = false;
 let lastTick = 0;
@@ -55,78 +57,33 @@ export function disconnectGameSocket(): void {
   }
 }
 
-function emitWithAck(
+function emitWithPending(
   event: string,
   payload: Record<string, unknown>,
   ackEvent: string,
   retries = 1,
 ): Promise<void> {
-  const s = getGameSocket();
-  const actionId =
-    (payload.actionId as string | undefined) ??
-    (typeof crypto !== 'undefined' && 'randomUUID' in crypto
-      ? crypto.randomUUID()
-      : Date.now().toString());
-  const fullPayload = { ...payload, actionId };
-
-  if (event === 'action') {
-    pending = { event, payload: fullPayload, ackEvent };
-  }
-
-  return new Promise<void>((resolve, reject) => {
-    let attempts = 0;
-    let timer: ReturnType<typeof setTimeout>;
-
-    const cleanup = () => {
-      clearTimeout(timer);
-      s.off(ackEvent, handler);
+  return emitWithAck(event, payload, ackEvent, retries, {
+    onSend: (fullPayload) => {
+      if (event === 'action') {
+        pending = { event, payload: fullPayload, ackEvent };
+      }
+    },
+    onCleanup: (actionId) => {
       if (pending?.payload.actionId === actionId) {
         pending = null;
       }
-    };
-
-    const fail = () => {
-      cleanup();
-      dispatchGlobalError('Failed to send request. Please try again.');
-      reject(new Error('No ACK received'));
-    };
-
-    const handler = (ack: { actionId: string }) => {
-      if (ack?.actionId === actionId) {
-        cleanup();
-        resolve();
-      }
-    };
-
-    const baseDelay = 2000;
-    const maxDelay = 8000;
-
-    const send = () => {
-      s.emit(event, fullPayload);
-      const delay = Math.min(baseDelay * 2 ** attempts, maxDelay);
-      timer = setTimeout(() => {
-        if (attempts < retries) {
-          attempts++;
-          send();
-        } else {
-          fail();
-        }
-      }, delay);
-    };
-
-    s.on(ackEvent, handler);
-    send();
+    },
   });
 }
 
 export function sendAction(action: GameActionPayload, retries = 1) {
   const payload = { version: EVENT_SCHEMA_VERSION, ...action };
   GameActionSchema.parse(payload);
-  return emitWithAck('action', payload, 'action:ack', retries);
+  return emitWithPending('action', payload, 'action:ack', retries);
 }
 
-export const join = () => emitWithAck('join', {}, 'join:ack');
-export const buyIn = () => emitWithAck('buy-in', {}, 'buy-in:ack');
-export const sitOut = () => emitWithAck('sitout', {}, 'sitout:ack');
-export const rebuy = () => emitWithAck('rebuy', {}, 'rebuy:ack');
-
+export const join = () => emitWithPending('join', {}, 'join:ack');
+export const buyIn = () => emitWithPending('buy-in', {}, 'buy-in:ack');
+export const sitOut = () => emitWithPending('sitout', {}, 'sitout:ack');
+export const rebuy = () => emitWithPending('rebuy', {}, 'rebuy:ack');
