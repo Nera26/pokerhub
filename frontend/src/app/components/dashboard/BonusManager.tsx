@@ -3,11 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import {
-  BONUS_TYPES,
-  BONUS_ELIGIBILITY,
-  BONUS_STATUSES,
-} from '@shared/types';
+import { BONUS_TYPES, BONUS_ELIGIBILITY, BONUS_STATUSES } from '@shared/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -38,6 +34,8 @@ import Tooltip from '../ui/Tooltip';
 import BonusForm from './forms/BonusForm';
 import StatusModal from './StatusModal';
 import StatusPill from './common/StatusPill';
+import AdminTableManager from './common/AdminTableManager';
+import { TableHead, TableRow, TableCell } from '../ui/Table';
 
 type BonusStatus = 'active' | 'paused';
 type StatusFilter = BonusStatus | 'all' | 'expired';
@@ -98,7 +96,6 @@ export default function BonusManager() {
     queryFn: ({ signal }) => fetchBonuses({ signal }),
   });
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [search, setSearch] = useState('');
   const [editOpen, setEditOpen] = useState(false);
   const [pauseOpen, setPauseOpen] = useState(false);
   const [resumeOpen, setResumeOpen] = useState(false);
@@ -184,21 +181,16 @@ export default function BonusManager() {
     setToast,
   });
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+  const filteredByStatus = useMemo(() => {
     return bonuses.filter((b) => {
-      const t = (b.name + ' ' + b.description + ' ' + b.type).toLowerCase();
       const expired = isExpired(b.expiryDate);
-      const passText = !q || t.includes(q);
-      const passStatus =
-        statusFilter === 'all'
-          ? true
-          : statusFilter === 'expired'
-            ? expired
-            : b.status === statusFilter;
-      return passText && passStatus;
+      return statusFilter === 'all'
+        ? true
+        : statusFilter === 'expired'
+          ? expired
+          : b.status === statusFilter;
     });
-  }, [bonuses, search, statusFilter]);
+  }, [bonuses, statusFilter]);
 
   const totalActive = useMemo(
     () =>
@@ -322,6 +314,28 @@ export default function BonusManager() {
     );
   };
 
+  const BonusRow = ({ b }: { b: Bonus }) => (
+    <TableRow key={b.id}>
+      <TableCell>
+        <div>
+          <p className="font-semibold">{b.name}</p>
+          <p className="text-text-secondary text-sm">{b.description}</p>
+        </div>
+      </TableCell>
+      <TableCell>{b.type}</TableCell>
+      <TableCell>{dateLabel(b.expiryDate)}</TableCell>
+      <TableCell className="text-accent-yellow">
+        {b.claimsTotal.toLocaleString()}
+      </TableCell>
+      <TableCell>
+        <BonusStatusPill b={b} />
+      </TableCell>
+      <TableCell className="text-right">
+        <StatusActions b={b} />
+      </TableCell>
+    </TableRow>
+  );
+
   return (
     <div className="space-y-8">
       <section className="flex items-center justify-between">
@@ -343,62 +357,8 @@ export default function BonusManager() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <section className="space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-xl font-bold">Active Bonuses</h3>
-            <span className="bg-accent-green px-3 py-1 rounded-lg text-sm font-semibold">
-              {totalActive} Active
-            </span>
-          </div>
-
-          {isLoading ? (
-            <p>Loading bonuses...</p>
-          ) : error ? (
-            <p role="alert">{error.message}</p>
-          ) : filtered.length === 0 ? (
-            <Card className="border border-dark">
-              <CardContent>
-                <p className="text-text-secondary">
-                  No promotions match your filters.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            filtered.map((b) => (
-              <Card key={b.id} className="border border-dark">
-                <CardContent>
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <h4 className="text-lg font-bold mb-2">{b.name}</h4>
-                      <p className="text-text-secondary text-sm mb-3">
-                        {b.description}
-                      </p>
-                    </div>
-                    <BonusStatusPill b={b} />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <p className="text-text-secondary text-xs">Expiry Date</p>
-                      <p className="font-semibold">{dateLabel(b.expiryDate)}</p>
-                    </div>
-                    <div>
-                      <p className="text-text-secondary text-xs">Total Claims</p>
-                      <p className="font-semibold text-accent-yellow">
-                        {b.claimsTotal.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-
-                  <StatusActions b={b} />
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </section>
-
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-bold">Create New Promotion</h3>
-            <div className="flex gap-2">
+            <h3 className="text-xl font-bold">Bonuses</h3>
+            <div className="flex items-center gap-2">
               <select
                 value={statusFilter}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
@@ -411,17 +371,51 @@ export default function BonusManager() {
                 <option value="paused">Paused</option>
                 <option value="expired">Expired</option>
               </select>
-              <input
-                value={search}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setSearch(e.target.value)
-                }
-                type="text"
-                placeholder="Search promotions..."
-                className="bg-primary-bg border border-dark rounded-xl px-3 py-2 text-sm text-text-primary focus:border-accent-yellow focus:outline-none w-48"
-              />
+              <span className="bg-accent-green px-3 py-1 rounded-lg text-sm font-semibold">
+                {totalActive} Active
+              </span>
             </div>
           </div>
+
+          {isLoading ? (
+            <p>Loading bonuses...</p>
+          ) : error ? (
+            <p role="alert">{error.message}</p>
+          ) : (
+            <AdminTableManager
+              items={filteredByStatus}
+              header={
+                <TableRow>
+                  <TableHead className="font-semibold">Name</TableHead>
+                  <TableHead className="font-semibold">Type</TableHead>
+                  <TableHead className="font-semibold">Expiry Date</TableHead>
+                  <TableHead className="font-semibold">Claims</TableHead>
+                  <TableHead className="font-semibold">Status</TableHead>
+                  <TableHead className="text-right font-semibold">
+                    Actions
+                  </TableHead>
+                </TableRow>
+              }
+              renderRow={(b) => <BonusRow b={b} />}
+              searchFilter={(b, q) => {
+                const t = (
+                  b.name +
+                  ' ' +
+                  b.description +
+                  ' ' +
+                  b.type
+                ).toLowerCase();
+                return !q || t.includes(q);
+              }}
+              searchPlaceholder="Search promotions..."
+              emptyMessage="No promotions match your filters."
+              caption="Admin view of bonuses"
+            />
+          )}
+        </section>
+
+        <section className="space-y-6">
+          <h3 className="text-xl font-bold">Create New Promotion</h3>
 
           <Card className="border border-dark">
             <CardContent>

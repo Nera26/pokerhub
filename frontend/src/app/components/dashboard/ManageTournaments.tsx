@@ -14,28 +14,17 @@ import { type AdminTournament } from '@shared/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faPlus,
-  faChevronLeft,
-  faChevronRight,
-  faSearch,
   faExclamationTriangle,
 } from '@fortawesome/free-solid-svg-icons';
 
-import Card, { CardContent, CardTitle } from '../ui/Card';
+import { CardTitle } from '../ui/Card';
 import Button from '../ui/Button';
-import Input from '../ui/Input';
 import Modal from '../ui/Modal';
-import {
-  Table as UiTable,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../ui/Table';
+import { TableHead, TableRow } from '../ui/Table';
 import ToastNotification from '../ui/ToastNotification';
 import TournamentRow from './TournamentRow';
 import TournamentModal from '../modals/TournamentModal';
+import AdminTableManager from './common/AdminTableManager';
 
 const statusEnum = z.enum(['scheduled', 'running', 'finished', 'cancelled']);
 type Status = z.infer<typeof statusEnum>;
@@ -52,11 +41,6 @@ export default function ManageTournaments() {
     queryFn: fetchAdminTournaments,
   });
   const [statusFilter, setStatusFilter] = useState<'all' | Status>('all');
-  const [search, setSearch] = useState('');
-
-  // pagination
-  const [page, setPage] = useState(1);
-  const pageSize = 5;
 
   // modals
   const [createOpen, setCreateOpen] = useState(false);
@@ -75,30 +59,17 @@ export default function ManageTournaments() {
     type: 'success',
   });
 
-  const {
-    data: defaults,
-  } = useQuery({
+  const { data: defaults } = useQuery({
     queryKey: ['admin', 'tournaments', 'defaults'],
     queryFn: fetchAdminTournamentDefaults,
     enabled: createOpen,
   });
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return rows.filter((t) => {
-      const passStatus =
-        statusFilter === 'all' ? true : t.status === statusFilter;
-      const passSearch =
-        !q ||
-        t.name.toLowerCase().includes(q) ||
-        t.gameType.toLowerCase().includes(q) ||
-        t.format.toLowerCase().includes(q);
-      return passStatus && passSearch;
-    });
-  }, [rows, statusFilter, search]);
-
-  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const filteredByStatus = useMemo(() => {
+    return rows.filter((t) =>
+      statusFilter === 'all' ? true : t.status === statusFilter,
+    );
+  }, [rows, statusFilter]);
 
   // actions
   const create = useMutation({
@@ -183,10 +154,7 @@ export default function ManageTournaments() {
     className?: string;
   }>) => (
     <button
-      onClick={() => {
-        setPage(1);
-        onClick();
-      }}
+      onClick={onClick}
       className={
         active
           ? 'bg-accent-yellow text-black px-4 py-2 rounded-xl font-semibold text-sm'
@@ -222,7 +190,7 @@ export default function ManageTournaments() {
         </Button>
       </section>
 
-      {/* Filters + Search */}
+      {/* Filters */}
       <section className="mb-2 flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-2">
           <FilterBtn
@@ -260,99 +228,38 @@ export default function ManageTournaments() {
             Cancelled
           </FilterBtn>
         </div>
-
-        <div className="relative">
-          <FontAwesomeIcon
-            icon={faSearch}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary"
-          />
-          <input
-            value={search}
-            onChange={(e) => {
-              setPage(1);
-              setSearch(e.target.value);
-            }}
-            placeholder="Search tournaments..."
-            className="bg-card-bg border border-dark rounded-xl pl-10 pr-4 py-2 text-text-primary focus:border-accent-yellow focus:outline-none"
-          />
-        </div>
       </section>
 
-      {/* Table */}
-      <Card>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <UiTable className="w-full">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="font-semibold">
-                    Tournament Name
-                  </TableHead>
-                  <TableHead className="font-semibold">Start Time</TableHead>
-                  <TableHead className="font-semibold">Buy-in & Fee</TableHead>
-                  <TableHead className="font-semibold">Prize Pool</TableHead>
-                  <TableHead className="font-semibold">Status</TableHead>
-                  <TableHead className="text-right font-semibold">
-                    Actions
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pageRows.map((t) => (
-                  <TournamentRow
-                    key={t.id}
-                    tournament={t}
-                    onEdit={openEdit}
-                    onDelete={openDelete}
-                  />
-                ))}
-                {pageRows.length === 0 && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="py-10 text-center text-text-secondary"
-                    >
-                      No tournaments found.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-              <TableCaption>Admin view of tournaments</TableCaption>
-            </UiTable>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Pagination */}
-      <section className="flex justify-center">
-        <div className="flex items-center gap-2">
-          <button
-            className="bg-card-bg border border-dark text-text-secondary px-3 py-2 rounded-xl hover:bg-hover-bg hover:text-text-primary disabled:opacity-50"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-          >
-            <FontAwesomeIcon icon={faChevronLeft} />
-          </button>
-          <button className="bg-accent-yellow text-black px-4 py-2 rounded-xl font-semibold">
-            {page}
-          </button>
-          {page < pageCount && (
-            <button
-              className="bg-card-bg border border-dark text-text-secondary px-4 py-2 rounded-xl hover:bg-hover-bg hover:text-text-primary"
-              onClick={() => setPage((p) => p + 1)}
-            >
-              {page + 1}
-            </button>
-          )}
-          <button
-            className="bg-card-bg border border-dark text-text-secondary px-3 py-2 rounded-xl hover:bg-hover-bg hover:text-text-primary disabled:opacity-50"
-            onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-            disabled={page === pageCount}
-          >
-            <FontAwesomeIcon icon={faChevronRight} />
-          </button>
-        </div>
-      </section>
+      <AdminTableManager
+        items={filteredByStatus}
+        header={
+          <TableRow>
+            <TableHead className="font-semibold">Tournament Name</TableHead>
+            <TableHead className="font-semibold">Start Time</TableHead>
+            <TableHead className="font-semibold">Buy-in & Fee</TableHead>
+            <TableHead className="font-semibold">Prize Pool</TableHead>
+            <TableHead className="font-semibold">Status</TableHead>
+            <TableHead className="text-right font-semibold">Actions</TableHead>
+          </TableRow>
+        }
+        renderRow={(t) => (
+          <TournamentRow
+            key={t.id}
+            tournament={t}
+            onEdit={openEdit}
+            onDelete={openDelete}
+          />
+        )}
+        searchFilter={(t, q) =>
+          !q ||
+          t.name.toLowerCase().includes(q) ||
+          t.gameType.toLowerCase().includes(q) ||
+          t.format.toLowerCase().includes(q)
+        }
+        searchPlaceholder="Search tournaments..."
+        emptyMessage="No tournaments found."
+        caption="Admin view of tournaments"
+      />
 
       {/* CREATE */}
       <TournamentModal
