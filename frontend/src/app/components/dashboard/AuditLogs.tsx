@@ -18,6 +18,7 @@ import { useAdminOverview } from '@/hooks/useAdminOverview';
 import { useAdminEvents } from '@/hooks/useAdminEvents';
 import type { AlertItem, AuditLogEntry, AdminEvent } from '@shared/types';
 import StatusPill from './common/StatusPill';
+import { exportCsv } from '@/lib/exportCsv';
 
 type AuditStatus = 'Success' | 'Warning' | 'Failed';
 
@@ -169,14 +170,7 @@ export default function AuditLogs() {
       `"${r.description.replace(/"/g, '""')}"`,
       r.status,
     ]);
-    const csv = [header, ...body].map((r) => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const aEl = document.createElement('a');
-    aEl.href = url;
-    aEl.download = 'audit_logs.csv';
-    aEl.click();
-    URL.revokeObjectURL(url);
+    exportCsv('audit_logs.csv', header, body);
   };
 
   // map action to color (includes “User Ban”)

@@ -24,6 +24,7 @@ import { rebuildLeaderboard } from '@/lib/api/leaderboard';
 import type { AuditLogEntry, AuditLogType } from '@shared/types';
 import { TYPE_BADGE_CLASSES } from './constants';
 import useToasts from '@/hooks/useToasts';
+import { exportCsv } from '@/lib/exportCsv';
 
 export default function Analytics() {
   const [search, setSearch] = useState('');
@@ -110,18 +111,18 @@ export default function Analytics() {
   const statLogins = summary?.logins ?? 0;
 
   const exportCSV = () => {
-    const header = 'Date,Type,Description,User\n';
-    const body = filtered
-      .map((r) => `${r.timestamp},${r.type},"${r.description}",${r.user}`)
-      .join('\n');
-    const csvContent = 'data:text/csv;charset=utf-8,' + header + body;
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.href = encodedUri;
-    link.download = `audit_logs_${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const header = ['Date', 'Type', 'Description', 'User'];
+    const rows = filtered.map((r) => [
+      r.timestamp,
+      r.type,
+      `"${r.description}"`,
+      r.user,
+    ]);
+    exportCsv(
+      `audit_logs_${new Date().toISOString().split('T')[0]}.csv`,
+      header,
+      rows,
+    );
   };
 
   const applyAdvanced = () => {

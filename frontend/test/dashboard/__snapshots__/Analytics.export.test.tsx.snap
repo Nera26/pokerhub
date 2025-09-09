@@ -1,0 +1,6 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Analytics CSV export generates expected CSV 1`] = `
+"Date,Type,Description,User
+2024-01-01,login,"desc",alice"
+`;

@@ -42,6 +42,7 @@ import {
   useWalletReconcileMismatches,
 } from '@/hooks/wallet';
 import type { IbanHistoryEntry } from '@shared/wallet.schema';
+import { exportCsv } from '@/lib/exportCsv';
 /* -------------------------------- Types -------------------------------- */
 type UserStatus = 'Active' | 'Frozen' | 'Banned';
 
@@ -439,14 +440,7 @@ export default function BalanceTransactions() {
       `"${t.notes.replace(/"/g, '""')}"`,
       t.status,
     ]);
-    const csv = [header, ...rows].map((r) => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'transaction_log.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+    exportCsv('transaction_log.csv', header, rows);
     notify('CSV export started');
   };
 
