@@ -1,9 +1,4 @@
-export const CARD_GLASS = 'var(--color-card-glass)';
-// Slightly higher alpha for bright felt backgrounds
-export const CARD_GLASS_SOLID = 'var(--color-card-glass-solid)';
 export const HAIRLINE = 'var(--color-hairline)';
-export const TEXT_PRIMARY = 'var(--color-text-primary)';
-export const TEXT_SECONDARY = 'var(--color-text-secondary)';
 
 export const POSITION_RING: Record<
   string,
