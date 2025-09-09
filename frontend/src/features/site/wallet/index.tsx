@@ -107,8 +107,8 @@ export default function WalletPage() {
     isLoading: bankLoading,
     error: bankError,
   } = useQuery({
-    queryKey: ['wallet', playerId, 'bank'],
-    queryFn: ({ signal }) => fetchBankAccount(playerId, { signal }),
+    queryKey: ['wallet', 'bank'],
+    queryFn: ({ signal }) => fetchBankAccount({ signal }),
     enabled: isWithdrawModalOpen,
   });
 
@@ -166,9 +166,7 @@ export default function WalletPage() {
     try {
       const res = await withdraw(playerId, amount, deviceId, currency);
       setBalances(res.realBalance, res.creditBalance);
-      showToast(
-        `Withdraw request of ${currencyFormatter.format(amount)} sent`,
-      );
+      showToast(`Withdraw request of ${currencyFormatter.format(amount)} sent`);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Withdraw failed';
       showToast(message, 'error');
@@ -291,9 +289,10 @@ export default function WalletPage() {
         ) : bankAccount ? (
           <WithdrawModalContent
             availableBalance={realBalance}
-            bankAccountNumber={bankAccount.accountNumber}
-            accountTier={bankAccount.tier}
-            accountHolder={bankAccount.holder}
+            bankName={bankAccount.name}
+            accountName={bankAccount.accountName}
+            bankAddress={bankAccount.address}
+            maskedAccountNumber={bankAccount.masked}
             onClose={closeWithdrawModal}
             onConfirm={handleWithdrawConfirm}
             currency={currency}
