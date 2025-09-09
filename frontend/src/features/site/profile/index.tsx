@@ -11,7 +11,7 @@ import GameStatistics from '@/app/components/user/GameStatistics';
 import HistoryTabs from '@/app/components/user/HistoryTabs';
 import FilterDropdown from '@/app/components/user/FilterDropdown';
 import HistoryList from '@/app/components/user/HistoryList';
-import { fetchProfile } from '@/lib/api/profile';
+import { fetchProfile, updateProfile } from '@/lib/api/profile';
 import type { UserProfile } from '@shared/types';
 const ReplayModal = dynamic(() => import('@/app/components/user/ReplayModal'), {
   ssr: false,
@@ -196,10 +196,24 @@ export default function ProfilePage() {
       <EditProfileModal
         isOpen={editOpen}
         onClose={closeEdit}
-        onSave={(data) => {
-          logger.info('Saved:', data);
-          closeEdit();
-          showToast('Profile updated', { type: 'success', duration: 4000 });
+        profile={profile}
+        onSave={async (data) => {
+          try {
+            const updated = await updateProfile(data);
+            setProfile(updated);
+            showToast('Profile updated', {
+              type: 'success',
+              duration: 4000,
+            });
+          } catch (err) {
+            logger.error('Failed to update profile', err);
+            showToast('Failed to update profile', {
+              type: 'error',
+              duration: 4000,
+            });
+          } finally {
+            closeEdit();
+          }
         }}
       />
 
