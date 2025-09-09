@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Socket } from 'socket.io-client';
-import { getSocket, disconnectSocket } from '@/app/utils/socket';
+import useSocket from './useSocket';
 import type { Message } from '@/app/components/common/chat/types';
 import { env } from '@/lib/env';
 import { scheduleTimeout } from './scheduleTimeout';
@@ -11,7 +10,6 @@ import { scheduleTimeout } from './scheduleTimeout';
 export type ChatStatus = 'connecting' | 'connected' | 'error';
 
 export default function useChatSocket() {
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [status, setStatus] = useState<ChatStatus>(
     env.IS_E2E ? 'connected' : 'connecting',
   );
@@ -21,6 +19,11 @@ export default function useChatSocket() {
     new Map<number, ReturnType<typeof setTimeout>>(),
   );
   const lastMessageId = useRef<number | null>(null);
+  const socket = useSocket('chat', {
+    onConnect: () => setStatus('connected'),
+    onDisconnect: () => setStatus('connecting'),
+    onError: () => setStatus('error'),
+  });
 
   useEffect(() => {
     return () => {
@@ -30,28 +33,16 @@ export default function useChatSocket() {
   }, []);
 
   useEffect(() => {
-    if (env.IS_E2E) return;
-
-    const s = getSocket({
-      onConnect: () => setStatus('connected'),
-      onDisconnect: () => setStatus('connecting'),
-      onError: () => setStatus('error'),
-    });
-
+    if (env.IS_E2E || !socket) return;
     const onReconnectAttempt = () => setStatus('connecting');
     const onReconnectError = () => setStatus('error');
-
-    s.io.on('reconnect_attempt', onReconnectAttempt);
-    s.io.on('reconnect_error', onReconnectError);
-
-    setSocket(s);
-
+    socket.io.on('reconnect_attempt', onReconnectAttempt);
+    socket.io.on('reconnect_error', onReconnectError);
     return () => {
-      s.io.off('reconnect_attempt', onReconnectAttempt);
-      s.io.off('reconnect_error', onReconnectError);
-      disconnectSocket();
+      socket.io.off('reconnect_attempt', onReconnectAttempt);
+      socket.io.off('reconnect_error', onReconnectError);
     };
-  }, []);
+  }, [socket]);
 
   useEffect(() => {
     if (!socket) return;
