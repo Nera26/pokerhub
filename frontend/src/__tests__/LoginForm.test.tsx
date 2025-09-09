@@ -34,6 +34,7 @@ describe('LoginForm', () => {
     useAuthActions as jest.MockedFunction<UseAuthActions>;
   const setToken = jest.fn();
   const clearToken = jest.fn();
+  const setAvatarUrl = jest.fn();
   const mockLogin = login as jest.MockedFunction<typeof login>;
 
   beforeEach(() => {
@@ -41,7 +42,7 @@ describe('LoginForm', () => {
       push,
     } as unknown as ReturnType<typeof useRouter>);
 
-    mockUseAuthActions.mockReturnValue({ setToken, clearToken });
+    mockUseAuthActions.mockReturnValue({ setToken, clearToken, setAvatarUrl });
   });
 
   afterEach(() => {

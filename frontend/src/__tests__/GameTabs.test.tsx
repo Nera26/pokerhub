@@ -15,7 +15,9 @@ describe('GameTabs', () => {
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <QueryClientProvider client={client}>{children}</QueryClientProvider>
     );
-    global.fetch = jest.fn<Promise<ResponseLike>, [string]>().mockResolvedValue({
+    (
+      global.fetch as jest.Mock<Promise<ResponseLike>, [string]>
+    ).mockResolvedValue({
       ok: true,
       status: 200,
       statusText: 'OK',
@@ -26,7 +28,9 @@ describe('GameTabs', () => {
     });
     const setGameType = jest.fn();
     const user = userEvent.setup();
-    render(<GameTabs gameType="texas" setGameType={setGameType} />, { wrapper });
+    render(<GameTabs gameType="texas" setGameType={setGameType} />, {
+      wrapper,
+    });
 
     await screen.findByRole('tab', { name: /tourneys/i });
     await user.click(screen.getByRole('tab', { name: /tourneys/i }));

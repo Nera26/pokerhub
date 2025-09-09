@@ -6,19 +6,14 @@ import {
   fetchHandState,
   fetchVerifiedHandProof,
 } from '@/lib/api/hands';
-import { serverFetch } from '@/lib/server-fetch';
 import { verifyProof } from '@shared/verify';
-
-jest.mock('@/lib/server-fetch', () => ({
-  serverFetch: jest.fn(),
-}));
 jest.mock('@shared/verify', () => ({
   verifyProof: jest.fn(),
 }));
 
 describe('hands api', () => {
   it('fetches hand proof', async () => {
-    (serverFetch as jest.Mock).mockResolvedValue({
+    (fetch as jest.Mock).mockResolvedValue({
       ok: true,
       status: 200,
       headers: { get: () => 'application/json' },
@@ -33,7 +28,7 @@ describe('hands api', () => {
   });
 
   it('fetches and verifies hand proof', async () => {
-    (serverFetch as jest.Mock).mockResolvedValue({
+    (fetch as jest.Mock).mockResolvedValue({
       ok: true,
       status: 200,
       headers: { get: () => 'application/json' },
@@ -48,7 +43,7 @@ describe('hands api', () => {
   });
 
   it('fetches hand log', async () => {
-    (serverFetch as jest.Mock).mockResolvedValue({
+    (fetch as jest.Mock).mockResolvedValue({
       ok: true,
       status: 200,
       headers: { get: () => 'text/plain' },
@@ -59,7 +54,7 @@ describe('hands api', () => {
   });
 
   it('throws on non-ok hand log response', async () => {
-    (serverFetch as jest.Mock).mockResolvedValue({
+    (fetch as jest.Mock).mockResolvedValue({
       ok: false,
       status: 500,
       statusText: 'Server Error',
@@ -70,7 +65,7 @@ describe('hands api', () => {
   });
 
   it('fetches hand state', async () => {
-    (serverFetch as jest.Mock).mockResolvedValue({
+    (fetch as jest.Mock).mockResolvedValue({
       ok: true,
       status: 200,
       headers: { get: () => 'application/json' },

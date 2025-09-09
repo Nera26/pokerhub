@@ -2,7 +2,6 @@ import { ZodError, ZodSchema } from 'zod';
 import { API_CONTRACT_VERSION } from '@shared/constants';
 import { ServiceStatusResponseSchema } from '@shared/types';
 import { getBaseUrl } from '@/lib/base-url';
-import { serverFetch } from '@/lib/server-fetch';
 import { useAuthStore } from '@/app/store/authStore';
 import { dispatchContractMismatch } from '@/components/ContractMismatchNotice';
 
@@ -40,7 +39,7 @@ export interface ResponseLike {
 export async function checkApiContractVersion(): Promise<void> {
   const baseUrl = getBaseUrl();
   try {
-    const res = serverFetch(`${baseUrl}/status`);
+    const res = fetch(`${baseUrl}/status`);
     const { contractVersion } = await handleResponse(
       res,
       ServiceStatusResponseSchema,
@@ -52,7 +51,10 @@ export async function checkApiContractVersion(): Promise<void> {
       throw new Error('API contract version mismatch');
     }
   } catch (err) {
-    if (err instanceof Error && err.message === 'API contract version mismatch') {
+    if (
+      err instanceof Error &&
+      err.message === 'API contract version mismatch'
+    ) {
       throw err;
     }
     // ignore other errors
@@ -81,7 +83,7 @@ export async function apiClient<T>(
     headers['content-type'] = headers['content-type'] ?? 'application/json';
   }
 
-  const res = serverFetch(`${baseUrl}${path}`, {
+  const res = fetch(`${baseUrl}${path}`, {
     method: opts.method ?? 'GET',
     credentials: 'include',
     headers,

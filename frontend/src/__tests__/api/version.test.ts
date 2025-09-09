@@ -1,27 +1,22 @@
 /** @jest-environment node */
 import { checkApiContractVersion } from '@/lib/api/client';
 import { API_CONTRACT_VERSION } from '@shared/constants';
-import { serverFetch } from '@/lib/server-fetch';
 
 jest.mock('@/lib/base-url', () => ({ getBaseUrl: () => '' }));
-jest.mock('@/lib/server-fetch', () => ({ serverFetch: jest.fn() }));
 
-const mockedServerFetch = serverFetch as jest.Mock;
+const mockedFetch = fetch as jest.Mock;
 
 describe('checkApiContractVersion', () => {
   beforeEach(() => {
-    mockedServerFetch.mockReset();
+    mockedFetch.mockReset();
   });
 
   it('throws on mismatched major version', async () => {
-    mockedServerFetch.mockResolvedValue(
-      new Response(
-        JSON.stringify({ status: 'ok', contractVersion: '3.0.0' }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        },
-      ),
+    mockedFetch.mockResolvedValue(
+      new Response(JSON.stringify({ status: 'ok', contractVersion: '3.0.0' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
     );
 
     await expect(checkApiContractVersion()).rejects.toThrow(
@@ -30,7 +25,7 @@ describe('checkApiContractVersion', () => {
   });
 
   it('resolves when major versions match', async () => {
-    mockedServerFetch.mockResolvedValue(
+    mockedFetch.mockResolvedValue(
       new Response(
         JSON.stringify({
           status: 'ok',

@@ -1,9 +1,5 @@
 /** @jest-environment node */
 
-jest.mock('@/lib/server-fetch', () => ({
-  serverFetch: jest.fn(),
-}));
-
 import {
   login,
   logout,
@@ -11,8 +7,7 @@ import {
   verifyResetCode,
   resetPassword,
 } from '@/lib/api/auth';
-import { serverFetch } from '@/lib/server-fetch';
-import { mockServerFetch } from '../utils/mockServerFetch';
+import { mockFetch } from '../utils/mockFetch';
 
 describe('auth api', () => {
   afterEach(() => {
@@ -20,7 +15,7 @@ describe('auth api', () => {
   });
 
   it('handles login and password reset flow', async () => {
-    mockServerFetch(
+    mockFetch(
       { status: 200, payload: { token: 'tok' } },
       { status: 200, payload: { message: 'ok' } },
       { status: 200, payload: { message: 'ok' } },
@@ -44,7 +39,7 @@ describe('auth api', () => {
   });
 
   it('throws ApiError on failure', async () => {
-    (serverFetch as jest.Mock).mockResolvedValue({
+    (fetch as jest.Mock).mockResolvedValue({
       ok: false,
       status: 500,
       statusText: 'Server Error',

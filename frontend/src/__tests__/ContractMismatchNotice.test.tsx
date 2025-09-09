@@ -4,19 +4,17 @@ import { checkApiContractVersion } from '@/lib/api/client';
 
 jest.mock('@/lib/base-url', () => ({ getBaseUrl: () => 'http://example.com' }));
 
-jest.mock('@/lib/server-fetch', () => ({
-  serverFetch: () =>
-    Promise.resolve({
+const mockedFetch = fetch as jest.Mock;
+
+describe('ContractMismatchNotice', () => {
+  it('shows notice when contract versions mismatch', async () => {
+    mockedFetch.mockResolvedValue({
       ok: true,
       status: 200,
       statusText: 'OK',
       headers: { get: () => 'application/json' },
       json: async () => ({ status: 'ok', contractVersion: '99.0.0' }),
-    }),
-}));
-
-describe('ContractMismatchNotice', () => {
-  it('shows notice when contract versions mismatch', async () => {
+    });
     render(<ContractMismatchNotice />);
     await expect(checkApiContractVersion()).rejects.toThrow(
       'API contract version mismatch',
