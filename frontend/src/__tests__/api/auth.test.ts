@@ -1,5 +1,9 @@
 /** @jest-environment node */
 
+jest.mock('@/lib/server-fetch', () => ({
+  serverFetch: jest.fn(),
+}));
+
 import {
   login,
   logout,
@@ -8,10 +12,7 @@ import {
   resetPassword,
 } from '@/lib/api/auth';
 import { serverFetch } from '@/lib/server-fetch';
-
-jest.mock('@/lib/server-fetch', () => ({
-  serverFetch: jest.fn(),
-}));
+import { mockServerFetch } from '../utils/mockServerFetch';
 
 describe('auth api', () => {
   afterEach(() => {
@@ -19,43 +20,27 @@ describe('auth api', () => {
   });
 
   it('handles login and password reset flow', async () => {
-    (serverFetch as jest.Mock)
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({ token: 'tok' }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({ message: 'ok' }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({ message: 'ok' }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({ message: 'ok' }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({ message: 'ok' }),
-      });
+    mockServerFetch(
+      { status: 200, payload: { token: 'tok' } },
+      { status: 200, payload: { message: 'ok' } },
+      { status: 200, payload: { message: 'ok' } },
+      { status: 200, payload: { message: 'ok' } },
+      { status: 200, payload: { message: 'ok' } },
+    );
 
-    await expect(login('u@example.com', 'p')).resolves.toEqual({ token: 'tok' });
+    await expect(login('u@example.com', 'p')).resolves.toEqual({
+      token: 'tok',
+    });
     await expect(logout()).resolves.toEqual({ message: 'ok' });
-    await expect(requestPasswordReset('u@example.com')).resolves.toEqual({ message: 'ok' });
-    await expect(verifyResetCode('u@example.com', 'c')).resolves.toEqual({ message: 'ok' });
-    await expect(resetPassword('u@example.com', 'c', 'np')).resolves.toEqual({ message: 'ok' });
+    await expect(requestPasswordReset('u@example.com')).resolves.toEqual({
+      message: 'ok',
+    });
+    await expect(verifyResetCode('u@example.com', 'c')).resolves.toEqual({
+      message: 'ok',
+    });
+    await expect(resetPassword('u@example.com', 'c', 'np')).resolves.toEqual({
+      message: 'ok',
+    });
   });
 
   it('throws ApiError on failure', async () => {
@@ -77,6 +62,8 @@ describe('auth api', () => {
     await expect(logout()).rejects.toEqual(err);
     await expect(requestPasswordReset('u@example.com')).rejects.toEqual(err);
     await expect(verifyResetCode('u@example.com', 'c')).rejects.toEqual(err);
-    await expect(resetPassword('u@example.com', 'c', 'np')).rejects.toEqual(err);
+    await expect(resetPassword('u@example.com', 'c', 'np')).rejects.toEqual(
+      err,
+    );
   });
 });
