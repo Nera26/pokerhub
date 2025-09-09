@@ -3,7 +3,7 @@ import TransactionHistoryTable, {
   type Column as TableColumn,
   type Action as TableAction,
 } from '../../common/TransactionHistoryTable';
-import StatusPill, { toStatus } from './StatusPill';
+import StatusPill from '../common/StatusPill';
 import type { StatusBadge } from './types';
 
 interface Column<T> {
@@ -19,6 +19,12 @@ interface Props<T extends { id: string; date: string; status: StatusBadge }> {
   columns: Column<T>[];
   actions?: Action<T>[];
 }
+
+const STATUS_STYLES: Record<StatusBadge, string> = {
+  Pending: 'bg-accent-yellow text-black',
+  Completed: 'bg-accent-green text-white',
+  Rejected: 'bg-danger-red text-white',
+};
 
 export default function RequestTable<
   T extends { id: string; date: string; status: StatusBadge }
@@ -38,7 +44,12 @@ export default function RequestTable<
     {
       header: 'Status',
       headerClassName: 'text-left py-3 px-2 text-text-secondary',
-      cell: (item) => <StatusPill status={toStatus(item.status)} />,
+      cell: (item) => (
+        <StatusPill
+          label={item.status}
+          className={STATUS_STYLES[item.status]}
+        />
+      ),
       cellClassName: 'py-3 px-2',
     },
   ];
