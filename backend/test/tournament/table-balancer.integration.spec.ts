@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { Table } from '../../src/database/entities/table.entity';
 import { Seat } from '../../src/database/entities/seat.entity';
 import { Tournament, TournamentState } from '../../src/database/entities/tournament.entity';
-import { createTablesRepository } from '../../src/tournament/test-utils';
+import { createTablesRepository } from './test-utils';
 
 describe('TableBalancerService integration', () => {
   function createTournamentRepo(initial: Tournament[]): any {
