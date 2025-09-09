@@ -1,4 +1,12 @@
 import { render, screen } from '@testing-library/react';
+
+jest.mock('@/hooks/useChipDenominations', () => ({
+  useChipDenominations: () => ({
+    data: { denoms: [1000, 100, 25] },
+    isLoading: false,
+  }),
+}));
+
 import PlayerChipStack from '../PlayerChipStack';
 
 describe('PlayerChipStack', () => {

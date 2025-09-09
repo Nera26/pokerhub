@@ -6,6 +6,13 @@ import SidePanel from '@/app/components/tables/SidePanel';
 import PokerTableLayout from '@/app/components/tables/PokerTableLayout';
 import type { Player } from '@/app/components/tables/types';
 
+jest.mock('@/hooks/useChipDenominations', () => ({
+  useChipDenominations: () => ({
+    data: { denoms: [1000, 100, 25] },
+    isLoading: false,
+  }),
+}));
+
 function renderWithClient(ui: React.ReactElement) {
   const queryClient = new QueryClient();
   return render(

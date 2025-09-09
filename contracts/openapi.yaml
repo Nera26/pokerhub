@@ -1554,6 +1554,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LanguagesResponse'
+  /config/chips:
+    get:
+      summary: List chip denominations
+      responses:
+        '200':
+          description: Chip denominations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChipDenominationsResponse'
   /users:
     post:
       summary: Create user
@@ -2955,6 +2965,14 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Language'
+    ChipDenominationsResponse:
+      type: object
+      required: [denoms]
+      properties:
+        denoms:
+          type: array
+          items:
+            type: number
     CreateTableRequest:
       type: object
       properties:

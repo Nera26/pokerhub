@@ -28,6 +28,7 @@ import { AdminMessagesController } from './routes/admin-messages.controller';
 import { AdminBonusController } from './routes/admin-bonus.controller'; // expose /admin/bonus/options
 import { PromotionsController } from './routes/promotions.controller';
 import { LanguagesController } from './routes/languages.controller';
+import { ConfigController } from './routes/config.controller';
 import { AppService } from './app.service';
 import { API_CONTRACT_VERSION } from '@shared/constants';
 import { ZodExceptionFilter } from './common/zod-exception.filter';
@@ -131,6 +132,7 @@ import { PromotionEntity } from './database/entities/promotion.entity';
     AdminBonusController,
     PromotionsController,
     LanguagesController,
+    ConfigController,
   ],
   providers: [
     AppService,

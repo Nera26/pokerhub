@@ -14,6 +14,14 @@ export type Language = z.infer<typeof LanguageSchema>;
 export const LanguagesResponseSchema = z.array(LanguageSchema);
 export type LanguagesResponse = z.infer<typeof LanguagesResponseSchema>;
 
+// Chip denominations
+export const ChipDenominationsResponseSchema = z.object({
+  denoms: z.array(z.number().positive()),
+});
+export type ChipDenominationsResponse = z.infer<
+  typeof ChipDenominationsResponseSchema
+>;
+
 // Backend re-exports
 export {
   UserProfileSchema,
