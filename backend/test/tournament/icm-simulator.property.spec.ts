@@ -1,5 +1,5 @@
 import fc from 'fast-check';
-import { calculateIcmPayouts, icmRaw } from '../../src/tournament/structures/icm';
+import { calculateIcmPayouts, icmRaw } from '@shared/utils/icm';
 
 function simulateFinalTable(seed: number) {
   let s = seed;

@@ -1,6 +1,6 @@
 import { writeFileSync } from 'fs';
 import { join } from 'path';
-import { calculateIcmPayouts } from '../../../src/tournament/structures/icm';
+import { calculateIcmPayouts } from '@shared/utils/icm';
 
 interface Scenario {
   name: string;

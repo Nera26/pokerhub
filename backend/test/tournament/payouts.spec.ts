@@ -2,7 +2,7 @@ import fc from 'fast-check';
 import { TournamentService } from '../../src/tournament/tournament.service';
 import { RebuyService } from '../../src/tournament/rebuy.service';
 import { PkoService } from '../../src/tournament/pko.service';
-import { icmRaw } from '../../src/tournament/structures/icm';
+import { icmRaw } from '@shared/utils/icm';
 
 describe('tournament calculatePrizes property', () => {
   const service = new TournamentService(
