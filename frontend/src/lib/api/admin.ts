@@ -17,6 +17,9 @@ import type { CreateUserRequest } from '@shared/types';
 export { AdminTournamentSchema } from '@shared/types';
 export type { AdminTournament } from '@shared/types';
 
+export const AuditActionColorsSchema = z.record(z.string());
+export type AuditActionColors = z.infer<typeof AuditActionColorsSchema>;
+
 /** =======================
  *  Admin Tournaments
  *  ======================= */
@@ -40,6 +43,14 @@ export async function fetchAdminEvents({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<AdminEvent[]> {
   return apiClient('/api/admin/events', AdminEventsResponseSchema, { signal });
+}
+
+export async function fetchAuditActionColors({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<AuditActionColors> {
+  return apiClient('/api/admin/audit-action-colors', AuditActionColorsSchema, {
+    signal,
+  });
 }
 
 export async function fetchDashboardUsers({

@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, type CSSProperties } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
 import VirtualizedList from '@/components/VirtualizedList';
 import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -16,7 +17,10 @@ import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { useAuditAlerts } from '@/hooks/useAuditAlerts';
 import { useAdminOverview } from '@/hooks/useAdminOverview';
 import { useAdminEvents } from '@/hooks/useAdminEvents';
+import { useApiError } from '@/hooks/useApiError';
 import type { AlertItem, AuditLogEntry, AdminEvent } from '@shared/types';
+import type { ApiError } from '@/lib/api/client';
+import { fetchAuditActionColors } from '@/lib/api/admin';
 import StatusPill from './common/StatusPill';
 import { exportCsv } from '@/lib/exportCsv';
 
@@ -60,6 +64,16 @@ export default function AuditLogs() {
     isLoading: logsLoading,
     error: logsError,
   } = useAuditLogs();
+
+  const {
+    data: actionColors = {},
+    isLoading: colorsLoading,
+    error: colorsError,
+  } = useQuery<Record<string, string>, ApiError>({
+    queryKey: ['audit-action-colors'],
+    queryFn: ({ signal }) => fetchAuditActionColors({ signal }),
+  });
+  useApiError(colorsError);
 
   const rows = useMemo<AuditLogRow[]>(
     () =>
@@ -137,7 +151,13 @@ export default function AuditLogs() {
   } = useAdminEvents();
   const events = eventsData ?? [];
 
-  if (logsLoading || alertsLoading || adminsLoading || eventsLoading) {
+  if (
+    logsLoading ||
+    alertsLoading ||
+    adminsLoading ||
+    eventsLoading ||
+    colorsLoading
+  ) {
     return <div aria-label="loading">Loading...</div>;
   }
   if (logsError || alertsError || adminsError || eventsError) {
@@ -173,18 +193,6 @@ export default function AuditLogs() {
     exportCsv('audit_logs.csv', header, body);
   };
 
-  // map action to color (includes “User Ban”)
-  const actionColor = (label: string) => {
-    const t = label.toLowerCase();
-    if (t.includes('add balance')) return 'text-accent-green';
-    if (t.includes('remove balance')) return 'text-danger-red';
-    if (t.includes('withdraw')) return 'text-accent-blue';
-    if (t.includes('new table')) return 'text-accent-yellow';
-    if (t.includes('ban')) return 'text-danger-red';
-    if (t.includes('setting')) return 'text-accent-blue';
-    return '';
-  };
-
   const renderRow = (
     r: AuditLogRow,
     style: CSSProperties | undefined,
@@ -198,7 +206,11 @@ export default function AuditLogs() {
       <div className="py-3 px-2 text-text-secondary">{r.timestamp}</div>
       <div className="py-3 px-2">{r.admin}</div>
       <div className="py-3 px-2">{r.user}</div>
-      <div className={`py-3 px-2 ${actionColor(r.action)}`}>{r.action}</div>
+      <div
+        className={`py-3 px-2 ${actionColors[r.action.toLowerCase()] ?? ''}`}
+      >
+        {r.action}
+      </div>
       <div className="py-3 px-2">{r.description}</div>
       <div className="py-3 px-2">
         <StatusPill label={r.status} className={auditStyles[r.status]} />
