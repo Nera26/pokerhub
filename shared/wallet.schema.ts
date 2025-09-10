@@ -66,7 +66,7 @@ export const KycDenialResponseSchema = z.object({
 
 export type KycDenialResponse = z.infer<typeof KycDenialResponseSchema>;
 
-export const WalletTransactionSchema = z.object({
+export const BaseTransactionSchema = z.object({
   id: z.string(),
   type: z.string(),
   amount: z.number().int(),
@@ -74,7 +74,9 @@ export const WalletTransactionSchema = z.object({
   status: z.string(),
   createdAt: z.string().datetime(),
 });
+export type BaseTransaction = z.infer<typeof BaseTransactionSchema>;
 
+export const WalletTransactionSchema = BaseTransactionSchema;
 export type WalletTransaction = z.infer<typeof WalletTransactionSchema>;
 
 export const WalletTransactionsResponseSchema = z.object({
@@ -86,15 +88,7 @@ export type WalletTransactionsResponse = z.infer<
   typeof WalletTransactionsResponseSchema
 >;
 
-export const PendingTransactionSchema = z.object({
-  id: z.string(),
-  type: z.string(),
-  amount: z.number().int(),
-  currency: CurrencySchema,
-  status: z.string(),
-  createdAt: z.string().datetime(),
-});
-
+export const PendingTransactionSchema = BaseTransactionSchema;
 export type PendingTransaction = z.infer<typeof PendingTransactionSchema>;
 
 export const PendingTransactionsResponseSchema = z.object({
