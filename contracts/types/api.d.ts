@@ -1497,6 +1497,24 @@ export interface paths {
       };
     };
   };
+  "/admin/tournaments/simulate": {
+    /** Simulate tournament durations */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["TournamentSimulateRequest"];
+        };
+      };
+      responses: {
+        /** @description Simulation result */
+        200: {
+          content: {
+            "application/json": components["schemas"]["TournamentSimulateResponse"];
+          };
+        };
+      };
+    };
+  };
   "/admin/bonus/options": {
     /** Get bonus form options */
     get: {
@@ -2456,6 +2474,17 @@ export interface components {
       value: "active" | "upcoming" | "past";
     };
     TournamentFilters: components["schemas"]["TournamentFilter"][];
+    TournamentSimulateRequest: {
+      levels: number;
+      levelMinutes: number;
+      increment: number;
+      entrants: number;
+      runs: number;
+    };
+    TournamentSimulateResponse: {
+      averageDuration: number;
+      durationVariance: number;
+    };
     Table: {
       id: string;
       tableName: string;
