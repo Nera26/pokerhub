@@ -1,6 +1,7 @@
 import { createHmac } from 'crypto';
 import { DataSource, Repository } from 'typeorm';
 import { createDataSource } from '../utils/pgMem';
+import * as handLedger from '../../src/wallet/hand-ledger';
 import { Account } from '../../src/wallet/account.entity';
 import { JournalEntry } from '../../src/wallet/journal-entry.entity';
 import { Disbursement } from '../../src/wallet/disbursement.entity';
@@ -16,9 +17,13 @@ import { ConfigService } from '@nestjs/config';
 import { WebhookController } from '../../src/wallet/webhook.controller';
 import { verifySignature } from '../../src/wallet/verify-signature';
 
+// Re-exported for compatibility with legacy tests
+export { createDataSource as createInMemoryDb } from '../utils/pgMem';
+
 export function createWalletServices(dataSource: DataSource) {
   const events: EventPublisher = { emit: jest.fn() } as any;
   const redis = new MockRedis();
+  const redisStore = (redis as any).store as Map<string, any>;
 
   const provider: any = {
     initiate3DS: jest.fn().mockResolvedValue({ id: 'tx' }),
@@ -94,6 +99,7 @@ export function createWalletServices(dataSource: DataSource) {
     provider,
     kyc,
     redis,
+    redisStore,
     settleSvc,
   };
 }
@@ -107,6 +113,17 @@ export async function createWalletTestContext() {
     PendingDeposit,
   ]);
   return { dataSource, ...createWalletServices(dataSource) };
+}
+
+export async function setupTestWallet(opts: { mockLedger?: boolean } = {}) {
+  const ctx = await createWalletTestContext();
+  let writeHandLedgerMock: jest.SpyInstance | undefined;
+  if (opts.mockLedger !== false) {
+    writeHandLedgerMock = jest
+      .spyOn(handLedger, 'writeHandLedger')
+      .mockResolvedValue(undefined);
+  }
+  return { ...ctx, writeHandLedger: writeHandLedgerMock };
 }
 
 export async function createWalletWebhookContext() {
