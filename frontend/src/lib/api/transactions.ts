@@ -3,7 +3,7 @@ import { apiClient } from './client';
 import {
   FilterOptionsSchema,
   AdminTransactionEntriesSchema,
-} from '@shared/types';
+} from '@shared/transactions.schema';
 
 export async function fetchTransactionFilters() {
   return apiClient('/api/transactions/filters', FilterOptionsSchema);

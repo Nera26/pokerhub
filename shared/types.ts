@@ -546,32 +546,6 @@ export const TableListQuerySchema = z.object({
 });
 export type TableListQuery = z.infer<typeof TableListQuerySchema>;
 
-
-// Admin transaction entries (frontend modal)
-const AdminTransactionEntrySchema = z.object({
-  date: z.string(),
-  action: z.string(),
-  amount: z.number(),
-  performedBy: z.string(),
-  notes: z.string(),
-  status: z.enum(['Completed', 'Pending', 'Rejected']),
-});
-export const AdminTransactionEntriesSchema = z.array(
-  AdminTransactionEntrySchema,
-);
-export type AdminTransactionEntry = z.infer<
-  typeof AdminTransactionEntrySchema
->;
-export type AdminTransactionEntries = z.infer<
-  typeof AdminTransactionEntriesSchema
->;
-
-export const FilterOptionsSchema = z.object({
-  types: z.array(z.string()),
-  performedBy: z.array(z.string()),
-});
-export type FilterOptions = z.infer<typeof FilterOptionsSchema>;
-
 export {
   GameHistoryEntrySchema,
   TournamentHistoryEntrySchema,

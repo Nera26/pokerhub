@@ -31,3 +31,28 @@ export const TransactionLogQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(10),
 });
 export type TransactionLogQuery = z.infer<typeof TransactionLogQuerySchema>;
+
+// Admin transaction entries (frontend modal)
+const AdminTransactionEntrySchema = z.object({
+  date: z.string(),
+  action: z.string(),
+  amount: z.number(),
+  performedBy: z.string(),
+  notes: z.string(),
+  status: z.enum(['Completed', 'Pending', 'Rejected']),
+});
+export const AdminTransactionEntriesSchema = z.array(
+  AdminTransactionEntrySchema,
+);
+export type AdminTransactionEntry = z.infer<
+  typeof AdminTransactionEntrySchema
+>;
+export type AdminTransactionEntries = z.infer<
+  typeof AdminTransactionEntriesSchema
+>;
+
+export const FilterOptionsSchema = z.object({
+  types: z.array(z.string()),
+  performedBy: z.array(z.string()),
+});
+export type FilterOptions = z.infer<typeof FilterOptionsSchema>;

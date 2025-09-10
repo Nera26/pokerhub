@@ -6,16 +6,12 @@ import { Transaction } from './transaction.entity';
 import {
   FilterOptionsSchema,
   AdminTransactionEntriesSchema,
-} from '@shared/types';
-import type {
-  FilterOptions,
-  AdminTransactionEntries,
-} from '@shared/types';
-import {
   TransactionLogResponseSchema,
   TransactionLogQuerySchema,
   TransactionTypesResponseSchema,
   type TransactionLogQuery,
+  type FilterOptions,
+  type AdminTransactionEntries,
 } from '@shared/transactions.schema';
 import type { TransactionTab } from '@shared/wallet.schema';
 

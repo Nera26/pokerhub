@@ -14,7 +14,10 @@ import {
   fetchTransactionFilters,
   fetchUserTransactions,
 } from '@/lib/api/transactions';
-import type { AdminTransactionEntry, FilterOptions } from '@shared/types';
+import type {
+  AdminTransactionEntry,
+  FilterOptions,
+} from '@shared/transactions.schema';
 
 export enum PerformedBy {
   All = 'All',
