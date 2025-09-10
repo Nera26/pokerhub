@@ -4,28 +4,24 @@ import IbanManager from '../IbanManager';
 import { useIban, useIbanHistory } from '@/hooks/wallet';
 import { updateIban } from '@/lib/api/wallet';
 
-jest.mock('@/hooks/wallet');
+jest.mock('@/hooks/wallet', () => ({
+  ...jest.requireActual('@/hooks/wallet'),
+  useIban: jest.fn(),
+  useIbanHistory: jest.fn(),
+}));
+
 jest.mock('@/lib/api/wallet', () => ({
   updateIban: jest.fn(),
 }));
 
-function renderWithClient(ui: React.ReactElement) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
+function renderWithClient(ui: React.ReactElement, client: QueryClient) {
   return render(
     <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
   );
 }
 
 describe('IbanManager', () => {
-  let ibanRefetch: jest.Mock;
-  let historyRefetch: jest.Mock;
-
   beforeEach(() => {
-    ibanRefetch = jest.fn();
-    historyRefetch = jest.fn();
-
     (useIban as jest.Mock).mockReturnValue({
       data: {
         iban: 'DE02123456789012345678',
@@ -35,7 +31,6 @@ describe('IbanManager', () => {
         updatedBy: 'Alice',
         updatedAt: '2024-01-01T00:00:00.000Z',
       },
-      refetch: ibanRefetch,
     });
 
     (useIbanHistory as jest.Mock).mockReturnValue({
@@ -50,7 +45,6 @@ describe('IbanManager', () => {
           },
         ],
       },
-      refetch: historyRefetch,
     });
   });
 
@@ -58,10 +52,15 @@ describe('IbanManager', () => {
     jest.clearAllMocks();
   });
 
-  it('updates IBAN and refreshes query', async () => {
+  it('updates IBAN and invalidates queries', async () => {
     (updateIban as jest.Mock).mockResolvedValue({ message: 'ok' });
 
-    renderWithClient(<IbanManager />);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const invalidateSpy = jest.spyOn(client, 'invalidateQueries');
+
+    renderWithClient(<IbanManager />, client);
 
     fireEvent.click(screen.getByRole('button', { name: /manage iban/i }));
 
@@ -75,27 +74,27 @@ describe('IbanManager', () => {
     const holderInput = screen.getByPlaceholderText(/PokerPro Gaming Ltd./i);
     fireEvent.change(holderInput, { target: { value: 'New Holder' } });
 
-    fireEvent.click(
-      screen.getByRole('button', { name: /update iban/i }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: /update iban/i }));
 
     await waitFor(() =>
-      expect(updateIban).toHaveBeenCalledWith(
-        'DE44500105175407324931',
-        'New Holder',
-        '',
-      ),
+      expect(updateIban).toHaveBeenCalledWith({
+        iban: 'DE44500105175407324931',
+        holder: 'New Holder',
+        notes: '',
+      }),
     );
-    expect(ibanRefetch).toHaveBeenCalled();
-    expect(historyRefetch).toHaveBeenCalled();
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['iban'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['iban-history'] });
   });
 
   it('renders history entries', async () => {
-    renderWithClient(<IbanManager />);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    renderWithClient(<IbanManager />, client);
 
     fireEvent.click(screen.getByRole('button', { name: /manage iban/i }));
 
     await screen.findByText('DE03111111111111111111');
   });
 });
-
