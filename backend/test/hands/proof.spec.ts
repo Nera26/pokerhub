@@ -7,7 +7,7 @@ import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { HandController } from '../../src/game/hand.controller';
 import { Hand } from '../../src/database/entities/hand.entity';
-import type { HandProof } from '@shared/types';
+import type { HandProofResponse } from '@shared/types';
 import { ConfigService } from '@nestjs/config';
 
 describe('HandController proof', () => {
@@ -44,7 +44,7 @@ describe('HandController proof', () => {
   });
 
   it('prefers proof from log file', async () => {
-    const proof: HandProof = { seed: 'fs', nonce: 'fn', commitment: 'fc' };
+    const proof: HandProofResponse = { seed: 'fs', nonce: 'fn', commitment: 'fc' };
     const dir = join(__dirname, '../../../storage/hand-logs');
     mkdirSync(dir, { recursive: true });
     const file = join(dir, 'hand1.jsonl');
@@ -69,7 +69,7 @@ describe('HandController proof', () => {
   });
 
   it('falls back to hand entity when log missing', () => {
-    const proof: HandProof = { seed: 's', nonce: 'n', commitment: 'c' };
+    const proof: HandProofResponse = { seed: 's', nonce: 'n', commitment: 'c' };
     const logEntry = [0, { type: 'start' }, { players: [{ id: 'u1' }] }, {}];
     store.set('hand2', {
       id: 'hand2',
@@ -88,7 +88,7 @@ describe('HandController proof', () => {
   });
 
   it('returns 403 for non-participant', async () => {
-    const proof: HandProof = { seed: 's3', nonce: 'n3', commitment: 'c3' };
+    const proof: HandProofResponse = { seed: 's3', nonce: 'n3', commitment: 'c3' };
     const dir = join(__dirname, '../../../storage/hand-logs');
     mkdirSync(dir, { recursive: true });
     const file = join(dir, 'hand3.jsonl');
@@ -107,7 +107,7 @@ describe('HandController proof', () => {
   });
 
   it('allows admin to access proof', async () => {
-    const proof: HandProof = { seed: 's4', nonce: 'n4', commitment: 'c4' };
+    const proof: HandProofResponse = { seed: 's4', nonce: 'n4', commitment: 'c4' };
     const dir = join(__dirname, '../../../storage/hand-logs');
     mkdirSync(dir, { recursive: true });
     const file = join(dir, 'hand4.jsonl');

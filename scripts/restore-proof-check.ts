@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { createHash } from 'crypto';
 import { verifyProof } from '../shared/verify';
-import type { HandProof } from '../shared/types';
+import type { HandProofResponse } from '../shared/types';
 
 async function verifyFile(proofPath: string, manifest: Record<string, string>): Promise<boolean> {
   const proofBuf = await fs.readFile(proofPath);
@@ -22,7 +22,7 @@ async function verifyFile(proofPath: string, manifest: Record<string, string>): 
 
   try {
     const data = JSON.parse(proofBuf.toString('utf-8'));
-    const proof: HandProof = {
+    const proof: HandProofResponse = {
       seed: data.seed,
       nonce: data.nonce,
       commitment: data.commitment,

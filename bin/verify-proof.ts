@@ -1,12 +1,12 @@
 #!/usr/bin/env ts-node
 import { parseArgs } from 'node:util';
 import { shuffle, standardDeck, verifyProof, hexToBytes } from '../shared/verify';
-import type { HandProof } from '../shared/types';
+import type { HandProofResponse } from '../shared/types';
 
 export async function verifyHandProof(handId: string, baseUrl: string) {
   const proofRes = await fetch(`${baseUrl}/hands/${handId}/proof`);
   if (!proofRes.ok) throw new Error('Failed to fetch proof');
-  const proof = (await proofRes.json()) as HandProof;
+  const proof = (await proofRes.json()) as HandProofResponse;
   if (!verifyProof(proof)) throw new Error('Invalid proof: commitment mismatch');
 
   const logRes = await fetch(`${baseUrl}/hands/${handId}/log`);
