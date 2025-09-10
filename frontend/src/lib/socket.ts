@@ -2,13 +2,13 @@ import type { Socket } from 'socket.io-client';
 import { GameActionSchema, type GameActionPayload } from '@shared/types';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
 import { setServerTime } from './server-time';
-import { initNamespaceSocket } from './socket-base';
+import { createNamespaceSocket } from './socket-namespace';
 
 const {
   getSocket: getNamespaceSocket,
   disconnect,
   emitWithAck,
-} = initNamespaceSocket('game');
+} = createNamespaceSocket('game');
 
 let initialized = false;
 let lastTick = 0;
