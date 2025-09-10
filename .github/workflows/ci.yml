@@ -27,8 +27,10 @@ jobs:
           node-version: 20
       - run: npm ci
       - run: npx eslint .
-      - run: npm run lint:unused
-      - run: npm run lint:dup
+      - name: Check for unused exports
+        run: npm run lint:unused
+      - name: Detect duplicate code
+        run: npm run lint:dup
       - run: npm test
       - run: npm test --prefix backend
       - run: npm test --prefix frontend
