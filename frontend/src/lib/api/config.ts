@@ -14,6 +14,17 @@ export async function fetchChipDenominations({
   });
 }
 
+export async function updateChipDenominations(
+  denoms: number[],
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<ChipDenominationsResponse> {
+  return apiClient('/api/config/chips', ChipDenominationsResponseSchema, {
+    method: 'PUT',
+    body: JSON.stringify({ denoms }),
+    signal,
+  });
+}
+
 export async function fetchTableTheme({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<TableThemeResponse> {

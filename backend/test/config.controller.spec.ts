@@ -2,12 +2,15 @@ import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { ConfigController } from '../src/routes/config.controller';
+import { AuthGuard } from '../src/auth/auth.guard';
+import { AdminGuard } from '../src/auth/admin.guard';
+import { ChipDenomsService } from '../src/services/chip-denoms.service';
 import type {
   ChipDenominationsResponse,
   TableThemeResponse,
 } from '@shared/types';
 
-const mockChips: ChipDenominationsResponse = { denoms: [1000, 100, 25] };
+const defaultChips: ChipDenominationsResponse = { denoms: [1000, 100, 25] };
 const mockTheme: TableThemeResponse = {
   hairline: 'var(--color-hairline)',
   positions: {
@@ -40,7 +43,13 @@ describe('ConfigController', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       controllers: [ConfigController],
-    }).compile();
+      providers: [ChipDenomsService],
+    })
+      .overrideGuard(AuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(AdminGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
     app = moduleRef.createNestApplication();
     await app.init();
   });
@@ -53,7 +62,19 @@ describe('ConfigController', () => {
     const res = await request(app.getHttpServer())
       .get('/config/chips')
       .expect(200);
-    expect(res.body).toEqual(mockChips);
+    expect(res.body).toEqual(defaultChips);
+  });
+
+  it('updates chip denominations', async () => {
+    await request(app.getHttpServer())
+      .put('/config/chips')
+      .send({ denoms: [500, 100, 25] })
+      .expect(200);
+
+    const res = await request(app.getHttpServer())
+      .get('/config/chips')
+      .expect(200);
+    expect(res.body).toEqual({ denoms: [500, 100, 25] });
   });
 
   it('returns table theme', async () => {
