@@ -1651,6 +1651,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChipDenominationsResponse'
+    put:
+      summary: Update chip denominations
+      description: Admin only
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChipDenominationsResponse'
+      responses:
+        '200':
+          description: Updated chip denominations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChipDenominationsResponse'
   /config/table-theme:
     get:
       summary: Get table theme

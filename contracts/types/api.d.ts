@@ -1713,6 +1713,25 @@ export interface paths {
         };
       };
     };
+    /**
+     * Update chip denominations
+     * @description Admin only
+     */
+    put: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["ChipDenominationsResponse"];
+        };
+      };
+      responses: {
+        /** @description Updated chip denominations */
+        200: {
+          content: {
+            "application/json": components["schemas"]["ChipDenominationsResponse"];
+          };
+        };
+      };
+    };
   };
   "/config/table-theme": {
     /** Get table theme */
