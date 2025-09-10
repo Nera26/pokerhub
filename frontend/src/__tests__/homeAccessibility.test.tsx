@@ -27,11 +27,12 @@ jest.mock('@/hooks/useGameTypes', () => ({
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: jest.fn(), prefetch: jest.fn() }),
 }));
-jest.mock('@/hooks/useChatSocket', () => () => ({
-  messages: [],
-  sendMessage: jest.fn(),
+
+// Mock ChatWidget to avoid socket internals affecting this suite
+jest.mock('@/app/components/common/chat/ChatWidget', () => ({
+  __esModule: true,
+  default: () => <div />,
 }));
-jest.mock('@/app/components/common/chat/ChatWidget', () => () => <div />);
 
 describe('home accessibility', () => {
   beforeEach(() => {
@@ -42,6 +43,7 @@ describe('home accessibility', () => {
       isLoading: false,
     });
   });
+
   it('LiveTableCard hides overlay from assistive tech', async () => {
     const props: LiveTableCardProps = {
       tableName: 'Test Table',
@@ -72,6 +74,7 @@ describe('home accessibility', () => {
       error: null,
       isLoading: false,
     });
+
     render(
       <HomePageClient
         cashGameList={(_: CashGameListProps) => (
@@ -82,6 +85,7 @@ describe('home accessibility', () => {
         )}
       />,
     );
+
     expect(screen.getByRole('main')).toHaveAttribute('aria-busy', 'true');
   });
 
@@ -108,15 +112,19 @@ describe('home accessibility', () => {
         createdAgo: 'just now',
       },
     ];
+
     (useVirtualizedList as jest.Mock).mockReturnValue({
       getTotalSize: () => tables.length * 280,
       getVirtualItems: () =>
         tables.map((_, index) => ({ index, start: index * 280 })),
     });
+
     const gameType: GameType = 'texas';
     render(<CashGameList tables={tables} gameType={gameType} hidden={false} />);
+
     const list = screen.getByRole('list');
     expect(within(list).getAllByRole('listitem')).toHaveLength(tables.length);
+
     const listContainer = list.parentElement as HTMLElement;
     expect(listContainer).toHaveAttribute('data-virtualized', 'false');
   });
@@ -146,16 +154,20 @@ describe('home accessibility', () => {
         registered: false,
       },
     ];
+
     (useVirtualizedList as jest.Mock).mockReturnValue({
       getTotalSize: () => tournaments.length * 280,
       getVirtualItems: () =>
         tournaments.map((_, index) => ({ index, start: index * 280 })),
     });
+
     render(<TournamentList tournaments={tournaments} hidden={false} />);
+
     const list = screen.getByRole('list');
     expect(within(list).getAllByRole('listitem')).toHaveLength(
       tournaments.length,
     );
+
     const listContainer = list.parentElement as HTMLElement;
     expect(listContainer).toHaveAttribute('data-virtualized', 'false');
   });

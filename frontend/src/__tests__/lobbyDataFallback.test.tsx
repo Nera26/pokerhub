@@ -17,36 +17,32 @@ jest.mock('@/hooks/useGameTypes', () => ({
   }),
 }));
 
-jest.mock('@/app/components/common/chat/ChatWidget', () => {
-  const ChatWidgetMock = () => <div />;
-  ChatWidgetMock.displayName = 'ChatWidgetMock';
-  return ChatWidgetMock;
-});
-jest.mock('@/hooks/useChatSocket', () => () => ({
-  messages: [],
-  sendMessage: jest.fn(),
+// Keep chat widget inert for these tests
+jest.mock('@/app/components/common/chat/ChatWidget', () => ({
+  __esModule: true,
+  default: () => <div />,
 }));
 
 describe('lobby data fallback messages', () => {
   const originalFetch = global.fetch;
+
   afterEach(() => {
     global.fetch = originalFetch;
   });
 
   it('shows tables error message when table fetch fails', async () => {
-    const fetchMock = jest.fn<Promise<ResponseLike>, [string]>(
-      async (url: string) => {
-        if (url.includes('/api/tables')) {
-          return Promise.reject(new Error('Network down'));
-        }
-        return {
-          ok: true,
-          status: 200,
-          statusText: 'OK',
-          json: async () => [],
-        };
-      },
-    );
+    const fetchMock = jest.fn<Promise<ResponseLike>, [string]>(async (url) => {
+      if (url.includes('/api/tables')) {
+        return Promise.reject(new Error('Network down'));
+      }
+      return {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => [],
+      };
+    });
+
     global.fetch = fetchMock as unknown as typeof fetch;
 
     const client = new QueryClient({
@@ -66,23 +62,24 @@ describe('lobby data fallback messages', () => {
       </QueryClientProvider>,
     );
 
-    await screen.findByText('Failed to fetch tables: Network down');
+    expect(
+      await screen.findByText('Failed to fetch tables: Network down'),
+    ).toBeInTheDocument();
   });
 
   it('shows tournaments error message when tournament fetch fails', async () => {
-    const fetchMock = jest.fn<Promise<ResponseLike>, [string]>(
-      async (url: string) => {
-        if (url.includes('/api/tournaments')) {
-          return Promise.reject(new Error('Connection lost'));
-        }
-        return {
-          ok: true,
-          status: 200,
-          statusText: 'OK',
-          json: async () => [],
-        };
-      },
-    );
+    const fetchMock = jest.fn<Promise<ResponseLike>, [string]>(async (url) => {
+      if (url.includes('/api/tournaments')) {
+        return Promise.reject(new Error('Connection lost'));
+      }
+      return {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => [],
+      };
+    });
+
     global.fetch = fetchMock as unknown as typeof fetch;
 
     const client = new QueryClient({
@@ -103,11 +100,11 @@ describe('lobby data fallback messages', () => {
       </QueryClientProvider>,
     );
 
-    const tournamentsTab = await screen.findByRole('tab', {
-      name: 'Tournaments',
-    });
+    const tournamentsTab = await screen.findByRole('tab', { name: 'Tournaments' });
     await user.click(tournamentsTab);
 
-    await screen.findByText('Failed to fetch tournaments: Connection lost');
+    expect(
+      await screen.findByText('Failed to fetch tournaments: Connection lost'),
+    ).toBeInTheDocument();
   });
 });

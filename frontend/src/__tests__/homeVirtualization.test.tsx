@@ -5,6 +5,7 @@ import type { CashGameListProps } from '@/app/components/home/CashGameList';
 import type { TournamentListProps } from '@/components/TournamentList';
 
 jest.mock('@/hooks/useLobbyData');
+
 jest.mock('@/hooks/useGameTypes', () => ({
   useGameTypes: () => ({
     data: [
@@ -15,19 +16,20 @@ jest.mock('@/hooks/useGameTypes', () => ({
     isLoading: false,
   }),
 }));
-jest.mock('next/link', () => {
-  const LinkMock = ({ children }: { children: React.ReactNode }) => (
-    <>{children}</>
-  );
-  LinkMock.displayName = 'LinkMock';
-  return LinkMock;
-});
-jest.mock('@/hooks/useChatSocket', () => () => ({
-  messages: [],
-  sendMessage: jest.fn(),
-}));
-jest.mock('@/app/components/common/chat/ChatWidget', () => () => <div />);
 
+// Next.js Link mock
+jest.mock('next/link', () => ({
+  __esModule: true,
+  default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+// ChatWidget mock (avoid socket internals)
+jest.mock('@/app/components/common/chat/ChatWidget', () => ({
+  __esModule: true,
+  default: () => <div />,
+}));
+
+// JSDOM sizing/observer shims for virtualization math
 Object.defineProperty(HTMLElement.prototype, 'getBoundingClientRect', {
   configurable: true,
   value: () => ({
@@ -39,12 +41,10 @@ Object.defineProperty(HTMLElement.prototype, 'getBoundingClientRect', {
     bottom: 400,
   }),
 });
-
 Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
   configurable: true,
   value: 400,
 });
-
 Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
   configurable: true,
   value: 800,
@@ -55,11 +55,10 @@ class ResizeObserver {
   unobserve() {}
   disconnect() {}
 }
-
 Object.assign(globalThis, { ResizeObserver });
 
 const mockTables = Array.from({ length: 20 }, (_, i) => ({
-  id: i + 1,
+  id: String(i + 1),
   tableName: `Table ${i + 1}`,
   gameType: 'texas',
   stakes: { small: 1, big: 2 },
@@ -70,7 +69,7 @@ const mockTables = Array.from({ length: 20 }, (_, i) => ({
 }));
 
 const mockTournaments = Array.from({ length: 20 }, (_, i) => ({
-  id: i + 1,
+  id: String(i + 1),
   title: `Tournament ${i + 1}`,
   buyIn: 10,
   fee: 0,
@@ -121,6 +120,7 @@ describe('home page virtualization', () => {
       .firstChild as HTMLElement;
     const tournamentsList = screen.getByTestId('tournaments-list')
       .firstChild as HTMLElement;
+
     expect(tablesList.style.height).toBe('5600px');
     expect(tournamentsList.style.height).toBe('5600px');
   });
