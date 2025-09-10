@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { createInMemoryDb } from '../../src/wallet/test-utils';
+import { createInMemoryDb } from './test-utils';
 import { BankReconciliationService } from '../../src/wallet/bank-reconciliation.service';
 import { PendingDeposit } from '../../src/wallet/pending-deposit.entity';
 import { EventPublisher } from '../../src/events/events.service';
