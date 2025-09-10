@@ -1,13 +1,11 @@
 'use client';
 
-import { createQueryHook } from './useApiQuery';
 import { fetchAdminEvents } from '@/lib/api/admin';
 import type { AdminEvent } from '@shared/types';
+import { createAdminQuery } from './useAdminQuery';
 
-const useAdminEvents = createQueryHook<AdminEvent[]>(
+export const useAdminEvents = createAdminQuery<AdminEvent[]>(
   'admin-events',
-  (_client, opts) => fetchAdminEvents({ signal: opts.signal }),
+  fetchAdminEvents,
   'admin events',
 );
-
-export default useAdminEvents;
