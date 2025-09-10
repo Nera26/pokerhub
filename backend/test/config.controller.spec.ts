@@ -5,6 +5,7 @@ import { ConfigController } from '../src/routes/config.controller';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
 import { ChipDenomsService } from '../src/services/chip-denoms.service';
+import { TableThemeService } from '../src/services/table-theme.service';
 import type {
   ChipDenominationsResponse,
   TableThemeResponse,
@@ -43,7 +44,7 @@ describe('ConfigController', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       controllers: [ConfigController],
-      providers: [ChipDenomsService],
+      providers: [ChipDenomsService, TableThemeService],
     })
       .overrideGuard(AuthGuard)
       .useValue({ canActivate: () => true })
@@ -78,9 +79,12 @@ describe('ConfigController', () => {
   });
 
   it('returns table theme', async () => {
+    const themeService = app.get(TableThemeService);
+    const customTheme = { ...mockTheme, hairline: '#123' };
+    themeService.update(customTheme);
     const res = await request(app.getHttpServer())
       .get('/config/table-theme')
       .expect(200);
-    expect(res.body).toEqual(mockTheme);
+    expect(res.body).toEqual(customTheme);
   });
 });

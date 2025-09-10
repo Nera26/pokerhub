@@ -8,12 +8,15 @@ import {
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { ChipDenomsService } from '../services/chip-denoms.service';
-import { TABLE_THEME } from '@shared/config/tableTheme';
+import { TableThemeService } from '../services/table-theme.service';
 
 @ApiTags('config')
 @Controller('config')
 export class ConfigController {
-  constructor(private readonly chips: ChipDenomsService) {}
+  constructor(
+    private readonly chips: ChipDenomsService,
+    private readonly theme: TableThemeService,
+  ) {}
 
   @Get('chips')
   @ApiOperation({ summary: 'List chip denominations' })
@@ -37,6 +40,6 @@ export class ConfigController {
   @ApiOperation({ summary: 'Get table theme' })
   @ApiResponse({ status: 200, description: 'Table theme mapping' })
   getTableTheme(): TableThemeResponse {
-    return TABLE_THEME;
+    return this.theme.get();
   }
 }
