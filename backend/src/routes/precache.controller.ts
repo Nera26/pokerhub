@@ -1,8 +1,21 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { PrecacheListResponse, PrecacheListResponseSchema } from '../schemas/precache';
 
-const PRECACHE_URLS = ['/', '/offline', '/favicon.ico'];
+const PRECACHE_URLS: string[] = JSON.parse(
+  readFileSync(
+    join(
+      process.cwd(),
+      '..',
+      'frontend',
+      '.next',
+      'precache-manifest.json',
+    ),
+    'utf-8',
+  ),
+);
 
 @ApiTags('precache')
 @Controller('precache')
