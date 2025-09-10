@@ -2,7 +2,6 @@ import '@testing-library/jest-dom';
 
 process.env.NEXT_PUBLIC_BASE_URL ??= 'http://localhost:3000';
 process.env.NEXT_PUBLIC_SOCKET_URL ??= 'http://localhost:4000';
-process.env.NEXT_INTL_CONFIG ??= 'next-intl.config.ts';
 
 // Default mock for next/navigation.
 // Individual tests can re-mock this as needed without conflicts.
