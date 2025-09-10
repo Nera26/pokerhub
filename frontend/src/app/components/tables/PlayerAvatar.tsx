@@ -22,7 +22,9 @@ export default function PlayerAvatar({
   avatarClass,
   avatarRingStyle,
 }: PlayerAvatarProps) {
-  const { hairline, positions } = useTableTheme();
+  const { data } = useTableTheme();
+  const hairline = data?.hairline;
+  const positions = data?.positions ?? {};
   const ring = positions[pos ?? ''];
 
   return (
