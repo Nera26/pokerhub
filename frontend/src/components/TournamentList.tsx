@@ -4,7 +4,7 @@ import { Tournament } from '@/hooks/useLobbyData';
 import TournamentCard, {
   type TournamentStatus,
 } from '@/app/components/tournaments/TournamentCard';
-import VirtualizedSection from '@/components/VirtualizedSection';
+import LobbyList from '@/components/LobbyList';
 
 export interface TournamentListProps<T extends Tournament> {
   tournaments: T[];
@@ -34,17 +34,13 @@ export default function TournamentList<T extends Tournament>({
   };
 
   return (
-    <VirtualizedSection
+    <LobbyList<T>
       id="tournaments-panel"
       aria-labelledby="tab-tournaments"
       hidden={hidden}
       title="Tournaments"
       items={tournaments}
-      listProps={{
-        estimateSize: 280,
-        className: 'h-96 overflow-auto',
-        testId: 'tournaments-list',
-      }}
+      estimateSize={280}
       renderItem={(t, style) => (
         <li key={t.id} style={style} className="mb-4">
           <TournamentCard

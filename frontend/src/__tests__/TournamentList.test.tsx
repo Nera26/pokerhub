@@ -21,5 +21,7 @@ describe('TournamentList', () => {
     render(<TournamentList tournaments={tournaments} hidden={false} />);
 
     expect(await screen.findByText('$10')).toBeInTheDocument();
+    const listContainer = screen.getByRole('list').parentElement as HTMLElement;
+    expect(listContainer).toHaveAttribute('data-virtualized', 'false');
   });
 });
