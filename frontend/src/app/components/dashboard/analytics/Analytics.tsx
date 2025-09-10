@@ -26,7 +26,11 @@ import type {
   AuditLogType,
   LogTypeClasses,
 } from '@shared/types';
-import { fetchLogTypeClasses } from '@/lib/api/analytics';
+import {
+  fetchLogTypeClasses,
+  fetchErrorCategories,
+  type ErrorCategoriesResponse,
+} from '@/lib/api/analytics';
 import useToasts from '@/hooks/useToasts';
 import { exportCsv } from '@/lib/exportCsv';
 
@@ -58,6 +62,14 @@ export default function Analytics() {
   const logs = data?.logs ?? [];
   const { data: summary } = useAuditSummary();
   const { data: metrics, isLoading: metricsLoading } = useDashboardMetrics();
+  const {
+    data: errorCategories,
+    isLoading: errorCategoriesLoading,
+    isError: errorCategoriesError,
+  } = useQuery<ErrorCategoriesResponse>({
+    queryKey: ['error-categories'],
+    queryFn: fetchErrorCategories,
+  });
   const { toasts, pushToast } = useToasts();
   const rebuild = useMutation({
     mutationFn: () => rebuildLeaderboard(),
@@ -196,10 +208,15 @@ export default function Analytics() {
         ) : (
           <ActivityChart data={metrics?.activity} showContainer />
         )}
-        {metricsLoading ? (
-          <CenteredMessage>Loading metrics...</CenteredMessage>
+        {errorCategoriesLoading ? (
+          <CenteredMessage>Loading error categories...</CenteredMessage>
+        ) : errorCategoriesError ? (
+          <CenteredMessage>Failed to load error categories</CenteredMessage>
         ) : (
-          <ErrorChart data={metrics?.errors} />
+          <ErrorChart
+            labels={errorCategories?.labels}
+            data={errorCategories?.counts}
+          />
         )}
       </section>
 

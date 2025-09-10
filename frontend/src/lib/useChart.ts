@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import type { DependencyList } from 'react';
 import type { Chart, ChartConfiguration, ChartType } from 'chart.js';
 
@@ -32,7 +32,7 @@ export function useChart(
   return { ref, ready };
 }
 
-interface ChartColors {
+export interface ChartColors {
   accent: string;
   border: string;
   text: string;
@@ -42,10 +42,17 @@ interface ChartColors {
 export function buildChartConfig<TType extends ChartType>(
   builder: (colors: ChartColors) => ChartConfiguration<TType>,
 ): ChartConfiguration<TType> {
-  const root = getComputedStyle(document.documentElement);
-  const accent = root.getPropertyValue('--color-accent-yellow').trim();
-  const border = root.getPropertyValue('--color-border-dark').trim();
-  const text = root.getPropertyValue('--color-text-secondary').trim();
+  const getVar = (name: string, fallback: string) => {
+    if (typeof window === 'undefined') return fallback;
+    const v = getComputedStyle(document.documentElement)
+      .getPropertyValue(name)
+      .trim();
+    return v || fallback;
+  };
+
+  const accent = getVar('--color-accent-yellow', '#f5c518');
+  const border = getVar('--color-border-dark', '#333333');
+  const text = getVar('--color-text-secondary', '#9aa0a6');
 
   const hexToRgba = (hex: string, alpha: number) => {
     const r = parseInt(hex.slice(1, 3), 16);
@@ -77,19 +84,53 @@ export function buildChartConfig<TType extends ChartType>(
     plugins: mergedPlugins,
   };
 
+  // Apply axis styling for non-doughnut charts
   if (config.type !== 'doughnut') {
     const baseScales = {
       y: { grid: { color: border }, ticks: { color: text } },
       x: { grid: { color: border }, ticks: { color: text } },
     };
 
-    options.scales = {
+    (options as any).scales = {
       ...baseScales,
       ...config.options?.scales,
-      y: { ...baseScales.y, ...(config.options?.scales?.y ?? {}) },
-      x: { ...baseScales.x, ...(config.options?.scales?.x ?? {}) },
-    } as any;
+      y: { ...baseScales.y, ...(config.options?.scales as any)?.y },
+      x: { ...baseScales.x, ...(config.options?.scales as any)?.x },
+    };
   }
 
   return { ...config, options };
+}
+
+/**
+ * Convenience hook for a doughnut "error distribution" chart.
+ * Uses CSS variables for colors and sets legend to bottom.
+ */
+export function useErrorChart(labels: string[], data: number[]) {
+  const config = useMemo(
+    () =>
+      buildChartConfig<'doughnut'>(() => ({
+        type: 'doughnut',
+        data: {
+          labels,
+          datasets: [
+            {
+              data,
+              backgroundColor: [
+                'var(--color-danger-red)',
+                'var(--color-accent-yellow)',
+                'var(--color-accent-blue)',
+                'var(--color-accent-green)',
+              ],
+            },
+          ],
+        },
+        options: {
+          plugins: { legend: { position: 'bottom' } },
+        },
+      })),
+    [labels, data],
+  );
+
+  return useChart(config, [config]);
 }
