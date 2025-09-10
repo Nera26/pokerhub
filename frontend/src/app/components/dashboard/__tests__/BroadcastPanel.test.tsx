@@ -1,12 +1,15 @@
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { renderWithClient } from './renderWithClient';
 import BroadcastPanel from '../BroadcastPanel';
-import { fetchMessages, sendBroadcast } from '@/lib/api/messages';
+import { fetchMessages } from '@/lib/api/messages';
+import { sendBroadcast } from '@/lib/api/broadcasts';
 import useBroadcastTypes from '@/hooks/useBroadcastTypes';
 
 jest.mock('@/hooks/useApiError', () => ({ useApiError: () => {} }));
 jest.mock('@/lib/api/messages', () => ({
   fetchMessages: jest.fn(),
+}));
+jest.mock('@/lib/api/broadcasts', () => ({
   sendBroadcast: jest.fn(),
 }));
 jest.mock('@/hooks/useBroadcastTypes', () => ({
@@ -17,6 +20,7 @@ jest.mock('@/hooks/useBroadcastTypes', () => ({
 const mockUseBroadcastTypes = useBroadcastTypes as jest.Mock;
 
 beforeEach(() => {
+  jest.clearAllMocks();
   mockUseBroadcastTypes.mockReturnValue({
     data: {
       types: {
