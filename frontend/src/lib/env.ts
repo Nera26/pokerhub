@@ -14,11 +14,31 @@ const envSchema = z
       .enum(['error', 'warn', 'info', 'debug'])
       .default('info'),
   })
+  .refine(
+    (env) =>
+      env.NODE_ENV === 'development' ||
+      env.NEXT_PUBLIC_BASE_URL ||
+      env.VERCEL_URL,
+    {
+      message:
+        'NEXT_PUBLIC_BASE_URL or VERCEL_URL is required when NODE_ENV is not development',
+      path: ['NEXT_PUBLIC_BASE_URL'],
+    },
+  )
+  .refine(
+    (env) =>
+      env.NODE_ENV === 'development' ||
+      env.NEXT_PUBLIC_SOCKET_URL ||
+      env.NEXT_PUBLIC_BASE_URL ||
+      env.VERCEL_URL,
+    {
+      message:
+        'NEXT_PUBLIC_SOCKET_URL is required when NODE_ENV is not development',
+      path: ['NEXT_PUBLIC_SOCKET_URL'],
+    },
+  )
   .transform((env) => ({
     ...env,
-    NEXT_PUBLIC_SOCKET_URL:
-      env.NEXT_PUBLIC_SOCKET_URL ?? 'http://localhost:4000',
-    NEXT_PUBLIC_BASE_URL: env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000',
     IS_E2E: env.NEXT_PUBLIC_E2E === '1',
   }));
 

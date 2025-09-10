@@ -24,19 +24,25 @@ describe('env validation', () => {
     );
   });
 
-  it('defaults NEXT_PUBLIC_BASE_URL when missing outside development', async () => {
+  it('throws if NEXT_PUBLIC_BASE_URL and VERCEL_URL are missing outside development', async () => {
     (process.env as Record<string, string | undefined>).NODE_ENV = 'production';
     delete (process.env as Record<string, string | undefined>)
       .NEXT_PUBLIC_BASE_URL;
-    const mod = await import('../lib/env');
-    expect(mod.env.NEXT_PUBLIC_BASE_URL).toBe('http://localhost:3000');
+    delete (process.env as Record<string, string | undefined>).VERCEL_URL;
+    (process.env as Record<string, string | undefined>).NEXT_PUBLIC_SOCKET_URL =
+      'http://localhost:4000';
+    await expect(import('../lib/env')).rejects.toThrow(/NEXT_PUBLIC_BASE_URL/);
   });
 
-  it('defaults NEXT_PUBLIC_SOCKET_URL when missing outside development', async () => {
+  it('throws if NEXT_PUBLIC_SOCKET_URL cannot be derived', async () => {
     (process.env as Record<string, string | undefined>).NODE_ENV = 'production';
     delete (process.env as Record<string, string | undefined>)
       .NEXT_PUBLIC_SOCKET_URL;
-    const mod = await import('../lib/env');
-    expect(mod.env.NEXT_PUBLIC_SOCKET_URL).toBe('http://localhost:4000');
+    delete (process.env as Record<string, string | undefined>)
+      .NEXT_PUBLIC_BASE_URL;
+    delete (process.env as Record<string, string | undefined>).VERCEL_URL;
+    await expect(import('../lib/env')).rejects.toThrow(
+      /NEXT_PUBLIC_SOCKET_URL/,
+    );
   });
 });
