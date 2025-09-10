@@ -13,27 +13,44 @@ import { Logger } from '@nestjs/common';
 import { Account as WalletAccount } from '../wallet/account.entity';
 import { JournalEntry } from '../wallet/journal-entry.entity';
 
+function makeService({
+  country,
+  blocked,
+  sanctioned,
+  pepRepo,
+}: {
+  country: string;
+  blocked?: string[];
+  sanctioned?: string[];
+  pepRepo?: Partial<Repository<Pep>>;
+}): KycService {
+  const provider: CountryProvider = {
+    getCountry: () => Promise.resolve(country),
+  };
+  const config =
+    blocked !== undefined || sanctioned !== undefined
+      ? ({
+          get: (key: string) =>
+            key === 'kyc.blockedCountries'
+              ? blocked ?? []
+              : key === 'kyc.sanctionedNames'
+                ? sanctioned ?? []
+                : undefined,
+        } as Partial<ConfigService>)
+      : undefined;
+  return new KycService(
+    {} as unknown as Repository<Account>,
+    provider,
+    {} as unknown as Repository<KycVerification>,
+    pepRepo as Repository<Pep>,
+    config as ConfigService,
+    undefined,
+  );
+}
+
 describe('KycService common', () => {
   it('blocks users from restricted countries', async () => {
-    const provider: CountryProvider = {
-      getCountry: () => Promise.resolve('US'),
-    };
-    const config: Partial<ConfigService> = {
-      get: (key: string) =>
-        key === 'kyc.blockedCountries'
-          ? ['US']
-          : key === 'kyc.sanctionedNames'
-            ? []
-            : undefined,
-    };
-    const service = new KycService(
-      {} as unknown as Repository<Account>,
-      provider,
-      {} as unknown as Repository<KycVerification>,
-      undefined as unknown as Repository<Pep>,
-      config as ConfigService,
-      undefined,
-    );
+    const service = makeService({ country: 'US', blocked: ['US'], sanctioned: [] });
     await service.onModuleInit();
     await expect(
       service.runChecks('good', '1.1.1.1', '1990-01-01'),
@@ -41,25 +58,11 @@ describe('KycService common', () => {
   });
 
   it('blocks sanctioned names', async () => {
-    const provider: CountryProvider = {
-      getCountry: () => Promise.resolve('GB'),
-    };
-    const config: Partial<ConfigService> = {
-      get: (key: string) =>
-        key === 'kyc.blockedCountries'
-          ? []
-          : key === 'kyc.sanctionedNames'
-            ? ['Bad Actor']
-            : undefined,
-    };
-    const service = new KycService(
-      {} as unknown as Repository<Account>,
-      provider,
-      {} as unknown as Repository<KycVerification>,
-      undefined as unknown as Repository<Pep>,
-      config as ConfigService,
-      undefined,
-    );
+    const service = makeService({
+      country: 'GB',
+      blocked: [],
+      sanctioned: ['Bad Actor'],
+    });
     await service.onModuleInit();
     await expect(
       service.runChecks('Bad Actor', '1.1.1.1', '1990-01-01'),
@@ -67,25 +70,7 @@ describe('KycService common', () => {
   });
 
   it('blocks underage users', async () => {
-    const provider: CountryProvider = {
-      getCountry: () => Promise.resolve('GB'),
-    };
-    const config: Partial<ConfigService> = {
-      get: (key: string) =>
-        key === 'kyc.blockedCountries'
-          ? []
-          : key === 'kyc.sanctionedNames'
-            ? []
-            : undefined,
-    };
-    const service = new KycService(
-      {} as unknown as Repository<Account>,
-      provider,
-      {} as unknown as Repository<KycVerification>,
-      undefined as unknown as Repository<Pep>,
-      config as ConfigService,
-      undefined,
-    );
+    const service = makeService({ country: 'GB', blocked: [], sanctioned: [] });
     await service.onModuleInit();
     await expect(
       service.runChecks('Young User', '1.1.1.1', '2010-01-01'),
@@ -93,30 +78,17 @@ describe('KycService common', () => {
   });
 
   it('blocks politically exposed persons', async () => {
-    const provider: CountryProvider = {
-      getCountry: () => Promise.resolve('GB'),
-    };
-    const config: Partial<ConfigService> = {
-      get: (key: string) =>
-        key === 'kyc.blockedCountries'
-          ? []
-          : key === 'kyc.sanctionedNames'
-            ? []
-            : undefined,
-    };
     const pepRepo: Partial<Repository<Pep>> = {
       findOneBy: jest
         .fn()
         .mockResolvedValue({ id: '1', name: 'famous politician' } as Pep),
     };
-    const service = new KycService(
-      {} as unknown as Repository<Account>,
-      provider,
-      {} as unknown as Repository<KycVerification>,
-      pepRepo as Repository<Pep>,
-      config as ConfigService,
-      undefined,
-    );
+    const service = makeService({
+      country: 'GB',
+      blocked: [],
+      sanctioned: [],
+      pepRepo,
+    });
     await service.onModuleInit();
     await expect(
       service.runChecks('Famous Politician', '1.1.1.1', '1990-01-01'),
@@ -124,28 +96,15 @@ describe('KycService common', () => {
   });
 
   it('allows non-politically exposed persons', async () => {
-    const provider: CountryProvider = {
-      getCountry: () => Promise.resolve('GB'),
-    };
-    const config: Partial<ConfigService> = {
-      get: (key: string) =>
-        key === 'kyc.blockedCountries'
-          ? []
-          : key === 'kyc.sanctionedNames'
-            ? []
-            : undefined,
-    };
     const pepRepo: Partial<Repository<Pep>> = {
       findOneBy: jest.fn().mockResolvedValue(null),
     };
-    const service = new KycService(
-      {} as unknown as Repository<Account>,
-      provider,
-      {} as unknown as Repository<KycVerification>,
-      pepRepo as Repository<Pep>,
-      config as ConfigService,
-      undefined,
-    );
+    const service = makeService({
+      country: 'GB',
+      blocked: [],
+      sanctioned: [],
+      pepRepo,
+    });
     await service.onModuleInit();
     await expect(
       service.runChecks('Average Joe', '1.1.1.1', '1990-01-01'),
@@ -153,25 +112,11 @@ describe('KycService common', () => {
   });
 
   it('loads restrictions on module init', async () => {
-    const provider: CountryProvider = {
-      getCountry: () => Promise.resolve('GB'),
-    };
-    const config: Partial<ConfigService> = {
-      get: (key: string) =>
-        key === 'kyc.blockedCountries'
-          ? ['US']
-          : key === 'kyc.sanctionedNames'
-            ? ['Bad Actor']
-            : undefined,
-    };
-    const service = new KycService(
-      {} as unknown as Repository<Account>,
-      provider,
-      {} as unknown as Repository<KycVerification>,
-      undefined as unknown as Repository<Pep>,
-      config as ConfigService,
-      undefined,
-    );
+    const service = makeService({
+      country: 'GB',
+      blocked: ['US'],
+      sanctioned: ['Bad Actor'],
+    });
     await expect(
       service.runChecks('Bad Actor', '1.1.1.1', '1990-01-01'),
     ).resolves.toEqual({ country: 'GB' });
@@ -182,20 +127,10 @@ describe('KycService common', () => {
   });
 
   it('falls back to empty lists when config missing', async () => {
-    const provider: CountryProvider = {
-      getCountry: () => Promise.resolve('US'),
-    };
     const warn = jest
       .spyOn(Logger.prototype, 'warn')
       .mockImplementation(() => {});
-    const service = new KycService(
-      {} as unknown as Repository<Account>,
-      provider,
-      {} as unknown as Repository<KycVerification>,
-      undefined as unknown as Repository<Pep>,
-      undefined,
-      undefined,
-    );
+    const service = makeService({ country: 'US' });
     await service.onModuleInit();
     const result = await service.runChecks(
       'Bad Actor',
