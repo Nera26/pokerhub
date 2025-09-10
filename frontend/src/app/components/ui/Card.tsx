@@ -1,6 +1,9 @@
-import React from "react";
+import React from 'react';
 
-export function Card({ className = "", ...props }: React.HTMLAttributes<HTMLDivElement>) {
+export function Card({
+  className = '',
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       {...props}
@@ -9,15 +12,17 @@ export function Card({ className = "", ...props }: React.HTMLAttributes<HTMLDivE
   );
 }
 
-export function CardHeader({ className = "", ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div {...props} className={`p-6 border-b border-dark ${className}`} />;
-}
-
-export function CardTitle({ className = "", ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
+export function CardTitle({
+  className = '',
+  ...props
+}: React.HTMLAttributes<HTMLHeadingElement>) {
   return <h3 {...props} className={`text-xl font-bold ${className}`} />;
 }
 
-export function CardContent({ className = "", ...props }: React.HTMLAttributes<HTMLDivElement>) {
+export function CardContent({
+  className = '',
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
   return <div {...props} className={`p-6 ${className}`} />;
 }
 
