@@ -19,6 +19,7 @@ import { useActiveTables } from '@/hooks/useActiveTables';
 import { useActivity } from '@/hooks/useActivity';
 import MetricCard from './MetricCard';
 import BroadcastPanel from './BroadcastPanel';
+import Messages from './Messages';
 import DashboardTransactionHistory from './transactions/TransactionHistory';
 import WalletReconcileMismatches from './WalletReconcileMismatches';
 import CenteredMessage from '@/components/CenteredMessage';
@@ -292,7 +293,10 @@ export default function Dashboard() {
 
         {/* Messages & Broadcast */}
         <Card title="Messages &amp; Broadcast">
-          <BroadcastPanel />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Messages />
+            <BroadcastPanel />
+          </div>
         </Card>
         {isAdmin && (
           <Card title="Wallet Reconcile Mismatches">
