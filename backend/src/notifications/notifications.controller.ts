@@ -10,7 +10,11 @@ import {
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 import { AuthGuard } from '../auth/auth.guard';
-import { StatusResponse, UnreadCountResponse } from '@shared/types';
+import {
+  StatusResponse,
+  UnreadCountResponse,
+  NotificationsResponseSchema,
+} from '@shared/types';
 import type { Request } from 'express';
 
 @ApiTags('notifications')
@@ -24,7 +28,11 @@ export class NotificationsController {
   @ApiResponse({ status: 200, description: 'Notifications list' })
   async getAll(@Req() req: Request) {
     const notifications = await this.notifications.findForUser(req.userId);
-    return { notifications };
+    const formatted = notifications.map((n) => ({
+      ...n,
+      timestamp: n.timestamp.toISOString(),
+    }));
+    return NotificationsResponseSchema.parse({ notifications: formatted });
   }
 
   @Get('unread')
