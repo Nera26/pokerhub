@@ -7,7 +7,7 @@ import { useState } from 'react';
 
 export default function BroadcastPanel() {
   const { data, isLoading, error } = useQuery({
-    queryKey: ['adminMessages'],
+    queryKey: ['admin-messages'],
     queryFn: fetchMessages,
   });
 

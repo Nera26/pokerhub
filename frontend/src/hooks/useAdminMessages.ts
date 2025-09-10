@@ -2,10 +2,9 @@
 
 import { fetchMessages } from '@/lib/api/messages';
 import type { AdminMessagesResponse } from '@shared/types';
-import { createAdminQuery } from './useAdminQuery';
+import { createAdminResource } from './useAdminResource';
 
-export const useAdminMessages = createAdminQuery<AdminMessagesResponse>(
-  'adminMessages',
+export const useAdminMessages = createAdminResource<AdminMessagesResponse>(
+  'admin-messages',
   fetchMessages,
-  'admin messages',
 );
