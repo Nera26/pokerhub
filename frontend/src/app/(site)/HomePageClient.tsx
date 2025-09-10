@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { TopCTAs, GameTabs, HomeLoadingSkeleton } from '../components/home';
 import {
@@ -16,15 +16,13 @@ import type { GameType } from '@shared/types';
 import type { CashGameListProps } from '../components/home/CashGameList';
 import { type TournamentListProps } from '@/components/TournamentList';
 import { registerTournament } from '@/lib/api/lobby';
+import useChat from '@/hooks/useChat';
+import ChatWidget from '../components/common/chat/ChatWidget';
 
 interface TournamentWithBreak extends Tournament {
   nextBreak?: string;
   breakDurationMs?: number;
 }
-
-const ChatPlaceholder = () => (
-  <div className="fixed bottom-4 right-4 h-12 w-12 rounded-full bg-card-bg animate-pulse" />
-);
 
 const CashGameListDefault = dynamic<CashGameListProps>(
   () => import('../components/home/CashGameList'),
@@ -81,23 +79,9 @@ export function HomePageClient({
     return <TournamentList {...props} />;
   };
   const [gameType, setGameType] = useState<GameType>('texas');
-  const [Chat, setChat] = useState<React.ComponentType | null>(null);
   const { toasts, pushToast } = useToasts();
   const [registering, setRegistering] = useState(false);
-
-  useEffect(() => {
-    const load = () =>
-      import('../components/common/chat/ChatWidget').then((mod) =>
-        setChat(() => mod.default),
-      );
-    if (typeof window !== 'undefined') {
-      if ('requestIdleCallback' in window) {
-        (window as Window & typeof globalThis).requestIdleCallback(load);
-      } else {
-        setTimeout(load, 1);
-      }
-    }
-  }, []);
+  const { messages, send } = useChat();
 
   const {
     data: tables,
@@ -127,7 +111,7 @@ export function HomePageClient({
     return (
       <>
         <HomeLoadingSkeleton />
-        {Chat ? <Chat /> : <ChatPlaceholder />}
+        <ChatWidget messages={messages} onSend={send} />
       </>
     );
   }
@@ -173,7 +157,7 @@ export function HomePageClient({
           <InlineError message={tournamentErrorMessage} />
         )}
       </main>
-      {Chat ? <Chat /> : <ChatPlaceholder />}
+      <ChatWidget messages={messages} onSend={send} />
       {toasts.map((t) => (
         <ToastNotification
           key={t.id}
