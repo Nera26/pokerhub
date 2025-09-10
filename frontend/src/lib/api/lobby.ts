@@ -77,28 +77,30 @@ export async function fetchCTAs({
   return fetchLobbyData<CTA[]>('ctas', z.array(CTASchema), { signal });
 }
 
-export async function createCTA(
+async function mutateCTA(
+  id: string | null,
   cta: CTA,
   { signal }: { signal?: AbortSignal } = {},
 ): Promise<CTA> {
-  return apiClient('/api/ctas', CTASchema, {
-    method: 'POST',
-    body: JSON.stringify(cta),
+  const url = id ? `/api/ctas/${id}` : '/api/ctas';
+  const method = id ? 'PUT' : 'POST';
+  return apiClient(url, CTASchema, {
+    method,
+    body: cta,
     signal,
   });
 }
 
-export async function updateCTA(
+export const createCTA = (
+  cta: CTA,
+  opts?: { signal?: AbortSignal },
+): Promise<CTA> => mutateCTA(null, cta, opts);
+
+export const updateCTA = (
   id: string,
   cta: CTA,
-  { signal }: { signal?: AbortSignal } = {},
-): Promise<CTA> {
-  return apiClient(`/api/ctas/${id}`, CTASchema, {
-    method: 'PUT',
-    body: JSON.stringify(cta),
-    signal,
-  });
-}
+  opts?: { signal?: AbortSignal },
+): Promise<CTA> => mutateCTA(id, cta, opts);
 
 export async function fetchTournamentDetails(
   id: string,
