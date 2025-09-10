@@ -1,23 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { useIban, useIbanHistory } from '@/hooks/wallet';
+import { useIban, useIbanHistory, useUpdateIban } from '@/hooks/wallet';
 import IBANManagerModal from '../modals/IBANManagerModal';
-import { updateIban } from '@/lib/api/wallet';
 
 export default function IbanManager() {
   const ibanQuery = useIban();
   const historyQuery = useIbanHistory();
+  const updateIbanMutation = useUpdateIban();
   const [open, setOpen] = useState(false);
   const [masked, setMasked] = useState(true);
 
-  const handleUpdate = async (
-    iban: string,
-    holder: string,
-    notes: string,
-  ) => {
-    await updateIban(iban, holder, notes);
-    await Promise.all([ibanQuery.refetch(), historyQuery.refetch()]);
+  const handleUpdate = async (iban: string, holder: string, notes: string) => {
+    await updateIbanMutation.mutateAsync({ iban, holder, notes });
     setOpen(false);
   };
 
@@ -44,4 +39,3 @@ export default function IbanManager() {
     </>
   );
 }
-
