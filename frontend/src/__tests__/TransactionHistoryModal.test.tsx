@@ -12,7 +12,7 @@ import TransactionHistoryModal, {
   PerformedBy,
 } from '@/app/components/modals/TransactionHistoryModal';
 import TransactionHistoryTable from '@/app/components/common/TransactionHistoryTable';
-import type { AdminTransactionEntry } from '@shared/types';
+import type { AdminTransactionEntry } from '@shared/transactions.schema';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   fetchTransactionFilters,
