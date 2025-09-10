@@ -43,3 +43,17 @@ Automated rollback uses `helm rollback` when SLOs are breached. To intervene man
    kubectl -n "$NAMESPACE" edit virtualservice api
    ```
 4. Releases are annotated with `pokerhub.io/release: <release>-<revision>` for traceability.
+
+## Database migrations
+
+Run pending TypeORM migrations before promoting the release:
+
+```bash
+npm run migration:run --prefix backend
+```
+
+If a rollback is required, revert the last migration:
+
+```bash
+npx typeorm-ts-node-commonjs migration:revert -d backend/src/database/data-source.ts
+```
