@@ -1,13 +1,16 @@
 'use client';
 
 import { createQueryHook } from './useApiQuery';
-import { fetchTableTheme } from '@/lib/api/config';
-import type { TableThemeResponse } from '@shared/types';
+import {
+  TableThemeResponseSchema,
+  type TableThemeResponse,
+} from '@shared/types';
 import { TABLE_THEME } from '@shared/config/tableTheme';
 
 const useTableThemeQuery = createQueryHook<TableThemeResponse>(
   'table-theme',
-  (_client, opts) => fetchTableTheme({ signal: opts.signal }),
+  (client, opts) =>
+    client('/api/config/table-theme', TableThemeResponseSchema, opts),
   'table theme',
   { staleTime: Infinity },
 );

@@ -12,15 +12,11 @@ export class AppService {
     @Inject('API_CONTRACT_VERSION') private readonly version: string,
   ) {}
 
-  getHello(): string {
-    return 'Hello World!';
-  }
-
   getStatus(): ServiceStatusResponse {
-    return withSpan('AppService.getStatus', (span) => {
+    return withSpan('AppService.getStatus', (span): ServiceStatusResponse => {
       statusCounter.add(1);
       span.setStatus({ code: SpanStatusCode.OK });
       return { status: 'ok', contractVersion: this.version };
-    });
+    }) as ServiceStatusResponse;
   }
 }

@@ -19,8 +19,10 @@ export default function TimerRing({
 }: TimerRingProps) {
   const [timeLeft, setTimeLeft] = useState(player.timeLeft ?? 0);
   const totalTimeRef = useRef(player.timeLeft ?? 0);
-  const { data: theme } = useTableTheme();
-  const { positions } = theme;
+
+  // Theme: guard against undefined during fetch
+  const { data } = useTableTheme();
+  const positions = data?.positions ?? {};
 
   useEffect(() => {
     totalTimeRef.current = player.timeLeft ?? 0;
@@ -29,30 +31,30 @@ export default function TimerRing({
 
   useEffect(() => {
     if (!player.isActive || (player.timeLeft ?? 0) <= 0) return;
+
     const start = getServerTime();
     const deadline = start + (player.timeLeft ?? 0);
-    let raf: number;
-    const tick = () => {
-      const remaining = Math.max(deadline - getServerTime(), 0);
+
+    let raf = requestAnimationFrame(function tick() {
+      const now = getServerTime();
+      const remaining = Math.max(deadline - now, 0);
       setTimeLeft(remaining);
-      if (remaining > 0) {
-        raf = requestAnimationFrame(tick);
-      }
-    };
-    raf = requestAnimationFrame(tick);
+      if (remaining > 0) raf = requestAnimationFrame(tick);
+    });
+
     return () => cancelAnimationFrame(raf);
   }, [player.isActive, player.timeLeft]);
 
   const totalTime = totalTimeRef.current;
-  const progress = totalTime > 0 ? timeLeft / totalTime : 1;
+  const progress = totalTime > 0 ? Math.max(0, Math.min(1, timeLeft / totalTime)) : 1;
 
   const ring = positions[player.pos ?? ''];
   const baseRingColor = ring?.color ?? 'rgba(255,255,255,0.4)';
   const ringColor = player.isActive ? 'rgba(255,255,255,0.9)' : baseRingColor;
 
   const avatarRingStyle: CSSProperties = {
-    // @ts-expect-error These may be read by PlayerAvatar
-    '--ring-color': ringColor,
+    // Expose CSS var consumed by PlayerAvatar's SVG ring
+    ...( { ['--ring-color']: ringColor } as any ),
   };
 
   const progressStyle: CSSProperties = {
@@ -72,7 +74,7 @@ export default function TimerRing({
           'transition-transform',
           player.isActive ? 'scale-105' : '',
           winPulse ? 'winner-pulse' : '',
-        ].join(' ')}
+        ].filter(Boolean).join(' ')}
         avatarClass={avatarClass}
         avatarRingStyle={avatarRingStyle}
       />

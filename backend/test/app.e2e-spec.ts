@@ -53,15 +53,31 @@ jest.mock('../src/notifications/notifications.module', () => ({
 jest.mock('../src/auth/auth.module', () => ({
   AuthModule: class AuthModule {},
 }));
+jest.mock('../src/auth/auth.guard', () => ({
+  AuthGuard: class AuthGuard {},
+}));
 jest.mock('../src/feature-flags/feature-flags.module', () => ({
   FeatureFlagsModule: class FeatureFlagsModule {},
 }));
 jest.mock('../src/metrics/metrics.module', () => ({
   MetricsModule: class MetricsModule {},
 }));
+jest.mock('../src/broadcasts/broadcasts.module', () => ({
+  BroadcastsModule: class BroadcastsModule {},
+}));
+jest.mock('../src/tiers/tiers.module', () => ({
+  TiersModule: class TiersModule {},
+}));
+jest.mock('../src/ctas/ctas.module', () => ({
+  CtasModule: class CtasModule {},
+}));
+jest.mock('../src/history/history.module', () => ({
+  HistoryModule: class HistoryModule {},
+}));
 import { AppModule } from './../src/app.module';
 import testDataSource from './utils/test-datasource';
 import { UserRepository } from './../src/users/user.repository';
+import { API_CONTRACT_VERSION } from '@shared/constants';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
@@ -95,16 +111,21 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/ (GET)', async () => {
-    await request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+  it('/status (GET)', async () => {
+    const res = await request(app.getHttpServer()).get('/status').expect(200);
+    expect(res.body).toEqual({
+      status: 'ok',
+      contractVersion: API_CONTRACT_VERSION,
+    });
   });
 
   it('applies security headers', async () => {
-    const res = await request(app.getHttpServer()).get('/');
-    expect(res.headers['content-security-policy']).toContain("default-src 'self'");
-    expect(res.headers['strict-transport-security']).toContain('max-age=31536000');
+    const res = await request(app.getHttpServer()).get('/status');
+    expect(res.headers['content-security-policy']).toContain(
+      "default-src 'self'",
+    );
+    expect(res.headers['strict-transport-security']).toContain(
+      'max-age=31536000',
+    );
   });
 });

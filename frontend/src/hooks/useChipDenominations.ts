@@ -1,11 +1,14 @@
 'use client';
 
 import { createQueryHook } from './useApiQuery';
-import { fetchChipDenominations } from '@/lib/api/config';
-import type { ChipDenominationsResponse } from '@shared/types';
+import {
+  ChipDenominationsResponseSchema,
+  type ChipDenominationsResponse,
+} from '@shared/types';
 
 export const useChipDenominations = createQueryHook<ChipDenominationsResponse>(
   'chip-denoms',
-  (_client, opts) => fetchChipDenominations({ signal: opts.signal }),
+  (client, opts) =>
+    client('/api/config/chips', ChipDenominationsResponseSchema, opts),
   'chip denominations',
 );
