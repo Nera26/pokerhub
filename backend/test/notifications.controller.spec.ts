@@ -1,4 +1,6 @@
+import { webcrypto } from 'crypto';
 process.env.JWT_SECRET = 'secret';
+(global as any).crypto = webcrypto;
 
 import { Test } from '@nestjs/testing';
 import type { INestApplication, ExecutionContext } from '@nestjs/common';
