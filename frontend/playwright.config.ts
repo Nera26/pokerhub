@@ -34,18 +34,30 @@ export default defineConfig({
       },
     },
   ],
-  webServer: {
-    command: 'npm run build && npm run start -- -p 3000',
-    url: 'http://127.0.0.1:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-    env: {
-      http_proxy: '',
-      https_proxy: '',
-      HTTP_PROXY: '',
-      HTTPS_PROXY: '',
-      NO_PROXY: 'localhost,127.0.0.1',
-      NEXT_PUBLIC_E2E: '1',
+  webServer: [
+    {
+      command: 'npm run start --prefix ../backend',
+      url: 'http://127.0.0.1:4000',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+      env: {
+        PORT: '4000',
+      },
     },
-  },
+    {
+      command: 'npm run build && npm run start -- -p 3000',
+      url: 'http://127.0.0.1:3000',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+      env: {
+        http_proxy: '',
+        https_proxy: '',
+        HTTP_PROXY: '',
+        HTTPS_PROXY: '',
+        NO_PROXY: 'localhost,127.0.0.1',
+        NEXT_PUBLIC_E2E: '1',
+        NEXT_PUBLIC_BASE_URL: 'http://127.0.0.1:4000',
+      },
+    },
+  ],
 });
