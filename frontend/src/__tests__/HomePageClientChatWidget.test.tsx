@@ -4,11 +4,12 @@ import { HomePageClient } from '@/app/(site)/HomePageClient';
 import { useTables, useTournaments, useCTAs } from '@/hooks/useLobbyData';
 
 jest.mock('@/hooks/useLobbyData');
-jest.mock('@/hooks/useChat', () => () => ({ messages: [], send: jest.fn() }));
 
-const ChatWidgetMock = () => <div data-testid="chat-widget" />;
-
-jest.mock('@/app/components/common/chat/ChatWidget', () => ChatWidgetMock);
+var ChatWidgetMock: jest.Mock;
+jest.mock('@/app/components/common/chat/ChatWidget', () => {
+  ChatWidgetMock = jest.fn(() => <div data-testid="chat-widget" />);
+  return { __esModule: true, default: ChatWidgetMock };
+});
 
 describe('HomePageClient chat widget', () => {
   it('renders immediately', () => {
@@ -44,5 +45,7 @@ describe('HomePageClient chat widget', () => {
     );
 
     expect(screen.getByTestId('chat-widget')).toBeInTheDocument();
+    expect(ChatWidgetMock).toHaveBeenCalled();
+    expect(ChatWidgetMock.mock.calls[0][0]).toEqual({});
   });
 });

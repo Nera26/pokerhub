@@ -9,7 +9,6 @@ jest.mock('@/lib/api/lobby');
 jest.mock('@/hooks/useApiError', () => ({
   useApiError: () => 'failed to register',
 }));
-jest.mock('@/hooks/useChat', () => () => ({ messages: [], send: jest.fn() }));
 jest.mock('@/app/components/common/chat/ChatWidget', () => () => <div />);
 
 function MockTournamentList({ onRegister }: any) {
