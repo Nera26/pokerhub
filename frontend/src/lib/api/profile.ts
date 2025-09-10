@@ -1,4 +1,4 @@
-import { apiClient, ApiError, handleResponse } from './client';
+import { apiClient, ApiError, fetchJson } from './client';
 import { getBaseUrl } from '@/lib/base-url';
 import { useAuthStore } from '@/app/store/authStore';
 import {
@@ -65,18 +65,15 @@ export function updateProfile(data: FormData): Promise<UserProfile> {
   return withProfileError(() => {
     const baseUrl = getBaseUrl();
     const token = useAuthStore.getState().token;
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-    return handleResponse(
-      fetch(`${baseUrl}/api/user/profile`, {
+    return fetchJson(
+      `${baseUrl}/api/user/profile`,
+      UserProfileSchema,
+      {
         method: 'PATCH',
         credentials: 'include',
-        headers,
         body: data,
-      }),
-      UserProfileSchema,
+      },
+      token ?? undefined,
     );
   }, 'Failed to update profile');
 }
