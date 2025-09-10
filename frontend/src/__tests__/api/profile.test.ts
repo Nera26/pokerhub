@@ -5,8 +5,9 @@ import {
   fetchMe,
   fetchUserProfile,
   updateProfile,
-} from './profile';
+} from '@/lib/api/profile';
 import { apiClient, type ApiError } from '@/lib/api/client';
+import { mockFetch } from '../utils/mockFetch';
 
 jest.mock('@/lib/api/client', () => {
   const actual = jest.requireActual('@/lib/api/client');
@@ -30,7 +31,7 @@ describe('profile API', () => {
         username: 'PlayerOne23',
         email: 'playerone23@example.com',
         avatarUrl: 'avatar.jpg',
-        bank: '\u2022\u2022\u2022\u2022 1234',
+        bank: '\\u2022\\u2022\\u2022\\u2022 1234',
         location: 'United States',
         joined: '2023-01-15T00:00:00.000Z',
         bio: 'Texas grinder',
@@ -62,7 +63,7 @@ describe('profile API', () => {
         username: 'PlayerOne23',
         email: 'playerone23@example.com',
         avatarUrl: 'avatar.jpg',
-        bank: '\u2022\u2022\u2022\u2022 1234',
+        bank: '\\u2022\\u2022\\u2022\\u2022 1234',
         location: 'United States',
         joined: '2023-01-15T00:00:00.000Z',
         bio: 'Texas grinder',
@@ -111,10 +112,6 @@ describe('profile API', () => {
   });
 
   describe('updateProfile', () => {
-    beforeEach(() => {
-      global.fetch = jest.fn();
-    });
-
     it('sends PATCH request and returns updated profile', async () => {
       const profile = {
         username: 'NewName',
@@ -127,18 +124,13 @@ describe('profile API', () => {
         experience: 42,
         balance: 100,
       };
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => profile,
-      });
+      mockFetch({ status: 200, payload: profile });
 
       const formData = new FormData();
       formData.append('username', 'NewName');
 
       await expect(updateProfile(formData)).resolves.toEqual(profile);
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(fetch).toHaveBeenCalledWith(
         'http://localhost:3000/api/user/profile',
         expect.objectContaining({
           method: 'PATCH',
@@ -148,7 +140,7 @@ describe('profile API', () => {
     });
 
     it('throws ApiError with prefixed message on failure', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
+      (fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,
         status: 500,
         statusText: 'Internal',
