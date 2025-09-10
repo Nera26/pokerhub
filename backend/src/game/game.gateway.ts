@@ -23,10 +23,9 @@ import { Repository } from 'typeorm';
 import { Hand } from '../database/entities/hand.entity';
 import { GameState } from '../database/entities/game-state.entity';
 
+import { GameActionSchema, type GameAction as WireGameAction } from '@shared/schemas/game';
 import {
-  GameActionSchema,
   GameStateSchema,
-  type GameAction as WireGameAction,
   type GameActionPayload,
   type GameState,
 } from '@shared/types';
