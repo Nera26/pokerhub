@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import ChatContainer from './ChatContainer';
 import useChatSocket from '@/hooks/useChatSocket';
+import type { Message } from './types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -13,7 +14,12 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
-export default function ChatWidget() {
+interface ChatWidgetProps {
+  messages?: Message[];
+  onSend?: (text: string) => void;
+}
+
+export default function ChatWidget(_props: ChatWidgetProps = {}) {
   const [open, setOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const { status, messages, sendMessage, retryMessage } = useChatSocket();

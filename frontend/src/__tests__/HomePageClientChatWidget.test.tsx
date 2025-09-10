@@ -4,13 +4,14 @@ import { HomePageClient } from '@/app/(site)/HomePageClient';
 import { useTables, useTournaments, useCTAs } from '@/hooks/useLobbyData';
 
 jest.mock('@/hooks/useLobbyData');
+jest.mock('@/hooks/useChat', () => () => ({ messages: [], send: jest.fn() }));
 
 const ChatWidgetMock = () => <div data-testid="chat-widget" />;
 
 jest.mock('@/app/components/common/chat/ChatWidget', () => ChatWidgetMock);
 
 describe('HomePageClient chat widget', () => {
-  it('renders after idle callback', async () => {
+  it('renders immediately', () => {
     (useTables as jest.Mock).mockReturnValue({
       data: [],
       error: null,
@@ -27,12 +28,6 @@ describe('HomePageClient chat widget', () => {
       isLoading: false,
     });
 
-    const callbacks: IdleRequestCallback[] = [];
-    (global as any).requestIdleCallback = (cb: IdleRequestCallback) => {
-      callbacks.push(cb);
-      return 1;
-    };
-
     const CashGameList = () => <div />;
     const TournamentList = () => <div />;
 
@@ -48,13 +43,6 @@ describe('HomePageClient chat widget', () => {
       </QueryClientProvider>,
     );
 
-    expect(screen.queryByTestId('chat-widget')).not.toBeInTheDocument();
-
-    callbacks.forEach((cb) =>
-      cb({ didTimeout: false, timeRemaining: () => 0 } as any),
-    );
-
-    expect(await screen.findByTestId('chat-widget')).toBeInTheDocument();
+    expect(screen.getByTestId('chat-widget')).toBeInTheDocument();
   });
 });
-

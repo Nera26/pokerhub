@@ -22,6 +22,8 @@ jest.mock('next/link', () => {
   LinkMock.displayName = 'LinkMock';
   return LinkMock;
 });
+jest.mock('@/hooks/useChat', () => () => ({ messages: [], send: jest.fn() }));
+jest.mock('@/app/components/common/chat/ChatWidget', () => () => <div />);
 
 Object.defineProperty(HTMLElement.prototype, 'getBoundingClientRect', {
   configurable: true,
