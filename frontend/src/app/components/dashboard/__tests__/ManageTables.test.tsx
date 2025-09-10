@@ -1,7 +1,6 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import ManageTables from '@/app/components/dashboard/ManageTables';
+import ManageTables from '../ManageTables';
 import {
   fetchTables,
   createTable,
@@ -9,6 +8,7 @@ import {
   deleteTable,
 } from '@/lib/api/table';
 import type { Table } from '@shared/types';
+import { renderWithClient } from './renderWithClient';
 
 jest.mock('@/lib/api/table', () => ({
   fetchTables: jest.fn(),
@@ -18,20 +18,15 @@ jest.mock('@/lib/api/table', () => ({
 }));
 
 describe('ManageTables', () => {
-  const mockFetchTables = fetchTables as jest.MockedFunction<typeof fetchTables>;
-  const mockCreateTable = createTable as jest.MockedFunction<typeof createTable>;
-  const mockUpdateTable = updateTable as jest.MockedFunction<typeof updateTable>;
-
-  function renderWithClient() {
-    const client = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    });
-    return render(
-      <QueryClientProvider client={client}>
-        <ManageTables />
-      </QueryClientProvider>,
-    );
-  }
+  const mockFetchTables = fetchTables as jest.MockedFunction<
+    typeof fetchTables
+  >;
+  const mockCreateTable = createTable as jest.MockedFunction<
+    typeof createTable
+  >;
+  const mockUpdateTable = updateTable as jest.MockedFunction<
+    typeof updateTable
+  >;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -39,16 +34,13 @@ describe('ManageTables', () => {
 
   it('submits form to create table', async () => {
     mockFetchTables.mockResolvedValueOnce([]);
-    renderWithClient();
+    renderWithClient(<ManageTables />);
 
     const openBtn = await screen.findByText(/create table/i);
     await userEvent.click(openBtn);
 
     await userEvent.type(screen.getByLabelText(/table name/i), 'My Table');
-    await userEvent.selectOptions(
-      screen.getByLabelText(/game type/i),
-      'omaha',
-    );
+    await userEvent.selectOptions(screen.getByLabelText(/game type/i), 'omaha');
     await userEvent.type(screen.getByLabelText(/small blind/i), '1');
     await userEvent.type(screen.getByLabelText(/big blind/i), '2');
     await userEvent.type(screen.getByLabelText(/starting stack/i), '100');
@@ -75,7 +67,7 @@ describe('ManageTables', () => {
   it('shows error when create table fails', async () => {
     mockFetchTables.mockResolvedValueOnce([]);
     mockCreateTable.mockRejectedValue(new Error('fail'));
-    renderWithClient();
+    renderWithClient(<ManageTables />);
 
     const openBtn = await screen.findByText(/create table/i);
     await userEvent.click(openBtn);
@@ -110,7 +102,7 @@ describe('ManageTables', () => {
       createdAgo: '1h',
     };
     mockFetchTables.mockResolvedValueOnce([table]);
-    renderWithClient();
+    renderWithClient(<ManageTables />);
 
     await waitFor(() => screen.getByText('Main'));
     await userEvent.click(screen.getByText(/update/i));
@@ -119,7 +111,9 @@ describe('ManageTables', () => {
     await userEvent.clear(nameInput);
     await userEvent.type(nameInput, 'Updated');
 
-    await userEvent.click(screen.getByRole('button', { name: /update table/i }));
+    await userEvent.click(
+      screen.getByRole('button', { name: /update table/i }),
+    );
 
     await waitFor(() =>
       expect(mockUpdateTable).toHaveBeenCalledWith(
@@ -142,11 +136,13 @@ describe('ManageTables', () => {
     };
     mockFetchTables.mockResolvedValueOnce([table]);
     mockUpdateTable.mockRejectedValue(new Error('fail'));
-    renderWithClient();
+    renderWithClient(<ManageTables />);
 
     await waitFor(() => screen.getByText('Main'));
     await userEvent.click(screen.getByText(/update/i));
-    await userEvent.click(screen.getByRole('button', { name: /update table/i }));
+    await userEvent.click(
+      screen.getByRole('button', { name: /update table/i }),
+    );
 
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent(
@@ -155,4 +151,3 @@ describe('ManageTables', () => {
     );
   });
 });
-
