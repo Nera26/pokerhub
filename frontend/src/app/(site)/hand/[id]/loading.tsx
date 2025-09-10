@@ -1,3 +1,27 @@
+'use client';
+
+import LoadingSection from '@/components/LoadingSection';
+import { fetchHandState } from '@/lib/api/hands';
+import { useQuery } from '@tanstack/react-query';
+import { useParams } from 'next/navigation';
+
 export default function LoadingHandPage() {
-  return <div className="p-4">Loading hand...</div>;
+  const { id } = useParams();
+  const { data } = useQuery({
+    queryKey: ['hand', id],
+    queryFn: () => fetchHandState(id as string, 0),
+    enabled: typeof id === 'string',
+  });
+
+  return (
+    <main className="container mx-auto px-4 py-6 text-text-primary">
+      {data && (
+        <>
+          <h1 className="text-xl font-bold mb-4">Hand {id}</h1>
+          <p className="mb-4">Pot: {data.pot}</p>
+        </>
+      )}
+      <LoadingSection />
+    </main>
+  );
 }
