@@ -30,7 +30,16 @@ jobs:
       - name: Check for unused exports
         run: npm run lint:unused
       - name: Detect duplicate code
-        run: npm run lint:dup
+        run: |
+          set -o pipefail
+          npm run lint:dup | tee jscpd-report.txt
+      - name: Upload duplicate report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: duplicate-report
+          path: jscpd-report.txt
+          if-no-files-found: ignore
       - run: npm test
       - run: npm test --prefix backend
       - run: npm test --prefix frontend

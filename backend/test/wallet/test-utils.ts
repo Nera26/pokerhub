@@ -1,5 +1,5 @@
-import { DataSource } from 'typeorm';
 import { createHmac, timingSafeEqual } from 'crypto';
+import { DataSource } from 'typeorm';
 import { createDataSource } from '../utils/pgMem';
 import { Account } from '../../src/wallet/account.entity';
 import { JournalEntry } from '../../src/wallet/journal-entry.entity';
@@ -15,7 +15,7 @@ import { MockRedis } from '../utils/mock-redis';
 import { ConfigService } from '@nestjs/config';
 import { WebhookController } from '../../src/wallet/webhook.controller';
 
-export async function createWalletTestContext() {
+export function createWalletServices(dataSource: DataSource) {
   const events: EventPublisher = { emit: jest.fn() } as any;
   const redis = new MockRedis();
 
@@ -43,14 +43,6 @@ export async function createWalletTestContext() {
     validate: jest.fn(),
     getDenialReason: jest.fn().mockResolvedValue(undefined),
   } as KycService;
-
-  const dataSource = await createDataSource([
-    Account,
-    JournalEntry,
-    Disbursement,
-    SettlementJournal,
-    PendingDeposit,
-  ]);
 
   const accountRepo = dataSource.getRepository(Account);
   const journalRepo = dataSource.getRepository(JournalEntry);
@@ -84,7 +76,6 @@ export async function createWalletTestContext() {
   });
 
   return {
-    dataSource,
     service,
     repos: {
       dataSource,
@@ -98,7 +89,19 @@ export async function createWalletTestContext() {
     provider,
     kyc,
     redis,
+    settleSvc,
   };
+}
+
+export async function createWalletTestContext() {
+  const dataSource = await createDataSource([
+    Account,
+    JournalEntry,
+    Disbursement,
+    SettlementJournal,
+    PendingDeposit,
+  ]);
+  return { dataSource, ...createWalletServices(dataSource) };
 }
 
 export async function createWalletWebhookContext() {

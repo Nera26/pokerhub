@@ -1,53 +1,22 @@
 import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
+import { createDataSource } from '../utils/pgMem';
 import { Account } from '../../src/wallet/account.entity';
 import { JournalEntry } from '../../src/wallet/journal-entry.entity';
 import { Disbursement } from '../../src/wallet/disbursement.entity';
 import { SettlementJournal } from '../../src/wallet/settlement-journal.entity';
-import { WalletService } from '../../src/wallet/wallet.service';
-import { SettlementService } from '../../src/wallet/settlement.service';
-import { EventPublisher } from '../../src/events/events.service';
-import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
-import { KycService } from '../../src/wallet/kyc.service';
-import { MockRedis } from '../utils/mock-redis';
 import type { Street } from '../../src/game/state-machine';
-
-function uuidSeq() {
-  let seq = 1;
-  return () => {
-    const id = seq.toString(16).padStart(32, '0');
-    seq++;
-    return `${id.slice(0,8)}-${id.slice(8,12)}-${id.slice(12,16)}-${id.slice(16,20)}-${id.slice(20)}`;
-  };
-}
+import { createWalletServices } from './test-utils';
 
 describe('Settlement crash recovery', () => {
   let dataSource: DataSource;
 
   beforeAll(async () => {
-    const db = newDb();
-    db.public.registerFunction({
-      name: 'version',
-      returns: 'text',
-      implementation: () => 'pg-mem',
-    });
-    db.public.registerFunction({
-      name: 'current_database',
-      returns: 'text',
-      implementation: () => 'test',
-    });
-    const nextUuid = uuidSeq();
-    db.public.registerFunction({
-      name: 'uuid_generate_v4',
-      returns: 'text',
-      implementation: () => nextUuid(),
-    });
-    dataSource = db.adapters.createTypeormDataSource({
-      type: 'postgres',
-      entities: [Account, JournalEntry, Disbursement, SettlementJournal],
-      synchronize: true,
-    }) as DataSource;
-    await dataSource.initialize();
+    dataSource = await createDataSource([
+      Account,
+      JournalEntry,
+      Disbursement,
+      SettlementJournal,
+    ]);
   });
 
   afterAll(async () => {
@@ -58,27 +27,8 @@ describe('Settlement crash recovery', () => {
   const street: Street = 'flop';
 
   function createServices() {
-    const accountRepo = dataSource.getRepository(Account);
-    const journalRepo = dataSource.getRepository(JournalEntry);
-    const disbRepo = dataSource.getRepository(Disbursement);
-    const settleRepo = dataSource.getRepository(SettlementJournal);
-    const events: EventPublisher = { emit: jest.fn() } as any;
-    const redis = new MockRedis();
-    const provider = { initiate3DS: jest.fn(), getStatus: jest.fn() } as unknown as PaymentProviderService;
-    const kyc = { validate: jest.fn().mockResolvedValue(undefined), isVerified: jest.fn().mockResolvedValue(true) } as unknown as KycService;
-    const settlementSvc = new SettlementService(settleRepo);
-    const walletSvc = new WalletService(
-      accountRepo,
-      journalRepo,
-      disbRepo,
-      settleRepo,
-      events,
-      redis,
-      provider,
-      kyc,
-      settlementSvc,
-    );
-    (walletSvc as any).enqueueDisbursement = jest.fn();
+    const { service: walletSvc, settleSvc: settlementSvc } =
+      createWalletServices(dataSource);
     return { walletSvc, settlementSvc };
   }
 
