@@ -22,12 +22,34 @@ const duration = __ENV.DURATION || defaultDuration;
 const BASE_URL = __ENV.BASE_URL || 'https://staging.pokerhub';
 const EXPECTED_DURATION = Number(__ENV.EXPECTED_DURATION || 60000);
 const PRIZE_POOL = Number(__ENV.PRIZE_POOL || 1000000);
-const PAYOUTS = (__ENV.PAYOUTS
-  ? __ENV.PAYOUTS.split(',').map(Number)
-  : [300000, 200000, 150000, 100000, 80000, 70000, 50000, 30000, 20000]);
-const STACKS = (__ENV.STACKS
-  ? __ENV.STACKS.split(',').map(Number)
-  : Array.from({ length: PAYOUTS.length }, (_, i) => PAYOUTS.length - i));
+function loadTournamentParams() {
+  if (__ENV.PAYOUTS && __ENV.STACKS) {
+    return {
+      payouts: __ENV.PAYOUTS.split(',').map(Number),
+      stacks: __ENV.STACKS.split(',').map(Number),
+    };
+  }
+
+  try {
+    const res = http.post(
+      `${BASE_URL}/tournaments/t1/prizes`,
+      JSON.stringify({ prizePool: PRIZE_POOL }),
+      { headers: { 'Content-Type': 'application/json' } },
+    );
+    const body = res.json();
+    const payouts = body?.payouts;
+    const stacks = body?.stacks;
+    if (!Array.isArray(payouts) || !Array.isArray(stacks)) {
+      throw new Error('missing payouts or stacks');
+    }
+    return { payouts: payouts.map(Number), stacks: stacks.map(Number) };
+  } catch (e) {
+    fail(`Failed to load tournament params: ${e.message}`);
+  }
+}
+
+const { payouts: PAYOUTS, stacks: STACKS } = loadTournamentParams();
+console.log(`Loaded payouts: ${PAYOUTS.join(',')} stacks: ${STACKS.join(',')}`);
 
 export const options = {
   scenarios: {
@@ -79,7 +101,17 @@ const HEAP_USED = new Trend('heap_used');
 const GC_PAUSE = new Trend('gc_pause_ms', true);
 const RUNTIME = new Trend('tournament_runtime', true);
 
-export { baseSetup as setup };
+export function setup() {
+  if (sockets > 0) {
+    try {
+      const data = baseSetup();
+      return { ...data };
+    } catch (e) {
+      console.error('socket proxy setup failed', e.message);
+    }
+  }
+  return { start: Date.now() };
+}
 
 export function teardown(data) {
   baseTeardown(data);
