@@ -7,6 +7,7 @@ import { useApiError } from '@/hooks/useApiError';
 import useBroadcastTypes from '@/hooks/useBroadcastTypes';
 import type { BroadcastType } from '@shared/types';
 import { useState } from 'react';
+import Link from 'next/link';
 
 export default function BroadcastPanel() {
   const { data, isLoading, error } = useQuery({
@@ -34,6 +35,12 @@ export default function BroadcastPanel() {
 
   return (
     <>
+      <Link
+        href="/admin/ctas"
+        className="block w-full bg-accent-yellow hover:brightness-110 text-black py-2 rounded-xl font-semibold text-center mb-4"
+      >
+        Manage CTAs
+      </Link>
       {isLoading ? (
         <div>Loading messages...</div>
       ) : error ? (
