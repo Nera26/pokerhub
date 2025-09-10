@@ -7,7 +7,7 @@ import {
   AuditLogsResponseSchema,
   AlertItem,
   AlertItemSchema,
-} from '../schemas/analytics';
+} from '@shared/schemas/analytics';
 import {
   SidebarItem,
   SidebarItemsResponseSchema,
