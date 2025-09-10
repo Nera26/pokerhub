@@ -58,6 +58,8 @@ import { AdminMessagesService } from './notifications/admin-messages.service';
 import { AdminMessageEntity } from './notifications/admin-message.entity';
 import { PromotionsService } from './promotions/promotions.service';
 import { PromotionEntity } from './database/entities/promotion.entity';
+import { LanguagesService } from './services/languages.service';
+import { LanguageEntity } from './database/entities/language.entity';
 
 @Module({
   imports: [
@@ -101,7 +103,7 @@ import { PromotionEntity } from './database/entities/promotion.entity';
       inject: [ConfigService],
     }),
 
-    TypeOrmModule.forFeature([AdminMessageEntity, PromotionEntity]),
+    TypeOrmModule.forFeature([AdminMessageEntity, PromotionEntity, LanguageEntity]),
 
     // Messaging / Infra
     MessagingModule,
@@ -140,6 +142,7 @@ import { PromotionEntity } from './database/entities/promotion.entity';
     { provide: APP_FILTER, useClass: ZodExceptionFilter },
     AdminMessagesService,
     PromotionsService,
+    LanguagesService,
   ],
 })
 export class AppModule implements NestModule {
