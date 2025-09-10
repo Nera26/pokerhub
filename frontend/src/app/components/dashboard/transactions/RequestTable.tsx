@@ -20,14 +20,20 @@ interface Props<T extends { id: string; date: string; status: StatusBadge }> {
   actions?: Action<T>[];
 }
 
+const STATUS_LABELS: Record<StatusBadge, string> = {
+  pending: 'Pending',
+  confirmed: 'Completed',
+  rejected: 'Rejected',
+};
+
 const STATUS_STYLES: Record<StatusBadge, string> = {
-  Pending: 'bg-accent-yellow text-black',
-  Completed: 'bg-accent-green text-white',
-  Rejected: 'bg-danger-red text-white',
+  pending: 'bg-accent-yellow text-black',
+  confirmed: 'bg-accent-green text-white',
+  rejected: 'bg-danger-red text-white',
 };
 
 export default function RequestTable<
-  T extends { id: string; date: string; status: StatusBadge }
+  T extends { id: string; date: string; status: StatusBadge },
 >({ title, rows, columns, actions }: Props<T>) {
   const sortedItems = useMemo(
     () => [...rows].sort((a, b) => a.date.localeCompare(b.date)),
@@ -46,7 +52,7 @@ export default function RequestTable<
       headerClassName: 'text-left py-3 px-2 text-text-secondary',
       cell: (item) => (
         <StatusPill
-          label={item.status}
+          label={STATUS_LABELS[item.status]}
           className={STATUS_STYLES[item.status]}
         />
       ),

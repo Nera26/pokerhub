@@ -12,14 +12,10 @@ import {
 } from '@/lib/api/wallet';
 import type { PendingWithdrawal } from '@shared/types';
 
-interface TableWithdrawal {
-  id: string;
-  userId: string;
-  amount: number;
-  bankInfo?: string;
+type TableWithdrawal = PendingWithdrawal & {
   date: string;
   status: StatusBadge;
-}
+};
 
 export default function Withdrawals() {
   const queryClient = useQueryClient();
@@ -31,17 +27,10 @@ export default function Withdrawals() {
   });
 
   const rows: TableWithdrawal[] = withdrawals.map((w) => ({
-    id: w.id,
-    userId: w.userId,
-    amount: w.amount,
+    ...w,
     bankInfo: w.bankInfo ?? `${w.bank ?? ''} ${w.maskedAccount ?? ''}`.trim(),
     date: w.createdAt,
-    status:
-      w.status === 'pending'
-        ? 'Pending'
-        : w.status === 'completed'
-          ? 'Completed'
-          : 'Rejected',
+    status: w.status === 'completed' ? 'confirmed' : w.status,
   }));
 
   const [selected, setSelected] = useState<TableWithdrawal | null>(null);
@@ -50,9 +39,15 @@ export default function Withdrawals() {
 
   const columns = [
     { label: 'User', render: (w: TableWithdrawal) => w.userId },
-    { label: 'Amount', render: (w: TableWithdrawal) => `$${w.amount.toFixed(2)}` },
+    {
+      label: 'Amount',
+      render: (w: TableWithdrawal) => `$${w.amount.toFixed(2)}`,
+    },
     { label: 'Bank', render: (w: TableWithdrawal) => w.bankInfo ?? 'N/A' },
-    { label: 'Date', render: (w: TableWithdrawal) => new Date(w.date).toLocaleDateString() },
+    {
+      label: 'Date',
+      render: (w: TableWithdrawal) => new Date(w.date).toLocaleDateString(),
+    },
   ];
 
   const handleOpen = (w: TableWithdrawal) => {
