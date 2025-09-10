@@ -28,7 +28,12 @@ describe('UserModal', () => {
   it('submits updated data in edit mode', async () => {
     const onSubmit = jest.fn();
     const onClose = jest.fn();
-    const user = { id: 1, name: 'Bob', email: 'bob@example.com', status: 'Active' };
+    const user = {
+      id: 1,
+      name: 'Bob',
+      email: 'bob@example.com',
+      status: 'Active',
+    };
     render(
       <UserModal
         mode="edit"
@@ -48,5 +53,16 @@ describe('UserModal', () => {
       expect.objectContaining({ username: 'Jane', id: 1 }),
     );
   });
-});
 
+  it('calls onClose when close button clicked', async () => {
+    const onSubmit = jest.fn();
+    const onClose = jest.fn();
+    render(
+      <UserModal mode="add" isOpen onClose={onClose} onSubmit={onSubmit} />,
+    );
+
+    await userEvent.click(screen.getByLabelText('Close'));
+
+    expect(onClose).toHaveBeenCalled();
+  });
+});
