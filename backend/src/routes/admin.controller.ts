@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 import { KycDenialResponse, KycDenialResponseSchema } from '@shared/wallet.schema';
@@ -7,7 +7,9 @@ import {
   AuditLogsResponseSchema,
   AlertItem,
   AlertItemSchema,
-} from '@shared/schemas/analytics';
+  RevenueBreakdown,
+  RevenueBreakdownSchema,
+} from '@shared/types';
 import {
   SidebarItem,
   SidebarItemsResponseSchema,
@@ -19,6 +21,7 @@ import {
 import { SidebarService } from '../services/sidebar.service';
 import { KycService } from '../wallet/kyc.service';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { RevenueService } from '../wallet/revenue.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 
@@ -30,6 +33,7 @@ export class AdminController {
     private readonly kyc: KycService,
     private readonly analytics: AnalyticsService,
     private readonly sidebar: SidebarService,
+    private readonly revenue: RevenueService,
   ) {}
 
   @Get('kyc/:id/denial')
@@ -83,5 +87,14 @@ export class AdminController {
       component: s.component,
     }));
     return AdminTabResponseSchema.parse(tabs);
+  }
+
+  @Get('revenue-breakdown')
+  @ApiOperation({ summary: 'Get revenue breakdown' })
+  @ApiResponse({ status: 200, description: 'Revenue breakdown' })
+  async revenueBreakdown(@Query('range') range: string): Promise<RevenueBreakdown> {
+    const r = z.enum(['today', 'week', 'month', 'all']).parse(range ?? 'all');
+    const data = await this.revenue.getBreakdown(r);
+    return RevenueBreakdownSchema.parse(data);
   }
 }

@@ -31,6 +31,7 @@ import { SidebarService } from '../services/sidebar.service';
 import { TransactionType } from './transaction-type.entity';
 import { Transaction } from './transaction.entity';
 import { TransactionsService } from './transactions.service';
+import { RevenueService } from './revenue.service';
 import { AdminBalanceController } from '../routes/admin-balance.controller';
 import { DepositIban } from './deposit-iban.entity';
 import { DepositIbanHistory } from './deposit-iban-history.entity';
@@ -87,6 +88,7 @@ class PendingDepositWorker implements OnModuleInit {
     BankReconciliationService,
     SidebarService,
     TransactionsService,
+    RevenueService,
   ],
   controllers: [
     WalletController,
@@ -104,6 +106,7 @@ class PendingDepositWorker implements OnModuleInit {
     SettlementService,
     BankReconciliationService,
     TransactionsService,
+    RevenueService,
   ],
 })
 export class WalletModule {}

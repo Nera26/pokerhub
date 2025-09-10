@@ -64,3 +64,13 @@ export type AdminOverview = z.infer<typeof AdminOverviewSchema>;
 
 export const AdminOverviewResponseSchema = z.array(AdminOverviewSchema);
 export type AdminOverviewResponse = z.infer<typeof AdminOverviewResponseSchema>;
+
+export const RevenueStreamSchema = z.object({
+  label: z.string(),
+  pct: z.number(),
+  value: z.number().optional(),
+});
+export type RevenueStream = z.infer<typeof RevenueStreamSchema>;
+
+export const RevenueBreakdownSchema = z.array(RevenueStreamSchema);
+export type RevenueBreakdown = z.infer<typeof RevenueBreakdownSchema>;

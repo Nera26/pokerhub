@@ -1396,6 +1396,24 @@ export interface paths {
       };
     };
   };
+  "/admin/revenue-breakdown": {
+    /** Get revenue breakdown */
+    get: {
+      parameters: {
+        query?: {
+          range?: "today" | "week" | "month" | "all";
+        };
+      };
+      responses: {
+        /** @description Revenue breakdown */
+        200: {
+          content: {
+            "application/json": components["schemas"]["RevenueBreakdown"];
+          };
+        };
+      };
+    };
+  };
   "/admin/messages": {
     /** List user messages */
     get: {
@@ -1982,6 +2000,12 @@ export interface components {
     AdminMessagesResponse: {
       messages: components["schemas"]["AdminMessage"][];
     };
+    RevenueStream: {
+      label: string;
+      pct: number;
+      value?: number;
+    };
+    RevenueBreakdown: components["schemas"]["RevenueStream"][];
     PromotionBreakdownItem: {
       label: string;
       value: number;
