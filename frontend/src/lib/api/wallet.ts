@@ -24,8 +24,6 @@ import {
   type IbanHistoryResponse,
   type IbanUpdateRequest,
   type WalletReconcileMismatchesResponse,
-  TransactionTabsResponseSchema,
-  type TransactionTab,
   // Optionally validate before calling adminAdjustBalance
   AdminBalanceRequestSchema,
   type AdminBalanceRequest,
@@ -326,18 +324,6 @@ export function fetchAdminPlayers(
   return apiClient(`/api/admin/players`, z.array(AdminPlayerSchema), {
     signal: opts.signal,
   });
-}
-
-export async function fetchTransactionTabs(
-  opts: { signal?: AbortSignal } = {},
-): Promise<TransactionTab[]> {
-  const res = await apiClient(
-    `/api/admin/transactions/tabs`,
-    TransactionTabsResponseSchema,
-    { signal: opts.signal },
-  );
-  // Assuming response shape: { tabs: TransactionTab[] }
-  return res.tabs;
 }
 
 export async function fetchTransactionTypes(
