@@ -1,5 +1,5 @@
-import type { Request } from 'express';
-import { createWalletWebhookContext, signProviderPayload } from './test-utils';
+import { createWalletWebhookContext } from './test-utils';
+import { makeProviderRequest, paymentIntentSucceeded } from './provider.test-utils';
 
 describe('Provider webhook', () => {
   let ctx: Awaited<ReturnType<typeof createWalletWebhookContext>>;
@@ -36,32 +36,20 @@ describe('Provider webhook', () => {
     await ctx.dataSource.destroy();
   });
 
-  it('validates signature and updates journal exactly once', async () => {
-    const challenge = await ctx.service.deposit(
-      'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-      50,
-      'dev1',
-      '1.1.1.1',
-      'USD',
-    );
-    const body = {
-      id: 'evt1',
-      type: 'payment_intent.succeeded',
-      data: { object: { id: challenge.id, status: 'succeeded' } },
-    };
-    const sig = signProviderPayload(body);
-    const req = {
-      headers: { 'x-provider-signature': sig, 'x-event-id': 'evt1' },
-    } as Request;
-    await ctx.controller.callback(req, body);
-    const entries = await ctx.repos.journal.find();
-    expect(entries).toHaveLength(2);
-    expect(entries[0].providerTxnId).toBe(challenge.id);
-    await ctx.controller.callback(req, body);
-    expect(await ctx.repos.journal.count()).toBe(2);
-  });
+  const cases = [
+    {
+      name: 'processes valid callback and is idempotent',
+      makeReq: (body: unknown) => makeProviderRequest(body),
+      expectError: false,
+    },
+    {
+      name: 'rejects invalid signatures',
+      makeReq: (body: unknown) => makeProviderRequest(body, 'bad'),
+      expectError: true,
+    },
+  ] as const;
 
-  it('rejects invalid signatures', async () => {
+  it.each(cases)('$name', async ({ makeReq, expectError }) => {
     const challenge = await ctx.service.deposit(
       'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
       50,
@@ -69,17 +57,52 @@ describe('Provider webhook', () => {
       '1.1.1.1',
       'USD',
     );
-    const body = {
-      id: 'evt1',
-      type: 'payment_intent.succeeded',
-      data: { object: { id: challenge.id, status: 'succeeded' } },
-    };
-    const req = {
-      headers: { 'x-provider-signature': 'bad', 'x-event-id': 'evt1' },
-    } as Request;
-    await expect(ctx.controller.callback(req, body)).rejects.toThrow(
-      'invalid signature',
+    const body = paymentIntentSucceeded(challenge.id);
+    const req = makeReq(body);
+
+    if (expectError) {
+      await expect(ctx.controller.callback(req, body)).rejects.toThrow(
+        'invalid signature',
+      );
+      return;
+    }
+
+    await ctx.controller.callback(req, body);
+    const journalRepo = ctx.repos.journal;
+    const accountRepo = ctx.repos.account;
+    expect(await journalRepo.count()).toBe(2);
+    const entries = await journalRepo.find();
+    expect(entries[0].providerTxnId).toBe(challenge.id);
+    const user = await accountRepo.findOneByOrFail({
+      id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+    });
+    const house = await accountRepo.findOneByOrFail({
+      id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    });
+    expect(user.balance).toBe(50);
+    expect(house.balance).toBe(-50);
+    expect(ctx.events.emit).toHaveBeenCalledWith(
+      'wallet.credit',
+      expect.objectContaining({
+        accountId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+        amount: 50,
+      }),
     );
+    expect(ctx.events.emit).toHaveBeenCalledWith(
+      'wallet.debit',
+      expect.objectContaining({
+        accountId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        amount: 50,
+      }),
+    );
+    await ctx.controller.callback(req, body);
+    expect(await journalRepo.count()).toBe(2);
+    const userAfter = await accountRepo.findOneByOrFail({
+      id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+    });
+    expect(userAfter.balance).toBe(50);
+    expect(ctx.events.emit).toHaveBeenCalledTimes(3);
+    expect(ctx.provider.confirm3DS).toHaveBeenCalledTimes(1);
   });
 });
 
