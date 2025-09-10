@@ -1,12 +1,18 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { fetchDashboardUsers } from '@/lib/api/admin';
 import type { DashboardUser } from '@shared/types';
+import { createQueryHook } from './useApiQuery';
 
-export function useDashboardUsers(limit = 5) {
-  return useQuery<DashboardUser[]>({
-    queryKey: ['dashboard-users', limit],
-    queryFn: ({ signal }) => fetchDashboardUsers({ limit, signal }),
-  });
+const useDashboardUsersQuery = createQueryHook<DashboardUser[], number>(
+  'dashboard-users',
+  (_client, limit, opts) => fetchDashboardUsers({ limit, signal: opts.signal }),
+  'dashboard users',
+);
+
+export function useDashboardUsers(
+  limit = 5,
+  options?: Parameters<typeof useDashboardUsersQuery>[1],
+) {
+  return useDashboardUsersQuery(limit, options);
 }

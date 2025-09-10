@@ -28,4 +28,10 @@ describe('useAuditLogs', () => {
       { signal: expect.anything() },
     );
   });
+
+  it('accepts per-call options', () => {
+    const params = { search: 'x' } as const;
+    renderHookWithClient(() => useAuditLogs(params, { enabled: false }));
+    expect(mockedApiClient).not.toHaveBeenCalled();
+  });
 });
