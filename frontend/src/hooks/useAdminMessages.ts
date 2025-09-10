@@ -1,11 +1,11 @@
-import { createQueryHook } from './useApiQuery';
+'use client';
+
 import { fetchMessages } from '@/lib/api/messages';
 import type { AdminMessagesResponse } from '@shared/types';
+import { createAdminQuery } from './useAdminQuery';
 
-const useAdminMessages = createQueryHook<AdminMessagesResponse>(
+export const useAdminMessages = createAdminQuery<AdminMessagesResponse>(
   'adminMessages',
-  () => fetchMessages(),
+  fetchMessages,
   'admin messages',
 );
-
-export default useAdminMessages;

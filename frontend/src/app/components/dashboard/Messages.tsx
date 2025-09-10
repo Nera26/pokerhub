@@ -22,7 +22,7 @@ import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import VirtualizedList from '@/components/VirtualizedList';
 import { replyMessage } from '@/lib/api/messages';
-import useAdminMessages from '@/hooks/useAdminMessages';
+import { useAdminMessages } from '@/hooks/useAdminMessages';
 import type { AdminMessage, AdminMessagesResponse } from '@shared/types';
 import type { ApiError } from '@/lib/api/client';
 
@@ -43,7 +43,8 @@ export default function Messages() {
   const mutation = useMutation({
     mutationFn: ({ id, reply }: { id: number; reply: string }) =>
       replyMessage(id, { reply }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['adminMessages'] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['adminMessages'] }),
   });
 
   const messages = data?.messages ?? [];
@@ -213,12 +214,8 @@ export default function Messages() {
 
                   {/* Preview */}
                   <div className="col-span-5">
-                    <p className="text-text-primary font-medium">
-                      {m.subject}
-                    </p>
-                    <p className="text-text-secondary text-sm">
-                      {m.preview}
-                    </p>
+                    <p className="text-text-primary font-medium">{m.subject}</p>
+                    <p className="text-text-secondary text-sm">{m.preview}</p>
                   </div>
 
                   {/* Date */}
