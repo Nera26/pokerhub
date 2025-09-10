@@ -1,6 +1,7 @@
 import { ZodError, ZodSchema } from 'zod';
 import { API_CONTRACT_VERSION } from '@shared/constants';
 import { ServiceStatusResponseSchema } from '@shared/types';
+import { fetchWithRetry } from '@shared/http';
 import { getBaseUrl } from '@/lib/base-url';
 import { useAuthStore } from '@/app/store/authStore';
 import { dispatchContractMismatch } from '@/components/ContractMismatchNotice';
@@ -39,7 +40,7 @@ export interface ResponseLike {
 export async function checkApiContractVersion(): Promise<void> {
   const baseUrl = getBaseUrl();
   try {
-    const res = fetch(`${baseUrl}/status`);
+    const res = fetchWithRetry(`${baseUrl}/status`, {}, { checkOk: false });
     const { contractVersion } = await handleResponse(
       res,
       ServiceStatusResponseSchema,
@@ -83,14 +84,18 @@ export async function apiClient<T>(
     headers['content-type'] = headers['content-type'] ?? 'application/json';
   }
 
-  const res = fetch(`${baseUrl}${path}`, {
-    method: opts.method ?? 'GET',
-    credentials: 'include',
-    headers,
-    ...(opts.body !== undefined && { body: JSON.stringify(opts.body) }),
-    ...(opts.signal && { signal: opts.signal }),
-    ...(opts.cache && { cache: opts.cache }),
-  });
+  const res = fetchWithRetry(
+    `${baseUrl}${path}`,
+    {
+      method: opts.method ?? 'GET',
+      credentials: 'include',
+      headers,
+      ...(opts.body !== undefined && { body: JSON.stringify(opts.body) }),
+      ...(opts.signal && { signal: opts.signal }),
+      ...(opts.cache && { cache: opts.cache }),
+    },
+    { checkOk: false },
+  );
   return handleResponse(res, schema);
 }
 

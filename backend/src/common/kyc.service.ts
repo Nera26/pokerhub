@@ -15,7 +15,7 @@ import { metrics } from '@opentelemetry/api';
 import { KycVerification } from '../database/entities/kycVerification.entity';
 import { Account } from '../wallet/account.entity';
 import { CountryProvider } from '../auth/providers/country-provider';
-import { fetchWithRetry, CircuitBreakerState } from './http';
+import { fetchJson, CircuitBreakerState } from '@shared/http';
 import { Pep } from '../database/entities/pep.entity';
 import { Onfido, Region } from 'onfido';
 
@@ -375,33 +375,35 @@ export class KycService implements OnModuleInit {
       const apiUrl = this.config.get<string>('kyc.apiUrl');
       const apiKey = this.config.get<string>('kyc.apiKey');
 
-      const response = await fetchWithRetry(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          id: record.id,
-          accountId: job.accountId,
-          name: job.name,
-          ip: job.ip,
-          country,
-        }),
-      }, {
-        onRetryExhausted: () => KycService.retriesExhausted.add(1),
-        circuitBreaker: {
-          state: this.circuitBreaker,
-          threshold: 5,
-          cooldownMs: 30_000,
-          openMessage: 'KYC provider circuit breaker open',
-        },
-      });
-
-      const providerData = (await response.json()) as {
+      const providerData = await fetchJson<{
         status: string;
         [key: string]: unknown;
-      };
+      }>(
+        apiUrl,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            id: record.id,
+            accountId: job.accountId,
+            name: job.name,
+            ip: job.ip,
+            country,
+          }),
+        },
+        {
+          onRetryExhausted: () => KycService.retriesExhausted.add(1),
+          circuitBreaker: {
+            state: this.circuitBreaker,
+            threshold: 5,
+            cooldownMs: 30_000,
+            openMessage: 'KYC provider circuit breaker open',
+          },
+        },
+      );
 
       record.result = providerData;
 
