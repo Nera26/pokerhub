@@ -9,7 +9,7 @@ import TableMain, { type TableMainHandle } from './TableMain';
 import useBetting from '@/hooks/useBetting';
 import useToasts from '@/hooks/useToasts';
 import type { Player } from './types';
-import calculateSidePots from './calculateSidePots';
+import { calculateSidePots } from '@shared/poker/sidePots';
 
 export interface ChatMessage {
   id: number;
