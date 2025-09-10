@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { POSITION_RING } from './colorTokens';
+import { useTableTheme } from '@/hooks/useTableTheme';
 import PlayerAvatar from './PlayerAvatar';
 import type { Player } from './types';
 import { getServerTime } from '@/lib/server-time';
@@ -19,6 +19,7 @@ export default function TimerRing({
 }: TimerRingProps) {
   const [timeLeft, setTimeLeft] = useState(player.timeLeft ?? 0);
   const totalTimeRef = useRef(player.timeLeft ?? 0);
+  const { positions } = useTableTheme();
 
   useEffect(() => {
     totalTimeRef.current = player.timeLeft ?? 0;
@@ -44,7 +45,7 @@ export default function TimerRing({
   const totalTime = totalTimeRef.current;
   const progress = totalTime > 0 ? timeLeft / totalTime : 1;
 
-  const ring = POSITION_RING[player.pos ?? ''];
+  const ring = positions[player.pos ?? ''];
   const baseRingColor = ring?.color ?? 'rgba(255,255,255,0.4)';
   const ringColor = player.isActive ? 'rgba(255,255,255,0.9)' : baseRingColor;
 

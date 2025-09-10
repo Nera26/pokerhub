@@ -27,6 +27,19 @@ export type ChipDenominationsResponse = z.infer<
   typeof ChipDenominationsResponseSchema
 >;
 
+// Table theme
+export const TableThemeResponseSchema = z.object({
+  hairline: z.string(),
+  positions: z.record(
+    z.object({
+      color: z.string(),
+      glow: z.string(),
+      badge: z.string().optional(),
+    }),
+  ),
+});
+export type TableThemeResponse = z.infer<typeof TableThemeResponseSchema>;
+
 // Backend re-exports
 export {
   UserProfileSchema,
