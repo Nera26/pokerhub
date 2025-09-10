@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { DependencyList } from 'react';
 import type { Chart, ChartConfiguration, ChartType } from 'chart.js';
 
@@ -100,37 +100,4 @@ export function buildChartConfig<TType extends ChartType>(
   }
 
   return { ...config, options };
-}
-
-/**
- * Convenience hook for a doughnut "error distribution" chart.
- * Uses CSS variables for colors and sets legend to bottom.
- */
-export function useErrorChart(labels: string[], data: number[]) {
-  const config = useMemo(
-    () =>
-      buildChartConfig<'doughnut'>(() => ({
-        type: 'doughnut',
-        data: {
-          labels,
-          datasets: [
-            {
-              data,
-              backgroundColor: [
-                'var(--color-danger-red)',
-                'var(--color-accent-yellow)',
-                'var(--color-accent-blue)',
-                'var(--color-accent-green)',
-              ],
-            },
-          ],
-        },
-        options: {
-          plugins: { legend: { position: 'bottom' } },
-        },
-      })),
-    [labels, data],
-  );
-
-  return useChart(config, [config]);
 }
