@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons/faSpinner';
+import InlineError from './InlineError';
 import { useChipDenominations } from '@/hooks/useChipDenominations';
 
 type Size = 'sm' | 'md' | 'lg';
@@ -11,8 +12,6 @@ interface ChipStackProps {
   amount: number;
   size?: Size;
 }
-
-const DEFAULT_DENOMS = [1000, 100, 25] as const;
 
 /** Tiny chip SVG used in badges and committed tags */
 function ChipIcon({
@@ -54,7 +53,7 @@ function ChipIcon({
 
 /**
  * Casino-style chip stack + amount pill.
- * - Denominations fetched from backend with fallback
+ * - Denominations fetched from backend
  * - Compact visual stack (auto-clamps chip count per denom)
  * - Win/loss animation: slide up (green) on increase, slide down (red) on decrease
  */
@@ -62,8 +61,7 @@ export default function PlayerChipStack({
   amount,
   size = 'sm',
 }: ChipStackProps) {
-  const { data, isLoading } = useChipDenominations();
-  const denoms = data?.denoms ?? DEFAULT_DENOMS;
+  const { data, isLoading, isError } = useChipDenominations();
 
   if (isLoading) {
     return (
@@ -72,6 +70,12 @@ export default function PlayerChipStack({
       </div>
     );
   }
+
+  if (isError || !data?.denoms?.length) {
+    return <InlineError message="Failed to load chips" />;
+  }
+
+  const denoms = data.denoms;
   const prevRef = useRef(amount);
   const [delta, setDelta] = useState(0);
   const [animKey, setAnimKey] = useState(0); // bump to retrigger CSS animations

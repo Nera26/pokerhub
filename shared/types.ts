@@ -16,7 +16,7 @@ export type LanguagesResponse = z.infer<typeof LanguagesResponseSchema>;
 
 // Chip denominations
 export const ChipDenominationsResponseSchema = z.object({
-  denoms: z.array(z.number().positive()),
+  denoms: z.array(z.number().positive()).nonempty(),
 });
 export type ChipDenominationsResponse = z.infer<
   typeof ChipDenominationsResponseSchema
