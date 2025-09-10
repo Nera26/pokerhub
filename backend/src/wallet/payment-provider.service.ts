@@ -1,10 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { createHmac, timingSafeEqual } from 'crypto';
 import type { ProviderCallback } from '@shared/wallet.schema';
 import { metrics } from '@opentelemetry/api';
 import { Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
 import { fetchWithRetry, CircuitBreakerState } from '../common/http';
+import { verifySignature as verifyProviderSignature } from './verify-signature';
 
 export type ProviderStatus = 'approved' | 'risky' | 'chargeback';
 
@@ -206,12 +206,6 @@ export class PaymentProviderService {
   }
 
   verifySignature(payload: string, signature: string): boolean {
-    const secret = process.env.PROVIDER_WEBHOOK_SECRET ?? '';
-    const expected = createHmac('sha256', secret).update(payload).digest('hex');
-    try {
-      return timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
-    } catch {
-      return false;
-    }
+    return verifyProviderSignature(payload, signature);
   }
 }
