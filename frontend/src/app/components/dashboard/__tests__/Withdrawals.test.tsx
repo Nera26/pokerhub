@@ -1,16 +1,14 @@
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { renderWithClient } from './renderWithClient';
 import Withdrawals from '../Withdrawals';
-import { useWithdrawals } from '@/hooks/useWithdrawals';
-import { rejectWithdrawal } from '@/lib/api/withdrawals';
+import { fetchPendingWithdrawals, rejectWithdrawal } from '@/lib/api/wallet';
 
-jest.mock('@/hooks/useWithdrawals');
-jest.mock('@/lib/api/withdrawals', () => ({
+jest.mock('@/lib/api/wallet', () => ({
+  fetchPendingWithdrawals: jest.fn(),
   rejectWithdrawal: jest.fn(),
 }));
 
 describe('Withdrawals', () => {
-  const refetch = jest.fn();
   const withdrawal = {
     id: '1',
     userId: 'user1',
@@ -25,32 +23,37 @@ describe('Withdrawals', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (useWithdrawals as jest.Mock).mockReturnValue({
-      data: [withdrawal],
-      refetch,
-      isLoading: false,
+    (fetchPendingWithdrawals as jest.Mock).mockResolvedValue({
+      withdrawals: [withdrawal],
     });
   });
 
   it('requires reason to reject', async () => {
     renderWithClient(<Withdrawals />);
-    fireEvent.click(screen.getByRole('button', { name: /reject/i }));
-    fireEvent.click(screen.getByRole('button', { name: /confirm rejection/i }));
-    await screen.findByText(/reason is required/i);
+    await screen.findByRole('button', { name: /review/i });
+    fireEvent.click(screen.getByRole('button', { name: /review/i }));
+    const rejectBtn = screen.getByRole('button', { name: /reject/i });
+    expect(rejectBtn).toBeDisabled();
+    fireEvent.click(rejectBtn);
     expect(rejectWithdrawal).not.toHaveBeenCalled();
   });
 
   it('rejects withdrawal and refreshes list', async () => {
-    (rejectWithdrawal as jest.Mock).mockResolvedValue(withdrawal);
+    (rejectWithdrawal as jest.Mock).mockResolvedValue({});
     renderWithClient(<Withdrawals />);
-    fireEvent.click(screen.getByRole('button', { name: /reject/i }));
+    await screen.findByRole('button', { name: /review/i });
+    fireEvent.click(screen.getByRole('button', { name: /review/i }));
     fireEvent.change(screen.getByPlaceholderText(/enter reason/i), {
       target: { value: 'fraud' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /confirm rejection/i }));
+    const rejectBtn = screen.getByRole('button', { name: /^reject$/i });
+    await waitFor(() => expect(rejectBtn).toBeEnabled());
+    fireEvent.click(rejectBtn);
     await waitFor(() =>
       expect(rejectWithdrawal).toHaveBeenCalledWith('1', 'fraud'),
     );
-    expect(refetch).toHaveBeenCalled();
+    await waitFor(() =>
+      expect(fetchPendingWithdrawals).toHaveBeenCalledTimes(2),
+    );
   });
 });
