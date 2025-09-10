@@ -15,12 +15,13 @@ import type { PendingWithdrawal } from '@shared/types';
 type TableWithdrawal = PendingWithdrawal & {
   date: string;
   status: StatusBadge;
+  type: string;
 };
 
 export default function Withdrawals() {
   const queryClient = useQueryClient();
 
-  const { data: withdrawals = [], isLoading } = useQuery<PendingWithdrawal[]>({
+  const { data: withdrawals = [] } = useQuery<PendingWithdrawal[]>({
     queryKey: ['adminWithdrawals'],
     queryFn: ({ signal }) =>
       fetchPendingWithdrawals({ signal }).then((r) => r.withdrawals),
@@ -29,26 +30,14 @@ export default function Withdrawals() {
   const rows: TableWithdrawal[] = withdrawals.map((w) => ({
     ...w,
     bankInfo: w.bankInfo ?? `${w.bank ?? ''} ${w.maskedAccount ?? ''}`.trim(),
-    date: w.createdAt,
+    date: new Date(w.createdAt).toLocaleString(),
     status: w.status === 'completed' ? 'confirmed' : w.status,
+    type: 'Withdrawal',
   }));
 
   const [selected, setSelected] = useState<TableWithdrawal | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const columns = [
-    { label: 'User', render: (w: TableWithdrawal) => w.userId },
-    {
-      label: 'Amount',
-      render: (w: TableWithdrawal) => `$${w.amount.toFixed(2)}`,
-    },
-    { label: 'Bank', render: (w: TableWithdrawal) => w.bankInfo ?? 'N/A' },
-    {
-      label: 'Date',
-      render: (w: TableWithdrawal) => new Date(w.date).toLocaleDateString(),
-    },
-  ];
 
   const handleOpen = (w: TableWithdrawal) => {
     setSelected(w);
@@ -82,9 +71,7 @@ export default function Withdrawals() {
     <>
       <RequestTable
         title="Withdrawals"
-        loading={isLoading}
         rows={rows}
-        columns={columns}
         actions={[
           {
             label: 'Review',
@@ -93,7 +80,6 @@ export default function Withdrawals() {
               'px-2 py-1 bg-accent-yellow text-black rounded hover:bg-yellow-500',
           },
         ]}
-        emptyMessage="No pending withdrawals."
       />
       {selected && (
         <ReviewWithdrawalModal

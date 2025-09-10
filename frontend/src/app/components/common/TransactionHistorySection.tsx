@@ -5,6 +5,7 @@ import { faReceipt } from '@fortawesome/free-solid-svg-icons/faReceipt';
 import type { ReactNode } from 'react';
 import TransactionHistory from '../dashboard/transactions/TransactionHistory';
 import { buildTransactionColumns } from './transactionColumns';
+import type { Action } from './TransactionHistoryTable';
 
 interface TransactionLike {
   amount: number;
@@ -24,6 +25,7 @@ export interface TransactionHistorySectionProps<T extends TransactionLike> {
   page?: number;
   pageSize?: number;
   onPageChange?: (page: number) => void;
+  actions?: Action<T>[];
 }
 
 export default function TransactionHistorySection<T extends TransactionLike>({
@@ -35,6 +37,7 @@ export default function TransactionHistorySection<T extends TransactionLike>({
   page,
   pageSize,
   onPageChange,
+  actions,
 }: TransactionHistorySectionProps<T>) {
   const columns = buildTransactionColumns<T>({
     getType: (row) =>
@@ -65,6 +68,7 @@ export default function TransactionHistorySection<T extends TransactionLike>({
       page={page}
       pageSize={pageSize}
       onPageChange={onPageChange}
+      actions={actions}
     />
   );
 }
