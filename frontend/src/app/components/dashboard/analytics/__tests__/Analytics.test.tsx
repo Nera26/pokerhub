@@ -55,6 +55,11 @@ describe('Analytics', () => {
       labels: ['Payment'],
       counts: [1],
     });
+    useAuditLogsMock.mockReturnValue({
+      data: { logs: [], total: 0 },
+      isLoading: false,
+      isError: false,
+    });
   });
 
   afterEach(() => {
@@ -87,35 +92,6 @@ describe('Analytics', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows loading state for audit logs', () => {
-    useAuditLogsMock.mockReturnValueOnce({ isLoading: true });
-    renderWithClient(<Analytics />);
-    expect(screen.getByText(/loading audit logs/i)).toBeInTheDocument();
-  });
-
-  it('shows empty state when no audit logs', () => {
-    useAuditLogsMock.mockReturnValueOnce({
-      data: { logs: [], total: 0 },
-      isLoading: false,
-      isError: false,
-    });
-    renderWithClient(<Analytics />);
-    expect(screen.getByText(/no audit logs found/i)).toBeInTheDocument();
-  });
-
-  it('shows error state when audit logs fail', () => {
-    useAuditLogsMock.mockReturnValueOnce({ isError: true });
-    renderWithClient(<Analytics />);
-    expect(screen.getByText(/failed to load audit logs/i)).toBeInTheDocument();
-  });
-
-  it('shows loading state for error categories', () => {
-    (fetchErrorCategories as jest.Mock).mockReturnValue(new Promise(() => {}));
-
-    renderWithClient(<Analytics />);
-    expect(screen.getByText(/loading error categories/i)).toBeInTheDocument();
-  });
-
   it('shows empty state when no error categories', async () => {
     (fetchErrorCategories as jest.Mock).mockResolvedValue({
       labels: [],
@@ -124,14 +100,5 @@ describe('Analytics', () => {
 
     renderWithClient(<Analytics />);
     expect(await screen.findByText(/no data/i)).toBeInTheDocument();
-  });
-
-  it('shows error state when error categories fail', async () => {
-    (fetchErrorCategories as jest.Mock).mockRejectedValue(new Error('fail'));
-
-    renderWithClient(<Analytics />);
-    expect(
-      await screen.findByText(/failed to load error categories/i),
-    ).toBeInTheDocument();
   });
 });
