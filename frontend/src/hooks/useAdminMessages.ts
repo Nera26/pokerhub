@@ -2,9 +2,10 @@
 
 import { fetchMessages } from '@/lib/api/messages';
 import type { AdminMessagesResponse } from '@shared/types';
-import { createResourceHook } from './createResourceHook';
+import { createQueryHook } from './useApiQuery';
 
-export const useAdminMessages = createResourceHook<AdminMessagesResponse>(
+export const useAdminMessages = createQueryHook<AdminMessagesResponse>(
   'admin-messages',
   () => fetchMessages(),
+  'admin messages',
 );
