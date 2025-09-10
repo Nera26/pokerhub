@@ -32,7 +32,10 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
     data: types = [],
     isLoading: typesLoading,
     error: typesError,
-  } = useQuery({ queryKey: ['transactionTypes'], queryFn: fetchTransactionTypes });
+  } = useQuery({
+    queryKey: ['transactionTypes'],
+    queryFn: fetchTransactionTypes,
+  });
 
   const {
     data: log = [],
@@ -63,6 +66,8 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
   useApiError(playersError);
   useApiError(typesError);
   useApiError(logError);
+
+  const currency = log[0]?.currency ?? 'USD';
 
   const filters = (
     <div className="flex flex-wrap gap-2 items-center">
@@ -144,9 +149,7 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
   }
 
   if (logError) {
-    return (
-      <p role="alert">Failed to load transaction history.</p>
-    );
+    return <p role="alert">Failed to load transaction history.</p>;
   }
 
   if (log.length === 0) {
@@ -156,7 +159,7 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
   return (
     <TransactionHistorySection
       data={log}
-      currency="USD"
+      currency={currency}
       filters={filters}
       onExport={onExport}
       emptyMessage="No transaction history."
@@ -166,4 +169,3 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
     />
   );
 }
-
