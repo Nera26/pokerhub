@@ -74,9 +74,8 @@ export function HomePageClient({
 
   const SiteTournamentList = (
     props: TournamentListProps<TournamentWithBreak>,
-  ) => {
-    return <TournamentList {...props} />;
-  };
+  ) => <TournamentList {...props} />;
+
   const [gameType, setGameType] = useState<GameType>('texas');
   const { toasts, pushToast } = useToasts();
   const [registering, setRegistering] = useState(false);
@@ -151,11 +150,14 @@ export function HomePageClient({
             onRegister={handleRegister}
           />
         </div>
+
         {showTournaments && tournamentErrorMessage && (
           <InlineError message={tournamentErrorMessage} />
         )}
       </main>
+
       <ChatWidget />
+
       {toasts.map((t) => (
         <ToastNotification
           key={t.id}

@@ -9,9 +9,18 @@ jest.mock('@/lib/api/lobby');
 jest.mock('@/hooks/useApiError', () => ({
   useApiError: () => 'failed to register',
 }));
-jest.mock('@/app/components/common/chat/ChatWidget', () => () => <div />);
 
-function MockTournamentList({ onRegister }: any) {
+// Mock ChatWidget to avoid socket internals in this test
+jest.mock('@/app/components/common/chat/ChatWidget', () => ({
+  __esModule: true,
+  default: () => <div />,
+}));
+
+function MockTournamentList({
+  onRegister,
+}: {
+  onRegister: (id: string) => void;
+}) {
   return <button onClick={() => onRegister('1')}>Register</button>;
 }
 

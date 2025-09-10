@@ -5,7 +5,7 @@ import { useTables, useTournaments, useCTAs } from '@/hooks/useLobbyData';
 
 jest.mock('@/hooks/useLobbyData');
 
-var ChatWidgetMock: jest.Mock;
+let ChatWidgetMock: jest.Mock;
 jest.mock('@/app/components/common/chat/ChatWidget', () => {
   ChatWidgetMock = jest.fn(() => <div data-testid="chat-widget" />);
   return { __esModule: true, default: ChatWidgetMock };
@@ -35,6 +35,7 @@ describe('HomePageClient chat widget', () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
+
     render(
       <QueryClientProvider client={client}>
         <HomePageClient
