@@ -42,4 +42,29 @@ describe('VirtualizedList', () => {
     );
     expect(screen.getAllByText(/Item/)).toHaveLength(3);
   });
+
+  it('shows title and empty message when no items', () => {
+    render(
+      <VirtualizedList
+        items={[]}
+        title="Games"
+        emptyMessage="Nothing here"
+        renderItem={() => null}
+      />,
+    );
+    expect(screen.getByRole('heading', { name: 'Games' })).toBeInTheDocument();
+    expect(screen.getByText('Nothing here')).toBeInTheDocument();
+  });
+
+  it('respects hidden prop', () => {
+    render(
+      <VirtualizedList
+        items={[]}
+        title="Hidden"
+        hidden
+        renderItem={() => null}
+      />,
+    );
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('hidden');
+  });
 });
