@@ -5,7 +5,6 @@ import {
   TableThemeResponseSchema,
   type TableThemeResponse,
 } from '@shared/types';
-import { TABLE_THEME } from '@shared/config/tableTheme';
 
 const useTableThemeQuery = createQueryHook<TableThemeResponse>(
   'table-theme',
@@ -16,6 +15,5 @@ const useTableThemeQuery = createQueryHook<TableThemeResponse>(
 );
 
 export function useTableTheme() {
-  const { data, ...rest } = useTableThemeQuery();
-  return { data: data ?? TABLE_THEME, ...rest };
+  return useTableThemeQuery();
 }
