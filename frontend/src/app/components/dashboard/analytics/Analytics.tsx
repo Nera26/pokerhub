@@ -19,6 +19,7 @@ import DetailModal from './DetailModal';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { useAuditSummary } from '@/hooks/useAuditSummary';
 import { useActivity } from '@/hooks/useActivity';
+import SecurityAlerts from './SecurityAlerts';
 import CenteredMessage from '@/components/CenteredMessage';
 import ToastNotification from '../../ui/ToastNotification';
 import { rebuildLeaderboard } from '@/lib/api/leaderboard';
@@ -185,6 +186,7 @@ export default function Analytics() {
           onSubmit={() => setPage(1)}
         />
         <QuickStats total={statTotal} errors={statErrors} logins={statLogins} />
+        <SecurityAlerts />
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">

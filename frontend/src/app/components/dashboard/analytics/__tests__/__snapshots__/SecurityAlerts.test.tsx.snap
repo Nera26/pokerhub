@@ -1,0 +1,50 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SecurityAlerts matches snapshot 1`] = `
+<DocumentFragment>
+  <div
+    class="bg-card-bg p-6 rounded-2xl shadow-[0_4px_8px_rgba(0,0,0,0.3)] relative"
+  >
+    <h3
+      class="text-lg font-bold mb-4 flex items-center"
+    >
+      Security Alerts
+      <span
+        class="ml-2 bg-danger-red text-white text-xs px-2 py-0.5 rounded-full"
+      >
+        1
+      </span>
+    </h3>
+    <ul
+      class="space-y-3 max-h-60 overflow-y-auto pr-2"
+    >
+      <li
+        class="border border-dark rounded-xl p-3 flex justify-between items-start"
+      >
+        <div>
+          <p
+            class="font-semibold mb-1 text-accent-yellow"
+          >
+            Alert
+          </p>
+          <p
+            class="text-sm text-text-secondary mb-1"
+          >
+            Body
+          </p>
+          <span
+            class="text-xs text-text-secondary"
+          >
+            now
+          </span>
+        </div>
+        <button
+          class="text-sm text-accent-blue hover:underline"
+        >
+          Acknowledge
+        </button>
+      </li>
+    </ul>
+  </div>
+</DocumentFragment>
+`;
