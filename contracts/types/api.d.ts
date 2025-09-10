@@ -1399,6 +1399,19 @@ export interface paths {
       };
     };
   };
+  "/admin/audit/log-types": {
+    /** Get audit log types */
+    get: {
+      responses: {
+        /** @description Audit log types */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AuditLogTypesResponse"];
+          };
+        };
+      };
+    };
+  };
   "/admin/security-alerts": {
     /** Get security alerts */
     get: {
@@ -2173,6 +2186,9 @@ export interface components {
     AuditLogsResponse: {
       logs: components["schemas"]["AuditLogEntry"][];
       total: number;
+    };
+    AuditLogTypesResponse: {
+      types: components["schemas"]["AuditLogType"][];
     };
     AuditSummaryResponse: {
       total: number;

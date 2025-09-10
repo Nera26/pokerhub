@@ -1381,6 +1381,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuditLogsResponse'
+  /admin/audit/log-types:
+    get:
+      summary: Get audit log types
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Audit log types
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogTypesResponse'
   /admin/security-alerts:
     get:
       summary: Get security alerts
@@ -2332,6 +2344,15 @@ components:
       required:
         - logs
         - total
+    AuditLogTypesResponse:
+      type: object
+      properties:
+        types:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLogType'
+      required:
+        - types
     AuditSummaryResponse:
       type: object
       properties:

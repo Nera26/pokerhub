@@ -3,7 +3,8 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import type { AuditLogType } from '@shared/types';
-import { LOG_TYPES } from './constants';
+import useAuditLogTypes from '@/hooks/useAuditLogTypes';
+import CenteredMessage from '@/components/CenteredMessage';
 
 interface Props {
   search: string;
@@ -20,6 +21,15 @@ export default function SearchBar({
   setType,
   onSubmit,
 }: Props) {
+  const { data, isLoading, isError } = useAuditLogTypes();
+  const logTypes = data?.types ?? [];
+
+  if (isLoading) return <CenteredMessage>Loading log types...</CenteredMessage>;
+  if (isError)
+    return <CenteredMessage>Failed to load log types</CenteredMessage>;
+  if (logTypes.length === 0)
+    return <CenteredMessage>No log types found</CenteredMessage>;
+
   return (
     <div className="bg-card-bg p-6 rounded-2xl shadow-[0_4px_8px_rgba(0,0,0,0.3)]">
       <h3 className="text-lg font-bold mb-4">Search Logs</h3>
@@ -42,7 +52,7 @@ export default function SearchBar({
           className="bg-primary-bg border border-dark rounded-xl px-4 py-3 text-sm"
         >
           <option value="all">All Types</option>
-          {LOG_TYPES.map((logType) => (
+          {logTypes.map((logType) => (
             <option key={logType} value={logType}>
               {logType}
             </option>
