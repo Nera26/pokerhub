@@ -4,6 +4,11 @@ import ProfilePage from '@/features/site/profile';
 import { fetchProfile } from '@/lib/api/profile';
 import { fetchTiers } from '@/lib/api/tiers';
 
+const mockTiers = [
+  { name: 'Bronze', min: 0, max: 999 },
+  { name: 'Silver', min: 1000, max: 4999 },
+];
+
 jest.mock('@/lib/api/profile');
 jest.mock('@/lib/api/tiers');
 jest.mock('@/app/components/user/GameStatistics', () => () => <div />);
@@ -40,10 +45,7 @@ describe('ProfilePage', () => {
       experience: 1234,
       balance: 1250,
     });
-    (fetchTiers as jest.Mock).mockResolvedValue([
-      { name: 'Bronze', min: 0, max: 999 },
-      { name: 'Silver', min: 1000, max: 4999 },
-    ]);
+    (fetchTiers as jest.Mock).mockResolvedValue(mockTiers);
     renderWithClient(<ProfilePage />);
     expect(screen.getByText('Loading...')).toBeInTheDocument();
     expect(
@@ -53,20 +55,14 @@ describe('ProfilePage', () => {
 
   it('shows loading state while fetching', () => {
     (fetchProfile as jest.Mock).mockReturnValue(new Promise(() => {}));
-    (fetchTiers as jest.Mock).mockResolvedValue([
-      { name: 'Bronze', min: 0, max: 999 },
-      { name: 'Silver', min: 1000, max: 4999 },
-    ]);
+    (fetchTiers as jest.Mock).mockResolvedValue(mockTiers);
     renderWithClient(<ProfilePage />);
     expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
   it('shows error state on failure', async () => {
     (fetchProfile as jest.Mock).mockRejectedValue(new Error('fail'));
-    (fetchTiers as jest.Mock).mockResolvedValue([
-      { name: 'Bronze', min: 0, max: 999 },
-      { name: 'Silver', min: 1000, max: 4999 },
-    ]);
+    (fetchTiers as jest.Mock).mockResolvedValue(mockTiers);
     renderWithClient(<ProfilePage />);
     expect(screen.getByText('Loading...')).toBeInTheDocument();
     expect(
