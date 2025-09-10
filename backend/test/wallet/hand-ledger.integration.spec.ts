@@ -1,5 +1,5 @@
 import { writeHandLedger } from '../../src/wallet/hand-ledger';
-import { setupTestWallet } from '../../src/wallet/test-utils';
+import { setupTestWallet } from './test-utils';
 import type { Street } from '../../src/game/state-machine';
 
 describe('hand ledger integration', () => {

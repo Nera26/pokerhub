@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { TABLE_THEME } from '@shared/config/tableTheme';
 import type { TableThemeResponse } from '@shared/types';
 import { TableThemeEntity } from '../database/entities/table-theme.entity';
 
@@ -13,20 +14,23 @@ export class TableThemeService {
 
   async get(): Promise<TableThemeResponse> {
     const entity = await this.repo.findOne({ where: {} });
-    if (!entity) {
-      return { hairline: '', positions: {} };
-    }
+    if (!entity) return { ...TABLE_THEME };
     return { hairline: entity.hairline, positions: entity.positions };
   }
 
   async update(theme: TableThemeResponse): Promise<TableThemeResponse> {
     let entity = await this.repo.findOne({ where: {} });
+
     if (!entity) {
-      entity = this.repo.create(theme);
+      entity = this.repo.create({
+        hairline: theme.hairline ?? TABLE_THEME.hairline,
+        positions: theme.positions ?? TABLE_THEME.positions,
+      });
     } else {
       entity.hairline = theme.hairline;
       entity.positions = theme.positions;
     }
+
     await this.repo.save(entity);
     return { hairline: entity.hairline, positions: entity.positions };
   }

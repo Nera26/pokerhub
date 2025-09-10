@@ -40,6 +40,6 @@ export class ConfigController {
   @ApiOperation({ summary: 'Get table theme' })
   @ApiResponse({ status: 200, description: 'Table theme mapping' })
   async getTableTheme(): Promise<TableThemeResponse> {
-    return this.themes.get();
+    return await this.themes.get();
   }
 }
