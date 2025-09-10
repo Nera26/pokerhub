@@ -5,6 +5,7 @@ import { KycDenialResponse, KycDenialResponseSchema } from '@shared/wallet.schem
 import {
   AuditLogsResponse,
   AuditLogsResponseSchema,
+  AuditLogsQuerySchema,
   AlertItem,
   AlertItemSchema,
   RevenueBreakdown,
@@ -47,8 +48,9 @@ export class AdminController {
   @Get('audit-logs')
   @ApiOperation({ summary: 'Get audit logs' })
   @ApiResponse({ status: 200, description: 'Audit logs' })
-  async auditLogs(): Promise<AuditLogsResponse> {
-    const data = await this.analytics.getAuditLogs({});
+  async auditLogs(@Query() query: unknown): Promise<AuditLogsResponse> {
+    const params = AuditLogsQuerySchema.parse(query);
+    const data = await this.analytics.getAuditLogs(params);
     return AuditLogsResponseSchema.parse(data);
   }
 

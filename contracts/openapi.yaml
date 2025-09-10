@@ -1036,11 +1036,37 @@ paths:
       summary: List system audit logs
       parameters:
         - in: query
-          name: cursor
+          name: search
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: type
+          required: false
+          schema:
+            $ref: '#/components/schemas/AuditLogType'
+        - in: query
+          name: user
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: dateFrom
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: dateTo
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: page
           required: false
           schema:
             type: integer
-            minimum: 0
+            minimum: 1
+            default: 1
         - in: query
           name: limit
           required: false
@@ -1287,6 +1313,47 @@ paths:
       summary: Get audit logs
       security:
         - bearerAuth: []
+      parameters:
+        - in: query
+          name: search
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: type
+          required: false
+          schema:
+            $ref: '#/components/schemas/AuditLogType'
+        - in: query
+          name: user
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: dateFrom
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: dateTo
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
       responses:
         '200':
           description: Audit logs
@@ -2236,11 +2303,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AuditLogEntry'
-        nextCursor:
+        total:
           type: integer
-          nullable: true
       required:
         - logs
+        - total
     AuditSummaryResponse:
       type: object
       properties:

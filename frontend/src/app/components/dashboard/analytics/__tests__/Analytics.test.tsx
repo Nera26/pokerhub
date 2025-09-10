@@ -16,8 +16,13 @@ jest.mock('../AuditTable', () => () => <div>AuditTable</div>);
 jest.mock('../AdvancedFilterModal', () => () => <div>AdvancedFilterModal</div>);
 jest.mock('../DetailModal', () => () => <div>DetailModal</div>);
 
+const useAuditLogsMock = jest.fn(() => ({
+  data: { logs: [], total: 0 },
+  isLoading: false,
+  isError: false,
+}));
 jest.mock('@/hooks/useAuditLogs', () => ({
-  useAuditLogs: () => ({ data: { logs: [] } }),
+  useAuditLogs: (...args: any[]) => useAuditLogsMock(...args),
 }));
 jest.mock('@/hooks/useAuditSummary', () => ({
   useAuditSummary: () => ({ data: {} }),
@@ -80,6 +85,28 @@ describe('Analytics', () => {
     expect(
       await screen.findByText(/leaderboard rebuild started/i),
     ).toBeInTheDocument();
+  });
+
+  it('shows loading state for audit logs', () => {
+    useAuditLogsMock.mockReturnValueOnce({ isLoading: true });
+    renderWithClient(<Analytics />);
+    expect(screen.getByText(/loading audit logs/i)).toBeInTheDocument();
+  });
+
+  it('shows empty state when no audit logs', () => {
+    useAuditLogsMock.mockReturnValueOnce({
+      data: { logs: [], total: 0 },
+      isLoading: false,
+      isError: false,
+    });
+    renderWithClient(<Analytics />);
+    expect(screen.getByText(/no audit logs found/i)).toBeInTheDocument();
+  });
+
+  it('shows error state when audit logs fail', () => {
+    useAuditLogsMock.mockReturnValueOnce({ isError: true });
+    renderWithClient(<Analytics />);
+    expect(screen.getByText(/failed to load audit logs/i)).toBeInTheDocument();
   });
 
   it('shows loading state for error categories', () => {

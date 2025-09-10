@@ -13,7 +13,7 @@ describe('AuditLogsResponseSchema', () => {
           ip: '127.0.0.1',
         },
       ],
-      nextCursor: 2,
+      total: 1,
     };
     expect(() => AuditLogsResponseSchema.parse(data)).not.toThrow();
   });

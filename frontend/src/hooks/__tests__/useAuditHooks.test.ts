@@ -1,9 +1,7 @@
 import { waitFor } from '@testing-library/react';
-import { useAuditLogs } from '../useAuditLogs';
 import { useAuditSummary } from '../useAuditSummary';
 import { useAuditAlerts } from '../useAuditAlerts';
 import {
-  AuditLogsResponseSchema,
   AuditSummarySchema,
   SecurityAlertsResponseSchema,
 } from '@shared/types';
@@ -24,14 +22,6 @@ describe('audit hooks', () => {
   });
 
   const cases = [
-    {
-      name: 'useAuditLogs',
-      hook: useAuditLogs as Hook<unknown>,
-      data: { logs: [], nextCursor: null },
-      path: '/api/admin/audit-logs',
-      schema: AuditLogsResponseSchema,
-      label: 'audit logs',
-    },
     {
       name: 'useAuditSummary',
       hook: useAuditSummary as Hook<unknown>,

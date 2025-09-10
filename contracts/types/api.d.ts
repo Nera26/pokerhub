@@ -1097,7 +1097,12 @@ export interface paths {
     get: {
       parameters: {
         query?: {
-          cursor?: number;
+          search?: string;
+          type?: components["schemas"]["AuditLogType"];
+          user?: string;
+          dateFrom?: string;
+          dateTo?: string;
+          page?: number;
           limit?: number;
         };
       };
@@ -1347,6 +1352,17 @@ export interface paths {
   "/admin/audit-logs": {
     /** Get audit logs */
     get: {
+      parameters: {
+        query?: {
+          search?: string;
+          type?: components["schemas"]["AuditLogType"];
+          user?: string;
+          dateFrom?: string;
+          dateTo?: string;
+          page?: number;
+          limit?: number;
+        };
+      };
       responses: {
         /** @description Audit logs */
         200: {
@@ -2129,7 +2145,7 @@ export interface components {
     };
     AuditLogsResponse: {
       logs: components["schemas"]["AuditLogEntry"][];
-      nextCursor?: number | null;
+      total: number;
     };
     AuditSummaryResponse: {
       total: number;

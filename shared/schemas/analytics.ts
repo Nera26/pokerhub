@@ -22,7 +22,7 @@ export type AuditLogEntry = z.infer<typeof AuditLogEntrySchema>;
 
 export const AuditLogsResponseSchema = z.object({
   logs: z.array(AuditLogEntrySchema),
-  nextCursor: z.number().int().nullable().optional(),
+  total: z.number().int(),
 });
 export type AuditLogsResponse = z.infer<typeof AuditLogsResponseSchema>;
 
@@ -34,7 +34,12 @@ export const AuditSummarySchema = z.object({
 export type AuditSummary = z.infer<typeof AuditSummarySchema>;
 
 export const AuditLogsQuerySchema = z.object({
-  cursor: z.coerce.number().int().min(0).optional(),
+  search: z.string().optional(),
+  type: AuditLogTypeSchema.optional(),
+  user: z.string().optional(),
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
+  page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 export type AuditLogsQuery = z.infer<typeof AuditLogsQuerySchema>;

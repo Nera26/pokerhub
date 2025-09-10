@@ -58,15 +58,21 @@ describe('AdminController', () => {
     await app.close();
   });
 
-  it('returns audit logs', async () => {
+  it('returns audit logs with query params', async () => {
     (analytics.getAuditLogs as jest.Mock).mockResolvedValue({
       logs: [],
-      nextCursor: null,
+      total: 0,
     });
     await request(app.getHttpServer())
       .get('/admin/audit-logs')
+      .query({ search: 'foo', page: 2 })
       .expect(200)
-      .expect({ logs: [], nextCursor: null });
+      .expect({ logs: [], total: 0 });
+    expect(analytics.getAuditLogs).toHaveBeenCalledWith({
+      search: 'foo',
+      page: 2,
+      limit: 50,
+    });
   });
 
   it('returns security alerts', async () => {

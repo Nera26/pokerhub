@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -46,9 +46,7 @@ export default function Analytics() {
   const [dateTo, setDateTo] = useState('');
   const [userFilter, setUserFilter] = useState('');
   const [resultLimit, setResultLimit] = useState(25);
-
   const [page, setPage] = useState(1);
-  const pageSize = 8;
 
   const {
     data: badgeClasses,
@@ -59,8 +57,23 @@ export default function Analytics() {
     queryFn: fetchLogTypeClasses,
   });
 
-  const { data } = useAuditLogs();
-  const logs = data?.logs ?? [];
+  const {
+    data: logData,
+    isLoading: logsLoading,
+    isError: logsError,
+  } = useAuditLogs({
+    search,
+    type: type === 'all' ? undefined : type,
+    user: userFilter || undefined,
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+    page,
+    limit: resultLimit,
+  });
+  const logs = logData?.logs ?? [];
+  const total = logData?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / resultLimit));
+  const start = (page - 1) * resultLimit;
   const { data: summary } = useAuditSummary();
   const {
     data: activity,
@@ -83,35 +96,6 @@ export default function Analytics() {
       pushToast('Failed to rebuild leaderboard', { variant: 'error' }),
   });
 
-  const filtered = useMemo(() => {
-    const s = search.trim().toLowerCase();
-    let rows = logs.filter((r) => {
-      const textOk =
-        !s ||
-        `${r.timestamp} ${r.type} ${r.description} ${r.user} ${r.ip}`
-          .toLowerCase()
-          .includes(s);
-      const typeOk = type === 'all' || r.type === type;
-      return textOk && typeOk;
-    });
-
-    if (userFilter.trim()) {
-      rows = rows.filter((r) =>
-        `${r.user}`.toLowerCase().includes(userFilter.trim().toLowerCase()),
-      );
-    }
-    if (dateFrom) {
-      rows = rows.filter((r) => new Date(r.timestamp) >= new Date(dateFrom));
-    }
-    if (dateTo) {
-      rows = rows.filter(
-        (r) => new Date(r.timestamp) <= new Date(dateTo + ' 23:59:59'),
-      );
-    }
-
-    return rows.slice(0, resultLimit);
-  }, [logs, search, type, userFilter, dateFrom, dateTo, resultLimit]);
-
   if (badgeLoading)
     return <CenteredMessage>Loading log types...</CenteredMessage>;
   if (badgeError)
@@ -119,18 +103,14 @@ export default function Analytics() {
   if (!badgeClasses || Object.keys(badgeClasses).length === 0)
     return <CenteredMessage>No log types found</CenteredMessage>;
 
-  const total = filtered.length;
-  const pageCount = Math.max(1, Math.ceil(total / pageSize));
-  const start = (page - 1) * pageSize;
-  const rows = filtered.slice(start, start + pageSize);
-
+  const rows = logs;
   const statTotal = summary?.total ?? 0;
   const statErrors = summary?.errors ?? 0;
   const statLogins = summary?.logins ?? 0;
 
   const exportCSV = () => {
     const header = ['Date', 'Type', 'Description', 'User'];
-    const rows = filtered.map((r) => [
+    const rows = logs.map((r) => [
       r.timestamp,
       r.type,
       `"${r.description}"`,
@@ -231,16 +211,24 @@ export default function Analytics() {
         )}
       </section>
 
-      <AuditTable
-        rows={rows}
-        page={page}
-        pageCount={pageCount}
-        start={start}
-        total={total}
-        setPage={setPage}
-        onView={setShowDetail}
-        badgeClasses={badgeClasses}
-      />
+      {logsLoading ? (
+        <CenteredMessage>Loading audit logs...</CenteredMessage>
+      ) : logsError ? (
+        <CenteredMessage>Failed to load audit logs</CenteredMessage>
+      ) : rows.length === 0 ? (
+        <CenteredMessage>No audit logs found</CenteredMessage>
+      ) : (
+        <AuditTable
+          rows={rows}
+          page={page}
+          pageCount={pageCount}
+          start={start}
+          total={total}
+          setPage={setPage}
+          onView={setShowDetail}
+          badgeClasses={badgeClasses}
+        />
+      )}
 
       <AdvancedFilterModal
         open={showAdvanced}
