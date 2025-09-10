@@ -14,6 +14,7 @@ test('validates response against schema', async (t) => {
       }),
   );
   t.after(restore);
+
   const schema = z.object({ ok: z.boolean() });
   const data = await fetchJson('http://example', schema, {});
   assert.deepEqual(data, { ok: true });
@@ -30,6 +31,7 @@ test('throws on schema mismatch', async (t) => {
       }),
   );
   t.after(restore);
+
   const schema = z.object({ ok: z.boolean() });
   await assert.rejects(fetchJson('http://example', schema, {}));
 });
@@ -45,6 +47,7 @@ test('throws on non-ok response', async (t) => {
       }),
   );
   t.after(restore);
+
   const schema = z.object({ ok: z.boolean() });
   await assert.rejects(
     fetchJson('http://example', schema, {}),
