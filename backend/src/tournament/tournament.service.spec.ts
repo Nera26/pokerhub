@@ -1,15 +1,5 @@
-import { Test } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { TournamentService } from './tournament.service';
-import { Tournament } from '../database/entities/tournament.entity';
-import { Seat } from '../database/entities/seat.entity';
-import { Table } from '../database/entities/table.entity';
-import { TournamentScheduler } from './scheduler.service';
-import { RoomManager } from '../game/room.service';
-import { RebuyService } from './rebuy.service';
-import { PkoService } from './pko.service';
-import { FeatureFlagsService } from '../feature-flags/feature-flags.service';
-import { EventPublisher } from '../events/events.service';
+import { createTournamentModule } from '../../test/utils/createTournamentModule';
 
 describe('TournamentService get', () => {
   let service: TournamentService;
@@ -17,22 +7,7 @@ describe('TournamentService get', () => {
   const seats: any = { count: jest.fn(), exists: jest.fn() };
 
   beforeEach(async () => {
-    const moduleRef = await Test.createTestingModule({
-      providers: [
-        TournamentService,
-        FeatureFlagsService,
-        { provide: EventPublisher, useValue: {} },
-        { provide: getRepositoryToken(Tournament), useValue: tournaments },
-        { provide: getRepositoryToken(Seat), useValue: seats },
-        { provide: getRepositoryToken(Table), useValue: {} },
-        { provide: TournamentScheduler, useValue: {} },
-        { provide: RoomManager, useValue: {} },
-        { provide: RebuyService, useValue: {} },
-        { provide: PkoService, useValue: {} },
-      ],
-    }).compile();
-
-    service = moduleRef.get(TournamentService);
+    ({ service } = await createTournamentModule({ tournaments, seats }));
   });
 
   it('returns overview structure and prizes', async () => {

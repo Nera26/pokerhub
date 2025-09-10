@@ -1,13 +1,13 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Page from '@/app/dashboard/page';
+import { mockProfile } from '../utils/mockProfile';
 
 const replace = jest.fn();
-const push = jest.fn();
 let searchParams = new URLSearchParams('?tab=users');
 
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ replace, push }),
+  useRouter: () => ({ replace }),
   usePathname: () => '/dashboard',
   useSearchParams: () => searchParams,
 }));
@@ -69,24 +69,11 @@ jest.mock('@tanstack/react-query', () => ({
     isError: false,
   })),
 }));
-jest.mock('@/lib/api/profile', () => ({
-  fetchProfile: jest.fn().mockResolvedValue({
-    username: 'Admin',
-    email: 'admin@example.com',
-    avatarUrl: '/a.png',
-    bank: '',
-    location: '',
-    joined: '2024-01-01T00:00:00Z',
-    bio: '',
-    experience: 0,
-    balance: 0,
-  }),
-}));
+jest.mock('@/lib/api/profile', () => mockProfile());
 
 describe('Dashboard page', () => {
   beforeEach(() => {
     replace.mockClear();
-    push.mockClear();
     searchParams = new URLSearchParams('?tab=users');
   });
 
@@ -101,10 +88,7 @@ describe('Dashboard page', () => {
   it('syncs tab changes to URL', async () => {
     const user = userEvent.setup();
     render(<Page />);
-    const analyticsBtn = await screen.findByRole('button', {
-      name: /analytics/i,
-    });
-    await user.click(analyticsBtn);
+    await user.click(await screen.findByRole('button', { name: /analytics/i }));
     expect(replace).toHaveBeenCalledWith('/dashboard?tab=analytics');
   });
 });

@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
+import { createInMemoryDb } from './test-utils';
 import { BankReconciliationService } from './bank-reconciliation.service';
 import { PendingDeposit } from './pending-deposit.entity';
 import { EventPublisher } from '../events/events.service';
@@ -12,28 +12,7 @@ describe('BankReconciliationService', () => {
   let send: jest.Mock;
 
   beforeAll(async () => {
-    const db = newDb();
-    db.public.registerFunction({
-      name: 'version',
-      returns: 'text',
-      implementation: () => 'pg-mem',
-    });
-    db.public.registerFunction({
-      name: 'current_database',
-      returns: 'text',
-      implementation: () => 'test',
-    });
-    db.public.registerFunction({
-      name: 'uuid_generate_v4',
-      returns: 'text',
-      implementation: () => '00000000-0000-0000-0000-000000000001',
-    });
-    dataSource = db.adapters.createTypeormDataSource({
-      type: 'postgres',
-      entities: [PendingDeposit],
-    });
-    await dataSource.initialize();
-    await dataSource.synchronize();
+    dataSource = await createInMemoryDb([PendingDeposit]);
     send = jest.fn().mockResolvedValue(undefined);
     const producer: any = {
       send,

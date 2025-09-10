@@ -1,4 +1,4 @@
-import { DataSource } from 'typeorm';
+import { DataSource, EntityTarget } from 'typeorm';
 import { newDb } from 'pg-mem';
 import { Account } from './account.entity';
 import { JournalEntry } from './journal-entry.entity';
@@ -10,6 +10,42 @@ import { EventPublisher } from '../events/events.service';
 import { PaymentProviderService } from './payment-provider.service';
 import { KycService } from './kyc.service';
 import { SettlementService } from './settlement.service';
+
+export async function createInMemoryDb(
+  entities: EntityTarget<any>[],
+): Promise<DataSource> {
+  const db = newDb();
+  db.public.registerFunction({
+    name: 'version',
+    returns: 'text',
+    implementation: () => 'pg-mem',
+  });
+  db.public.registerFunction({
+    name: 'current_database',
+    returns: 'text',
+    implementation: () => 'test',
+  });
+  let seq = 1;
+  db.public.registerFunction({
+    name: 'uuid_generate_v4',
+    returns: 'text',
+    implementation: () => {
+      const id = seq.toString(16).padStart(32, '0');
+      seq++;
+      return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(
+        16,
+        20,
+      )}-${id.slice(20)}`;
+    },
+  });
+  const dataSource = db.adapters.createTypeormDataSource({
+    type: 'postgres',
+    entities,
+    synchronize: true,
+  }) as DataSource;
+  await dataSource.initialize();
+  return dataSource;
+}
 
 export async function setupTestWallet() {
   const events: EventPublisher = { emit: jest.fn() } as any;
@@ -54,33 +90,13 @@ export async function setupTestWallet() {
   const provider: any = { initiate3DS: jest.fn() } as PaymentProviderService;
   const kyc: any = { isVerified: jest.fn() } as KycService;
 
-  const db = newDb();
-  db.public.registerFunction({
-    name: 'version',
-    returns: 'text',
-    implementation: () => 'pg-mem',
-  });
-  db.public.registerFunction({
-    name: 'current_database',
-    returns: 'text',
-    implementation: () => 'test',
-  });
-  let seq = 1;
-  db.public.registerFunction({
-    name: 'uuid_generate_v4',
-    returns: 'text',
-    implementation: () => {
-      const id = seq.toString(16).padStart(32, '0');
-      seq++;
-      return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(16, 20)}-${id.slice(20)}`;
-    },
-  });
-  const dataSource = db.adapters.createTypeormDataSource({
-    type: 'postgres',
-    entities: [Account, JournalEntry, Disbursement, SettlementJournal, PendingDeposit],
-    synchronize: true,
-  }) as DataSource;
-  await dataSource.initialize();
+  const dataSource = await createInMemoryDb([
+    Account,
+    JournalEntry,
+    Disbursement,
+    SettlementJournal,
+    PendingDeposit,
+  ]);
 
   const account = dataSource.getRepository(Account);
   const journal = dataSource.getRepository(JournalEntry);
