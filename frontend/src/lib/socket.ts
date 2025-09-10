@@ -3,7 +3,7 @@ import { type GameActionPayload } from '@shared/types';
 import { GameActionSchema } from '@shared/schemas/game';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
 import { setServerTime } from './server-time';
-import { createNamespaceSocket } from './socket-namespace';
+import { createNamespaceSocket } from './socket-base';
 
 const {
   getSocket: getNamespaceSocket,
