@@ -71,4 +71,5 @@ export const validationSchema = Joi.object({
   METRICS_PORT: Joi.number().integer().optional(),
   RAKE_CONFIG: Joi.string().optional(),
   TOURNAMENT_AVOID_WITHIN: Joi.number().integer().min(0).optional(),
+  SYSTEM_ACCOUNTS: Joi.string().optional(),
 });

@@ -11,6 +11,7 @@ import { PaymentProviderService } from '../../src/wallet/payment-provider.servic
 import { KycService } from '../../src/wallet/kyc.service';
 import { SettlementService } from '../../src/wallet/settlement.service';
 import { MockRedis } from '../utils/mock-redis';
+import { ConfigService } from '@nestjs/config';
 
 export async function setupWalletTest() {
   const events: EventPublisher = { emit: jest.fn() } as any;
@@ -43,6 +44,10 @@ export async function setupWalletTest() {
 
   const settleSvc = new SettlementService(settleRepo);
 
+  const config = {
+    get: jest.fn().mockReturnValue(['reserve', 'house', 'rake', 'prize']),
+  } as unknown as ConfigService;
+
   const service = new WalletService(
     accountRepo,
     journalRepo,
@@ -54,6 +59,7 @@ export async function setupWalletTest() {
     provider,
     kyc,
     settleSvc,
+    config,
   );
   (service as any).enqueueDisbursement = jest.fn();
   (service as any).pendingQueue = { add: jest.fn(), getJob: jest.fn() };

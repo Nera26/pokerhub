@@ -20,6 +20,7 @@ import {
   geoConfig,
   gameConfig,
   tournamentConfig,
+  systemConfig,
 } from './config';
 import { validationSchema } from './config/env.validation';
 
@@ -81,6 +82,7 @@ import { LanguageEntity } from './database/entities/language.entity';
         geoConfig,
         gameConfig,
         tournamentConfig,
+        systemConfig,
       ],
     }),
 

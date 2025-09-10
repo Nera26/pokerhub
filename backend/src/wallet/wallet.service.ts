@@ -1,4 +1,5 @@
 import { Inject, Injectable, ForbiddenException, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, LessThan } from 'typeorm';
 import { createHash, randomUUID } from 'crypto';
@@ -73,6 +74,7 @@ export class WalletService {
     private readonly provider: PaymentProviderService,
     private readonly kyc: KycService,
     private readonly settlementSvc: SettlementService,
+    private readonly config: ConfigService = new ConfigService(),
     @Optional() private readonly analytics?: AnalyticsService,
     @Optional() private readonly chargebacks?: ChargebackMonitor,
     @Optional() private readonly geo?: GeoIpService,
@@ -167,7 +169,13 @@ export class WalletService {
         refId,
         currency: entry.account.currency,
       };
-      const systemAccounts = ['reserve', 'house', 'rake', 'prize'];
+      const systemAccounts =
+        this.config.get<string[]>('SYSTEM_ACCOUNTS') ?? [
+          'reserve',
+          'house',
+          'rake',
+          'prize',
+        ];
       if (entry.amount > 0) {
         await this.events.emit('wallet.credit', payload);
         if (!systemAccounts.includes(entry.account.name)) {
