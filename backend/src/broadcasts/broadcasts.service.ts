@@ -1,14 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { BroadcastEntity } from '../database/entities/broadcast.entity';
+import { BroadcastTemplateEntity } from '../database/entities/broadcast-template.entity';
 import { Broadcast, SendBroadcastRequest } from '../schemas/broadcasts';
 
 @Injectable()
 export class BroadcastsService {
   private readonly repo: Repository<BroadcastEntity>;
+  private readonly templatesRepo: Repository<BroadcastTemplateEntity>;
 
   constructor(private readonly dataSource: DataSource) {
     this.repo = dataSource.getRepository(BroadcastEntity);
+    this.templatesRepo = dataSource.getRepository(BroadcastTemplateEntity);
   }
 
   async list(): Promise<Broadcast[]> {
@@ -20,6 +23,14 @@ export class BroadcastsService {
       timestamp: e.timestamp.toISOString(),
       urgent: e.urgent,
     }));
+  }
+
+  async listTemplates(): Promise<Record<string, string>> {
+    const entities = await this.templatesRepo.find();
+    return entities.reduce((acc, e) => {
+      acc[e.name] = e.text;
+      return acc;
+    }, {} as Record<string, string>);
   }
 
   async send(req: SendBroadcastRequest): Promise<Broadcast> {

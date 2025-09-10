@@ -4,6 +4,8 @@ import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
 import { BroadcastsService } from '../src/broadcasts/broadcasts.service';
 import { BroadcastEntity } from '../src/database/entities/broadcast.entity';
+import { BroadcastTemplateEntity } from '../src/database/entities/broadcast-template.entity';
+import { getRepositoryToken } from '@nestjs/typeorm';
 
 describe('BroadcastsService', () => {
   let service: BroadcastsService;
@@ -38,14 +40,14 @@ describe('BroadcastsService', () => {
             });
             dataSource = db.adapters.createTypeormDataSource({
               type: 'postgres',
-              entities: [BroadcastEntity],
+              entities: [BroadcastEntity, BroadcastTemplateEntity],
               synchronize: true,
             }) as DataSource;
             return dataSource.options;
           },
           dataSourceFactory: async () => dataSource.initialize(),
         }),
-        TypeOrmModule.forFeature([BroadcastEntity]),
+        TypeOrmModule.forFeature([BroadcastEntity, BroadcastTemplateEntity]),
       ],
       providers: [BroadcastsService],
     }).compile();
@@ -62,5 +64,28 @@ describe('BroadcastsService', () => {
     const list = await service.list();
     expect(list).toHaveLength(1);
     expect(list[0].text).toBe('Hello');
+  });
+
+  it('lists templates from database', async () => {
+    const repo = moduleRef.get(getRepositoryToken(BroadcastTemplateEntity));
+    await repo.save({
+      id: '11111111-1111-1111-1111-111111111111',
+      name: 'maintenance',
+      text:
+        'Server maintenance scheduled for [DATE] at [TIME]. Expected downtime: [DURATION]. We apologize for any inconvenience.',
+    });
+    await repo.save({
+      id: '22222222-2222-2222-2222-222222222222',
+      name: 'tournament',
+      text:
+        'New tournament starting [DATE] at [TIME]! Buy-in: [AMOUNT] | Prize Pool: [PRIZE] | Register now to secure your seat!',
+    });
+    const templates = await service.listTemplates();
+    expect(templates).toEqual({
+      maintenance:
+        'Server maintenance scheduled for [DATE] at [TIME]. Expected downtime: [DURATION]. We apologize for any inconvenience.',
+      tournament:
+        'New tournament starting [DATE] at [TIME]! Buy-in: [AMOUNT] | Prize Pool: [PRIZE] | Register now to secure your seat!',
+    });
   });
 });

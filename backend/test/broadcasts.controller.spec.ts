@@ -6,6 +6,7 @@ import { newDb } from 'pg-mem';
 import request from 'supertest';
 import { BroadcastsModule } from '../src/broadcasts/broadcasts.module';
 import { BroadcastEntity } from '../src/database/entities/broadcast.entity';
+import { BroadcastTemplateEntity } from '../src/database/entities/broadcast-template.entity';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
 
@@ -41,7 +42,7 @@ describe('BroadcastsController', () => {
             });
             dataSource = db.adapters.createTypeormDataSource({
               type: 'postgres',
-              entities: [BroadcastEntity],
+              entities: [BroadcastEntity, BroadcastTemplateEntity],
               synchronize: true,
             }) as DataSource;
             return dataSource.options;
@@ -59,6 +60,22 @@ describe('BroadcastsController', () => {
 
     app = moduleRef.createNestApplication();
     await app.init();
+
+    const repo = app
+      .get(DataSource)
+      .getRepository(BroadcastTemplateEntity);
+    await repo.save({
+      id: '11111111-1111-1111-1111-111111111111',
+      name: 'maintenance',
+      text:
+        'Server maintenance scheduled for [DATE] at [TIME]. Expected downtime: [DURATION]. We apologize for any inconvenience.',
+    });
+    await repo.save({
+      id: '22222222-2222-2222-2222-222222222222',
+      name: 'tournament',
+      text:
+        'New tournament starting [DATE] at [TIME]! Buy-in: [AMOUNT] | Prize Pool: [PRIZE] | Register now to secure your seat!',
+    });
   });
 
   afterAll(async () => {
