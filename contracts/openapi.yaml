@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.16.0
+  version: 2.17.0
 paths:
   /status:
     get:
@@ -23,6 +23,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PrecacheResponse'
+  /nav-icons:
+    get:
+      summary: List navigation icon metadata
+      responses:
+        '200':
+          description: Navigation icons
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NavIconsResponse'
   /auth/login:
     post:
       summary: Login
@@ -3338,6 +3348,18 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Language'
+    NavIcon:
+      type: object
+      required: [name, svg]
+      properties:
+        name:
+          type: string
+        svg:
+          type: string
+    NavIconsResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/NavIcon'
     ChipDenominationsResponse:
       type: object
       required: [denoms]

@@ -28,6 +28,15 @@ export type Language = z.infer<typeof LanguageSchema>;
 export const LanguagesResponseSchema = z.array(LanguageSchema);
 export type LanguagesResponse = z.infer<typeof LanguagesResponseSchema>;
 
+// Navigation icons
+export const NavIconSchema = z.object({
+  name: z.string(),
+  svg: z.string(),
+});
+export type NavIcon = z.infer<typeof NavIconSchema>;
+export const NavIconsResponseSchema = z.array(NavIconSchema);
+export type NavIconsResponse = z.infer<typeof NavIconsResponseSchema>;
+
 // Chip denominations
 export const ChipDenominationsResponseSchema = z.object({
   denoms: z.array(z.number().positive()).nonempty(),
