@@ -5,9 +5,12 @@ import { TransactionType } from './transaction-type.entity';
 import { Transaction } from './transaction.entity';
 import {
   FilterOptionsSchema,
-  TransactionEntriesSchema,
+  AdminTransactionEntriesSchema,
 } from '@shared/types';
-import type { FilterOptions, TransactionEntries } from '@shared/types';
+import type {
+  FilterOptions,
+  AdminTransactionEntries,
+} from '@shared/types';
 import {
   TransactionLogResponseSchema,
   TransactionLogQuerySchema,
@@ -51,12 +54,12 @@ export class TransactionsService {
     ];
   }
 
-  async getUserTransactions(userId: string): Promise<TransactionEntries> {
+  async getUserTransactions(userId: string): Promise<AdminTransactionEntries> {
     const txs = await this.txRepo.find({
       where: { userId },
       order: { createdAt: 'DESC' },
     });
-    return TransactionEntriesSchema.parse(
+    return AdminTransactionEntriesSchema.parse(
       txs.map((t) => ({
         date: t.createdAt.toISOString(),
         action: t.type.label,

@@ -8,9 +8,11 @@ jest.mock('@/app/components/common/TransactionHistoryTable', () => {
   };
 });
 
-import TransactionHistoryModal, { PerformedBy } from '@/app/components/modals/TransactionHistoryModal';
+import TransactionHistoryModal, {
+  PerformedBy,
+} from '@/app/components/modals/TransactionHistoryModal';
 import TransactionHistoryTable from '@/app/components/common/TransactionHistoryTable';
-import type { TransactionEntry } from '@shared/types';
+import type { AdminTransactionEntry } from '@shared/types';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   fetchTransactionFilters,
@@ -23,7 +25,7 @@ jest.mock('@/lib/api/transactions', () => ({
 }));
 
 describe('TransactionHistoryModal', () => {
-  const entries: TransactionEntry[] = [
+  const entries: AdminTransactionEntry[] = [
     {
       date: '2024-01-01 10:00',
       action: 'Deposit',
@@ -74,15 +76,12 @@ describe('TransactionHistoryModal', () => {
       by: performedBy,
       ...rest,
     }));
-    expect(tableMock.mock.calls[tableMock.mock.calls.length - 1][0].data).toEqual(
-      expectedTableData,
-    );
+    expect(
+      tableMock.mock.calls[tableMock.mock.calls.length - 1][0].data,
+    ).toEqual(expectedTableData);
 
     // apply filter
-    await user.selectOptions(
-      screen.getByDisplayValue('All Types'),
-      'Deposit',
-    );
+    await user.selectOptions(screen.getByDisplayValue('All Types'), 'Deposit');
     await user.click(screen.getByRole('button', { name: /apply/i }));
 
     expect(onFilter).toHaveBeenCalledWith([entries[0]]);
@@ -99,4 +98,3 @@ describe('TransactionHistoryModal', () => {
     ]);
   });
 });
-

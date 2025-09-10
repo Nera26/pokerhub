@@ -1,16 +1,15 @@
 import { z } from 'zod';
 import { apiClient } from './client';
+import {
+  GameHistoryEntrySchema,
+  TournamentHistoryEntrySchema,
+  TransactionEntrySchema,
+  type GameHistoryEntry,
+  type TournamentHistoryEntry,
+  type TransactionEntry,
+} from '@shared/types';
 
-const GameHistoryEntrySchema = z.object({
-  id: z.string(),
-  type: z.string(),
-  stakes: z.string(),
-  buyin: z.string(),
-  date: z.string(),
-  profit: z.boolean(),
-  amount: z.string(),
-});
-export type GameHistoryEntry = z.infer<typeof GameHistoryEntrySchema>;
+export type { GameHistoryEntry, TournamentHistoryEntry, TransactionEntry };
 
 export function fetchGameHistory(
   opts: { signal?: AbortSignal } = {},
@@ -19,17 +18,6 @@ export function fetchGameHistory(
     signal: opts.signal,
   });
 }
-
-const TournamentHistoryEntrySchema = z.object({
-  name: z.string(),
-  place: z.string(),
-  buyin: z.string(),
-  prize: z.string(),
-  duration: z.string(),
-});
-export type TournamentHistoryEntry = z.infer<
-  typeof TournamentHistoryEntrySchema
->;
 
 export function fetchTournamentHistory(
   opts: { signal?: AbortSignal } = {},
@@ -40,14 +28,6 @@ export function fetchTournamentHistory(
     { signal: opts.signal },
   );
 }
-
-const TransactionEntrySchema = z.object({
-  date: z.string(),
-  type: z.string(),
-  amount: z.string(),
-  status: z.string(),
-});
-export type TransactionEntry = z.infer<typeof TransactionEntrySchema>;
 
 export function fetchTransactions(
   opts: { signal?: AbortSignal } = {},

@@ -2,7 +2,10 @@ import { Controller, Get, Param, UseGuards, Req } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
-import { FilterOptionsSchema, TransactionEntriesSchema } from '@shared/types';
+import {
+  FilterOptionsSchema,
+  AdminTransactionEntriesSchema,
+} from '@shared/types';
 import {
   TransactionTypesResponseSchema,
   TransactionLogResponseSchema,
@@ -54,6 +57,6 @@ export class TransactionsController {
   @ApiResponse({ status: 200, description: 'Transactions list' })
   async userTransactions(@Param('id') id: string) {
     const res = await this.txService.getUserTransactions(id);
-    return TransactionEntriesSchema.parse(res);
+    return AdminTransactionEntriesSchema.parse(res);
   }
 }
