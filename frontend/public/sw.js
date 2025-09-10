@@ -16,7 +16,23 @@ precacheAndRoute(self.__WB_MANIFEST || []);
 const OFFLINE_URL = '/offline';
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open('offline-cache').then((cache) => cache.addAll([OFFLINE_URL])),
+    (async () => {
+      let urls = [];
+      try {
+        const res = await fetch('/api/precache');
+        if (res.ok) {
+          urls = await res.json();
+        }
+      } catch (err) {
+        console.error('Failed to fetch precache list', err);
+      }
+      try {
+        const cache = await caches.open('offline-cache');
+        await cache.addAll([OFFLINE_URL, ...urls]);
+      } catch (err) {
+        console.error('Failed to pre-cache assets', err);
+      }
+    })(),
   );
 });
 
@@ -92,4 +108,3 @@ const bgSyncPlugin = new BackgroundSyncPlugin('api-mutations', {
     method,
   );
 });
-
