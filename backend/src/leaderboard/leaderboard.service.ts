@@ -18,7 +18,9 @@ import {
 import type {
   LeaderboardEntry,
   LeaderboardRangesResponse,
+  LeaderboardModesResponse,
   TimeFilter,
+  ModeFilter,
 } from '@shared/types';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -29,6 +31,7 @@ export class LeaderboardService implements OnModuleInit {
   private readonly dataKey = 'leaderboard:data';
   private readonly ttl = 30; // seconds
   private readonly ranges: TimeFilter[] = ['daily', 'weekly', 'monthly'];
+  private readonly modes: ModeFilter[] = ['cash', 'tournament'];
   private scores = new Map<string, ScoreEntry>();
   private static readonly meter = metrics.getMeter('leaderboard');
   private static readonly rebuildEventsDuration =
@@ -77,6 +80,10 @@ export class LeaderboardService implements OnModuleInit {
 
   getRanges(): LeaderboardRangesResponse {
     return { ranges: this.ranges };
+  }
+
+  getModes(): LeaderboardModesResponse {
+    return { modes: this.modes };
   }
 
   async onModuleInit(): Promise<void> {

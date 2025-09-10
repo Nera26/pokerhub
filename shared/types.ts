@@ -330,10 +330,13 @@ export type TournamentDetails = z.infer<typeof TournamentDetailsSchema>;
 /** ---- Leaderboard / Hands (backend shared) ---- */
 export {
   LeaderboardRangesResponseSchema,
+  LeaderboardModesResponseSchema,
 } from '../backend/src/schemas/leaderboard';
 export type {
   TimeFilter,
+  ModeFilter,
   LeaderboardRangesResponse,
+  LeaderboardModesResponse,
 } from '../backend/src/schemas/leaderboard';
 
 export {

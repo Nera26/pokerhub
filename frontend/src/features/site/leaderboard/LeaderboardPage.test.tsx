@@ -25,6 +25,13 @@ jest.mock(
 );
 jest.mock('@/lib/api/profile');
 jest.mock('next/navigation', () => ({ useRouter: jest.fn() }));
+jest.mock('@/lib/api/leaderboard', () => ({
+  useLeaderboardModes: () => ({
+    data: { modes: ['cash'] },
+    isLoading: false,
+    error: null,
+  }),
+}));
 
 describe('LeaderboardPage', () => {
   function renderWithClient(ui: React.ReactElement) {

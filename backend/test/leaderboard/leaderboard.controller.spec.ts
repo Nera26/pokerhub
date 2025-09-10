@@ -3,7 +3,10 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { LeaderboardController } from '../../src/leaderboard/leaderboard.controller';
 import { LeaderboardService } from '../../src/leaderboard/leaderboard.service';
-import { LeaderboardRangesResponseSchema } from '@shared/types';
+import {
+  LeaderboardRangesResponseSchema,
+  LeaderboardModesResponseSchema,
+} from '@shared/types';
 import { AuthGuard } from '../../src/auth/auth.guard';
 import { AdminGuard } from '../../src/auth/admin.guard';
 
@@ -18,6 +21,7 @@ describe('LeaderboardController', () => {
           provide: LeaderboardService,
           useValue: {
             getRanges: () => ({ ranges: ['daily', 'weekly', 'monthly'] }),
+            getModes: () => ({ modes: ['cash', 'tournament'] }),
             getTopPlayers: jest.fn(),
             rebuild: jest.fn(),
           },
@@ -44,5 +48,13 @@ describe('LeaderboardController', () => {
       .expect(200);
     const parsed = LeaderboardRangesResponseSchema.parse(res.body);
     expect(parsed.ranges).toEqual(['daily', 'weekly', 'monthly']);
+  });
+
+  it('returns leaderboard modes', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/leaderboard/modes')
+      .expect(200);
+    const parsed = LeaderboardModesResponseSchema.parse(res.body);
+    expect(parsed.modes).toEqual(['cash', 'tournament']);
   });
 });

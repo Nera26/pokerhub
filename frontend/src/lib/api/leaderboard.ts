@@ -6,13 +6,15 @@ import {
   LeaderboardResponseSchema,
   StatusResponseSchema,
   LeaderboardRangesResponseSchema,
+  LeaderboardModesResponseSchema,
   type LeaderboardRangesResponse,
+  type LeaderboardModesResponse,
   type StatusResponse,
 } from '@shared/types';
 
-export async function fetchLeaderboard(
-  { signal }: { signal?: AbortSignal } = {},
-): Promise<LeaderboardEntry[]> {
+export async function fetchLeaderboard({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<LeaderboardEntry[]> {
   return await apiClient('/api/leaderboard', LeaderboardResponseSchema, {
     signal,
   });
@@ -31,5 +33,13 @@ export function useLeaderboardRanges() {
     queryKey: ['leaderboard', 'ranges'],
     queryFn: () =>
       apiClient('/api/leaderboard/ranges', LeaderboardRangesResponseSchema),
+  });
+}
+
+export function useLeaderboardModes() {
+  return useQuery<LeaderboardModesResponse, ApiError>({
+    queryKey: ['leaderboard', 'modes'],
+    queryFn: () =>
+      apiClient('/api/leaderboard/modes', LeaderboardModesResponseSchema),
   });
 }

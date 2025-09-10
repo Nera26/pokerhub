@@ -933,6 +933,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LeaderboardRangesResponse'
+  /leaderboard/modes:
+    get:
+      summary: Get leaderboard modes
+      responses:
+        '200':
+          description: Available modes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaderboardModesResponse'
   /leaderboard/rebuild:
     post:
       summary: Rebuild leaderboard
@@ -3644,6 +3654,11 @@ components:
       - daily
       - weekly
       - monthly
+  ModeFilter:
+    type: string
+    enum:
+      - cash
+      - tournament
   LeaderboardRangesResponse:
     type: object
     properties:
@@ -3653,6 +3668,15 @@ components:
           $ref: '#/components/schemas/TimeFilter'
     required:
       - ranges
+  LeaderboardModesResponse:
+    type: object
+    properties:
+      modes:
+        type: array
+        items:
+          $ref: '#/components/schemas/ModeFilter'
+    required:
+      - modes
   LeaderboardResponse:
     type: array
     items:
