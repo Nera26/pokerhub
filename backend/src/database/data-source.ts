@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import path from 'path';
 import { DataSource } from 'typeorm';
 import { Table } from './entities/table.entity';
 import { Tournament } from './entities/tournament.entity';
@@ -46,5 +47,5 @@ export const AppDataSource = new DataSource({
     BroadcastTypeEntity,
     BroadcastTemplateEntity,
   ],
-  migrations: [__dirname + '/migrations/*{.ts,.js}'],
+  migrations: [path.join(__dirname, 'migrations', '*.{ts,js}')],
 });
