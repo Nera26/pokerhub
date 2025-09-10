@@ -1,10 +1,7 @@
 import { WalletService } from '../../src/wallet/wallet.service';
 import { EventPublisher } from '../../src/events/events.service';
-import {
-  setupWalletTest,
-  WalletTestContext,
-  seedWalletAccounts,
-} from './test-utils';
+import { setupWalletTest, WalletTestContext } from './test-utils';
+import { walletAccounts } from './fixtures';
 
 describe('WalletService transactions', () => {
   let ctx: WalletTestContext;
@@ -15,7 +12,7 @@ describe('WalletService transactions', () => {
     ctx = await setupWalletTest();
     service = ctx.service;
     events = ctx.events;
-    await seedWalletAccounts(ctx.repos.account);
+    await ctx.repos.account.save(walletAccounts);
   });
 
   afterAll(async () => {

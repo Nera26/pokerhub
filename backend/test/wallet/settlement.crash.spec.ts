@@ -6,6 +6,7 @@ import { Disbursement } from '../../src/wallet/disbursement.entity';
 import { SettlementJournal } from '../../src/wallet/settlement-journal.entity';
 import type { Street } from '../../src/game/state-machine';
 import { createWalletServices } from './test-utils';
+import { walletAccounts } from './fixtures';
 
 describe('Settlement crash recovery', () => {
   let dataSource: DataSource;
@@ -41,12 +42,7 @@ describe('Settlement crash recovery', () => {
     await disbRepo.createQueryBuilder().delete().execute();
     await settleRepo.createQueryBuilder().delete().execute();
     await accountRepo.createQueryBuilder().delete().execute();
-    await accountRepo.save([
-      { id: userId, name: 'user', balance: 1000, currency: 'USD' },
-      { id: '00000000-0000-0000-0000-000000000001', name: 'reserve', balance: 0, currency: 'USD' },
-      { id: '00000000-0000-0000-0000-000000000002', name: 'rake', balance: 0, currency: 'USD' },
-      { id: '00000000-0000-0000-0000-000000000003', name: 'prize', balance: 0, currency: 'USD' },
-    ]);
+    await accountRepo.save(walletAccounts);
   });
 
   it('retries commit after crash without double settlement', async () => {
