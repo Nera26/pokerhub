@@ -1,12 +1,11 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { fetchFeatureFlags } from '@/lib/api/feature-flags';
 import type { FeatureFlagsResponse } from '@shared/types';
+import { createQueryHook } from './useApiQuery';
 
-export function useFeatureFlags() {
-  return useQuery<FeatureFlagsResponse>({
-    queryKey: ['feature-flags'],
-    queryFn: ({ signal }) => fetchFeatureFlags({ signal }),
-  });
-}
+export const useFeatureFlags = createQueryHook<FeatureFlagsResponse>(
+  'feature-flags',
+  (_client, _params, opts) => fetchFeatureFlags({ signal: opts.signal }),
+  'feature flags',
+);
