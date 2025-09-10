@@ -1,11 +1,23 @@
-import { TableThemeService, DEFAULT_TABLE_THEME } from '../src/services/table-theme.service';
+import { TableThemeService } from '../src/services/table-theme.service';
 import { TableThemeEntity } from '../src/database/entities/table-theme.entity';
+import { TABLE_THEME } from '@shared/config/tableTheme';
 import type { Repository } from 'typeorm';
+import type { TableThemeResponse } from '@shared/types';
 
 describe('TableThemeService', () => {
   let entity: TableThemeEntity | null;
   let repo: Partial<Repository<TableThemeEntity>>;
   let service: TableThemeService;
+  const customTheme: TableThemeResponse = {
+    hairline: 'var(--color-hairline)',
+    positions: {
+      BTN: {
+        color: 'hsl(44,88%,60%)',
+        glow: 'hsla(44,88%,60%,0.45)',
+        badge: '/badges/btn.svg',
+      },
+    },
+  };
 
   beforeEach(() => {
     entity = null;
@@ -20,17 +32,17 @@ describe('TableThemeService', () => {
     service = new TableThemeService(repo as Repository<TableThemeEntity>);
   });
 
-  it('seeds defaults when no theme exists', async () => {
-    const theme = await service.get();
-    expect(theme).toEqual(DEFAULT_TABLE_THEME);
-    expect((repo.save as jest.Mock).mock.calls.length).toBe(1);
+  it('throws when no theme exists', async () => {
+    await expect(service.get()).rejects.toThrow('Table theme not found');
   });
 
-  it('updates theme', async () => {
-    await service.get();
-    const updated = { ...DEFAULT_TABLE_THEME, hairline: 'var(--color-alt)' };
-    const res = await service.update(updated);
-    expect(res).toEqual(updated);
-    expect(entity?.hairline).toBe('var(--color-alt)');
+  it('creates and updates theme', async () => {
+    const created = await service.update(customTheme);
+    expect(created).toEqual(customTheme);
+    expect(await service.get()).toEqual(customTheme);
+
+    const res = await service.update({ hairline: undefined as any, positions: undefined as any });
+    expect(res).toEqual(TABLE_THEME);
+    expect(await service.get()).toEqual(TABLE_THEME);
   });
 });

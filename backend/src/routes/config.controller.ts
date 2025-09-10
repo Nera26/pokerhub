@@ -4,6 +4,7 @@ import {
   ChipDenominationsResponse,
   ChipDenominationsResponseSchema,
   TableThemeResponse,
+  TableThemeResponseSchema,
 } from '../schemas/config';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
@@ -41,5 +42,16 @@ export class ConfigController {
   @ApiResponse({ status: 200, description: 'Table theme mapping' })
   async getTableTheme(): Promise<TableThemeResponse> {
     return await this.themes.get();
+  }
+
+  @Put('table-theme')
+  @UseGuards(AuthGuard, AdminGuard)
+  @ApiOperation({ summary: 'Update table theme' })
+  @ApiResponse({ status: 200, description: 'Updated table theme' })
+  async updateTableTheme(
+    @Body() body: TableThemeResponse,
+  ): Promise<TableThemeResponse> {
+    const parsed = TableThemeResponseSchema.parse(body);
+    return await this.themes.update(parsed);
   }
 }

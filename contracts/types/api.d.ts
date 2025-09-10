@@ -1831,6 +1831,25 @@ export interface paths {
         };
       };
     };
+    /**
+     * Update table theme
+     * @description Admin only
+     */
+    put: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["TableThemeResponse"];
+        };
+      };
+      responses: {
+        /** @description Updated table theme */
+        200: {
+          content: {
+            "application/json": components["schemas"]["TableThemeResponse"];
+          };
+        };
+      };
+    };
   };
   "/users": {
     /** Create user */
