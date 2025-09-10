@@ -1,7 +1,8 @@
 'use client';
 
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { fetchMessages, sendBroadcast } from '@/lib/api/messages';
+import { fetchMessages } from '@/lib/api/messages';
+import { sendBroadcast } from '@/lib/api/broadcasts';
 import { useApiError } from '@/hooks/useApiError';
 import { useState } from 'react';
 

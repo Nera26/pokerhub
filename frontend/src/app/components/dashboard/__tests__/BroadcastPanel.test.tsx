@@ -1,11 +1,14 @@
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { renderWithClient } from './renderWithClient';
 import BroadcastPanel from '../BroadcastPanel';
-import { fetchMessages, sendBroadcast } from '@/lib/api/messages';
+import { fetchMessages } from '@/lib/api/messages';
+import { sendBroadcast } from '@/lib/api/broadcasts';
 
 jest.mock('@/hooks/useApiError', () => ({ useApiError: () => {} }));
 jest.mock('@/lib/api/messages', () => ({
   fetchMessages: jest.fn(),
+}));
+jest.mock('@/lib/api/broadcasts', () => ({
   sendBroadcast: jest.fn(),
 }));
 
