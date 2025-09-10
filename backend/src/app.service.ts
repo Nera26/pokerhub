@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ServiceStatusResponse } from '@shared/types';
-import { trace, metrics, SpanStatusCode } from '@opentelemetry/api';
+import { metrics, SpanStatusCode } from '@opentelemetry/api';
+import { withSpan } from './common/tracing';
 
 const meter = metrics.getMeter('backend');
 const statusCounter = meter.createCounter('status_requests_total');
@@ -16,15 +17,10 @@ export class AppService {
   }
 
   getStatus(): ServiceStatusResponse {
-    const tracer = trace.getTracer('backend');
-    return tracer.startActiveSpan('AppService.getStatus', (span) => {
+    return withSpan('AppService.getStatus', (span) => {
       statusCounter.add(1);
-      try {
-        span.setStatus({ code: SpanStatusCode.OK });
-        return { status: 'ok', contractVersion: this.version };
-      } finally {
-        span.end();
-      }
+      span.setStatus({ code: SpanStatusCode.OK });
+      return { status: 'ok', contractVersion: this.version };
     });
   }
 }

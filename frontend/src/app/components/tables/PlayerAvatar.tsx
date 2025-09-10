@@ -1,6 +1,6 @@
 'use client';
 
-import { HAIRLINE, POSITION_RING } from './colorTokens';
+import { useTableTheme } from '@/hooks/useTableTheme';
 import type { Player } from './types';
 import Image from 'next/image';
 
@@ -22,7 +22,8 @@ export default function PlayerAvatar({
   avatarClass,
   avatarRingStyle,
 }: PlayerAvatarProps) {
-  const ring = POSITION_RING[pos ?? ''];
+  const { hairline, positions } = useTableTheme();
+  const ring = positions[pos ?? ''];
 
   return (
     <div className={[wrapperClass, 'w-full flex justify-center'].join(' ')}>
@@ -39,7 +40,7 @@ export default function PlayerAvatar({
         />
         <div
           className="pointer-events-none absolute inset-0 rounded-full border"
-          style={{ borderColor: HAIRLINE }}
+          style={{ borderColor: hairline }}
         />
         <svg
           className="pointer-events-none absolute -inset-0.5"

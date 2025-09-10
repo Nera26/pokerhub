@@ -78,49 +78,51 @@ export default function TransactionHistoryTable<T extends { date: string }>({
   );
 
   return (
-    <div>
-      {sortedItems.length > 0 ? (
-        <table className={tableClassName}>
-          <thead>
+    <table className={tableClassName}>
+      <thead>
+        <tr>
+          {columns.map((col, i) => (
+            <th key={i} className={col.headerClassName}>
+              {col.header}
+            </th>
+          ))}
+          {actions && actions.length > 0 && (
+            <th className="text-left py-3 px-2 text-text-secondary">Action</th>
+          )}
+        </tr>
+      </thead>
+      <tbody>
+        <VirtualizedList
+          items={sortedItems}
+          estimateSize={estimateSize}
+          className={containerClassName}
+          emptyMessage={
             <tr>
-              {columns.map((col, i) => (
-                <th key={i} className={col.headerClassName}>
-                  {col.header}
-                </th>
-              ))}
-              {actions && actions.length > 0 && (
-                <th className="text-left py-3 px-2 text-text-secondary">
-                  Action
-                </th>
-              )}
+              <td
+                colSpan={columns.length + (actions ? 1 : 0)}
+                className="py-4 text-center"
+              >
+                {noDataMessage ?? null}
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            <VirtualizedList
-              items={sortedItems}
-              estimateSize={estimateSize}
-              className={containerClassName}
-              renderItem={(row, style, index) => (
-                <tr
-                  key={getRowKey ? getRowKey(row, index) : index}
-                  data-index={index}
-                  className={rowClassName}
-                  style={style}
-                >
-                  {columns.map((col, i) => (
-                    <td key={i} className={col.cellClassName}>
-                      {col.cell(row)}
-                    </td>
-                  ))}
-                  <ActionCells actions={actions} row={row} />
-                </tr>
-              )}
-            />
-          </tbody>
-        </table>
-      ) : (
-        (noDataMessage ?? null)
-      )}
-    </div>
+          }
+          renderItem={(row, style, index) => (
+            <tr
+              key={getRowKey ? getRowKey(row, index) : index}
+              data-index={index}
+              className={rowClassName}
+              style={style}
+            >
+              {columns.map((col, i) => (
+                <td key={i} className={col.cellClassName}>
+                  {col.cell(row)}
+                </td>
+              ))}
+              <ActionCells actions={actions} row={row} />
+            </tr>
+          )}
+        />
+      </tbody>
+    </table>
   );
 }

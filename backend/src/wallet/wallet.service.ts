@@ -12,7 +12,8 @@ import { DepositIban } from './deposit-iban.entity';
 import { DepositIbanHistory } from './deposit-iban-history.entity';
 import { EventPublisher } from '../events/events.service';
 import Redis from 'ioredis';
-import { metrics, trace, SpanStatusCode } from '@opentelemetry/api';
+import { metrics, SpanStatusCode } from '@opentelemetry/api';
+import { withSpan } from '../common/tracing';
 import type { Queue } from 'bullmq';
 import { createQueue } from '../redis/queue';
 import {
@@ -48,7 +49,6 @@ export interface ReconcileRow {
 
 @Injectable()
 export class WalletService {
-  private static readonly tracer = trace.getTracer('wallet');
   private static readonly meter = metrics.getMeter('wallet');
   private static readonly txnCounter = WalletService.meter.createCounter(
     'wallet_transactions_total',
@@ -205,46 +205,38 @@ export class WalletService {
     currency: string,
     idempotencyKey?: string,
   ): Promise<void> {
-    return WalletService.tracer.startActiveSpan(
-      'wallet.reserve',
-      async (span) => {
-        const start = Date.now();
-        WalletService.txnCounter.add(1, { operation: 'reserve' });
-        try {
-          const user = await this.accounts.findOneByOrFail({ id: accountId, currency });
-          const reserve = await this.accounts.findOneByOrFail({
-            name: 'reserve',
-            currency,
-          });
-          if (idempotencyKey && this.settlements) {
-            await this.settlements
-              .createQueryBuilder()
-              .insert()
-              .values({
-                id: randomUUID(),
-                idempotencyKey,
-                status: 'reserved',
-              })
-              .orIgnore()
-              .execute();
-          }
-          await this.record('reserve', refId, [
-            { account: user, amount: -amount },
-            { account: reserve, amount },
-          ]);
-          span.setStatus({ code: SpanStatusCode.OK });
-        } catch (err) {
-          span.recordException(err as Error);
-          span.setStatus({ code: SpanStatusCode.ERROR });
-          throw err;
-        } finally {
-          WalletService.txnDuration.record(Date.now() - start, {
-            operation: 'reserve',
-          });
-          span.end();
+    return withSpan('wallet.reserve', async (span) => {
+      const start = Date.now();
+      WalletService.txnCounter.add(1, { operation: 'reserve' });
+      try {
+        const user = await this.accounts.findOneByOrFail({ id: accountId, currency });
+        const reserve = await this.accounts.findOneByOrFail({
+          name: 'reserve',
+          currency,
+        });
+        if (idempotencyKey && this.settlements) {
+          await this.settlements
+            .createQueryBuilder()
+            .insert()
+            .values({
+              id: randomUUID(),
+              idempotencyKey,
+              status: 'reserved',
+            })
+            .orIgnore()
+            .execute();
         }
-      },
-    );
+        await this.record('reserve', refId, [
+          { account: user, amount: -amount },
+          { account: reserve, amount },
+        ]);
+        span.setStatus({ code: SpanStatusCode.OK });
+      } finally {
+        WalletService.txnDuration.record(Date.now() - start, {
+          operation: 'reserve',
+        });
+      }
+    });
   }
 
   async commit(
@@ -254,49 +246,41 @@ export class WalletService {
     currency: string,
     idempotencyKey?: string,
   ): Promise<void> {
-    return WalletService.tracer.startActiveSpan(
-      'wallet.commit',
-      async (span) => {
-        const start = Date.now();
-        WalletService.txnCounter.add(1, { operation: 'commit' });
-        try {
-          const reserve = await this.accounts.findOneByOrFail({
-            name: 'reserve',
-            currency,
-          });
-          const prize = await this.accounts.findOneByOrFail({
-            name: 'prize',
-            currency,
-          });
-          const rakeAcc = await this.accounts.findOneByOrFail({
-            name: 'rake',
-            currency,
-          });
-          await this.record('commit', refId, [
-            { account: reserve, amount: -amount },
-            { account: prize, amount: amount - rakeAmount },
-            { account: rakeAcc, amount: rakeAmount },
-          ]);
-          await this.metrics?.addRevenue(rakeAmount);
-          if (idempotencyKey && this.settlements) {
-            await this.settlements.update(
-              { idempotencyKey },
-              { status: 'committed' },
-            );
-          }
-          span.setStatus({ code: SpanStatusCode.OK });
-        } catch (err) {
-          span.recordException(err as Error);
-          span.setStatus({ code: SpanStatusCode.ERROR });
-          throw err;
-        } finally {
-          WalletService.txnDuration.record(Date.now() - start, {
-            operation: 'commit',
-          });
-          span.end();
+    return withSpan('wallet.commit', async (span) => {
+      const start = Date.now();
+      WalletService.txnCounter.add(1, { operation: 'commit' });
+      try {
+        const reserve = await this.accounts.findOneByOrFail({
+          name: 'reserve',
+          currency,
+        });
+        const prize = await this.accounts.findOneByOrFail({
+          name: 'prize',
+          currency,
+        });
+        const rakeAcc = await this.accounts.findOneByOrFail({
+          name: 'rake',
+          currency,
+        });
+        await this.record('commit', refId, [
+          { account: reserve, amount: -amount },
+          { account: prize, amount: amount - rakeAmount },
+          { account: rakeAcc, amount: rakeAmount },
+        ]);
+        await this.metrics?.addRevenue(rakeAmount);
+        if (idempotencyKey && this.settlements) {
+          await this.settlements.update(
+            { idempotencyKey },
+            { status: 'committed' },
+          );
         }
-      },
-    );
+        span.setStatus({ code: SpanStatusCode.OK });
+      } finally {
+        WalletService.txnDuration.record(Date.now() - start, {
+          operation: 'commit',
+        });
+      }
+    });
   }
 
   async rollback(
@@ -306,40 +290,32 @@ export class WalletService {
     currency: string,
     idempotencyKey?: string,
   ): Promise<void> {
-    return WalletService.tracer.startActiveSpan(
-      'wallet.rollback',
-      async (span) => {
-        const start = Date.now();
-        WalletService.txnCounter.add(1, { operation: 'rollback' });
-        try {
-          const reserve = await this.accounts.findOneByOrFail({
-            name: 'reserve',
-            currency,
-          });
-          const user = await this.accounts.findOneByOrFail({ id: accountId, currency });
-          await this.record('rollback', refId, [
-            { account: reserve, amount: -amount },
-            { account: user, amount },
-          ]);
-          if (idempotencyKey) {
-            const [handId, street, idx] = idempotencyKey.split('#');
-            if (handId && street && idx) {
-              await this.settlementSvc.cancel(handId, street as Street, Number(idx));
-            }
+    return withSpan('wallet.rollback', async (span) => {
+      const start = Date.now();
+      WalletService.txnCounter.add(1, { operation: 'rollback' });
+      try {
+        const reserve = await this.accounts.findOneByOrFail({
+          name: 'reserve',
+          currency,
+        });
+        const user = await this.accounts.findOneByOrFail({ id: accountId, currency });
+        await this.record('rollback', refId, [
+          { account: reserve, amount: -amount },
+          { account: user, amount },
+        ]);
+        if (idempotencyKey) {
+          const [handId, street, idx] = idempotencyKey.split('#');
+          if (handId && street && idx) {
+            await this.settlementSvc.cancel(handId, street as Street, Number(idx));
           }
-          span.setStatus({ code: SpanStatusCode.OK });
-        } catch (err) {
-          span.recordException(err as Error);
-          span.setStatus({ code: SpanStatusCode.ERROR });
-          throw err;
-        } finally {
-          WalletService.txnDuration.record(Date.now() - start, {
-            operation: 'rollback',
-          });
-          span.end();
         }
-      },
-    );
+        span.setStatus({ code: SpanStatusCode.OK });
+      } finally {
+        WalletService.txnDuration.record(Date.now() - start, {
+          operation: 'rollback',
+        });
+      }
+    });
   }
 
   async requestDisbursement(id: string, currency: string): Promise<void> {
@@ -695,71 +671,65 @@ export class WalletService {
     currency: string,
     idempotencyKey?: string,
   ): Promise<ProviderChallenge> {
-    return WalletService.tracer.startActiveSpan(
-      'wallet.withdraw',
-      async (span) => {
-        const start = Date.now();
-        WalletService.txnCounter.add(1, { operation: 'withdraw' });
-        try {
-          let redisKey: string | undefined;
-          if (idempotencyKey) {
-            redisKey = `wallet:idemp:${idempotencyKey}`;
-            const existing = await this.redis.get(redisKey);
-            if (existing && existing !== 'LOCK') {
+    return withSpan('wallet.withdraw', async (span) => {
+      const start = Date.now();
+      WalletService.txnCounter.add(1, { operation: 'withdraw' });
+      try {
+        let redisKey: string | undefined;
+        if (idempotencyKey) {
+          redisKey = `wallet:idemp:${idempotencyKey}`;
+          const existing = await this.redis.get(redisKey);
+          if (existing && existing !== 'LOCK') {
+            span.setStatus({ code: SpanStatusCode.OK });
+            return JSON.parse(existing);
+          }
+          const lock = await this.redis.set(redisKey, 'LOCK', 'NX', 'EX', 600);
+          if (lock === null) {
+            const cached = await this.redis.get(redisKey);
+            if (cached && cached !== 'LOCK') {
               span.setStatus({ code: SpanStatusCode.OK });
-              return JSON.parse(existing);
+              return JSON.parse(cached);
             }
-            const lock = await this.redis.set(redisKey, 'LOCK', 'NX', 'EX', 600);
-            if (lock === null) {
-              const cached = await this.redis.get(redisKey);
-              if (cached && cached !== 'LOCK') {
-                span.setStatus({ code: SpanStatusCode.OK });
-                return JSON.parse(cached);
-              }
-              throw new Error('Duplicate request in progress');
-            }
+            throw new Error('Duplicate request in progress');
           }
-
-          if (this.geo && !this.geo.isAllowed(ip)) {
-            throw new ForbiddenException('Country not allowed');
-          }
-          const user = await this.accounts.findOneByOrFail({ id: accountId, currency });
-          if (!(await this.kyc.isVerified(accountId, ip))) {
-            throw new Error('KYC required');
-          }
-          if (amount > 100000) {
-            throw new Error('AML limit exceeded');
-          }
-          await this.checkVelocity('withdraw', deviceId, ip);
-          await this.enforceVelocity('withdraw', accountId, amount);
-          await this.enforceDailyLimit('withdraw', accountId, amount, currency);
-          const challenge = await this.provider.initiate3DS(accountId, amount);
-          await this.redis.set(
-            this.challengeKey(challenge.id),
-            JSON.stringify({ op: 'withdraw', accountId, amount, currency }),
-            'EX',
-            600,
-          );
-          if (redisKey) {
-            await this.redis.set(redisKey, JSON.stringify(challenge), 'EX', 600);
-          }
-          span.setStatus({ code: SpanStatusCode.OK });
-          return challenge;
-        } catch (err) {
-          if (idempotencyKey) {
-            await this.redis.del(`wallet:idemp:${idempotencyKey}`);
-          }
-          span.recordException(err as Error);
-          span.setStatus({ code: SpanStatusCode.ERROR });
-          throw err;
-        } finally {
-          WalletService.txnDuration.record(Date.now() - start, {
-            operation: 'withdraw',
-          });
-          span.end();
         }
-      },
-    );
+
+        if (this.geo && !this.geo.isAllowed(ip)) {
+          throw new ForbiddenException('Country not allowed');
+        }
+        const user = await this.accounts.findOneByOrFail({ id: accountId, currency });
+        if (!(await this.kyc.isVerified(accountId, ip))) {
+          throw new Error('KYC required');
+        }
+        if (amount > 100000) {
+          throw new Error('AML limit exceeded');
+        }
+        await this.checkVelocity('withdraw', deviceId, ip);
+        await this.enforceVelocity('withdraw', accountId, amount);
+        await this.enforceDailyLimit('withdraw', accountId, amount, currency);
+        const challenge = await this.provider.initiate3DS(accountId, amount);
+        await this.redis.set(
+          this.challengeKey(challenge.id),
+          JSON.stringify({ op: 'withdraw', accountId, amount, currency }),
+          'EX',
+          600,
+        );
+        if (redisKey) {
+          await this.redis.set(redisKey, JSON.stringify(challenge), 'EX', 600);
+        }
+        span.setStatus({ code: SpanStatusCode.OK });
+        return challenge;
+      } catch (err) {
+        if (idempotencyKey) {
+          await this.redis.del(`wallet:idemp:${idempotencyKey}`);
+        }
+        throw err;
+      } finally {
+        WalletService.txnDuration.record(Date.now() - start, {
+          operation: 'withdraw',
+        });
+      }
+    });
   }
 
   async deposit(
@@ -770,84 +740,78 @@ export class WalletService {
     currency: string,
     idempotencyKey?: string,
   ): Promise<ProviderChallenge> {
-    return WalletService.tracer.startActiveSpan(
-      'wallet.deposit',
-      async (span) => {
-        const start = Date.now();
-        WalletService.txnCounter.add(1, { operation: 'deposit' });
-        try {
-          let redisKey: string | undefined;
-          if (idempotencyKey) {
-            redisKey = `wallet:idemp:${idempotencyKey}`;
-            const existing = await this.redis.get(redisKey);
-            if (existing && existing !== 'LOCK') {
+    return withSpan('wallet.deposit', async (span) => {
+      const start = Date.now();
+      WalletService.txnCounter.add(1, { operation: 'deposit' });
+      try {
+        let redisKey: string | undefined;
+        if (idempotencyKey) {
+          redisKey = `wallet:idemp:${idempotencyKey}`;
+          const existing = await this.redis.get(redisKey);
+          if (existing && existing !== 'LOCK') {
+            span.setStatus({ code: SpanStatusCode.OK });
+            return JSON.parse(existing);
+          }
+          const lock = await this.redis.set(redisKey, 'LOCK', 'NX', 'EX', 600);
+          if (lock === null) {
+            const cached = await this.redis.get(redisKey);
+            if (cached && cached !== 'LOCK') {
               span.setStatus({ code: SpanStatusCode.OK });
-              return JSON.parse(existing);
+              return JSON.parse(cached);
             }
-            const lock = await this.redis.set(redisKey, 'LOCK', 'NX', 'EX', 600);
-            if (lock === null) {
-              const cached = await this.redis.get(redisKey);
-              if (cached && cached !== 'LOCK') {
-                span.setStatus({ code: SpanStatusCode.OK });
-                return JSON.parse(cached);
-              }
-              throw new Error('Duplicate request in progress');
-            }
+            throw new Error('Duplicate request in progress');
           }
-
-          if (this.geo && !this.geo.isAllowed(ip)) {
-            throw new ForbiddenException('Country not allowed');
-          }
-          await this.checkVelocity('deposit', deviceId, ip);
-          await this.enforceVelocity('deposit', accountId, amount);
-          const user = await this.accounts.findOneByOrFail({ id: accountId, currency });
-          if (!user.kycVerified) {
-            throw new Error('KYC required');
-          }
-          await this.enforceDailyLimit('deposit', accountId, amount, currency);
-          const cb = await this.chargebacks?.check(accountId, deviceId);
-          if (cb?.flagged) {
-            await this.analytics?.emit('wallet.chargeback_flag', {
-              accountId,
-              deviceId,
-              count:
-                cb.accountCount >= cb.accountLimit
-                  ? cb.accountCount
-                  : cb.deviceCount,
-              limit:
-                cb.accountCount >= cb.accountLimit
-                  ? cb.accountLimit
-                  : cb.deviceLimit,
-            });
-            throw new Error('Chargeback threshold exceeded');
-          }
-          const challenge = await this.provider.initiate3DS(accountId, amount);
-          await this.redis.set(
-            this.challengeKey(challenge.id),
-            JSON.stringify({ op: 'deposit', accountId, amount, currency }),
-            'EX',
-            600,
-          );
-          if (redisKey) {
-            await this.redis.set(redisKey, JSON.stringify(challenge), 'EX', 600);
-          }
-          span.setStatus({ code: SpanStatusCode.OK });
-          return challenge;
-        } catch (err) {
-          if (idempotencyKey) {
-            await this.redis.del(`wallet:idemp:${idempotencyKey}`);
-          }
-          span.recordException(err as Error);
-          span.setStatus({ code: SpanStatusCode.ERROR });
-          throw err;
-        } finally {
-          WalletService.txnDuration.record(Date.now() - start, {
-            operation: 'deposit',
-          });
-          span.end();
         }
-      },
-    );
+
+        if (this.geo && !this.geo.isAllowed(ip)) {
+          throw new ForbiddenException('Country not allowed');
+        }
+        await this.checkVelocity('deposit', deviceId, ip);
+        await this.enforceVelocity('deposit', accountId, amount);
+        const user = await this.accounts.findOneByOrFail({ id: accountId, currency });
+        if (!user.kycVerified) {
+          throw new Error('KYC required');
+        }
+        await this.enforceDailyLimit('deposit', accountId, amount, currency);
+        const cb = await this.chargebacks?.check(accountId, deviceId);
+        if (cb?.flagged) {
+          await this.analytics?.emit('wallet.chargeback_flag', {
+            accountId,
+            deviceId,
+            count:
+              cb.accountCount >= cb.accountLimit
+                ? cb.accountCount
+                : cb.deviceCount,
+            limit:
+              cb.accountCount >= cb.accountLimit
+                ? cb.accountLimit
+                : cb.deviceLimit,
+          });
+          throw new Error('Chargeback threshold exceeded');
+        }
+        const challenge = await this.provider.initiate3DS(accountId, amount);
+        await this.redis.set(
+          this.challengeKey(challenge.id),
+          JSON.stringify({ op: 'deposit', accountId, amount, currency }),
+          'EX',
+          600,
+        );
+        if (redisKey) {
+          await this.redis.set(redisKey, JSON.stringify(challenge), 'EX', 600);
+        }
+        span.setStatus({ code: SpanStatusCode.OK });
+        return challenge;
+      } catch (err) {
+        if (idempotencyKey) {
+          await this.redis.del(`wallet:idemp:${idempotencyKey}`);
+        }
+        throw err;
+      } finally {
+        WalletService.txnDuration.record(Date.now() - start, {
+          operation: 'deposit',
+        });
+      }
+    });
   }
 
   async transactions(accountId: string) {

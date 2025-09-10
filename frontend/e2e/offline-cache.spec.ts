@@ -26,6 +26,10 @@ test('home page renders offline and reconnects', async ({ page, context }) => {
   // Offline fallback page should render
   await expect(page.getByText('You are offline')).toBeVisible();
 
+  // Clicking retry while offline should keep the offline page
+  await page.getByRole('button', { name: /refresh/i }).click();
+  await expect(page.getByText('You are offline')).toBeVisible();
+
   // Restore connectivity and trigger reload via the retry button
   await context.setOffline(false);
   await page.getByRole('button', { name: /refresh/i }).click();

@@ -1651,6 +1651,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChipDenominationsResponse'
+  /config/table-theme:
+    get:
+      summary: Get table theme
+      responses:
+        '200':
+          description: Table theme mapping
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableThemeResponse'
   /users:
     post:
       summary: Create user
@@ -3122,6 +3132,24 @@ components:
           items:
             type: number
           minItems: 1
+    TableThemeResponse:
+      type: object
+      required: [hairline, positions]
+      properties:
+        hairline:
+          type: string
+        positions:
+          type: object
+          additionalProperties:
+            type: object
+            required: [color, glow]
+            properties:
+              color:
+                type: string
+              glow:
+                type: string
+              badge:
+                type: string
     CreateTableRequest:
       type: object
       properties:
