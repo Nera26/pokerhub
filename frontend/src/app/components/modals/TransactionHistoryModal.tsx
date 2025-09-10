@@ -10,8 +10,11 @@ import {
   transactionColumns,
   type Transaction,
 } from '../dashboard/transactions/transactionColumns';
-import { fetchTransactionFilters, fetchUserTransactions } from '@/lib/api/transactions';
-import type { TransactionEntry, FilterOptions } from '@shared/types';
+import {
+  fetchTransactionFilters,
+  fetchUserTransactions,
+} from '@/lib/api/transactions';
+import type { AdminTransactionEntry, FilterOptions } from '@shared/types';
 
 export enum PerformedBy {
   All = 'All',
@@ -25,7 +28,7 @@ interface Props {
   onClose: () => void;
   userName: string;
   userId: string;
-  onFilter?: (filtered: TransactionEntry[]) => void;
+  onFilter?: (filtered: AdminTransactionEntry[]) => void;
 }
 
 export default function TransactionHistoryModal({
@@ -48,7 +51,7 @@ export default function TransactionHistoryModal({
     data: entries = [],
     isLoading: txLoading,
     error: txError,
-  } = useQuery<TransactionEntry[]>({
+  } = useQuery<AdminTransactionEntry[]>({
     queryKey: ['userTransactions', userId],
     queryFn: () => fetchUserTransactions(userId),
     enabled: isOpen && !!userId,

@@ -1,5 +1,10 @@
 import { z, ZodError } from 'zod';
 import { GameActionSchema } from './schemas/game';
+import {
+  GameHistoryEntrySchema,
+  TournamentHistoryEntrySchema,
+  TransactionEntrySchema,
+} from './schemas/history';
 
 export { ZodError };
 
@@ -492,8 +497,8 @@ export const TableListQuerySchema = z.object({
 export type TableListQuery = z.infer<typeof TableListQuerySchema>;
 
 
-// Transaction entries (frontend modal)
-const TransactionEntrySchema = z.object({
+// Admin transaction entries (frontend modal)
+const AdminTransactionEntrySchema = z.object({
   date: z.string(),
   action: z.string(),
   amount: z.number(),
@@ -501,13 +506,30 @@ const TransactionEntrySchema = z.object({
   notes: z.string(),
   status: z.enum(['Completed', 'Pending', 'Rejected']),
 });
-export const TransactionEntriesSchema = z.array(TransactionEntrySchema);
-export type TransactionEntry = z.infer<typeof TransactionEntrySchema>;
-export type TransactionEntries = z.infer<typeof TransactionEntriesSchema>;
+export const AdminTransactionEntriesSchema = z.array(
+  AdminTransactionEntrySchema,
+);
+export type AdminTransactionEntry = z.infer<
+  typeof AdminTransactionEntrySchema
+>;
+export type AdminTransactionEntries = z.infer<
+  typeof AdminTransactionEntriesSchema
+>;
 
 export const FilterOptionsSchema = z.object({
   types: z.array(z.string()),
   performedBy: z.array(z.string()),
 });
 export type FilterOptions = z.infer<typeof FilterOptionsSchema>;
+
+export {
+  GameHistoryEntrySchema,
+  TournamentHistoryEntrySchema,
+  TransactionEntrySchema,
+} from './schemas/history';
+export type {
+  GameHistoryEntry,
+  TournamentHistoryEntry,
+  TransactionEntry,
+} from './schemas/history';
 

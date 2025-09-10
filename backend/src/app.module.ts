@@ -54,6 +54,7 @@ import { cookieSecurity } from './common/cookie-security.middleware';
 import { BroadcastsModule } from './broadcasts/broadcasts.module';
 import { TiersModule } from './tiers/tiers.module';
 import { CtasModule } from './ctas/ctas.module';
+import { HistoryModule } from './history/history.module';
 import { AdminMessagesService } from './notifications/admin-messages.service';
 import { AdminMessageEntity } from './notifications/admin-message.entity';
 import { PromotionsService } from './promotions/promotions.service';
@@ -127,6 +128,7 @@ import { LanguageEntity } from './database/entities/language.entity';
     BroadcastsModule,
     TiersModule,
     CtasModule,
+    HistoryModule,
   ],
   controllers: [
     AppController,
