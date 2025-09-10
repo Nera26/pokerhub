@@ -15,7 +15,6 @@ This directory contains load test scripts for PokerHub.
 - `artillery-10k-tables.yml` – Artillery equivalent to `k6-10k-tables.js` that captures per-endpoint latency histograms.
 - `k6-10k-tables-clickhouse.js` – k6 scenario for 10k tables and 80 k sockets injecting 5% packet loss and 200 ms jitter, capturing latency histograms and error rates with metrics exported to ClickHouse and deterministic seeds.
 - `k6-chaos-swarm.js` – swarm 80 k sockets across 10 k tables; pair with `toxiproxy.sh` for 5 % loss and 200 ms jitter.
-- `k6-ws-reconnect.js` – k6 scenario validating reconnect success and ACK latency under Toxiproxy impairments.
 
 All scripts assume the server is reachable via `ws://localhost:4000/game` by default.
 

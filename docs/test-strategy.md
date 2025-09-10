@@ -62,20 +62,6 @@ TABLES=10000 SOCKETS=80000 k6 run infra/tests/load/k6-table-actions.js \
 
 Latency histograms are stored under the `ack_latency` metric in ClickHouse for query and dashboarding.
 
-## WebSocket Reconnect Test (Pre-release Gate)
-
-The `load/k6-ws-reconnect.js` scenario opens 80k sockets across 10k tables through Toxiproxy configured with 5% packet loss and 200 ms jitter. It records `ack_latency` histograms and a `reconnect_success` rate and fails if p95 ACK latency exceeds 120 ms.
-
-### Running
-
-```bash
-docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 ghcr.io/shopify/toxiproxy
-PACKET_LOSS=0.05 LATENCY_MS=200 UPSTREAM=staging.pokerhub:80 ./load/toxiproxy.sh
-TABLES=10000 SOCKETS=80000 k6 run load/k6-ws-reconnect.js --summary-export=reconnect-summary.json
-```
-
-Releases are blocked if this test reports `reconnect_success` < 0.99 or if p95 ACK latency breaches 120 ms.
-
 ## Action Swarm Soak Test
 
 The `load/soak.js` script extends the action swarm to a 24 h soak run. Execute it via:
