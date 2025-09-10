@@ -81,6 +81,7 @@ export {
   SidebarItemsResponseSchema,
   AdminTabResponseSchema,
 } from '../backend/src/schemas/admin';
+/** Sidebar item returned by the admin sidebar API. `icon` is a FontAwesome icon name (e.g., faUsers). */
 export type {
   SidebarItem,
   SidebarTab,

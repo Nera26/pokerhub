@@ -27,7 +27,7 @@ describe('AdminController', () => {
     {
       id: 'dynamic',
       label: 'Dynamic',
-      icon: 'chart-line',
+      icon: 'faChartLine',
       component: 'dynamic-component',
     },
   ];

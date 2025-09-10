@@ -6,7 +6,7 @@ export type SidebarTab = z.infer<typeof SidebarTabSchema>;
 export const SidebarItemSchema = z.object({
   id: SidebarTabSchema,
   label: z.string(),
-  icon: z.string(),
+  icon: z.string().describe('FontAwesome icon name, e.g., faUsers'),
   component: z.string(),
   path: z.string().optional(),
   disabled: z.boolean().optional(),

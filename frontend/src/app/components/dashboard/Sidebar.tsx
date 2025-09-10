@@ -2,19 +2,7 @@
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
-import {
-  faChartLine,
-  faUsers,
-  faTableCells,
-  faTrophy,
-  faGift,
-  faBullhorn,
-  faEnvelope,
-  faChartBar,
-  faDollarSign,
-  faClipboardList,
-  faMagnifyingGlass,
-} from '@fortawesome/free-solid-svg-icons';
+import { faChartLine } from '@fortawesome/free-solid-svg-icons';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { fetchSidebarItems } from '@/lib/api/admin';
@@ -25,21 +13,6 @@ export type SidebarTab = SidebarItem['id'];
 interface SidebarItemWithIcon extends Omit<SidebarItem, 'icon'> {
   icon: IconDefinition;
 }
-
-const ICON_MAP: Record<string, IconDefinition> = {
-  'chart-line': faChartLine,
-  users: faUsers,
-  'dollar-sign': faDollarSign,
-  'table-cells': faTableCells,
-  trophy: faTrophy,
-  gift: faGift,
-  bullhorn: faBullhorn,
-  envelope: faEnvelope,
-  'clipboard-list': faClipboardList,
-  'chart-bar': faChartBar,
-  'magnifying-glass': faMagnifyingGlass,
-};
-
 
 interface SidebarProps {
   active?: SidebarTab;
@@ -65,19 +38,26 @@ export default function Sidebar({
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    fetchSidebarItems()
-      .then((data) =>
+    const load = async () => {
+      try {
+        const [data, icons] = await Promise.all([
+          fetchSidebarItems(),
+          import('@fortawesome/free-solid-svg-icons'),
+        ]);
         setItems(
           data.map((it) => ({
             ...it,
-            icon: ICON_MAP[it.icon] ?? faChartLine,
+            icon:
+              (icons as Record<string, IconDefinition>)[it.icon] ?? faChartLine,
           })),
-        ),
-      )
-      .catch(() => {
+        );
+      } catch {
         setError(true);
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    };
+    void load();
   }, []);
 
   const change = (id: SidebarTab, disabled?: boolean, path?: string) => {
