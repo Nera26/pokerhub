@@ -34,7 +34,7 @@ The test writes metrics to `metrics/table-metrics.json` and fails when:
 
 ## Table Action Load Test
 
-The `infra/tests/load/k6-table-actions.js` script simulates action traffic across 10k tables. It records an `ack_latency` histogram for each action acknowledgement and enforces latency and throughput thresholds: p50 ≤ 40 ms, p95 ≤ 120 ms, p99 ≤ 200 ms and >150 actions per minute. k6 fails the run if any threshold is breached.
+The `load/k6-table-actions.js` script simulates action traffic across 10k tables. It records an `ack_latency` histogram for each action acknowledgement and enforces latency and throughput thresholds: p50 ≤ 40 ms, p95 ≤ 120 ms, p99 ≤ 200 ms and >150 actions per minute. k6 fails the run if any threshold is breached.
 
 ### Running in CI
 
@@ -55,7 +55,7 @@ Artifacts `table-actions-summary.json` and `table-actions-telemetry.json` are pu
 ```bash
 docker run -d --name toxiproxy -p 8474:8474 -p 3001:3001 ghcr.io/shopify/toxiproxy
 PACKET_LOSS=0.05 LATENCY_MS=200 UPSTREAM=staging.pokerhub:80 ./load/toxiproxy.sh
-TABLES=10000 SOCKETS=80000 k6 run infra/tests/load/k6-table-actions.js \
+TABLES=10000 SOCKETS=80000 k6 run load/k6-table-actions.js \
   --summary-export=summary.json \
   --out xk6-clickhouse=$CLICKHOUSE_DSN
 ```
