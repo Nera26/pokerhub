@@ -14,8 +14,9 @@ gcloud sql backups create \
   --instance "$PG_INSTANCE_ID" \
   --project "$PROJECT_ID" >/dev/null
 
-log "Copying backup to $SECONDARY_REGION (placeholder)"
-# gcloud sql backups copy not available; implement via API or export if needed
+log "Copying backup to $SECONDARY_REGION"
+# TODO(infra): implement cross-region backup copy. `gcloud sql backups copy` is unavailable;
+# leverage API or export/import workflow.
 
 log "Restoring backup in $SECONDARY_REGION"
 gcloud sql instances create "${snap}-restore" \

@@ -59,7 +59,7 @@ log "Postgres ready in ${pg_time}s"
 ch_test_id="ch-failover-$start_all"
 log "Restoring ClickHouse snapshot $CLICKHOUSE_SNAPSHOT to $ch_test_id in $SECONDARY_REGION..."
 ch_start=$(date +%s)
-# Placeholder restore using kubectl/helm; assumes snapshot manifest
+# Restore using provided snapshot manifest
 kubectl --context "$SECONDARY_REGION" apply -f "$CLICKHOUSE_SNAPSHOT"
 # Wait for ClickHouse statefulset readiness
 kubectl --context "$SECONDARY_REGION" rollout status statefulset/clickhouse -n clickhouse
