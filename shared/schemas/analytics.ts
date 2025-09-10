@@ -74,3 +74,9 @@ export type RevenueStream = z.infer<typeof RevenueStreamSchema>;
 
 export const RevenueBreakdownSchema = z.array(RevenueStreamSchema);
 export type RevenueBreakdown = z.infer<typeof RevenueBreakdownSchema>;
+
+export const ActivityResponseSchema = z.object({
+  labels: z.array(z.string()),
+  data: z.array(z.number()),
+});
+export type ActivityResponse = z.infer<typeof ActivityResponseSchema>;

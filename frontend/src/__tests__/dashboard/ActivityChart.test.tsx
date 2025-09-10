@@ -11,8 +11,18 @@ describe('ActivityChart', () => {
   beforeEach(() => {
     chartMock.mockClear();
   });
+  const labels = [
+    '00:00',
+    '04:00',
+    '08:00',
+    '12:00',
+    '16:00',
+    '20:00',
+    '24:00',
+  ];
+
   it('shows loading state before chart is ready', () => {
-    render(<ActivityChart data={[1, 2, 3, 4, 5, 6, 7]} />);
+    render(<ActivityChart labels={labels} data={[1, 2, 3, 4, 5, 6, 7]} />);
     expect(screen.getByText(/loading chart/i)).toBeInTheDocument();
   });
 
@@ -23,18 +33,19 @@ describe('ActivityChart', () => {
 
   it('renders with accessible name and updates when data changes', async () => {
     const { rerender } = render(
-      <ActivityChart data={[1, 2, 3, 4, 5, 6, 7]} />,
+      <ActivityChart labels={labels} data={[1, 2, 3, 4, 5, 6, 7]} />,
     );
 
     await screen.findByRole('img', { name: /activity/i });
     expect(chartMock).toHaveBeenCalledTimes(1);
     type ChartConfig = {
-      data: { datasets: { label: string; data: number[] }[] };
+      data: { labels: string[]; datasets: { label: string; data: number[] }[] };
     };
     let config = chartMock.mock.calls[0]![1] as ChartConfig;
     expect(config.data.datasets[0].label).toBe('Active Players');
+    expect(config.data.labels).toEqual(labels);
 
-    rerender(<ActivityChart data={[7, 6, 5, 4, 3, 2, 1]} />);
+    rerender(<ActivityChart labels={labels} data={[7, 6, 5, 4, 3, 2, 1]} />);
     await screen.findByRole('img', { name: /activity/i });
     expect(chartMock).toHaveBeenCalledTimes(2);
     config = chartMock.mock.calls[1]![1] as ChartConfig;

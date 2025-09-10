@@ -22,8 +22,12 @@ jest.mock('@/hooks/useAuditLogs', () => ({
 jest.mock('@/hooks/useAuditSummary', () => ({
   useAuditSummary: () => ({ data: {} }),
 }));
-jest.mock('@/hooks/useDashboardMetrics', () => ({
-  useDashboardMetrics: () => ({ data: {}, isLoading: false }),
+jest.mock('@/hooks/useActivity', () => ({
+  useActivity: () => ({
+    data: { labels: [], data: [] },
+    isLoading: false,
+    error: null,
+  }),
 }));
 
 jest.mock('@/lib/api/leaderboard', () => ({

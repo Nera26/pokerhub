@@ -8,6 +8,11 @@ jest.mock('@/hooks/useDashboardMetrics', () => ({
   useDashboardMetrics: () => metricsMock(),
 }));
 
+const activityMock = jest.fn();
+jest.mock('@/hooks/useActivity', () => ({
+  useActivity: () => activityMock(),
+}));
+
 const revenueMock = jest.fn();
 jest.mock('@/hooks/useRevenueBreakdown', () => ({
   useRevenueBreakdown: (range: string) => revenueMock(range),
@@ -15,8 +20,16 @@ jest.mock('@/hooks/useRevenueBreakdown', () => ({
 
 jest.mock('@/app/components/dashboard/charts/ActivityChart', () => ({
   __esModule: true,
-  default: ({ data }: { data: number[] }) => (
-    <div data-testid="activity-chart">{data.join(',')}</div>
+  default: ({
+    labels = [],
+    data = [],
+  }: {
+    labels?: string[];
+    data?: number[];
+  }) => (
+    <div data-testid="activity-chart">
+      {labels.join('|')}:{data.join(',')}
+    </div>
   ),
 }));
 
@@ -37,8 +50,14 @@ function renderWithClient(ui: React.ReactElement) {
 describe('Dashboard metrics', () => {
   beforeEach(() => {
     metricsMock.mockReset();
+    activityMock.mockReset();
     revenueMock.mockReset();
     revenueMock.mockReturnValue({ data: [], isLoading: false, error: null });
+    activityMock.mockReturnValue({
+      data: { labels: [], data: [] },
+      isLoading: false,
+      error: null,
+    });
   });
 
   it('shows loading state', () => {
@@ -70,7 +89,14 @@ describe('Dashboard metrics', () => {
         revenue: { today: { amount: 100, trend: 'trend' } },
         deposits: { today: { amount: 50, trend: 'trend' } },
         withdrawals: { today: { amount: 25, trend: 'trend' } },
-        activity: { today: [1, 2, 3] },
+      },
+      isLoading: false,
+      error: null,
+    });
+    activityMock.mockReturnValue({
+      data: {
+        labels: ['00:00', '04:00'],
+        data: [1, 2],
       },
       isLoading: false,
       error: null,

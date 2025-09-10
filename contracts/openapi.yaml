@@ -1066,6 +1066,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuditSummaryResponse'
+  /analytics/activity:
+    get:
+      summary: Get player activity data
+      responses:
+        '200':
+          description: Activity data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityResponse'
   /analytics/collusion/flagged:
     get:
       summary: List collusion flagged sessions
@@ -2244,6 +2254,20 @@ components:
         - total
         - errors
         - logins
+    ActivityResponse:
+      type: object
+      properties:
+        labels:
+          type: array
+          items:
+            type: string
+        data:
+          type: array
+          items:
+            type: number
+      required:
+        - labels
+        - data
     AlertItem:
       type: object
       properties:

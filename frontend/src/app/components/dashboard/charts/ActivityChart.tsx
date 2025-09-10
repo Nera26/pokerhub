@@ -5,12 +5,14 @@ import CenteredMessage from '@/components/CenteredMessage';
 import { buildChartConfig, useChart } from '@/lib/useChart';
 
 interface ActivityChartProps {
+  labels?: string[];
   data?: number[];
   title?: string;
   showContainer?: boolean;
 }
 
 export default function ActivityChart({
+  labels,
   data,
   title = 'Player Activity (24h)',
   showContainer = false,
@@ -33,15 +35,7 @@ export default function ActivityChart({
       buildChartConfig(({ accent, hexToRgba }) => ({
         type: 'line',
         data: {
-          labels: [
-            '00:00',
-            '04:00',
-            '08:00',
-            '12:00',
-            '16:00',
-            '20:00',
-            '24:00',
-          ],
+          labels: labels ?? [],
           datasets: [
             {
               label: 'Active Players',
@@ -61,7 +55,7 @@ export default function ActivityChart({
           interaction: { intersect: false, mode: 'index' },
         },
       })),
-    [data],
+    [labels, data],
   );
 
   const { ref, ready } = useChart(config, [config]);

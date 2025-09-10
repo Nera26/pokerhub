@@ -1,9 +1,11 @@
-import { apiClient } from './client';
+import { apiClient, type ApiError } from './client';
 import {
   AdminOverviewResponseSchema,
   type AdminOverview,
   LogTypeClassesSchema,
   type LogTypeClasses,
+  ActivityResponseSchema,
+  type ActivityResponse,
 } from '@shared/types';
 import { z } from 'zod';
 
@@ -39,4 +41,18 @@ export function fetchErrorCategories({
     ErrorCategoriesResponseSchema,
     { signal },
   );
+}
+
+export async function fetchActivity({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<ActivityResponse> {
+  try {
+    return await apiClient('/api/analytics/activity', ActivityResponseSchema, {
+      signal,
+    });
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : (err as ApiError).message;
+    throw { message: `Failed to fetch activity: ${message}` } as ApiError;
+  }
 }
