@@ -80,12 +80,12 @@ ts-node backend/test/high-scale-harness.ts
 ts-node backend/test/replay.ts       # replay using seeds.json
 ```
 
-Platform level load is exercised with `infra/tests/load/k6-table-actions.js` (enable via `CHAOS_MODE=1`) which
+Platform level load is exercised with `load/k6-table-actions.js` (enable via `CHAOS_MODE=1`) which
 simulates 100k sockets and exports the same latency histogram and memory/GC
 snapshots. Re-run a scenario with:
 
 ```bash
-node infra/tests/load/replay.js seed.txt
+node load/replay.js seed.txt
 ```
 
 ## Chaos soak workflow
@@ -96,7 +96,7 @@ Trigger a 24 h chaos soak via [`soak.yaml`](../.github/workflows/soak.yaml):
 gh workflow run soak.yaml
 ```
 
-The workflow runs `infra/tests/load/k6-table-actions.js` with `CHAOS_MODE=1` and `DURATION=24h`,
+The workflow runs `load/k6-table-actions.js` with `CHAOS_MODE=1` and `DURATION=24h`,
 polling GC and heap statistics from `$MEM_URL`. It fails when
 `heap_delta_pct \u2265 1` or `gc_p95_ms > 50`.
 

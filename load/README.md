@@ -18,7 +18,7 @@ This directory contains load test scripts for PokerHub.
 
 All scripts assume the server is reachable via `ws://localhost:4000/game` by default.
 
-The `k6-100k-chaos` GitHub Actions workflow runs the `infra/tests/load/k6-table-actions.js` scenario with `CHAOS_MODE=1`
+The `k6-100k-chaos` GitHub Actions workflow runs the `load/k6-table-actions.js` scenario with `CHAOS_MODE=1`
 nightly and uploads the `load/metrics/latest` contents as artifacts.
 
 
