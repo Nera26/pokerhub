@@ -2,15 +2,19 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Analytics from '@/app/components/dashboard/analytics/Analytics';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { useAuditLogs, useAuditSummary } from '@/hooks/useAuditResource';
+import { useAuditLogs } from '@/hooks/useAuditLogs';
+import { useAuditSummary } from '@/hooks/useAuditSummary';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import useToasts from '@/hooks/useToasts';
 import { exportCsv } from '@/lib/exportCsv';
 
 jest.mock('@tanstack/react-query');
-jest.mock('@/hooks/useAuditResource', () => ({
+jest.mock('@/hooks/useAuditLogs', () => ({
   __esModule: true,
   useAuditLogs: jest.fn(),
+}));
+jest.mock('@/hooks/useAuditSummary', () => ({
+  __esModule: true,
   useAuditSummary: jest.fn(),
 }));
 jest.mock('@/hooks/useDashboardMetrics');
