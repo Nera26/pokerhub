@@ -1714,6 +1714,19 @@ export interface paths {
       };
     };
   };
+  "/config/table-theme": {
+    /** Get table theme */
+    get: {
+      responses: {
+        /** @description Table theme mapping */
+        200: {
+          content: {
+            "application/json": components["schemas"]["TableThemeResponse"];
+          };
+        };
+      };
+    };
+  };
   "/users": {
     /** Create user */
     post: {
@@ -2463,6 +2476,16 @@ export interface components {
     LanguagesResponse: components["schemas"]["Language"][];
     ChipDenominationsResponse: {
       denoms: number[];
+    };
+    TableThemeResponse: {
+      hairline: string;
+      positions: {
+        [key: string]: {
+          color: string;
+          glow: string;
+          badge?: string;
+        };
+      };
     };
     CreateTableRequest: {
       tableName: string;
