@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { HomePageClient } from '@/app/(site)/HomePageClient';
 import { useTables, useTournaments, useCTAs } from '@/hooks/useLobbyData';
+import { ENTITY_ITEM_HEIGHT } from '@/components/EntityList';
 import type { CashGameListProps } from '@/app/components/home/CashGameList';
 import type { TournamentListProps } from '@/components/TournamentList';
 
@@ -100,12 +101,14 @@ describe('home page virtualization', () => {
 
     const CashGameList = ({ tables }: CashGameListProps) => (
       <div data-testid="tables-list">
-        <div style={{ height: `${tables.length * 280}px` }} />
+        <div style={{ height: `${tables.length * ENTITY_ITEM_HEIGHT}px` }} />
       </div>
     );
     const TournamentList = ({ tournaments }: TournamentListProps<any>) => (
       <div data-testid="tournaments-list">
-        <div style={{ height: `${tournaments.length * 280}px` }} />
+        <div
+          style={{ height: `${tournaments.length * ENTITY_ITEM_HEIGHT}px` }}
+        />
       </div>
     );
 
@@ -121,7 +124,11 @@ describe('home page virtualization', () => {
     const tournamentsList = screen.getByTestId('tournaments-list')
       .firstChild as HTMLElement;
 
-    expect(tablesList.style.height).toBe('5600px');
-    expect(tournamentsList.style.height).toBe('5600px');
+    expect(tablesList.style.height).toBe(
+      `${mockTables.length * ENTITY_ITEM_HEIGHT}px`,
+    );
+    expect(tournamentsList.style.height).toBe(
+      `${mockTournaments.length * ENTITY_ITEM_HEIGHT}px`,
+    );
   });
 });

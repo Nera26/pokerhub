@@ -21,6 +21,9 @@ describe('TournamentList', () => {
     render(<TournamentList tournaments={tournaments} hidden={false} />);
 
     expect(await screen.findByText('$10')).toBeInTheDocument();
+    const panel = screen.getByRole('tabpanel');
+    expect(panel).toHaveAttribute('id', 'tournaments-panel');
+    expect(panel).toHaveAttribute('aria-labelledby', 'tab-tournaments');
     const listContainer = screen.getByRole('list').parentElement as HTMLElement;
     expect(listContainer).toHaveAttribute('data-virtualized', 'false');
   });
