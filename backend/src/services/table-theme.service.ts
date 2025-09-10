@@ -1,17 +1,37 @@
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { TABLE_THEME } from '@shared/config/tableTheme';
 import type { TableThemeResponse } from '@shared/types';
+import { TableThemeEntity } from '../database/entities/table-theme.entity';
 
 @Injectable()
 export class TableThemeService {
-  private theme: TableThemeResponse = { ...TABLE_THEME };
+  constructor(
+    @InjectRepository(TableThemeEntity)
+    private readonly repo: Repository<TableThemeEntity>,
+  ) {}
 
-  get(): TableThemeResponse {
-    return this.theme;
+  async get(): Promise<TableThemeResponse> {
+    const entity = await this.repo.findOne({ where: {} });
+    if (!entity) return { ...TABLE_THEME };
+    return { hairline: entity.hairline, positions: entity.positions };
   }
 
-  update(theme: TableThemeResponse): TableThemeResponse {
-    this.theme = { ...theme };
-    return this.theme;
+  async update(theme: TableThemeResponse): Promise<TableThemeResponse> {
+    let entity = await this.repo.findOne({ where: {} });
+
+    if (!entity) {
+      entity = this.repo.create({
+        hairline: theme.hairline ?? TABLE_THEME.hairline,
+        positions: theme.positions ?? TABLE_THEME.positions,
+      });
+    } else {
+      entity.hairline = theme.hairline;
+      entity.positions = theme.positions;
+    }
+
+    await this.repo.save(entity);
+    return { hairline: entity.hairline, positions: entity.positions };
   }
 }

@@ -1,15 +1,15 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { fetchTableTheme } from '@/lib/api/config';
-import type { TableThemeResponse } from '@shared/types';
-import { TABLE_THEME } from '@shared/config/tableTheme';
+import { createQueryHook } from './useApiQuery';
+import {
+  TableThemeResponseSchema,
+  type TableThemeResponse,
+} from '@shared/types';
 
-export function useTableTheme() {
-  const { data } = useQuery<TableThemeResponse>({
-    queryKey: ['table-theme'],
-    queryFn: ({ signal }) => fetchTableTheme({ signal }),
-    staleTime: Infinity,
-  });
-  return data ?? TABLE_THEME;
-}
+export const useTableTheme = createQueryHook<TableThemeResponse>(
+  'table-theme',
+  (client, opts) =>
+    client('/api/config/table-theme', TableThemeResponseSchema, opts),
+  'table theme',
+  { staleTime: Infinity },
+);

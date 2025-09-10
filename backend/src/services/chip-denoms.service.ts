@@ -1,16 +1,25 @@
 import { Injectable } from '@nestjs/common';
-import { CHIP_DENOMS } from '@shared/config/chipDenoms';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { ChipDenominationEntity } from '../database/entities/chip-denomination.entity';
 
 @Injectable()
 export class ChipDenomsService {
-  private denoms = [...CHIP_DENOMS];
+  constructor(
+    @InjectRepository(ChipDenominationEntity)
+    private readonly repo: Repository<ChipDenominationEntity>,
+  ) {}
 
-  get(): number[] {
-    return this.denoms;
+  async get(): Promise<number[]> {
+    const rows = await this.repo.find({ order: { value: 'DESC' } });
+    return rows.map((r) => r.value);
   }
 
-  update(denoms: number[]): number[] {
-    this.denoms = [...denoms];
-    return this.denoms;
+  async update(denoms: number[]): Promise<number[]> {
+    await this.repo.clear();
+    if (denoms.length) {
+      await this.repo.insert(denoms.map((value) => ({ value })));
+    }
+    return this.get();
   }
 }

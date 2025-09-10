@@ -15,31 +15,31 @@ import { TableThemeService } from '../services/table-theme.service';
 export class ConfigController {
   constructor(
     private readonly chips: ChipDenomsService,
-    private readonly theme: TableThemeService,
+    private readonly themes: TableThemeService,
   ) {}
 
   @Get('chips')
   @ApiOperation({ summary: 'List chip denominations' })
   @ApiResponse({ status: 200, description: 'Chip denominations' })
-  listChips(): ChipDenominationsResponse {
-    return { denoms: this.chips.get() };
+  async listChips(): Promise<ChipDenominationsResponse> {
+    return { denoms: await this.chips.get() };
   }
 
   @Put('chips')
   @UseGuards(AuthGuard, AdminGuard)
   @ApiOperation({ summary: 'Update chip denominations' })
   @ApiResponse({ status: 200, description: 'Updated chip denominations' })
-  updateChips(
+  async updateChips(
     @Body() body: ChipDenominationsResponse,
-  ): ChipDenominationsResponse {
+  ): Promise<ChipDenominationsResponse> {
     const parsed = ChipDenominationsResponseSchema.parse(body);
-    return { denoms: this.chips.update(parsed.denoms) };
+    return { denoms: await this.chips.update(parsed.denoms) };
   }
 
   @Get('table-theme')
   @ApiOperation({ summary: 'Get table theme' })
   @ApiResponse({ status: 200, description: 'Table theme mapping' })
-  getTableTheme(): TableThemeResponse {
-    return this.theme.get();
+  async getTableTheme(): Promise<TableThemeResponse> {
+    return await this.themes.get();
   }
 }

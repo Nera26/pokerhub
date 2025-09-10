@@ -19,7 +19,8 @@ export default function TimerRing({
 }: TimerRingProps) {
   const [timeLeft, setTimeLeft] = useState(player.timeLeft ?? 0);
   const totalTimeRef = useRef(player.timeLeft ?? 0);
-  const { positions } = useTableTheme();
+  const { data } = useTableTheme();
+  const positions = data?.positions ?? {};
 
   useEffect(() => {
     totalTimeRef.current = player.timeLeft ?? 0;

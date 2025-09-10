@@ -1,15 +1,21 @@
-import { Test } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+process.env.DATABASE_URL = '';
+
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication, Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+import { newDb } from 'pg-mem';
 import request from 'supertest';
+
 import { ConfigController } from '../src/routes/config.controller';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
 import { ChipDenomsService } from '../src/services/chip-denoms.service';
 import { TableThemeService } from '../src/services/table-theme.service';
-import type {
-  ChipDenominationsResponse,
-  TableThemeResponse,
-} from '@shared/types';
+import { ChipDenominationEntity } from '../src/database/entities/chip-denomination.entity';
+import { TableThemeEntity } from '../src/database/entities/table-theme.entity';
+
+import type { ChipDenominationsResponse, TableThemeResponse } from '@shared/types';
 
 const defaultChips: ChipDenominationsResponse = { denoms: [1000, 100, 25] };
 const mockTheme: TableThemeResponse = {
@@ -38,21 +44,70 @@ const mockTheme: TableThemeResponse = {
   },
 };
 
+function createTestModule() {
+  let dataSource: DataSource;
+
+  @Module({
+    imports: [
+      TypeOrmModule.forRootAsync({
+        useFactory: () => {
+          const db = newDb();
+          db.public.registerFunction({
+            name: 'version',
+            returns: 'text',
+            implementation: () => 'pg-mem',
+          });
+          db.public.registerFunction({
+            name: 'current_database',
+            returns: 'text',
+            implementation: () => 'test',
+          });
+
+          dataSource = db.adapters.createTypeormDataSource({
+            type: 'postgres',
+            entities: [ChipDenominationEntity, TableThemeEntity],
+            synchronize: true,
+          }) as DataSource;
+
+          return dataSource.options;
+        },
+        dataSourceFactory: async () => dataSource.initialize(),
+      }),
+      TypeOrmModule.forFeature([ChipDenominationEntity, TableThemeEntity]),
+    ],
+    controllers: [ConfigController],
+    providers: [ChipDenomsService, TableThemeService],
+  })
+  class ConfigTestModule {}
+
+  return { module: ConfigTestModule };
+}
+
 describe('ConfigController', () => {
   let app: INestApplication;
+  let chipService: ChipDenomsService;
+  let themeService: TableThemeService;
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
-      controllers: [ConfigController],
-      providers: [ChipDenomsService, TableThemeService],
+    const { module: ConfigTestModule } = createTestModule();
+
+    const moduleRef: TestingModule = await Test.createTestingModule({
+      imports: [ConfigTestModule],
     })
       .overrideGuard(AuthGuard)
       .useValue({ canActivate: () => true })
       .overrideGuard(AdminGuard)
       .useValue({ canActivate: () => true })
       .compile();
+
     app = moduleRef.createNestApplication();
     await app.init();
+
+    chipService = moduleRef.get(ChipDenomsService);
+    themeService = moduleRef.get(TableThemeService);
+
+    await chipService.update(defaultChips.denoms);
+    await themeService.update(mockTheme);
   });
 
   afterAll(async () => {
@@ -63,6 +118,7 @@ describe('ConfigController', () => {
     const res = await request(app.getHttpServer())
       .get('/config/chips')
       .expect(200);
+
     expect(res.body).toEqual(defaultChips);
   });
 
@@ -75,16 +131,18 @@ describe('ConfigController', () => {
     const res = await request(app.getHttpServer())
       .get('/config/chips')
       .expect(200);
+
     expect(res.body).toEqual({ denoms: [500, 100, 25] });
   });
 
-  it('returns table theme', async () => {
-    const themeService = app.get(TableThemeService);
-    const customTheme = { ...mockTheme, hairline: '#123' };
-    themeService.update(customTheme);
+  it('persists table theme', async () => {
+    const updated = { ...mockTheme, hairline: 'blue' };
+    await themeService.update(updated);
+
     const res = await request(app.getHttpServer())
       .get('/config/table-theme')
       .expect(200);
-    expect(res.body).toEqual(customTheme);
+
+    expect(res.body).toEqual(updated);
   });
 });

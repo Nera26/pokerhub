@@ -66,6 +66,8 @@ import { BonusService } from './services/bonus.service';
 import { ChipDenomsService } from './services/chip-denoms.service';
 import { TableThemeService } from './services/table-theme.service';
 import { BonusOptionEntity } from './database/entities/bonus-option.entity';
+import { ChipDenominationEntity } from './database/entities/chip-denomination.entity';
+import { TableThemeEntity } from './database/entities/table-theme.entity';
 
 @Module({
   imports: [
@@ -115,6 +117,8 @@ import { BonusOptionEntity } from './database/entities/bonus-option.entity';
       PromotionEntity,
       LanguageEntity,
       BonusOptionEntity,
+      ChipDenominationEntity,
+      TableThemeEntity,
     ]),
 
     // Messaging / Infra
