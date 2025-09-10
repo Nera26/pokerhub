@@ -1,12 +1,9 @@
 #!/usr/bin/env ts-node
 import { parseArgs } from 'node:util';
-import { consume as etlConsume } from '../backend/src/analytics/consume';
 
 type CommandHandler = () => Promise<void>;
 
-export const commands: Record<string, CommandHandler> = {
-  'etl:consume': etlConsume,
-};
+export const commands: Record<string, CommandHandler> = {};
 
 export async function run(command: string): Promise<void> {
   const handler = commands[command];

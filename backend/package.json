@@ -26,7 +26,6 @@
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/database/data-source.ts src/database/migrations/$npm_config_name",
     "migration:create": "typeorm-ts-node-commonjs migration:create src/database/migrations/$npm_config_name",
     "rebuild:leaderboard": "ts-node src/leaderboard/rebuild.ts --days=30 --assert-duration=1800000",
-    "analytics:consume": "ts-node ../tools/cli.ts etl:consume",
     "load:socket": "ts-node test/load/socket-load.ts",
     "test:soak": "node --trace-gc -r ts-node/register -r tsconfig-paths/register test/soak/soak24h.ts",
     "verify:proof": "ts-node ../bin/verify-proof.ts",
