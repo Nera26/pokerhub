@@ -1,7 +1,7 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AnalyticsService } from './analytics.service';
-import { AuditLogsQuerySchema } from '../schemas/analytics';
+import { AuditLogsQuerySchema } from '@shared/schemas/analytics';
 import { AdminGuard } from '../auth/admin.guard';
 
 @UseGuards(AdminGuard)

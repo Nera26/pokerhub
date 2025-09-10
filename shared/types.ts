@@ -63,6 +63,30 @@ export {
 } from '../backend/src/schemas/bonus';
 export type { BonusOptionsResponse } from '../backend/src/schemas/bonus';
 
+export {
+  AUDIT_LOG_TYPES,
+  AuditLogTypeSchema,
+  AuditLogEntrySchema,
+  AuditLogsResponseSchema,
+  AuditSummarySchema,
+  AuditLogsQuerySchema,
+  AlertItemSchema,
+  SecurityAlertsResponseSchema,
+  AdminOverviewSchema,
+  AdminOverviewResponseSchema,
+} from './schemas/analytics';
+export type {
+  AuditLogType,
+  AuditLogEntry,
+  AuditLogsResponse,
+  AuditSummary,
+  AuditLogsQuery,
+  AlertItem,
+  SecurityAlertsResponse,
+  AdminOverview,
+  AdminOverviewResponse,
+} from './schemas/analytics';
+
 // Analytics log types
 export const LogTypeClassesSchema = z.record(z.string());
 export type LogTypeClasses = z.infer<typeof LogTypeClassesSchema>;
