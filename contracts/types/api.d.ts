@@ -31,6 +31,19 @@ export interface paths {
       };
     };
   };
+  "/nav-icons": {
+    /** List navigation icon metadata */
+    get: {
+      responses: {
+        /** @description Navigation icons */
+        200: {
+          content: {
+            "application/json": components["schemas"]["NavIconsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/auth/login": {
     /** Login */
     post: {
@@ -2617,6 +2630,11 @@ export interface components {
       label: string;
     };
     LanguagesResponse: components["schemas"]["Language"][];
+    NavIcon: {
+      name: string;
+      svg: string;
+    };
+    NavIconsResponse: components["schemas"]["NavIcon"][];
     ChipDenominationsResponse: {
       denoms: number[];
     };

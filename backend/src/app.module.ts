@@ -31,6 +31,7 @@ import { PromotionsController } from './routes/promotions.controller';
 import { LanguagesController } from './routes/languages.controller';
 import { ConfigController } from './routes/config.controller';
 import { PrecacheController } from './routes/precache.controller';
+import { NavIconsController } from './routes/nav-icons.controller';
 import { AppService } from './app.service';
 import { API_CONTRACT_VERSION } from '@shared/constants';
 import { ZodExceptionFilter } from './common/zod-exception.filter';
@@ -66,6 +67,7 @@ import { LanguageEntity } from './database/entities/language.entity';
 import { BonusService } from './services/bonus.service';
 import { ChipDenomsService } from './services/chip-denoms.service';
 import { TableThemeService } from './services/table-theme.service';
+import { NavIconsService } from './services/nav-icons.service';
 import { BonusOptionEntity } from './database/entities/bonus-option.entity';
 import { ChipDenominationEntity } from './database/entities/chip-denomination.entity';
 import { TableThemeEntity } from './database/entities/table-theme.entity';
@@ -154,6 +156,7 @@ import { TableThemeEntity } from './database/entities/table-theme.entity';
     LanguagesController,
     ConfigController,
     PrecacheController,
+    NavIconsController,
   ],
   providers: [
     AppService,
@@ -162,6 +165,7 @@ import { TableThemeEntity } from './database/entities/table-theme.entity';
     AdminMessagesService,
     PromotionsService,
     LanguagesService,
+    NavIconsService,
     BonusService,
     ChipDenomsService,
     TableThemeService,
