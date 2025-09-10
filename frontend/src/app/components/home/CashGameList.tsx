@@ -23,6 +23,7 @@ export default function CashGameList({
       hidden={hidden}
       title="Cash Games"
       className="mb-6 md:mb-8"
+      emptyMessage="No cash games available."
       items={tables}
       estimateSize={280}
       renderItem={(table, style) => (

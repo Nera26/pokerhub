@@ -39,6 +39,7 @@ export default function TournamentList<T extends Tournament>({
       aria-labelledby="tab-tournaments"
       hidden={hidden}
       title="Tournaments"
+      emptyMessage="No tournaments available."
       items={tournaments}
       estimateSize={280}
       renderItem={(t, style) => (

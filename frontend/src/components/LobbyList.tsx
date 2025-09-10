@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode, CSSProperties, HTMLAttributes } from 'react';
-import VirtualizedSection from '@/components/VirtualizedSection';
+import VirtualizedList from '@/components/VirtualizedList';
 
 interface LobbyListProps<T>
   extends Omit<HTMLAttributes<HTMLElement>, 'children'> {
@@ -10,6 +10,7 @@ interface LobbyListProps<T>
   items: T[];
   hidden: boolean;
   estimateSize?: number;
+  emptyMessage?: string;
   renderItem: (
     item: T,
     style: CSSProperties | undefined,
@@ -23,18 +24,23 @@ export default function LobbyList<T>({
   items,
   hidden,
   estimateSize = 280,
+  emptyMessage,
   renderItem,
   ...sectionProps
 }: LobbyListProps<T>) {
+  const { className, ...rest } = sectionProps;
   return (
-    <VirtualizedSection
+    <VirtualizedList
       id={id}
       title={title}
       items={items}
       hidden={hidden}
+      estimateSize={estimateSize}
+      emptyMessage={emptyMessage}
       renderItem={renderItem}
-      listProps={{ estimateSize, className: 'h-96 overflow-auto' }}
-      {...sectionProps}
+      className="h-96 overflow-auto"
+      containerClassName={className}
+      {...rest}
     />
   );
 }
