@@ -45,6 +45,12 @@ export async function fetchAdminEvents({
   return apiClient('/api/admin/events', AdminEventsResponseSchema, { signal });
 }
 
+export async function acknowledgeAdminEvent(id: string): Promise<void> {
+  await apiClient(`/api/admin/events/${id}/ack`, MessageResponseSchema, {
+    method: 'POST',
+  });
+}
+
 export async function fetchAuditActionColors({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<AuditActionColors> {
