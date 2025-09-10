@@ -51,13 +51,14 @@ export async function toggleUserBan(userId: number): Promise<MessageResponse> {
   });
 }
 
-export async function fetchUsers({
-  signal,
-}: { signal?: AbortSignal } = {}) {
-  return apiClient(
-    '/api/admin/users',
-    z.array(DashboardUserSchema),
-    { signal },
-  );
+export async function fetchUsers({ signal }: { signal?: AbortSignal } = {}) {
+  return apiClient('/api/admin/users', z.array(DashboardUserSchema), {
+    signal,
+  });
 }
 
+const DefaultAvatarSchema = z.object({ url: z.string() });
+
+export async function fetchDefaultAvatar(): Promise<{ url: string }> {
+  return apiClient('/api/users/avatar/default', DefaultAvatarSchema);
+}
