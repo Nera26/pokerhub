@@ -69,4 +69,15 @@ describe('UserModal', () => {
       expect.objectContaining({ username: 'Jane', id: 1 }),
     );
   });
+
+  it('calls onClose when close button clicked', async () => {
+    const onSubmit = jest.fn();
+    const onClose = jest.fn();
+    render(
+      <UserModal mode="add" isOpen onClose={onClose} onSubmit={onSubmit} />,
+    );
+
+    await userEvent.click(screen.getByLabelText('Close'));
+    expect(onClose).toHaveBeenCalled();
+  });
 });

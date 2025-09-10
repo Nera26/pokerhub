@@ -1,10 +1,10 @@
 'use client';
 
-import Modal from '../ui/Modal';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUserPlus, faXmark } from '@fortawesome/free-solid-svg-icons';
-import UserForm, { type UserFormValues } from '../forms/UserForm';
 import { useEffect, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faUserPlus } from '@fortawesome/free-solid-svg-icons';
+import UserForm, { type UserFormValues } from '../forms/UserForm';
+import FormModal from './FormModal';
 import { fetchDefaultAvatar } from '@/lib/api/users';
 
 interface User {
@@ -70,25 +70,12 @@ export default function UserModal({
     ? 'bg-accent-green hover:bg-green-600'
     : 'bg-accent-blue hover:bg-blue-600';
 
+  const title = isEdit
+    ? `Edit User - ${user?.name ?? 'Player'}`
+    : 'Add New User';
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <div className="flex items-center justify-between p-0 border-b border-dark pb-4 mb-4">
-        <h3 className="text-xl font-bold">
-          {isEdit ? `Edit User - ${user?.name ?? 'Player'}` : 'Add New User'}
-        </h3>
-        <button
-          aria-label="Close"
-          onClick={onClose}
-          className="text-text-secondary hover:text-text-primary text-xl"
-        >
-          <FontAwesomeIcon icon={faXmark} />
-        </button>
-      </div>
-      {error && (
-        <p role="alert" className="mb-4 text-danger-red">
-          {error}
-        </p>
-      )}
+    <FormModal isOpen={isOpen} onClose={onClose} title={title} error={error}>
       <UserForm
         key={isEdit ? user?.id : avatar}
         defaultValues={defaultValues}
@@ -107,6 +94,6 @@ export default function UserModal({
         showCountry={isEdit}
         submitClassName={submitClassName}
       />
-    </Modal>
+    </FormModal>
   );
 }
