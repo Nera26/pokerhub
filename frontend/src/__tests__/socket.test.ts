@@ -5,7 +5,7 @@ jest.mock('@/hooks/useApiError', () => ({
 }));
 
 import { dispatchGlobalError } from '@/hooks/useApiError';
-import { initNamespaceSocket } from '@/lib/socket-base';
+import { createNamespaceSocket } from '@/lib/socket-namespace';
 
 const mockSocket = {
   on: jest.fn((event: string, handler: (payload?: any) => void) => {
@@ -28,7 +28,7 @@ jest.mock('@/app/utils/socket', () => ({
   disconnectSocket: jest.fn(),
 }));
 
-const { emitWithAck, disconnect } = initNamespaceSocket('game');
+const { emitWithAck, disconnect } = createNamespaceSocket('game');
 
 describe('emitWithAck', () => {
   beforeEach(() => {
