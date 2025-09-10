@@ -1,5 +1,5 @@
 import { createHmac } from 'crypto';
-import { DataSource } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { createDataSource } from '../utils/pgMem';
 import { Account } from '../../src/wallet/account.entity';
 import { JournalEntry } from '../../src/wallet/journal-entry.entity';
@@ -117,6 +117,41 @@ export async function createWalletWebhookContext() {
     ctx.redis as any,
   );
   return { ...ctx, controller };
+}
+
+export async function seedWalletAccounts(repo: Repository<Account>) {
+  await repo.save([
+    {
+      id: '11111111-1111-1111-1111-111111111111',
+      name: 'user',
+      balance: 1000,
+      currency: 'USD',
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000001',
+      name: 'reserve',
+      balance: 0,
+      currency: 'USD',
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000002',
+      name: 'house',
+      balance: 0,
+      currency: 'USD',
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000003',
+      name: 'rake',
+      balance: 0,
+      currency: 'USD',
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000004',
+      name: 'prize',
+      balance: 0,
+      currency: 'USD',
+    },
+  ]);
 }
 
 export function signProviderPayload(body: unknown): string {
