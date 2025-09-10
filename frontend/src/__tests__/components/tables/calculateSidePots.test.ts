@@ -1,4 +1,4 @@
-import calculateSidePots from '@/app/components/tables/calculateSidePots';
+import { calculateSidePots } from '@shared/poker/sidePots';
 import type { Player } from '@/app/components/tables/types';
 
 const makePlayer = (id: number, committed: number): Player => ({

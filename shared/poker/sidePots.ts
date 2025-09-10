@@ -1,3 +1,43 @@
+export interface PlayerLike {
+  committed?: number;
+}
+
+export interface SidePotResult {
+  main: number;
+  sidePots: number[];
+}
+
+export function calculateSidePots(
+  players: PlayerLike[],
+  totalPot: number,
+): SidePotResult {
+  const commitments = players
+    .map((p) => p.committed ?? 0)
+    .filter((c) => c > 0)
+    .sort((a, b) => a - b);
+
+  const layers: number[] = [];
+  let prev = 0;
+  let remaining = commitments.length;
+
+  for (let i = 0; i < commitments.length; i++) {
+    const diff = commitments[i] - prev;
+    if (diff > 0 && remaining > 1) {
+      layers.push(diff * remaining);
+      prev = commitments[i];
+    }
+    remaining--;
+  }
+
+  const sidePots = layers.slice(1);
+  const sideTotal = sidePots.reduce((a, b) => a + b, 0);
+  const main = totalPot - sideTotal;
+
+  return { main, sidePots };
+}
+
+// --- Hand evaluation & settlement logic ------------------------------------
+
 enum HandRank {
   HIGH_CARD = 0,
   PAIR = 1,
@@ -86,7 +126,9 @@ function evaluate5(cards: number[]): HandValue {
     return { rank: HandRank.THREE_OF_A_KIND, kickers: [trip, ...kickers] };
   }
   if (counts[0][1] === 2 && counts[1]?.[1] === 2) {
-    const [highPair, lowPair] = [counts[0][0], counts[1][0]].sort((a, b) => b - a);
+    const [highPair, lowPair] = [counts[0][0], counts[1][0]].sort(
+      (a, b) => b - a,
+    );
     const kicker = ranks.find((r) => r !== highPair && r !== lowPair) ?? 0;
     return { rank: HandRank.TWO_PAIR, kickers: [highPair, lowPair, kicker] };
   }
@@ -98,7 +140,7 @@ function evaluate5(cards: number[]): HandValue {
   return { rank: HandRank.HIGH_CARD, kickers: ranks.slice(0, 5) };
 }
 
-export function evaluateHand(cards: number[]): number {
+function evaluateHand(cards: number[]): number {
   if (cards.length < 5) throw new Error('Need at least 5 cards');
   let best = 0;
   for (let i = 0; i < cards.length - 4; i++) {
@@ -116,3 +158,66 @@ export function evaluateHand(cards: number[]): number {
   }
   return best;
 }
+
+export interface SettlementState {
+  players: Array<{
+    id: string;
+    stack: number;
+    folded: boolean;
+    holeCards?: number[];
+  }>;
+  pot: number;
+  sidePots: {
+    amount: number;
+    players: string[];
+    contributions: Record<string, number>;
+  }[];
+  communityCards?: number[];
+}
+
+export function settlePots(state: SettlementState): void {
+  const active = state.players.filter((p) => !p.folded);
+  if (active.length === 0) return;
+
+  const board = state.communityCards ?? [];
+  const scores = new Map<string, number>();
+  for (const p of active) {
+    const hole: number[] = p.holeCards ?? [];
+    let score = 0;
+    try {
+      score = evaluateHand([...hole, ...board]);
+    } catch {
+      score = 0;
+    }
+    scores.set(p.id, score);
+  }
+
+  const pots =
+    state.sidePots.length > 0
+      ? [...state.sidePots]
+      : [
+          {
+            amount: state.pot,
+            players: active.map((p) => p.id),
+            contributions: Object.fromEntries(active.map((p) => [p.id, 0])),
+          },
+        ];
+
+  for (const pot of pots) {
+    const contenders = active.filter((p) => pot.players.includes(p.id));
+    if (contenders.length === 0) continue;
+
+    const best = Math.max(...contenders.map((p) => scores.get(p.id)!));
+    const winners = contenders.filter((p) => scores.get(p.id) === best);
+    const share = Math.floor(pot.amount / winners.length);
+
+    for (const w of winners) w.stack += share;
+
+    const remainder = pot.amount - share * winners.length;
+    if (remainder > 0) winners[0].stack += remainder;
+  }
+
+  state.pot = 0;
+  state.sidePots = [];
+}
+
