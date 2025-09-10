@@ -187,5 +187,14 @@ export async function reconcileSum(service: WalletService) {
   return { report, total };
 }
 
+export async function assertLedgerInvariant(service: WalletService) {
+  const [totalBalance, totalJournal] = await Promise.all([
+    service.totalBalance(),
+    service.totalJournal(),
+  ]);
+  expect(totalBalance).toBe(0);
+  expect(totalJournal).toBe(0);
+}
+
 export { createWalletTestContext as setupWalletTest };
 export type WalletTestContext = Awaited<ReturnType<typeof createWalletTestContext>>;
