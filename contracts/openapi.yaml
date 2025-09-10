@@ -1332,6 +1332,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminTabResponse'
+  /admin/revenue-breakdown:
+    get:
+      summary: Get revenue breakdown
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: range
+          schema:
+            type: string
+            enum: [today, week, month, all]
+      responses:
+        '200':
+          description: Revenue breakdown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevenueBreakdown'
   /admin/messages:
     get:
       summary: List user messages
@@ -1981,6 +1999,22 @@ components:
             $ref: '#/components/schemas/AdminMessage'
       required:
         - messages
+    RevenueStream:
+      type: object
+      properties:
+        label:
+          type: string
+        pct:
+          type: number
+        value:
+          type: number
+      required:
+        - label
+        - pct
+    RevenueBreakdown:
+      type: array
+      items:
+        $ref: '#/components/schemas/RevenueStream'
     PromotionBreakdownItem:
       type: object
       properties:

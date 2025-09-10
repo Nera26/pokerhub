@@ -8,6 +8,7 @@ import { KycService } from '../src/wallet/kyc.service';
 import { AnalyticsService } from '../src/analytics/analytics.service';
 import { SidebarService } from '../src/services/sidebar.service';
 import type { SidebarItem } from '../src/schemas/admin';
+import { RevenueService } from '../src/wallet/revenue.service';
 
 describe('AdminController', () => {
   let app: INestApplication;
@@ -18,6 +19,9 @@ describe('AdminController', () => {
     getSecurityAlerts: jest.fn(),
     getAdminEvents: jest.fn(),
   } as Partial<AnalyticsService>;
+  const revenue = {
+    getBreakdown: jest.fn(),
+  } as Partial<RevenueService>;
   const sidebarItems: SidebarItem[] = [
     {
       id: 'dynamic',
@@ -37,6 +41,7 @@ describe('AdminController', () => {
         { provide: KycService, useValue: kyc },
         { provide: AnalyticsService, useValue: analytics },
         { provide: SidebarService, useValue: sidebar },
+        { provide: RevenueService, useValue: revenue },
       ],
     })
       .overrideGuard(AuthGuard)
@@ -97,5 +102,15 @@ describe('AdminController', () => {
       .get('/admin/tabs')
       .expect(200)
       .expect(tabs);
+  });
+
+  it('returns revenue breakdown', async () => {
+    (revenue.getBreakdown as jest.Mock).mockResolvedValue([
+      { label: 'Cash', pct: 100, value: 200 },
+    ]);
+    await request(app.getHttpServer())
+      .get('/admin/revenue-breakdown?range=all')
+      .expect(200)
+      .expect([{ label: 'Cash', pct: 100, value: 200 }]);
   });
 });
