@@ -2,10 +2,7 @@ import { Account } from '../../src/wallet/account.entity';
 import { JournalEntry } from '../../src/wallet/journal-entry.entity';
 import { WalletService } from '../../src/wallet/wallet.service';
 import { EventPublisher } from '../../src/events/events.service';
-import {
-  setupTestWallet,
-  WalletTestContext,
-} from './test-setup';
+import { setupWalletTest, WalletTestContext } from './test-utils';
 
 describe('WalletService transactions', () => {
   let ctx: WalletTestContext;
@@ -13,7 +10,7 @@ describe('WalletService transactions', () => {
   let events: EventPublisher;
 
   beforeAll(async () => {
-    ctx = await setupTestWallet();
+    ctx = await setupWalletTest();
     service = ctx.service;
     events = ctx.events;
     await ctx.repos.account.save([
