@@ -35,6 +35,17 @@ npm run start:dev
 npm run start:prod
 ```
 
+## Test Credentials
+
+Local development and load tests occasionally require a throwaway user. Rather than running an ad‑hoc seeding script, provide the credentials through environment variables so they can be injected per environment:
+
+```bash
+TEST_USER_EMAIL=user@example.com
+TEST_USER_PASSWORD=secret
+```
+
+On startup the service can check for these values and create the user if it does not exist. This keeps secrets out of version control and allows CI to provision test accounts securely.
+
 ## Tests
 
 ```bash

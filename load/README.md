@@ -29,7 +29,7 @@ Ensure the following services are running (see `docker-compose.test.yml`):
 - Redis: `localhost:6379`
 - Backend API: `http://localhost:4000`
 - Game gateway: `ws://localhost:4000/game`
-- Test user credentials: `user@example.com / secret` (seed with `npm run seed:test-credentials --prefix backend`)
+- Test user credentials: `user@example.com / secret` (set via `TEST_USER_EMAIL` and `TEST_USER_PASSWORD` environment variables)
 ## Thresholds
 
 - ack latency p95 < 120ms
