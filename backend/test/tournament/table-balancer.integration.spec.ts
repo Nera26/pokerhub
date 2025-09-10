@@ -5,6 +5,7 @@ import { Table } from '../../src/database/entities/table.entity';
 import { Seat } from '../../src/database/entities/seat.entity';
 import { Tournament, TournamentState } from '../../src/database/entities/tournament.entity';
 import { createTablesRepository } from './test-utils';
+import { createInMemoryRedis } from './redis-mock';
 
 describe('TableBalancerService integration', () => {
   function createTournamentRepo(initial: Tournament[]): any {
@@ -82,7 +83,8 @@ describe('TableBalancerService integration', () => {
       scheduler,
       rooms,
     );
-    const balancer = new TableBalancerService(tablesRepo, service);
+    const { redis } = createInMemoryRedis();
+    const balancer = new TableBalancerService(tablesRepo, service, redis);
 
     const before = tables.map((t) => t.seats.length);
     expect(Math.max(...before) - Math.min(...before)).toBeGreaterThan(1);
@@ -144,7 +146,8 @@ describe('TableBalancerService integration', () => {
       scheduler,
       rooms,
     );
-    const balancer = new TableBalancerService(tablesRepo, service);
+    const { redis } = createInMemoryRedis();
+    const balancer = new TableBalancerService(tablesRepo, service, redis);
 
     await balancer.rebalanceIfNeeded('t1', 10, 5);
     const initialSecondTable = new Set(players2);
@@ -220,7 +223,8 @@ describe('TableBalancerService integration', () => {
       scheduler,
       rooms,
     );
-    const balancer = new TableBalancerService(tablesRepo, service);
+    const { redis } = createInMemoryRedis();
+    const balancer = new TableBalancerService(tablesRepo, service, redis);
 
     await balancer.rebalanceIfNeeded('t1', 10, 5);
     const initialSecondTable = new Set(players2);
@@ -248,7 +252,7 @@ describe('TableBalancerService integration', () => {
       scheduler,
       rooms,
     );
-    const balancer2 = new TableBalancerService(tablesRepo, service2);
+    const balancer2 = new TableBalancerService(tablesRepo, service2, redis);
 
     await balancer2.rebalanceIfNeeded('t1', 12, 5);
 
