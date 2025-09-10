@@ -21,7 +21,7 @@ import { CardContent } from '../ui/Card';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import VirtualizedList from '@/components/VirtualizedList';
-import { replyMessage } from '@/lib/api/messages';
+import { markMessageRead, replyMessage } from '@/lib/api/messages';
 import { useAdminMessages } from '@/hooks/useAdminMessages';
 import type { AdminMessage, AdminMessagesResponse } from '@shared/types';
 import type { ApiError } from '@/lib/api/client';
@@ -88,24 +88,38 @@ export default function Messages() {
 
   const unread = messages.filter((m) => !m.read).length;
 
-  const markRead = (id: number) => {
-    queryClient.setQueryData(['admin-messages'], (old) => {
-      if (!old) return old;
-      return {
-        messages: old.messages.map((x: AdminMessage) =>
-          x.id === id ? { ...x, read: true } : x,
-        ),
-      } as AdminMessagesResponse;
-    });
-  };
+  const markRead = useMutation({
+    mutationFn: (id: number) => markMessageRead(id),
+    onMutate: async (id: number) => {
+      await queryClient.cancelQueries({ queryKey: ['admin-messages'] });
+      const prev = queryClient.getQueryData<AdminMessagesResponse>([
+        'admin-messages',
+      ]);
+      if (prev) {
+        queryClient.setQueryData(['admin-messages'], {
+          messages: prev.messages.map((m) =>
+            m.id === id ? { ...m, read: true } : m,
+          ),
+        } as AdminMessagesResponse);
+      }
+      return { prev };
+    },
+    onError: (_err, _id, ctx) => {
+      if (ctx?.prev) {
+        queryClient.setQueryData(['admin-messages'], ctx.prev);
+      }
+    },
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: ['admin-messages'] }),
+  });
 
   const openView = (m: AdminMessage) => {
-    markRead(m.id);
+    markRead.mutate(m.id);
     setViewing({ ...m, read: true });
   };
 
   const openReply = (m: AdminMessage) => {
-    markRead(m.id);
+    markRead.mutate(m.id);
     setReplyTo(m);
     setValue('replyText', '');
   };

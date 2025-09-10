@@ -1,14 +1,6 @@
 import React from 'react';
 import type { Column } from './TransactionHistoryTable';
-
-const statusStyles: Record<string, string> = {
-  Completed: 'bg-accent-green/20 text-accent-green',
-  Failed: 'bg-danger-red/20 text-danger-red',
-  Processing: 'bg-accent-yellow/20 text-accent-yellow',
-  'Pending Confirmation': 'bg-accent-yellow/20 text-accent-yellow',
-  Pending: 'bg-accent-yellow/20 text-accent-yellow',
-  Rejected: 'bg-danger-red/20 text-danger-red',
-};
+import { getStatusInfo } from './status';
 
 function formatAmount(amt: number, currency: string) {
   const formatted = Math.abs(amt).toLocaleString(undefined, {
@@ -21,7 +13,12 @@ function formatAmount(amt: number, currency: string) {
 }
 
 export function buildTransactionColumns<
-  T extends { amount: number; status: string; date?: string; datetime?: string }
+  T extends {
+    amount: number;
+    status: string;
+    date?: string;
+    datetime?: string;
+  },
 >(
   opts: {
     getType?: (row: T) => string;
@@ -45,7 +42,9 @@ export function buildTransactionColumns<
     {
       header: 'Amount',
       cell: (row) => (
-        <span className={row.amount >= 0 ? 'text-accent-green' : 'text-danger-red'}>
+        <span
+          className={row.amount >= 0 ? 'text-accent-green' : 'text-danger-red'}
+        >
           {formatAmount(row.amount, currency)}
         </span>
       ),
@@ -56,15 +55,14 @@ export function buildTransactionColumns<
     },
     {
       header: 'Status',
-      cell: (row) => (
-        <span
-          className={`${
-            statusStyles[row.status] ?? 'bg-border-dark text-text-secondary'
-          } px-2 py-1 rounded-md font-medium`}
-        >
-          {row.status}
-        </span>
-      ),
+      cell: (row) => {
+        const { label, style } = getStatusInfo(row.status);
+        return (
+          <span className={`${style} px-2 py-1 rounded-md font-medium`}>
+            {label}
+          </span>
+        );
+      },
     },
   );
 
@@ -75,4 +73,6 @@ export function buildTransactionColumns<
   }));
 }
 
-export type TransactionColumns<T> = ReturnType<typeof buildTransactionColumns<T>>;
+export type TransactionColumns<T> = ReturnType<
+  typeof buildTransactionColumns<T>
+>;

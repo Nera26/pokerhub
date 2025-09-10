@@ -1,6 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`AuditLogs CSV export generates expected CSV 1`] = `
-"Timestamp,Admin,Affected User,Action Type,Description,Status
-2024-01-01,admin,admin,Login,"desc",Success"
-`;

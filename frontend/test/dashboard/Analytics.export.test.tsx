@@ -47,7 +47,7 @@ describe('Analytics CSV export', () => {
   beforeEach(() => {
     (useMutation as jest.Mock).mockReturnValue({ mutate: jest.fn() });
     (useQuery as jest.Mock).mockReturnValue({
-      data: {},
+      data: { Login: '' },
       isLoading: false,
       isError: false,
     });

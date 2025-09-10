@@ -19,6 +19,7 @@ import { useActiveTables } from '@/hooks/useActiveTables';
 import { useActivity } from '@/hooks/useActivity';
 import MetricCard from './MetricCard';
 import BroadcastPanel from './BroadcastPanel';
+import Messages from './Messages';
 import DashboardTransactionHistory from './transactions/TransactionHistory';
 import WalletReconcileMismatches from './WalletReconcileMismatches';
 import CenteredMessage from '@/components/CenteredMessage';
@@ -291,12 +292,14 @@ export default function Dashboard() {
         {/* Messages & Broadcast */}
         <Card className="border-0">
           <CardContent>
-            <CardTitle className="text-lg mb-4">
-              Messages &amp; Broadcast
-            </CardTitle>
-            <BroadcastPanel />
+            <CardTitle className="text-lg mb-4">Messages &amp; Broadcast</CardTitle>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Messages />
+              <BroadcastPanel />
+            </div>
           </CardContent>
         </Card>
+
         {isAdmin && (
           <Card className="border-0">
             <CardContent>
@@ -315,7 +318,7 @@ export default function Dashboard() {
           <CardTitle className="text-lg mb-4">
             Deposit &amp; Withdrawal Log
           </CardTitle>
-          <DashboardTransactionHistory onExport={() => {}} />
+        <DashboardTransactionHistory onExport={() => {}} />
         </CardContent>
       </Card>
     </div>

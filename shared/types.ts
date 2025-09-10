@@ -241,6 +241,7 @@ export type {
 
 /** ---- Admin Messages ---- */
 export {
+  AdminMessageSchema,
   AdminMessagesResponseSchema,
 } from '../backend/src/schemas/messages';
 export type {

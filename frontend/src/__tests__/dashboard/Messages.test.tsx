@@ -14,14 +14,13 @@ function renderWithClient(ui: ReactElement) {
 }
 
 describe('Messages dashboard', () => {
-  const origFetch = global.fetch;
   afterEach(() => {
-    global.fetch = origFetch;
     jest.clearAllMocks();
   });
 
   it('shows spinner and lists messages then refetches on reply', async () => {
-    const fetchMock = jest.fn()
+    const fetchMock = jest
+      .fn()
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -39,6 +38,21 @@ describe('Messages dashboard', () => {
               read: false,
             },
           ],
+        }),
+      } as unknown as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          id: 1,
+          sender: 'Alice',
+          userId: 'u1',
+          avatar: '/a.png',
+          subject: 'Hi',
+          preview: 'Hi',
+          content: 'Hello',
+          time: '2024',
+          read: true,
         }),
       } as unknown as Response)
       .mockResolvedValueOnce({
@@ -65,7 +79,79 @@ describe('Messages dashboard', () => {
     );
     await user.click(screen.getByText('Send Reply'));
 
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(4));
+  });
+
+  it('persists read status via API', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          messages: [
+            {
+              id: 1,
+              sender: 'Alice',
+              userId: 'u1',
+              avatar: '/a.png',
+              subject: 'Hi',
+              preview: 'Hi',
+              content: 'Hello',
+              time: '2024',
+              read: false,
+            },
+          ],
+        }),
+      } as unknown as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          id: 1,
+          sender: 'Alice',
+          userId: 'u1',
+          avatar: '/a.png',
+          subject: 'Hi',
+          preview: 'Hi',
+          content: 'Hello',
+          time: '2024',
+          read: true,
+        }),
+      } as unknown as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          messages: [
+            {
+              id: 1,
+              sender: 'Alice',
+              userId: 'u1',
+              avatar: '/a.png',
+              subject: 'Hi',
+              preview: 'Hi',
+              content: 'Hello',
+              time: '2024',
+              read: true,
+            },
+          ],
+        }),
+      } as unknown as Response);
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    renderWithClient(<Messages />);
+
+    expect(await screen.findByText('1 Unread')).toBeInTheDocument();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText('View'));
+
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    expect(fetchMock.mock.calls[1][0]).toBe('/api/admin/messages/1/read');
+    await waitFor(() =>
+      expect(screen.getByText('0 Unread')).toBeInTheDocument(),
+    );
   });
 
   it('shows empty state', async () => {
@@ -88,8 +174,6 @@ describe('Messages dashboard', () => {
     } as unknown as Response);
 
     renderWithClient(<Messages />);
-    expect(
-      await screen.findByText('fail'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('fail')).toBeInTheDocument();
   });
 });
