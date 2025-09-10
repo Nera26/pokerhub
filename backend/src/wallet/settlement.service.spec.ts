@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { createInMemoryDataSource } from '../../test/utils/pgMem';
+import { createInMemoryDb } from './test-utils';
 import { SettlementJournal } from './settlement-journal.entity';
 import { SettlementService } from './settlement.service';
 import type { Street } from '../game/state-machine';
@@ -12,7 +12,7 @@ describe('SettlementService', () => {
   let repo: Repository<SettlementJournal>;
 
   beforeAll(async () => {
-    const dataSource: DataSource = await createInMemoryDataSource([
+    const dataSource: DataSource = await createInMemoryDb([
       SettlementJournal,
     ]);
 
