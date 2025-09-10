@@ -1,6 +1,6 @@
 import type { Repository } from 'typeorm';
-import type Redis from 'ioredis';
 import { Table } from '../database/entities/table.entity';
+import { createInMemoryRedis } from './redis-mock';
 
 export type TournamentService = {
   balanceTournament(
@@ -25,29 +25,7 @@ export function createTablesRepository(
   };
 }
 
-export function createRedis(initial: Record<string, string> = {}): {
-  redis: Redis;
-  store: Map<string, string>;
-} {
-  const store = new Map<string, string>(Object.entries(initial));
-  const redis = {
-    hgetall: (key: string) => {
-      void key;
-      return Promise.resolve(Object.fromEntries(store));
-    },
-    hset: (key: string, data: Record<string, string>) => {
-      void key;
-      for (const [k, v] of Object.entries(data)) store.set(k, v);
-      return Promise.resolve(0);
-    },
-    del: (key: string) => {
-      void key;
-      store.clear();
-      return Promise.resolve(1);
-    },
-  } as unknown as Redis;
-  return { redis, store };
-}
+export { createInMemoryRedis };
 
 export function createTournamentService(moved: string[]): TournamentService {
   return {
