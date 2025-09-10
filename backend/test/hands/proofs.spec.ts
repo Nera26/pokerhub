@@ -13,7 +13,7 @@ import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { HandController } from '../../src/game/hand.controller';
 import { Hand } from '../../src/database/entities/hand.entity';
-import type { HandProof } from '@shared/types';
+import type { HandProofResponse } from '@shared/types';
 import { ConfigService } from '@nestjs/config';
 
 describe('HandController proofs', () => {
@@ -46,8 +46,8 @@ describe('HandController proofs', () => {
   it('filters proofs by ids and time range', async () => {
     const dir = join(process.cwd(), '../storage/proofs');
     mkdirSync(dir, { recursive: true });
-    const p1: HandProof = { seed: 's1', nonce: 'n1', commitment: 'c1' };
-    const p2: HandProof = { seed: 's2', nonce: 'n2', commitment: 'c2' };
+    const p1: HandProofResponse = { seed: 's1', nonce: 'n1', commitment: 'c1' };
+    const p2: HandProofResponse = { seed: 's2', nonce: 'n2', commitment: 'c2' };
     const f1 = join(dir, 'h1.json');
     const f2 = join(dir, 'h2.json');
     writeFileSync(f1, JSON.stringify(p1));

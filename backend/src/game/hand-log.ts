@@ -2,7 +2,7 @@ import { createWriteStream, mkdirSync, WriteStream } from 'fs';
 import { once } from 'events';
 import { join } from 'path';
 import { GameAction, GameStateInternal } from './state-machine';
-import type { HandProof } from '@shared/types';
+import type { HandProofResponse } from '@shared/types';
 
 // [index, action, preState, postState, proof]
 export type HandLogEntry = [
@@ -10,7 +10,7 @@ export type HandLogEntry = [
   GameAction,
   GameStateInternal,
   GameStateInternal,
-  HandProof?,
+  HandProofResponse?,
 ];
 
 export class HandLog {
@@ -19,7 +19,7 @@ export class HandLog {
   private stream?: WriteStream;
   private pending: Promise<void> = Promise.resolve();
   private commitment?: string;
-  private proof?: HandProof;
+  private proof?: HandProofResponse;
 
   constructor(handId?: string, commitment?: string) {
     if (handId) {
@@ -65,7 +65,7 @@ export class HandLog {
     this.appendLine({ commitment });
   }
 
-  recordProof(proof: HandProof) {
+  recordProof(proof: HandProofResponse) {
     this.proof = structuredClone(proof);
     this.appendLine({ proof: this.proof });
   }
@@ -89,7 +89,7 @@ export class HandLog {
     return this.commitment;
   }
 
-  getProof(): HandProof | undefined {
+  getProof(): HandProofResponse | undefined {
     return this.proof ? structuredClone(this.proof) : undefined;
   }
 

@@ -1,11 +1,11 @@
-import type { HandProof } from '@shared/types';
+import type { HandProofResponse } from '@shared/types';
 
 export default function ProofDetails({
   proof,
   valid,
   deck,
 }: {
-  proof: HandProof;
+  proof: HandProofResponse;
   valid?: boolean;
   deck: number[] | null;
 }) {
@@ -28,7 +28,9 @@ export default function ProofDetails({
       {deck && (
         <div>
           <strong>Deck:</strong>
-          <pre className="whitespace-pre-wrap break-words">{deck.join(' ')}</pre>
+          <pre className="whitespace-pre-wrap break-words">
+            {deck.join(' ')}
+          </pre>
         </div>
       )}
     </div>

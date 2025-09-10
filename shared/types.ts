@@ -384,34 +384,6 @@ export const TableDataSchema = z.object({
   stateAvailable: z.boolean(),
 });
 export type TableData = z.infer<typeof TableDataSchema>;
-
-// --- Leaderboard ---
-export const HandStateResponseSchema = z.object({
-  street: z.enum(['preflop', 'flop', 'turn', 'river', 'showdown']),
-  pot: z.number(),
-  sidePots: z.array(
-    z.object({ amount: z.number(), players: z.array(z.string()) }),
-  ),
-  currentBet: z.number(),
-  players: z.array(
-    z.object({
-      id: z.string(),
-      stack: z.number(),
-      folded: z.boolean(),
-      bet: z.number(),
-      allIn: z.boolean(),
-    }),
-  ),
-});
-export type HandStateResponse = z.infer<typeof HandStateResponseSchema>;
-
-// Fairness proof
-export const HandProofSchema = z.object({
-  seed: z.string(),
-  nonce: z.string(),
-  commitment: z.string(),
-});
-export type HandProof = z.infer<typeof HandProofSchema>;
 // Rebuy / PKO options
 // (internal helpers only)
 const RebuyOptionsSchema = z.object({
@@ -505,6 +477,19 @@ export type {
   TimeFilter,
   LeaderboardRangesResponse,
 } from '../backend/src/schemas/leaderboard';
+
+export {
+  HandProofResponse as HandProofResponseSchema,
+  HandProofsResponse as HandProofsResponseSchema,
+  HandLogResponse as HandLogResponseSchema,
+  HandStateResponse as HandStateResponseSchema,
+} from '../backend/src/schemas/hands';
+export type {
+  HandProofResponse,
+  HandProofsResponse,
+  HandLogResponse,
+  HandStateResponse,
+} from '../backend/src/schemas/hands';
 
 // Users (frontend)
 export const UserSchema = z.object({

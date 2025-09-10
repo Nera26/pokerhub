@@ -1,6 +1,6 @@
 import { randomBytes } from 'crypto';
 import { hashCommitment, shuffle, bytesToHex } from '@shared/verify';
-import type { HandProof } from '@shared/types';
+import type { HandProofResponse } from '@shared/types';
 
 /**
  * Per-hand RNG helper implementing commit-reveal protocol.
@@ -26,7 +26,7 @@ export class HandRNG {
   /**
    * Reveal seed & nonce after showdown and log proof.
    */
-  reveal(): HandProof {
+  reveal(): HandProofResponse {
     return {
       commitment: this.commitment,
       seed: bytesToHex(this.seed),

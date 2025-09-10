@@ -7,7 +7,7 @@ import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { HandController } from './hand.controller';
 import { Hand } from '../database/entities/hand.entity';
-import type { HandProof } from '@shared/types';
+import type { HandProofResponse } from '@shared/types';
 import { ConfigService } from '@nestjs/config';
 import { expectedState, state } from './test-utils';
 
@@ -42,7 +42,7 @@ describe('HandController', () => {
   });
 
   it('returns proof from log file', async () => {
-    const proof: HandProof = { seed: 'fs', nonce: 'fn', commitment: 'fc' };
+    const proof: HandProofResponse = { seed: 'fs', nonce: 'fn', commitment: 'fc' };
     const file = join(process.cwd(), '../storage/hand-logs', 'hand-spec.jsonl');
     const logEntry = [0, { type: 'start' }, { players: [{ id: 'u1' }] }, {}];
     writeFileSync(file, `${JSON.stringify(logEntry)}\n${JSON.stringify({ proof })}\n`);
