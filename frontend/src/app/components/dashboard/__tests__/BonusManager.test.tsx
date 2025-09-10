@@ -1,5 +1,5 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { renderWithClient } from './renderWithClient';
 import BonusManager from '../BonusManager';
 import {
   fetchBonuses,
@@ -16,15 +16,6 @@ jest.mock('@/lib/api/admin', () => ({
   deleteBonus: jest.fn(),
   fetchBonusOptions: jest.fn(),
 }));
-
-function renderWithClient(ui: React.ReactElement) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return render(
-    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
-  );
-}
 
 describe('BonusManager status toggle', () => {
   beforeEach(() => {

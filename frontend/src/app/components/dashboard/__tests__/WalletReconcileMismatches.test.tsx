@@ -1,20 +1,11 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { screen, fireEvent } from '@testing-library/react';
+import { renderWithClient } from './renderWithClient';
 import WalletReconcileMismatches from '../WalletReconcileMismatches';
 import { useWalletReconcileMismatches } from '@/hooks/wallet';
 
 jest.mock('@/hooks/wallet', () => ({
   useWalletReconcileMismatches: jest.fn(),
 }));
-
-function renderWithClient(ui: React.ReactElement) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return render(
-    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
-  );
-}
 
 describe('WalletReconcileMismatches', () => {
   afterEach(() => {

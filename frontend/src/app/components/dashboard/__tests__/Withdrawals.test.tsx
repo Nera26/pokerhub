@@ -1,5 +1,5 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { renderWithClient } from './renderWithClient';
 import Withdrawals from '../Withdrawals';
 import { useWithdrawals } from '@/hooks/useWithdrawals';
 import { rejectWithdrawal } from '@/lib/api/withdrawals';
@@ -8,15 +8,6 @@ jest.mock('@/hooks/useWithdrawals');
 jest.mock('@/lib/api/withdrawals', () => ({
   rejectWithdrawal: jest.fn(),
 }));
-
-function renderWithClient(ui: React.ReactElement) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return render(
-    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
-  );
-}
 
 describe('Withdrawals', () => {
   const refetch = jest.fn();
