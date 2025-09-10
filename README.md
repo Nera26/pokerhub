@@ -105,8 +105,8 @@ npm run push:all        # push both subtrees
 Static analysis scripts help keep the repository tidy:
 
 ```bash
-npm run lint:unused   # report unused TypeScript exports
-npm run lint:dup      # detect copy/paste code
+npm run lint:unused   # report unused TypeScript exports via ts-prune
+npm run lint:dup      # detect copy/paste code with jscpd
 ```
 
 Both commands scan `frontend/`, `backend/`, and `shared/` and run in CI to prevent regressions.
