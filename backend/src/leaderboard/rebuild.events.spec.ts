@@ -2,39 +2,7 @@ import { LeaderboardService } from './leaderboard.service';
 import type { Cache } from 'cache-manager';
 import { ConfigService } from '@nestjs/config';
 import { updateRating } from './rating';
-
-class MockCache {
-  private store = new Map<string, any>();
-  private ttl = new Map<string, number>();
-  get<T>(key: string): Promise<T | undefined> {
-    return Promise.resolve(this.store.get(key) as T | undefined);
-  }
-  set<T>(key: string, value: T, options?: { ttl: number }): Promise<void> {
-    this.store.set(key, value);
-    if (options?.ttl) {
-      this.ttl.set(key, options.ttl);
-    }
-    return Promise.resolve();
-  }
-  del(key: string): Promise<void> {
-    this.store.delete(key);
-    this.ttl.delete(key);
-    return Promise.resolve();
-  }
-}
-
-class MockLeaderboardRepo {
-  rows: any[] = [];
-  async clear(): Promise<void> {
-    this.rows = [];
-  }
-  async insert(entries: any[]): Promise<void> {
-    this.rows.push(...entries);
-  }
-  async find(): Promise<any[]> {
-    return [...this.rows];
-  }
-}
+import { MockCache, MockLeaderboardRepo } from '../../test/leaderboard-mocks';
 
 describe('rebuildWithEvents', () => {
   it('loads JSONL events into leaderboard', async () => {
