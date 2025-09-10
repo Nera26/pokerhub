@@ -7,7 +7,7 @@ import {
   BonusOptionsResponseSchema,
   type BonusOptionsResponse,
   AdminTabResponseSchema,
-  type AdminTabResponse,
+  type AdminTab,
   AdminEventsResponseSchema,
   type AdminEvent,
 } from '@shared/types';
@@ -32,7 +32,7 @@ export async function fetchSidebarItems({
 
 export async function fetchAdminTabs({
   signal,
-}: { signal?: AbortSignal } = {}): Promise<AdminTabResponse> {
+}: { signal?: AbortSignal } = {}): Promise<AdminTab[]> {
   return apiClient('/api/admin/tabs', AdminTabResponseSchema, { signal });
 }
 
