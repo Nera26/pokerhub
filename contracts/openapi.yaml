@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.15.0
+  version: 2.16.0
 paths:
   /status:
     get:
@@ -13,6 +13,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServiceStatusResponse'
+  /precache:
+    get:
+      summary: List asset URLs to pre-cache
+      responses:
+        '200':
+          description: Asset URLs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrecacheResponse'
   /auth/login:
     post:
       summary: Login
@@ -2040,6 +2050,10 @@ components:
       required:
         - status
         - contractVersion
+    PrecacheResponse:
+      type: array
+      items:
+        type: string
     LoginRequest:
       type: object
       properties:

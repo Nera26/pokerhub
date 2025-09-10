@@ -48,6 +48,13 @@ export const TableThemeResponseSchema = z.object({
 });
 export type TableThemeResponse = z.infer<typeof TableThemeResponseSchema>;
 
+export {
+  PrecacheListResponseSchema,
+} from '../backend/src/schemas/precache';
+export type {
+  PrecacheListResponse,
+} from '../backend/src/schemas/precache';
+
 // Backend re-exports
 export {
   UserProfileSchema,
