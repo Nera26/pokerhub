@@ -1,5 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import request from 'supertest';
 import { PrecacheController } from '../src/routes/precache.controller';
 
@@ -19,10 +21,22 @@ describe('PrecacheController', () => {
     await app.close();
   });
 
-  it('returns asset urls', async () => {
+  it('returns asset urls from manifest', async () => {
+    const manifest = JSON.parse(
+      readFileSync(
+        join(
+          process.cwd(),
+          '..',
+          'frontend',
+          '.next',
+          'precache-manifest.json',
+        ),
+        'utf-8',
+      ),
+    );
     await request(app.getHttpServer())
       .get('/precache')
       .expect(200)
-      .expect(['/', '/offline', '/favicon.ico']);
+      .expect(manifest);
   });
 });
