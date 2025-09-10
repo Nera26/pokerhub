@@ -2,7 +2,9 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { PrecacheListResponse, PrecacheListResponseSchema } from '../schemas/precache';
 
-const PRECACHE_URLS = ['/', '/offline', '/favicon.ico'];
+const PRECACHE_URLS = process.env.PRECACHE_URLS
+  ? process.env.PRECACHE_URLS.split(',').map((s) => s.trim()).filter(Boolean)
+  : [];
 
 @ApiTags('precache')
 @Controller('precache')
