@@ -86,7 +86,6 @@ function createTestModule() {
 describe('ConfigController', () => {
   let app: INestApplication;
   let chipService: ChipDenomsService;
-  let themeService: TableThemeService;
 
   beforeAll(async () => {
     const { module: ConfigTestModule } = createTestModule();
@@ -104,10 +103,12 @@ describe('ConfigController', () => {
     await app.init();
 
     chipService = moduleRef.get(ChipDenomsService);
-    themeService = moduleRef.get(TableThemeService);
 
     await chipService.update(defaultChips.denoms);
-    await themeService.update(mockTheme);
+    await request(app.getHttpServer())
+      .put('/config/table-theme')
+      .send(mockTheme)
+      .expect(200);
   });
 
   afterAll(async () => {
@@ -135,9 +136,20 @@ describe('ConfigController', () => {
     expect(res.body).toEqual({ denoms: [500, 100, 25] });
   });
 
-  it('persists table theme', async () => {
+  it('returns table theme', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/config/table-theme')
+      .expect(200);
+
+    expect(res.body).toEqual(mockTheme);
+  });
+
+  it('updates table theme', async () => {
     const updated = { ...mockTheme, hairline: 'blue' };
-    await themeService.update(updated);
+    await request(app.getHttpServer())
+      .put('/config/table-theme')
+      .send(updated)
+      .expect(200);
 
     const res = await request(app.getHttpServer())
       .get('/config/table-theme')

@@ -1804,6 +1804,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TableThemeResponse'
+    put:
+      summary: Update table theme
+      description: Admin only
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableThemeResponse'
+      responses:
+        '200':
+          description: Updated table theme
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableThemeResponse'
   /users:
     post:
       summary: Create user
