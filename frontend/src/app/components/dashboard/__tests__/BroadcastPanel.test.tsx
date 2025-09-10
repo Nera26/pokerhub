@@ -3,6 +3,7 @@ import { renderWithClient } from './renderWithClient';
 import BroadcastPanel from '../BroadcastPanel';
 import { fetchMessages } from '@/lib/api/messages';
 import { sendBroadcast } from '@/lib/api/broadcasts';
+import useBroadcastTypes from '@/hooks/useBroadcastTypes';
 
 jest.mock('@/hooks/useApiError', () => ({ useApiError: () => {} }));
 jest.mock('@/lib/api/messages', () => ({
@@ -11,6 +12,26 @@ jest.mock('@/lib/api/messages', () => ({
 jest.mock('@/lib/api/broadcasts', () => ({
   sendBroadcast: jest.fn(),
 }));
+jest.mock('@/hooks/useBroadcastTypes', () => ({
+  __esModule: true,
+  default: jest.fn(),
+}));
+
+const mockUseBroadcastTypes = useBroadcastTypes as jest.Mock;
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockUseBroadcastTypes.mockReturnValue({
+    data: {
+      types: {
+        announcement: { icon: '', color: '' },
+        alert: { icon: '', color: '' },
+      },
+    },
+    isLoading: false,
+    error: null,
+  });
+});
 
 describe('BroadcastPanel', () => {
   it('renders messages from server', async () => {
@@ -45,10 +66,17 @@ describe('BroadcastPanel', () => {
     (fetchMessages as jest.Mock).mockResolvedValue({ messages: [] });
     (sendBroadcast as jest.Mock).mockResolvedValue({ status: 'ok' });
     renderWithClient(<BroadcastPanel />);
+    const select = screen.getByRole('combobox');
+    expect(select).toBeInTheDocument();
     const input = screen.getByPlaceholderText('Broadcast message...');
     fireEvent.change(input, { target: { value: 'hello' } });
     fireEvent.click(screen.getByRole('button', { name: /send broadcast/i }));
-    await waitFor(() => expect(sendBroadcast).toHaveBeenCalledWith('hello'));
+    await waitFor(() =>
+      expect(sendBroadcast).toHaveBeenCalledWith({
+        text: 'hello',
+        type: 'announcement',
+      }),
+    );
     expect(input).toHaveValue('');
   });
 
