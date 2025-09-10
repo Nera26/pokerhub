@@ -10,5 +10,7 @@ export function getBaseUrl() {
   if (typeof window !== 'undefined') {
     return window.location.origin;
   }
-  return 'http://localhost:3000';
+  throw new Error(
+    'Base URL could not be determined: set NEXT_PUBLIC_BASE_URL or VERCEL_URL',
+  );
 }
