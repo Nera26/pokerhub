@@ -1,17 +1,17 @@
 import { createAdminResource } from '../useAdminResource';
 
-jest.mock('../useAdminQuery', () => ({
-  createAdminQuery: jest.fn(() => 'hook'),
+jest.mock('../useApiQuery', () => ({
+  createQueryHook: jest.fn(() => 'hook'),
 }));
 
 describe('createAdminResource', () => {
   it('constructs query with normalized label', () => {
     const fetcher = jest.fn();
-    const { createAdminQuery } = require('../useAdminQuery');
+    const { createQueryHook } = require('../useApiQuery');
     const result = createAdminResource('admin-messages', fetcher);
-    expect(createAdminQuery).toHaveBeenCalledWith(
+    expect(createQueryHook).toHaveBeenCalledWith(
       'admin-messages',
-      fetcher,
+      expect.any(Function),
       'admin messages',
     );
     expect(result).toBe('hook');

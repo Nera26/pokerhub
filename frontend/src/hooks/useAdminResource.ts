@@ -1,8 +1,13 @@
 'use client';
 
-import { createAdminQuery } from './useAdminQuery';
+import { createQueryHook } from './useApiQuery';
 
 export const createAdminResource = <T>(
   key: string,
   fetcher: (...a: any[]) => Promise<T>,
-) => createAdminQuery<T>(key, fetcher, key.replace('-', ' '));
+) =>
+  createQueryHook<T>(
+    key,
+    (_client, opts) => fetcher({ signal: opts.signal }),
+    key.replace(/-/g, ' '),
+  );
