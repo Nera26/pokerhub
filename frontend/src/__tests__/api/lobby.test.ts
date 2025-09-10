@@ -1,7 +1,7 @@
 /** @jest-environment node */
 
 import {
-  getTables,
+  fetchTables,
   fetchTournamentDetails,
   createCTA,
   updateCTA,
@@ -9,9 +9,17 @@ import {
 import { mockFetch } from '../utils/mockFetch';
 
 describe('lobby api', () => {
+  beforeAll(() => {
+    // Ensure fetch exists in node test env
+    if (!(global as any).fetch) {
+      (global as any).fetch = jest.fn();
+    }
+  });
+
   beforeEach(() => {
     (fetch as jest.Mock).mockReset();
   });
+
   it('fetches tables', async () => {
     (fetch as jest.Mock).mockResolvedValue({
       ok: true,
@@ -31,7 +39,7 @@ describe('lobby api', () => {
       ],
     });
 
-    await expect(getTables()).resolves.toEqual([
+    await expect(fetchTables()).resolves.toEqual([
       {
         id: '1',
         tableName: 'Test Table',
@@ -53,7 +61,7 @@ describe('lobby api', () => {
       text: async () => 'fail',
     });
 
-    await expect(getTables()).rejects.toEqual({
+    await expect(fetchTables()).rejects.toEqual({
       status: 500,
       message: 'Server Error',
       details: 'fail',
