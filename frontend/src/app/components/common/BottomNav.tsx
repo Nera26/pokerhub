@@ -4,15 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Image from 'next/image';
-import { faHome } from '@fortawesome/free-solid-svg-icons/faHome';
-import { faWallet } from '@fortawesome/free-solid-svg-icons/faWallet';
-import { faTags } from '@fortawesome/free-solid-svg-icons/faTags';
-import { faTrophy } from '@fortawesome/free-solid-svg-icons/faTrophy';
-import { faBell } from '@fortawesome/free-solid-svg-icons/faBell';
-import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/hooks/notifications';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
+import { fetchNavItems, type NavItem } from '@/lib/api/nav';
 
 export default function BottomNav() {
   const pathname = usePathname();
@@ -25,45 +21,30 @@ export default function BottomNav() {
 
   const { data: flags } = useFeatureFlags();
 
-  type NavItem = {
-    href: string;
-    label: string;
-    icon?: IconDefinition;
-    badge?: number;
-    avatar?: string;
-  };
+  const {
+    data: items = [],
+    isLoading: navLoading,
+    error: navError,
+  } = useQuery({ queryKey: ['nav-items'], queryFn: fetchNavItems });
 
-  const items: (NavItem & { flag: string })[] = [
-    { flag: 'lobby', href: '/', label: 'Lobby', icon: faHome },
-    { flag: 'wallet', href: '/wallet', label: 'Wallet', icon: faWallet },
-    {
-      flag: 'promotions',
-      href: '/promotions',
-      label: 'Promotions',
-      icon: faTags,
-    },
-    {
-      flag: 'leaderboard',
-      href: '/leaderboard',
-      label: 'Leaders',
-      icon: faTrophy,
-    },
-    {
-      flag: 'notifications',
-      href: '/notification',
-      label: 'Alerts',
-      icon: faBell,
-      badge: !notifLoading && !notifError ? notifData?.unread : undefined,
-    },
-    {
-      flag: 'profile',
-      href: '/profile',
-      label: 'Profile',
-      avatar: avatarUrl || undefined,
-    },
-  ];
+  if (navLoading || navError) {
+    return null;
+  }
 
-  const navItems: NavItem[] = items
+  const itemsWithDynamic = items.map((item) => {
+    if (item.flag === 'notifications') {
+      return {
+        ...item,
+        badge: !notifLoading && !notifError ? notifData?.unread : undefined,
+      };
+    }
+    if (item.flag === 'profile') {
+      return { ...item, avatar: avatarUrl || undefined };
+    }
+    return item;
+  });
+
+  const navItems: Omit<NavItem, 'flag'>[] = itemsWithDynamic
     .filter(({ flag }) => flags?.[flag] !== false)
     .map(({ flag: _flag, ...item }) => item);
 
