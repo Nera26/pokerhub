@@ -1,18 +1,18 @@
 import { DataSource } from 'typeorm';
-import { setupTestWallet } from './test-utils';
-import { WalletService } from './wallet.service';
+import { setupWalletTest } from './test-utils';
+import { WalletService } from '../../src/wallet/wallet.service';
 
 describe('WalletService initiateBankTransfer checks', () => {
   let dataSource: DataSource;
   let service: WalletService;
   let redisStore: Map<string, any>;
   let kyc: any;
-  let repos: Awaited<ReturnType<typeof setupTestWallet>>['repos'];
+  let repos: Awaited<ReturnType<typeof setupWalletTest>>['repos'];
 
   const userId = '11111111-1111-1111-1111-111111111111';
 
   beforeAll(async () => {
-    ({ dataSource, service, redisStore, kyc, repos } = await setupTestWallet());
+    ({ dataSource, service, redisStore, kyc, repos } = await setupWalletTest());
     await repos.account.save([
       {
         id: userId,

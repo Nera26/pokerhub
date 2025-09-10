@@ -1,8 +1,8 @@
 import { DataSource } from 'typeorm';
-import { createInMemoryDb } from './test-utils';
-import { BankReconciliationService } from './bank-reconciliation.service';
-import { PendingDeposit } from './pending-deposit.entity';
-import { EventPublisher } from '../events/events.service';
+import { createInMemoryDb } from '../../src/wallet/test-utils';
+import { BankReconciliationService } from '../../src/wallet/bank-reconciliation.service';
+import { PendingDeposit } from '../../src/wallet/pending-deposit.entity';
+import { EventPublisher } from '../../src/events/events.service';
 
 describe('BankReconciliationService', () => {
   let dataSource: DataSource;

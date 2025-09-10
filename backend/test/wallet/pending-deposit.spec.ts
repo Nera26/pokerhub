@@ -1,5 +1,5 @@
-import AdminDepositsController from '../routes/admin-deposits.controller';
-import { setupWalletTest, WalletTestContext } from '../../test/wallet/test-utils';
+import AdminDepositsController from '../../src/routes/admin-deposits.controller';
+import { setupWalletTest, WalletTestContext } from './test-utils';
 
 jest.setTimeout(20000);
 

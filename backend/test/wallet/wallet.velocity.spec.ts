@@ -1,4 +1,4 @@
-import { setupWalletTest, WalletTestContext } from '../../test/wallet/test-utils';
+import { setupWalletTest, WalletTestContext } from './test-utils';
 
 describe('WalletService velocity limits', () => {
   let ctx: WalletTestContext;

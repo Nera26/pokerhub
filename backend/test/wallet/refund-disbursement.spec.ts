@@ -1,6 +1,6 @@
-import { WalletService } from './wallet.service';
-import { Account } from './account.entity';
-import { Disbursement } from './disbursement.entity';
+import { WalletService } from '../../src/wallet/wallet.service';
+import { Account } from '../../src/wallet/account.entity';
+import { Disbursement } from '../../src/wallet/disbursement.entity';
 
 describe('WalletService.refundDisbursement', () => {
   it('records refund from house to user', async () => {

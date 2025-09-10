@@ -1,4 +1,4 @@
-import { PaymentProviderService } from './payment-provider.service';
+import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
 import type { ProviderCallback } from '@shared/wallet.schema';
 import Redis from 'ioredis';
 
