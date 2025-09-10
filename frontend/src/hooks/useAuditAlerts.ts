@@ -1,9 +1,9 @@
 'use client';
 
-import { createResourceHook } from './createResourceHook';
+import { createQueryHook } from './useApiQuery';
 import { SecurityAlertsResponseSchema, type AlertItem } from '@shared/types';
 
-export const useAuditAlerts = createResourceHook<AlertItem[]>(
+export const useAuditAlerts = createQueryHook<AlertItem[]>(
   'audit-alerts',
   (client, opts) =>
     client('/api/admin/security-alerts', SecurityAlertsResponseSchema, opts),
