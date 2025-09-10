@@ -15,6 +15,7 @@ DATABASE_URL=postgres://user:pass@host:5432/pokerhub
 REDIS_URL=redis://host:6379
 JWT_SECRET=dev-secret
 GATEWAY_GLOBAL_LIMIT=30 # max actions per 10s across all sockets
+SYSTEM_ACCOUNTS=reserve,house,rake,prize # special account names excluded from notifications
 ```
 Additional options exist for storage, telemetry and message queues (see `.env.example`).
 

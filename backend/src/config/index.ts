@@ -11,3 +11,4 @@ export { default as kycConfig } from './kyc.config';
 export { default as geoConfig } from './geo.config';
 export { default as gameConfig } from './game.config';
 export { default as tournamentConfig } from './tournament.config';
+export { default as systemConfig } from './system.config';
