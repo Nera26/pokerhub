@@ -3,6 +3,7 @@ import {
   setupWalletTest,
   WalletTestContext,
   seedWalletAccounts,
+  assertLedgerInvariant,
 } from './test-utils';
 
 describe('WalletService reserve/commit/rollback flow', () => {
@@ -85,11 +86,7 @@ describe('WalletService reserve/commit/rollback flow', () => {
                 await ctx.service.rollback(userId, rollbackAmt, refId, 'USD');
               }
             }
-
-            const totalBalance = await ctx.service.totalBalance();
-            const totalJournal = await ctx.service.totalJournal();
-            expect(totalBalance).toBe(0);
-            expect(totalJournal).toBe(0);
+            await assertLedgerInvariant(ctx.service);
           },
         ),
         { numRuns: 25 },

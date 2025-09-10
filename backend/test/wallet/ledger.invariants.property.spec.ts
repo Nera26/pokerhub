@@ -4,15 +4,19 @@ import { Account } from '../../src/wallet/account.entity';
 import { JournalEntry } from '../../src/wallet/journal-entry.entity';
 import { Disbursement } from '../../src/wallet/disbursement.entity';
 import { SettlementJournal } from '../../src/wallet/settlement-journal.entity';
+import { PendingDeposit } from '../../src/wallet/pending-deposit.entity';
 import { WalletService } from '../../src/wallet/wallet.service';
 import { EventPublisher } from '../../src/events/events.service';
 import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
 import { KycService } from '../../src/wallet/kyc.service';
 import { runReconcile } from '../../src/wallet/reconcile.job';
+import { SettlementService } from '../../src/wallet/settlement.service';
+import { ConfigService } from '@nestjs/config';
 import * as fc from 'fast-check';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { assertLedgerInvariant } from './test-utils';
 
 const runInTmp = async (fn: () => Promise<void>) => {
   const cwd = process.cwd();
@@ -60,7 +64,13 @@ describe('Wallet ledger invariants', () => {
     });
     dataSource = db.adapters.createTypeormDataSource({
       type: 'postgres',
-      entities: [Account, JournalEntry, Disbursement, SettlementJournal],
+      entities: [
+        Account,
+        JournalEntry,
+        Disbursement,
+        SettlementJournal,
+        PendingDeposit,
+      ],
       synchronize: true,
     }) as DataSource;
     await dataSource.initialize();
@@ -70,17 +80,25 @@ describe('Wallet ledger invariants', () => {
     const redis: any = { incr: jest.fn(), expire: jest.fn() };
     const disbRepo = dataSource.getRepository(Disbursement);
     const settleRepo = dataSource.getRepository(SettlementJournal);
+    const pendingRepo = dataSource.getRepository(PendingDeposit);
     const provider = {} as unknown as PaymentProviderService;
     const kyc = { validate: jest.fn(), getDenialReason: jest.fn() } as unknown as KycService;
+    const settleSvc = new SettlementService(settleRepo);
+    const config = {
+      get: jest.fn().mockReturnValue(['reserve', 'house', 'rake', 'prize']),
+    } as unknown as ConfigService;
     service = new WalletService(
       accountRepo,
       journalRepo,
       disbRepo,
       settleRepo,
+      pendingRepo,
       events,
       redis,
       provider,
       kyc,
+      settleSvc,
+      config,
     );
 
     await accountRepo.save([
@@ -120,7 +138,6 @@ describe('Wallet ledger invariants', () => {
               acc.balance = 0;
             }
             await accountRepo.save(accounts);
-            const start = new Map(accounts.map((a) => [a.id, a.balance]));
 
             for (let i = 0; i < batch.length; i++) {
               const t = batch[i];
@@ -132,13 +149,7 @@ describe('Wallet ledger invariants', () => {
                 await service.rollback(userId, rollbackAmt, ref, 'USD');
               }
             }
-
-            const end = await accountRepo.find();
-            const deltaSum = end.reduce(
-              (sum, acc) => sum + (acc.balance - (start.get(acc.id) ?? 0)),
-              0,
-            );
-            expect(deltaSum).toBe(0);
+            await assertLedgerInvariant(service);
           },
         ),
         { numRuns: 25 },
@@ -191,8 +202,7 @@ describe('Wallet ledger invariants', () => {
               }
             }
 
-            const total = await service.totalBalance();
-            expect(total).toBe(0);
+            await assertLedgerInvariant(service);
 
             await runInTmp(() => runReconcile(service, events));
 
@@ -280,9 +290,7 @@ describe('Wallet ledger invariants', () => {
               expect(total).toBe(0);
             }
 
-            const allEntries = await journalRepo.find();
-            const sum = allEntries.reduce((s, e) => s + Number(e.amount), 0);
-            expect(sum).toBe(0);
+            await assertLedgerInvariant(service);
 
             await runInTmp(() => runReconcile(service, events));
 
