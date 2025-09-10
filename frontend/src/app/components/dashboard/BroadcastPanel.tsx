@@ -1,8 +1,11 @@
 'use client';
 
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { fetchMessages, sendBroadcast } from '@/lib/api/messages';
+import { fetchMessages } from '@/lib/api/messages';
+import { sendBroadcast } from '@/lib/api/broadcasts';
 import { useApiError } from '@/hooks/useApiError';
+import useBroadcastTypes from '@/hooks/useBroadcastTypes';
+import type { BroadcastType } from '@shared/types';
 import { useState } from 'react';
 
 export default function BroadcastPanel() {
@@ -11,7 +14,11 @@ export default function BroadcastPanel() {
     queryFn: fetchMessages,
   });
 
+  const { data: typesData } = useBroadcastTypes();
+  const types = typesData?.types ?? {};
+
   const [text, setText] = useState('');
+  const [type, setType] = useState<BroadcastType>('announcement');
   const {
     mutate: broadcast,
     isLoading: isSending,
@@ -48,6 +55,17 @@ export default function BroadcastPanel() {
         </div>
       )}
       <div className="mt-4 space-y-2">
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value as BroadcastType)}
+          className="w-full bg-primary-bg border border-dark rounded-xl px-3 py-2 text-sm"
+        >
+          {(Object.keys(types) as BroadcastType[]).map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
         <input
           type="text"
           placeholder="Broadcast message..."
@@ -61,7 +79,7 @@ export default function BroadcastPanel() {
           </div>
         )}
         <button
-          onClick={() => broadcast(text)}
+          onClick={() => broadcast({ text, type })}
           disabled={isSending || text === ''}
           className="w-full bg-accent-yellow hover:brightness-110 text-black py-2 rounded-xl font-semibold disabled:opacity-50"
         >

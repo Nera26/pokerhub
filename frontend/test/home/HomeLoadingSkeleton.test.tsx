@@ -21,10 +21,10 @@ describe('HomeLoadingSkeleton', () => {
   });
 
   it('falls back to defaults when data is undefined', () => {
-    mockUseTables.mockReturnValue({ data: undefined });
-    mockUseTournaments.mockReturnValue({ data: undefined });
-    mockUseCTAs.mockReturnValue({ data: undefined });
-    mockUseGameTypes.mockReturnValue({ data: undefined });
+    mockUseTables.mockReturnValue({ data: undefined } as any);
+    mockUseTournaments.mockReturnValue({ data: undefined } as any);
+    mockUseCTAs.mockReturnValue({ data: undefined } as any);
+    mockUseGameTypes.mockReturnValue({ data: undefined } as any);
 
     const { container, getAllByTestId } = render(<HomeLoadingSkeleton />);
 
@@ -45,10 +45,10 @@ describe('HomeLoadingSkeleton', () => {
   });
 
   it('renders skeletons based on query sizes', () => {
-    mockUseTables.mockReturnValue({ data: Array(5).fill({}) });
-    mockUseTournaments.mockReturnValue({ data: Array(2).fill({}) });
-    mockUseCTAs.mockReturnValue({ data: Array(3).fill({}) });
-    mockUseGameTypes.mockReturnValue({ data: Array(6).fill({}) });
+    mockUseTables.mockReturnValue({ data: Array(5).fill({}) } as any);
+    mockUseTournaments.mockReturnValue({ data: Array(2).fill({}) } as any);
+    mockUseCTAs.mockReturnValue({ data: Array(3).fill({}) } as any);
+    mockUseGameTypes.mockReturnValue({ data: Array(6).fill({}) } as any);
 
     const { container, getAllByTestId } = render(<HomeLoadingSkeleton />);
 

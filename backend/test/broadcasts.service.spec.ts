@@ -2,21 +2,24 @@ import { Test } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
+
 import { BroadcastsService } from '../src/broadcasts/broadcasts.service';
 import { BroadcastEntity } from '../src/database/entities/broadcast.entity';
+import { BroadcastTemplateEntity } from '../src/database/entities/broadcast-template.entity';
 import { BroadcastTypeEntity } from '../src/database/entities/broadcast-type.entity';
 
 describe('BroadcastsService', () => {
   let service: BroadcastsService;
   let moduleRef: any;
+  let dataSource: DataSource;
 
   beforeAll(async () => {
-    let dataSource: DataSource;
     moduleRef = await Test.createTestingModule({
       imports: [
         TypeOrmModule.forRootAsync({
           useFactory: () => {
             const db = newDb();
+
             db.public.registerFunction({
               name: 'version',
               returns: 'text',
@@ -27,6 +30,8 @@ describe('BroadcastsService', () => {
               returns: 'text',
               implementation: () => 'test',
             });
+
+            // Deterministic UUID generator for pg-mem
             let seq = 1;
             db.public.registerFunction({
               name: 'uuid_generate_v4',
@@ -34,31 +39,64 @@ describe('BroadcastsService', () => {
               implementation: () => {
                 const id = seq.toString(16).padStart(32, '0');
                 seq++;
-                return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(16, 20)}-${id.slice(20)}`;
+                return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(
+                  12,
+                  16,
+                )}-${id.slice(16, 20)}-${id.slice(20)}`;
               },
             });
-            dataSource = db.adapters.createTypeormDataSource({
+
+            const ds = db.adapters.createTypeormDataSource({
               type: 'postgres',
-              entities: [BroadcastEntity, BroadcastTypeEntity],
+              entities: [
+                BroadcastEntity,
+                BroadcastTemplateEntity,
+                BroadcastTypeEntity,
+              ],
               synchronize: true,
             }) as DataSource;
-            return dataSource.options;
+
+            return ds.options;
           },
-          dataSourceFactory: async () => dataSource.initialize(),
+          dataSourceFactory: async (opts) => {
+            const ds = new DataSource(opts as any);
+            return ds.initialize();
+          },
         }),
-        TypeOrmModule.forFeature([BroadcastEntity, BroadcastTypeEntity]),
+        TypeOrmModule.forFeature([
+          BroadcastEntity,
+          BroadcastTemplateEntity,
+          BroadcastTypeEntity,
+        ]),
       ],
       providers: [BroadcastsService],
     }).compile();
 
     service = moduleRef.get(BroadcastsService);
+    dataSource = moduleRef.get(DataSource);
 
+    // Seed types
     const typeRepo = dataSource.getRepository(BroadcastTypeEntity);
     await typeRepo.save([
       { name: 'announcement', icon: '📢', color: 'text-accent-yellow' },
       { name: 'alert', icon: '⚠️', color: 'text-danger-red' },
       { name: 'notice', icon: 'ℹ️', color: 'text-accent-blue' },
     ]);
+
+    // Seed templates
+    const templateRepo = dataSource.getRepository(BroadcastTemplateEntity);
+    await templateRepo.save({
+      id: '11111111-1111-1111-1111-111111111111',
+      name: 'maintenance',
+      text:
+        'Server maintenance scheduled for [DATE] at [TIME]. Expected downtime: [DURATION]. We apologize for any inconvenience.',
+    });
+    await templateRepo.save({
+      id: '22222222-2222-2222-2222-222222222222',
+      name: 'tournament',
+      text:
+        'New tournament starting [DATE] at [TIME]! Buy-in: [AMOUNT] | Prize Pool: [PRIZE] | Register now to secure your seat!',
+    });
   });
 
   afterAll(async () => {
@@ -66,7 +104,12 @@ describe('BroadcastsService', () => {
   });
 
   it('persists broadcasts', async () => {
-    await service.send({ type: 'announcement', text: 'Hello', urgent: false, sound: true });
+    await service.send({
+      type: 'announcement',
+      text: 'Hello',
+      urgent: false,
+      sound: true,
+    });
     const list = await service.list();
     expect(list).toHaveLength(1);
     expect(list[0].text).toBe('Hello');
@@ -78,6 +121,16 @@ describe('BroadcastsService', () => {
       announcement: { icon: '📢', color: 'text-accent-yellow' },
       alert: { icon: '⚠️', color: 'text-danger-red' },
       notice: { icon: 'ℹ️', color: 'text-accent-blue' },
+    });
+  });
+
+  it('lists templates from database', async () => {
+    const templates = await service.listTemplates();
+    expect(templates).toEqual({
+      maintenance:
+        'Server maintenance scheduled for [DATE] at [TIME]. Expected downtime: [DURATION]. We apologize for any inconvenience.',
+      tournament:
+        'New tournament starting [DATE] at [TIME]! Buy-in: [AMOUNT] | Prize Pool: [PRIZE] | Register now to secure your seat!',
     });
   });
 });
