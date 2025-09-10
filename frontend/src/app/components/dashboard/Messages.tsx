@@ -44,7 +44,7 @@ export default function Messages() {
     mutationFn: ({ id, reply }: { id: number; reply: string }) =>
       replyMessage(id, { reply }),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['adminMessages'] }),
+      queryClient.invalidateQueries({ queryKey: ['admin-messages'] }),
   });
 
   const messages = data?.messages ?? [];
@@ -89,7 +89,7 @@ export default function Messages() {
   const unread = messages.filter((m) => !m.read).length;
 
   const markRead = (id: number) => {
-    queryClient.setQueryData(['adminMessages'], (old) => {
+    queryClient.setQueryData(['admin-messages'], (old) => {
       if (!old) return old;
       return {
         messages: old.messages.map((x: AdminMessage) =>

@@ -2,10 +2,9 @@
 
 import { fetchAdminEvents } from '@/lib/api/admin';
 import type { AdminEvent } from '@shared/types';
-import { createAdminQuery } from './useAdminQuery';
+import { createAdminResource } from './useAdminResource';
 
-export const useAdminEvents = createAdminQuery<AdminEvent[]>(
+export const useAdminEvents = createAdminResource<AdminEvent[]>(
   'admin-events',
   fetchAdminEvents,
-  'admin events',
 );
