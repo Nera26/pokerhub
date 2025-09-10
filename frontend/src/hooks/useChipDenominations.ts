@@ -10,5 +10,3 @@ export function useChipDenominations() {
     queryFn: ({ signal }) => fetchChipDenominations({ signal }),
   });
 }
-
-export default useChipDenominations;
