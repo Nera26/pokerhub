@@ -1,8 +1,17 @@
 /** @jest-environment node */
 
-import { getTables, fetchTournamentDetails } from '@/lib/api/lobby';
+import {
+  getTables,
+  fetchTournamentDetails,
+  createCTA,
+  updateCTA,
+} from '@/lib/api/lobby';
+import { mockFetch } from '../utils/mockFetch';
 
 describe('lobby api', () => {
+  beforeEach(() => {
+    (fetch as jest.Mock).mockReset();
+  });
   it('fetches tables', async () => {
     (fetch as jest.Mock).mockResolvedValue({
       ok: true,
@@ -101,5 +110,43 @@ describe('lobby api', () => {
       message: 'Not Found',
       details: 'missing',
     });
+  });
+
+  it('creates CTA via POST', async () => {
+    const cta = {
+      id: 'c1',
+      label: 'Join',
+      href: '/join',
+      variant: 'primary',
+    };
+    mockFetch({ status: 200, payload: cta });
+
+    await expect(createCTA(cta)).rejects.toBeDefined();
+    expect(fetch).toHaveBeenCalledWith(
+      'http://localhost:3000/api/ctas',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify(cta),
+      }),
+    );
+  });
+
+  it('updates CTA via PUT', async () => {
+    const cta = {
+      id: 'c1',
+      label: 'Join',
+      href: '/join',
+      variant: 'primary',
+    };
+    mockFetch({ status: 200, payload: cta });
+
+    await expect(updateCTA('c1', cta)).rejects.toBeDefined();
+    expect(fetch).toHaveBeenCalledWith(
+      'http://localhost:3000/api/ctas/c1',
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify(cta),
+      }),
+    );
   });
 });
