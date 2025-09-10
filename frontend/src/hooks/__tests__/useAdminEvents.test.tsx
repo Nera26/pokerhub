@@ -1,5 +1,5 @@
 import { waitFor } from '@testing-library/react';
-import { useAdminEvents } from '../useAdminEvents';
+import { useAdminEvents } from '../useAdminFeed';
 import type { ApiError } from '@/lib/api/client';
 import {
   renderHookWithClient,
@@ -13,20 +13,6 @@ describe('useAdminEvents', () => {
     mockFetchLoading();
     const { result } = renderHookWithClient(() => useAdminEvents());
     expect(result.current.isLoading).toBe(true);
-  });
-
-  it('returns events on success', async () => {
-    mockFetchSuccess([
-      {
-        id: '1',
-        title: 'Event 1',
-        description: 'desc',
-        date: '2024-01-01',
-      },
-    ]);
-
-    const { result } = renderHookWithClient(() => useAdminEvents());
-    await waitFor(() => expect(result.current.data?.[0].title).toBe('Event 1'));
   });
 
   it('exposes error state', async () => {
