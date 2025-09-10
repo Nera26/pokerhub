@@ -82,7 +82,7 @@ if [[ -n "$REPLAY_DIR" ]]; then
   # replay only runs k6
   SOCKETS="$SOCKETS" TABLES="$TABLES" RNG_SEED="$RNG_SEED" \
   PACKET_LOSS="$PACKET_LOSS" JITTER_MS="$JITTER_MS" WS_URL="$WS_URL" \
-    k6 run "$SCRIPT_DIR/k6-10k-tables.js" \
+    k6 run "$SCRIPT_DIR/k6/load-test.js" \
     --summary-export="$METRICS_DIR/k6-summary.json" \
     --out json="$METRICS_DIR/k6-metrics.json"
   mv "$SCRIPT_DIR/metrics/ack-histogram.json" "$METRICS_DIR/ack-histogram.json" 2>/dev/null || true
@@ -105,7 +105,7 @@ trap 'kill $GC_PID >/dev/null 2>&1 || true' EXIT
 # run k6 scenario
 SOCKETS="$SOCKETS" TABLES="$TABLES" RNG_SEED="$RNG_SEED" \
 PACKET_LOSS="$PACKET_LOSS" JITTER_MS="$JITTER_MS" WS_URL="$WS_URL" \
-  k6 run "$SCRIPT_DIR/k6-10k-tables.js" \
+  k6 run "$SCRIPT_DIR/k6/load-test.js" \
   --summary-export="$METRICS_DIR/k6-summary.json" \
   --out json="$METRICS_DIR/k6-metrics.json"
 mv "$SCRIPT_DIR/metrics/ack-histogram.json" "$METRICS_DIR/ack-histogram.json" 2>/dev/null || true
@@ -148,7 +148,7 @@ fi
 # run 100k socket replay scenario and capture histograms
 REPLAY_FILE="$REPLAY_FILE" SOCKETS="$SOCKETS" TABLES="$TABLES" RNG_SEED="$RNG_SEED" \
 PACKET_LOSS="$PACKET_LOSS" JITTER_MS="$JITTER_MS" WS_URL="$WS_URL" \
-  k6 run "$SCRIPT_DIR/k6-10k-tables.js" \
+  k6 run "$SCRIPT_DIR/k6/load-test.js" \
   --summary-export="$METRICS_DIR/k6-summary.json" \
   --out json="$METRICS_DIR/k6-metrics.json"
 mv "$SCRIPT_DIR/metrics/ack-histogram.json" "$METRICS_DIR/ack-histogram.json" 2>/dev/null || true
