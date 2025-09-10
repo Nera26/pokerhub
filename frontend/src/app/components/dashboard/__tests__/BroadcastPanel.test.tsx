@@ -58,7 +58,7 @@ describe('BroadcastPanel', () => {
     (fetchMessages as jest.Mock).mockRejectedValue(new Error('oops'));
     renderWithClient(<BroadcastPanel />);
     expect(
-      await screen.findByText(/failed to load messages/i),
+      await screen.findByText(/failed to fetch admin messages/i),
     ).toBeInTheDocument();
   });
 

@@ -1,19 +1,17 @@
 'use client';
 
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { fetchMessages } from '@/lib/api/messages';
+import { useMutation } from '@tanstack/react-query';
 import { sendBroadcast } from '@/lib/api/broadcasts';
 import { useApiError } from '@/hooks/useApiError';
 import useBroadcastTypes from '@/hooks/useBroadcastTypes';
+import { useAdminMessages } from '@/hooks/useAdminMessageActions';
+import AdminMessageList from './AdminMessageList';
 import type { BroadcastType } from '@shared/types';
 import { useState } from 'react';
 import Link from 'next/link';
 
 export default function BroadcastPanel() {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['admin-messages'],
-    queryFn: fetchMessages,
-  });
+  const { data, isLoading, isError, error } = useAdminMessages();
 
   const { data: typesData } = useBroadcastTypes();
   const types = typesData?.types ?? {};
@@ -41,26 +39,22 @@ export default function BroadcastPanel() {
       >
         Manage CTAs
       </Link>
-      {isLoading ? (
-        <div>Loading messages...</div>
-      ) : error ? (
-        <div className="text-danger-red">Failed to load messages</div>
-      ) : messages.length === 0 ? (
-        <div className="text-text-secondary">No messages.</div>
-      ) : (
-        <div className="space-y-3">
-          {messages.map((m) => (
-            <div key={m.id} className="p-3 bg-primary-bg rounded-xl">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 bg-accent-green rounded-full" />
-                <span className="text-sm font-semibold">{m.sender}</span>
-              </div>
-              <p className="text-xs text-text-secondary">{m.preview}</p>
-              <button className="text-accent-blue text-xs mt-1">Reply</button>
+      <AdminMessageList
+        messages={messages}
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        renderMessage={(m) => (
+          <div className="p-3 bg-primary-bg rounded-xl">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-2 h-2 bg-accent-green rounded-full" />
+              <span className="text-sm font-semibold">{m.sender}</span>
             </div>
-          ))}
-        </div>
-      )}
+            <p className="text-xs text-text-secondary">{m.preview}</p>
+            <button className="text-accent-blue text-xs mt-1">Reply</button>
+          </div>
+        )}
+      />
       <div className="mt-4 space-y-2">
         <select
           value={type}

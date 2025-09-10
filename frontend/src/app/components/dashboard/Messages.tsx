@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -11,18 +11,17 @@ import {
   faSearch,
   faEye,
   faReply,
-  faChevronLeft,
-  faChevronRight,
   faPaperPlane,
-  faSpinner,
 } from '@fortawesome/free-solid-svg-icons';
 
-import { CardContent } from '../ui/Card';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
-import VirtualizedList from '@/components/VirtualizedList';
-import { markMessageRead, replyMessage } from '@/lib/api/messages';
-import { useAdminMessages } from '@/hooks/useAdminMessages';
+import { markMessageRead } from '@/lib/api/messages';
+import {
+  useAdminMessages,
+  useReplyMessage,
+} from '@/hooks/useAdminMessageActions';
+import AdminMessageList from './AdminMessageList';
 import type { AdminMessage, AdminMessagesResponse } from '@shared/types';
 import type { ApiError } from '@/lib/api/client';
 
@@ -40,15 +39,9 @@ type FormValues = z.infer<typeof formSchema>;
 export default function Messages() {
   const queryClient = useQueryClient();
   const { data, isLoading, isError, error } = useAdminMessages();
-  const mutation = useMutation({
-    mutationFn: ({ id, reply }: { id: number; reply: string }) =>
-      replyMessage(id, { reply }),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['admin-messages'] }),
-  });
+  const mutation = useReplyMessage();
 
   const messages = data?.messages ?? [];
-  const [page, setPage] = useState(1);
   const [viewing, setViewing] = useState<AdminMessage | null>(null);
   const [replyTo, setReplyTo] = useState<AdminMessage | null>(null);
 
@@ -66,8 +59,6 @@ export default function Messages() {
   const search = watch('search') ?? '';
   const replyText = watch('replyText');
 
-  const pageSize = 6;
-
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return messages;
@@ -77,14 +68,6 @@ export default function Messages() {
       return hay.includes(q);
     });
   }, [messages, search]);
-
-  useEffect(() => setPage(1), [search]);
-
-  const total = filtered.length;
-  const pageCount = Math.max(1, Math.ceil(total / pageSize));
-  const startIdx = (page - 1) * pageSize;
-  const endIdx = Math.min(startIdx + pageSize, total);
-  const pageItems = filtered.slice(startIdx, endIdx);
 
   const unread = messages.filter((m) => !m.read).length;
 
@@ -161,15 +144,6 @@ export default function Messages() {
         </div>
       </section>
 
-      {isError && (
-        <div
-          className="bg-danger-red text-white px-4 py-2 rounded-xl"
-          role="alert"
-        >
-          {(error as ApiError)?.message || 'Failed to load messages'}
-        </div>
-      )}
-
       {/* Table */}
       <section className="bg-card-bg rounded-2xl card-shadow overflow-hidden">
         {/* Header row — removed border */}
@@ -182,113 +156,74 @@ export default function Messages() {
           </div>
         </div>
 
-        {isLoading ? (
-          <CardContent className="text-center">
-            <FontAwesomeIcon icon={faSpinner} spin role="status" />
-          </CardContent>
-        ) : pageItems.length === 0 ? (
-          <CardContent className="text-center text-text-secondary">
-            {total === 0 ? 'No messages.' : 'No results.'}
-          </CardContent>
-        ) : (
-          <VirtualizedList
-            items={pageItems}
-            estimateSize={88}
-            className="h-96 overflow-auto"
-            renderItem={(m, style) => (
-              <li
-                key={m.id}
-                style={style}
-                className={`px-6 py-4 transition-colors transition-opacity duration-200 cursor-pointer hover:bg-hover-bg ${m.read ? 'opacity-60' : ''}`}
-              >
-                <div className="grid grid-cols-12 gap-4 items-center">
-                  {/* Sender */}
-                  <div className="col-span-3 flex items-center gap-3">
-                    <div className="relative">
-                      <Image
-                        src={m.avatar}
-                        alt={m.sender}
-                        width={40}
-                        height={40}
-                        className="w-10 h-10 rounded-full"
-                      />
-                      {!m.read && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent-yellow rounded-full grid place-items-center">
-                          <div className="w-2 h-2 bg-black rounded-full" />
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-semibold">{m.sender}</p>
-                      <p className="text-text-secondary text-xs">
-                        ID: {m.userId}
-                      </p>
-                    </div>
+        <AdminMessageList
+          messages={filtered}
+          isLoading={isLoading}
+          isError={isError}
+          error={error as ApiError}
+          renderMessage={(m) => (
+            <div
+              className={`px-6 py-4 transition-colors transition-opacity duration-200 cursor-pointer hover:bg-hover-bg ${m.read ? 'opacity-60' : ''}`}
+            >
+              <div className="grid grid-cols-12 gap-4 items-center">
+                {/* Sender */}
+                <div className="col-span-3 flex items-center gap-3">
+                  <div className="relative">
+                    <Image
+                      src={m.avatar}
+                      alt={m.sender}
+                      width={40}
+                      height={40}
+                      className="w-10 h-10 rounded-full"
+                    />
+                    {!m.read && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent-yellow rounded-full grid place-items-center">
+                        <div className="w-2 h-2 bg-black rounded-full" />
+                      </div>
+                    )}
                   </div>
-
-                  {/* Preview */}
-                  <div className="col-span-5">
-                    <p className="text-text-primary font-medium">{m.subject}</p>
-                    <p className="text-text-secondary text-sm">{m.preview}</p>
-                  </div>
-
-                  {/* Date */}
-                  <div className="col-span-2">
-                    <p className="text-text-secondary text-sm">{m.time}</p>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="col-span-2 flex gap-2">
-                    <Button
-                      variant="chipBlue"
-                      onClick={() => openView(m)}
-                      leftIcon={<FontAwesomeIcon icon={faEye} />}
-                      aria-label="View"
-                    >
-                      View
-                    </Button>
-                    <Button
-                      variant="chipYellow"
-                      onClick={() => openReply(m)}
-                      leftIcon={<FontAwesomeIcon icon={faReply} />}
-                      aria-label="Reply"
-                    >
-                      Reply
-                    </Button>
+                  <div>
+                    <p className="font-semibold">{m.sender}</p>
+                    <p className="text-text-secondary text-xs">
+                      ID: {m.userId}
+                    </p>
                   </div>
                 </div>
-              </li>
-            )}
-          />
-        )}
 
-        {/* Footer / pagination — removed border */}
-        <div className="bg-primary-bg px-6 py-4">
-          <div className="flex items-center justify-between">
-            <p className="text-text-secondary text-sm">
-              Showing {endIdx} of {total} messages
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                className="bg-card-bg border border-dark px-3 py-2 rounded-lg text-sm font-semibold"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                leftIcon={<FontAwesomeIcon icon={faChevronLeft} />}
-              >
-                Previous
-              </Button>
-              <Button
-                variant="chipYellow"
-                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                disabled={page >= pageCount}
-                rightIcon={<FontAwesomeIcon icon={faChevronRight} />}
-              >
-                Next
-              </Button>
+                {/* Preview */}
+                <div className="col-span-5">
+                  <p className="text-text-primary font-medium">{m.subject}</p>
+                  <p className="text-text-secondary text-sm">{m.preview}</p>
+                </div>
+
+                {/* Date */}
+                <div className="col-span-2">
+                  <p className="text-text-secondary text-sm">{m.time}</p>
+                </div>
+
+                {/* Actions */}
+                <div className="col-span-2 flex gap-2">
+                  <Button
+                    variant="chipBlue"
+                    onClick={() => openView(m)}
+                    leftIcon={<FontAwesomeIcon icon={faEye} />}
+                    aria-label="View"
+                  >
+                    View
+                  </Button>
+                  <Button
+                    variant="chipYellow"
+                    onClick={() => openReply(m)}
+                    leftIcon={<FontAwesomeIcon icon={faReply} />}
+                    aria-label="Reply"
+                  >
+                    Reply
+                  </Button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          )}
+        />
       </section>
 
       {/* View modal */}
