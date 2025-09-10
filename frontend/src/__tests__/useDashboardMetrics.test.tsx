@@ -5,11 +5,6 @@ import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import type { ApiError } from '@/lib/api/client';
 
 describe('useDashboardMetrics', () => {
-  const originalFetch = global.fetch;
-  afterEach(() => {
-    global.fetch = originalFetch;
-  });
-
   it('returns metrics data', async () => {
     const fetchMock = jest.fn<Promise<Response>, []>().mockResolvedValue({
       ok: true,
@@ -55,7 +50,7 @@ describe('useDashboardMetrics', () => {
     const { result } = renderHook(() => useDashboardMetrics(), { wrapper });
     await waitFor(() => expect(result.current.error).not.toBeNull());
     expect((result.current.error as ApiError).message).toBe(
-      'Failed to fetch metrics: Network down',
+      'Failed to fetch dashboard metrics: Network down',
     );
   });
 });
