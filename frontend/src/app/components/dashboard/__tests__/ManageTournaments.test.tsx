@@ -8,6 +8,7 @@ import {
   deleteAdminTournament,
   fetchAdminTournamentDefaults,
 } from '@/lib/api/admin';
+import { makeTournaments, defaultTournament } from './testUtils';
 
 jest.mock('@/lib/api/admin', () => ({
   fetchAdminTournaments: jest.fn(),
@@ -17,28 +18,72 @@ jest.mock('@/lib/api/admin', () => ({
   fetchAdminTournamentDefaults: jest.fn(),
 }));
 
-describe('ManageTournaments table manager', () => {
+jest.mock('@/app/components/modals/TournamentModal', () => ({
+  __esModule: true,
+  default: ({ isOpen, onSubmit, defaultValues }: any) => {
+    if (!isOpen) return null;
+    const { makeTournament } = require('./testUtils');
+    return (
+      <div>
+        <button
+          onClick={() =>
+            onSubmit({
+              ...(defaultValues || makeTournament()),
+              name: 'Updated Tournament',
+            })
+          }
+        >
+          Submit Tournament
+        </button>
+      </div>
+    );
+  },
+}));
+
+jest.mock('@/app/components/ui/Modal', () => ({
+  __esModule: true,
+  default: ({ isOpen, children }: any) =>
+    isOpen ? <div>{children}</div> : null,
+}));
+
+jest.mock('@/app/components/ui/ToastNotification', () => ({
+  __esModule: true,
+  default: () => null,
+}));
+
+describe('ManageTournaments', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
+  it('shows loading state', () => {
+    (fetchAdminTournaments as jest.Mock).mockImplementation(
+      () => new Promise(() => {}),
+    );
+    renderWithClient(<ManageTournaments />);
+    expect(screen.getByText('Loading tournaments...')).toBeInTheDocument();
+  });
+
+  it('shows error state', async () => {
+    (fetchAdminTournaments as jest.Mock).mockRejectedValue(new Error('fail'));
+    renderWithClient(<ManageTournaments />);
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Failed to load tournaments.',
+      ),
+    );
+  });
+
+  it('shows empty state', async () => {
+    (fetchAdminTournaments as jest.Mock).mockResolvedValue([]);
+    renderWithClient(<ManageTournaments />);
+    await waitFor(() =>
+      expect(screen.getByText('No tournaments found.')).toBeInTheDocument(),
+    );
+  });
+
   it('filters and paginates tournaments', async () => {
-    const tournaments = Array.from({ length: 6 }, (_, i) => ({
-      id: i + 1,
-      name: `Tournament ${i + 1}`,
-      gameType: "Texas Hold'em",
-      buyin: 10,
-      fee: 1,
-      prizePool: 1000,
-      date: '2024-12-20',
-      time: '12:00',
-      format: 'Regular',
-      seatCap: 9,
-      description: '',
-      rebuy: false,
-      addon: false,
-      status: i % 2 === 0 ? 'scheduled' : 'running',
-    }));
+    const tournaments = makeTournaments(6);
     (fetchAdminTournaments as jest.Mock).mockResolvedValue(tournaments);
 
     renderWithClient(<ManageTournaments />);
@@ -55,5 +100,72 @@ describe('ManageTournaments table manager', () => {
       expect(screen.getByText('Tournament 3')).toBeInTheDocument(),
     );
     expect(screen.queryByText('Tournament 6')).not.toBeInTheDocument();
+  });
+
+  it('creates a tournament via mutation', async () => {
+    (fetchAdminTournaments as jest.Mock).mockResolvedValue([]);
+    (fetchAdminTournamentDefaults as jest.Mock).mockResolvedValue(
+      defaultTournament,
+    );
+    (createAdminTournament as jest.Mock).mockResolvedValue({});
+
+    renderWithClient(<ManageTournaments />);
+
+    await waitFor(() =>
+      expect(screen.getByText('No tournaments found.')).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByText('New Tournament'));
+    await waitFor(() =>
+      expect(fetchAdminTournamentDefaults).toHaveBeenCalled(),
+    );
+
+    const submit = await screen.findByText('Submit Tournament');
+    fireEvent.click(submit);
+
+    await waitFor(() =>
+      expect(createAdminTournament).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'Updated Tournament' }),
+      ),
+    );
+  });
+
+  it('edits a tournament via mutation', async () => {
+    const tournaments = makeTournaments(1);
+    (fetchAdminTournaments as jest.Mock).mockResolvedValue(tournaments);
+    (updateAdminTournament as jest.Mock).mockResolvedValue({});
+
+    renderWithClient(<ManageTournaments />);
+
+    await screen.findByText('Tournament 1');
+
+    fireEvent.click(screen.getByLabelText('Edit'));
+    const submit = await screen.findByText('Submit Tournament');
+    fireEvent.click(submit);
+
+    await waitFor(() =>
+      expect(updateAdminTournament).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ name: 'Updated Tournament' }),
+      ),
+    );
+  });
+
+  it('deletes a tournament via mutation', async () => {
+    const tournaments = makeTournaments(1);
+    (fetchAdminTournaments as jest.Mock).mockResolvedValue(tournaments);
+    (deleteAdminTournament as jest.Mock).mockResolvedValue({});
+
+    renderWithClient(<ManageTournaments />);
+
+    await screen.findByText('Tournament 1');
+    fireEvent.click(screen.getByLabelText('Delete'));
+
+    const confirm = await screen.findByRole('button', {
+      name: /confirm delete/i,
+    });
+    fireEvent.click(confirm);
+
+    await waitFor(() => expect(deleteAdminTournament).toHaveBeenCalledWith(1));
   });
 });
