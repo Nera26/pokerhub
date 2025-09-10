@@ -20,5 +20,9 @@
     "reload": "Refresh",
     "dismiss": "Dismiss",
     "offlineNotice": "You are offline. Changes will sync once connection is restored."
+  },
+  "offline": {
+    "title": "You are offline",
+    "body": "Some features may be unavailable. Please check your connection and try again."
   }
 }

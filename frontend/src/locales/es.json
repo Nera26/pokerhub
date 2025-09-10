@@ -20,5 +20,9 @@
     "reload": "Actualizar",
     "dismiss": "Cerrar",
     "offlineNotice": "Estás sin conexión. Los cambios se sincronizarán cuando se restablezca la conexión."
+  },
+  "offline": {
+    "title": "Estás sin conexión",
+    "body": "Algunas funciones pueden no estar disponibles. Por favor, verifica tu conexión e inténtalo de nuevo."
   }
 }
