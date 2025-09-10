@@ -3,7 +3,7 @@ import type { ProviderCallback } from '@shared/wallet.schema';
 import { metrics } from '@opentelemetry/api';
 import { Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
-import { fetchWithRetry, CircuitBreakerState } from '../common/http';
+import { fetchJson, CircuitBreakerState } from '@shared/http';
 import { verifySignature as verifyProviderSignature } from './verify-signature';
 
 export type ProviderStatus = 'approved' | 'risky' | 'chargeback';
@@ -48,7 +48,7 @@ export class PaymentProviderService {
   }
 
   private async request<T>(url: string, init: RequestInit): Promise<T> {
-    const res = await fetchWithRetry(
+    return fetchJson<T>(
       url,
       init,
       {
@@ -62,7 +62,6 @@ export class PaymentProviderService {
         },
       },
     );
-    return (await res.json()) as T;
   }
 
   registerHandler(key: string, handler: (event: ProviderCallback) => Promise<void>): void {

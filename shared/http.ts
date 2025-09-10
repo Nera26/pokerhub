@@ -14,6 +14,7 @@ export interface FetchRetryOptions {
   retries?: number;
   timeoutMs?: number;
   backoffMs?: number;
+  checkOk?: boolean;
   onRetryExhausted?: () => void;
   circuitBreaker?: CircuitBreakerOptions;
 }
@@ -27,6 +28,7 @@ export async function fetchWithRetry(
     retries = 3,
     timeoutMs = 5_000,
     backoffMs = 100,
+    checkOk = true,
     onRetryExhausted,
     circuitBreaker,
   } = opts;
@@ -42,7 +44,7 @@ export async function fetchWithRetry(
     try {
       const res = await fetch(url, { ...init, signal: controller.signal });
       clearTimeout(timeout);
-      if (!res.ok) {
+      if (checkOk && !res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
       if (circuitBreaker) {
@@ -73,3 +75,11 @@ export async function fetchWithRetry(
   throw new Error(`Request to ${url} failed after ${retries} attempts: ${message}`);
 }
 
+export async function fetchJson<T = unknown>(
+  url: string,
+  init: RequestInit,
+  opts: FetchRetryOptions = {},
+): Promise<T> {
+  const res = await fetchWithRetry(url, init, opts);
+  return (await res.json()) as T;
+}

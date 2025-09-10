@@ -1,4 +1,4 @@
-import { fetchWithRetry, CircuitBreakerState } from './http';
+import { fetchWithRetry, fetchJson, CircuitBreakerState } from '@shared/http';
 
 describe('fetchWithRetry', () => {
   const originalFetch = global.fetch;
@@ -19,6 +19,16 @@ describe('fetchWithRetry', () => {
     const res = await fetchWithRetry('http://example', {});
     expect(res.ok).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('returns non-ok responses when checkOk is false', async () => {
+    jest
+      .spyOn(global, 'fetch' as any)
+      .mockResolvedValueOnce(new Response('fail', { status: 500 }));
+
+    const res = await fetchWithRetry('http://example', {}, { checkOk: false });
+    expect(res.ok).toBe(false);
+    expect(res.status).toBe(500);
   });
 
   it('opens circuit breaker after consecutive failures and recovers', async () => {
@@ -62,6 +72,42 @@ describe('fetchWithRetry', () => {
       Response,
     );
     expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('fetchJson', () => {
+  const originalFetch = global.fetch;
+
+  afterEach(() => {
+    (global.fetch as any) = originalFetch;
+    jest.restoreAllMocks();
+  });
+
+  it('parses JSON response', async () => {
+    jest
+      .spyOn(global, 'fetch' as any)
+      .mockResolvedValueOnce(
+        new Response('{"ok":true}', { status: 200 }),
+      );
+    await expect(fetchJson<{ ok: boolean }>('http://example', {})).resolves.toEqual({
+      ok: true,
+    });
+  });
+
+  it('throws on invalid JSON', async () => {
+    jest
+      .spyOn(global, 'fetch' as any)
+      .mockResolvedValueOnce(new Response('invalid', { status: 200 }));
+    await expect(fetchJson('http://example', {})).rejects.toThrow();
+  });
+
+  it('throws on non-ok responses', async () => {
+    jest
+      .spyOn(global, 'fetch' as any)
+      .mockResolvedValue(new Response('{}', { status: 500 }));
+    await expect(
+      fetchJson('http://example', {}, { retries: 1 })
+    ).rejects.toThrow(/HTTP 500/);
   });
 });
 
