@@ -56,7 +56,7 @@ if [[ -n "$REPLAY_DIR" ]]; then
   SOCKETS=${SOCKETS:-100000}
   REPLAY_FILE=${REPLAY_FILE:-}
   REPLAY_FILE="$REPLAY_FILE" SOCKETS="$SOCKETS" RNG_SEED="$RNG_SEED" WS_URL="$WS_URL" \
-    k6 run "$SCRIPT_DIR/k6-10k-tables.js" \
+    k6 run "$SCRIPT_DIR/k6/load-test.js" \
     --summary-export="$METRICS_DIR/k6-summary.json" \
     --out json="$METRICS_DIR/k6-metrics.json"
   mv "$SCRIPT_DIR/metrics/ack-histogram.json" "$METRICS_DIR/ack-histogram.json" 2>/dev/null || true
@@ -80,7 +80,7 @@ trap 'kill $GC_PID >/dev/null 2>&1 || true' EXIT
 SOCKETS=${SOCKETS:-100000}
 REPLAY_FILE=${REPLAY_FILE:-}
 REPLAY_FILE="$REPLAY_FILE" SOCKETS="$SOCKETS" RNG_SEED="$RNG_SEED" WS_URL="$WS_URL" \
-  k6 run "$SCRIPT_DIR/k6-10k-tables.js" \
+  k6 run "$SCRIPT_DIR/k6/load-test.js" \
   --summary-export="$METRICS_DIR/k6-summary.json" \
   --out json="$METRICS_DIR/k6-metrics.json"
 mv "$SCRIPT_DIR/metrics/ack-histogram.json" "$METRICS_DIR/ack-histogram.json" 2>/dev/null || true
