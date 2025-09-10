@@ -5,9 +5,6 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
-  "bin": {
-    "export-proofs": "src/scripts/export-proofs.ts"
-  },
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -28,7 +25,6 @@
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/database/data-source.ts",
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/database/data-source.ts src/database/migrations/$npm_config_name",
     "migration:create": "typeorm-ts-node-commonjs migration:create src/database/migrations/$npm_config_name",
-    "export:proofs": "ts-node src/scripts/export-proofs.ts",
     "rebuild:leaderboard": "ts-node src/leaderboard/rebuild.ts --days=30 --assert-duration=1800000",
     "analytics:consume": "ts-node ../tools/cli.ts etl:consume",
     "load:socket": "ts-node test/load/socket-load.ts",

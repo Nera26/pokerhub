@@ -92,24 +92,8 @@ bin/verify-hand <handId> [baseUrl]
 It verifies the commitment and asserts that the recorded deck matches the
 shuffle derived from the revealed seed.
 
-### Exporting proofs via CLI
-
-For convenience a CLI is available to dump the proof for a specific hand.
-
-1. Install the backend package dependencies:
-
-   ```sh
-   cd backend
-   npm install
-   ```
-
-2. Export the proof for a hand ID:
-
-   ```sh
-   npx export-proofs <handId>
-   ```
-
-   The command prints a JSON object containing the `seed`, `nonce` and `commitment` for the hand.
+Proofs can be downloaded directly via the `/hands/{id}/proof` API endpoint or
+exported with the full deck using the helper script below.
 
 ### Exporting proof with deck
 
