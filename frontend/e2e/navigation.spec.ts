@@ -1,8 +1,12 @@
 import { test, expect } from './fixtures';
-import { mockTablesRoute, tables } from './fixtures/tables';
+import { seedTable, cleanupTables } from './fixtures/tables';
+
+test.afterEach(async ({ page }) => {
+  await cleanupTables(page);
+});
 
 test('navigates from home to table page', async ({ page }) => {
-  await mockTablesRoute(page);
+  const table = await seedTable(page);
   await page.route('**/api/tournaments', (route) => {
     route.fulfill({
       status: 200,
@@ -11,9 +15,11 @@ test('navigates from home to table page', async ({ page }) => {
     });
   });
 
+  const tablesResponse = page.waitForResponse('**/api/tables');
   await page.goto('/');
+  await tablesResponse;
   await page.getByRole('link', { name: 'Join Table' }).click();
-  await expect(page).toHaveURL(`/table/${tables[0].id}`);
+  await expect(page).toHaveURL(`/table/${table.id}`);
 });
 
 test('shows 404 page for unknown route', async ({ page }) => {
