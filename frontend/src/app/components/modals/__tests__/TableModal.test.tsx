@@ -11,39 +11,33 @@ const defaultValues = {
   buyIn: { min: 50, max: 200 },
 };
 
+const renderModal = () => {
+  const onSubmit = jest.fn();
+  const onClose = jest.fn();
+  render(
+    <TableModal
+      isOpen
+      onClose={onClose}
+      onSubmit={onSubmit}
+      defaultValues={defaultValues}
+      title="Create Table"
+      submitLabel="Create"
+    />,
+  );
+  return { onSubmit, onClose };
+};
+
 describe('TableModal', () => {
   it('submits form data', async () => {
-    const onSubmit = jest.fn();
-    const onClose = jest.fn();
-    render(
-      <TableModal
-        isOpen
-        onClose={onClose}
-        onSubmit={onSubmit}
-        defaultValues={defaultValues}
-        title="Create Table"
-        submitLabel="Create"
-      />,
-    );
+    const { onSubmit } = renderModal();
 
     await userEvent.click(screen.getByText('Create'));
 
-    expect(onSubmit).toHaveBeenCalledWith(defaultValues);
+    expect(onSubmit).toHaveBeenCalledWith(defaultValues, expect.anything());
   });
 
   it('calls onClose when close button clicked', async () => {
-    const onSubmit = jest.fn();
-    const onClose = jest.fn();
-    render(
-      <TableModal
-        isOpen
-        onClose={onClose}
-        onSubmit={onSubmit}
-        defaultValues={defaultValues}
-        title="Create Table"
-        submitLabel="Create"
-      />,
-    );
+    const { onClose } = renderModal();
 
     await userEvent.click(screen.getByLabelText('Close'));
 
