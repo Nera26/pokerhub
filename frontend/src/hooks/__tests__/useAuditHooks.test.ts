@@ -1,9 +1,7 @@
 import { waitFor } from '@testing-library/react';
-import {
-  useAuditLogs,
-  useAuditSummary,
-  useAuditAlerts,
-} from '../useAuditResource';
+import { useAuditLogs } from '../useAuditLogs';
+import { useAuditSummary } from '../useAuditSummary';
+import { useAuditAlerts } from '../useAuditAlerts';
 import {
   AuditLogsResponseSchema,
   AuditSummarySchema,

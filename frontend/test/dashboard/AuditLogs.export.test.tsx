@@ -1,14 +1,18 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import AuditLogs from '@/app/components/dashboard/AuditLogs';
-import { useAuditLogs, useAuditAlerts } from '@/hooks/useAuditResource';
+import { useAuditLogs } from '@/hooks/useAuditLogs';
+import { useAuditAlerts } from '@/hooks/useAuditAlerts';
 import { useAdminOverview } from '@/hooks/useAdminOverview';
 import { useAdminEvents } from '@/hooks/useAdminEvents';
 import { exportCsv } from '@/lib/exportCsv';
 
-jest.mock('@/hooks/useAuditResource', () => ({
+jest.mock('@/hooks/useAuditLogs', () => ({
   __esModule: true,
   useAuditLogs: jest.fn(),
+}));
+jest.mock('@/hooks/useAuditAlerts', () => ({
+  __esModule: true,
   useAuditAlerts: jest.fn(),
 }));
 jest.mock('@/hooks/useAdminOverview');

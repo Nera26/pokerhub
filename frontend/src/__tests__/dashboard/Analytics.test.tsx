@@ -9,7 +9,7 @@ jest.mock('chart.js/auto', () => ({
   default: jest.fn(() => ({ destroy: jest.fn() })),
 }));
 
-jest.mock('@/hooks/useAuditResource', () => ({
+jest.mock('@/hooks/useAuditLogs', () => ({
   useAuditLogs: () => ({
     data: {
       logs: [
@@ -40,6 +40,8 @@ jest.mock('@/hooks/useAuditResource', () => ({
       ],
     },
   }),
+}));
+jest.mock('@/hooks/useAuditSummary', () => ({
   useAuditSummary: () => ({ data: { total: 3, errors: 2, logins: 1 } }),
 }));
 

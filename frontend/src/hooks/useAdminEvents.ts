@@ -2,9 +2,9 @@
 
 import { fetchAdminEvents } from '@/lib/api/admin';
 import type { AdminEvent } from '@shared/types';
-import { createAdminResource } from './useAdminResource';
+import { createResourceHook } from './createResourceHook';
 
-export const useAdminEvents = createAdminResource<AdminEvent[]>(
+export const useAdminEvents = createResourceHook<AdminEvent[]>(
   'admin-events',
-  fetchAdminEvents,
+  (_client, opts) => fetchAdminEvents({ signal: opts.signal }),
 );

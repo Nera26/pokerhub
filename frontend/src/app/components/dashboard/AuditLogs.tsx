@@ -12,7 +12,8 @@ import {
   faShieldHalved,
   faFlag,
 } from '@fortawesome/free-solid-svg-icons';
-import { useAuditLogs, useAuditAlerts } from '@/hooks/useAuditResource';
+import { useAuditLogs } from '@/hooks/useAuditLogs';
+import { useAuditAlerts } from '@/hooks/useAuditAlerts';
 import { useAdminOverview } from '@/hooks/useAdminOverview';
 import { useAdminEvents } from '@/hooks/useAdminEvents';
 import type { AlertItem, AuditLogEntry, AdminEvent } from '@shared/types';

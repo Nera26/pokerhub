@@ -26,8 +26,7 @@ describe('useAdminEvents', () => {
     ]);
 
     const { result } = renderHookWithClient(() => useAdminEvents());
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.[0].title).toBe('Event 1');
+    await waitFor(() => expect(result.current.data?.[0].title).toBe('Event 1'));
   });
 
   it('exposes error state', async () => {
