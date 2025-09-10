@@ -5,7 +5,6 @@ import {
   calculateTimingSimilarity,
   calculateSeatProximity,
 } from '@shared/analytics/collusion';
-import type { FlaggedSession, ReviewStatus } from '@shared/types';
 import { AnalyticsService } from './analytics.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -160,8 +159,12 @@ export class CollusionService {
   async listFlaggedSessions(opts?: {
     page?: number;
     pageSize?: number;
-    status?: ReviewStatus;
-  }): Promise<FlaggedSession[]> {
+    status?: 'flagged' | 'warn' | 'restrict' | 'ban';
+  }): Promise<{
+    id: string;
+    users: string[];
+    status: 'flagged' | 'warn' | 'restrict' | 'ban';
+  }[]> {
     const { page = 1, pageSize = 20, status } = opts ?? {};
     const where = status ? { status } : {};
     const audits = await this.auditRepo.find({
@@ -172,7 +175,7 @@ export class CollusionService {
     return audits.map((a) => ({
       id: a.sessionId,
       users: a.users,
-      status: a.status as ReviewStatus,
+      status: a.status as 'flagged' | 'warn' | 'restrict' | 'ban',
     }));
   }
 

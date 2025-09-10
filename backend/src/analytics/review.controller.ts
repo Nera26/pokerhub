@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CollusionService } from './collusion.service';
-import { FlaggedSessionsQuerySchema } from '@shared/types';
 import { AdminGuard } from '../auth/admin.guard';
 
 @UseGuards(AdminGuard)
@@ -19,9 +18,12 @@ export class ReviewController {
   @Get('flagged')
   @ApiOperation({ summary: 'List flagged sessions' })
   @ApiResponse({ status: 200, description: 'Flagged sessions' })
-  async list(@Query() query: unknown) {
-    const { page, status } = FlaggedSessionsQuerySchema.parse(query);
-    return this.collusion.listFlaggedSessions({ page, status });
+  async list(@Query('page') page = '1', @Query('status') status?: string) {
+    const pageNum = Number(page);
+    return this.collusion.listFlaggedSessions({
+      page: Number.isNaN(pageNum) ? 1 : pageNum,
+      status: status as any,
+    });
   }
 
   @Get(':id/audit')

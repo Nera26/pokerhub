@@ -8,7 +8,6 @@ import {
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CollusionService } from './collusion.service';
 import { AnalyticsService } from './analytics.service';
-import { ReviewActionSchema } from '@shared/types';
 import { AdminGuard } from '../auth/admin.guard';
 
 @UseGuards(AdminGuard)
@@ -25,14 +24,13 @@ export class CollusionController {
   @ApiResponse({ status: 200, description: 'Action recorded' })
   async record(
     @Param('sessionId') sessionId: string,
-    @Param('action') action: string,
+    @Param('action') action: 'warn' | 'restrict' | 'ban',
     @Req() req: any,
   ) {
-    const parsed = ReviewActionSchema.parse(action);
     const reviewerId = req.userId;
     const entry = await this.collusion.applyAction(
       sessionId,
-      parsed,
+      action,
       reviewerId,
     );
     await this.analytics.ingest('collusion_audit', {
