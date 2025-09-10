@@ -62,6 +62,8 @@ import { PromotionsService } from './promotions/promotions.service';
 import { PromotionEntity } from './database/entities/promotion.entity';
 import { LanguagesService } from './services/languages.service';
 import { LanguageEntity } from './database/entities/language.entity';
+import { BonusService } from './services/bonus.service';
+import { BonusOptionEntity } from './database/entities/bonus-option.entity';
 
 @Module({
   imports: [
@@ -106,7 +108,12 @@ import { LanguageEntity } from './database/entities/language.entity';
       inject: [ConfigService],
     }),
 
-    TypeOrmModule.forFeature([AdminMessageEntity, PromotionEntity, LanguageEntity]),
+    TypeOrmModule.forFeature([
+      AdminMessageEntity,
+      PromotionEntity,
+      LanguageEntity,
+      BonusOptionEntity,
+    ]),
 
     // Messaging / Infra
     MessagingModule,
@@ -147,6 +154,7 @@ import { LanguageEntity } from './database/entities/language.entity';
     AdminMessagesService,
     PromotionsService,
     LanguagesService,
+    BonusService,
   ],
 })
 export class AppModule implements NestModule {

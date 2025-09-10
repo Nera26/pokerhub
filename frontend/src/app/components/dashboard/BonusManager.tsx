@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { BONUS_TYPES, BONUS_ELIGIBILITY, BONUS_STATUSES } from '@shared/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -39,7 +38,7 @@ import { TableHead, TableRow, TableCell } from '../ui/Table';
 
 type BonusStatus = 'active' | 'paused';
 type StatusFilter = BonusStatus | 'all' | 'expired';
-type PromoType = (typeof BONUS_TYPES)[number];
+type PromoType = string;
 
 export const bonusStyles: Record<BonusStatus | 'expired', string> = {
   active: 'bg-accent-green text-white',
@@ -49,13 +48,13 @@ export const bonusStyles: Record<BonusStatus | 'expired', string> = {
 
 const bonusFormSchema = z.object({
   name: z.string().min(1, 'Promotion name is required'),
-  type: z.enum(BONUS_TYPES),
+  type: z.string(),
   description: z.string().min(1, 'Description is required'),
   bonusPercent: z.coerce.number().optional(),
   maxBonusUsd: z.coerce.number().optional(),
   expiryDate: z.string().optional(),
-  eligibility: z.enum(BONUS_ELIGIBILITY),
-  status: z.enum(BONUS_STATUSES),
+  eligibility: z.string(),
+  status: z.string(),
 });
 export type BonusFormValues = z.infer<typeof bonusFormSchema>;
 
