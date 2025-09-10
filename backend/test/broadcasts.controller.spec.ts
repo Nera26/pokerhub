@@ -6,6 +6,7 @@ import { newDb } from 'pg-mem';
 import request from 'supertest';
 import { BroadcastsModule } from '../src/broadcasts/broadcasts.module';
 import { BroadcastEntity } from '../src/database/entities/broadcast.entity';
+import { BroadcastTypeEntity } from '../src/database/entities/broadcast-type.entity';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
 
@@ -41,7 +42,7 @@ describe('BroadcastsController', () => {
             });
             dataSource = db.adapters.createTypeormDataSource({
               type: 'postgres',
-              entities: [BroadcastEntity],
+              entities: [BroadcastEntity, BroadcastTypeEntity],
               synchronize: true,
             }) as DataSource;
             return dataSource.options;
@@ -59,6 +60,13 @@ describe('BroadcastsController', () => {
 
     app = moduleRef.createNestApplication();
     await app.init();
+
+    const typeRepo = dataSource.getRepository(BroadcastTypeEntity);
+    await typeRepo.save([
+      { name: 'announcement', icon: '📢', color: 'text-accent-yellow' },
+      { name: 'alert', icon: '⚠️', color: 'text-danger-red' },
+      { name: 'notice', icon: 'ℹ️', color: 'text-accent-blue' },
+    ]);
   });
 
   afterAll(async () => {

@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
 import { BroadcastsService } from '../src/broadcasts/broadcasts.service';
 import { BroadcastEntity } from '../src/database/entities/broadcast.entity';
+import { BroadcastTypeEntity } from '../src/database/entities/broadcast-type.entity';
 
 describe('BroadcastsService', () => {
   let service: BroadcastsService;
@@ -38,19 +39,26 @@ describe('BroadcastsService', () => {
             });
             dataSource = db.adapters.createTypeormDataSource({
               type: 'postgres',
-              entities: [BroadcastEntity],
+              entities: [BroadcastEntity, BroadcastTypeEntity],
               synchronize: true,
             }) as DataSource;
             return dataSource.options;
           },
           dataSourceFactory: async () => dataSource.initialize(),
         }),
-        TypeOrmModule.forFeature([BroadcastEntity]),
+        TypeOrmModule.forFeature([BroadcastEntity, BroadcastTypeEntity]),
       ],
       providers: [BroadcastsService],
     }).compile();
 
     service = moduleRef.get(BroadcastsService);
+
+    const typeRepo = dataSource.getRepository(BroadcastTypeEntity);
+    await typeRepo.save([
+      { name: 'announcement', icon: '📢', color: 'text-accent-yellow' },
+      { name: 'alert', icon: '⚠️', color: 'text-danger-red' },
+      { name: 'notice', icon: 'ℹ️', color: 'text-accent-blue' },
+    ]);
   });
 
   afterAll(async () => {
@@ -62,5 +70,14 @@ describe('BroadcastsService', () => {
     const list = await service.list();
     expect(list).toHaveLength(1);
     expect(list[0].text).toBe('Hello');
+  });
+
+  it('lists types', async () => {
+    const types = await service.listTypes();
+    expect(types).toEqual({
+      announcement: { icon: '📢', color: 'text-accent-yellow' },
+      alert: { icon: '⚠️', color: 'text-danger-red' },
+      notice: { icon: 'ℹ️', color: 'text-accent-blue' },
+    });
   });
 });

@@ -1,14 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { BroadcastEntity } from '../database/entities/broadcast.entity';
-import { Broadcast, SendBroadcastRequest } from '../schemas/broadcasts';
+import { BroadcastTypeEntity } from '../database/entities/broadcast-type.entity';
+import {
+  Broadcast,
+  BroadcastTypeInfo,
+  SendBroadcastRequest,
+} from '../schemas/broadcasts';
 
 @Injectable()
 export class BroadcastsService {
   private readonly repo: Repository<BroadcastEntity>;
+  private readonly typeRepo: Repository<BroadcastTypeEntity>;
 
   constructor(private readonly dataSource: DataSource) {
     this.repo = dataSource.getRepository(BroadcastEntity);
+    this.typeRepo = dataSource.getRepository(BroadcastTypeEntity);
   }
 
   async list(): Promise<Broadcast[]> {
@@ -36,5 +43,13 @@ export class BroadcastsService {
       timestamp: saved.timestamp.toISOString(),
       urgent: saved.urgent,
     };
+  }
+
+  async listTypes(): Promise<Record<Broadcast['type'], BroadcastTypeInfo>> {
+    const entities = await this.typeRepo.find();
+    return entities.reduce((acc, e) => {
+      acc[e.name as Broadcast['type']] = { icon: e.icon, color: e.color };
+      return acc;
+    }, {} as Record<Broadcast['type'], BroadcastTypeInfo>);
   }
 }
