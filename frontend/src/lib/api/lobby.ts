@@ -36,31 +36,15 @@ export async function fetchLobbyData<T>(
   }
 }
 
-export async function getTables({
-  signal,
-}: {
-  signal?: AbortSignal;
-} = {}): Promise<components['schemas']['Table'][]> {
-  try {
-    return await apiClient('/api/tables', z.array(TableSchema), {
-      signal,
-      cache: 'no-store',
-    });
-  } catch (err) {
-    const apiErr = err as ApiError;
-    if (apiErr.status !== undefined) {
-      throw apiErr;
-    }
-    throw { message: `Failed to fetch tables: ${apiErr.message}` } as ApiError;
-  }
-}
-
 export async function fetchTables({
   signal,
 }: {
   signal?: AbortSignal;
-}): Promise<components['schemas']['Table'][]> {
-  return getTables({ signal });
+} = {}): Promise<components['schemas']['Table'][]> {
+  return apiClient('/api/tables', z.array(TableSchema), {
+    signal,
+    cache: 'no-store',
+  });
 }
 
 export async function fetchTournaments({

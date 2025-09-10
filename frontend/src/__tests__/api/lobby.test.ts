@@ -1,6 +1,6 @@
 /** @jest-environment node */
 
-import { getTables, fetchTournamentDetails } from '@/lib/api/lobby';
+import { fetchTables, fetchTournamentDetails } from '@/lib/api/lobby';
 
 describe('lobby api', () => {
   it('fetches tables', async () => {
@@ -22,7 +22,7 @@ describe('lobby api', () => {
       ],
     });
 
-    await expect(getTables()).resolves.toEqual([
+    await expect(fetchTables()).resolves.toEqual([
       {
         id: '1',
         tableName: 'Test Table',
@@ -44,7 +44,7 @@ describe('lobby api', () => {
       text: async () => 'fail',
     });
 
-    await expect(getTables()).rejects.toEqual({
+    await expect(fetchTables()).rejects.toEqual({
       status: 500,
       message: 'Server Error',
       details: 'fail',
