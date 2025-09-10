@@ -2,16 +2,23 @@ import { Injectable } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { BroadcastEntity } from '../database/entities/broadcast.entity';
 import { BroadcastTemplateEntity } from '../database/entities/broadcast-template.entity';
-import { Broadcast, SendBroadcastRequest } from '../schemas/broadcasts';
+import { BroadcastTypeEntity } from '../database/entities/broadcast-type.entity';
+import {
+  Broadcast,
+  BroadcastTypeInfo,
+  SendBroadcastRequest,
+} from '../schemas/broadcasts';
 
 @Injectable()
 export class BroadcastsService {
   private readonly repo: Repository<BroadcastEntity>;
   private readonly templatesRepo: Repository<BroadcastTemplateEntity>;
+  private readonly typeRepo: Repository<BroadcastTypeEntity>;
 
   constructor(private readonly dataSource: DataSource) {
     this.repo = dataSource.getRepository(BroadcastEntity);
     this.templatesRepo = dataSource.getRepository(BroadcastTemplateEntity);
+    this.typeRepo = dataSource.getRepository(BroadcastTypeEntity);
   }
 
   async list(): Promise<Broadcast[]> {
@@ -31,6 +38,14 @@ export class BroadcastsService {
       acc[e.name] = e.text;
       return acc;
     }, {} as Record<string, string>);
+  }
+
+  async listTypes(): Promise<Record<Broadcast['type'], BroadcastTypeInfo>> {
+    const entities = await this.typeRepo.find();
+    return entities.reduce((acc, e) => {
+      acc[e.name as Broadcast['type']] = { icon: e.icon, color: e.color };
+      return acc;
+    }, {} as Record<Broadcast['type'], BroadcastTypeInfo>);
   }
 
   async send(req: SendBroadcastRequest): Promise<Broadcast> {

@@ -1,12 +1,16 @@
+/** @jest-environment node */
+
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
 import request from 'supertest';
+
 import { BroadcastsModule } from '../src/broadcasts/broadcasts.module';
 import { BroadcastEntity } from '../src/database/entities/broadcast.entity';
 import { BroadcastTemplateEntity } from '../src/database/entities/broadcast-template.entity';
+import { BroadcastTypeEntity } from '../src/database/entities/broadcast-type.entity';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
 
@@ -15,11 +19,13 @@ describe('BroadcastsController', () => {
 
   beforeAll(async () => {
     let dataSource: DataSource;
+
     const moduleRef = await Test.createTestingModule({
       imports: [
         TypeOrmModule.forRootAsync({
           useFactory: () => {
             const db = newDb();
+
             db.public.registerFunction({
               name: 'version',
               returns: 'text',
@@ -30,6 +36,8 @@ describe('BroadcastsController', () => {
               returns: 'text',
               implementation: () => 'test',
             });
+
+            // deterministic-ish UUID generator for pg-mem
             let seq = 1;
             db.public.registerFunction({
               name: 'uuid_generate_v4',
@@ -37,14 +45,23 @@ describe('BroadcastsController', () => {
               implementation: () => {
                 const id = seq.toString(16).padStart(32, '0');
                 seq++;
-                return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(16, 20)}-${id.slice(20)}`;
+                return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(
+                  12,
+                  16,
+                )}-${id.slice(16, 20)}-${id.slice(20)}`;
               },
             });
+
             dataSource = db.adapters.createTypeormDataSource({
               type: 'postgres',
-              entities: [BroadcastEntity, BroadcastTemplateEntity],
+              entities: [
+                BroadcastEntity,
+                BroadcastTemplateEntity,
+                BroadcastTypeEntity,
+              ],
               synchronize: true,
             }) as DataSource;
+
             return dataSource.options;
           },
           dataSourceFactory: async () => dataSource.initialize(),
@@ -61,16 +78,23 @@ describe('BroadcastsController', () => {
     app = moduleRef.createNestApplication();
     await app.init();
 
-    const repo = app
-      .get(DataSource)
-      .getRepository(BroadcastTemplateEntity);
-    await repo.save({
+    // Seed broadcast types
+    const typeRepo = dataSource.getRepository(BroadcastTypeEntity);
+    await typeRepo.save([
+      { name: 'announcement', icon: '📢', color: 'text-accent-yellow' },
+      { name: 'alert', icon: '⚠️', color: 'text-danger-red' },
+      { name: 'notice', icon: 'ℹ️', color: 'text-accent-blue' },
+    ]);
+
+    // Seed broadcast templates
+    const templateRepo = dataSource.getRepository(BroadcastTemplateEntity);
+    await templateRepo.save({
       id: '11111111-1111-1111-1111-111111111111',
       name: 'maintenance',
       text:
         'Server maintenance scheduled for [DATE] at [TIME]. Expected downtime: [DURATION]. We apologize for any inconvenience.',
     });
-    await repo.save({
+    await templateRepo.save({
       id: '22222222-2222-2222-2222-222222222222',
       name: 'tournament',
       text:
@@ -107,6 +131,7 @@ describe('BroadcastsController', () => {
       .get('/admin/broadcasts')
       .set('Authorization', 'Bearer test')
       .expect(200);
+
     expect(list.body.broadcasts).toHaveLength(1);
     expect(list.body.broadcasts[0].text).toBe('Hello');
   });

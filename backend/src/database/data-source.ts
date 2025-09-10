@@ -18,6 +18,7 @@ import { GameState } from './entities/game-state.entity';
 import { CollusionAudit } from '../analytics/collusion-audit.entity';
 import { Tier } from './entities/tier.entity';
 import { BroadcastEntity } from './entities/broadcast.entity';
+import { BroadcastTypeEntity } from './entities/broadcast-type.entity';
 import { BroadcastTemplateEntity } from './entities/broadcast-template.entity';
 
 export const AppDataSource = new DataSource({
@@ -42,6 +43,7 @@ export const AppDataSource = new DataSource({
     CollusionAudit,
     Tier,
     BroadcastEntity,
+    BroadcastTypeEntity,
     BroadcastTemplateEntity,
   ],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
