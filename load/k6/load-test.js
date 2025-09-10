@@ -4,7 +4,7 @@ import { Trend, Rate } from 'k6/metrics';
 import { sleep, check, fail } from 'k6';
 import { SharedArray } from 'k6/data';
 import { Random } from 'https://jslib.k6.io/random/1.0.0/index.js';
-import { calculateIcmPayouts } from '../lib/icm.js';
+import { calculateIcmPayouts } from '../shared/utils/icm.js';
 import { setup as baseSetup, teardown as baseTeardown } from './utils.js';
 
 // Drive socket and tournament scenarios with shared setup/teardown.

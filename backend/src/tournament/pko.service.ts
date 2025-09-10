@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { calculateIcmPayouts } from './structures/icm';
+import { calculateIcmPayouts } from '@shared/utils/icm';
 
 export interface CalculatePrizeOptions {
   bountyPct?: number;

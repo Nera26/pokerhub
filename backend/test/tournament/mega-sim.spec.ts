@@ -4,7 +4,7 @@ import { TableBalancerService } from '../../src/tournament/table-balancer.servic
 import { TournamentService } from '../../src/tournament/tournament.service';
 import { RebuyService } from '../../src/tournament/rebuy.service';
 import { PkoService } from '../../src/tournament/pko.service';
-import { calculateIcmPayouts } from '../../src/tournament/structures/icm';
+import { calculateIcmPayouts } from '@shared/utils/icm';
 import { Seat } from '../../src/database/entities/seat.entity';
 import { Table } from '../../src/database/entities/table.entity';
 import { Tournament } from '../../src/database/entities/tournament.entity';

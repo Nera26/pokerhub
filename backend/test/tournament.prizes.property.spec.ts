@@ -1,5 +1,5 @@
 import fc from 'fast-check';
-import { calculateIcmPayouts, icmRaw } from '../src/tournament/structures/icm';
+import { calculateIcmPayouts, icmRaw } from '@shared/utils/icm';
 import { TournamentService } from '../src/tournament/tournament.service';
 
 describe('tournament prizes property', () => {

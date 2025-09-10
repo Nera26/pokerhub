@@ -6,7 +6,7 @@ import { Seat } from '../../src/database/entities/seat.entity';
 import { Tournament } from '../../src/database/entities/tournament.entity';
 import { RebuyService } from '../../src/tournament/rebuy.service';
 import { PkoService } from '../../src/tournament/pko.service';
-import { icmRaw } from '../../src/tournament/structures/icm';
+import { icmRaw } from '@shared/utils/icm';
 
 describe('TournamentScheduler', () => {
   it('schedules level up jobs', async () => {

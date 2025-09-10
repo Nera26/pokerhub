@@ -10,7 +10,7 @@ import {
 import { Seat } from '../database/entities/seat.entity';
 import { Table } from '../database/entities/table.entity';
 import { TournamentScheduler } from './scheduler.service';
-import { calculateIcmPayouts as icmPayouts, icmRaw } from './structures/icm';
+import { calculateIcmPayouts as icmPayouts, icmRaw } from '@shared/utils/icm';
 import { RoomManager } from '../game/room.service';
 import { RebuyService } from './rebuy.service';
 import {
