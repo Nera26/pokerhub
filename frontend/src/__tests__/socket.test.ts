@@ -5,7 +5,7 @@ jest.mock('@/hooks/useApiError', () => ({
 }));
 
 import { dispatchGlobalError } from '@/hooks/useApiError';
-import { createNamespaceSocket } from '@/lib/socket-namespace';
+import { createNamespaceSocket } from '@/lib/socket-base';
 
 const mockSocket = {
   on: jest.fn((event: string, handler: (payload?: any) => void) => {

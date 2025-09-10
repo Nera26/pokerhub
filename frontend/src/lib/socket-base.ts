@@ -12,7 +12,7 @@ interface EmitHooks {
   onCleanup?: (actionId: string) => void;
 }
 
-export function initNamespaceSocket(namespace: string) {
+export function createNamespaceSocket(namespace: string) {
   let socket: Socket | null = null;
 
   const getSocket = (options: GetSocketOptions = {}): Socket => {

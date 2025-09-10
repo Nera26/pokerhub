@@ -1,6 +1,6 @@
 import type { Socket } from 'socket.io-client';
 import type { GameState } from '@shared/types';
-import { createNamespaceSocket } from './socket-namespace';
+import { createNamespaceSocket } from './socket-base';
 
 const { getSocket: getSpectatorSocket, disconnect } =
   createNamespaceSocket('spectate');
