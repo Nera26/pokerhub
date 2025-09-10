@@ -79,12 +79,12 @@ export function useActivityChart(data: number[]) {
   return useChart(config, [config]);
 }
 
-export function useErrorChart(data: number[]) {
+export function useErrorChart(labels: string[], data: number[]) {
   const config: ChartConfiguration = useMemo(
     () => ({
       type: 'doughnut',
       data: {
-        labels: ['Payment', 'Database', 'Network', 'Other'],
+        labels,
         datasets: [
           {
             data,
@@ -108,7 +108,7 @@ export function useErrorChart(data: number[]) {
         },
       },
     }),
-    [data],
+    [labels, data],
   );
 
   return useChart(config, [config]);
