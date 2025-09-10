@@ -14,6 +14,16 @@ import type { TournamentListProps } from '@/components/TournamentList';
 
 jest.mock('@/hooks/useVirtualizedList');
 jest.mock('@/hooks/useLobbyData');
+jest.mock('@/hooks/useGameTypes', () => ({
+  useGameTypes: () => ({
+    data: [
+      { id: 'texas', label: 'Texas' },
+      { id: 'tournaments', label: 'Tournaments' },
+    ],
+    error: null,
+    isLoading: false,
+  }),
+}));
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: jest.fn(), prefetch: jest.fn() }),
 }));
@@ -103,6 +113,8 @@ describe('home accessibility', () => {
     render(<CashGameList tables={tables} gameType={gameType} hidden={false} />);
     const list = screen.getByRole('list');
     expect(within(list).getAllByRole('listitem')).toHaveLength(tables.length);
+    const listContainer = list.parentElement as HTMLElement;
+    expect(listContainer).toHaveAttribute('data-virtualized', 'false');
   });
 
   it('TournamentList exposes list semantics', () => {
@@ -140,5 +152,7 @@ describe('home accessibility', () => {
     expect(within(list).getAllByRole('listitem')).toHaveLength(
       tournaments.length,
     );
+    const listContainer = list.parentElement as HTMLElement;
+    expect(listContainer).toHaveAttribute('data-virtualized', 'false');
   });
 });
