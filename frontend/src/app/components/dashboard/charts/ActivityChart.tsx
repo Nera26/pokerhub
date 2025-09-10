@@ -1,7 +1,8 @@
 'use client';
 
+import { useMemo } from 'react';
 import CenteredMessage from '@/components/CenteredMessage';
-import { useActivityChart } from '@/lib/useChart';
+import { buildChartConfig, useChart } from '@/lib/useChart';
 
 interface ActivityChartProps {
   data?: number[];
@@ -27,7 +28,43 @@ export default function ActivityChart({
     return message;
   }
 
-  const { ref, ready } = useActivityChart(data);
+  const config = useMemo(
+    () =>
+      buildChartConfig(({ accent, hexToRgba }) => ({
+        type: 'line',
+        data: {
+          labels: [
+            '00:00',
+            '04:00',
+            '08:00',
+            '12:00',
+            '16:00',
+            '20:00',
+            '24:00',
+          ],
+          datasets: [
+            {
+              label: 'Active Players',
+              data,
+              borderColor: accent,
+              backgroundColor: hexToRgba(accent, 0.1),
+              tension: 0.4,
+              pointBackgroundColor: accent,
+              pointBorderColor: accent,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+            },
+          ],
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          interaction: { intersect: false, mode: 'index' },
+        },
+      })),
+    [data],
+  );
+
+  const { ref, ready } = useChart(config, [config]);
 
   const chart = (
     <div className="h-64 relative">
