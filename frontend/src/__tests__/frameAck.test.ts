@@ -1,4 +1,4 @@
-import { getSocket, disconnectSocket } from '@/app/utils/socket';
+import { getSocket, disconnectSocket } from '@/lib/socket-core';
 
 const sockets: any[] = [];
 const packetHandlers: ((packet: any) => void)[] = [];
@@ -46,4 +46,3 @@ describe('frame acknowledgement', () => {
     expect(gameSock.emit).toHaveBeenCalledWith('frame:ack', { frameId: 'f1' });
   });
 });
-

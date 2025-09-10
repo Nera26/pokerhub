@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { Socket } from 'socket.io-client';
-import { getSocket, disconnectSocket } from '@/app/utils/socket';
+import { getSocket, disconnectSocket } from '@/lib/socket-core';
 
 interface Callbacks {
   onConnect?: () => void;
