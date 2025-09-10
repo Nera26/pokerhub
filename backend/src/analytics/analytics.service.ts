@@ -207,34 +207,92 @@ export class AnalyticsService {
   }
 
   async getAuditLogs({
-    cursor = 0,
+    search,
+    type,
+    user,
+    dateFrom,
+    dateTo,
+    page = 1,
     limit = 50,
   }: {
-    cursor?: number;
+    search?: string;
+    type?: string;
+    user?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    page?: number;
     limit?: number;
-  }): Promise<{ logs: AuditLog[]; nextCursor: number | null }> {
+  }): Promise<{ logs: AuditLog[]; total: number }> {
+    const offset = (page - 1) * limit;
     if (this.client) {
+      const where: string[] = [];
+      const params: Record<string, any> = { limit, offset };
+      if (search) {
+        where.push(
+          '(description ILIKE {search:String} OR user ILIKE {search:String} OR type ILIKE {search:String} OR ip ILIKE {search:String})',
+        );
+        params.search = `%${search}%`;
+      }
+      if (type) {
+        where.push('type = {type:String}');
+        params.type = type;
+      }
+      if (user) {
+        where.push('user = {user:String}');
+        params.user = user;
+      }
+      if (dateFrom) {
+        where.push('ts >= parseDateTimeBestEffort({dateFrom:String})');
+        params.dateFrom = dateFrom;
+      }
+      if (dateTo) {
+        where.push('ts <= parseDateTimeBestEffort({dateTo:String})');
+        params.dateTo = dateTo;
+      }
+      const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
       const res = await this.client.query({
-        query:
-          'SELECT id, ts AS timestamp, type, description, user, ip FROM audit_log ORDER BY ts DESC LIMIT {limit:UInt32} OFFSET {cursor:UInt32}',
-        query_params: { cursor, limit },
+        query: `SELECT id, ts AS timestamp, type, description, user, ip FROM audit_log ${whereClause} ORDER BY ts DESC LIMIT {limit:UInt32} OFFSET {offset:UInt32}`,
+        query_params: params,
         format: 'JSONEachRow',
       });
       const logs = (await res.json()) as AuditLog[];
-      return {
-        logs,
-        nextCursor: logs.length === limit ? cursor + limit : null,
-      };
+      const countRes = await this.client.query({
+        query: `SELECT count() AS total FROM audit_log ${whereClause}`,
+        query_params: params,
+        format: 'JSONEachRow',
+      });
+      const [{ total }] = (await countRes.json()) as { total: string }[];
+      return { logs, total: Number(total) };
     }
 
-    const start = cursor;
-    const end = cursor + limit - 1;
-    const entries = await this.redis.lrange('audit-logs', start, end);
-    const logs = entries.map((e) => JSON.parse(e) as AuditLog);
-    return {
-      logs,
-      nextCursor: logs.length === limit ? cursor + limit : null,
-    };
+    const entries = await this.redis.lrange('audit-logs', 0, -1);
+    let logs = entries.map((e) => JSON.parse(e) as AuditLog);
+    if (search) {
+      const s = search.toLowerCase();
+      logs = logs.filter((l) =>
+        `${l.timestamp} ${l.type} ${l.description} ${l.user} ${l.ip}`
+          .toLowerCase()
+          .includes(s),
+      );
+    }
+    if (type) {
+      logs = logs.filter((l) => l.type === type);
+    }
+    if (user) {
+      const u = user.toLowerCase();
+      logs = logs.filter((l) => (l.user ?? '').toLowerCase().includes(u));
+    }
+    if (dateFrom) {
+      logs = logs.filter((l) => new Date(l.timestamp) >= new Date(dateFrom));
+    }
+    if (dateTo) {
+      logs = logs.filter((l) => new Date(l.timestamp) <= new Date(dateTo));
+    }
+    const total = logs.length;
+    const start = offset;
+    const end = start + limit;
+    logs = logs.slice(start, end);
+    return { logs, total };
   }
 
   async getAuditSummary(): Promise<AuditSummary> {

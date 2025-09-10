@@ -17,8 +17,8 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Get audit logs' })
   @ApiResponse({ status: 200, description: 'Audit log entries' })
   async logs(@Query() query: unknown) {
-    const { cursor, limit } = AuditLogsQuerySchema.parse(query);
-    return this.analytics.getAuditLogs({ cursor, limit });
+    const params = AuditLogsQuerySchema.parse(query);
+    return this.analytics.getAuditLogs(params);
   }
 
   @Get('summary')
