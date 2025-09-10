@@ -132,6 +132,7 @@ describe('GameGateway outbound queue metrics', () => {
           startActiveSpan: (_n: string, fn: any) => fn({ setAttribute: () => {}, end: () => {} }),
         }),
       },
+      SpanStatusCode: { ERROR: 2 },
     }));
 
     ({ GameGateway } = require('../../src/game/game.gateway'));

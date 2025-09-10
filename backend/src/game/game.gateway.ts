@@ -33,10 +33,10 @@ import {
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
 import {
   metrics,
-  trace,
   type ObservableResult,
   type Attributes,
 } from '@opentelemetry/api';
+import { withSpan } from '../common/tracing';
 import PQueue from 'p-queue';
 import { sanitize } from './state-sanitize';
 import {
@@ -411,7 +411,6 @@ export class GameGateway
   server!: GameServer;
 
   private tick = 0;
-  private static readonly tracer = trace.getTracer('game-gateway');
 
   private readonly observeQueueDepth = (result: ObservableResult) => {
     for (const [socketId, queue] of this.queues) {
@@ -977,14 +976,13 @@ export class GameGateway
 
   @SubscribeMessage('replay')
   async handleReplay(@ConnectedSocket() client: GameSocket) {
-    return GameGateway.tracer.startActiveSpan('ws.replay', async (span) => {
+    return withSpan('ws.replay', async (span) => {
       span.setAttribute('socket.id', client.id);
       if (
         (await this.flags?.get('dealing')) === false ||
         (await this.flags?.getRoom('default', 'dealing')) === false
       ) {
         this.enqueue(client, 'server:Error', 'dealing disabled');
-        span.end();
         return;
       }
       const room = this.rooms.get('default');
@@ -996,7 +994,6 @@ export class GameGateway
       };
       GameStateSchema.parse(payload);
       this.enqueue(client, 'state', payload);
-      span.end();
     });
   }
 
@@ -1005,7 +1002,7 @@ export class GameGateway
     @ConnectedSocket() client: GameSocket,
     @MessageBody() body: { tick: number },
   ) {
-    return GameGateway.tracer.startActiveSpan('ws.resume', async (span) => {
+    return withSpan('ws.resume', async (span) => {
       span.setAttribute('socket.id', client.id);
       const from = body?.tick ?? 0;
       if (
@@ -1013,7 +1010,6 @@ export class GameGateway
         (await this.flags?.getRoom('default', 'dealing')) === false
       ) {
         this.enqueue(client, 'server:Error', 'dealing disabled');
-        span.end();
         return;
       }
       const room = this.rooms.get('default');
@@ -1027,7 +1023,6 @@ export class GameGateway
         GameStateSchema.parse(payload);
         this.enqueue(client, 'state', payload);
       }
-      span.end();
     });
   }
 
