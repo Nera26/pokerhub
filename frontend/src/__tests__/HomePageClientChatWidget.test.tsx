@@ -4,11 +4,13 @@ import { HomePageClient } from '@/app/(site)/HomePageClient';
 import { useTables, useTournaments, useCTAs } from '@/hooks/useLobbyData';
 
 jest.mock('@/hooks/useLobbyData');
-function ChatWidgetMock() {
-  return <div data-testid="chat-widget" />;
-}
 
-jest.mock('@/app/components/common/chat/ChatWidget', () => ChatWidgetMock);
+// Mock ChatWidget to render a simple marker immediately
+jest.mock('@/app/components/common/chat/ChatWidget', () => ({
+  __esModule: true,
+  default: () => <div data-testid="chat-widget" />,
+}));
+
 describe('HomePageClient chat widget', () => {
   it('renders immediately', () => {
     (useTables as jest.Mock).mockReturnValue({
@@ -33,6 +35,7 @@ describe('HomePageClient chat widget', () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
+
     render(
       <QueryClientProvider client={client}>
         <HomePageClient

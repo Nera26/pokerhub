@@ -5,7 +5,12 @@ import { useGameTypes } from '@/hooks/useGameTypes';
 
 jest.mock('@/hooks/useLobbyData');
 jest.mock('@/hooks/useGameTypes');
-jest.mock('@/app/components/common/chat/ChatWidget', () => () => <div />);
+
+// Mock ChatWidget to avoid its internals affecting this test
+jest.mock('@/app/components/common/chat/ChatWidget', () => ({
+  __esModule: true,
+  default: () => <div />,
+}));
 
 describe('HomePageClient loading', () => {
   it('uses HomeLoadingSkeleton during initial load', () => {
@@ -29,15 +34,20 @@ describe('HomePageClient loading', () => {
       error: null,
       isLoading: false,
     });
+
     const CashGameList = () => <div data-testid="tables-list" />;
     const TournamentList = () => <div data-testid="tournaments-list" />;
+
     render(
       <HomePageClient
         cashGameList={CashGameList}
         tournamentList={TournamentList}
       />,
     );
+
+    // HomeLoadingSkeleton should set aria-busy on <main>
     expect(screen.getByRole('main')).toHaveAttribute('aria-busy', 'true');
+    // Section wrapper should still render
     expect(document.getElementById('cash-games-section')).toBeInTheDocument();
   });
 });
