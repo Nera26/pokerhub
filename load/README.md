@@ -8,6 +8,7 @@ This directory contains load test scripts for PokerHub.
 - `toxiproxy.sh` – configures a Toxiproxy instance injecting packet loss, latency and jitter between clients and the server.
 - `toxiproxy-soak.sh` – wrapper around `toxiproxy.sh` with 5% packet loss and 200 ms jitter for soak tests.
 - `collect-gc-heap.sh` – polls the metrics endpoint for GC pause and RSS stats, exporting p95 and growth metrics (fails if RSS grows ≥1% or GC pause p95 ≥50 ms).
+- `lib/wsMetrics.js` – shared helpers for WebSocket scenarios handling metrics setup, teardown and histogram summaries.
 - `run-10k-chaos.sh` – orchestrates k6 and Artillery runs, capturing ACK latency, GC/heap metrics and RNG seeds under `load/metrics/`.
 - `run-ws-soak.sh` – runs the 24 h `k6-ws-soak.js` scenario and records GC pause p95 and RSS growth metrics under `load/metrics/`.
 - `k6-10k-tables.js` – k6 WebSocket scenario driving ~80 k sockets across 10 k tables, injecting packet loss and jitter while recording ACK latency. Supports deterministic replays via `RNG_SEED` and outputs histograms under `load/metrics/`. If `REPLAY_FILE` is set, it replays socket messages from the given hand-history JSON.

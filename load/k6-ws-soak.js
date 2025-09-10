@@ -2,6 +2,7 @@ import ws from 'k6/ws';
 import http from 'k6/http';
 import { Trend } from 'k6/metrics';
 import { sleep } from 'k6';
+import { setupMetrics, teardownMetrics, pushSummary } from './lib/wsMetrics.js';
 
 const cpuThreshold = Number(__ENV.CPU_THRESHOLD) || 80;
 const grafanaPushUrl = __ENV.GRAFANA_PUSH_URL;
@@ -21,12 +22,8 @@ const tables = Number(__ENV.TABLES) || 10000;
 const loss = Number(__ENV.PACKET_LOSS) || 0.05;
 const jitterMs = Number(__ENV.JITTER_MS) || 200;
 const rngSeed = Number(__ENV.RNG_SEED) || 1;
-const metricsUrl = __ENV.METRICS_URL;
 
 const latency = new Trend('ws_latency');
-const rssGrowth = new Trend('rss_growth');
-const gcPause = new Trend('gc_pause');
-const cpuUsage = new Trend('cpu_usage');
 
 function mulberry32(a) {
   return function () {
@@ -37,19 +34,7 @@ function mulberry32(a) {
   };
 }
 
-export function setup() {
-  if (!metricsUrl) return {};
-  const res = http.get(metricsUrl);
-  try {
-    const data = res.json();
-    return {
-      startRss: data.rssBytes,
-      startGc: data.gcPauseP95,
-    };
-  } catch (e) {
-    return {};
-  }
-}
+export const setup = () => setupMetrics(__ENV.METRICS_URL);
 
 export default function (data) {
   const rng = mulberry32(rngSeed + __VU);
@@ -75,35 +60,16 @@ export default function (data) {
   });
 }
 
-export function teardown(data) {
-  if (!metricsUrl) return;
-  const res = http.get(metricsUrl);
-  try {
-    const end = res.json();
-    if (end.rssDeltaPct !== undefined) {
-      rssGrowth.add(end.rssDeltaPct);
-    } else if (data.startRss && end.rssBytes !== undefined) {
-      const growth = ((end.rssBytes - data.startRss) / data.startRss) * 100;
-      rssGrowth.add(growth);
-    }
-    if (end.gcPauseP95 !== undefined) {
-      gcPause.add(end.gcPauseP95);
-    }
-    if (end.cpuPercent !== undefined) {
-      cpuUsage.add(end.cpuPercent);
-    }
-  } catch (e) {
-    // ignore parsing errors
-  }
-}
+export const teardown = (data) => teardownMetrics(__ENV.METRICS_URL, data);
 
 export function handleSummary(data) {
-  const latHist = data.metrics.ws_latency?.histogram || data.metrics.ws_latency?.bins || {};
-  const cpuHist = data.metrics.cpu_usage?.histogram || data.metrics.cpu_usage?.bins || {};
-  const heapHist = data.metrics.rss_growth?.histogram || data.metrics.rss_growth?.bins || {};
-  const gcHist = data.metrics.gc_pause?.histogram || data.metrics.gc_pause?.bins || {};
+  const summaries = pushSummary(data, {
+    latencyMetric: 'ws_latency',
+    cpuMetric: 'cpu_usage',
+  });
   if (grafanaPushUrl) {
-    const latencyMetrics = data.metrics.ws_latency?.values || {};
+    const latencyMetrics =
+      (data.metrics.ws_latency && data.metrics.ws_latency.values) || {};
     const p50 = latencyMetrics['p(50)'] || 0;
     const p95 = latencyMetrics['p(95)'] || 0;
     const p99 = latencyMetrics['p(99)'] || 0;
@@ -112,10 +78,5 @@ export function handleSummary(data) {
       headers: { 'Content-Type': 'text/plain' },
     });
   }
-  return {
-    'metrics/latency-histogram.json': JSON.stringify(latHist, null, 2),
-    'metrics/cpu-histogram.json': JSON.stringify(cpuHist, null, 2),
-    'metrics/heap-histogram.json': JSON.stringify(heapHist, null, 2),
-    'metrics/gc-histogram.json': JSON.stringify(gcHist, null, 2),
-  };
+  return summaries;
 }
