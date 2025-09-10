@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { ZodFastCheck } from 'zod-fast-check';
-import { GameActionSchema as BackendActionSchema } from '../../src/schemas/game';
+import { GameActionSchema as BackendActionSchema } from '@shared/schemas/game';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
 jest.mock('p-queue', () => ({
   __esModule: true,
