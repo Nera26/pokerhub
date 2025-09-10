@@ -16,7 +16,7 @@ import type { GameType } from '@shared/types';
 import type { CashGameListProps } from '../components/home/CashGameList';
 import { type TournamentListProps } from '@/components/TournamentList';
 import { registerTournament } from '@/lib/api/lobby';
-import useChat from '@/hooks/useChat';
+import useChatSocket from '@/hooks/useChatSocket';
 import ChatWidget from '../components/common/chat/ChatWidget';
 
 interface TournamentWithBreak extends Tournament {
@@ -81,7 +81,7 @@ export function HomePageClient({
   const [gameType, setGameType] = useState<GameType>('texas');
   const { toasts, pushToast } = useToasts();
   const [registering, setRegistering] = useState(false);
-  const { messages, send } = useChat();
+  const { messages, sendMessage } = useChatSocket();
 
   const {
     data: tables,
@@ -111,7 +111,7 @@ export function HomePageClient({
     return (
       <>
         <HomeLoadingSkeleton />
-        <ChatWidget messages={messages} onSend={send} />
+        <ChatWidget messages={messages} onSend={sendMessage} />
       </>
     );
   }
@@ -157,7 +157,7 @@ export function HomePageClient({
           <InlineError message={tournamentErrorMessage} />
         )}
       </main>
-      <ChatWidget messages={messages} onSend={send} />
+      <ChatWidget messages={messages} onSend={sendMessage} />
       {toasts.map((t) => (
         <ToastNotification
           key={t.id}
