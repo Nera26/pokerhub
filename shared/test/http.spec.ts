@@ -1,4 +1,4 @@
-import { fetchWithRetry, fetchJson, CircuitBreakerState } from '@shared/http';
+import { fetchWithRetry, fetchJson, CircuitBreakerState } from '../http';
 
 describe('fetchWithRetry', () => {
   const originalFetch = global.fetch;
@@ -53,14 +53,14 @@ describe('fetchWithRetry', () => {
     };
 
     await expect(fetchWithRetry('http://example', {}, opts)).rejects.toThrow(
-      /boom/,
+      /boom/
     );
     await expect(fetchWithRetry('http://example', {}, opts)).rejects.toThrow(
-      /boom/,
+      /boom/
     );
 
     await expect(fetchWithRetry('http://example', {}, opts)).rejects.toThrow(
-      /circuit breaker open/,
+      /circuit breaker open/
     );
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(exhausted).toBe(2);
@@ -69,7 +69,7 @@ describe('fetchWithRetry', () => {
     jest.advanceTimersByTime(30_000);
 
     await expect(fetchWithRetry('http://example', {}, opts)).resolves.toBeInstanceOf(
-      Response,
+      Response
     );
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
@@ -87,7 +87,7 @@ describe('fetchJson', () => {
     jest
       .spyOn(global, 'fetch' as any)
       .mockResolvedValueOnce(
-        new Response('{"ok":true}', { status: 200 }),
+        new Response('{"ok":true}', { status: 200 })
       );
     await expect(fetchJson<{ ok: boolean }>('http://example', {})).resolves.toEqual({
       ok: true,
