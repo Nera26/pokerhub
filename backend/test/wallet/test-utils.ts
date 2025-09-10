@@ -10,42 +10,11 @@ import { EventPublisher } from '../../src/events/events.service';
 import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
 import { KycService } from '../../src/wallet/kyc.service';
 import { SettlementService } from '../../src/wallet/settlement.service';
+import { MockRedis } from '../utils/mock-redis';
 
 export async function setupWalletTest() {
   const events: EventPublisher = { emit: jest.fn() } as any;
-  const redisStore = new Map<string, number>();
-  const redis: any = {
-    store: redisStore,
-    incr: jest.fn(async (key: string) => {
-      const val = (redisStore.get(key) ?? 0) + 1;
-      redisStore.set(key, val);
-      return val;
-    }),
-    incrby: jest.fn(async (key: string, amt: number) => {
-      const val = (redisStore.get(key) ?? 0) + amt;
-      redisStore.set(key, val);
-      return val;
-    }),
-    decr: jest.fn(async (key: string) => {
-      const val = (redisStore.get(key) ?? 0) - 1;
-      redisStore.set(key, val);
-      return val;
-    }),
-    decrby: jest.fn(async (key: string, amt: number) => {
-      const val = (redisStore.get(key) ?? 0) - amt;
-      redisStore.set(key, val);
-      return val;
-    }),
-    expire: jest.fn(async () => 1),
-    set: jest.fn(async (key: string, value: string, _mode?: string, _ttl?: number) => {
-      redisStore.set(key, Number(value));
-      return 'OK';
-    }),
-    del: jest.fn(async (key: string) => {
-      redisStore.delete(key);
-      return 1;
-    }),
-  };
+  const redis = new MockRedis();
 
   const provider: any = {
     initiate3DS: jest.fn().mockResolvedValue({ id: 'tx' }),
@@ -90,6 +59,7 @@ export async function setupWalletTest() {
   (service as any).pendingQueue = { add: jest.fn(), getJob: jest.fn() };
 
   return {
+    dataSource,
     service,
     repos: {
       dataSource,
@@ -99,6 +69,9 @@ export async function setupWalletTest() {
       settlement: settleRepo,
       pending: pendingRepo,
     },
+    events,
+    provider,
+    kyc,
     redis,
   };
 }

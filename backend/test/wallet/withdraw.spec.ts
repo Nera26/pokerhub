@@ -1,6 +1,6 @@
 import { WalletService } from '../../src/wallet/wallet.service';
 import { EventPublisher } from '../../src/events/events.service';
-import { setupTestWallet, WalletTestContext } from './test-setup';
+import { setupWalletTest, WalletTestContext } from './test-utils';
 
 describe('WalletService withdraw', () => {
   let ctx: WalletTestContext;
@@ -9,7 +9,7 @@ describe('WalletService withdraw', () => {
   let events: EventPublisher;
 
   beforeEach(async () => {
-    ctx = await setupTestWallet();
+    ctx = await setupWalletTest();
     service = ctx.service;
     events = ctx.events;
     kyc = ctx.kyc;
