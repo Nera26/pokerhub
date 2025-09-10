@@ -35,7 +35,7 @@ interface SocketOptions {
   onError?: (err: unknown) => void;
 }
 
-jest.mock('@/app/utils/socket', () => ({
+jest.mock('@/lib/socket-core', () => ({
   getSocket: jest.fn((options?: SocketOptions) => {
     if (options?.onConnect) handlers['connect'] = options.onConnect;
     if (options?.onDisconnect) handlers['disconnect'] = options.onDisconnect;

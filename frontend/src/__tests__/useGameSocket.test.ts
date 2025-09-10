@@ -22,9 +22,10 @@ const socket = {
   disconnect: jest.fn(),
 } as any;
 
-jest.mock('../app/utils/socket', () => ({
+jest.mock('@/lib/socket-core', () => ({
   getSocket: () => socket,
   disconnectSocket: jest.fn(),
+  emitWithAck: jest.fn(),
 }));
 
 describe('useGameSocket', () => {
@@ -61,4 +62,3 @@ describe('useGameSocket', () => {
     Date.now = originalNow;
   });
 });
-

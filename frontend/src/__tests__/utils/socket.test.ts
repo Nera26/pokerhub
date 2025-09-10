@@ -1,4 +1,4 @@
-import { getSocket, disconnectSocket } from '@/app/utils/socket';
+import { getSocket, disconnectSocket } from '@/lib/socket-core';
 import { io as ioClient } from 'socket.io-client';
 
 const on = jest.fn();

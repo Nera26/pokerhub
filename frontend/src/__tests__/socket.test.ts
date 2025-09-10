@@ -23,10 +23,14 @@ const mockSocket = {
   emit: jest.fn(),
 };
 
-jest.mock('@/app/utils/socket', () => ({
-  getSocket: jest.fn(() => mockSocket),
-  disconnectSocket: jest.fn(),
-}));
+jest.mock('@/lib/socket-core', () => {
+  const actual = jest.requireActual('@/lib/socket-core');
+  return {
+    ...actual,
+    getSocket: jest.fn(() => mockSocket),
+    disconnectSocket: jest.fn(),
+  };
+});
 
 const { emitWithAck, disconnect } = createNamespaceSocket('game');
 
@@ -74,5 +78,22 @@ describe('emitWithAck', () => {
     expect(dispatchGlobalError).toHaveBeenCalledWith(
       'Failed to send request. Please try again.',
     );
+  });
+
+  it('calls hooks on send and cleanup', async () => {
+    const onSend = jest.fn();
+    const onCleanup = jest.fn();
+    const promise = emitWithAck('action', {}, 'action:ack', 1, {
+      onSend,
+      onCleanup,
+    });
+    const actionId = mockSocket.emit.mock.calls[0][1].actionId;
+    expect(onSend).toHaveBeenCalledWith(
+      expect.objectContaining({ actionId }),
+      actionId,
+    );
+    handlers['action:ack'][0]({ actionId });
+    await promise;
+    expect(onCleanup).toHaveBeenCalledWith(actionId);
   });
 });

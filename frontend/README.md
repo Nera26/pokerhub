@@ -74,8 +74,7 @@ Define the following variables (required unless noted):
 | `NEXT_PUBLIC_LOG_LEVEL` | Optional client log level (`error`, `warn`, `info`, `debug`; default `info`). |
 | `VERCEL_URL` | Provided automatically in production deployments. |
 
-When establishing realtime connections with `getSocket` (from `src/app/utils/socket.ts`), remember to call `disconnectSocket()` in
-`useEffect` cleanups or similar teardown logic to avoid leaving stale connections open.
+When establishing realtime connections with `getSocket` (from `src/lib/socket-core.ts`), remember to call `disconnectSocket()` in `useEffect` cleanups or similar teardown logic to avoid leaving stale connections open.
 
 ### Run the development server
 

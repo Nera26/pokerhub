@@ -36,7 +36,7 @@ const mockSockets = {
   spectate: createMockSocket(),
 };
 
-jest.mock('@/app/utils/socket', () => ({
+jest.mock('@/lib/socket-core', () => ({
   __esModule: true,
   getSocket: jest.fn((opts: any = {}) => {
     const ns = opts.namespace ?? '';
@@ -47,11 +47,15 @@ jest.mock('@/app/utils/socket', () => ({
     return socket;
   }),
   disconnectSocket: jest.fn(),
+  emitWithAck: jest.fn(),
 }));
 
-import '@/app/utils/socket';
+import '@/lib/socket-core';
 import { getGameSocket, sendAction, disconnectGameSocket } from '@/lib/socket';
-import { subscribeToTable, disconnectSpectatorSocket } from '@/lib/spectator-socket';
+import {
+  subscribeToTable,
+  disconnectSpectatorSocket,
+} from '@/lib/spectator-socket';
 
 Object.defineProperty(global, 'crypto', {
   value: { randomUUID: () => 'test-id' },
@@ -96,4 +100,3 @@ describe.skip('namespace sockets', () => {
     disconnectSpectatorSocket();
   });
 });
-
