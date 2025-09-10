@@ -1,5 +1,5 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { renderWithClient } from './renderWithClient';
 import BroadcastPanel from '../BroadcastPanel';
 import { fetchMessages, sendBroadcast } from '@/lib/api/messages';
 
@@ -8,15 +8,6 @@ jest.mock('@/lib/api/messages', () => ({
   fetchMessages: jest.fn(),
   sendBroadcast: jest.fn(),
 }));
-
-function renderWithClient(ui: React.ReactElement) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return render(
-    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
-  );
-}
 
 describe('BroadcastPanel', () => {
   it('renders messages from server', async () => {
