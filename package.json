@@ -28,6 +28,7 @@
     "lint:unused": "ts-prune -p tsconfig.json -e",
     "lint:dup": "jscpd -g --threshold 10 frontend backend shared",
     "simulate:tourney": "ts-node backend/src/scripts/tournament-simulator.ts --entrants 10000 --runs 100",
+    "simulate:tournament": "ts-node backend/src/scripts/tournament-simulator.ts",
     "audit:score": "node tools/audit-score.mjs"
   },
   "devDependencies": {

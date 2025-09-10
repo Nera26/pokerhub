@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.12.0
+  version: 2.15.0
 paths:
   /status:
     get:
@@ -1434,6 +1434,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminTournament'
+  /admin/tournaments/simulate:
+    post:
+      summary: Simulate tournament durations
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TournamentSimulateRequest'
+      responses:
+        '200':
+          description: Simulation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TournamentSimulateResponse'
   /admin/bonus/options:
     get:
       summary: Get bonus form options
@@ -3053,6 +3071,35 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/TournamentFilter'
+    TournamentSimulateRequest:
+      type: object
+      properties:
+        levels:
+          type: integer
+        levelMinutes:
+          type: integer
+        increment:
+          type: number
+        entrants:
+          type: integer
+        runs:
+          type: integer
+      required:
+        - levels
+        - levelMinutes
+        - increment
+        - entrants
+        - runs
+    TournamentSimulateResponse:
+      type: object
+      properties:
+        averageDuration:
+          type: number
+        durationVariance:
+          type: number
+      required:
+        - averageDuration
+        - durationVariance
     Table:
       type: object
       properties:

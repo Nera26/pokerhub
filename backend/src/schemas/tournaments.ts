@@ -38,3 +38,22 @@ export const TournamentFiltersResponseSchema = z.array(
 export type TournamentFiltersResponse = z.infer<
   typeof TournamentFiltersResponseSchema
 >;
+
+export const TournamentSimulateRequestSchema = z.object({
+  levels: z.number().int().positive(),
+  levelMinutes: z.number().int().positive(),
+  increment: z.number().positive(),
+  entrants: z.number().int().positive(),
+  runs: z.number().int().positive(),
+});
+export type TournamentSimulateRequest = z.infer<
+  typeof TournamentSimulateRequestSchema
+>;
+
+export const TournamentSimulateResponseSchema = z.object({
+  averageDuration: z.number(),
+  durationVariance: z.number(),
+});
+export type TournamentSimulateResponse = z.infer<
+  typeof TournamentSimulateResponseSchema
+>;

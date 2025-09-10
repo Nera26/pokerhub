@@ -8,6 +8,14 @@ import {
 
 export { ZodError };
 
+export const ServiceStatusResponseSchema = z.object({
+  status: z.string(),
+  contractVersion: z.string(),
+});
+export type ServiceStatusResponse = z.infer<
+  typeof ServiceStatusResponseSchema
+>;
+
 // Wallet types are available via @shared/wallet.schema
 
 // Language selector
@@ -176,12 +184,16 @@ export {
   TournamentFilterSchema,
   TournamentFilterOptionSchema,
   TournamentFiltersResponseSchema,
+  TournamentSimulateRequestSchema,
+  TournamentSimulateResponseSchema,
 } from '../backend/src/schemas/tournaments';
 export type {
   AdminTournament,
   TournamentFilter,
   TournamentFilterOption,
   TournamentFiltersResponse,
+  TournamentSimulateRequest,
+  TournamentSimulateResponse,
 } from '../backend/src/schemas/tournaments';
 
 /** ---- Admin Messages ---- */
