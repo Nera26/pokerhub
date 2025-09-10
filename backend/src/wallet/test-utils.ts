@@ -10,6 +10,7 @@ import { EventPublisher } from '../events/events.service';
 import { PaymentProviderService } from './payment-provider.service';
 import { KycService } from './kyc.service';
 import { SettlementService } from './settlement.service';
+import * as handLedger from './hand-ledger';
 
 export async function createInMemoryDb(
   entities: EntityTarget<any>[],
@@ -47,7 +48,7 @@ export async function createInMemoryDb(
   return dataSource;
 }
 
-export async function setupTestWallet() {
+export async function setupTestWallet(opts: { mockLedger?: boolean } = {}) {
   const events: EventPublisher = { emit: jest.fn() } as any;
 
   const redisStore = new Map<string, any>();
@@ -120,6 +121,13 @@ export async function setupTestWallet() {
   );
   (service as any).pendingQueue = { add: jest.fn() };
 
+  let writeHandLedgerMock: jest.SpyInstance | undefined;
+  if (opts.mockLedger !== false) {
+    writeHandLedgerMock = jest
+      .spyOn(handLedger, 'writeHandLedger')
+      .mockResolvedValue(undefined);
+  }
+
   return {
     dataSource,
     service,
@@ -128,5 +136,6 @@ export async function setupTestWallet() {
     redisStore,
     provider,
     kyc,
+    writeHandLedger: writeHandLedgerMock,
   };
 }

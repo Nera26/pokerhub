@@ -7,6 +7,7 @@ import {
 import { SettlementJournal, recordDeltas } from '../settlement';
 import { WalletService } from '../../wallet/wallet.service';
 import { SettlementService } from '../../wallet/settlement.service';
+import { writeHandLedger } from '../../wallet/hand-ledger';
 import { randomUUID } from 'crypto';
 import { HandRNG } from '../rng';
 import { Repository } from 'typeorm';
@@ -234,9 +235,26 @@ export class GameEngine {
     }
 
     const entries = recordDeltas(state, this.initialStacks, this.settlement);
-
     const street = state.street;
-    let idx = 0;
+
+    if (this.wallet) {
+      const ds =
+        (this.wallet as any)?.journals?.manager?.connection ??
+        (this.wallet as any)?.journals?.manager?.dataSource;
+      if (ds) {
+        await writeHandLedger(
+          this.wallet,
+          ds,
+          this.handId,
+          street,
+          0,
+          entries,
+          this.currency,
+        );
+      }
+    }
+
+    let idx = 1;
     let totalLoss = 0;
     for (const { playerId, delta } of entries) {
       const initial = this.initialStacks.get(playerId) ?? 0;
