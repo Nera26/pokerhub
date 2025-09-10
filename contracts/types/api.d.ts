@@ -1000,6 +1000,19 @@ export interface paths {
       };
     };
   };
+  "/leaderboard/modes": {
+    /** Get leaderboard modes */
+    get: {
+      responses: {
+        /** @description Available modes */
+        200: {
+          content: {
+            "application/json": components["schemas"]["LeaderboardModesResponse"];
+          };
+        };
+      };
+    };
+  };
   "/leaderboard/rebuild": {
     /** Rebuild leaderboard */
     post: {

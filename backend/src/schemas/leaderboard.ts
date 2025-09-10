@@ -17,9 +17,19 @@ export type LeaderboardRebuildQuery = z.infer<typeof LeaderboardRebuildQuerySche
 export const TimeFilterSchema = z.enum(['daily', 'weekly', 'monthly']);
 export type TimeFilter = z.infer<typeof TimeFilterSchema>;
 
+export const ModeFilterSchema = z.enum(['cash', 'tournament']);
+export type ModeFilter = z.infer<typeof ModeFilterSchema>;
+
 export const LeaderboardRangesResponseSchema = z.object({
   ranges: z.array(TimeFilterSchema),
 });
 export type LeaderboardRangesResponse = z.infer<
   typeof LeaderboardRangesResponseSchema
+>;
+
+export const LeaderboardModesResponseSchema = z.object({
+  modes: z.array(ModeFilterSchema),
+});
+export type LeaderboardModesResponse = z.infer<
+  typeof LeaderboardModesResponseSchema
 >;

@@ -1,7 +1,13 @@
-import { useLeaderboardRanges } from '@/lib/api/leaderboard';
+import {
+  useLeaderboardRanges,
+  useLeaderboardModes,
+} from '@/lib/api/leaderboard';
 import { apiClient } from '@/lib/api/client';
 import { useQuery } from '@tanstack/react-query';
-import { LeaderboardRangesResponseSchema } from '@shared/types';
+import {
+  LeaderboardRangesResponseSchema,
+  LeaderboardModesResponseSchema,
+} from '@shared/types';
 
 jest.mock('@/lib/api/client', () => ({ apiClient: jest.fn() }));
 jest.mock('@tanstack/react-query', () => ({ useQuery: jest.fn() }));
@@ -30,6 +36,31 @@ describe('useLeaderboardRanges', () => {
     expect(apiClientMock).toHaveBeenCalledWith(
       '/api/leaderboard/ranges',
       LeaderboardRangesResponseSchema,
+    );
+  });
+});
+
+describe('useLeaderboardModes', () => {
+  beforeEach(() => {
+    useQueryMock.mockReturnValue({});
+    apiClientMock.mockResolvedValue({ modes: [] });
+  });
+  afterEach(() => {
+    useQueryMock.mockReset();
+    apiClientMock.mockReset();
+  });
+
+  it('invokes apiClient with correct arguments', async () => {
+    useLeaderboardModes();
+    expect(useQueryMock).toHaveBeenCalledWith({
+      queryKey: ['leaderboard', 'modes'],
+      queryFn: expect.any(Function),
+    });
+    const { queryFn } = useQueryMock.mock.calls[0][0];
+    await queryFn();
+    expect(apiClientMock).toHaveBeenCalledWith(
+      '/api/leaderboard/modes',
+      LeaderboardModesResponseSchema,
     );
   });
 });

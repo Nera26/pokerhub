@@ -6,12 +6,12 @@ import type { LeaderboardEntry } from '@shared/types';
 
 jest.mock('@fortawesome/react-fontawesome', () => ({
   __esModule: true,
-  FontAwesomeIcon: () => <span />, 
+  FontAwesomeIcon: () => <span />,
 }));
 
 jest.mock('@/app/components/leaderboard/LeaderboardTabs', () => ({
   __esModule: true,
-  default: () => <div />, 
+  default: () => <div />,
 }));
 
 jest.mock('@/app/components/ui/ToastNotification', () => ({
@@ -24,6 +24,11 @@ jest.mock('@/lib/api/leaderboard', () => ({
   fetchLeaderboard: jest.fn(),
   useLeaderboardRanges: () => ({
     data: { ranges: ['daily'] },
+    isLoading: false,
+    error: null,
+  }),
+  useLeaderboardModes: () => ({
+    data: { modes: ['cash'] },
     isLoading: false,
     error: null,
   }),
@@ -46,7 +51,9 @@ describe('Leaderboard refresh', () => {
       },
     ];
 
-    const mockFetch = fetchLeaderboard as jest.MockedFunction<typeof fetchLeaderboard>;
+    const mockFetch = fetchLeaderboard as jest.MockedFunction<
+      typeof fetchLeaderboard
+    >;
     mockFetch.mockResolvedValue(mockData);
 
     const queryClient = new QueryClient();
@@ -69,4 +76,3 @@ describe('Leaderboard refresh', () => {
     await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2));
   });
 });
-

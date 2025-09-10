@@ -13,6 +13,7 @@ import { LeaderboardRebuildQuerySchema } from '../schemas/leaderboard';
 import type {
   LeaderboardEntry,
   LeaderboardRangesResponse,
+  LeaderboardModesResponse,
 } from '@shared/types';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
@@ -45,5 +46,12 @@ export class LeaderboardController {
   @ApiResponse({ status: 200, description: 'Available time ranges' })
   getRanges(): LeaderboardRangesResponse {
     return this.leaderboardService.getRanges();
+  }
+
+  @Get('modes')
+  @ApiOperation({ summary: 'Get leaderboard modes' })
+  @ApiResponse({ status: 200, description: 'Available modes' })
+  getModes(): LeaderboardModesResponse {
+    return this.leaderboardService.getModes();
   }
 }

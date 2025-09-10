@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -11,13 +11,24 @@ import ToastNotification, {
 } from '@/app/components/ui/ToastNotification';
 import LeaderboardBase from '@/components/leaderboard/LeaderboardBase';
 import { fetchUserProfile } from '@/lib/api/profile';
-import type { LeaderboardEntry, TimeFilter } from '@shared/types';
-
-type ModeFilter = 'cash' | 'tournament';
+import { useLeaderboardModes } from '@/lib/api/leaderboard';
+import type { LeaderboardEntry, TimeFilter, ModeFilter } from '@shared/types';
 
 export default function LeaderboardPage() {
   const [selectedTime, setSelectedTime] = useState<TimeFilter>('daily');
-  const [selectedMode, setSelectedMode] = useState<ModeFilter>('cash');
+  const {
+    data: modesData,
+    isLoading: modesLoading,
+    error: modesError,
+  } = useLeaderboardModes();
+  const modeOptions = modesData?.modes ?? [];
+  const [selectedMode, setSelectedMode] = useState<ModeFilter | undefined>();
+
+  useEffect(() => {
+    if (!selectedMode && modeOptions.length > 0) {
+      setSelectedMode(modeOptions[0]);
+    }
+  }, [modeOptions, selectedMode]);
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<ToastType>('success');
@@ -61,30 +72,37 @@ export default function LeaderboardPage() {
               <label className="block text-sm font-medium text-text-secondary mb-2">
                 Game Mode:
               </label>
-              <div className="flex space-x-2">
-                <button
-                  type="button"
-                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-200 hover-glow-yellow ${
-                    selectedMode === 'cash'
-                      ? 'bg-accent-yellow text-primary-bg'
-                      : 'bg-hover-bg text-text-secondary hover:bg-accent-yellow hover:text-primary-bg'
-                  }`}
-                  onClick={() => setSelectedMode('cash')}
-                >
-                  Cash Game
-                </button>
-                <button
-                  type="button"
-                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-200 hover-glow-yellow ${
-                    selectedMode === 'tournament'
-                      ? 'bg-accent-yellow text-primary-bg'
-                      : 'bg-hover-bg text-text-secondary hover:bg-accent-yellow hover:text-primary-bg'
-                  }`}
-                  onClick={() => setSelectedMode('tournament')}
-                >
-                  Tournament
-                </button>
-              </div>
+              {modesLoading ? (
+                <div>Loading modes...</div>
+              ) : modesError ? (
+                <div>Error loading modes</div>
+              ) : modeOptions.length === 0 ? (
+                <div>No modes available</div>
+              ) : (
+                <div className="flex space-x-2">
+                  {modeOptions.map((mode) => {
+                    const isActive = mode === selectedMode;
+                    const label =
+                      mode === 'cash'
+                        ? 'Cash Game'
+                        : mode.charAt(0).toUpperCase() + mode.slice(1);
+                    return (
+                      <button
+                        key={mode}
+                        type="button"
+                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-200 hover-glow-yellow ${
+                          isActive
+                            ? 'bg-accent-yellow text-primary-bg'
+                            : 'bg-hover-bg text-text-secondary hover:bg-accent-yellow hover:text-primary-bg'
+                        }`}
+                        onClick={() => setSelectedMode(mode)}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <button
