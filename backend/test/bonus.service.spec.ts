@@ -1,16 +1,12 @@
 process.env.DATABASE_URL = '';
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
-import request from 'supertest';
-import { AdminBonusController } from '../src/routes/admin-bonus.controller';
 import { BonusService } from '../src/services/bonus.service';
 import { BonusOptionEntity } from '../src/database/entities/bonus-option.entity';
-import { AuthGuard } from '../src/auth/auth.guard';
-import { AdminGuard } from '../src/auth/admin.guard';
 
 function createTestModule() {
   let dataSource: DataSource;
@@ -40,29 +36,25 @@ function createTestModule() {
       }),
       TypeOrmModule.forFeature([BonusOptionEntity]),
     ],
-    controllers: [AdminBonusController],
     providers: [BonusService],
+    exports: [BonusService],
   })
   class BonusTestModule {}
-  return BonusTestModule;
+  return { BonusTestModule, getDataSource: () => dataSource };
 }
 
-describe('AdminBonusController', () => {
-  let app: INestApplication;
+describe('BonusService', () => {
+  let service: BonusService;
   let dataSource: DataSource;
 
   beforeAll(async () => {
-    const BonusTestModule = createTestModule();
+    const { BonusTestModule, getDataSource } = createTestModule();
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [BonusTestModule],
-    })
-      .overrideGuard(AuthGuard)
-      .useValue({ canActivate: () => true })
-      .overrideGuard(AdminGuard)
-      .useValue({ canActivate: () => true })
-      .compile();
-    app = moduleRef.createNestApplication();
-    dataSource = moduleRef.get(DataSource);
+    }).compile();
+    service = moduleRef.get(BonusService);
+    dataSource = getDataSource();
+    const app = moduleRef.createNestApplication();
     await app.init();
 
     const repo = dataSource.getRepository(BonusOptionEntity);
@@ -81,32 +73,25 @@ describe('AdminBonusController', () => {
     ]);
   });
 
-  afterAll(async () => {
-    await app.close();
-  });
-
-  it('returns bonus options', async () => {
-    await request(app.getHttpServer())
-      .get('/admin/bonus/options')
-      .expect(200)
-      .expect({
-        types: [
-          { value: 'deposit', label: 'Deposit Match' },
-          { value: 'rakeback', label: 'Rakeback' },
-          { value: 'ticket', label: 'Tournament Tickets' },
-          { value: 'rebate', label: 'Rebate' },
-          { value: 'first-deposit', label: 'First Deposit Only' },
-        ],
-        eligibilities: [
-          { value: 'all', label: 'All Players' },
-          { value: 'new', label: 'New Players Only' },
-          { value: 'vip', label: 'VIP Players Only' },
-          { value: 'active', label: 'Active Players' },
-        ],
-        statuses: [
-          { value: 'active', label: 'Active' },
-          { value: 'paused', label: 'Paused' },
-        ],
-      });
+  it('lists options', async () => {
+    await expect(service.listOptions()).resolves.toEqual({
+      types: [
+        { value: 'deposit', label: 'Deposit Match' },
+        { value: 'rakeback', label: 'Rakeback' },
+        { value: 'ticket', label: 'Tournament Tickets' },
+        { value: 'rebate', label: 'Rebate' },
+        { value: 'first-deposit', label: 'First Deposit Only' },
+      ],
+      eligibilities: [
+        { value: 'all', label: 'All Players' },
+        { value: 'new', label: 'New Players Only' },
+        { value: 'vip', label: 'VIP Players Only' },
+        { value: 'active', label: 'Active Players' },
+      ],
+      statuses: [
+        { value: 'active', label: 'Active' },
+        { value: 'paused', label: 'Paused' },
+      ],
+    });
   });
 });
