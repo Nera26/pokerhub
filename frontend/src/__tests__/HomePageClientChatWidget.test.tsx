@@ -5,11 +5,11 @@ import { useTables, useTournaments, useCTAs } from '@/hooks/useLobbyData';
 
 jest.mock('@/hooks/useLobbyData');
 
-// Mock ChatWidget to render a simple marker immediately
-jest.mock('@/app/components/common/chat/ChatWidget', () => ({
-  __esModule: true,
-  default: () => <div data-testid="chat-widget" />,
-}));
+let ChatWidgetMock: jest.Mock;
+jest.mock('@/app/components/common/chat/ChatWidget', () => {
+  ChatWidgetMock = jest.fn(() => <div data-testid="chat-widget" />);
+  return { __esModule: true, default: ChatWidgetMock };
+});
 
 describe('HomePageClient chat widget', () => {
   it('renders immediately', () => {
@@ -46,5 +46,7 @@ describe('HomePageClient chat widget', () => {
     );
 
     expect(screen.getByTestId('chat-widget')).toBeInTheDocument();
+    expect(ChatWidgetMock).toHaveBeenCalled();
+    expect(ChatWidgetMock.mock.calls[0][0]).toEqual({});
   });
 });

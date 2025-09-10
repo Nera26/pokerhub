@@ -150,6 +150,7 @@ export function HomePageClient({
             onRegister={handleRegister}
           />
         </div>
+
         {showTournaments && tournamentErrorMessage && (
           <InlineError message={tournamentErrorMessage} />
         )}
