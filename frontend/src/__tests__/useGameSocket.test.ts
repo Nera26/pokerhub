@@ -12,20 +12,16 @@ const socket = {
   off: jest.fn((event: string, handler: (...a: any[]) => void) => {
     handlers[event] = (handlers[event] || []).filter((h) => h !== handler);
   }),
-  emit: jest.fn((event: string, payload?: any) => {
-    setTimeout(() => {
-      const ackEvent = `${event}:ack`;
-      handlers[ackEvent]?.forEach((h) => h({ actionId: payload?.actionId }));
-    }, 0);
-  }),
   io: { on: jest.fn(), off: jest.fn() },
   disconnect: jest.fn(),
 } as any;
 
+const emitWithAck = jest.fn().mockResolvedValue(undefined);
+
 jest.mock('@/lib/socket-core', () => ({
   getSocket: () => socket,
   disconnectSocket: jest.fn(),
-  emitWithAck: jest.fn(),
+  emitWithAck: (...args: any[]) => emitWithAck(...args),
 }));
 
 describe('useGameSocket', () => {
@@ -43,14 +39,46 @@ describe('useGameSocket', () => {
       await result.current.sitout();
       await result.current.rebuy();
     });
-    expect(socket.emit).toHaveBeenCalledWith(
+    expect(emitWithAck).toHaveBeenCalledWith(
+      'game',
       'action',
-      expect.objectContaining({ type: 'bet', actionId: expect.any(String) }),
+      expect.objectContaining({ type: 'bet' }),
+      'action:ack',
+      1,
+      expect.any(Object),
     );
-    expect(socket.emit).toHaveBeenCalledWith('join', expect.any(Object));
-    expect(socket.emit).toHaveBeenCalledWith('buy-in', expect.any(Object));
-    expect(socket.emit).toHaveBeenCalledWith('sitout', expect.any(Object));
-    expect(socket.emit).toHaveBeenCalledWith('rebuy', expect.any(Object));
+    expect(emitWithAck).toHaveBeenCalledWith(
+      'game',
+      'join',
+      {},
+      'join:ack',
+      1,
+      expect.any(Object),
+    );
+    expect(emitWithAck).toHaveBeenCalledWith(
+      'game',
+      'buy-in',
+      {},
+      'buy-in:ack',
+      1,
+      expect.any(Object),
+    );
+    expect(emitWithAck).toHaveBeenCalledWith(
+      'game',
+      'sitout',
+      {},
+      'sitout:ack',
+      1,
+      expect.any(Object),
+    );
+    expect(emitWithAck).toHaveBeenCalledWith(
+      'game',
+      'rebuy',
+      {},
+      'rebuy:ack',
+      1,
+      expect.any(Object),
+    );
   });
 
   it('updates server time offset on server:Clock', () => {

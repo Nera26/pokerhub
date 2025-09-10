@@ -1,9 +1,9 @@
 import type { Socket } from 'socket.io-client';
 import type { GameState } from '@shared/types';
-import { createNamespaceSocket } from './socket-base';
+import { createGameNamespace } from './socket-namespaces';
 
 const { getSocket: getSpectatorSocket, disconnect } =
-  createNamespaceSocket('spectate');
+  createGameNamespace('spectate');
 
 export function subscribeToTable(
   tableId: string,

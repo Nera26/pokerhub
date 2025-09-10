@@ -3,13 +3,13 @@ import { type GameActionPayload } from '@shared/types';
 import { GameActionSchema } from '@shared/schemas/game';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
 import { setServerTime } from './server-time';
-import { createNamespaceSocket } from './socket-base';
+import { createGameNamespace } from './socket-namespaces';
 
 const {
   getSocket: getNamespaceSocket,
   disconnect,
   emitWithAck,
-} = createNamespaceSocket('game');
+} = createGameNamespace('game');
 
 let initialized = false;
 let lastTick = 0;
@@ -58,17 +58,16 @@ export function disconnectGameSocket(): void {
   }
 }
 
-function emitWithPending(
-  event: string,
-  payload: Record<string, unknown>,
-  ackEvent: string,
-  retries = 1,
-): Promise<void> {
-  return emitWithAck(event, payload, ackEvent, retries, {
+export function sendAction(action: GameActionPayload, retries = 1) {
+  const payload = { version: EVENT_SCHEMA_VERSION, ...action };
+  GameActionSchema.parse(payload);
+  return emitWithAck('action', payload, 'action:ack', retries, {
     onSend: (fullPayload) => {
-      if (event === 'action') {
-        pending = { event, payload: fullPayload, ackEvent };
-      }
+      pending = {
+        event: 'action',
+        payload: fullPayload,
+        ackEvent: 'action:ack',
+      };
     },
     onCleanup: (actionId) => {
       if (pending?.payload.actionId === actionId) {
@@ -77,14 +76,7 @@ function emitWithPending(
     },
   });
 }
-
-export function sendAction(action: GameActionPayload, retries = 1) {
-  const payload = { version: EVENT_SCHEMA_VERSION, ...action };
-  GameActionSchema.parse(payload);
-  return emitWithPending('action', payload, 'action:ack', retries);
-}
-
-export const join = () => emitWithPending('join', {}, 'join:ack');
-export const buyIn = () => emitWithPending('buy-in', {}, 'buy-in:ack');
-export const sitOut = () => emitWithPending('sitout', {}, 'sitout:ack');
-export const rebuy = () => emitWithPending('rebuy', {}, 'rebuy:ack');
+export const join = () => emitWithAck('join', {}, 'join:ack');
+export const buyIn = () => emitWithAck('buy-in', {}, 'buy-in:ack');
+export const sitOut = () => emitWithAck('sitout', {}, 'sitout:ack');
+export const rebuy = () => emitWithAck('rebuy', {}, 'rebuy:ack');
