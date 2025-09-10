@@ -8,6 +8,7 @@ import { fetchLogTypeClasses, fetchErrorCategories } from '@/lib/api/analytics';
 
 jest.mock('../SearchBar', () => () => <div>SearchBar</div>);
 jest.mock('../QuickStats', () => () => <div>QuickStats</div>);
+jest.mock('../SecurityAlerts', () => () => <div>SecurityAlerts</div>);
 jest.mock('../../charts/ActivityChart', () => () => <div>ActivityChart</div>);
 jest.mock('../ErrorChart', () => ({ data }: { data?: number[] }) => (
   <div>{data && data.length ? 'ErrorChart' : 'No data'}</div>
