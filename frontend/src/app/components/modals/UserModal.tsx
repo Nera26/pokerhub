@@ -4,6 +4,8 @@ import Modal from '../ui/Modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserPlus, faXmark } from '@fortawesome/free-solid-svg-icons';
 import UserForm, { type UserFormValues } from '../forms/UserForm';
+import { useEffect, useState } from 'react';
+import { fetchDefaultAvatar } from '@/lib/api/users';
 
 interface User {
   id: number;
@@ -31,6 +33,14 @@ export default function UserModal({
 }: Props) {
   const isEdit = mode === 'edit';
 
+  const [avatar, setAvatar] = useState('');
+
+  useEffect(() => {
+    if (!isEdit && isOpen) {
+      fetchDefaultAvatar().then((res) => setAvatar(res.url));
+    }
+  }, [isEdit, isOpen]);
+
   const defaultValues = isEdit
     ? {
         username: user?.name ?? '',
@@ -44,8 +54,7 @@ export default function UserModal({
         email: '',
         password: '',
         status: 'Active',
-        avatar:
-          'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg',
+        avatar,
       };
 
   const submitLabel = isEdit ? (
@@ -81,7 +90,7 @@ export default function UserModal({
         </p>
       )}
       <UserForm
-        key={isEdit ? user?.id : undefined}
+        key={isEdit ? user?.id : avatar}
         defaultValues={defaultValues}
         submitLabel={submitLabel}
         onSubmit={(data) => {
