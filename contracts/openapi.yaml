@@ -4039,6 +4039,7 @@ components:
           type: string
         icon:
           type: string
+          description: Font Awesome icon name (e.g., faUsers)
         component:
           type: string
         path:

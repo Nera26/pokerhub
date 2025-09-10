@@ -28,19 +28,19 @@ jest.mock('@/lib/api/admin', () => ({
     {
       id: 'dashboard',
       label: 'Dashboard',
-      icon: 'chart-line',
+      icon: 'faChartLine',
       component: '@/app/components/dashboard/DashboardModule',
     },
     {
       id: 'users',
       label: 'Users',
-      icon: 'users',
+      icon: 'faUsers',
       component: '@/app/components/dashboard/DashboardModule',
     },
     {
       id: 'analytics',
       label: 'Analytics',
-      icon: 'chart-bar',
+      icon: 'faChartBar',
       component: '@/app/components/dashboard/DashboardModule',
     },
   ]),

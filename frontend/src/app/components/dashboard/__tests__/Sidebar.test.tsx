@@ -20,13 +20,13 @@ beforeEach(() => {
     {
       id: 'dashboard',
       label: 'Dashboard',
-      icon: 'chart-line',
+      icon: 'faChartLine',
       component: '@/app/components/dashboard/DashboardModule',
     },
     {
       id: 'analytics',
       label: 'Analytics',
-      icon: 'chart-bar',
+      icon: 'faChartBar',
       component: '@/app/components/dashboard/DashboardModule',
     },
   ]);
@@ -38,13 +38,13 @@ describe('Sidebar', () => {
       {
         id: 'dashboard',
         label: 'API Dashboard',
-        icon: 'chart-line',
+        icon: 'faChartLine',
         component: '@/app/components/dashboard/DashboardModule',
       },
       {
         id: 'users',
         label: 'API Users',
-        icon: 'users',
+        icon: 'faUsers',
         component: '@/app/components/dashboard/DashboardModule',
       },
     ]);
@@ -97,5 +97,41 @@ describe('Sidebar', () => {
     await user.click(dashboardTab);
 
     expect(onChange).toHaveBeenCalledWith('dashboard');
+  });
+
+  it('renders icons provided by the server', async () => {
+    (fetchSidebarItems as jest.Mock).mockResolvedValueOnce([
+      {
+        id: 'users',
+        label: 'Users',
+        icon: 'faUsers',
+        component: '@/app/components/dashboard/DashboardModule',
+      },
+    ]);
+    const { container } = render(<Sidebar open />);
+    await waitFor(() => expect(fetchSidebarItems).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(
+        container.querySelector('svg[data-icon="users"]'),
+      ).toBeInTheDocument(),
+    );
+  });
+
+  it('falls back to default icon when server icon is unknown', async () => {
+    (fetchSidebarItems as jest.Mock).mockResolvedValueOnce([
+      {
+        id: 'unknown',
+        label: 'Unknown',
+        icon: 'faDoesNotExist',
+        component: '@/app/components/dashboard/DashboardModule',
+      },
+    ]);
+    const { container } = render(<Sidebar open />);
+    await waitFor(() => expect(fetchSidebarItems).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(
+        container.querySelector('svg[data-icon="chart-line"]'),
+      ).toBeInTheDocument(),
+    );
   });
 });
