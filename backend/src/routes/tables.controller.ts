@@ -23,11 +23,11 @@ import {
   type CreateTableRequest,
   UpdateTableSchema,
   type UpdateTableRequest,
+  TableListQuerySchema,
 } from '../schemas/tables';
 import { ChatMessagesSchema, SendChatMessageRequestSchema } from '../schemas/chat';
 import { TablesService } from '../game/tables.service';
 import { ChatService } from '../game/chat.service';
-import { TableListQuerySchema } from '@shared/types';
 import type { Request } from 'express';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';

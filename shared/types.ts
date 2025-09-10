@@ -1,5 +1,6 @@
 import { z, ZodError } from 'zod';
 import { GameActionSchema } from './schemas/game';
+import { GameTypeSchema } from '../backend/src/schemas/game-types';
 import {
   GameHistoryEntrySchema,
   TournamentHistoryEntrySchema,
@@ -90,6 +91,40 @@ export type {
 
 export { BonusOptionsResponseSchema } from '../backend/src/schemas/bonus';
 export type { BonusOptionsResponse } from '../backend/src/schemas/bonus';
+
+export {
+  GameTypeSchema,
+  GameTypeWithLabelSchema,
+  GameTypeListSchema,
+} from '../backend/src/schemas/game-types';
+export type {
+  GameType,
+  GameTypeWithLabel,
+  GameTypeList,
+} from '../backend/src/schemas/game-types';
+
+export {
+  PlayerSchema,
+  ChatMessageSchema,
+  SendChatMessageRequestSchema,
+  TableSchema,
+  TableListSchema,
+  TableDataSchema,
+  CreateTableSchema,
+  UpdateTableSchema,
+  TableListQuerySchema,
+} from '../backend/src/schemas/tables';
+export type {
+  Player,
+  ChatMessage,
+  SendChatMessageRequest,
+  Table,
+  TableList,
+  TableData,
+  CreateTableRequest,
+  UpdateTableRequest,
+  TableListQuery,
+} from '../backend/src/schemas/tables';
 
 export {
   AUDIT_LOG_TYPES,
@@ -262,22 +297,6 @@ export const GameStateSchema = z
 export type GameState = z.infer<typeof GameStateSchema>;
 
 
-// --- Table / Game Types ---
-export const GameTypeSchema = z.enum([
-  'texas',
-  'omaha',
-  'allin',
-  'tournaments',
-]);
-export type GameType = z.infer<typeof GameTypeSchema>;
-export const GameTypeWithLabelSchema = z.object({
-  id: GameTypeSchema,
-  label: z.string(),
-});
-export type GameTypeWithLabel = z.infer<typeof GameTypeWithLabelSchema>;
-export const GameTypeListSchema = z.array(GameTypeWithLabelSchema);
-export type GameTypeList = z.infer<typeof GameTypeListSchema>;
-
 // Tournaments (frontend)
 export const TournamentSchema = z.object({
   id: z.string(),
@@ -308,82 +327,6 @@ export const TournamentDetailsSchema = TournamentSchema.extend({
 });
 export type TournamentDetails = z.infer<typeof TournamentDetailsSchema>;
 
-
-// Tables
-export const TableSchema = z.object({
-  id: z.string(),
-  tableName: z.string(),
-  gameType: GameTypeSchema,
-  stakes: z.object({ small: z.number(), big: z.number() }),
-  players: z.object({ current: z.number(), max: z.number() }),
-  buyIn: z.object({ min: z.number(), max: z.number() }),
-  stats: z.object({
-    handsPerHour: z.number(),
-    avgPot: z.number(),
-    rake: z.number(),
-  }),
-  createdAgo: z.string(),
-});
-export const TableListSchema = z.array(TableSchema);
-export type Table = z.infer<typeof TableSchema>;
-export type TableList = z.infer<typeof TableListSchema>;
-
-export const CreateTableSchema = z.object({
-  tableName: z.string(),
-  gameType: GameTypeSchema,
-  stakes: z.object({ small: z.number(), big: z.number() }),
-  startingStack: z.number(),
-  players: z.object({ max: z.number() }),
-  buyIn: z.object({ min: z.number(), max: z.number() }),
-});
-export type CreateTableRequest = z.infer<typeof CreateTableSchema>;
-
-const UpdateTableSchema = CreateTableSchema.partial();
-export type UpdateTableRequest = z.infer<typeof UpdateTableSchema>;
-
-// Players / Chat
-export const PlayerSchema = z.object({
-  id: z.number(),
-  username: z.string(),
-  avatar: z.string(),
-  chips: z.number(),
-  committed: z.number().optional(),
-  isActive: z.boolean().optional(),
-  isFolded: z.boolean().optional(),
-  sittingOut: z.boolean().optional(),
-  isAllIn: z.boolean().optional(),
-  isWinner: z.boolean().optional(),
-  timeLeft: z.number().optional(),
-  cards: z.tuple([z.string(), z.string()]).optional(),
-  pos: z.string().optional(),
-  lastAction: z.string().optional(),
-});
-
-export const ChatMessageSchema = z.object({
-  id: z.number(),
-  username: z.string(),
-  avatar: z.string(),
-  text: z.string(),
-  time: z.string(),
-});
-export type ChatMessage = z.infer<typeof ChatMessageSchema>;
-
-export const SendChatMessageRequestSchema = z.object({
-  userId: z.string(),
-  text: z.string(),
-});
-export type SendChatMessageRequest = z.infer<typeof SendChatMessageRequestSchema>;
-
-export const TableDataSchema = z.object({
-  smallBlind: z.number(),
-  bigBlind: z.number(),
-  pot: z.number(),
-  communityCards: z.array(z.string()),
-  players: z.array(PlayerSchema),
-  chatMessages: z.array(ChatMessageSchema),
-  stateAvailable: z.boolean(),
-});
-export type TableData = z.infer<typeof TableDataSchema>;
 
 // --- Leaderboard ---
 export const HandStateResponseSchema = z.object({
@@ -547,11 +490,6 @@ export const AdminUsersQuerySchema = z.object({
   limit: z.coerce.number().int().positive().optional(),
 });
 export type AdminUsersQuery = z.infer<typeof AdminUsersQuerySchema>;
-
-export const TableListQuerySchema = z.object({
-  status: z.enum(['active']).optional(),
-});
-export type TableListQuery = z.infer<typeof TableListQuerySchema>;
 
 export {
   GameHistoryEntrySchema,
