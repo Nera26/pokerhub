@@ -64,6 +64,7 @@ import { LanguagesService } from './services/languages.service';
 import { LanguageEntity } from './database/entities/language.entity';
 import { BonusService } from './services/bonus.service';
 import { ChipDenomsService } from './services/chip-denoms.service';
+import { TableThemeService } from './services/table-theme.service';
 import { BonusOptionEntity } from './database/entities/bonus-option.entity';
 
 @Module({
@@ -157,6 +158,7 @@ import { BonusOptionEntity } from './database/entities/bonus-option.entity';
     LanguagesService,
     BonusService,
     ChipDenomsService,
+    TableThemeService,
   ],
 })
 export class AppModule implements NestModule {
