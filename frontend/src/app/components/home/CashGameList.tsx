@@ -3,7 +3,7 @@
 import { Table } from '@/hooks/useLobbyData';
 import LiveTableCard from './LiveTableCard';
 import type { GameType } from '@shared/types';
-import LobbyList from '@/components/LobbyList';
+import VirtualizedList from '@/components/VirtualizedList';
 
 export interface CashGameListProps {
   tables: Table[];
@@ -17,15 +17,16 @@ export default function CashGameList({
   hidden,
 }: CashGameListProps) {
   return (
-    <LobbyList<Table>
+    <VirtualizedList<Table>
       id="cash-games-panel"
       aria-labelledby={`tab-${gameType === 'tournaments' ? 'texas' : gameType}`}
       hidden={hidden}
       title="Cash Games"
-      className="mb-6 md:mb-8"
+      containerClassName="mb-6 md:mb-8"
       emptyMessage="No cash games available."
       items={tables}
       estimateSize={280}
+      className="h-96 overflow-auto"
       renderItem={(table, style) => (
         <li key={table.id} className="mb-4" style={style}>
           <LiveTableCard
