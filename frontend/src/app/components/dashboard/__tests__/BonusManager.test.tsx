@@ -145,3 +145,55 @@ describe('BonusManager table manager', () => {
     expect(screen.queryByText('Promo 6')).not.toBeInTheDocument();
   });
 });
+
+describe('BonusManager creation and errors', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (fetchBonusOptions as jest.Mock).mockResolvedValue({
+      types: [{ value: 'deposit', label: 'Deposit Match' }],
+      eligibilities: [{ value: 'all', label: 'All Players' }],
+      statuses: [
+        { value: 'active', label: 'Active' },
+        { value: 'paused', label: 'Paused' },
+      ],
+    });
+  });
+
+  it('creates a promotion and shows success toast', async () => {
+    (fetchBonuses as jest.Mock).mockResolvedValue([]);
+    (createBonus as jest.Mock).mockResolvedValue({});
+
+    renderWithClient(<BonusManager />);
+
+    fireEvent.change(screen.getByPlaceholderText('Enter promotion name...'), {
+      target: { value: 'New Promo' },
+    });
+    fireEvent.change(
+      screen.getByPlaceholderText('Enter promotion description...'),
+      { target: { value: 'Amazing offer' } },
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /create promotion/i }));
+
+    await screen.findByText('Promotion created');
+
+    expect(createBonus).toHaveBeenCalledWith({
+      name: 'New Promo',
+      type: 'deposit',
+      description: 'Amazing offer',
+      bonusPercent: undefined,
+      maxBonusUsd: undefined,
+      expiryDate: undefined,
+      eligibility: 'all',
+      status: 'active',
+    });
+  });
+
+  it('renders error message when bonus fetch fails', async () => {
+    (fetchBonuses as jest.Mock).mockRejectedValue(new Error('fail'));
+
+    renderWithClient(<BonusManager />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('fail');
+  });
+});
