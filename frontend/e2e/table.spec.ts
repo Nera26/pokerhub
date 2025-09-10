@@ -1,9 +1,14 @@
 import { test, expect } from './fixtures';
-import { mockTablesRoute, tables } from './fixtures/tables';
+import { seedTable, cleanupTables } from './fixtures/tables';
 
-test('table list displays mocked table', async ({ page }) => {
-  await mockTablesRoute(page);
+test.afterEach(async ({ page }) => {
+  await cleanupTables(page);
+});
 
+test('table list displays seeded table', async ({ page }) => {
+  const table = await seedTable(page);
+  const tablesResponse = page.waitForResponse('**/api/tables');
   await page.goto('/table');
-  await expect(page.getByText(tables[0].tableName)).toBeVisible();
+  await tablesResponse;
+  await expect(page.getByText(table.tableName)).toBeVisible();
 });
