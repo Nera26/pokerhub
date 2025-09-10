@@ -16,10 +16,12 @@ import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import { useRevenueBreakdown } from '@/hooks/useRevenueBreakdown';
 import { useDashboardUsers } from '@/hooks/useDashboardUsers';
 import { useActiveTables } from '@/hooks/useActiveTables';
+import { useActivity } from '@/hooks/useActivity';
 import MetricCard from './MetricCard';
 import BroadcastPanel from './BroadcastPanel';
 import DashboardTransactionHistory from './transactions/TransactionHistory';
 import WalletReconcileMismatches from './WalletReconcileMismatches';
+import CenteredMessage from '@/components/CenteredMessage';
 
 const ActivityChart = dynamic(() => import('./charts/ActivityChart'), {
   loading: () => (
@@ -103,6 +105,11 @@ export default function Dashboard() {
     isLoading: tablesLoading,
     error: tablesError,
   } = useActiveTables();
+  const {
+    data: activity,
+    isLoading: activityLoading,
+    error: activityError,
+  } = useActivity();
 
   const token = useAuthToken();
   const isAdmin = useMemo(() => {
@@ -191,7 +198,13 @@ export default function Dashboard() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card title="Player Activity (24h)">
-          <ActivityChart data={metrics.activity?.today ?? []} />
+          {activityLoading ? (
+            <CenteredMessage>Loading activity...</CenteredMessage>
+          ) : activityError ? (
+            <CenteredMessage>Failed to load activity</CenteredMessage>
+          ) : (
+            <ActivityChart labels={activity?.labels} data={activity?.data} />
+          )}
         </Card>
         <Card title="Revenue Breakdown">
           <RevenueDonut streams={revenueStreams} />

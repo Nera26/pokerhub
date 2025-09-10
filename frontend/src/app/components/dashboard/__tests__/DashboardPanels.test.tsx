@@ -7,6 +7,7 @@ const metricsMock = jest.fn();
 const revenueMock = jest.fn();
 const usersMock = jest.fn();
 const tablesMock = jest.fn();
+const activityMock = jest.fn();
 
 jest.mock('@/hooks/useDashboardMetrics', () => ({
   useDashboardMetrics: () => metricsMock(),
@@ -19,6 +20,9 @@ jest.mock('@/hooks/useDashboardUsers', () => ({
 }));
 jest.mock('@/hooks/useActiveTables', () => ({
   useActiveTables: () => tablesMock(),
+}));
+jest.mock('@/hooks/useActivity', () => ({
+  useActivity: () => activityMock(),
 }));
 
 function renderWithClient(ui: React.ReactElement) {
@@ -36,7 +40,6 @@ const baseMetrics = {
     revenue: { today: { amount: 0 } },
     deposits: { today: { amount: 0 } },
     withdrawals: { today: { amount: 0 } },
-    activity: { today: [] },
   },
   isLoading: false,
   error: null,
@@ -49,6 +52,11 @@ describe('Dashboard panels', () => {
     revenueMock.mockReturnValue(baseRevenue);
     usersMock.mockReset();
     tablesMock.mockReset();
+    activityMock.mockReturnValue({
+      data: { labels: [], data: [] },
+      isLoading: false,
+      error: null,
+    });
   });
 
   describe('User panel', () => {

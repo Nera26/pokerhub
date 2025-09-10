@@ -48,10 +48,21 @@ jest.mock('@/hooks/useAuditSummary', () => ({
 jest.mock('@/lib/api/leaderboard', () => ({
   rebuildLeaderboard: jest.fn(() => Promise.resolve()),
 }));
-
-const dashboardMetricsMock = jest.fn();
-jest.mock('@/hooks/useDashboardMetrics', () => ({
-  useDashboardMetrics: () => dashboardMetricsMock(),
+const activityMock = jest.fn();
+jest.mock('@/hooks/useActivity', () => ({
+  useActivity: () => activityMock(),
+}));
+jest.mock('@/lib/api/analytics', () => ({
+  fetchLogTypeClasses: jest.fn().mockResolvedValue({
+    Login: '',
+    'Table Event': '',
+    Broadcast: '',
+    Error: '',
+  }),
+  fetchErrorCategories: jest.fn().mockResolvedValue({
+    labels: ['Payment'],
+    counts: [1, 2, 3, 4],
+  }),
 }));
 
 function renderWithClient(ui: React.ReactElement) {
@@ -62,14 +73,13 @@ function renderWithClient(ui: React.ReactElement) {
 }
 
 beforeEach(() => {
-  dashboardMetricsMock.mockReturnValue({
+  activityMock.mockReturnValue({
     data: {
-      online: 0,
-      revenue: 0,
-      activity: [1, 2, 3, 4, 5, 6, 7],
-      errors: [1, 1, 1, 1],
+      labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'],
+      data: [1, 2, 3, 4, 5, 6, 7],
     },
     isLoading: false,
+    error: null,
   });
 });
 
@@ -114,16 +124,29 @@ describe('Analytics filtering', () => {
 
 describe('dashboard metrics charts', () => {
   it('shows loading state', () => {
-    dashboardMetricsMock.mockReturnValue({ data: undefined, isLoading: true });
+    activityMock.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+    });
+    const { fetchErrorCategories } = require('@/lib/api/analytics');
+    (fetchErrorCategories as jest.Mock).mockReturnValue(new Promise(() => {}));
     renderWithClient(<Analytics />);
-    expect(screen.getAllByText(/loading metrics/i)).toHaveLength(2);
+    expect(screen.getByText(/loading activity/i)).toBeInTheDocument();
+    expect(screen.getByText(/loading error categories/i)).toBeInTheDocument();
     expect(document.querySelectorAll('canvas')).toHaveLength(0);
   });
 
   it('shows empty state when no data', () => {
-    dashboardMetricsMock.mockReturnValue({
-      data: { online: 0, revenue: 0, activity: [], errors: [] },
+    activityMock.mockReturnValue({
+      data: { labels: [], data: [] },
       isLoading: false,
+      error: null,
+    });
+    const { fetchErrorCategories } = require('@/lib/api/analytics');
+    (fetchErrorCategories as jest.Mock).mockResolvedValue({
+      labels: [],
+      counts: [],
     });
     renderWithClient(<Analytics />);
     expect(screen.getAllByText(/no data/i)).toHaveLength(2);
@@ -131,14 +154,18 @@ describe('dashboard metrics charts', () => {
   });
 
   it('renders charts when data present', async () => {
-    dashboardMetricsMock.mockReturnValue({
+    activityMock.mockReturnValue({
       data: {
-        online: 0,
-        revenue: 0,
-        activity: [1, 2, 3, 4, 5, 6, 7],
-        errors: [1, 2, 3, 4],
+        labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'],
+        data: [1, 2, 3, 4, 5, 6, 7],
       },
       isLoading: false,
+      error: null,
+    });
+    const { fetchErrorCategories } = require('@/lib/api/analytics');
+    (fetchErrorCategories as jest.Mock).mockResolvedValue({
+      labels: ['Payment'],
+      counts: [1, 2, 3, 4],
     });
     renderWithClient(<Analytics />);
     expect(document.querySelectorAll('canvas')).toHaveLength(2);

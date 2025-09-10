@@ -18,7 +18,7 @@ import AdvancedFilterModal from './AdvancedFilterModal';
 import DetailModal from './DetailModal';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { useAuditSummary } from '@/hooks/useAuditSummary';
-import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
+import { useActivity } from '@/hooks/useActivity';
 import CenteredMessage from '@/components/CenteredMessage';
 import ToastNotification from '../../ui/ToastNotification';
 import { rebuildLeaderboard } from '@/lib/api/leaderboard';
@@ -62,7 +62,11 @@ export default function Analytics() {
   const { data } = useAuditLogs();
   const logs = data?.logs ?? [];
   const { data: summary } = useAuditSummary();
-  const { data: metrics, isLoading: metricsLoading } = useDashboardMetrics();
+  const {
+    data: activity,
+    isLoading: activityLoading,
+    error: activityError,
+  } = useActivity();
   const {
     data: errorCategories,
     isLoading: errorCategoriesLoading,
@@ -204,10 +208,16 @@ export default function Analytics() {
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {metricsLoading ? (
-          <CenteredMessage>Loading metrics...</CenteredMessage>
+        {activityLoading ? (
+          <CenteredMessage>Loading activity...</CenteredMessage>
+        ) : activityError ? (
+          <CenteredMessage>Failed to load activity</CenteredMessage>
         ) : (
-          <ActivityChart data={metrics?.activity} showContainer />
+          <ActivityChart
+            labels={activity?.labels}
+            data={activity?.data}
+            showContainer
+          />
         )}
         {errorCategoriesLoading ? (
           <CenteredMessage>Loading error categories...</CenteredMessage>

@@ -1,7 +1,10 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AnalyticsService } from './analytics.service';
-import { AuditLogsQuerySchema } from '@shared/schemas/analytics';
+import {
+  AuditLogsQuerySchema,
+  ActivityResponseSchema,
+} from '@shared/schemas/analytics';
 import { AdminGuard } from '../auth/admin.guard';
 
 @UseGuards(AdminGuard)
@@ -23,5 +26,13 @@ export class AnalyticsController {
   @ApiResponse({ status: 200, description: 'Audit summary' })
   async summary() {
     return this.analytics.getAuditSummary();
+  }
+
+  @Get('activity')
+  @ApiOperation({ summary: 'Get player activity' })
+  @ApiResponse({ status: 200, description: 'Activity data' })
+  async activity() {
+    const data = await this.analytics.getActivity();
+    return ActivityResponseSchema.parse(data);
   }
 }

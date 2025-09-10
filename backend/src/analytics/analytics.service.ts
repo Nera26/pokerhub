@@ -263,6 +263,13 @@ export class AnalyticsService {
     return { total: entries.length, errors, logins };
   }
 
+  async getActivity(): Promise<{ labels: string[]; data: number[] }> {
+    const raw = await this.redis.lrange('metrics:activity', 0, -1);
+    const data = (raw ?? []).map((v) => Number(v));
+    const labels = ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'];
+    return { labels, data };
+  }
+
   async getSecurityAlerts(): Promise<AlertItem[]> {
     const entries = await this.redis.lrange('security-alerts', 0, -1);
     return entries.map((e) => JSON.parse(e) as AlertItem);

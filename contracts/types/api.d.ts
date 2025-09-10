@@ -1124,6 +1124,19 @@ export interface paths {
       };
     };
   };
+  "/analytics/activity": {
+    /** Get player activity data */
+    get: {
+      responses: {
+        /** @description Activity data */
+        200: {
+          content: {
+            "application/json": components["schemas"]["ActivityResponse"];
+          };
+        };
+      };
+    };
+  };
   "/analytics/collusion/flagged": {
     /** List collusion flagged sessions */
     get: {
@@ -2104,6 +2117,10 @@ export interface components {
       total: number;
       errors: number;
       logins: number;
+    };
+    ActivityResponse: {
+      labels: string[];
+      data: number[];
     };
     AlertItem: {
       id: string;

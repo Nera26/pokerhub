@@ -4,7 +4,7 @@ import Analytics from '@/app/components/dashboard/analytics/Analytics';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { useAuditSummary } from '@/hooks/useAuditSummary';
-import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
+import { useActivity } from '@/hooks/useActivity';
 import useToasts from '@/hooks/useToasts';
 import { exportCsv } from '@/lib/exportCsv';
 
@@ -17,7 +17,7 @@ jest.mock('@/hooks/useAuditSummary', () => ({
   __esModule: true,
   useAuditSummary: jest.fn(),
 }));
-jest.mock('@/hooks/useDashboardMetrics');
+jest.mock('@/hooks/useActivity');
 jest.mock('@/hooks/useToasts');
 jest.mock('@/lib/exportCsv', () => ({ exportCsv: jest.fn() }));
 
@@ -67,9 +67,10 @@ describe('Analytics CSV export', () => {
     (useAuditSummary as jest.Mock).mockReturnValue({
       data: { total: 1, errors: 0, logins: 1 },
     });
-    (useDashboardMetrics as jest.Mock).mockReturnValue({
-      data: { activity: [], errors: [] },
+    (useActivity as jest.Mock).mockReturnValue({
+      data: { labels: [], data: [] },
       isLoading: false,
+      error: null,
     });
     (useToasts as jest.Mock).mockReturnValue({
       toasts: [],
