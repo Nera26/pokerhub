@@ -14,8 +14,20 @@ gcloud sql backups create \
   --instance "$PG_INSTANCE_ID" \
   --project "$PROJECT_ID" >/dev/null
 
-log "Copying backup to $SECONDARY_REGION (placeholder)"
-# gcloud sql backups copy not available; implement via API or export if needed
+log "Copying backup to $SECONDARY_REGION"
+: "${CLOUD_SQL_ACCESS_TOKEN?Must set CLOUD_SQL_ACCESS_TOKEN}"
+curl -s -X POST \
+  -H "Authorization: Bearer $CLOUD_SQL_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  "https://sqladmin.googleapis.com/sql/v1beta4/projects/$PROJECT_ID/instances/$PG_INSTANCE_ID/backupRuns/$snap/copy" \
+  -d "{\"destinationRegion\":\"$SECONDARY_REGION\"}" >/dev/null
+
+log "Verifying backup copy in $SECONDARY_REGION"
+backups_json=$(curl -s \
+  -H "Authorization: Bearer $CLOUD_SQL_ACCESS_TOKEN" \
+  "https://sqladmin.googleapis.com/sql/v1beta4/projects/$PROJECT_ID/instances/$PG_INSTANCE_ID/backupRuns")
+echo "$backups_json" | grep -q "\"id\":\"$snap\""
+echo "$backups_json" | grep -q "\"location\":\"$SECONDARY_REGION\""
 
 log "Restoring backup in $SECONDARY_REGION"
 gcloud sql instances create "${snap}-restore" \
