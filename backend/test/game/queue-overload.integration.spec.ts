@@ -108,6 +108,7 @@ describe('GameGateway queue overload alerts', () => {
             fn({ setAttribute: () => {}, end: () => {} }),
         }),
       },
+      SpanStatusCode: { ERROR: 2 },
     }));
 
     ({ GameGateway } = require('../../src/game/game.gateway'));

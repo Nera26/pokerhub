@@ -99,6 +99,7 @@ describe('GameGateway queue saturation under load', () => {
             fn({ setAttribute: () => {}, end: () => {} }),
         }),
       },
+      SpanStatusCode: { ERROR: 2 },
     }));
 
     ({ GameGateway } = require('../../src/game/game.gateway'));
