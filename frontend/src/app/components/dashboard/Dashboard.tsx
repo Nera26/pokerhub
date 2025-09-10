@@ -10,6 +10,8 @@ import {
   faArrowUp,
 } from '@fortawesome/free-solid-svg-icons';
 import dynamic from 'next/dynamic';
+import { useMemo } from 'react';
+import { useAuthToken } from '@/app/store/authStore';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import { useRevenueBreakdown } from '@/hooks/useRevenueBreakdown';
 import { useDashboardUsers } from '@/hooks/useDashboardUsers';
@@ -17,6 +19,7 @@ import { useActiveTables } from '@/hooks/useActiveTables';
 import MetricCard from './MetricCard';
 import BroadcastPanel from './BroadcastPanel';
 import DashboardTransactionHistory from './transactions/TransactionHistory';
+import WalletReconcileMismatches from './WalletReconcileMismatches';
 
 const ActivityChart = dynamic(() => import('./charts/ActivityChart'), {
   loading: () => (
@@ -100,6 +103,17 @@ export default function Dashboard() {
     isLoading: tablesLoading,
     error: tablesError,
   } = useActiveTables();
+
+  const token = useAuthToken();
+  const isAdmin = useMemo(() => {
+    if (!token) return false;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1] ?? ''));
+      return payload.role === 'admin';
+    } catch {
+      return false;
+    }
+  }, [token]);
 
   const formatCurrency = (v: number | undefined) =>
     `$${(v ?? 0).toLocaleString()}`;
@@ -267,6 +281,11 @@ export default function Dashboard() {
         <Card title="Messages &amp; Broadcast">
           <BroadcastPanel />
         </Card>
+        {isAdmin && (
+          <Card title="Wallet Reconcile Mismatches">
+            <WalletReconcileMismatches />
+          </Card>
+        )}
       </div>
 
       {/* Transaction Log */}
