@@ -4,12 +4,11 @@ import { HomePageClient } from '@/app/(site)/HomePageClient';
 import { useTables, useTournaments, useCTAs } from '@/hooks/useLobbyData';
 
 jest.mock('@/hooks/useLobbyData');
-jest.mock('@/hooks/useChat', () => () => ({ messages: [], send: jest.fn() }));
-
-const ChatWidgetMock = () => <div data-testid="chat-widget" />;
+function ChatWidgetMock() {
+  return <div data-testid="chat-widget" />;
+}
 
 jest.mock('@/app/components/common/chat/ChatWidget', () => ChatWidgetMock);
-
 describe('HomePageClient chat widget', () => {
   it('renders immediately', () => {
     (useTables as jest.Mock).mockReturnValue({

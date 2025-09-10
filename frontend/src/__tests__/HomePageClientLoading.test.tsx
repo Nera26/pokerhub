@@ -6,7 +6,6 @@ import { useGameTypes } from '@/hooks/useGameTypes';
 jest.mock('@/hooks/useLobbyData');
 jest.mock('@/hooks/useGameTypes');
 jest.mock('@/app/components/common/chat/ChatWidget', () => () => <div />);
-jest.mock('@/hooks/useChat', () => () => ({ messages: [], send: jest.fn() }));
 
 describe('HomePageClient loading', () => {
   it('uses HomeLoadingSkeleton during initial load', () => {

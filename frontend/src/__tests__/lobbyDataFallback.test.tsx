@@ -22,7 +22,6 @@ jest.mock('@/app/components/common/chat/ChatWidget', () => {
   ChatWidgetMock.displayName = 'ChatWidgetMock';
   return ChatWidgetMock;
 });
-jest.mock('@/hooks/useChat', () => () => ({ messages: [], send: jest.fn() }));
 
 describe('lobby data fallback messages', () => {
   const originalFetch = global.fetch;

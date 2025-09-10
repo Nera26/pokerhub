@@ -27,7 +27,6 @@ jest.mock('@/hooks/useGameTypes', () => ({
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: jest.fn(), prefetch: jest.fn() }),
 }));
-jest.mock('@/hooks/useChat', () => () => ({ messages: [], send: jest.fn() }));
 jest.mock('@/app/components/common/chat/ChatWidget', () => () => <div />);
 
 describe('home accessibility', () => {
