@@ -1,4 +1,4 @@
-import type { HandProof } from '../types';
+import type { HandProofResponse } from '../types';
 import { sha256 } from 'js-sha256';
 
 export function hexToBytes(hex: string): Uint8Array {
@@ -53,14 +53,14 @@ export function standardDeck(): number[] {
   return Array.from({ length: 52 }, (_, i) => i);
 }
 
-export function verifyProof(proof: HandProof): boolean {
+export function verifyProof(proof: HandProofResponse): boolean {
   const seed = hexToBytes(proof.seed);
   const nonce = hexToBytes(proof.nonce);
   const commitment = hashCommitment(seed, nonce);
   return commitment === proof.commitment;
 }
 
-export function revealDeck(proof: HandProof): number[] {
+export function revealDeck(proof: HandProofResponse): number[] {
   const seed = hexToBytes(proof.seed);
   return shuffle(standardDeck(), seed);
 }

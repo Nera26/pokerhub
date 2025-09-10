@@ -19,6 +19,7 @@ import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import type { Instrumentation } from '@opentelemetry/instrumentation';
 import type { Request, Response, NextFunction } from 'express';
+import { addSample, recordTimestamp, percentile } from './metrics';
 
 interface TelemetryOptions {
   serviceName: string;
@@ -34,7 +35,6 @@ let requestCounter: Counter | undefined;
 let requestDuration: Histogram | undefined;
 const requestLatencies: number[] = [];
 const requestTimestamps: number[] = [];
-const MAX_SAMPLES = 1000;
 
 const noopGauge = {
   addCallback() {},
@@ -48,28 +48,11 @@ let reqP95 = noopGauge;
 let reqP99 = noopGauge;
 let reqThroughput = noopGauge;
 
-function addSample(arr: number[], value: number) {
-  arr.push(value);
-  if (arr.length > MAX_SAMPLES) arr.shift();
-}
-
 function pruneTimestamps(now: number) {
   const cutoff = now - 1000;
   while (requestTimestamps.length && requestTimestamps[0] < cutoff) {
     requestTimestamps.shift();
   }
-}
-
-function recordTimestamp(ts: number) {
-  requestTimestamps.push(ts);
-  pruneTimestamps(ts);
-}
-
-function percentile(arr: number[], p: number): number {
-  if (arr.length === 0) return 0;
-  const sorted = [...arr].sort((a, b) => a - b);
-  const idx = Math.floor((p / 100) * (sorted.length - 1));
-  return sorted[idx];
 }
 
 class LogCounterProcessor implements LogRecordProcessor {
@@ -196,7 +179,7 @@ export async function setupTelemetry({
           status: res.statusCode,
         });
         addSample(requestLatencies, duration);
-        recordTimestamp(Date.now());
+        recordTimestamp(requestTimestamps, Date.now());
       });
       next();
     };

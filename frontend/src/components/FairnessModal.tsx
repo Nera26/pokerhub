@@ -7,7 +7,7 @@ import Modal from '@/app/components/ui/Modal';
 import Button from '@/app/components/ui/Button';
 import { fetchHandProof, downloadHandProof } from '@/lib/api/hands';
 import { verifyProof } from '@shared/verify';
-import type { HandProof } from '@shared/types';
+import type { HandProofResponse } from '@shared/types';
 import ProofDetails from '@/components/hand/ProofDetails';
 
 interface FairnessModalProps {
@@ -21,7 +21,7 @@ export default function FairnessModal({
   isOpen,
   onClose,
 }: FairnessModalProps) {
-  const [proof, setProof] = useState<HandProof | null>(null);
+  const [proof, setProof] = useState<HandProofResponse | null>(null);
   const [valid, setValid] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -56,11 +56,7 @@ export default function FairnessModal({
       {!proof && <p>Loading...</p>}
       {proof && (
         <div className="space-y-2 break-words">
-          <ProofDetails
-            proof={proof}
-            valid={valid ?? undefined}
-            deck={null}
-          />
+          <ProofDetails proof={proof} valid={valid ?? undefined} deck={null} />
           <Link
             href={`/hands/${handId}/proof`}
             className="underline text-accent-blue"

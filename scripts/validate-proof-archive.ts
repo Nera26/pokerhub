@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { createHash } from 'crypto';
 import { verifyProof } from '../shared/verify';
-import type { HandProof } from '../shared/types';
+import type { HandProofResponse } from '../shared/types';
 
 async function main() {
   const dir = path.join(__dirname, '..', 'storage', 'proofs');
@@ -32,7 +32,7 @@ async function main() {
     try {
       const buf = await fs.readFile(filePath);
       const data = JSON.parse(buf.toString('utf-8'));
-      const proof: HandProof = {
+      const proof: HandProofResponse = {
         seed: data.seed,
         nonce: data.nonce,
         commitment: data.commitment,

@@ -3,7 +3,7 @@ import 'dotenv/config';
 import { AppDataSource } from '../backend/src/database/data-source';
 import { Hand } from '../backend/src/database/entities/hand.entity';
 import { revealDeck, verifyProof } from '../shared/verify';
-import type { HandProof } from '../shared/types';
+import type { HandProofResponse } from '../shared/types';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -23,7 +23,7 @@ async function main() {
       process.exit(1);
     }
 
-    const proof: HandProof = {
+    const proof: HandProofResponse = {
       seed: hand.seed,
       nonce: hand.nonce,
       commitment: hand.commitment,

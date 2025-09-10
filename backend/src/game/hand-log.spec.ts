@@ -1,6 +1,6 @@
 import { HandLog } from './hand-log';
 import { GameAction, GameStateInternal } from './state-machine';
-import type { HandProof } from '@shared/types';
+import type { HandProofResponse } from '@shared/types';
 import { existsSync, readFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 
@@ -61,7 +61,7 @@ describe('HandLog', () => {
     };
     const action: GameAction = { type: 'check', playerId: 'A' };
     log.record(action, s0, s0);
-    const proof: HandProof = { seed: 's', nonce: 'n', commitment: 'c' };
+    const proof: HandProofResponse = { seed: 's', nonce: 'n', commitment: 'c' };
     log.recordProof(proof);
     expect(existsSync(path)).toBe(false);
     await log.flush();

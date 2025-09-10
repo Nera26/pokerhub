@@ -2,25 +2,29 @@ import { getBaseUrl } from '@/lib/base-url';
 import { apiClient } from './client';
 import { verifyProof } from '@shared/verify';
 import {
-  HandProofSchema,
-  type HandProof,
-  HandLogResponseSchema,
-  type HandLogResponse,
-  HandStateResponseSchema,
-  type HandStateResponse,
+  HandProofResponse as HandProofResponseSchema,
+  HandLogResponse as HandLogResponseSchema,
+  HandStateResponse as HandStateResponseSchema,
+} from '@shared/types';
+import type {
+  HandProofResponse,
+  HandLogResponse,
+  HandStateResponse,
 } from '@shared/types';
 
 export async function fetchHandProof(
   id: string,
   { signal }: { signal?: AbortSignal } = {},
-): Promise<HandProof> {
-  return apiClient(`/api/hands/${id}/proof`, HandProofSchema, { signal });
+): Promise<HandProofResponse> {
+  return apiClient(`/api/hands/${id}/proof`, HandProofResponseSchema, {
+    signal,
+  });
 }
 
 export async function fetchVerifiedHandProof(
   id: string,
   { signal }: { signal?: AbortSignal } = {},
-): Promise<{ proof: HandProof; valid: boolean }> {
+): Promise<{ proof: HandProofResponse; valid: boolean }> {
   const proof = await fetchHandProof(id, { signal });
   const valid = await verifyProof(proof);
   return { proof, valid };
