@@ -1,4 +1,4 @@
-import { AuditLogsResponseSchema } from '../../src/schemas/analytics';
+import { AuditLogsResponseSchema } from '@shared/schemas/analytics';
 
 describe('AuditLogsResponseSchema', () => {
   it('parses a valid response', () => {
