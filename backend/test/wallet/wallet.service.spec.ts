@@ -1,5 +1,5 @@
 import * as fc from 'fast-check';
-import { setupWalletTest, WalletTestContext } from '../../test/wallet/test-utils';
+import { setupWalletTest, WalletTestContext } from './test-utils';
 
 describe('WalletService reserve/commit/rollback flow', () => {
   let ctx: WalletTestContext;

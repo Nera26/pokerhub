@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { createInMemoryDb } from './test-utils';
-import { SettlementJournal } from './settlement-journal.entity';
-import { SettlementService } from './settlement.service';
-import type { Street } from '../game/state-machine';
+import { createInMemoryDb } from '../../src/wallet/test-utils';
+import { SettlementJournal } from '../../src/wallet/settlement-journal.entity';
+import { SettlementService } from '../../src/wallet/settlement.service';
+import type { Street } from '../../src/game/state-machine';
 
 describe('SettlementService', () => {
   let module: TestingModule;

@@ -1,5 +1,5 @@
-import { writeHandLedger } from './hand-ledger';
-import type { Street } from '../game/state-machine';
+import { writeHandLedger } from '../../src/wallet/hand-ledger';
+import type { Street } from '../../src/game/state-machine';
 
 describe('writeHandLedger transactional rollback', () => {
   it('restores balances when commit fails', async () => {

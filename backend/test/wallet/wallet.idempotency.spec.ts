@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
-import { setupTestWallet } from './test-utils';
-import { WalletService } from './wallet.service';
+import { setupWalletTest } from './test-utils';
+import { WalletService } from '../../src/wallet/wallet.service';
 
 describe('WalletService idempotency', () => {
   let dataSource: DataSource;
@@ -8,13 +8,13 @@ describe('WalletService idempotency', () => {
   let redisStore: Map<string, any>;
   let provider: any;
   let kyc: any;
-  let repos: Awaited<ReturnType<typeof setupTestWallet>>['repos'];
+  let repos: Awaited<ReturnType<typeof setupWalletTest>>['repos'];
 
   const userId = '11111111-1111-1111-1111-111111111111';
 
   beforeAll(async () => {
     ({ dataSource, service, redisStore, provider, kyc, repos } =
-      await setupTestWallet());
+      await setupWalletTest());
     provider.initiate3DS
       .mockResolvedValueOnce({ id: 'tx1' })
       .mockResolvedValue({ id: 'tx2' });

@@ -1,4 +1,4 @@
-import { RevenueService } from './revenue.service';
+import { RevenueService } from '../../src/wallet/revenue.service';
 
 describe('RevenueService', () => {
   it('computes percentages', async () => {
