@@ -2,8 +2,6 @@ import { apiClient } from './client';
 import {
   ChipDenominationsResponseSchema,
   type ChipDenominationsResponse,
-  TableThemeResponseSchema,
-  type TableThemeResponse,
 } from '@shared/types';
 
 export async function fetchChipDenominations({
@@ -21,14 +19,6 @@ export async function updateChipDenominations(
   return apiClient('/api/config/chips', ChipDenominationsResponseSchema, {
     method: 'PUT',
     body: JSON.stringify({ denoms }),
-    signal,
-  });
-}
-
-export async function fetchTableTheme({
-  signal,
-}: { signal?: AbortSignal } = {}): Promise<TableThemeResponse> {
-  return apiClient('/api/config/table-theme', TableThemeResponseSchema, {
     signal,
   });
 }
