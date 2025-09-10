@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from 'crypto';
+import { createHmac } from 'crypto';
 import { DataSource } from 'typeorm';
 import { createDataSource } from '../utils/pgMem';
 import { Account } from '../../src/wallet/account.entity';
@@ -14,6 +14,7 @@ import { SettlementService } from '../../src/wallet/settlement.service';
 import { MockRedis } from '../utils/mock-redis';
 import { ConfigService } from '@nestjs/config';
 import { WebhookController } from '../../src/wallet/webhook.controller';
+import { verifySignature } from '../../src/wallet/verify-signature';
 
 export function createWalletServices(dataSource: DataSource) {
   const events: EventPublisher = { emit: jest.fn() } as any;
@@ -25,17 +26,7 @@ export function createWalletServices(dataSource: DataSource) {
     drainQueue: jest.fn().mockResolvedValue(undefined),
     registerHandler: jest.fn(),
     confirm3DS: jest.fn(),
-    verifySignature(payload: string, signature: string) {
-      const secret = process.env.PROVIDER_WEBHOOK_SECRET ?? '';
-      const expected = createHmac('sha256', secret)
-        .update(payload)
-        .digest('hex');
-      try {
-        return timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
-      } catch {
-        return false;
-      }
-    },
+    verifySignature,
   } as unknown as PaymentProviderService;
 
   const kyc: any = {
@@ -71,8 +62,22 @@ export function createWalletServices(dataSource: DataSource) {
   );
   (service as any).enqueueDisbursement = jest.fn();
   (service as any).pendingQueue = { add: jest.fn(), getJob: jest.fn() };
-  provider.confirm3DS = jest.fn(async (payload: unknown) => {
-    await service.confirm3DS(payload as any);
+  provider.confirm3DS = jest.fn(async (payload: any) => {
+    const intent = payload?.data?.object ?? {};
+    const status =
+      intent.status === 'succeeded'
+        ? 'approved'
+        : intent.status === 'requires_action'
+          ? 'risky'
+          : 'chargeback';
+    const event = {
+      eventId: payload?.id ?? intent.id,
+      idempotencyKey: intent.metadata?.idempotencyKey ?? intent.id,
+      providerTxnId: intent.id,
+      status,
+    };
+    await redis.del(`wallet:webhook:${event.eventId}`);
+    await service.confirm3DS(event as any);
   });
 
   return {
