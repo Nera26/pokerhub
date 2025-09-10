@@ -18,6 +18,19 @@ export interface paths {
       };
     };
   };
+  "/precache": {
+    /** List asset URLs to pre-cache */
+    get: {
+      responses: {
+        /** @description Asset URLs */
+        200: {
+          content: {
+            "application/json": components["schemas"]["PrecacheResponse"];
+          };
+        };
+      };
+    };
+  };
   "/auth/login": {
     /** Login */
     post: {
@@ -2049,6 +2062,7 @@ export interface components {
       status: string;
       contractVersion: string;
     };
+    PrecacheResponse: string[];
     LoginRequest: {
       email: string;
       password: string;

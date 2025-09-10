@@ -5,8 +5,6 @@ import { useTranslations } from 'next-intl';
 import Button from './components/ui/Button';
 import { env } from '@/lib/env';
 
-const PRECACHE_URLS = ['/', '/offline', '/favicon.ico'];
-
 export default function ServiceWorker() {
   const t = useTranslations('serviceWorker');
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(
@@ -31,9 +29,19 @@ export default function ServiceWorker() {
         .register('/sw.js')
         .then(async (registration) => {
           // Pre-cache critical assets for offline usage
+          let urls: string[] = [];
+          try {
+            const res = await fetch('/api/precache');
+            if (res.ok) {
+              urls = await res.json();
+            }
+          } catch (err) {
+            console.error('Failed to fetch precache list', err);
+          }
+
           try {
             const cache = await caches.open('offline-cache');
-            await cache.addAll(PRECACHE_URLS);
+            await cache.addAll(urls);
           } catch (err) {
             console.error('Failed to pre-cache assets', err);
           }

@@ -30,6 +30,7 @@ import { AdminBonusController } from './routes/admin-bonus.controller'; // expos
 import { PromotionsController } from './routes/promotions.controller';
 import { LanguagesController } from './routes/languages.controller';
 import { ConfigController } from './routes/config.controller';
+import { PrecacheController } from './routes/precache.controller';
 import { AppService } from './app.service';
 import { API_CONTRACT_VERSION } from '@shared/constants';
 import { ZodExceptionFilter } from './common/zod-exception.filter';
@@ -152,6 +153,7 @@ import { TableThemeEntity } from './database/entities/table-theme.entity';
     PromotionsController,
     LanguagesController,
     ConfigController,
+    PrecacheController,
   ],
   providers: [
     AppService,
