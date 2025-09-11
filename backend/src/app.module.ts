@@ -68,6 +68,7 @@ import { BonusService } from './services/bonus.service';
 import { ChipDenomsService } from './services/chip-denoms.service';
 import { TableThemeService } from './services/table-theme.service';
 import { NavIconsService } from './services/nav-icons.service';
+import { ConfigService as AppConfigService } from './services/config.service';
 import { BonusOptionEntity } from './database/entities/bonus-option.entity';
 import { ChipDenominationEntity } from './database/entities/chip-denomination.entity';
 import { TableThemeEntity } from './database/entities/table-theme.entity';
@@ -171,6 +172,7 @@ import { NavIconEntity } from './database/entities/nav-icon.entity';
     BonusService,
     ChipDenomsService,
     TableThemeService,
+    AppConfigService,
   ],
 })
 export class AppModule implements NestModule {
