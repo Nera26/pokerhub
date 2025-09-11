@@ -11,11 +11,11 @@ import type { Cache } from 'cache-manager';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { Queue } from 'bullmq';
 import { Repository } from 'typeorm';
-import { metrics } from '@opentelemetry/api';
 import { KycVerification } from '../database/entities/kycVerification.entity';
 import { Account } from '../wallet/account.entity';
 import { CountryProvider } from '../auth/providers/country-provider';
-import { fetchJson, CircuitBreakerState } from './http';
+import { z } from 'zod';
+import { fetchJson } from '@shared/utils/http';
 import { Pep } from '../database/entities/pep.entity';
 import { Onfido, Region } from 'onfido';
 
@@ -48,16 +48,6 @@ export class KycService implements OnModuleInit {
   private readonly logger = new Logger(KycService.name);
 
   private queue?: Queue;
-
-  private static readonly meter = metrics.getMeter('kyc');
-  private static readonly retriesExhausted = KycService.meter.createCounter(
-    'kyc_provider_retry_exhausted_total',
-    {
-      description: 'Number of KYC provider API calls that exhausted retries',
-    },
-  );
-
-  private circuitBreaker: CircuitBreakerState = { failures: 0, openUntil: 0 };
   private onfido?: Onfido;
 
   constructor(
@@ -375,11 +365,9 @@ export class KycService implements OnModuleInit {
       const apiUrl = this.config.get<string>('kyc.apiUrl');
       const apiKey = this.config.get<string>('kyc.apiKey');
 
-      const providerData = await fetchJson<{
-        status: string;
-        [key: string]: unknown;
-      }>(
+      const providerData = await fetchJson(
         apiUrl,
+        z.object({ status: z.string() }).passthrough(),
         {
           method: 'POST',
           headers: {
@@ -393,15 +381,6 @@ export class KycService implements OnModuleInit {
             ip: job.ip,
             country,
           }),
-        },
-        {
-          onRetryExhausted: () => KycService.retriesExhausted.add(1),
-          circuitBreaker: {
-            state: this.circuitBreaker,
-            threshold: 5,
-            cooldownMs: 30_000,
-            openMessage: 'KYC provider circuit breaker open',
-          },
         },
       );
 

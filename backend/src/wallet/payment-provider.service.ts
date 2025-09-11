@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { ProviderCallback } from '@shared/wallet.schema';
-import { metrics } from '@opentelemetry/api';
 import { Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
-import { fetchJson, CircuitBreakerState } from '../common/http';
+import { z, type ZodSchema } from 'zod';
+import { fetchJson } from '@shared/utils/http';
 import { verifySignature as verifyProviderSignature } from './verify-signature';
 
 export type ProviderStatus = 'approved' | 'risky' | 'chargeback';
@@ -22,18 +22,6 @@ export class PaymentProviderService {
   private retryWorker?: Worker;
   private draining: Promise<void> = Promise.resolve();
 
-  private static readonly meter = metrics.getMeter('wallet');
-  private static readonly retriesExhausted =
-    PaymentProviderService.meter.createCounter(
-      'payment_provider_retry_exhausted_total',
-      {
-        description:
-          'Number of payment provider API calls that exhausted retries',
-      },
-    );
-
-  private circuitBreaker: CircuitBreakerState = { failures: 0, openUntil: 0 };
-
   constructor(@Inject('REDIS_CLIENT') private readonly redis: Redis) {}
 
   private redisKey(idempotencyKey: string) {
@@ -47,20 +35,27 @@ export class PaymentProviderService {
     };
   }
 
-  private async request<T>(url: string, init: RequestInit): Promise<T> {
-    return fetchJson<T>(
-      url,
-      init,
-      {
-        onRetryExhausted: () =>
-          PaymentProviderService.retriesExhausted.add(1),
-        circuitBreaker: {
-          state: this.circuitBreaker,
-          threshold: 5,
-          cooldownMs: 30_000,
-          openMessage: 'Payment provider circuit breaker open',
-        },
-      },
+  private async request<T>(
+    url: string,
+    schema: ZodSchema<T>,
+    init: RequestInit,
+  ): Promise<T> {
+    const retries = 3;
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        return await fetchJson(url, schema, init);
+      } catch (err) {
+        lastError = err;
+        if (attempt < retries) continue;
+      }
+    }
+    const message =
+      lastError && typeof lastError === 'object' && 'message' in lastError
+        ? (lastError as any).message
+        : String(lastError);
+    throw new Error(
+      `Request to ${url} failed after ${retries} attempts: ${message}`,
     );
   }
 
@@ -156,16 +151,21 @@ export class PaymentProviderService {
   }
 
   async createPaymentIntent(body: string): Promise<{ id: string }> {
-    return this.request(`${this.baseUrl}/payment_intents`, {
-      method: 'POST',
-      headers: this.authHeaders(),
-      body,
-    });
+    return this.request(
+      `${this.baseUrl}/payment_intents`,
+      z.object({ id: z.string() }),
+      {
+        method: 'POST',
+        headers: this.authHeaders(),
+        body,
+      },
+    );
   }
 
   async getStatus(id: string): Promise<ProviderStatus> {
-    const data = await this.request<{ status?: string }>(
+    const data = await this.request(
       `${this.baseUrl}/payment_intents/${id}`,
+      z.object({ status: z.string().optional() }),
       { method: 'GET', headers: { Authorization: `Bearer ${this.apiKey}` } },
     );
     switch (data.status) {
