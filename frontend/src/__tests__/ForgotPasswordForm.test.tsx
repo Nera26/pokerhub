@@ -3,6 +3,11 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ForgotPasswordForm from '@/app/components/auth/ForgotPasswordForm';
 import {
+  submitCodeForm,
+  submitEmailForm,
+  submitResetForm,
+} from './helpers/forgotPassword';
+import {
   requestPasswordReset,
   verifyResetCode,
   resetPassword,
@@ -48,8 +53,7 @@ describe('ForgotPasswordForm', () => {
     const user = userEvent.setup();
     renderWithClient(<ForgotPasswordForm />);
 
-    await user.type(screen.getByLabelText('Email Address'), 'test@example.com');
-    await user.click(screen.getByRole('button', { name: /Send Code/i }));
+    await submitEmailForm(user, 'test@example.com');
 
     expect(mockRequest).toHaveBeenCalledWith('test@example.com');
     expect(await screen.findByText('Enter 6-digit Code')).toBeInTheDocument();
@@ -61,8 +65,7 @@ describe('ForgotPasswordForm', () => {
     const user = userEvent.setup();
     renderWithClient(<ForgotPasswordForm />);
 
-    await user.type(screen.getByLabelText('Email Address'), 'test@example.com');
-    await user.click(screen.getByRole('button', { name: /Send Code/i }));
+    await submitEmailForm(user, 'test@example.com');
 
     const verifyBtn = await screen.findByRole('button', {
       name: /Verify Code/i,
@@ -82,13 +85,8 @@ describe('ForgotPasswordForm', () => {
     const user = userEvent.setup();
     renderWithClient(<ForgotPasswordForm />);
 
-    await user.type(screen.getByLabelText('Email Address'), 'test@example.com');
-    await user.click(screen.getByRole('button', { name: /Send Code/i }));
-    await user.type(
-      await screen.findByLabelText('Enter 6-digit Code'),
-      '123456',
-    );
-    await user.click(screen.getByRole('button', { name: /Verify Code/i }));
+    await submitEmailForm(user, 'test@example.com');
+    await submitCodeForm(user, '123456');
 
     expect(await screen.findByText('Invalid code')).toBeInTheDocument();
   });
@@ -100,17 +98,9 @@ describe('ForgotPasswordForm', () => {
     const user = userEvent.setup();
     renderWithClient(<ForgotPasswordForm />);
 
-    await user.type(screen.getByLabelText('Email Address'), 'test@example.com');
-    await user.click(screen.getByRole('button', { name: /Send Code/i }));
-    const codeInput = await screen.findByLabelText('Enter 6-digit Code');
-    await user.type(codeInput, '123456');
-    await user.click(screen.getByRole('button', { name: /Verify Code/i }));
-
-    const pwdInput = await screen.findByLabelText('New Password');
-    const confirmInput = screen.getByLabelText('Confirm Password');
-    await user.type(pwdInput, 'password1');
-    await user.type(confirmInput, 'password2');
-    await user.click(screen.getByRole('button', { name: /Reset Password/i }));
+    await submitEmailForm(user, 'test@example.com');
+    await submitCodeForm(user, '123456');
+    await submitResetForm(user, 'password1', 'password2');
 
     expect(
       await screen.findByText('Passwords do not match'),
@@ -129,8 +119,7 @@ describe('ForgotPasswordForm', () => {
     const user = userEvent.setup();
     renderWithClient(<ForgotPasswordForm />);
 
-    await user.type(screen.getByLabelText('Email Address'), 'test@example.com');
-    await user.click(screen.getByRole('button', { name: /Send Code/i }));
+    await submitEmailForm(user, 'test@example.com');
 
     expect(
       await screen.findByText('No user with that email'),
@@ -143,8 +132,7 @@ describe('ForgotPasswordForm', () => {
     const user = userEvent.setup();
     renderWithClient(<ForgotPasswordForm />);
 
-    await user.type(screen.getByLabelText('Email Address'), 'test@example.com');
-    await user.click(screen.getByRole('button', { name: /Send Code/i }));
+    await submitEmailForm(user, 'test@example.com');
 
     expect(await screen.findByText('Network error')).toBeInTheDocument();
   });
@@ -152,24 +140,16 @@ describe('ForgotPasswordForm', () => {
   it('calls reset APIs and shows success message', async () => {
     mockRequest.mockResolvedValueOnce({ message: 'sent' });
     mockVerify.mockResolvedValueOnce({ message: 'verified' });
-    mockReset.mockResolvedValueOnce({ message: 'Password reset successfully.' });
+    mockReset.mockResolvedValueOnce({
+      message: 'Password reset successfully.',
+    });
 
     const user = userEvent.setup();
     renderWithClient(<ForgotPasswordForm />);
 
-    await user.type(screen.getByLabelText('Email Address'), 'test@example.com');
-    await user.click(screen.getByRole('button', { name: /Send Code/i }));
-    await user.type(
-      await screen.findByLabelText('Enter 6-digit Code'),
-      '123456',
-    );
-    await user.click(screen.getByRole('button', { name: /Verify Code/i }));
-    await user.type(
-      await screen.findByLabelText('New Password'),
-      'newpass',
-    );
-    await user.type(screen.getByLabelText('Confirm Password'), 'newpass');
-    await user.click(screen.getByRole('button', { name: /Reset Password/i }));
+    await submitEmailForm(user, 'test@example.com');
+    await submitCodeForm(user, '123456');
+    await submitResetForm(user, 'newpass');
 
     expect(mockRequest).toHaveBeenCalledWith('test@example.com');
     expect(mockVerify).toHaveBeenCalled();
@@ -187,19 +167,9 @@ describe('ForgotPasswordForm', () => {
     const user = userEvent.setup();
     renderWithClient(<ForgotPasswordForm />);
 
-    await user.type(screen.getByLabelText('Email Address'), 'test@example.com');
-    await user.click(screen.getByRole('button', { name: /Send Code/i }));
-    await user.type(
-      await screen.findByLabelText('Enter 6-digit Code'),
-      '123456',
-    );
-    await user.click(screen.getByRole('button', { name: /Verify Code/i }));
-    await user.type(
-      await screen.findByLabelText('New Password'),
-      'newpass',
-    );
-    await user.type(screen.getByLabelText('Confirm Password'), 'newpass');
-    await user.click(screen.getByRole('button', { name: /Reset Password/i }));
+    await submitEmailForm(user, 'test@example.com');
+    await submitCodeForm(user, '123456');
+    await submitResetForm(user, 'newpass');
 
     expect(mockReset).toHaveBeenCalled();
     expect(await screen.findByText('Reset failed')).toBeInTheDocument();
