@@ -1,9 +1,12 @@
 import { startLeaderboardRebuildWorker } from '../../src/leaderboard/rebuild.worker';
-import { LeaderboardService } from '../../src/leaderboard/leaderboard.service';
-import { Cache } from 'cache-manager';
-import { writeSyntheticEvents } from './synthetic-events';
-import { ConfigService } from '@nestjs/config';
-import { MockCache } from './test-utils';
+import { createLeaderboardPerfService } from './perf-utils';
+
+jest.mock('../../src/redis/queue', () => ({
+  createQueue: jest.fn().mockResolvedValue({
+    add: jest.fn(),
+    opts: { connection: {} },
+  }),
+}));
 
 jest.mock('bullmq', () => {
   class Queue {
@@ -23,7 +26,6 @@ jest.mock('bullmq', () => {
   return { Queue, Worker };
 });
 
-
 describe('leaderboard rebuild worker performance', () => {
   it('rebuilds synthetic events within threshold', async () => {
     jest.useFakeTimers();
@@ -33,27 +35,18 @@ describe('leaderboard rebuild worker performance', () => {
     const days = Number(process.env.LEADERBOARD_BENCH_DAYS ?? 30);
     const players = Number(process.env.LEADERBOARD_BENCH_PLAYERS ?? 10);
     const perDay = Number(process.env.LEADERBOARD_BENCH_PER_DAY ?? 100);
-    await writeSyntheticEvents(days, players, perDay);
-    const cache = new MockCache();
-    const analytics = { ingest: jest.fn(), rangeStream: jest.fn() };
-    const repo = {
-      clear: jest.fn(),
-      insert: jest.fn(),
-      find: jest.fn().mockResolvedValue([]),
-    } as any;
-    const service = new LeaderboardService(
-      cache as unknown as Cache,
-      { find: jest.fn() } as any,
-      repo,
-      analytics as any,
-      new ConfigService(),
-    );
+    const { service, analytics } = await createLeaderboardPerfService({
+      days,
+      players,
+      perDay,
+    });
     const start = process.hrtime.bigint();
     await startLeaderboardRebuildWorker(service);
     const durationMs = Number((process.hrtime.bigint() - start) / BigInt(1_000_000));
     // eslint-disable-next-line no-console
     console.log(`worker rebuild duration: ${durationMs}ms`);
     expect(durationMs).toBeLessThan(maxDurationMs);
+    await analytics.close();
     jest.useRealTimers();
   });
 });
