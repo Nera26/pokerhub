@@ -7,6 +7,7 @@ import { useAuditSummary } from '@/hooks/useAuditSummary';
 import { useActivity } from '@/hooks/useActivity';
 import useToasts from '@/hooks/useToasts';
 import { exportCsv } from '@/lib/exportCsv';
+import { AuditLogEntrySchema } from '@shared/schemas/analytics';
 
 jest.mock('@tanstack/react-query');
 jest.mock('@/hooks/useAuditLogs', () => ({
@@ -33,6 +34,9 @@ jest.mock('@/app/components/dashboard/charts/ActivityChart', () => () => (
 jest.mock('@/app/components/dashboard/analytics/ErrorChart', () => () => (
   <div />
 ));
+jest.mock('@/app/components/dashboard/analytics/SecurityAlerts', () => () => (
+  <div />
+));
 jest.mock('@/app/components/dashboard/analytics/AuditTable', () => () => (
   <div />
 ));
@@ -55,6 +59,7 @@ describe('Analytics CSV export', () => {
       data: {
         logs: [
           {
+            id: 1,
             timestamp: '2024-01-01',
             type: 'login',
             description: 'desc',
@@ -83,6 +88,7 @@ describe('Analytics CSV export', () => {
     render(<Analytics />);
     await userEvent.click(screen.getByText('Export'));
     const [filename, header, rows] = (exportCsv as jest.Mock).mock.calls[0];
+    expect(header).toEqual(Object.keys(AuditLogEntrySchema.shape));
     const csv = [header, ...rows].map((r: string[]) => r.join(',')).join('\n');
     expect(filename).toMatch(/^audit_logs_/);
     expect(csv).toMatchSnapshot();

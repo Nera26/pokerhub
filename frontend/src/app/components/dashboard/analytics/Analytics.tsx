@@ -35,6 +35,7 @@ import {
 } from '@/lib/api/analytics';
 import useToasts from '@/hooks/useToasts';
 import { exportCsv } from '@/lib/exportCsv';
+import { AuditLogEntrySchema } from '@shared/schemas/analytics';
 
 export default function Analytics() {
   const [search, setSearch] = useState('');
@@ -110,13 +111,13 @@ export default function Analytics() {
   const statLogins = summary?.logins ?? 0;
 
   const exportCSV = () => {
-    const header = ['Date', 'Type', 'Description', 'User'];
-    const rows = logs.map((r) => [
-      r.timestamp,
-      r.type,
-      `"${r.description}"`,
-      r.user,
-    ]);
+    const header = Object.keys(AuditLogEntrySchema.shape);
+    const rows = logs.map((log) =>
+      header.map((key) => {
+        const value = (log as any)[key];
+        return key === 'description' ? `"${value}"` : String(value);
+      }),
+    );
     exportCsv(
       `audit_logs_${new Date().toISOString().split('T')[0]}.csv`,
       header,

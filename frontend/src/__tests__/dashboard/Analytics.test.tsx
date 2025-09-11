@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import Analytics from '@/app/components/dashboard/analytics/Analytics';
+import { AuditLogEntrySchema } from '@shared/schemas/analytics';
 
 jest.mock('chart.js/auto', () => ({
   __esModule: true,
@@ -46,6 +47,9 @@ jest.mock('@/hooks/useAuditLogs', () => ({
 jest.mock('@/hooks/useAuditSummary', () => ({
   useAuditSummary: () => ({ data: { total: 3, errors: 2, logins: 1 } }),
 }));
+jest.mock('@/hooks/useChartPalette', () => ({
+  useChartPalette: () => ({ data: [], isLoading: false, isError: false }),
+}));
 
 jest.mock('@/lib/api/leaderboard', () => ({
   rebuildLeaderboard: jest.fn(() => Promise.resolve()),
@@ -66,6 +70,7 @@ jest.mock('@/lib/api/analytics', () => ({
     counts: [1, 2, 3, 4],
   }),
 }));
+jest.mock('@/lib/exportCsv', () => ({ exportCsv: jest.fn() }));
 
 function renderWithClient(ui: React.ReactElement) {
   const client = new QueryClient();
@@ -86,7 +91,7 @@ beforeEach(() => {
 });
 
 describe('dashboard metrics charts', () => {
-  it('shows loading state', () => {
+  it('shows loading state', async () => {
     activityMock.mockReturnValue({
       data: undefined,
       isLoading: true,
@@ -95,12 +100,13 @@ describe('dashboard metrics charts', () => {
     const { fetchErrorCategories } = require('@/lib/api/analytics');
     (fetchErrorCategories as jest.Mock).mockReturnValue(new Promise(() => {}));
     renderWithClient(<Analytics />);
+    await screen.findByText(/loading activity/i);
     expect(screen.getByText(/loading activity/i)).toBeInTheDocument();
     expect(screen.getByText(/loading error categories/i)).toBeInTheDocument();
     expect(document.querySelectorAll('canvas')).toHaveLength(0);
   });
 
-  it('shows empty state when no data', () => {
+  it('shows empty state when no data', async () => {
     activityMock.mockReturnValue({
       data: { labels: [], data: [] },
       isLoading: false,
@@ -112,7 +118,8 @@ describe('dashboard metrics charts', () => {
       counts: [],
     });
     renderWithClient(<Analytics />);
-    expect(screen.getAllByText(/no data/i)).toHaveLength(2);
+    const noDataEls = await screen.findAllByText(/no data/i);
+    expect(noDataEls).toHaveLength(2);
     expect(document.querySelectorAll('canvas')).toHaveLength(0);
   });
 
@@ -131,8 +138,8 @@ describe('dashboard metrics charts', () => {
       counts: [1, 2, 3, 4],
     });
     renderWithClient(<Analytics />);
-    expect(document.querySelectorAll('canvas')).toHaveLength(2);
     await screen.findByRole('img', { name: /activity/i });
+    expect(document.querySelectorAll('canvas')).toHaveLength(2);
   });
 });
 
@@ -140,11 +147,24 @@ describe('leaderboard rebuild toast', () => {
   it('shows toast when rebuild starts', async () => {
     renderWithClient(<Analytics />);
     const user = userEvent.setup();
-    await user.click(
-      screen.getByRole('button', { name: /rebuild leaderboard/i }),
-    );
+    const button = await screen.findByRole('button', {
+      name: /rebuild leaderboard/i,
+    });
+    await user.click(button);
     expect(
       await screen.findByText(/leaderboard rebuild started/i),
     ).toBeInTheDocument();
+  });
+});
+
+describe('csv export', () => {
+  it('uses schema keys for header', async () => {
+    const { exportCsv } = require('@/lib/exportCsv');
+    renderWithClient(<Analytics />);
+    const user = userEvent.setup();
+    const button = await screen.findByText('Export');
+    await user.click(button);
+    const [, header] = (exportCsv as jest.Mock).mock.calls[0];
+    expect(header).toEqual(Object.keys(AuditLogEntrySchema.shape));
   });
 });
