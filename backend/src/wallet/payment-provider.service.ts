@@ -3,7 +3,7 @@ import type { ProviderCallback } from '@shared/wallet.schema';
 import { metrics } from '@opentelemetry/api';
 import { Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
-import { fetchJson, CircuitBreakerState } from '@shared/http';
+import { fetchJson, CircuitBreakerState } from '../common/http';
 import { verifySignature as verifyProviderSignature } from './verify-signature';
 
 export type ProviderStatus = 'approved' | 'risky' | 'chargeback';
