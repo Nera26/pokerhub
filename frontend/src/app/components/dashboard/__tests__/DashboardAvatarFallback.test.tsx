@@ -1,8 +1,6 @@
-import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import Dashboard from '../Dashboard';
+import { screen } from '@testing-library/react';
 import { fetchProfile } from '@/lib/api/profile';
+import { renderDashboard, findUserAvatar } from './helpers';
 
 const metricsMock = jest.fn();
 jest.mock('@/hooks/useDashboardMetrics', () => ({
@@ -31,13 +29,6 @@ jest.mock('@/hooks/useActiveTables', () => ({
 
 jest.mock('@/lib/api/profile');
 
-function renderWithClient(ui: React.ReactElement) {
-  const client = new QueryClient();
-  return render(
-    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
-  );
-}
-
 describe('Dashboard recent users avatar', () => {
   beforeEach(() => {
     metricsMock.mockReturnValue({ data: {}, isLoading: false, error: null });
@@ -59,8 +50,8 @@ describe('Dashboard recent users avatar', () => {
   });
 
   it('falls back to profile avatar when user lacks avatarKey', async () => {
-    renderWithClient(<Dashboard />);
-    const img = await screen.findByAltText('bob');
+    renderDashboard();
+    const img = await findUserAvatar('bob');
     expect(img.getAttribute('src')).toContain('%2Fprofile.png');
   });
 });

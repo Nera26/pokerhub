@@ -1,7 +1,5 @@
-import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import Dashboard from '../Dashboard';
+import { screen } from '@testing-library/react';
+import { renderDashboard } from './helpers';
 
 const metricsMock = jest.fn();
 jest.mock('@/hooks/useDashboardMetrics', () => ({
@@ -40,13 +38,6 @@ jest.mock('@/app/components/dashboard/charts/RevenueDonut', () => ({
   ),
 }));
 
-function renderWithClient(ui: React.ReactElement) {
-  const client = new QueryClient();
-  return render(
-    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
-  );
-}
-
 describe('Dashboard metrics', () => {
   beforeEach(() => {
     metricsMock.mockReset();
@@ -66,7 +57,7 @@ describe('Dashboard metrics', () => {
       isLoading: true,
       error: null,
     });
-    renderWithClient(<Dashboard />);
+    renderDashboard();
     expect(screen.getByText(/loading dashboard/i)).toBeInTheDocument();
   });
 
@@ -76,7 +67,7 @@ describe('Dashboard metrics', () => {
       isLoading: false,
       error: new Error('fail'),
     });
-    renderWithClient(<Dashboard />);
+    renderDashboard();
     expect(screen.getByText(/failed to load dashboard/i)).toBeInTheDocument();
   });
 
@@ -110,7 +101,7 @@ describe('Dashboard metrics', () => {
       isLoading: false,
       error: null,
     });
-    renderWithClient(<Dashboard />);
+    renderDashboard();
     expect(
       screen.getByText(/active users/i).parentElement?.textContent,
     ).toMatch(/5/);
