@@ -171,6 +171,39 @@ export async function seedWalletAccounts(repo: Repository<Account>) {
   ]);
 }
 
+export async function expectLedgerBalances(
+  repos: {
+    account: Repository<Account>;
+    journal: Repository<JournalEntry>;
+  },
+  expected: {
+    user: number;
+    reserve: number;
+    prize: number;
+    rake: number;
+    journals: number;
+    total?: number;
+  },
+  userId = '11111111-1111-1111-1111-111111111111',
+) {
+  const accounts = await repos.account.find();
+  const user = accounts.find((a) => a.id === userId);
+  const reserve = accounts.find((a) => a.name === 'reserve');
+  const prize = accounts.find((a) => a.name === 'prize');
+  const rake = accounts.find((a) => a.name === 'rake');
+  expect(user?.balance).toBe(expected.user);
+  expect(reserve?.balance).toBe(expected.reserve);
+  expect(prize?.balance).toBe(expected.prize);
+  expect(rake?.balance).toBe(expected.rake);
+  if (expected.total !== undefined) {
+    const sum = accounts.reduce((acc, a) => acc + a.balance, 0);
+    expect(sum).toBe(expected.total);
+  }
+  const journals = await repos.journal.find();
+  expect(journals).toHaveLength(expected.journals);
+  return { accounts, journals };
+}
+
 export function signProviderPayload(body: unknown): string {
   const secret = process.env.PROVIDER_WEBHOOK_SECRET ?? '';
   return createHmac('sha256', secret)
