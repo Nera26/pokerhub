@@ -7,18 +7,10 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
   fetchNotificationFilters,
-  type NotificationFilter,
 } from '@/lib/api/notifications';
-import type { ApiError } from '@/lib/api/notifications';
-import type {
-  NotificationsResponse,
-  Notification,
-  NotificationType,
-} from '@shared/types';
+import type { ApiError, NotificationFilter } from '@/lib/api/notifications';
+import type { NotificationsResponse } from '@shared/types';
 import { useNotificationMutation } from './useNotificationMutation';
-
-export type { Notification, NotificationType } from '@shared/types';
-export type { NotificationFilter } from '@/lib/api/notifications';
 
 export function useNotifications(
   options?: Omit<
