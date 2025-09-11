@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import Analytics from '@/app/components/dashboard/analytics/Analytics';
+import { AuditLogEntrySchema } from '@shared/schemas/analytics';
 
 jest.mock('chart.js/auto', () => ({
   __esModule: true,
@@ -66,6 +67,7 @@ jest.mock('@/lib/api/analytics', () => ({
     counts: [1, 2, 3, 4],
   }),
 }));
+jest.mock('@/lib/exportCsv', () => ({ exportCsv: jest.fn() }));
 
 function renderWithClient(ui: React.ReactElement) {
   const client = new QueryClient();
@@ -146,5 +148,17 @@ describe('leaderboard rebuild toast', () => {
     expect(
       await screen.findByText(/leaderboard rebuild started/i),
     ).toBeInTheDocument();
+  });
+});
+
+describe('CSV export', () => {
+  it('uses schema keys for header', async () => {
+    renderWithClient(<Analytics />);
+    const user = userEvent.setup();
+    const exportBtn = await screen.findByRole('button', { name: /export/i });
+    await user.click(exportBtn);
+    const { exportCsv } = require('@/lib/exportCsv');
+    const header = (exportCsv as jest.Mock).mock.calls[0][1];
+    expect(header).toEqual(Object.keys(AuditLogEntrySchema.shape));
   });
 });
