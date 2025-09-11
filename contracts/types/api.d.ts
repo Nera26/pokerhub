@@ -1859,7 +1859,10 @@ export interface paths {
     };
   };
   "/config/table-theme": {
-    /** Get table theme */
+    /**
+     * Get table theme
+     * @description Returns the current table theme mapping
+     */
     get: {
       responses: {
         /** @description Table theme mapping */

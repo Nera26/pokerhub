@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { TABLE_THEME } from '@shared/config/tableTheme';
 import type { TableThemeResponse } from '@shared/types';
 import { TableThemeEntity } from '../database/entities/table-theme.entity';
+
+const DEFAULT_THEME: TableThemeResponse = {
+  hairline: 'var(--color-hairline)',
+  positions: {},
+};
 
 @Injectable()
 export class TableThemeService {
@@ -25,12 +29,12 @@ export class TableThemeService {
 
     if (!entity) {
       entity = this.repo.create({
-        hairline: theme.hairline ?? TABLE_THEME.hairline,
-        positions: theme.positions ?? TABLE_THEME.positions,
+        hairline: theme.hairline ?? DEFAULT_THEME.hairline,
+        positions: theme.positions ?? DEFAULT_THEME.positions,
       });
     } else {
-      entity.hairline = theme.hairline ?? TABLE_THEME.hairline;
-      entity.positions = theme.positions ?? TABLE_THEME.positions;
+      entity.hairline = theme.hairline ?? DEFAULT_THEME.hairline;
+      entity.positions = theme.positions ?? DEFAULT_THEME.positions;
     }
 
     await this.repo.save(entity);
