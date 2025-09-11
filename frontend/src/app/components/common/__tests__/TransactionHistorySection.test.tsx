@@ -5,8 +5,16 @@ const columnIndex = { value: 1 };
 
 jest.mock('../../dashboard/transactions/TransactionHistory', () => ({
   __esModule: true,
-  default: ({ columns, data }: any) => (
-    <div>{columns[columnIndex.value].cell(data[0])}</div>
+  default: ({ columns, data, headerSlot, actions }: any) => (
+    <div>
+      {headerSlot}
+      {columns[columnIndex.value].cell(data[0])}
+      {actions?.map((a: any, i: number) => (
+        <button key={i} onClick={() => a.onClick(data[0])}>
+          {a.label}
+        </button>
+      ))}
+    </div>
   ),
 }));
 
@@ -40,5 +48,30 @@ describe('TransactionHistorySection', () => {
     const statusEl = screen.getByText('Pending');
     expect(statusEl).toHaveClass('bg-accent-yellow/20');
     expect(statusEl).toHaveClass('text-accent-yellow');
+  });
+
+  it('renders title, filters, and actions', () => {
+    columnIndex.value = 1;
+    const data = [
+      { amount: 5, status: 'Completed', date: '2024-01-01', type: 'Bonus' },
+    ];
+    const onAction = jest.fn();
+
+    render(
+      <TransactionHistorySection
+        data={data}
+        currency="USD"
+        title="History"
+        filters={<div>filters</div>}
+        actions={[{ label: 'Action', onClick: onAction, className: '' }]}
+      />,
+    );
+
+    expect(screen.getByText('History')).toBeInTheDocument();
+    expect(screen.getByText('filters')).toBeInTheDocument();
+    const actionBtn = screen.getByRole('button', { name: 'Action' });
+    expect(actionBtn).toBeInTheDocument();
+    actionBtn.click();
+    expect(onAction).toHaveBeenCalledWith(data[0]);
   });
 });

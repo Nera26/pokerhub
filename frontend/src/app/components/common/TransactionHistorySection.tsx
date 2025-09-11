@@ -19,6 +19,7 @@ interface TransactionLike {
 export interface TransactionHistorySectionProps<T extends TransactionLike> {
   data: T[];
   currency: string;
+  title?: string;
   filters?: ReactNode;
   onExport?: () => void;
   emptyMessage?: string;
@@ -31,6 +32,7 @@ export interface TransactionHistorySectionProps<T extends TransactionLike> {
 export default function TransactionHistorySection<T extends TransactionLike>({
   data,
   currency,
+  title,
   filters,
   onExport,
   emptyMessage = 'No transaction history found.',
@@ -59,16 +61,21 @@ export default function TransactionHistorySection<T extends TransactionLike>({
   );
 
   return (
-    <TransactionHistory
-      data={data}
-      columns={columns}
-      headerSlot={filters}
-      onExport={onExport}
-      emptyState={emptyState}
-      page={page}
-      pageSize={pageSize}
-      onPageChange={onPageChange}
-      actions={actions}
-    />
+    <section>
+      <div className="bg-card-bg p-6 rounded-2xl card-shadow">
+        {title && <h3 className="text-lg font-bold mb-4">{title}</h3>}
+        <TransactionHistory
+          data={data}
+          columns={columns}
+          headerSlot={filters}
+          onExport={onExport}
+          emptyState={emptyState}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={onPageChange}
+          actions={actions}
+        />
+      </div>
+    </section>
   );
 }
