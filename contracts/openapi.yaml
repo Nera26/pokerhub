@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.19.0
+  version: 2.20.0
 paths:
   /status:
     get:
@@ -33,6 +33,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NavIconsResponse'
+  /site-metadata:
+    get:
+      summary: Get site metadata
+      responses:
+        '200':
+          description: Site metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteMetadataResponse'
   /history-tabs:
     get:
       summary: List history tabs
@@ -3381,6 +3391,16 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/NavIcon'
+    SiteMetadataResponse:
+      type: object
+      required: [title, description, imagePath]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        imagePath:
+          type: string
     HistoryTabItem:
       type: object
       required: [key, label]
