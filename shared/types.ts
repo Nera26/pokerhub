@@ -62,13 +62,6 @@ export const TableThemeResponseSchema = z.object({
 });
 export type TableThemeResponse = z.infer<typeof TableThemeResponseSchema>;
 
-export {
-  PrecacheListResponseSchema,
-} from '../backend/src/schemas/precache';
-export type {
-  PrecacheListResponse,
-} from '../backend/src/schemas/precache';
-
 // Backend re-exports
 export {
   UserProfileSchema,
@@ -80,30 +73,6 @@ export type {
   MeResponse,
   ProfileStatsResponse,
 } from '../backend/src/schemas/users';
-
-export {
-  PendingWithdrawalsResponseSchema,
-  WithdrawalDecisionRequestSchema,
-} from '../backend/src/schemas/withdrawals';
-export type {
-  PendingWithdrawalsResponse,
-  WithdrawalDecisionRequest,
-} from '../backend/src/schemas/withdrawals';
-
-export {
-  SidebarItemsResponseSchema,
-  AdminTabResponseSchema,
-} from '../backend/src/schemas/admin';
-/** Sidebar item returned by the admin sidebar API. `icon` is a FontAwesome icon name (e.g., faUsers). */
-export type {
-  SidebarItem,
-  SidebarTab,
-  AdminTab,
-  AdminTabResponse,
-} from '../backend/src/schemas/admin';
-
-export { BonusOptionsResponseSchema } from '../backend/src/schemas/bonus';
-export type { BonusOptionsResponse } from '../backend/src/schemas/bonus';
 
 export {
   GameTypeSchema,
