@@ -1,5 +1,6 @@
 import { z, ZodError } from 'zod';
 import { GameActionSchema } from './schemas/game';
+import { SidePotSchema } from './schemas/sidePot';
 import { GameTypeSchema } from '../backend/src/schemas/game-types';
 import {
   GameHistoryEntrySchema,
@@ -252,6 +253,8 @@ export type FeatureFlagsResponse = z.infer<typeof FeatureFlagsResponseSchema>;
 export { GameActionSchema } from './schemas/game';
 export type { GameAction } from './schemas/game';
 export type GameActionPayload = z.infer<typeof GameActionSchema>;
+export { SidePotSchema } from './schemas/sidePot';
+export type { SidePot } from './schemas/sidePot';
 
 // Game state
 const GameStatePlayerSchema = z.object({
@@ -277,13 +280,7 @@ export const GameStateSchema = z
     ]),
     street: z.enum(['preflop', 'flop', 'turn', 'river', 'showdown']),
     pot: z.number(),
-    sidePots: z.array(
-      z.object({
-        amount: z.number(),
-        players: z.array(z.string()),
-        contributions: z.record(z.string(), z.number()),
-      }),
-    ),
+    sidePots: z.array(SidePotSchema),
     currentBet: z.number(),
     players: z.array(GameStatePlayerSchema),
     communityCards: z.array(z.number()),

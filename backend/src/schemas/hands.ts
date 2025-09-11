@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SidePotSchema } from '@shared/schemas/sidePot';
 
 /** ---- /hands/:id/proof ---- */
 export const HandProofResponse = z.object({
@@ -32,12 +33,7 @@ const PlayerState = z.object({
 export const HandStateResponse = z.object({
   street: z.enum(['preflop', 'flop', 'turn', 'river', 'showdown']),
   pot: z.number(),
-  sidePots: z.array(
-    z.object({
-      amount: z.number(),
-      players: z.array(z.string()),
-    }),
-  ),
+  sidePots: z.array(SidePotSchema),
   currentBet: z.number(),
   players: z.array(PlayerState),
 });
