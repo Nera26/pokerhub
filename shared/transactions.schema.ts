@@ -47,3 +47,46 @@ export const FilterOptionsSchema = z.object({
   performedBy: z.array(z.string()),
 });
 export type FilterOptions = z.infer<typeof FilterOptionsSchema>;
+
+const StatusInfoSchema = z.object({
+  label: z.string(),
+  style: z.string(),
+});
+
+export const TransactionStatusesResponseSchema = z.record(StatusInfoSchema);
+export type TransactionStatusesResponse = z.infer<
+  typeof TransactionStatusesResponseSchema
+>;
+
+export const DEFAULT_STATUS_INFO: TransactionStatusesResponse = {
+  pending: { label: 'Pending', style: 'bg-accent-yellow/20 text-accent-yellow' },
+  confirmed: {
+    label: 'Completed',
+    style: 'bg-accent-green/20 text-accent-green',
+  },
+  rejected: {
+    label: 'Rejected',
+    style: 'bg-danger-red/20 text-danger-red',
+  },
+  Pending: { label: 'Pending', style: 'bg-accent-yellow/20 text-accent-yellow' },
+  Completed: {
+    label: 'Completed',
+    style: 'bg-accent-green/20 text-accent-green',
+  },
+  Rejected: {
+    label: 'Rejected',
+    style: 'bg-danger-red/20 text-danger-red',
+  },
+  Failed: {
+    label: 'Failed',
+    style: 'bg-danger-red/20 text-danger-red',
+  },
+  Processing: {
+    label: 'Processing',
+    style: 'bg-accent-yellow/20 text-accent-yellow',
+  },
+  'Pending Confirmation': {
+    label: 'Pending Confirmation',
+    style: 'bg-accent-yellow/20 text-accent-yellow',
+  },
+};

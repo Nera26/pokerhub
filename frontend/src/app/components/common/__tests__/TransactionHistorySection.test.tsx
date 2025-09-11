@@ -1,5 +1,10 @@
 import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import TransactionHistorySection from '../TransactionHistorySection';
+import {
+  mockFetchLoading,
+  mockFetchSuccess,
+} from '@/hooks/__tests__/utils/renderHookWithClient';
 
 const columnIndex = { value: 1 };
 
@@ -19,13 +24,24 @@ jest.mock('../../dashboard/transactions/TransactionHistory', () => ({
 }));
 
 describe('TransactionHistorySection', () => {
+  afterEach(() => {
+    jest.resetAllMocks();
+  });
   it('formats amounts using provided currency', () => {
     columnIndex.value = 1;
     const data = [
       { amount: 10, status: 'Completed', date: '2024-01-01', type: 'Deposit' },
     ];
 
-    render(<TransactionHistorySection data={data} currency="EUR" />);
+    mockFetchSuccess({});
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <TransactionHistorySection data={data} currency="EUR" />
+      </QueryClientProvider>,
+    );
 
     const formatted = new Intl.NumberFormat(undefined, {
       style: 'currency',
@@ -43,7 +59,15 @@ describe('TransactionHistorySection', () => {
       { amount: 10, status: 'pending', date: '2024-01-01', type: 'Deposit' },
     ];
 
-    render(<TransactionHistorySection data={data} currency="USD" />);
+    mockFetchLoading();
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <TransactionHistorySection data={data} currency="USD" />
+      </QueryClientProvider>,
+    );
 
     const statusEl = screen.getByText('Pending');
     expect(statusEl).toHaveClass('bg-accent-yellow/20');
@@ -57,14 +81,20 @@ describe('TransactionHistorySection', () => {
     ];
     const onAction = jest.fn();
 
+    mockFetchSuccess({});
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
     render(
-      <TransactionHistorySection
-        data={data}
-        currency="USD"
-        title="History"
-        filters={<div>filters</div>}
-        actions={[{ label: 'Action', onClick: onAction, className: '' }]}
-      />,
+      <QueryClientProvider client={client}>
+        <TransactionHistorySection
+          data={data}
+          currency="USD"
+          title="History"
+          filters={<div>filters</div>}
+          actions={[{ label: 'Action', onClick: onAction, className: '' }]}
+        />
+      </QueryClientProvider>,
     );
 
     expect(screen.getByText('History')).toBeInTheDocument();

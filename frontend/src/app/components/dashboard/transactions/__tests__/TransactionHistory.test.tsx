@@ -7,6 +7,7 @@ import {
   fetchTransactionTypes,
   fetchAdminPlayers,
 } from '@/lib/api/wallet';
+import { mockFetchSuccess } from '@/hooks/__tests__/utils/renderHookWithClient';
 
 jest.mock('@/lib/api/wallet', () => ({
   fetchTransactionsLog: jest.fn(),
@@ -16,13 +17,20 @@ jest.mock('@/lib/api/wallet', () => ({
 
 function renderWithClient(ui: React.ReactElement) {
   const client = new QueryClient();
-  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+  return render(
+    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
+  );
 }
 
 describe('Dashboard TransactionHistory', () => {
   beforeEach(() => {
     (fetchTransactionTypes as jest.Mock).mockResolvedValue([]);
     (fetchAdminPlayers as jest.Mock).mockResolvedValue([]);
+    mockFetchSuccess({});
+  });
+
+  afterEach(() => {
+    jest.resetAllMocks();
   });
 
   it('shows loading state', () => {
@@ -34,7 +42,9 @@ describe('Dashboard TransactionHistory', () => {
   it('shows empty state', async () => {
     (fetchTransactionsLog as jest.Mock).mockResolvedValue([]);
     renderWithClient(<TransactionHistory onExport={() => {}} />);
-    expect(await screen.findByText('No transaction history.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('No transaction history.'),
+    ).toBeInTheDocument();
   });
 
   it('calls fetchTransactionsLog with type filter', async () => {
@@ -62,4 +72,3 @@ describe('Dashboard TransactionHistory', () => {
     );
   });
 });
-

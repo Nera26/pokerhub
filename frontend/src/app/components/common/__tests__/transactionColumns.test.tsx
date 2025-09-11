@@ -1,9 +1,11 @@
-import { render } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   buildAmountColumn,
   buildDateColumn,
   buildStatusColumn,
 } from '../transactionColumns';
+import { mockFetchSuccess } from '@/hooks/__tests__/utils/renderHookWithClient';
 
 describe('base transaction column builders', () => {
   interface Row {
@@ -12,6 +14,10 @@ describe('base transaction column builders', () => {
     date?: string;
     datetime?: string;
   }
+
+  afterEach(() => {
+    jest.resetAllMocks();
+  });
 
   it('builds amount column with sign and color', () => {
     const col = buildAmountColumn<Row>();
@@ -38,13 +44,21 @@ describe('base transaction column builders', () => {
     );
   });
 
-  it('builds status column with label and style', () => {
+  it('builds status column with label and style', async () => {
+    mockFetchSuccess({
+      confirmed: { label: 'Done', style: 'my-style' },
+    });
     const col = buildStatusColumn<Row>();
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
     const { getByText } = render(
-      <>{col.cell({ amount: 0, status: 'confirmed' })}</>,
+      <QueryClientProvider client={client}>
+        {col.cell({ amount: 0, status: 'confirmed' })}
+      </QueryClientProvider>,
     );
-    const el = getByText('Completed');
-    expect(el).toHaveClass('bg-accent-green/20');
-    expect(el).toHaveClass('text-accent-green');
+    await waitFor(() => getByText('Done'));
+    const el = getByText('Done');
+    expect(el).toHaveClass('my-style');
   });
 });

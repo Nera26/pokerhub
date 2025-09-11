@@ -97,6 +97,17 @@ describe('TransactionsController', () => {
     );
   });
 
+  it('returns transaction statuses', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/transactions/statuses')
+      .set('Authorization', 'Bearer test')
+      .expect(200);
+    expect(res.body.confirmed).toEqual({
+      label: 'Completed',
+      style: 'bg-accent-green/20 text-accent-green',
+    });
+  });
+
   it('returns user transactions', async () => {
     const res = await request(app.getHttpServer())
       .get('/users/user1/transactions')

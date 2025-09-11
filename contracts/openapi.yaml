@@ -194,6 +194,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TransactionTypesResponse'
+  /transactions/statuses:
+    get:
+      summary: Get transaction statuses
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Transaction statuses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionStatusesResponse'
   /dashboard/metrics:
     get:
       summary: Get dashboard metrics
@@ -4105,6 +4117,20 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/TransactionType'
+    TransactionStatusInfo:
+      type: object
+      properties:
+        label:
+          type: string
+        style:
+          type: string
+      required:
+        - label
+        - style
+    TransactionStatusesResponse:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/TransactionStatusInfo'
     TransactionTab:
       type: object
       properties:

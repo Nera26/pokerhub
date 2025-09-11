@@ -234,6 +234,19 @@ export interface paths {
       };
     };
   };
+  "/transactions/statuses": {
+    /** Get transaction statuses */
+    get: {
+      responses: {
+        /** @description Transaction statuses */
+        200: {
+          content: {
+            "application/json": components["schemas"]["TransactionStatusesResponse"];
+          };
+        };
+      };
+    };
+  };
   "/dashboard/metrics": {
     /** Get dashboard metrics */
     get: {
