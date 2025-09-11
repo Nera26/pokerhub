@@ -38,10 +38,9 @@ import {
 const MessageResponseSchema = z.object({ message: z.string() });
 
 import {
-  TransactionTypeSchema,
-  TransactionLogEntrySchema,
-  type TransactionType,
-  type TransactionLogEntry,
+  TransactionTypesResponseSchema,
+  TransactionLogResponseSchema,
+  type TransactionTypesResponse,
 } from '@shared/transactions.schema';
 
 /* istanbul ignore next */
@@ -328,11 +327,11 @@ export function fetchAdminPlayers(
 
 export async function fetchTransactionTypes(
   opts: { signal?: AbortSignal } = {},
-): Promise<TransactionType[]> {
+): Promise<TransactionTypesResponse> {
   try {
     return await apiClient(
       `/api/transactions/types`,
-      z.array(TransactionTypeSchema),
+      TransactionTypesResponseSchema,
       { signal: opts.signal },
     );
   } catch (err) {
@@ -351,7 +350,7 @@ export async function fetchTransactionsLog(
     page?: number;
     pageSize?: number;
   } = {},
-): Promise<TransactionLogEntry[]> {
+): Promise<z.infer<typeof TransactionLogResponseSchema>> {
   const {
     signal,
     playerId,
@@ -372,7 +371,7 @@ export async function fetchTransactionsLog(
   try {
     return await apiClient(
       `/api/admin/transactions?${query}`,
-      z.array(TransactionLogEntrySchema),
+      TransactionLogResponseSchema,
       { signal },
     );
   } catch (err) {

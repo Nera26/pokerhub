@@ -1,6 +1,7 @@
 import type { PendingDeposit } from '@shared/wallet.schema';
-import type { TransactionLogEntry } from '@shared/transactions.schema';
+import { TransactionLogResponseSchema } from '@shared/transactions.schema';
+import { z } from 'zod';
 
 export type StatusBadge = PendingDeposit['status'];
 
-export type Txn = TransactionLogEntry;
+export type Txn = z.infer<typeof TransactionLogResponseSchema>[number];
