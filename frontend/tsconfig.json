@@ -20,7 +20,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@shared/*": ["../shared/*"],
-      "@contracts/*": ["../contracts/types/*"]
+      "@contracts/*": ["../contracts/types/*"],
+      "@/test-utils/*": ["./test-utils/*"]
     },
     "types": ["node", "react", "jest", "@testing-library/jest-dom"],
     "allowJs": true

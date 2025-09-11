@@ -10,6 +10,7 @@ const customJestConfig = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {
+    '^@/test-utils/(.*)$': '<rootDir>/test-utils/$1',
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@shared/(.*)$': '<rootDir>/../shared/$1',
     '^@contracts/(.*)$': '<rootDir>/../contracts/types/$1',

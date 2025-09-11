@@ -7,7 +7,7 @@ import {
   verifyResetCode,
   resetPassword,
 } from '@/lib/api/auth';
-import { mockFetch } from '../utils/mockFetch';
+import { mockFetch } from '@/test-utils/mockFetch';
 
 describe('auth api', () => {
   afterEach(() => {

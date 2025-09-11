@@ -1,7 +1,7 @@
 /** @jest-environment node */
 
 import { fetchNavItems } from '@/lib/api/nav';
-import { mockFetch } from '../utils/mockFetch';
+import { mockFetch } from '@/test-utils/mockFetch';
 
 process.env.NEXT_PUBLIC_BASE_URL = '';
 

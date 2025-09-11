@@ -48,7 +48,7 @@ import {
   withdraw,
   getStatus,
 } from '@/lib/api/wallet';
-import { mockFetch } from '../utils/mockFetch';
+import { mockFetch } from '@/test-utils/mockFetch';
 
 describe('wallet api', () => {
   it('handles reserve/commit/rollback/deposit/withdraw', async () => {
