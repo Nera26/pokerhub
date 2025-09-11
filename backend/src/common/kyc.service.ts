@@ -15,7 +15,7 @@ import { metrics } from '@opentelemetry/api';
 import { KycVerification } from '../database/entities/kycVerification.entity';
 import { Account } from '../wallet/account.entity';
 import { CountryProvider } from '../auth/providers/country-provider';
-import { fetchJson, CircuitBreakerState } from '@shared/http';
+import { fetchJson, CircuitBreakerState } from './http';
 import { Pep } from '../database/entities/pep.entity';
 import { Onfido, Region } from 'onfido';
 
