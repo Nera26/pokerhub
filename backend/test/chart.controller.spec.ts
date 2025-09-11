@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { SettingsController } from '../src/routes/settings.controller';
+import { ChartController } from '../src/routes/chart.controller';
 import { SettingsService } from '../src/services/settings.service';
 
-describe('SettingsController', () => {
+describe('ChartController', () => {
   let app: INestApplication | null = null;
 
   afterEach(async () => {
@@ -19,7 +19,7 @@ describe('SettingsController', () => {
       getChartPalette: jest.fn().mockResolvedValue(['#111', '#222']),
     };
     const moduleRef: TestingModule = await Test.createTestingModule({
-      controllers: [SettingsController],
+      controllers: [ChartController],
       providers: [{ provide: SettingsService, useValue: mock }],
     }).compile();
 
@@ -27,7 +27,7 @@ describe('SettingsController', () => {
     await app.init();
 
     await request(app.getHttpServer())
-      .get('/settings/chart-palette')
+      .get('/chart/palette')
       .expect(200)
       .expect(['#111', '#222']);
 

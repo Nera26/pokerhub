@@ -24,6 +24,10 @@ describe('useChartPalette', () => {
     const { result } = renderHookWithClient(() => useChartPalette());
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual(['#111', '#222']);
+    expect(global.fetch).toHaveBeenCalledWith(
+      'http://localhost:3000/api/chart/palette',
+      expect.any(Object),
+    );
   });
 
   it('exposes error state', async () => {

@@ -70,7 +70,7 @@ export interface paths {
       };
     };
   };
-  "/settings/chart-palette": {
+  "/chart/palette": {
     /** Get chart palette colors */
     get: {
       responses: {

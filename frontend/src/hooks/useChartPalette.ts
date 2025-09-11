@@ -9,6 +9,6 @@ import {
 export const useChartPalette = createQueryHook<ChartPaletteResponse>(
   'chart-palette',
   (client, opts) =>
-    client('/api/settings/chart-palette', ChartPaletteResponseSchema, opts),
+    client('/api/chart/palette', ChartPaletteResponseSchema, opts),
   'chart palette',
 );
