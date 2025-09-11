@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import ReviewWithdrawalModal from '../modals/ReviewWithdrawalModal';
-import RequestTable from './transactions/RequestTable';
+import TransactionHistorySection from '../common/TransactionHistorySection';
 import type { StatusBadge } from './transactions/types';
 import {
   fetchPendingWithdrawals,
@@ -34,6 +34,8 @@ export default function Withdrawals() {
     status: w.status === 'completed' ? 'confirmed' : w.status,
     type: 'Withdrawal',
   }));
+
+  const currency = rows[0]?.currency ?? 'USD';
 
   const [selected, setSelected] = useState<TableWithdrawal | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -69,9 +71,10 @@ export default function Withdrawals() {
 
   return (
     <>
-      <RequestTable
+      <TransactionHistorySection
         title="Withdrawals"
-        rows={rows}
+        data={rows}
+        currency={currency}
         actions={[
           {
             label: 'Review',
