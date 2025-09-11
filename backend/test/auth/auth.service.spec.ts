@@ -1,12 +1,12 @@
-import { AuthService } from './auth.service';
+import { AuthService } from '../../src/auth/auth.service';
 import { ConflictException } from '@nestjs/common';
 import Redis from 'ioredis';
-import type { SessionService } from '../session/session.service';
+import type { SessionService } from '../../src/session/session.service';
 import type { ConfigService } from '@nestjs/config';
-import type { AnalyticsService } from '../analytics/analytics.service';
-import type { UserRepository } from '../users/user.repository';
-import type { EmailService } from './email.service';
-import type { MetricsWriterService } from '../metrics/metrics-writer.service';
+import type { AnalyticsService } from '../../src/analytics/analytics.service';
+import type { UserRepository } from '../../src/users/user.repository';
+import type { EmailService } from '../../src/auth/email.service';
+import type { MetricsWriterService } from '../../src/metrics/metrics-writer.service';
 
 describe('AuthService register', () => {
   it('throws ConflictException when email exists', async () => {

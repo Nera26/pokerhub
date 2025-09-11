@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */
 import type { ExecutionContext } from '@nestjs/common';
 import type { Socket } from 'socket.io';
-import { BaseAuthGuard } from './base.guard';
+import { BaseAuthGuard } from '../../src/auth/base.guard';
 
 describe('BaseAuthGuard', () => {
   class TestGuard extends BaseAuthGuard {

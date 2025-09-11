@@ -1,18 +1,18 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
-import { SessionService } from '../session/session.service';
+import { AuthController } from '../../src/auth/auth.controller';
+import { AuthService } from '../../src/auth/auth.service';
+import { SessionService } from '../../src/session/session.service';
 import { ConfigService } from '@nestjs/config';
-import { MockRedis } from '../../test/utils/mock-redis';
-import { AnalyticsService } from '../analytics/analytics.service';
-import { GeoIpService } from './geoip.service';
-import { AuthRateLimitMiddleware } from './rate-limit.middleware';
+import { MockRedis } from '../utils/mock-redis';
+import { AnalyticsService } from '../../src/analytics/analytics.service';
+import { GeoIpService } from '../../src/auth/geoip.service';
+import { AuthRateLimitMiddleware } from '../../src/auth/rate-limit.middleware';
 import * as bcrypt from 'bcrypt';
-import { UserRepository } from '../users/user.repository';
-import { EmailService } from './email.service';
-import { MetricsWriterService } from '../metrics/metrics-writer.service';
+import { UserRepository } from '../../src/users/user.repository';
+import { EmailService } from '../../src/auth/email.service';
+import { MetricsWriterService } from '../../src/metrics/metrics-writer.service';
 
 class InMemoryUserRepository {
   private users: any[] = [];
