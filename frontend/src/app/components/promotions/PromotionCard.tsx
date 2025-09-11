@@ -8,38 +8,21 @@ import SmoothButton from '../ui/SmoothButton';
 import dynamic from 'next/dynamic';
 import { m } from '@/lib/motion';
 import Tooltip from '../ui/Tooltip';
+import type { Promotion as BasePromotion } from '@shared/types';
 
 const MotionDiv = dynamic(
   () => import('framer-motion').then((mod) => mod.motion.div),
   { ssr: false },
 );
 
-export type PromotionCategory = 'daily' | 'weekly' | 'special';
-
-export interface Promotion {
-  id: string | number;
-  category: PromotionCategory;
-  title: string;
-  description: string;
-  reward: string;
+export type Promotion = BasePromotion & {
   unlockText: string;
-  breakdown: { label: string; value: number }[];
-  eta?: string;
-  // If provided, show a progress bar: current/total and percent
-  progress?: {
-    current: number;
-    total: number;
-    label?: string;
-    barColorClass?: string; // e.g. 'bg-accent-green' or 'bg-accent-yellow'
-  };
-  // If provided, show a status instead of a progress bar
-  statusText?: string;
-  // Action button
   actionLabel: string;
   actionDisabled?: boolean;
   actionTooltip?: string;
   onAction: () => void;
-}
+  breakdown: { label: string; value: number }[]; // ensure defined for card
+};
 
 export interface PromotionCardProps {
   promotion: Promotion;

@@ -3,8 +3,8 @@ import PromotionCard from '@/app/components/promotions/PromotionCard';
 
 describe('PromotionCard', () => {
   const basePromotion = {
-    id: 1,
-    category: 'daily' as const,
+    id: '1',
+    category: 'daily',
     title: 'Daily Reward',
     description: 'Play a game to earn rewards',
     reward: '$10',
@@ -39,5 +39,17 @@ describe('PromotionCard', () => {
       />,
     );
     expect(screen.getByRole('button', { name: /claim/i })).toBeDisabled();
+  });
+
+  it('renders unknown category without crashing', () => {
+    render(
+      <PromotionCard
+        promotion={{
+          ...basePromotion,
+          category: 'mystery',
+        }}
+      />,
+    );
+    expect(screen.getByText('Mystery')).toBeInTheDocument();
   });
 });
