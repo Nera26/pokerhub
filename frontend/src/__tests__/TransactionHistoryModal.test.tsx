@@ -12,7 +12,12 @@ import TransactionHistoryModal, {
   PerformedBy,
 } from '@/app/components/modals/TransactionHistoryModal';
 import TransactionHistoryTable from '@/app/components/common/TransactionHistoryTable';
-import type { AdminTransactionEntry } from '@shared/transactions.schema';
+import { z } from 'zod';
+import { AdminTransactionEntriesSchema } from '@shared/transactions.schema';
+
+type AdminTransactionEntry = z.infer<
+  typeof AdminTransactionEntriesSchema
+>[number];
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   fetchTransactionFilters,

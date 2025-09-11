@@ -1,15 +1,14 @@
 import { z } from 'zod';
 
-export const TransactionTypeSchema = z.object({
+const TransactionTypeSchema = z.object({
   id: z.string(),
   label: z.string(),
 });
-export type TransactionType = z.infer<typeof TransactionTypeSchema>;
 
 export const TransactionTypesResponseSchema = z.array(TransactionTypeSchema);
 export type TransactionTypesResponse = z.infer<typeof TransactionTypesResponseSchema>;
 
-export const TransactionLogEntrySchema = z.object({
+const TransactionLogEntrySchema = z.object({
   datetime: z.string(),
   action: z.string(),
   amount: z.number().int(),
@@ -17,10 +16,8 @@ export const TransactionLogEntrySchema = z.object({
   notes: z.string(),
   status: z.string(),
 });
-export type TransactionLogEntry = z.infer<typeof TransactionLogEntrySchema>;
 
 export const TransactionLogResponseSchema = z.array(TransactionLogEntrySchema);
-export type TransactionLogResponse = z.infer<typeof TransactionLogResponseSchema>;
 
 export const TransactionLogQuerySchema = z.object({
   playerId: z.string().optional(),
@@ -44,12 +41,6 @@ const AdminTransactionEntrySchema = z.object({
 export const AdminTransactionEntriesSchema = z.array(
   AdminTransactionEntrySchema,
 );
-export type AdminTransactionEntry = z.infer<
-  typeof AdminTransactionEntrySchema
->;
-export type AdminTransactionEntries = z.infer<
-  typeof AdminTransactionEntriesSchema
->;
 
 export const FilterOptionsSchema = z.object({
   types: z.array(z.string()),

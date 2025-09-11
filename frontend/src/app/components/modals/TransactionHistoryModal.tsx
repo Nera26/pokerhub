@@ -14,10 +14,13 @@ import {
   fetchTransactionFilters,
   fetchUserTransactions,
 } from '@/lib/api/transactions';
-import type {
-  AdminTransactionEntry,
-  FilterOptions,
-} from '@shared/transactions.schema';
+import type { FilterOptions } from '@shared/transactions.schema';
+import { AdminTransactionEntriesSchema } from '@shared/transactions.schema';
+import { z } from 'zod';
+
+type AdminTransactionEntry = z.infer<
+  typeof AdminTransactionEntriesSchema
+>[number];
 
 export enum PerformedBy {
   All = 'All',

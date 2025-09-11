@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { z } from 'zod';
 import { TransactionType } from './transaction-type.entity';
 import { Transaction } from './transaction.entity';
 import {
@@ -11,7 +12,6 @@ import {
   TransactionTypesResponseSchema,
   type TransactionLogQuery,
   type FilterOptions,
-  type AdminTransactionEntries,
 } from '@shared/transactions.schema';
 import type { TransactionTab } from '@shared/wallet.schema';
 
@@ -50,7 +50,9 @@ export class TransactionsService {
     ];
   }
 
-  async getUserTransactions(userId: string): Promise<AdminTransactionEntries> {
+  async getUserTransactions(
+    userId: string,
+  ): Promise<z.infer<typeof AdminTransactionEntriesSchema>> {
     const txs = await this.txRepo.find({
       where: { userId },
       order: { createdAt: 'DESC' },
