@@ -2,12 +2,12 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { EventEmitter } from 'events';
 import TablePageClient from '@/app/table/[id]/TablePageClient';
 import { useTableData } from '@/hooks/useTableData';
-import useGameSocket from '@/hooks/useGameSocket';
+import useSocket from '@/hooks/useSocket';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
 
 jest.mock('@/hooks/useTableData');
 jest.mock('@/hooks/useApiError', () => ({ useApiError: () => null }));
-jest.mock('@/hooks/useGameSocket');
+jest.mock('@/hooks/useSocket');
 jest.mock('next/dynamic', () => {
   const dynamic = () => {
     const DynamicComponent = () => null;
@@ -22,8 +22,10 @@ jest.mock('@/components/FairnessModal', () => ({
     isOpen ? <div data-testid="fairness-modal">Proof {handId}</div> : null,
 }));
 
-const mockUseTableData = useTableData as jest.MockedFunction<typeof useTableData>;
-const mockUseGameSocket = useGameSocket as jest.MockedFunction<typeof useGameSocket>;
+const mockUseTableData = useTableData as jest.MockedFunction<
+  typeof useTableData
+>;
+const mockUseSocket = useSocket as jest.MockedFunction<typeof useSocket>;
 
 describe('TablePageClient fairness features', () => {
   function setup() {
@@ -41,7 +43,7 @@ describe('TablePageClient fairness features', () => {
       error: null,
       isLoading: false,
     } as any);
-    mockUseGameSocket.mockReturnValue({ socket } as any);
+    mockUseSocket.mockReturnValue(socket as any);
     return socket;
   }
 
@@ -50,7 +52,10 @@ describe('TablePageClient fairness features', () => {
     render(<TablePageClient tableId="t1" />);
 
     act(() => {
-      socket.emit('hand.end', { handId: 'h123', version: EVENT_SCHEMA_VERSION });
+      socket.emit('hand.end', {
+        handId: 'h123',
+        version: EVENT_SCHEMA_VERSION,
+      });
     });
 
     const link = await screen.findByRole('link', { name: /download proof/i });
@@ -63,7 +68,10 @@ describe('TablePageClient fairness features', () => {
     render(<TablePageClient tableId="t1" />);
 
     act(() => {
-      socket.emit('hand.end', { handId: 'h123', version: EVENT_SCHEMA_VERSION });
+      socket.emit('hand.end', {
+        handId: 'h123',
+        version: EVENT_SCHEMA_VERSION,
+      });
     });
 
     const button = await screen.findByRole('button', { name: /verify hand/i });

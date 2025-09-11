@@ -3,10 +3,10 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { TableState } from '@/app/store/tableStore';
-import useGameSocket from './useGameSocket';
+import useSocket from './useSocket';
 
 export function useTableState(tableId?: string) {
-  const { socket } = useGameSocket();
+  const socket = useSocket('game');
   const queryClient = useQueryClient();
   const queryKey = ['table', tableId ?? 'local'] as const;
 
