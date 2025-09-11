@@ -10,8 +10,12 @@ import { faDoorOpen } from '@fortawesome/free-solid-svg-icons/faDoorOpen';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import type { ChatMessage } from './PokerTableLayout';
-import useGameSocket from '@/hooks/useGameSocket';
-import { sendChatMessage, fetchTableHands, type HandSummary } from '@/lib/api/table';
+import useSocket from '@/hooks/useSocket';
+import {
+  sendChatMessage,
+  fetchTableHands,
+  type HandSummary,
+} from '@/lib/api/table';
 
 export interface SidePanelProps {
   isOpen: boolean;
@@ -41,7 +45,7 @@ export default function SidePanel({
   const [input, setInput] = useState('');
   const [tab, setTab] = useState<TabKey>('history');
   const [messages, setMessages] = useState(chatMessages);
-  const { socket } = useGameSocket();
+  const socket = useSocket('game');
 
   const {
     data: hands,
@@ -164,29 +168,29 @@ export default function SidePanel({
             <div className="text-xs text-text-secondary">Loading hands...</div>
           )}
           {handsError && (
-            <div className="text-xs text-text-secondary">Failed to load hands.</div>
+            <div className="text-xs text-text-secondary">
+              Failed to load hands.
+            </div>
           )}
-          {hands && hands.length > 0 ? (
-            hands.map((hand) => (
-              <div key={hand.id} className="space-y-1">
-                <div className="font-semibold text-text-primary">
-                  Hand #{hand.id}
+          {hands && hands.length > 0
+            ? hands.map((hand) => (
+                <div key={hand.id} className="space-y-1">
+                  <div className="font-semibold text-text-primary">
+                    Hand #{hand.id}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    className="mt-3"
+                    onClick={() => onReplay?.(hand.id)}
+                  >
+                    Replay hand
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  className="mt-3"
-                  onClick={() => onReplay?.(hand.id)}
-                >
-                  Replay hand
-                </Button>
-              </div>
-            ))
-          ) : (
-            !handsLoading &&
-            !handsError && (
-              <div className="text-xs text-text-secondary">No hands yet.</div>
-            )
-          )}
+              ))
+            : !handsLoading &&
+              !handsError && (
+                <div className="text-xs text-text-secondary">No hands yet.</div>
+              )}
         </div>
       )}
 

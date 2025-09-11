@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useTableData } from '@/hooks/useTableData';
 import { useApiError } from '@/hooks/useApiError';
-import useGameSocket from '@/hooks/useGameSocket';
+import useSocket from '@/hooks/useSocket';
 import FairnessModal from '@/components/FairnessModal';
 import CenteredMessage from '@/components/CenteredMessage';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
@@ -12,16 +12,14 @@ import { EVENT_SCHEMA_VERSION } from '@shared/events';
 const PokerTableLayout = dynamic(
   () => import('../../components/tables/PokerTableLayout'),
   {
-    loading: () => (
-      <CenteredMessage>Loading table...</CenteredMessage>
-    ),
+    loading: () => <CenteredMessage>Loading table...</CenteredMessage>,
   },
 );
 
 export default function TablePageClient({ tableId }: { tableId: string }) {
   const { data, error, isLoading } = useTableData(tableId);
   const errorMessage = useApiError(error);
-  const { socket } = useGameSocket();
+  const socket = useSocket('game');
   const [proofHandId, setProofHandId] = useState<string | null>(null);
   const [showProof, setShowProof] = useState(false);
 
@@ -44,9 +42,7 @@ export default function TablePageClient({ tableId }: { tableId: string }) {
 
   if (!data) {
     return (
-      <CenteredMessage>
-        {errorMessage ?? 'Table not found.'}
-      </CenteredMessage>
+      <CenteredMessage>{errorMessage ?? 'Table not found.'}</CenteredMessage>
     );
   }
 
@@ -55,9 +51,7 @@ export default function TablePageClient({ tableId }: { tableId: string }) {
   }
 
   if (data.players.length === 0) {
-    return (
-      <CenteredMessage>No players at this table.</CenteredMessage>
-    );
+    return <CenteredMessage>No players at this table.</CenteredMessage>;
   }
 
   return (
