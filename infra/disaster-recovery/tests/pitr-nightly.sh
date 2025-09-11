@@ -6,7 +6,7 @@ import {
   createCTA,
   updateCTA,
 } from '@/lib/api/lobby';
-import { mockFetch } from '../utils/mockFetch';
+import { mockFetch } from '@/test-utils/mockFetch';
 
 describe('lobby api', () => {
   beforeAll(() => {

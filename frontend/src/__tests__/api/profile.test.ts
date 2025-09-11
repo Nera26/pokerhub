@@ -7,7 +7,7 @@ import {
   updateProfile,
 } from '@/lib/api/profile';
 import { apiClient, type ApiError } from '@/lib/api/client';
-import { mockFetch } from '../utils/mockFetch';
+import { mockFetch } from '@/test-utils/mockFetch';
 
 jest.mock('@/lib/api/client', () => {
   const actual = jest.requireActual('@/lib/api/client');

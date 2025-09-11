@@ -6,7 +6,7 @@ import {
   createCTA,
   updateCTA,
 } from '@/lib/api/lobby';
-import { mockFetch } from '../utils/mockFetch';
+import { mockFetch } from '@/test-utils/mockFetch';
 import { tables, tournamentDetails } from '../fixtures/lobby';
 
 describe('lobby api', () => {
