@@ -2,14 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-export type ToastVariant = 'info' | 'success' | 'error';
+type ToastVariant = 'info' | 'success' | 'error';
 
 interface ToastOptions {
   duration?: number;
   variant?: ToastVariant;
 }
 
-export interface Toast extends Required<ToastOptions> {
+interface Toast extends Required<ToastOptions> {
   id: number;
   message: string;
 }
