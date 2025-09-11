@@ -1,9 +1,9 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchMessages, replyMessage } from '@/lib/api/messages';
 import type { AdminMessagesResponse } from '@shared/types';
 import { createQueryHook } from './useApiQuery';
+import { useInvalidateMutation } from './useInvalidateMutation';
 
 export const useAdminMessages = createQueryHook<AdminMessagesResponse>(
   'admin-messages',
@@ -12,11 +12,9 @@ export const useAdminMessages = createQueryHook<AdminMessagesResponse>(
 );
 
 export function useReplyMessage() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useInvalidateMutation({
     mutationFn: ({ id, reply }: { id: number; reply: string }) =>
       replyMessage(id, { reply }),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['admin-messages'] }),
+    queryKey: ['admin-messages'],
   });
 }
