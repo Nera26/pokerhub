@@ -30,3 +30,14 @@ export const TransactionEntrySchema = z.object({
 });
 export type TransactionEntry = z.infer<typeof TransactionEntrySchema>;
 
+export const HistoryTabItemSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+});
+export type HistoryTabItem = z.infer<typeof HistoryTabItemSchema>;
+
+export const HistoryTabsResponseSchema = z.object({
+  tabs: z.array(HistoryTabItemSchema),
+});
+export type HistoryTabsResponse = z.infer<typeof HistoryTabsResponseSchema>;
+

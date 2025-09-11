@@ -414,9 +414,13 @@ export {
   GameHistoryEntrySchema,
   TournamentHistoryEntrySchema,
   TransactionEntrySchema,
+  HistoryTabItemSchema,
+  HistoryTabsResponseSchema,
 } from './schemas/history';
 export type {
   GameHistoryEntry,
   TournamentHistoryEntry,
   TransactionEntry,
+  HistoryTabItem,
+  HistoryTabsResponse,
 } from './schemas/history';
