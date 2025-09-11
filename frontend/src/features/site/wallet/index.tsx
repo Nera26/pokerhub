@@ -7,8 +7,7 @@ import { faHourglassHalf } from '@fortawesome/free-solid-svg-icons/faHourglassHa
 import WalletSummary from '@/app/components/wallet/WalletSummary';
 import TransactionHistorySection from '@/app/components/common/TransactionHistorySection';
 import Modal from '@/app/components/ui/Modal';
-import DepositModalContent from '@/app/components/wallet/DepositModalContent';
-import WithdrawModalContent from '@/app/components/wallet/WithdrawModalContent';
+import BankTransferModal from '@/app/components/wallet/BankTransferModal';
 import ToastNotification, {
   ToastType,
 } from '@/app/components/ui/ToastNotification';
@@ -269,9 +268,10 @@ export default function WalletPage() {
 
       {/* Deposit Modal */}
       <Modal isOpen={isDepositModalOpen} onClose={closeDepositModal}>
-        <DepositModalContent
+        <BankTransferModal
+          mode="deposit"
           onClose={closeDepositModal}
-          onInitiate={handleBankTransfer}
+          onSubmit={handleBankTransfer}
           currency={currency}
         />
       </Modal>
@@ -287,15 +287,18 @@ export default function WalletPage() {
             Failed to load bank account
           </div>
         ) : bankAccount ? (
-          <WithdrawModalContent
-            availableBalance={realBalance}
-            bankName={bankAccount.name}
-            accountName={bankAccount.accountName}
-            bankAddress={bankAccount.address}
-            maskedAccountNumber={bankAccount.masked}
+          <BankTransferModal
+            mode="withdraw"
             onClose={closeWithdrawModal}
-            onConfirm={handleWithdrawConfirm}
+            onSubmit={handleWithdrawConfirm}
             currency={currency}
+            availableBalance={realBalance}
+            bankDetails={{
+              bankName: bankAccount.name,
+              accountName: bankAccount.accountName,
+              bankAddress: bankAccount.address,
+              maskedAccountNumber: bankAccount.masked,
+            }}
           />
         ) : null}
       </Modal>
