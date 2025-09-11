@@ -71,6 +71,7 @@ import { NavIconsService } from './services/nav-icons.service';
 import { BonusOptionEntity } from './database/entities/bonus-option.entity';
 import { ChipDenominationEntity } from './database/entities/chip-denomination.entity';
 import { TableThemeEntity } from './database/entities/table-theme.entity';
+import { NavIconEntity } from './database/entities/nav-icon.entity';
 
 @Module({
   imports: [
@@ -122,6 +123,7 @@ import { TableThemeEntity } from './database/entities/table-theme.entity';
       BonusOptionEntity,
       ChipDenominationEntity,
       TableThemeEntity,
+      NavIconEntity,
     ]),
 
     // Messaging / Infra
