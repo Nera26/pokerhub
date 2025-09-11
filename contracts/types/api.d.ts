@@ -44,6 +44,19 @@ export interface paths {
       };
     };
   };
+  "/settings/chart-palette": {
+    /** Get chart palette colors */
+    get: {
+      responses: {
+        /** @description Chart palette colors */
+        200: {
+          content: {
+            "application/json": components["schemas"]["ChartPaletteResponse"];
+          };
+        };
+      };
+    };
+  };
   "/auth/login": {
     /** Login */
     post: {
@@ -2635,6 +2648,7 @@ export interface components {
       svg: string;
     };
     NavIconsResponse: components["schemas"]["NavIcon"][];
+    ChartPaletteResponse: string[];
     ChipDenominationsResponse: {
       denoms: number[];
     };

@@ -37,6 +37,10 @@ export type NavIcon = z.infer<typeof NavIconSchema>;
 export const NavIconsResponseSchema = z.array(NavIconSchema);
 export type NavIconsResponse = z.infer<typeof NavIconsResponseSchema>;
 
+// Chart palette
+export const ChartPaletteResponseSchema = z.array(z.string());
+export type ChartPaletteResponse = z.infer<typeof ChartPaletteResponseSchema>;
+
 // Chip denominations
 export const ChipDenominationsResponseSchema = z.object({
   denoms: z.array(z.number().positive()).nonempty(),

@@ -13,6 +13,7 @@ export function mockFetchSuccess(data: any) {
     ok: true,
     status: 200,
     json: async () => data,
+    headers: { get: () => 'application/json' },
   }) as unknown as typeof fetch;
 }
 
@@ -22,6 +23,7 @@ export function mockFetchError(message = 'fail') {
     status: 500,
     statusText: 'Server error',
     json: async () => ({ message }),
+    headers: { get: () => 'application/json' },
   }) as unknown as typeof fetch;
 }
 
