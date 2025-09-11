@@ -20,9 +20,14 @@ export default function TimerRing({
   const [timeLeft, setTimeLeft] = useState(player.timeLeft ?? 0);
   const totalTimeRef = useRef(player.timeLeft ?? 0);
 
-  // Theme: guard against undefined during fetch
-  const { data } = useTableTheme();
-  const positions = data?.positions ?? {};
+  const { data, isLoading, isError } = useTableTheme();
+  if (isLoading) {
+    return <div>Loading table theme...</div>;
+  }
+  if (isError || !data) {
+    return <div>Failed to load theme</div>;
+  }
+  const positions = data.positions;
 
   useEffect(() => {
     totalTimeRef.current = player.timeLeft ?? 0;
@@ -46,7 +51,8 @@ export default function TimerRing({
   }, [player.isActive, player.timeLeft]);
 
   const totalTime = totalTimeRef.current;
-  const progress = totalTime > 0 ? Math.max(0, Math.min(1, timeLeft / totalTime)) : 1;
+  const progress =
+    totalTime > 0 ? Math.max(0, Math.min(1, timeLeft / totalTime)) : 1;
 
   const ring = positions[player.pos ?? ''];
   const baseRingColor = ring?.color ?? 'rgba(255,255,255,0.4)';
@@ -54,7 +60,7 @@ export default function TimerRing({
 
   const avatarRingStyle: CSSProperties = {
     // Expose CSS var consumed by PlayerAvatar's SVG ring
-    ...( { ['--ring-color']: ringColor } as any ),
+    ...({ ['--ring-color']: ringColor } as any),
   };
 
   const progressStyle: CSSProperties = {
@@ -74,7 +80,9 @@ export default function TimerRing({
           'transition-transform',
           player.isActive ? 'scale-105' : '',
           winPulse ? 'winner-pulse' : '',
-        ].filter(Boolean).join(' ')}
+        ]
+          .filter(Boolean)
+          .join(' ')}
         avatarClass={avatarClass}
         avatarRingStyle={avatarRingStyle}
       />

@@ -23,10 +23,23 @@ export default function PlayerAvatar({
   avatarClass,
   avatarRingStyle,
 }: PlayerAvatarProps) {
-  // Robust against undefined while fetching
-  const { data } = useTableTheme();
-  const hairline = data?.hairline ?? 'transparent';
-  const positions = data?.positions ?? {};
+  const { data, isLoading, isError } = useTableTheme();
+  if (isLoading) {
+    return (
+      <div className={[wrapperClass, 'w-full flex justify-center'].join(' ')}>
+        Loading table theme...
+      </div>
+    );
+  }
+  if (isError || !data) {
+    return (
+      <div className={[wrapperClass, 'w-full flex justify-center'].join(' ')}>
+        Failed to load theme
+      </div>
+    );
+  }
+  const hairline = data.hairline;
+  const positions = data.positions;
   const ring = pos ? positions[pos] : undefined;
 
   return (
@@ -57,7 +70,7 @@ export default function PlayerAvatar({
           style={{
             ...(avatarRingStyle || {}),
             // TS doesn't include CSS vars on CSSProperties; cast to any:
-            ...( { ['--ring-color']: ring?.color ?? 'transparent' } as any ),
+            ...({ ['--ring-color']: ring?.color ?? 'transparent' } as any),
           }}
         >
           <circle

@@ -1,14 +1,17 @@
-import type { TableThemeResponse } from '@shared/types';
+import { TableThemeResponseSchema, type TableThemeResponse } from '@shared/types';
 
 /**
- * Minimal fallback table theme.
- * The backend seeds the database with full position data via migration or
- * admin UI. Frontend consumers should expect `/api/config/table-theme` to
- * provide positions and use these defaults only when the API is unavailable.
+ * Fetch the current table theme from the backend.
  */
-export const TABLE_THEME: TableThemeResponse = {
-  hairline: 'var(--color-hairline)',
-  positions: {},
-};
+export async function fetchTableTheme(
+  opts: { signal?: AbortSignal } = {},
+): Promise<TableThemeResponse> {
+  const res = await fetch('/api/config/table-theme', { signal: opts.signal });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch table theme: ${res.status}`);
+  }
+  const json = await res.json();
+  return TableThemeResponseSchema.parse(json);
+}
 
-export default TABLE_THEME;
+export default fetchTableTheme;

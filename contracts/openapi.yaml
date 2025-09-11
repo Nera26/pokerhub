@@ -1827,6 +1827,7 @@ paths:
   /config/table-theme:
     get:
       summary: Get table theme
+      description: Returns the current table theme mapping
       responses:
         '200':
           description: Table theme mapping

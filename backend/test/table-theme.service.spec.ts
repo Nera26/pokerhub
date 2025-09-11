@@ -1,6 +1,5 @@
 import { TableThemeService } from '../src/services/table-theme.service';
 import { TableThemeEntity } from '../src/database/entities/table-theme.entity';
-import { TABLE_THEME } from '@shared/config/tableTheme';
 import type { Repository } from 'typeorm';
 import type { TableThemeResponse } from '@shared/types';
 
@@ -17,6 +16,10 @@ describe('TableThemeService', () => {
         badge: '/badges/btn.svg',
       },
     },
+  };
+  const defaultTheme: TableThemeResponse = {
+    hairline: 'var(--color-hairline)',
+    positions: {},
   };
 
   beforeEach(() => {
@@ -42,7 +45,7 @@ describe('TableThemeService', () => {
     expect(await service.get()).toEqual(customTheme);
 
     const res = await service.update({ hairline: undefined as any, positions: undefined as any });
-    expect(res).toEqual(TABLE_THEME);
-    expect(await service.get()).toEqual(TABLE_THEME);
+    expect(res).toEqual(defaultTheme);
+    expect(await service.get()).toEqual(defaultTheme);
   });
 });
