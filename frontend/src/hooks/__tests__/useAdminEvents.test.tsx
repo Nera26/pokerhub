@@ -1,5 +1,5 @@
 import { waitFor } from '@testing-library/react';
-import { useAdminEvents } from '../useAdminFeed';
+import { useAdminEvents } from '../useAdminEvents';
 import type { ApiError } from '@/lib/api/client';
 import {
   renderHookWithClient,
