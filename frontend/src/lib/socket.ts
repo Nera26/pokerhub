@@ -76,7 +76,3 @@ export function sendAction(action: GameActionPayload, retries = 1) {
     },
   });
 }
-export const join = () => emitWithAck('join', {}, 'join:ack');
-export const buyIn = () => emitWithAck('buy-in', {}, 'buy-in:ack');
-export const sitOut = () => emitWithAck('sitout', {}, 'sitout:ack');
-export const rebuy = () => emitWithAck('rebuy', {}, 'rebuy:ack');
