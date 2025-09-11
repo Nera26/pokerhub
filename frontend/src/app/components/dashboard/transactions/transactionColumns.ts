@@ -1,32 +1,38 @@
 import type { Txn } from './types';
 import type { Column } from '@/app/components/common/TransactionHistoryTable';
-import { buildTransactionColumns } from '@/app/components/common/transactionColumns';
+import {
+  buildAmountColumn,
+  buildDateColumn,
+  buildStatusColumn,
+} from '@/app/components/common/transactionColumns';
 
 export type Transaction = Txn;
 
-const [amountColumn, dateColumn, statusColumn] = buildTransactionColumns<Transaction>({
+const commonOpts = {
   headerClassName: 'text-left py-3 px-2 text-text-secondary',
   cellClassName: 'py-3 px-2',
-});
+};
+
+const amountColumn = buildAmountColumn<Transaction>(commonOpts);
+const dateColumn = buildDateColumn<Transaction>(commonOpts);
+const statusColumn = buildStatusColumn<Transaction>(commonOpts);
 
 export const transactionColumns: Column<Transaction>[] = [
   dateColumn,
   {
     header: 'Action',
-    headerClassName: 'text-left py-3 px-2 text-text-secondary',
+    ...commonOpts,
     cell: (t) => t.action,
-    cellClassName: 'py-3 px-2',
   },
   amountColumn,
   {
     header: 'Performed By',
-    headerClassName: 'text-left py-3 px-2 text-text-secondary',
+    ...commonOpts,
     cell: (t) => t.by,
-    cellClassName: 'py-3 px-2',
   },
   {
     header: 'Notes',
-    headerClassName: 'text-left py-3 px-2 text-text-secondary',
+    ...commonOpts,
     cell: (t) => t.notes,
     cellClassName: 'py-3 px-2 text-text-secondary',
   },

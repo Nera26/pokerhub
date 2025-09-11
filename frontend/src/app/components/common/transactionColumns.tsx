@@ -12,6 +12,68 @@ function formatAmount(amt: number, currency: string) {
   return `${amt >= 0 ? '+' : '-'}${formatted}`;
 }
 
+interface ColumnOpts {
+  headerClassName?: string;
+  cellClassName?: string;
+}
+
+export function buildAmountColumn<
+  T extends {
+    amount: number;
+  },
+>({
+  currency = 'USD',
+  headerClassName,
+  cellClassName,
+}: ColumnOpts & { currency?: string } = {}): Column<T> {
+  return {
+    header: 'Amount',
+    headerClassName,
+    cellClassName,
+    cell: (row) => (
+      <span
+        className={row.amount >= 0 ? 'text-accent-green' : 'text-danger-red'}
+      >
+        {formatAmount(row.amount, currency)}
+      </span>
+    ),
+  };
+}
+
+export function buildDateColumn<
+  T extends {
+    date?: string;
+    datetime?: string;
+  },
+>({ headerClassName, cellClassName }: ColumnOpts = {}): Column<T> {
+  return {
+    header: 'Date & Time',
+    headerClassName,
+    cellClassName,
+    cell: (row) => row.date ?? row.datetime ?? '',
+  };
+}
+
+export function buildStatusColumn<
+  T extends {
+    status: string;
+  },
+>({ headerClassName, cellClassName }: ColumnOpts = {}): Column<T> {
+  return {
+    header: 'Status',
+    headerClassName,
+    cellClassName,
+    cell: (row) => {
+      const { label, style } = getStatusInfo(row.status);
+      return (
+        <span className={`${style} px-2 py-1 rounded-md font-medium`}>
+          {label}
+        </span>
+      );
+    },
+  };
+}
+
 export function buildTransactionColumns<
   T extends {
     amount: number;
@@ -19,58 +81,35 @@ export function buildTransactionColumns<
     date?: string;
     datetime?: string;
   },
->(
-  opts: {
-    getType?: (row: T) => string;
-    headerClassName?: string;
-    cellClassName?: string;
-    currency?: string;
-  } = {},
-): Column<T>[] {
-  const { getType, headerClassName, cellClassName, currency = 'USD' } = opts;
-
+>({
+  getType,
+  headerClassName,
+  cellClassName,
+  currency,
+}: {
+  getType?: (row: T) => string;
+  headerClassName?: string;
+  cellClassName?: string;
+  currency?: string;
+} = {}): Column<T>[] {
   const cols: Column<T>[] = [];
 
   if (getType) {
     cols.push({
       header: 'Type',
+      headerClassName,
+      cellClassName,
       cell: (row) => getType(row),
     });
   }
 
   cols.push(
-    {
-      header: 'Amount',
-      cell: (row) => (
-        <span
-          className={row.amount >= 0 ? 'text-accent-green' : 'text-danger-red'}
-        >
-          {formatAmount(row.amount, currency)}
-        </span>
-      ),
-    },
-    {
-      header: 'Date & Time',
-      cell: (row) => row.date ?? row.datetime ?? '',
-    },
-    {
-      header: 'Status',
-      cell: (row) => {
-        const { label, style } = getStatusInfo(row.status);
-        return (
-          <span className={`${style} px-2 py-1 rounded-md font-medium`}>
-            {label}
-          </span>
-        );
-      },
-    },
+    buildAmountColumn<T>({ currency, headerClassName, cellClassName }),
+    buildDateColumn<T>({ headerClassName, cellClassName }),
+    buildStatusColumn<T>({ headerClassName, cellClassName }),
   );
 
-  return cols.map((col) => ({
-    ...col,
-    headerClassName,
-    cellClassName,
-  }));
+  return cols;
 }
 
 export type TransactionColumns<T> = ReturnType<
