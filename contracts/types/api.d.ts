@@ -1105,7 +1105,7 @@ export interface paths {
         };
       };
       responses: {
-        /** @description Commitment, seed and nonce for the hand */
+        /** @description Commitment, seed, nonce and deck for the hand */
         200: {
           content: {
             "application/json": components["schemas"]["HandProof"];

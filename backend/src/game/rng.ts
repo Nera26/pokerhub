@@ -1,5 +1,5 @@
 import { randomBytes } from 'crypto';
-import { hashCommitment, shuffle, bytesToHex } from '@shared/verify';
+import { hashCommitment, shuffle, bytesToHex, standardDeck } from '@shared/verify';
 import type { HandProofResponse } from '@shared/types';
 
 /**
@@ -31,6 +31,7 @@ export class HandRNG {
       commitment: this.commitment,
       seed: bytesToHex(this.seed),
       nonce: bytesToHex(this.nonce),
+      deck: shuffle(standardDeck(), this.seed),
     };
   }
 }

@@ -56,7 +56,11 @@ export default function FairnessModal({
       {!proof && <p>Loading...</p>}
       {proof && (
         <div className="space-y-2 break-words">
-          <ProofDetails proof={proof} valid={valid ?? undefined} deck={null} />
+          <ProofDetails
+            proof={proof}
+            valid={valid ?? undefined}
+            deck={proof.deck ?? null}
+          />
           <Link
             href={`/hands/${handId}/proof`}
             className="underline text-accent-blue"

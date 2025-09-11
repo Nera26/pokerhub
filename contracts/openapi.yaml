@@ -1024,7 +1024,7 @@ paths:
             type: string
       responses:
         '200':
-          description: Commitment, seed and nonce for the hand
+          description: Commitment, seed, nonce and deck for the hand
           content:
             application/json:
               schema:
@@ -3852,7 +3852,7 @@ components:
       - finishes
   HandProof:
     type: object
-    description: Commitment, seed and nonce proving deck fairness for a hand.
+    description: Commitment, seed, nonce and deck proving fairness for a hand.
     properties:
       seed:
         type: string
@@ -3860,6 +3860,10 @@ components:
         type: string
       commitment:
         type: string
+      deck:
+        type: array
+        items:
+          type: integer
     required:
       - seed
       - nonce

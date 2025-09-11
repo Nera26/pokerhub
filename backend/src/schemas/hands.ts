@@ -5,6 +5,7 @@ export const HandProofResponse = z.object({
   seed: z.string(),
   nonce: z.string(),
   commitment: z.string(),
+  deck: z.array(z.number()).optional(),
 });
 export type HandProofResponse = z.infer<typeof HandProofResponse>;
 
