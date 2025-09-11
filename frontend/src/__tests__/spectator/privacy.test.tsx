@@ -2,15 +2,17 @@ import { render, screen, waitFor } from '@testing-library/react';
 import SpectatorTable from '@/features/table/spectator';
 
 jest.mock('@/lib/spectator-socket', () => ({
-  subscribeToTable: jest.fn((_tableId: string, handler: (state: any) => void) => {
-    handler({
-      players: [
-        { id: 'p1', stack: 100, holeCards: ['AS', 'KD'], secret: 'private' },
-      ],
-      communityCards: [],
-    });
-    return jest.fn();
-  }),
+  subscribeToTable: jest.fn(
+    (_tableId: string, handler: (state: any) => void) => {
+      handler({
+        players: [
+          { id: 'p1', stack: 100, holeCards: ['AS', 'KD'], secret: 'private' },
+        ],
+        communityCards: [],
+      });
+      return jest.fn();
+    },
+  ),
   disconnectSpectatorSocket: jest.fn(),
 }));
 
