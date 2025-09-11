@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import fc from 'fast-check';
-import { GameEngine, GameAction } from './engine';
+import { GameEngine, GameAction } from '../../src/game/engine';
 import { hashCommitment, verifyProof } from '@shared/verify';
 import { existsSync, readFileSync, unlinkSync } from 'fs';
 import path from 'path';

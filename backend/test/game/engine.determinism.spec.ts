@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import path from 'path';
 import { readFileSync } from 'fs';
-import { GameEngine, GameAction } from './engine';
+import { GameEngine, GameAction } from '../../src/game/engine';
 
 describe('GameEngine determinism', () => {
   it('produces identical logs for fixed seed and actions', async () => {

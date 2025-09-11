@@ -1,4 +1,4 @@
-import { TablesService } from './tables.service';
+import { TablesService } from '../../src/game/tables.service';
 
 describe('TablesService.getTable', () => {
   it('maps state from RoomManager into table data', async () => {

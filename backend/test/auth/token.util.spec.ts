@@ -1,6 +1,6 @@
 import { UnauthorizedException, type ExecutionContext } from '@nestjs/common';
 import type { Socket } from 'socket.io';
-import { extractBearerToken } from './token.util';
+import { extractBearerToken } from '../../src/auth/token.util';
 
 describe('extractBearerToken', () => {
   const makeHttpContext = (authorization?: string): ExecutionContext =>
