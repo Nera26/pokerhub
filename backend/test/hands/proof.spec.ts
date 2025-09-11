@@ -44,7 +44,12 @@ describe('HandController proof', () => {
   });
 
   it('prefers proof from log file', async () => {
-    const proof: HandProofResponse = { seed: 'fs', nonce: 'fn', commitment: 'fc' };
+    const proof: HandProofResponse = {
+      seed: 'fs',
+      nonce: 'fn',
+      commitment: 'fc',
+      deck: [1, 2, 3],
+    };
     const dir = join(__dirname, '../../../storage/hand-logs');
     mkdirSync(dir, { recursive: true });
     const file = join(dir, 'hand1.jsonl');

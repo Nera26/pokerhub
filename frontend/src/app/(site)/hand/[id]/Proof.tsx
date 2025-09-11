@@ -8,7 +8,7 @@ export default async function Proof({ handId }: { handId: string }) {
   const valid = await verifyProof(proof);
   return (
     <div className="space-y-2 break-words">
-      <ProofDetails proof={proof} valid={valid} deck={null} />
+      <ProofDetails proof={proof} valid={valid} deck={proof.deck ?? null} />
       <ProofDownloadButton handId={handId} />
     </div>
   );

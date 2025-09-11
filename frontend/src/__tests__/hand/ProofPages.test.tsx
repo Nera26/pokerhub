@@ -5,7 +5,7 @@ jest.mock('@/lib/api/hands');
 jest.mock('@shared/verify');
 
 describe('Proof page', () => {
-  const proof = { seed: 's', nonce: 'n', commitment: 'c' };
+  const proof = { seed: 's', nonce: 'n', commitment: 'c', deck: [1, 2] };
   const { fetchHandProof } = require('@/lib/api/hands') as Record<
     string,
     jest.Mock
@@ -25,5 +25,7 @@ describe('Proof page', () => {
     const { findByText } = render(proofElement);
     const seedLabel = await findByText('Seed:');
     expect(seedLabel.parentElement!.textContent).toContain('s');
+    const deckLabel = await findByText('Deck:');
+    expect(deckLabel.parentElement!.textContent).toContain('1 2');
   });
 });

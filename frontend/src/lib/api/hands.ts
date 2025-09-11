@@ -16,9 +16,14 @@ export async function fetchHandProof(
   id: string,
   { signal }: { signal?: AbortSignal } = {},
 ): Promise<HandProofResponse> {
-  return apiClient(`/api/hands/${id}/proof`, HandProofResponseSchema, {
-    signal,
-  });
+  const proof = await apiClient(
+    `/api/hands/${id}/proof`,
+    HandProofResponseSchema,
+    {
+      signal,
+    },
+  );
+  return proof;
 }
 
 export async function fetchVerifiedHandProof(
