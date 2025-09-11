@@ -36,6 +36,9 @@ jest.mock('@/app/components/dashboard/analytics/ErrorChart', () => () => (
 jest.mock('@/app/components/dashboard/analytics/AuditTable', () => () => (
   <div />
 ));
+jest.mock('@/app/components/dashboard/analytics/SecurityAlerts', () => () => (
+  <div />
+));
 jest.mock(
   '@/app/components/dashboard/analytics/AdvancedFilterModal',
   () => () => null,
@@ -55,6 +58,7 @@ describe('Analytics CSV export', () => {
       data: {
         logs: [
           {
+            id: 1,
             timestamp: '2024-01-01',
             type: 'login',
             description: 'desc',

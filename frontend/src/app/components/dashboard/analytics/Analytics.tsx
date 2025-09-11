@@ -28,6 +28,7 @@ import type {
   AuditLogType,
   LogTypeClasses,
 } from '@shared/types';
+import { AuditLogEntrySchema } from '@shared/schemas/analytics';
 import {
   fetchLogTypeClasses,
   fetchErrorCategories,
@@ -110,13 +111,15 @@ export default function Analytics() {
   const statLogins = summary?.logins ?? 0;
 
   const exportCSV = () => {
-    const header = ['Date', 'Type', 'Description', 'User'];
-    const rows = logs.map((r) => [
-      r.timestamp,
-      r.type,
-      `"${r.description}"`,
-      r.user,
-    ]);
+    const keys = Object.keys(
+      AuditLogEntrySchema.shape,
+    ) as (keyof AuditLogEntry)[];
+    const header = keys;
+    const rows = logs.map((r) =>
+      keys.map((k) =>
+        k === 'description' ? `"${r[k] ?? ''}"` : String(r[k] ?? ''),
+      ),
+    );
     exportCsv(
       `audit_logs_${new Date().toISOString().split('T')[0]}.csv`,
       header,
