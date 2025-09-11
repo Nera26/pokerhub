@@ -32,18 +32,21 @@ export default function ErrorChart({ labels, data }: ErrorChartProps) {
     );
   }
 
-  const fallback = [
-    'var(--color-danger-red)',
-    'var(--color-accent-yellow)',
-    'var(--color-accent-blue)',
-    'var(--color-accent-green)',
-  ];
-  const colors = palette ?? fallback;
+  if (isError || !palette) {
+    return (
+      <div className="bg-card-bg p-6 rounded-2xl shadow-[0_4px_8px_rgba(0,0,0,0.3)]">
+        <h3 className="text-lg font-bold mb-4">Error Distribution</h3>
+        <InlineError message="Failed to load chart palette" />
+      </div>
+    );
+  }
 
   const config = useMemo(
     () =>
       buildChartConfig(() => {
-        const backgroundColor = labels.map((_, i) => colors[i % colors.length]);
+        const backgroundColor = labels.map(
+          (_, i) => palette[i % palette.length],
+        );
 
         return {
           type: 'doughnut',
@@ -61,7 +64,7 @@ export default function ErrorChart({ labels, data }: ErrorChartProps) {
           },
         };
       }),
-    [labels, data, colors],
+    [labels, data, palette],
   );
 
   const { ref } = useChart(config, [config]);
@@ -69,7 +72,6 @@ export default function ErrorChart({ labels, data }: ErrorChartProps) {
   return (
     <div className="bg-card-bg p-6 rounded-2xl shadow-[0_4px_8px_rgba(0,0,0,0.3)]">
       <h3 className="text-lg font-bold mb-4">Error Distribution</h3>
-      {isError && <InlineError message="Failed to load chart palette" />}
       <div className="h-64">
         <canvas ref={ref} />
       </div>

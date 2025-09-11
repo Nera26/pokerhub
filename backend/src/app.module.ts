@@ -33,7 +33,7 @@ import { ConfigController } from './routes/config.controller';
 import { PrecacheController } from './routes/precache.controller';
 import { NavIconsController } from './routes/nav-icons.controller';
 import { HistoryTabsController } from './routes/history-tabs.controller';
-import { SettingsController } from './routes/settings.controller';
+import { ChartController } from './routes/chart.controller';
 import { SiteMetadataController } from './routes/site-metadata.controller';
 import { AppService } from './app.service';
 import { API_CONTRACT_VERSION } from '@shared/constants';
@@ -166,7 +166,7 @@ import { NavIconEntity } from './database/entities/nav-icon.entity';
     PrecacheController,
     NavIconsController,
     HistoryTabsController,
-    SettingsController,
+    ChartController,
     SiteMetadataController,
   ],
   providers: [
