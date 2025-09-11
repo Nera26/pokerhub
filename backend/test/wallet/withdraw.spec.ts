@@ -1,6 +1,10 @@
 import { WalletService } from '../../src/wallet/wallet.service';
 import { EventPublisher } from '../../src/events/events.service';
 import { setupWalletTest, WalletTestContext } from './test-utils';
+import {
+  expectDailyLimitExceeded,
+  expectRateLimitExceeded,
+} from './shared-wallet-utils';
 
 describe('WalletService withdraw', () => {
   let ctx: WalletTestContext;
@@ -49,70 +53,22 @@ describe('WalletService withdraw', () => {
   });
 
   it('enforces rate limits', async () => {
-    await service.withdraw(
+    await expectRateLimitExceeded(
+      service,
+      'withdraw',
       'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-      100,
-      'd1',
-      '2.2.2.2',
-      'USD',
     );
-    await service.withdraw(
-      'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-      100,
-      'd1',
-      '2.2.2.2',
-      'USD',
-    );
-    await service.withdraw(
-      'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-      100,
-      'd1',
-      '2.2.2.2',
-      'USD',
-    );
-    await expect(
-      service.withdraw(
-        'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-        100,
-        'd1',
-        '2.2.2.2',
-        'USD',
-      ),
-    ).rejects.toThrow('Rate limit exceeded');
   });
 
 
   it('flags and rejects withdrawals exceeding daily limits', async () => {
-    process.env.WALLET_DAILY_WITHDRAW_LIMIT = '200';
-    await service.withdraw(
+    await expectDailyLimitExceeded(
+      service,
+      'withdraw',
       'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-      150,
-      'dev3',
-      '4.4.4.4',
-      'USD',
+      events,
+      ctx.redis,
     );
-    (events.emit as jest.Mock).mockClear();
-    await expect(
-      service.withdraw(
-        'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-        60,
-        'dev4',
-        '4.4.4.4',
-        'USD',
-      ),
-    ).rejects.toThrow('Daily limit exceeded');
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(events.emit as jest.Mock).toHaveBeenCalledWith(
-      'antiCheat.flag',
-      expect.objectContaining({
-        accountId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-        operation: 'withdraw',
-        currency: 'USD',
-      }),
-    );
-    const [key] = await ctx.redis.keys('wallet:withdraw*');
-    expect(parseInt((await ctx.redis.get(key)) ?? '0', 10)).toBe(150);
-    delete process.env.WALLET_DAILY_WITHDRAW_LIMIT;
   });
 
   it('commits on challenge success', async () => {
