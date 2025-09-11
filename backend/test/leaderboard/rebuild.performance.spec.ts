@@ -1,30 +1,23 @@
-import { LeaderboardService } from '../../src/leaderboard/leaderboard.service';
-import { writeSyntheticEvents } from './synthetic-events';
-import { Cache } from 'cache-manager';
-import { ConfigService } from '@nestjs/config';
-import { MockCache, ClickHouseAnalytics } from './test-utils';
+import { createLeaderboardPerfService } from './perf-utils';
 
 describe('leaderboard rebuild performance', () => {
-  it('rebuildFromEvents(30) completes under 30 minutes', async () => {
+  it('rebuildFromEvents completes under threshold', async () => {
     jest.useFakeTimers();
-    await writeSyntheticEvents(30);
-    const cache = new MockCache();
-    const analytics = new ClickHouseAnalytics();
-    const repo = {
-      clear: jest.fn(),
-      insert: jest.fn(),
-      find: jest.fn().mockResolvedValue([]),
-    } as any;
-    const service = new LeaderboardService(
-      cache as unknown as Cache,
-      { find: jest.fn() } as any,
-      repo,
-      analytics as any,
-      new ConfigService(),
+    const maxDurationMs = Number(
+      process.env.LEADERBOARD_REBUILD_MAX_MS ?? 30 * 60 * 1000,
     );
-    const { durationMs, memoryMb } = await service.rebuildFromEvents(30);
+    const days = Number(process.env.LEADERBOARD_BENCH_DAYS ?? 30);
+    const players = Number(process.env.LEADERBOARD_BENCH_PLAYERS ?? 10);
+    const { service, analytics } = await createLeaderboardPerfService({
+      days,
+      players,
+    });
+    const { durationMs, memoryMb } = await service.rebuildFromEvents(
+      days,
+      maxDurationMs,
+    );
     console.info('leaderboard rebuild', { durationMs, memoryMb });
-    expect(durationMs).toBeLessThanOrEqual(30 * 60 * 1000);
+    expect(durationMs).toBeLessThanOrEqual(maxDurationMs);
     // memoryMb captured and sent via analytics.ingest inside service
     expect(memoryMb).toBeGreaterThanOrEqual(0);
     await analytics.close();
