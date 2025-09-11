@@ -10,13 +10,14 @@ import {
   faArrowUp,
 } from '@fortawesome/free-solid-svg-icons';
 import dynamic from 'next/dynamic';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuthToken } from '@/app/store/authStore';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import { useRevenueBreakdown } from '@/hooks/useRevenueBreakdown';
 import { useDashboardUsers } from '@/hooks/useDashboardUsers';
 import { useActiveTables } from '@/hooks/useActiveTables';
 import { useActivity } from '@/hooks/useActivity';
+import { fetchProfile } from '@/lib/api/profile';
 import MetricCard from './MetricCard';
 import BroadcastPanel from './BroadcastPanel';
 import Messages from './Messages';
@@ -96,6 +97,16 @@ export default function Dashboard() {
     isLoading: activityLoading,
     error: activityError,
   } = useActivity();
+
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchProfile({ signal: controller.signal })
+      .then((p) => setProfileAvatarUrl(p.avatarUrl || null))
+      .catch(() => setProfileAvatarUrl(null));
+    return () => controller.abort();
+  }, []);
 
   const token = useAuthToken();
   const isAdmin = useMemo(() => {
@@ -226,7 +237,7 @@ export default function Dashboard() {
                   >
                     <div className="flex items-center gap-3">
                       <Image
-                        src={u.avatarKey || DEFAULT_AVATAR}
+                        src={u.avatarKey || profileAvatarUrl || DEFAULT_AVATAR}
                         alt={u.username}
                         width={32}
                         height={32}
