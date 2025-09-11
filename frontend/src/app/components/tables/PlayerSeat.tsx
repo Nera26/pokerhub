@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
+import Image from 'next/image';
 import { useSetSeatPosition } from '../../store/tableStore';
 import { useTableUi } from './TableUiContext';
 
@@ -17,6 +18,7 @@ export interface PlayerSeatProps {
   style?: CSSProperties;
   street?: 'pre' | 'flop' | 'turn' | 'river';
   density?: 'compact' | 'default' | 'large';
+  badge?: string;
 }
 
 export default function PlayerSeat({
@@ -24,6 +26,7 @@ export default function PlayerSeat({
   style,
   street: _street = 'pre',
   density = 'default',
+  badge,
 }: PlayerSeatProps) {
   const { pendingBySeat, setActiveSeat, activeSeatId } = useTableUi();
   const optimistic = pendingBySeat[player.id] || 0;
@@ -89,11 +92,23 @@ export default function PlayerSeat({
         <div className="relative flex flex-col items-center z-20">
           <WinAnimation player={player}>
             {(winPulse) => (
-              <TimerRing
-                player={player}
-                avatarClass={sz.avatar}
-                winPulse={winPulse}
-              />
+              <div className="relative">
+                <TimerRing
+                  player={player}
+                  avatarClass={sz.avatar}
+                  winPulse={winPulse}
+                />
+                {badge && (
+                  <Image
+                    src={badge}
+                    alt={player.pos ?? 'badge'}
+                    width={32}
+                    height={32}
+                    sizes="32px"
+                    className="pointer-events-none absolute -bottom-1 -right-1 translate-x-1/3 translate-y-1/3 z-10 w-8 h-8"
+                  />
+                )}
+              </div>
             )}
           </WinAnimation>
 

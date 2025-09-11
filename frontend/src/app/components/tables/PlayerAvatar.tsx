@@ -86,34 +86,6 @@ export default function PlayerAvatar({
             }}
           />
         </svg>
-
-        {/* Position badge / label */}
-        {pos &&
-          (ring?.badge ? (
-            <Image
-              src={ring.badge}
-              alt={pos}
-              width={32}
-              height={32}
-              sizes="32px"
-              className="pointer-events-none absolute -bottom-1 -right-1 translate-x-1/3 translate-y-1/3 z-10 w-8 h-8 rounded-full"
-              style={{
-                filter: `drop-shadow(0 0 4px ${ring?.glow ?? 'transparent'})`,
-              }}
-            />
-          ) : (
-            <span
-              className="pointer-events-none absolute -bottom-1 -right-1 px-1 rounded text-[10px] font-semibold"
-              style={{
-                color: ring?.color ?? 'inherit',
-                // Use a neutral background if there's no SVG badge asset:
-                backgroundColor: 'rgba(0,0,0,0.6)',
-                boxShadow: `0 0 6px ${ring?.glow ?? 'transparent'}`,
-              }}
-            >
-              {pos}
-            </span>
-          ))}
       </div>
     </div>
   );
