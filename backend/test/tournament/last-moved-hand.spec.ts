@@ -7,36 +7,9 @@ import {
   TournamentState,
 } from '../../src/database/entities/tournament.entity';
 import { Repository } from 'typeorm';
+import { createSeatRepo, createTournamentRepo } from './helpers';
 
 describe('TableBalancerService lastMovedHand persistence', () => {
-  function createTournamentRepo(initial: Tournament[]): Repository<Tournament> {
-    const items = new Map(initial.map((t) => [t.id, t]));
-    return {
-      find: jest.fn(async () => Array.from(items.values())),
-      findOne: jest.fn(async ({ where: { id } }) => items.get(id)),
-      save: jest.fn(async (obj: Tournament) => {
-        items.set(obj.id, obj);
-        return obj;
-      }),
-    } as unknown as Repository<Tournament>;
-  }
-
-  function createSeatRepo(tables: Table[]): Repository<Seat> {
-    const seats = tables.flatMap((t) => t.seats);
-    const items = new Map(seats.map((s) => [s.id, s]));
-    return {
-      find: jest.fn(async () => Array.from(items.values())),
-      save: jest.fn(async (seat: Seat) => {
-        tables.forEach((tbl) => {
-          tbl.seats = tbl.seats.filter((s) => s.id !== seat.id);
-        });
-        seat.table.seats.push(seat);
-        items.set(seat.id, seat);
-        return seat;
-      }),
-    } as unknown as Repository<Seat>;
-  }
-
   it('skips moves for players who recently moved even after restart', async () => {
     const tables: Table[] = [
       { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
