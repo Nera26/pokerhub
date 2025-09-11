@@ -18,7 +18,7 @@ import {
 
 export type { Table, Tournament, TournamentDetails, CTA };
 
-export async function fetchLobbyData<T>(
+async function fetchLobbyData<T>(
   endpoint: string,
   schema: ZodType<T>,
   { signal }: { signal?: AbortSignal } = {},
