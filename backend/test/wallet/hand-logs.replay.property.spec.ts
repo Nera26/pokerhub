@@ -1,15 +1,7 @@
 import { readdirSync, readFileSync, promises as fs, existsSync } from 'fs';
 import path from 'path';
-import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
-import { Account } from '../../src/wallet/account.entity';
 import { JournalEntry } from '../../src/wallet/journal-entry.entity';
-import { Disbursement } from '../../src/wallet/disbursement.entity';
-import { SettlementJournal } from '../../src/wallet/settlement-journal.entity';
-import { WalletService } from '../../src/wallet/wallet.service';
-import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
-import { KycService } from '../../src/wallet/kyc.service';
-import { MockRedis } from '../utils/mock-redis';
+import { createFlowTestContext, seedAccounts } from './flow-test-utils';
 
 async function writeFailure(data: unknown) {
   const dir = path.join(__dirname, '../../../storage');
@@ -21,61 +13,6 @@ async function writeFailure(data: unknown) {
 
 interface ReplayResult {
   entries: { account: string; amount: number; ref: string }[];
-}
-
-async function setup(accountIds: string[]) {
-  const db = newDb();
-  db.public.registerFunction({
-    name: 'version',
-    returns: 'text',
-    implementation: () => 'pg-mem',
-  });
-  db.public.registerFunction({
-    name: 'current_database',
-    returns: 'text',
-    implementation: () => 'test',
-  });
-  let seq = 1;
-  db.public.registerFunction({
-    name: 'uuid_generate_v4',
-    returns: 'text',
-    implementation: () => {
-      const id = seq.toString(16).padStart(32, '0');
-      seq++;
-      return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(16, 20)}-${id.slice(20)}`;
-    },
-  });
-  const dataSource = db.adapters.createTypeormDataSource({
-    type: 'postgres',
-    entities: [Account, JournalEntry, Disbursement, SettlementJournal],
-    synchronize: true,
-  }) as DataSource;
-  await dataSource.initialize();
-  const accountRepo = dataSource.getRepository(Account);
-  const journalRepo = dataSource.getRepository(JournalEntry);
-  const disbRepo = dataSource.getRepository(Disbursement);
-  const settleRepo = dataSource.getRepository(SettlementJournal);
-  const redis = new MockRedis();
-  const provider = {} as unknown as PaymentProviderService;
-  const kyc = { validate: async () => undefined } as unknown as KycService;
-  const events = { emit: jest.fn() } as any;
-  const service = new WalletService(
-    accountRepo,
-    journalRepo,
-    disbRepo,
-    settleRepo,
-    events,
-    redis,
-    provider,
-    kyc,
-  );
-  await accountRepo.save(
-    accountIds.map((id) => ({ id, name: id, balance: 0, currency: 'USD' })),
-  );
-  const accounts = new Map(
-    (await accountRepo.find()).map((a) => [a.id, a]),
-  );
-  return { dataSource, service, journalRepo, accounts };
 }
 
 function normalize(entries: JournalEntry[]) {
@@ -99,7 +36,9 @@ async function replay(file: string): Promise<ReplayResult> {
       lines.flatMap((line) => Object.keys(JSON.parse(line).accounts || {})),
     ),
   );
-  const { dataSource, service, journalRepo, accounts } = await setup(accountIds);
+  const { dataSource, service, accountRepo, journalRepo } =
+    await createFlowTestContext();
+  const accounts = await seedAccounts(accountRepo, accountIds);
   try {
     for (const [index, line] of lines.entries()) {
       const { accounts: acct } = JSON.parse(line);
