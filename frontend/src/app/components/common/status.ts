@@ -1,23 +1,21 @@
-import type { StatusBadge } from '../dashboard/transactions/types';
+import { useQuery } from '@tanstack/react-query';
+import { fetchTransactionStatuses } from '@/lib/api/transactions';
+import {
+  DEFAULT_STATUS_INFO,
+  type TransactionStatusesResponse,
+} from '@shared/transactions.schema';
 
-export const STATUS_LABELS: Record<StatusBadge, string> = {
-  pending: 'Pending',
-  confirmed: 'Completed',
-  rejected: 'Rejected',
-};
+export function useStatusInfo() {
+  const { data } = useQuery<TransactionStatusesResponse>({
+    queryKey: ['transaction-statuses'],
+    queryFn: fetchTransactionStatuses,
+  });
 
-export const STATUS_STYLES: Record<string, string> = {
-  Pending: 'bg-accent-yellow/20 text-accent-yellow',
-  Completed: 'bg-accent-green/20 text-accent-green',
-  Rejected: 'bg-danger-red/20 text-danger-red',
-  Failed: 'bg-danger-red/20 text-danger-red',
-  Processing: 'bg-accent-yellow/20 text-accent-yellow',
-  'Pending Confirmation': 'bg-accent-yellow/20 text-accent-yellow',
-  Pending: 'bg-accent-yellow/20 text-accent-yellow',
-};
+  const map = { ...DEFAULT_STATUS_INFO, ...(data ?? {}) };
 
-export function getStatusInfo(status: string) {
-  const label = STATUS_LABELS[status as StatusBadge] ?? status;
-  const style = STATUS_STYLES[label] ?? 'bg-border-dark text-text-secondary';
-  return { label, style };
+  return (status: string) =>
+    map[status] ?? {
+      label: status,
+      style: 'bg-border-dark text-text-secondary',
+    };
 }

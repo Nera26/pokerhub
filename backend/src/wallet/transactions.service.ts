@@ -10,6 +10,8 @@ import {
   TransactionLogResponseSchema,
   TransactionLogQuerySchema,
   TransactionTypesResponseSchema,
+  TransactionStatusesResponseSchema,
+  DEFAULT_STATUS_INFO,
   type TransactionLogQuery,
   type FilterOptions,
 } from '@shared/transactions.schema';
@@ -39,6 +41,10 @@ export class TransactionsService {
   async getTransactionTypes() {
     const res = await this.types.find();
     return TransactionTypesResponseSchema.parse(res);
+  }
+
+  async getTransactionStatuses() {
+    return TransactionStatusesResponseSchema.parse(DEFAULT_STATUS_INFO);
   }
 
   async getTransactionTabs(): Promise<TransactionTab[]> {

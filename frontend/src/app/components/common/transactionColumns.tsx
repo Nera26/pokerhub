@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Column } from './TransactionHistoryTable';
-import { getStatusInfo } from './status';
+import { useStatusInfo } from './status';
 
 function formatAmount(amt: number, currency: string) {
   const formatted = Math.abs(amt).toLocaleString(undefined, {
@@ -59,18 +59,20 @@ export function buildStatusColumn<
     status: string;
   },
 >({ headerClassName, cellClassName }: ColumnOpts = {}): Column<T> {
+  function StatusCell({ status }: { status: string }) {
+    const getInfo = useStatusInfo();
+    const { label, style } = getInfo(status);
+    return (
+      <span className={`${style} px-2 py-1 rounded-md font-medium`}>
+        {label}
+      </span>
+    );
+  }
   return {
     header: 'Status',
     headerClassName,
     cellClassName,
-    cell: (row) => {
-      const { label, style } = getStatusInfo(row.status);
-      return (
-        <span className={`${style} px-2 py-1 rounded-md font-medium`}>
-          {label}
-        </span>
-      );
-    },
+    cell: (row) => <StatusCell status={row.status} />,
   };
 }
 

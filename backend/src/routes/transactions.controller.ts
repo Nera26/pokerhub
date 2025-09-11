@@ -8,6 +8,7 @@ import {
   TransactionTypesResponseSchema,
   TransactionLogResponseSchema,
   TransactionLogQuerySchema,
+  TransactionStatusesResponseSchema,
 } from '@shared/transactions.schema';
 import { TransactionTabsResponseSchema } from '@shared/wallet.schema';
 import { TransactionsService } from '../wallet/transactions.service';
@@ -39,6 +40,14 @@ export class TransactionsController {
   async types() {
     const res = await this.txService.getTransactionTypes();
     return TransactionTypesResponseSchema.parse(res);
+  }
+
+  @Get('transactions/statuses')
+  @ApiOperation({ summary: 'Get transaction statuses' })
+  @ApiResponse({ status: 200, description: 'Transaction statuses' })
+  async statuses() {
+    const res = await this.txService.getTransactionStatuses();
+    return TransactionStatusesResponseSchema.parse(res);
   }
 
   @Get('admin/transactions')
