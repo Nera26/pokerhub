@@ -32,6 +32,7 @@ import { LanguagesController } from './routes/languages.controller';
 import { ConfigController } from './routes/config.controller';
 import { PrecacheController } from './routes/precache.controller';
 import { NavIconsController } from './routes/nav-icons.controller';
+import { HistoryTabsController } from './routes/history-tabs.controller';
 import { SettingsController } from './routes/settings.controller';
 import { AppService } from './app.service';
 import { API_CONTRACT_VERSION } from '@shared/constants';
@@ -69,6 +70,7 @@ import { BonusService } from './services/bonus.service';
 import { ChipDenomsService } from './services/chip-denoms.service';
 import { TableThemeService } from './services/table-theme.service';
 import { NavIconsService } from './services/nav-icons.service';
+import { HistoryTabsService } from './services/history-tabs.service';
 import { SettingsService } from './services/settings.service';
 import { ConfigService as AppConfigService } from './services/config.service';
 import { BonusOptionEntity } from './database/entities/bonus-option.entity';
@@ -162,6 +164,7 @@ import { NavIconEntity } from './database/entities/nav-icon.entity';
     ConfigController,
     PrecacheController,
     NavIconsController,
+    HistoryTabsController,
     SettingsController,
   ],
   providers: [
@@ -172,6 +175,7 @@ import { NavIconEntity } from './database/entities/nav-icon.entity';
     PromotionsService,
     LanguagesService,
     NavIconsService,
+    HistoryTabsService,
     SettingsService,
     BonusService,
     ChipDenomsService,

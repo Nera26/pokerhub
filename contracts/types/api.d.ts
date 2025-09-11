@@ -44,6 +44,19 @@ export interface paths {
       };
     };
   };
+  "/history-tabs": {
+    /** List history tabs */
+    get: {
+      responses: {
+        /** @description History tabs */
+        200: {
+          content: {
+            "application/json": components["schemas"]["HistoryTabsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/settings/chart-palette": {
     /** Get chart palette colors */
     get: {
@@ -2648,6 +2661,13 @@ export interface components {
       svg: string;
     };
     NavIconsResponse: components["schemas"]["NavIcon"][];
+    HistoryTabItem: {
+      key: string;
+      label: string;
+    };
+    HistoryTabsResponse: {
+      tabs: components["schemas"]["HistoryTabItem"][];
+    };
     ChartPaletteResponse: string[];
     ChipDenominationsResponse: {
       denoms: number[];
