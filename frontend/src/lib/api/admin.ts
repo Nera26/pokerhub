@@ -8,17 +8,12 @@ import {
   type BonusOptionsResponse,
   AdminTabResponseSchema,
   type AdminTab,
-  AdminEventsResponseSchema,
-  type AdminEvent,
 } from '@shared/types';
 import { SidebarItemsResponseSchema, type SidebarItem } from '@shared/types';
 import { DashboardUserSchema, type DashboardUser } from '@shared/types';
 import type { CreateUserRequest } from '@shared/types';
 export { AdminTournamentSchema } from '@shared/types';
 export type { AdminTournament } from '@shared/types';
-
-export const AuditActionColorsSchema = z.record(z.string());
-export type AuditActionColors = z.infer<typeof AuditActionColorsSchema>;
 
 /** =======================
  *  Admin Tournaments
@@ -39,23 +34,9 @@ export async function fetchAdminTabs({
   return apiClient('/api/admin/tabs', AdminTabResponseSchema, { signal });
 }
 
-export async function fetchAdminEvents({
-  signal,
-}: { signal?: AbortSignal } = {}): Promise<AdminEvent[]> {
-  return apiClient('/api/admin/events', AdminEventsResponseSchema, { signal });
-}
-
 export async function acknowledgeAdminEvent(id: string): Promise<void> {
   await apiClient(`/api/admin/events/${id}/ack`, MessageResponseSchema, {
     method: 'POST',
-  });
-}
-
-export async function fetchAuditActionColors({
-  signal,
-}: { signal?: AbortSignal } = {}): Promise<AuditActionColors> {
-  return apiClient('/api/admin/audit-action-colors', AuditActionColorsSchema, {
-    signal,
   });
 }
 
