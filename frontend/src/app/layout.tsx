@@ -21,12 +21,13 @@ import PerformanceMonitor from './PerformanceMonitor';
 import { env } from '@/lib/env';
 import ContractMismatchNotice from '@/components/ContractMismatchNotice';
 
-const meta = buildMetadata();
-
-export const metadata = {
-  title: meta.title,
-  description: meta.description,
-};
+export async function generateMetadata() {
+  const meta = await buildMetadata();
+  return {
+    title: meta.title,
+    description: meta.description,
+  };
+}
 
 export const viewport = {
   width: 'device-width',
@@ -46,6 +47,7 @@ export default async function RootLayout({
   const locale = cookieStore.get('locale')?.value || 'en';
   const messages = (await import(`../locales/${locale}.json`)).default;
   const skipText = messages.layout?.skip ?? 'Skip to main content';
+  const meta = await buildMetadata();
 
   return (
     <html lang={locale}>
@@ -90,7 +92,9 @@ export default async function RootLayout({
               </ApiErrorProvider>
             </AuthProvider>
           </ReactQueryProvider>
-          {env.NODE_ENV === 'production' && !env.IS_E2E && <PerformanceMonitor />}
+          {env.NODE_ENV === 'production' && !env.IS_E2E && (
+            <PerformanceMonitor />
+          )}
           {env.NODE_ENV === 'production' && !env.IS_E2E && <SpeedInsights />}
           {env.NODE_ENV === 'production' && !env.IS_E2E && <Analytics />}
           {!env.IS_E2E && <ServiceWorker />}

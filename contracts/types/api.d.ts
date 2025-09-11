@@ -44,6 +44,19 @@ export interface paths {
       };
     };
   };
+  "/site-metadata": {
+    /** Get site metadata */
+    get: {
+      responses: {
+        /** @description Site metadata */
+        200: {
+          content: {
+            "application/json": components["schemas"]["SiteMetadataResponse"];
+          };
+        };
+      };
+    };
+  };
   "/history-tabs": {
     /** List history tabs */
     get: {
@@ -2664,6 +2677,11 @@ export interface components {
       svg: string;
     };
     NavIconsResponse: components["schemas"]["NavIcon"][];
+    SiteMetadataResponse: {
+      title: string;
+      description: string;
+      imagePath: string;
+    };
     HistoryTabItem: {
       key: string;
       label: string;

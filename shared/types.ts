@@ -37,6 +37,14 @@ export type NavIcon = z.infer<typeof NavIconSchema>;
 export const NavIconsResponseSchema = z.array(NavIconSchema);
 export type NavIconsResponse = z.infer<typeof NavIconsResponseSchema>;
 
+// Site metadata
+export const SiteMetadataResponseSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  imagePath: z.string(),
+});
+export type SiteMetadataResponse = z.infer<typeof SiteMetadataResponseSchema>;
+
 // Chart palette
 export const ChartPaletteResponseSchema = z.array(z.string());
 export type ChartPaletteResponse = z.infer<typeof ChartPaletteResponseSchema>;
