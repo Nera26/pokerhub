@@ -7,7 +7,9 @@ jest.mock('@/features/site/leaderboard', () => ({
 
 describe('Leaderboard page dynamic import', () => {
   it('renders fallback then module', async () => {
-    const { default: LeaderboardPage } = await import('@/app/(site)/leaderboard/page');
+    const { default: LeaderboardPage } = await import(
+      '@/app/(site)/leaderboard/page'
+    );
 
     render(<LeaderboardPage />);
 

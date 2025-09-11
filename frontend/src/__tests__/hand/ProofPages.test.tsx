@@ -6,8 +6,14 @@ jest.mock('@shared/verify');
 
 describe('Proof page', () => {
   const proof = { seed: 's', nonce: 'n', commitment: 'c' };
-  const { fetchHandProof } = require('@/lib/api/hands') as Record<string, jest.Mock>;
-  const { verifyProof } = require('@shared/verify') as Record<string, jest.Mock>;
+  const { fetchHandProof } = require('@/lib/api/hands') as Record<
+    string,
+    jest.Mock
+  >;
+  const { verifyProof } = require('@shared/verify') as Record<
+    string,
+    jest.Mock
+  >;
 
   beforeEach(() => {
     fetchHandProof.mockResolvedValue(proof);

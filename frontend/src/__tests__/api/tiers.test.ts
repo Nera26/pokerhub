@@ -14,10 +14,8 @@ describe('fetchTiers', () => {
   it('invokes apiClient with correct arguments', async () => {
     apiClientMock.mockResolvedValue([]);
     await fetchTiers();
-    expect(apiClientMock).toHaveBeenCalledWith(
-      '/api/tiers',
-      TiersSchema,
-      { signal: undefined },
-    );
+    expect(apiClientMock).toHaveBeenCalledWith('/api/tiers', TiersSchema, {
+      signal: undefined,
+    });
   });
 });

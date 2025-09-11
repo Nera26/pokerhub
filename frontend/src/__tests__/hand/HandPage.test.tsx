@@ -4,7 +4,10 @@ import HandPage from '@/app/(site)/hand/[id]/page';
 jest.mock('@/lib/api/hands');
 
 describe('Hand page', () => {
-  const { fetchHandState } = require('@/lib/api/hands') as Record<string, jest.Mock>;
+  const { fetchHandState } = require('@/lib/api/hands') as Record<
+    string,
+    jest.Mock
+  >;
 
   beforeEach(() => {
     fetchHandState.mockResolvedValue({
@@ -12,9 +15,7 @@ describe('Hand page', () => {
       pot: 100,
       sidePots: [],
       currentBet: 0,
-      players: [
-        { id: 'p1', stack: 1000, folded: false, bet: 0, allIn: false },
-      ],
+      players: [{ id: 'p1', stack: 1000, folded: false, bet: 0, allIn: false }],
     });
   });
 
