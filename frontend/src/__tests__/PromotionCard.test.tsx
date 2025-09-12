@@ -10,7 +10,6 @@ describe('PromotionCard', () => {
     reward: '$10',
     unlockText: 'Play one game',
     breakdown: [],
-    actionLabel: 'Claim',
     onAction: jest.fn(),
   };
 
