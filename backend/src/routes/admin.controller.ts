@@ -8,7 +8,6 @@ import {
   AuditLogsQuerySchema,
   AuditLogTypesResponse,
   AuditLogTypesResponseSchema,
-  AUDIT_LOG_TYPES,
   AlertItem,
   AlertItemSchema,
   RevenueBreakdown,
@@ -60,8 +59,9 @@ export class AdminController {
   @Get('audit/log-types')
   @ApiOperation({ summary: 'Get audit log types' })
   @ApiResponse({ status: 200, description: 'Audit log types' })
-  auditLogTypes(): AuditLogTypesResponse {
-    return AuditLogTypesResponseSchema.parse({ types: AUDIT_LOG_TYPES });
+  async auditLogTypes(): Promise<AuditLogTypesResponse> {
+    const types = await this.analytics.getAuditLogTypes();
+    return AuditLogTypesResponseSchema.parse({ types });
   }
 
   @Get('security-alerts')

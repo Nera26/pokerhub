@@ -1,13 +1,6 @@
 import { z } from 'zod';
 
-export const AUDIT_LOG_TYPES = [
-  'Login',
-  'Table Event',
-  'Broadcast',
-  'Error',
-] as const;
-
-export const AuditLogTypeSchema = z.enum(AUDIT_LOG_TYPES);
+export const AuditLogTypeSchema = z.string();
 export type AuditLogType = z.infer<typeof AuditLogTypeSchema>;
 
 export const AuditLogEntrySchema = z.object({

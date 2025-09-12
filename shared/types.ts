@@ -129,7 +129,6 @@ export type {
 } from '../backend/src/schemas/tables';
 
 export {
-  AUDIT_LOG_TYPES,
   AuditLogTypeSchema,
   AuditLogEntrySchema,
   AuditLogsResponseSchema,

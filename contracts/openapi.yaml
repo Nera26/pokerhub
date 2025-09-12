@@ -2466,6 +2466,8 @@ components:
         - revenue
         - activity
         - errors
+    AuditLogType:
+      type: string
     AuditLogEntry:
       type: object
       properties:
@@ -2475,8 +2477,7 @@ components:
           type: string
           format: date-time
         type:
-          type: string
-          enum: [Login, 'Table Event', Broadcast, Error]
+          $ref: '#/components/schemas/AuditLogType'
         description:
           type: string
         user:

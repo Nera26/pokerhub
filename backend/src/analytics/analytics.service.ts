@@ -206,6 +206,19 @@ export class AnalyticsService {
     this.scheduleEngagementMetrics();
   }
 
+  async getAuditLogTypes(): Promise<string[]> {
+    if (!this.client) return [];
+    await this.query(
+      'CREATE TABLE IF NOT EXISTS audit_log_types (id UInt32, name String) ENGINE = MergeTree() ORDER BY id',
+    );
+    const res = await this.client.query({
+      query: 'SELECT name FROM audit_log_types ORDER BY id',
+      format: 'JSONEachRow',
+    });
+    const rows = (await res.json()) as { name: string }[];
+    return rows.map((r) => r.name);
+  }
+
   async getAuditLogs({
     search,
     type,
