@@ -5,42 +5,18 @@ import {
   createWalletTestContext,
   reconcileSum,
 } from './test-utils';
+import { USER_ID, opArb } from './property-utils';
 
 jest.setTimeout(20000);
 
 describe('WalletService.reconcile zero-sum property', () => {
-  const userId = '11111111-1111-1111-1111-111111111111';
-
-  const reserveArb = fc.record({
-    type: fc.constant<'reserve'>('reserve'),
-    amount: fc.integer({ min: 1, max: 100 }),
-    ref: fc.hexaString({ minLength: 1, maxLength: 10 }),
-  });
-
-  const rollbackArb = fc.record({
-    type: fc.constant<'rollback'>('rollback'),
-    amount: fc.integer({ min: 1, max: 100 }),
-    ref: fc.hexaString({ minLength: 1, maxLength: 10 }),
-  });
-
-  const commitArb = fc.integer({ min: 1, max: 100 }).chain((amount) =>
-    fc.record({
-      type: fc.constant<'commit'>('commit'),
-      amount: fc.constant(amount),
-      rake: fc.integer({ min: 0, max: amount }),
-      ref: fc.hexaString({ minLength: 1, maxLength: 10 }),
-    }),
-  );
-
-  const opArb = fc.oneof(reserveArb, commitArb, rollbackArb);
-
   it('reconciliation sums always to zero', async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(opArb, { maxLength: 10 }), async (ops) => {
         const ctx = await createWalletTestContext();
         try {
           await ctx.repos.account.save([
-            { id: userId, name: 'user', balance: 0, currency: 'USD' },
+            { id: USER_ID, name: 'user', balance: 0, currency: 'USD' },
             {
               id: '00000000-0000-0000-0000-000000000001',
               name: 'reserve',
@@ -69,13 +45,13 @@ describe('WalletService.reconcile zero-sum property', () => {
           for (const op of ops) {
             switch (op.type) {
               case 'reserve':
-                await ctx.service.reserve(userId, op.amount, op.ref, 'USD');
+                await ctx.service.reserve(USER_ID, op.amount, op.ref, 'USD');
                 break;
               case 'commit':
                 await ctx.service.commit(op.ref, op.amount, op.rake, 'USD');
                 break;
               case 'rollback':
-                await ctx.service.rollback(userId, op.amount, op.ref, 'USD');
+                await ctx.service.rollback(USER_ID, op.amount, op.ref, 'USD');
                 break;
             }
           }
