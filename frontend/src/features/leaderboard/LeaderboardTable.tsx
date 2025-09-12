@@ -13,9 +13,7 @@ export default function LeaderboardTable({
 }: LeaderboardTableProps) {
   if (data.length === 0) {
     return (
-      <div className="text-center text-text-secondary py-6">
-        No results
-      </div>
+      <div className="text-center text-text-secondary py-6">No results</div>
     );
   }
 
@@ -66,4 +64,3 @@ export default function LeaderboardTable({
     </table>
   );
 }
-

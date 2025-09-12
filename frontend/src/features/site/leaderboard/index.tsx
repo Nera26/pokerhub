@@ -5,11 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons/faArrowsRotate';
-import LeaderboardTabs from '@/app/components/leaderboard/LeaderboardTabs';
+import { LeaderboardTabs, LeaderboardBase } from '@/features/leaderboard';
 import ToastNotification, {
   ToastType,
 } from '@/app/components/ui/ToastNotification';
-import LeaderboardBase from '@/components/leaderboard/LeaderboardBase';
 import { fetchUserProfile } from '@/lib/api/profile';
 import { useLeaderboardModes } from '@/lib/api/leaderboard';
 import type { LeaderboardEntry, TimeFilter, ModeFilter } from '@shared/types';

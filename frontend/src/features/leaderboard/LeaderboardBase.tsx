@@ -1,14 +1,16 @@
 'use client';
 
 import LeaderboardTable from './LeaderboardTable';
-import { useLeaderboard } from '@/features/leaderboard/useLeaderboard';
+import { useLeaderboard } from './useLeaderboard';
 import type { LeaderboardEntry } from '@shared/types';
 
 interface LeaderboardBaseProps {
   onPlayerClick?: (player: LeaderboardEntry) => void;
 }
 
-export default function LeaderboardBase({ onPlayerClick }: LeaderboardBaseProps) {
+export default function LeaderboardBase({
+  onPlayerClick,
+}: LeaderboardBaseProps) {
   const { data, isLoading, error } = useLeaderboard();
   const players = data ?? [];
 
@@ -22,4 +24,3 @@ export default function LeaderboardBase({ onPlayerClick }: LeaderboardBaseProps)
 
   return <LeaderboardTable data={players} onPlayerClick={onPlayerClick} />;
 }
-
