@@ -1,0 +1,238 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`WalletPage matches snapshot when KYC pending 1`] = `
+<div>
+  <section
+    class="bg-card-bg rounded-2xl p-8 md:p-12 mb-6 md:mb-8"
+  >
+    <div
+      class="flex flex-col md:flex-row md:items-center justify-between"
+    >
+      <div>
+        <p
+          class="text-text-secondary text-sm sm:text-base"
+        >
+          Total Balance
+        </p>
+        <p
+          class="text-3xl sm:text-4xl font-bold text-accent-yellow mb-1"
+        >
+          $150.00
+        </p>
+        <p
+          class="text-xs text-text-secondary mb-2"
+        >
+          KYC Status: 
+          Pending
+        </p>
+        <p
+          class="text-sm sm:text-base text-text-secondary"
+        >
+          <span
+            class="font-medium"
+          >
+            • Real: 
+            $100.00
+          </span>
+           | 
+          <span
+            aria-describedby="«r1»"
+            class="relative inline-block cursor-pointer"
+            tabindex="0"
+          >
+            <span
+              class="font-medium"
+            >
+              • Credit: 
+              $50.00
+            </span>
+            <span
+              class="absolute bottom-full left-1/2 mb-2 w-max max-w-xs whitespace-nowrap rounded bg-card-bg px-2 py-1 text-xs text-text-primary z-50 transition-opacity duration-200 opacity-0 invisible"
+              id="«r1»"
+              role="tooltip"
+            >
+              Credits can only be used for games and cannot be withdrawn.
+            </span>
+          </span>
+        </p>
+      </div>
+      <div
+        class="mt-6 md:mt-0 flex space-x-4"
+      >
+        <button
+          class="justify-center gap-2 rounded-xl font-semibold transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed select-none focus:outline-none focus-glow-yellow px-6 py-3 bg-transparent border border-accent-yellow text-accent-yellow hover:bg-accent-yellow hover:text-primary-bg text-sm sm:text-base uppercase flex items-center"
+          data-variant="outline"
+          type="button"
+        >
+          <span
+            class="inline-block"
+          >
+            Verify
+          </span>
+        </button>
+        <button
+          class="justify-center gap-2 rounded-xl font-semibold transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed select-none focus:outline-none focus-glow-yellow px-6 py-3 bg-accent-green text-text-primary hover-glow-green text-sm sm:text-base uppercase flex items-center"
+          data-variant="primary"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            class="svg-inline--fa fa-arrow-down mr-2"
+            data-icon="arrow-down"
+            data-prefix="fas"
+            role="img"
+            viewBox="0 0 384 512"
+          >
+            <path
+              d="M169.4 502.6c12.5 12.5 32.8 12.5 45.3 0l160-160c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L224 402.7 224 32c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 370.7-105.4-105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l160 160z"
+              fill="currentColor"
+            />
+          </svg>
+          <span
+            class="inline-block"
+          >
+             Deposit
+          </span>
+        </button>
+        <button
+          class="justify-center gap-2 rounded-xl font-semibold transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed select-none focus:outline-none focus-glow-yellow px-6 py-3 bg-transparent border border-accent-yellow text-accent-yellow hover:bg-accent-yellow hover:text-primary-bg text-sm sm:text-base uppercase flex items-center"
+          data-variant="outline"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            class="svg-inline--fa fa-arrow-up mr-2"
+            data-icon="arrow-up"
+            data-prefix="fas"
+            role="img"
+            viewBox="0 0 384 512"
+          >
+            <path
+              d="M214.6 17.4c-12.5-12.5-32.8-12.5-45.3 0l-160 160c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L160 117.3 160 488c0 17.7 14.3 32 32 32s32-14.3 32-32l0-370.7 105.4 105.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-160-160z"
+              fill="currentColor"
+            />
+          </svg>
+          <span
+            class="inline-block"
+          >
+             Withdraw
+          </span>
+        </button>
+      </div>
+    </div>
+  </section>
+</div>
+`;
+
+exports[`WalletPage matches snapshot when KYC verified 1`] = `
+<div>
+  <section
+    class="bg-card-bg rounded-2xl p-8 md:p-12 mb-6 md:mb-8"
+  >
+    <div
+      class="flex flex-col md:flex-row md:items-center justify-between"
+    >
+      <div>
+        <p
+          class="text-text-secondary text-sm sm:text-base"
+        >
+          Total Balance
+        </p>
+        <p
+          class="text-3xl sm:text-4xl font-bold text-accent-yellow mb-1"
+        >
+          $150.00
+        </p>
+        <p
+          class="text-xs text-text-secondary mb-2"
+        >
+          KYC Status: 
+          Verified
+        </p>
+        <p
+          class="text-sm sm:text-base text-text-secondary"
+        >
+          <span
+            class="font-medium"
+          >
+            • Real: 
+            $100.00
+          </span>
+           | 
+          <span
+            aria-describedby="«r0»"
+            class="relative inline-block cursor-pointer"
+            tabindex="0"
+          >
+            <span
+              class="font-medium"
+            >
+              • Credit: 
+              $50.00
+            </span>
+            <span
+              class="absolute bottom-full left-1/2 mb-2 w-max max-w-xs whitespace-nowrap rounded bg-card-bg px-2 py-1 text-xs text-text-primary z-50 transition-opacity duration-200 opacity-0 invisible"
+              id="«r0»"
+              role="tooltip"
+            >
+              Credits can only be used for games and cannot be withdrawn.
+            </span>
+          </span>
+        </p>
+      </div>
+      <div
+        class="mt-6 md:mt-0 flex space-x-4"
+      >
+        <button
+          class="justify-center gap-2 rounded-xl font-semibold transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed select-none focus:outline-none focus-glow-yellow px-6 py-3 bg-accent-green text-text-primary hover-glow-green text-sm sm:text-base uppercase flex items-center"
+          data-variant="primary"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            class="svg-inline--fa fa-arrow-down mr-2"
+            data-icon="arrow-down"
+            data-prefix="fas"
+            role="img"
+            viewBox="0 0 384 512"
+          >
+            <path
+              d="M169.4 502.6c12.5 12.5 32.8 12.5 45.3 0l160-160c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L224 402.7 224 32c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 370.7-105.4-105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l160 160z"
+              fill="currentColor"
+            />
+          </svg>
+          <span
+            class="inline-block"
+          >
+             Deposit
+          </span>
+        </button>
+        <button
+          class="justify-center gap-2 rounded-xl font-semibold transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed select-none focus:outline-none focus-glow-yellow px-6 py-3 bg-transparent border border-accent-yellow text-accent-yellow hover:bg-accent-yellow hover:text-primary-bg text-sm sm:text-base uppercase flex items-center"
+          data-variant="outline"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            class="svg-inline--fa fa-arrow-up mr-2"
+            data-icon="arrow-up"
+            data-prefix="fas"
+            role="img"
+            viewBox="0 0 384 512"
+          >
+            <path
+              d="M214.6 17.4c-12.5-12.5-32.8-12.5-45.3 0l-160 160c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L160 117.3 160 488c0 17.7 14.3 32 32 32s32-14.3 32-32l0-370.7 105.4 105.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-160-160z"
+              fill="currentColor"
+            />
+          </svg>
+          <span
+            class="inline-block"
+          >
+             Withdraw
+          </span>
+        </button>
+      </div>
+    </div>
+  </section>
+</div>
+`;
