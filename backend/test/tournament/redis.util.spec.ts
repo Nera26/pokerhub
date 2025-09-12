@@ -1,6 +1,6 @@
 import RedisMock from 'ioredis-mock';
 import type { Redis } from 'ioredis';
-import { saveRecentlyMoved } from './redis.util';
+import { saveRecentlyMoved } from '../../src/tournament/redis.util';
 
 describe('saveRecentlyMoved', () => {
   it('deletes key when map is empty', async () => {

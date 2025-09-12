@@ -1,4 +1,4 @@
-import { runEtl } from '../etl.utils';
+import { runEtl } from '../../src/analytics/etl.utils';
 import { Logger } from '@nestjs/common';
 import { Producer } from 'kafkajs';
 import { ValidateFunction } from 'ajv';

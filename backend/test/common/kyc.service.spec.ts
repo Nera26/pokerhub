@@ -1,17 +1,17 @@
-import { KycService } from './kyc.service';
+import { KycService } from '../../src/common/kyc.service';
 import type { Repository } from 'typeorm';
-import type { KycVerification } from '../database/entities/kycVerification.entity';
-import type { Account } from '../wallet/account.entity';
-import type { CountryProvider } from '../auth/providers/country-provider';
+import type { KycVerification } from '../../src/database/entities/kycVerification.entity';
+import type { Account } from '../../src/wallet/account.entity';
+import type { CountryProvider } from '../../src/auth/providers/country-provider';
 import type { ConfigService } from '@nestjs/config';
-import type { Pep } from '../database/entities/pep.entity';
+import type { Pep } from '../../src/database/entities/pep.entity';
 import { DataSource } from 'typeorm';
-import { createInMemoryDataSource } from '../../test/utils/pgMem';
+import { createInMemoryDataSource } from '../utils/pgMem';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Logger } from '@nestjs/common';
 
-import { Account as WalletAccount } from '../wallet/account.entity';
-import { JournalEntry } from '../wallet/journal-entry.entity';
+import { Account as WalletAccount } from '../../src/wallet/account.entity';
+import { JournalEntry } from '../../src/wallet/journal-entry.entity';
 
 function makeService({
   country,

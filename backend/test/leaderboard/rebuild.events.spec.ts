@@ -1,8 +1,8 @@
-import { LeaderboardService } from './leaderboard.service';
+import { LeaderboardService } from '../../src/leaderboard/leaderboard.service';
 import type { Cache } from 'cache-manager';
 import { ConfigService } from '@nestjs/config';
-import { updateRating } from './rating';
-import { MockCache, MockLeaderboardRepo } from '../../test/leaderboard-mocks';
+import { updateRating } from '../../src/leaderboard/rating';
+import { MockCache, MockLeaderboardRepo } from '../leaderboard-mocks';
 
 describe('rebuildWithEvents', () => {
   it('loads JSONL events into leaderboard', async () => {

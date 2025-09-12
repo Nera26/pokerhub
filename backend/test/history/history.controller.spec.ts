@@ -3,18 +3,18 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { newDb } from 'pg-mem';
-import { AuthGuard } from '../auth/auth.guard';
+import { AuthGuard } from '../../src/auth/auth.guard';
 import {
   GameHistory,
   TournamentHistory,
   WalletHistory,
-} from './history.entity';
+} from '../../src/history/history.entity';
 import {
   GameHistoryRepository,
   TournamentHistoryRepository,
   WalletHistoryRepository,
-} from './history.repository';
-import { HistoryModule } from './history.module';
+} from '../../src/history/history.repository';
+import { HistoryModule } from '../../src/history/history.module';
 
 describe('HistoryController', () => {
   let app: INestApplication;

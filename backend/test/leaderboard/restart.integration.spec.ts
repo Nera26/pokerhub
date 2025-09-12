@@ -1,7 +1,7 @@
-import { LeaderboardService } from './leaderboard.service';
+import { LeaderboardService } from '../../src/leaderboard/leaderboard.service';
 import type { Cache } from 'cache-manager';
 import { ConfigService } from '@nestjs/config';
-import { MockCache, MockAnalytics, MockLeaderboardRepo } from '../../test/leaderboard-mocks';
+import { MockCache, MockAnalytics, MockLeaderboardRepo } from '../leaderboard-mocks';
 
 describe('LeaderboardService restart integration', () => {
   it('persists data across service restart', async () => {

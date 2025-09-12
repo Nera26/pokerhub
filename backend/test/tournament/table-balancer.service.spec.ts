@@ -1,6 +1,6 @@
-import { TableBalancerService } from './table-balancer.service';
+import { TableBalancerService } from '../../src/tournament/table-balancer.service';
 import type { Repository } from 'typeorm';
-import { Table } from '../database/entities/table.entity';
+import { Table } from '../../src/database/entities/table.entity';
 import {
   createRedis,
   createTablesRepository,
