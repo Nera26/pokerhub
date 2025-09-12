@@ -45,6 +45,14 @@ test('join table, bet, fold, and leave', async ({ page }) => {
     });
   });
 
+  await page.route('**/api/table/1/tabs', (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(['history', 'chat', 'notes']),
+    });
+  });
+
   await page.goto('/');
   await page.getByRole('link', { name: 'Join Table' }).click();
 

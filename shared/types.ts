@@ -104,6 +104,8 @@ export {
   CreateTableSchema,
   UpdateTableSchema,
   TableListQuerySchema,
+  TabKeySchema,
+  TableTabsResponseSchema,
 } from '../backend/src/schemas/tables';
 export type {
   Player,
@@ -115,6 +117,8 @@ export type {
   CreateTableRequest,
   UpdateTableRequest,
   TableListQuery,
+  TabKey,
+  TableTabsResponse,
 } from '../backend/src/schemas/tables';
 
 export {

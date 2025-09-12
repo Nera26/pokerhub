@@ -1,6 +1,6 @@
 /** @jest-environment node */
 
-import { fetchTable } from '@/lib/api/table';
+import { fetchTable, fetchSidePanelTabs } from '@/lib/api/table';
 
 const sampleTable = {
   smallBlind: 1,
@@ -53,5 +53,20 @@ describe('table api', () => {
       message: 'Not Found',
       details: '{"error":"nope"}',
     });
+  });
+
+  it('fetches side panel tabs', async () => {
+    (fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => ['history', 'chat', 'notes'],
+    });
+
+    await expect(fetchSidePanelTabs('1')).resolves.toEqual([
+      'history',
+      'chat',
+      'notes',
+    ]);
   });
 });

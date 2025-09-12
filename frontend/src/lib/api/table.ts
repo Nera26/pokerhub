@@ -13,6 +13,9 @@ import {
   type TableList,
   type CreateTableRequest,
   type UpdateTableRequest,
+  TabKeySchema,
+  TableTabsResponseSchema,
+  type TabKey,
 } from '@shared/types';
 
 export {
@@ -22,6 +25,8 @@ export {
   SendChatMessageRequestSchema,
   TableSchema,
   TableListSchema,
+  TabKeySchema,
+  TableTabsResponseSchema,
 };
 export type {
   TableData,
@@ -30,6 +35,7 @@ export type {
   TableList,
   CreateTableRequest,
   UpdateTableRequest,
+  TabKey,
 };
 
 const HandSummarySchema = z.object({
@@ -64,6 +70,16 @@ export async function fetchTableHands(
   { signal }: { signal?: AbortSignal } = {},
 ): Promise<HandSummary[]> {
   return apiClient(`/api/table/${id}/hands`, z.array(HandSummarySchema), {
+    signal,
+    cache: 'no-store',
+  });
+}
+
+export async function fetchSidePanelTabs(
+  id: string,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<TabKey[]> {
+  return apiClient(`/api/table/${id}/tabs`, TableTabsResponseSchema, {
     signal,
     cache: 'no-store',
   });

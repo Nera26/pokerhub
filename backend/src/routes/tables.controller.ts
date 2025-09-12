@@ -24,6 +24,8 @@ import {
   UpdateTableSchema,
   type UpdateTableRequest,
   TableListQuerySchema,
+  TableTabsResponseSchema,
+  type TableTabsResponse,
 } from '../schemas/tables';
 import { ChatMessagesSchema, SendChatMessageRequestSchema } from '../schemas/chat';
 import { TablesService } from '../game/tables.service';
@@ -57,6 +59,16 @@ export class TablesController {
   ): Promise<TableData> {
     const res = await this.tables.getTable(id);
     return TableDataSchema.parse(res);
+  }
+
+  @Get(':id/tabs')
+  @ApiOperation({ summary: 'Get side panel tabs' })
+  @ApiResponse({ status: 200, description: 'Side panel tabs' })
+  async getTabs(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<TableTabsResponse> {
+    const res = await this.tables.getSidePanelTabs(id);
+    return TableTabsResponseSchema.parse(res);
   }
 
   @Post()

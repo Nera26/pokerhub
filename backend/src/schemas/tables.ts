@@ -81,3 +81,9 @@ export const TableListQuerySchema = z.object({
   status: z.enum(['active']).optional(),
 });
 export type TableListQuery = z.infer<typeof TableListQuerySchema>;
+
+export const TabKeySchema = z.enum(['history', 'chat', 'notes']);
+export type TabKey = z.infer<typeof TabKeySchema>;
+
+export const TableTabsResponseSchema = z.array(TabKeySchema);
+export type TableTabsResponse = z.infer<typeof TableTabsResponseSchema>;

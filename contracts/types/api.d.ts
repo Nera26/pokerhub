@@ -467,6 +467,24 @@ export interface paths {
       };
     };
   };
+  "/tables/{id}/tabs": {
+    /** Get side panel tabs */
+    get: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Side panel tabs */
+        200: {
+          content: {
+            "application/json": components["schemas"]["TableTabsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/tables/{id}/chat": {
     /** Get table chat messages */
     get: {
@@ -2702,6 +2720,9 @@ export interface components {
     HistoryTabsResponse: {
       tabs: components["schemas"]["HistoryTabItem"][];
     };
+    /** @enum {string} */
+    TabKey: "history" | "chat" | "notes";
+    TableTabsResponse: components["schemas"]["TabKey"][];
     ChartPaletteResponse: string[];
     ChipDenominationsResponse: {
       denoms: number[];

@@ -10,6 +10,7 @@ import type {
   TableData,
   CreateTableRequest,
   UpdateTableRequest,
+  TabKey,
 } from '../schemas/tables';
 
 @Injectable()
@@ -79,6 +80,10 @@ export class TablesService {
       chatMessages,
       stateAvailable,
     };
+  }
+
+  async getSidePanelTabs(id: string): Promise<TabKey[]> {
+    return ['history', 'chat', 'notes'];
   }
 
   async createTable(data: CreateTableRequest): Promise<TableDto> {
