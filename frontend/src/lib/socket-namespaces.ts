@@ -1,6 +1,8 @@
-import { createNamespaceSocket } from './socket-base';
-import type { EmitHooks } from './socket-core';
-import type { SocketOptions } from './socket-core';
+import {
+  createNamespaceSocket,
+  type EmitHooks,
+  type SocketOptions,
+} from './socket-core';
 
 export function createGameNamespace(
   name: string,

@@ -205,4 +205,31 @@ export function emitWithAck(
   });
 }
 
+export function createNamespaceSocket(namespace: string) {
+  let socket: BrowserSocket | null = null;
+
+  const get = (options: SocketOptions = {}): BrowserSocket => {
+    socket = getSocket({ namespace, ...options });
+    return socket;
+  };
+
+  const disconnect = (): void => {
+    if (socket) {
+      disconnectSocket(namespace);
+      socket = null;
+    }
+  };
+
+  const emit = (
+    event: string,
+    payload: Record<string, unknown>,
+    ackEvent: string,
+    retries = 1,
+    hooks: EmitHooks = {},
+  ): Promise<void> =>
+    emitWithAck(namespace, event, payload, ackEvent, retries, hooks);
+
+  return { getSocket: get, disconnect, emitWithAck: emit };
+}
+
 export type { BrowserSocket };
