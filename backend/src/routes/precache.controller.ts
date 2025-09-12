@@ -1,22 +1,23 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ConfigService } from '../services/config.service';
+import { GcsService } from '../storage/gcs.service';
 import {
   PrecacheListResponse,
   PrecacheListResponseSchema,
 } from '../schemas/precache';
 
 @ApiTags('precache')
-@Controller('precache')
+@Controller('precache-manifest')
 export class PrecacheController {
-  constructor(private readonly config: ConfigService) {}
+  constructor(private readonly storage: GcsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List asset URLs to pre-cache' })
+  @ApiOperation({ summary: 'Retrieve pre-cache manifest' })
   @ApiResponse({ status: 200, description: 'Asset URLs', type: [String] })
   async list(): Promise<PrecacheListResponse> {
-    const urls = await this.config.getPrecacheUrls();
-    return PrecacheListResponseSchema.parse(urls);
+    const buf = await this.storage.downloadObject('precache-manifest.json');
+    const data = JSON.parse(buf.toString('utf-8'));
+    return PrecacheListResponseSchema.parse(data);
   }
 }
 

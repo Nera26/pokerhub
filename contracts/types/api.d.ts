@@ -18,8 +18,8 @@ export interface paths {
       };
     };
   };
-  "/precache": {
-    /** List asset URLs to pre-cache */
+  "/precache-manifest": {
+    /** Retrieve pre-cache manifest */
     get: {
       responses: {
         /** @description Asset URLs */
