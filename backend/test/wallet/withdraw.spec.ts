@@ -5,6 +5,7 @@ import {
   expectDailyLimitExceeded,
   expectRateLimitExceeded,
 } from './shared-wallet-utils';
+import { confirmChallenge } from './transaction-flow';
 
 describe('WalletService withdraw', () => {
   let ctx: WalletTestContext;
@@ -79,12 +80,7 @@ describe('WalletService withdraw', () => {
       '3.3.3.3',
       'USD',
     );
-    await service.confirm3DS({
-      eventId: 'evt1',
-      idempotencyKey: 'idem1',
-      providerTxnId: challenge.id,
-      status: 'approved',
-    });
+    await confirmChallenge(service, challenge, 'approved');
     const user = await ctx.repos.account.findOneByOrFail({
       id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
     });
@@ -100,12 +96,7 @@ describe('WalletService withdraw', () => {
       '9.9.9.9',
       'USD',
     );
-    await service.confirm3DS({
-      eventId: 'evt2',
-      idempotencyKey: 'idem2',
-      providerTxnId: challenge.id,
-      status: 'chargeback',
-    });
+    await confirmChallenge(service, challenge, 'chargeback');
     const user = await ctx.repos.account.findOneByOrFail({
       id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
     });
