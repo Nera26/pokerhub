@@ -54,5 +54,15 @@ describe('collusion heuristics integration', () => {
         expect.objectContaining({ features: expect.objectContaining({ type: 'synchronizedBetting' }) }),
       ]),
     );
+
+    const analytics2 = new AnalyticsService(
+      config,
+      redis as unknown as Redis,
+      gcs as any,
+    );
+    const spy2 = jest.spyOn(analytics2, 'emitAntiCheatFlag');
+    await analytics2.recordGameEvent({ handId: 'h2', playerId: 'p1', timeMs: 0 });
+    await analytics2.recordGameEvent({ handId: 'h2', playerId: 'p2', timeMs: 100 });
+    expect(spy2).toHaveBeenCalled();
   });
 });

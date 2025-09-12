@@ -32,9 +32,8 @@ export class CollusionService {
     await this.redis.sadd(`collusion:ip:${ip}`, userId);
     await this.redis.sadd(`collusion:user:devices:${userId}`, deviceId);
     await this.redis.sadd(`collusion:user:ips:${userId}`, ip);
-    await this.redis.zadd(
+    await this.redis.rpush(
       `collusion:times:${userId}`,
-      timestamp,
       timestamp.toString(),
     );
   }
@@ -48,7 +47,7 @@ export class CollusionService {
   }
 
   async hasFastActions(userId: string, thresholdMs: number): Promise<boolean> {
-    const times = await this.redis.zrange(`collusion:times:${userId}`, 0, -1);
+    const times = await this.redis.lrange(`collusion:times:${userId}`, 0, -1);
     for (let i = 1; i < times.length; i++) {
       if (+times[i] - +times[i - 1] < thresholdMs) {
         return true;
@@ -109,10 +108,10 @@ export class CollusionService {
       this.shared(`collusion:user:devices:${userA}`, `collusion:user:devices:${userB}`),
       this.shared(`collusion:user:ips:${userA}`, `collusion:user:ips:${userB}`),
       this.redis
-        .zrange(`collusion:times:${userA}`, 0, -1)
+        .lrange(`collusion:times:${userA}`, 0, -1)
         .then((t) => t.map(Number)),
       this.redis
-        .zrange(`collusion:times:${userB}`, 0, -1)
+        .lrange(`collusion:times:${userB}`, 0, -1)
         .then((t) => t.map(Number)),
     ]);
     const ipClusterSizes = await Promise.all(
@@ -154,6 +153,10 @@ export class CollusionService {
       users,
       features: enriched,
     });
+    await this.redis.rpush(
+      'collusion:flags',
+      JSON.stringify({ sessionId, users, features: enriched }),
+    );
   }
 
   async listFlaggedSessions(opts?: {
