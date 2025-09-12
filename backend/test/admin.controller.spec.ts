@@ -9,7 +9,6 @@ import { AnalyticsService } from '../src/analytics/analytics.service';
 import { SidebarService } from '../src/services/sidebar.service';
 import type { SidebarItem } from '../src/schemas/admin';
 import { RevenueService } from '../src/wallet/revenue.service';
-import { AUDIT_LOG_TYPES } from '@shared/types';
 
 describe('AdminController', () => {
   let app: INestApplication;
@@ -19,6 +18,7 @@ describe('AdminController', () => {
     getAuditLogs: jest.fn(),
     getSecurityAlerts: jest.fn(),
     getAdminEvents: jest.fn(),
+    getAuditLogTypes: jest.fn(),
   } as Partial<AnalyticsService>;
   const revenue = {
     getBreakdown: jest.fn(),
@@ -77,10 +77,19 @@ describe('AdminController', () => {
   });
 
   it('returns audit log types', async () => {
+    (analytics.getAuditLogTypes as jest.Mock).mockResolvedValue(['Login']);
     await request(app.getHttpServer())
       .get('/admin/audit/log-types')
       .expect(200)
-      .expect({ types: AUDIT_LOG_TYPES });
+      .expect({ types: ['Login'] });
+  });
+
+  it('returns empty audit log types', async () => {
+    (analytics.getAuditLogTypes as jest.Mock).mockResolvedValue([]);
+    await request(app.getHttpServer())
+      .get('/admin/audit/log-types')
+      .expect(200)
+      .expect({ types: [] });
   });
 
   it('returns security alerts', async () => {

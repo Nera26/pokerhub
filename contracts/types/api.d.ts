@@ -2362,12 +2362,12 @@ export interface components {
       activity: number[];
       errors: number[];
     };
+    AuditLogType: string;
     AuditLogEntry: {
       id: number;
       /** Format: date-time */
       timestamp: string;
-      /** @enum {string} */
-      type: "Login" | "Table Event" | "Broadcast" | "Error";
+      type: components["schemas"]["AuditLogType"];
       description: string;
       user: string;
       ip: string;

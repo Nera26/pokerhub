@@ -88,3 +88,31 @@ describe('AnalyticsService rebuildEngagementMetrics', () => {
     expect(service.writeEngagementSnapshot).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('AnalyticsService getAuditLogTypes', () => {
+  it('returns empty array when no types exist', async () => {
+    const service: any = {
+      client: { query: jest.fn().mockResolvedValue({ json: async () => [] }) },
+      query: jest.fn(),
+    };
+    const types = await (AnalyticsService.prototype as any).getAuditLogTypes.call(
+      service,
+    );
+    expect(types).toEqual([]);
+  });
+
+  it('returns type names from ClickHouse', async () => {
+    const service: any = {
+      client: {
+        query: jest.fn().mockResolvedValue({
+          json: async () => [{ name: 'Login' }, { name: 'Error' }],
+        }),
+      },
+      query: jest.fn(),
+    };
+    const types = await (AnalyticsService.prototype as any).getAuditLogTypes.call(
+      service,
+    );
+    expect(types).toEqual(['Login', 'Error']);
+  });
+});
