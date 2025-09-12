@@ -16,8 +16,8 @@ describe('useStatusInfo', () => {
     mockFetchLoading();
     const { result } = renderHookWithClient(() => useStatusInfo());
     expect(result.current('confirmed')).toEqual({
-      label: 'Completed',
-      style: 'bg-accent-green/20 text-accent-green',
+      label: 'confirmed',
+      style: 'bg-border-dark text-text-secondary',
     });
   });
 
@@ -26,8 +26,8 @@ describe('useStatusInfo', () => {
     const { result, queryClient } = renderHookWithClient(() => useStatusInfo());
     await waitFor(() => expect(queryClient.isFetching()).toBe(0));
     expect(result.current('confirmed')).toEqual({
-      label: 'Completed',
-      style: 'bg-accent-green/20 text-accent-green',
+      label: 'confirmed',
+      style: 'bg-border-dark text-text-secondary',
     });
   });
 
@@ -36,8 +36,8 @@ describe('useStatusInfo', () => {
     const { result, queryClient } = renderHookWithClient(() => useStatusInfo());
     await waitFor(() => expect(queryClient.isFetching()).toBe(0));
     expect(result.current('confirmed')).toEqual({
-      label: 'Completed',
-      style: 'bg-accent-green/20 text-accent-green',
+      label: 'confirmed',
+      style: 'bg-border-dark text-text-secondary',
     });
   });
 });

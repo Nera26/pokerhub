@@ -5,11 +5,15 @@ import { newDb } from 'pg-mem';
 import { TransactionsService } from '../src/wallet/transactions.service';
 import { TransactionType } from '../src/wallet/transaction-type.entity';
 import { Transaction } from '../src/wallet/transaction.entity';
+import { TransactionStatus } from '../src/wallet/transaction-status.entity';
+import { TransactionTabEntity } from '../src/wallet/transaction-tab.entity';
 
 describe('TransactionsService', () => {
   let service: TransactionsService;
   let typeRepo: Repository<TransactionType>;
   let txnRepo: Repository<Transaction>;
+  let statusRepo: Repository<TransactionStatus>;
+  let tabRepo: Repository<TransactionTabEntity>;
 
   beforeEach(async () => {
     let dataSource: DataSource;
@@ -33,16 +37,32 @@ describe('TransactionsService', () => {
               returns: 'text',
               implementation: () => 'test',
             });
+            db.public.registerFunction({
+              name: 'uuid_generate_v4',
+              returns: 'uuid',
+              impure: true,
+              implementation: () => crypto.randomUUID(),
+            });
             dataSource = db.adapters.createTypeormDataSource({
               type: 'postgres',
-              entities: [TransactionType, Transaction],
+              entities: [
+                TransactionType,
+                Transaction,
+                TransactionStatus,
+                TransactionTabEntity,
+              ],
               synchronize: true,
             }) as DataSource;
             return dataSource.options;
           },
           dataSourceFactory: async () => dataSource.initialize(),
         }),
-        TypeOrmModule.forFeature([TransactionType, Transaction]),
+        TypeOrmModule.forFeature([
+          TransactionType,
+          Transaction,
+          TransactionStatus,
+          TransactionTabEntity,
+        ]),
       ],
       providers: [TransactionsService],
     }).compile();
@@ -50,29 +70,45 @@ describe('TransactionsService', () => {
     service = moduleRef.get(TransactionsService);
     typeRepo = moduleRef.get(getRepositoryToken(TransactionType));
     txnRepo = moduleRef.get(getRepositoryToken(Transaction));
+    statusRepo = moduleRef.get(getRepositoryToken(TransactionStatus));
+    tabRepo = moduleRef.get(getRepositoryToken(TransactionTabEntity));
 
     await typeRepo.save([
       { id: 'deposit', label: 'Deposit' },
       { id: 'withdrawal', label: 'Withdrawal' },
     ]);
-    await txnRepo.save([
+    await statusRepo.save([
       {
-        userId: 'user1',
-        typeId: 'deposit',
-        amount: 100,
-        performedBy: 'Admin',
-        notes: '',
-        status: 'Completed',
+        id: 'confirmed',
+        label: 'Completed',
+        style: 'bg-accent-green/20 text-accent-green',
       },
       {
-        userId: 'user1',
-        typeId: 'withdrawal',
-        amount: -50,
-        performedBy: 'User',
-        notes: '',
-        status: 'Pending',
+        id: 'pending',
+        label: 'Pending',
+        style: 'bg-accent-yellow/20 text-accent-yellow',
       },
     ]);
+    await tabRepo.save([
+      { id: 'all', label: 'All' },
+      { id: 'deposits', label: 'Deposits' },
+    ]);
+    await txnRepo.save({
+      userId: 'user1',
+      typeId: 'deposit',
+      amount: 100,
+      performedBy: 'Admin',
+      notes: '',
+      status: 'Completed',
+    });
+    await txnRepo.save({
+      userId: 'user1',
+      typeId: 'withdrawal',
+      amount: -50,
+      performedBy: 'User',
+      notes: '',
+      status: 'Pending',
+    });
   });
 
   it('returns transaction types', async () => {
@@ -87,6 +123,14 @@ describe('TransactionsService', () => {
         expect.objectContaining({ id: 'all', label: 'All' }),
       ]),
     );
+  });
+
+  it('returns transaction statuses', async () => {
+    const statuses = await service.getTransactionStatuses();
+    expect(statuses.confirmed).toEqual({
+      label: 'Completed',
+      style: 'bg-accent-green/20 text-accent-green',
+    });
   });
 
   it('returns filter options', async () => {

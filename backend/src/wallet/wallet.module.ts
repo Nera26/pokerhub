@@ -30,6 +30,8 @@ import { WalletIbanController } from '../routes/wallet-iban.controller';
 import { SidebarService } from '../services/sidebar.service';
 import { TransactionType } from './transaction-type.entity';
 import { Transaction } from './transaction.entity';
+import { TransactionStatus } from './transaction-status.entity';
+import { TransactionTabEntity } from './transaction-tab.entity';
 import { TransactionsService } from './transactions.service';
 import { RevenueService } from './revenue.service';
 import { AdminBalanceController } from '../routes/admin-balance.controller';
@@ -66,6 +68,8 @@ class PendingDepositWorker implements OnModuleInit {
       PendingDeposit,
       TransactionType,
       Transaction,
+      TransactionStatus,
+      TransactionTabEntity,
       DepositIban,
       DepositIbanHistory,
     ]),

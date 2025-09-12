@@ -8,6 +8,8 @@ import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
 import { TransactionsService } from '../src/wallet/transactions.service';
 import { TransactionType } from '../src/wallet/transaction-type.entity';
 import { Transaction } from '../src/wallet/transaction.entity';
+import { TransactionStatus } from '../src/wallet/transaction-status.entity';
+import { TransactionTabEntity } from '../src/wallet/transaction-tab.entity';
 import { DataSource, Repository } from 'typeorm';
 import { newDb } from 'pg-mem';
 
@@ -15,6 +17,8 @@ describe('TransactionsController', () => {
   let app: INestApplication;
   let typeRepo: Repository<TransactionType>;
   let txnRepo: Repository<Transaction>;
+  let statusRepo: Repository<TransactionStatus>;
+  let tabRepo: Repository<TransactionTabEntity>;
 
   beforeAll(async () => {
     let dataSource: DataSource;
@@ -45,14 +49,24 @@ describe('TransactionsController', () => {
             });
             dataSource = db.adapters.createTypeormDataSource({
               type: 'postgres',
-              entities: [TransactionType, Transaction],
+              entities: [
+                TransactionType,
+                Transaction,
+                TransactionStatus,
+                TransactionTabEntity,
+              ],
               synchronize: true,
             }) as DataSource;
             return dataSource.options;
           },
           dataSourceFactory: async () => dataSource.initialize(),
         }),
-        TypeOrmModule.forFeature([TransactionType, Transaction]),
+        TypeOrmModule.forFeature([
+          TransactionType,
+          Transaction,
+          TransactionStatus,
+          TransactionTabEntity,
+        ]),
       ],
       controllers: [TransactionsController],
       providers: [TransactionsService],
@@ -65,10 +79,20 @@ describe('TransactionsController', () => {
 
     typeRepo = moduleRef.get(getRepositoryToken(TransactionType));
     txnRepo = moduleRef.get(getRepositoryToken(Transaction));
+    statusRepo = moduleRef.get(getRepositoryToken(TransactionStatus));
+    tabRepo = moduleRef.get(getRepositoryToken(TransactionTabEntity));
     await typeRepo.save([
       { id: 'deposit', label: 'Deposit' },
       { id: 'withdrawal', label: 'Withdrawal' },
     ]);
+    await statusRepo.save([
+      {
+        id: 'confirmed',
+        label: 'Completed',
+        style: 'bg-accent-green/20 text-accent-green',
+      },
+    ]);
+    await tabRepo.save([{ id: 'all', label: 'All' }]);
     await txnRepo.save({
       userId: 'user1',
       typeId: 'deposit',
