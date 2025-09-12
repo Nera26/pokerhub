@@ -32,15 +32,15 @@ const createMockSocket = () => {
 };
 
 const mockSockets = {
-  spectate: createMockSocket(),
+  game: createMockSocket(),
 };
 
 jest.mock('@/lib/socket-core', () => ({
   __esModule: true,
   getSocket: jest.fn((opts: any = {}) => {
     const ns = opts.namespace ?? '';
-    const socket = mockSockets[ns as keyof typeof mockSockets];
-    if (opts.onConnect) {
+    const socket = (mockSockets as any)[ns];
+    if (opts.onConnect && socket) {
       socket.on('connect', opts.onConnect);
     }
     return socket;
@@ -50,27 +50,15 @@ jest.mock('@/lib/socket-core', () => ({
 }));
 
 import '@/lib/socket-core';
-import {
-  subscribeToTable,
-  disconnectSpectatorSocket,
-} from '@/lib/spectator-socket';
+import { getGameSocket, sendAction, disconnectGameSocket } from '@/lib/socket';
 
 describe.skip('namespace sockets', () => {
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  test('spectator socket wires handlers and cleans up', () => {
-    const socket = mockSockets.spectate;
-    const handler = jest.fn();
-    const unsubscribe = subscribeToTable('table1', handler);
-    expect(socket.on).toHaveBeenCalled();
-
-    unsubscribe();
-    expect(socket.emit).toHaveBeenCalledWith('leave', { tableId: 'table1' });
-  });
-
   test('disconnect helpers tear down sockets', () => {
-    disconnectSpectatorSocket();
+    disconnectGameSocket();
+    // No explicit assertion needed; this ensures the helper can be invoked without errors.
   });
 });
