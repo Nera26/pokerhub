@@ -134,6 +134,22 @@ export class HandController {
     return log;
   }
 
+  /** Load and parse a hand log from disk or DB. */
+  private async loadHandLog(id: string): Promise<HandLog> {
+    const file = join(process.cwd(), '../storage/hand-logs', `${id}.jsonl`);
+    let raw: string | undefined;
+    try {
+      raw = await readFile(file, 'utf8');
+    } catch {
+      const hand = await this.hands.findOne({ where: { id } });
+      if (!hand || !hand.log) {
+        throw new NotFoundException('log not found');
+      }
+      raw = hand.log;
+    }
+    return this.parseHandLog(raw);
+  }
+
   @Get('proofs')
   @ApiOperation({ summary: 'List hand proofs' })
   @ApiResponse({ status: 200, description: 'Proofs list' })
@@ -230,20 +246,7 @@ export class HandController {
       id,
       req.headers['authorization'],
     );
-
-    const file = join(process.cwd(), '../storage/hand-logs', `${id}.jsonl`);
-    let raw: string | undefined;
-    try {
-      raw = await readFile(file, 'utf8');
-    } catch {
-      const hand = await this.hands.findOne({ where: { id } });
-      if (!hand) {
-        throw new NotFoundException('log not found');
-      }
-      raw = hand.log;
-    }
-
-    const log = this.parseHandLog(raw);
+    const log = await this.loadHandLog(id);
     const frames: HandReplayResponse = [];
     for (const [index, , , state] of log.getAll()) {
       const sanitized = sanitize(state, userId);
@@ -282,20 +285,7 @@ export class HandController {
     if (!Number.isInteger(index) || index < 0) {
       throw new NotFoundException('state not found');
     }
-
-    const file = join(process.cwd(), '../storage/hand-logs', `${id}.jsonl`);
-    let raw: string | undefined;
-    try {
-      raw = await readFile(file, 'utf8');
-    } catch {
-      const hand = await this.hands.findOne({ where: { id } });
-      if (!hand) {
-        throw new NotFoundException('log not found');
-      }
-      raw = hand.log;
-    }
-
-    const log = this.parseHandLog(raw);
+    const log = await this.loadHandLog(id);
     const state = log.reconstruct(index);
     if (!state) {
       throw new NotFoundException('state not found');

@@ -65,8 +65,10 @@ describe('HandController', () => {
   };
   const config = new ConfigService({ auth: { jwtSecrets: ['secret'] } });
 
-  function auth(userId: string) {
-    const token = jwt.sign({ sub: userId }, 'secret');
+  function auth(userId: string, role?: string) {
+    const payload: any = { sub: userId };
+    if (role) payload.role = role;
+    const token = jwt.sign(payload, 'secret');
     return `Bearer ${token}`;
   }
 
@@ -144,6 +146,41 @@ describe('HandController', () => {
       .expect(404);
 
     if (existsSync(file)) unlinkSync(file);
+  });
+
+  it('replays hand from db when file missing', async () => {
+    const entry = [0, { type: 'start' }, state, state];
+    store.set('hand-db-only', { id: 'hand-db-only', log: `${JSON.stringify(entry)}\n` } as Hand);
+
+    const frame = {
+      street: state.street,
+      pot: state.pot,
+      sidePots: state.sidePots,
+      currentBet: state.currentBet,
+      players: state.players.map((p) => ({
+        id: p.id,
+        stack: p.stack,
+        folded: p.folded,
+        bet: p.bet,
+        allIn: p.allIn,
+      })),
+      communityCards: state.communityCards,
+    };
+
+    await request(app.getHttpServer())
+      .get('/hands/hand-db-only/replay')
+      .set('Authorization', auth('u1'))
+      .expect(200)
+      .expect([frame]);
+
+    store.delete('hand-db-only');
+  });
+
+  it('returns 404 when log missing', async () => {
+    await request(app.getHttpServer())
+      .get('/hands/hand-missing-log/replay')
+      .set('Authorization', auth('admin', 'admin'))
+      .expect(404);
   });
 });
 
