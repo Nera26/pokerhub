@@ -1,32 +1,20 @@
 import { getBaseUrl } from './base-url';
+import {
+  SiteMetadataResponseSchema,
+  type SiteMetadataResponse,
+} from '@shared/types';
 
-const DEFAULT_TITLE = 'PokerHub';
-const DEFAULT_DESCRIPTION =
-  "Live Texas Hold'em, Omaha & Tournaments — PokerHub";
-const DEFAULT_IMAGE = '/pokerhub-logo.svg';
+let metadataPromise: Promise<SiteMetadataResponse> | null = null;
 
-interface SiteMetadata {
-  title: string;
-  description: string;
-  imagePath: string;
-}
-
-let metadataPromise: Promise<SiteMetadata> | null = null;
-
-async function getSiteMetadata(): Promise<SiteMetadata> {
+export function getSiteMetadata(): Promise<SiteMetadataResponse> {
   if (!metadataPromise) {
-    metadataPromise = fetch('/api/site-metadata')
-      .then(async (res) => {
-        if (res.ok) {
-          return (await res.json()) as SiteMetadata;
-        }
-        throw new Error('Failed to fetch');
-      })
-      .catch(() => ({
-        title: DEFAULT_TITLE,
-        description: DEFAULT_DESCRIPTION,
-        imagePath: DEFAULT_IMAGE,
-      }));
+    metadataPromise = fetch('/api/site-metadata').then(async (res) => {
+      if (!res.ok) {
+        throw new Error('Failed to fetch site metadata');
+      }
+      const data = await res.json();
+      return SiteMetadataResponseSchema.parse(data);
+    });
   }
   return metadataPromise;
 }

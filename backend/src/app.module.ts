@@ -35,7 +35,7 @@ import { PrecacheController } from './routes/precache.controller';
 import { NavIconsController } from './routes/nav-icons.controller';
 import { HistoryTabsController } from './routes/history-tabs.controller';
 import { ChartController } from './routes/chart.controller';
-import { SiteMetadataController } from './routes/site-metadata.controller';
+import { MetadataController } from './routes/metadata.controller';
 import { AppService } from './app.service';
 import { API_CONTRACT_VERSION } from '@shared/constants';
 import { ZodExceptionFilter } from './common/zod-exception.filter';
@@ -170,7 +170,7 @@ import { NavIconEntity } from './database/entities/nav-icon.entity';
     NavIconsController,
     HistoryTabsController,
     ChartController,
-    SiteMetadataController,
+    MetadataController,
   ],
   providers: [
     AppService,
