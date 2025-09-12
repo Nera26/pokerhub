@@ -1,19 +1,30 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createQueryHook } from './useApiQuery';
 import {
   fetchIban,
   fetchIbanHistory,
   fetchWalletReconcileMismatches,
+  getStatus,
   updateIban,
 } from '@/lib/api/wallet';
+import { useAuth } from '@/context/AuthContext';
 import type {
   IbanResponse,
   IbanHistoryResponse,
   WalletReconcileMismatchesResponse,
   IbanUpdateRequest,
+  WalletStatusResponse,
 } from '@shared/wallet.schema';
+
+export function useWalletStatus() {
+  const { playerId } = useAuth();
+  return useQuery<WalletStatusResponse>({
+    queryKey: ['wallet', playerId, 'status'],
+    queryFn: ({ signal }) => getStatus(playerId, { signal }),
+  });
+}
 
 export const useIban = createQueryHook<IbanResponse>(
   'iban',
