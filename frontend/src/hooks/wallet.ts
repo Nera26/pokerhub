@@ -70,9 +70,7 @@ export function useBankTransfer() {
     mutationFn: ({ amount, deviceId, currency }) =>
       initiateBankTransfer(playerId, amount, deviceId, currency),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['wallet', playerId, 'status'],
-      });
+      queryClient.invalidateQueries({ queryKey: ['wallet', playerId, 'status'] });
     },
   });
 }
@@ -88,9 +86,7 @@ export function useWithdraw() {
     mutationFn: ({ amount, deviceId, currency }) =>
       withdraw(playerId, amount, deviceId, currency),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['wallet', playerId, 'status'],
-      });
+      queryClient.invalidateQueries({ queryKey: ['wallet', playerId, 'status'] });
     },
   });
 }
