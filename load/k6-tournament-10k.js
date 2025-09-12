@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { sleep } from 'k6';
 import { Trend, Gauge } from 'k6/metrics';
-import { calculateIcmPayouts } from './shared/utils/icm.js';
+import { calculateIcmPayouts } from '@shared/utils/icm';
 
 const ci = !!__ENV.CI;
 export const options = {
