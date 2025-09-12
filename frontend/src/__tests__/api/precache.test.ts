@@ -1,33 +1,57 @@
 /** @jest-environment node */
 
-import { GET } from '@/app/api/precache/route';
-import { promises as fs } from 'fs';
-import { join } from 'path';
-
 describe('/api/precache', () => {
-  const manifestPath = join(process.cwd(), '.next', 'precache-manifest.json');
+  const OLD_ENV = process.env;
 
-  afterEach(async () => {
-    try {
-      await fs.unlink(manifestPath);
-    } catch {}
+  beforeEach(() => {
+    jest.resetModules();
+    process.env.NEXT_PUBLIC_BASE_URL = 'http://localhost';
   });
 
-  it('returns manifest urls when file exists', async () => {
-    await fs.mkdir(join(process.cwd(), '.next'), { recursive: true });
-    await fs.writeFile(manifestPath, JSON.stringify(['/', '/favicon.ico']));
+  afterEach(() => {
+    process.env = { ...OLD_ENV } as NodeJS.ProcessEnv;
+  });
 
+  async function loadRoute() {
+    const mod = await import('@/app/api/precache/route');
+    return mod.GET;
+  }
+
+  it('returns manifest urls on success', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ['/', '/favicon.ico'],
+    }) as any;
+
+    const GET = await loadRoute();
     const res = await GET();
     const data = await res.json();
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(data)).toBe(true);
     expect(data).toEqual(['/', '/favicon.ico']);
   });
 
-  it('returns empty array when manifest missing', async () => {
+  it('returns empty array when backend empty', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [],
+    }) as any;
+
+    const GET = await loadRoute();
     const res = await GET();
     const data = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(data).toEqual([]);
+  });
+
+  it('returns empty array when backend error', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: false }) as any;
+
+    const GET = await loadRoute();
+    const res = await GET();
+    const data = await res.json();
+
     expect(res.status).toBe(200);
     expect(data).toEqual([]);
   });

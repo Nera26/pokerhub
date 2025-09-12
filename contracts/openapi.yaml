@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.21.0
+  version: 2.22.0
 paths:
   /status:
     get:
@@ -13,9 +13,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServiceStatusResponse'
-  /precache:
+  /precache-manifest:
     get:
-      summary: List asset URLs to pre-cache
+      summary: Retrieve pre-cache manifest
       responses:
         '200':
           description: Asset URLs

@@ -1,16 +1,12 @@
 import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import { join } from 'path';
+import { env } from '@/lib/env';
 
 export async function GET() {
   try {
-    const manifestPath = join(
-      process.cwd(),
-      'public',
-      'precache-manifest.json',
-    );
-    const data = await fs.readFile(manifestPath, 'utf-8');
-    const urls = JSON.parse(data);
+    const base = env.NEXT_PUBLIC_BASE_URL ?? '';
+    const res = await fetch(`${base}/precache-manifest`);
+    if (!res.ok) throw new Error('Failed to fetch');
+    const urls = await res.json();
     return NextResponse.json(urls);
   } catch {
     return NextResponse.json([]);
