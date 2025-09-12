@@ -1,6 +1,6 @@
 'use client';
 
-import { createQueryHook } from './useApiQuery';
+import { createQueryHook } from './createQueryHook';
 import { type TableThemeResponse } from '@shared/types';
 import fetchTableTheme from '@shared/config/tableTheme';
 

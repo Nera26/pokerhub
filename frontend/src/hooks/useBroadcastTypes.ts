@@ -1,4 +1,4 @@
-import { createQueryHook } from './useApiQuery';
+import { createQueryHook } from './createQueryHook';
 import { fetchBroadcastTypes } from '@/lib/api/broadcasts';
 import { type BroadcastTypesResponse } from '@shared/types';
 import type { apiClient, ApiError } from '@/lib/api/client';

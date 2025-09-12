@@ -2,7 +2,7 @@
 
 import { fetchDashboardUsers } from '@/lib/api/admin';
 import type { DashboardUser } from '@shared/types';
-import { createQueryHook } from './useApiQuery';
+import { createQueryHook } from './createQueryHook';
 
 const useDashboardUsersQuery = createQueryHook<DashboardUser[], number>(
   'dashboard-users',

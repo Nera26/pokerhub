@@ -2,7 +2,7 @@
 
 import { fetchTables } from '@/lib/api/table';
 import type { Table } from '@shared/types';
-import { createQueryHook } from './useApiQuery';
+import { createQueryHook } from './createQueryHook';
 
 export const useActiveTables = createQueryHook<Table[]>(
   'active-tables',

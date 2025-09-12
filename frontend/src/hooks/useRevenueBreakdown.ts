@@ -1,6 +1,6 @@
 'use client';
 
-import { createQueryHook } from './useApiQuery';
+import { createQueryHook } from './createQueryHook';
 import { RevenueBreakdownSchema, type RevenueBreakdown } from '@shared/types';
 
 export type TimeFilter = 'today' | 'week' | 'month' | 'all';
