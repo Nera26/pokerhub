@@ -3,10 +3,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { DashboardService } from '../metrics/dashboard.service';
-import {
-  DashboardMetricsSchema,
-  type DashboardMetrics,
-} from '../schemas/dashboard';
+import { DashboardMetricsSchema, type DashboardMetrics } from '@shared/types';
 
 @UseGuards(AuthGuard, AdminGuard)
 @ApiTags('dashboard')

@@ -2,9 +2,9 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { SettingsService } from '../services/settings.service';
 import {
-  ChartPaletteResponse,
   ChartPaletteResponseSchema,
-} from '../schemas/settings';
+  type ChartPaletteResponse,
+} from '@shared/types';
 
 @ApiTags('chart')
 @Controller('chart')

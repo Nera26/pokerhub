@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { NavIconsResponse, NavIconsResponseSchema } from '../schemas/nav-icons';
+import { NavIconsResponseSchema, type NavIconsResponse } from '@shared/types';
 import { NavIconsService } from '../services/nav-icons.service';
 
 @ApiTags('nav')

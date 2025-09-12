@@ -1,9 +1,9 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
-  HistoryTabsResponse,
   HistoryTabsResponseSchema,
-} from '../schemas/history-tabs';
+  type HistoryTabsResponse,
+} from '@shared/types';
 import { HistoryTabsService } from '../services/history-tabs.service';
 
 @ApiTags('history')
