@@ -24,10 +24,12 @@ import { Hand } from '../database/entities/hand.entity';
 import {
   HandProofResponse as HandProofResponseSchema,
   HandProofsResponse as HandProofsResponseSchema,
+  HandReplayResponse as HandReplayResponseSchema,
 } from '../schemas/hands';
 import type {
   HandProofResponse,
   HandProofsResponse,
+  HandReplayResponse,
 } from '../schemas/hands';
 import { HandLog } from './hand-log';
 import { sanitize } from './state-sanitize';
@@ -215,6 +217,52 @@ export class HandController {
     }
 
     return HandProofResponseSchema.parse(proof);
+  }
+
+  @Get(':id/replay')
+  @ApiOperation({ summary: 'Replay hand states' })
+  @ApiResponse({ status: 200, description: 'Hand replay frames' })
+  async getReplay(
+    @Param('id') id: string,
+    @Req() req: Request,
+  ): Promise<HandReplayResponse> {
+    const userId = await this.assertParticipantOrAdmin(
+      id,
+      req.headers['authorization'],
+    );
+
+    const file = join(process.cwd(), '../storage/hand-logs', `${id}.jsonl`);
+    let raw: string | undefined;
+    try {
+      raw = await readFile(file, 'utf8');
+    } catch {
+      const hand = await this.hands.findOne({ where: { id } });
+      if (!hand) {
+        throw new NotFoundException('log not found');
+      }
+      raw = hand.log;
+    }
+
+    const log = this.parseHandLog(raw);
+    const frames: HandReplayResponse = [];
+    for (const [index, , , state] of log.getAll()) {
+      const sanitized = sanitize(state, userId);
+      frames.push({
+        street: sanitized.street,
+        pot: sanitized.pot,
+        sidePots: sanitized.sidePots,
+        currentBet: sanitized.currentBet,
+        players: sanitized.players.map((p) => ({
+          id: p.id,
+          stack: p.stack,
+          folded: p.folded,
+          bet: p.bet,
+          allIn: p.allIn,
+        })),
+        communityCards: sanitized.communityCards,
+      });
+    }
+    return HandReplayResponseSchema.parse(frames);
   }
 
   @Get(':id/state/:index')

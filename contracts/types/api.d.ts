@@ -1182,6 +1182,36 @@ export interface paths {
       };
     };
   };
+  "/hands/{id}/replay": {
+    /** Replay hand states */
+    get: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Reconstructed hand states for replay */
+        200: {
+          content: {
+            "application/json": components["schemas"]["HandReplay"];
+          };
+        };
+        /** @description Unauthorized */
+        401: {
+          content: never;
+        };
+        /** @description Forbidden */
+        403: {
+          content: never;
+        };
+        /** @description Hand not found */
+        404: {
+          content: never;
+        };
+      };
+    };
+  };
   "/hands/{id}/state/{index}": {
     /** Reconstruct hand state at action index */
     get: {
