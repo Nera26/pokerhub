@@ -1,6 +1,7 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+'use client';
+
+import { useInvalidateMutation } from './useInvalidateMutation';
 import type { Bonus } from '@/lib/api/admin';
-import type { ApiError } from '@/lib/api/client';
 
 interface ToastState {
   open: boolean;
@@ -23,31 +24,45 @@ export default function useBonusMutation<TVariables, TData = unknown>({
   errorToast,
   setToast,
 }: UseBonusMutationOptions<TVariables, TData>) {
-  const queryClient = useQueryClient();
-  return useMutation<TData, ApiError, TVariables>({
+  const mutation = useInvalidateMutation<TData, TVariables, Bonus[]>({
     mutationFn,
-    onMutate: async (variables) => {
-      await queryClient.cancelQueries({ queryKey: ['admin-bonuses'] });
-      const previous =
-        queryClient.getQueryData<Bonus[]>(['admin-bonuses']) ?? [];
-      const updated = updateCache(previous, variables);
-      queryClient.setQueryData(['admin-bonuses'], updated);
-      return { previous };
-    },
-    onError: (_err, _vars, context) => {
-      queryClient.setQueryData(['admin-bonuses'], context?.previous);
-      setToast({ open: true, msg: errorToast, type: 'error' });
-    },
-    onSuccess: (_data, variables) => {
-      const msg =
-        typeof successToast === 'function'
-          ? successToast(variables)
-          : successToast;
-      setToast({ open: true, msg, type: 'success' });
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-bonuses'] });
-    },
+    queryKey: ['admin-bonuses'],
+    update: updateCache,
   });
-}
 
+  const mutate: typeof mutation.mutate = (variables, options) =>
+    mutation.mutate(variables, {
+      ...options,
+      onError: (err, vars, ctx) => {
+        setToast({ open: true, msg: errorToast, type: 'error' });
+        options?.onError?.(err, vars, ctx);
+      },
+      onSuccess: (data, vars, ctx) => {
+        const msg =
+          typeof successToast === 'function'
+            ? successToast(vars)
+            : successToast;
+        setToast({ open: true, msg, type: 'success' });
+        options?.onSuccess?.(data, vars, ctx);
+      },
+    });
+
+  const mutateAsync: typeof mutation.mutateAsync = (variables, options) =>
+    mutation.mutateAsync(variables, {
+      ...options,
+      onError: (err, vars, ctx) => {
+        setToast({ open: true, msg: errorToast, type: 'error' });
+        options?.onError?.(err, vars, ctx);
+      },
+      onSuccess: (data, vars, ctx) => {
+        const msg =
+          typeof successToast === 'function'
+            ? successToast(vars)
+            : successToast;
+        setToast({ open: true, msg, type: 'success' });
+        options?.onSuccess?.(data, vars, ctx);
+      },
+    });
+
+  return { ...mutation, mutate, mutateAsync };
+}
