@@ -2,7 +2,7 @@ import { test, expect } from './fixtures';
 
 test.skip(process.env.NEXT_PUBLIC_E2E !== '1');
 
-// Ensure the app shows an offline page and recovers once connectivity is restored.
+// Ensure the app shows an offline notice and recovers once connectivity is restored.
 test('home page renders offline and reconnects', async ({ page, context }) => {
   const errors: string[] = [];
   page.on('pageerror', (err) => errors.push(err.message));
@@ -23,16 +23,12 @@ test('home page renders offline and reconnects', async ({ page, context }) => {
   await context.setOffline(true);
   await page.reload();
 
-  // Offline fallback page should render
+  // Offline banner should render
   await expect(page.getByText('You are offline')).toBeVisible();
 
-  // Clicking retry while offline should keep the offline page
-  await page.getByRole('button', { name: /refresh/i }).click();
-  await expect(page.getByText('You are offline')).toBeVisible();
-
-  // Restore connectivity and trigger reload via the retry button
+  // Restore connectivity and reload
   await context.setOffline(false);
-  await page.getByRole('button', { name: /refresh/i }).click();
+  await page.reload();
   await expect(page.locator('header')).toBeVisible();
   await expect(page.locator('main')).toBeVisible();
 

@@ -37,10 +37,6 @@ const withPWAConfig = withPWA({
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === 'development',
-  fallbacks: {
-    document: '/offline',
-  },
-  precachePages: ['/offline'],
 });
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');

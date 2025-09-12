@@ -19,10 +19,10 @@ describe('service worker install', () => {
     } as any;
 
     await precacheOnInstall();
-    expect(addAll).toHaveBeenLastCalledWith(['/offline', '/a.js']);
+    expect(addAll).toHaveBeenLastCalledWith(['/a.js']);
 
     await precacheOnInstall();
-    expect(addAll).toHaveBeenLastCalledWith(['/offline', '/a.js', '/b.js']);
+    expect(addAll).toHaveBeenLastCalledWith(['/a.js', '/b.js']);
 
     global.fetch = originalFetch;
     global.caches = originalCaches;
