@@ -1,5 +1,5 @@
 import { MeterProvider } from '@opentelemetry/sdk-metrics';
-import { gaugeFactory } from './gauge.factory';
+import { gaugeFactory } from '../../src/metrics/gauge.factory';
 
 describe('gaugeFactory', () => {
   it('creates real gauge when meter is provided', () => {

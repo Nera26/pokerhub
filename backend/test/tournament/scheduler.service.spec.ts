@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/require-await */
-import { TournamentScheduler } from './scheduler.service';
+import { TournamentScheduler } from '../../src/tournament/scheduler.service';
 
 class MockQueue {
   jobs: unknown[] = [];

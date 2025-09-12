@@ -1,5 +1,5 @@
 import type { Repository } from 'typeorm';
-import { Table } from '../database/entities/table.entity';
+import { Table } from '../../src/database/entities/table.entity';
 import { createInMemoryRedis } from './redis-mock';
 
 export type TournamentService = {

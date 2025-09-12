@@ -5,8 +5,8 @@ import { existsSync, unlinkSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
-import { HandController } from './hand.controller';
-import { Hand } from '../database/entities/hand.entity';
+import { HandController } from '../../src/game/hand.controller';
+import { Hand } from '../../src/database/entities/hand.entity';
 import type { HandProofResponse } from '@shared/types';
 import { ConfigService } from '@nestjs/config';
 

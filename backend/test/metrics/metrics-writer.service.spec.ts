@@ -1,5 +1,5 @@
-import { MetricsWriterService } from './metrics-writer.service';
-import { MockRedis } from '../../test/utils/mock-redis';
+import { MetricsWriterService } from '../../src/metrics/metrics-writer.service';
+import { MockRedis } from '../utils/mock-redis';
 
 describe('MetricsWriterService', () => {
   let redis: MockRedis;

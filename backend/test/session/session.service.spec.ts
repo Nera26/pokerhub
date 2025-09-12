@@ -1,7 +1,7 @@
-import { SessionService } from './session.service';
+import { SessionService } from '../../src/session/session.service';
 import type Redis from 'ioredis';
 import jwt from 'jsonwebtoken';
-import { MockRedis } from '../../test/utils/mock-redis';
+import { MockRedis } from '../utils/mock-redis';
 
 class MockConfig {
   get(key: string, def?: any) {

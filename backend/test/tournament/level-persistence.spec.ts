@@ -1,4 +1,4 @@
-import { createTournamentModule } from '../../test/utils/createTournamentModule';
+import { createTournamentModule } from '../utils/createTournamentModule';
 
 function createRedis() {
   const store = new Map<string, string>();

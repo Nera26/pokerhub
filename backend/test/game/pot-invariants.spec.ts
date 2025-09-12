@@ -1,7 +1,16 @@
 import fc from 'fast-check';
-import { HandStateMachine, GameAction, GameStateInternal, PlayerStateInternal } from './state-machine';
-import { HandRNG } from './rng';
-import { settlePots, recordDeltas, SettlementJournal } from './settlement';
+import {
+  HandStateMachine,
+  GameAction,
+  GameStateInternal,
+  PlayerStateInternal,
+} from '../../src/game/state-machine';
+import { HandRNG } from '../../src/game/rng';
+import {
+  settlePots,
+  recordDeltas,
+  SettlementJournal,
+} from '../../src/game/settlement';
 
 describe('pot invariants', () => {
   it('keeps stacks non-negative and balances settlements', () => {

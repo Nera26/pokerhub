@@ -1,8 +1,8 @@
-import { WithdrawalsService } from './withdrawals.service';
+import { WithdrawalsService } from '../../src/withdrawals/withdrawals.service';
 import { Repository } from 'typeorm';
-import { WithdrawalDecision } from './withdrawal-decision.entity';
-import { Disbursement } from '../wallet/disbursement.entity';
-import { WalletService } from '../wallet/wallet.service';
+import { WithdrawalDecision } from '../../src/withdrawals/withdrawal-decision.entity';
+import { Disbursement } from '../../src/wallet/disbursement.entity';
+import { WalletService } from '../../src/wallet/wallet.service';
 
 
 describe('WithdrawalsService.reject', () => {
