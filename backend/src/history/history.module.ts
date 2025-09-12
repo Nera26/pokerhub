@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { HistoryController } from './history.controller';
 import { HistoryService } from './history.service';
 import {
@@ -8,9 +9,10 @@ import {
   WalletHistory,
 } from './history.entity';
 import {
-  GameHistoryRepository,
-  TournamentHistoryRepository,
-  WalletHistoryRepository,
+  HistoryRepository,
+  GAME_HISTORY_REPOSITORY,
+  TOURNAMENT_HISTORY_REPOSITORY,
+  WALLET_HISTORY_REPOSITORY,
 } from './history.repository';
 
 @Module({
@@ -20,9 +22,24 @@ import {
   controllers: [HistoryController],
   providers: [
     HistoryService,
-    GameHistoryRepository,
-    TournamentHistoryRepository,
-    WalletHistoryRepository,
+    {
+      provide: GAME_HISTORY_REPOSITORY,
+      useFactory: (dataSource: DataSource) =>
+        new HistoryRepository(GameHistory, dataSource),
+      inject: [DataSource],
+    },
+    {
+      provide: TOURNAMENT_HISTORY_REPOSITORY,
+      useFactory: (dataSource: DataSource) =>
+        new HistoryRepository(TournamentHistory, dataSource),
+      inject: [DataSource],
+    },
+    {
+      provide: WALLET_HISTORY_REPOSITORY,
+      useFactory: (dataSource: DataSource) =>
+        new HistoryRepository(WalletHistory, dataSource),
+      inject: [DataSource],
+    },
   ],
 })
 export class HistoryModule {}

@@ -1,29 +1,18 @@
-import { Injectable } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
-import {
-  GameHistory,
-  TournamentHistory,
-  WalletHistory,
-} from './history.entity';
+import { DataSource, EntityTarget, Repository } from 'typeorm';
 
-@Injectable()
-export class GameHistoryRepository extends Repository<GameHistory> {
-  constructor(dataSource: DataSource) {
-    super(GameHistory, dataSource.createEntityManager());
+/**
+ * Generic repository for history entities.
+ *
+ * Each history entity (game, tournament, wallet) can reuse this class
+ * instead of having its own repository implementation.
+ */
+export class HistoryRepository<T> extends Repository<T> {
+  constructor(entity: EntityTarget<T>, dataSource: DataSource) {
+    super(entity, dataSource.createEntityManager());
   }
 }
 
-@Injectable()
-export class TournamentHistoryRepository extends Repository<TournamentHistory> {
-  constructor(dataSource: DataSource) {
-    super(TournamentHistory, dataSource.createEntityManager());
-  }
-}
-
-@Injectable()
-export class WalletHistoryRepository extends Repository<WalletHistory> {
-  constructor(dataSource: DataSource) {
-    super(WalletHistory, dataSource.createEntityManager());
-  }
-}
+export const GAME_HISTORY_REPOSITORY = 'GAME_HISTORY_REPOSITORY';
+export const TOURNAMENT_HISTORY_REPOSITORY = 'TOURNAMENT_HISTORY_REPOSITORY';
+export const WALLET_HISTORY_REPOSITORY = 'WALLET_HISTORY_REPOSITORY';
 
