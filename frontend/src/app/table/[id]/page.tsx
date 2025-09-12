@@ -1,11 +1,12 @@
 import dynamic from 'next/dynamic';
+import LoadingSection from '@/components/LoadingSection';
 
 interface PageProps {
   params: { id: string };
 }
 
 const TablePageClient = dynamic(() => import('./TablePageClient'), {
-  loading: () => <div>Loading...</div>,
+  loading: () => <LoadingSection />,
 });
 
 export default function TablePage({ params }: PageProps) {
