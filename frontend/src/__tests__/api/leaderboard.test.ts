@@ -10,6 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   LeaderboardRangesResponseSchema,
   LeaderboardModesResponseSchema,
+  LeaderboardResponseSchema,
 } from '@shared/types';
 import { leaderboard } from '../fixtures/leaderboard';
 
@@ -20,15 +21,21 @@ const useQueryMock = useQuery as unknown as jest.Mock;
 const apiClientMock = apiClient as jest.Mock;
 
 describe('leaderboard api', () => {
-  it('fetches leaderboard', async () => {
-    (fetch as jest.Mock).mockResolvedValue({
-      ok: true,
-      status: 200,
-      headers: { get: () => 'application/json' },
-      json: async () => leaderboard,
-    });
+  beforeEach(() => {
+    apiClientMock.mockResolvedValue(leaderboard);
+  });
 
+  afterEach(() => {
+    apiClientMock.mockReset();
+  });
+
+  it('fetches leaderboard from /api/leaderboard', async () => {
     await expect(fetchLeaderboard()).resolves.toEqual(leaderboard);
+    expect(apiClientMock).toHaveBeenCalledWith(
+      '/api/leaderboard',
+      LeaderboardResponseSchema,
+      { signal: undefined },
+    );
   });
 });
 
