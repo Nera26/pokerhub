@@ -29,6 +29,10 @@ export async function createFlowTestContext(): Promise<FlowTestContext> {
   };
 }
 
+export async function setupFlow(): Promise<FlowTestContext> {
+  return createFlowTestContext();
+}
+
 export async function seedDefaultAccounts(accountRepo: Repository<Account>) {
   await accountRepo.save([
     { id: USER_ID, name: 'user', balance: 0, kycVerified: true, currency: 'USD' },
