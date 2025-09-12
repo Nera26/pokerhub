@@ -25,6 +25,7 @@ import {
   TournamentFiltersResponseSchema,
   type TournamentFilterOption,
 } from '@shared/types';
+import { TournamentsProducer } from '../messaging/tournaments/tournaments.producer';
 
 @Injectable()
 export class TournamentService implements OnModuleInit {
@@ -47,6 +48,7 @@ export class TournamentService implements OnModuleInit {
     private readonly pko: PkoService,
     private readonly flags: FeatureFlagsService,
     private readonly events: EventPublisher,
+    private readonly producer: TournamentsProducer,
     @Optional() @Inject('REDIS_CLIENT') private readonly redis?: Redis,
     @Optional() private readonly wallet?: WalletService,
   ) {}
@@ -176,6 +178,10 @@ export class TournamentService implements OnModuleInit {
       opts.structure,
       opts.start,
     );
+  }
+
+  async scheduleStart(id: string, start: Date): Promise<void> {
+    this.producer.scheduleTournament(id, start);
   }
 
   async openRegistration(id: string): Promise<void> {
