@@ -33,7 +33,6 @@ const createMockSocket = () => {
 
 const mockSockets = {
   game: createMockSocket(),
-  spectate: createMockSocket(),
 };
 
 jest.mock('@/lib/socket-core', () => ({
@@ -52,10 +51,6 @@ jest.mock('@/lib/socket-core', () => ({
 
 import '@/lib/socket-core';
 import { getGameSocket, sendAction, disconnectGameSocket } from '@/lib/socket';
-import {
-  subscribeToTable,
-  disconnectSpectatorSocket,
-} from '@/lib/spectator-socket';
 
 Object.defineProperty(global, 'crypto', {
   value: { randomUUID: () => 'test-id' },
@@ -85,18 +80,7 @@ describe.skip('namespace sockets', () => {
     await promise;
   });
 
-  test('spectator socket wires handlers and cleans up', () => {
-    const socket = mockSockets.spectate;
-    const handler = jest.fn();
-    const unsubscribe = subscribeToTable('table1', handler);
-    expect(socket.on).toHaveBeenCalled();
-
-    unsubscribe();
-    expect(socket.emit).toHaveBeenCalledWith('leave', { tableId: 'table1' });
-  });
-
   test('disconnect helpers tear down sockets', () => {
     disconnectGameSocket();
-    disconnectSpectatorSocket();
   });
 });
