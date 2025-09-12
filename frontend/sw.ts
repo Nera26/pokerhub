@@ -14,21 +14,12 @@ import { clientsClaim } from 'workbox-core';
 declare const self: ServiceWorkerGlobalScope;
 
 if (typeof self !== 'undefined') {
-  const OFFLINE_URL = '/offline';
   self.skipWaiting();
   clientsClaim();
   precacheAndRoute(self.__WB_MANIFEST || []);
 
   self.addEventListener('install', (event) => {
     event.waitUntil(precacheOnInstall());
-  });
-
-  self.addEventListener('fetch', (event) => {
-    if (event.request.mode === 'navigate') {
-      event.respondWith(
-        fetch(event.request).catch(() => caches.match(OFFLINE_URL)),
-      );
-    }
   });
 
   registerRoute(
