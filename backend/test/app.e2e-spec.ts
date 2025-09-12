@@ -62,9 +62,6 @@ jest.mock('../src/feature-flags/feature-flags.module', () => ({
 jest.mock('../src/metrics/metrics.module', () => ({
   MetricsModule: class MetricsModule {},
 }));
-jest.mock('../src/broadcasts/broadcasts.module', () => ({
-  BroadcastsModule: class BroadcastsModule {},
-}));
 jest.mock('../src/tiers/tiers.module', () => ({
   TiersModule: class TiersModule {},
 }));
