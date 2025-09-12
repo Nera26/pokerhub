@@ -15,8 +15,7 @@
 /test-results
 
 # next.js
-/.next/*
-!/.next/precache-manifest.json
+/.next/
 /out/
 
 # production
