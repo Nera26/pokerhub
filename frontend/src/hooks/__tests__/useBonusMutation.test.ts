@@ -27,6 +27,10 @@ describe('useBonusMutation', () => {
         mutate: (_vars: T, mutateOpts: any) => {
           calls.push(mutateOpts);
         },
+        mutateAsync: (_vars: T, mutateOpts: any) => {
+          calls.push(mutateOpts);
+          return Promise.resolve();
+        },
       };
     });
     const setToast = jest.fn();
@@ -143,6 +147,30 @@ describe('useBonusMutation', () => {
     expect(setToast).toHaveBeenCalledWith({
       open: true,
       msg: 'Paused "Test Bonus"',
+      type: 'success',
+    });
+  });
+
+  it('emits toasts for mutateAsync', async () => {
+    const { result, setToast, calls } = setup<{ name: string }>({
+      mutationFn: jest.fn(),
+      updateCache: (prev: any[], bonus: any) => [{ ...bonus, id: 2 }],
+      successToast: 'Promotion created',
+      errorToast: 'Failed to create bonus',
+    });
+    const vars = { name: 'Async' };
+    await result.current.mutateAsync(vars);
+    const mutateOpts = calls[1];
+    mutateOpts.onError(new Error('err'), vars);
+    expect(setToast).toHaveBeenCalledWith({
+      open: true,
+      msg: 'Failed to create bonus',
+      type: 'error',
+    });
+    mutateOpts.onSuccess(undefined, vars);
+    expect(setToast).toHaveBeenCalledWith({
+      open: true,
+      msg: 'Promotion created',
       type: 'success',
     });
   });
