@@ -24,7 +24,7 @@ describe('ProfileController (unit)', () => {
       providers: [
         {
           provide: UsersService,
-          useValue: { getProfile: jest.fn() },
+          useValue: { getProfile: jest.fn(), getStats: jest.fn() },
         },
       ],
     })
@@ -66,5 +66,21 @@ describe('ProfileController (unit)', () => {
       .expect(200);
     expect(res.body).toEqual(profile);
     expect(service.getProfile).toHaveBeenCalledWith('user-1');
+  });
+
+  it('returns stats from UsersService', async () => {
+    const stats = {
+      handsPlayed: 5,
+      winRate: 40,
+      tournamentsPlayed: 2,
+      topThreeRate: 50,
+    };
+    (service.getStats as jest.Mock).mockResolvedValue(stats);
+
+    const res = await request(app.getHttpServer())
+      .get('/user/profile/stats')
+      .expect(200);
+    expect(res.body).toEqual(stats);
+    expect(service.getStats).toHaveBeenCalledWith('user-1');
   });
 });

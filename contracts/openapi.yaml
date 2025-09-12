@@ -1823,7 +1823,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserProfile'
-  /profile/stats:
+  /user/profile/stats:
     get:
       summary: Get profile statistics
       security:
