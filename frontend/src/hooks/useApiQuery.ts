@@ -2,6 +2,7 @@
 
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import { apiClient, type ApiError } from '@/lib/api/client';
+import type { ZodSchema } from 'zod';
 
 type QueryKey<P> = [string, P?];
 
@@ -52,4 +53,15 @@ export function createQueryHook<T, P = undefined>(
       ...(optionsArg ?? {}),
     });
   };
+}
+
+export function createGetHook<T>(path: string, schema: ZodSchema<T>) {
+  const trimmed = path.replace(/^\/?api\/?/, '');
+  const key = trimmed.replace(/\//g, '-');
+  const label = trimmed.replace(/[\/-]/g, ' ');
+  return createQueryHook<T>(
+    key,
+    (client, _params, opts) => client(path, schema, opts),
+    label,
+  );
 }
