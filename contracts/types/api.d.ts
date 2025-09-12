@@ -1870,6 +1870,24 @@ export interface paths {
       };
     };
   };
+  "/translations/{lang}": {
+    /** Get translations for a language */
+    get: {
+      parameters: {
+        path: {
+          lang: string;
+        };
+      };
+      responses: {
+        /** @description Translation messages */
+        200: {
+          content: {
+            "application/json": components["schemas"]["TranslationsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/config/chips": {
     /** List chip denominations */
     get: {
@@ -2703,6 +2721,11 @@ export interface components {
       label: string;
     };
     LanguagesResponse: components["schemas"]["Language"][];
+    TranslationsResponse: {
+      messages: {
+        [key: string]: string;
+      };
+    };
     NavIcon: {
       name: string;
       svg: string;

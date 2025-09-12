@@ -1837,6 +1837,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LanguagesResponse'
+  /translations/{lang}:
+    get:
+      summary: Get translations for a language
+      parameters:
+        - in: path
+          name: lang
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Translation messages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranslationsResponse'
   /config/chips:
     get:
       summary: List chip denominations
@@ -3408,6 +3424,14 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Language'
+    TranslationsResponse:
+      type: object
+      required: [messages]
+      properties:
+        messages:
+          type: object
+          additionalProperties:
+            type: string
     NavIcon:
       type: object
       required: [name, svg]

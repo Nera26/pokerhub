@@ -29,6 +29,9 @@ export type Language = z.infer<typeof LanguageSchema>;
 export const LanguagesResponseSchema = z.array(LanguageSchema);
 export type LanguagesResponse = z.infer<typeof LanguagesResponseSchema>;
 
+export { TranslationsResponseSchema } from '../backend/src/schemas/translations';
+export type { TranslationsResponse } from '../backend/src/schemas/translations';
+
 // Navigation icons
 export const NavIconSchema = z.object({
   name: z.string(),
