@@ -33,6 +33,16 @@ describe('Pending deposits', () => {
     await ctx.repos.dataSource.destroy();
   });
 
+  async function verifyPendingDeposit(id: string) {
+    ((ctx.service as any).events.emit as jest.Mock).mockClear();
+    await ctx.service.markActionRequiredIfPending(id, id);
+    const after = await ctx.repos.pending.findOneByOrFail({ id });
+    expect(after.actionRequired).toBe(false);
+    const list = await ctx.service.listPendingDeposits();
+    expect(list.find((d) => d.id === id)).toBeUndefined();
+    expect((ctx.service as any).events.emit).not.toHaveBeenCalled();
+  }
+
   it('confirms deposit, removes job and credits account without re-triggering events', async () => {
     (ctx.service as any).pendingQueue.getJob.mockClear();
     removeJob.mockClear();
@@ -80,10 +90,7 @@ describe('Pending deposits', () => {
     expect(userAgain.balance).toBe(100);
     expect((ctx.service as any).events.emit).not.toHaveBeenCalled();
 
-    await ctx.service.markActionRequiredIfPending(deposit.id, 'job-x');
-    const after = await ctx.repos.pending.findOneByOrFail({ id: deposit.id });
-    expect(after.actionRequired).toBe(false);
-    expect((ctx.service as any).events.emit).not.toHaveBeenCalled();
+    await verifyPendingDeposit(deposit.id);
   });
 
   it('rejects deposit and notifies', async () => {
@@ -156,12 +163,7 @@ describe('Pending deposits', () => {
     const updated = await ctx.repos.pending.findOneByOrFail({ id: deposit.id });
     expect(updated.status).toBe('rejected');
 
-    await ctx.service.markActionRequiredIfPending(deposit.id);
-    const after = await ctx.repos.pending.findOneByOrFail({ id: deposit.id });
-    expect(after.actionRequired).toBe(false);
-
-    const list = await ctx.service.listPendingDeposits();
-    expect(list.find((d) => d.id === deposit.id)).toBeUndefined();
+    await verifyPendingDeposit(deposit.id);
   });
 
   it('emits admin notification after delay and confirms deposit via controller', async () => {
