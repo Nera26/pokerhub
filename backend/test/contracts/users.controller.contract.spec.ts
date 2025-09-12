@@ -1,69 +1,32 @@
-import { INestApplication, ExecutionContext } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { UsersController } from '../../src/routes/users.controller';
 import { UsersService } from '../../src/users/users.service';
-import { AuthGuard } from '../../src/auth/auth.guard';
-import { AdminGuard } from '../../src/auth/admin.guard';
-import { SelfGuard } from '../../src/auth/self.guard';
 import { CreateUserRequest, User, UserSchema } from '@shared/types';
+import { initUserTestApp } from '../utils/user-controller';
 
 describe('Contract: UsersController', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    const moduleRef: TestingModule = await Test.createTestingModule({
-      controllers: [UsersController],
-      providers: [
-        {
-          provide: UsersService,
-          useValue: {
-            create: async (dto: CreateUserRequest): Promise<User> => ({
-              id: 'test-id',
-              username: dto.username,
-              avatarKey: dto.avatarKey,
-              banned: false,
-            }),
-            findById: async (id: string): Promise<User> => ({
-              id,
-              username: 'alice',
-              avatarKey: undefined,
-              banned: false,
-            }),
-          },
+    app = await initUserTestApp([
+      {
+        provide: UsersService,
+        useValue: {
+          create: async (dto: CreateUserRequest): Promise<User> => ({
+            id: 'test-id',
+            username: dto.username,
+            avatarKey: dto.avatarKey,
+            banned: false,
+          }),
+          findById: async (id: string): Promise<User> => ({
+            id,
+            username: 'alice',
+            avatarKey: undefined,
+            banned: false,
+          }),
         },
-      ],
-    })
-      .overrideGuard(AuthGuard)
-      .useValue({
-        canActivate: (ctx: ExecutionContext) => {
-          const req = ctx.switchToHttp().getRequest();
-          const header = req.headers['authorization'];
-          if (typeof header === 'string' && header.startsWith('Bearer ')) {
-            req.userId = header.slice(7);
-            return true;
-          }
-          return false;
-        },
-      })
-      .overrideGuard(AdminGuard)
-      .useValue({
-        canActivate: (ctx: ExecutionContext) => {
-          const req = ctx.switchToHttp().getRequest();
-          const header = req.headers['authorization'];
-          if (header === 'Bearer admin') {
-            req.userId = 'admin';
-            return true;
-          }
-          return false;
-        },
-      })
-      .overrideGuard(SelfGuard)
-      .useClass(SelfGuard)
-      .compile();
-
-    app = moduleRef.createNestApplication();
-    await app.init();
+      },
+    ]);
   });
 
   afterAll(async () => {
