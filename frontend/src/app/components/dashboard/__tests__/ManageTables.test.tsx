@@ -9,6 +9,7 @@ import {
 } from '@/lib/api/table';
 import type { Table } from '@shared/types';
 import { renderWithClient } from './renderWithClient';
+import { fillTableForm } from './fillTableForm';
 
 jest.mock('@/lib/api/table', () => ({
   fetchTables: jest.fn(),
@@ -33,24 +34,7 @@ describe('ManageTables', () => {
   });
 
   it('submits form to create table', async () => {
-    mockFetchTables.mockResolvedValueOnce([]);
-    renderWithClient(<ManageTables />);
-
-    const openBtn = await screen.findByText(/create table/i);
-    await userEvent.click(openBtn);
-
-    await userEvent.type(screen.getByLabelText(/table name/i), 'My Table');
-    await userEvent.selectOptions(screen.getByLabelText(/game type/i), 'omaha');
-    await userEvent.type(screen.getByLabelText(/small blind/i), '1');
-    await userEvent.type(screen.getByLabelText(/big blind/i), '2');
-    await userEvent.type(screen.getByLabelText(/starting stack/i), '100');
-    await userEvent.type(screen.getByLabelText(/max players/i), '6');
-    await userEvent.type(screen.getByLabelText(/min buy-in/i), '50');
-    await userEvent.type(screen.getByLabelText(/max buy-in/i), '200');
-
-    await userEvent.click(
-      screen.getAllByRole('button', { name: /create table/i })[1],
-    );
+    await fillTableForm();
 
     await waitFor(() =>
       expect(mockCreateTable).toHaveBeenCalledWith({
@@ -65,23 +49,7 @@ describe('ManageTables', () => {
   });
 
   it('shows error when create table fails', async () => {
-    mockFetchTables.mockResolvedValueOnce([]);
-    mockCreateTable.mockRejectedValue(new Error('fail'));
-    renderWithClient(<ManageTables />);
-
-    const openBtn = await screen.findByText(/create table/i);
-    await userEvent.click(openBtn);
-    await userEvent.type(screen.getByLabelText(/table name/i), 'My Table');
-    await userEvent.selectOptions(screen.getByLabelText(/game type/i), 'omaha');
-    await userEvent.type(screen.getByLabelText(/small blind/i), '1');
-    await userEvent.type(screen.getByLabelText(/big blind/i), '2');
-    await userEvent.type(screen.getByLabelText(/starting stack/i), '100');
-    await userEvent.type(screen.getByLabelText(/max players/i), '6');
-    await userEvent.type(screen.getByLabelText(/min buy-in/i), '50');
-    await userEvent.type(screen.getByLabelText(/max buy-in/i), '200');
-    await userEvent.click(
-      screen.getAllByRole('button', { name: /create table/i })[1],
-    );
+    await fillTableForm({ createTable: new Error('fail') });
 
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent(
