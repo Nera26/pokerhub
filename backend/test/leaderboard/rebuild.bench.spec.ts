@@ -5,7 +5,10 @@ import { ConfigService } from '@nestjs/config';
 import { MockCache, ClickHouseAnalytics } from './test-utils';
 
 describe('leaderboard rebuild benchmark', () => {
-  it('rebuilds 30 days within 30 minutes', async () => {
+  it.each([
+    { name: 'baseline load', players: 5, sessions: 10 },
+    { name: 'CLI high load', players: 50, sessions: 200 },
+  ])('$name rebuilds 30 days within 30 minutes', async ({ players, sessions }) => {
     jest.useFakeTimers();
     const cache = new MockCache();
     const analytics = new ClickHouseAnalytics();
@@ -24,13 +27,14 @@ describe('leaderboard rebuild benchmark', () => {
     const { durationMs } = await run({
       days: 30,
       benchmark: true,
-      players: 5,
-      sessions: 10,
+      players,
+      sessions,
       assertDurationMs: 30 * 60 * 1000,
       service,
     });
     expect(durationMs).toBeLessThan(30 * 60 * 1000);
     await analytics.close();
+    jest.clearAllTimers();
     jest.useRealTimers();
   });
 });
