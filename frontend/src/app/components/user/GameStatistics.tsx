@@ -1,32 +1,14 @@
 'use client';
-import { useQuery } from '@tanstack/react-query';
-import { fetchStats } from '@/lib/api/profile';
 import type { ProfileStatsResponse } from '@shared/types';
 
 type HistoryTab = 'game-history' | 'tournament-history' | 'transaction-history';
 
 interface Props {
+  stats: ProfileStatsResponse;
   onSelectTab(tab: HistoryTab): void;
 }
 
-function useProfileStats() {
-  return useQuery<ProfileStatsResponse>({
-    queryKey: ['profileStats'],
-    queryFn: ({ signal }) => fetchStats({ signal }),
-  });
-}
-
-export default function GameStatistics({ onSelectTab }: Props) {
-  const { data: stats, isLoading, isError } = useProfileStats();
-
-  if (isLoading) {
-    return <p>Loading stats...</p>;
-  }
-
-  if (isError || !stats) {
-    return <p>Error loading stats</p>;
-  }
-
+export default function GameStatistics({ stats, onSelectTab }: Props) {
   const cards: { value: string; label: string; tab: HistoryTab }[] = [
     {
       value: stats.handsPlayed.toLocaleString(),

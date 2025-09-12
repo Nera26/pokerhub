@@ -31,7 +31,7 @@ describe('NavigationLinks', () => {
       );
 
       const profileLink = screen.getByRole('link', { name: /Profile/i });
-      expect(profileLink).toHaveAttribute('href', '/profile');
+      expect(profileLink).toHaveAttribute('href', '/user');
 
       const walletLink = screen.getByRole('link', { name: 'Wallet' });
       expect(walletLink).toHaveAttribute('href', '/wallet');
