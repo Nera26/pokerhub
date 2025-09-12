@@ -11,12 +11,14 @@ import {
   fetchTransactions,
 } from '@/lib/api/history';
 import useLogout from '@/hooks/useLogout';
+import { useGameTypes } from '@/hooks/useGameTypes';
 
 jest.mock('@/lib/api/profile');
 jest.mock('@/lib/api/tiers');
 jest.mock('@/lib/api/historyTabs');
 jest.mock('@/lib/api/history');
 jest.mock('@/hooks/useLogout');
+jest.mock('@/hooks/useGameTypes');
 
 function renderPage() {
   const queryClient = new QueryClient();
@@ -56,6 +58,10 @@ describe('UserPage', () => {
     { key: 'transaction-history', label: 'Transactions' },
   ];
 
+  const mockUseGameTypes = useGameTypes as jest.MockedFunction<
+    typeof useGameTypes
+  >;
+
   beforeEach(() => {
     (fetchProfile as jest.Mock).mockResolvedValue(profile);
     (fetchStats as jest.Mock).mockResolvedValue(stats);
@@ -68,6 +74,11 @@ describe('UserPage', () => {
     (useLogout as jest.Mock).mockReturnValue({
       mutate: jest.fn((_v, opts) => opts?.onSuccess?.()),
       isPending: false,
+    });
+    mockUseGameTypes.mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null,
     });
   });
 
@@ -104,5 +115,40 @@ describe('UserPage', () => {
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
+  });
+
+  it('applies filters to history list', async () => {
+    const user = userEvent.setup();
+    const data = [
+      {
+        id: '1',
+        type: "Texas Hold'em",
+        stakes: '$1/$2',
+        buyin: '$100',
+        date: '2023-01-01',
+        profit: true,
+        amount: '+$50',
+      },
+      {
+        id: '2',
+        type: 'Omaha',
+        stakes: '$1/$2',
+        buyin: '$100',
+        date: '2023-01-02',
+        profit: false,
+        amount: '-$20',
+      },
+    ];
+    (fetchGameHistory as jest.Mock).mockResolvedValue(data);
+    renderPage();
+    expect(await screen.findByText(/Table #1/)).toBeInTheDocument();
+    expect(screen.getByText(/Table #2/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Filters' }));
+    await user.selectOptions(screen.getAllByRole('combobox')[1], 'win');
+    await user.click(screen.getByRole('button', { name: 'Apply' }));
+    await waitFor(() =>
+      expect(screen.queryByText(/Table #2/)).not.toBeInTheDocument(),
+    );
+    expect(screen.getByText(/Table #1/)).toBeInTheDocument();
   });
 });
