@@ -7,3 +7,4 @@ hand-log
 *.log
 
 audit/backlog.csv
+audit/score.json

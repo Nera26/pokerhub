@@ -1,10 +1,7 @@
 import { execSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 
 const sh = (c) => execSync(c, { stdio: "pipe" }).toString().trim();
 const safeJson = (s, f) => { try { return JSON.parse(s); } catch { return f; } };
-
-if (!existsSync("audit")) mkdirSync("audit", { recursive: true });
 
 /* 1) CURRENT COUNTS */
 const tspBackend = sh(
@@ -38,23 +35,21 @@ const staticHits = sh(
 );
 const STATIC = parseInt(staticHits || "0", 10) || 0;
 
-/* 2) BASELINE (first run sets it) */
-const scorePath = "audit/score.json";
-let score = existsSync(scorePath)
-  ? JSON.parse(readFileSync(scorePath, "utf8"))
-  : { baseline: null, current: null, total: 0, notes: [] };
+/* 2) BASELINE (provided via env or default to current) */
+const baselineEnv = process.env.AUDIT_BASELINE || null;
+let baseline = baselineEnv ? safeJson(baselineEnv, null) : null;
 
-if (!score.baseline) {
-  score.baseline = { UNUSED, DUPLICATES, STATIC };
+if (!baseline) {
+  baseline = { UNUSED, DUPLICATES, STATIC };
 }
 
 /* avoid div by zero */
 const pct = (cur, base) => (base > 0 ? Math.max(0, 1 - cur / base) : cur === 0 ? 1 : 0);
 
 /* 3) CATEGORY SCORES (match your rubric) */
-const deadCode = Math.round(30 * pct(UNUSED, score.baseline.UNUSED));
-const dups = Math.round(25 * pct(DUPLICATES, score.baseline.DUPLICATES));
-const dynamic = Math.round(35 * pct(STATIC, score.baseline.STATIC));
+const deadCode = Math.round(30 * pct(UNUSED, baseline.UNUSED));
+const dups = Math.round(25 * pct(DUPLICATES, baseline.DUPLICATES));
+const dynamic = Math.round(35 * pct(STATIC, baseline.STATIC));
 
 /* simple “tests & types” gate: +10 only if typecheck & tests pass */
 let testsTypes = 0;
@@ -68,13 +63,12 @@ try {
 
 const total = deadCode + dups + dynamic + testsTypes;
 
-score.current = { UNUSED, DUPLICATES, STATIC, deadCode, dups, dynamic, testsTypes };
-score.total = total;
-score.notes = [
-  `UNUSED: ${UNUSED} (baseline ${score.baseline.UNUSED})`,
-  `DUPLICATES: ${DUPLICATES} (baseline ${score.baseline.DUPLICATES})`,
-  `STATIC: ${STATIC} (baseline ${score.baseline.STATIC})`
+const current = { UNUSED, DUPLICATES, STATIC, deadCode, dups, dynamic, testsTypes };
+const notes = [
+  `UNUSED: ${UNUSED} (baseline ${baseline.UNUSED})`,
+  `DUPLICATES: ${DUPLICATES} (baseline ${baseline.DUPLICATES})`,
+  `STATIC: ${STATIC} (baseline ${baseline.STATIC})`
 ];
 
-writeFileSync(scorePath, JSON.stringify(score, null, 2));
-console.log(JSON.stringify({ total, current: score.current, notes: score.notes }, null, 2));
+const result = { baseline, current, total, notes };
+console.log(JSON.stringify(result, null, 2));
