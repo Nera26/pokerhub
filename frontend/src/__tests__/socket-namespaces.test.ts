@@ -32,7 +32,6 @@ const createMockSocket = () => {
 };
 
 const mockSockets = {
-  game: createMockSocket(),
   spectate: createMockSocket(),
 };
 
@@ -51,38 +50,14 @@ jest.mock('@/lib/socket-core', () => ({
 }));
 
 import '@/lib/socket-core';
-import { getGameSocket, sendAction, disconnectGameSocket } from '@/lib/socket';
 import {
   subscribeToTable,
   disconnectSpectatorSocket,
 } from '@/lib/spectator-socket';
 
-Object.defineProperty(global, 'crypto', {
-  value: { randomUUID: () => 'test-id' },
-});
-
 describe.skip('namespace sockets', () => {
   afterEach(() => {
     jest.clearAllMocks();
-    jest.useRealTimers();
-  });
-
-  test('game socket emits events on reconnect', async () => {
-    jest.useFakeTimers();
-    const socket = mockSockets.game;
-    getGameSocket();
-    const promise = sendAction(
-      { type: 'bet', tableId: 't', playerId: 'p', amount: 1 },
-      0,
-    ).catch(() => undefined);
-
-    socket.trigger('connect');
-
-    expect(socket.emit).toHaveBeenCalled();
-
-    socket.trigger('action:ack', { actionId: 'test-id' });
-    jest.runAllTimers();
-    await promise;
   });
 
   test('spectator socket wires handlers and cleans up', () => {
@@ -96,7 +71,6 @@ describe.skip('namespace sockets', () => {
   });
 
   test('disconnect helpers tear down sockets', () => {
-    disconnectGameSocket();
     disconnectSpectatorSocket();
   });
 });
