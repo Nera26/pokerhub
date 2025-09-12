@@ -11,25 +11,22 @@ jest.mock('../AmountInput', () => {
 
 import BankTransferModal from '../BankTransferModal';
 import AmountInput from '../AmountInput';
+import { useBankTransfer, useWithdraw } from '@/hooks/wallet';
+
+jest.mock('@/hooks/wallet', () => ({
+  useBankTransfer: jest.fn(),
+  useWithdraw: jest.fn(),
+}));
 
 const depositProps = () => ({
   mode: 'deposit' as const,
   onClose: jest.fn(),
-  onSubmit: jest.fn().mockResolvedValue({
-    bank: {
-      bankName: 'Test Bank',
-      accountNumber: '123',
-      routingCode: '000',
-    },
-    reference: 'ref',
-  }),
   currency: 'EUR',
 });
 
 const withdrawProps = () => ({
   mode: 'withdraw' as const,
   onClose: jest.fn(),
-  onSubmit: jest.fn(),
   currency: 'EUR',
   availableBalance: 100,
   bankDetails: {
@@ -45,6 +42,8 @@ describe.each([
   ['withdraw', withdrawProps],
 ])('%s mode', (type, getProps) => {
   let props: any;
+  let depositMutate: jest.Mock;
+  let withdrawMutate: jest.Mock;
 
   beforeEach(() => {
     (AmountInput as jest.Mock).mockClear();
@@ -53,6 +52,19 @@ describe.each([
     Object.assign(navigator, {
       clipboard: { writeText: jest.fn().mockResolvedValue(undefined) },
     });
+    depositMutate = jest.fn().mockResolvedValue({
+      bank: {
+        bankName: 'Test Bank',
+        accountNumber: '123',
+        routingCode: '000',
+      },
+      reference: 'ref',
+    });
+    withdrawMutate = jest.fn().mockResolvedValue(undefined);
+    (useBankTransfer as jest.Mock).mockReturnValue({
+      mutateAsync: depositMutate,
+    });
+    (useWithdraw as jest.Mock).mockReturnValue({ mutateAsync: withdrawMutate });
     props = getProps();
   });
 
@@ -70,7 +82,7 @@ describe.each([
     await userEvent.type(input, '50');
     const buttonName = type === 'deposit' ? /get instructions/i : 'Withdraw';
     await userEvent.click(screen.getByRole('button', { name: buttonName }));
-    const action = props.onSubmit;
+    const action = type === 'deposit' ? depositMutate : withdrawMutate;
     expect(action).toHaveBeenCalledWith({
       amount: 50,
       currency: props.currency,

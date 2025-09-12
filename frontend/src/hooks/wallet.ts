@@ -8,6 +8,8 @@ import {
   fetchWalletReconcileMismatches,
   getStatus,
   updateIban,
+  initiateBankTransfer,
+  withdraw,
 } from '@/lib/api/wallet';
 import { useAuth } from '@/context/AuthContext';
 import type {
@@ -16,6 +18,7 @@ import type {
   WalletReconcileMismatchesResponse,
   IbanUpdateRequest,
   WalletStatusResponse,
+  BankTransferDepositResponse,
 } from '@shared/wallet.schema';
 
 export function useWalletStatus() {
@@ -52,6 +55,42 @@ export function useUpdateIban() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['iban'] });
       queryClient.invalidateQueries({ queryKey: ['iban-history'] });
+    },
+  });
+}
+
+export function useBankTransfer() {
+  const { playerId } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation<
+    BankTransferDepositResponse,
+    Error,
+    { amount: number; deviceId: string; currency: string }
+  >({
+    mutationFn: ({ amount, deviceId, currency }) =>
+      initiateBankTransfer(playerId, amount, deviceId, currency),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['wallet', playerId, 'status'],
+      });
+    },
+  });
+}
+
+export function useWithdraw() {
+  const { playerId } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation<
+    WalletStatusResponse,
+    Error,
+    { amount: number; deviceId: string; currency: string }
+  >({
+    mutationFn: ({ amount, deviceId, currency }) =>
+      withdraw(playerId, amount, deviceId, currency),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['wallet', playerId, 'status'],
+      });
     },
   });
 }
