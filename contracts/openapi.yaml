@@ -2190,6 +2190,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Promotion'
+  /promotions/{id}/claim:
+    post:
+      summary: Claim promotion
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Claim result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
 components:
   securitySchemes:
     bearerAuth:

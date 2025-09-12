@@ -75,6 +75,8 @@ export const TableThemeResponseSchema = z.object({
 export type TableThemeResponse = z.infer<typeof TableThemeResponseSchema>;
 
 // Backend re-exports
+export { MessageResponseSchema } from '../backend/src/schemas/auth';
+export type { MessageResponse } from '../backend/src/schemas/auth';
 export {
   UserProfileSchema,
   MeResponseSchema,
