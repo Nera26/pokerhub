@@ -1,6 +1,6 @@
 // app/layout.tsx
 import './globals.css';
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { cookies } from 'next/headers';
 import { NextIntlClientProvider } from 'next-intl';
 import '@fortawesome/fontawesome-svg-core/styles.css';
@@ -22,6 +22,7 @@ import { env } from '@/lib/env';
 import ContractMismatchNotice from '@/components/ContractMismatchNotice';
 import { getBaseUrl } from '@/lib/base-url';
 import { TranslationsResponseSchema } from '@shared/types';
+import useOffline from '@/hooks/useOffline';
 
 export async function generateMetadata() {
   const meta = await buildMetadata();
@@ -67,6 +68,31 @@ async function loadMessages(locale: string) {
   }
 }
 
+export function OfflineBanner() {
+  const { online, retry } = useOffline();
+  const [dismissed, setDismissed] = useState(false);
+
+  if (online || dismissed) {
+    return null;
+  }
+
+  return (
+    <div className="bg-danger-red text-white p-2 text-center">
+      <span>You are offline.</span>
+      <button className="ml-2 underline" onClick={retry}>
+        Retry
+      </button>
+      <button
+        aria-label="Dismiss offline notice"
+        className="ml-2"
+        onClick={() => setDismissed(true)}
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
 export default async function RootLayout({
   children,
 }: {
@@ -102,6 +128,7 @@ export default async function RootLayout({
             {skipText}
           </a>
           <LanguageSelector />
+          <OfflineBanner />
           <NextTopLoader
             color="var(--color-accent-yellow)"
             height={1}
