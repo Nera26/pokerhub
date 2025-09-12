@@ -16,6 +16,7 @@ import { MockRedis } from '../utils/mock-redis';
 import { ConfigService } from '@nestjs/config';
 import { WebhookController } from '../../src/wallet/webhook.controller';
 import { verifySignature } from '../../src/wallet/verify-signature';
+import * as fc from 'fast-check';
 
 // Re-exported for compatibility with legacy tests
 export { createDataSource as createInMemoryDb } from '../utils/pgMem';
@@ -181,6 +182,38 @@ export async function resetLedger(repos: {
     acc.balance = 0;
   }
   await repos.account.save(accounts);
+}
+
+export const walletBatchArb = () =>
+  fc.array(
+    fc
+      .record({
+        reserve: fc.integer({ min: 1, max: 100 }),
+        commit: fc.integer({ min: 0, max: 100 }),
+        rake: fc.integer({ min: 0, max: 100 }),
+      })
+      .filter((t) => t.commit <= t.reserve && t.rake <= t.commit),
+    { maxLength: 10 },
+  );
+
+export async function runWalletBatch(
+  service: WalletService,
+  repos: { account: Repository<Account>; journal: Repository<JournalEntry> },
+  batch: { reserve: number; commit: number; rake: number }[],
+  userId = '11111111-1111-1111-1111-111111111111',
+) {
+  await resetLedger(repos);
+  for (let i = 0; i < batch.length; i++) {
+    const t = batch[i];
+    const refId = `hand#${i}`;
+    await service.reserve(userId, t.reserve, refId, 'USD');
+    await service.commit(refId, t.commit, t.rake, 'USD');
+    const rollbackAmt = t.reserve - t.commit;
+    if (rollbackAmt > 0) {
+      await service.rollback(userId, rollbackAmt, refId, 'USD');
+    }
+  }
+  await assertLedgerInvariant(service);
 }
 
 export async function expectLedgerBalances(
