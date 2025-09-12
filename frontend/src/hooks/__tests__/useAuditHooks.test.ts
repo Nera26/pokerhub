@@ -30,7 +30,7 @@ describe('audit hooks', () => {
         { id: '1', severity: 'danger', title: 't', body: 'b', time: 'now' },
       ],
       path: '/api/admin/security-alerts',
-      label: 'audit alerts',
+      label: 'admin security alerts',
     },
   ] as const;
 

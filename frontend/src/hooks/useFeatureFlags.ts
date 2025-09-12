@@ -1,11 +1,12 @@
 'use client';
 
-import { fetchFeatureFlags } from '@/lib/api/feature-flags';
-import type { FeatureFlagsResponse } from '@shared/types';
-import { createQueryHook } from './useApiQuery';
+import {
+  FeatureFlagsResponseSchema,
+  type FeatureFlagsResponse,
+} from '@shared/types';
+import { createGetHook } from './useApiQuery';
 
-export const useFeatureFlags = createQueryHook<FeatureFlagsResponse>(
-  'feature-flags',
-  (_client, _params, opts) => fetchFeatureFlags({ signal: opts.signal }),
-  'feature flags',
+export const useFeatureFlags = createGetHook<FeatureFlagsResponse>(
+  '/api/feature-flags',
+  FeatureFlagsResponseSchema,
 );

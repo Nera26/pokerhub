@@ -7,12 +7,15 @@ import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
 import request from 'supertest';
 
-import { BroadcastsModule } from '../src/broadcasts/broadcasts.module';
-import { BroadcastEntity } from '../src/database/entities/broadcast.entity';
-import { BroadcastTemplateEntity } from '../src/database/entities/broadcast-template.entity';
-import { BroadcastTypeEntity } from '../src/database/entities/broadcast-type.entity';
-import { AuthGuard } from '../src/auth/auth.guard';
-import { AdminGuard } from '../src/auth/admin.guard';
+import { BroadcastEntity } from '../../src/database/entities/broadcast.entity';
+import { BroadcastTemplateEntity } from '../../src/database/entities/broadcast-template.entity';
+import { BroadcastTypeEntity } from '../../src/database/entities/broadcast-type.entity';
+import { AuthGuard } from '../../src/auth/auth.guard';
+import { AdminGuard } from '../../src/auth/admin.guard';
+import { BroadcastsService } from '../../src/messaging/broadcasts.service';
+import { BroadcastsController } from '../../src/messaging/broadcasts.controller';
+import { BroadcastTemplatesController } from '../../src/messaging/templates.controller';
+import { BroadcastTypesController } from '../../src/messaging/types.controller';
 
 describe('BroadcastsController', () => {
   let app: INestApplication;
@@ -66,8 +69,13 @@ describe('BroadcastsController', () => {
           },
           dataSourceFactory: async () => dataSource.initialize(),
         }),
-        BroadcastsModule,
       ],
+      controllers: [
+        BroadcastsController,
+        BroadcastTemplatesController,
+        BroadcastTypesController,
+      ],
+      providers: [BroadcastsService],
     })
       .overrideGuard(AuthGuard)
       .useValue({ canActivate: () => true })
@@ -80,11 +88,24 @@ describe('BroadcastsController', () => {
 
     // Seed broadcast types
     const typeRepo = dataSource.getRepository(BroadcastTypeEntity);
-    await typeRepo.save([
-      { name: 'announcement', icon: '📢', color: 'text-accent-yellow' },
-      { name: 'alert', icon: '⚠️', color: 'text-danger-red' },
-      { name: 'notice', icon: 'ℹ️', color: 'text-accent-blue' },
-    ]);
+    await typeRepo.save({
+      id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      name: 'announcement',
+      icon: '📢',
+      color: 'text-accent-yellow',
+    });
+    await typeRepo.save({
+      id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+      name: 'alert',
+      icon: '⚠️',
+      color: 'text-danger-red',
+    });
+    await typeRepo.save({
+      id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+      name: 'notice',
+      icon: 'ℹ️',
+      color: 'text-accent-blue',
+    });
 
     // Seed broadcast templates
     const templateRepo = dataSource.getRepository(BroadcastTemplateEntity);

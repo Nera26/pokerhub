@@ -31,7 +31,7 @@ export default function SecurityAlerts() {
     mutationFn: (id: string) =>
       fetch(`/api/admin/security-alerts/${id}/ack`, { method: 'POST' }),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['audit-alerts'] }),
+      queryClient.invalidateQueries({ queryKey: ['admin-security-alerts'] }),
   });
 
   if (isLoading)
@@ -111,4 +111,3 @@ export default function SecurityAlerts() {
     </div>
   );
 }
-

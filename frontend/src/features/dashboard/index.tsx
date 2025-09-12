@@ -13,7 +13,7 @@ import { useAuthStore } from '@/app/store/authStore';
 import { fetchProfile } from '@/lib/api/profile';
 import { useQuery } from '@tanstack/react-query';
 
-import { fetchAdminTabs } from '@/lib/api/admin';
+import { fetchAdminTabs, fetchAdminTabMeta } from '@/lib/api/admin';
 import type { SidebarTab } from '@shared/types';
 const Sidebar = dynamic(() => import('@/app/components/dashboard/Sidebar'), {
   loading: () => <div>Loading sidebar...</div>,
@@ -25,6 +25,44 @@ const DEFAULT_AVATAR =
 
 function isSidebarTab(v: string | null, tabs: SidebarTab[]): v is SidebarTab {
   return !!v && tabs.includes(v as SidebarTab);
+}
+
+function TabFallback({ tab, online }: { tab: SidebarTab; online?: number }) {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['admin-tab-meta', tab],
+    queryFn: ({ signal }) => fetchAdminTabMeta(tab, { signal }),
+  });
+
+  if (isLoading) {
+    return <div>Loading {tab}...</div>;
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="bg-card-bg rounded-2xl p-8 card-shadow">
+        <h3 className="text-xl font-semibold mb-2 capitalize">{tab}</h3>
+        <p className="text-text-secondary">This section is coming soon.</p>
+      </div>
+    );
+  }
+
+  if (!data.enabled) {
+    return (
+      <div className="bg-card-bg rounded-2xl p-8 card-shadow">
+        <h3 className="text-xl font-semibold mb-2 capitalize">{data.title}</h3>
+        <p className="text-text-secondary">{data.message}</p>
+      </div>
+    );
+  }
+
+  return (
+    <DashboardModule
+      loader={() => import(/* @vite-ignore */ data.component)}
+      loading={<div>Loading {data.title.toLowerCase()}...</div>}
+      error={<div>Error loading {data.title.toLowerCase()}.</div>}
+      {...(tab === 'broadcast' ? { props: { online: online ?? 0 } } : {})}
+    />
+  );
 }
 
 function DashboardPage() {
@@ -88,7 +126,7 @@ function DashboardPage() {
   useEffect(() => {
     if (!tabs.length) return;
     const q = search.get('tab');
-    if (isSidebarTab(q, tabs)) {
+    if (q) {
       setTab(q as SidebarTab);
     } else {
       setTab('dashboard');
@@ -195,12 +233,7 @@ function DashboardPage() {
                 : {})}
             />
           ) : (
-            <div className="bg-card-bg rounded-2xl p-8 card-shadow">
-              <h3 className="text-xl font-semibold mb-2 capitalize">{tab}</h3>
-              <p className="text-text-secondary">
-                This section is coming soon.
-              </p>
-            </div>
+            <TabFallback tab={tab} online={metrics?.online} />
           )}
         </section>
       </main>

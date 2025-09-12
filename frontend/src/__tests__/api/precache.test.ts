@@ -16,14 +16,19 @@ describe('/api/precache', () => {
   it('returns manifest urls when file exists', async () => {
     await fs.mkdir(join(process.cwd(), '.next'), { recursive: true });
     await fs.writeFile(manifestPath, JSON.stringify(['/', '/favicon.ico']));
+
     const res = await GET();
     const data = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(data)).toBe(true);
     expect(data).toEqual(['/', '/favicon.ico']);
   });
 
   it('returns empty array when manifest missing', async () => {
     const res = await GET();
     const data = await res.json();
+    expect(res.status).toBe(200);
     expect(data).toEqual([]);
   });
 });

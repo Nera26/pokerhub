@@ -1,11 +1,9 @@
 'use client';
 
-import { createQueryHook } from './useApiQuery';
 import { AdminEventsResponseSchema, type AdminEvent } from '@shared/types';
+import { createGetHook } from './useApiQuery';
 
-export const useAdminEvents = createQueryHook<AdminEvent[]>(
-  'admin-events',
-  (client, opts) =>
-    client('/api/admin/events', AdminEventsResponseSchema, opts),
-  'admin events',
+export const useAdminEvents = createGetHook<AdminEvent[]>(
+  '/api/admin/events',
+  AdminEventsResponseSchema,
 );

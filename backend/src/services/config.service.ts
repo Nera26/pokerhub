@@ -16,7 +16,7 @@ export class ConfigService {
         process.cwd(),
         '..',
         'frontend',
-        '.next',
+        'public',
         'precache-manifest.json',
       );
       const raw = await readFile(manifestPath, 'utf-8');
