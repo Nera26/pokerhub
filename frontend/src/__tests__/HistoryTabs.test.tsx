@@ -19,6 +19,37 @@ describe('HistoryTabs', () => {
     (global.fetch as jest.Mock).mockReset();
   });
 
+  it('renders history tabs from API', async () => {
+    (
+      global.fetch as jest.Mock<Promise<ResponseLike>, [string]>
+    ).mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: { get: () => 'application/json' } as any,
+      json: async () => ({
+        tabs: [
+          { key: 'game-history', label: 'Game History' },
+          { key: 'tournament-history', label: 'Tournament History' },
+          { key: 'transaction-history', label: 'Deposit/Withdraw' },
+        ],
+      }),
+    });
+    render(<HistoryTabs selected="game-history" onChange={jest.fn()} />, {
+      wrapper,
+    });
+
+    expect(
+      await screen.findByRole('button', { name: /game history/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /tournament history/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /deposit\/withdraw/i }),
+    ).toBeInTheDocument();
+  });
+
   it('fetches tabs and reacts to selection', async () => {
     (
       global.fetch as jest.Mock<Promise<ResponseLike>, [string]>
