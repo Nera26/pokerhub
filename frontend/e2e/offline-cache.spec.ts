@@ -1,6 +1,6 @@
 import { test, expect } from './fixtures';
 
-test.skip(process.env.NEXT_PUBLIC_E2E === '1');
+test.skip(process.env.NEXT_PUBLIC_E2E !== '1');
 
 // Ensure the app shows an offline page and recovers once connectivity is restored.
 test('home page renders offline and reconnects', async ({ page, context }) => {
