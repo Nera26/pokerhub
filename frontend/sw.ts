@@ -1,4 +1,3 @@
-import { precacheOnInstall } from './sw-install';
 import { precacheAndRoute } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
 import {
@@ -17,10 +16,6 @@ if (typeof self !== 'undefined') {
   self.skipWaiting();
   clientsClaim();
   precacheAndRoute(self.__WB_MANIFEST || []);
-
-  self.addEventListener('install', (event) => {
-    event.waitUntil(precacheOnInstall());
-  });
 
   registerRoute(
     ({ request }) => request.destination === 'script',
