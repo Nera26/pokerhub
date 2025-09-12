@@ -30,7 +30,7 @@ jobs:
       - name: Run 10k table scenario
         uses: grafana/k6-action@v0.2.0
         with:
-          filename: load/k6-10k-tables.js
+          filename: infra/tests/load/k6-10k-tables.js
           flags: >-
             --summary-export=10k-summary.json
             -o experimental-prometheus-rw=${{ secrets.GRAFANA_PROM_URL }}

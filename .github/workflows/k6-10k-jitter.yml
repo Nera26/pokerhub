@@ -24,7 +24,7 @@ jobs:
         SOCKETS: 80000
         ACK_P95_MS: 120
       with:
-        filename: load/k6-10k-tables.js
+        filename: infra/tests/load/k6-10k-tables.js
         flags: --summary-export=ack-summary.json --out json=ack-telemetry.json
     - name: Check thresholds
       run: ./load/check-thresholds.sh ack-summary.json
