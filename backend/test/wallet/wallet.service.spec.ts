@@ -3,8 +3,8 @@ import {
   setupWalletTest,
   WalletTestContext,
   seedWalletAccounts,
-  assertLedgerInvariant,
-  resetLedger,
+  walletBatchArb,
+  runWalletBatch,
 } from './test-utils';
 
 describe('WalletService reserve/commit/rollback flow', () => {
@@ -58,28 +58,9 @@ describe('WalletService reserve/commit/rollback flow', () => {
     async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.array(
-            fc.record({
-              reserve: fc.integer({ min: 1, max: 100 }),
-              commit: fc.integer({ min: 0, max: 100 }),
-              rake: fc.integer({ min: 0, max: 100 }),
-            }).filter((t) => t.commit <= t.reserve && t.rake <= t.commit),
-            { maxLength: 10 },
-          ),
+          walletBatchArb(),
           async (batch) => {
-            await resetLedger(ctx.repos);
-
-            for (let i = 0; i < batch.length; i++) {
-              const t = batch[i];
-              const refId = `hand#${i}`;
-              await ctx.service.reserve(userId, t.reserve, refId, 'USD');
-              await ctx.service.commit(refId, t.commit, t.rake, 'USD');
-              const rollbackAmt = t.reserve - t.commit;
-              if (rollbackAmt > 0) {
-                await ctx.service.rollback(userId, rollbackAmt, refId, 'USD');
-              }
-            }
-            await assertLedgerInvariant(ctx.service);
+            await runWalletBatch(ctx.service, ctx.repos, batch, userId);
           },
         ),
         { numRuns: 25 },
