@@ -23,7 +23,7 @@ export default function NavigationLinks({
   return (
     <>
       <Link
-        href="/profile"
+        href="/user"
         prefetch
         className="flex items-center text-text-secondary hover:text-accent-yellow transition-colors duration-200"
       >

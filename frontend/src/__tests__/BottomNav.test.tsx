@@ -81,7 +81,7 @@ const baseNavItems = [
     label: 'Alerts',
     icon: faBell,
   },
-  { flag: 'profile', href: '/profile', label: 'Profile' },
+  { flag: 'profile', href: '/user', label: 'Profile' },
 ];
 
 describe('BottomNav', () => {
