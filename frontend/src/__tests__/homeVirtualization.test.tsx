@@ -1,3 +1,4 @@
+import { mockHomeDependencies } from './utils/homePageMocks';
 import { render, screen } from '@testing-library/react';
 import { HomePageClient } from '@/app/(site)/HomePageClient';
 import { useTables, useTournaments, useCTAs } from '@/hooks/useLobbyData';
@@ -6,28 +7,12 @@ import type { CashGameListProps } from '@/app/components/home/CashGameList';
 import type { TournamentListProps } from '@/components/TournamentList';
 
 jest.mock('@/hooks/useLobbyData');
-
-jest.mock('@/hooks/useGameTypes', () => ({
-  useGameTypes: () => ({
-    data: [
-      { id: 'texas', label: 'Texas' },
-      { id: 'tournaments', label: 'Tournaments' },
-    ],
-    error: null,
-    isLoading: false,
-  }),
-}));
+mockHomeDependencies();
 
 // Next.js Link mock
 jest.mock('next/link', () => ({
   __esModule: true,
   default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
-
-// ChatWidget mock (avoid socket internals)
-jest.mock('@/app/components/common/chat/ChatWidget', () => ({
-  __esModule: true,
-  default: () => <div />,
 }));
 
 // JSDOM sizing/observer shims for virtualization math
