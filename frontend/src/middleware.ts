@@ -11,18 +11,23 @@ export function middleware(request: NextRequest) {
     },
   });
 
-  const csp = [
-    "default-src 'self';",
-    "script-src 'self' 'nonce-" + nonce + "';",
-    "style-src 'self' 'nonce-" + nonce + "';",
-    "img-src 'self' data:;",
-    "connect-src 'self';",
-    "font-src 'self';",
-    "object-src 'none';",
-    "base-uri 'self';",
-    "form-action 'self';",
-    "frame-ancestors 'none';",
-  ].join(' ');
+  const baseCsp =
+    process.env.NEXT_PUBLIC_CSP?.split(';')
+      .map((d) => d.trim())
+      .filter(Boolean) ?? [];
+
+  const directives = baseCsp.map((d) => {
+    if (d.startsWith('script-src')) return `${d} 'nonce-${nonce}'`;
+    if (d.startsWith('style-src')) return `${d} 'nonce-${nonce}'`;
+    return d;
+  });
+
+  if (!directives.some((d) => d.startsWith('script-src')))
+    directives.push(`script-src 'nonce-${nonce}'`);
+  if (!directives.some((d) => d.startsWith('style-src')))
+    directives.push(`style-src 'nonce-${nonce}'`);
+
+  const csp = directives.map((d) => `${d};`).join(' ');
 
   response.headers.set('Content-Security-Policy', csp);
   response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
