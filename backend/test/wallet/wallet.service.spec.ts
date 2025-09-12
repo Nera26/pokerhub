@@ -4,6 +4,7 @@ import {
   WalletTestContext,
   seedWalletAccounts,
   assertLedgerInvariant,
+  resetLedger,
 } from './test-utils';
 
 describe('WalletService reserve/commit/rollback flow', () => {
@@ -66,15 +67,7 @@ describe('WalletService reserve/commit/rollback flow', () => {
             { maxLength: 10 },
           ),
           async (batch) => {
-            const accountRepo = ctx.repos.account;
-            const journalRepo = ctx.repos.journal;
-
-            await journalRepo.clear();
-            const accounts = await accountRepo.find();
-            for (const acc of accounts) {
-              acc.balance = 0;
-            }
-            await accountRepo.save(accounts);
+            await resetLedger(ctx.repos);
 
             for (let i = 0; i < batch.length; i++) {
               const t = batch[i];

@@ -16,7 +16,7 @@ import * as fc from 'fast-check';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { assertLedgerInvariant } from './test-utils';
+import { assertLedgerInvariant, resetLedger } from './test-utils';
 
 const runInTmp = async (fn: () => Promise<void>) => {
   const cwd = process.cwd();
@@ -132,12 +132,7 @@ describe('Wallet ledger invariants', () => {
             const accountRepo = dataSource.getRepository(Account);
             const journalRepo = dataSource.getRepository(JournalEntry);
 
-            await journalRepo.clear();
-            const accounts = await accountRepo.find();
-            for (const acc of accounts) {
-              acc.balance = 0;
-            }
-            await accountRepo.save(accounts);
+            await resetLedger({ account: accountRepo, journal: journalRepo });
 
             for (let i = 0; i < batch.length; i++) {
               const t = batch[i];
@@ -155,12 +150,10 @@ describe('Wallet ledger invariants', () => {
         { numRuns: 25 },
       );
 
-      const accountRepo = dataSource.getRepository(Account);
-      const reset = await accountRepo.find();
-      for (const acc of reset) {
-        acc.balance = 0;
-      }
-      await accountRepo.save(reset);
+      await resetLedger({
+        account: dataSource.getRepository(Account),
+        journal: dataSource.getRepository(JournalEntry),
+      });
     },
     30000,
   );
@@ -184,12 +177,7 @@ describe('Wallet ledger invariants', () => {
             const accountRepo = dataSource.getRepository(Account);
             const journalRepo = dataSource.getRepository(JournalEntry);
 
-            await journalRepo.clear();
-            const accounts = await accountRepo.find();
-            for (const acc of accounts) {
-              acc.balance = 0;
-            }
-            await accountRepo.save(accounts);
+            await resetLedger({ account: accountRepo, journal: journalRepo });
 
             for (let i = 0; i < batch.length; i++) {
               const t = batch[i];
@@ -246,12 +234,7 @@ describe('Wallet ledger invariants', () => {
             const accountRepo = dataSource.getRepository(Account);
             const journalRepo = dataSource.getRepository(JournalEntry);
 
-            await journalRepo.clear();
-            const accounts = await accountRepo.find();
-            for (const acc of accounts) {
-              acc.balance = 0;
-            }
-            await accountRepo.save(accounts);
+            await resetLedger({ account: accountRepo, journal: journalRepo });
 
             const expected = new Map<string, number>([
               [userId, 0],
