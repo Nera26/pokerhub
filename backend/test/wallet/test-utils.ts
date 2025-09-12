@@ -171,6 +171,18 @@ export async function seedWalletAccounts(repo: Repository<Account>) {
   ]);
 }
 
+export async function resetLedger(repos: {
+  account: Repository<Account>;
+  journal: Repository<JournalEntry>;
+}) {
+  await repos.journal.clear();
+  const accounts = await repos.account.find();
+  for (const acc of accounts) {
+    acc.balance = 0;
+  }
+  await repos.account.save(accounts);
+}
+
 export async function expectLedgerBalances(
   repos: {
     account: Repository<Account>;
