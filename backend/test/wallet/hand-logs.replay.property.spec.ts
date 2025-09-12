@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, promises as fs, existsSync } from 'fs';
 import path from 'path';
 import { JournalEntry } from '../../src/wallet/journal-entry.entity';
-import { createFlowTestContext, seedAccounts } from './flow-test-utils';
+import { setupFlow, seedAccounts } from './flow-test-utils';
 
 async function writeFailure(data: unknown) {
   const dir = path.join(__dirname, '../../../storage');
@@ -37,7 +37,7 @@ async function replay(file: string): Promise<ReplayResult> {
     ),
   );
   const { dataSource, service, accountRepo, journalRepo } =
-    await createFlowTestContext();
+    await setupFlow();
   const accounts = await seedAccounts(accountRepo, accountIds);
   try {
     for (const [index, line] of lines.entries()) {
