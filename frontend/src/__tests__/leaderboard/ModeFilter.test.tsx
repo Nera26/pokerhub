@@ -1,9 +1,10 @@
 import { screen } from '@testing-library/react';
 import { renderLeaderboardPage } from './testUtils';
 
-jest.mock('@/components/leaderboard/LeaderboardBase', () => ({
+jest.mock('@/features/leaderboard', () => ({
   __esModule: true,
-  default: () => <div />,
+  LeaderboardBase: () => <div />,
+  LeaderboardTabs: () => <div />,
 }));
 
 jest.mock('@/lib/api/leaderboard', () => ({

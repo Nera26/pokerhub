@@ -5,16 +5,13 @@ import LeaderboardPage from '@/features/site/leaderboard';
 import { fetchUserProfile } from '@/lib/api/profile';
 import { useRouter } from 'next/navigation';
 
-jest.mock('@/app/components/leaderboard/LeaderboardTabs', () => () => <div />);
-jest.mock(
-  '@/components/leaderboard/LeaderboardBase',
-  () =>
-    ({ onPlayerClick }: any) => (
-      <button onClick={() => onPlayerClick({ playerId: 'alice' })}>
-        Alice
-      </button>
-    ),
-);
+jest.mock('@/features/leaderboard', () => ({
+  __esModule: true,
+  LeaderboardTabs: () => <div />,
+  LeaderboardBase: ({ onPlayerClick }: any) => (
+    <button onClick={() => onPlayerClick({ playerId: 'alice' })}>Alice</button>
+  ),
+}));
 jest.mock(
   '@/app/components/ui/ToastNotification',
   () =>

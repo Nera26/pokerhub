@@ -9,10 +9,14 @@ jest.mock('@fortawesome/react-fontawesome', () => ({
   FontAwesomeIcon: () => null,
 }));
 
-jest.mock('@/app/components/leaderboard/LeaderboardTabs', () => ({
-  __esModule: true,
-  default: () => null,
-}));
+jest.mock('@/features/leaderboard', () => {
+  const actual = jest.requireActual('@/features/leaderboard');
+  return {
+    __esModule: true,
+    ...actual,
+    LeaderboardTabs: () => null,
+  };
+});
 
 jest.mock('@/app/components/ui/ToastNotification', () => ({
   __esModule: true,

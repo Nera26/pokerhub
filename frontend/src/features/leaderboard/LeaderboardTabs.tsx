@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useRef, type KeyboardEvent } from 'react';
 import { useLeaderboardRanges } from '@/lib/api/leaderboard';
