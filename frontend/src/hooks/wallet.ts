@@ -8,6 +8,8 @@ import {
   fetchWalletReconcileMismatches,
   getStatus,
   updateIban,
+  initiateBankTransfer,
+  withdraw,
 } from '@/lib/api/wallet';
 import { useAuth } from '@/context/AuthContext';
 import type {
@@ -16,6 +18,9 @@ import type {
   WalletReconcileMismatchesResponse,
   IbanUpdateRequest,
   WalletStatusResponse,
+  BankTransferDepositRequest,
+  BankTransferDepositResponse,
+  WithdrawRequest,
 } from '@shared/wallet.schema';
 
 export function useWalletStatus() {
@@ -53,5 +58,31 @@ export function useUpdateIban() {
       queryClient.invalidateQueries({ queryKey: ['iban'] });
       queryClient.invalidateQueries({ queryKey: ['iban-history'] });
     },
+  });
+}
+
+export function useBankTransfer() {
+  const { playerId } = useAuth();
+  return useMutation<
+    BankTransferDepositResponse,
+    unknown,
+    BankTransferDepositRequest
+  >({
+    mutationFn: ({ amount, deviceId, currency, idempotencyKey }) =>
+      initiateBankTransfer(
+        playerId,
+        amount,
+        deviceId,
+        currency,
+        idempotencyKey,
+      ),
+  });
+}
+
+export function useWithdraw() {
+  const { playerId } = useAuth();
+  return useMutation<WalletStatusResponse, unknown, WithdrawRequest>({
+    mutationFn: ({ amount, deviceId, currency }) =>
+      withdraw(playerId, amount, deviceId, currency),
   });
 }
