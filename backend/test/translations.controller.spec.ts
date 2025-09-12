@@ -2,21 +2,59 @@ process.env.DATABASE_URL = '';
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { CacheModule } from '@nestjs/cache-manager';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+import { newDb } from 'pg-mem';
 import request from 'supertest';
 import { TranslationsController } from '../src/routes/translations.controller';
 import { TranslationsService } from '../src/services/translations.service';
+import { TranslationEntity } from '../src/database/entities/translation.entity';
 
 describe('TranslationsController', () => {
   let app: INestApplication;
+  let dataSource: DataSource;
 
   beforeAll(async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
+      imports: [
+        CacheModule.register(),
+        TypeOrmModule.forRootAsync({
+          useFactory: () => {
+            const db = newDb();
+            db.public.registerFunction({
+              name: 'version',
+              returns: 'text',
+              implementation: () => 'pg-mem',
+            });
+            db.public.registerFunction({
+              name: 'current_database',
+              returns: 'text',
+              implementation: () => 'test',
+            });
+            dataSource = db.adapters.createTypeormDataSource({
+              type: 'postgres',
+              entities: [TranslationEntity],
+              synchronize: true,
+            }) as DataSource;
+            return dataSource.options;
+          },
+          dataSourceFactory: async () => dataSource.initialize(),
+        }),
+        TypeOrmModule.forFeature([TranslationEntity]),
+      ],
       controllers: [TranslationsController],
       providers: [TranslationsService],
     }).compile();
 
     app = moduleRef.createNestApplication();
     await app.init();
+
+    const repo = dataSource.getRepository(TranslationEntity);
+    await repo.insert([
+      { lang: 'en', key: 'login.title', value: 'Login' },
+      { lang: 'es', key: 'login.title', value: 'Iniciar sesión' },
+    ]);
   });
 
   afterAll(async () => {

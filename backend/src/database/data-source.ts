@@ -21,6 +21,7 @@ import { Tier } from './entities/tier.entity';
 import { BroadcastEntity } from './entities/broadcast.entity';
 import { BroadcastTypeEntity } from './entities/broadcast-type.entity';
 import { BroadcastTemplateEntity } from './entities/broadcast-template.entity';
+import { TranslationEntity } from './entities/translation.entity';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -46,6 +47,7 @@ export const AppDataSource = new DataSource({
     BroadcastEntity,
     BroadcastTypeEntity,
     BroadcastTemplateEntity,
+    TranslationEntity,
   ],
   migrations: [path.join(__dirname, 'migrations', '*.{ts,js}')],
 });
