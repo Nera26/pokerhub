@@ -3,10 +3,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
 
-import { BroadcastsService } from '../src/broadcasts/broadcasts.service';
-import { BroadcastEntity } from '../src/database/entities/broadcast.entity';
-import { BroadcastTemplateEntity } from '../src/database/entities/broadcast-template.entity';
-import { BroadcastTypeEntity } from '../src/database/entities/broadcast-type.entity';
+import { BroadcastsService } from '../../src/messaging/broadcasts.service';
+import { BroadcastEntity } from '../../src/database/entities/broadcast.entity';
+import { BroadcastTemplateEntity } from '../../src/database/entities/broadcast-template.entity';
+import { BroadcastTypeEntity } from '../../src/database/entities/broadcast-type.entity';
 
 describe('BroadcastsService', () => {
   let service: BroadcastsService;
@@ -46,7 +46,7 @@ describe('BroadcastsService', () => {
               },
             });
 
-            const ds = db.adapters.createTypeormDataSource({
+            dataSource = db.adapters.createTypeormDataSource({
               type: 'postgres',
               entities: [
                 BroadcastEntity,
@@ -56,12 +56,9 @@ describe('BroadcastsService', () => {
               synchronize: true,
             }) as DataSource;
 
-            return ds.options;
+            return dataSource.options;
           },
-          dataSourceFactory: async (opts) => {
-            const ds = new DataSource(opts as any);
-            return ds.initialize();
-          },
+          dataSourceFactory: async () => dataSource.initialize(),
         }),
         TypeOrmModule.forFeature([
           BroadcastEntity,
@@ -77,11 +74,24 @@ describe('BroadcastsService', () => {
 
     // Seed types
     const typeRepo = dataSource.getRepository(BroadcastTypeEntity);
-    await typeRepo.save([
-      { name: 'announcement', icon: '📢', color: 'text-accent-yellow' },
-      { name: 'alert', icon: '⚠️', color: 'text-danger-red' },
-      { name: 'notice', icon: 'ℹ️', color: 'text-accent-blue' },
-    ]);
+    await typeRepo.save({
+      id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      name: 'announcement',
+      icon: '📢',
+      color: 'text-accent-yellow',
+    });
+    await typeRepo.save({
+      id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+      name: 'alert',
+      icon: '⚠️',
+      color: 'text-danger-red',
+    });
+    await typeRepo.save({
+      id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+      name: 'notice',
+      icon: 'ℹ️',
+      color: 'text-accent-blue',
+    });
 
     // Seed templates
     const templateRepo = dataSource.getRepository(BroadcastTemplateEntity);

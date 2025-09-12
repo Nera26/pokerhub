@@ -58,7 +58,6 @@ import { UsersModule } from './users/users.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { cookieSecurity } from './common/cookie-security.middleware';
-import { BroadcastsModule } from './broadcasts/broadcasts.module';
 import { TiersModule } from './tiers/tiers.module';
 import { CtasModule } from './ctas/ctas.module';
 import { HistoryModule } from './history/history.module';
@@ -153,7 +152,6 @@ import { NavIconEntity } from './database/entities/nav-icon.entity';
     UsersModule,
     NotificationsModule,
     MetricsModule,
-    BroadcastsModule,
     TiersModule,
     CtasModule,
     HistoryModule,
