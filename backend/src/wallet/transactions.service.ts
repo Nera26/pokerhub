@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { z } from 'zod';
 import { TransactionType } from './transaction-type.entity';
 import { Transaction } from './transaction.entity';
+import { TransactionStatus } from './transaction-status.entity';
+import { TransactionTabEntity } from './transaction-tab.entity';
 import {
   FilterOptionsSchema,
   AdminTransactionEntriesSchema,
@@ -11,7 +13,6 @@ import {
   TransactionLogQuerySchema,
   TransactionTypesResponseSchema,
   TransactionStatusesResponseSchema,
-  DEFAULT_STATUS_INFO,
   type TransactionLogQuery,
   type FilterOptions,
 } from '@shared/transactions.schema';
@@ -24,6 +25,10 @@ export class TransactionsService {
     private readonly types: Repository<TransactionType>,
     @InjectRepository(Transaction)
     private readonly txRepo: Repository<Transaction>,
+    @InjectRepository(TransactionStatus)
+    private readonly statusRepo: Repository<TransactionStatus>,
+    @InjectRepository(TransactionTabEntity)
+    private readonly tabRepo: Repository<TransactionTabEntity>,
   ) {}
 
   async getFilterOptions(): Promise<FilterOptions> {
@@ -44,16 +49,16 @@ export class TransactionsService {
   }
 
   async getTransactionStatuses() {
-    return TransactionStatusesResponseSchema.parse(DEFAULT_STATUS_INFO);
+    const rows = await this.statusRepo.find();
+    const map = Object.fromEntries(
+      rows.map((s) => [s.id, { label: s.label, style: s.style }]),
+    );
+    return TransactionStatusesResponseSchema.parse(map);
   }
 
   async getTransactionTabs(): Promise<TransactionTab[]> {
-    return [
-      { id: 'all', label: 'All' },
-      { id: 'deposits', label: 'Deposits' },
-      { id: 'withdrawals', label: 'Withdrawals' },
-      { id: 'manual', label: 'Manual Adjustments' },
-    ];
+    const tabs = await this.tabRepo.find();
+    return tabs.map((t) => ({ id: t.id, label: t.label }));
   }
 
   async getUserTransactions(
