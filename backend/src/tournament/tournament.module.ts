@@ -13,12 +13,14 @@ import { Table } from '../database/entities/table.entity';
 import { GameModule } from '../game/game.module';
 import { FeatureFlagsModule } from '../feature-flags/feature-flags.module';
 import { RateLimitGuard } from '../routes/rate-limit.guard';
+import { MessagingModule } from '../messaging/messaging.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Tournament, Seat, Table]),
     GameModule,
     FeatureFlagsModule,
+    MessagingModule,
   ],
   controllers: [TournamentController, AdminTournamentsController],
   providers: [

@@ -21,6 +21,7 @@ describe('TournamentService algorithms', () => {
   let flags: any;
   let events: any;
   let wallet: any;
+  let producer: any;
   let balance: number;
 
   function createRepo<T extends { id: string }>(initial: T[] = []) {
@@ -62,6 +63,7 @@ describe('TournamentService algorithms', () => {
     rooms = { get: jest.fn() };
     flags = { get: jest.fn(), getTourney: jest.fn() };
     events = { emit: jest.fn() };
+    producer = { scheduleTournament: jest.fn() };
     balance = 1000;
     wallet = {
       reserve: jest.fn(async (_id: string, amount: number) => {
@@ -81,6 +83,7 @@ describe('TournamentService algorithms', () => {
       new PkoService(),
       flags,
       events,
+      producer,
       undefined,
       wallet,
     );
@@ -214,6 +217,14 @@ describe('TournamentService algorithms', () => {
         expect.any(Array),
         start,
       );
+    });
+  });
+
+  describe('scheduleStart', () => {
+    it('emits schedule event', async () => {
+      const start = new Date();
+      await service.scheduleStart('t1', start);
+      expect(producer.scheduleTournament).toHaveBeenCalledWith('t1', start);
     });
   });
 
