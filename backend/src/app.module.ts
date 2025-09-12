@@ -79,6 +79,7 @@ import { BonusOptionEntity } from './database/entities/bonus-option.entity';
 import { ChipDenominationEntity } from './database/entities/chip-denomination.entity';
 import { TableThemeEntity } from './database/entities/table-theme.entity';
 import { NavIconEntity } from './database/entities/nav-icon.entity';
+import { HistoryTabEntity } from './database/entities/history-tab.entity';
 
 @Module({
   imports: [
@@ -131,6 +132,7 @@ import { NavIconEntity } from './database/entities/nav-icon.entity';
       ChipDenominationEntity,
       TableThemeEntity,
       NavIconEntity,
+      HistoryTabEntity,
     ]),
 
     // Messaging / Infra
