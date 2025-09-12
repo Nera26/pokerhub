@@ -11,6 +11,9 @@
 2. Link to related runbooks or specifications where applicable.
 3. Run `npm run docs:lint` and `npm run docs:check` before submitting a PR.
 
+## Developer Tools
+- [Audit Score](./audit-score.md) – static analysis scorecard.
+
 ## Whitepapers
 - [Game Engine Specification](./game-engine-spec.md)
 - [RNG & RTP Fairness](./rng-fairness.md)
