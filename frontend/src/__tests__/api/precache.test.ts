@@ -5,7 +5,7 @@ import { promises as fs } from 'fs';
 import { join } from 'path';
 
 describe('/api/precache', () => {
-  const manifestPath = join(process.cwd(), '.next', 'precache-manifest.json');
+  const manifestPath = join(process.cwd(), 'public', 'precache-manifest.json');
 
   afterEach(async () => {
     try {
@@ -17,12 +17,15 @@ describe('/api/precache', () => {
     await fs.writeFile(manifestPath, JSON.stringify(['/', '/offline']));
     const res = await GET();
     const data = await res.json();
+    expect(res.status).toBe(200);
+    expect(Array.isArray(data)).toBe(true);
     expect(data).toEqual(['/', '/offline']);
   });
 
   it('returns empty array when manifest missing', async () => {
     const res = await GET();
     const data = await res.json();
+    expect(res.status).toBe(200);
     expect(data).toEqual([]);
   });
 });
