@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createQueryHook } from './useApiQuery';
+import { createQueryHook } from './createQueryHook';
 import {
   fetchIban,
   fetchIbanHistory,

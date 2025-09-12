@@ -6,7 +6,7 @@ import {
   type AuditLogsQuery,
 } from '@shared/types';
 import { apiClient } from '@/lib/api/client';
-import { createQueryHook } from './useApiQuery';
+import { createQueryHook } from './createQueryHook';
 
 export const useAuditLogs = createQueryHook<AuditLogsResponse, AuditLogsQuery>(
   'audit-logs',

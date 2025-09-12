@@ -2,7 +2,7 @@
 
 import { fetchActivity } from '@/lib/api/analytics';
 import type { ActivityResponse } from '@shared/types';
-import { createQueryHook } from './useApiQuery';
+import { createQueryHook } from './createQueryHook';
 
 export const useActivity = createQueryHook<ActivityResponse>(
   'activity',

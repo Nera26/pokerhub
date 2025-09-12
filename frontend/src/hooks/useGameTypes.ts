@@ -2,7 +2,7 @@
 
 import { fetchGameTypes } from '@/lib/api/game-types';
 import type { GameTypeList } from '@shared/types';
-import { createQueryHook } from './useApiQuery';
+import { createQueryHook } from './createQueryHook';
 
 export const useGameTypes = createQueryHook<GameTypeList>(
   'game-types',

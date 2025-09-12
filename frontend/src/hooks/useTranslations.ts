@@ -1,6 +1,6 @@
 'use client';
 
-import { createQueryHook } from './useApiQuery';
+import { createQueryHook } from './createQueryHook';
 import { fetchTranslations } from '@/lib/api/translations';
 
 export const useTranslations = createQueryHook<Record<string, string>, string>(

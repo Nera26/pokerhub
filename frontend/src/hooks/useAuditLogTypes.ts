@@ -1,4 +1,4 @@
-import { createQueryHook } from './useApiQuery';
+import { createQueryHook } from './createQueryHook';
 import { apiClient } from '@/lib/api/client';
 import {
   AuditLogTypesResponseSchema,

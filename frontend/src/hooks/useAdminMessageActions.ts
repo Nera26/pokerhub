@@ -2,7 +2,7 @@
 
 import { fetchMessages, replyMessage } from '@/lib/api/messages';
 import type { AdminMessagesResponse } from '@shared/types';
-import { createQueryHook } from './useApiQuery';
+import { createQueryHook } from './createQueryHook';
 import { useInvalidateMutation } from './useInvalidateMutation';
 
 export const useAdminMessages = createQueryHook<AdminMessagesResponse>(
