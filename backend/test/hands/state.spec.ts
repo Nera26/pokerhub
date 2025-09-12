@@ -1,41 +1,17 @@
-import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import request from 'supertest';
-import jwt from 'jsonwebtoken';
-import { existsSync, unlinkSync, writeFileSync, mkdirSync } from 'fs';
-import { join } from 'path';
-import { HandController } from '../../src/game/hand.controller';
-import { Hand } from '../../src/database/entities/hand.entity';
-import { ConfigService } from '@nestjs/config';
+import {
+  bootstrapHandController,
+  auth,
+  writeHandLog,
+  removeHandLog,
+} from './hand-test-utils';
 
 describe('HandController state', () => {
   let app: INestApplication;
-  const store = new Map<string, Hand>();
-  const repo = {
-    findOne: ({ where: { id } }: any) => Promise.resolve(store.get(id) ?? null),
-  };
-  const config = new ConfigService({ auth: { jwtSecrets: ['secret'] } });
-
-  function auth(userId: string, role?: string) {
-    const token = jwt.sign(
-      { sub: userId, ...(role ? { role } : {}) },
-      'secret',
-    );
-    return `Bearer ${token}`;
-  }
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
-      controllers: [HandController],
-      providers: [
-        { provide: getRepositoryToken(Hand), useValue: repo },
-        { provide: ConfigService, useValue: config },
-      ],
-    }).compile();
-
-    app = moduleRef.createNestApplication();
-    await app.init();
+    ({ app } = await bootstrapHandController());
 
     const pre = {
       phase: 'BETTING_ROUND',
@@ -61,18 +37,12 @@ describe('HandController state', () => {
       deck: [],
       communityCards: [],
     };
-    const dir = join(__dirname, '../../../storage/hand-logs');
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(
-      join(dir, 'handS.jsonl'),
-      `${JSON.stringify([0, { type: 'start' }, pre, post])}\n`,
-    );
+    writeHandLog('handS', [0, { type: 'start' }, pre, post]);
   });
 
   afterAll(async () => {
     await app.close();
-    const file = join(__dirname, '../../../storage/hand-logs', 'handS.jsonl');
-    if (existsSync(file)) unlinkSync(file);
+    removeHandLog('handS');
   });
 
   const expected = {
