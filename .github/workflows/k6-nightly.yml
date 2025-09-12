@@ -74,7 +74,7 @@ jobs:
     - name: Run 10k tables test
       uses: grafana/k6-action@v0.2.0
       with:
-        filename: load/k6-10k-tables.js
+        filename: infra/tests/load/k6-10k-tables.js
         flags: --summary-export=10k-summary.json --out json=10k-metrics.json
     - name: Upload metrics to GCS
       if: always()
