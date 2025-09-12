@@ -3,7 +3,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersController } from '../routes/users.controller';
 import { AdminUsersController } from '../routes/admin-users.controller';
 import { ProfileController } from '../routes/profile.controller';
-import { ProfileStatsController } from '../routes/profile-stats.controller';
 import { TransactionsController } from '../routes/transactions.controller';
 import { MeController } from '../routes/me.controller';
 import { User } from '../database/entities/user.entity';
@@ -19,7 +18,6 @@ import { WalletModule } from '../wallet/wallet.module';
     ProfileController,
     TransactionsController,
     MeController,
-    ProfileStatsController,
   ],
   providers: [UsersService, UserRepository],
   exports: [UsersService],

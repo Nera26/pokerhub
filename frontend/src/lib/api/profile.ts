@@ -54,7 +54,9 @@ export function fetchStats({
 }: { signal?: AbortSignal } = {}): Promise<ProfileStatsResponse> {
   return withProfileError(
     () =>
-      apiClient('/api/profile/stats', ProfileStatsResponseSchema, { signal }),
+      apiClient('/api/user/profile/stats', ProfileStatsResponseSchema, {
+        signal,
+      }),
     'Failed to fetch profile stats',
   );
 }

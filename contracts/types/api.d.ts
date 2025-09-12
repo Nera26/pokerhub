@@ -1853,7 +1853,7 @@ export interface paths {
       };
     };
   };
-  "/profile/stats": {
+  "/user/profile/stats": {
     /** Get profile statistics */
     get: {
       responses: {

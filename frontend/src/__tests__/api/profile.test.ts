@@ -5,6 +5,7 @@ import {
   fetchMe,
   fetchUserProfile,
   updateProfile,
+  fetchStats,
 } from '@/lib/api/profile';
 import { apiClient, type ApiError } from '@/lib/api/client';
 import { mockFetch } from '@/test-utils/mockFetch';
@@ -53,6 +54,33 @@ describe('profile API', () => {
 
       await expect(fetchProfile()).rejects.toEqual({
         message: 'Failed to fetch profile: boom',
+      });
+    });
+  });
+
+  describe('fetchStats', () => {
+    it('returns stats on success', async () => {
+      const stats = {
+        handsPlayed: 10,
+        winRate: 50,
+        tournamentsPlayed: 2,
+        topThreeRate: 30,
+      };
+      mockedApiClient.mockResolvedValueOnce(stats);
+
+      await expect(fetchStats()).resolves.toEqual(stats);
+      expect(mockedApiClient).toHaveBeenCalledWith(
+        '/api/user/profile/stats',
+        expect.anything(),
+        { signal: undefined },
+      );
+    });
+
+    it('throws ApiError with prefixed message on failure', async () => {
+      mockedApiClient.mockRejectedValueOnce({ message: 'boom' } as ApiError);
+
+      await expect(fetchStats()).rejects.toEqual({
+        message: 'Failed to fetch profile stats: boom',
       });
     });
   });
