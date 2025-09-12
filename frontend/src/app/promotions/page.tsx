@@ -28,7 +28,7 @@ export default function PromotionsPage() {
   }
 
   if (error) {
-    return <div role="alert">{error.message}</div>;
+    return <div role="alert">{(error as Error).message}</div>;
   }
 
   if (!data || data.length === 0) {

@@ -2246,6 +2246,24 @@ export interface paths {
       };
     };
   };
+  "/promotions/{id}/claim": {
+    /** Claim promotion */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Claim result */
+        200: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
 }
 
 export type webhooks = Record<string, never>;
