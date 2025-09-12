@@ -16,12 +16,9 @@ const MotionDiv = dynamic(
 );
 
 export type Promotion = BasePromotion & {
-  unlockText: string;
-  actionLabel: string;
   actionDisabled?: boolean;
   actionTooltip?: string;
   onAction: () => void;
-  breakdown: { label: string; value: number }[]; // ensure defined for card
 };
 
 export interface PromotionCardProps {
@@ -37,7 +34,6 @@ export default function PromotionCard({ promotion }: PromotionCardProps) {
     unlockText,
     progress,
     statusText,
-    actionLabel,
     actionDisabled = false,
     actionTooltip,
     onAction,
@@ -65,7 +61,7 @@ export default function PromotionCard({ promotion }: PromotionCardProps) {
       disabled={actionDisabled}
       onClick={onAction}
     >
-      {actionLabel}
+      Claim
     </SmoothButton>
   );
 
