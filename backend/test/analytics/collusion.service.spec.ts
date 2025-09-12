@@ -85,6 +85,9 @@ describe('CollusionService', () => {
     expect(flagged[0]).toMatchObject({ id: 's1', status: 'ban' });
     const history = await service.getActionHistory('s1');
     expect(history[0]).toMatchObject({ reviewerId: 'r1' });
+    const flags = await client.lrange('collusion:flags', 0, -1);
+    expect(flags).toHaveLength(1);
+    expect(JSON.parse(flags[0])).toMatchObject({ sessionId: 's1' });
   });
 
   it('creates reviewable entry for shared device and ip', async () => {
@@ -119,6 +122,13 @@ describe('CollusionService', () => {
     expect(warned).toEqual([
       expect.objectContaining({ id: 's1', status: 'warn' }),
     ]);
+  });
+  it('persists action timestamps across instances', async () => {
+    await service.record('u1', 'd1', '1.1.1.1', 1000);
+    await service.record('u1', 'd1', '1.1.1.1', 1010);
+    const repo = dataSource.getRepository(CollusionAudit);
+    service = new CollusionService(client as unknown as Redis, repo);
+    expect(await service.hasFastActions('u1', 20)).toBe(true);
   });
   it('retrieves audit history after restart', async () => {
     await service.flagSession('s1', ['u1'], {});

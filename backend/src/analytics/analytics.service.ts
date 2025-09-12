@@ -185,9 +185,9 @@ export class AnalyticsService {
     auth: 'auth',
     antiCheat: 'auth',
   };
-  private collusionSessions: CollusionSession[] = [];
-  private collusionTransfers: CollusionTransfer[] = [];
-  private collusionEvents: CollusionBetEvent[] = [];
+  private readonly collusionSessionsKey = 'collusion:sessions';
+  private readonly collusionTransfersKey = 'collusion:transfers';
+  private readonly collusionEventsKey = 'collusion:events';
 
   constructor(
     config: ConfigService,
@@ -469,11 +469,14 @@ export class AnalyticsService {
       'playerId' in event &&
       typeof (event as any).timeMs === 'number'
     ) {
-      this.collusionEvents.push({
-        handId: (event as any).handId,
-        playerId: (event as any).playerId,
-        timeMs: (event as any).timeMs,
-      });
+      await this.redis.rpush(
+        this.collusionEventsKey,
+        JSON.stringify({
+          handId: (event as any).handId,
+          playerId: (event as any).playerId,
+          timeMs: (event as any).timeMs,
+        }),
+      );
       await this.runCollusionHeuristics();
     }
   }
@@ -483,17 +486,32 @@ export class AnalyticsService {
   }
 
   async recordCollusionSession(session: CollusionSession) {
-    this.collusionSessions.push(session);
+    await this.redis.rpush(
+      this.collusionSessionsKey,
+      JSON.stringify(session),
+    );
     await this.runCollusionHeuristics();
   }
 
   async recordCollusionTransfer(transfer: CollusionTransfer) {
-    this.collusionTransfers.push(transfer);
+    await this.redis.rpush(
+      this.collusionTransfersKey,
+      JSON.stringify(transfer),
+    );
     await this.runCollusionHeuristics();
   }
 
   private async runCollusionHeuristics() {
-    for (const { ip, players } of detectSharedIP(this.collusionSessions)) {
+    const [sessionsRaw, transfersRaw, eventsRaw] = await Promise.all([
+      this.redis.lrange(this.collusionSessionsKey, 0, -1),
+      this.redis.lrange(this.collusionTransfersKey, 0, -1),
+      this.redis.lrange(this.collusionEventsKey, 0, -1),
+    ]);
+
+    const sessions: CollusionSession[] = sessionsRaw.map((s) =>
+      JSON.parse(s),
+    );
+    for (const { ip, players } of detectSharedIP(sessions)) {
       await this.emitAntiCheatFlag({
         sessionId: `shared-${ip}`,
         users: players,
@@ -502,7 +520,10 @@ export class AnalyticsService {
     }
 
     const transferTotals = new Map<string, number>();
-    for (const t of this.collusionTransfers) {
+    const transfers: CollusionTransfer[] = transfersRaw.map((t) =>
+      JSON.parse(t),
+    );
+    for (const t of transfers) {
       const key = `${t.from}-${t.to}`;
       transferTotals.set(key, (transferTotals.get(key) || 0) + t.amount);
     }
@@ -517,9 +538,8 @@ export class AnalyticsService {
       }
     }
 
-    for (const { handId, players } of detectSynchronizedBetting(
-      this.collusionEvents,
-    )) {
+    const events: CollusionBetEvent[] = eventsRaw.map((e) => JSON.parse(e));
+    for (const { handId, players } of detectSynchronizedBetting(events)) {
       await this.emitAntiCheatFlag({
         sessionId: `sync-${handId}`,
         users: players,
