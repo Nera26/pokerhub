@@ -1,12 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import Redis from 'ioredis';
-
-interface DashboardMetrics {
-  online: number;
-  revenue: number;
-  activity: number[];
-  errors: number[];
-}
+import type { DashboardMetrics } from '@shared/types';
 
 @Injectable()
 export class DashboardService {

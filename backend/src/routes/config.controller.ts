@@ -1,11 +1,11 @@
 import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
-  ChipDenominationsResponse,
   ChipDenominationsResponseSchema,
-  TableThemeResponse,
   TableThemeResponseSchema,
-} from '../schemas/config';
+  type ChipDenominationsResponse,
+  type TableThemeResponse,
+} from '@shared/types';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { ChipDenomsService } from '../services/chip-denoms.service';

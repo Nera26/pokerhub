@@ -1,12 +1,13 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
-  SiteMetadataResponse,
   SiteMetadataResponseSchema,
-} from '../schemas/site-metadata';
+  type SiteMetadataResponse,
+} from '@shared/types';
 
 const DEFAULT_TITLE = 'PokerHub';
-const DEFAULT_DESCRIPTION = "Live Texas Hold'em, Omaha & Tournaments — PokerHub";
+const DEFAULT_DESCRIPTION =
+  "Live Texas Hold'em, Omaha & Tournaments — PokerHub";
 const DEFAULT_IMAGE = '/pokerhub-logo.svg';
 
 @ApiTags('site')
@@ -15,7 +16,7 @@ export class SiteMetadataController {
   @Get()
   @ApiOperation({ summary: 'Get site metadata' })
   @ApiResponse({ status: 200, description: 'Site metadata' })
-  async get(): Promise<SiteMetadataResponse> {
+  get(): SiteMetadataResponse {
     const data = {
       title: process.env.SITE_TITLE ?? DEFAULT_TITLE,
       description: process.env.SITE_DESCRIPTION ?? DEFAULT_DESCRIPTION,
