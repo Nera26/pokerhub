@@ -467,6 +467,24 @@ export interface paths {
       };
     };
   };
+  "/tables/{id}/state": {
+    /** Get table state */
+    get: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Table state */
+        200: {
+          content: {
+            "application/json": components["schemas"]["TableState"];
+          };
+        };
+      };
+    };
+  };
   "/tables/{id}/tabs": {
     /** Get side panel tabs */
     get: {
@@ -2858,7 +2876,24 @@ export interface components {
       communityCards: string[];
       players: components["schemas"]["Player"][];
       chatMessages: components["schemas"]["ChatMessage"][];
-      stateAvailable?: boolean;
+      stateAvailable: boolean;
+    };
+    TableSeat: {
+      id: number;
+      name: string;
+      avatar: string;
+      balance: number;
+      inHand: boolean;
+    };
+    TableState: {
+      handId: string;
+      seats: components["schemas"]["TableSeat"][];
+      pot: {
+        main: number;
+        sidePots: number[];
+      };
+      /** @enum {string} */
+      street: "pre" | "flop" | "turn" | "river";
     };
     CalculatePrizesRequest: {
       prizePool: number;

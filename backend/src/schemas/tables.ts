@@ -77,6 +77,22 @@ export const TableDataSchema = z.object({
 });
 export type TableData = z.infer<typeof TableDataSchema>;
 
+const TableSeatSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  avatar: z.string(),
+  balance: z.number(),
+  inHand: z.boolean(),
+});
+
+export const TableStateSchema = z.object({
+  handId: z.string(),
+  seats: z.array(TableSeatSchema),
+  pot: z.object({ main: z.number(), sidePots: z.array(z.number()) }),
+  street: z.enum(['pre', 'flop', 'turn', 'river']),
+});
+export type TableState = z.infer<typeof TableStateSchema>;
+
 export const TableListQuerySchema = z.object({
   status: z.enum(['active']).optional(),
 });

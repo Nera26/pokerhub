@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import type { TableState } from '@/app/store/tableStore';
+import { fetchTableState, type TableState } from '@/lib/api/table';
 import useSocket from './useSocket';
 
 export function useTableState(tableId?: string) {
@@ -21,7 +21,7 @@ export function useTableState(tableId?: string) {
     };
   }, [socket, queryClient, queryKey]);
 
-  const initialState: TableState = {
+  const emptyState: TableState = {
     handId: '',
     seats: [],
     pot: { main: 0, sidePots: [] },
@@ -30,8 +30,8 @@ export function useTableState(tableId?: string) {
 
   return useQuery<TableState>({
     queryKey,
-    queryFn: async () => initialState,
-    enabled: false,
-    initialData: initialState,
+    queryFn: ({ signal }) => fetchTableState(tableId!, { signal }),
+    enabled: !!tableId,
+    initialData: emptyState,
   });
 }

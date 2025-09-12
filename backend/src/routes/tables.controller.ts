@@ -19,6 +19,8 @@ import {
   type TableList,
   TableDataSchema,
   type TableData,
+  TableStateSchema,
+  type TableState,
   CreateTableSchema,
   type CreateTableRequest,
   UpdateTableSchema,
@@ -59,6 +61,16 @@ export class TablesController {
   ): Promise<TableData> {
     const res = await this.tables.getTable(id);
     return TableDataSchema.parse(res);
+  }
+
+  @Get(':id/state')
+  @ApiOperation({ summary: 'Get table state' })
+  @ApiResponse({ status: 200, description: 'Table state' })
+  async getState(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<TableState> {
+    const res = await this.tables.getTableState(id);
+    return TableStateSchema.parse(res);
   }
 
   @Get(':id/tabs')
