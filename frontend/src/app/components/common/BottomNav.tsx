@@ -7,7 +7,6 @@ import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/hooks/notifications';
-import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { fetchNavItems, type NavItem } from '@/lib/api/nav';
 
 export default function BottomNav() {
@@ -18,8 +17,6 @@ export default function BottomNav() {
     isLoading: notifLoading,
     error: notifError,
   } = useNotifications();
-
-  const { data: flags } = useFeatureFlags();
 
   const {
     data: items = [],
@@ -44,9 +41,9 @@ export default function BottomNav() {
     return item;
   });
 
-  const navItems: Omit<NavItem, 'flag'>[] = itemsWithDynamic
-    .filter(({ flag }) => flags?.[flag] !== false)
-    .map(({ flag: _flag, ...item }) => item);
+  const navItems: Omit<NavItem, 'flag'>[] = itemsWithDynamic.map(
+    ({ flag: _flag, ...item }) => item,
+  );
 
   return (
     <nav

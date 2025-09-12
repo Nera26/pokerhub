@@ -11,7 +11,6 @@ import { fetchNavItems } from '@/lib/api/nav';
 const mockUsePathname = jest.fn();
 const mockUseAuth = jest.fn();
 const mockUseNotifications = jest.fn();
-const mockUseFeatureFlags = jest.fn();
 const mockFetchNavItems = fetchNavItems as jest.MockedFunction<
   typeof fetchNavItems
 >;
@@ -52,10 +51,6 @@ jest.mock('@/hooks/notifications', () => ({
   useNotifications: () => mockUseNotifications(),
 }));
 
-jest.mock('@/hooks/useFeatureFlags', () => ({
-  useFeatureFlags: () => mockUseFeatureFlags(),
-}));
-
 jest.mock('@/lib/api/nav', () => ({
   fetchNavItems: jest.fn(),
 }));
@@ -89,7 +84,6 @@ describe('BottomNav', () => {
     mockUsePathname.mockReset();
     mockUseAuth.mockReset();
     mockUseNotifications.mockReset();
-    mockUseFeatureFlags.mockReset();
     mockFetchNavItems.mockReset();
     mockFetchNavItems.mockResolvedValue(baseNavItems);
   });
@@ -111,7 +105,6 @@ describe('BottomNav', () => {
       isLoading: false,
       error: null,
     });
-    mockUseFeatureFlags.mockReturnValue({ data: {} });
     renderNav();
     const wallet = await screen.findByRole('link', { name: 'Wallet' });
     expect(wallet.className).toContain('text-accent-yellow');
@@ -125,7 +118,6 @@ describe('BottomNav', () => {
       isLoading: false,
       error: null,
     });
-    mockUseFeatureFlags.mockReturnValue({ data: {} });
     renderNav();
     const lobby = await screen.findByRole('link', { name: 'Lobby' });
     expect(lobby.className).toContain('text-accent-yellow');
@@ -148,7 +140,6 @@ describe('BottomNav', () => {
       isLoading: false,
       error: null,
     });
-    mockUseFeatureFlags.mockReturnValue({ data: {} });
     renderNav();
     expect(await screen.findByText('5')).toBeInTheDocument();
   });
@@ -161,36 +152,10 @@ describe('BottomNav', () => {
       isLoading: false,
       error: new Error('fail'),
     });
-    mockUseFeatureFlags.mockReturnValue({ data: {} });
     renderNav();
     await waitFor(() =>
       expect(screen.queryByText('5')).not.toBeInTheDocument(),
     );
-  });
-
-  it('hides nav items when flags are disabled', async () => {
-    mockUsePathname.mockReturnValue('/');
-    mockUseAuth.mockReturnValue({ avatarUrl: '/a.png' });
-    mockUseNotifications.mockReturnValue({
-      data: { unread: 0 },
-      isLoading: false,
-      error: null,
-    });
-    mockUseFeatureFlags.mockReturnValue({
-      data: { promotions: false, notifications: false },
-    });
-    renderNav();
-    await waitFor(() => {
-      expect(
-        screen.queryByRole('link', { name: 'Promotions' }),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole('link', { name: /Alerts/ }),
-      ).not.toBeInTheDocument();
-    });
-    expect(
-      await screen.findByRole('link', { name: 'Wallet' }),
-    ).toBeInTheDocument();
   });
 
   it('renders nothing while loading', () => {
@@ -201,7 +166,6 @@ describe('BottomNav', () => {
       isLoading: false,
       error: null,
     });
-    mockUseFeatureFlags.mockReturnValue({ data: {} });
     mockFetchNavItems.mockReturnValue(new Promise(() => {}));
     renderNav();
     expect(
@@ -217,7 +181,6 @@ describe('BottomNav', () => {
       isLoading: false,
       error: null,
     });
-    mockUseFeatureFlags.mockReturnValue({ data: {} });
     mockFetchNavItems.mockRejectedValue(new Error('fail'));
     renderNav();
     await waitFor(() =>
