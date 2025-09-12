@@ -46,10 +46,12 @@ function providerFactory(config: ConfigService): CountryProvider {
   const driver = config.get<string>('KYC_PROVIDER');
   switch (driver) {
     case 'trulioo':
-      return new TruliooProvider();
+      return new TruliooProvider(
+        config.get<string>('TRULIOO_API_KEY', ''),
+      );
     case 'gbg':
     default:
-      return new GbgProvider();
+      return new GbgProvider(config.get<string>('GBG_API_KEY', ''));
   }
 }
 
