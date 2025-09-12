@@ -29,6 +29,7 @@ import { AdminMessagesController } from './routes/admin-messages.controller';
 import { AdminBonusController } from './routes/admin-bonus.controller'; // expose /admin/bonus/options
 import { PromotionsController } from './routes/promotions.controller';
 import { LanguagesController } from './routes/languages.controller';
+import { TranslationsController } from './routes/translations.controller';
 import { ConfigController } from './routes/config.controller';
 import { PrecacheController } from './routes/precache.controller';
 import { NavIconsController } from './routes/nav-icons.controller';
@@ -66,6 +67,7 @@ import { AdminMessageEntity } from './notifications/admin-message.entity';
 import { PromotionsService } from './promotions/promotions.service';
 import { PromotionEntity } from './database/entities/promotion.entity';
 import { LanguagesService } from './services/languages.service';
+import { TranslationsService } from './services/translations.service';
 import { LanguageEntity } from './database/entities/language.entity';
 import { BonusService } from './services/bonus.service';
 import { ChipDenomsService } from './services/chip-denoms.service';
@@ -162,6 +164,7 @@ import { NavIconEntity } from './database/entities/nav-icon.entity';
     AdminBonusController,
     PromotionsController,
     LanguagesController,
+    TranslationsController,
     ConfigController,
     PrecacheController,
     NavIconsController,
@@ -176,6 +179,7 @@ import { NavIconEntity } from './database/entities/nav-icon.entity';
     AdminMessagesService,
     PromotionsService,
     LanguagesService,
+    TranslationsService,
     NavIconsService,
     HistoryTabsService,
     SettingsService,

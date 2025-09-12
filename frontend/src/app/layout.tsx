@@ -20,6 +20,8 @@ import { buildMetadata } from '@/lib/metadata';
 import PerformanceMonitor from './PerformanceMonitor';
 import { env } from '@/lib/env';
 import ContractMismatchNotice from '@/components/ContractMismatchNotice';
+import { getBaseUrl } from '@/lib/base-url';
+import { TranslationsResponseSchema } from '@shared/types';
 
 export async function generateMetadata() {
   const meta = await buildMetadata();
@@ -38,6 +40,33 @@ export const viewport = {
 
 // Next.js will inject a <meta name="viewport"> tag based on the export above.
 
+function unflatten(messages: Record<string, string>) {
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(messages)) {
+    const parts = key.split('.');
+    let obj = result;
+    for (let i = 0; i < parts.length - 1; i++) {
+      obj[parts[i]] = obj[parts[i]] ?? {};
+      obj = obj[parts[i]];
+    }
+    obj[parts[parts.length - 1]] = value;
+  }
+  return result;
+}
+
+async function loadMessages(locale: string) {
+  const base = getBaseUrl();
+  try {
+    const res = await fetch(`${base}/api/translations/${locale}`);
+    const data = await res.json();
+    return unflatten(TranslationsResponseSchema.parse(data).messages);
+  } catch {
+    const res = await fetch(`${base}/api/translations/en`);
+    const data = await res.json();
+    return unflatten(TranslationsResponseSchema.parse(data).messages);
+  }
+}
+
 export default async function RootLayout({
   children,
 }: {
@@ -45,7 +74,7 @@ export default async function RootLayout({
 }) {
   const cookieStore = await cookies();
   const locale = cookieStore.get('locale')?.value || 'en';
-  const messages = (await import(`../locales/${locale}.json`)).default;
+  const messages = await loadMessages(locale);
   const skipText = messages.layout?.skip ?? 'Skip to main content';
   const meta = await buildMetadata();
 
