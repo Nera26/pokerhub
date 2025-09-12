@@ -56,4 +56,29 @@ describe('Messages', () => {
       expect(replyMessage).toHaveBeenCalledWith(1, { reply: 'Thanks' }),
     );
   });
+
+  it('marks messages as read when viewing', async () => {
+    (fetchMessages as jest.Mock).mockResolvedValue({
+      messages: [
+        {
+          id: 1,
+          sender: 'Bob',
+          preview: 'Hello',
+          subject: 'Hi',
+          content: 'Hello there',
+          userId: '2',
+          avatar: '',
+          time: '',
+          read: false,
+        },
+      ],
+    });
+    (markMessageRead as jest.Mock).mockResolvedValue({});
+    renderWithClient(<Messages />);
+
+    const viewBtn = await screen.findByRole('button', { name: /view/i });
+    fireEvent.click(viewBtn);
+
+    await waitFor(() => expect(markMessageRead).toHaveBeenCalledWith(1));
+  });
 });
