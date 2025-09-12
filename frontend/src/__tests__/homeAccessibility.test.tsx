@@ -1,3 +1,4 @@
+import { mockHomeDependencies } from './utils/homePageMocks';
 import { render, screen, within } from '@testing-library/react';
 import { HomePageClient } from '@/app/(site)/HomePageClient';
 import LiveTableCard, {
@@ -14,24 +15,9 @@ import type { TournamentListProps } from '@/components/TournamentList';
 
 jest.mock('@/hooks/useVirtualizedList');
 jest.mock('@/hooks/useLobbyData');
-jest.mock('@/hooks/useGameTypes', () => ({
-  useGameTypes: () => ({
-    data: [
-      { id: 'texas', label: 'Texas' },
-      { id: 'tournaments', label: 'Tournaments' },
-    ],
-    error: null,
-    isLoading: false,
-  }),
-}));
+mockHomeDependencies();
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: jest.fn(), prefetch: jest.fn() }),
-}));
-
-// Mock ChatWidget to avoid socket internals affecting this suite
-jest.mock('@/app/components/common/chat/ChatWidget', () => ({
-  __esModule: true,
-  default: () => <div />,
 }));
 
 describe('home accessibility', () => {

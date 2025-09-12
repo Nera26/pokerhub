@@ -1,9 +1,5 @@
 import fc from 'fast-check';
-import {
-  createFlowTestContext,
-  seedDefaultAccounts,
-  USER_ID,
-} from './flow-test-utils';
+import { setupFlow, seedDefaultAccounts, USER_ID } from './flow-test-utils';
 
 jest.setTimeout(20000);
 
@@ -38,7 +34,7 @@ describe('WalletService flows idempotency', () => {
     await fc.assert(
       fc.asyncProperty(fc.array(opArb, { maxLength: 10 }), async (ops) => {
         const { dataSource, service, accountRepo, journalRepo, settleRepo } =
-          await createFlowTestContext();
+          await setupFlow();
         const accounts = await seedDefaultAccounts(accountRepo);
         try {
           const apply = async () => {

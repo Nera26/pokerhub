@@ -19,7 +19,7 @@ interface Props {
     profitLoss: string;
     date: string;
   };
-  onWatchReplay?(): void;
+  onWatchReplay?(id: string): void;
   onViewBracket?(title: string): void;
 }
 
@@ -72,7 +72,8 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
     }
     const entries = (gameData ?? []).filter((e) => {
       if (!filters) return true;
-      if (filters.gameType !== 'any' && e.type !== filters.gameType) return false;
+      if (filters.gameType !== 'any' && e.type !== filters.gameType)
+        return false;
       if (filters.profitLoss === 'win' && !e.profit) return false;
       if (filters.profitLoss === 'loss' && e.profit) return false;
       if (filters.date && e.date !== filters.date) return false;
@@ -93,7 +94,9 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
             className="border-b border-border-dark pb-4 flex justify-between"
           >
             <div>
-              <p className="font-medium">{e.type} – Table #{e.id}</p>
+              <p className="font-medium">
+                {e.type} – Table #{e.id}
+              </p>
               <p className="text-text-secondary text-sm">
                 Stakes: {e.stakes} – Buy-in: {e.buyin}
               </p>
@@ -108,7 +111,7 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
                 {e.amount}
               </p>
               <button
-                onClick={onWatchReplay}
+                onClick={() => onWatchReplay?.(e.id)}
                 className="text-accent-yellow text-sm mt-2 hover:text-accent-blue cursor-pointer"
               >
                 Watch Replay
@@ -156,13 +159,18 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
           <table className="min-w-[640px] w-full text-left table-auto">
             <thead>
               <tr>
-                {['Name', 'Place', 'Buy-in', 'Prize', 'Duration', 'Details'].map(
-                  (h) => (
-                    <th key={h} className="pb-2 pr-6 whitespace-nowrap">
-                      {h}
-                    </th>
-                  ),
-                )}
+                {[
+                  'Name',
+                  'Place',
+                  'Buy-in',
+                  'Prize',
+                  'Duration',
+                  'Details',
+                ].map((h) => (
+                  <th key={h} className="pb-2 pr-6 whitespace-nowrap">
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -172,7 +180,9 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
                   <td className="py-2 pr-6 whitespace-nowrap">{row.place}</td>
                   <td className="py-2 pr-6 whitespace-nowrap">{row.buyin}</td>
                   <td className="py-2 pr-6 whitespace-nowrap">{row.prize}</td>
-                  <td className="py-2 pr-6 whitespace-nowrap">{row.duration}</td>
+                  <td className="py-2 pr-6 whitespace-nowrap">
+                    {row.duration}
+                  </td>
                   <td className="py-2 pr-6 whitespace-nowrap">
                     <button
                       onClick={() => onViewBracket?.(row.name)}
@@ -247,8 +257,8 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
                         row.status === 'Completed'
                           ? 'text-accent-green'
                           : row.status === 'Failed'
-                          ? 'text-danger-red'
-                          : ''
+                            ? 'text-danger-red'
+                            : ''
                       }
                     >
                       {row.status}
