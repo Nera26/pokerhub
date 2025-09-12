@@ -33,6 +33,7 @@ const nextConfig: NextConfig = {
 
 const withPWAConfig = withPWA({
   dest: 'public',
+  swSrc: 'sw.ts',
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === 'development',

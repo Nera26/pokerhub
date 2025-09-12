@@ -17,7 +17,7 @@ const customJestConfig = {
   },
   modulePaths: ['<rootDir>/node_modules'],
   testPathIgnorePatterns: ['<rootDir>/e2e/'],
-  transformIgnorePatterns: ['node_modules/(?!(next-intl|intl-messageformat)/)'],
+  transformIgnorePatterns: ['node_modules/(?!(next-intl|intl-messageformat|workbox.*)/)'],
   collectCoverage: true,
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
