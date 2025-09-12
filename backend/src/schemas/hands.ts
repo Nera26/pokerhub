@@ -39,3 +39,12 @@ export const HandStateResponse = z.object({
   players: z.array(PlayerState),
 });
 export type HandStateResponse = z.infer<typeof HandStateResponse>;
+
+/** ---- /hands/:id/replay ---- */
+export const HandReplayFrame = HandStateResponse.extend({
+  communityCards: z.array(z.number()),
+});
+export type HandReplayFrame = z.infer<typeof HandReplayFrame>;
+
+export const HandReplayResponse = z.array(HandReplayFrame);
+export type HandReplayResponse = z.infer<typeof HandReplayResponse>;

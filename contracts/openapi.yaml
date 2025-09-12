@@ -1099,6 +1099,29 @@ paths:
               schema:
                 type: string
 
+  /hands/{id}/replay:
+    get:
+      summary: Replay hand states
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Reconstructed hand states for replay
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HandReplay'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Hand not found
+
   /hands/{id}/state/{index}:
     get:
       summary: Reconstruct hand state at action index
@@ -4008,6 +4031,56 @@ components:
       - currentBet
       - players
       - communityCards
+
+  HandReplayFrame:
+    type: object
+    properties:
+      street:
+        type: string
+        enum: [preflop, flop, turn, river, showdown]
+      pot:
+        type: number
+      sidePots:
+        type: array
+        items:
+          type: object
+          properties:
+            amount:
+              type: number
+            players:
+              type: array
+              items:
+                type: string
+            contributions:
+              type: object
+              additionalProperties:
+                type: number
+          required:
+            - amount
+            - players
+            - contributions
+      currentBet:
+        type: number
+      players:
+        type: array
+        items:
+          $ref: '#/components/schemas/GameStatePlayer'
+      communityCards:
+        type: array
+        items:
+          type: number
+    required:
+      - street
+      - pot
+      - sidePots
+      - currentBet
+      - players
+      - communityCards
+
+  HandReplay:
+    type: array
+    items:
+      $ref: '#/components/schemas/HandReplayFrame'
     
     FeatureFlagRequest:
       type: object

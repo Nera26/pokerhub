@@ -343,12 +343,14 @@ export {
   HandProofsResponse as HandProofsResponseSchema,
   HandLogResponse as HandLogResponseSchema,
   HandStateResponse as HandStateResponseSchema,
+  HandReplayResponse as HandReplayResponseSchema,
 } from '../backend/src/schemas/hands';
 export type {
   HandProofResponse,
   HandProofsResponse,
   HandLogResponse,
   HandStateResponse,
+  HandReplayResponse,
 } from '../backend/src/schemas/hands';
 
 // Users (frontend)
