@@ -16,6 +16,7 @@ import type { ProfileStatsResponse, UserProfile } from '@shared/types';
 
 export default function UserPage() {
   const queryClient = useQueryClient();
+
   const [activeTab, setActiveTab] = useState<
     'game-history' | 'tournament-history' | 'transaction-history'
   >('game-history');
