@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { gameGatewaySetup } from './utils/gameGatewaySetup';
+import { createGameNamespace } from '../src/lib/socket-namespaces';
+import { GameActionSchema } from '@shared/schemas/game';
+import { EVENT_SCHEMA_VERSION } from '@shared/events';
 
 test('replays pending actions after reconnect', async () => {
   let pot = 0;
@@ -15,11 +18,9 @@ test('replays pending actions after reconnect', async () => {
   const { app, url } = await gameGatewaySetup({ room });
   process.env.NEXT_PUBLIC_SOCKET_URL = url;
 
-  const { getGameSocket, sendAction, disconnectGameSocket } = await import(
-    '../src/lib/socket'
-  );
+  const { getSocket, emitWithAck, disconnect } = createGameNamespace('game');
 
-  const s = getGameSocket();
+  const s = getSocket();
   await new Promise((res) => s.on('connect', res));
 
   const action = {
@@ -28,14 +29,16 @@ test('replays pending actions after reconnect', async () => {
     amount: 5,
     tableId: 'default',
   };
+  const payload = { version: EVENT_SCHEMA_VERSION, ...action };
+  GameActionSchema.parse(payload);
 
-  const promise = sendAction(action);
+  const promise = emitWithAck('action', payload, 'action:ack');
   s.disconnect();
   s.connect();
   await promise;
 
   expect(pot).toBe(5);
 
-  disconnectGameSocket();
+  disconnect();
   await app.close();
 });
