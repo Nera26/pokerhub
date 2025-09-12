@@ -16,7 +16,7 @@ import * as fc from 'fast-check';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { assertLedgerInvariant, resetLedger } from './test-utils';
+import { assertLedgerInvariant, resetLedger, walletBatchArb, runWalletBatch } from './test-utils';
 
 const runInTmp = async (fn: () => Promise<void>) => {
   const cwd = process.cwd();
@@ -118,42 +118,20 @@ describe('Wallet ledger invariants', () => {
     async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.array(
-            fc
-              .record({
-                reserve: fc.integer({ min: 1, max: 100 }),
-                commit: fc.integer({ min: 0, max: 100 }),
-                rake: fc.integer({ min: 0, max: 100 }),
-              })
-              .filter((t) => t.commit <= t.reserve && t.rake <= t.commit),
-            { maxLength: 10 },
-          ),
+          walletBatchArb(),
           async (batch) => {
             const accountRepo = dataSource.getRepository(Account);
             const journalRepo = dataSource.getRepository(JournalEntry);
-
-            await resetLedger({ account: accountRepo, journal: journalRepo });
-
-            for (let i = 0; i < batch.length; i++) {
-              const t = batch[i];
-              const ref = `hand#${i}`;
-              await service.reserve(userId, t.reserve, ref, 'USD');
-              await service.commit(ref, t.commit, t.rake, 'USD');
-              const rollbackAmt = t.reserve - t.commit;
-              if (rollbackAmt > 0) {
-                await service.rollback(userId, rollbackAmt, ref, 'USD');
-              }
-            }
-            await assertLedgerInvariant(service);
+            await runWalletBatch(
+              service,
+              { account: accountRepo, journal: journalRepo },
+              batch,
+              userId,
+            );
           },
         ),
         { numRuns: 25 },
       );
-
-      await resetLedger({
-        account: dataSource.getRepository(Account),
-        journal: dataSource.getRepository(JournalEntry),
-      });
     },
     30000,
   );
@@ -163,34 +141,17 @@ describe('Wallet ledger invariants', () => {
     async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.array(
-            fc
-              .record({
-                reserve: fc.integer({ min: 1, max: 100 }),
-                commit: fc.integer({ min: 0, max: 100 }),
-                rake: fc.integer({ min: 0, max: 100 }),
-              })
-              .filter((t) => t.commit <= t.reserve && t.rake <= t.commit),
-            { maxLength: 10 },
-          ),
+          walletBatchArb(),
           async (batch) => {
             const accountRepo = dataSource.getRepository(Account);
             const journalRepo = dataSource.getRepository(JournalEntry);
 
-            await resetLedger({ account: accountRepo, journal: journalRepo });
-
-            for (let i = 0; i < batch.length; i++) {
-              const t = batch[i];
-              const ref = `hand#${i}`;
-              await service.reserve(userId, t.reserve, ref, 'USD');
-              await service.commit(ref, t.commit, t.rake, 'USD');
-              const rollbackAmt = t.reserve - t.commit;
-              if (rollbackAmt > 0) {
-                await service.rollback(userId, rollbackAmt, ref, 'USD');
-              }
-            }
-
-            await assertLedgerInvariant(service);
+            await runWalletBatch(
+              service,
+              { account: accountRepo, journal: journalRepo },
+              batch,
+              userId,
+            );
 
             await runInTmp(() => runReconcile(service, events));
 
