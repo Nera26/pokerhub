@@ -72,6 +72,7 @@ Define the following variables (required unless noted):
 | `NEXT_PUBLIC_BASE_URL` | Base URL for API requests. Required when `NODE_ENV` is not `development` (e.g. `http://localhost:3000`). |
 | `NEXT_PUBLIC_SOCKET_URL` | Socket.IO server address for realtime updates. Required when `NODE_ENV` is not `development` (e.g. `http://localhost:4000`). |
 | `NEXT_PUBLIC_LOG_LEVEL` | Optional client log level (`error`, `warn`, `info`, `debug`; default `info`). |
+| `NEXT_PUBLIC_CSP` | Semicolon-separated CSP directives; `script-src` and `style-src` get a runtime `nonce`. |
 | `VERCEL_URL` | Provided automatically in production deployments. |
 
 When establishing realtime connections with `getSocket` (from `src/lib/socket-core.ts`), remember to call `disconnectSocket()` in `useEffect` cleanups or similar teardown logic to avoid leaving stale connections open.
