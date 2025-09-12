@@ -68,6 +68,7 @@ import { PromotionEntity } from './database/entities/promotion.entity';
 import { LanguagesService } from './services/languages.service';
 import { TranslationsService } from './services/translations.service';
 import { LanguageEntity } from './database/entities/language.entity';
+import { TranslationEntity } from './database/entities/translation.entity';
 import { BonusService } from './services/bonus.service';
 import { ChipDenomsService } from './services/chip-denoms.service';
 import { TableThemeService } from './services/table-theme.service';
@@ -127,6 +128,7 @@ import { NavIconEntity } from './database/entities/nav-icon.entity';
       AdminMessageEntity,
       PromotionEntity,
       LanguageEntity,
+      TranslationEntity,
       BonusOptionEntity,
       ChipDenominationEntity,
       TableThemeEntity,

@@ -1,47 +1,45 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
+import { Repository } from 'typeorm';
+import { TranslationEntity } from '../database/entities/translation.entity';
 
-const MESSAGES: Record<string, Record<string, string>> = {
-  en: {
-    'layout.skip': 'Skip to main content',
-    'login.tagline': 'Join the community of poker enthusiasts!',
-    'login.brandButton': 'Join the Community',
-    'login.title': 'Login',
-    'login.forgot': 'Forgot Password?',
-    "login.noAccount": "Don't have an account?",
-    'login.signUp': 'Sign Up',
-    'login.footer.copyright': '\u00a9 2024 PokerHub. All rights reserved.',
-    'login.footer.terms': 'Terms of Service',
-    'login.footer.privacy': 'Privacy Policy',
-    'serviceWorker.updatePrompt': 'A new version is available. Refresh now?',
-    'serviceWorker.reload': 'Refresh',
-    'serviceWorker.dismiss': 'Dismiss',
-    'serviceWorker.offlineNotice': 'You are offline. Changes will sync once connection is restored.',
-    'offline.title': 'You are offline',
-    'offline.body': 'Some features may be unavailable. Please check your connection and try again.',
-  },
-  es: {
-    'layout.skip': 'Saltar al contenido principal',
-    'login.tagline': '¡Únete a la comunidad de entusiastas del póker!',
-    'login.brandButton': 'Únete a la comunidad',
-    'login.title': 'Iniciar sesión',
-    'login.forgot': '¿Olvidaste tu contraseña?',
-    'login.noAccount': '¿No tienes una cuenta?',
-    'login.signUp': 'Regístrate',
-    'login.footer.copyright': '\u00a9 2024 PokerHub. Todos los derechos reservados.',
-    'login.footer.terms': 'Términos de servicio',
-    'login.footer.privacy': 'Política de privacidad',
-    'serviceWorker.updatePrompt': 'Hay una nueva versión disponible. ¿Actualizar ahora?',
-    'serviceWorker.reload': 'Actualizar',
-    'serviceWorker.dismiss': 'Cerrar',
-    'serviceWorker.offlineNotice': 'Estás sin conexión. Los cambios se sincronizarán cuando se restablezca la conexión.',
-    'offline.title': 'Estás sin conexión',
-    'offline.body': 'Algunas funciones pueden no estar disponibles. Por favor, verifica tu conexión e inténtalo de nuevo.',
-  },
-};
+const CACHE_TTL = 3600; // 1 hour
 
 @Injectable()
 export class TranslationsService {
+  constructor(
+    @InjectRepository(TranslationEntity)
+    private readonly repo: Repository<TranslationEntity>,
+    @Inject(CACHE_MANAGER)
+    private readonly cache: Cache,
+  ) {}
+
+  private cacheKey(lang: string): string {
+    return `translations:${lang}`;
+  }
+
+  private async loadFromDb(lang: string): Promise<Record<string, string>> {
+    const rows = await this.repo.find({ where: { lang } });
+    const messages: Record<string, string> = {};
+    for (const row of rows) {
+      messages[row.key] = row.value;
+    }
+    return messages;
+  }
+
   async get(lang: string): Promise<Record<string, string>> {
-    return MESSAGES[lang] ?? MESSAGES.en;
+    const key = this.cacheKey(lang);
+    const cached = await this.cache.get<Record<string, string>>(key);
+    if (cached) return cached;
+
+    let messages = await this.loadFromDb(lang);
+    if (Object.keys(messages).length === 0 && lang !== 'en') {
+      messages = await this.get('en');
+    }
+
+    await this.cache.set(key, messages, { ttl: CACHE_TTL });
+    return messages;
   }
 }
