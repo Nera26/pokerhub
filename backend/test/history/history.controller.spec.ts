@@ -10,17 +10,18 @@ import {
   WalletHistory,
 } from '../../src/history/history.entity';
 import {
-  GameHistoryRepository,
-  TournamentHistoryRepository,
-  WalletHistoryRepository,
+  HistoryRepository,
+  GAME_HISTORY_REPOSITORY,
+  TOURNAMENT_HISTORY_REPOSITORY,
+  WALLET_HISTORY_REPOSITORY,
 } from '../../src/history/history.repository';
 import { HistoryModule } from '../../src/history/history.module';
 
 describe('HistoryController', () => {
   let app: INestApplication;
-  let gameRepo: GameHistoryRepository;
-  let tournamentRepo: TournamentHistoryRepository;
-  let walletRepo: WalletHistoryRepository;
+  let gameRepo: HistoryRepository<GameHistory>;
+  let tournamentRepo: HistoryRepository<TournamentHistory>;
+  let walletRepo: HistoryRepository<WalletHistory>;
 
   beforeAll(async () => {
     let dataSource: any;
@@ -38,6 +39,11 @@ describe('HistoryController', () => {
               name: 'current_database',
               returns: 'text',
               implementation: () => 'test',
+            });
+            db.public.registerFunction({
+              name: 'version',
+              returns: 'text',
+              implementation: () => 'pg-mem',
             });
             db.public.registerFunction({
               name: 'uuid_generate_v4',
@@ -60,9 +66,9 @@ describe('HistoryController', () => {
       .useValue({ canActivate: () => true })
       .compile();
 
-    gameRepo = moduleRef.get(GameHistoryRepository);
-    tournamentRepo = moduleRef.get(TournamentHistoryRepository);
-    walletRepo = moduleRef.get(WalletHistoryRepository);
+    gameRepo = moduleRef.get<HistoryRepository<GameHistory>>(GAME_HISTORY_REPOSITORY);
+    tournamentRepo = moduleRef.get<HistoryRepository<TournamentHistory>>(TOURNAMENT_HISTORY_REPOSITORY);
+    walletRepo = moduleRef.get<HistoryRepository<WalletHistory>>(WALLET_HISTORY_REPOSITORY);
 
     await gameRepo.save({
       type: 'cash',

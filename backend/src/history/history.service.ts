@@ -1,21 +1,26 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type {
   GameHistoryEntry,
   TournamentHistoryEntry,
   TransactionEntry,
 } from '@shared/types';
 import {
-  GameHistoryRepository,
-  TournamentHistoryRepository,
-  WalletHistoryRepository,
+  HistoryRepository,
+  GAME_HISTORY_REPOSITORY,
+  TOURNAMENT_HISTORY_REPOSITORY,
+  WALLET_HISTORY_REPOSITORY,
 } from './history.repository';
+import { GameHistory, TournamentHistory, WalletHistory } from './history.entity';
 
 @Injectable()
 export class HistoryService {
   constructor(
-    private readonly games: GameHistoryRepository,
-    private readonly tournaments: TournamentHistoryRepository,
-    private readonly transactionsRepo: WalletHistoryRepository,
+    @Inject(GAME_HISTORY_REPOSITORY)
+    private readonly games: HistoryRepository<GameHistory>,
+    @Inject(TOURNAMENT_HISTORY_REPOSITORY)
+    private readonly tournaments: HistoryRepository<TournamentHistory>,
+    @Inject(WALLET_HISTORY_REPOSITORY)
+    private readonly transactionsRepo: HistoryRepository<WalletHistory>,
   ) {}
 
   async getGames(): Promise<GameHistoryEntry[]> {
