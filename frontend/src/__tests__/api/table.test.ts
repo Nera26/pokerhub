@@ -1,6 +1,10 @@
 /** @jest-environment node */
 
-import { fetchTable, fetchSidePanelTabs } from '@/lib/api/table';
+import {
+  fetchTable,
+  fetchSidePanelTabs,
+  fetchTableState,
+} from '@/lib/api/table';
 
 const sampleTable = {
   smallBlind: 1,
@@ -37,6 +41,27 @@ describe('table api', () => {
     });
 
     await expect(fetchTable('1')).resolves.toEqual(sampleTable);
+  });
+
+  it('fetches table state', async () => {
+    (fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => ({
+        handId: 'h1',
+        seats: [],
+        pot: { main: 0, sidePots: [] },
+        street: 'pre',
+      }),
+    });
+
+    await expect(fetchTableState('1')).resolves.toEqual({
+      handId: 'h1',
+      seats: [],
+      pot: { main: 0, sidePots: [] },
+      street: 'pre',
+    });
   });
 
   it('throws ApiError on failure', async () => {

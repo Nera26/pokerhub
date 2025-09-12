@@ -8,6 +8,7 @@ import { ChatService } from './chat.service';
 import type {
   Table as TableDto,
   TableData,
+  TableState,
   CreateTableRequest,
   UpdateTableRequest,
   TabKey,
@@ -82,6 +83,39 @@ export class TablesService {
     };
   }
 
+  async getTableState(id: string): Promise<TableState> {
+    let pot = 0;
+    let sidePots: number[] = [];
+    let seats: TableState['seats'] = [];
+    let street: TableState['street'] = 'pre';
+    let handId = '';
+
+    try {
+      const room = this.rooms.get(id);
+      const state = await room.getPublicState();
+      pot = state.pot;
+      sidePots = state.sidePots.map((s) => s.amount);
+      street = this.mapStreet(state.street);
+      const userIds = state.players.map((p) => p.id);
+      const userEntities = await this.users.findBy({ id: In(userIds) });
+      const userMap = new Map(userEntities.map((u) => [u.id, u]));
+      seats = state.players.map((p, idx) => {
+        const user = userMap.get(p.id);
+        return {
+          id: idx + 1,
+          name: user?.username ?? p.id,
+          avatar: user?.avatarKey ?? '',
+          balance: p.stack,
+          inHand: !p.folded,
+        };
+      });
+    } catch {
+      // fallback to defaults if room/state unavailable
+    }
+
+    return { handId, seats, pot: { main: pot, sidePots }, street };
+  }
+
   async getSidePanelTabs(id: string): Promise<TabKey[]> {
     return ['history', 'chat', 'notes'];
   }
@@ -154,5 +188,19 @@ export class TablesService {
     const rank = ranks[Math.floor(card / 4)] ?? '?';
     const suit = suits[card % 4] ?? '?';
     return `${rank}${suit}`;
+  }
+
+  private mapStreet(street: string): TableState['street'] {
+    switch (street) {
+      case 'flop':
+        return 'flop';
+      case 'turn':
+        return 'turn';
+      case 'river':
+      case 'showdown':
+        return 'river';
+      default:
+        return 'pre';
+    }
   }
 }

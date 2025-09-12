@@ -401,6 +401,23 @@ paths:
       security:
         - bearerAuth: []
 
+  /tables/{id}/state:
+    get:
+      summary: Get table state
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Table state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableState'
+
   /tables/{id}/tabs:
     get:
       summary: Get side panel tabs
@@ -3695,6 +3712,57 @@ components:
         - communityCards
         - players
         - chatMessages
+        - stateAvailable
+
+    TableSeat:
+      type: object
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        avatar:
+          type: string
+        balance:
+          type: number
+        inHand:
+          type: boolean
+      required:
+        - id
+        - name
+        - avatar
+        - balance
+        - inHand
+
+    TableState:
+      type: object
+      properties:
+        handId:
+          type: string
+        seats:
+          type: array
+          items:
+            $ref: '#/components/schemas/TableSeat'
+        pot:
+          type: object
+          properties:
+            main:
+              type: number
+            sidePots:
+              type: array
+              items:
+                type: number
+          required:
+            - main
+            - sidePots
+        street:
+          type: string
+          enum: [pre, flop, turn, river]
+      required:
+        - handId
+        - seats
+        - pot
+        - street
     CalculatePrizesRequest:
       type: object
       properties:
