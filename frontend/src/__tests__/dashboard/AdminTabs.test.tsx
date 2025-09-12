@@ -27,6 +27,7 @@ jest.mock('@/lib/api/profile', () => ({
 jest.mock('@/lib/api/admin', () => ({
   fetchSidebarItems: jest.fn().mockResolvedValue([]),
   fetchAdminTabs: jest.fn(),
+  fetchAdminTabMeta: jest.fn(),
 }));
 
 function renderPage() {
@@ -85,6 +86,29 @@ describe('Admin tabs loading', () => {
     expect(await screen.findByText(/error loading tabs/i)).toBeInTheDocument();
     expect(
       screen.getByRole('heading', { name: /admin dashboard/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('shows backend message when tab disabled', async () => {
+    const { fetchAdminTabs, fetchAdminTabMeta } = require('@/lib/api/admin');
+    (fetchAdminTabs as jest.Mock).mockResolvedValue([
+      {
+        id: 'dashboard',
+        title: 'Dashboard',
+        component: '@/app/components/dashboard/DashboardModule',
+      },
+    ]);
+    (fetchAdminTabMeta as jest.Mock).mockResolvedValue({
+      id: 'reports',
+      title: 'Reports',
+      component: '@/app/components/dashboard/Reports',
+      enabled: false,
+      message: 'Reports disabled by admin',
+    });
+    searchParams = new URLSearchParams('tab=reports');
+    renderPage();
+    expect(
+      await screen.findByText(/reports disabled by admin/i),
     ).toBeInTheDocument();
   });
 });

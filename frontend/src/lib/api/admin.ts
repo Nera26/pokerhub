@@ -34,6 +34,23 @@ export async function fetchAdminTabs({
   return apiClient('/api/admin/tabs', AdminTabResponseSchema, { signal });
 }
 
+const AdminTabMetaSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  component: z.string(),
+  enabled: z.boolean(),
+  message: z.string(),
+});
+
+export type AdminTabMeta = z.infer<typeof AdminTabMetaSchema>;
+
+export async function fetchAdminTabMeta(
+  id: string,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<AdminTabMeta> {
+  return apiClient(`/api/admin/tabs/${id}`, AdminTabMetaSchema, { signal });
+}
+
 export async function acknowledgeAdminEvent(id: string): Promise<void> {
   await apiClient(`/api/admin/events/${id}/ack`, MessageResponseSchema, {
     method: 'POST',
