@@ -6,16 +6,10 @@ describe('buildMetadata', () => {
     jest.clearAllMocks();
   });
 
-  it('falls back to defaults on fetch failure', async () => {
+  it('throws on fetch failure', async () => {
     (global as any).fetch = jest.fn().mockRejectedValue(new Error('fail'));
     const { buildMetadata } = await import('@/lib/metadata');
-    const meta = await buildMetadata();
-    expect(meta).toEqual({
-      title: 'PokerHub',
-      description: "Live Texas Hold'em, Omaha & Tournaments — PokerHub",
-      image: 'http://base/pokerhub-logo.svg',
-      url: 'http://base',
-    });
+    await expect(buildMetadata()).rejects.toThrow('fail');
     expect((global as any).fetch).toHaveBeenCalledTimes(1);
   });
 

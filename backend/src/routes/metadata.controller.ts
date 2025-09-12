@@ -12,7 +12,7 @@ const DEFAULT_IMAGE = '/pokerhub-logo.svg';
 
 @ApiTags('site')
 @Controller('site-metadata')
-export class SiteMetadataController {
+export class MetadataController {
   @Get()
   @ApiOperation({ summary: 'Get site metadata' })
   @ApiResponse({ status: 200, description: 'Site metadata' })

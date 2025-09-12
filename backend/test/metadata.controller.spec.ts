@@ -1,10 +1,10 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { SiteMetadataController } from '../src/routes/site-metadata.controller';
+import { MetadataController } from '../src/routes/metadata.controller';
 import type { SiteMetadataResponse } from '@shared/types';
 
-describe('SiteMetadataController', () => {
+describe('MetadataController', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -13,7 +13,7 @@ describe('SiteMetadataController', () => {
     process.env.SITE_IMAGE_PATH = '/logo.png';
 
     const moduleRef: TestingModule = await Test.createTestingModule({
-      controllers: [SiteMetadataController],
+      controllers: [MetadataController],
     }).compile();
 
     app = moduleRef.createNestApplication();
