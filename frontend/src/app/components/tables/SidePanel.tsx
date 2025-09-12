@@ -14,7 +14,9 @@ import useSocket from '@/hooks/useSocket';
 import {
   sendChatMessage,
   fetchTableHands,
+  fetchSidePanelTabs,
   type HandSummary,
+  type TabKey,
 } from '@/lib/api/table';
 
 export interface SidePanelProps {
@@ -28,8 +30,6 @@ export interface SidePanelProps {
   onLeave: () => void;
   onReplay?: (handId: string) => void;
 }
-
-type TabKey = 'history' | 'chat' | 'notes';
 
 export default function SidePanel({
   isOpen,
@@ -57,6 +57,18 @@ export default function SidePanel({
     enabled: !!tableId,
   });
 
+  const { data: tabs = [] } = useQuery<TabKey[]>({
+    queryKey: ['table-tabs', tableId],
+    queryFn: () => fetchSidePanelTabs(tableId),
+    enabled: !!tableId,
+  });
+
+  useEffect(() => {
+    if (tabs.length && !tabs.includes(tab)) {
+      setTab(tabs[0]);
+    }
+  }, [tabs, tab]);
+
   useEffect(() => {
     setMessages(chatMessages);
   }, [chatMessages]);
@@ -72,12 +84,12 @@ export default function SidePanel({
     };
   }, [socket]);
 
-  const tabs: TabKey[] = ['history', 'chat', 'notes'];
   const switchTab = (key: TabKey) => {
     setTab(key);
     document.getElementById(`${key}-tab`)?.focus();
   };
   const onTabKey = (e: KeyboardEvent<HTMLButtonElement>) => {
+    if (!tabs.length) return;
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
       e.preventDefault();
       const dir = e.key === 'ArrowRight' ? 1 : -1;
@@ -108,56 +120,62 @@ export default function SidePanel({
           role="tablist"
           aria-label="Side panel tabs"
         >
-          <button
-            id="history-tab"
-            role="tab"
-            aria-selected={tab === 'history'}
-            aria-controls="history-panel"
-            className={`px-3 py-1 rounded-xl text-sm border ${
-              tab === 'history'
-                ? 'border-accent-yellow text-accent-yellow'
-                : 'border-border-dark text-text-secondary'
-            }`}
-            onClick={() => switchTab('history')}
-            onKeyDown={onTabKey}
-          >
-            Hand History
-          </button>
-          <button
-            id="chat-tab"
-            role="tab"
-            aria-selected={tab === 'chat'}
-            aria-controls="chat-panel"
-            className={`px-3 py-1 rounded-xl text-sm border ${
-              tab === 'chat'
-                ? 'border-accent-yellow text-accent-yellow'
-                : 'border-border-dark text-text-secondary'
-            }`}
-            onClick={() => switchTab('chat')}
-            onKeyDown={onTabKey}
-          >
-            Chat
-          </button>
-          <button
-            id="notes-tab"
-            role="tab"
-            aria-selected={tab === 'notes'}
-            aria-controls="notes-panel"
-            className={`px-3 py-1 rounded-xl text-sm border ${
-              tab === 'notes'
-                ? 'border-accent-yellow text-accent-yellow'
-                : 'border-border-dark text-text-secondary'
-            }`}
-            onClick={() => switchTab('notes')}
-            onKeyDown={onTabKey}
-          >
-            Notes
-          </button>
+          {tabs.includes('history') && (
+            <button
+              id="history-tab"
+              role="tab"
+              aria-selected={tab === 'history'}
+              aria-controls="history-panel"
+              className={`px-3 py-1 rounded-xl text-sm border ${
+                tab === 'history'
+                  ? 'border-accent-yellow text-accent-yellow'
+                  : 'border-border-dark text-text-secondary'
+              }`}
+              onClick={() => switchTab('history')}
+              onKeyDown={onTabKey}
+            >
+              Hand History
+            </button>
+          )}
+          {tabs.includes('chat') && (
+            <button
+              id="chat-tab"
+              role="tab"
+              aria-selected={tab === 'chat'}
+              aria-controls="chat-panel"
+              className={`px-3 py-1 rounded-xl text-sm border ${
+                tab === 'chat'
+                  ? 'border-accent-yellow text-accent-yellow'
+                  : 'border-border-dark text-text-secondary'
+              }`}
+              onClick={() => switchTab('chat')}
+              onKeyDown={onTabKey}
+            >
+              Chat
+            </button>
+          )}
+          {tabs.includes('notes') && (
+            <button
+              id="notes-tab"
+              role="tab"
+              aria-selected={tab === 'notes'}
+              aria-controls="notes-panel"
+              className={`px-3 py-1 rounded-xl text-sm border ${
+                tab === 'notes'
+                  ? 'border-accent-yellow text-accent-yellow'
+                  : 'border-border-dark text-text-secondary'
+              }`}
+              onClick={() => switchTab('notes')}
+              onKeyDown={onTabKey}
+            >
+              Notes
+            </button>
+          )}
         </div>
       </div>
 
       {/* Hand History (default) */}
-      {tab === 'history' && (
+      {tab === 'history' && tabs.includes('history') && (
         <div
           id="history-panel"
           role="tabpanel"
@@ -195,7 +213,7 @@ export default function SidePanel({
       )}
 
       {/* Chat */}
-      {tab === 'chat' && (
+      {tab === 'chat' && tabs.includes('chat') && (
         <div
           id="chat-panel"
           role="tabpanel"
@@ -240,7 +258,7 @@ export default function SidePanel({
       )}
 
       {/* Notes */}
-      {tab === 'notes' && (
+      {tab === 'notes' && tabs.includes('notes') && (
         <div
           id="notes-panel"
           role="tabpanel"

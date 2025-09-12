@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.20.0
+  version: 2.21.0
 paths:
   /status:
     get:
@@ -400,6 +400,23 @@ paths:
           description: Table deleted
       security:
         - bearerAuth: []
+
+  /tables/{id}/tabs:
+    get:
+      summary: Get side panel tabs
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Side panel tabs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableTabsResponse'
 
   /tables/{id}/chat:
     get:
@@ -3429,6 +3446,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/HistoryTabItem'
+    TabKey:
+      type: string
+      enum: [history, chat, notes]
+    TableTabsResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/TabKey'
     ChartPaletteResponse:
       type: array
       items:
