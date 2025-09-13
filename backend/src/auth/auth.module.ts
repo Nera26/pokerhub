@@ -47,11 +47,19 @@ function providerFactory(config: ConfigService): CountryProvider {
   switch (driver) {
     case 'trulioo':
       return new TruliooProvider(
-        config.get<string>('TRULIOO_API_KEY', ''),
+        config.get<string>('TRULIOO_URL', 'https://api.trulioo.com/ip/v1'),
+        {
+          'x-trulioo-api-key': config.get<string>('TRULIOO_API_KEY', ''),
+        },
       );
     case 'gbg':
     default:
-      return new GbgProvider(config.get<string>('GBG_API_KEY', ''));
+      return new GbgProvider(
+        config.get<string>('GBG_URL', 'https://api.gbgplc.com/ip/v1'),
+        {
+          Authorization: `Bearer ${config.get<string>('GBG_API_KEY', '')}`,
+        },
+      );
   }
 }
 
