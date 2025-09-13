@@ -1,16 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import {
-  listFlaggedSessions,
-  applyAction,
-  getActionHistory,
-} from '@/lib/api/collusion';
-import type {
-  FlaggedSession,
-  ReviewAction,
-  ReviewActionLog,
-} from '@shared/types';
+  useFlaggedSessions,
+  useActionHistory,
+  useApplyCollusionAction,
+} from '@/hooks/collusion';
+import type { FlaggedSession, ReviewAction } from '@shared/types';
 import { useAuthToken, usePlayerId } from '@/app/store/authStore';
 
 function nextAction(status: FlaggedSession['status']): ReviewAction | null {
@@ -27,53 +22,27 @@ function nextAction(status: FlaggedSession['status']): ReviewAction | null {
 }
 
 export default function CollusionReviewPage() {
-  const [sessions, setSessions] = useState<FlaggedSession[]>([]);
-  const [history, setHistory] = useState<Record<string, ReviewActionLog[]>>({});
   const token = useAuthToken();
   const reviewerId = usePlayerId();
+  const { data: sessions = [], isLoading, isError } = useFlaggedSessions(token);
+  const history = useActionHistory(sessions, token);
+  const act = useApplyCollusionAction(token, reviewerId);
 
-  useEffect(() => {
-    if (!token) return;
-    listFlaggedSessions(token)
-      .then(async (s) => {
-        setSessions(s);
-        const entries = await Promise.all(
-          s.map((sess) => getActionHistory(sess.id, token)),
-        );
-        const map: Record<string, ReviewActionLog[]> = {};
-        s.forEach((sess, i) => {
-          map[sess.id] = entries[i];
-        });
-        setHistory(map);
-      })
-      .catch(() => {
-        setSessions([]);
-        setHistory({});
-      });
-  }, [token]);
-
-  const act = async (id: string, status: FlaggedSession['status']) => {
-    if (!token || !reviewerId) return;
-    const action = nextAction(status);
-    if (!action) return;
-    const optimistic: ReviewActionLog = {
-      action,
-      timestamp: Date.now(),
-      reviewerId,
-    };
-    setSessions((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, status: action } : s)),
+  if (isLoading) {
+    return (
+      <main id="main-content" className="p-4">
+        Loading...
+      </main>
     );
-    setHistory((prev) => ({
-      ...prev,
-      [id]: [...(prev[id] ?? []), optimistic],
-    }));
-    const confirmed = await applyAction(id, action, token, reviewerId);
-    setHistory((prev) => ({
-      ...prev,
-      [id]: [...(prev[id] ?? []).slice(0, -1), confirmed],
-    }));
-  };
+  }
+
+  if (isError) {
+    return (
+      <main id="main-content" className="p-4">
+        Failed to load sessions
+      </main>
+    );
+  }
 
   return (
     <main id="main-content" className="p-4">
@@ -100,7 +69,7 @@ export default function CollusionReviewPage() {
                   {action && (
                     <button
                       className="px-2 py-1 bg-accent-yellow text-black rounded"
-                      onClick={() => act(s.id, s.status)}
+                      onClick={() => act.mutate({ id: s.id, status: s.status })}
                     >
                       {action}
                     </button>
