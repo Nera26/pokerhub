@@ -2,6 +2,8 @@ import { apiClient } from './client';
 import {
   ChipDenominationsResponseSchema,
   type ChipDenominationsResponse,
+  PerformanceThresholdsResponseSchema,
+  type PerformanceThresholdsResponse,
 } from '@shared/types';
 
 export async function fetchChipDenominations({
@@ -21,4 +23,14 @@ export async function updateChipDenominations(
     body: JSON.stringify({ denoms }),
     signal,
   });
+}
+
+export async function fetchPerformanceThresholds({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<PerformanceThresholdsResponse> {
+  return apiClient(
+    '/api/config/performance-thresholds',
+    PerformanceThresholdsResponseSchema,
+    { signal },
+  );
 }

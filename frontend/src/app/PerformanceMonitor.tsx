@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { onCLS, onINP, onLCP, Metric } from 'web-vitals';
+import { fetchPerformanceThresholds } from '@/lib/api/config';
 import { env } from '@/lib/env';
 
-const THRESHOLDS = {
+const DEFAULT_THRESHOLDS = {
   INP: 150,
   LCP: 2500,
   CLS: 0.05,
@@ -24,11 +25,19 @@ function sendMetric(metric: Metric, overThreshold: boolean) {
 }
 
 export default function PerformanceMonitor() {
+  const [thresholds, setThresholds] = useState(DEFAULT_THRESHOLDS);
+
+  useEffect(() => {
+    fetchPerformanceThresholds()
+      .then(setThresholds)
+      .catch(() => setThresholds(DEFAULT_THRESHOLDS));
+  }, []);
+
   useEffect(() => {
     if (process.env.NODE_ENV !== 'production' || env.IS_E2E) return;
 
     const handle = (metric: Metric) => {
-      const limit = THRESHOLDS[metric.name as keyof typeof THRESHOLDS];
+      const limit = thresholds[metric.name as keyof typeof thresholds];
       const over = limit !== undefined && metric.value > limit;
       if (over) {
         console.warn(
@@ -41,7 +50,7 @@ export default function PerformanceMonitor() {
     onINP(handle);
     onLCP(handle);
     onCLS(handle);
-  }, []);
+  }, [thresholds]);
 
   return null;
 }

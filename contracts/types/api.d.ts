@@ -2070,6 +2070,22 @@ export interface paths {
       };
     };
   };
+  "/config/performance-thresholds": {
+    /**
+     * Get performance thresholds
+     * @description Returns the performance thresholds used for web vitals
+     */
+    get: {
+      responses: {
+        /** @description Performance thresholds */
+        200: {
+          content: {
+            "application/json": components["schemas"]["PerformanceThresholdsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/users": {
     /** Create user */
     post: {
@@ -2897,6 +2913,11 @@ export interface components {
     };
     DefaultAvatarResponse: {
       defaultAvatar: string;
+    };
+    PerformanceThresholdsResponse: {
+      INP: number;
+      LCP: number;
+      CLS: number;
     };
     CreateTableRequest: {
       tableName: string;
