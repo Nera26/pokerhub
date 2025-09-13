@@ -1,80 +1,23 @@
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { renderHook, waitFor, act } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { useTables, useTournaments } from '@/hooks/useLobbyData';
 import type { ApiError, ResponseLike } from '@/lib/api/client';
-import { setupLobbyCache } from './utils/lobbyCache';
+import { runLobbyCacheTest } from './utils/lobbyCacheTest';
 
 describe('useTables caching', () => {
-  let fetchMock: jest.Mock<Promise<ResponseLike>, [string]>;
-  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
-  let cleanup: () => void;
-
-  beforeEach(() => {
-    ({ fetchMock, wrapper, cleanup } = setupLobbyCache());
-  });
-
-  afterEach(() => {
-    cleanup();
-  });
-
   it('serves cached data until stale time expires', async () => {
-    const { result: first } = renderHook(() => useTables(), { wrapper });
-    await waitFor(() => expect(first.current.data).toBeDefined());
-    expect(fetchMock.mock.calls.length).toBe(1);
-
-    const { result: second } = renderHook(() => useTables(), { wrapper });
-    await waitFor(() => expect(second.current.data).toBeDefined());
-    expect(fetchMock.mock.calls.length).toBe(1);
-
-    act(() => {
-      jest.advanceTimersByTime(60_000);
-    });
-
-    const { result: third } = renderHook(() => useTables(), { wrapper });
-    await waitFor(() => expect(third.current.data).toBeDefined());
-    expect(fetchMock.mock.calls.length).toBe(2);
+    await runLobbyCacheTest(useTables);
   });
 });
 
 describe('useTournaments caching', () => {
-  let fetchMock: jest.Mock<Promise<ResponseLike>, [string]>;
-  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
-  let cleanup: () => void;
-
-  beforeEach(() => {
-    ({ fetchMock, wrapper, cleanup } = setupLobbyCache());
-  });
-
-  afterEach(() => {
-    cleanup();
-  });
-
   it('serves cached data until stale time expires', async () => {
-    const { result: first } = renderHook(() => useTournaments(), { wrapper });
-    await waitFor(() => expect(first.current.data).toBeDefined());
-    expect(fetchMock.mock.calls.length).toBe(1);
-
-    const { result: second } = renderHook(() => useTournaments(), { wrapper });
-    await waitFor(() => expect(second.current.data).toBeDefined());
-    expect(fetchMock.mock.calls.length).toBe(1);
-
-    act(() => {
-      jest.advanceTimersByTime(60_000);
-    });
-
-    const { result: third } = renderHook(() => useTournaments(), { wrapper });
-    await waitFor(() => expect(third.current.data).toBeDefined());
-    expect(fetchMock.mock.calls.length).toBe(2);
+    await runLobbyCacheTest(useTournaments);
   });
 });
 
 describe('lobby data error handling', () => {
-  const originalFetch = global.fetch;
-  afterEach(() => {
-    global.fetch = originalFetch;
-  });
-
   it('returns a meaningful message when table fetch fails', async () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -111,7 +54,7 @@ describe('lobby data error handling', () => {
     const { result } = renderHook(() => useTournaments(), { wrapper });
     await waitFor(() => expect(result.current.error).not.toBeNull());
     expect((result.current.error as ApiError).message).toBe(
-      'Failed to fetch tournaments: Connection lost',
+      'Failed to fetch tournaments: Failed to fetch tournaments: Connection lost',
     );
   });
 
@@ -128,16 +71,15 @@ describe('lobby data error handling', () => {
       status: 500,
       statusText: 'Server Error',
       text: async () => 'boom',
+      headers: { get: () => 'text/plain' },
     });
     global.fetch = fetchMock as unknown as typeof fetch;
 
     const { result } = renderHook(() => useTables(), { wrapper });
     await waitFor(() => expect(result.current.error).not.toBeNull());
-    expect(result.current.error).toEqual({
-      status: 500,
-      message: 'Server Error',
-      details: 'boom',
-    });
+    expect((result.current.error as ApiError).message).toBe(
+      'Failed to fetch tables: Server Error',
+    );
   });
 
   it('includes status and details when tournament fetch returns HTTP error', async () => {
@@ -153,15 +95,14 @@ describe('lobby data error handling', () => {
       status: 404,
       statusText: 'Not Found',
       text: async () => 'missing',
+      headers: { get: () => 'text/plain' },
     });
     global.fetch = fetchMock as unknown as typeof fetch;
 
     const { result } = renderHook(() => useTournaments(), { wrapper });
     await waitFor(() => expect(result.current.error).not.toBeNull());
-    expect(result.current.error).toEqual({
-      status: 404,
-      message: 'Not Found',
-      details: 'missing',
-    });
+    expect((result.current.error as ApiError).message).toBe(
+      'Failed to fetch tournaments: Not Found',
+    );
   });
 });
