@@ -14,6 +14,7 @@ import type { NavIconsResponse } from '@shared/types';
 describe('NavIconsController', () => {
   let app: INestApplication;
   let dataSource: DataSource;
+  let service: NavIconsService;
 
   beforeAll(async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
@@ -47,6 +48,7 @@ describe('NavIconsController', () => {
     }).compile();
 
     app = moduleRef.createNestApplication();
+    service = moduleRef.get(NavIconsService);
     await app.init();
 
     const repo = dataSource.getRepository(NavIconEntity);
@@ -61,8 +63,12 @@ describe('NavIconsController', () => {
   });
 
   it('returns navigation icons', async () => {
-    const res = await request(app.getHttpServer()).get('/nav-icons').expect(200);
-    const body: NavIconsResponse = res.body;
+    const listSpy = jest.spyOn(service, 'list');
+    const res = await request(app.getHttpServer())
+      .get('/nav-icons')
+      .expect(200);
+    expect(listSpy).toHaveBeenCalledTimes(1);
+    const body = res.body as unknown as NavIconsResponse;
     const expected: NavIconsResponse = [
       { name: 'foo', svg: '<svg>foo</svg>' },
       { name: 'bar', svg: '<svg>bar</svg>' },
