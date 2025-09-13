@@ -74,6 +74,10 @@ export const TableThemeResponseSchema = z.object({
 });
 export type TableThemeResponse = z.infer<typeof TableThemeResponseSchema>;
 
+// Default avatar
+export { DefaultAvatarResponseSchema } from '../backend/src/schemas/config';
+export type { DefaultAvatarResponse } from '../backend/src/schemas/config';
+
 // Backend re-exports
 export { MessageResponseSchema } from '../backend/src/schemas/auth';
 export type { MessageResponse } from '../backend/src/schemas/auth';

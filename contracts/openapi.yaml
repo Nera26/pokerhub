@@ -1960,6 +1960,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TableThemeResponse'
+  /config/default-avatar:
+    get:
+      summary: Get default avatar
+      description: Returns the default avatar URL
+      responses:
+        '200':
+          description: Default avatar URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultAvatarResponse'
+    put:
+      summary: Update default avatar
+      description: Admin only
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DefaultAvatarResponse'
+      responses:
+        '200':
+          description: Updated default avatar URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultAvatarResponse'
   /users:
     post:
       summary: Create user
@@ -3582,6 +3609,12 @@ components:
                 type: string
               badge:
                 type: string
+    DefaultAvatarResponse:
+      type: object
+      required: [defaultAvatar]
+      properties:
+        defaultAvatar:
+          type: string
     CreateTableRequest:
       type: object
       properties:
