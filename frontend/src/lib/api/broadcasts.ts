@@ -1,4 +1,5 @@
-import { apiClient, ApiError } from './client';
+import { apiClient } from './client';
+import { safeApiClient } from './utils';
 import {
   BroadcastSchema,
   BroadcastsResponseSchema,
@@ -14,15 +15,10 @@ import {
 export async function fetchBroadcasts({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<BroadcastsResponse> {
-  try {
-    return await apiClient('/api/admin/broadcasts', BroadcastsResponseSchema, {
-      signal,
-    });
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : (err as ApiError).message;
-    throw { message: `Failed to fetch broadcasts: ${message}` } as ApiError;
-  }
+  return safeApiClient('/api/admin/broadcasts', BroadcastsResponseSchema, {
+    signal,
+    errorMessage: 'Failed to fetch broadcasts',
+  });
 }
 
 export async function sendBroadcast(
@@ -37,35 +33,21 @@ export async function sendBroadcast(
 export async function fetchBroadcastTemplates({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<BroadcastTemplatesResponse> {
-  try {
-    return await apiClient(
-      '/api/broadcast/templates',
-      BroadcastTemplatesResponseSchema,
-      { signal },
-    );
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : (err as ApiError).message;
-    throw {
-      message: `Failed to fetch broadcast templates: ${message}`,
-    } as ApiError;
-  }
+  return safeApiClient(
+    '/api/broadcast/templates',
+    BroadcastTemplatesResponseSchema,
+    {
+      signal,
+      errorMessage: 'Failed to fetch broadcast templates',
+    },
+  );
 }
 
 export async function fetchBroadcastTypes({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<BroadcastTypesResponse> {
-  try {
-    return await apiClient(
-      '/api/broadcasts/types',
-      BroadcastTypesResponseSchema,
-      { signal },
-    );
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : (err as ApiError).message;
-    throw {
-      message: `Failed to fetch broadcast types: ${message}`,
-    } as ApiError;
-  }
+  return safeApiClient('/api/broadcasts/types', BroadcastTypesResponseSchema, {
+    signal,
+    errorMessage: 'Failed to fetch broadcast types',
+  });
 }
