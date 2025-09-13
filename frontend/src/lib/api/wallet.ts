@@ -43,6 +43,25 @@ import {
   type TransactionTypesResponse,
 } from '@shared/transactions.schema';
 
+const IbanDetailsSchema = z.object({
+  ibanMasked: z.string(),
+  ibanFull: z.string(),
+  holder: z.string(),
+  instructions: z.string(),
+  history: z.array(
+    z.object({
+      date: z.string(),
+      oldIban: z.string(),
+      newIban: z.string(),
+      by: z.string(),
+      notes: z.string(),
+    }),
+  ),
+  lastUpdatedBy: z.string(),
+  lastUpdatedAt: z.string().datetime(),
+});
+export type IbanDetails = z.infer<typeof IbanDetailsSchema>;
+
 /* istanbul ignore next */
 async function postAmount(
   path: string,
@@ -393,6 +412,14 @@ export function fetchBankAccount(
   opts: { signal?: AbortSignal } = {},
 ): Promise<BankAccount> {
   return apiClient(`/api/wallet/${playerId}/bank-account`, BankAccountSchema, {
+    signal: opts.signal,
+  });
+}
+
+export function fetchIbanDetails(
+  opts: { signal?: AbortSignal } = {},
+): Promise<IbanDetails> {
+  return apiClient(`/api/wallet/iban`, IbanDetailsSchema, {
     signal: opts.signal,
   });
 }

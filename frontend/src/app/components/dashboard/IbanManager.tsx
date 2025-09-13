@@ -1,12 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useIban, useIbanHistory, useUpdateIban } from '@/hooks/wallet';
+import { useUpdateIban } from '@/hooks/wallet';
 import IBANManagerModal from '../modals/IBANManagerModal';
 
 export default function IbanManager() {
-  const ibanQuery = useIban();
-  const historyQuery = useIbanHistory();
   const updateIbanMutation = useUpdateIban();
   const [open, setOpen] = useState(false);
   const [masked, setMasked] = useState(true);
@@ -19,21 +17,13 @@ export default function IbanManager() {
   return (
     <>
       <button onClick={() => setOpen(true)}>Manage IBAN</button>
-      {ibanQuery.data && historyQuery.data && (
+      {open && (
         <IBANManagerModal
           open={open}
           onClose={() => setOpen(false)}
-          currentIbanMasked={ibanQuery.data.masked}
-          currentIbanFull={ibanQuery.data.iban}
           masked={masked}
-          holder={ibanQuery.data.holder}
-          instructions={ibanQuery.data.instructions}
           onToggleMask={() => setMasked((m) => !m)}
           onUpdate={handleUpdate}
-          history={historyQuery.data.history}
-          onReuse={(iban) => handleUpdate(iban, ibanQuery.data!.holder, '')}
-          lastUpdatedBy={ibanQuery.data.updatedBy}
-          lastUpdatedAt={ibanQuery.data.updatedAt}
         />
       )}
     </>
