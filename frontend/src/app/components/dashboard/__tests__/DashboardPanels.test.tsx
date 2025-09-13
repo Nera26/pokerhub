@@ -1,3 +1,4 @@
+import { mockUseActivity } from '@/test-utils/mockActivity';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -7,7 +8,7 @@ const metricsMock = jest.fn();
 const revenueMock = jest.fn();
 const usersMock = jest.fn();
 const tablesMock = jest.fn();
-const activityMock = jest.fn();
+const activityMock = mockUseActivity();
 
 jest.mock('@/hooks/useDashboardMetrics', () => ({
   useDashboardMetrics: () => metricsMock(),
@@ -20,9 +21,6 @@ jest.mock('@/hooks/useDashboardUsers', () => ({
 }));
 jest.mock('@/hooks/useActiveTables', () => ({
   useActiveTables: () => tablesMock(),
-}));
-jest.mock('@/hooks/useActivity', () => ({
-  useActivity: () => activityMock(),
 }));
 
 function renderWithClient(ui: React.ReactElement) {

@@ -1,3 +1,4 @@
+import { mockUseActivity } from '@/test-utils/mockActivity';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -5,6 +6,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Analytics from '../Analytics';
 import { rebuildLeaderboard } from '@/lib/api/leaderboard';
 import { fetchLogTypeClasses, fetchErrorCategories } from '@/lib/api/analytics';
+
+mockUseActivity();
 
 jest.mock('../SearchBar', () => () => <div>SearchBar</div>);
 jest.mock('../QuickStats', () => () => <div>QuickStats</div>);
@@ -27,13 +30,6 @@ jest.mock('@/hooks/useAuditLogs', () => ({
 }));
 jest.mock('@/hooks/useAuditSummary', () => ({
   useAuditSummary: () => ({ data: {} }),
-}));
-jest.mock('@/hooks/useActivity', () => ({
-  useActivity: () => ({
-    data: { labels: [], data: [] },
-    isLoading: false,
-    error: null,
-  }),
 }));
 
 jest.mock('@/lib/api/leaderboard', () => ({
