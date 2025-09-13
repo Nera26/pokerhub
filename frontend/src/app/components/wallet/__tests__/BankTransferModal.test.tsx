@@ -42,29 +42,40 @@ describe.each([
   ['withdraw', withdrawProps],
 ])('%s mode', (type, getProps) => {
   let props: any;
-  let depositMutate: jest.Mock;
-  let withdrawMutate: jest.Mock;
+  let bankTransferMock: any;
+  let withdrawMock: any;
 
   beforeEach(() => {
     (AmountInput as jest.Mock).mockClear();
     localStorage.clear();
     localStorage.setItem('deviceId', 'test-device');
+
     Object.assign(navigator, {
       clipboard: { writeText: jest.fn().mockResolvedValue(undefined) },
     });
-    depositMutate = jest.fn().mockResolvedValue({
-      bank: {
-        bankName: 'Test Bank',
-        accountNumber: '123',
-        routingCode: '000',
-      },
-      reference: 'ref',
-    });
-    withdrawMutate = jest.fn().mockResolvedValue(undefined);
-    (useBankTransfer as jest.Mock).mockReturnValue({
-      mutateAsync: depositMutate,
-    });
-    (useWithdraw as jest.Mock).mockReturnValue({ mutateAsync: withdrawMutate });
+
+    bankTransferMock = {
+      mutateAsync: jest.fn().mockResolvedValue({
+        bank: {
+          bankName: 'Test Bank',
+          accountNumber: '123',
+          routingCode: '000',
+        },
+        reference: 'ref',
+      }),
+      reset: jest.fn(),
+      error: null,
+    };
+
+    withdrawMock = {
+      mutateAsync: jest.fn(),
+      reset: jest.fn(),
+      error: null,
+    };
+
+    (useBankTransfer as jest.Mock).mockReturnValue(bankTransferMock);
+    (useWithdraw as jest.Mock).mockReturnValue(withdrawMock);
+
     props = getProps();
   });
 
@@ -80,10 +91,12 @@ describe.each([
     render(<BankTransferModal {...props} />);
     const input = screen.getByPlaceholderText('0.00');
     await userEvent.type(input, '50');
+
     const buttonName = type === 'deposit' ? /get instructions/i : 'Withdraw';
     await userEvent.click(screen.getByRole('button', { name: buttonName }));
-    const action = type === 'deposit' ? depositMutate : withdrawMutate;
-    expect(action).toHaveBeenCalledWith({
+
+    const hook = type === 'withdraw' ? withdrawMock : bankTransferMock;
+    expect(hook.mutateAsync).toHaveBeenCalledWith({
       amount: 50,
       currency: props.currency,
       deviceId: 'test-device',
@@ -101,6 +114,22 @@ describe.each([
       const acct = await screen.findByText('123');
       await userEvent.click(acct);
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith('123');
+    });
+
+    it('shows error message on failure', async () => {
+      bankTransferMock.mutateAsync.mockImplementation(() => {
+        bankTransferMock.error = { message: 'fail' } as any;
+        return Promise.reject(new Error('fail'));
+      });
+
+      render(<BankTransferModal {...props} />);
+      const input = screen.getByPlaceholderText('0.00');
+      await userEvent.type(input, '10');
+      await userEvent.click(
+        screen.getByRole('button', { name: /get instructions/i }),
+      );
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('fail');
     });
   } else {
     it('does not copy masked account number', async () => {

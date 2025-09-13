@@ -6,8 +6,10 @@ import { faTimes } from '@fortawesome/free-solid-svg-icons/faTimes';
 import Tooltip from '../ui/Tooltip';
 import Button from '../ui/Button';
 import BankTransferForm from './BankTransferForm';
-import { BankTransferDepositResponse } from '@shared/wallet.schema';
+import InlineError from '../ui/InlineError';
+import { useApiError } from '@/hooks/useApiError';
 import { useBankTransfer, useWithdraw } from '@/hooks/wallet';
+import type { BankTransferDepositResponse } from '@shared/wallet.schema';
 
 interface BaseProps {
   mode: 'deposit' | 'withdraw';
@@ -34,34 +36,36 @@ export type BankTransferModalProps = DepositProps | WithdrawProps;
 
 export default function BankTransferModal(props: BankTransferModalProps) {
   const { mode, onClose, currency } = props;
+
   const [details, setDetails] = useState<BankTransferDepositResponse | null>(
     null,
   );
   const [status, setStatus] = useState<
     'idle' | 'submitting' | 'success' | 'error'
   >('idle');
-  const [error, setError] = useState<string | null>(null);
+
   const bankTransfer = useBankTransfer();
-  const withdrawMutation = useWithdraw();
+  const withdraw = useWithdraw();
+  const activeMutation = mode === 'withdraw' ? withdraw : bankTransfer;
+  const errorMessage = useApiError(activeMutation.error);
 
   const handleSubmit = async (payload: {
     amount: number;
     deviceId: string;
     currency: string;
   }) => {
+    activeMutation.reset?.();
     setStatus('submitting');
-    setError(null);
     try {
-      if (mode === 'deposit') {
+      if (mode === 'withdraw') {
+        await withdraw.mutateAsync(payload);
+      } else {
         const res = await bankTransfer.mutateAsync(payload);
         setDetails(res);
-      } else {
-        await withdrawMutation.mutateAsync(payload);
       }
       setStatus('success');
-    } catch (e) {
+    } catch {
       setStatus('error');
-      setError(e instanceof Error ? e.message : 'Something went wrong');
     }
   };
 
@@ -70,10 +74,11 @@ export default function BankTransferModal(props: BankTransferModalProps) {
     try {
       await navigator.clipboard.writeText(details.bank.accountNumber);
     } catch {
-      // ignore
+      // ignore copy failures
     }
   };
 
+  // Deposit flow success screen (bank instructions)
   if (mode === 'deposit' && status === 'success' && details) {
     return (
       <div className="space-y-4">
@@ -117,13 +122,14 @@ export default function BankTransferModal(props: BankTransferModalProps) {
     );
   }
 
+  // Withdraw flow success screen
   if (mode === 'withdraw' && status === 'success') {
     return (
       <div className="space-y-4">
         <h2 className="text-xl sm:text-2xl font-bold text-text-primary">
           Withdraw Funds
         </h2>
-        <p className="text-text-secondary text-sm">Withdrawal successful.</p>
+        <p className="text-text-primary">Withdrawal requested.</p>
         <Button
           type="button"
           variant="primary"
@@ -138,8 +144,10 @@ export default function BankTransferModal(props: BankTransferModalProps) {
 
   return (
     <div
+      aria-busy={status === 'submitting'}
       className={
-        mode === 'withdraw' ? 'max-h-[90vh] overflow-y-auto' : 'space-y-4'
+        (status === 'submitting' ? 'pointer-events-none opacity-50 ' : '') +
+        (mode === 'withdraw' ? 'max-h-[90vh] overflow-y-auto' : 'space-y-4')
       }
     >
       {mode === 'withdraw' ? (
@@ -159,12 +167,6 @@ export default function BankTransferModal(props: BankTransferModalProps) {
         <h2 className="text-xl sm:text-2xl font-bold text-text-primary">
           Deposit via Bank Transfer
         </h2>
-      )}
-
-      {error && (
-        <p role="alert" className="text-danger-red mb-4">
-          {error}
-        </p>
       )}
 
       <div className={mode === 'withdraw' ? 'mb-4' : ''}>
@@ -191,23 +193,25 @@ export default function BankTransferModal(props: BankTransferModalProps) {
         </BankTransferForm>
       </div>
 
-      {mode === 'withdraw' && props.bankDetails && (
+      {errorMessage && <InlineError message={errorMessage} />}
+
+      {mode === 'withdraw' && (props as WithdrawProps).bankDetails && (
         <div className="mb-6 bg-primary-bg rounded-xl p-4">
           <p className="text-text-secondary mb-1">
             <span className="font-semibold">Bank Name:</span>{' '}
-            {props.bankDetails.bankName}
+            {(props as WithdrawProps).bankDetails.bankName}
           </p>
           <p className="text-text-secondary mb-1">
             <span className="font-semibold">Account Name:</span>{' '}
-            {props.bankDetails.accountName}
+            {(props as WithdrawProps).bankDetails.accountName}
           </p>
           <p className="text-text-secondary mb-1">
             <span className="font-semibold">Bank Address:</span>{' '}
-            {props.bankDetails.bankAddress}
+            {(props as WithdrawProps).bankDetails.bankAddress}
           </p>
           <p className="text-text-secondary">
             <span className="font-semibold">Account Number:</span>{' '}
-            {props.bankDetails.maskedAccountNumber}
+            {(props as WithdrawProps).bankDetails.maskedAccountNumber}
           </p>
         </div>
       )}
