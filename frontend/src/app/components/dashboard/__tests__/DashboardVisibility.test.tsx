@@ -1,11 +1,10 @@
 import { screen } from '@testing-library/react';
 import { renderWithClient } from './renderWithClient';
-import Dashboard from '../Dashboard';
 
+jest.mock('../AdminEvents', () => () => <div data-testid="admin-events" />);
 jest.mock('../FeatureFlagsPanel', () => () => (
   <div data-testid="feature-flags" />
 ));
-jest.mock('../AdminEvents', () => () => <div />);
 jest.mock('../Messages', () => () => <div />);
 jest.mock('../BroadcastPanel', () => () => <div />);
 
@@ -52,20 +51,32 @@ jest.mock('@/app/store/authStore', () => ({
 const adminToken = 'a.eyJyb2xlIjoiYWRtaW4ifQ==.b';
 const userToken = 'a.eyJyb2xlIjoidXNlciJ9.b';
 
-describe('Dashboard feature flags visibility', () => {
+const cases = [
+  { component: 'AdminEvents', selector: 'admin-events' },
+  { component: 'FeatureFlagsPanel', selector: 'feature-flags' },
+] as const;
+
+describe('Dashboard component visibility', () => {
   beforeEach(() => {
     authMock.mockReset();
   });
 
-  it('shows feature flags for admins', () => {
+  test.each(cases)('shows %s for admins', async ({ component, selector }) => {
     authMock.mockReturnValue(adminToken);
+    await import(`../${component}`);
+    const { default: Dashboard } = await import('../Dashboard');
     renderWithClient(<Dashboard />);
-    expect(screen.getByTestId('feature-flags')).toBeInTheDocument();
+    expect(screen.getByTestId(selector)).toBeInTheDocument();
   });
 
-  it('hides feature flags for non-admins', () => {
-    authMock.mockReturnValue(userToken);
-    renderWithClient(<Dashboard />);
-    expect(screen.queryByTestId('feature-flags')).toBeNull();
-  });
+  test.each(cases)(
+    'hides %s for non-admins',
+    async ({ component, selector }) => {
+      authMock.mockReturnValue(userToken);
+      await import(`../${component}`);
+      const { default: Dashboard } = await import('../Dashboard');
+      renderWithClient(<Dashboard />);
+      expect(screen.queryByTestId(selector)).toBeNull();
+    },
+  );
 });
