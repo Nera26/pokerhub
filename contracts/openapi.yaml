@@ -1919,12 +1919,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LanguagesResponse'
-  /translations/{lang}:
+  /translations/{locale}:
     get:
       summary: Get translations for a language
       parameters:
         - in: path
-          name: lang
+          name: locale
           required: true
           schema:
             type: string

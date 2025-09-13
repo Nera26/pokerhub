@@ -29,8 +29,7 @@
     "load:socket": "ts-node test/load/socket-load.ts",
     "test:soak": "node --trace-gc -r ts-node/register -r tsconfig-paths/register test/soak/soak24h.ts",
     "verify:proof": "ts-node ../bin/verify-proof.ts",
-    "openapi:generate": "ts-node --transpile-only -r tsconfig-paths/register src/scripts/generate-openapi.ts",
-    "seed:translations": "ts-node src/scripts/seed-translations.ts"
+    "openapi:generate": "ts-node --transpile-only -r tsconfig-paths/register src/scripts/generate-openapi.ts"
   },
   "dependencies": {
     "@clickhouse/client": "^1.12.1",

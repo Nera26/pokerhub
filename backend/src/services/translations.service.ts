@@ -5,7 +5,7 @@ import type { Cache } from 'cache-manager';
 import { Repository } from 'typeorm';
 import { TranslationEntity } from '../database/entities/translation.entity';
 
-const CACHE_TTL = 3600; // 1 hour
+export const CACHE_TTL = 3600; // 1 hour
 
 @Injectable()
 export class TranslationsService {
