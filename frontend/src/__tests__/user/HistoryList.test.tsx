@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
+import { useState, type ComponentProps } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import HistoryList from '@/app/components/user/HistoryList';
 import ReplayModal from '@/app/components/user/ReplayModal';
@@ -24,6 +24,14 @@ function renderWithClient(ui: React.ReactElement) {
   return render(
     <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
   );
+}
+
+async function renderHistoryList(
+  type: ComponentProps<typeof HistoryList>['type'],
+  expectedText: RegExp | string,
+) {
+  renderWithClient(<HistoryList type={type} />);
+  expect(await screen.findByText(expectedText)).toBeInTheDocument();
 }
 
 describe('HistoryList game history', () => {
@@ -51,24 +59,17 @@ describe('HistoryList game history', () => {
       },
     ];
     gameMock.mockResolvedValueOnce(data);
-    renderWithClient(<HistoryList type="game-history" />);
-    expect(await screen.findByText(/Table #1/)).toBeInTheDocument();
+    await renderHistoryList('game-history', /Table #1/);
   });
 
   it('renders empty state', async () => {
     gameMock.mockResolvedValueOnce([]);
-    renderWithClient(<HistoryList type="game-history" />);
-    expect(
-      await screen.findByText('No game history found.'),
-    ).toBeInTheDocument();
+    await renderHistoryList('game-history', 'No game history found.');
   });
 
   it('renders error state', async () => {
     gameMock.mockRejectedValueOnce(new Error('fail'));
-    renderWithClient(<HistoryList type="game-history" />);
-    expect(
-      await screen.findByText('Failed to load game history.'),
-    ).toBeInTheDocument();
+    await renderHistoryList('game-history', 'Failed to load game history.');
   });
 
   it('opens replay modal and fetches data', async () => {
@@ -133,24 +134,23 @@ describe('HistoryList tournament history', () => {
       },
     ];
     tournamentMock.mockResolvedValueOnce(data);
-    renderWithClient(<HistoryList type="tournament-history" />);
-    expect(await screen.findByText('Sunday Million')).toBeInTheDocument();
+    await renderHistoryList('tournament-history', 'Sunday Million');
   });
 
   it('renders empty state', async () => {
     tournamentMock.mockResolvedValueOnce([]);
-    renderWithClient(<HistoryList type="tournament-history" />);
-    expect(
-      await screen.findByText('No tournament history found.'),
-    ).toBeInTheDocument();
+    await renderHistoryList(
+      'tournament-history',
+      'No tournament history found.',
+    );
   });
 
   it('renders error state', async () => {
     tournamentMock.mockRejectedValueOnce(new Error('fail'));
-    renderWithClient(<HistoryList type="tournament-history" />);
-    expect(
-      await screen.findByText('Failed to load tournament history.'),
-    ).toBeInTheDocument();
+    await renderHistoryList(
+      'tournament-history',
+      'Failed to load tournament history.',
+    );
   });
 });
 
@@ -173,23 +173,19 @@ describe('HistoryList transaction history', () => {
       },
     ];
     txMock.mockResolvedValueOnce(data);
-    renderWithClient(<HistoryList type="transaction-history" />);
-    expect(await screen.findByText('Deposit')).toBeInTheDocument();
+    await renderHistoryList('transaction-history', 'Deposit');
   });
 
   it('renders empty state', async () => {
     txMock.mockResolvedValueOnce([]);
-    renderWithClient(<HistoryList type="transaction-history" />);
-    expect(
-      await screen.findByText('No transactions found.'),
-    ).toBeInTheDocument();
+    await renderHistoryList('transaction-history', 'No transactions found.');
   });
 
   it('renders error state', async () => {
     txMock.mockRejectedValueOnce(new Error('fail'));
-    renderWithClient(<HistoryList type="transaction-history" />);
-    expect(
-      await screen.findByText('Failed to load transactions.'),
-    ).toBeInTheDocument();
+    await renderHistoryList(
+      'transaction-history',
+      'Failed to load transactions.',
+    );
   });
 });
