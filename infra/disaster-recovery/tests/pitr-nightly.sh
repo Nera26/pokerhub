@@ -1,7 +1,7 @@
 /** @jest-environment node */
 
+import { fetchTables } from '@/lib/api/table';
 import {
-  fetchTables,
   fetchTournamentDetails,
   createCTA,
   updateCTA,

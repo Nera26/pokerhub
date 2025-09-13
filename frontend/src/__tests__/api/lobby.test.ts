@@ -1,11 +1,7 @@
 /** @jest-environment node */
 
-import {
-  fetchTables,
-  fetchTournamentDetails,
-  createCTA,
-  updateCTA,
-} from '@/lib/api/lobby';
+import { fetchTables } from '@/lib/api/table';
+import { fetchTournamentDetails, createCTA, updateCTA } from '@/lib/api/lobby';
 import { mockFetch } from '@/test-utils/mockFetch';
 import { tables, tournamentDetails } from '../fixtures/lobby';
 

@@ -1,11 +1,10 @@
 'use client';
 
 import { createQueryHook } from './createQueryHook';
+import { fetchTables, type Table } from '@/lib/api/table';
 import {
-  fetchTables,
   fetchTournaments,
   fetchCTAs,
-  type Table,
   type Tournament,
   type CTA,
 } from '@/lib/api/lobby';
@@ -36,4 +35,5 @@ export const useTournaments = makeLobbyHook<Tournament[]>(
 
 export const useCTAs = makeLobbyHook<CTA[]>('ctas', fetchCTAs, 'CTAs');
 
-export type { Table, Tournament, CTA } from '@/lib/api/lobby';
+export type { Table } from '@/lib/api/table';
+export type { Tournament, CTA } from '@/lib/api/lobby';
