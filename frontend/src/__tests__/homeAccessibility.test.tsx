@@ -6,14 +6,21 @@ import LiveTableCard, {
 } from '@/app/components/home/LiveTableCard';
 import CashGameList from '@/app/components/home/CashGameList';
 import TournamentList from '@/components/TournamentList';
-import useVirtualizedList from '@/hooks/useVirtualizedList';
 import { useTables, useTournaments, useCTAs } from '@/hooks/useLobbyData';
 import type { Table, Tournament } from '@/hooks/useLobbyData';
 import type { GameType } from '@shared/types';
 import type { CashGameListProps } from '@/app/components/home/CashGameList';
 import type { TournamentListProps } from '@/components/TournamentList';
+import virtualizerStub from '../test-utils/virtualizerStub';
 
-jest.mock('@/hooks/useVirtualizedList');
+jest.mock('@/hooks/useVirtualizedList', () => {
+  const actual = jest.requireActual('@/hooks/useVirtualizedList');
+  return {
+    __esModule: true,
+    default: (opts: any) =>
+      actual.default({ ...opts, createVirtualizer: virtualizerStub }),
+  };
+});
 jest.mock('@/hooks/useLobbyData');
 mockHomeDependencies();
 jest.mock('next/navigation', () => ({
@@ -22,7 +29,6 @@ jest.mock('next/navigation', () => ({
 
 describe('home accessibility', () => {
   beforeEach(() => {
-    (useVirtualizedList as jest.Mock).mockReset();
     (useCTAs as jest.Mock).mockReturnValue({
       data: [],
       error: null,
@@ -98,13 +104,6 @@ describe('home accessibility', () => {
         createdAgo: 'just now',
       },
     ];
-
-    (useVirtualizedList as jest.Mock).mockReturnValue({
-      getTotalSize: () => tables.length * 280,
-      getVirtualItems: () =>
-        tables.map((_, index) => ({ index, start: index * 280 })),
-    });
-
     const gameType: GameType = 'texas';
     render(<CashGameList tables={tables} gameType={gameType} hidden={false} />);
 
@@ -140,13 +139,6 @@ describe('home accessibility', () => {
         registered: false,
       },
     ];
-
-    (useVirtualizedList as jest.Mock).mockReturnValue({
-      getTotalSize: () => tournaments.length * 280,
-      getVirtualItems: () =>
-        tournaments.map((_, index) => ({ index, start: index * 280 })),
-    });
-
     render(<TournamentList tournaments={tournaments} hidden={false} />);
 
     const list = screen.getByRole('list');
