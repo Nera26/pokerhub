@@ -63,25 +63,6 @@ Players can independently validate a hand using the public Google Cloud Storage 
 
 The verifier recomputes the commitment and deterministic deck to confirm fairness.
 
-### Exporting a Proof Locally
-For an on-chain audit or offline archive you can export a hand's proof and deck
-straight from the database:
-
-```sh
-npx ts-node scripts/export-hand-proof.ts <handId>
-```
-
-Sample output:
-
-```json
-{
-  "seed": "0x7e3",
-  "nonce": "0xa9",
-  "commitment": "0x5b2f...",
-  "deck": ["AC", "KD", "QS", "JH", "10C", "..."]
-}
-Proof saved to storage/proofs/<handId>.json
-```
 
 ### Verifying a Seed/Nonce Pair
 Use the standalone verifier to check any seed and nonce against a commitment:
