@@ -1,5 +1,6 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { LanguageSchema } from '@shared/types';
 import { TranslationsService } from '../services/translations.service';
 import {
   TranslationsResponse,
@@ -15,7 +16,8 @@ export class TranslationsController {
   @ApiOperation({ summary: 'Get translations for a language' })
   @ApiResponse({ status: 200, description: 'Translation messages' })
   async get(@Param('lang') lang: string): Promise<TranslationsResponse> {
-    const messages = await this.translations.get(lang);
+    const { code } = LanguageSchema.pick({ code: true }).parse({ code: lang });
+    const messages = await this.translations.get(code);
     return TranslationsResponseSchema.parse({ messages });
   }
 }
