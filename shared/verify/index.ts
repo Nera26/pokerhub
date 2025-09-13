@@ -60,11 +60,6 @@ export function verifyProof(proof: HandProofResponse): boolean {
   return commitment === proof.commitment;
 }
 
-export function revealDeck(proof: HandProofResponse): number[] {
-  const seed = hexToBytes(proof.seed);
-  return shuffle(standardDeck(), seed);
-}
-
 if (require.main === module) {
   const [seedHex, nonceHex, commitment] = process.argv.slice(2);
   if (!seedHex || !nonceHex) {
