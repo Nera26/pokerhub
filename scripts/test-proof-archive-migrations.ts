@@ -3,7 +3,7 @@ import { execSync } from 'child_process';
 import { randomBytes, randomUUID, createHash } from 'crypto';
 import { AppDataSource } from '../backend/src/database/data-source';
 import { Hand } from '../backend/src/database/entities/hand.entity';
-import { bytesToHex, hashCommitment } from '../shared/verify';
+import { bytesToHex, hashCommitment, revealDeck, verifyProof } from '../shared/verify';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -52,21 +52,31 @@ async function main() {
       settled: false,
     });
 
-    await AppDataSource.destroy();
+    const hand = await repo.findOne({ where: { id: handId } });
+    if (!hand || !hand.seed || !hand.nonce) {
+      throw new Error(`Hand ${handId} not found or missing proof`);
+    }
+    const proof = {
+      seed: hand.seed,
+      nonce: hand.nonce,
+      commitment: hand.commitment,
+    };
+    if (!(await verifyProof(proof))) {
+      throw new Error('Invalid proof: commitment mismatch');
+    }
+    const deck = await revealDeck(proof);
 
     const proofsDir = path.join(__dirname, '..', 'storage', 'proofs');
     await fs.rm(proofsDir, { recursive: true, force: true });
     await fs.mkdir(proofsDir, { recursive: true });
-
-    execSync(`npx -y ts-node scripts/export-hand-proof.ts ${handId}`, {
-      stdio: 'inherit',
-      env: process.env,
-    });
     const fileName = `${handId}.json`;
     const proofPath = path.join(proofsDir, fileName);
+    await fs.writeFile(proofPath, JSON.stringify({ ...proof, deck }));
     const data = await fs.readFile(proofPath);
     const hash = createHash('sha256').update(data).digest('hex');
     await fs.writeFile(path.join(proofsDir, 'manifest.txt'), `${hash} ${fileName}\n`);
+
+    await AppDataSource.destroy();
 
     execSync(`npx -y ts-node scripts/validate-proof-archive.ts`, {
       stdio: 'inherit',

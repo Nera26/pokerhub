@@ -92,21 +92,7 @@ bin/verify-hand <handId> [baseUrl]
 It verifies the commitment and asserts that the recorded deck matches the
 shuffle derived from the revealed seed.
 
-Proofs can be downloaded directly via the `/hands/{id}/proof` API endpoint or
-exported with the full deck using the helper script below.
-
-### Exporting proof with deck
-
-Auditors can also export the fully reconstructed deck for a hand. The helper
-script reads the hand from the database, verifies the commitment and writes a
-JSON file under `storage/proofs/<handId>.json` containing the commitment, seed,
-nonce and deterministic deck order:
-
-```sh
-npx ts-node scripts/export-hand-proof.ts <handId>
-```
-
-The script also prints the same object to stdout for quick inspection.
+Proofs can be downloaded directly via the `/hands/{id}/proof` API endpoint.
 
 ### Verifying a hand via CLI
 
