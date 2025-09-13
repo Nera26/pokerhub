@@ -2,7 +2,6 @@ import { mockHomeDependencies } from './utils/homePageMocks';
 import { render, screen } from '@testing-library/react';
 import { HomePageClient } from '@/app/(site)/HomePageClient';
 import { useTables, useTournaments, useCTAs } from '@/hooks/useLobbyData';
-import { ENTITY_ITEM_HEIGHT } from '@/components/EntityList';
 import type { CashGameListProps } from '@/app/components/home/CashGameList';
 import type { TournamentListProps } from '@/components/TournamentList';
 
@@ -42,6 +41,8 @@ class ResizeObserver {
   disconnect() {}
 }
 Object.assign(globalThis, { ResizeObserver });
+
+const ENTITY_ITEM_HEIGHT = 280;
 
 const mockTables = Array.from({ length: 20 }, (_, i) => ({
   id: String(i + 1),

@@ -12,8 +12,10 @@ import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
 import { ChipDenomsService } from '../src/services/chip-denoms.service';
 import { TableThemeService } from '../src/services/table-theme.service';
+import { DefaultAvatarService } from '../src/services/default-avatar.service';
 import { ChipDenominationEntity } from '../src/database/entities/chip-denomination.entity';
 import { TableThemeEntity } from '../src/database/entities/table-theme.entity';
+import { DefaultAvatarEntity } from '../src/database/entities/default-avatar.entity';
 
 import type { ChipDenominationsResponse, TableThemeResponse } from '@shared/types';
 
@@ -65,7 +67,11 @@ function createTestModule() {
 
           dataSource = db.adapters.createTypeormDataSource({
             type: 'postgres',
-            entities: [ChipDenominationEntity, TableThemeEntity],
+            entities: [
+              ChipDenominationEntity,
+              TableThemeEntity,
+              DefaultAvatarEntity,
+            ],
             synchronize: true,
           }) as DataSource;
 
@@ -73,10 +79,14 @@ function createTestModule() {
         },
         dataSourceFactory: async () => dataSource.initialize(),
       }),
-      TypeOrmModule.forFeature([ChipDenominationEntity, TableThemeEntity]),
+      TypeOrmModule.forFeature([
+        ChipDenominationEntity,
+        TableThemeEntity,
+        DefaultAvatarEntity,
+      ]),
     ],
     controllers: [ConfigController],
-    providers: [ChipDenomsService, TableThemeService],
+    providers: [ChipDenomsService, TableThemeService, DefaultAvatarService],
   })
   class ConfigTestModule {}
 
@@ -86,6 +96,7 @@ function createTestModule() {
 describe('ConfigController', () => {
   let app: INestApplication;
   let chipService: ChipDenomsService;
+  let avatarService: DefaultAvatarService;
 
   beforeAll(async () => {
     const { module: ConfigTestModule } = createTestModule();
@@ -103,12 +114,14 @@ describe('ConfigController', () => {
     await app.init();
 
     chipService = moduleRef.get(ChipDenomsService);
+    avatarService = moduleRef.get(DefaultAvatarService);
 
     await chipService.update(defaultChips.denoms);
     await request(app.getHttpServer())
       .put('/config/table-theme')
       .send(mockTheme)
       .expect(200);
+    await avatarService.update('initial.png');
   });
 
   afterAll(async () => {
@@ -156,5 +169,23 @@ describe('ConfigController', () => {
       .expect(200);
 
     expect(res.body).toEqual(updated);
+  });
+
+  it('returns default avatar', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/config/default-avatar')
+      .expect(200);
+    expect(res.body).toEqual({ defaultAvatar: 'initial.png' });
+  });
+
+  it('updates default avatar', async () => {
+    await request(app.getHttpServer())
+      .put('/config/default-avatar')
+      .send({ defaultAvatar: 'updated.png' })
+      .expect(200);
+    const res = await request(app.getHttpServer())
+      .get('/config/default-avatar')
+      .expect(200);
+    expect(res.body).toEqual({ defaultAvatar: 'updated.png' });
   });
 });

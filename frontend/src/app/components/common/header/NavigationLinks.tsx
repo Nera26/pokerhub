@@ -6,16 +6,15 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { fetchNavItems } from '@/lib/api/nav';
+import { useSettings } from '@/hooks/useSettings';
 
 interface NavigationLinksProps {
   balance: string;
 }
 
-const DEFAULT_AVATAR =
-  'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
-
 export default function NavigationLinks({ balance }: NavigationLinksProps) {
   const { avatarUrl } = useAuth();
+  const { data: settings } = useSettings();
   const {
     data: items = [],
     isLoading,
@@ -36,7 +35,11 @@ export default function NavigationLinks({ balance }: NavigationLinksProps) {
               className="flex items-center text-text-secondary hover:text-accent-yellow transition-colors duration-200"
             >
               <Image
-                src={avatarUrl || DEFAULT_AVATAR}
+                src={
+                  avatarUrl ||
+                  settings?.defaultAvatar ||
+                  'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='
+                }
                 alt="User Avatar"
                 width={32}
                 height={32}
