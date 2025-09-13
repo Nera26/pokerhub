@@ -4,25 +4,25 @@ import { useState } from 'react';
 import WalletSummary from '@/app/components/wallet/WalletSummary';
 import BankTransferModal from '@/app/components/wallet/BankTransferModal';
 import Modal from '@/app/components/ui/Modal';
-import { useWalletStatus, useIban } from '@/hooks/wallet';
+import { useWalletStatus, useIbanDetails } from '@/hooks/wallet';
 
 export const dynamic = 'force-dynamic';
 
 export default function WalletPage() {
   const { data: status } = useWalletStatus();
-  const { data: iban } = useIban();
+  const { data: ibanDetails } = useIbanDetails();
   const [mode, setMode] = useState<'deposit' | 'withdraw' | null>(null);
 
   if (!status) {
     return <p>Loading wallet...</p>;
   }
 
-  const bankDetails = iban
+  const bankDetails = ibanDetails
     ? {
-        bankName: 'Your Bank',
-        accountName: iban.holder,
-        bankAddress: '',
-        maskedAccountNumber: iban.masked,
+        bankName: ibanDetails.bankName,
+        accountName: ibanDetails.holder,
+        bankAddress: ibanDetails.bankAddress,
+        maskedAccountNumber: ibanDetails.ibanMasked,
       }
     : undefined;
 
@@ -34,7 +34,7 @@ export default function WalletPage() {
         kycVerified={status.kycVerified}
         currency={status.currency}
         onDeposit={() => setMode('deposit')}
-        onWithdraw={() => setMode('withdraw')}
+        onWithdraw={() => bankDetails && setMode('withdraw')}
       />
 
       <Modal isOpen={mode === 'deposit'} onClose={() => setMode(null)}>
