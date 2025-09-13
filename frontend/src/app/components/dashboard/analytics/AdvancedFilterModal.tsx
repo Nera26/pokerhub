@@ -1,7 +1,6 @@
 'use client';
 
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes } from '@fortawesome/free-solid-svg-icons';
+import Modal from '../../ui/Modal';
 
 interface Props {
   open: boolean;
@@ -32,20 +31,11 @@ export default function AdvancedFilterModal({
   onClear,
   onClose,
 }: Props) {
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-card-bg p-6 rounded-2xl w-96 max-w-[90vw]">
+    <Modal isOpen={open} onClose={onClose}>
+      <div className="w-96 max-w-[90vw]">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-bold">Advanced Filters</h3>
-          <button
-            onClick={onClose}
-            className="text-text-secondary hover:text-text-primary"
-            title="Close"
-          >
-            <FontAwesomeIcon icon={faTimes} />
-          </button>
         </div>
 
         <div className="space-y-4">
@@ -105,6 +95,6 @@ export default function AdvancedFilterModal({
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
