@@ -10,7 +10,7 @@ import {
 } from '@/lib/api/notifications';
 import type { ApiError, NotificationFilter } from '@/lib/api/notifications';
 import type { NotificationsResponse } from '@shared/types';
-import { useInvalidateMutationWithToast } from './useInvalidateMutationWithToast';
+import { useInvalidateMutation } from './useInvalidateMutation';
 
 export function useNotifications(
   options?: Omit<
@@ -45,7 +45,7 @@ export function useNotificationFilters(
 }
 
 export function useMarkAllRead() {
-  return useInvalidateMutationWithToast({
+  return useInvalidateMutation({
     mutationFn: markAllNotificationsRead,
     queryKey: ['notifications'],
     update: (previous) => ({
@@ -59,7 +59,7 @@ export function useMarkAllRead() {
 }
 
 export function useMarkRead() {
-  return useInvalidateMutationWithToast({
+  return useInvalidateMutation({
     mutationFn: (id: string) => markNotificationRead(id),
     queryKey: ['notifications'],
     update: (previous, id) => ({

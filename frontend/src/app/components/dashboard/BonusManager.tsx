@@ -12,7 +12,7 @@ import {
   deleteBonus,
   type Bonus,
 } from '@/lib/api/admin';
-import { useInvalidateMutationWithToast } from '@/hooks/useInvalidateMutationWithToast';
+import { useInvalidateMutation } from '@/hooks/useInvalidateMutation';
 import type { ApiError } from '@/lib/api/client';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -130,7 +130,7 @@ export default function BonusManager() {
     type: 'success',
   });
 
-  const createMutation = useInvalidateMutationWithToast({
+  const createMutation = useInvalidateMutation({
     mutationFn: createBonus,
     queryKey: ['admin-bonuses'],
     update: (previous, newBonus) => {
@@ -149,7 +149,7 @@ export default function BonusManager() {
     },
   });
 
-  const updateMutation = useInvalidateMutationWithToast<{
+  const updateMutation = useInvalidateMutation<{
     id: number;
     data: Partial<Bonus>;
   }>({
@@ -164,7 +164,7 @@ export default function BonusManager() {
     },
   });
 
-  const deleteMutation = useInvalidateMutationWithToast<number>({
+  const deleteMutation = useInvalidateMutation<number>({
     mutationFn: deleteBonus,
     queryKey: ['admin-bonuses'],
     update: (previous, id) => previous.filter((b) => b.id !== id),
@@ -175,7 +175,7 @@ export default function BonusManager() {
     },
   });
 
-  const toggleMutation = useInvalidateMutationWithToast<{
+  const toggleMutation = useInvalidateMutation<{
     id: number;
     status: BonusStatus;
     name: string;
