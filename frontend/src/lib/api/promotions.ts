@@ -1,4 +1,4 @@
-import { apiClient, ApiError } from './client';
+import { safeApiClient } from './utils';
 import {
   PromotionsResponseSchema,
   MessageResponseSchema,
@@ -9,28 +9,16 @@ import {
 export async function fetchPromotions({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<Promotion[]> {
-  try {
-    // Categories are arbitrary strings; return them without transformation.
-    return await apiClient('/api/promotions', PromotionsResponseSchema, {
-      signal,
-    });
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : (err as ApiError).message;
-    throw { message: `Failed to fetch promotions: ${message}` } as ApiError;
-  }
+  // Categories are arbitrary strings; return them without transformation.
+  return safeApiClient('/api/promotions', PromotionsResponseSchema, {
+    signal,
+    errorMessage: 'Failed to fetch promotions',
+  });
 }
 
 export async function claimPromotion(id: string): Promise<MessageResponse> {
-  try {
-    return await apiClient(
-      `/api/promotions/${id}/claim`,
-      MessageResponseSchema,
-      { method: 'POST' },
-    );
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : (err as ApiError).message;
-    throw { message: `Failed to claim promotion: ${message}` } as ApiError;
-  }
+  return safeApiClient(`/api/promotions/${id}/claim`, MessageResponseSchema, {
+    method: 'POST',
+    errorMessage: 'Failed to claim promotion',
+  });
 }
