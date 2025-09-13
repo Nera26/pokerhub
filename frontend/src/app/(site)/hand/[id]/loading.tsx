@@ -1,5 +1,6 @@
 'use client';
 
+import RouteLoading from '@/components/RouteLoading';
 import LoadingSection from '@/components/LoadingSection';
 import { fetchHandState } from '@/lib/api/hands';
 import { useQuery } from '@tanstack/react-query';
@@ -14,7 +15,7 @@ export default function LoadingHandPage() {
   });
 
   return (
-    <main className="container mx-auto px-4 py-6 text-text-primary">
+    <RouteLoading className="px-4 py-6 text-text-primary">
       {data && (
         <>
           <h1 className="text-xl font-bold mb-4">Hand {id}</h1>
@@ -22,6 +23,6 @@ export default function LoadingHandPage() {
         </>
       )}
       <LoadingSection />
-    </main>
+    </RouteLoading>
   );
 }
