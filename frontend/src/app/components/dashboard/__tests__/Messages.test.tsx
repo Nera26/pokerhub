@@ -19,27 +19,31 @@ jest.mock('@/lib/api/messages', () => ({
   markMessageRead: jest.fn(),
 }));
 
+function buildMessages() {
+  return {
+    messages: [
+      {
+        id: 1,
+        sender: 'Bob',
+        preview: 'Hello',
+        subject: 'Hi',
+        content: 'Hello there',
+        userId: '2',
+        avatar: '',
+        time: '',
+        read: false,
+      },
+    ],
+  };
+}
+
 describe('Messages', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   it('renders messages and allows replying', async () => {
-    (fetchMessages as jest.Mock).mockResolvedValue({
-      messages: [
-        {
-          id: 1,
-          sender: 'Bob',
-          preview: 'Hello',
-          subject: 'Hi',
-          content: 'Hello there',
-          userId: '2',
-          avatar: '',
-          time: '',
-          read: false,
-        },
-      ],
-    });
+    (fetchMessages as jest.Mock).mockResolvedValue(buildMessages());
     (replyMessage as jest.Mock).mockResolvedValue({});
     renderWithClient(<Messages />);
 
@@ -58,21 +62,7 @@ describe('Messages', () => {
   });
 
   it('marks messages as read when viewing', async () => {
-    (fetchMessages as jest.Mock).mockResolvedValue({
-      messages: [
-        {
-          id: 1,
-          sender: 'Bob',
-          preview: 'Hello',
-          subject: 'Hi',
-          content: 'Hello there',
-          userId: '2',
-          avatar: '',
-          time: '',
-          read: false,
-        },
-      ],
-    });
+    (fetchMessages as jest.Mock).mockResolvedValue(buildMessages());
     (markMessageRead as jest.Mock).mockResolvedValue({});
     renderWithClient(<Messages />);
 

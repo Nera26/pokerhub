@@ -1,15 +1,8 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import ManageTables from '../ManageTables';
-import {
-  fetchTables,
-  createTable,
-  updateTable,
-  deleteTable,
-} from '@/lib/api/table';
-import type { Table } from '@shared/types';
-import { renderWithClient } from './renderWithClient';
+import { createTable, updateTable } from '@/lib/api/table';
 import { fillTableForm } from './fillTableForm';
+import { searchTables } from './utils';
 
 jest.mock('@/lib/api/table', () => ({
   fetchTables: jest.fn(),
@@ -19,9 +12,6 @@ jest.mock('@/lib/api/table', () => ({
 }));
 
 describe('ManageTables', () => {
-  const mockFetchTables = fetchTables as jest.MockedFunction<
-    typeof fetchTables
-  >;
   const mockCreateTable = createTable as jest.MockedFunction<
     typeof createTable
   >;
@@ -59,21 +49,7 @@ describe('ManageTables', () => {
   });
 
   it('submits form to update table', async () => {
-    const table: Table = {
-      id: '1',
-      tableName: 'Main',
-      gameType: 'texas',
-      stakes: { small: 1, big: 2 },
-      players: { current: 0, max: 9 },
-      buyIn: { min: 50, max: 500 },
-      stats: { handsPerHour: 0, avgPot: 0, rake: 0 },
-      createdAgo: '1h',
-    };
-    mockFetchTables.mockResolvedValueOnce([table]);
-    renderWithClient(<ManageTables />);
-
-    await waitFor(() => screen.getByText('Main'));
-    await userEvent.click(screen.getByText(/update/i));
+    await searchTables();
 
     const nameInput = screen.getByLabelText(/table name/i);
     await userEvent.clear(nameInput);
@@ -92,22 +68,8 @@ describe('ManageTables', () => {
   });
 
   it('shows error when update table fails', async () => {
-    const table: Table = {
-      id: '1',
-      tableName: 'Main',
-      gameType: 'texas',
-      stakes: { small: 1, big: 2 },
-      players: { current: 0, max: 9 },
-      buyIn: { min: 50, max: 500 },
-      stats: { handsPerHour: 0, avgPot: 0, rake: 0 },
-      createdAgo: '1h',
-    };
-    mockFetchTables.mockResolvedValueOnce([table]);
     mockUpdateTable.mockRejectedValue(new Error('fail'));
-    renderWithClient(<ManageTables />);
-
-    await waitFor(() => screen.getByText('Main'));
-    await userEvent.click(screen.getByText(/update/i));
+    await searchTables();
     await userEvent.click(
       screen.getByRole('button', { name: /update table/i }),
     );
