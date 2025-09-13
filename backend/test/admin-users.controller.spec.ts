@@ -5,7 +5,11 @@ import { AdminUsersController } from '../src/routes/admin-users.controller';
 import { UsersService } from '../src/users/users.service';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
-import { DashboardUserListSchema, DashboardUserSchema } from '@shared/types';
+import {
+  DashboardUserListSchema,
+  DashboardUserSchema,
+  UserMetaResponseSchema,
+} from '@shared/types';
 
 describe('AdminUsersController', () => {
   let app: INestApplication;
@@ -45,6 +49,15 @@ describe('AdminUsersController', () => {
     const parsed = DashboardUserListSchema.parse(res.body);
     expect(parsed[0].username).toBe('alice');
     expect(list).toHaveBeenCalledWith(5);
+  });
+
+  it('returns user meta', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/admin/users/meta')
+      .expect(200);
+    const parsed = UserMetaResponseSchema.parse(res.body);
+    expect(parsed.roles[0].value).toBe('Player');
+    expect(parsed.statuses[0].value).toBe('Active');
   });
 
   it('creates user', async () => {

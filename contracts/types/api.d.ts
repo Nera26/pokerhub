@@ -1702,6 +1702,19 @@ export interface paths {
       };
     };
   };
+  "/admin/users/meta": {
+    /** Get user metadata */
+    get: {
+      responses: {
+        /** @description Roles and statuses */
+        200: {
+          content: {
+            "application/json": components["schemas"]["UserMetaResponse"];
+          };
+        };
+      };
+    };
+  };
   "/admin/tournaments/formats": {
     /** List tournament formats */
     get: {
@@ -2692,6 +2705,22 @@ export interface components {
       avatarKey?: string;
       balance: number;
       banned: boolean;
+    };
+    /** @enum {string} */
+    UserRole: "Player" | "Admin";
+    /** @enum {string} */
+    UserStatus: "Active" | "Frozen" | "Banned";
+    UserRoleOption: {
+      value: components["schemas"]["UserRole"];
+      label: string;
+    };
+    UserStatusOption: {
+      value: components["schemas"]["UserStatus"];
+      label: string;
+    };
+    UserMetaResponse: {
+      roles: components["schemas"]["UserRoleOption"][];
+      statuses: components["schemas"]["UserStatusOption"][];
     };
     UserProfile: {
       username: string;
