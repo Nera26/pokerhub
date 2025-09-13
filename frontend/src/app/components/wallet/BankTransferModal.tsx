@@ -6,17 +6,15 @@ import { faTimes } from '@fortawesome/free-solid-svg-icons/faTimes';
 import Tooltip from '../ui/Tooltip';
 import Button from '../ui/Button';
 import BankTransferForm from './BankTransferForm';
-import { BankTransferDepositResponse } from '@shared/wallet.schema';
+import InlineError from '../ui/InlineError';
+import { useApiError } from '@/hooks/useApiError';
+import { useBankTransfer, useWithdraw } from '@/hooks/wallet';
+import type { BankTransferDepositResponse } from '@shared/wallet.schema';
 
 interface BaseProps {
   mode: 'deposit' | 'withdraw';
   onClose: () => void;
   currency: string;
-  onSubmit: (payload: {
-    amount: number;
-    deviceId: string;
-    currency: string;
-  }) => void | Promise<BankTransferDepositResponse | void>;
 }
 
 interface DepositProps extends BaseProps {
@@ -37,19 +35,36 @@ interface WithdrawProps extends BaseProps {
 export type BankTransferModalProps = DepositProps | WithdrawProps;
 
 export default function BankTransferModal(props: BankTransferModalProps) {
-  const { mode, onClose, currency, onSubmit } = props;
+  const { mode, onClose, currency } = props;
   const [details, setDetails] = useState<BankTransferDepositResponse | null>(
     null,
   );
+  const [status, setStatus] = useState<
+    'idle' | 'submitting' | 'success' | 'error'
+  >('idle');
+
+  const bankTransfer = useBankTransfer();
+  const withdraw = useWithdraw();
+  const activeMutation = mode === 'withdraw' ? withdraw : bankTransfer;
+  const errorMessage = useApiError(activeMutation.error);
 
   const handleSubmit = async (payload: {
     amount: number;
     deviceId: string;
     currency: string;
   }) => {
-    const res = await onSubmit(payload);
-    if (mode === 'deposit') {
-      setDetails(res as BankTransferDepositResponse);
+    activeMutation.reset?.();
+    setStatus('submitting');
+    try {
+      if (mode === 'withdraw') {
+        await withdraw.mutateAsync(payload);
+      } else {
+        const res = await bankTransfer.mutateAsync(payload);
+        setDetails(res);
+      }
+      setStatus('success');
+    } catch {
+      setStatus('error');
     }
   };
 
@@ -61,8 +76,7 @@ export default function BankTransferModal(props: BankTransferModalProps) {
       // ignore
     }
   };
-
-  if (mode === 'deposit' && details) {
+  if (mode === 'deposit' && status === 'success' && details) {
     return (
       <div className="space-y-4">
         <h2 className="text-xl sm:text-2xl font-bold text-text-primary">
@@ -105,10 +119,31 @@ export default function BankTransferModal(props: BankTransferModalProps) {
     );
   }
 
+  if (mode === 'withdraw' && status === 'success') {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-text-primary">
+          Withdraw Funds
+        </h2>
+        <p className="text-text-primary">Withdrawal requested.</p>
+        <Button
+          type="button"
+          variant="primary"
+          className="w-full uppercase py-3"
+          onClick={onClose}
+        >
+          Close
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div
+      aria-busy={status === 'submitting'}
       className={
-        mode === 'withdraw' ? 'max-h-[90vh] overflow-y-auto' : 'space-y-4'
+        (status === 'submitting' ? 'pointer-events-none opacity-50 ' : '') +
+        (mode === 'withdraw' ? 'max-h-[90vh] overflow-y-auto' : 'space-y-4')
       }
     >
       {mode === 'withdraw' ? (
@@ -147,6 +182,8 @@ export default function BankTransferModal(props: BankTransferModalProps) {
           )}
         </BankTransferForm>
       </div>
+
+      {errorMessage && <InlineError message={errorMessage} />}
 
       {mode === 'withdraw' && props.bankDetails && (
         <div className="mb-6 bg-primary-bg rounded-xl p-4">
