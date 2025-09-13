@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import ErrorBoundary from '@/app/components/ui/ErrorBoundary';
 import { useTables, type Table } from '@/hooks/useLobbyData';
 import useVirtualizedList from '@/hooks/useVirtualizedList';
+import SkeletonGrid from '@/app/components/common/SkeletonGrid';
 
 const LiveTableCard = dynamic(
   () => import('@/app/components/home/LiveTableCard'),
@@ -56,15 +57,7 @@ export default function TablePage() {
         className={isVirtualized ? 'h-96 overflow-auto' : undefined}
       >
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className="rounded-2xl bg-card-bg h-48 animate-pulse"
-                aria-label="Loading table"
-              />
-            ))}
-          </div>
+          <SkeletonGrid rows={6} cardHeight="h-48" />
         ) : tables.length === 0 ? (
           <p>No tables available.</p>
         ) : isVirtualized ? (
