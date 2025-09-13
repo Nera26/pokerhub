@@ -1,6 +1,9 @@
-import { z } from 'zod';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
-import { NavIconsResponseSchema } from '@shared/types';
+import {
+  NavItemsResponseSchema,
+  type NavItem as NavItemResponse,
+  NavIconsResponseSchema,
+} from '@shared/types';
 import { apiClient, type ApiError } from './client';
 
 export type NavItem = {
@@ -11,15 +14,6 @@ export type NavItem = {
   badge?: number;
   avatar?: string;
 };
-
-const NavItemSchema = z.object({
-  flag: z.string(),
-  href: z.string(),
-  label: z.string(),
-  icon: z.string().optional(),
-});
-
-const NavItemsSchema = z.array(NavItemSchema);
 
 function toIconDefinition(
   name: string,
@@ -43,7 +37,9 @@ export async function fetchNavItems({
 }: { signal?: AbortSignal } = {}): Promise<NavItem[]> {
   try {
     const [items, icons] = await Promise.all([
-      apiClient('/api/nav-items', NavItemsSchema, { signal }),
+      apiClient('/api/nav-items', NavItemsResponseSchema, {
+        signal,
+      }) as Promise<NavItemResponse[]>,
       apiClient('/api/nav-icons', NavIconsResponseSchema, { signal }).catch(
         () => [],
       ),
@@ -53,7 +49,7 @@ export async function fetchNavItems({
       const def = toIconDefinition(name, svg);
       if (def) iconMap.set(name, def);
     }
-    return items.map(({ icon, ...rest }) => ({
+    return items.map(({ icon, ...rest }: NavItemResponse) => ({
       ...rest,
       ...(icon && iconMap.has(icon) ? { icon: iconMap.get(icon)! } : {}),
     }));

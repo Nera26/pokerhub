@@ -44,6 +44,19 @@ export interface paths {
       };
     };
   };
+  "/nav-items": {
+    /** List navigation items */
+    get: {
+      responses: {
+        /** @description Navigation items */
+        200: {
+          content: {
+            "application/json": components["schemas"]["NavItemsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/site-metadata": {
     /** Get site metadata */
     get: {
@@ -2931,6 +2944,13 @@ export interface components {
       svg: string;
     };
     NavIconsResponse: components["schemas"]["NavIcon"][];
+    NavItem: {
+      flag: string;
+      href: string;
+      label: string;
+      icon?: string;
+    };
+    NavItemsResponse: components["schemas"]["NavItem"][];
     SiteMetadataResponse: {
       title: string;
       description: string;

@@ -73,7 +73,7 @@ const baseNavItems = [
   },
   {
     flag: 'notifications',
-    href: '/notification',
+    href: '/notifications',
     label: 'Alerts',
     icon: faBell,
   },

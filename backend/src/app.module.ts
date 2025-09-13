@@ -33,6 +33,7 @@ import { TranslationsController } from './routes/translations.controller';
 import { ConfigController } from './routes/config.controller';
 import { PrecacheController } from './routes/precache.controller';
 import { NavIconsController } from './routes/nav-icons.controller';
+import { NavItemsController } from './routes/nav-items.controller';
 import { HistoryTabsController } from './routes/history-tabs.controller';
 import { ChartController } from './routes/chart.controller';
 import { MetadataController } from './routes/metadata.controller';
@@ -163,20 +164,21 @@ import { DefaultAvatarEntity } from './database/entities/default-avatar.entity';
     CtasModule,
     HistoryModule,
   ],
-  controllers: [
-    AppController,
-    AdminMessagesController,
-    AdminBonusController,
-    PromotionsController,
-    LanguagesController,
-    TranslationsController,
-    ConfigController,
-    PrecacheController,
-    NavIconsController,
-    HistoryTabsController,
-    ChartController,
-    MetadataController,
-  ],
+    controllers: [
+      AppController,
+      AdminMessagesController,
+      AdminBonusController,
+      PromotionsController,
+      LanguagesController,
+      TranslationsController,
+      ConfigController,
+      PrecacheController,
+      NavIconsController,
+      NavItemsController,
+      HistoryTabsController,
+      ChartController,
+      MetadataController,
+    ],
   providers: [
     AppService,
     { provide: 'API_CONTRACT_VERSION', useValue: API_CONTRACT_VERSION },

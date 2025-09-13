@@ -140,7 +140,7 @@ export default function NotificationDropdown({
 
           <div className="pt-3">
             <Link
-              href="/notification"
+              href="/notifications"
               prefetch
               onClick={() => close()}
               className="block text-center w-full bg-accent-yellow text-black font-semibold py-2 rounded-xl hover:brightness-110"

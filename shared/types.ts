@@ -41,6 +41,16 @@ export type NavIcon = z.infer<typeof NavIconSchema>;
 export const NavIconsResponseSchema = z.array(NavIconSchema);
 export type NavIconsResponse = z.infer<typeof NavIconsResponseSchema>;
 
+export const NavItemSchema = z.object({
+  flag: z.string(),
+  href: z.string(),
+  label: z.string(),
+  icon: z.string().optional(),
+});
+export type NavItem = z.infer<typeof NavItemSchema>;
+export const NavItemsResponseSchema = z.array(NavItemSchema);
+export type NavItemsResponse = z.infer<typeof NavItemsResponseSchema>;
+
 // Site metadata
 export {
   SiteMetadataResponseSchema,

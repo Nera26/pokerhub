@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.24.0
+  version: 2.25.0
 paths:
   /status:
     get:
@@ -33,6 +33,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NavIconsResponse'
+  /nav-items:
+    get:
+      summary: List navigation items
+      responses:
+        '200':
+          description: Navigation items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NavItemsResponse'
   /site-metadata:
     get:
       summary: Get site metadata
@@ -3658,6 +3668,22 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/NavIcon'
+    NavItem:
+      type: object
+      required: [flag, href, label]
+      properties:
+        flag:
+          type: string
+        href:
+          type: string
+        label:
+          type: string
+        icon:
+          type: string
+    NavItemsResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/NavItem'
     SiteMetadataResponse:
       type: object
       required: [title, description, imagePath, defaultAvatar]
