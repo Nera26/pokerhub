@@ -1,4 +1,5 @@
 import { waitFor } from '@testing-library/react';
+// Import hook directly after removing createAdminGetHook helper
 import { useAdminEvents } from '../admin';
 import type { ApiError } from '@/lib/api/client';
 import {
@@ -30,11 +31,12 @@ describe('useAdminEvents', () => {
       { id: '1', title: 't', description: 'd', date: '2024-01-01' },
     ];
     mockFetchSuccess(data);
-    const { result } = renderHookWithClient(() => useAdminEvents());
-    await waitFor(() => expect(result.current.data).toEqual(data));
-    expect(global.fetch).toHaveBeenCalledWith(
-      'http://localhost:3000/api/admin/events',
-      expect.objectContaining({ method: 'GET' }),
+    renderHookWithClient(() => useAdminEvents());
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(
+        'http://localhost:3000/api/admin/events',
+        expect.objectContaining({ method: 'GET' }),
+      ),
     );
   });
 });

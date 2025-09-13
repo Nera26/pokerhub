@@ -1,6 +1,6 @@
 import { waitFor } from '@testing-library/react';
-import { useAuditSummary } from '../useAuditSummary';
 import { useAuditAlerts } from '../admin';
+import { useAuditSummary } from '../useAuditSummary';
 import type { ApiError } from '@/lib/api/client';
 import {
   renderHookWithClient,
