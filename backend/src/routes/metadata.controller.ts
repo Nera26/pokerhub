@@ -4,6 +4,7 @@ import {
   SiteMetadataResponseSchema,
   type SiteMetadataResponse,
 } from '@shared/types';
+import { DefaultAvatarService } from '../services/default-avatar.service';
 
 const DEFAULT_TITLE = 'PokerHub';
 const DEFAULT_DESCRIPTION =
@@ -13,14 +14,19 @@ const DEFAULT_IMAGE = '/pokerhub-logo.svg';
 @ApiTags('site')
 @Controller('site-metadata')
 export class MetadataController {
+  constructor(private readonly avatars: DefaultAvatarService) {}
+
   @Get()
   @ApiOperation({ summary: 'Get site metadata' })
   @ApiResponse({ status: 200, description: 'Site metadata' })
-  get(): SiteMetadataResponse {
+  async get(): Promise<SiteMetadataResponse> {
     const data = {
       title: process.env.SITE_TITLE ?? DEFAULT_TITLE,
       description: process.env.SITE_DESCRIPTION ?? DEFAULT_DESCRIPTION,
       imagePath: process.env.SITE_IMAGE_PATH ?? DEFAULT_IMAGE,
+      defaultAvatar:
+        (await this.avatars.get()) ||
+        'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=',
     };
     return SiteMetadataResponseSchema.parse(data);
   }

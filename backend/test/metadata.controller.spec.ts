@@ -3,9 +3,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { MetadataController } from '../src/routes/metadata.controller';
 import type { SiteMetadataResponse } from '@shared/types';
+import { DefaultAvatarService } from '../src/services/default-avatar.service';
 
 describe('MetadataController', () => {
   let app: INestApplication;
+  const defaultAvatar = 'https://example.com/avatar.png';
 
   beforeAll(async () => {
     process.env.SITE_TITLE = 'My Title';
@@ -14,6 +16,12 @@ describe('MetadataController', () => {
 
     const moduleRef: TestingModule = await Test.createTestingModule({
       controllers: [MetadataController],
+      providers: [
+        {
+          provide: DefaultAvatarService,
+          useValue: { get: jest.fn().mockResolvedValue(defaultAvatar) },
+        },
+      ],
     }).compile();
 
     app = moduleRef.createNestApplication();
@@ -33,6 +41,7 @@ describe('MetadataController', () => {
       title: 'My Title',
       description: 'My Desc',
       imagePath: '/logo.png',
+      defaultAvatar,
     });
   });
 });

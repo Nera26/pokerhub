@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.23.0
+  version: 2.24.0
 paths:
   /status:
     get:
@@ -3632,13 +3632,15 @@ components:
         $ref: '#/components/schemas/NavIcon'
     SiteMetadataResponse:
       type: object
-      required: [title, description, imagePath]
+      required: [title, description, imagePath, defaultAvatar]
       properties:
         title:
           type: string
         description:
           type: string
         imagePath:
+          type: string
+        defaultAvatar:
           type: string
     HistoryTabItem:
       type: object

@@ -20,8 +20,7 @@ const Sidebar = dynamic(() => import('@/app/components/dashboard/Sidebar'), {
 });
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import DashboardModule from '@/app/components/dashboard/DashboardModule';
-import { useSettings } from '@/hooks/useSettings';
-import { DEFAULT_AVATAR_URL } from '@shared/constants';
+import { getSiteMetadata } from '@/lib/metadata';
 
 function isSidebarTab(v: string | null, tabs: SidebarTab[]): v is SidebarTab {
   return !!v && tabs.includes(v as SidebarTab);
@@ -117,7 +116,10 @@ function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const avatarUrl = useAuthStore((s) => s.avatarUrl);
   const setAvatarUrl = useAuthStore((s) => s.setAvatarUrl);
-  const { data: settings } = useSettings();
+  const { data: meta } = useQuery({
+    queryKey: ['site-metadata'],
+    queryFn: getSiteMetadata,
+  });
   const {
     data: metrics,
     error: metricsError,
@@ -199,7 +201,11 @@ function DashboardPage() {
               error={metricsError}
             />
             <Image
-              src={avatarUrl ?? settings?.defaultAvatar ?? DEFAULT_AVATAR_URL}
+              src={
+                avatarUrl ??
+                meta?.defaultAvatar ??
+                'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='
+              }
               alt="Admin avatar"
               width={40}
               height={40}
