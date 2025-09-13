@@ -10,5 +10,3 @@ export const usePromotions = createQueryHook<Promotion[]>(
   'promotions',
   { staleTime: 60_000, refetchOnWindowFocus: false },
 );
-
-export default usePromotions;
