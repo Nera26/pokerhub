@@ -21,11 +21,9 @@ export type ServiceStatusResponse = z.infer<
 // Wallet types are available via @shared/wallet.schema
 
 export {
-  TransactionColumnSchema,
   TransactionColumnsResponseSchema,
 } from '../backend/src/schemas/transactions';
 export type {
-  TransactionColumn,
   TransactionColumnsResponse,
 } from '../backend/src/schemas/transactions';
 
@@ -127,12 +125,10 @@ export type {
 
 export {
   GameTypeSchema,
-  GameTypeWithLabelSchema,
   GameTypeListSchema,
 } from '../backend/src/schemas/game-types';
 export type {
   GameType,
-  GameTypeWithLabel,
   GameTypeList,
 } from '../backend/src/schemas/game-types';
 
@@ -166,8 +162,6 @@ export type {
 } from '../backend/src/schemas/tables';
 
 export {
-  AuditLogTypeSchema,
-  AuditLogEntrySchema,
   AuditLogsResponseSchema,
   AuditLogTypesResponseSchema,
   AuditSummarySchema,
