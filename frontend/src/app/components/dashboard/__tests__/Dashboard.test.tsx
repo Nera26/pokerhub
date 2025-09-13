@@ -48,23 +48,27 @@ jest.mock('@/app/components/dashboard/charts/RevenueDonut', () => ({
   ),
 }));
 
+const resetMocks = () => {
+  mockMetrics.mockReset();
+  activityMock.mockReset();
+  revenueMock.mockReset();
+  usersMock.mockReset();
+  tablesMock.mockReset();
+  (fetchProfile as jest.Mock).mockReset();
+  revenueMock.mockReturnValue({ data: [], isLoading: false, error: null });
+  activityMock.mockReturnValue({
+    data: { labels: [], data: [] },
+    isLoading: false,
+    error: null,
+  });
+  usersMock.mockReturnValue({ data: [], isLoading: false, error: null });
+  tablesMock.mockReturnValue({ data: [], isLoading: false, error: null });
+  (fetchProfile as jest.Mock).mockResolvedValue({ avatarUrl: null });
+};
+
 describe('Dashboard metrics', () => {
   beforeEach(() => {
-    mockMetrics.mockReset();
-    activityMock.mockReset();
-    revenueMock.mockReset();
-    usersMock.mockReset();
-    tablesMock.mockReset();
-    (fetchProfile as jest.Mock).mockReset();
-    revenueMock.mockReturnValue({ data: [], isLoading: false, error: null });
-    activityMock.mockReturnValue({
-      data: { labels: [], data: [] },
-      isLoading: false,
-      error: null,
-    });
-    usersMock.mockReturnValue({ data: [], isLoading: false, error: null });
-    tablesMock.mockReturnValue({ data: [], isLoading: false, error: null });
-    (fetchProfile as jest.Mock).mockResolvedValue({ avatarUrl: null });
+    resetMocks();
   });
 
   it('shows loading state', () => {
@@ -129,14 +133,8 @@ describe('Dashboard metrics', () => {
 
 describe('Dashboard recent users avatar', () => {
   beforeEach(() => {
+    resetMocks();
     mockMetrics.mockReturnValue({ data: {}, isLoading: false, error: null });
-    revenueMock.mockReturnValue({ data: [], isLoading: false, error: null });
-    activityMock.mockReturnValue({
-      data: { labels: [], data: [] },
-      isLoading: false,
-      error: null,
-    });
-    tablesMock.mockReturnValue({ data: [], isLoading: false, error: null });
     usersMock.mockReturnValue({
       data: [{ id: '1', username: 'bob', balance: 0 }],
       isLoading: false,
