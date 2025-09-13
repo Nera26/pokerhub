@@ -4,13 +4,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NextIntlClientProvider } from 'next-intl';
 import { useRouter, useParams } from 'next/navigation';
 import LanguageSelector from '@/app/components/common/LanguageSelector';
-import { fetchLanguages } from '@/lib/api/languages';
+import { fetchLanguages } from '@/lib/api/translations';
 
 jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
   useParams: jest.fn(),
 }));
-jest.mock('@/lib/api/languages', () => ({ fetchLanguages: jest.fn() }));
+jest.mock('@/lib/api/translations', () => ({ fetchLanguages: jest.fn() }));
 
 function renderComponent() {
   const client = new QueryClient();

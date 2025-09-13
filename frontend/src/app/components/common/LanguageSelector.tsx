@@ -3,7 +3,7 @@
 import { useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { fetchLanguages } from '@/lib/api/languages';
+import { fetchLanguages } from '@/lib/api/translations';
 import type { LanguagesResponse } from '@shared/types';
 
 export default function LanguageSelector() {
