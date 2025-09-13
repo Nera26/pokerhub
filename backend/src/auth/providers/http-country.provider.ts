@@ -1,3 +1,5 @@
+import { CountryProvider } from './country-provider';
+
 interface CountryResponse {
   countryCode?: string;
   CountryCode?: string;
@@ -27,5 +29,16 @@ export async function fetchCountry(
     data.Country ||
     ''
   );
+}
+
+export class HttpCountryProvider implements CountryProvider {
+  constructor(
+    private readonly url: string,
+    private readonly headers: HeadersInit = {},
+  ) {}
+
+  getCountry(ip: string): Promise<string> {
+    return fetchCountry(ip, { url: this.url, headers: this.headers });
+  }
 }
 

@@ -1,6 +1,6 @@
 import { fetchCountry } from '../../src/auth/providers/http-country.provider';
-import { GbgProvider } from '../../src/auth/providers/gbg.provider';
-import { TruliooProvider } from '../../src/auth/providers/trulioo.provider';
+import { createGbgProvider } from '../../src/auth/providers/gbg.provider';
+import { createTruliooProvider } from '../../src/auth/providers/trulioo.provider';
 
 describe('fetchCountry', () => {
   afterEach(() => jest.restoreAllMocks());
@@ -34,7 +34,7 @@ describe('fetchCountry', () => {
   });
 });
 
-describe('GbgProvider', () => {
+describe('createGbgProvider', () => {
   afterEach(() => jest.restoreAllMocks());
 
   it('fetches country via GBG API', async () => {
@@ -42,9 +42,10 @@ describe('GbgProvider', () => {
       ok: true,
       json: async () => ({ countryCode: 'GB' }),
     } as any);
-    const provider = new GbgProvider('https://api.gbgplc.com/ip/v1', {
-      Authorization: 'Bearer gbg-key',
-    });
+    const provider = createGbgProvider(
+      'https://api.gbgplc.com/ip/v1',
+      'gbg-key',
+    );
     await expect(provider.getCountry('1.2.3.4')).resolves.toBe('GB');
     expect(mock).toHaveBeenCalledWith(
       'https://api.gbgplc.com/ip/v1/1.2.3.4',
@@ -56,16 +57,17 @@ describe('GbgProvider', () => {
     jest
       .spyOn(global as any, 'fetch')
       .mockResolvedValue({ ok: false, status: 404 } as any);
-    const provider = new GbgProvider('https://api.gbgplc.com/ip/v1', {
-      Authorization: 'Bearer gbg-key',
-    });
+    const provider = createGbgProvider(
+      'https://api.gbgplc.com/ip/v1',
+      'gbg-key',
+    );
     await expect(provider.getCountry('1.2.3.4')).rejects.toThrow(
       'Country lookup failed: 404',
     );
   });
 });
 
-describe('TruliooProvider', () => {
+describe('createTruliooProvider', () => {
   afterEach(() => jest.restoreAllMocks());
 
   it('fetches country via Trulioo API', async () => {
@@ -73,9 +75,10 @@ describe('TruliooProvider', () => {
       ok: true,
       json: async () => ({ countryCode: 'CA' }),
     } as any);
-    const provider = new TruliooProvider('https://api.trulioo.com/ip/v1', {
-      'x-trulioo-api-key': 'trulioo-key',
-    });
+    const provider = createTruliooProvider(
+      'https://api.trulioo.com/ip/v1',
+      'trulioo-key',
+    );
     await expect(provider.getCountry('5.6.7.8')).resolves.toBe('CA');
     expect(mock).toHaveBeenCalledWith(
       'https://api.trulioo.com/ip/v1/5.6.7.8',
@@ -87,9 +90,10 @@ describe('TruliooProvider', () => {
     jest
       .spyOn(global as any, 'fetch')
       .mockResolvedValue({ ok: false, status: 500 } as any);
-    const provider = new TruliooProvider('https://api.trulioo.com/ip/v1', {
-      'x-trulioo-api-key': 'trulioo-key',
-    });
+    const provider = createTruliooProvider(
+      'https://api.trulioo.com/ip/v1',
+      'trulioo-key',
+    );
     await expect(provider.getCountry('5.6.7.8')).rejects.toThrow(
       'Country lookup failed: 500',
     );

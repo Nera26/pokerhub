@@ -1,14 +1,12 @@
 import { CountryProvider } from './country-provider';
-import { fetchCountry } from './http-country.provider';
+import { HttpCountryProvider } from './http-country.provider';
 
-export class GbgProvider implements CountryProvider {
-  constructor(
-    private readonly url: string,
-    private readonly headers: HeadersInit,
-  ) {}
-
-  getCountry(ip: string): Promise<string> {
-    return fetchCountry(ip, { url: this.url, headers: this.headers });
-  }
+export function createGbgProvider(
+  url: string,
+  apiKey: string,
+): CountryProvider {
+  return new HttpCountryProvider(url, {
+    Authorization: `Bearer ${apiKey}`,
+  });
 }
 
