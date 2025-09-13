@@ -4,8 +4,8 @@ import {
   WalletTestContext,
   createWalletServices,
   expectLedgerBalances,
+  walletAccounts,
 } from './test-utils';
-import { walletAccounts } from './fixtures';
 
 describe('Settlement crash recovery', () => {
   const userId = '11111111-1111-1111-1111-111111111111';

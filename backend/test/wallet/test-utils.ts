@@ -17,9 +17,11 @@ import { ConfigService } from '@nestjs/config';
 import { WebhookController } from '../../src/wallet/webhook.controller';
 import { verifySignature } from '../../src/wallet/verify-signature';
 import * as fc from 'fast-check';
+import { walletAccounts } from './accounts.fixture';
 
 // Re-exported for compatibility with legacy tests
 export { createDataSource as createInMemoryDb } from '../utils/pgMem';
+export { walletAccounts };
 
 export function createWalletServices(dataSource: DataSource) {
   const events: EventPublisher = { emit: jest.fn() } as any;
@@ -138,38 +140,7 @@ export async function createWalletWebhookContext() {
 }
 
 export async function seedWalletAccounts(repo: Repository<Account>) {
-  await repo.save([
-    {
-      id: '11111111-1111-1111-1111-111111111111',
-      name: 'user',
-      balance: 1000,
-      currency: 'USD',
-    },
-    {
-      id: '00000000-0000-0000-0000-000000000001',
-      name: 'reserve',
-      balance: 0,
-      currency: 'USD',
-    },
-    {
-      id: '00000000-0000-0000-0000-000000000002',
-      name: 'house',
-      balance: 0,
-      currency: 'USD',
-    },
-    {
-      id: '00000000-0000-0000-0000-000000000003',
-      name: 'rake',
-      balance: 0,
-      currency: 'USD',
-    },
-    {
-      id: '00000000-0000-0000-0000-000000000004',
-      name: 'prize',
-      balance: 0,
-      currency: 'USD',
-    },
-  ]);
+  await repo.save(walletAccounts);
 }
 
 export async function resetLedger(repos: {

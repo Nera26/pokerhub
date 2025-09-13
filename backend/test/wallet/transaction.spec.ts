@@ -4,8 +4,8 @@ import {
   setupWalletTest,
   WalletTestContext,
   expectLedgerBalances,
+  walletAccounts,
 } from './test-utils';
-import { walletAccounts } from './fixtures';
 
 describe('WalletService transactions', () => {
   let ctx: WalletTestContext;
