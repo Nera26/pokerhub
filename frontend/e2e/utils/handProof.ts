@@ -1,6 +1,7 @@
 import { execSync } from 'child_process';
 import path from 'path';
-import { io } from 'socket.io-client';
+import { io, type Socket } from 'socket.io-client';
+import { expect, type Page } from '@playwright/test';
 
 export async function waitFor(url: string, timeout = 60_000) {
   const start = Date.now();
@@ -38,6 +39,26 @@ export function tearDown() {
       cwd: rootDir,
     },
   );
+}
+
+export async function playHand(
+  page: Page,
+): Promise<{ handId: string; socket: Socket }> {
+  const { socket, events } = recordSocketEvents();
+
+  await page.goto('/login');
+  await page.fill('input[name="email"]', 'test@example.com');
+  await page.fill('input[name="password"]', 'password');
+  await page.click('button:has-text("Login")');
+
+  await page.click('text=Join Table');
+  await page.click('text=Bet');
+
+  await expect
+    .poll(() => events.end?.handId, { timeout: 60_000 })
+    .not.toBeUndefined();
+
+  return { handId: events.end.handId as string, socket };
 }
 
 export function recordSocketEvents() {

@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { bringUp, tearDown, recordSocketEvents } from './utils/handProof';
+import { bringUp, tearDown, playHand } from './utils/handProof';
 import { z } from 'zod';
 import { verifyProof } from '@shared/verify';
+import { execSync } from 'child_process';
+import path from 'path';
 
 const HandProofResponseSchema = z.object({
   seed: z.string(),
@@ -19,21 +21,7 @@ test.describe('hand proof fairness', () => {
   });
 
   test('plays a hand and verifies proof', async ({ page }) => {
-    const { socket, events } = recordSocketEvents();
-
-    await page.goto('/login');
-    await page.fill('input[name="email"]', 'test@example.com');
-    await page.fill('input[name="password"]', 'password');
-    await page.click('button:has-text("Login")');
-
-    await page.click('text=Join Table');
-    await page.click('text=Bet');
-
-    await expect
-      .poll(() => events.end?.handId, { timeout: 60_000 })
-      .not.toBeUndefined();
-
-    const handId = events.end.handId;
+    const { handId, socket } = await playHand(page);
 
     const [resp] = await Promise.all([
       page.waitForResponse((r) => r.url().includes(`/hands/${handId}/proof`)),
@@ -50,6 +38,15 @@ test.describe('hand proof fairness', () => {
       page.getByRole('heading', { name: 'Fairness Proof' }),
     ).toBeVisible();
     await expect(page.getByText('Verification: valid')).toBeVisible();
+
+    if (process.env.VERIFY_DECK === 'true') {
+      const cmd = path.resolve(__dirname, '../../bin/verify-proof');
+      const output = execSync(`${cmd} ${handId} --base http://localhost:3000`, {
+        cwd: path.resolve(__dirname, '..', '..'),
+        encoding: 'utf8',
+      });
+      expect(output).toContain('Proof verified');
+    }
 
     socket.disconnect();
   });
