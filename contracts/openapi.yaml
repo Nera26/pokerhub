@@ -198,6 +198,17 @@ paths:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
 
+  /auth/providers:
+    get:
+      summary: List auth providers
+      responses:
+        '200':
+          description: Auth providers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthProvidersResponse'
+
   /transactions/types:
     get:
       summary: List transaction types
@@ -2338,6 +2349,23 @@ components:
           type: string
       required:
         - message
+    AuthProvider:
+      type: object
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+        label:
+          type: string
+      required:
+        - name
+        - url
+        - label
+    AuthProvidersResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/AuthProvider'
     CTA:
       type: object
       properties:

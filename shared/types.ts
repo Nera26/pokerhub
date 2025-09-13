@@ -85,8 +85,16 @@ export type {
 } from '../backend/src/schemas/config';
 
 // Backend re-exports
-export { MessageResponseSchema } from '../backend/src/schemas/auth';
-export type { MessageResponse } from '../backend/src/schemas/auth';
+export {
+  MessageResponseSchema,
+  AuthProviderSchema,
+  AuthProvidersResponseSchema,
+} from '../backend/src/schemas/auth';
+export type {
+  MessageResponse,
+  AuthProvider,
+  AuthProvidersResponse,
+} from '../backend/src/schemas/auth';
 export {
   UserProfileSchema,
   MeResponseSchema,
