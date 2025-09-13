@@ -4,6 +4,7 @@ import {
   seedDefaultAccounts,
   USER_ID,
 } from './flow-test-utils';
+import { applyOperation } from './apply-operations';
 
 jest.setTimeout(20000);
 
@@ -47,30 +48,9 @@ describe('WalletService credit/debit zero-sum property', () => {
         try {
           for (const batch of batches) {
             await Promise.all(
-              batch.map(async (op) => {
-                switch (op.type) {
-                  case 'deposit':
-                    await (service as any).record('deposit', op.ref, [
-                      { account: accounts.house, amount: -op.amount },
-                      { account: accounts.user, amount: op.amount },
-                    ]);
-                    break;
-                  case 'withdraw':
-                    await (service as any).record('withdraw', op.ref, [
-                      { account: accounts.user, amount: -op.amount },
-                      { account: accounts.house, amount: op.amount },
-                    ]);
-                    break;
-                  case 'reserveCommit':
-                    await service.reserve(userId, op.amount, op.ref, 'USD', op.idempotencyKey);
-                    await service.commit(op.ref, op.amount, op.rake, 'USD', op.idempotencyKey);
-                    break;
-                  case 'reserveRollback':
-                    await service.reserve(userId, op.amount, op.ref, 'USD', op.idempotencyKey);
-                    await service.rollback(userId, op.amount, op.ref, 'USD');
-                    break;
-                }
-              }),
+              batch.map((op) =>
+                applyOperation(service, accounts, userId, op),
+              ),
             );
           }
           const total =
