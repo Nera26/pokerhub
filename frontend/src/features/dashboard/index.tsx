@@ -27,7 +27,7 @@ function isSidebarTab(v: string | null, tabs: SidebarTab[]): v is SidebarTab {
 }
 
 function TabFallback({ tab, online }: { tab: SidebarTab; online?: number }) {
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['admin-tab-meta', tab],
     queryFn: ({ signal }) => fetchAdminTabMeta(tab, { signal }),
   });
@@ -36,20 +36,15 @@ function TabFallback({ tab, online }: { tab: SidebarTab; online?: number }) {
     return <div>Loading {tab}...</div>;
   }
 
-  if (isError || !data) {
+  if (isError || !data || !data.enabled) {
+    const title = data?.title ?? tab;
+    const message =
+      data?.message ??
+      (error instanceof Error ? error.message : 'This section is coming soon.');
     return (
       <div className="bg-card-bg rounded-2xl p-8 card-shadow">
-        <h3 className="text-xl font-semibold mb-2 capitalize">{tab}</h3>
-        <p className="text-text-secondary">This section is coming soon.</p>
-      </div>
-    );
-  }
-
-  if (!data.enabled) {
-    return (
-      <div className="bg-card-bg rounded-2xl p-8 card-shadow">
-        <h3 className="text-xl font-semibold mb-2 capitalize">{data.title}</h3>
-        <p className="text-text-secondary">{data.message}</p>
+        <h3 className="text-xl font-semibold mb-2 capitalize">{title}</h3>
+        <p className="text-text-secondary">{message}</p>
       </div>
     );
   }
@@ -73,6 +68,7 @@ function DashboardPage() {
     data: tabsData,
     isLoading: tabsLoading,
     isError: tabsError,
+    error: tabsFetchError,
   } = useQuery({
     queryKey: ['admin-tabs'],
     queryFn: ({ signal }) => fetchAdminTabs({ signal }),
@@ -126,6 +122,12 @@ function DashboardPage() {
     isLoading: metricsLoading,
   } = useDashboardMetrics();
 
+  const { data: tabMeta } = useQuery({
+    queryKey: ['admin-tab-meta', tab],
+    queryFn: ({ signal }) => fetchAdminTabMeta(tab, { signal }),
+    enabled: !tabConfig[tab],
+  });
+
   useEffect(() => {
     if (!tabs.length) return;
     const q = search.get('tab');
@@ -146,7 +148,7 @@ function DashboardPage() {
     }
   }, [tab, router, pathname, search, tabs]);
 
-  const title = titles[tab] ?? 'Admin Dashboard';
+  const title = titles[tab] ?? tabMeta?.title ?? 'Admin Dashboard';
 
   useEffect(() => {
     if (avatarUrl === null) {
@@ -169,7 +171,9 @@ function DashboardPage() {
     <div className="min-h-screen bg-primary-bg text-text-primary">
       {tabsError && (
         <div role="alert" className="text-red-500 p-4">
-          Error loading tabs.
+          {tabsFetchError instanceof Error
+            ? tabsFetchError.message
+            : 'Error loading tabs.'}
         </div>
       )}
       {/* Header */}
