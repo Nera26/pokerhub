@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { useAuditAlerts } from '@/hooks/useAuditAlerts';
+import { useAuditAlerts } from '@/hooks/admin';
 import ToastNotification from '../../ui/ToastNotification';
 import useToasts from '@/hooks/useToasts';
 
