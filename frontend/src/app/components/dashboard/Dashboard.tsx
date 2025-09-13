@@ -45,8 +45,6 @@ const RevenueDonut = dynamic(() => import('./charts/RevenueDonut'), {
   ssr: false,
 });
 
-const DEFAULT_AVATAR = '/default-avatar.svg';
-
 // ---------- Small UI helpers ----------
 function PillBtn({
   children,
@@ -98,15 +96,24 @@ export default function Dashboard() {
     error: activityError,
   } = useActivity();
 
-  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<
+    string | undefined
+  >();
+  const [profileAvatarError, setProfileAvatarError] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
     fetchProfile({ signal: controller.signal })
-      .then((p) => setProfileAvatarUrl(p.avatarUrl || null))
-      .catch(() => setProfileAvatarUrl(null));
+      .then((p) => setProfileAvatarUrl(p.avatarUrl))
+      .catch(() => setProfileAvatarError(true));
     return () => controller.abort();
   }, []);
+
+  const resolveAvatar = (avatarKey?: string) => {
+    if (avatarKey) return avatarKey;
+    if (profileAvatarError) return undefined;
+    return profileAvatarUrl;
+  };
 
   const token = useAuthToken();
   const isAdmin = useMemo(() => {
@@ -230,32 +237,42 @@ export default function Dashboard() {
               <div>No users found</div>
             ) : (
               <div className="space-y-3">
-                {recentUsers.map((u) => (
-                  <div
-                    key={u.id}
-                    className="flex items-center justify-between p-3 bg-primary-bg rounded-xl"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Image
-                        src={u.avatarKey || profileAvatarUrl || DEFAULT_AVATAR}
-                        alt={u.username}
-                        width={32}
-                        height={32}
-                        className="w-8 h-8 rounded-full"
-                      />
-                      <div>
-                        <p className="text-sm font-semibold">{u.username}</p>
-                        <p className="text-sm font-bold">
-                          ${u.balance?.toLocaleString() ?? 0}
-                        </p>
+                {recentUsers.map((u) => {
+                  const avatarSrc = resolveAvatar(u.avatarKey);
+                  return (
+                    <div
+                      key={u.id}
+                      className="flex items-center justify-between p-3 bg-primary-bg rounded-xl"
+                    >
+                      <div className="flex items-center gap-3">
+                        {avatarSrc ? (
+                          <Image
+                            src={avatarSrc}
+                            alt={u.username}
+                            width={32}
+                            height={32}
+                            className="w-8 h-8 rounded-full"
+                          />
+                        ) : (
+                          <div
+                            className="w-8 h-8 rounded-full bg-primary-bg"
+                            aria-label={`${u.username} avatar`}
+                          />
+                        )}
+                        <div>
+                          <p className="text-sm font-semibold">{u.username}</p>
+                          <p className="text-sm font-bold">
+                            ${u.balance?.toLocaleString() ?? 0}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <PillBtn color="blue">Edit</PillBtn>
+                        <PillBtn color="red">Ban</PillBtn>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <PillBtn color="blue">Edit</PillBtn>
-                      <PillBtn color="red">Ban</PillBtn>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
             <button className="w-full mt-4 bg-accent-green hover:brightness-110 py-2 rounded-xl font-semibold">
