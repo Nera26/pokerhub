@@ -237,6 +237,8 @@ export type {
 
 /** ---- Tournaments ---- */
 export {
+  TournamentSchema,
+  TournamentDetailsSchema,
   AdminTournamentSchema,
   TournamentFormatSchema,
   TournamentFormatsResponseSchema,
@@ -247,6 +249,8 @@ export {
   TournamentSimulateResponseSchema,
 } from '../backend/src/schemas/tournaments';
 export type {
+  Tournament,
+  TournamentDetails,
   AdminTournament,
   TournamentFormat,
   TournamentFormatsResponse,
@@ -310,36 +314,6 @@ export const GameStateSchema = z
   .strict();
 
 export type GameState = z.infer<typeof GameStateSchema>;
-
-// Tournaments (frontend)
-export const TournamentSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  gameType: GameTypeSchema,
-  buyIn: z.number(),
-  fee: z.number().optional(),
-  prizePool: z.number(),
-  state: z.enum(['REG_OPEN', 'RUNNING', 'PAUSED', 'FINISHED', 'CANCELLED']),
-  players: z.object({ current: z.number(), max: z.number() }),
-  registered: z.boolean(),
-});
-export type Tournament = z.infer<typeof TournamentSchema>;
-
-const TournamentInfoSchema = z.object({
-  title: z.string(),
-  description: z.string(),
-});
-
-export const TournamentDetailsSchema = TournamentSchema.extend({
-  registration: z.object({
-    open: z.string().datetime().nullable(),
-    close: z.string().datetime().nullable(),
-  }),
-  overview: z.array(TournamentInfoSchema),
-  structure: z.array(TournamentInfoSchema),
-  prizes: z.array(TournamentInfoSchema),
-});
-export type TournamentDetails = z.infer<typeof TournamentDetailsSchema>;
 
 /** ---- Leaderboard / Hands (backend shared) ---- */
 export {
