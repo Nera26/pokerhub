@@ -42,6 +42,10 @@ class MockConfigService {
       'auth.jwtSecrets': ['test-secret'],
       'auth.accessTtl': 900,
       'auth.refreshTtl': 3600,
+      'auth.providers': [
+        { name: 'google', url: '/auth/google', label: 'Google' },
+        { name: 'facebook', url: '/auth/facebook', label: 'Facebook' },
+      ],
       'rateLimit.window': 60,
       'rateLimit.max': 5,
       'geo.allowedCountries': [],
@@ -93,6 +97,16 @@ describe('AuthController', () => {
       .expect(200);
     const parsed = LoginResponseSchema.parse(res.body);
     expect(parsed.token).toBeDefined();
+  });
+
+  it('returns auth providers', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/auth/providers')
+      .expect(200);
+    expect(res.body).toEqual([
+      { name: 'google', url: '/auth/google', label: 'Google' },
+      { name: 'facebook', url: '/auth/facebook', label: 'Facebook' },
+    ]);
   });
 
   it('rejects invalid credentials', async () => {

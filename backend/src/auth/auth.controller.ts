@@ -6,6 +6,7 @@ import {
   Post,
   UnauthorizedException,
   Req,
+  Get,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
@@ -23,6 +24,7 @@ import {
   VerifyResetCodeSchema,
   ResetPasswordRequest,
   ResetPasswordSchema,
+  AuthProvidersResponse,
 } from '../schemas/auth';
 import { AuthService } from './auth.service';
 import { GeoIpService } from './geoip.service';
@@ -124,5 +126,13 @@ export class AuthController {
     );
     if (!ok) throw new UnauthorizedException('Invalid code');
     return { message: 'password reset' };
+  }
+
+  @Get('providers')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'List auth providers' })
+  @ApiResponse({ status: 200, description: 'Returns auth providers' })
+  async getProviders(): Promise<AuthProvidersResponse> {
+    return this.auth.getProviders();
   }
 }

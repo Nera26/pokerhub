@@ -2,6 +2,9 @@
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGoogle, faFacebookF } from '@fortawesome/free-brands-svg-icons';
+import { useQuery } from '@tanstack/react-query';
+import type { AuthProvidersResponse } from '@shared/types';
+import { fetchAuthProviders } from '@/lib/api/auth';
 import Button, { type ButtonProps } from '../ui/Button';
 
 const popupOptions = 'width=500,height=600';
@@ -16,13 +19,17 @@ const sharedButtonProps: Pick<
 const iconClass = 'text-xl';
 
 export default function SocialLoginButtons() {
-  const handleGoogleLogin = () => {
-    // Opens OAuth popup for Google
-    window.open('/auth/google', 'GoogleLogin', popupOptions);
-  };
-  const handleFacebookLogin = () => {
-    // Opens OAuth popup for Facebook
-    window.open('/auth/facebook', 'FacebookLogin', popupOptions);
+  const { data, isLoading, error } = useQuery<AuthProvidersResponse>({
+    queryKey: ['auth', 'providers'],
+    queryFn: ({ signal }) => fetchAuthProviders({ signal }),
+  });
+
+  if (isLoading) return <div>Loading providers...</div>;
+  if (error) return <div>Error loading providers</div>;
+
+  const icons: Record<string, any> = {
+    google: faGoogle,
+    facebook: faFacebookF,
   };
 
   return (
@@ -35,24 +42,30 @@ export default function SocialLoginButtons() {
         <div className="flex-grow border-t border-border-dark" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-        <Button
-          {...sharedButtonProps}
-          onClick={handleGoogleLogin}
-          leftIcon={<FontAwesomeIcon icon={faGoogle} className={iconClass} />}
-          aria-label="Continue with Google"
-        >
-          Google
-        </Button>
-        <Button
-          {...sharedButtonProps}
-          onClick={handleFacebookLogin}
-          leftIcon={
-            <FontAwesomeIcon icon={faFacebookF} className={iconClass} />
-          }
-          aria-label="Continue with Facebook"
-        >
-          Facebook
-        </Button>
+        {data?.map((provider) => {
+          const icon = icons[provider.name];
+          return (
+            <Button
+              {...sharedButtonProps}
+              key={provider.name}
+              onClick={() =>
+                window.open(
+                  provider.url,
+                  `${provider.label}Login`,
+                  popupOptions,
+                )
+              }
+              leftIcon={
+                icon ? (
+                  <FontAwesomeIcon icon={icon} className={iconClass} />
+                ) : undefined
+              }
+              aria-label={`Continue with ${provider.label}`}
+            >
+              {provider.label}
+            </Button>
+          );
+        })}
       </div>
     </div>
   );

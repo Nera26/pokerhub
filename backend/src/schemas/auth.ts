@@ -47,3 +47,13 @@ export const ResetPasswordSchema = z.object({
 export type ResetPasswordRequest = z.infer<typeof ResetPasswordSchema>;
 export const ResetPasswordResponseSchema = MessageResponseSchema;
 export type ResetPasswordResponse = MessageResponse;
+
+// Social auth providers
+export const AuthProviderSchema = z.object({
+  name: z.string(),
+  url: z.string().url(),
+  label: z.string(),
+});
+export type AuthProvider = z.infer<typeof AuthProviderSchema>;
+export const AuthProvidersResponseSchema = z.array(AuthProviderSchema);
+export type AuthProvidersResponse = z.infer<typeof AuthProvidersResponseSchema>;

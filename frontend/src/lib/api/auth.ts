@@ -1,7 +1,11 @@
 import { apiClient } from './client';
 export type { ApiError } from './client';
 import type { components } from '@contracts/api';
-import { LoginResponseSchema, MessageResponseSchema } from '@shared/types';
+import {
+  LoginResponseSchema,
+  MessageResponseSchema,
+  AuthProvidersResponseSchema,
+} from '@shared/types';
 
 export async function login(
   email: string,
@@ -13,7 +17,9 @@ export async function login(
   });
 }
 
-export async function logout(): Promise<components['schemas']['MessageResponse']> {
+export async function logout(): Promise<
+  components['schemas']['MessageResponse']
+> {
   return apiClient('/api/auth/logout', MessageResponseSchema, {
     method: 'POST',
   });
@@ -46,5 +52,15 @@ export async function resetPassword(
   return apiClient('/api/auth/reset-password', MessageResponseSchema, {
     method: 'POST',
     body: { email, code, password },
+  });
+}
+
+export async function fetchAuthProviders({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<
+  components['schemas']['AuthProvidersResponse']
+> {
+  return apiClient('/api/auth/providers', AuthProvidersResponseSchema, {
+    signal,
   });
 }

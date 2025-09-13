@@ -8,6 +8,7 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import { MetricsWriterService } from '../metrics/metrics-writer.service';
 import { UserRepository } from '../users/user.repository';
 import { EmailService } from './email.service';
+import type { AuthProvider } from '../schemas/auth';
 
 @Injectable()
 export class AuthService {
@@ -146,5 +147,9 @@ export class AuthService {
     await this.sessions.revokeAll(user.id);
     await this.redis.del(`${this.resetPrefix}${email}`);
     return true;
+  }
+
+  getProviders(): AuthProvider[] {
+    return this.config.get<AuthProvider[]>('auth.providers', []);
   }
 }

@@ -240,6 +240,19 @@ export interface paths {
       };
     };
   };
+  "/auth/providers": {
+    /** List auth providers */
+    get: {
+      responses: {
+        /** @description Auth providers */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AuthProvidersResponse"];
+          };
+        };
+      };
+    };
+  };
   "/transactions/types": {
     /** List transaction types */
     get: {
@@ -2384,6 +2397,12 @@ export interface components {
     MessageResponse: {
       message: string;
     };
+    AuthProvider: {
+      name: string;
+      url: string;
+      label: string;
+    };
+    AuthProvidersResponse: components["schemas"]["AuthProvider"][];
     CTA: {
       id: string;
       label: string;
