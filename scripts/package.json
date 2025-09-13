@@ -2,7 +2,7 @@
   "name": "pokerhub-scripts",
   "private": true,
   "scripts": {
-    "test": "TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\",\\\"allowImportingTsExtensions\\\":true}\" TS_NODE_PREFER_TS_EXTS=1 node --test --require ts-node/register test/*.spec.js test/*.spec.ts"
+    "test": "TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"commonjs\\\",\\\"allowImportingTsExtensions\\\":true}\" TS_NODE_PREFER_TS_EXTS=1 node --test --require ts-node/register"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^8.1.1"
