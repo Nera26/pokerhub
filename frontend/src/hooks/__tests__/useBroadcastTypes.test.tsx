@@ -1,5 +1,5 @@
 import { waitFor } from '@testing-library/react';
-import useBroadcastTypes from '../useBroadcastTypes';
+import { useBroadcastTypes } from '../useBroadcastTypes';
 import type { ApiError } from '@/lib/api/client';
 import {
   renderHookWithClient,
@@ -41,7 +41,7 @@ describe('useBroadcastTypes', () => {
     const { result } = renderHookWithClient(() => useBroadcastTypes());
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect((result.current.error as ApiError).message).toBe(
-      'Failed to fetch broadcast types: fail',
+      'Failed to fetch broadcasts types: fail',
     );
   });
 });
