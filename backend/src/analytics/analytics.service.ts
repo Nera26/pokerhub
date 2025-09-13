@@ -337,7 +337,10 @@ export class AnalyticsService {
   async getActivity(): Promise<{ labels: string[]; data: number[] }> {
     const raw = await this.redis.lrange('metrics:activity', 0, -1);
     const data = (raw ?? []).map((v) => Number(v));
-    const labels = ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'];
+    // labels[i] corresponds to 4-hour increments beginning at midnight
+    const labels = Array.from({ length: data.length }, (_, i) =>
+      `${String(i * 4).padStart(2, '0')}:00`,
+    );
     return { labels, data };
   }
 

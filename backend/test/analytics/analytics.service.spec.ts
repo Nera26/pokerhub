@@ -14,6 +14,22 @@ describe('AnalyticsService', () => {
   });
 });
 
+describe('AnalyticsService getActivity', () => {
+  it('generates labels based on data length', async () => {
+    const service: any = {
+      redis: { lrange: jest.fn().mockResolvedValue(Array(12).fill('1')) },
+    };
+    const result = await (AnalyticsService.prototype as any).getActivity.call(
+      service,
+    );
+    const expected = Array.from({ length: 12 }, (_, i) =>
+      `${String(i * 4).padStart(2, '0')}:00`,
+    );
+    expect(result.labels).toEqual(expected);
+    expect(result.data).toHaveLength(12);
+  });
+});
+
 describe('AnalyticsService scheduling', () => {
   const oneDay = 24 * 60 * 60 * 1000;
 

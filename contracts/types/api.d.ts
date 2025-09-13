@@ -2470,6 +2470,7 @@ export interface components {
       logins: number;
     };
     ActivityResponse: {
+      /** @description labels[i] corresponds to 4-hour increments beginning at midnight */
       labels: string[];
       data: number[];
     };
