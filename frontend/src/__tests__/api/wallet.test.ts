@@ -47,6 +47,7 @@ import {
   initiateBankTransfer,
   withdraw,
   getStatus,
+  fetchIbanDetails,
 } from '@/lib/api/wallet';
 import { mockFetch } from '@/test-utils/mockFetch';
 
@@ -136,5 +137,13 @@ describe('wallet api', () => {
     (fetch as jest.Mock).mockClear();
     expect(() => withdraw('u1', 10, 123 as any, 'EUR')).toThrow();
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('fetchIbanDetails handles API failure', async () => {
+    mockFetch({ status: 500, payload: { message: 'fail' } });
+    await expect(fetchIbanDetails()).rejects.toMatchObject({
+      status: 500,
+      message: 'fail',
+    });
   });
 });
