@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createQueryHook } from './createQueryHook';
 import {
   fetchIban,
+  fetchIbanDetails,
   fetchIbanHistory,
   fetchWalletReconcileMismatches,
   getStatus,
@@ -14,6 +15,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import type {
   IbanResponse,
+  IbanDetails,
   IbanHistoryResponse,
   WalletReconcileMismatchesResponse,
   IbanUpdateRequest,
@@ -33,6 +35,12 @@ export const useIban = createQueryHook<IbanResponse>(
   'iban',
   (_client, opts) => fetchIban(opts),
   'IBAN',
+);
+
+export const useIbanDetails = createQueryHook<IbanDetails>(
+  'iban-details',
+  (_client, opts) => fetchIbanDetails(opts),
+  'IBAN details',
 );
 
 export const useIbanHistory = createQueryHook<IbanHistoryResponse>(
@@ -70,7 +78,9 @@ export function useBankTransfer() {
     mutationFn: ({ amount, deviceId, currency }) =>
       initiateBankTransfer(playerId, amount, deviceId, currency),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['wallet', playerId, 'status'] });
+      queryClient.invalidateQueries({
+        queryKey: ['wallet', playerId, 'status'],
+      });
     },
   });
 }
@@ -86,7 +96,9 @@ export function useWithdraw() {
     mutationFn: ({ amount, deviceId, currency }) =>
       withdraw(playerId, amount, deviceId, currency),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['wallet', playerId, 'status'] });
+      queryClient.invalidateQueries({
+        queryKey: ['wallet', playerId, 'status'],
+      });
     },
   });
 }

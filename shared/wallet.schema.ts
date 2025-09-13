@@ -225,6 +225,19 @@ export const IbanUpdateRequestSchema = z.object({
 });
 export type IbanUpdateRequest = z.infer<typeof IbanUpdateRequestSchema>;
 
+export const IbanDetailsSchema = z.object({
+  ibanMasked: z.string(),
+  ibanFull: z.string(),
+  holder: z.string(),
+  instructions: z.string(),
+  history: z.array(IbanHistoryEntrySchema),
+  lastUpdatedBy: z.string(),
+  lastUpdatedAt: z.string().datetime(),
+  bankName: z.string(),
+  bankAddress: z.string(),
+});
+export type IbanDetails = z.infer<typeof IbanDetailsSchema>;
+
 export const TransactionTabSchema = z.object({
   id: z.enum(['all', 'deposits', 'withdrawals', 'manual']),
   label: z.string(),

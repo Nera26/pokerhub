@@ -15,6 +15,7 @@ import {
   IbanResponseSchema,
   IbanHistoryResponseSchema,
   IbanUpdateRequestSchema,
+  IbanDetailsSchema,
   WalletReconcileMismatchesResponseSchema,
   type WalletStatusResponse,
   type WalletTransactionsResponse,
@@ -23,6 +24,7 @@ import {
   type IbanResponse,
   type IbanHistoryResponse,
   type IbanUpdateRequest,
+  type IbanDetails,
   type WalletReconcileMismatchesResponse,
   // Optionally validate before calling adminAdjustBalance
   AdminBalanceRequestSchema,
@@ -35,6 +37,8 @@ import {
   type PendingWithdrawalsResponse,
 } from '@shared/types';
 
+export type { IbanDetails };
+
 const MessageResponseSchema = z.object({ message: z.string() });
 
 import {
@@ -42,25 +46,6 @@ import {
   TransactionLogResponseSchema,
   type TransactionTypesResponse,
 } from '@shared/transactions.schema';
-
-const IbanDetailsSchema = z.object({
-  ibanMasked: z.string(),
-  ibanFull: z.string(),
-  holder: z.string(),
-  instructions: z.string(),
-  history: z.array(
-    z.object({
-      date: z.string(),
-      oldIban: z.string(),
-      newIban: z.string(),
-      by: z.string(),
-      notes: z.string(),
-    }),
-  ),
-  lastUpdatedBy: z.string(),
-  lastUpdatedAt: z.string().datetime(),
-});
-export type IbanDetails = z.infer<typeof IbanDetailsSchema>;
 
 /* istanbul ignore next */
 async function postAmount(
