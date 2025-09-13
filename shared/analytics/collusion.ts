@@ -25,6 +25,23 @@ export function detectSharedIP(sessions: Session[]): SharedIpResult[] {
   return results;
 }
 
+export function clusterBySharedValues(
+  userValues: Record<string, string[]>,
+): Record<string, string[]> {
+  const groups: Record<string, Set<string>> = {};
+  for (const [user, values] of Object.entries(userValues)) {
+    for (const value of values) {
+      groups[value] ??= new Set();
+      groups[value]!.add(user);
+    }
+  }
+  return Object.fromEntries(
+    Object.entries(groups)
+      .filter(([, set]) => set.size > 1)
+      .map(([k, set]) => [k, Array.from(set)]),
+  );
+}
+
 export function detectChipDump(transfers: Transfer[]): number {
   const balances: Record<string, number> = {};
   for (const t of transfers) {
@@ -99,5 +116,20 @@ export function calculateSeatProximity(
   seatsB: number[],
 ): number {
   return averageDiffSimilarity(seatsA, seatsB);
+}
+
+export function timeCorrelatedBetting(
+  timesA: number[],
+  timesB: number[],
+  windowMs = 1000,
+): number {
+  if (!timesA.length || !timesB.length) return 0;
+  let matches = 0;
+  for (const tA of timesA) {
+    if (timesB.some((tB) => Math.abs(tA - tB) <= windowMs)) {
+      matches++;
+    }
+  }
+  return matches / Math.max(timesA.length, timesB.length);
 }
 
