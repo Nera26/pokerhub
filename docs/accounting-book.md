@@ -1,7 +1,7 @@
 # Accounting Book
 
-**Version:** 1.1.2
-**Last Updated:** 2025-09-01
+**Version:** 1.1.3
+**Last Updated:** 2025-09-13
 
 ## Ledger Schema
 
@@ -14,6 +14,8 @@ Operational response steps for ledger discrepancies are detailed in the [Wallet 
 - **Account**: tracks the running balance for a wallet participant.
 - **JournalEntry**: immutable rows recording debits and credits with a `refType` and `refId`.
 - Every transaction writes equal and opposite entries so the sum of amounts per ref is zero.
+- Transaction history columns are described by `GET /transactions/columns`,
+  which returns `{ id, label }` pairs for dynamic table headers.
 
 ### Ledger Flow
 

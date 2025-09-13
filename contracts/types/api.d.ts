@@ -292,6 +292,19 @@ export interface paths {
       };
     };
   };
+  "/transactions/columns": {
+    /** Get transaction columns */
+    get: {
+      responses: {
+        /** @description Transaction columns */
+        200: {
+          content: {
+            "application/json": components["schemas"]["TransactionColumnsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/dashboard/metrics": {
     /** Get dashboard metrics */
     get: {

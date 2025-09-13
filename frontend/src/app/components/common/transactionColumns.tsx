@@ -25,9 +25,10 @@ export function buildAmountColumn<
   currency = 'USD',
   headerClassName,
   cellClassName,
-}: ColumnOpts & { currency?: string } = {}): Column<T> {
+  label = 'Amount',
+}: ColumnOpts & { currency?: string; label?: string } = {}): Column<T> {
   return {
-    header: 'Amount',
+    header: label,
     headerClassName,
     cellClassName,
     cell: (row) => (
@@ -45,9 +46,13 @@ export function buildDateColumn<
     date?: string;
     datetime?: string;
   },
->({ headerClassName, cellClassName }: ColumnOpts = {}): Column<T> {
+>({
+  headerClassName,
+  cellClassName,
+  label = 'Date & Time',
+}: ColumnOpts & { label?: string } = {}): Column<T> {
   return {
-    header: 'Date & Time',
+    header: label,
     headerClassName,
     cellClassName,
     cell: (row) => row.date ?? row.datetime ?? '',
@@ -58,7 +63,11 @@ export function buildStatusColumn<
   T extends {
     status: string;
   },
->({ headerClassName, cellClassName }: ColumnOpts = {}): Column<T> {
+>({
+  headerClassName,
+  cellClassName,
+  label = 'Status',
+}: ColumnOpts & { label?: string } = {}): Column<T> {
   function StatusCell({ status }: { status: string }) {
     const getInfo = useStatusInfo();
     const { label, style } = getInfo(status);
@@ -69,7 +78,7 @@ export function buildStatusColumn<
     );
   }
   return {
-    header: 'Status',
+    header: label,
     headerClassName,
     cellClassName,
     cell: (row) => <StatusCell status={row.status} />,
@@ -88,17 +97,19 @@ export function buildTransactionColumns<
   headerClassName,
   cellClassName,
   currency,
+  labels = {},
 }: {
   getType?: (row: T) => string;
   headerClassName?: string;
   cellClassName?: string;
   currency?: string;
+  labels?: Record<string, string>;
 } = {}): Column<T>[] {
   const cols: Column<T>[] = [];
 
   if (getType) {
     cols.push({
-      header: 'Type',
+      header: labels.type ?? 'Type',
       headerClassName,
       cellClassName,
       cell: (row) => getType(row),
@@ -106,9 +117,22 @@ export function buildTransactionColumns<
   }
 
   cols.push(
-    buildAmountColumn<T>({ currency, headerClassName, cellClassName }),
-    buildDateColumn<T>({ headerClassName, cellClassName }),
-    buildStatusColumn<T>({ headerClassName, cellClassName }),
+    buildAmountColumn<T>({
+      currency,
+      headerClassName,
+      cellClassName,
+      label: labels.amount,
+    }),
+    buildDateColumn<T>({
+      headerClassName,
+      cellClassName,
+      label: labels.date,
+    }),
+    buildStatusColumn<T>({
+      headerClassName,
+      cellClassName,
+      label: labels.status,
+    }),
   );
 
   return cols;
