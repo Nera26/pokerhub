@@ -1,18 +1,5 @@
-import { cn } from '@/app/lib/utils';
+import SkeletonGrid from '@/app/components/common/Skeleton';
 
-interface LoadingSectionProps {
-  className?: string;
-  buttonClassName?: string;
-}
-
-export default function LoadingSection({
-  className,
-  buttonClassName,
-}: LoadingSectionProps) {
-  return (
-    <div className={cn('flex gap-4', className)}>
-      <div className={cn('h-10 w-40 bg-card-bg rounded-xl', buttonClassName)} />
-      <div className={cn('h-10 w-40 bg-card-bg rounded-xl', buttonClassName)} />
-    </div>
-  );
+export default function LoadingSection() {
+  return <SkeletonGrid rows={2} cardHeight="h-10" />;
 }

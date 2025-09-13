@@ -5,10 +5,7 @@ export default function Loading() {
     <main className="p-4">
       <div className="animate-pulse space-y-4">
         <div className="h-64 bg-card-bg rounded-xl" />
-        <LoadingSection
-          className="justify-center"
-          buttonClassName="w-24 rounded"
-        />
+        <LoadingSection />
       </div>
     </main>
   );
