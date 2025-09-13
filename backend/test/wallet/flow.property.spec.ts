@@ -1,5 +1,6 @@
 import fc from 'fast-check';
 import { setupFlow, seedDefaultAccounts, USER_ID } from './flow-test-utils';
+import { applyOperation } from './apply-operations';
 
 jest.setTimeout(20000);
 
@@ -39,24 +40,7 @@ describe('WalletService flows idempotency', () => {
         try {
           const apply = async () => {
             for (const op of ops) {
-              switch (op.type) {
-                case 'deposit':
-                  await (service as any).record('deposit', op.ref, [
-                    { account: accounts.house, amount: -op.amount },
-                    { account: accounts.user, amount: op.amount },
-                  ]);
-                  break;
-                case 'withdraw':
-                  await (service as any).record('withdraw', op.ref, [
-                    { account: accounts.user, amount: -op.amount },
-                    { account: accounts.house, amount: op.amount },
-                  ]);
-                  break;
-                case 'reserve':
-                  await service.reserve(userId, op.amount, op.ref, 'USD', op.idempotencyKey);
-                  await service.commit(op.ref, op.amount, op.rake, 'USD', op.idempotencyKey);
-                  break;
-              }
+              await applyOperation(service, accounts, userId, op);
             }
           };
           await apply();
