@@ -1,5 +1,6 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 import { bringUp, tearDown } from './utils/smoke';
+import { loginAndPlay } from './utils/loginAndPlay';
 
 test.describe('table smoke', () => {
   test.beforeAll(async () => {
@@ -11,16 +12,6 @@ test.describe('table smoke', () => {
   });
 
   test('join table and play a hand', async ({ page }) => {
-    await page.goto('/login');
-    await page.fill('input[name="email"]', 'test@example.com');
-    await page.fill('input[name="password"]', 'password');
-    await page.click('button:has-text("Login")');
-
-    await page.goto('/table/default');
-    await page.getByRole('button', { name: 'Bet 1' }).click();
-
-    await expect(page.getByTestId('status')).toContainText(
-      'Action acknowledged',
-    );
+    await loginAndPlay(page);
   });
 });
