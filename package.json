@@ -30,9 +30,7 @@
     "lint:unused": "ts-prune -p tsconfig.json -e",
     "lint:dup": "jscpd -g --threshold 10 frontend backend shared",
     "audit:score": "node tools/audit-score.mjs"
-  }
-}
-
+  },
   "devDependencies": {
     "@actions/github": "^6.0.1",
     "@eslint/js": "^9.18.0",
