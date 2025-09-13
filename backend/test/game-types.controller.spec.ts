@@ -15,6 +15,7 @@ const mockGameTypes: GameTypeList = [
 
 describe('GameTypesController', () => {
   let app: INestApplication;
+  let service: GameTypesService;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -28,6 +29,7 @@ describe('GameTypesController', () => {
       ],
     }).compile();
     app = moduleRef.createNestApplication();
+    service = moduleRef.get(GameTypesService);
     await app.init();
   });
 
@@ -36,7 +38,11 @@ describe('GameTypesController', () => {
   });
 
   it('returns game types', async () => {
-    const res = await request(app.getHttpServer()).get('/game-types').expect(200);
+    const listSpy = jest.spyOn(service, 'list');
+    const res = await request(app.getHttpServer())
+      .get('/game-types')
+      .expect(200);
+    expect(listSpy).toHaveBeenCalledTimes(1);
     expect(res.body).toEqual(mockGameTypes);
   });
 });
