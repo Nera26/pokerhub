@@ -10,6 +10,15 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { TableState } from '../../store/tableStore';
 import { TableUiProvider } from './TableUiContext';
 import { useTableTheme } from '@/hooks/useTableTheme';
+import btnBadge from '/badges/btn.svg';
+import sbBadge from '/badges/sb.svg';
+import bbBadge from '/badges/bb.svg';
+
+const BADGE_SRC: Record<string, string> = {
+  BTN: btnBadge,
+  SB: sbBadge,
+  BB: bbBadge,
+};
 
 export interface SeatRingProps {
   players: Player[];
@@ -120,14 +129,13 @@ export default function SeatRing({
     queryClient.setQueryData(['table', 'local'], tableState);
   }, [players, pot, street, sidePots, handNumber, queryClient]);
 
-  const { data: theme, isLoading, isError } = useTableTheme();
+  const { isLoading, isError } = useTableTheme();
   if (isLoading) {
     return <div>Loading table theme...</div>;
   }
-  if (isError || !theme) {
+  if (isError) {
     return <div>Failed to load theme</div>;
   }
-  const positions = theme.positions;
 
   return (
     <TableUiProvider>
@@ -183,7 +191,7 @@ export default function SeatRing({
                     style={seatStyles[idx]}
                     street={street}
                     density={density}
-                    badge={positions[p.pos ?? '']?.badge}
+                    badge={BADGE_SRC[p.pos ?? '']}
                   />
                 ))}
               </>
