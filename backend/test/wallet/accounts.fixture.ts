@@ -32,4 +32,3 @@ export const walletAccounts: Partial<Account>[] = [
     currency: 'USD',
   },
 ];
-
