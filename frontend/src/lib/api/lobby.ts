@@ -2,10 +2,8 @@ import { z, type ZodType } from 'zod';
 import { apiClient, ApiError } from './client';
 import type { components } from '@contracts/api';
 import {
-  TableSchema,
   TournamentSchema,
   TournamentDetailsSchema,
-  type Table,
   type Tournament,
   type TournamentDetails,
   MessageResponseSchema,
@@ -16,7 +14,7 @@ import {
   type TournamentFilterOption,
 } from '@shared/types';
 
-export type { Table, Tournament, TournamentDetails, CTA };
+export type { Tournament, TournamentDetails, CTA };
 
 async function fetchLobbyData<T>(
   endpoint: string,
@@ -34,17 +32,6 @@ async function fetchLobbyData<T>(
       message: `Failed to fetch ${endpoint}: ${apiErr.message}`,
     } as ApiError;
   }
-}
-
-export async function fetchTables({
-  signal,
-}: {
-  signal?: AbortSignal;
-} = {}): Promise<components['schemas']['Table'][]> {
-  return apiClient('/api/tables', z.array(TableSchema), {
-    signal,
-    cache: 'no-store',
-  });
 }
 
 export async function fetchTournaments({

@@ -1,5 +1,5 @@
 import { waitFor } from '@testing-library/react';
-import { useTables, useTournaments, useCTAs } from '../useLobbyData';
+import { useTables, useTournaments } from '../useLobbyData';
 import type { ApiError } from '@/lib/api/client';
 import {
   renderHookWithClient,
@@ -67,28 +67,6 @@ describe('useLobbyData hooks', () => {
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect((result.current.error as ApiError).message).toBe(
         'Failed to fetch tournaments: fail',
-      );
-    });
-  });
-
-  describe('useCTAs', () => {
-    it('returns CTAs on success', async () => {
-      mockFetchSuccess([
-        { id: '1', label: 'Play', href: '/play', variant: 'primary' },
-      ]);
-
-      const { result } = renderHookWithClient(() => useCTAs());
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      expect(result.current.data?.[0].label).toBe('Play');
-    });
-
-    it('exposes error state', async () => {
-      mockFetchError('fail');
-
-      const { result } = renderHookWithClient(() => useCTAs());
-      await waitFor(() => expect(result.current.isError).toBe(true));
-      expect((result.current.error as ApiError).message).toBe(
-        'Failed to fetch CTAs: fail',
       );
     });
   });
