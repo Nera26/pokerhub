@@ -10,14 +10,12 @@ import {
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { KycService } from '../common/kyc.service';
-import { GbgProvider } from './providers/gbg.provider';
-import { TruliooProvider } from './providers/trulioo.provider';
+import { providerFactory } from './providers';
 import { Account } from '../wallet/account.entity';
 import { KycVerification } from '../database/entities/kycVerification.entity';
 import { User } from '../database/entities/user.entity';
 import { Pep } from '../database/entities/pep.entity';
 import { UserRepository } from '../users/user.repository';
-import { CountryProvider } from './providers/country-provider';
 import { startKycWorker } from './kyc.worker';
 import { AuthController } from './auth.controller';
 import { SessionModule } from '../session/session.module';
@@ -39,27 +37,6 @@ class KycWorker implements OnModuleInit {
   async onModuleInit() {
     if (process.env.NODE_ENV === 'test') return;
     await startKycWorker(this.kyc);
-  }
-}
-
-function providerFactory(config: ConfigService): CountryProvider {
-  const driver = config.get<string>('KYC_PROVIDER');
-  switch (driver) {
-    case 'trulioo':
-      return new TruliooProvider(
-        config.get<string>('TRULIOO_URL', 'https://api.trulioo.com/ip/v1'),
-        {
-          'x-trulioo-api-key': config.get<string>('TRULIOO_API_KEY', ''),
-        },
-      );
-    case 'gbg':
-    default:
-      return new GbgProvider(
-        config.get<string>('GBG_URL', 'https://api.gbgplc.com/ip/v1'),
-        {
-          Authorization: `Bearer ${config.get<string>('GBG_API_KEY', '')}`,
-        },
-      );
   }
 }
 
