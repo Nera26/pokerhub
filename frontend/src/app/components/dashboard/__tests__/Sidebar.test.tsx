@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Sidebar from '../Sidebar';
 import { fetchSidebarItems } from '@/lib/api/admin';
+import type { SidebarItem } from '@shared/types';
 
 const push = jest.fn();
 
@@ -12,6 +13,15 @@ jest.mock('next/navigation', () => ({
 jest.mock('@/lib/api/admin', () => ({
   fetchSidebarItems: jest.fn(),
 }));
+
+const renderWithItems = async (items: SidebarItem[], selector: string) => {
+  (fetchSidebarItems as jest.Mock).mockResolvedValueOnce(items);
+  const { container } = render(<Sidebar open />);
+  await waitFor(() => expect(fetchSidebarItems).toHaveBeenCalled());
+  await waitFor(() =>
+    expect(container.querySelector(selector)).toBeInTheDocument(),
+  );
+};
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -100,38 +110,30 @@ describe('Sidebar', () => {
   });
 
   it('renders icons provided by the server', async () => {
-    (fetchSidebarItems as jest.Mock).mockResolvedValueOnce([
-      {
-        id: 'users',
-        label: 'Users',
-        icon: 'faUsers',
-        component: '@/app/components/dashboard/DashboardModule',
-      },
-    ]);
-    const { container } = render(<Sidebar open />);
-    await waitFor(() => expect(fetchSidebarItems).toHaveBeenCalled());
-    await waitFor(() =>
-      expect(
-        container.querySelector('svg[data-icon="users"]'),
-      ).toBeInTheDocument(),
+    await renderWithItems(
+      [
+        {
+          id: 'users',
+          label: 'Users',
+          icon: 'faUsers',
+          component: '@/app/components/dashboard/DashboardModule',
+        },
+      ],
+      'svg[data-icon="users"]',
     );
   });
 
   it('falls back to default icon when server icon is unknown', async () => {
-    (fetchSidebarItems as jest.Mock).mockResolvedValueOnce([
-      {
-        id: 'unknown',
-        label: 'Unknown',
-        icon: 'faDoesNotExist',
-        component: '@/app/components/dashboard/DashboardModule',
-      },
-    ]);
-    const { container } = render(<Sidebar open />);
-    await waitFor(() => expect(fetchSidebarItems).toHaveBeenCalled());
-    await waitFor(() =>
-      expect(
-        container.querySelector('svg[data-icon="chart-line"]'),
-      ).toBeInTheDocument(),
+    await renderWithItems(
+      [
+        {
+          id: 'unknown',
+          label: 'Unknown',
+          icon: 'faDoesNotExist',
+          component: '@/app/components/dashboard/DashboardModule',
+        },
+      ],
+      'svg[data-icon="chart-line"]',
     );
   });
 });
