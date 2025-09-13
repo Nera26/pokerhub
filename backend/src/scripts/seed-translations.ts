@@ -1,57 +1,46 @@
 import 'dotenv/config';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { z } from 'zod';
 import { AppDataSource } from '../database/data-source';
 import { TranslationEntity } from '../database/entities/translation.entity';
+import { LanguageSchema } from '@shared/types';
 
-const MESSAGES: Record<string, Record<string, string>> = {
-  en: {
-    'layout.skip': 'Skip to main content',
-    'login.tagline': 'Join the community of poker enthusiasts!',
-    'login.brandButton': 'Join the Community',
-    'login.title': 'Login',
-    'login.forgot': 'Forgot Password?',
-    "login.noAccount": "Don't have an account?",
-    'login.signUp': 'Sign Up',
-    'login.footer.copyright': '\u00a9 2024 PokerHub. All rights reserved.',
-    'login.footer.terms': 'Terms of Service',
-    'login.footer.privacy': 'Privacy Policy',
-    'serviceWorker.updatePrompt': 'A new version is available. Refresh now?',
-    'serviceWorker.reload': 'Refresh',
-    'serviceWorker.dismiss': 'Dismiss',
-    'serviceWorker.offlineNotice':
-      'You are offline. Changes will sync once connection is restored.',
-    'offline.title': 'You are offline',
-    'offline.body':
-      'Some features may be unavailable. Please check your connection and try again.',
-  },
-  es: {
-    'layout.skip': 'Saltar al contenido principal',
-    'login.tagline': '¡Únete a la comunidad de entusiastas del póker!',
-    'login.brandButton': 'Únete a la comunidad',
-    'login.title': 'Iniciar sesión',
-    'login.forgot': '¿Olvidaste tu contraseña?',
-    'login.noAccount': '¿No tienes una cuenta?',
-    'login.signUp': 'Regístrate',
-    'login.footer.copyright': '\u00a9 2024 PokerHub. Todos los derechos reservados.',
-    'login.footer.terms': 'Términos de servicio',
-    'login.footer.privacy': 'Política de privacidad',
-    'serviceWorker.updatePrompt':
-      'Hay una nueva versión disponible. ¿Actualizar ahora?',
-    'serviceWorker.reload': 'Actualizar',
-    'serviceWorker.dismiss': 'Cerrar',
-    'serviceWorker.offlineNotice':
-      'Estás sin conexión. Los cambios se sincronizarán cuando se restablezca la conexión.',
-    'offline.title': 'Estás sin conexión',
-    'offline.body':
-      'Algunas funciones pueden no estar disponibles. Por favor, verifica tu conexión e inténtalo de nuevo.',
-  },
-};
+const TranslationSchema = LanguageSchema.extend({
+  messages: z.record(z.string()),
+});
+
+type Translation = z.infer<typeof TranslationSchema>;
+
+async function loadTranslations(): Promise<Translation[]> {
+  const serviceUrl = process.env.I18N_SERVICE_URL;
+  if (serviceUrl) {
+    const res = await fetch(serviceUrl);
+    if (!res.ok) {
+      throw new Error(`Failed to load translations: ${res.status}`);
+    }
+    const data = await res.json();
+    return z.array(TranslationSchema).parse(data);
+  }
+
+  const dir = path.join(__dirname, 'translations');
+  const files = await fs.readdir(dir);
+  const translations: Translation[] = [];
+  for (const file of files) {
+    if (!file.endsWith('.json')) continue;
+    const raw = await fs.readFile(path.join(dir, file), 'utf8');
+    translations.push(TranslationSchema.parse(JSON.parse(raw)));
+  }
+  return translations;
+}
 
 async function seed() {
   await AppDataSource.initialize();
   const repo = AppDataSource.getRepository(TranslationEntity);
-  for (const [lang, entries] of Object.entries(MESSAGES)) {
-    for (const [key, value] of Object.entries(entries)) {
-      await repo.upsert({ lang, key, value }, ['lang', 'key']);
+  const translations = await loadTranslations();
+  for (const { code, messages } of translations) {
+    for (const [key, value] of Object.entries(messages)) {
+      await repo.upsert({ lang: code, key, value }, ['lang', 'key']);
     }
   }
   await AppDataSource.destroy();
