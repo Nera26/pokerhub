@@ -25,6 +25,24 @@ describe('AdminController', () => {
   } as Partial<RevenueService>;
   const sidebarItems: SidebarItem[] = [
     {
+      id: 'users',
+      label: 'Users',
+      icon: 'faUsers',
+      component: '@/app/components/dashboard/ManageUsers',
+    },
+    {
+      id: 'tables',
+      label: 'Tables',
+      icon: 'faTable',
+      component: '@/app/components/dashboard/ManageTables',
+    },
+    {
+      id: 'tournaments',
+      label: 'Tournaments',
+      icon: 'faTrophy',
+      component: '@/app/components/dashboard/ManageTournaments',
+    },
+    {
       id: 'dynamic',
       label: 'Dynamic',
       icon: 'faChartLine',
@@ -116,28 +134,11 @@ describe('AdminController', () => {
   });
 
   it('returns tabs with components from service', async () => {
-    const tabs = [
-      ...sidebarItems.map((s) => ({
-        id: s.id,
-        title: s.label,
-        component: s.component,
-      })),
-      {
-        id: 'users',
-        title: 'Users',
-        component: '@/app/components/dashboard/ManageUsers',
-      },
-      {
-        id: 'tables',
-        title: 'Tables',
-        component: '@/app/components/dashboard/ManageTables',
-      },
-      {
-        id: 'tournaments',
-        title: 'Tournaments',
-        component: '@/app/components/dashboard/ManageTournaments',
-      },
-    ];
+    const tabs = sidebarItems.map((s) => ({
+      id: s.id,
+      title: s.label,
+      component: s.component,
+    }));
     await request(app.getHttpServer())
       .get('/admin/tabs')
       .expect(200)
