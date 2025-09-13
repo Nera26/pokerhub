@@ -24,6 +24,7 @@ import Messages from './Messages';
 import AdminEvents from './AdminEvents';
 import DashboardTransactionHistory from './transactions/TransactionHistory';
 import WalletReconcileMismatches from './WalletReconcileMismatches';
+import FeatureFlagsPanel from './FeatureFlagsPanel';
 import CenteredMessage from '@/components/CenteredMessage';
 import { Card, CardTitle, CardContent } from '@/app/components/ui/Card';
 
@@ -335,6 +336,15 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {isAdmin && (
+          <Card className="border-0">
+            <CardContent>
+              <CardTitle className="text-lg mb-4">Feature Flags</CardTitle>
+              <FeatureFlagsPanel />
+            </CardContent>
+          </Card>
+        )}
 
         {isAdmin && (
           <Card className="border-0">
