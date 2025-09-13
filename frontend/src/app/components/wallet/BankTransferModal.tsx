@@ -36,6 +36,7 @@ export type BankTransferModalProps = DepositProps | WithdrawProps;
 
 export default function BankTransferModal(props: BankTransferModalProps) {
   const { mode, onClose, currency } = props;
+
   const [details, setDetails] = useState<BankTransferDepositResponse | null>(
     null,
   );
@@ -73,9 +74,11 @@ export default function BankTransferModal(props: BankTransferModalProps) {
     try {
       await navigator.clipboard.writeText(details.bank.accountNumber);
     } catch {
-      // ignore
+      // ignore copy failures
     }
   };
+
+  // Deposit flow success screen (bank instructions)
   if (mode === 'deposit' && status === 'success' && details) {
     return (
       <div className="space-y-4">
@@ -119,6 +122,7 @@ export default function BankTransferModal(props: BankTransferModalProps) {
     );
   }
 
+  // Withdraw flow success screen
   if (mode === 'withdraw' && status === 'success') {
     return (
       <div className="space-y-4">
@@ -168,7 +172,13 @@ export default function BankTransferModal(props: BankTransferModalProps) {
       <div className={mode === 'withdraw' ? 'mb-4' : ''}>
         <BankTransferForm
           currency={currency}
-          submitLabel={mode === 'deposit' ? 'Get Instructions' : 'Withdraw'}
+          submitLabel={
+            status === 'submitting'
+              ? 'Processing...'
+              : mode === 'deposit'
+                ? 'Get Instructions'
+                : 'Withdraw'
+          }
           amountInputId={
             mode === 'deposit' ? 'deposit-amount' : 'withdraw-amount'
           }
@@ -185,23 +195,23 @@ export default function BankTransferModal(props: BankTransferModalProps) {
 
       {errorMessage && <InlineError message={errorMessage} />}
 
-      {mode === 'withdraw' && props.bankDetails && (
+      {mode === 'withdraw' && (props as WithdrawProps).bankDetails && (
         <div className="mb-6 bg-primary-bg rounded-xl p-4">
           <p className="text-text-secondary mb-1">
             <span className="font-semibold">Bank Name:</span>{' '}
-            {props.bankDetails.bankName}
+            {(props as WithdrawProps).bankDetails.bankName}
           </p>
           <p className="text-text-secondary mb-1">
             <span className="font-semibold">Account Name:</span>{' '}
-            {props.bankDetails.accountName}
+            {(props as WithdrawProps).bankDetails.accountName}
           </p>
           <p className="text-text-secondary mb-1">
             <span className="font-semibold">Bank Address:</span>{' '}
-            {props.bankDetails.bankAddress}
+            {(props as WithdrawProps).bankDetails.bankAddress}
           </p>
           <p className="text-text-secondary">
             <span className="font-semibold">Account Number:</span>{' '}
-            {props.bankDetails.maskedAccountNumber}
+            {(props as WithdrawProps).bankDetails.maskedAccountNumber}
           </p>
         </div>
       )}
