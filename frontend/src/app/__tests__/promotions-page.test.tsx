@@ -24,7 +24,6 @@ const promotion = {
   title: 'Daily Reward',
   description: 'Play one game',
   reward: '$10',
-  unlockText: 'Play once',
   breakdown: [],
 };
 
@@ -77,5 +76,21 @@ describe('PromotionsPage', () => {
     render(<PromotionsPage />);
     fireEvent.click(screen.getByRole('button', { name: /claim/i }));
     expect(await screen.findByRole('alert')).toHaveTextContent('fail');
+  });
+
+  it('opens modal with promotion details on click', async () => {
+    global.requestAnimationFrame = (cb: FrameRequestCallback) =>
+      setTimeout(cb, 0);
+    mockUsePromotions.mockReturnValue({
+      data: [promotion],
+      isLoading: false,
+      error: null,
+      refetch: jest.fn(),
+    } as any);
+    render(<PromotionsPage />);
+    fireEvent.click(screen.getByText('Daily Reward'));
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Daily Reward' }),
+    ).toBeInTheDocument();
   });
 });
