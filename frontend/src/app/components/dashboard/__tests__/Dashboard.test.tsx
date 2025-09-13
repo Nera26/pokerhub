@@ -1,10 +1,6 @@
-import { screen } from '@testing-library/react';
-import { renderDashboard } from './helpers';
-
-const metricsMock = jest.fn();
-jest.mock('@/hooks/useDashboardMetrics', () => ({
-  useDashboardMetrics: () => metricsMock(),
-}));
+import { screen, waitFor } from '@testing-library/react';
+import { fetchProfile } from '@/lib/api/profile';
+import { mockMetrics, renderDashboard, findUserAvatar } from './utils';
 
 const activityMock = jest.fn();
 jest.mock('@/hooks/useActivity', () => ({
@@ -15,6 +11,22 @@ const revenueMock = jest.fn();
 jest.mock('@/hooks/useRevenueBreakdown', () => ({
   useRevenueBreakdown: (range: string) => revenueMock(range),
 }));
+
+const usersMock = jest.fn();
+jest.mock('@/hooks/useDashboardUsers', () => ({
+  useDashboardUsers: () => usersMock(),
+}));
+
+const tablesMock = jest.fn();
+jest.mock('@/hooks/useActiveTables', () => ({
+  useActiveTables: () => tablesMock(),
+}));
+
+jest.mock('@/hooks/useDashboardMetrics', () => ({
+  useDashboardMetrics: () => mockMetrics(),
+}));
+
+jest.mock('@/lib/api/profile');
 
 jest.mock('@/app/components/dashboard/charts/ActivityChart', () => ({
   __esModule: true,
@@ -40,19 +52,25 @@ jest.mock('@/app/components/dashboard/charts/RevenueDonut', () => ({
 
 describe('Dashboard metrics', () => {
   beforeEach(() => {
-    metricsMock.mockReset();
+    mockMetrics.mockReset();
     activityMock.mockReset();
     revenueMock.mockReset();
+    usersMock.mockReset();
+    tablesMock.mockReset();
+    (fetchProfile as jest.Mock).mockReset();
     revenueMock.mockReturnValue({ data: [], isLoading: false, error: null });
     activityMock.mockReturnValue({
       data: { labels: [], data: [] },
       isLoading: false,
       error: null,
     });
+    usersMock.mockReturnValue({ data: [], isLoading: false, error: null });
+    tablesMock.mockReturnValue({ data: [], isLoading: false, error: null });
+    (fetchProfile as jest.Mock).mockResolvedValue({ avatarUrl: null });
   });
 
   it('shows loading state', () => {
-    metricsMock.mockReturnValue({
+    mockMetrics.mockReturnValue({
       data: undefined,
       isLoading: true,
       error: null,
@@ -62,7 +80,7 @@ describe('Dashboard metrics', () => {
   });
 
   it('shows error state', () => {
-    metricsMock.mockReturnValue({
+    mockMetrics.mockReturnValue({
       data: undefined,
       isLoading: false,
       error: new Error('fail'),
@@ -72,7 +90,7 @@ describe('Dashboard metrics', () => {
   });
 
   it('renders metrics when loaded', () => {
-    metricsMock.mockReturnValue({
+    mockMetrics.mockReturnValue({
       data: {
         online: 5,
         tables: { open: 2, full: 1 },
@@ -108,5 +126,34 @@ describe('Dashboard metrics', () => {
 
     const revenueLabel = screen.getAllByText(/revenue/i)[0];
     expect(revenueLabel.parentElement?.textContent).toMatch(/\$100/);
+  });
+});
+
+describe('Dashboard recent users avatar', () => {
+  beforeEach(() => {
+    mockMetrics.mockReturnValue({ data: {}, isLoading: false, error: null });
+    revenueMock.mockReturnValue({ data: [], isLoading: false, error: null });
+    activityMock.mockReturnValue({
+      data: { labels: [], data: [] },
+      isLoading: false,
+      error: null,
+    });
+    tablesMock.mockReturnValue({ data: [], isLoading: false, error: null });
+    usersMock.mockReturnValue({
+      data: [{ id: '1', username: 'bob', balance: 0 }],
+      isLoading: false,
+      error: null,
+    });
+    (fetchProfile as jest.Mock).mockResolvedValue({
+      avatarUrl: '/profile.png',
+    });
+  });
+
+  it('falls back to profile avatar when user lacks avatarKey', async () => {
+    renderDashboard();
+    const img = await findUserAvatar('bob');
+    await waitFor(() =>
+      expect(img.getAttribute('src')).toContain('%2Fprofile.png'),
+    );
   });
 });
