@@ -4,10 +4,23 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ManageUsers from '../ManageUsers';
 import { useDashboardUsers } from '@/hooks/useDashboardUsers';
 import { adminAdjustBalance } from '@/lib/api/wallet';
+import { createAdminUser } from '@/lib/api/admin';
 
 jest.mock('@/hooks/useDashboardUsers');
 jest.mock('@/lib/api/wallet', () => ({
   adminAdjustBalance: jest.fn(),
+}));
+jest.mock('@/lib/api/admin', () => ({
+  createAdminUser: jest.fn(),
+}));
+jest.mock('../modals/UserModal', () => ({
+  __esModule: true,
+  default: ({ isOpen, onSubmit }: any) =>
+    isOpen ? (
+      <button onClick={() => onSubmit({ username: 'bob', avatar: null })}>
+        Submit User
+      </button>
+    ) : null,
 }));
 
 const mockUseDashboardUsers = useDashboardUsers as jest.MockedFunction<
@@ -15,6 +28,9 @@ const mockUseDashboardUsers = useDashboardUsers as jest.MockedFunction<
 >;
 const mockAdjust = adminAdjustBalance as jest.MockedFunction<
   typeof adminAdjustBalance
+>;
+const mockCreate = createAdminUser as jest.MockedFunction<
+  typeof createAdminUser
 >;
 
 function renderWithClient() {
@@ -36,6 +52,7 @@ beforeEach(() => {
     error: null,
   } as any);
   mockAdjust.mockResolvedValue({ message: 'ok' } as any);
+  mockCreate.mockResolvedValue({} as any);
 });
 
 it('submits positive adjustment', async () => {
@@ -89,6 +106,22 @@ it('submits negative adjustment', async () => {
       amount: 20,
       currency: 'USD',
       notes: '',
+    }),
+  );
+});
+
+it('creates a user via mutation', async () => {
+  renderWithClient();
+
+  await userEvent.click(screen.getByRole('button', { name: /add user/i }));
+
+  const submit = await screen.findByText('Submit User');
+  await userEvent.click(submit);
+
+  await waitFor(() =>
+    expect(mockCreate).toHaveBeenCalledWith({
+      username: 'bob',
+      avatarKey: null,
     }),
   );
 });

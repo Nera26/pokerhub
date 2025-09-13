@@ -98,7 +98,31 @@ export class AdminController {
       title: s.label,
       component: s.component,
     }));
-    return AdminTabResponseSchema.parse(tabs);
+
+    const defaults: AdminTab[] = [
+      {
+        id: 'users',
+        title: 'Users',
+        component: '@/app/components/dashboard/ManageUsers',
+      },
+      {
+        id: 'tables',
+        title: 'Tables',
+        component: '@/app/components/dashboard/ManageTables',
+      },
+      {
+        id: 'tournaments',
+        title: 'Tournaments',
+        component: '@/app/components/dashboard/ManageTournaments',
+      },
+    ];
+
+    const merged = [
+      ...tabs,
+      ...defaults.filter((d) => !tabs.some((t) => t.id === d.id)),
+    ];
+
+    return AdminTabResponseSchema.parse(merged);
   }
 
   @Get('revenue-breakdown')
