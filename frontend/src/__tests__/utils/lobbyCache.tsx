@@ -11,6 +11,7 @@ export function setupLobbyCache() {
       ok: true,
       status: 200,
       statusText: 'OK',
+      headers: { get: () => 'application/json' },
       json: async () => [],
     });
   global.fetch = fetchMock as unknown as typeof fetch;
