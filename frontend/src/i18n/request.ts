@@ -1,12 +1,10 @@
 import { cookies } from 'next/headers';
 import { getRequestConfig } from 'next-intl/server';
-import { getBaseUrl } from '@/lib/base-url';
-import { TranslationsResponseSchema } from '@shared/types';
+import { fetchTranslations } from '@/lib/api/translations';
 
 export default getRequestConfig(async () => {
   const store = await cookies();
   const locale = store.get('locale')?.value || 'en';
-  const base = getBaseUrl();
 
   function unflatten(messages: Record<string, string>) {
     const result: Record<string, any> = {};
@@ -22,10 +20,9 @@ export default getRequestConfig(async () => {
     return result;
   }
 
-  async function fetchMessages(lang: string) {
-    const res = await fetch(`${base}/api/translations/${lang}`);
-    const data = await res.json();
-    return unflatten(TranslationsResponseSchema.parse(data).messages);
+  async function fetchMessages(locale: string) {
+    const { messages } = await fetchTranslations(locale);
+    return unflatten(messages);
   }
 
   let messages;

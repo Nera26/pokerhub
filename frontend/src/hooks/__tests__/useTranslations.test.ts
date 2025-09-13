@@ -13,14 +13,14 @@ describe('useTranslations', () => {
   it.each([
     ['en', 'Login'],
     ['es', 'Iniciar sesión'],
-  ])('fetches %s messages', async (lang, title) => {
+  ])('fetches %s messages', async (locale, title) => {
     mockFetchSuccess({ messages: { 'login.title': title } });
-    const { result } = renderHookWithClient(() => useTranslations(lang));
+    const { result } = renderHookWithClient(() => useTranslations(locale));
     await waitFor(() =>
       expect(result.current.data?.['login.title']).toBe(title),
     );
     expect(global.fetch).toHaveBeenCalledWith(
-      `http://localhost:3000/api/translations/${lang}`,
+      `http://localhost:3000/api/translations/${locale}`,
       expect.objectContaining({ method: 'GET' }),
     );
   });

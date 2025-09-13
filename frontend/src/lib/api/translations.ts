@@ -7,10 +7,10 @@ import {
 } from '@shared/types';
 
 export async function fetchTranslations(
-  lang: string,
+  locale: string,
   { signal }: { signal?: AbortSignal } = {},
 ): Promise<TranslationsResponse> {
-  return apiClient(`/api/translations/${lang}`, TranslationsResponseSchema, {
+  return apiClient(`/api/translations/${locale}`, TranslationsResponseSchema, {
     signal,
   });
 }

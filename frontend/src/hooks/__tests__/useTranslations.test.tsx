@@ -32,7 +32,7 @@ describe('useTranslations', () => {
     );
   });
 
-  it('falls back when language unsupported', async () => {
+  it('falls back when locale unsupported', async () => {
     mockFetchSuccess({ messages: { 'login.title': 'Login' } });
     const { result } = renderHookWithClient(() => useTranslations('fr'));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

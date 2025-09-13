@@ -10,7 +10,7 @@ describe('translations api', () => {
   it.each([
     ['en', 'Login'],
     ['es', 'Iniciar sesión'],
-  ])('fetches %s messages', async (lang, title) => {
+  ])('fetches %s messages', async (locale, title) => {
     (fetch as jest.Mock).mockResolvedValue({
       ok: true,
       status: 200,
@@ -18,10 +18,10 @@ describe('translations api', () => {
       json: async () => ({ messages: { 'login.title': title } }),
     });
 
-    const res = await fetchTranslations(lang);
+    const res = await fetchTranslations(locale);
     expect(res.messages['login.title']).toBe(title);
     expect(fetch).toHaveBeenCalledWith(
-      `/api/translations/${lang}`,
+      `http://localhost:3000/api/translations/${locale}`,
       expect.objectContaining({ method: 'GET' }),
     );
   });

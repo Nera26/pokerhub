@@ -8,7 +8,10 @@ import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
 import request from 'supertest';
 import { TranslationsController } from '../src/routes/translations.controller';
-import { TranslationsService } from '../src/services/translations.service';
+import {
+  CACHE_TTL,
+  TranslationsService,
+} from '../src/services/translations.service';
 import { TranslationEntity } from '../src/database/entities/translation.entity';
 
 describe('TranslationsController', () => {
@@ -73,6 +76,13 @@ describe('TranslationsController', () => {
       .get('/translations/fr')
       .expect(200);
     expect(res.body.messages['login.title']).toBe('Login');
+  });
+
+  it('sets cache headers', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/translations/en')
+      .expect(200);
+    expect(res.headers['cache-control']).toBe(`public, max-age=${CACHE_TTL}`);
   });
 
   it('handles service errors', async () => {

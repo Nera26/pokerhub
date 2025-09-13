@@ -20,8 +20,7 @@ import { buildMetadata } from '@/lib/metadata';
 import PerformanceMonitor from './PerformanceMonitor';
 import { env } from '@/lib/env';
 import ContractMismatchNotice from '@/components/ContractMismatchNotice';
-import { getBaseUrl } from '@/lib/base-url';
-import { TranslationsResponseSchema } from '@shared/types';
+import { fetchTranslations } from '@/lib/api/translations';
 import useOffline from '@/hooks/useOffline';
 
 export async function generateMetadata() {
@@ -56,15 +55,12 @@ function unflatten(messages: Record<string, string>) {
 }
 
 async function loadMessages(locale: string) {
-  const base = getBaseUrl();
   try {
-    const res = await fetch(`${base}/api/translations/${locale}`);
-    const data = await res.json();
-    return unflatten(TranslationsResponseSchema.parse(data).messages);
+    const { messages } = await fetchTranslations(locale);
+    return unflatten(messages);
   } catch {
-    const res = await fetch(`${base}/api/translations/en`);
-    const data = await res.json();
-    return unflatten(TranslationsResponseSchema.parse(data).messages);
+    const { messages } = await fetchTranslations('en');
+    return unflatten(messages);
   }
 }
 

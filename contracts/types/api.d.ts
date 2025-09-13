@@ -1963,12 +1963,12 @@ export interface paths {
       };
     };
   };
-  "/translations/{lang}": {
+  "/translations/{locale}": {
     /** Get translations for a language */
     get: {
       parameters: {
         path: {
-          lang: string;
+          locale: string;
         };
       };
       responses: {
