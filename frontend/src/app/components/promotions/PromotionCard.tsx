@@ -23,9 +23,13 @@ export type Promotion = BasePromotion & {
 
 export interface PromotionCardProps {
   promotion: Promotion;
+  onClick?: () => void;
 }
 
-export default function PromotionCard({ promotion }: PromotionCardProps) {
+export default function PromotionCard({
+  promotion,
+  onClick,
+}: PromotionCardProps) {
   const {
     category,
     title,
@@ -71,6 +75,7 @@ export default function PromotionCard({ promotion }: PromotionCardProps) {
       whileTap={{ scale: 0.98 }}
       transition={m.base}
       className="bg-card-bg rounded-2xl p-6 flex flex-col justify-between hover:bg-hover-bg motion-safe:transition-transform motion-reduce:!transform-none"
+      onClick={onClick}
     >
       <div>
         <div className="flex justify-between items-start mb-3">

@@ -1,13 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import PromotionCard from '@/app/components/promotions/PromotionCard';
+import PromotionCard, {
+  type Promotion,
+} from '@/app/components/promotions/PromotionCard';
+import PromotionDetailModalContent from '@/app/components/promotions/PromotionDetailModalContent';
+import Modal from '@/app/components/ui/Modal';
 import { usePromotions } from '@/hooks/usePromotions';
 import { claimPromotion } from '@/lib/api/promotions';
 
 export default function PromotionsPage() {
   const { data, isLoading, error, refetch } = usePromotions();
   const [claimError, setClaimError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Promotion | null>(null);
 
   const handleClaim = async (id: string) => {
     setClaimError(null);
@@ -42,15 +47,27 @@ export default function PromotionsPage() {
           {claimError}
         </div>
       )}
-      {data.map((promotion) => (
-        <PromotionCard
-          key={promotion.id}
-          promotion={{
-            ...promotion,
-            onAction: () => handleClaim(promotion.id),
-          }}
-        />
-      ))}
+      {data.map((promotion) => {
+        const promotionWithAction: Promotion = {
+          ...promotion,
+          onAction: () => handleClaim(promotion.id),
+        };
+        return (
+          <PromotionCard
+            key={promotion.id}
+            promotion={promotionWithAction}
+            onClick={() => setSelected(promotionWithAction)}
+          />
+        );
+      })}
+      <Modal isOpen={!!selected} onClose={() => setSelected(null)}>
+        {selected && (
+          <PromotionDetailModalContent
+            promotion={selected}
+            onClose={() => setSelected(null)}
+          />
+        )}
+      </Modal>
     </div>
   );
 }
