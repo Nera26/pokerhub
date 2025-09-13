@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
-import ErrorChart from '../ErrorChart';
 
 const useChartPaletteMock = jest.fn();
+const useChartMock = jest.fn();
 const buildChartConfigMock = jest.fn((fn: any) =>
   fn({
     accent: '',
@@ -17,8 +17,13 @@ jest.mock('@/hooks/useChartPalette', () => ({
 
 jest.mock('@/lib/useChart', () => ({
   buildChartConfig: (...args: any[]) => buildChartConfigMock(...args),
-  useChart: () => ({ ref: jest.fn() }),
+  useChart: (config: unknown) => {
+    useChartMock(config);
+    return { ref: jest.fn(), ready: true };
+  },
 }));
+
+const ErrorChart = require('../ErrorChart').default;
 
 describe('ErrorChart', () => {
   afterEach(() => {
@@ -35,7 +40,7 @@ describe('ErrorChart', () => {
       data: undefined,
     });
     render(<ErrorChart labels={labels} data={data} />);
-    expect(screen.getByText(/loading palette/i)).toBeInTheDocument();
+    expect(screen.getByText(/loading chart/i)).toBeInTheDocument();
   });
 
   it('shows error when palette fails to load', () => {
@@ -58,7 +63,13 @@ describe('ErrorChart', () => {
       data: ['#111', '#222'],
     });
     render(<ErrorChart labels={labels} data={data} />);
-    const config = buildChartConfigMock.mock.results[0].value;
+    const builder = buildChartConfigMock.mock.calls[0][0];
+    const config = builder({
+      accent: '',
+      border: '',
+      text: '',
+      hexToRgba: () => '',
+    });
     expect(config.data.datasets[0].backgroundColor).toEqual(['#111', '#222']);
   });
 });

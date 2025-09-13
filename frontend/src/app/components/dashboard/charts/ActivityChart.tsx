@@ -1,34 +1,21 @@
 'use client';
 
 import { useMemo } from 'react';
-import CenteredMessage from '@/components/CenteredMessage';
-import { buildChartConfig, useChart } from '@/lib/useChart';
+import ChartCard from './ChartCard';
+import { buildChartConfig } from '@/lib/useChart';
 
 interface ActivityChartProps {
   labels?: string[];
   data?: number[];
   title?: string;
-  showContainer?: boolean;
 }
 
 export default function ActivityChart({
   labels,
   data,
   title = 'Player Activity (24h)',
-  showContainer = false,
 }: ActivityChartProps) {
-  if (!data || data.length === 0) {
-    const message = <CenteredMessage>No data</CenteredMessage>;
-    if (showContainer) {
-      return (
-        <div className="bg-card-bg p-6 rounded-2xl shadow-[0_4px_8px_rgba(0,0,0,0.3)]">
-          <h3 className="text-lg font-bold mb-4">{title}</h3>
-          {message}
-        </div>
-      );
-    }
-    return message;
-  }
+  const hasData = !!data && data.length > 0;
 
   const config = useMemo(
     () =>
@@ -58,39 +45,12 @@ export default function ActivityChart({
     [labels, data],
   );
 
-  const { ref, ready } = useChart(config, [config]);
-
-  const chart = (
-    <div className="h-64 relative">
-      {!ready && (
-        <div className="absolute inset-0 flex items-center justify-center text-text-secondary">
-          Loading chart...
-        </div>
-      )}
-      <h2 id="activity-chart-title" className="sr-only">
-        {title}
-      </h2>
-      <p id="activity-chart-desc" className="sr-only">
-        Line chart displaying number of active players at four-hour intervals
-        throughout the day.
-      </p>
-      <canvas
-        ref={ref}
-        role="img"
-        aria-labelledby="activity-chart-title"
-        aria-describedby="activity-chart-desc"
-        hidden={!ready}
-        aria-hidden={!ready}
-      />
-    </div>
-  );
-
-  if (!showContainer) return chart;
-
   return (
-    <div className="bg-card-bg p-6 rounded-2xl shadow-[0_4px_8px_rgba(0,0,0,0.3)]">
-      <h3 className="text-lg font-bold mb-4">{title}</h3>
-      {chart}
-    </div>
+    <ChartCard
+      title={title}
+      config={config}
+      hasData={hasData}
+      description="Line chart displaying number of active players at four-hour intervals throughout the day."
+    />
   );
 }
