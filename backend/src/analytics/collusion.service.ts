@@ -4,6 +4,8 @@ import {
   calculateVpipCorrelation,
   calculateTimingSimilarity,
   calculateSeatProximity,
+  timeCorrelatedBetting,
+  clusterBySharedValues,
 } from '@shared/analytics/collusion';
 import { AnalyticsService } from './analytics.service';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -56,35 +58,6 @@ export class CollusionService {
     return false;
   }
 
-  private async clusterByIp(users: string[]): Promise<Record<string, string[]>> {
-    const groups: Record<string, string[]> = {};
-    for (const u of users) {
-      const ips = await this.redis.smembers(`collusion:user:ips:${u}`);
-      for (const ip of ips) {
-        groups[ip] ??= [];
-        groups[ip].push(u);
-      }
-    }
-    return Object.fromEntries(
-      Object.entries(groups).filter(([, us]) => us.length > 1),
-    );
-  }
-
-  private timeCorrelatedBetting(
-    timesA: number[],
-    timesB: number[],
-    windowMs = 1000,
-  ): number {
-    if (!timesA.length || !timesB.length) return 0;
-    let matches = 0;
-    for (const tA of timesA) {
-      if (timesB.some((tB) => Math.abs(tA - tB) <= windowMs)) {
-        matches++;
-      }
-    }
-    return matches / Math.max(timesA.length, timesB.length);
-  }
-
   private async shared(
     keyA: string,
     keyB: string,
@@ -123,7 +96,7 @@ export class CollusionService {
       ipClusterScore: Math.max(0, ...ipClusterSizes),
       vpipCorrelation: calculateVpipCorrelation(vpipA, vpipB),
       timingSimilarity: calculateTimingSimilarity(timesA, timesB),
-      betCorrelation: this.timeCorrelatedBetting(timesA, timesB),
+      betCorrelation: timeCorrelatedBetting(timesA, timesB),
       seatProximity: calculateSeatProximity(seatsA, seatsB),
     };
   }
@@ -133,7 +106,12 @@ export class CollusionService {
     users: string[],
     features: Record<string, unknown>,
   ) {
-    const ipClusters = await this.clusterByIp(users);
+    const ipMap = Object.fromEntries(
+      await Promise.all(
+        users.map(async (u) => [u, await this.redis.smembers(`collusion:user:ips:${u}`)]),
+      ),
+    );
+    const ipClusters = clusterBySharedValues(ipMap);
     const enriched = { ...features, ipClusters };
     const audit = this.auditRepo.create({
       sessionId,

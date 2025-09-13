@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "pretest": "npm install && npm install --prefix backend && npm install --prefix frontend && npm install --prefix scripts",
+    "build": "tsc -b",
+    "prepublishOnly": "npm run build",
     "pull:frontend": "git subtree pull --prefix frontend frontend-remote main --squash",
     "pull:backend": "git subtree pull --prefix backend backend-remote main --squash",
     "pull:all": "npm run pull:frontend && npm run pull:backend",
@@ -29,7 +30,9 @@
     "lint:unused": "ts-prune -p tsconfig.json -e",
     "lint:dup": "jscpd -g --threshold 10 frontend backend shared",
     "audit:score": "node tools/audit-score.mjs"
-  },
+  }
+}
+
   "devDependencies": {
     "@actions/github": "^6.0.1",
     "@eslint/js": "^9.18.0",
