@@ -93,5 +93,11 @@ describe('table api', () => {
       'chat',
       'notes',
     ]);
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/tables/1/tabs',
+      expect.objectContaining({
+        cache: 'no-store',
+      }),
+    );
   });
 });

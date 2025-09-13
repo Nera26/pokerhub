@@ -11,6 +11,7 @@ import {
 import { Tournament } from './tournament.entity';
 import { User } from './user.entity';
 import { Seat } from './seat.entity';
+import type { TabKey } from '../../schemas/tables';
 
 @Entity()
 export class Table {
@@ -52,6 +53,12 @@ export class Table {
 
   @Column('int', { default: 0 })
   rake: number;
+
+  @Column('text', {
+    array: true,
+    default: ['history', 'chat', 'notes'],
+  })
+  tabs: TabKey[];
 
   @CreateDateColumn()
   createdAt: Date;

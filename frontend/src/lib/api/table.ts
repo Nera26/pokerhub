@@ -93,7 +93,7 @@ export async function fetchSidePanelTabs(
   id: string,
   { signal }: { signal?: AbortSignal } = {},
 ): Promise<TabKey[]> {
-  return apiClient(`/api/table/${id}/tabs`, TableTabsResponseSchema, {
+  return apiClient(`/api/tables/${id}/tabs`, TableTabsResponseSchema, {
     signal,
     cache: 'no-store',
   });
