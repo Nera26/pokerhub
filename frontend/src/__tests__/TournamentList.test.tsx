@@ -2,6 +2,19 @@ import { render, screen } from '@testing-library/react';
 import TournamentList from '@/components/TournamentList';
 import type { Tournament } from '@/hooks/useLobbyData';
 
+const entityListSpy = jest.fn();
+
+jest.mock('@/components/EntityList', () => {
+  const actual = jest.requireActual('@/components/EntityList');
+  return {
+    __esModule: true,
+    default: jest.fn((props: any) => {
+      entityListSpy(props);
+      return actual.default(props);
+    }),
+  };
+});
+
 describe('TournamentList', () => {
   it('displays formatted rebuy fee when present', async () => {
     const tournaments: Tournament[] = [
@@ -19,6 +32,16 @@ describe('TournamentList', () => {
     ];
 
     render(<TournamentList tournaments={tournaments} hidden={false} />);
+
+    expect(entityListSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'tournaments-panel',
+        items: tournaments,
+        title: 'Tournaments',
+        emptyMessage: 'No tournaments available.',
+        hidden: false,
+      }),
+    );
 
     expect(await screen.findByText('$10')).toBeInTheDocument();
     const panel = screen.getByRole('tabpanel');

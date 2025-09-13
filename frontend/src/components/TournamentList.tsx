@@ -4,9 +4,7 @@ import { Tournament } from '@/hooks/useLobbyData';
 import TournamentCard, {
   type TournamentStatus,
 } from '@/app/components/tournaments/TournamentCard';
-import VirtualizedList from '@/components/VirtualizedList';
-
-const ENTITY_ITEM_HEIGHT = 280;
+import EntityList from '@/components/EntityList';
 
 export interface TournamentListProps<T extends Tournament> {
   tournaments: T[];
@@ -36,15 +34,13 @@ export default function TournamentList<T extends Tournament>({
   };
 
   return (
-    <VirtualizedList<T>
+    <EntityList<T>
       id="tournaments-panel"
       aria-labelledby="tab-tournaments"
       hidden={hidden}
       title="Tournaments"
       emptyMessage="No tournaments available."
       items={tournaments}
-      estimateSize={ENTITY_ITEM_HEIGHT}
-      className="h-96 overflow-auto"
       renderItem={(t, style) => (
         <li key={t.id} style={style} className="mb-4">
           <TournamentCard
