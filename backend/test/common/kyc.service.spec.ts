@@ -7,7 +7,6 @@ import type { ConfigService } from '@nestjs/config';
 import type { Pep } from '../../src/database/entities/pep.entity';
 import { DataSource } from 'typeorm';
 import { createInMemoryDataSource } from '../utils/pgMem';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Logger } from '@nestjs/common';
 
 import { Account as WalletAccount } from '../../src/wallet/account.entity';
@@ -32,9 +31,9 @@ function makeService({
       ? ({
           get: (key: string) =>
             key === 'kyc.blockedCountries'
-              ? blocked ?? []
+              ? (blocked ?? [])
               : key === 'kyc.sanctionedNames'
-                ? sanctioned ?? []
+                ? (sanctioned ?? [])
                 : undefined,
         } as Partial<ConfigService>)
       : undefined;
@@ -50,7 +49,11 @@ function makeService({
 
 describe('KycService common', () => {
   it('blocks users from restricted countries', async () => {
-    const service = makeService({ country: 'US', blocked: ['US'], sanctioned: [] });
+    const service = makeService({
+      country: 'US',
+      blocked: ['US'],
+      sanctioned: [],
+    });
     await service.onModuleInit();
     await expect(
       service.runChecks('good', '1.1.1.1', '1990-01-01'),
@@ -142,6 +145,31 @@ describe('KycService common', () => {
     warn.mockRestore();
   });
 
+  it('loads blocked countries from db when env var missing', async () => {
+    const accounts = {
+      query: jest.fn().mockResolvedValue([{ country: 'US' }]),
+    } as unknown as Repository<Account>;
+    const provider: CountryProvider = {
+      getCountry: () => Promise.resolve('US'),
+    };
+    const service = new KycService(
+      accounts,
+      provider,
+      undefined as any,
+      undefined as any,
+      undefined as any,
+      undefined,
+    );
+    await service.onModuleInit();
+    await expect(
+      service.runChecks('Good', '1.1.1.1', '1990-01-01'),
+    ).rejects.toThrow('Blocked jurisdiction');
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(accounts.query).toHaveBeenCalledWith(
+      'SELECT country FROM blocked_countries',
+    );
+  });
+
   describe('wallet flows', () => {
     let dataSource: DataSource;
     let service: KycService;
@@ -209,7 +237,9 @@ describe('KycService common', () => {
         .mockResolvedValue({ allowed: false, reason: 'fail' });
       jest.spyOn(service as any, 'checkFlag').mockResolvedValue(undefined);
       jest.spyOn(service as any, 'checkGeoIp').mockResolvedValue(undefined);
-      await expect(service.verify(accountId, '1.1.1.1')).rejects.toThrow('fail');
+      await expect(service.verify(accountId, '1.1.1.1')).rejects.toThrow(
+        'fail',
+      );
     });
 
     it('rejects geo-blocked locations', async () => {
