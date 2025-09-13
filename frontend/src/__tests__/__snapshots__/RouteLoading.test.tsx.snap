@@ -1,0 +1,35 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`RouteLoading renders wrapper and children 1`] = `
+<div>
+  <div
+    class="h-20 bg-card-bg animate-pulse"
+  />
+  <main
+    aria-busy="true"
+    class="container mx-auto px-4 sm:px-6 lg:px-8 pt-6 md:pt-8 pb-[calc(env(safe-area-inset-bottom)+72px)]"
+  >
+    <div
+      class="placeholder"
+    />
+  </main>
+  <div
+    class="h-20 bg-card-bg animate-pulse"
+  />
+</div>
+`;
+
+exports[`RouteLoading renders wrapper without children 1`] = `
+<div>
+  <div
+    class="h-20 bg-card-bg animate-pulse"
+  />
+  <main
+    aria-busy="true"
+    class="container mx-auto px-4 sm:px-6 lg:px-8 pt-6 md:pt-8 pb-[calc(env(safe-area-inset-bottom)+72px)]"
+  />
+  <div
+    class="h-20 bg-card-bg animate-pulse"
+  />
+</div>
+`;
