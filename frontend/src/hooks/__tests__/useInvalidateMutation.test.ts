@@ -1,13 +1,11 @@
 import { renderHook } from '@testing-library/react';
-import { useInvalidateMutationWithToast } from '@/hooks/useInvalidateMutationWithToast';
-import { useInvalidateMutation } from '@/hooks/useInvalidateMutation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInvalidateMutation } from '@/hooks/useInvalidateMutation';
 import type { NotificationsResponse } from '@shared/types';
 
-jest.mock('@/hooks/useInvalidateMutation');
 jest.mock('@tanstack/react-query');
 
-describe('useInvalidateMutationWithToast', () => {
+describe('useInvalidateMutation', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -17,11 +15,11 @@ describe('useInvalidateMutationWithToast', () => {
       mutate: jest.fn(),
       mutateAsync: jest.fn().mockResolvedValue(undefined),
     };
-    (useInvalidateMutation as jest.Mock).mockReturnValue(base);
+    (useMutation as jest.Mock).mockReturnValue(base);
     const setToast = jest.fn();
 
     const { result } = renderHook(() =>
-      useInvalidateMutationWithToast({
+      useInvalidateMutation({
         mutationFn: jest.fn(),
         queryKey: ['q'],
         toastOpts: {
@@ -53,10 +51,6 @@ describe('useInvalidateMutationWithToast', () => {
   });
 
   it('invalidates cache on settled', async () => {
-    const actual = jest.requireActual('@/hooks/useInvalidateMutation');
-    (useInvalidateMutation as jest.Mock).mockImplementation(
-      actual.useInvalidateMutation,
-    );
     const cancelQueries = jest.fn();
     const getQueryData = jest
       .fn()
@@ -77,7 +71,7 @@ describe('useInvalidateMutationWithToast', () => {
     });
 
     renderHook(() =>
-      useInvalidateMutationWithToast({
+      useInvalidateMutation({
         mutationFn: (id: string) => Promise.resolve(id),
         queryKey: ['notifications'],
         update: (prev: NotificationsResponse, id: string) => ({
