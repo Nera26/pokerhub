@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { gameGatewaySetup } from './utils/gameGatewaySetup';
-import { createGameNamespace } from '../src/lib/socket-namespaces';
+import { createGameNamespace } from './utils/socketNamespaces';
 import { GameActionSchema } from '@shared/schemas/game';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
 

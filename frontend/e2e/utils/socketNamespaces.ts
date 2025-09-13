@@ -2,7 +2,7 @@ import {
   createNamespaceSocket,
   type EmitHooks,
   type SocketOptions,
-} from './socket-core';
+} from '../../src/lib/socket-core';
 
 export function createGameNamespace(
   name: string,
@@ -33,4 +33,4 @@ export function createGameNamespace(
   return { getSocket: get, disconnect, emitWithAck: emit };
 }
 
-export type { EmitHooks } from './socket-core';
+export type { EmitHooks } from '../../src/lib/socket-core';
