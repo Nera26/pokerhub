@@ -10,10 +10,10 @@ export default function HomeLoadingSkeleton() {
   const { data: ctas } = useCTAs();
   const { data: gameTypes } = useGameTypes();
 
-  const ctaCount = ctas?.length ?? 2;
-  const tabCount = gameTypes?.length ?? 4;
-  const tableCount = tables?.length ?? 3;
-  const tournamentCount = tournaments?.length ?? 3;
+  const ctaCount = ctas?.length ?? 0;
+  const tabCount = gameTypes?.length ?? 0;
+  const tableCount = tables?.length ?? 0;
+  const tournamentCount = tournaments?.length ?? 0;
 
   return (
     <main

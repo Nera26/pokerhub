@@ -20,16 +20,16 @@ describe('HomeLoadingSkeleton', () => {
     jest.resetAllMocks();
   });
 
-  it('falls back to defaults when data is undefined', () => {
+  it('renders zero placeholders when data is undefined', () => {
     mockUseTables.mockReturnValue({ data: undefined } as any);
     mockUseTournaments.mockReturnValue({ data: undefined } as any);
     mockUseCTAs.mockReturnValue({ data: undefined } as any);
     mockUseGameTypes.mockReturnValue({ data: undefined } as any);
 
-    const { container, getAllByTestId } = render(<HomeLoadingSkeleton />);
+    const { container, queryAllByTestId } = render(<HomeLoadingSkeleton />);
 
-    expect(getAllByTestId('cta-skeleton')).toHaveLength(2);
-    expect(getAllByTestId('tab-skeleton')).toHaveLength(4);
+    expect(queryAllByTestId('cta-skeleton')).toHaveLength(0);
+    expect(queryAllByTestId('tab-skeleton')).toHaveLength(0);
 
     const cashSection = container.querySelector(
       '#cash-games-section',
@@ -38,10 +38,10 @@ describe('HomeLoadingSkeleton', () => {
       '#tournaments-section',
     ) as HTMLElement;
 
-    expect(within(cashSection).getAllByTestId('skeleton-card')).toHaveLength(3);
+    expect(within(cashSection).queryAllByTestId('skeleton-card')).toHaveLength(0);
     expect(
-      within(tournamentSection).getAllByTestId('skeleton-card'),
-    ).toHaveLength(3);
+      within(tournamentSection).queryAllByTestId('skeleton-card'),
+    ).toHaveLength(0);
   });
 
   it('renders skeletons based on query sizes', () => {
