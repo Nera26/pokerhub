@@ -2601,6 +2601,7 @@ components:
       properties:
         labels:
           type: array
+          description: labels[i] corresponds to 4-hour increments beginning at midnight
           items:
             type: string
         data:
