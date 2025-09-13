@@ -117,7 +117,11 @@ export class TablesService {
   }
 
   async getSidePanelTabs(id: string): Promise<TabKey[]> {
-    return ['history', 'chat', 'notes'];
+    const table = await this.tables.findOne({ where: { id } });
+    if (!table) {
+      throw new NotFoundException('Table not found');
+    }
+    return table.tabs ?? ['history', 'chat', 'notes'];
   }
 
   async createTable(data: CreateTableRequest): Promise<TableDto> {

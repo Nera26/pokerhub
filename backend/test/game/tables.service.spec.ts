@@ -62,3 +62,23 @@ describe('TablesService.getTable', () => {
     expect(res.stateAvailable).toBe(false);
   });
 });
+
+describe('TablesService.getSidePanelTabs', () => {
+  it('returns stored tabs for table', async () => {
+    const repo: any = {
+      findOne: jest.fn().mockResolvedValue({ tabs: ['history', 'chat'] }),
+    };
+    const service = new TablesService(repo, {} as any, {} as any, {} as any);
+    await expect(service.getSidePanelTabs('t1')).resolves.toEqual([
+      'history',
+      'chat',
+    ]);
+    expect(repo.findOne).toHaveBeenCalledWith({ where: { id: 't1' } });
+  });
+
+  it('throws when table not found', async () => {
+    const repo: any = { findOne: jest.fn().mockResolvedValue(null) };
+    const service = new TablesService(repo, {} as any, {} as any, {} as any);
+    await expect(service.getSidePanelTabs('missing')).rejects.toThrow('Table not found');
+  });
+});
