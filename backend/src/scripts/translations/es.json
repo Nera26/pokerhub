@@ -1,0 +1,22 @@
+{
+  "code": "es",
+  "label": "Español",
+  "messages": {
+    "layout.skip": "Saltar al contenido principal",
+    "login.tagline": "¡Únete a la comunidad de entusiastas del póker!",
+    "login.brandButton": "Únete a la comunidad",
+    "login.title": "Iniciar sesión",
+    "login.forgot": "¿Olvidaste tu contraseña?",
+    "login.noAccount": "¿No tienes una cuenta?",
+    "login.signUp": "Regístrate",
+    "login.footer.copyright": "\u00a9 2024 PokerHub. Todos los derechos reservados.",
+    "login.footer.terms": "Términos de servicio",
+    "login.footer.privacy": "Política de privacidad",
+    "serviceWorker.updatePrompt": "Hay una nueva versión disponible. ¿Actualizar ahora?",
+    "serviceWorker.reload": "Actualizar",
+    "serviceWorker.dismiss": "Cerrar",
+    "serviceWorker.offlineNotice": "Estás sin conexión. Los cambios se sincronizarán cuando se restablezca la conexión.",
+    "offline.title": "Estás sin conexión",
+    "offline.body": "Algunas funciones pueden no estar disponibles. Por favor, verifica tu conexión e inténtalo de nuevo."
+  }
+}
