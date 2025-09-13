@@ -1,26 +1,21 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import ReviewWithdrawalModal from '../modals/ReviewWithdrawalModal';
 import TransactionHistorySection from '../common/TransactionHistorySection';
 import type { StatusBadge } from './transactions/types';
-import {
-  fetchPendingWithdrawals,
-  confirmWithdrawal,
-  rejectWithdrawal,
-} from '@/lib/api/wallet';
+import { fetchPendingWithdrawals } from '@/lib/api/wallet';
 import type { PendingWithdrawal } from '@shared/types';
 
 type TableWithdrawal = PendingWithdrawal & {
   date: string;
   status: StatusBadge;
   type: string;
+  bankInfo: string;
 };
 
 export default function Withdrawals() {
-  const queryClient = useQueryClient();
-
   const { data: withdrawals = [] } = useQuery<PendingWithdrawal[]>({
     queryKey: ['adminWithdrawals'],
     queryFn: ({ signal }) =>
@@ -37,37 +32,7 @@ export default function Withdrawals() {
 
   const currency = rows[0]?.currency ?? 'USD';
 
-  const [selected, setSelected] = useState<TableWithdrawal | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleOpen = (w: TableWithdrawal) => {
-    setSelected(w);
-    setError(null);
-    setModalOpen(true);
-  };
-
-  const handleApprove = async (_comment: string) => {
-    if (!selected) return;
-    try {
-      await confirmWithdrawal(selected.id);
-      setModalOpen(false);
-      await queryClient.invalidateQueries({ queryKey: ['adminWithdrawals'] });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to approve withdrawal');
-    }
-  };
-
-  const handleReject = async (comment: string) => {
-    if (!selected) return;
-    try {
-      await rejectWithdrawal(selected.id, comment);
-      setModalOpen(false);
-      await queryClient.invalidateQueries({ queryKey: ['adminWithdrawals'] });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to reject withdrawal');
-    }
-  };
+  const [selected, setSelected] = useState<PendingWithdrawal | null>(null);
 
   return (
     <>
@@ -78,7 +43,10 @@ export default function Withdrawals() {
         actions={[
           {
             label: 'Review',
-            onClick: handleOpen,
+            onClick: (row) => {
+              const original = withdrawals.find((w) => w.id === row.id);
+              if (original) setSelected(original);
+            },
             className:
               'px-2 py-1 bg-accent-yellow text-black rounded hover:bg-yellow-500',
           },
@@ -86,17 +54,8 @@ export default function Withdrawals() {
       />
       {selected && (
         <ReviewWithdrawalModal
-          isOpen={modalOpen}
-          onClose={() => setModalOpen(false)}
-          request={{
-            user: selected.userId,
-            amount: `$${selected.amount.toFixed(2)}`,
-            date: new Date(selected.date).toLocaleDateString(),
-            bankInfo: selected.bankInfo,
-          }}
-          onApprove={handleApprove}
-          onReject={handleReject}
-          error={error}
+          request={selected}
+          onClose={() => setSelected(null)}
         />
       )}
     </>

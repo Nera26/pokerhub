@@ -6,22 +6,13 @@ import ModalHeader from './ModalHeader';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-
-type Withdrawal = {
-  user: string;
-  amount: string; // "$200.00"
-  date: string;
-  status?: 'Pending' | 'Approved' | 'Rejected';
-  bankInfo?: string;
-};
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { confirmWithdrawal, rejectWithdrawal } from '@/lib/api/wallet';
+import type { PendingWithdrawal } from '@shared/types';
 
 type Props = {
-  isOpen: boolean;
   onClose: () => void;
-  request: Withdrawal;
-  onApprove: (comment: string) => void;
-  onReject: (comment: string) => void;
-  error?: string | null;
+  request: PendingWithdrawal;
 };
 
 const schema = z.object({
@@ -30,14 +21,7 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-export default function ReviewWithdrawalModal({
-  isOpen,
-  onClose,
-  request,
-  onApprove,
-  onReject,
-  error,
-}: Props) {
+export default function ReviewWithdrawalModal({ onClose, request }: Props) {
   const {
     register,
     handleSubmit,
@@ -48,34 +32,63 @@ export default function ReviewWithdrawalModal({
     mode: 'onChange',
   });
 
+  const queryClient = useQueryClient();
+
+  const approveMutation = useMutation({
+    mutationFn: () => confirmWithdrawal(request.id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['adminWithdrawals'] });
+      onClose();
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: (comment: string) => rejectWithdrawal(request.id, comment),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['adminWithdrawals'] });
+      onClose();
+    },
+  });
+
   const amountFormatted = useMemo(() => {
-    if (!request?.amount) return '$0.00';
-    return request.amount.startsWith('$')
-      ? request.amount
-      : `$${request.amount}`;
-  }, [request]);
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: request.currency,
+    }).format(request.amount);
+  }, [request.amount, request.currency]);
+
+  const bankInfo = useMemo(() => {
+    return (
+      request.bankInfo ??
+      (`${request.bank} ${request.maskedAccount}`.trim() || 'N/A')
+    );
+  }, [request.bankInfo, request.bank, request.maskedAccount]);
+
+  const error = (approveMutation.error || rejectMutation.error) as Error | null;
+  const loading = approveMutation.isPending || rejectMutation.isPending;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal isOpen onClose={onClose}>
       <ModalHeader title="Review Withdrawal Request" onClose={onClose} />
       <div className="p-6 space-y-4">
         {error && (
           <p role="alert" className="text-danger-red">
-            {error}
+            {error.message}
           </p>
         )}
         <div className="space-y-1">
           <p>
-            <strong>User:</strong> {request?.user}
+            <strong>User:</strong> {request.userId}
           </p>
           <p>
             <strong>Amount:</strong> {amountFormatted}
           </p>
           <p>
-            <strong>Request Date:</strong> {request?.date}
+            <strong>Request Date:</strong>{' '}
+            {new Date(request.createdAt).toLocaleString()}
           </p>
           <p>
-            <strong>Bank Info:</strong> {request?.bankInfo ?? 'N/A'}
+            <strong>Bank Info:</strong> {bankInfo}
           </p>
         </div>
 
@@ -91,18 +104,20 @@ export default function ReviewWithdrawalModal({
 
         <div className="flex gap-3 pt-2">
           <button
-            onClick={handleSubmit(({ comment }) => onApprove(comment))}
-            disabled={!isValid}
+            onClick={handleSubmit(() => approveMutation.mutate())}
+            disabled={!isValid || loading}
             className="flex-1 bg-accent-green hover:bg-green-600 px-4 py-3 rounded-xl font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Approve
+            {approveMutation.isPending ? 'Approving...' : 'Approve'}
           </button>
           <button
-            onClick={handleSubmit(({ comment }) => onReject(comment))}
-            disabled={!isValid}
+            onClick={handleSubmit(({ comment }) =>
+              rejectMutation.mutate(comment),
+            )}
+            disabled={!isValid || loading}
             className="flex-1 bg-danger-red hover:bg-red-600 px-4 py-3 rounded-xl font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Reject
+            {rejectMutation.isPending ? 'Rejecting...' : 'Reject'}
           </button>
         </div>
       </div>
