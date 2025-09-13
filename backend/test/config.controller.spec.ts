@@ -1,4 +1,7 @@
 process.env.DATABASE_URL = '';
+process.env.PERF_THRESHOLD_INP = '200';
+process.env.PERF_THRESHOLD_LCP = '3000';
+process.env.PERF_THRESHOLD_CLS = '0.1';
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, Module } from '@nestjs/common';
@@ -13,6 +16,7 @@ import { AdminGuard } from '../src/auth/admin.guard';
 import { ChipDenomsService } from '../src/services/chip-denoms.service';
 import { TableThemeService } from '../src/services/table-theme.service';
 import { DefaultAvatarService } from '../src/services/default-avatar.service';
+import { PerformanceThresholdsService } from '../src/services/performance-thresholds.service';
 import { ChipDenominationEntity } from '../src/database/entities/chip-denomination.entity';
 import { TableThemeEntity } from '../src/database/entities/table-theme.entity';
 import { DefaultAvatarEntity } from '../src/database/entities/default-avatar.entity';
@@ -86,7 +90,12 @@ function createTestModule() {
       ]),
     ],
     controllers: [ConfigController],
-    providers: [ChipDenomsService, TableThemeService, DefaultAvatarService],
+    providers: [
+      ChipDenomsService,
+      TableThemeService,
+      DefaultAvatarService,
+      PerformanceThresholdsService,
+    ],
   })
   class ConfigTestModule {}
 
@@ -121,7 +130,7 @@ describe('ConfigController', () => {
       .put('/config/table-theme')
       .send(mockTheme)
       .expect(200);
-    await avatarService.update('initial.png');
+    await avatarService.update('https://example.com/initial.png');
   });
 
   afterAll(async () => {
@@ -175,17 +184,24 @@ describe('ConfigController', () => {
     const res = await request(app.getHttpServer())
       .get('/config/default-avatar')
       .expect(200);
-    expect(res.body).toEqual({ defaultAvatar: 'initial.png' });
+    expect(res.body).toEqual({ defaultAvatar: 'https://example.com/initial.png' });
   });
 
   it('updates default avatar', async () => {
     await request(app.getHttpServer())
       .put('/config/default-avatar')
-      .send({ defaultAvatar: 'updated.png' })
+      .send({ defaultAvatar: 'https://example.com/updated.png' })
       .expect(200);
     const res = await request(app.getHttpServer())
       .get('/config/default-avatar')
       .expect(200);
-    expect(res.body).toEqual({ defaultAvatar: 'updated.png' });
+    expect(res.body).toEqual({ defaultAvatar: 'https://example.com/updated.png' });
+  });
+
+  it('returns performance thresholds', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/config/performance-thresholds')
+      .expect(200);
+    expect(res.body).toEqual({ INP: 200, LCP: 3000, CLS: 0.1 });
   });
 });

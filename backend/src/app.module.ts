@@ -76,6 +76,7 @@ import { NavIconsService } from './services/nav-icons.service';
 import { HistoryTabsService } from './services/history-tabs.service';
 import { SettingsService } from './services/settings.service';
 import { DefaultAvatarService } from './services/default-avatar.service';
+import { PerformanceThresholdsService } from './services/performance-thresholds.service';
 import { ConfigService as AppConfigService } from './services/config.service';
 import { BonusOptionEntity } from './database/entities/bonus-option.entity';
 import { ChipDenominationEntity } from './database/entities/chip-denomination.entity';
@@ -189,6 +190,7 @@ import { DefaultAvatarEntity } from './database/entities/default-avatar.entity';
     HistoryTabsService,
     SettingsService,
     DefaultAvatarService,
+    PerformanceThresholdsService,
     BonusService,
     ChipDenomsService,
     TableThemeService,

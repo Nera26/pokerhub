@@ -2003,6 +2003,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DefaultAvatarResponse'
+  /config/performance-thresholds:
+    get:
+      summary: Get performance thresholds
+      description: Returns the performance thresholds used for web vitals
+      responses:
+        '200':
+          description: Performance thresholds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerformanceThresholdsResponse'
   /users:
     post:
       summary: Create user
@@ -3631,6 +3642,16 @@ components:
       properties:
         defaultAvatar:
           type: string
+    PerformanceThresholdsResponse:
+      type: object
+      required: [INP, LCP, CLS]
+      properties:
+        INP:
+          type: number
+        LCP:
+          type: number
+        CLS:
+          type: number
     CreateTableRequest:
       type: object
       properties:

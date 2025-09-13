@@ -7,12 +7,15 @@ import {
   type TableThemeResponse,
   DefaultAvatarResponseSchema,
   type DefaultAvatarResponse,
+  PerformanceThresholdsResponseSchema,
+  type PerformanceThresholdsResponse,
 } from '@shared/types';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { ChipDenomsService } from '../services/chip-denoms.service';
 import { TableThemeService } from '../services/table-theme.service';
 import { DefaultAvatarService } from '../services/default-avatar.service';
+import { PerformanceThresholdsService } from '../services/performance-thresholds.service';
 
 @ApiTags('config')
 @Controller('config')
@@ -21,6 +24,7 @@ export class ConfigController {
     private readonly chips: ChipDenomsService,
     private readonly themes: TableThemeService,
     private readonly avatars: DefaultAvatarService,
+    private readonly thresholds: PerformanceThresholdsService,
   ) {}
 
   @Get('chips')
@@ -75,5 +79,14 @@ export class ConfigController {
   ): Promise<DefaultAvatarResponse> {
     const parsed = DefaultAvatarResponseSchema.parse(body);
     return { defaultAvatar: await this.avatars.update(parsed.defaultAvatar) };
+  }
+
+  @Get('performance-thresholds')
+  @ApiOperation({ summary: 'Get performance thresholds' })
+  @ApiResponse({ status: 200, description: 'Performance thresholds' })
+  async getPerformanceThresholds(): Promise<PerformanceThresholdsResponse> {
+    return PerformanceThresholdsResponseSchema.parse(
+      await this.thresholds.get(),
+    );
   }
 }
