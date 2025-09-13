@@ -75,12 +75,14 @@ import { TableThemeService } from './services/table-theme.service';
 import { NavIconsService } from './services/nav-icons.service';
 import { HistoryTabsService } from './services/history-tabs.service';
 import { SettingsService } from './services/settings.service';
+import { DefaultAvatarService } from './services/default-avatar.service';
 import { ConfigService as AppConfigService } from './services/config.service';
 import { BonusOptionEntity } from './database/entities/bonus-option.entity';
 import { ChipDenominationEntity } from './database/entities/chip-denomination.entity';
 import { TableThemeEntity } from './database/entities/table-theme.entity';
 import { NavIconEntity } from './database/entities/nav-icon.entity';
 import { HistoryTabEntity } from './database/entities/history-tab.entity';
+import { DefaultAvatarEntity } from './database/entities/default-avatar.entity';
 
 @Module({
   imports: [
@@ -133,6 +135,7 @@ import { HistoryTabEntity } from './database/entities/history-tab.entity';
       BonusOptionEntity,
       ChipDenominationEntity,
       TableThemeEntity,
+      DefaultAvatarEntity,
       NavIconEntity,
       HistoryTabEntity,
     ]),
@@ -185,6 +188,7 @@ import { HistoryTabEntity } from './database/entities/history-tab.entity';
     NavIconsService,
     HistoryTabsService,
     SettingsService,
+    DefaultAvatarService,
     BonusService,
     ChipDenomsService,
     TableThemeService,

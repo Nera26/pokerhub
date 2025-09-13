@@ -2016,6 +2016,41 @@ export interface paths {
       };
     };
   };
+  "/config/default-avatar": {
+    /**
+     * Get default avatar
+     * @description Returns the default avatar URL
+     */
+    get: {
+      responses: {
+        /** @description Default avatar URL */
+        200: {
+          content: {
+            "application/json": components["schemas"]["DefaultAvatarResponse"];
+          };
+        };
+      };
+    };
+    /**
+     * Update default avatar
+     * @description Admin only
+     */
+    put: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["DefaultAvatarResponse"];
+        };
+      };
+      responses: {
+        /** @description Updated default avatar URL */
+        200: {
+          content: {
+            "application/json": components["schemas"]["DefaultAvatarResponse"];
+          };
+        };
+      };
+    };
+  };
   "/users": {
     /** Create user */
     post: {
@@ -2840,6 +2875,9 @@ export interface components {
           badge?: string;
         };
       };
+    };
+    DefaultAvatarResponse: {
+      defaultAvatar: string;
     };
     CreateTableRequest: {
       tableName: string;

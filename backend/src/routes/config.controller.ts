@@ -5,11 +5,14 @@ import {
   TableThemeResponseSchema,
   type ChipDenominationsResponse,
   type TableThemeResponse,
+  DefaultAvatarResponseSchema,
+  type DefaultAvatarResponse,
 } from '@shared/types';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { ChipDenomsService } from '../services/chip-denoms.service';
 import { TableThemeService } from '../services/table-theme.service';
+import { DefaultAvatarService } from '../services/default-avatar.service';
 
 @ApiTags('config')
 @Controller('config')
@@ -17,6 +20,7 @@ export class ConfigController {
   constructor(
     private readonly chips: ChipDenomsService,
     private readonly themes: TableThemeService,
+    private readonly avatars: DefaultAvatarService,
   ) {}
 
   @Get('chips')
@@ -53,5 +57,23 @@ export class ConfigController {
   ): Promise<TableThemeResponse> {
     const parsed = TableThemeResponseSchema.parse(body);
     return await this.themes.update(parsed);
+  }
+
+  @Get('default-avatar')
+  @ApiOperation({ summary: 'Get default avatar' })
+  @ApiResponse({ status: 200, description: 'Default avatar URL' })
+  async getDefaultAvatar(): Promise<DefaultAvatarResponse> {
+    return { defaultAvatar: await this.avatars.get() };
+  }
+
+  @Put('default-avatar')
+  @UseGuards(AuthGuard, AdminGuard)
+  @ApiOperation({ summary: 'Update default avatar' })
+  @ApiResponse({ status: 200, description: 'Updated default avatar URL' })
+  async updateDefaultAvatar(
+    @Body() body: DefaultAvatarResponse,
+  ): Promise<DefaultAvatarResponse> {
+    const parsed = DefaultAvatarResponseSchema.parse(body);
+    return { defaultAvatar: await this.avatars.update(parsed.defaultAvatar) };
   }
 }
