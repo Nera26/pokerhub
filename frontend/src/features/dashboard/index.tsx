@@ -21,6 +21,7 @@ const Sidebar = dynamic(() => import('@/app/components/dashboard/Sidebar'), {
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import DashboardModule from '@/app/components/dashboard/DashboardModule';
 import { useSettings } from '@/hooks/useSettings';
+import { DEFAULT_AVATAR_URL } from '@shared/constants';
 
 function isSidebarTab(v: string | null, tabs: SidebarTab[]): v is SidebarTab {
   return !!v && tabs.includes(v as SidebarTab);
@@ -198,11 +199,7 @@ function DashboardPage() {
               error={metricsError}
             />
             <Image
-              src={
-                avatarUrl ||
-                settings?.defaultAvatar ||
-                'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='
-              }
+              src={avatarUrl ?? settings?.defaultAvatar ?? DEFAULT_AVATAR_URL}
               alt="Admin avatar"
               width={40}
               height={40}

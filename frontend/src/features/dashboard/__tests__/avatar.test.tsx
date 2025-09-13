@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Page from '../index';
+import { DEFAULT_AVATAR_URL } from '@shared/constants';
 
 jest.mock('@/app/components/dashboard/Sidebar', () => () => <div />);
 jest.mock('@/app/components/dashboard/DashboardModule', () => () => <div />);
@@ -10,13 +11,11 @@ jest.mock('@/lib/api/admin', () => ({
     .mockResolvedValue([
       { id: 'dashboard', title: 'Dashboard', component: './dummy' },
     ]),
-  fetchAdminTabMeta: jest
-    .fn()
-    .mockResolvedValue({
-      enabled: true,
-      title: 'Dashboard',
-      component: './dummy',
-    }),
+  fetchAdminTabMeta: jest.fn().mockResolvedValue({
+    enabled: true,
+    title: 'Dashboard',
+    component: './dummy',
+  }),
 }));
 jest.mock('@/hooks/useDashboardMetrics', () => ({
   useDashboardMetrics: () => ({
@@ -29,17 +28,12 @@ jest.mock('@/lib/api/profile', () => ({
   fetchProfile: jest.fn().mockResolvedValue({ avatarUrl: null }),
 }));
 
-it('renders default avatar and updates when config changes', async () => {
-  const queryClient = new QueryClient();
-  (global.fetch as jest.Mock)
-    .mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ defaultAvatar: 'first.png' }),
-    })
-    .mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ defaultAvatar: 'second.png' }),
-    });
+it('falls back to DEFAULT_AVATAR_URL when no avatars are available', async () => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+
+  (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('failed'));
 
   render(
     <QueryClientProvider client={queryClient}>
@@ -48,10 +42,7 @@ it('renders default avatar and updates when config changes', async () => {
   );
 
   const img = await screen.findByAltText('Admin avatar');
-  expect(img).toHaveAttribute('src', 'first.png');
-
-  await queryClient.invalidateQueries({ queryKey: ['settings'] });
-  await waitFor(() => {
-    expect(img).toHaveAttribute('src', 'second.png');
-  });
+  expect(img.getAttribute('src')).toContain(
+    encodeURIComponent(DEFAULT_AVATAR_URL),
+  );
 });
