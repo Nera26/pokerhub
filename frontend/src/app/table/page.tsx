@@ -1,7 +1,3 @@
-import dynamic from 'next/dynamic';
+import createDynamicPage from '@/app/utils/createDynamicPage';
 
-const TablePage = dynamic(() => import('@/features/table'), {
-  loading: () => <div>Loading...</div>,
-});
-
-export default TablePage;
+export default createDynamicPage(() => import('@/features/table'));
