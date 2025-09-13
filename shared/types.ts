@@ -228,6 +228,8 @@ export type {
 /** ---- Tournaments ---- */
 export {
   AdminTournamentSchema,
+  TournamentFormatSchema,
+  TournamentFormatsResponseSchema,
   TournamentFilterSchema,
   TournamentFilterOptionSchema,
   TournamentFiltersResponseSchema,
@@ -236,6 +238,8 @@ export {
 } from '../backend/src/schemas/tournaments';
 export type {
   AdminTournament,
+  TournamentFormat,
+  TournamentFormatsResponse,
   TournamentFilter,
   TournamentFilterOption,
   TournamentFiltersResponse,

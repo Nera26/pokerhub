@@ -26,6 +26,13 @@ describe('AdminTournamentsController', () => {
     await app.close();
   });
 
+  it('returns formats', async () => {
+    await request(app.getHttpServer())
+      .get('/admin/tournaments/formats')
+      .expect(200)
+      .expect(['Regular', 'Turbo', 'Deepstack', 'Bounty', 'Freeroll']);
+  });
+
   it('returns defaults', async () => {
     await request(app.getHttpServer())
       .get('/admin/tournaments/defaults')

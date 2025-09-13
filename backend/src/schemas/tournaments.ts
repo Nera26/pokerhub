@@ -1,5 +1,13 @@
 import { z } from 'zod';
 
+export const TournamentFormatSchema = z.enum([
+  'Regular',
+  'Turbo',
+  'Deepstack',
+  'Bounty',
+  'Freeroll',
+]);
+
 export const AdminTournamentSchema = z.object({
   id: z.number(),
   name: z.string(),
@@ -9,7 +17,7 @@ export const AdminTournamentSchema = z.object({
   prizePool: z.number(),
   date: z.string(),
   time: z.string(),
-  format: z.enum(['Regular', 'Turbo', 'Deepstack', 'Bounty', 'Freeroll']),
+  format: TournamentFormatSchema,
   seatCap: z.union([z.number().int().positive(), z.literal('')]).optional(),
   description: z.string().optional(),
   rebuy: z.boolean(),
@@ -18,6 +26,11 @@ export const AdminTournamentSchema = z.object({
 });
 
 export type AdminTournament = z.infer<typeof AdminTournamentSchema>;
+
+export const TournamentFormatsResponseSchema = z.array(TournamentFormatSchema);
+export type TournamentFormatsResponse = z.infer<
+  typeof TournamentFormatsResponseSchema
+>;
 
 export const TournamentFilterSchema = z.enum([
   'active',

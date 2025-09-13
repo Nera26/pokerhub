@@ -8,6 +8,8 @@ import {
   type BonusOptionsResponse,
   AdminTabResponseSchema,
   type AdminTab,
+  TournamentFormatsResponseSchema,
+  type TournamentFormatsResponse,
 } from '@shared/types';
 import { SidebarItemsResponseSchema, type SidebarItem } from '@shared/types';
 import { DashboardUserSchema, type DashboardUser } from '@shared/types';
@@ -119,6 +121,16 @@ export async function fetchAdminTournamentDefaults({
   return apiClient('/api/admin/tournaments/defaults', AdminTournamentSchema, {
     signal,
   });
+}
+
+export async function fetchTournamentFormats({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<TournamentFormatsResponse> {
+  return apiClient(
+    '/api/admin/tournaments/formats',
+    TournamentFormatsResponseSchema,
+    { signal },
+  );
 }
 
 /** =======================

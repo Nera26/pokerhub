@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
@@ -14,6 +15,7 @@ import { useForm, type UseFormSetValue } from 'react-hook-form';
 import { useGameTypes } from '@/hooks/useGameTypes';
 import { useApiError } from '@/hooks/useApiError';
 import { AdminTournamentSchema, type AdminTournament } from '@shared/types';
+import { fetchTournamentFormats } from '@/lib/api/admin';
 
 const tournamentSchema = AdminTournamentSchema.extend({
   name: z.string().min(1, 'Name is required'),
@@ -60,6 +62,16 @@ export default function TournamentModal({
     error: gameTypesError,
   } = useGameTypes();
   const gameTypesErrorMessage = useApiError(gameTypesError);
+
+  const {
+    data: formats,
+    isLoading: formatsLoading,
+    error: formatsError,
+  } = useQuery({
+    queryKey: ['admin', 'tournament-formats'],
+    queryFn: ({ signal }) => fetchTournamentFormats({ signal }),
+  });
+  const formatsErrorMessage = useApiError(formatsError);
 
   useEffect(() => {
     if (defaultValues) reset(defaultValues);
@@ -163,16 +175,24 @@ export default function TournamentModal({
             <label className="block text-text-secondary text-sm font-semibold mb-2">
               Format
             </label>
-            <select
-              className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 focus:border-accent-yellow focus:outline-none"
-              {...register('format')}
-            >
-              <option>Regular</option>
-              <option>Turbo</option>
-              <option>Deepstack</option>
-              <option>Bounty</option>
-              <option>Freeroll</option>
-            </select>
+            {formatsLoading ? (
+              <p role="status">Loading formats...</p>
+            ) : formatsErrorMessage ? (
+              <InlineError message={formatsErrorMessage} />
+            ) : formats && formats.length > 0 ? (
+              <select
+                className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 focus:border-accent-yellow focus:outline-none"
+                {...register('format')}
+              >
+                {formats.map((f) => (
+                  <option key={f} value={f}>
+                    {f}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="text-text-secondary">No formats available</p>
+            )}
           </div>
           <Input
             id="seatCap"

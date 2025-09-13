@@ -1640,6 +1640,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DashboardUser'
+  /admin/tournaments/formats:
+    get:
+      summary: List tournament formats
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Available tournament formats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TournamentFormat'
   /admin/tournaments/defaults:
     get:
       summary: Get default tournament values
@@ -2392,6 +2406,9 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Promotion'
+    TournamentFormat:
+      type: string
+      enum: [Regular, Turbo, Deepstack, Bounty, Freeroll]
     ReplyMessageRequest:
       type: object
       properties:
@@ -2419,7 +2436,7 @@ components:
         time:
           type: string
         format:
-          type: string
+          $ref: '#/components/schemas/TournamentFormat'
         seatCap:
           oneOf:
             - type: integer
