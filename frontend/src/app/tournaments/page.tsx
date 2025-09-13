@@ -1,7 +1,3 @@
-import dynamic from 'next/dynamic';
+import createDynamicPage from '@/app/utils/createDynamicPage';
 
-const TournamentPage = dynamic(() => import('@/features/tournament'), {
-  loading: () => <div>Loading...</div>,
-});
-
-export default TournamentPage;
+export default createDynamicPage(() => import('@/features/tournament'));
