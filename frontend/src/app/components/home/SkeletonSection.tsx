@@ -1,6 +1,6 @@
 'use client';
 
-import SkeletonGrid from '../common/Skeleton';
+import SkeletonGrid from '../common/SkeletonGrid';
 
 interface SkeletonSectionProps {
   id: string;
