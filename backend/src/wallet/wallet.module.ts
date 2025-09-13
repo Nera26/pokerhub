@@ -37,6 +37,7 @@ import { RevenueService } from './revenue.service';
 import { AdminBalanceController } from '../routes/admin-balance.controller';
 import { DepositIban } from './deposit-iban.entity';
 import { DepositIbanHistory } from './deposit-iban-history.entity';
+import { AdminTabEntity } from '../database/entities/admin-tab.entity';
 
 @Injectable()
 class PayoutWorker implements OnModuleInit {
@@ -72,6 +73,7 @@ class PendingDepositWorker implements OnModuleInit {
       TransactionTabEntity,
       DepositIban,
       DepositIbanHistory,
+      AdminTabEntity,
     ]),
     EventsModule,
     RedisModule,
