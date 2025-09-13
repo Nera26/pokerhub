@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.22.0
+  version: 2.23.0
 paths:
   /status:
     get:
@@ -59,6 +59,22 @@ paths:
       responses:
         '200':
           description: Chart palette colors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChartPaletteResponse'
+    put:
+      summary: Update chart palette colors
+      description: Admin only
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChartPaletteResponse'
+      responses:
+        '200':
+          description: Updated chart palette colors
           content:
             application/json:
               schema:

@@ -13,6 +13,7 @@ import SearchBar from './SearchBar';
 import QuickStats from './QuickStats';
 import ActivityChart from '../charts/ActivityChart';
 import ErrorChart from './ErrorChart';
+import PaletteEditor from './PaletteEditor';
 import AuditTable from './AuditTable';
 import AdvancedFilterModal from './AdvancedFilterModal';
 import DetailModal from './DetailModal';
@@ -214,6 +215,10 @@ export default function Analytics() {
             data={errorCategories?.counts}
           />
         )}
+      </section>
+
+      <section className="grid grid-cols-1 gap-6">
+        <PaletteEditor />
       </section>
 
       {logsLoading ? (

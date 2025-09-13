@@ -1,4 +1,5 @@
 import { safeApiClient } from './utils';
+import { apiClient } from './client';
 import {
   AdminOverviewResponseSchema,
   type AdminOverview,
@@ -6,6 +7,8 @@ import {
   type LogTypeClasses,
   ActivityResponseSchema,
   type ActivityResponse,
+  ChartPaletteResponseSchema,
+  type ChartPaletteResponse,
 } from '@shared/types';
 import { z } from 'zod';
 
@@ -49,5 +52,16 @@ export async function fetchActivity({
   return safeApiClient('/api/analytics/activity', ActivityResponseSchema, {
     signal,
     errorMessage: 'Failed to fetch activity',
+  });
+}
+
+export async function updateChartPalette(
+  palette: string[],
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<ChartPaletteResponse> {
+  return apiClient('/api/chart/palette', ChartPaletteResponseSchema, {
+    method: 'PUT',
+    body: palette,
+    signal,
   });
 }

@@ -82,6 +82,25 @@ export interface paths {
         };
       };
     };
+    /**
+     * Update chart palette colors
+     * @description Admin only
+     */
+    put: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["ChartPaletteResponse"];
+        };
+      };
+      responses: {
+        /** @description Updated chart palette colors */
+        200: {
+          content: {
+            "application/json": components["schemas"]["ChartPaletteResponse"];
+          };
+        };
+      };
+    };
   };
   "/auth/login": {
     /** Login */

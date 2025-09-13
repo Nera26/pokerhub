@@ -1,10 +1,16 @@
-import { fetchLogTypeClasses } from '@/lib/api/analytics';
+import { fetchLogTypeClasses, updateChartPalette } from '@/lib/api/analytics';
 import { safeApiClient } from '@/lib/api/utils';
-import { LogTypeClassesSchema } from '@shared/types';
+import { apiClient } from '@/lib/api/client';
+import {
+  LogTypeClassesSchema,
+  ChartPaletteResponseSchema,
+} from '@shared/types';
 
 jest.mock('@/lib/api/utils', () => ({ safeApiClient: jest.fn() }));
+jest.mock('@/lib/api/client', () => ({ apiClient: jest.fn() }));
 
 const safeApiClientMock = safeApiClient as jest.Mock;
+const apiClientMock = apiClient as jest.Mock;
 
 describe('fetchLogTypeClasses', () => {
   it('calls safeApiClient with correct arguments', async () => {
@@ -14,6 +20,18 @@ describe('fetchLogTypeClasses', () => {
       '/api/admin/log-types',
       LogTypeClassesSchema,
       { errorMessage: 'Failed to fetch log type classes' },
+    );
+  });
+});
+
+describe('updateChartPalette', () => {
+  it('calls apiClient with correct arguments', async () => {
+    apiClientMock.mockResolvedValue([]);
+    await updateChartPalette(['#fff']);
+    expect(apiClientMock).toHaveBeenCalledWith(
+      '/api/chart/palette',
+      ChartPaletteResponseSchema,
+      { method: 'PUT', body: ['#fff'], signal: undefined },
     );
   });
 });
