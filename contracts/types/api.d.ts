@@ -2916,6 +2916,7 @@ export interface components {
       title: string;
       description: string;
       imagePath: string;
+      defaultAvatar: string;
     };
     HistoryTabItem: {
       key: string;
