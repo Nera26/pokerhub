@@ -194,11 +194,9 @@ const PromotionBreakdownItemSchema = z.object({
   label: z.string(),
   value: z.number(),
 });
-export const PromotionCategorySchema = z.string();
-export type PromotionCategory = z.infer<typeof PromotionCategorySchema>;
 export const PromotionSchema = z.object({
   id: z.string(),
-  category: PromotionCategorySchema,
+  category: z.string(),
   title: z.string(),
   description: z.string(),
   reward: z.string(),
