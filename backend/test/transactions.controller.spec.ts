@@ -132,6 +132,19 @@ describe('TransactionsController', () => {
     });
   });
 
+  it('returns transaction columns', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/transactions/columns')
+      .set('Authorization', 'Bearer test')
+      .expect(200);
+    expect(res.body).toEqual(
+      expect.arrayContaining([
+        { id: 'amount', label: 'Amount' },
+        { id: 'status', label: 'Status' },
+      ]),
+    );
+  });
+
   it('returns user transactions', async () => {
     const res = await request(app.getHttpServer())
       .get('/users/user1/transactions')

@@ -243,6 +243,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TransactionStatusesResponse'
+  /transactions/columns:
+    get:
+      summary: Get transaction columns
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Transaction columns
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionColumnsResponse'
   /dashboard/metrics:
     get:
       summary: Get dashboard metrics
@@ -4542,6 +4554,20 @@ components:
       type: object
       additionalProperties:
         $ref: '#/components/schemas/TransactionStatusInfo'
+    TransactionColumn:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+      required:
+        - id
+        - label
+    TransactionColumnsResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/TransactionColumn'
     TransactionTab:
       type: object
       properties:

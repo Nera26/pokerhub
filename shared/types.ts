@@ -20,6 +20,15 @@ export type ServiceStatusResponse = z.infer<
 
 // Wallet types are available via @shared/wallet.schema
 
+export {
+  TransactionColumnSchema,
+  TransactionColumnsResponseSchema,
+} from '../backend/src/schemas/transactions';
+export type {
+  TransactionColumn,
+  TransactionColumnsResponse,
+} from '../backend/src/schemas/transactions';
+
 // Language selector
 export const LanguageSchema = z.object({
   code: z.string(),

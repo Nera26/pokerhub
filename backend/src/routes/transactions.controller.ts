@@ -9,7 +9,8 @@ import {
   TransactionLogResponseSchema,
   TransactionLogQuerySchema,
   TransactionStatusesResponseSchema,
-} from '@shared/transactions.schema';
+  TransactionColumnsResponseSchema,
+} from '../schemas/transactions';
 import { TransactionTabsResponseSchema } from '@shared/wallet.schema';
 import { TransactionsService } from '../wallet/transactions.service';
 import type { Request } from 'express';
@@ -48,6 +49,14 @@ export class TransactionsController {
   async statuses() {
     const res = await this.txService.getTransactionStatuses();
     return TransactionStatusesResponseSchema.parse(res);
+  }
+
+  @Get('transactions/columns')
+  @ApiOperation({ summary: 'Get transaction columns' })
+  @ApiResponse({ status: 200, description: 'Transaction columns' })
+  async columns() {
+    const res = await this.txService.getTransactionColumns();
+    return TransactionColumnsResponseSchema.parse(res);
   }
 
   @Get('admin/transactions')

@@ -13,6 +13,7 @@ import {
   TransactionLogQuerySchema,
   TransactionTypesResponseSchema,
   TransactionStatusesResponseSchema,
+  TransactionColumnsResponseSchema,
   type TransactionLogQuery,
   type FilterOptions,
 } from '@shared/transactions.schema';
@@ -59,6 +60,15 @@ export class TransactionsService {
   async getTransactionTabs(): Promise<TransactionTab[]> {
     const tabs = await this.tabRepo.find();
     return tabs.map((t) => ({ id: t.id, label: t.label }));
+  }
+
+  async getTransactionColumns() {
+    return TransactionColumnsResponseSchema.parse([
+      { id: 'type', label: 'Type' },
+      { id: 'amount', label: 'Amount' },
+      { id: 'date', label: 'Date & Time' },
+      { id: 'status', label: 'Status' },
+    ]);
   }
 
   async getUserTransactions(
