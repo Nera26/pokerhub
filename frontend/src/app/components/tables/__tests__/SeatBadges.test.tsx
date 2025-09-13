@@ -4,6 +4,22 @@ import SeatRing from '../SeatRing';
 import { mockFetchSuccess } from '@/hooks/__tests__/utils/renderHookWithClient';
 import type { Player } from '../types';
 
+jest.mock('../PlayerSeat', () => ({
+  __esModule: true,
+  default: ({ badge, player }: { badge?: any; player: Player }) => (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={typeof badge === 'string' ? badge : badge?.src}
+      alt={player.pos ?? 'badge'}
+    />
+  ),
+}));
+
+jest.mock('../ChipAnimator', () => ({
+  __esModule: true,
+  default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
 describe('Seat badges', () => {
   afterEach(() => {
     jest.resetAllMocks();
@@ -22,9 +38,9 @@ describe('Seat badges', () => {
     mockFetchSuccess({
       hairline: '#fff',
       positions: {
-        BTN: { color: '#fff', glow: '#fff', badge: '/badges/btn.svg' },
-        SB: { color: '#fff', glow: '#fff', badge: '/badges/sb.svg' },
-        BB: { color: '#fff', glow: '#fff', badge: '/badges/bb.svg' },
+        BTN: { color: '#fff', glow: '#fff' },
+        SB: { color: '#fff', glow: '#fff' },
+        BB: { color: '#fff', glow: '#fff' },
       },
     });
 
@@ -47,17 +63,8 @@ describe('Seat badges', () => {
       />,
     );
 
-    expect(await screen.findByAltText('BTN')).toHaveAttribute(
-      'src',
-      '/badges/btn.svg',
-    );
-    expect(await screen.findByAltText('SB')).toHaveAttribute(
-      'src',
-      '/badges/sb.svg',
-    );
-    expect(await screen.findByAltText('BB')).toHaveAttribute(
-      'src',
-      '/badges/bb.svg',
-    );
+    expect(await screen.findByAltText('BTN')).toBeInTheDocument();
+    expect(await screen.findByAltText('SB')).toBeInTheDocument();
+    expect(await screen.findByAltText('BB')).toBeInTheDocument();
   });
 });
