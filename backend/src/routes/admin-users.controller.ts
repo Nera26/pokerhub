@@ -19,6 +19,8 @@ import {
   AdminUsersQuerySchema,
   CreateUserSchema,
   type CreateUserRequest,
+  UserMetaResponseSchema,
+  type UserMetaResponse,
   ZodError,
 } from '@shared/types';
 
@@ -27,6 +29,24 @@ import {
 @Controller('admin/users')
 export class AdminUsersController {
   constructor(private readonly users: UsersService) {}
+
+  @Get('meta')
+  @ApiOperation({ summary: 'Get user metadata' })
+  @ApiResponse({ status: 200, description: 'User roles and statuses' })
+  meta(): UserMetaResponse {
+    const res = {
+      roles: [
+        { value: 'Player', label: 'Player' },
+        { value: 'Admin', label: 'Admin' },
+      ],
+      statuses: [
+        { value: 'Active', label: 'Active' },
+        { value: 'Frozen', label: 'Frozen' },
+        { value: 'Banned', label: 'Banned' },
+      ],
+    };
+    return UserMetaResponseSchema.parse(res);
+  }
 
   @Post()
   @ApiOperation({ summary: 'Create user' })

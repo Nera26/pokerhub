@@ -10,6 +10,8 @@ import {
   type AdminTab,
   TournamentFormatsResponseSchema,
   type TournamentFormatsResponse,
+  UserMetaResponseSchema,
+  type UserMetaResponse,
 } from '@shared/types';
 import { SidebarItemsResponseSchema, type SidebarItem } from '@shared/types';
 import { DashboardUserSchema, type DashboardUser } from '@shared/types';
@@ -68,6 +70,14 @@ export async function fetchDashboardUsers({
     z.array(DashboardUserSchema),
     { signal },
   );
+}
+
+export async function fetchUserMeta({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<UserMetaResponse> {
+  return apiClient('/api/admin/users/meta', UserMetaResponseSchema, {
+    signal,
+  });
 }
 
 export async function createAdminUser(

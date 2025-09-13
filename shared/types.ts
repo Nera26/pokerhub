@@ -369,6 +369,29 @@ export type {
 } from '../backend/src/schemas/hands';
 
 // Users (frontend)
+export const UserRoleSchema = z.enum(['Player', 'Admin']);
+export const UserStatusSchema = z.enum(['Active', 'Frozen', 'Banned']);
+
+export type UserRole = z.infer<typeof UserRoleSchema>;
+export type UserStatus = z.infer<typeof UserStatusSchema>;
+
+export const UserRoleOptionSchema = z.object({
+  value: UserRoleSchema,
+  label: z.string(),
+});
+
+export const UserStatusOptionSchema = z.object({
+  value: UserStatusSchema,
+  label: z.string(),
+});
+
+export const UserMetaResponseSchema = z.object({
+  roles: z.array(UserRoleOptionSchema),
+  statuses: z.array(UserStatusOptionSchema),
+});
+
+export type UserMetaResponse = z.infer<typeof UserMetaResponseSchema>;
+
 export const UserSchema = z.object({
   id: z.string(),
   username: z.string(),

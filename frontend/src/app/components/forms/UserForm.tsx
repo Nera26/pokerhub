@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, type ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUpload } from '@fortawesome/free-solid-svg-icons';
@@ -8,14 +9,21 @@ import Input from '../ui/Input';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { fetchUserMeta } from '@/lib/api/admin';
+import type { ApiError } from '@/lib/api/client';
+import {
+  UserRoleSchema,
+  UserStatusSchema,
+  type UserMetaResponse,
+} from '@shared/types';
 
 const schema = z.object({
   username: z.string().min(1, 'Username is required'),
   email: z.string().email('Invalid email'),
   password: z.string().min(1, 'Password is required').optional(),
-  status: z.enum(['Active', 'Frozen', 'Banned']),
+  status: UserStatusSchema,
   avatar: z.string().optional(),
-  role: z.enum(['Player', 'Admin']).optional(),
+  role: UserRoleSchema.optional(),
   country: z.string().optional(),
 });
 
@@ -55,6 +63,25 @@ export default function UserForm({
     resolver: zodResolver(schema),
     defaultValues,
   });
+
+  const {
+    data: meta,
+    isLoading,
+    error,
+  } = useQuery<UserMetaResponse, ApiError>({
+    queryKey: ['admin-user-meta'],
+    queryFn: ({ signal }) => fetchUserMeta({ signal }),
+  });
+
+  if (error) {
+    return (
+      <p className="p-6 text-xs text-danger-red">Failed to load user options</p>
+    );
+  }
+
+  if (isLoading || !meta) {
+    return <p className="p-6 text-sm">Loading...</p>;
+  }
 
   const avatar = watch('avatar') ?? '';
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -108,11 +135,16 @@ export default function UserForm({
             className="w-full bg-primary-bg border border-dark rounded-xl px-3 py-3 text-sm focus:border-accent-yellow outline-none"
             {...register('role')}
           >
-            <option>Player</option>
-            <option>Admin</option>
+            {meta.roles.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
           </select>
           {errors.role && (
-            <p className="mt-1 text-xs text-danger-red">{errors.role.message}</p>
+            <p className="mt-1 text-xs text-danger-red">
+              {errors.role.message}
+            </p>
           )}
         </div>
       )}
@@ -140,12 +172,16 @@ export default function UserForm({
           className="w-full bg-primary-bg border border-dark rounded-xl px-3 py-3 text-sm focus:border-accent-yellow outline-none"
           {...register('status')}
         >
-          <option>Active</option>
-          <option>Frozen</option>
-          <option>Banned</option>
+          {meta.statuses.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
         </select>
         {errors.status && (
-          <p className="mt-1 text-xs text-danger-red">{errors.status.message}</p>
+          <p className="mt-1 text-xs text-danger-red">
+            {errors.status.message}
+          </p>
         )}
       </div>
 
@@ -181,7 +217,9 @@ export default function UserForm({
             </button>
           </div>
           {errors.avatar && (
-            <p className="mt-1 text-xs text-danger-red">{errors.avatar.message}</p>
+            <p className="mt-1 text-xs text-danger-red">
+              {errors.avatar.message}
+            </p>
           )}
         </div>
       )}
@@ -204,4 +242,3 @@ export default function UserForm({
     </div>
   );
 }
-

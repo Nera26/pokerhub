@@ -1656,6 +1656,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DashboardUser'
+  /admin/users/meta:
+    get:
+      summary: Get user metadata
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Roles and statuses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserMetaResponse'
   /admin/tournaments/formats:
     get:
       summary: List tournament formats
@@ -3141,6 +3153,51 @@ components:
         - username
         - balance
         - banned
+    UserRole:
+      type: string
+      enum:
+        - Player
+        - Admin
+    UserStatus:
+      type: string
+      enum:
+        - Active
+        - Frozen
+        - Banned
+    UserRoleOption:
+      type: object
+      properties:
+        value:
+          $ref: '#/components/schemas/UserRole'
+        label:
+          type: string
+      required:
+        - value
+        - label
+    UserStatusOption:
+      type: object
+      properties:
+        value:
+          $ref: '#/components/schemas/UserStatus'
+        label:
+          type: string
+      required:
+        - value
+        - label
+    UserMetaResponse:
+      type: object
+      properties:
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserRoleOption'
+        statuses:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserStatusOption'
+      required:
+        - roles
+        - statuses
     UserProfile:
       type: object
       properties:
