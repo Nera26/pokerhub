@@ -3,6 +3,8 @@ import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { ChartController } from '../src/routes/chart.controller';
 import { SettingsService } from '../src/services/settings.service';
+import { AuthGuard } from '../src/auth/auth.guard';
+import { AdminGuard } from '../src/auth/admin.guard';
 
 describe('ChartController', () => {
   let app: INestApplication | null = null;
@@ -21,7 +23,12 @@ describe('ChartController', () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
       controllers: [ChartController],
       providers: [{ provide: SettingsService, useValue: mock }],
-    }).compile();
+    })
+      .overrideGuard(AuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(AdminGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     app = moduleRef.createNestApplication();
     await app.init();
@@ -32,5 +39,31 @@ describe('ChartController', () => {
       .expect(['#111', '#222']);
 
     expect(mock.getChartPalette).toHaveBeenCalled();
+  });
+
+  it('updates chart palette', async () => {
+    const mock: Partial<SettingsService> = {
+      setChartPalette: jest.fn().mockResolvedValue(['#333']),
+    };
+    const moduleRef: TestingModule = await Test.createTestingModule({
+      controllers: [ChartController],
+      providers: [{ provide: SettingsService, useValue: mock }],
+    })
+      .overrideGuard(AuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(AdminGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
+
+    app = moduleRef.createNestApplication();
+    await app.init();
+
+    await request(app.getHttpServer())
+      .put('/chart/palette')
+      .send(['#333'])
+      .expect(200)
+      .expect(['#333']);
+
+    expect(mock.setChartPalette).toHaveBeenCalledWith(['#333']);
   });
 });
