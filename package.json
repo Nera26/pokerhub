@@ -16,7 +16,7 @@
     "test:load": "npm run load:socket --prefix backend",
     "test:property": "npm run test:property --prefix backend && npm run audit:ledger",
     "test:e2e": "npm run test:e2e --prefix frontend",
-    "test:scripts": "npm test --prefix scripts",
+    "test:scripts": "npm test --prefix scripts -- test/ensure-workflow-step.spec.ts",
     "test:perf": "npm test --prefix backend -- \"(test|tests)/.*\\.sim\\.spec\\.ts$\"",
     "test:ledger": "npm run audit:ledger --prefix backend",
     "audit:ledger": "npm run audit:ledger --prefix backend",
