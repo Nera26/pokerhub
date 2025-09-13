@@ -30,24 +30,6 @@ export async function fetchSidebarItems({
   });
 }
 
-export const DEFAULT_ADMIN_TABS: AdminTab[] = [
-  {
-    id: 'users',
-    title: 'Users',
-    component: '@/app/components/dashboard/ManageUsers',
-  },
-  {
-    id: 'tables',
-    title: 'Tables',
-    component: '@/app/components/dashboard/ManageTables',
-  },
-  {
-    id: 'tournaments',
-    title: 'Tournaments',
-    component: '@/app/components/dashboard/ManageTournaments',
-  },
-];
-
 export async function fetchAdminTabs({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<AdminTab[]> {
