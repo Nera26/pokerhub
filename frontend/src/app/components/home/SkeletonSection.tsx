@@ -8,7 +8,11 @@ interface SkeletonSectionProps {
   repeat?: number;
 }
 
-export default function SkeletonSection({ id, layout, repeat = 3 }: SkeletonSectionProps) {
+export default function SkeletonSection({
+  id,
+  layout,
+  repeat = 0,
+}: SkeletonSectionProps) {
   const titleWidths = {
     cash: 'w-40 sm:w-48',
     tournament: 'w-44 sm:w-56',
