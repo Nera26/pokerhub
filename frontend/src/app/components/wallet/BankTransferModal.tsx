@@ -7,16 +7,12 @@ import Tooltip from '../ui/Tooltip';
 import Button from '../ui/Button';
 import BankTransferForm from './BankTransferForm';
 import { BankTransferDepositResponse } from '@shared/wallet.schema';
+import { useBankTransfer, useWithdraw } from '@/hooks/wallet';
 
 interface BaseProps {
   mode: 'deposit' | 'withdraw';
   onClose: () => void;
   currency: string;
-  onSubmit: (payload: {
-    amount: number;
-    deviceId: string;
-    currency: string;
-  }) => void | Promise<BankTransferDepositResponse | void>;
 }
 
 interface DepositProps extends BaseProps {
@@ -37,19 +33,35 @@ interface WithdrawProps extends BaseProps {
 export type BankTransferModalProps = DepositProps | WithdrawProps;
 
 export default function BankTransferModal(props: BankTransferModalProps) {
-  const { mode, onClose, currency, onSubmit } = props;
+  const { mode, onClose, currency } = props;
   const [details, setDetails] = useState<BankTransferDepositResponse | null>(
     null,
   );
+  const [status, setStatus] = useState<
+    'idle' | 'submitting' | 'success' | 'error'
+  >('idle');
+  const [error, setError] = useState<string | null>(null);
+  const bankTransfer = useBankTransfer();
+  const withdrawMutation = useWithdraw();
 
   const handleSubmit = async (payload: {
     amount: number;
     deviceId: string;
     currency: string;
   }) => {
-    const res = await onSubmit(payload);
-    if (mode === 'deposit') {
-      setDetails(res as BankTransferDepositResponse);
+    setStatus('submitting');
+    setError(null);
+    try {
+      if (mode === 'deposit') {
+        const res = await bankTransfer.mutateAsync(payload);
+        setDetails(res);
+      } else {
+        await withdrawMutation.mutateAsync(payload);
+      }
+      setStatus('success');
+    } catch (e) {
+      setStatus('error');
+      setError(e instanceof Error ? e.message : 'Something went wrong');
     }
   };
 
@@ -62,7 +74,7 @@ export default function BankTransferModal(props: BankTransferModalProps) {
     }
   };
 
-  if (mode === 'deposit' && details) {
+  if (mode === 'deposit' && status === 'success' && details) {
     return (
       <div className="space-y-4">
         <h2 className="text-xl sm:text-2xl font-bold text-text-primary">
@@ -105,6 +117,25 @@ export default function BankTransferModal(props: BankTransferModalProps) {
     );
   }
 
+  if (mode === 'withdraw' && status === 'success') {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-text-primary">
+          Withdraw Funds
+        </h2>
+        <p className="text-text-secondary text-sm">Withdrawal successful.</p>
+        <Button
+          type="button"
+          variant="primary"
+          className="w-full uppercase py-3"
+          onClick={onClose}
+        >
+          Close
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div
       className={
@@ -130,10 +161,22 @@ export default function BankTransferModal(props: BankTransferModalProps) {
         </h2>
       )}
 
+      {error && (
+        <p role="alert" className="text-danger-red mb-4">
+          {error}
+        </p>
+      )}
+
       <div className={mode === 'withdraw' ? 'mb-4' : ''}>
         <BankTransferForm
           currency={currency}
-          submitLabel={mode === 'deposit' ? 'Get Instructions' : 'Withdraw'}
+          submitLabel={
+            status === 'submitting'
+              ? 'Processing...'
+              : mode === 'deposit'
+                ? 'Get Instructions'
+                : 'Withdraw'
+          }
           amountInputId={
             mode === 'deposit' ? 'deposit-amount' : 'withdraw-amount'
           }

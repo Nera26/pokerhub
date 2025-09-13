@@ -18,9 +18,7 @@ import type {
   WalletReconcileMismatchesResponse,
   IbanUpdateRequest,
   WalletStatusResponse,
-  BankTransferDepositRequest,
   BankTransferDepositResponse,
-  WithdrawRequest,
 } from '@shared/wallet.schema';
 
 export function useWalletStatus() {
@@ -63,26 +61,32 @@ export function useUpdateIban() {
 
 export function useBankTransfer() {
   const { playerId } = useAuth();
+  const queryClient = useQueryClient();
   return useMutation<
     BankTransferDepositResponse,
-    unknown,
-    BankTransferDepositRequest
+    Error,
+    { amount: number; deviceId: string; currency: string }
   >({
-    mutationFn: ({ amount, deviceId, currency, idempotencyKey }) =>
-      initiateBankTransfer(
-        playerId,
-        amount,
-        deviceId,
-        currency,
-        idempotencyKey,
-      ),
+    mutationFn: ({ amount, deviceId, currency }) =>
+      initiateBankTransfer(playerId, amount, deviceId, currency),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['wallet', playerId, 'status'] });
+    },
   });
 }
 
 export function useWithdraw() {
   const { playerId } = useAuth();
-  return useMutation<WalletStatusResponse, unknown, WithdrawRequest>({
+  const queryClient = useQueryClient();
+  return useMutation<
+    WalletStatusResponse,
+    Error,
+    { amount: number; deviceId: string; currency: string }
+  >({
     mutationFn: ({ amount, deviceId, currency }) =>
       withdraw(playerId, amount, deviceId, currency),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['wallet', playerId, 'status'] });
+    },
   });
 }
