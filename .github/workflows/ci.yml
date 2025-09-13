@@ -26,6 +26,9 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
+      - run: npm install --prefix backend
+      - run: npm install --prefix frontend
+      - run: npm install --prefix scripts
       - run: npx eslint .
       - name: Check for unused exports
         run: npm run lint:unused

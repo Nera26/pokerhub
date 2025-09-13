@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "pretest": "npm install && npm install --prefix backend && npm install --prefix frontend && npm install --prefix scripts",
     "pull:frontend": "git subtree pull --prefix frontend frontend-remote main --squash",
     "pull:backend": "git subtree pull --prefix backend backend-remote main --squash",
     "pull:all": "npm run pull:frontend && npm run pull:backend",
