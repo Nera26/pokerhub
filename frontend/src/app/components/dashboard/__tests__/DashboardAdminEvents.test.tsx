@@ -1,6 +1,9 @@
+import { mockUseActivity } from '@/test-utils/mockActivity';
 import { screen } from '@testing-library/react';
 import { renderWithClient } from './renderWithClient';
 import Dashboard from '../Dashboard';
+
+mockUseActivity();
 
 jest.mock('../AdminEvents', () => () => <div data-testid="admin-events" />);
 jest.mock('../Messages', () => () => <div data-testid="messages" />);
@@ -31,14 +34,6 @@ jest.mock('@/hooks/useDashboardUsers', () => ({
 
 jest.mock('@/hooks/useActiveTables', () => ({
   useActiveTables: () => ({ data: [], isLoading: false, error: null }),
-}));
-
-jest.mock('@/hooks/useActivity', () => ({
-  useActivity: () => ({
-    data: { labels: [], data: [] },
-    isLoading: false,
-    error: null,
-  }),
 }));
 
 const authMock = jest.fn();

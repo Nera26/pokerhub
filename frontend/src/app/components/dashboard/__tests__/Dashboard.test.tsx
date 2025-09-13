@@ -1,11 +1,9 @@
+import { mockUseActivity } from '@/test-utils/mockActivity';
 import { screen, waitFor } from '@testing-library/react';
 import { fetchProfile } from '@/lib/api/profile';
 import { mockMetrics, renderDashboard, findUserAvatar } from './utils';
 
-const activityMock = jest.fn();
-jest.mock('@/hooks/useActivity', () => ({
-  useActivity: () => activityMock(),
-}));
+const activityMock = mockUseActivity();
 
 const revenueMock = jest.fn();
 jest.mock('@/hooks/useRevenueBreakdown', () => ({
