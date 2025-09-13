@@ -1,25 +1,12 @@
-import { mockUseActivity } from '@/test-utils/mockActivity';
+import { setupDashboardMocks } from './dashboardMocks';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Dashboard from '@/app/components/dashboard/Dashboard';
 
-const useActivity = mockUseActivity();
-useActivity.mockReturnValue({ data: null, isLoading: false, error: null });
+setupDashboardMocks();
 
 jest.mock('next/dynamic', () => () => () => null);
 
-jest.mock('@/hooks/useDashboardMetrics', () => ({
-  useDashboardMetrics: () => ({ data: {}, isLoading: false, error: null }),
-}));
-jest.mock('@/hooks/useRevenueBreakdown', () => ({
-  useRevenueBreakdown: () => ({ data: [], isLoading: false, error: null }),
-}));
-jest.mock('@/hooks/useDashboardUsers', () => ({
-  useDashboardUsers: () => ({ data: [], isLoading: false, error: null }),
-}));
-jest.mock('@/hooks/useActiveTables', () => ({
-  useActiveTables: () => ({ data: [], isLoading: false, error: null }),
-}));
 jest.mock('@/app/store/authStore', () => ({ useAuthToken: () => null }));
 
 jest.mock('@/app/components/dashboard/Messages', () => ({
