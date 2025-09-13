@@ -3,9 +3,11 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import SecurityAlerts from '../SecurityAlerts';
-import { useAuditAlerts } from '@/hooks/useAuditAlerts';
+import { useAuditAlerts } from '@/hooks/admin';
 
-jest.mock('@/hooks/useAuditAlerts');
+jest.mock('@/hooks/admin', () => ({
+  useAuditAlerts: jest.fn(),
+}));
 jest.mock(
   '../../../ui/ToastNotification',
   () =>

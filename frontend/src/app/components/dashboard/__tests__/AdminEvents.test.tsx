@@ -1,11 +1,11 @@
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AdminEvents from '../AdminEvents';
-import { useAdminEvents } from '@/hooks/useAdminEvents';
+import { useAdminEvents } from '@/hooks/admin';
 import { acknowledgeAdminEvent } from '@/lib/api/admin';
 import React from 'react';
 
-jest.mock('@/hooks/useAdminEvents', () => ({
+jest.mock('@/hooks/admin', () => ({
   useAdminEvents: jest.fn(),
 }));
 

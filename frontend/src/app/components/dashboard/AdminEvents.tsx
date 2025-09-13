@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAdminEvents } from '@/hooks/useAdminEvents';
+import { useAdminEvents } from '@/hooks/admin';
 import { acknowledgeAdminEvent } from '@/lib/api/admin';
 import Button from '../ui/Button';
 
