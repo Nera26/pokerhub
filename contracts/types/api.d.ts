@@ -1683,6 +1683,19 @@ export interface paths {
       };
     };
   };
+  "/admin/tournaments/formats": {
+    /** List tournament formats */
+    get: {
+      responses: {
+        /** @description Available tournament formats */
+        200: {
+          content: {
+            "application/json": components["schemas"]["TournamentFormat"][];
+          };
+        };
+      };
+    };
+  };
   "/admin/tournaments/defaults": {
     /** Get default tournament values */
     get: {
@@ -2337,6 +2350,8 @@ export interface components {
       eta?: string;
     };
     PromotionsResponse: components["schemas"]["Promotion"][];
+    /** @enum {string} */
+    TournamentFormat: "Regular" | "Turbo" | "Deepstack" | "Bounty" | "Freeroll";
     ReplyMessageRequest: {
       reply: string;
     };
@@ -2349,7 +2364,7 @@ export interface components {
       prizePool: number;
       date: string;
       time: string;
-      format: string;
+      format: components["schemas"]["TournamentFormat"];
       seatCap?: number | "";
       description?: string;
       rebuy: boolean;

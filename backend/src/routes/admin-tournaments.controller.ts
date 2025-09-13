@@ -14,6 +14,8 @@ import {
   AdminTournamentSchema,
   TournamentSimulateRequestSchema,
   TournamentSimulateResponse,
+  TournamentFormatsResponseSchema,
+  TournamentFormatSchema,
 } from '../schemas/tournaments';
 import { ZodError } from 'zod';
 import { simulate, BlindLevel } from '../services/tournamentSimulator';
@@ -22,6 +24,18 @@ import { simulate, BlindLevel } from '../services/tournamentSimulator';
 @UseGuards(AuthGuard, AdminGuard)
 @Controller('admin/tournaments')
 export class AdminTournamentsController {
+  @Get('formats')
+  @ApiOperation({ summary: 'List tournament formats' })
+  @ApiResponse({
+    status: 200,
+    description: 'Available tournament formats',
+  })
+  formats() {
+    return TournamentFormatsResponseSchema.parse(
+      TournamentFormatSchema.options,
+    );
+  }
+
   @Get('defaults')
   @ApiOperation({ summary: 'Get default tournament values' })
   @ApiResponse({ status: 200, description: 'Default tournament values' })

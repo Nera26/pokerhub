@@ -1,7 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import TournamentModal from '../TournamentModal';
 import type { AdminTournament } from '@shared/types';
+import { fetchTournamentFormats } from '@/lib/api/admin';
 
 jest.mock('@/hooks/useGameTypes', () => ({
   useGameTypes: () => ({
@@ -13,6 +15,11 @@ jest.mock('@/hooks/useGameTypes', () => ({
     isLoading: false,
     error: null,
   }),
+}));
+
+jest.mock('@/lib/api/admin', () => ({
+  ...jest.requireActual('@/lib/api/admin'),
+  fetchTournamentFormats: jest.fn(),
 }));
 
 describe('TournamentModal', () => {
@@ -33,9 +40,26 @@ describe('TournamentModal', () => {
     status: 'scheduled',
   };
 
+  const renderWithClient = (ui: React.ReactElement) => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+  };
+
+  const mockFetchFormats = fetchTournamentFormats as jest.Mock;
+
+  beforeEach(() => {
+    mockFetchFormats.mockResolvedValue(['Regular', 'Turbo']);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('submits form data in create mode', async () => {
     const onSubmit = jest.fn();
-    render(
+    renderWithClient(
       <TournamentModal
         isOpen
         mode="create"
@@ -57,7 +81,7 @@ describe('TournamentModal', () => {
 
   it('submits updated data in edit mode', async () => {
     const onSubmit = jest.fn();
-    render(
+    renderWithClient(
       <TournamentModal
         isOpen
         mode="edit"
@@ -76,5 +100,40 @@ describe('TournamentModal', () => {
       expect.objectContaining({ name: 'Updated', id: 1 }),
       expect.anything(),
     );
+  });
+
+  it('shows error when formats fetch fails', async () => {
+    mockFetchFormats.mockRejectedValue({
+      status: 500,
+      message: 'Server Error',
+    });
+
+    renderWithClient(
+      <TournamentModal
+        isOpen
+        mode="create"
+        onClose={jest.fn()}
+        onSubmit={jest.fn()}
+        defaultValues={base}
+      />,
+    );
+
+    expect(await screen.findByText(/500 Server Error/)).toBeInTheDocument();
+  });
+
+  it('shows empty state when no formats available', async () => {
+    mockFetchFormats.mockResolvedValue([]);
+
+    renderWithClient(
+      <TournamentModal
+        isOpen
+        mode="create"
+        onClose={jest.fn()}
+        onSubmit={jest.fn()}
+        defaultValues={base}
+      />,
+    );
+
+    expect(await screen.findByText('No formats available')).toBeInTheDocument();
   });
 });
