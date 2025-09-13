@@ -4,6 +4,15 @@ import { createWrapper } from './utils/queryClientWrapper';
 import { useIban, useIbanHistory } from '@/hooks/wallet';
 import type { ApiError } from '@/lib/api/client';
 
+function mockFetchResponse(payload: unknown) {
+  return jest.fn<Promise<Response>, []>().mockResolvedValue({
+    ok: true,
+    status: 200,
+    headers: { get: () => 'application/json' },
+    json: async () => payload,
+  } as unknown as Response);
+}
+
 describe('useIban', () => {
   it('indicates loading state', () => {
     const fetchMock = jest.fn<Promise<Response>, []>(
@@ -16,20 +25,14 @@ describe('useIban', () => {
   });
 
   it('returns empty data when IBAN not set', async () => {
-    const fetchMock = jest.fn<Promise<Response>, []>().mockResolvedValue({
-      ok: true,
-      status: 200,
-      headers: { get: () => 'application/json' },
-      json: async () => ({
-        iban: '',
-        masked: '',
-        holder: '',
-        instructions: '',
-        updatedBy: '',
-        updatedAt: '2024-01-01T00:00:00Z',
-      }),
-    } as unknown as Response);
-    global.fetch = fetchMock as unknown as typeof fetch;
+    global.fetch = mockFetchResponse({
+      iban: '',
+      masked: '',
+      holder: '',
+      instructions: '',
+      updatedBy: '',
+      updatedAt: '2024-01-01T00:00:00Z',
+    }) as unknown as typeof fetch;
     const wrapper = createWrapper(new QueryClient());
     const { result } = renderHook(() => useIban(), { wrapper });
     await waitFor(() => expect(result.current.data).toBeDefined());
@@ -71,13 +74,9 @@ describe('useIbanHistory', () => {
   });
 
   it('returns empty history array', async () => {
-    const fetchMock = jest.fn<Promise<Response>, []>().mockResolvedValue({
-      ok: true,
-      status: 200,
-      headers: { get: () => 'application/json' },
-      json: async () => ({ history: [] }),
-    } as unknown as Response);
-    global.fetch = fetchMock as unknown as typeof fetch;
+    global.fetch = mockFetchResponse({
+      history: [],
+    }) as unknown as typeof fetch;
     const wrapper = createWrapper(new QueryClient());
     const { result } = renderHook(() => useIbanHistory(), { wrapper });
     await waitFor(() => expect(result.current.data).toBeDefined());
