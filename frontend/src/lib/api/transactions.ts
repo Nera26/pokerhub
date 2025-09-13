@@ -7,7 +7,14 @@ import {
 } from '@shared/transactions.schema';
 
 export async function fetchTransactionFilters() {
-  return apiClient('/api/transactions/filters', FilterOptionsSchema);
+  const res = await apiClient(
+    '/api/transactions/filters',
+    FilterOptionsSchema,
+  );
+  return {
+    types: ['All Types', ...res.types],
+    performedBy: ['All', ...res.performedBy],
+  };
 }
 
 export async function fetchUserTransactions(userId: string) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Modal from '../ui/Modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner, faXmark } from '@fortawesome/free-solid-svg-icons';
@@ -21,13 +21,6 @@ import { z } from 'zod';
 type AdminTransactionEntry = z.infer<
   typeof AdminTransactionEntriesSchema
 >[number];
-
-export enum PerformedBy {
-  All = 'All',
-  Admin = 'Admin',
-  User = 'User',
-  System = 'System',
-}
 
 interface Props {
   isOpen: boolean;
@@ -68,36 +61,50 @@ export default function TransactionHistoryModal({
   // inputs (pending)
   const [start, setStart] = useState<string>('');
   const [end, setEnd] = useState<string>('');
-  const [type, setType] = useState<string>('All Types');
-  const [by, setBy] = useState<PerformedBy>(PerformedBy.All);
+  const [type, setType] = useState('');
+  const [by, setBy] = useState('');
 
   // applied filters (after clicking Apply)
   const [applied, setApplied] = useState<{
     start: string;
     end: string;
     type: string;
-    by: PerformedBy;
+    by: string;
   }>({
     start: '',
     end: '',
-    type: 'All Types',
-    by: PerformedBy.All,
+    type: '',
+    by: '',
   });
+  const performedByOptions =
+    filterOptions?.performedBy.map((p) => ({
+      label: p === 'All' ? 'Performed By: All' : p,
+      value: p,
+    })) ?? [];
+  const typeOptions = filterOptions?.types ?? [];
 
-  const performedByOptions = [
-    { label: 'Performed By: All', value: PerformedBy.All },
-    ...(filterOptions?.performedBy ?? []).map((p) => ({
-      label: p,
-      value: p as PerformedBy,
-    })),
-  ];
-  const typeOptions = ['All Types', ...(filterOptions?.types ?? [])];
+  useEffect(() => {
+    if (filterOptions) {
+      const defaultType = filterOptions.types[0] ?? '';
+      const defaultBy = filterOptions.performedBy[0] ?? '';
+      setType((prev) => prev || defaultType);
+      setBy((prev) => prev || defaultBy);
+      setApplied((prev) => ({
+        ...prev,
+        type: prev.type || defaultType,
+        by: prev.by || defaultBy,
+      }));
+    }
+  }, [filterOptions]);
+
+  const defaultType = typeOptions[0];
+  const defaultBy = performedByOptions[0]?.value;
 
   const filtered = useMemo(() => {
     let data = [...entries];
-    if (applied.type !== 'All Types')
+    if (applied.type && defaultType && applied.type !== defaultType)
       data = data.filter((e) => e.action === applied.type);
-    if (applied.by !== PerformedBy.All)
+    if (applied.by && defaultBy && applied.by !== defaultBy)
       data = data.filter((e) => e.performedBy === applied.by);
     if (applied.start)
       data = data.filter((e) => new Date(e.date) >= new Date(applied.start));
@@ -121,8 +128,9 @@ export default function TransactionHistoryModal({
     setApplied(next);
     onFilter?.(
       [...entries].filter((e) => {
-        if (next.type !== 'All Types' && e.action !== next.type) return false;
-        if (next.by !== PerformedBy.All && e.performedBy !== next.by)
+        if (defaultType && next.type !== defaultType && e.action !== next.type)
+          return false;
+        if (defaultBy && next.by !== defaultBy && e.performedBy !== next.by)
           return false;
         if (next.start && new Date(e.date) < new Date(next.start)) return false;
         if (next.end && new Date(e.date) > new Date(next.end)) return false;
@@ -183,7 +191,7 @@ export default function TransactionHistoryModal({
             </select>
             <select
               value={by}
-              onChange={(e) => setBy(e.target.value as PerformedBy)}
+              onChange={(e) => setBy(e.target.value)}
               className="bg-primary-bg border border-dark rounded-xl px-3 py-2 text-sm"
             >
               {performedByOptions.map((opt) => (

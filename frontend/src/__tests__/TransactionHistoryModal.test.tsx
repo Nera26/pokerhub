@@ -8,9 +8,7 @@ jest.mock('@/app/components/common/TransactionHistoryTable', () => {
   };
 });
 
-import TransactionHistoryModal, {
-  PerformedBy,
-} from '@/app/components/modals/TransactionHistoryModal';
+import TransactionHistoryModal from '@/app/components/modals/TransactionHistoryModal';
 import TransactionHistoryTable from '@/app/components/common/TransactionHistoryTable';
 import { z } from 'zod';
 import { AdminTransactionEntriesSchema } from '@shared/transactions.schema';
@@ -35,7 +33,7 @@ describe('TransactionHistoryModal', () => {
       date: '2024-01-01 10:00',
       action: 'Deposit',
       amount: 100,
-      performedBy: PerformedBy.User,
+      performedBy: 'User',
       notes: '',
       status: 'Completed',
     },
@@ -43,7 +41,7 @@ describe('TransactionHistoryModal', () => {
       date: '2024-01-02 12:00',
       action: 'Withdrawal',
       amount: -50,
-      performedBy: PerformedBy.Admin,
+      performedBy: 'Admin',
       notes: '',
       status: 'Pending',
     },
@@ -53,8 +51,8 @@ describe('TransactionHistoryModal', () => {
     const onFilter = jest.fn();
     const user = userEvent.setup();
     (fetchTransactionFilters as jest.Mock).mockResolvedValue({
-      types: ['Deposit', 'Withdrawal'],
-      performedBy: ['Admin', 'User'],
+      types: ['All Types', 'Deposit', 'Withdrawal'],
+      performedBy: ['All', 'Admin', 'User'],
     });
     (fetchUserTransactions as jest.Mock).mockResolvedValue(entries);
     const client = new QueryClient({
@@ -101,5 +99,29 @@ describe('TransactionHistoryModal', () => {
         status: entries[0].status,
       },
     ]);
+  });
+
+  it('shows error when data fetching fails', async () => {
+    (fetchTransactionFilters as jest.Mock).mockRejectedValue(
+      new Error('fail'),
+    );
+    (fetchUserTransactions as jest.Mock).mockRejectedValue(new Error('fail'));
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <TransactionHistoryModal
+          isOpen
+          onClose={() => {}}
+          userName="Test"
+          userId="1"
+        />
+      </QueryClientProvider>,
+    );
+
+    expect(
+      await screen.findByText('Failed to load transactions'),
+    ).toBeInTheDocument();
   });
 });
