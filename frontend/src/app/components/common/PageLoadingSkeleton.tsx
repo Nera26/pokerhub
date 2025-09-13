@@ -1,4 +1,4 @@
-import SkeletonGrid from './Skeleton';
+import SkeletonGrid from './SkeletonGrid';
 
 interface PageLoadingSkeletonProps {
   rows?: number;
@@ -11,8 +11,8 @@ export default function PageLoadingSkeleton({
 }: PageLoadingSkeletonProps) {
   return (
     <main className="container mx-auto px-4 sm:px-6 lg:px-8 pt-6 md:pt-8 pb-[calc(env(safe-area-inset-bottom)+72px)]">
-      <div className="space-y-6">
-        <div className="h-8 w-48 bg-card-bg rounded animate-pulse" />
+      <div className="animate-pulse space-y-6">
+        <div className="h-8 w-48 bg-card-bg rounded" />
         <SkeletonGrid rows={rows} cardHeight={cardHeight} />
       </div>
     </main>
