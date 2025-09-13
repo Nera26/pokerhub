@@ -12,7 +12,7 @@ import {
   deleteBonus,
   type Bonus,
 } from '@/lib/api/admin';
-import useBonusMutation from '@/hooks/useBonusMutation';
+import { useInvalidateMutationWithToast } from '@/hooks/useInvalidateMutationWithToast';
 import type { ApiError } from '@/lib/api/client';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -130,9 +130,10 @@ export default function BonusManager() {
     type: 'success',
   });
 
-  const createMutation = useBonusMutation({
+  const createMutation = useInvalidateMutationWithToast({
     mutationFn: createBonus,
-    updateCache: (previous, newBonus) => {
+    queryKey: ['admin-bonuses'],
+    update: (previous, newBonus) => {
       const optimistic: Bonus = {
         ...newBonus,
         id: Date.now(),
@@ -141,43 +142,54 @@ export default function BonusManager() {
       } as Bonus;
       return [optimistic, ...previous];
     },
-    successToast: 'Promotion created',
-    errorToast: 'Failed to create bonus',
-    setToast,
+    toastOpts: {
+      success: 'Promotion created',
+      error: 'Failed to create bonus',
+      setToast,
+    },
   });
 
-  const updateMutation = useBonusMutation<{
+  const updateMutation = useInvalidateMutationWithToast<{
     id: number;
     data: Partial<Bonus>;
   }>({
     mutationFn: ({ id, data }) => updateBonus(id, data),
-    updateCache: (previous, { id, data }) =>
+    queryKey: ['admin-bonuses'],
+    update: (previous, { id, data }) =>
       previous.map((b) => (b.id === id ? { ...b, ...data } : b)),
-    successToast: 'Changes saved',
-    errorToast: 'Failed to update bonus',
-    setToast,
+    toastOpts: {
+      success: 'Changes saved',
+      error: 'Failed to update bonus',
+      setToast,
+    },
   });
 
-  const deleteMutation = useBonusMutation<number>({
+  const deleteMutation = useInvalidateMutationWithToast<number>({
     mutationFn: deleteBonus,
-    updateCache: (previous, id) => previous.filter((b) => b.id !== id),
-    successToast: 'Deleted bonus',
-    errorToast: 'Failed to delete bonus',
-    setToast,
+    queryKey: ['admin-bonuses'],
+    update: (previous, id) => previous.filter((b) => b.id !== id),
+    toastOpts: {
+      success: 'Deleted bonus',
+      error: 'Failed to delete bonus',
+      setToast,
+    },
   });
 
-  const toggleMutation = useBonusMutation<{
+  const toggleMutation = useInvalidateMutationWithToast<{
     id: number;
     status: BonusStatus;
     name: string;
   }>({
     mutationFn: ({ id, status }) => updateBonus(id, { status }),
-    updateCache: (previous, { id, status }) =>
+    queryKey: ['admin-bonuses'],
+    update: (previous, { id, status }) =>
       previous.map((b) => (b.id === id ? { ...b, status } : b)),
-    successToast: ({ status, name }) =>
-      status === 'paused' ? `Paused "${name}"` : `Resumed "${name}"`,
-    errorToast: 'Failed to update bonus',
-    setToast,
+    toastOpts: {
+      success: ({ status, name }) =>
+        status === 'paused' ? `Paused "${name}"` : `Resumed "${name}"`,
+      error: 'Failed to update bonus',
+      setToast,
+    },
   });
 
   const filteredByStatus = useMemo(() => {
