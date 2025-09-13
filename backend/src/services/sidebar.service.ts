@@ -8,7 +8,31 @@ export class SidebarService {
 
   async getItems(): Promise<SidebarItem[]> {
     const items = this.config.get<SidebarItem[]>('admin.sidebar', []) ?? [];
-    return items.map((it) => ({
+    const required: SidebarItem[] = [
+      {
+        id: 'users',
+        label: 'Users',
+        icon: 'faUsers',
+        component: '@/app/components/dashboard/ManageUsers',
+      },
+      {
+        id: 'tables',
+        label: 'Tables',
+        icon: 'faTable',
+        component: '@/app/components/dashboard/ManageTables',
+      },
+      {
+        id: 'tournaments',
+        label: 'Tournaments',
+        icon: 'faTrophy',
+        component: '@/app/components/dashboard/ManageTournaments',
+      },
+    ];
+    const merged = [
+      ...items,
+      ...required.filter((d) => !items.some((t) => t.id === d.id)),
+    ];
+    return merged.map((it) => ({
       ...it,
       icon: this.formatIcon(it.icon),
     }));
