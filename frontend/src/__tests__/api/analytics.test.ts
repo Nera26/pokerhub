@@ -1,18 +1,19 @@
 import { fetchLogTypeClasses } from '@/lib/api/analytics';
-import { apiClient } from '@/lib/api/client';
+import { safeApiClient } from '@/lib/api/utils';
 import { LogTypeClassesSchema } from '@shared/types';
 
-jest.mock('@/lib/api/client', () => ({ apiClient: jest.fn() }));
+jest.mock('@/lib/api/utils', () => ({ safeApiClient: jest.fn() }));
 
-const apiClientMock = apiClient as jest.Mock;
+const safeApiClientMock = safeApiClient as jest.Mock;
 
 describe('fetchLogTypeClasses', () => {
-  it('calls apiClient with correct arguments', async () => {
-    apiClientMock.mockResolvedValue({});
+  it('calls safeApiClient with correct arguments', async () => {
+    safeApiClientMock.mockResolvedValue({});
     await fetchLogTypeClasses();
-    expect(apiClientMock).toHaveBeenCalledWith(
+    expect(safeApiClientMock).toHaveBeenCalledWith(
       '/api/admin/log-types',
       LogTypeClassesSchema,
+      { errorMessage: 'Failed to fetch log type classes' },
     );
   });
 });

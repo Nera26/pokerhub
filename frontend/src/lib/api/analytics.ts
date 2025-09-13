@@ -1,4 +1,4 @@
-import { apiClient, type ApiError } from './client';
+import { safeApiClient } from './utils';
 import {
   AdminOverviewResponseSchema,
   type AdminOverview,
@@ -20,39 +20,34 @@ export type ErrorCategoriesResponse = z.infer<
 export async function fetchAdminOverview({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<AdminOverview[]> {
-  return apiClient(
+  return safeApiClient(
     '/api/analytics/admin-overview',
     AdminOverviewResponseSchema,
-    {
-      signal,
-    },
+    { signal, errorMessage: 'Failed to fetch admin overview' },
   );
 }
 
 export function fetchLogTypeClasses(): Promise<LogTypeClasses> {
-  return apiClient('/api/admin/log-types', LogTypeClassesSchema);
+  return safeApiClient('/api/admin/log-types', LogTypeClassesSchema, {
+    errorMessage: 'Failed to fetch log type classes',
+  });
 }
 
 export function fetchErrorCategories({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<ErrorCategoriesResponse> {
-  return apiClient(
+  return safeApiClient(
     '/api/analytics/error-categories',
     ErrorCategoriesResponseSchema,
-    { signal },
+    { signal, errorMessage: 'Failed to fetch error categories' },
   );
 }
 
 export async function fetchActivity({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<ActivityResponse> {
-  try {
-    return await apiClient('/api/analytics/activity', ActivityResponseSchema, {
-      signal,
-    });
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : (err as ApiError).message;
-    throw { message: `Failed to fetch activity: ${message}` } as ApiError;
-  }
+  return safeApiClient('/api/analytics/activity', ActivityResponseSchema, {
+    signal,
+    errorMessage: 'Failed to fetch activity',
+  });
 }
