@@ -1,12 +1,15 @@
-import { SettingsService } from '../src/services/settings.service';
 import { ChartPaletteEntity } from '../src/database/entities/chart-palette.entity';
 import type { Repository } from 'typeorm';
 
 describe('SettingsService', () => {
   let repo: Partial<Repository<ChartPaletteEntity>>;
   let entities: ChartPaletteEntity[];
-  let service: SettingsService;
-  const defaultPalette = ['#ff4d4f', '#facc15', '#3b82f6', '#22c55e'];
+
+  const loadService = () => {
+    jest.resetModules();
+    const { SettingsService } = require('../src/services/settings.service');
+    return new SettingsService(repo as Repository<ChartPaletteEntity>);
+  };
 
   beforeEach(() => {
     entities = [];
@@ -21,14 +24,23 @@ describe('SettingsService', () => {
         return entities;
       }),
     };
-    service = new SettingsService(repo as Repository<ChartPaletteEntity>);
   });
 
-  it('returns default palette when table empty', async () => {
-    await expect(service.getChartPalette()).resolves.toEqual(defaultPalette);
+  it('returns empty array when table empty and env var unset', async () => {
+    delete process.env.DEFAULT_CHART_PALETTE;
+    const service = loadService();
+    await expect(service.getChartPalette()).resolves.toEqual([]);
+  });
+
+  it('returns palette from env var when table empty', async () => {
+    process.env.DEFAULT_CHART_PALETTE = '#111,#222';
+    const service = loadService();
+    await expect(service.getChartPalette()).resolves.toEqual(['#111', '#222']);
   });
 
   it('persists and retrieves palette', async () => {
+    delete process.env.DEFAULT_CHART_PALETTE;
+    const service = loadService();
     await service.setChartPalette(['#111', '#222']);
     expect(await service.getChartPalette()).toEqual(['#111', '#222']);
   });

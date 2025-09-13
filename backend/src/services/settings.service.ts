@@ -3,7 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ChartPaletteEntity } from '../database/entities/chart-palette.entity';
 
-const DEFAULT_PALETTE = ['#ff4d4f', '#facc15', '#3b82f6', '#22c55e'];
+const DEFAULT_PALETTE =
+  process.env.DEFAULT_CHART_PALETTE?.split(',').filter(Boolean) ?? [];
 
 @Injectable()
 export class SettingsService {
