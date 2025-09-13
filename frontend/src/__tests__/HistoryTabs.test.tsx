@@ -5,6 +5,18 @@ import type { ReactNode } from 'react';
 import HistoryTabs from '@/app/components/user/HistoryTabs';
 import type { ResponseLike } from '@/lib/api/client';
 
+function mockTabs(tabs: Array<{ key: string; label: string }>) {
+  (
+    global.fetch as jest.Mock<Promise<ResponseLike>, [string]>
+  ).mockResolvedValue({
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    headers: { get: () => 'application/json' } as any,
+    json: async () => ({ tabs }),
+  });
+}
+
 describe('HistoryTabs', () => {
   let client: QueryClient;
   let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
@@ -20,21 +32,11 @@ describe('HistoryTabs', () => {
   });
 
   it('renders history tabs from API', async () => {
-    (
-      global.fetch as jest.Mock<Promise<ResponseLike>, [string]>
-    ).mockResolvedValue({
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-      headers: { get: () => 'application/json' } as any,
-      json: async () => ({
-        tabs: [
-          { key: 'game-history', label: 'Game History' },
-          { key: 'tournament-history', label: 'Tournament History' },
-          { key: 'transaction-history', label: 'Deposit/Withdraw' },
-        ],
-      }),
-    });
+    mockTabs([
+      { key: 'game-history', label: 'Game History' },
+      { key: 'tournament-history', label: 'Tournament History' },
+      { key: 'transaction-history', label: 'Deposit/Withdraw' },
+    ]);
     render(<HistoryTabs selected="game-history" onChange={jest.fn()} />, {
       wrapper,
     });
@@ -51,20 +53,10 @@ describe('HistoryTabs', () => {
   });
 
   it('fetches tabs and reacts to selection', async () => {
-    (
-      global.fetch as jest.Mock<Promise<ResponseLike>, [string]>
-    ).mockResolvedValue({
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-      headers: { get: () => 'application/json' } as any,
-      json: async () => ({
-        tabs: [
-          { key: 'game-history', label: 'Game History' },
-          { key: 'tournament-history', label: 'Tournament History' },
-        ],
-      }),
-    });
+    mockTabs([
+      { key: 'game-history', label: 'Game History' },
+      { key: 'tournament-history', label: 'Tournament History' },
+    ]);
     const onChange = jest.fn();
     const user = userEvent.setup();
     render(<HistoryTabs selected="game-history" onChange={onChange} />, {
@@ -81,30 +73,25 @@ describe('HistoryTabs', () => {
   it.each([
     {
       name: 'renders error state on failure',
-      response: {
-        ok: false,
-        status: 500,
-        statusText: 'Server Error',
-        headers: { get: () => 'application/json' } as any,
-        json: async () => ({ message: 'boom' }),
-      },
+      setup: () =>
+        (
+          global.fetch as jest.Mock<Promise<ResponseLike>, [string]>
+        ).mockResolvedValue({
+          ok: false,
+          status: 500,
+          statusText: 'Server Error',
+          headers: { get: () => 'application/json' } as any,
+          json: async () => ({ message: 'boom' }),
+        }),
       query: () => screen.findByRole('alert'),
     },
     {
       name: 'shows empty state when no tabs returned',
-      response: {
-        ok: true,
-        status: 200,
-        statusText: 'OK',
-        headers: { get: () => 'application/json' } as any,
-        json: async () => ({ tabs: [] }),
-      },
+      setup: () => mockTabs([]),
       query: () => screen.findByText(/no history available/i),
     },
-  ])('$name', async ({ response, query }) => {
-    (
-      global.fetch as jest.Mock<Promise<ResponseLike>, [string]>
-    ).mockResolvedValue(response);
+  ])('$name', async ({ setup, query }) => {
+    setup();
     render(<HistoryTabs selected="game-history" onChange={jest.fn()} />, {
       wrapper,
     });
