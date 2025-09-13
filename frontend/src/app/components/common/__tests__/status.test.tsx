@@ -21,23 +21,23 @@ describe('useStatusInfo', () => {
     });
   });
 
-  it('uses fallback on error', async () => {
-    mockFetchError('boom');
-    const { result, queryClient } = renderHookWithClient(() => useStatusInfo());
-    await waitFor(() => expect(queryClient.isFetching()).toBe(0));
-    expect(result.current('confirmed')).toEqual({
-      label: 'confirmed',
-      style: 'bg-border-dark text-text-secondary',
-    });
-  });
+  test.each([mockFetchError, mockFetchSuccess])(
+    'uses fallback on error or missing status mapping',
+    async (mockFetch) => {
+      if (mockFetch === mockFetchError) {
+        mockFetch('boom');
+      } else {
+        mockFetch({});
+      }
 
-  it('falls back for missing status mapping', async () => {
-    mockFetchSuccess({});
-    const { result, queryClient } = renderHookWithClient(() => useStatusInfo());
-    await waitFor(() => expect(queryClient.isFetching()).toBe(0));
-    expect(result.current('confirmed')).toEqual({
-      label: 'confirmed',
-      style: 'bg-border-dark text-text-secondary',
-    });
-  });
+      const { result, queryClient } = renderHookWithClient(() =>
+        useStatusInfo(),
+      );
+      await waitFor(() => expect(queryClient.isFetching()).toBe(0));
+      expect(result.current('confirmed')).toEqual({
+        label: 'confirmed',
+        style: 'bg-border-dark text-text-secondary',
+      });
+    },
+  );
 });
