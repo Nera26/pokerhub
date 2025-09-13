@@ -1,6 +1,6 @@
 'use client';
 
-import SkeletonGrid from './SkeletonGrid';
+import SkeletonGrid from '../common/Skeleton';
 
 interface SkeletonSectionProps {
   id: string;
@@ -23,8 +23,7 @@ export default function SkeletonSection({
       <div
         className={`h-8 ${titleWidths[layout]} mb-4 sm:mb-6 rounded bg-card-bg animate-pulse`}
       />
-      <SkeletonGrid layout={layout} repeat={repeat} />
+      <SkeletonGrid rows={repeat} />
     </section>
   );
 }
-
