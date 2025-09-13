@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import { createHmac } from 'node:crypto';
-import type { CreateTableRequest, Table } from '@shared/types';
+import type { CreateTableRequest } from '@shared/types';
 
 const JWT_SECRET = 'dev-secret';
 
@@ -20,7 +20,7 @@ function createAdminToken(): string {
 
 const ADMIN_TOKEN = createAdminToken();
 
-const defaultTable: CreateTableRequest = {
+export const defaultTable: CreateTableRequest = {
   tableName: 'Test Table',
   gameType: 'texas',
   stakes: { small: 1, big: 2 },
@@ -31,25 +31,22 @@ const defaultTable: CreateTableRequest = {
 
 const createdIds: string[] = [];
 
-export async function seedTable(
+export async function createTestTable(
   page: Page,
   table: CreateTableRequest = defaultTable,
-): Promise<Table> {
-  const res = await page.request.post(
-    'http://localhost:4000/api/admin/tables',
-    {
-      data: table,
-      headers: { Authorization: `Bearer ${ADMIN_TOKEN}` },
-    },
-  );
-  const json = (await res.json()) as Table;
+): Promise<string> {
+  const res = await page.request.post('http://localhost:4000/api/tables', {
+    data: table,
+    headers: { Authorization: `Bearer ${ADMIN_TOKEN}` },
+  });
+  const json = (await res.json()) as { id: string };
   createdIds.push(json.id);
-  return json;
+  return json.id;
 }
 
 export async function cleanupTables(page: Page): Promise<void> {
   for (const id of createdIds) {
-    await page.request.delete(`http://localhost:4000/api/admin/tables/${id}`, {
+    await page.request.delete(`http://localhost:4000/api/tables/${id}`, {
       headers: { Authorization: `Bearer ${ADMIN_TOKEN}` },
     });
   }
