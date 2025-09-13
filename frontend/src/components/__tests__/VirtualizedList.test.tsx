@@ -65,6 +65,8 @@ describe('VirtualizedList', () => {
         renderItem={() => null}
       />,
     );
-    expect(screen.getByRole('tabpanel')).toHaveAttribute('hidden');
+    expect(screen.getByRole('tabpanel', { hidden: true })).toHaveAttribute(
+      'hidden',
+    );
   });
 });
