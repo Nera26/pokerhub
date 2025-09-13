@@ -1,5 +1,4 @@
-import { apiClient } from './client';
-import type { ApiError } from './client';
+import { safeApiClient } from './utils';
 import {
   AdminMessage,
   AdminMessageSchema,
@@ -11,39 +10,29 @@ import {
 } from '@shared/types';
 
 export async function fetchMessages(): Promise<AdminMessagesResponse> {
-  try {
-    return await apiClient('/api/admin/messages', AdminMessagesResponseSchema);
-  } catch (err) {
-    throw err as ApiError;
-  }
+  return safeApiClient('/api/admin/messages', AdminMessagesResponseSchema, {
+    errorMessage: 'Failed to fetch messages',
+  });
 }
 
 export async function replyMessage(
   id: number,
   body: ReplyMessageRequest,
 ): Promise<MessageResponse> {
-  try {
-    return await apiClient(
-      `/api/admin/messages/${id}/reply`,
-      MessageResponseSchema,
-      {
-        method: 'POST',
-        body,
-      },
-    );
-  } catch (err) {
-    throw err as ApiError;
-  }
+  return safeApiClient(
+    `/api/admin/messages/${id}/reply`,
+    MessageResponseSchema,
+    {
+      method: 'POST',
+      body,
+      errorMessage: 'Failed to reply to message',
+    },
+  );
 }
 
 export async function markMessageRead(id: number): Promise<AdminMessage> {
-  try {
-    return await apiClient(
-      `/api/admin/messages/${id}/read`,
-      AdminMessageSchema,
-      { method: 'POST' },
-    );
-  } catch (err) {
-    throw err as ApiError;
-  }
+  return safeApiClient(`/api/admin/messages/${id}/read`, AdminMessageSchema, {
+    method: 'POST',
+    errorMessage: 'Failed to mark message read',
+  });
 }
