@@ -1,75 +1,92 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import WalletPage from '../page';
-import { useWalletStatus } from '@/hooks/wallet';
+import {
+  useWalletStatus,
+  useIbanDetails,
+  useBankTransfer,
+  useWithdraw,
+} from '@/hooks/wallet';
 
 jest.mock('@/hooks/wallet', () => ({
   useWalletStatus: jest.fn(),
+  useIbanDetails: jest.fn(),
+  useBankTransfer: jest.fn(() => ({
+    mutateAsync: jest.fn(),
+    reset: jest.fn(),
+    error: null,
+  })),
+  useWithdraw: jest.fn(() => ({
+    mutateAsync: jest.fn(),
+    reset: jest.fn(),
+    error: null,
+  })),
 }));
 
-describe('WalletPage', () => {
-  beforeEach(() => {
-    (useWalletStatus as jest.Mock).mockReset();
+const mockStatus = {
+  data: {
+    realBalance: 100,
+    creditBalance: 0,
+    kycVerified: true,
+    currency: 'EUR',
+  },
+};
+
+beforeEach(() => {
+  (useWalletStatus as jest.Mock).mockReturnValue(mockStatus);
+  (useIbanDetails as jest.Mock).mockReset();
+});
+
+test('shows bank details when iban details resolve', async () => {
+  (useIbanDetails as jest.Mock).mockReturnValue({
+    data: {
+      ibanMasked: '***123',
+      ibanFull: 'DE001',
+      holder: 'John Doe',
+      instructions: '',
+      history: [],
+      lastUpdatedBy: 'admin',
+      lastUpdatedAt: '2024-01-01T00:00:00Z',
+      bankName: 'Test Bank',
+      bankAddress: '123 Street',
+    },
+    isLoading: false,
+    error: null,
   });
 
-  it('shows loading state', () => {
-    (useWalletStatus as jest.Mock).mockReturnValue({
-      data: undefined,
-      isLoading: true,
-      error: null,
-    });
-    render(<WalletPage />);
-    expect(screen.getByText(/loading wallet/i)).toBeInTheDocument();
+  render(<WalletPage />);
+  await userEvent.click(screen.getByRole('button', { name: /withdraw/i }));
+
+  expect(await screen.findByText('Test Bank')).toBeInTheDocument();
+  expect(screen.getByText('***123')).toBeInTheDocument();
+});
+
+test('shows empty state when iban details missing', async () => {
+  (useIbanDetails as jest.Mock).mockReturnValue({
+    data: undefined,
+    isLoading: false,
+    error: null,
   });
 
-  it('shows error state', () => {
-    (useWalletStatus as jest.Mock).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      error: new Error('fail'),
-    });
-    render(<WalletPage />);
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      /failed to load wallet/i,
-    );
+  render(<WalletPage />);
+  await userEvent.click(screen.getByRole('button', { name: /withdraw/i }));
+
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    /no bank details available/i,
+  );
+});
+
+test('shows error state when iban details fail', async () => {
+  (useIbanDetails as jest.Mock).mockReturnValue({
+    data: undefined,
+    isLoading: false,
+    error: new Error('fail'),
   });
 
-  it('shows empty state', () => {
-    (useWalletStatus as jest.Mock).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      error: null,
-    });
-    render(<WalletPage />);
-    expect(screen.getByText(/no wallet data/i)).toBeInTheDocument();
-  });
+  render(<WalletPage />);
+  await userEvent.click(screen.getByRole('button', { name: /withdraw/i }));
 
-  it('matches snapshot when KYC verified', () => {
-    (useWalletStatus as jest.Mock).mockReturnValue({
-      data: {
-        realBalance: 100,
-        creditBalance: 50,
-        kycVerified: true,
-        currency: 'USD',
-      },
-      isLoading: false,
-      error: null,
-    });
-    const { container } = render(<WalletPage />);
-    expect(container).toMatchSnapshot();
-  });
-
-  it('matches snapshot when KYC pending', () => {
-    (useWalletStatus as jest.Mock).mockReturnValue({
-      data: {
-        realBalance: 100,
-        creditBalance: 50,
-        kycVerified: false,
-        currency: 'USD',
-      },
-      isLoading: false,
-      error: null,
-    });
-    const { container } = render(<WalletPage />);
-    expect(container).toMatchSnapshot();
-  });
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    /failed to load bank details/i,
+  );
 });
