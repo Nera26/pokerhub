@@ -19,11 +19,14 @@ import {
 } from '../schemas/tournaments';
 import { ZodError } from 'zod';
 import { simulate, BlindLevel } from '../services/tournamentSimulator';
+import { BotProfilesResponseSchema } from '@shared/types';
+import { TournamentService } from '../tournament/tournament.service';
 
 @ApiTags('admin')
 @UseGuards(AuthGuard, AdminGuard)
 @Controller('admin/tournaments')
 export class AdminTournamentsController {
+  constructor(private readonly service: TournamentService) {}
   @Get('formats')
   @ApiOperation({ summary: 'List tournament formats' })
   @ApiResponse({
@@ -62,7 +65,7 @@ export class AdminTournamentsController {
   @HttpCode(200)
   @ApiOperation({ summary: 'Simulate tournament durations' })
   @ApiResponse({ status: 200, description: 'Simulation result' })
-  simulate(@Body() body: unknown): TournamentSimulateResponse {
+  async simulate(@Body() body: unknown): Promise<TournamentSimulateResponse> {
     try {
       const { levels, levelMinutes, increment, entrants, runs } =
         TournamentSimulateRequestSchema.parse(body);
@@ -74,7 +77,9 @@ export class AdminTournamentsController {
           blindMultiplier: 1 + i * increment,
         }),
       );
-      return simulate(structure, entrants, runs);
+      const profiles = await this.service.getBotProfiles();
+      const parsed = BotProfilesResponseSchema.parse(profiles);
+      return simulate(structure, entrants, runs, parsed);
     } catch (err) {
       if (err instanceof ZodError) {
         throw new BadRequestException(err.errors);

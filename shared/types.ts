@@ -282,6 +282,15 @@ export type {
   TournamentSimulateResponse,
 } from '../backend/src/schemas/tournaments';
 
+export {
+  BotProfileSchema,
+  BotProfilesResponseSchema,
+} from '../backend/src/schemas/bot-profiles';
+export type {
+  BotProfile,
+  BotProfilesResponse,
+} from '../backend/src/schemas/bot-profiles';
+
 /** ---- Admin Messages ---- */
 export {
   AdminMessageSchema,

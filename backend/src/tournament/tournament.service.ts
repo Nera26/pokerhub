@@ -26,6 +26,8 @@ import {
   type TournamentFilterOption,
 } from '@shared/types';
 import { TournamentsProducer } from '../messaging/tournaments/tournaments.producer';
+import { BotProfileRepository } from './bot-profile.repository';
+import { BotProfilesResponseSchema } from '@shared/types';
 
 @Injectable()
 export class TournamentService implements OnModuleInit {
@@ -49,6 +51,7 @@ export class TournamentService implements OnModuleInit {
     private readonly flags: FeatureFlagsService,
     private readonly events: EventPublisher,
     private readonly producer: TournamentsProducer,
+    private readonly botProfiles: BotProfileRepository,
     @Optional() @Inject('REDIS_CLIENT') private readonly redis?: Redis,
     @Optional() private readonly wallet?: WalletService,
   ) {}
@@ -100,6 +103,13 @@ export class TournamentService implements OnModuleInit {
       { label: 'Upcoming', value: 'upcoming' },
       { label: 'Past', value: 'past' },
     ]);
+  }
+
+  async getBotProfiles() {
+    const res = await this.botProfiles.find({
+      select: ['name', 'proportion', 'bustMultiplier'],
+    });
+    return BotProfilesResponseSchema.parse(res);
   }
 
   async get(id: string, userId?: string) {

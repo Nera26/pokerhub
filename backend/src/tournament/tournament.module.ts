@@ -10,6 +10,8 @@ import { RebuyService } from './rebuy.service';
 import { Tournament } from '../database/entities/tournament.entity';
 import { Seat } from '../database/entities/seat.entity';
 import { Table } from '../database/entities/table.entity';
+import { BotProfile } from './bot-profile.entity';
+import { BotProfileRepository } from './bot-profile.repository';
 import { GameModule } from '../game/game.module';
 import { FeatureFlagsModule } from '../feature-flags/feature-flags.module';
 import { RateLimitGuard } from '../routes/rate-limit.guard';
@@ -17,7 +19,7 @@ import { MessagingModule } from '../messaging/messaging.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Tournament, Seat, Table]),
+    TypeOrmModule.forFeature([Tournament, Seat, Table, BotProfile]),
     GameModule,
     FeatureFlagsModule,
     MessagingModule,
@@ -30,12 +32,14 @@ import { MessagingModule } from '../messaging/messaging.module';
     PkoService,
     RebuyService,
     RateLimitGuard,
+    BotProfileRepository,
   ],
   exports: [
     TournamentService,
     TableBalancerService,
     PkoService,
     RebuyService,
+    BotProfileRepository,
   ],
 })
 export class TournamentModule {}
