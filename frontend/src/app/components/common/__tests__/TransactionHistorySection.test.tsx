@@ -39,13 +39,13 @@ describe('TransactionHistorySection', () => {
     jest.resetAllMocks();
   });
 
-  it('formats amounts using provided currency', () => {
+  it('formats amounts using provided currency', async () => {
     columnIndex.value = 1;
     const data = [
       { amount: 10, status: 'Completed', date: '2024-01-01', type: 'Deposit' },
     ];
 
-    mockMetadataFetch();
+    mockMetadataFetch({ columns: defaultColumns });
     renderWithClient(<TransactionHistorySection data={data} currency="EUR" />);
 
     const formatted = new Intl.NumberFormat(undefined, {
@@ -55,7 +55,7 @@ describe('TransactionHistorySection', () => {
       maximumFractionDigits: 2,
     }).format(10);
 
-    expect(screen.getByText(`+${formatted}`)).toBeInTheDocument();
+    expect(await screen.findByText(`+${formatted}`)).toBeInTheDocument();
   });
 
   it.each([
@@ -103,14 +103,14 @@ describe('TransactionHistorySection', () => {
     await check();
   });
 
-  it('renders title, filters, and actions', () => {
+  it('renders title, filters, and actions', async () => {
     columnIndex.value = 1;
     const data = [
       { amount: 5, status: 'Completed', date: '2024-01-01', type: 'Bonus' },
     ];
     const onAction = jest.fn();
 
-    mockMetadataFetch();
+    mockMetadataFetch({ columns: defaultColumns });
     renderWithClient(
       <TransactionHistorySection
         data={data}
@@ -121,9 +121,9 @@ describe('TransactionHistorySection', () => {
       />,
     );
 
-    expect(screen.getByText('History')).toBeInTheDocument();
-    expect(screen.getByText('filters')).toBeInTheDocument();
-    const actionBtn = screen.getByRole('button', { name: 'Action' });
+    expect(await screen.findByText('History')).toBeInTheDocument();
+    expect(await screen.findByText('filters')).toBeInTheDocument();
+    const actionBtn = await screen.findByRole('button', { name: 'Action' });
     expect(actionBtn).toBeInTheDocument();
     actionBtn.click();
     expect(onAction).toHaveBeenCalledWith(data[0]);
