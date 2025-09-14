@@ -20,3 +20,28 @@ export function mockFetch(...responses: MockResponse[]) {
   });
   return mock;
 }
+
+export function mockFetchLoading() {
+  global.fetch = jest.fn(
+    () => new Promise(() => {}),
+  ) as unknown as typeof fetch;
+}
+
+export function mockFetchSuccess(data: unknown) {
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    json: async () => data,
+    headers: { get: () => 'application/json' },
+  }) as unknown as typeof fetch;
+}
+
+export function mockFetchError(message = 'fail') {
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: false,
+    status: 500,
+    statusText: 'Server error',
+    json: async () => ({ message }),
+    headers: { get: () => 'application/json' },
+  }) as unknown as typeof fetch;
+}
