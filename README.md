@@ -231,6 +231,16 @@ Pull requests additionally run a lightweight soak smoke test via the
 duration and reports metrics to Cloud Monitoring to catch performance
 regressions early.
 
+## Verification CLI
+
+A `verify` command validates hand proofs and shuffles. It targets
+`http://localhost:3000` by default. Override the base URL via
+`POKERHUB_BASE_URL` or the `--base` flag.
+
+```bash
+POKERHUB_BASE_URL=https://staging.example.com verify proof <handId>
+```
+
 ## Release
 
 The release workflow publishes player documentation only after the following

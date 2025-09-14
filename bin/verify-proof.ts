@@ -1,7 +1,10 @@
 import { shuffle, standardDeck, verifyProof, hexToBytes } from '../shared/verify';
 import type { HandProofResponse } from '../shared/types';
 
-export async function verifyHandProof(handId: string, baseUrl: string) {
+export async function verifyHandProof(
+  handId: string,
+  baseUrl = process.env.POKERHUB_BASE_URL || 'http://localhost:3000',
+) {
   const proofRes = await fetch(`${baseUrl}/hands/${handId}/proof`);
   if (!proofRes.ok) throw new Error('Failed to fetch proof');
   const proof = (await proofRes.json()) as HandProofResponse;
