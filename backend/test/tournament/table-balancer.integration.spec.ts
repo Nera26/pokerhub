@@ -5,7 +5,7 @@ import { Table } from '../../src/database/entities/table.entity';
 import { Seat } from '../../src/database/entities/seat.entity';
 import { Tournament, TournamentState } from '../../src/database/entities/tournament.entity';
 import { createTablesRepository } from './test-utils';
-import { createInMemoryRedis } from './redis-mock';
+import { createInMemoryRedis } from '../utils/mock-redis';
 import { createSeatRepo, createTournamentRepo } from './helpers';
 
 describe('TableBalancerService integration', () => {

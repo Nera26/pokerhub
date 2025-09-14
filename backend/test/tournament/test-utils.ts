@@ -1,6 +1,6 @@
 import type { Repository } from 'typeorm';
 import { Table } from '../../src/database/entities/table.entity';
-import { createInMemoryRedis } from './redis-mock';
+import { createInMemoryRedis } from '../utils/mock-redis';
 
 export type TournamentService = {
   balanceTournament(

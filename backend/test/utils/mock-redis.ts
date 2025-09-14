@@ -1,3 +1,5 @@
+import type Redis from 'ioredis';
+
 export class MockRedis {
   private store = new Map<string, string>();
   private hashes = new Map<string, Map<string, string>>();
@@ -238,6 +240,40 @@ export class MockRedis {
 
 export function createRedisMock() {
   return new MockRedis();
+}
+
+export function createInMemoryRedis(
+  initial: Record<string, string> = {},
+): {
+  redis: Redis;
+  store: {
+    strings: Map<string, string>;
+    hashes: Map<string, Map<string, string>>;
+    sets: Map<string, Set<string>>;
+    lists: Map<string, string[]>;
+    sortedSets: Map<string, { score: number; member: string }[]>;
+    streams: Map<string, Array<[string, [string, string]]>>;
+  };
+} {
+  const redis = new MockRedis();
+  for (const [k, v] of Object.entries(initial)) {
+    void redis.set(k, v);
+  }
+  const store = {
+    strings: (redis as any).store as Map<string, string>,
+    hashes: (redis as any).hashes as Map<string, Map<string, string>>,
+    sets: (redis as any).sets as Map<string, Set<string>>,
+    lists: (redis as any).lists as Map<string, string[]>,
+    sortedSets: (redis as any).sorted as Map<
+      string,
+      { score: number; member: string }[]
+    >,
+    streams: (redis as any).streams as Map<
+      string,
+      Array<[string, [string, string]]>
+    >,
+  };
+  return { redis: redis as unknown as Redis, store };
 }
 
 export default MockRedis;
