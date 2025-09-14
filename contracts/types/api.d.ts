@@ -983,6 +983,19 @@ export interface paths {
       };
     };
   };
+  "/tournaments/bot-profiles": {
+    /** List bot profiles */
+    get: {
+      responses: {
+        /** @description Bot profiles */
+        200: {
+          content: {
+            "application/json": components["schemas"]["BotProfilesResponse"];
+          };
+        };
+      };
+    };
+  };
   "/tournaments/{id}": {
     /** Get tournament */
     get: {
@@ -2910,6 +2923,12 @@ export interface components {
       averageDuration: number;
       durationVariance: number;
     };
+    BotProfile: {
+      name: string;
+      proportion: number;
+      bustMultiplier: number;
+    };
+    BotProfilesResponse: components["schemas"]["BotProfile"][];
     Table: {
       id: string;
       tableName: string;

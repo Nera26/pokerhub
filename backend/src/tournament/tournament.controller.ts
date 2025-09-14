@@ -21,6 +21,7 @@ import type {
 } from '@shared/types';
 import type { Request } from 'express';
 import { TournamentFiltersResponseSchema } from '@shared/types';
+import { BotProfilesResponseSchema } from '@shared/types';
 
 @UseGuards(RateLimitGuard)
 @ApiTags('tournaments')
@@ -33,6 +34,14 @@ export class TournamentController {
   @ApiResponse({ status: 200, description: 'Tournament list' })
   list() {
     return this.service.list();
+  }
+
+  @Get('bot-profiles')
+  @ApiOperation({ summary: 'List bot profiles' })
+  @ApiResponse({ status: 200, description: 'Bot profiles' })
+  async botProfiles() {
+    const res = await this.service.getBotProfiles();
+    return BotProfilesResponseSchema.parse(res);
   }
 
   @Get('filters')

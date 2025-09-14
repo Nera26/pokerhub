@@ -2,8 +2,8 @@
  * Monte Carlo simulation of tournament structures with different bot profiles.
  */
 
-interface BotProfile {
-  name: 'tight' | 'loose' | 'aggressive';
+export interface BotProfile {
+  name: string;
   proportion: number;
   bustMultiplier: number;
 }
@@ -14,12 +14,6 @@ export interface BlindLevel {
   blindMultiplier: number;
 }
 
-const profiles: BotProfile[] = [
-  { name: 'tight', proportion: 0.4, bustMultiplier: 0.95 },
-  { name: 'loose', proportion: 0.4, bustMultiplier: 1.0 },
-  { name: 'aggressive', proportion: 0.2, bustMultiplier: 1.05 },
-];
-
 function rand(seed: { value: number }) {
   seed.value = (seed.value * 1664525 + 1013904223) % 0xffffffff;
   return seed.value / 0xffffffff;
@@ -28,6 +22,7 @@ function rand(seed: { value: number }) {
 function runOnce(
   structure: BlindLevel[],
   entrants: number,
+  profiles: BotProfile[],
   seed: { value: number },
 ) {
   const totalMinutes = structure.reduce((acc, l) => acc + l.durationMinutes, 0);
@@ -75,12 +70,15 @@ export function simulate(
   structure: BlindLevel[],
   entrants: number,
   runs: number,
+  profiles: BotProfile[],
 ) {
   const seedBase = 42;
   const durations: number[] = [];
 
   for (let i = 0; i < runs; i++) {
-    const result = runOnce(structure, entrants, { value: seedBase + i });
+    const result = runOnce(structure, entrants, profiles, {
+      value: seedBase + i,
+    });
     durations.push(result.duration);
   }
 

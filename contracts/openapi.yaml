@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.25.0
+  version: 2.26.0
 paths:
   /status:
     get:
@@ -903,6 +903,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TournamentFilters'
+  /tournaments/bot-profiles:
+    get:
+      summary: List bot profiles
+      responses:
+        '200':
+          description: Bot profiles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BotProfilesResponse'
   /tournaments/{id}:
     get:
       summary: Get tournament
@@ -3574,6 +3584,23 @@ components:
       required:
         - averageDuration
         - durationVariance
+    BotProfile:
+      type: object
+      properties:
+        name:
+          type: string
+        proportion:
+          type: number
+        bustMultiplier:
+          type: number
+      required:
+        - name
+        - proportion
+        - bustMultiplier
+    BotProfilesResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/BotProfile'
     Table:
       type: object
       properties:
