@@ -1,5 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {
+  mockUseBankTransfer,
+  mockUseWithdraw,
+  resetWalletMocks,
+} from '@/app/wallet/__tests__/walletTestUtils';
 
 jest.mock('../AmountInput', () => {
   const actual = jest.requireActual('../AmountInput');
@@ -11,12 +16,6 @@ jest.mock('../AmountInput', () => {
 
 import BankTransferModal from '../BankTransferModal';
 import AmountInput from '../AmountInput';
-import { useBankTransfer, useWithdraw } from '@/hooks/wallet';
-
-jest.mock('@/hooks/wallet', () => ({
-  useBankTransfer: jest.fn(),
-  useWithdraw: jest.fn(),
-}));
 
 const depositProps = () => ({
   mode: 'deposit' as const,
@@ -46,6 +45,7 @@ describe.each([
   let withdrawMock: any;
 
   beforeEach(() => {
+    resetWalletMocks();
     (AmountInput as jest.Mock).mockClear();
     localStorage.clear();
     localStorage.setItem('deviceId', 'test-device');
@@ -73,8 +73,8 @@ describe.each([
       error: null,
     };
 
-    (useBankTransfer as jest.Mock).mockReturnValue(bankTransferMock);
-    (useWithdraw as jest.Mock).mockReturnValue(withdrawMock);
+    mockUseBankTransfer.mockReturnValue(bankTransferMock);
+    mockUseWithdraw.mockReturnValue(withdrawMock);
 
     props = getProps();
   });

@@ -1,44 +1,14 @@
+import { mockUseIbanDetails, resetWalletMocks } from './walletTestUtils';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import WalletPage from '../page';
-import {
-  useWalletStatus,
-  useIbanDetails,
-  useBankTransfer,
-  useWithdraw,
-} from '@/hooks/wallet';
-
-jest.mock('@/hooks/wallet', () => ({
-  useWalletStatus: jest.fn(),
-  useIbanDetails: jest.fn(),
-  useBankTransfer: jest.fn(() => ({
-    mutateAsync: jest.fn(),
-    reset: jest.fn(),
-    error: null,
-  })),
-  useWithdraw: jest.fn(() => ({
-    mutateAsync: jest.fn(),
-    reset: jest.fn(),
-    error: null,
-  })),
-}));
-
-const mockStatus = {
-  data: {
-    realBalance: 100,
-    creditBalance: 0,
-    kycVerified: true,
-    currency: 'EUR',
-  },
-};
 
 beforeEach(() => {
-  (useWalletStatus as jest.Mock).mockReturnValue(mockStatus);
-  (useIbanDetails as jest.Mock).mockReset();
+  resetWalletMocks();
 });
 
 test('shows bank details when iban details resolve', async () => {
-  (useIbanDetails as jest.Mock).mockReturnValue({
+  mockUseIbanDetails.mockReturnValue({
     data: {
       ibanMasked: '***123',
       ibanFull: 'DE001',
@@ -62,7 +32,7 @@ test('shows bank details when iban details resolve', async () => {
 });
 
 test('shows empty state when iban details missing', async () => {
-  (useIbanDetails as jest.Mock).mockReturnValue({
+  mockUseIbanDetails.mockReturnValue({
     data: undefined,
     isLoading: false,
     error: null,
@@ -76,8 +46,8 @@ test('shows empty state when iban details missing', async () => {
   );
 });
 
-test('shows error state when iban details fail', async () => {
-  (useIbanDetails as jest.Mock).mockReturnValue({
+test('shows error state and hides withdraw modal when iban details fail', async () => {
+  mockUseIbanDetails.mockReturnValue({
     data: undefined,
     isLoading: false,
     error: new Error('fail'),
@@ -89,4 +59,5 @@ test('shows error state when iban details fail', async () => {
   expect(await screen.findByRole('alert')).toHaveTextContent(
     /failed to load bank details/i,
   );
+  expect(screen.queryByText('Withdraw Funds')).not.toBeInTheDocument();
 });
