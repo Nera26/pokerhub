@@ -74,11 +74,11 @@ k6 run --vus 50 --duration 1m --out otlp --otlp-endpoint http://localhost:4318 l
 
 ## Backend Telemetry
 
-The backend `LoggingModule` boots OpenTelemetry through an `OtelProvider` that
-configures the NodeSDK with OTLP trace and metric exporters as well as a
-Prometheus scrape endpoint.  Instrumentations for Redis, Postgres and Socket.IO
-are enabled so traces span cache calls, database queries and WebSocket message
-handlers.
+The backend bootstraps OpenTelemetry via `backend/src/telemetry/telemetry.ts`, which
+configures the NodeSDK with OTLP trace and metric exporters along with a
+Prometheus scrape endpoint. Instrumentations for Redis, Postgres and
+Socket.IO are enabled so traces span cache calls, database queries and
+WebSocket message handlers.
 
 Exporter endpoints are driven by environment variables:
 

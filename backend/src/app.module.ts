@@ -48,7 +48,6 @@ import { SessionModule } from './session/session.module';
 import { LeaderboardModule } from './leaderboard/leaderboard.module';
 import { GameModule } from './game/game.module';
 import { StorageModule } from './storage/storage.module';
-import { LoggingModule } from './logging/logging.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { TournamentModule } from './tournament/tournament.module';
 import { WalletModule } from './wallet/wallet.module';
@@ -153,7 +152,6 @@ import { DefaultAvatarEntity } from './database/entities/default-avatar.entity';
     LeaderboardModule,
     GameModule,
     StorageModule,
-    LoggingModule,
     AnalyticsModule,
     TournamentModule,
     WalletModule,

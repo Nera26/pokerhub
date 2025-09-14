@@ -29,9 +29,6 @@ jest.mock('../src/game/game.module', () => ({
 jest.mock('../src/storage/storage.module', () => ({
   StorageModule: class StorageModule {},
 }));
-jest.mock('../src/logging/logging.module', () => ({
-  LoggingModule: class LoggingModule {},
-}));
 jest.mock('../src/analytics/analytics.module', () => ({
   AnalyticsModule: class AnalyticsModule {},
 }));
