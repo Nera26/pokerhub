@@ -14,7 +14,12 @@ export function sanitize(
       folded,
       bet,
       allIn,
-      ...(playerId === id && holeCards ? { holeCards } : {}),
+      ...(playerId === id &&
+      Array.isArray(holeCards) &&
+      holeCards.length === 2 &&
+      holeCards.every((c) => typeof c === 'number')
+        ? { holeCards }
+        : {}),
     })),
   } as GameState;
 }
