@@ -5,41 +5,51 @@ import {
   sendBroadcast,
   fetchBroadcastTemplates,
 } from '@/lib/api/broadcasts';
-import { mockFetchError } from '@/test-utils/mockFetch';
+import { http, HttpResponse } from 'msw';
+import { setupServer } from 'msw/node';
+
+const server = setupServer();
+const fetchSpy = jest.fn((input: RequestInfo, init?: RequestInit) =>
+  server.fetch(input, init),
+);
+
+beforeAll(() => {
+  server.listen();
+  // @ts-expect-error override for tests
+  global.fetch = fetchSpy;
+});
+
+afterEach(() => {
+  server.resetHandlers();
+  fetchSpy.mockReset();
+});
+
+afterAll(() => {
+  server.close();
+});
 
 describe('broadcasts api', () => {
-  afterEach(() => {
-    jest.resetAllMocks();
-  });
-
   it('fetches broadcasts, templates and sends broadcast', async () => {
-    (fetch as jest.Mock)
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({ broadcasts: [] }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 201,
-        headers: { get: () => 'application/json' },
-        json: async () => ({
-          id: '1',
-          type: 'announcement',
-          text: 'hi',
-          urgent: false,
-          timestamp: '2020-01-01T00:00:00.000Z',
-        }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({
-          templates: { maintenance: 'm', tournament: 't' },
-        }),
-      });
+    server.use(
+      http.get('http://localhost:3000/api/admin/broadcasts', () =>
+        HttpResponse.json({ broadcasts: [] }),
+      ),
+      http.post('http://localhost:3000/api/admin/broadcasts', () =>
+        HttpResponse.json(
+          {
+            id: '1',
+            type: 'announcement',
+            text: 'hi',
+            urgent: false,
+            timestamp: '2020-01-01T00:00:00.000Z',
+          },
+          { status: 201 },
+        ),
+      ),
+      http.get('http://localhost:3000/api/broadcast/templates', () =>
+        HttpResponse.json({ templates: { maintenance: 'm', tournament: 't' } }),
+      ),
+    );
 
     await expect(fetchBroadcasts()).resolves.toEqual({ broadcasts: [] });
     await expect(
@@ -62,7 +72,26 @@ describe('broadcasts api', () => {
   });
 
   it('throws ApiError on failure', async () => {
-    mockFetchError();
+    server.use(
+      http.get('http://localhost:3000/api/admin/broadcasts', () =>
+        HttpResponse.json(
+          { message: 'Server Error' },
+          { status: 500, statusText: 'Server Error' },
+        ),
+      ),
+      http.post('http://localhost:3000/api/admin/broadcasts', () =>
+        HttpResponse.json(
+          { message: 'Server Error' },
+          { status: 500, statusText: 'Server Error' },
+        ),
+      ),
+      http.get('http://localhost:3000/api/broadcast/templates', () =>
+        HttpResponse.json(
+          { message: 'Server Error' },
+          { status: 500, statusText: 'Server Error' },
+        ),
+      ),
+    );
     await expect(fetchBroadcasts()).rejects.toMatchObject({
       message: 'Failed to fetch broadcasts: Server Error',
     });

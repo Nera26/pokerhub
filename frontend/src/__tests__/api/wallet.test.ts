@@ -49,52 +49,77 @@ import {
   getStatus,
   fetchIbanDetails,
 } from '@/lib/api/wallet';
-import { mockFetch } from '@/test-utils/mockFetch';
+import { http, HttpResponse } from 'msw';
+import { setupServer } from 'msw/node';
+
+const server = setupServer();
+const fetchSpy = jest.fn((input: RequestInfo, init?: RequestInit) =>
+  server.fetch(input, init),
+);
+
+beforeAll(() => {
+  server.listen();
+  // @ts-expect-error override for tests
+  global.fetch = fetchSpy;
+});
+
+afterEach(() => {
+  server.resetHandlers();
+  fetchSpy.mockReset();
+});
+
+afterAll(() => {
+  server.close();
+});
 
 describe('wallet api', () => {
   it('handles reserve/commit/rollback/deposit/withdraw', async () => {
-    mockFetch(
-      { status: 200, payload: { message: 'ok' } },
-      { status: 200, payload: { message: 'ok' } },
-      { status: 200, payload: { message: 'ok' } },
-      {
-        status: 200,
-        payload: {
+    server.use(
+      http.post('http://localhost:3000/api/wallet/u1/reserve', () =>
+        HttpResponse.json({ message: 'ok' }),
+      ),
+      http.post('http://localhost:3000/api/wallet/u1/commit', () =>
+        HttpResponse.json({ message: 'ok' }),
+      ),
+      http.post('http://localhost:3000/api/wallet/u1/rollback', () =>
+        HttpResponse.json({ message: 'ok' }),
+      ),
+      http.post('http://localhost:3000/api/wallet/u1/deposit', () =>
+        HttpResponse.json({
           kycVerified: true,
           realBalance: 20,
           creditBalance: 10,
           currency: 'EUR',
-        },
-      },
-      {
-        status: 200,
-        payload: {
-          reference: 'ref1',
-          bank: {
-            bankName: 'Bank',
-            accountNumber: '123',
-            routingCode: '456',
-          },
-        },
-      },
-      {
-        status: 200,
-        payload: {
+        }),
+      ),
+      http.post(
+        'http://localhost:3000/api/wallet/u1/deposit/bank-transfer',
+        () =>
+          HttpResponse.json({
+            reference: 'ref1',
+            bank: {
+              bankName: 'Bank',
+              accountNumber: '123',
+              routingCode: '456',
+            },
+          }),
+      ),
+      http.post('http://localhost:3000/api/wallet/u1/withdraw', () =>
+        HttpResponse.json({
           kycVerified: true,
           realBalance: 10,
           creditBalance: 5,
           currency: 'EUR',
-        },
-      },
-      {
-        status: 200,
-        payload: {
+        }),
+      ),
+      http.get('http://localhost:3000/api/wallet/u1/status', () =>
+        HttpResponse.json({
           kycVerified: true,
           realBalance: 20,
           creditBalance: 10,
           currency: 'EUR',
-        },
-      },
+        }),
+      ),
     );
 
     await expect(reserve('u1', 10, 'EUR')).resolves.toEqual({ message: 'ok' });
@@ -131,16 +156,20 @@ describe('wallet api', () => {
   });
 
   it('validates deposit and withdraw payloads', () => {
-    (fetch as jest.Mock).mockClear();
+    fetchSpy.mockClear();
     expect(() => deposit('u1', -1, 'd1', 'EUR')).toThrow();
-    expect(fetch).not.toHaveBeenCalled();
-    (fetch as jest.Mock).mockClear();
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockClear();
     expect(() => withdraw('u1', 10, 123 as any, 'EUR')).toThrow();
-    expect(fetch).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it('fetchIbanDetails handles API failure', async () => {
-    mockFetch({ status: 500, payload: { message: 'fail' } });
+    server.use(
+      http.get('http://localhost:3000/api/wallet/iban', () =>
+        HttpResponse.json({ message: 'fail' }, { status: 500 }),
+      ),
+    );
     await expect(fetchIbanDetails()).rejects.toMatchObject({
       status: 500,
       message: 'fail',

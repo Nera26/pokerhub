@@ -7,20 +7,47 @@ import {
   verifyResetCode,
   resetPassword,
 } from '@/lib/api/auth';
-import { mockFetch, mockFetchError } from '@/test-utils/mockFetch';
+import { http, HttpResponse } from 'msw';
+import { setupServer } from 'msw/node';
+
+const server = setupServer();
+const fetchSpy = jest.fn((input: RequestInfo, init?: RequestInit) =>
+  server.fetch(input, init),
+);
+
+beforeAll(() => {
+  server.listen();
+  // @ts-expect-error override for tests
+  global.fetch = fetchSpy;
+});
+
+afterEach(() => {
+  server.resetHandlers();
+  fetchSpy.mockReset();
+});
+
+afterAll(() => {
+  server.close();
+});
 
 describe('auth api', () => {
-  afterEach(() => {
-    jest.resetAllMocks();
-  });
-
   it('handles login and password reset flow', async () => {
-    mockFetch(
-      { status: 200, payload: { token: 'tok' } },
-      { status: 200, payload: { message: 'ok' } },
-      { status: 200, payload: { message: 'ok' } },
-      { status: 200, payload: { message: 'ok' } },
-      { status: 200, payload: { message: 'ok' } },
+    server.use(
+      http.post('http://localhost:3000/api/auth/login', () =>
+        HttpResponse.json({ token: 'tok' }),
+      ),
+      http.post('http://localhost:3000/api/auth/logout', () =>
+        HttpResponse.json({ message: 'ok' }),
+      ),
+      http.post('http://localhost:3000/api/auth/request-reset', () =>
+        HttpResponse.json({ message: 'ok' }),
+      ),
+      http.post('http://localhost:3000/api/auth/verify-reset-code', () =>
+        HttpResponse.json({ message: 'ok' }),
+      ),
+      http.post('http://localhost:3000/api/auth/reset-password', () =>
+        HttpResponse.json({ message: 'ok' }),
+      ),
     );
 
     await expect(login('u@example.com', 'p')).resolves.toEqual({
@@ -39,7 +66,38 @@ describe('auth api', () => {
   });
 
   it('throws ApiError on failure', async () => {
-    mockFetchError();
+    server.use(
+      http.post('http://localhost:3000/api/auth/login', () =>
+        HttpResponse.json(
+          { error: 'fail' },
+          { status: 500, statusText: 'Server Error' },
+        ),
+      ),
+      http.post('http://localhost:3000/api/auth/logout', () =>
+        HttpResponse.json(
+          { error: 'fail' },
+          { status: 500, statusText: 'Server Error' },
+        ),
+      ),
+      http.post('http://localhost:3000/api/auth/request-reset', () =>
+        HttpResponse.json(
+          { error: 'fail' },
+          { status: 500, statusText: 'Server Error' },
+        ),
+      ),
+      http.post('http://localhost:3000/api/auth/verify-reset-code', () =>
+        HttpResponse.json(
+          { error: 'fail' },
+          { status: 500, statusText: 'Server Error' },
+        ),
+      ),
+      http.post('http://localhost:3000/api/auth/reset-password', () =>
+        HttpResponse.json(
+          { error: 'fail' },
+          { status: 500, statusText: 'Server Error' },
+        ),
+      ),
+    );
     const err = {
       status: 500,
       message: 'Server Error',

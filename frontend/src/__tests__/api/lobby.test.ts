@@ -2,39 +2,47 @@
 
 import { fetchTables } from '@/lib/api/table';
 import { fetchTournamentDetails, createCTA, updateCTA } from '@/lib/api/lobby';
-import { mockFetch } from '@/test-utils/mockFetch';
+import { http, HttpResponse } from 'msw';
+import { setupServer } from 'msw/node';
+
+const server = setupServer();
+const fetchSpy = jest.fn((input: RequestInfo, init?: RequestInit) =>
+  server.fetch(input, init),
+);
+
+beforeAll(() => {
+  server.listen();
+  // @ts-expect-error override for tests
+  global.fetch = fetchSpy;
+});
+
+afterEach(() => {
+  server.resetHandlers();
+  fetchSpy.mockReset();
+});
+
+afterAll(() => {
+  server.close();
+});
 import { tables, tournamentDetails } from '../fixtures/lobby';
 
 describe('lobby api', () => {
-  beforeAll(() => {
-    // Ensure fetch exists in node test env
-    if (!(global as any).fetch) {
-      (global as any).fetch = jest.fn();
-    }
-  });
-
-  beforeEach(() => {
-    (fetch as jest.Mock).mockReset();
-  });
-
   it('fetches tables', async () => {
-    (fetch as jest.Mock).mockResolvedValue({
-      ok: true,
-      status: 200,
-      headers: { get: () => 'application/json' },
-      json: async () => tables,
-    });
+    server.use(
+      http.get('http://localhost:3000/api/tables', () =>
+        HttpResponse.json(tables),
+      ),
+    );
 
     await expect(fetchTables()).resolves.toEqual(tables);
   });
 
   it('throws ApiError on failure', async () => {
-    (fetch as jest.Mock).mockResolvedValue({
-      ok: false,
-      status: 500,
-      statusText: 'Server Error',
-      text: async () => 'fail',
-    });
+    server.use(
+      http.get('http://localhost:3000/api/tables', () =>
+        HttpResponse.text('fail', { status: 500, statusText: 'Server Error' }),
+      ),
+    );
 
     await expect(fetchTables()).rejects.toEqual({
       status: 500,
@@ -44,12 +52,11 @@ describe('lobby api', () => {
   });
 
   it('fetches tournament details', async () => {
-    (fetch as jest.Mock).mockResolvedValue({
-      ok: true,
-      status: 200,
-      headers: { get: () => 'application/json' },
-      json: async () => tournamentDetails,
-    });
+    server.use(
+      http.get('http://localhost:3000/api/tournaments/t1', () =>
+        HttpResponse.json(tournamentDetails),
+      ),
+    );
 
     await expect(fetchTournamentDetails('t1')).resolves.toEqual(
       tournamentDetails,
@@ -57,12 +64,11 @@ describe('lobby api', () => {
   });
 
   it('throws ApiError when tournament details request fails', async () => {
-    (fetch as jest.Mock).mockResolvedValue({
-      ok: false,
-      status: 404,
-      statusText: 'Not Found',
-      text: async () => 'missing',
-    });
+    server.use(
+      http.get('http://localhost:3000/api/tournaments/x', () =>
+        HttpResponse.text('missing', { status: 404, statusText: 'Not Found' }),
+      ),
+    );
 
     await expect(fetchTournamentDetails('x')).rejects.toEqual({
       status: 404,
@@ -78,10 +84,12 @@ describe('lobby api', () => {
       href: '/join',
       variant: 'primary',
     };
-    mockFetch({ status: 200, payload: cta });
+    server.use(
+      http.post('http://localhost:3000/api/ctas', () => HttpResponse.json(cta)),
+    );
 
     await expect(createCTA(cta)).rejects.toBeDefined();
-    expect(fetch).toHaveBeenCalledWith(
+    expect(fetchSpy).toHaveBeenCalledWith(
       'http://localhost:3000/api/ctas',
       expect.objectContaining({
         method: 'POST',
@@ -97,10 +105,14 @@ describe('lobby api', () => {
       href: '/join',
       variant: 'primary',
     };
-    mockFetch({ status: 200, payload: cta });
+    server.use(
+      http.put('http://localhost:3000/api/ctas/c1', () =>
+        HttpResponse.json(cta),
+      ),
+    );
 
     await expect(updateCTA('c1', cta)).rejects.toBeDefined();
-    expect(fetch).toHaveBeenCalledWith(
+    expect(fetchSpy).toHaveBeenCalledWith(
       'http://localhost:3000/api/ctas/c1',
       expect.objectContaining({
         method: 'PUT',

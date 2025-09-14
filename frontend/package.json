@@ -89,6 +89,7 @@
     "@jest/globals": "^29.7.0",
     "axe-core": "^4.10.3",
     "node-fetch": "^2.6.1",
+    "msw": "^2.4.9",
     "chromatic": "^13.1.4",
     "chrome-launcher": "^0.15.2",
     "cross-env": "^7.0.3",

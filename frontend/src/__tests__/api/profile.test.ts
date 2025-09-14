@@ -8,7 +8,28 @@ import {
   fetchStats,
 } from '@/lib/api/profile';
 import { apiClient, type ApiError } from '@/lib/api/client';
-import { mockFetch } from '@/test-utils/mockFetch';
+import { http, HttpResponse } from 'msw';
+import { setupServer } from 'msw/node';
+
+const server = setupServer();
+const fetchSpy = jest.fn((input: RequestInfo, init?: RequestInit) =>
+  server.fetch(input, init),
+);
+
+beforeAll(() => {
+  server.listen();
+  // @ts-expect-error override for tests
+  global.fetch = fetchSpy;
+});
+
+afterEach(() => {
+  server.resetHandlers();
+  fetchSpy.mockReset();
+});
+
+afterAll(() => {
+  server.close();
+});
 
 jest.mock('@/lib/api/client', () => {
   const actual = jest.requireActual('@/lib/api/client');
@@ -23,7 +44,7 @@ const mockedApiClient = apiClient as jest.MockedFunction<typeof apiClient>;
 describe('profile API', () => {
   beforeEach(() => {
     mockedApiClient.mockReset();
-    (global.fetch as jest.Mock | undefined)?.mockReset?.();
+    fetchSpy.mockReset();
   });
 
   describe('fetchProfile', () => {
@@ -152,13 +173,19 @@ describe('profile API', () => {
         experience: 42,
         balance: 100,
       };
-      mockFetch({ status: 200, payload: profile });
-
       const formData = new FormData();
       formData.append('username', 'NewName');
 
+      const actualClient = jest.requireActual('@/lib/api/client').apiClient;
+      mockedApiClient.mockImplementationOnce(actualClient);
+      server.use(
+        http.patch('http://localhost:3000/api/user/profile', () =>
+          HttpResponse.json(profile),
+        ),
+      );
+
       await expect(updateProfile(formData)).resolves.toEqual(profile);
-      expect(fetch).toHaveBeenCalledWith(
+      expect(fetchSpy).toHaveBeenCalledWith(
         'http://localhost:3000/api/user/profile',
         expect.objectContaining({
           method: 'PATCH',
@@ -168,13 +195,16 @@ describe('profile API', () => {
     });
 
     it('throws ApiError with prefixed message on failure', async () => {
-      (fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        statusText: 'Internal',
-        headers: { get: () => 'application/json' },
-        json: async () => ({ message: 'boom' }),
-      });
+      const actualClient = jest.requireActual('@/lib/api/client').apiClient;
+      mockedApiClient.mockImplementationOnce(actualClient);
+      server.use(
+        http.patch('http://localhost:3000/api/user/profile', () =>
+          HttpResponse.json(
+            { message: 'boom' },
+            { status: 500, statusText: 'Internal' },
+          ),
+        ),
+      );
       await expect(updateProfile(new FormData())).rejects.toEqual(
         expect.objectContaining({
           message: 'Failed to update profile: boom',
