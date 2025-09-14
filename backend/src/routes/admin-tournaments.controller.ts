@@ -18,7 +18,7 @@ import {
   TournamentFormatSchema,
 } from '../schemas/tournaments';
 import { ZodError } from 'zod';
-import { simulate, BlindLevel } from '../services/tournamentSimulator';
+import { simulate, type BlindLevel } from '@shared/utils/tournamentSimulator';
 import { BotProfilesResponseSchema } from '@shared/types';
 import { TournamentService } from '../tournament/tournament.service';
 
