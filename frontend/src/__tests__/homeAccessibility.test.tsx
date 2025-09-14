@@ -11,7 +11,29 @@ import type { Table, Tournament } from '@/hooks/useLobbyData';
 import type { GameType } from '@shared/types';
 import type { CashGameListProps } from '@/app/components/home/CashGameList';
 import type { TournamentListProps } from '@/components/TournamentList';
-import virtualizerStub from '../test-utils/virtualizerStub';
+import type { Virtualizer } from '@tanstack/react-virtual';
+import type { RefObject } from 'react';
+
+function virtualizerStub<T extends HTMLElement>({
+  count,
+  estimateSize = 280,
+}: {
+  count: number;
+  parentRef: RefObject<T | null>;
+  estimateSize?: number;
+}): Virtualizer<T, Element> {
+  return {
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, index) => ({
+        index,
+        start: index * estimateSize,
+        end: (index + 1) * estimateSize,
+      })),
+    getTotalSize: () => count * estimateSize,
+    scrollToIndex: () => undefined,
+    measureElement: () => undefined,
+  } as unknown as Virtualizer<T, Element>;
+}
 
 jest.mock('@/hooks/useVirtualizedList', () => {
   const actual = jest.requireActual('@/hooks/useVirtualizedList');
