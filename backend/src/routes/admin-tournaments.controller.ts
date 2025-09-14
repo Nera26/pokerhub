@@ -42,23 +42,9 @@ export class AdminTournamentsController {
   @Get('defaults')
   @ApiOperation({ summary: 'Get default tournament values' })
   @ApiResponse({ status: 200, description: 'Default tournament values' })
-  defaults() {
-    return AdminTournamentSchema.parse({
-      id: 0,
-      name: '',
-      gameType: "Texas Hold'em",
-      buyin: 0,
-      fee: 0,
-      prizePool: 0,
-      date: '',
-      time: '',
-      format: 'Regular',
-      seatCap: '',
-      description: '',
-      rebuy: false,
-      addon: false,
-      status: 'scheduled',
-    });
+  async defaults() {
+    const defaults = await this.service.getDefaultTournament();
+    return AdminTournamentSchema.parse(defaults);
   }
 
   @Post('simulate')

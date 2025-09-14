@@ -5,13 +5,27 @@ import { AdminTournamentsController } from '../src/routes/admin-tournaments.cont
 import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
 import { TournamentSimulateResponseSchema } from '@shared/types';
+import { TournamentService } from '../src/tournament/tournament.service';
+
+jest.mock('../src/services/tournamentSimulator', () => ({
+  simulate: () => ({ averageDuration: 1, durationVariance: 0 }),
+}));
 
 describe('AdminTournamentsController simulate', () => {
   let app: INestApplication;
 
+  const svc: Partial<TournamentService> = {
+    getBotProfiles: jest
+      .fn()
+      .mockResolvedValue([
+        { name: 'test', proportion: 1, bustMultiplier: 1 },
+      ]),
+  };
+
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       controllers: [AdminTournamentsController],
+      providers: [{ provide: TournamentService, useValue: svc }],
     })
       .overrideGuard(AuthGuard)
       .useValue({ canActivate: () => true })
