@@ -1,8 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { screen } from '@testing-library/react';
 
 import WalletPage from '..';
+import {
+  renderAndOpenWithdraw,
+  expectBankDetailsShown,
+  sampleIbanDetails,
+} from './utils';
 
 const mockUseWalletStatus = jest.fn();
 const mockUseIbanDetails = jest.fn();
@@ -38,25 +42,10 @@ beforeEach(() => {
 });
 
 it('renders bank details when iban details resolve', async () => {
-  mockUseIbanDetails.mockReturnValue({
-    data: {
-      ibanMasked: '***123',
-      ibanFull: 'DE001',
-      holder: 'John Doe',
-      instructions: '',
-      history: [],
-      lastUpdatedBy: 'admin',
-      lastUpdatedAt: '2024-01-01T00:00:00Z',
-      bankName: 'Test Bank',
-      bankAddress: '123 Street',
-    },
-  });
+  mockUseIbanDetails.mockReturnValue({ data: sampleIbanDetails });
 
-  render(<WalletPage />);
-  await userEvent.click(screen.getByRole('button', { name: /withdraw/i }));
-
-  expect(await screen.findByText('Test Bank')).toBeInTheDocument();
-  expect(screen.getByText('***123')).toBeInTheDocument();
+  await renderAndOpenWithdraw(<WalletPage />);
+  await expectBankDetailsShown();
 });
 
 it('hides withdraw modal when iban details fail', async () => {
@@ -65,8 +54,7 @@ it('hides withdraw modal when iban details fail', async () => {
     error: new Error('fail'),
   });
 
-  render(<WalletPage />);
-  await userEvent.click(screen.getByRole('button', { name: /withdraw/i }));
+  await renderAndOpenWithdraw(<WalletPage />);
 
   expect(screen.queryByText('Withdraw Funds')).not.toBeInTheDocument();
 });

@@ -1,5 +1,4 @@
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { screen } from '@testing-library/react';
 import WalletPage from '../page';
 import {
   useWalletStatus,
@@ -7,6 +6,11 @@ import {
   useBankTransfer,
   useWithdraw,
 } from '@/hooks/wallet';
+import {
+  renderAndOpenWithdraw,
+  expectBankDetailsShown,
+  sampleIbanDetails,
+} from '../../../features/wallet/__tests__/utils';
 
 jest.mock('@/hooks/wallet', () => ({
   useWalletStatus: jest.fn(),
@@ -39,26 +43,13 @@ beforeEach(() => {
 
 test('shows bank details when iban details resolve', async () => {
   (useIbanDetails as jest.Mock).mockReturnValue({
-    data: {
-      ibanMasked: '***123',
-      ibanFull: 'DE001',
-      holder: 'John Doe',
-      instructions: '',
-      history: [],
-      lastUpdatedBy: 'admin',
-      lastUpdatedAt: '2024-01-01T00:00:00Z',
-      bankName: 'Test Bank',
-      bankAddress: '123 Street',
-    },
+    data: sampleIbanDetails,
     isLoading: false,
     error: null,
   });
 
-  render(<WalletPage />);
-  await userEvent.click(screen.getByRole('button', { name: /withdraw/i }));
-
-  expect(await screen.findByText('Test Bank')).toBeInTheDocument();
-  expect(screen.getByText('***123')).toBeInTheDocument();
+  await renderAndOpenWithdraw(<WalletPage />);
+  await expectBankDetailsShown();
 });
 
 test('shows empty state when iban details missing', async () => {
@@ -68,8 +59,7 @@ test('shows empty state when iban details missing', async () => {
     error: null,
   });
 
-  render(<WalletPage />);
-  await userEvent.click(screen.getByRole('button', { name: /withdraw/i }));
+  await renderAndOpenWithdraw(<WalletPage />);
 
   expect(await screen.findByRole('alert')).toHaveTextContent(
     /no bank details available/i,
@@ -83,8 +73,7 @@ test('shows error state when iban details fail', async () => {
     error: new Error('fail'),
   });
 
-  render(<WalletPage />);
-  await userEvent.click(screen.getByRole('button', { name: /withdraw/i }));
+  await renderAndOpenWithdraw(<WalletPage />);
 
   expect(await screen.findByRole('alert')).toHaveTextContent(
     /failed to load bank details/i,
