@@ -3,11 +3,19 @@
 import { useState } from 'react';
 import BankTransferModal from '../components/wallet/BankTransferModal';
 import Button from '../components/ui/Button';
-import { useWalletStatus } from '@/hooks/wallet';
+import InlineError from '../components/ui/InlineError';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSpinner } from '@fortawesome/free-solid-svg-icons/faSpinner';
+import { useWalletStatus, useIbanDetails } from '@/hooks/wallet';
 
 export default function WalletPage() {
   const [mode, setMode] = useState<'deposit' | 'withdraw' | null>(null);
   const { data: status } = useWalletStatus();
+  const {
+    data: ibanDetails,
+    isLoading: ibanLoading,
+    error: ibanError,
+  } = useIbanDetails();
 
   return (
     <>
@@ -17,24 +25,40 @@ export default function WalletPage() {
           <Button onClick={() => setMode('withdraw')}>Withdraw</Button>
         </div>
 
-        {mode && status && (
-          <BankTransferModal
-            mode={mode}
-            onClose={() => setMode(null)}
-            currency={status.currency}
-            {...(mode === 'withdraw'
-              ? {
-                  availableBalance: status.realBalance,
-                  bankDetails: {
-                    bankName: 'Your Bank',
-                    accountName: 'John Doe',
-                    bankAddress: '123 Street',
-                    maskedAccountNumber: '****1234',
-                  },
-                }
-              : {})}
-          />
-        )}
+        {mode &&
+          status &&
+          (mode === 'withdraw' ? (
+            ibanLoading ? (
+              <FontAwesomeIcon
+                icon={faSpinner}
+                spin
+                aria-label="Loading bank details"
+              />
+            ) : ibanError ? (
+              <InlineError message="Failed to load bank details" />
+            ) : ibanDetails ? (
+              <BankTransferModal
+                mode="withdraw"
+                onClose={() => setMode(null)}
+                currency={status.currency}
+                availableBalance={status.realBalance}
+                bankDetails={{
+                  bankName: ibanDetails.bankName,
+                  accountName: ibanDetails.holder,
+                  bankAddress: ibanDetails.bankAddress,
+                  maskedAccountNumber: ibanDetails.ibanMasked,
+                }}
+              />
+            ) : (
+              <InlineError message="No bank details available" />
+            )
+          ) : (
+            <BankTransferModal
+              mode="deposit"
+              onClose={() => setMode(null)}
+              currency={status.currency}
+            />
+          ))}
       </main>
     </>
   );
