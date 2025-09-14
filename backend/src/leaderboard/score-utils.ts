@@ -14,19 +14,25 @@ export interface ScoreEntry {
   finishes: Record<number, number>;
 }
 
+export const defaultScoreEntry: ScoreEntry = {
+  get sessions() {
+    return new Set<string>();
+  },
+  rating: 0,
+  rd: 350,
+  volatility: 0.06,
+  net: 0,
+  bb: 0,
+  hands: 0,
+  duration: 0,
+  buyIn: 0,
+  get finishes() {
+    return {} as Record<number, number>;
+  },
+};
+
 export function initScoreEntry(overrides: Partial<ScoreEntry> = {}): ScoreEntry {
-  return {
-    sessions: overrides.sessions ?? new Set<string>(),
-    rating: overrides.rating ?? 0,
-    rd: overrides.rd ?? 350,
-    volatility: overrides.volatility ?? 0.06,
-    net: overrides.net ?? 0,
-    bb: overrides.bb ?? 0,
-    hands: overrides.hands ?? 0,
-    duration: overrides.duration ?? 0,
-    buyIn: overrides.buyIn ?? 0,
-    finishes: overrides.finishes ?? {},
-  };
+  return { ...defaultScoreEntry, ...overrides };
 }
 
 interface ScoreDelta {
