@@ -1,35 +1,18 @@
 import fc from 'fast-check';
 import { setupFlow, seedDefaultAccounts, USER_ID } from './flow-test-utils';
 import { applyOperation } from './apply-operations';
+import { depositArb, withdrawArb, reserveArb } from './operation-arbs';
 
 jest.setTimeout(20000);
 
 describe('WalletService flows idempotency', () => {
   const userId = USER_ID;
 
-  const depositArb = fc.record({
-    type: fc.constant<'deposit'>('deposit'),
-    amount: fc.integer({ min: 1, max: 100 }),
-    ref: fc.hexaString({ minLength: 1, maxLength: 10 }),
-  });
-
-  const withdrawArb = fc.record({
-    type: fc.constant<'withdraw'>('withdraw'),
-    amount: fc.integer({ min: 1, max: 100 }),
-    ref: fc.hexaString({ minLength: 1, maxLength: 10 }),
-  });
-
-  const reserveArb = fc.integer({ min: 1, max: 100 }).chain((amount) =>
-    fc.record({
-      type: fc.constant<'reserve'>('reserve'),
-      amount: fc.constant(amount),
-      rake: fc.integer({ min: 0, max: amount }),
-      ref: fc.hexaString({ minLength: 1, maxLength: 10 }),
-      idempotencyKey: fc.hexaString({ minLength: 1, maxLength: 10 }),
-    }),
+  const opArb = fc.oneof(
+    depositArb(100),
+    withdrawArb(100),
+    reserveArb(100),
   );
-
-  const opArb = fc.oneof(depositArb, withdrawArb, reserveArb);
 
   it('maintains zero-sum and is idempotent', async () => {
     await fc.assert(
