@@ -1,16 +1,13 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { AuthGuard } from '../auth/auth.guard';
-import { AdminGuard } from '../auth/admin.guard';
+import { Get } from '@nestjs/common';
+import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { AdminController } from './admin-base.controller';
 import { BonusService } from '../services/bonus.service';
 import {
   BonusOptionsResponse,
   BonusOptionsResponseSchema,
 } from '../schemas/bonus';
 
-@ApiTags('admin')
-@UseGuards(AuthGuard, AdminGuard)
-@Controller('admin/bonus')
+@AdminController('bonus')
 export class AdminBonusController {
   constructor(private readonly bonusService: BonusService) {}
 
@@ -18,8 +15,8 @@ export class AdminBonusController {
   @ApiOperation({ summary: 'Get bonus form options' })
   @ApiResponse({ status: 200, description: 'Bonus options' })
   options(): Promise<BonusOptionsResponse> {
-    return this.bonusService.listOptions().then((res) =>
-      BonusOptionsResponseSchema.parse(res),
-    );
+    return this.bonusService
+      .listOptions()
+      .then((res) => BonusOptionsResponseSchema.parse(res));
   }
 }
