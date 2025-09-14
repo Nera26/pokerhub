@@ -2,16 +2,9 @@ import { QueryClient } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import { createWrapper } from './utils/queryClientWrapper';
 import { useIban, useIbanHistory } from '@/hooks/wallet';
+import { server } from '@/test-utils/server';
+import { mockError, mockLoading, mockSuccess } from '@/test-utils/handlers';
 import type { ApiError } from '@/lib/api/client';
-
-function mockFetchResponse(payload: unknown) {
-  return jest.fn<Promise<Response>, []>().mockResolvedValue({
-    ok: true,
-    status: 200,
-    headers: { get: () => 'application/json' },
-    json: async () => payload,
-  } as unknown as Response);
-}
 
 describe.each([
   {
@@ -39,17 +32,14 @@ describe.each([
   },
 ])('$name', ({ hook, fixtures }) => {
   it('indicates loading state', () => {
-    const fetchMock = jest.fn<Promise<Response>, []>(
-      () => new Promise(() => {}),
-    );
-    global.fetch = fetchMock as unknown as typeof fetch;
+    server.use(mockLoading({ once: true }));
     const wrapper = createWrapper(new QueryClient());
     const { result } = renderHook(() => hook(), { wrapper });
     expect(result.current.isLoading).toBe(true);
   });
 
   it('returns empty data', async () => {
-    global.fetch = mockFetchResponse(fixtures.empty) as unknown as typeof fetch;
+    server.use(mockSuccess(fixtures.empty, { once: true }));
     const wrapper = createWrapper(new QueryClient());
     const { result } = renderHook(() => hook(), { wrapper });
     await waitFor(() => expect(result.current.data).toBeDefined());
@@ -57,10 +47,7 @@ describe.each([
   });
 
   it('reports error on failure', async () => {
-    const fetchMock = jest
-      .fn<Promise<Response>, []>()
-      .mockRejectedValue(new Error('boom'));
-    global.fetch = fetchMock as unknown as typeof fetch;
+    server.use(mockError({ message: 'boom' }, { once: true }));
     const wrapper = createWrapper(
       new QueryClient({ defaultOptions: { queries: { retry: false } } }),
     );
