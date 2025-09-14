@@ -1,20 +1,11 @@
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ResponseLike } from '@/lib/api/client';
+import { server, mockSuccess } from '@/test-utils';
 
 export function setupLobbyCache() {
-  const originalFetch = global.fetch;
   jest.useFakeTimers();
-  const fetchMock = jest
-    .fn<Promise<ResponseLike>, [string]>()
-    .mockResolvedValue({
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-      headers: { get: () => 'application/json' },
-      json: async () => [],
-    });
-  global.fetch = fetchMock as unknown as typeof fetch;
+  server.use(mockSuccess([]));
+  const fetchMock = jest.spyOn(global, 'fetch');
 
   const client = new QueryClient();
   const wrapper = ({ children }: { children: ReactNode }) => (
@@ -26,8 +17,7 @@ export function setupLobbyCache() {
     wrapper,
     cleanup: () => {
       jest.useRealTimers();
-      fetchMock.mockReset();
-      global.fetch = originalFetch;
+      fetchMock.mockRestore();
     },
   } as const;
 }
