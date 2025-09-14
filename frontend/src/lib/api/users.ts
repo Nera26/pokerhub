@@ -1,9 +1,11 @@
 /* istanbul ignore file */
 import { apiClient } from './client';
-import { z } from 'zod';
+import { DefaultAvatarResponseSchema } from '@shared/types';
+import type { paths } from '@contracts/api';
 
-const DefaultAvatarSchema = z.object({ url: z.string() });
+type DefaultAvatarResponse =
+  paths['/config/default-avatar']['get']['responses']['200']['content']['application/json'];
 
-export async function fetchDefaultAvatar(): Promise<{ url: string }> {
-  return apiClient('/api/users/avatar/default', DefaultAvatarSchema);
+export async function fetchDefaultAvatar(): Promise<DefaultAvatarResponse> {
+  return apiClient('/api/config/default-avatar', DefaultAvatarResponseSchema);
 }
