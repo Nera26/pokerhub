@@ -9,7 +9,8 @@ async function main() {
     allowPositionals: true,
   });
   const handId = positionals[0];
-  const baseUrl = values.base || 'http://localhost:3000';
+  const baseUrl =
+    values.base || process.env.POKERHUB_BASE_URL || 'http://localhost:3000';
   if (!handId) {
     console.error('Usage: verify-hand <handId> [--base <url>]');
     process.exit(1);

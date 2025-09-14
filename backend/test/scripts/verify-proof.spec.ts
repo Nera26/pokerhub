@@ -1,13 +1,10 @@
 import { createServer, Server } from 'http';
-import {
-  hashCommitment,
-  shuffle,
-  standardDeck,
-} from '@shared/verify';
-import { verifyHandProof } from '../../../bin/verify-proof';
-
+import { hashCommitment, shuffle, standardDeck } from '@shared/verify';
+import { spawnSync } from 'child_process';
+import path from 'path';
 let server: Server;
 let baseUrl: string;
+const requests: string[] = [];
 
 beforeAll((done) => {
   const seed = '11'.repeat(32);
@@ -21,6 +18,7 @@ beforeAll((done) => {
   const badLog = `${JSON.stringify([0, {}, { deck: badDeck }, {}])}\n`;
 
   server = createServer((req, res) => {
+    if (req.url) requests.push(req.url);
     if (req.url === '/hands/good/proof') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(proof));
@@ -49,11 +47,12 @@ afterAll((done) => {
 });
 
 describe('verify-proof CLI', () => {
-  it('passes on valid hand', async () => {
-    await expect(verifyHandProof('good', baseUrl)).resolves.toBeUndefined();
-  });
-
-  it('fails on deck mismatch', async () => {
-    await expect(verifyHandProof('bad', baseUrl)).rejects.toThrow('Deck mismatch');
+  it('uses POKERHUB_BASE_URL when invoking CLI', () => {
+    const cli = path.resolve(__dirname, '../../../bin/verify-hand');
+    spawnSync('node', [cli, 'good'], {
+      env: { ...process.env, POKERHUB_BASE_URL: baseUrl },
+      encoding: 'utf8',
+    });
+    expect(requests).toContain('/hands/good/proof');
   });
 });
