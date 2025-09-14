@@ -1,13 +1,14 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { server } from '@/test-utils/server';
+import { mockSuccess } from '@/test-utils/handlers';
 import TransactionHistory from '../TransactionHistory';
 import {
   fetchTransactionsLog,
   fetchTransactionTypes,
   fetchAdminPlayers,
 } from '@/lib/api/wallet';
-import { mockFetchSuccess } from '@/hooks/__tests__/utils/renderHookWithClient';
 
 jest.mock('@/lib/api/wallet', () => ({
   fetchTransactionsLog: jest.fn(),
@@ -26,7 +27,7 @@ describe('Dashboard TransactionHistory', () => {
   beforeEach(() => {
     (fetchTransactionTypes as jest.Mock).mockResolvedValue([]);
     (fetchAdminPlayers as jest.Mock).mockResolvedValue([]);
-    mockFetchSuccess({});
+    server.use(mockSuccess({}));
   });
 
   afterEach(() => {

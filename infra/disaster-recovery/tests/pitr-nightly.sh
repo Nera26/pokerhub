@@ -6,7 +6,8 @@ import {
   createCTA,
   updateCTA,
 } from '@/lib/api/lobby';
-import { mockFetch } from '@/test-utils/mockFetch';
+import { server } from '@/test-utils/server';
+import { mockSuccess } from '@/test-utils/handlers';
 
 describe('lobby api', () => {
   beforeAll(() => {
@@ -127,7 +128,7 @@ describe('lobby api', () => {
       href: '/join',
       variant: 'primary',
     };
-    mockFetch({ status: 200, payload: cta });
+    server.use(mockSuccess(cta));
 
     await expect(createCTA(cta)).rejects.toBeDefined();
     expect(fetch).toHaveBeenCalledWith(
@@ -146,7 +147,7 @@ describe('lobby api', () => {
       href: '/join',
       variant: 'primary',
     };
-    mockFetch({ status: 200, payload: cta });
+    server.use(mockSuccess(cta));
 
     await expect(updateCTA('c1', cta)).rejects.toBeDefined();
     expect(fetch).toHaveBeenCalledWith(

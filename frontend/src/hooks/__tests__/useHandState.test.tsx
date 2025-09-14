@@ -1,12 +1,9 @@
 import { waitFor } from '@testing-library/react';
+import { server } from '@/test-utils/server';
+import { mockLoading, mockSuccess, mockError } from '@/test-utils/handlers';
 import { useHandState } from '../useHandState';
 import type { ApiError } from '@/lib/api/client';
-import {
-  renderHookWithClient,
-  mockFetchLoading,
-  mockFetchSuccess,
-  mockFetchError,
-} from './utils/renderHookWithClient';
+import { renderHookWithClient } from './utils/renderHookWithClient';
 
 describe('useHandState', () => {
   afterEach(() => {
@@ -14,19 +11,21 @@ describe('useHandState', () => {
   });
 
   it('reports loading state', () => {
-    mockFetchLoading();
+    server.use(mockLoading());
     const { result } = renderHookWithClient(() => useHandState('1', 0));
     expect(result.current.isLoading).toBe(true);
   });
 
   it('returns data on success', async () => {
-    mockFetchSuccess({
-      street: 'preflop',
-      pot: 0,
-      sidePots: [],
-      currentBet: 0,
-      players: [],
-    });
+    server.use(
+      mockSuccess({
+        street: 'preflop',
+        pot: 0,
+        sidePots: [],
+        currentBet: 0,
+        players: [],
+      }),
+    );
     const { result } = renderHookWithClient(() => useHandState('1', 0));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual({
@@ -43,7 +42,7 @@ describe('useHandState', () => {
   });
 
   it('exposes error state', async () => {
-    mockFetchError('boom');
+    server.use(mockError('boom'));
     const { result } = renderHookWithClient(() => useHandState('1', 0));
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect((result.current.error as ApiError).message).toBe(

@@ -1,13 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import {
-  mockFetchLoading,
-  mockFetchSuccess,
-  mockFetchError,
-} from '../../../../test-utils';
-
-export { mockFetchLoading, mockFetchSuccess, mockFetchError };
 
 export function renderHookWithClient<T>(hook: () => T, client?: QueryClient) {
   const queryClient =

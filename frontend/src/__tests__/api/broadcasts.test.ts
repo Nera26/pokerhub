@@ -5,7 +5,8 @@ import {
   sendBroadcast,
   fetchBroadcastTemplates,
 } from '@/lib/api/broadcasts';
-import { mockFetchError } from '@/test-utils/mockFetch';
+import { server } from '@/test-utils/server';
+import { mockSuccess, mockError } from '@/test-utils/handlers';
 
 describe('broadcasts api', () => {
   afterEach(() => {
@@ -13,33 +14,23 @@ describe('broadcasts api', () => {
   });
 
   it('fetches broadcasts, templates and sends broadcast', async () => {
-    (fetch as jest.Mock)
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({ broadcasts: [] }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 201,
-        headers: { get: () => 'application/json' },
-        json: async () => ({
+    server.use(
+      mockSuccess({ broadcasts: [] }, { once: true }),
+      mockSuccess(
+        {
           id: '1',
           type: 'announcement',
           text: 'hi',
           urgent: false,
           timestamp: '2020-01-01T00:00:00.000Z',
-        }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({
-          templates: { maintenance: 'm', tournament: 't' },
-        }),
-      });
+        },
+        { once: true },
+      ),
+      mockSuccess(
+        { templates: { maintenance: 'm', tournament: 't' } },
+        { once: true },
+      ),
+    );
 
     await expect(fetchBroadcasts()).resolves.toEqual({ broadcasts: [] });
     await expect(
@@ -62,7 +53,7 @@ describe('broadcasts api', () => {
   });
 
   it('throws ApiError on failure', async () => {
-    mockFetchError();
+    server.use(mockError());
     await expect(fetchBroadcasts()).rejects.toMatchObject({
       message: 'Failed to fetch broadcasts: Server Error',
     });

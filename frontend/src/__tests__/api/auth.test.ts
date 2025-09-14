@@ -1,5 +1,3 @@
-/** @jest-environment node */
-
 import {
   login,
   logout,
@@ -7,7 +5,8 @@ import {
   verifyResetCode,
   resetPassword,
 } from '@/lib/api/auth';
-import { mockFetch, mockFetchError } from '@/test-utils/mockFetch';
+import { server } from '@/test-utils/server';
+import { mockSuccess, mockError } from '@/test-utils/handlers';
 
 describe('auth api', () => {
   afterEach(() => {
@@ -15,12 +14,12 @@ describe('auth api', () => {
   });
 
   it('handles login and password reset flow', async () => {
-    mockFetch(
-      { status: 200, payload: { token: 'tok' } },
-      { status: 200, payload: { message: 'ok' } },
-      { status: 200, payload: { message: 'ok' } },
-      { status: 200, payload: { message: 'ok' } },
-      { status: 200, payload: { message: 'ok' } },
+    server.use(
+      mockSuccess({ token: 'tok' }, { once: true }),
+      mockSuccess({ message: 'ok' }, { once: true }),
+      mockSuccess({ message: 'ok' }, { once: true }),
+      mockSuccess({ message: 'ok' }, { once: true }),
+      mockSuccess({ message: 'ok' }, { once: true }),
     );
 
     await expect(login('u@example.com', 'p')).resolves.toEqual({
@@ -39,7 +38,7 @@ describe('auth api', () => {
   });
 
   it('throws ApiError on failure', async () => {
-    mockFetchError();
+    server.use(mockError());
     const err = {
       status: 500,
       message: 'Server Error',

@@ -1,12 +1,9 @@
 import { waitFor } from '@testing-library/react';
+import { server } from '@/test-utils/server';
+import { mockLoading, mockSuccess, mockError } from '@/test-utils/handlers';
 import { useTranslations } from '../useTranslations';
 import type { ApiError } from '@/lib/api/client';
-import {
-  renderHookWithClient,
-  mockFetchLoading,
-  mockFetchSuccess,
-  mockFetchError,
-} from './utils/renderHookWithClient';
+import { renderHookWithClient } from './utils/renderHookWithClient';
 
 describe('useTranslations', () => {
   afterEach(() => {
@@ -14,13 +11,15 @@ describe('useTranslations', () => {
   });
 
   it('reports loading state', () => {
-    mockFetchLoading();
+    server.use(mockLoading());
     const { result } = renderHookWithClient(() => useTranslations('en'));
     expect(result.current.isLoading).toBe(true);
   });
 
   it('returns data on success', async () => {
-    mockFetchSuccess({ messages: { 'layout.skip': 'Skip to main content' } });
+    server.use(
+      mockSuccess({ messages: { 'layout.skip': 'Skip to main content' } }),
+    );
     const { result } = renderHookWithClient(() => useTranslations('en'));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual({
@@ -33,7 +32,7 @@ describe('useTranslations', () => {
   });
 
   it('falls back when locale unsupported', async () => {
-    mockFetchSuccess({ messages: { 'login.title': 'Login' } });
+    server.use(mockSuccess({ messages: { 'login.title': 'Login' } }));
     const { result } = renderHookWithClient(() => useTranslations('fr'));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual({ 'login.title': 'Login' });
@@ -44,7 +43,7 @@ describe('useTranslations', () => {
   });
 
   it('exposes error state', async () => {
-    mockFetchError('boom');
+    server.use(mockError('boom'));
     const { result } = renderHookWithClient(() => useTranslations('en'));
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect((result.current.error as ApiError).message).toBe(
