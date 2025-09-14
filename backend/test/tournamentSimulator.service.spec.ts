@@ -2,9 +2,9 @@ import {
   simulate,
   mean,
   variance,
-  BlindLevel,
-  BotProfile,
-} from '../src/services/tournamentSimulator';
+  type BlindLevel,
+  type BotProfile,
+} from '@shared/utils/tournamentSimulator';
 
 describe('tournamentSimulator service', () => {
   it('computes mean and variance', () => {
