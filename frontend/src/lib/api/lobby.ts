@@ -12,8 +12,6 @@ import {
   type CTA,
   TournamentFiltersResponseSchema,
   type TournamentFilterOption,
-  BotProfileSchema,
-  type BotProfile,
 } from '@shared/types';
 
 export type { Tournament, TournamentDetails, CTA };
@@ -120,16 +118,4 @@ export async function withdrawTournament(
     method: 'POST',
     signal,
   });
-}
-
-export async function fetchBotProfiles({
-  signal,
-}: {
-  signal?: AbortSignal;
-} = {}): Promise<BotProfile[]> {
-  return fetchLobbyData<BotProfile[]>(
-    'tournaments/bot-profiles',
-    z.array(BotProfileSchema),
-    { signal },
-  );
 }
