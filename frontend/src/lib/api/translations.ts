@@ -1,10 +1,11 @@
 import { apiClient } from './client';
-import {
-  TranslationsResponseSchema,
-  LanguagesResponseSchema,
-  type TranslationsResponse,
-  type LanguagesResponse,
-} from '@shared/types';
+import { z } from 'zod';
+import { LanguagesResponseSchema, type LanguagesResponse } from '@shared/types';
+
+const TranslationsResponseSchema = z.object({
+  messages: z.record(z.string()),
+});
+type TranslationsResponse = z.infer<typeof TranslationsResponseSchema>;
 
 export async function fetchTranslations(
   locale: string,

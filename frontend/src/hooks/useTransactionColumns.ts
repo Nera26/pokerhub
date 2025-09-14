@@ -3,7 +3,7 @@ import { apiClient } from '@/lib/api/client';
 import {
   TransactionColumnsResponseSchema,
   type TransactionColumnsResponse,
-} from '@shared/types';
+} from '@shared/transactions.schema';
 
 const fetchTransactionColumns = (
   client: typeof apiClient,
