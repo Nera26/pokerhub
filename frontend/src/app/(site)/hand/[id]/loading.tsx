@@ -3,11 +3,13 @@
 import RouteSkeleton from '@/components/RouteSkeleton';
 import LoadingSection from '@/components/LoadingSection';
 import { useHandState } from '@/hooks/useHandState';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 
 export default function LoadingHandPage() {
   const { id } = useParams();
-  const frame = 0;
+  const searchParams = useSearchParams();
+  const frameParam = searchParams.get('frame');
+  const frame = Number.isNaN(Number(frameParam)) ? 0 : Number(frameParam ?? 0);
   const { data, error, isLoading } = useHandState(id as string, frame);
 
   return (
