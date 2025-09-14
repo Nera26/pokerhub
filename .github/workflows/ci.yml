@@ -32,6 +32,8 @@ jobs:
       - run: npx eslint .
       - name: Check for unused exports
         run: npm run lint:unused
+      - name: Check unused dependencies
+        run: npx depcheck
       - name: Detect duplicate code
         run: |
           set -o pipefail
