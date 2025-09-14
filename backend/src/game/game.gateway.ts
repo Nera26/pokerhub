@@ -11,7 +11,7 @@ import { Inject, Logger, Optional, OnModuleInit } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { randomUUID, createHash } from 'crypto';
 import Redis from 'ioredis';
-import { GameAction, type InternalGameState } from './engine';
+import { GameEngine, GameAction, type InternalGameState } from './engine';
 import { RoomManager } from './room.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { CollusionService } from '../analytics/collusion.service';
@@ -24,11 +24,7 @@ import { Hand } from '../database/entities/hand.entity';
 import { GameState } from '../database/entities/game-state.entity';
 
 import { GameActionSchema, type GameAction as WireGameAction } from '@shared/schemas/game';
-import {
-  GameStateSchema,
-  type GameActionPayload,
-  type GameState,
-} from '@shared/types';
+import { GameStateSchema, type GameState } from '@shared/types';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
 import {
   metrics,
@@ -405,6 +401,7 @@ export class GameGateway
   private readonly frameAcks = new Map<string, Map<string, FrameInfo>>();
   private readonly maxFrameAttempts = 5;
   private readonly socketPlayers = new Map<string, string>();
+  private readonly engines = new Map<string, GameEngine>();
 
   @WebSocketServer()
   server!: GameServer;
@@ -538,6 +535,19 @@ export class GameGateway
     }
   }
 
+  async startSession(tableId: string, playerIds: string[]) {
+    const engine = await GameEngine.create(
+      playerIds,
+      undefined,
+      undefined,
+      undefined,
+      this.hands,
+      undefined,
+      tableId,
+    );
+    this.engines.set(tableId, engine);
+  }
+
   handleConnection(client: GameSocket) {
     this.logger.debug(`Client connected: ${client.id}`);
     const auth = client.handshake?.auth as SocketData | undefined;
@@ -620,7 +630,7 @@ export class GameGateway
     }
     const { tableId: parsedTableId, ...wire } = parsed;
     tableId = parsedTableId;
-    const gameAction = wire as GameActionPayload;
+    const gameAction = wire as GameAction;
 
     if (
       (await this.flags?.get('dealing')) === false ||
@@ -641,9 +651,22 @@ export class GameGateway
       return;
     }
 
-    const room = this.rooms.get(tableId);
-    await room.apply(gameAction);
-    const state = await room.getPublicState();
+    const engine = this.engines.get(tableId);
+    if (!engine) {
+      this.enqueue(client, 'server:Error', 'engine not started');
+      this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+      this.recordAckLatency(start, tableId);
+      return;
+    }
+    let state: InternalGameState;
+    try {
+      state = engine.applyAction(gameAction);
+    } catch (err) {
+      this.enqueue(client, 'server:Error', (err as Error).message);
+      this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+      this.recordAckLatency(start, tableId);
+      return;
+    }
 
     void this.analytics.recordGameEvent({
       clientId: client.id,
@@ -669,9 +692,17 @@ export class GameGateway
     await this.redis.set(this.tickKey, this.tick.toString());
     await this.maybeSnapshot(tableId, state);
 
+    if (state.phase === 'NEXT_HAND') {
+      await this.hands?.save({
+        id: engine.getHandId(),
+        log: JSON.stringify(engine.getHandLog()),
+        tableId,
+      } as any);
+    }
+
     if (this.server?.of) {
       // Send sanitized state to spectators as well
-      const publicState = await room.getPublicState();
+      const publicState = engine.getPublicState();
       const spectatorPayload = {
         version: '1',
         ...sanitize(publicState),

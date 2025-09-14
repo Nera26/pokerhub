@@ -8,6 +8,11 @@ import {
   TransactionEntrySchema,
 } from './schemas/history';
 
+export type { GameAction } from './schemas/game';
+export type { HandLogEntry } from '../backend/src/game/hand-log';
+export type HandLog = HandLogEntry[];
+export { GameActionSchema };
+
 export { ZodError };
 
 export const ServiceStatusResponseSchema = z.object({
