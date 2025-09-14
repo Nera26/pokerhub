@@ -236,6 +236,14 @@ export class MockRedis {
   }
 }
 
+export function createInMemoryRedis(initial?: Record<string, string>) {
+  const redis = new MockRedis();
+  const store = new Map(Object.entries(initial ?? {}));
+  (redis as any).store = store;
+  return { redis, store };
+}
+
+/** @deprecated use createInMemoryRedis instead */
 export function createRedisMock() {
   return new MockRedis();
 }

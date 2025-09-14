@@ -25,7 +25,7 @@ describe('WalletService velocity limits', () => {
   });
 
   beforeEach(async () => {
-    ctx.redis.store.clear();
+    ctx.redisStore.clear();
     jest.clearAllMocks();
     const repo = ctx.repos.account;
     const user = await repo.findOneByOrFail({ id: userId });
@@ -50,7 +50,7 @@ describe('WalletService velocity limits', () => {
       'wallet.velocity.limit',
       expect.objectContaining({ accountId: userId, operation: 'deposit' }),
     );
-    expect(ctx.redis.store.get(`wallet:deposit:${userId}:h:count`)).toBe(2);
+    expect(ctx.redisStore.get(`wallet:deposit:${userId}:h:count`)).toBe(2);
     delete process.env.WALLET_VELOCITY_DEPOSIT_HOURLY_COUNT;
   });
 
@@ -64,7 +64,7 @@ describe('WalletService velocity limits', () => {
       'wallet.velocity.limit',
       expect.objectContaining({ accountId: userId, operation: 'withdraw' }),
     );
-    expect(ctx.redis.store.get(`wallet:withdraw:${userId}:h:amount`)).toBe(70);
+    expect(ctx.redisStore.get(`wallet:withdraw:${userId}:h:amount`)).toBe(70);
     delete process.env.WALLET_VELOCITY_WITHDRAW_HOURLY_AMOUNT;
   });
 
@@ -73,14 +73,14 @@ describe('WalletService velocity limits', () => {
     const originalCheck = (ctx.service as any).checkVelocity;
     (ctx.service as any).checkVelocity = jest.fn();
     ctx.redis.incr.mockImplementationOnce(async (key: string) => {
-      const val = (ctx.redis.store.get(key) ?? 0) + 1;
-      ctx.redis.store.set(key, val);
+      const val = (ctx.redisStore.get(key) ?? 0) + 1;
+      ctx.redisStore.set(key, val);
       throw new Error('boom');
     });
     await expect(
       ctx.service.deposit(userId, 10, 'dev', '1.1.1.1', 'USD'),
     ).rejects.toThrow('boom');
-    expect(ctx.redis.store.get(`wallet:deposit:${userId}:h:count`)).toBe(0);
+    expect(ctx.redisStore.get(`wallet:deposit:${userId}:h:count`)).toBe(0);
     (ctx.service as any).checkVelocity = originalCheck;
     delete process.env.WALLET_VELOCITY_DEPOSIT_HOURLY_COUNT;
   });
@@ -90,14 +90,14 @@ describe('WalletService velocity limits', () => {
     const originalCheck = (ctx.service as any).checkVelocity;
     (ctx.service as any).checkVelocity = jest.fn();
     ctx.redis.incrby.mockImplementationOnce(async (key: string, amt: number) => {
-      const val = (ctx.redis.store.get(key) ?? 0) + amt;
-      ctx.redis.store.set(key, val);
+      const val = (ctx.redisStore.get(key) ?? 0) + amt;
+      ctx.redisStore.set(key, val);
       throw new Error('boom');
     });
     await expect(
       ctx.service.withdraw(userId, 10, 'dev', '1.1.1.1', 'USD'),
     ).rejects.toThrow('boom');
-    expect(ctx.redis.store.get(`wallet:withdraw:${userId}:h:amount`)).toBe(0);
+    expect(ctx.redisStore.get(`wallet:withdraw:${userId}:h:amount`)).toBe(0);
     (ctx.service as any).checkVelocity = originalCheck;
     delete process.env.WALLET_VELOCITY_WITHDRAW_HOURLY_AMOUNT;
   });

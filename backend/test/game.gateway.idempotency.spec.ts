@@ -7,7 +7,7 @@ import { RoomManager } from '../src/game/room.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Hand } from '../src/database/entities/hand.entity';
 import { GameState } from '../src/database/entities/game-state.entity';
-import { MockRedis } from './utils/mock-redis';
+import { createInMemoryRedis, MockRedis } from './utils/mock-redis';
 
 jest.mock('p-queue', () => ({
   __esModule: true,
@@ -44,7 +44,7 @@ describe('GameGateway idempotency', () => {
   }
 
   it('acknowledges duplicates and only applies once', async () => {
-    const redis = new MockRedis();
+    const { redis } = createInMemoryRedis();
     const state = {
       phase: 'DEAL',
       street: 'preflop',
@@ -78,7 +78,7 @@ describe('GameGateway idempotency', () => {
   });
 
   it('deduplicates across process restarts via Redis', async () => {
-    const redis = new MockRedis();
+    const { redis } = createInMemoryRedis();
     const action = { type: 'check', tableId: 't1', version: '1', actionId: 'b1', playerId: 'p1' } as const;
 
     const state = {

@@ -1,5 +1,5 @@
 import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
-import { MockRedis } from '../utils/mock-redis';
+import { createInMemoryRedis } from '../utils/mock-redis';
 
 describe('PaymentProviderService', () => {
   const originalFetch = global.fetch;
@@ -11,7 +11,8 @@ describe('PaymentProviderService', () => {
   });
 
   it('retries initiate3DS until success', async () => {
-    const service = new PaymentProviderService(new MockRedis() as any);
+    const { redis } = createInMemoryRedis();
+    const service = new PaymentProviderService(redis as any);
     const fetchMock = jest
       .spyOn(global, 'fetch' as any)
       .mockRejectedValueOnce(new Error('fail1'))
@@ -30,7 +31,8 @@ describe('PaymentProviderService', () => {
     process.env.PAYMENT_PROVIDER_BASE_URL = 'https://example.com';
     process.env.DEFAULT_CURRENCY = 'eur';
     try {
-      const service = new PaymentProviderService(new MockRedis() as any);
+      const { redis } = createInMemoryRedis();
+      const service = new PaymentProviderService(redis as any);
       const fetchMock = jest
         .spyOn(global, 'fetch' as any)
         .mockResolvedValueOnce(
@@ -53,7 +55,8 @@ describe('PaymentProviderService', () => {
   });
 
   it('throws descriptive error when getStatus exhausts retries', async () => {
-    const service = new PaymentProviderService(new MockRedis() as any);
+    const { redis } = createInMemoryRedis();
+    const service = new PaymentProviderService(redis as any);
     const fetchMock = jest
       .spyOn(global, 'fetch' as any)
       .mockRejectedValue(new Error('network'));
@@ -63,7 +66,7 @@ describe('PaymentProviderService', () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
   it('deduplicates concurrent webhook events and cleans up', async () => {
-    const redis = new MockRedis();
+    const { redis } = createInMemoryRedis();
     const service = new PaymentProviderService(redis as any);
     (service as any).initQueue = jest.fn().mockResolvedValue(undefined);
     const handler = jest

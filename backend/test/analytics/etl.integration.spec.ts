@@ -2,7 +2,7 @@ import { EtlService } from '../../src/analytics/etl.service';
 import { EventName } from '@shared/events';
 import type { ConfigService } from '@nestjs/config';
 import type Redis from 'ioredis';
-import { MockRedis } from '../utils/mock-redis';
+import { createInMemoryRedis } from '../utils/mock-redis';
 
 class MockProducer {
   send = jest.fn(async () => undefined);
@@ -75,7 +75,7 @@ describe('EtlService round-trip', () => {
   };
 
   it('ingests events and makes them queryable', async () => {
-    const redis = new MockRedis();
+    const { redis } = createInMemoryRedis();
     const analytics = new MockAnalyticsService();
     const config = {
       get: (key: string) =>

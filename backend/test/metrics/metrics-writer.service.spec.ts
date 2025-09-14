@@ -1,12 +1,12 @@
 import { MetricsWriterService } from '../../src/metrics/metrics-writer.service';
-import { MockRedis } from '../utils/mock-redis';
+import { createInMemoryRedis, MockRedis } from '../utils/mock-redis';
 
 describe('MetricsWriterService', () => {
   let redis: MockRedis;
   let service: MetricsWriterService;
 
   beforeEach(() => {
-    redis = new MockRedis();
+    ({ redis } = createInMemoryRedis());
     service = new MetricsWriterService(redis as any);
   });
 

@@ -11,7 +11,7 @@ import { PaymentProviderService } from '../src/wallet/payment-provider.service';
 import { KycService } from '../src/wallet/kyc.service';
 import { ChargebackMonitor } from '../src/wallet/chargeback.service';
 import { AnalyticsService } from '../src/analytics/analytics.service';
-import { MockRedis } from './utils/mock-redis';
+import { createInMemoryRedis } from './utils/mock-redis';
 
 jest.setTimeout(20000);
 
@@ -52,7 +52,7 @@ describe('ChargebackMonitor flags accounts', () => {
     const journalRepo = dataSource.getRepository(JournalEntry);
     const disbRepo = dataSource.getRepository(Disbursement);
     const settleRepo = dataSource.getRepository(SettlementJournal);
-    const redis = new MockRedis();
+    const { redis } = createInMemoryRedis();
     const provider = {
       initiate3DS: jest.fn().mockResolvedValue({ id: 'tx' }),
       getStatus: jest.fn(),

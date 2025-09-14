@@ -1,7 +1,7 @@
 import { SessionService } from '../../src/session/session.service';
 import type Redis from 'ioredis';
 import jwt from 'jsonwebtoken';
-import { MockRedis } from '../utils/mock-redis';
+import { createInMemoryRedis, MockRedis } from '../utils/mock-redis';
 
 class MockConfig {
   get(key: string, def?: any) {
@@ -19,7 +19,7 @@ describe('SessionService', () => {
   let client: MockRedis;
 
   beforeEach(() => {
-    client = new MockRedis();
+    ({ redis: client } = createInMemoryRedis());
     const typed: unknown = client;
     service = new SessionService(typed as Redis, new MockConfig() as any);
   });

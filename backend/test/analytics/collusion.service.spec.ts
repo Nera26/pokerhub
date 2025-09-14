@@ -1,6 +1,6 @@
 import { CollusionService } from '../../src/analytics/collusion.service';
 import type Redis from 'ioredis';
-import { MockRedis } from '../utils/mock-redis';
+import { createInMemoryRedis, MockRedis } from '../utils/mock-redis';
 import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
 import { CollusionAudit } from '../../src/analytics/collusion-audit.entity';
@@ -12,7 +12,7 @@ describe('CollusionService', () => {
   let db: ReturnType<typeof newDb>;
 
   beforeEach(async () => {
-    client = new MockRedis();
+    ({ redis: client } = createInMemoryRedis());
     db = newDb();
     db.public.registerFunction({
       name: 'version',

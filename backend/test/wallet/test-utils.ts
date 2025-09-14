@@ -12,7 +12,7 @@ import { EventPublisher } from '../../src/events/events.service';
 import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
 import { KycService } from '../../src/wallet/kyc.service';
 import { SettlementService } from '../../src/wallet/settlement.service';
-import { MockRedis } from '../utils/mock-redis';
+import { createInMemoryRedis } from '../utils/mock-redis';
 import { ConfigService } from '@nestjs/config';
 import { WebhookController } from '../../src/wallet/webhook.controller';
 import { verifySignature } from '../../src/wallet/verify-signature';
@@ -25,8 +25,7 @@ export { walletAccounts };
 
 export function createWalletServices(dataSource: DataSource) {
   const events: EventPublisher = { emit: jest.fn() } as any;
-  const redis = new MockRedis();
-  const redisStore = (redis as any).store as Map<string, any>;
+  const { redis, store: redisStore } = createInMemoryRedis();
 
   const provider: any = {
     initiate3DS: jest.fn().mockResolvedValue({ id: 'tx' }),

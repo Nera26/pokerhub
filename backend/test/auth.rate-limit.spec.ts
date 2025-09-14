@@ -1,7 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { RateLimitGuard } from '../src/routes/rate-limit.guard';
 import { HttpException } from '@nestjs/common';
-import { MockRedis } from './utils/mock-redis';
+import { createInMemoryRedis } from './utils/mock-redis';
 
 describe('RateLimitGuard', () => {
 
@@ -18,7 +18,7 @@ describe('RateLimitGuard', () => {
   }
 
   it('throttles requests after limit', async () => {
-    const redis = new MockRedis();
+    const { redis } = createInMemoryRedis();
     const config = new ConfigService({ rateLimit: { window: 60, max: 2 } });
     const guard = new RateLimitGuard(redis as any, config);
     const ctx = createContext();
