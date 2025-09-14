@@ -17,7 +17,7 @@ interface Seed {
 /**
  * Deterministic linear congruential generator.
  */
-export function rand(seed: Seed): number {
+function rand(seed: Seed): number {
   seed.value = (seed.value * 1664525 + 1013904223) % 0xffffffff;
   return seed.value / 0xffffffff;
 }
@@ -31,7 +31,7 @@ class Bot {
   }
 }
 
-export interface SimulationOptions {
+interface SimulationOptions {
   /** Number of hands to simulate per blind level */
   handsPerLevel: number;
   /** Number of milliseconds that represent one minute */
@@ -40,7 +40,7 @@ export interface SimulationOptions {
   seedValue?: number;
 }
 
-export interface SimulationResult {
+interface SimulationResult {
   levelAverages: number[];
   totalDuration: number;
 }

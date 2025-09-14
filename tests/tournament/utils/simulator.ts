@@ -1,7 +1,12 @@
-import { simulate, type BlindLevel, type SimulationResult } from '@shared/utils/tournamentSimulator';
+import { simulate, type BlindLevel } from '@shared/utils/tournamentSimulator';
 
 export const HANDS_PER_LEVEL = 5;
 export const MS_PER_MINUTE_SCALED = 10; // 10ms represents 1 minute for tests
+
+interface SimulationResult {
+  levelAverages: number[];
+  totalDuration: number;
+}
 
 export function simulateTournament(
   structure: ReadonlyArray<BlindLevel>,
@@ -14,5 +19,4 @@ export function simulateTournament(
     seedValue,
   });
 }
-
 export type { BlindLevel, SimulationResult };
