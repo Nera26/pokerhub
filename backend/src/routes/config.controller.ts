@@ -3,13 +3,19 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   ChipDenominationsResponseSchema,
   TableThemeResponseSchema,
-  type ChipDenominationsResponse,
-  type TableThemeResponse,
   DefaultAvatarResponseSchema,
-  type DefaultAvatarResponse,
   PerformanceThresholdsResponseSchema,
-  type PerformanceThresholdsResponse,
 } from '@shared/types';
+import type { paths } from '@contracts/api';
+
+type ChipDenominationsResponse =
+  paths['/config/chips']['get']['responses']['200']['content']['application/json'];
+type TableThemeResponse =
+  paths['/config/table-theme']['get']['responses']['200']['content']['application/json'];
+type DefaultAvatarResponse =
+  paths['/config/default-avatar']['get']['responses']['200']['content']['application/json'];
+type PerformanceThresholdsResponse =
+  paths['/config/performance-thresholds']['get']['responses']['200']['content']['application/json'];
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { ChipDenomsService } from '../services/chip-denoms.service';

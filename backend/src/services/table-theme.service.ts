@@ -1,8 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import type { TableThemeResponse } from '@shared/types';
+import type { paths } from '@contracts/api';
 import { TableThemeEntity } from '../database/entities/table-theme.entity';
+
+type TableThemeResponse =
+  paths['/config/table-theme']['get']['responses']['200']['content']['application/json'];
 
 const DEFAULT_THEME: TableThemeResponse = {
   hairline: 'var(--color-hairline)',

@@ -1,10 +1,14 @@
 import { apiClient } from './client';
 import {
   ChipDenominationsResponseSchema,
-  type ChipDenominationsResponse,
   PerformanceThresholdsResponseSchema,
-  type PerformanceThresholdsResponse,
 } from '@shared/types';
+import type { paths } from '@contracts/api';
+
+type ChipDenominationsResponse =
+  paths['/config/chips']['get']['responses']['200']['content']['application/json'];
+type PerformanceThresholdsResponse =
+  paths['/config/performance-thresholds']['get']['responses']['200']['content']['application/json'];
 
 export async function fetchChipDenominations({
   signal,
