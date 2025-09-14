@@ -24,6 +24,34 @@ describe('PaymentProviderService', () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
+  it('uses env base URL and currency when provided', async () => {
+    const prevBaseUrl = process.env.PAYMENT_PROVIDER_BASE_URL;
+    const prevCurrency = process.env.DEFAULT_CURRENCY;
+    process.env.PAYMENT_PROVIDER_BASE_URL = 'https://example.com';
+    process.env.DEFAULT_CURRENCY = 'eur';
+    try {
+      const service = new PaymentProviderService(new MockRedis() as any);
+      const fetchMock = jest
+        .spyOn(global, 'fetch' as any)
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ id: 'pi_env' }), { status: 200 }),
+        );
+      await service.initiate3DS('acct1', 10);
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://example.com/payment_intents',
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('currency=eur'),
+        }),
+      );
+    } finally {
+      if (prevBaseUrl === undefined) delete process.env.PAYMENT_PROVIDER_BASE_URL;
+      else process.env.PAYMENT_PROVIDER_BASE_URL = prevBaseUrl;
+      if (prevCurrency === undefined) delete process.env.DEFAULT_CURRENCY;
+      else process.env.DEFAULT_CURRENCY = prevCurrency;
+    }
+  });
+
   it('throws descriptive error when getStatus exhausts retries', async () => {
     const service = new PaymentProviderService(new MockRedis() as any);
     const fetchMock = jest

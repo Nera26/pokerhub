@@ -15,7 +15,10 @@ export interface ProviderChallenge {
 @Injectable()
 export class PaymentProviderService {
   private readonly apiKey = process.env.STRIPE_API_KEY ?? '';
-  private readonly baseUrl = 'https://api.stripe.com/v1';
+  private readonly baseUrl =
+    process.env.PAYMENT_PROVIDER_BASE_URL ?? 'https://api.stripe.com/v1';
+  private readonly defaultCurrency =
+    process.env.DEFAULT_CURRENCY ?? 'usd';
 
   private handlers = new Map<string, (event: ProviderCallback) => Promise<void>>();
   private retryQueue?: Queue;
@@ -143,7 +146,7 @@ export class PaymentProviderService {
   ): Promise<ProviderChallenge> {
     const body = new URLSearchParams({
       amount: String(amount),
-      currency: 'usd',
+      currency: this.defaultCurrency,
     });
     body.append('metadata[accountId]', accountId);
     const data = await this.createPaymentIntent(body.toString());

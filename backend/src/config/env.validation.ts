@@ -40,6 +40,10 @@ export const validationSchema = Joi.object({
   ONFIDO_API_TOKEN: Joi.string().optional(),
   ALLOWED_COUNTRIES: Joi.string().optional(),
   STRIPE_API_KEY: Joi.string().optional(),
+  PAYMENT_PROVIDER_BASE_URL: Joi.string()
+    .uri()
+    .default('https://api.stripe.com/v1'),
+  DEFAULT_CURRENCY: Joi.string().length(3).default('usd'),
   PROVIDER_WEBHOOK_SECRET: Joi.string().optional(),
   WALLET_DAILY_DEPOSIT_LIMIT: Joi.number().integer().optional(),
   WALLET_DAILY_WITHDRAW_LIMIT: Joi.number().integer().optional(),

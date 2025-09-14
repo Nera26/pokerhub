@@ -19,6 +19,13 @@ SYSTEM_ACCOUNTS=reserve,house,rake,prize # special account names excluded from n
 ```
 Additional options exist for storage, telemetry and message queues (see `.env.example`).
 
+Payment provider configuration:
+
+```bash
+PAYMENT_PROVIDER_BASE_URL=https://api.stripe.com/v1 # override payment API endpoint
+DEFAULT_CURRENCY=usd # ISO-4217 currency code for transactions
+```
+
 To reduce churn during table balancing, set `TOURNAMENT_AVOID_WITHIN` to the
 number of hands a player must wait before being moved again. This maps to the
 `tournament.avoidWithin` configuration key (default: `10` hands).
