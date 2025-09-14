@@ -43,6 +43,15 @@ describe('Pending deposits', () => {
     expect((ctx.service as any).events.emit).not.toHaveBeenCalled();
   }
 
+  function expectQueueAndNotification(id: string, message: string) {
+    expect((ctx.service as any).pendingQueue.getJob).toHaveBeenCalledWith(id);
+    expect(removeJob).toHaveBeenCalled();
+    expect((ctx.service as any).events.emit).toHaveBeenCalledWith(
+      'notification.create',
+      expect.objectContaining({ userId, message }),
+    );
+  }
+
   it('confirms deposit, removes job and credits account without re-triggering events', async () => {
     (ctx.service as any).pendingQueue.getJob.mockClear();
     removeJob.mockClear();
@@ -60,12 +69,7 @@ describe('Pending deposits', () => {
     ((ctx.service as any).events.emit as jest.Mock).mockClear();
     await ctx.service.confirmPendingDeposit(deposit.id, 'admin');
 
-    expect((ctx.service as any).pendingQueue.getJob).toHaveBeenCalledWith(deposit.id);
-    expect(removeJob).toHaveBeenCalled();
-    expect((ctx.service as any).events.emit).toHaveBeenCalledWith(
-      'notification.create',
-      expect.objectContaining({ userId, message: 'Deposit confirmed' }),
-    );
+    expectQueueAndNotification(deposit.id, 'Deposit confirmed');
     expect((ctx.service as any).events.emit).toHaveBeenCalledWith(
       'wallet.deposit.confirmed',
       expect.objectContaining({
@@ -149,12 +153,7 @@ describe('Pending deposits', () => {
 
     await ctx.service.cancelPendingDeposit(userId, deposit.id);
 
-    expect((ctx.service as any).pendingQueue.getJob).toHaveBeenCalledWith(deposit.id);
-    expect(removeJob).toHaveBeenCalled();
-    expect((ctx.service as any).events.emit).toHaveBeenCalledWith(
-      'notification.create',
-      expect.objectContaining({ userId, message: 'Deposit cancelled' }),
-    );
+    expectQueueAndNotification(deposit.id, 'Deposit cancelled');
     expect((ctx.service as any).events.emit).toHaveBeenCalledWith(
       'wallet.deposit.rejected',
       expect.objectContaining({ depositId: deposit.id, currency: 'USD' }),
