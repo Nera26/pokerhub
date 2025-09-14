@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { LeaderboardService } from './leaderboard.service';
 import type { INestApplicationContext } from '@nestjs/common';
+import { performRebuild } from './rebuild.core';
 
 interface RebuildOptions {
   days?: number;
@@ -33,7 +34,8 @@ async function run(options: RebuildOptions = {}): Promise<{
       await writeSyntheticEvents(days, players, sessions);
     }
 
-    const { durationMs, memoryMb } = await service.rebuildFromEvents(
+    const { durationMs, memoryMb } = await performRebuild(
+      service,
       days,
       options.assertDurationMs,
     );
