@@ -1,13 +1,9 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, ClickHouseClient } from '@clickhouse/client';
 import { randomUUID } from 'crypto';
 import Redis from 'ioredis';
-import { Producer } from 'kafkajs';
-import { createKafkaProducer } from '../common/kafka';
-import Ajv, { ValidateFunction } from 'ajv';
 import { Events, EventName } from '@shared/events';
-import { createValidators } from './validator';
 import { GcsService } from '../storage/gcs.service';
 import { ParquetSchema, ParquetWriter } from 'parquetjs-lite';
 import { PassThrough } from 'stream';
@@ -24,7 +20,7 @@ import type {
   Transfer as CollusionTransfer,
   BetEvent as CollusionBetEvent,
 } from '@shared/analytics';
-import { runEtl } from './etl.utils';
+import { EtlService } from './etl.service';
 
 interface AuditLog {
   id: string;
@@ -173,18 +169,6 @@ function scheduleDaily(task: () => void): void {
 export class AnalyticsService {
   private readonly client: ClickHouseClient | null;
   private readonly logger = new Logger(AnalyticsService.name);
-  private readonly producer: Producer;
-  private readonly ajv: Ajv;
-  private readonly validators: Record<EventName, ValidateFunction>;
-  private readonly topicMap: Record<string, string> = {
-    game: 'hand',
-    hand: 'hand',
-    action: 'hand',
-    tournament: 'tourney',
-    wallet: 'wallet',
-    auth: 'auth',
-    antiCheat: 'auth',
-  };
   private readonly collusionSessionsKey = 'collusion:sessions';
   private readonly collusionTransfersKey = 'collusion:transfers';
   private readonly collusionEventsKey = 'collusion:events';
@@ -193,14 +177,10 @@ export class AnalyticsService {
     config: ConfigService,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
     private readonly gcs: GcsService,
+    @Inject(forwardRef(() => EtlService)) private readonly etl: EtlService,
   ) {
     const url = config.get<string>('analytics.clickhouseUrl');
     this.client = url ? createClient({ url }) : null;
-
-    this.producer = createKafkaProducer(config);
-    const { ajv, validators } = createValidators();
-    this.ajv = ajv;
-    this.validators = validators;
 
     this.scheduleStakeAggregates();
     this.scheduleEngagementMetrics();
@@ -445,14 +425,7 @@ export class AnalyticsService {
   }
 
   async emit<E extends EventName>(event: E, data: Events[E]) {
-    await runEtl(event, data as unknown as Record<string, unknown>, {
-      analytics: this,
-      validators: this.validators,
-      producer: this.producer,
-      topicMap: this.topicMap,
-      logger: this.logger,
-      errorsText: (errors) => this.ajv.errorsText(errors),
-    });
+    await this.etl.runEtl(event, data as unknown as Record<string, unknown>);
   }
 
   private async recordStream(
@@ -467,14 +440,7 @@ export class AnalyticsService {
       JSON.stringify(event),
     );
 
-    await runEtl(eventName, event, {
-      analytics: this,
-      validators: this.validators,
-      producer: this.producer,
-      topicMap: this.topicMap,
-      logger: this.logger,
-      errorsText: (errors) => this.ajv.errorsText(errors),
-    });
+    await this.etl.runEtl(eventName, event);
   }
 
   async recordGameEvent<T extends Record<string, unknown>>(event: T) {

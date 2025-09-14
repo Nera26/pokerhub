@@ -1,8 +1,9 @@
-import { runEtl } from '../../src/analytics/etl.utils';
+import { EtlService } from '../../src/analytics/etl.service';
 import { Logger } from '@nestjs/common';
 import { Producer } from 'kafkajs';
 import { ValidateFunction } from 'ajv';
-import { EventName } from '@shared/events';
+import type { ConfigService } from '@nestjs/config';
+import type Redis from 'ioredis';
 
 describe('runEtl', () => {
   const logger = { warn: jest.fn() } as unknown as Logger;
@@ -13,23 +14,26 @@ describe('runEtl', () => {
     ingest: jest.fn().mockResolvedValue(undefined),
     archive: jest.fn().mockResolvedValue(undefined),
   };
-  const topicMap = { foo: 'bar' } as Record<string, string>;
+
+  let etl: EtlService;
 
   beforeEach(() => {
+    etl = new EtlService(
+      {} as ConfigService,
+      analytics as any,
+      {} as unknown as Redis,
+      producer,
+    );
+    (etl as any).logger = logger;
+    (etl as any).topicMap = { foo: 'bar' };
     jest.clearAllMocks();
   });
 
   it('sends to kafka and archives when valid', async () => {
-    const validators = {
+    (etl as any).validators = {
       'foo.event': (() => true) as unknown as ValidateFunction,
-    } as Record<EventName, ValidateFunction>;
-    await runEtl('foo.event', { ok: true }, {
-      analytics,
-      validators,
-      producer,
-      topicMap,
-      logger,
-    });
+    };
+    await etl.runEtl('foo.event', { ok: true });
     expect(producer.send).toHaveBeenCalledWith({
       topic: 'bar',
       messages: [{ value: JSON.stringify({ event: 'foo.event', data: { ok: true } }) }],
@@ -39,17 +43,11 @@ describe('runEtl', () => {
   });
 
   it('logs and skips on validation error', async () => {
-    const validators = {
-      'foo.event': (() => false) as unknown as ValidateFunction,
-    } as Record<EventName, ValidateFunction>;
-    await runEtl('foo.event', { ok: false }, {
-      analytics,
-      validators,
-      producer,
-      topicMap,
-      logger,
-      errorsText: () => 'bad',
-    });
+    const validate: ValidateFunction = (() => false) as any;
+    (validate as any).errors = [{ message: 'bad' }];
+    (etl as any).validators = { 'foo.event': validate };
+    (etl as any).ajv = { errorsText: () => 'bad' } as any;
+    await etl.runEtl('foo.event', { ok: false });
     expect(logger.warn).toHaveBeenCalledWith('Invalid event foo.event: bad');
     expect(producer.send).not.toHaveBeenCalled();
     expect(analytics.ingest).not.toHaveBeenCalled();
@@ -57,14 +55,9 @@ describe('runEtl', () => {
   });
 
   it('warns when no topic mapping', async () => {
-    const validators = {} as Record<EventName, ValidateFunction>;
-    await runEtl('missing.event', {}, {
-      analytics,
-      validators,
-      producer,
-      topicMap,
-      logger,
-    });
+    (etl as any).validators = {};
+    (etl as any).topicMap = {};
+    await etl.runEtl('missing.event', {});
     expect(logger.warn).toHaveBeenCalledWith('No topic mapping for event missing.event');
     expect(producer.send).not.toHaveBeenCalled();
   });

@@ -7,17 +7,6 @@ class MockGcsService {
   uploadObject = jest.fn();
 }
 
-class MockProducer {
-  send = jest.fn(async () => undefined);
-  connect = jest.fn(async () => undefined);
-}
-
-jest.mock('kafkajs', () => ({
-  Kafka: jest.fn().mockImplementation(() => ({
-    producer: () => new MockProducer(),
-  })),
-}));
-
 describe('collusion heuristics integration', () => {
   it('emits antiCheat.flag for suspicious patterns', async () => {
     const redis = new MockRedis();
@@ -26,6 +15,7 @@ describe('collusion heuristics integration', () => {
         key === 'analytics.kafkaBrokers' ? 'localhost:9092' : undefined,
     } as unknown as ConfigService;
     const gcs = new MockGcsService();
+    const etl = { runEtl: jest.fn() } as any;
     jest
       .spyOn(AnalyticsService.prototype as any, 'scheduleStakeAggregates')
       .mockImplementation(() => undefined);
@@ -36,6 +26,7 @@ describe('collusion heuristics integration', () => {
       config,
       redis as unknown as Redis,
       gcs as any,
+      etl,
     );
     const spy = jest.spyOn(analytics, 'emitAntiCheatFlag');
 
@@ -59,6 +50,7 @@ describe('collusion heuristics integration', () => {
       config,
       redis as unknown as Redis,
       gcs as any,
+      etl,
     );
     const spy2 = jest.spyOn(analytics2, 'emitAntiCheatFlag');
     await analytics2.recordGameEvent({ handId: 'h2', playerId: 'p1', timeMs: 0 });

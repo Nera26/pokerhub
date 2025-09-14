@@ -1,36 +1,12 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Producer } from 'kafkajs';
 import { createKafkaProducer } from '../common/kafka';
 import Redis from 'ioredis';
-import { ValidateFunction } from 'ajv';
+import Ajv, { ValidateFunction } from 'ajv';
 import { EventName } from '@shared/events';
 import { createValidators } from './validator';
 import { AnalyticsService } from './analytics.service';
-import { runEtl } from './etl.utils';
-
-export async function processEntry(
-  event: string,
-  fields: string[],
-  analytics: AnalyticsService,
-  validators: Record<EventName, ValidateFunction>,
-  producer: Producer,
-  logger: Logger,
-  topicMap: Record<string, string>,
-) {
-  try {
-    const data = JSON.parse(fields[1] as string) as Record<string, unknown>;
-    await runEtl(event, data, {
-      analytics,
-      validators,
-      producer,
-      topicMap,
-      logger,
-    });
-  } catch (err) {
-    logger.error(err);
-  }
-}
 
 @Injectable()
 export class EtlService {
@@ -38,21 +14,58 @@ export class EtlService {
   private readonly producer: Producer;
   private readonly topicMap: Record<string, string> = {
     game: 'hand',
+    hand: 'hand',
     action: 'hand',
     wallet: 'wallet',
     tournament: 'tourney',
+    auth: 'auth',
     antiCheat: 'auth',
   };
+  private readonly ajv: Ajv;
   private readonly validators: Record<EventName, ValidateFunction>;
 
   constructor(
     config: ConfigService,
+    @Inject(forwardRef(() => AnalyticsService))
     private readonly analytics: AnalyticsService,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
+    producer?: Producer,
   ) {
-    this.producer = createKafkaProducer(config);
-    const { validators } = createValidators();
+    this.producer = producer ?? createKafkaProducer(config);
+    const { ajv, validators } = createValidators();
+    this.ajv = ajv;
     this.validators = validators;
+  }
+
+  async runEtl(event: string, data: Record<string, unknown>): Promise<void> {
+    const validate = this.validators[event as EventName];
+    if (validate && !validate(data)) {
+      const msg = this.ajv.errorsText(validate.errors);
+      this.logger.warn(`Invalid event ${event}: ${msg}`);
+      return;
+    }
+    const topic = this.topicMap[event.split('.')[0]];
+    if (!topic) {
+      this.logger.warn(`No topic mapping for event ${event}`);
+      return;
+    }
+    await Promise.all([
+      this.producer.send({
+        topic,
+        messages: [{ value: JSON.stringify({ event, data }) }],
+      }),
+      this.analytics.ingest(event.replace('.', '_'), data),
+      this.analytics.archive(event, data),
+    ]);
+  }
+
+  private async processEntry(event: string, fields: string[]) {
+    try {
+      const data = JSON.parse(fields[1] as string) as Record<string, unknown>;
+      await this.runEtl(event, data);
+    } catch (err) {
+      this.logger.error(err);
+    }
   }
 
   async drainOnce() {
@@ -65,15 +78,7 @@ export class EtlService {
       const key = stream.split(':')[1];
       const event = key.includes('.') ? key : `${key}.event`;
       for (const [, fields] of entries) {
-        await processEntry(
-          event,
-          fields as string[],
-          this.analytics,
-          this.validators,
-          this.producer,
-          this.logger,
-          this.topicMap,
-        );
+        await this.processEntry(event, fields as string[]);
       }
     }
   }
@@ -102,15 +107,7 @@ export class EtlService {
         const event = key.includes('.') ? key : `${key}.event`;
         for (const [id, fields] of entries) {
           last = id;
-          await processEntry(
-            event,
-            fields as string[],
-            this.analytics,
-            this.validators,
-            this.producer,
-            this.logger,
-            this.topicMap,
-          );
+          await this.processEntry(event, fields as string[]);
         }
         lastIds.set(stream, last);
       }
