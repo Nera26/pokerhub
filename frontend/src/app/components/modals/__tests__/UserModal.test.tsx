@@ -1,9 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import UserModal from '../UserModal';
-import { fetchDefaultAvatar } from '@/lib/api/users';
+import { fetchDefaultAvatar } from '@/lib/api';
 
-jest.mock('@/lib/api/users', () => ({
+jest.mock('@/lib/api', () => ({
+  ...jest.requireActual('@/lib/api'),
   fetchDefaultAvatar: jest.fn(),
 }));
 

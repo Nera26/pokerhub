@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserPlus } from '@fortawesome/free-solid-svg-icons';
 import UserForm, { type UserFormValues } from '../forms/UserForm';
 import FormModal from './FormModal';
-import { fetchDefaultAvatar } from '@/lib/api/users';
+import { fetchDefaultAvatar } from '@/lib/api';
 
 interface User {
   id: number;

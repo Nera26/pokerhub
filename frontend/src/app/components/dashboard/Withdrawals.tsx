@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import ReviewWithdrawalModal from '../modals/ReviewWithdrawalModal';
 import TransactionHistorySection from '../common/TransactionHistorySection';
 import type { StatusBadge } from './transactions/types';
-import { fetchPendingWithdrawals } from '@/lib/api/wallet';
+import { fetchPendingWithdrawals } from '@/lib/api';
 import type { PendingWithdrawal } from '@shared/types';
 
 type TableWithdrawal = PendingWithdrawal & {
