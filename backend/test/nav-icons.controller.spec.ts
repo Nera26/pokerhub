@@ -9,7 +9,7 @@ import request from 'supertest';
 import { NavIconsController } from '../src/routes/nav-icons.controller';
 import { NavIconsService } from '../src/services/nav-icons.service';
 import { NavIconEntity } from '../src/database/entities/nav-icon.entity';
-import type { NavIconsResponse } from '@shared/types';
+import { NavIconsResponseSchema, type NavIconsResponse } from '@shared/types';
 
 describe('NavIconsController', () => {
   let app: INestApplication;
@@ -68,7 +68,7 @@ describe('NavIconsController', () => {
       .get('/nav-icons')
       .expect(200);
     expect(listSpy).toHaveBeenCalledTimes(1);
-    const body = res.body as unknown as NavIconsResponse;
+    const body = NavIconsResponseSchema.parse(res.body);
     const expected: NavIconsResponse = [
       { name: 'foo', svg: '<svg>foo</svg>' },
       { name: 'bar', svg: '<svg>bar</svg>' },
