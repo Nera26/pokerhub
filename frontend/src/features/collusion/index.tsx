@@ -4,22 +4,9 @@ import {
   useFlaggedSessions,
   useActionHistory,
   useApplyCollusionAction,
+  nextAction,
 } from '@/hooks/collusion';
-import type { FlaggedSession, ReviewAction } from '@shared/types';
 import { useAuthToken, usePlayerId } from '@/app/store/authStore';
-
-function nextAction(status: FlaggedSession['status']): ReviewAction | null {
-  switch (status) {
-    case 'flagged':
-      return 'warn';
-    case 'warn':
-      return 'restrict';
-    case 'restrict':
-      return 'ban';
-    default:
-      return null;
-  }
-}
 
 export default function CollusionReviewPage() {
   const token = useAuthToken();
