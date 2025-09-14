@@ -1,16 +1,16 @@
-import { Controller, Post, Param, Body, Req, UseGuards, HttpCode } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Post, Param, Body, Req, HttpCode } from '@nestjs/common';
+import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import type { Request } from 'express';
-import { AuthGuard } from '../auth/auth.guard';
-import { AdminGuard } from '../auth/admin.guard';
-import { AdminBalanceRequest, AdminBalanceRequestSchema } from '@shared/wallet.schema';
+import { AdminController } from './admin-base.controller';
+import {
+  AdminBalanceRequest,
+  AdminBalanceRequestSchema,
+} from '@shared/wallet.schema';
 import { WalletService } from '../wallet/wallet.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { MessageResponse, MessageResponseSchema } from '../schemas/auth';
 
-@ApiTags('admin')
-@UseGuards(AuthGuard, AdminGuard)
-@Controller('admin/balance')
+@AdminController('balance')
 export class AdminBalanceController {
   constructor(
     private readonly wallet: WalletService,
@@ -26,12 +26,8 @@ export class AdminBalanceController {
     @Body() body: AdminBalanceRequest,
     @Req() req: Request,
   ): Promise<MessageResponse> {
-    const {
-      action,
-      amount,
-      currency,
-      notes,
-    } = AdminBalanceRequestSchema.parse(body);
+    const { action, amount, currency, notes } =
+      AdminBalanceRequestSchema.parse(body);
     await this.wallet.adminAdjustBalance(userId, action, amount, currency);
     await this.analytics.addAuditLog({
       type: 'Balance',
