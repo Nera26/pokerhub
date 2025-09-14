@@ -28,7 +28,7 @@
     "rebuild:leaderboard": "ts-node src/leaderboard/rebuild.ts --days=30 --assert-duration=1800000",
     "load:socket": "ts-node test/load/socket-load.ts",
     "test:soak": "node --trace-gc -r ts-node/register -r tsconfig-paths/register test/soak/soak24h.ts",
-    "verify:proof": "ts-node ../bin/verify-proof.ts"
+    "verify:proof": "ts-node ../bin/verify.ts proof"
   },
   "dependencies": {
     "@clickhouse/client": "^1.12.1",

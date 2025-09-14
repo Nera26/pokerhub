@@ -27,7 +27,7 @@ PokerHub uses a commit–reveal protocol to prove every shuffle was fair and unm
 1. Fetch `{ seed, nonce, commitment }` from `/hands/{id}/proof`.
 2. Verify the hash equality.
 3. Shuffle a new deck with the seed and compare against the public hand log.
-4. Optional: run `bin/verify-hand <handId>` to automate steps 1–3.
+4. Optional: run `bin/verify hand <handId>` to automate steps 1–3.
 
 ## How to verify a hand
 1. Play a hand and note its identifier from the table history.
@@ -36,7 +36,7 @@ PokerHub uses a commit–reveal protocol to prove every shuffle was fair and unm
 4. Save the deck to `deck.json` and run:
 
    ```sh
-   bin/verify-proof <handId> [--base <url>]
+   bin/verify proof <handId> [--base <url>]
    ```
 
    The CLI downloads the proof and log, verifies the commitment and asserts the
@@ -68,7 +68,7 @@ The verifier recomputes the commitment and deterministic deck to confirm fairnes
 Use the standalone verifier to check any seed and nonce against a commitment:
 
 ```sh
-npx ts-node bin/verify-proof.ts 0x7e3 0xa9 0x5b2f...
+npx ts-node shared/verify/index.ts 0x7e3 0xa9 0x5b2f...
 ```
 
 Expected output:

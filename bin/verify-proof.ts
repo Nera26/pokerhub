@@ -1,5 +1,3 @@
-#!/usr/bin/env ts-node
-import { parseArgs } from 'node:util';
 import { shuffle, standardDeck, verifyProof, hexToBytes } from '../shared/verify';
 import type { HandProofResponse } from '../shared/types';
 
@@ -13,15 +11,15 @@ export async function verifyHandProof(handId: string, baseUrl: string) {
   if (!logRes.ok) throw new Error('Failed to fetch log');
   const logText = await logRes.text();
 
-  let deck: number[] | undefined;
+  let deck: (number | undefined)[] | undefined;
   for (const line of logText.trim().split('\n')) {
     if (!line) continue;
     if (line.startsWith('[')) {
       try {
         const entry = JSON.parse(line);
-        const d = entry[2]?.deck;
+        const d = entry[2]?.deck as Array<number | null> | undefined;
         if (Array.isArray(d)) {
-          deck = d;
+          deck = d.map((v) => (v == null ? undefined : v));
           break;
         }
       } catch {}
@@ -30,31 +28,7 @@ export async function verifyHandProof(handId: string, baseUrl: string) {
   if (!Array.isArray(deck)) throw new Error('Deck not found in log');
 
   const expected = shuffle(standardDeck(), hexToBytes(proof.seed));
-  const match = deck.length === expected.length && deck.every((v, i) => v === expected[i]);
+  const match =
+    deck.length === expected.length && deck.every((v, i) => v === expected[i]);
   if (!match) throw new Error('Deck mismatch');
-}
-
-async function main() {
-  const { values, positionals } = parseArgs({
-    args: process.argv.slice(2),
-    options: { base: { type: 'string', short: 'b' } },
-    allowPositionals: true,
-  });
-  const handId = positionals[0];
-  const baseUrl = values.base || 'http://localhost:3000';
-  if (!handId) {
-    console.error('Usage: verify-proof <handId> [--base <url>]');
-    process.exit(1);
-  }
-  try {
-    await verifyHandProof(handId, baseUrl);
-    console.log(`Proof verified for hand ${handId}`);
-  } catch (err) {
-    console.error((err as Error).message);
-    process.exit(1);
-  }
-}
-
-if (require.main === module) {
-  void main();
 }

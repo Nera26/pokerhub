@@ -7,7 +7,7 @@ PokerHub uses a commit–reveal protocol to guarantee fair shuffles. Each hand l
 Export the hand's proof and log, then run the verifier:
 
 ```sh
-npm run verify:proof --prefix backend -- <proof.json> <hand-log.jsonl>
+npm run verify:proof --prefix backend -- <handId> [--base <url>]
 ```
 
 The command performs three checks:
