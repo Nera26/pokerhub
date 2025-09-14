@@ -23,8 +23,6 @@ export const AmountDeviceSchema = z.object({
   currency: CurrencySchema,
 });
 
-export type AmountDeviceRequest = z.infer<typeof AmountDeviceSchema>;
-
 export const WithdrawSchema = AmountDeviceSchema;
 export type WithdrawRequest = z.infer<typeof WithdrawSchema>;
 
