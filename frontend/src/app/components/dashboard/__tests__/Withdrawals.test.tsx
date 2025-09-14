@@ -1,9 +1,9 @@
 import { screen } from '@testing-library/react';
 import { renderWithClient } from './renderWithClient';
 import Withdrawals from '../Withdrawals';
-import { fetchPendingWithdrawals } from '@/lib/api/wallet';
+import { fetchPendingWithdrawals } from '@/lib/api';
 
-jest.mock('@/lib/api/wallet', () => ({
+jest.mock('@/lib/api', () => ({
   fetchPendingWithdrawals: jest.fn(),
 }));
 

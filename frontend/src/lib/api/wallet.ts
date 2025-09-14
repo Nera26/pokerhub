@@ -31,10 +31,8 @@ import {
   type AdminBalanceRequest,
 } from '@shared/wallet.schema';
 import {
-  PendingWithdrawalsResponseSchema,
   WithdrawalDecisionRequestSchema,
   type MessageResponse,
-  type PendingWithdrawalsResponse,
 } from '@shared/types';
 
 export type { IbanDetails };
@@ -243,14 +241,6 @@ export function rejectDeposit(
   return apiClient(`/api/admin/deposits/${id}/reject`, MessageResponseSchema, {
     method: 'POST',
     body,
-    signal: opts.signal,
-  });
-}
-
-export function fetchPendingWithdrawals(
-  opts: { signal?: AbortSignal } = {},
-): Promise<PendingWithdrawalsResponse> {
-  return apiClient(`/api/admin/withdrawals`, PendingWithdrawalsResponseSchema, {
     signal: opts.signal,
   });
 }

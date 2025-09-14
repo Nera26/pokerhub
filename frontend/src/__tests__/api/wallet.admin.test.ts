@@ -3,7 +3,6 @@ import {
   fetchPendingDeposits,
   confirmDeposit,
   rejectDeposit,
-  fetchPendingWithdrawals,
   confirmWithdrawal,
   rejectWithdrawal,
   fetchBalances,
@@ -59,15 +58,6 @@ describe('wallet admin api client', () => {
       '/api/admin/withdrawals/abc/reject',
       MessageResponseSchema,
       { method: 'POST', body: { comment: 'nope' }, signal: undefined },
-    );
-  });
-
-  it('fetchPendingWithdrawals calls endpoint', async () => {
-    await fetchPendingWithdrawals();
-    expect(apiClientMock).toHaveBeenCalledWith(
-      '/api/admin/withdrawals',
-      PendingWithdrawalsResponseSchema,
-      { signal: undefined },
     );
   });
 
