@@ -36,12 +36,18 @@ export function mockFetchSuccess(data: unknown) {
   }) as unknown as typeof fetch;
 }
 
-export function mockFetchError(message = 'fail') {
-  global.fetch = jest.fn().mockResolvedValue({
+export function mockFetchError(
+  payload: unknown = { error: 'fail' },
+  status = 500,
+  statusText = 'Server Error',
+) {
+  const mock = fetch as unknown as jest.Mock;
+  mock.mockResolvedValue({
     ok: false,
-    status: 500,
-    statusText: 'Server error',
-    json: async () => ({ message }),
+    status,
+    statusText,
+    json: async () => payload,
     headers: { get: () => 'application/json' },
-  }) as unknown as typeof fetch;
+  });
+  return mock;
 }
