@@ -1,12 +1,9 @@
 import { waitFor } from '@testing-library/react';
+import { server } from '@/test-utils/server';
+import { mockLoading, mockSuccess, mockError } from '@/test-utils/handlers';
 import useAuditLogTypes from '../useAuditLogTypes';
 import type { ApiError } from '@/lib/api/client';
-import {
-  renderHookWithClient,
-  mockFetchLoading,
-  mockFetchSuccess,
-  mockFetchError,
-} from './utils/renderHookWithClient';
+import { renderHookWithClient } from './utils/renderHookWithClient';
 
 describe('useAuditLogTypes', () => {
   afterEach(() => {
@@ -18,20 +15,20 @@ describe('useAuditLogTypes', () => {
   });
 
   it('reports loading state', () => {
-    mockFetchLoading();
+    server.use(mockLoading());
     const { result } = renderHookWithClient(() => useAuditLogTypes());
     expect(result.current.isLoading).toBe(true);
   });
 
   it('returns types on success', async () => {
-    mockFetchSuccess({ types: ['Login'] });
+    server.use(mockSuccess({ types: ['Login'] }));
     const { result } = renderHookWithClient(() => useAuditLogTypes());
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.types).toEqual(['Login']);
   });
 
   it('exposes error state', async () => {
-    mockFetchError('fail');
+    server.use(mockError('fail'));
     const { result } = renderHookWithClient(() => useAuditLogTypes());
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect((result.current.error as ApiError).message).toBe(

@@ -1,17 +1,20 @@
 import { waitFor } from '@testing-library/react';
+import { server } from '@/test-utils/server';
+import { mockSuccess } from '@/test-utils/handlers';
 import { useAuditLogs } from '../useAuditLogs';
-import {
-  renderHookWithClient,
-  mockFetchSuccess,
-} from './utils/renderHookWithClient';
+import { renderHookWithClient } from './utils/renderHookWithClient';
+import { apiClient } from '@/lib/api/client';
+
+jest.mock('@/lib/api/client');
+const mockedApiClient = apiClient as jest.MockedFunction<typeof apiClient>;
 
 describe('useAuditLogs', () => {
   afterEach(() => {
-    (global.fetch as jest.Mock).mockReset();
+    mockedApiClient.mockReset();
   });
 
   it('forwards query parameters', async () => {
-    mockFetchSuccess({ logs: [], total: 0 });
+    server.use(mockSuccess({ logs: [], total: 0 }));
     const params = { search: 'x', page: 2, limit: 10 } as const;
     const { result } = renderHookWithClient(() => useAuditLogs(params));
     await waitFor(() =>

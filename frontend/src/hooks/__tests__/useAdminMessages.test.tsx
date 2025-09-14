@@ -1,36 +1,35 @@
 import { waitFor } from '@testing-library/react';
+import { server } from '@/test-utils/server';
+import { mockLoading, mockSuccess, mockError } from '@/test-utils/handlers';
 import { useAdminMessages } from '../useAdminMessageActions';
 import type { ApiError } from '@/lib/api/client';
-import {
-  renderHookWithClient,
-  mockFetchLoading,
-  mockFetchSuccess,
-  mockFetchError,
-} from './utils/renderHookWithClient';
+import { renderHookWithClient } from './utils/renderHookWithClient';
 
 describe('useAdminMessages', () => {
   it('reports loading state', () => {
-    mockFetchLoading();
+    server.use(mockLoading());
     const { result } = renderHookWithClient(() => useAdminMessages());
     expect(result.current.isLoading).toBe(true);
   });
 
   it('returns messages on success', async () => {
-    mockFetchSuccess({
-      messages: [
-        {
-          id: 1,
-          sender: 'Alice',
-          userId: 'u1',
-          avatar: '/a.png',
-          subject: 'Hi',
-          preview: 'Hi',
-          content: 'Hello',
-          time: '2024',
-          read: false,
-        },
-      ],
-    });
+    server.use(
+      mockSuccess({
+        messages: [
+          {
+            id: 1,
+            sender: 'Alice',
+            userId: 'u1',
+            avatar: '/a.png',
+            subject: 'Hi',
+            preview: 'Hi',
+            content: 'Hello',
+            time: '2024',
+            read: false,
+          },
+        ],
+      }),
+    );
 
     const { result } = renderHookWithClient(() => useAdminMessages());
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -38,7 +37,7 @@ describe('useAdminMessages', () => {
   });
 
   it('handles empty response', async () => {
-    mockFetchSuccess({ messages: [] });
+    server.use(mockSuccess({ messages: [] }));
 
     const { result } = renderHookWithClient(() => useAdminMessages());
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -46,7 +45,7 @@ describe('useAdminMessages', () => {
   });
 
   it('exposes error state', async () => {
-    mockFetchError('fail');
+    server.use(mockError('fail'));
 
     const { result } = renderHookWithClient(() => useAdminMessages());
     await waitFor(() => expect(result.current.isError).toBe(true));

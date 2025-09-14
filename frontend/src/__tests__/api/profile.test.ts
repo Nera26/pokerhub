@@ -8,7 +8,8 @@ import {
   fetchStats,
 } from '@/lib/api/profile';
 import { apiClient, type ApiError } from '@/lib/api/client';
-import { mockFetch } from '@/test-utils/mockFetch';
+import { server } from '@/test-utils/server';
+import { mockSuccess } from '@/test-utils/handlers';
 
 jest.mock('@/lib/api/client', () => {
   const actual = jest.requireActual('@/lib/api/client');
@@ -152,7 +153,7 @@ describe('profile API', () => {
         experience: 42,
         balance: 100,
       };
-      mockFetch({ status: 200, payload: profile });
+      server.use(mockSuccess(profile, { once: true }));
 
       const formData = new FormData();
       formData.append('username', 'NewName');

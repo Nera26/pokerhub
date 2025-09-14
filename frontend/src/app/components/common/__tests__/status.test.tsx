@@ -1,11 +1,8 @@
 import { waitFor } from '@testing-library/react';
+import { server } from '@/test-utils/server';
+import { mockLoading, mockError, mockSuccess } from '@/test-utils/handlers';
 import { useStatusInfo } from '../status';
-import {
-  renderHookWithClient,
-  mockFetchLoading,
-  mockFetchError,
-  mockFetchSuccess,
-} from '@/hooks/__tests__/utils/renderHookWithClient';
+import { renderHookWithClient } from '@/hooks/__tests__/utils/renderHookWithClient';
 
 describe('useStatusInfo', () => {
   afterEach(() => {
@@ -13,7 +10,7 @@ describe('useStatusInfo', () => {
   });
 
   it('uses fallback while loading', () => {
-    mockFetchLoading();
+    server.use(mockLoading());
     const { result } = renderHookWithClient(() => useStatusInfo());
     expect(result.current('confirmed')).toEqual({
       label: 'confirmed',
@@ -21,13 +18,13 @@ describe('useStatusInfo', () => {
     });
   });
 
-  test.each([mockFetchError, mockFetchSuccess])(
+  test.each([mockError, mockSuccess])(
     'uses fallback on error or missing status mapping',
-    async (mockFetch) => {
-      if (mockFetch === mockFetchError) {
-        mockFetch('boom');
+    async (mockHandler) => {
+      if (mockHandler === mockError) {
+        server.use(mockHandler('boom'));
       } else {
-        mockFetch({});
+        server.use(mockHandler({}));
       }
 
       const { result, queryClient } = renderHookWithClient(() =>

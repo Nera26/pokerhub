@@ -1,23 +1,20 @@
 import { waitFor } from '@testing-library/react';
+import { server } from '@/test-utils/server';
+import { mockLoading, mockSuccess, mockError } from '@/test-utils/handlers';
 // Import hook directly after removing createAdminGetHook helper
 import { useAdminEvents } from '../admin';
 import type { ApiError } from '@/lib/api/client';
-import {
-  renderHookWithClient,
-  mockFetchLoading,
-  mockFetchSuccess,
-  mockFetchError,
-} from './utils/renderHookWithClient';
+import { renderHookWithClient } from './utils/renderHookWithClient';
 
 describe('useAdminEvents', () => {
   it('reports loading state', () => {
-    mockFetchLoading();
+    server.use(mockLoading());
     const { result } = renderHookWithClient(() => useAdminEvents());
     expect(result.current.isLoading).toBe(true);
   });
 
   it('exposes error state', async () => {
-    mockFetchError('fail');
+    server.use(mockError('fail'));
 
     const { result } = renderHookWithClient(() => useAdminEvents());
     await waitFor(() => expect(result.current.isError).toBe(true));
@@ -30,7 +27,7 @@ describe('useAdminEvents', () => {
     const data = [
       { id: '1', title: 't', description: 'd', date: '2024-01-01' },
     ];
-    mockFetchSuccess(data);
+    server.use(mockSuccess(data));
     renderHookWithClient(() => useAdminEvents());
     await waitFor(() =>
       expect(global.fetch).toHaveBeenCalledWith(

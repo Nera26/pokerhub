@@ -1,12 +1,9 @@
 import { waitFor } from '@testing-library/react';
+import { server } from '@/test-utils/server';
+import { mockLoading, mockSuccess, mockError } from '@/test-utils/handlers';
 import { useChartPalette } from '../useChartPalette';
 import type { ApiError } from '@/lib/api/client';
-import {
-  renderHookWithClient,
-  mockFetchLoading,
-  mockFetchSuccess,
-  mockFetchError,
-} from './utils/renderHookWithClient';
+import { renderHookWithClient } from './utils/renderHookWithClient';
 
 describe('useChartPalette', () => {
   afterEach(() => {
@@ -14,13 +11,13 @@ describe('useChartPalette', () => {
   });
 
   it('reports loading state', () => {
-    mockFetchLoading();
+    server.use(mockLoading());
     const { result } = renderHookWithClient(() => useChartPalette());
     expect(result.current.isLoading).toBe(true);
   });
 
   it('returns data on success', async () => {
-    mockFetchSuccess(['#111', '#222']);
+    server.use(mockSuccess(['#111', '#222']));
     const { result } = renderHookWithClient(() => useChartPalette());
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual(['#111', '#222']);
@@ -31,7 +28,7 @@ describe('useChartPalette', () => {
   });
 
   it('exposes error state', async () => {
-    mockFetchError('boom');
+    server.use(mockError('boom'));
     const { result } = renderHookWithClient(() => useChartPalette());
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect((result.current.error as ApiError).message).toBe(

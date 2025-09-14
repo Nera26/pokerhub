@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { server } from '@/test-utils/server';
+import { mockSuccess } from '@/test-utils/handlers';
 import SeatRing from '../SeatRing';
-import { mockFetchSuccess } from '@/hooks/__tests__/utils/renderHookWithClient';
 import type { Player } from '../types';
 
 jest.mock('../PlayerSeat', () => ({
@@ -35,14 +36,16 @@ describe('Seat badges', () => {
   }
 
   it('renders badge images for BTN, SB, BB', async () => {
-    mockFetchSuccess({
-      hairline: '#fff',
-      positions: {
-        BTN: { color: '#fff', glow: '#fff' },
-        SB: { color: '#fff', glow: '#fff' },
-        BB: { color: '#fff', glow: '#fff' },
-      },
-    });
+    server.use(
+      mockSuccess({
+        hairline: '#fff',
+        positions: {
+          BTN: { color: '#fff', glow: '#fff' },
+          SB: { color: '#fff', glow: '#fff' },
+          BB: { color: '#fff', glow: '#fff' },
+        },
+      }),
+    );
 
     const players: Player[] = [
       { id: 1, username: 'A', avatar: '', chips: 100, pos: 'BTN' },

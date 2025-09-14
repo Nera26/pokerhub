@@ -1,5 +1,3 @@
-/** @jest-environment node */
-
 jest.mock('@shared/wallet.schema', () => {
   const { z } = require('zod');
   const AmountSchema = z.object({
@@ -49,26 +47,26 @@ import {
   getStatus,
   fetchIbanDetails,
 } from '@/lib/api/wallet';
-import { mockFetch } from '@/test-utils/mockFetch';
+import { server } from '@/test-utils/server';
+import { mockSuccess, mockError } from '@/test-utils/handlers';
 
 describe('wallet api', () => {
   it('handles reserve/commit/rollback/deposit/withdraw', async () => {
-    mockFetch(
-      { status: 200, payload: { message: 'ok' } },
-      { status: 200, payload: { message: 'ok' } },
-      { status: 200, payload: { message: 'ok' } },
-      {
-        status: 200,
-        payload: {
+    server.use(
+      mockSuccess({ message: 'ok' }, { once: true }),
+      mockSuccess({ message: 'ok' }, { once: true }),
+      mockSuccess({ message: 'ok' }, { once: true }),
+      mockSuccess(
+        {
           kycVerified: true,
           realBalance: 20,
           creditBalance: 10,
           currency: 'EUR',
         },
-      },
-      {
-        status: 200,
-        payload: {
+        { once: true },
+      ),
+      mockSuccess(
+        {
           reference: 'ref1',
           bank: {
             bankName: 'Bank',
@@ -76,25 +74,26 @@ describe('wallet api', () => {
             routingCode: '456',
           },
         },
-      },
-      {
-        status: 200,
-        payload: {
+        { once: true },
+      ),
+      mockSuccess(
+        {
           kycVerified: true,
           realBalance: 10,
           creditBalance: 5,
           currency: 'EUR',
         },
-      },
-      {
-        status: 200,
-        payload: {
+        { once: true },
+      ),
+      mockSuccess(
+        {
           kycVerified: true,
           realBalance: 20,
           creditBalance: 10,
           currency: 'EUR',
         },
-      },
+        { once: true },
+      ),
     );
 
     await expect(reserve('u1', 10, 'EUR')).resolves.toEqual({ message: 'ok' });
@@ -140,7 +139,7 @@ describe('wallet api', () => {
   });
 
   it('fetchIbanDetails handles API failure', async () => {
-    mockFetch({ status: 500, payload: { message: 'fail' } });
+    server.use(mockError({ message: 'fail' }, { status: 500 }));
     await expect(fetchIbanDetails()).rejects.toMatchObject({
       status: 500,
       message: 'fail',

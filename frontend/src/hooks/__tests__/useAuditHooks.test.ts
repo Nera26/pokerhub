@@ -1,18 +1,16 @@
 import { waitFor } from '@testing-library/react';
+import { server } from '@/test-utils/server';
+import { mockSuccess, mockError } from '@/test-utils/handlers';
 import { useAuditAlerts } from '../admin';
 import { useAuditSummary } from '../useAuditSummary';
 import type { ApiError } from '@/lib/api/client';
-import {
-  renderHookWithClient,
-  mockFetchSuccess,
-  mockFetchError,
-} from './utils/renderHookWithClient';
+import { renderHookWithClient } from './utils/renderHookWithClient';
 
 type Hook<T> = () => T;
 
 describe('audit hooks', () => {
   afterEach(() => {
-    (global.fetch as jest.Mock).mockReset();
+    jest.resetAllMocks();
   });
 
   const cases = [
@@ -35,7 +33,7 @@ describe('audit hooks', () => {
   ] as const;
 
   it.each(cases)('%s resolves data', async ({ hook, data, path }) => {
-    mockFetchSuccess(data);
+    server.use(mockSuccess(data));
     const { result } = renderHookWithClient(() => hook());
     await waitFor(() => expect(result.current.data).toEqual(data));
     expect(global.fetch).toHaveBeenCalledWith(
@@ -45,7 +43,7 @@ describe('audit hooks', () => {
   });
 
   it.each(cases)('%s bubbles errors', async ({ hook, label, path }) => {
-    mockFetchError('err');
+    server.use(mockError('err'));
     const { result } = renderHookWithClient(() => hook());
     await waitFor(() => {
       expect(result.current.error).toBeDefined();
