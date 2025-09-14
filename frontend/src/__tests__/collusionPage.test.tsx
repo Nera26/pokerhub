@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import CollusionReviewPage from '@/features/collusion';
 import {
   listFlaggedSessions,
@@ -29,10 +30,17 @@ describe('CollusionReviewPage', () => {
         resolveAction = res;
       }),
     );
-    render(<CollusionReviewPage />);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <CollusionReviewPage />
+      </QueryClientProvider>,
+    );
     const btn = await screen.findByText('warn');
     fireEvent.click(btn);
-    expect(screen.getByText('warn by r1')).toBeInTheDocument();
+    expect(await screen.findByText('warn by r1')).toBeInTheDocument();
     resolveAction({ action: 'warn', timestamp: 123, reviewerId: 'srv1' });
     expect(await screen.findByText('warn by srv1')).toBeInTheDocument();
     expect(applyAction).toHaveBeenCalledWith('s1', 'warn', 'token', 'r1');

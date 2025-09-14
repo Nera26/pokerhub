@@ -17,7 +17,9 @@ import type {
   ReviewActionLog,
 } from '@shared/types';
 
-function nextAction(status: FlaggedSession['status']): ReviewAction | null {
+export function nextAction(
+  status: FlaggedSession['status'],
+): ReviewAction | null {
   switch (status) {
     case 'flagged':
       return 'warn';
@@ -121,5 +123,3 @@ export function useApplyCollusionAction(token?: string, reviewerId?: string) {
     },
   });
 }
-
-export { nextAction };
