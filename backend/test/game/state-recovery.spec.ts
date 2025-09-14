@@ -6,7 +6,7 @@ import { RoomManager } from '../../src/game/room.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Hand } from '../../src/database/entities/hand.entity';
 import { GameState } from '../../src/database/entities/game-state.entity';
-import { MockRedis } from '../utils/mock-redis';
+import { createInMemoryRedis } from '../utils/mock-redis';
 
 jest.mock('p-queue', () => ({
   __esModule: true,
@@ -15,7 +15,7 @@ jest.mock('p-queue', () => ({
 
 describe('Game state recovery', () => {
   it('restores latest snapshot when redis empty', async () => {
-    const redis = new MockRedis();
+    const { redis } = createInMemoryRedis();
     const snapshot = {
       tableId: 't1',
       tick: 5,

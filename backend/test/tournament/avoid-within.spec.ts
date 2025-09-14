@@ -6,7 +6,7 @@ import { Tournament, TournamentState } from '../../src/database/entities/tournam
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import type Redis from 'ioredis';
-import { MockRedis } from '../utils/mock-redis';
+import { createInMemoryRedis } from '../utils/mock-redis';
 
 describe('TableBalancerService avoidWithin', () => {
   function createTournamentRepo(initial: Tournament[]): any {
@@ -43,7 +43,8 @@ describe('TableBalancerService avoidWithin', () => {
   test.each([false, true])(
     'avoids moving the same player twice across rapid rebalances (redis=%s)',
     async (useRedis) => {
-      const redis = useRedis ? (new MockRedis() as unknown as Redis) : undefined;
+      const ctx = useRedis ? createInMemoryRedis() : undefined;
+      const redis = ctx?.redis as unknown as Redis | undefined;
       const config = new ConfigService({ tournament: { avoidWithin: 5 } });
 
       const tables: Table[] = [
@@ -149,7 +150,8 @@ describe('TableBalancerService avoidWithin', () => {
   );
 
   it('shares lastMoved state via redis across balancer instances', async () => {
-    const redis = new MockRedis() as unknown as Redis;
+    const { redis } = createInMemoryRedis();
+    const redisClient = redis as unknown as Redis;
     const config = new ConfigService({ tournament: { avoidWithin: 5 } });
 
     const tables: Table[] = [
@@ -203,12 +205,12 @@ describe('TableBalancerService avoidWithin', () => {
       undefined,
       undefined,
       undefined,
-      redis,
+      redisClient,
     );
     const balancer1 = new TableBalancerService(
       tablesRepo,
       service1,
-      redis,
+      redisClient,
       config,
     );
 
@@ -240,12 +242,12 @@ describe('TableBalancerService avoidWithin', () => {
       undefined,
       undefined,
       undefined,
-      redis,
+      redisClient,
     );
     const balancer2 = new TableBalancerService(
       tablesRepo,
       service2,
-      redis,
+      redisClient,
       config,
     );
 

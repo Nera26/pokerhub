@@ -14,7 +14,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Hand } from '../../src/database/entities/hand.entity';
 import { GameState } from '../../src/database/entities/game-state.entity';
 import { RoomManager } from '../../src/game/room.service';
-import { MockRedis } from '../utils/mock-redis';
+import { createInMemoryRedis } from '../utils/mock-redis';
 
 class MockSocket extends EventEmitter {
   id = Math.random().toString(36).slice(2);
@@ -34,6 +34,7 @@ describe('GameGateway with GameEngine', () => {
 
   beforeAll(async () => {
     handsRepo = { save: jest.fn(), findOne: jest.fn() } as any;
+    const { redis } = createInMemoryRedis();
     const moduleRef = await Test.createTestingModule({
       providers: [
         GameGateway,
@@ -42,7 +43,7 @@ describe('GameGateway with GameEngine', () => {
         { provide: RoomManager, useValue: {} },
         { provide: getRepositoryToken(Hand), useValue: handsRepo },
         { provide: getRepositoryToken(GameState), useValue: { find: jest.fn(), save: jest.fn() } },
-        { provide: 'REDIS_CLIENT', useClass: MockRedis },
+        { provide: 'REDIS_CLIENT', useValue: redis },
       ],
     }).compile();
 

@@ -6,7 +6,7 @@ import { AuthService } from '../src/auth/auth.service';
 import { SessionService } from '../src/session/session.service';
 import { LoginResponseSchema } from '@shared/types';
 import { ConfigService } from '@nestjs/config';
-import { MockRedis } from './utils/mock-redis';
+import { createInMemoryRedis, MockRedis } from './utils/mock-redis';
 import { AnalyticsService } from '../src/analytics/analytics.service';
 import { GeoIpService } from '../src/auth/geoip.service';
 import { AuthRateLimitMiddleware } from '../src/auth/rate-limit.middleware';
@@ -58,6 +58,7 @@ describe('AuthController', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
+    const { redis } = createInMemoryRedis();
     const moduleRef = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
@@ -65,7 +66,7 @@ describe('AuthController', () => {
         SessionService,
         GeoIpService,
         AuthRateLimitMiddleware,
-        { provide: 'REDIS_CLIENT', useClass: MockRedis },
+        { provide: 'REDIS_CLIENT', useValue: redis },
         { provide: ConfigService, useClass: MockConfigService },
         { provide: AnalyticsService, useValue: { emit: jest.fn() } },
         { provide: UserRepository, useClass: InMemoryUserRepository },

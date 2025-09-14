@@ -1,7 +1,7 @@
 import { AnalyticsService } from '../../src/analytics/analytics.service';
 import type { ConfigService } from '@nestjs/config';
 import type Redis from 'ioredis';
-import { MockRedis } from '../utils/mock-redis';
+import { createInMemoryRedis } from '../utils/mock-redis';
 
 class MockGcsService {
   uploadObject = jest.fn();
@@ -9,7 +9,7 @@ class MockGcsService {
 
 describe('collusion heuristics integration', () => {
   it('emits antiCheat.flag for suspicious patterns', async () => {
-    const redis = new MockRedis();
+    const { redis } = createInMemoryRedis();
     const config = {
       get: (key: string) =>
         key === 'analytics.kafkaBrokers' ? 'localhost:9092' : undefined,

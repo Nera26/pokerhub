@@ -6,7 +6,7 @@ import { AnalyticsService } from '../../src/analytics/analytics.service';
 import { EventPublisher } from '../../src/events/events.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Hand } from '../../src/database/entities/hand.entity';
-import { MockRedis } from '../utils/mock-redis';
+import { createInMemoryRedis } from '../utils/mock-redis';
 import { ConfigService } from '@nestjs/config';
 import { GameState } from '../../src/database/entities/game-state.entity';
 
@@ -24,6 +24,7 @@ describe('player timeout', () => {
       get: (id: string) => (id === 't1' ? room1 : room2),
     } as RoomManager;
 
+    const { redis } = createInMemoryRedis();
     const moduleRef = await Test.createTestingModule({
       providers: [
         GameGateway,
@@ -34,7 +35,7 @@ describe('player timeout', () => {
         { provide: EventPublisher, useValue: { emit: jest.fn() } },
         { provide: getRepositoryToken(Hand), useValue: {} },
         { provide: getRepositoryToken(GameState), useValue: { find: jest.fn(), save: jest.fn() } },
-        { provide: 'REDIS_CLIENT', useClass: MockRedis },
+        { provide: 'REDIS_CLIENT', useValue: redis },
       ],
     }).compile();
 

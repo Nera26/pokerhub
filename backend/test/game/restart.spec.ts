@@ -6,7 +6,7 @@ import { RoomManager } from '../../src/game/room.service';
 import { ClockService } from '../../src/game/clock.service';
 import { AnalyticsService } from '../../src/analytics/analytics.service';
 import { EventPublisher } from '../../src/events/events.service';
-import { MockRedis } from '../utils/mock-redis';
+import { createInMemoryRedis, MockRedis } from '../utils/mock-redis';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Hand } from '../../src/database/entities/hand.entity';
 import { GameState } from '../../src/database/entities/game-state.entity';
@@ -61,7 +61,7 @@ describe('GameGateway restart', () => {
   }
 
   it('ignores duplicate action after server restart', async () => {
-    redis = new MockRedis();
+    ({ redis } = createInMemoryRedis());
     const { app, url } = await createApp();
     const action = {
       type: 'postBlind',

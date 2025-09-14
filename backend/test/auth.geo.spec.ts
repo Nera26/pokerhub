@@ -6,7 +6,7 @@ import { AuthService } from '../src/auth/auth.service';
 import { LoginResponseSchema } from '@shared/types';
 import { ConfigService } from '@nestjs/config';
 import { GeoIpService } from '../src/auth/geoip.service';
-import { MockRedis } from './utils/mock-redis';
+import { createInMemoryRedis } from './utils/mock-redis';
 import { AnalyticsService } from '../src/analytics/analytics.service';
 import { WalletService } from '../src/wallet/wallet.service';
 
@@ -28,12 +28,13 @@ describe('GeoIP restrictions', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
+    const { redis } = createInMemoryRedis();
     const moduleRef = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
         { provide: AuthService, useValue: { login: async () => ({ accessToken: 't' }) } },
         GeoIpService,
-        { provide: 'REDIS_CLIENT', useClass: MockRedis },
+        { provide: 'REDIS_CLIENT', useValue: redis },
         { provide: ConfigService, useClass: MockConfigService },
         { provide: AnalyticsService, useValue: { emit: jest.fn() } },
       ],

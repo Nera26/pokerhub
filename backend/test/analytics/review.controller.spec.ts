@@ -6,7 +6,7 @@ import { CollusionService } from '../../src/analytics/collusion.service';
 import { CollusionController } from '../../src/analytics/collusion.controller';
 import { AnalyticsService } from '../../src/analytics/analytics.service';
 import { AdminGuard } from '../../src/auth/admin.guard';
-import { MockRedis } from '../utils/mock-redis';
+import { createInMemoryRedis } from '../utils/mock-redis';
 import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -42,11 +42,12 @@ describe('ReviewController', () => {
     await dataSource.initialize();
     const repo = dataSource.getRepository(CollusionAudit);
 
+    const { redis } = createInMemoryRedis();
     const moduleRef = await Test.createTestingModule({
       controllers: [ReviewController, CollusionController],
       providers: [
         CollusionService,
-        { provide: 'REDIS_CLIENT', useClass: MockRedis },
+        { provide: 'REDIS_CLIENT', useValue: redis },
         { provide: getRepositoryToken(CollusionAudit), useValue: repo },
         {
           provide: AnalyticsService,

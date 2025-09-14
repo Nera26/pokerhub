@@ -1,6 +1,6 @@
 import type { Request } from 'express';
 import { WebhookController } from '../../src/wallet/webhook.controller';
-import { MockRedis } from '../utils/mock-redis';
+import { createInMemoryRedis } from '../utils/mock-redis';
 
 describe('WebhookController idempotency', () => {
   it('processes each event only once', async () => {
@@ -13,7 +13,7 @@ describe('WebhookController idempotency', () => {
         await wallet.confirm3DS(payload);
       }),
     };
-    const redis = new MockRedis();
+    const { redis } = createInMemoryRedis();
     const controller = new WebhookController(wallet, provider as any, redis as any);
     const req = {
       headers: {

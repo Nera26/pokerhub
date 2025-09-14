@@ -1,7 +1,7 @@
 import { Queue } from 'bullmq';
 import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
 import type { ProviderCallback } from '@shared/wallet.schema';
-import { MockRedis } from '../utils/mock-redis';
+import { createInMemoryRedis } from '../utils/mock-redis';
 
 describe('PaymentProviderService persistent retries', () => {
   beforeAll(() => {
@@ -22,7 +22,8 @@ describe('PaymentProviderService persistent retries', () => {
     await preQueue.add('retry', { event, handlerKey: 'test' }, { jobId: event.idempotencyKey });
     await preQueue.close();
 
-    const provider = new PaymentProviderService(new MockRedis() as any);
+    const { redis } = createInMemoryRedis();
+    const provider = new PaymentProviderService(redis as any);
     provider.registerHandler('test', async () => {
       /* no-op */
     });
