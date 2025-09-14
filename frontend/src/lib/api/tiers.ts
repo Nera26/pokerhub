@@ -1,8 +1,11 @@
 import { TiersSchema, type Tiers } from '@shared/types';
-import { fetchList } from './fetchList';
+import { safeApiClient } from './utils';
 
 export async function fetchTiers({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<Tiers> {
-  return await fetchList('/api/tiers', TiersSchema, { signal });
+  return await safeApiClient('/api/tiers', TiersSchema, {
+    signal,
+    errorMessage: 'Failed to fetch tiers',
+  });
 }
