@@ -4,6 +4,11 @@ import { server } from '@/test-utils/server';
 process.env.NEXT_PUBLIC_BASE_URL ??= 'http://localhost:3000';
 process.env.NEXT_PUBLIC_SOCKET_URL ??= 'http://localhost:4000';
 
+const realFetch = global.fetch;
+global.fetch = jest.fn((...args) =>
+  realFetch(...args),
+) as unknown as typeof fetch;
+
 // Default mock for next/navigation.
 // Individual tests can re-mock this as needed without conflicts.
 jest.mock('next/navigation', () => ({
