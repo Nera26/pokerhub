@@ -14,7 +14,7 @@
 ## Security
 - [RNG Whitepaper](./security/rng-whitepaper.md)
 - [Stride Threat Model](./security/stride-threat-model.md)
-- [Threat Model](./threat-model.md)
+- [Security Threat Model](./security-threat-model.md)
 
 ## Runbooks
 - [Runbooks Index](./runbooks/index.md)
