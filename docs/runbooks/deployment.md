@@ -3,6 +3,11 @@
 
 Use this runbook to roll out a new release using a guarded canary.
 
+## Prerequisites
+
+- Set `ELASTIC_URL` and `LOKI_URL` to the logging endpoints. The backend refuses to
+  start if neither is configured.
+
 ## Dashboard
 - Grafana: [Action ACK Latency](../analytics-dashboards.md#action-ack-latency)
 - Grafana: [Error Rate](../analytics-dashboards.md#error-rate)

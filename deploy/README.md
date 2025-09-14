@@ -12,6 +12,8 @@ These scripts perform canary deployments and rollbacks to GKE.
   - `roles/artifactregistry.reader` and `roles/artifactregistry.writer` to pull/push images
 - **Images**: container images are built with Cloud Build and stored in Artifact Registry.
   Set `ARTIFACT_REGISTRY` to the repository path, e.g. `us-docker.pkg.dev/<project>/<repo>`.
+- **Logging**: export `ELASTIC_URL` and `LOKI_URL` for log shipping destinations. The backend
+  fails to start if neither is provided.
 
 ## Usage
 
