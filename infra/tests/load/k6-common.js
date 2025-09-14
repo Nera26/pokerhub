@@ -4,26 +4,19 @@ import { Gauge } from 'k6/metrics';
 
 const gcPause = new Gauge('gc_pause_p95_ms');
 const heapGrowth = new Gauge('heap_growth_pct');
+
 const METRICS_FILE = __ENV.GC_METRICS_FILE || '../../metrics/soak_gc.jsonl';
-
-export const options = {
-  vus: 25,
-  duration: '10m',
-  thresholds: {
-    http_req_duration: ['p(95)<120'],
-    gc_pause_p95_ms: ['value<50'],
-    heap_growth_pct: ['value<1'],
-  },
-};
-
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
 
-export default function () {
-  http.get(`${BASE_URL}/rooms`);
+export function request(path, metric) {
+  const res = http.get(`${BASE_URL}${path}`);
+  if (metric) {
+    metric.add(res.timings.duration);
+  }
   sleep(1);
 }
 
-export function teardown() {
+export function trackGcAndHeap() {
   const text = open(METRICS_FILE);
   const lines = text.trim().split('\n');
   const summary = JSON.parse(lines[lines.length - 1] || '{}');
