@@ -1,21 +1,22 @@
 import { fetchTiers } from '@/lib/api/tiers';
-import { fetchList } from '@/lib/api/fetchList';
+import { safeApiClient } from '@/lib/api/utils';
 import { TiersSchema } from '@shared/types';
 
-jest.mock('@/lib/api/fetchList', () => ({ fetchList: jest.fn() }));
+jest.mock('@/lib/api/utils', () => ({ safeApiClient: jest.fn() }));
 
-const fetchListMock = fetchList as jest.Mock;
+const safeApiClientMock = safeApiClient as jest.Mock;
 
 describe('fetchTiers', () => {
   afterEach(() => {
-    fetchListMock.mockReset();
+    safeApiClientMock.mockReset();
   });
 
   it('invokes apiClient with correct arguments', async () => {
-    fetchListMock.mockResolvedValue([]);
+    safeApiClientMock.mockResolvedValue([]);
     await fetchTiers();
-    expect(fetchListMock).toHaveBeenCalledWith('/api/tiers', TiersSchema, {
+    expect(safeApiClientMock).toHaveBeenCalledWith('/api/tiers', TiersSchema, {
       signal: undefined,
+      errorMessage: 'Failed to fetch tiers',
     });
   });
 });
