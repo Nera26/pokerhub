@@ -15,15 +15,9 @@ import type {
 } from '@shared/types';
 import { CreateTableSchema } from '@shared/types';
 import { Button } from '../ui/Button';
-import {
-  Table as UiTable,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../ui/Table';
+import { TableCell, TableHead, TableRow } from '../ui/Table';
 import TableModal from '../modals/TableModal';
+import AdminTableManager from './common/AdminTableManager';
 
 export default function ManageTables() {
   const queryClient = useQueryClient();
@@ -93,65 +87,46 @@ export default function ManageTables() {
     return <div>Error loading tables</div>;
   }
 
-  if (tables.length === 0) {
-    return (
-      <div className="space-y-4">
-        <p>No tables found</p>
-        <Button onClick={openCreateModal}>Create Table</Button>
-        <TableModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onSubmit={submitTable}
-          title="Add Table"
-          submitLabel="Create Table"
-          error={modalError}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
-      <Button onClick={openCreateModal}>Add Table</Button>
+      <Button onClick={openCreateModal}>Create Table</Button>
 
-      <UiTable>
-        <TableHeader>
+      <AdminTableManager
+        items={tables}
+        header={
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Stakes</TableHead>
             <TableHead>Players</TableHead>
             <TableHead />
           </TableRow>
-        </TableHeader>
-        <TableBody>
-          {tables.map((t) => (
-            <TableRow key={t.id}>
-              <TableCell>{t.tableName}</TableCell>
-              <TableCell>{`$${t.stakes.small}/${t.stakes.big}`}</TableCell>
-              <TableCell>
-                {t.players.current}/{t.players.max}
-              </TableCell>
-              <TableCell className="space-x-2">
-                <Button
-                  variant="secondary"
-                  onClick={() => openEditModal(t)}
-                >
-                  Update
-                </Button>
-                <Button variant="danger" onClick={() => remove.mutate(t.id)}>
-                  Delete
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </UiTable>
+        }
+        renderRow={(t) => (
+          <TableRow key={t.id}>
+            <TableCell>{t.tableName}</TableCell>
+            <TableCell>{`$${t.stakes.small}/${t.stakes.big}`}</TableCell>
+            <TableCell>
+              {t.players.current}/{t.players.max}
+            </TableCell>
+            <TableCell className="space-x-2">
+              <Button variant="secondary" onClick={() => openEditModal(t)}>
+                Update
+              </Button>
+              <Button variant="danger" onClick={() => remove.mutate(t.id)}>
+                Delete
+              </Button>
+            </TableCell>
+          </TableRow>
+        )}
+        searchFilter={(t, q) => t.tableName.toLowerCase().includes(q)}
+        emptyMessage="No tables found"
+      />
 
       <TableModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={submitTable}
-        title={editingTable ? 'Edit Table' : 'Add Table'}
+        title={editingTable ? 'Edit Table' : 'Create Table'}
         submitLabel={editingTable ? 'Update Table' : 'Create Table'}
         defaultValues={
           editingTable
@@ -170,4 +145,3 @@ export default function ManageTables() {
     </div>
   );
 }
-
