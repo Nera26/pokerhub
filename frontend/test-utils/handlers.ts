@@ -26,3 +26,91 @@ export function mockLoading({ once = false }: { once?: boolean } = {}) {
     { once },
   );
 }
+
+export function getTablesSuccess(
+  data: unknown,
+  { status = 200, once = false }: Options = {},
+) {
+  return http.get('/api/tables', () => HttpResponse.json(data, { status }), {
+    once,
+  });
+}
+
+export function getTablesError(
+  data: unknown = { error: 'fail' },
+  { status = 500, once = false }: Options = {},
+) {
+  return http.get('/api/tables', () => HttpResponse.json(data, { status }), {
+    once,
+  });
+}
+
+export function getTournamentsSuccess(
+  data: unknown,
+  { status = 200, once = false }: Options = {},
+) {
+  return http.get(
+    '/api/tournaments',
+    () => HttpResponse.json(data, { status }),
+    { once },
+  );
+}
+
+export function getTournamentsError(
+  data: unknown = { error: 'fail' },
+  { status = 500, once = false }: Options = {},
+) {
+  return http.get(
+    '/api/tournaments',
+    () => HttpResponse.json(data, { status }),
+    { once },
+  );
+}
+
+export function postRegisterTournamentSuccess(
+  id: string,
+  data: unknown = { message: 'ok' },
+  { status = 200, once = false }: Options = {},
+) {
+  return http.post(
+    `/api/tournaments/${id}/register`,
+    () => HttpResponse.json(data, { status }),
+    { once },
+  );
+}
+
+export function postRegisterTournamentError(
+  id: string,
+  data: unknown = { error: 'fail' },
+  { status = 500, once = false }: Options = {},
+) {
+  return http.post(
+    `/api/tournaments/${id}/register`,
+    () => HttpResponse.json(data, { status }),
+    { once },
+  );
+}
+
+export function postWithdrawTournamentSuccess(
+  id: string,
+  data: unknown = { message: 'ok' },
+  { status = 200, once = false }: Options = {},
+) {
+  return http.post(
+    `/api/tournaments/${id}/withdraw`,
+    () => HttpResponse.json(data, { status }),
+    { once },
+  );
+}
+
+export function postWithdrawTournamentError(
+  id: string,
+  data: unknown = { error: 'fail' },
+  { status = 500, once = false }: Options = {},
+) {
+  return http.post(
+    `/api/tournaments/${id}/withdraw`,
+    () => HttpResponse.json(data, { status }),
+    { once },
+  );
+}
