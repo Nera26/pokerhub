@@ -1,16 +1,25 @@
 import { AnalyticsService } from '../../src/analytics/analytics.service';
 
-jest.mock('kafkajs', () => ({
-  Kafka: jest.fn(() => ({ producer: () => ({ connect: jest.fn() }) })),
-}));
 jest.mock('@clickhouse/client', () => ({ createClient: jest.fn() }));
 
 describe('AnalyticsService', () => {
-  it('throws when kafka brokers config missing', () => {
+  it('initializes without kafka brokers', () => {
     const config: any = { get: () => undefined };
-    expect(() => new AnalyticsService(config, {} as any, {} as any)).toThrow(
-      'Missing analytics.kafkaBrokers configuration',
+    const stakeSpy = jest
+      .spyOn(AnalyticsService.prototype as any, 'scheduleStakeAggregates')
+      .mockImplementation(() => undefined);
+    const engageSpy = jest
+      .spyOn(AnalyticsService.prototype as any, 'scheduleEngagementMetrics')
+      .mockImplementation(() => undefined);
+    const service = new AnalyticsService(
+      config,
+      { xrange: jest.fn() } as any,
+      {} as any,
+      {} as any,
     );
+    expect(service).toBeDefined();
+    stakeSpy.mockRestore();
+    engageSpy.mockRestore();
   });
 });
 
