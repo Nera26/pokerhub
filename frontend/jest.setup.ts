@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+import { server } from './test-utils/server';
 
 process.env.NEXT_PUBLIC_BASE_URL ??= 'http://localhost:3000';
 process.env.NEXT_PUBLIC_SOCKET_URL ??= 'http://localhost:4000';
@@ -21,20 +22,19 @@ jest.mock('next/navigation', () => ({
 // Quiet noisy console output during tests; restore afterward.
 const originalError = console.error;
 const originalCount = console.count;
-const originalFetch = global.fetch;
 
 beforeAll(() => {
   console.error = () => {};
   console.count = () => {};
-  global.fetch = jest.fn();
+  server.listen();
+});
+
+afterEach(() => {
+  server.resetHandlers();
 });
 
 afterAll(() => {
   console.error = originalError;
   console.count = originalCount;
-  global.fetch = originalFetch;
-});
-
-afterEach(() => {
-  (global.fetch as jest.Mock).mockReset();
+  server.close();
 });
