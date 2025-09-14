@@ -24,6 +24,7 @@ import { WalletService } from '../wallet/wallet.service';
 import {
   TournamentFiltersResponseSchema,
   type TournamentFilterOption,
+  type AdminTournament,
 } from '@shared/types';
 import { TournamentsProducer } from '../messaging/tournaments/tournaments.producer';
 import { BotProfileRepository } from './bot-profile.repository';
@@ -110,6 +111,28 @@ export class TournamentService implements OnModuleInit {
       select: ['name', 'proportion', 'bustMultiplier'],
     });
     return BotProfilesResponseSchema.parse(res);
+  }
+
+  async getDefaultTournament(): Promise<AdminTournament> {
+    const [defaults] = await this.tournaments.query(
+      `SELECT id,
+              name,
+              game_type AS "gameType",
+              buyin,
+              fee,
+              prize_pool AS "prizePool",
+              date,
+              time,
+              format,
+              seat_cap AS "seatCap",
+              description,
+              rebuy,
+              addon,
+              status
+       FROM tournament_defaults
+       LIMIT 1`,
+    );
+    return defaults;
   }
 
   async get(id: string, userId?: string) {
