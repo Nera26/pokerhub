@@ -11,10 +11,13 @@ const fetchTransactionColumns = (
 ) =>
   client('/api/transactions/columns', TransactionColumnsResponseSchema, opts);
 
-const useTransactionColumns = createQueryHook<TransactionColumnsResponse>(
+const useTransactionColumnsQuery = createQueryHook<TransactionColumnsResponse>(
   'transaction-columns',
   fetchTransactionColumns,
   'transaction columns',
 );
 
-export default useTransactionColumns;
+export default function useTransactionColumns() {
+  const { data, isLoading, error } = useTransactionColumnsQuery();
+  return { data: data ?? [], isLoading, error };
+}

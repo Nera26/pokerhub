@@ -4,9 +4,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faReceipt } from '@fortawesome/free-solid-svg-icons/faReceipt';
 import { useMemo, type ReactNode } from 'react';
 import TransactionHistory from '../dashboard/transactions/TransactionHistory';
-import { buildTransactionColumns } from './transactionColumns';
-import type { Action } from './TransactionHistoryTable';
+import type { Action, Column } from './TransactionHistoryTable';
 import useTransactionColumns from '@/hooks/useTransactionColumns';
+import { AmountCell, StatusCell } from './transactionCells';
+import CenteredMessage from '@/components/CenteredMessage';
 
 interface TransactionLike {
   amount: number;
@@ -15,6 +16,7 @@ interface TransactionLike {
   datetime?: string;
   type?: string;
   action?: string;
+  [key: string]: unknown;
 }
 
 export interface TransactionHistorySectionProps<T extends TransactionLike> {
@@ -42,21 +44,44 @@ export default function TransactionHistorySection<T extends TransactionLike>({
   onPageChange,
   actions,
 }: TransactionHistorySectionProps<T>) {
-  const { data: colMeta } = useTransactionColumns();
-  const labels = useMemo(
-    () => Object.fromEntries((colMeta ?? []).map((c) => [c.id, c.label])),
-    [colMeta],
-  );
+  const {
+    data: colMeta,
+    isLoading: colsLoading,
+    error: colsError,
+  } = useTransactionColumns();
 
-  const columns = buildTransactionColumns<T>({
-    getType: (row) =>
-      row.type ?? (row as unknown as { action?: string }).action ?? '',
-    headerClassName:
-      'text-left p-4 font-semibold text-text-secondary text-sm uppercase',
-    cellClassName: 'p-4 text-sm',
-    currency,
-    labels,
-  });
+  const columns = useMemo<Column<T>[]>(() => {
+    return colMeta.map((c) => ({
+      header: c.label,
+      headerClassName:
+        'text-left p-4 font-semibold text-text-secondary text-sm uppercase',
+      cellClassName: 'p-4 text-sm',
+      cell: (row: T) => {
+        switch (c.id) {
+          case 'amount':
+            return <AmountCell amount={row.amount} currency={currency} />;
+          case 'date':
+          case 'datetime':
+            return (row as any).date ?? (row as any).datetime ?? '';
+          case 'status':
+            return <StatusCell status={row.status} />;
+          case 'type':
+            return (row as any).type ?? (row as any).action ?? '';
+          default:
+            return (row as any)[c.id as keyof T] ?? '';
+        }
+      },
+    }));
+  }, [colMeta, currency]);
+
+  if (colsLoading)
+    return <CenteredMessage>Loading transaction history...</CenteredMessage>;
+  if (colsError)
+    return (
+      <CenteredMessage>Failed to load transaction history</CenteredMessage>
+    );
+  if (columns.length === 0)
+    return <CenteredMessage>No transaction columns found</CenteredMessage>;
 
   const emptyState = (
     <div className="p-[20px] text-center text-text-secondary">

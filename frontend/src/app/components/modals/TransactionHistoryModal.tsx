@@ -5,11 +5,13 @@ import Modal from '../ui/Modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { useQuery } from '@tanstack/react-query';
-import TransactionHistoryTable from '@/app/components/common/TransactionHistoryTable';
+import TransactionHistoryTable, {
+  type Column,
+} from '@/app/components/common/TransactionHistoryTable';
 import {
-  transactionColumns,
-  type Transaction,
-} from '../dashboard/transactions/transactionColumns';
+  AmountCell,
+  StatusCell,
+} from '@/app/components/common/transactionCells';
 import {
   fetchTransactionFilters,
   fetchUserTransactions,
@@ -17,6 +19,15 @@ import {
 import type { FilterOptions } from '@shared/transactions.schema';
 import { AdminTransactionEntriesSchema } from '@shared/transactions.schema';
 import { z } from 'zod';
+
+export type Transaction = {
+  datetime: string;
+  action: string;
+  amount: number;
+  by: string;
+  notes: string;
+  status: string;
+};
 
 type AdminTransactionEntry = z.infer<
   typeof AdminTransactionEntriesSchema
@@ -29,6 +40,45 @@ interface Props {
   userId: string;
   onFilter?: (filtered: AdminTransactionEntry[]) => void;
 }
+
+const commonOpts = {
+  headerClassName: 'text-left py-3 px-2 text-text-secondary',
+  cellClassName: 'py-3 px-2',
+};
+
+const transactionColumns: Column<Transaction>[] = [
+  {
+    header: 'Date & Time',
+    ...commonOpts,
+    cell: (t) => t.datetime,
+  },
+  {
+    header: 'Action',
+    ...commonOpts,
+    cell: (t) => t.action,
+  },
+  {
+    header: 'Amount',
+    ...commonOpts,
+    cell: (t) => <AmountCell amount={t.amount} currency="USD" />, // default
+  },
+  {
+    header: 'Performed By',
+    ...commonOpts,
+    cell: (t) => t.by,
+  },
+  {
+    header: 'Notes',
+    ...commonOpts,
+    cell: (t) => t.notes,
+    cellClassName: 'py-3 px-2 text-text-secondary',
+  },
+  {
+    header: 'Status',
+    ...commonOpts,
+    cell: (t) => <StatusCell status={t.status} />,
+  },
+];
 
 export default function TransactionHistoryModal({
   isOpen,
