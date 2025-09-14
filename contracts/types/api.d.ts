@@ -56,6 +56,59 @@ export interface paths {
         };
       };
     };
+    /** Create navigation item */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["NavItemRequest"];
+        };
+      };
+      responses: {
+        /** @description Created navigation item */
+        200: {
+          content: {
+            "application/json": components["schemas"]["NavItem"];
+          };
+        };
+      };
+    };
+  };
+  "/nav-items/{flag}": {
+    /** Update navigation item */
+    put: {
+      parameters: {
+        path: {
+          flag: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["NavItemRequest"];
+        };
+      };
+      responses: {
+        /** @description Updated navigation item */
+        200: {
+          content: {
+            "application/json": components["schemas"]["NavItem"];
+          };
+        };
+      };
+    };
+    /** Delete navigation item */
+    delete: {
+      parameters: {
+        path: {
+          flag: string;
+        };
+      };
+      responses: {
+        /** @description Deleted */
+        204: {
+          content: never;
+        };
+      };
+    };
   };
   "/site-metadata": {
     /** Get site metadata */
@@ -2981,6 +3034,13 @@ export interface components {
       href: string;
       label: string;
       icon?: string;
+    };
+    NavItemRequest: {
+      flag: string;
+      href: string;
+      label: string;
+      icon?: string;
+      order: number;
     };
     NavItemsResponse: components["schemas"]["NavItem"][];
     SiteMetadataResponse: {

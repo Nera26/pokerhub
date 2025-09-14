@@ -43,6 +43,54 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NavItemsResponse'
+    post:
+      summary: Create navigation item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NavItemRequest'
+      responses:
+        '200':
+          description: Created navigation item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NavItem'
+  /nav-items/{flag}:
+    put:
+      summary: Update navigation item
+      parameters:
+        - in: path
+          name: flag
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NavItemRequest'
+      responses:
+        '200':
+          description: Updated navigation item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NavItem'
+    delete:
+      summary: Delete navigation item
+      parameters:
+        - in: path
+          name: flag
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted
   /site-metadata:
     get:
       summary: Get site metadata
@@ -3719,6 +3767,20 @@ components:
           type: string
         icon:
           type: string
+    NavItemRequest:
+      type: object
+      required: [flag, href, label, order]
+      properties:
+        flag:
+          type: string
+        href:
+          type: string
+        label:
+          type: string
+        icon:
+          type: string
+        order:
+          type: integer
     NavItemsResponse:
       type: array
       items:

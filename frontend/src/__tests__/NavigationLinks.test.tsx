@@ -143,6 +143,18 @@ describe('Navigation Links', () => {
       ).not.toBeInTheDocument(),
     );
   });
+
+  it('renders newly created nav items', async () => {
+    mockFetchNavItems.mockResolvedValue([
+      ...baseNavItems,
+      { flag: 'about', href: '/about', label: 'About' },
+    ]);
+    mockUseAuth.mockReturnValue({ avatarUrl: '/avatar.png' });
+    renderLinks('$0.00');
+    expect(
+      await screen.findByRole('link', { name: /About/ }),
+    ).toBeInTheDocument();
+  });
 });
 
 describe('BottomNav', () => {

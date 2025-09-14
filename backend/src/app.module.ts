@@ -33,7 +33,6 @@ import { TranslationsController } from './routes/translations.controller';
 import { ConfigController } from './routes/config.controller';
 import { PrecacheController } from './routes/precache.controller';
 import { NavIconsController } from './routes/nav-icons.controller';
-import { NavItemsController } from './routes/nav-items.controller';
 import { HistoryTabsController } from './routes/history-tabs.controller';
 import { ChartController } from './routes/chart.controller';
 import { MetadataController } from './routes/metadata.controller';
@@ -73,7 +72,6 @@ import { BonusService } from './services/bonus.service';
 import { ChipDenomsService } from './services/chip-denoms.service';
 import { TableThemeService } from './services/table-theme.service';
 import { NavIconsService } from './services/nav-icons.service';
-import { NavItemsService } from './services/nav-items.service';
 import { HistoryTabsService } from './services/history-tabs.service';
 import { SettingsService } from './services/settings.service';
 import { DefaultAvatarService } from './services/default-avatar.service';
@@ -82,9 +80,9 @@ import { BonusOptionEntity } from './database/entities/bonus-option.entity';
 import { ChipDenominationEntity } from './database/entities/chip-denomination.entity';
 import { TableThemeEntity } from './database/entities/table-theme.entity';
 import { NavIconEntity } from './database/entities/nav-icon.entity';
-import { NavItemEntity } from './database/entities/nav-item.entity';
 import { HistoryTabEntity } from './database/entities/history-tab.entity';
 import { DefaultAvatarEntity } from './database/entities/default-avatar.entity';
+import { NavModule } from './nav/nav.module';
 
 @Module({
   imports: [
@@ -139,7 +137,6 @@ import { DefaultAvatarEntity } from './database/entities/default-avatar.entity';
       TableThemeEntity,
       DefaultAvatarEntity,
       NavIconEntity,
-      NavItemEntity,
       HistoryTabEntity,
     ]),
 
@@ -164,6 +161,7 @@ import { DefaultAvatarEntity } from './database/entities/default-avatar.entity';
     TiersModule,
     CtasModule,
     HistoryModule,
+    NavModule,
   ],
     controllers: [
       AppController,
@@ -175,7 +173,6 @@ import { DefaultAvatarEntity } from './database/entities/default-avatar.entity';
       ConfigController,
       PrecacheController,
       NavIconsController,
-      NavItemsController,
       HistoryTabsController,
       ChartController,
       MetadataController,
@@ -189,7 +186,6 @@ import { DefaultAvatarEntity } from './database/entities/default-avatar.entity';
     LanguagesService,
     TranslationsService,
     NavIconsService,
-    NavItemsService,
     HistoryTabsService,
     SettingsService,
     DefaultAvatarService,

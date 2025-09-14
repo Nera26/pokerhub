@@ -46,6 +46,11 @@ export type NavItem = z.infer<typeof NavItemSchema>;
 export const NavItemsResponseSchema = z.array(NavItemSchema);
 export type NavItemsResponse = z.infer<typeof NavItemsResponseSchema>;
 
+export const NavItemRequestSchema = NavItemSchema.extend({
+  order: z.number().int(),
+});
+export type NavItemRequest = z.infer<typeof NavItemRequestSchema>;
+
 // Site metadata
 export {
   SiteMetadataResponseSchema,
