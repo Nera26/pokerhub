@@ -6,7 +6,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { useAuditSummary } from '@/hooks/useAuditSummary';
 import useToasts from '@/hooks/useToasts';
-import { exportCsv } from '@/lib/exportCsv';
+import { exportCsv, toCsv } from '@/lib/exportCsv';
 
 const useActivity = mockUseActivity();
 
@@ -20,7 +20,10 @@ jest.mock('@/hooks/useAuditSummary', () => ({
   useAuditSummary: jest.fn(),
 }));
 jest.mock('@/hooks/useToasts');
-jest.mock('@/lib/exportCsv', () => ({ exportCsv: jest.fn() }));
+jest.mock('@/lib/exportCsv', () => ({
+  ...jest.requireActual('@/lib/exportCsv'),
+  exportCsv: jest.fn(),
+}));
 
 jest.mock('@/app/components/dashboard/analytics/SearchBar', () => () => (
   <div />
@@ -88,7 +91,7 @@ describe('Analytics CSV export', () => {
     render(<Analytics />);
     await userEvent.click(screen.getByText('Export'));
     const [filename, header, rows] = (exportCsv as jest.Mock).mock.calls[0];
-    const csv = [header, ...rows].map((r: string[]) => r.join(',')).join('\n');
+    const csv = toCsv(header, rows);
     expect(filename).toMatch(/^audit_logs_/);
     expect(csv).toMatchSnapshot();
   });
