@@ -6,12 +6,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
 import request from 'supertest';
-import { NavItemsController } from '../src/routes/nav-items.controller';
-import { NavItemsService } from '../src/services/nav-items.service';
+import { NavController } from '../src/nav/nav.controller';
+import { NavService } from '../src/nav/nav.service';
+import { AuthGuard } from '../src/auth/auth.guard';
+import { AdminGuard } from '../src/auth/admin.guard';
 import { NavItemEntity } from '../src/database/entities/nav-item.entity';
 import type { NavItemsResponse } from '@shared/types';
 
-describe('NavItemsController', () => {
+describe('NavController', () => {
   let app: INestApplication;
   let dataSource: DataSource;
 
@@ -42,9 +44,14 @@ describe('NavItemsController', () => {
         }),
         TypeOrmModule.forFeature([NavItemEntity]),
       ],
-      controllers: [NavItemsController],
-      providers: [NavItemsService],
-    }).compile();
+      controllers: [NavController],
+      providers: [NavService],
+    })
+      .overrideGuard(AuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(AdminGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     app = moduleRef.createNestApplication();
     await app.init();
@@ -68,5 +75,35 @@ describe('NavItemsController', () => {
       { flag: 'profile', href: '/user', label: 'Profile' },
     ];
     expect(body).toEqual(expected);
+  });
+
+  it('creates and deletes nav items', async () => {
+    await request(app.getHttpServer())
+      .post('/nav-items')
+      .send({
+        flag: 'help',
+        href: '/help',
+        label: 'Help',
+        order: 3,
+      })
+      .expect(200);
+
+    let res = await request(app.getHttpServer()).get('/nav-items').expect(200);
+    expect(res.body).toEqual(
+      expect.arrayContaining([
+        { flag: 'help', href: '/help', label: 'Help' },
+      ]),
+    );
+
+    await request(app.getHttpServer())
+      .delete('/nav-items/help')
+      .expect(204);
+
+    res = await request(app.getHttpServer()).get('/nav-items').expect(200);
+    expect(res.body).not.toContainEqual({
+      flag: 'help',
+      href: '/help',
+      label: 'Help',
+    });
   });
 });

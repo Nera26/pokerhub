@@ -3,8 +3,11 @@ import {
   NavItemsResponseSchema,
   type NavItem as NavItemResponse,
   NavIconsResponseSchema,
+  NavItemSchema,
+  type NavItemRequest,
 } from '@shared/types';
 import { apiClient, type ApiError } from './client';
+import { z } from 'zod';
 
 export type NavItem = {
   flag: string;
@@ -58,6 +61,28 @@ export async function fetchNavItems({
       err instanceof Error ? err.message : (err as ApiError).message;
     throw { message: `Failed to fetch nav items: ${message}` } as ApiError;
   }
+}
+
+export async function createNavItem(
+  body: NavItemRequest,
+): Promise<NavItemResponse> {
+  return apiClient('/api/nav-items', NavItemSchema, { method: 'POST', body });
+}
+
+export async function updateNavItem(
+  flag: string,
+  body: NavItemRequest,
+): Promise<NavItemResponse> {
+  return apiClient(`/api/nav-items/${flag}`, NavItemSchema, {
+    method: 'PUT',
+    body,
+  });
+}
+
+export async function deleteNavItem(flag: string): Promise<void> {
+  await apiClient(`/api/nav-items/${flag}`, z.void(), {
+    method: 'DELETE',
+  });
 }
 
 export type { ApiError } from './client';
