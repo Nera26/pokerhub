@@ -28,16 +28,12 @@ export const RequestResetSchema = z.object({
   email: z.string().email(),
 });
 export type RequestResetRequest = z.infer<typeof RequestResetSchema>;
-export const RequestResetResponseSchema = MessageResponseSchema;
-export type RequestResetResponse = MessageResponse;
 
 export const VerifyResetCodeSchema = z.object({
   email: z.string().email(),
   code: z.string(),
 });
 export type VerifyResetCodeRequest = z.infer<typeof VerifyResetCodeSchema>;
-export const VerifyResetCodeResponseSchema = MessageResponseSchema;
-export type VerifyResetCodeResponse = MessageResponse;
 
 export const ResetPasswordSchema = z.object({
   email: z.string().email(),
@@ -45,8 +41,6 @@ export const ResetPasswordSchema = z.object({
   password: z.string(),
 });
 export type ResetPasswordRequest = z.infer<typeof ResetPasswordSchema>;
-export const ResetPasswordResponseSchema = MessageResponseSchema;
-export type ResetPasswordResponse = MessageResponse;
 
 // Social auth providers
 export const AuthProviderSchema = z.object({
