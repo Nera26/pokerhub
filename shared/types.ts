@@ -91,11 +91,13 @@ export type {
 
 // Backend re-exports
 export {
+  LoginResponseSchema,
   MessageResponseSchema,
   AuthProviderSchema,
   AuthProvidersResponseSchema,
 } from '../backend/src/schemas/auth';
 export type {
+  LoginResponse,
   MessageResponse,
   AuthProvider,
   AuthProvidersResponse,

@@ -1,9 +1,7 @@
 // Chaos swarm: 80k sockets across 10k tables. Assumes toxiproxy adds 5% packet loss and 200ms jitter.
 
 import { Trend, Rate } from 'k6/metrics';
-import { io } from 'k6/x/socket.io';
-
-const ACTIONS = JSON.parse(open('../backend/src/game/engine/gateway.actions.json'));
+import { runSocket } from './lib/runSocket.js';
 
 const ACK_LATENCY = new Trend('ack_latency', true);
 const ACK_SUCCESS = new Rate('ack_success');
@@ -25,23 +23,11 @@ export default function () {
   const tableId = (__VU - 1) % tables;
   const url = __ENV.SIO_URL || 'ws://localhost:4000/game';
 
-  const socket = io(url, {
-    query: { table: tableId },
-    transports: ['websocket'],
-  });
-
-  socket.on('connect', () => {
-    for (const action of ACTIONS) {
-      const start = Date.now();
-      socket.emit('action', action, () => {
-        ACK_LATENCY.add(Date.now() - start);
-        ACK_SUCCESS.add(1);
-      });
-    }
-    socket.disconnect();
-  });
-
-  socket.on('connect_error', () => {
-    ACK_SUCCESS.add(0);
+  runSocket(url, tableId, ACK_SUCCESS, (socket, action) => {
+    const start = Date.now();
+    socket.emit('action', action, () => {
+      ACK_LATENCY.add(Date.now() - start);
+      ACK_SUCCESS.add(1);
+    });
   });
 }

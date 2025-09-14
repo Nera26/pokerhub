@@ -1,9 +1,7 @@
 import { Trend, Rate, Counter } from 'k6/metrics';
-import { io } from 'k6/x/socket.io';
+import { runSocket } from './lib/runSocket.js';
 import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 import { setupMetrics, teardownMetrics, pushSummary } from './lib/wsMetrics.js';
-
-const ACTIONS = JSON.parse(open('../backend/src/game/engine/gateway.actions.json'));
 
 const ACK_LATENCY = new Trend('ack_latency', true);
 const ACK_SUCCESS = new Rate('ack_success');
@@ -44,25 +42,13 @@ export default function () {
   const tableId = (__VU - 1) % TABLES;
   const url = __ENV.SIO_URL || 'ws://localhost:4000/game';
 
-  const socket = io(url, {
-    query: { table: tableId },
-    transports: ['websocket'],
-  });
-
-  socket.on('connect', () => {
-    for (const action of ACTIONS) {
-      const start = Date.now();
-      socket.emit('action', action, () => {
-        ACK_LATENCY.add(Date.now() - start, { table: tableId });
-        ACK_SUCCESS.add(1);
-        ACTION_COUNTER.add(1, { table: tableId });
-      });
-    }
-    socket.disconnect();
-  });
-
-  socket.on('connect_error', () => {
-    ACK_SUCCESS.add(0);
+  runSocket(url, tableId, ACK_SUCCESS, (socket, action) => {
+    const start = Date.now();
+    socket.emit('action', action, () => {
+      ACK_LATENCY.add(Date.now() - start, { table: tableId });
+      ACK_SUCCESS.add(1);
+      ACTION_COUNTER.add(1, { table: tableId });
+    });
   });
 }
 

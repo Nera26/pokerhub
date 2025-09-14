@@ -7,7 +7,7 @@ import {
   verifyResetCode,
   resetPassword,
 } from '@/lib/api/auth';
-import { mockFetch } from '@/test-utils/mockFetch';
+import { mockFetch, mockFetchError } from '@/test-utils/mockFetch';
 
 describe('auth api', () => {
   afterEach(() => {
@@ -39,20 +39,12 @@ describe('auth api', () => {
   });
 
   it('throws ApiError on failure', async () => {
-    (fetch as jest.Mock).mockResolvedValue({
-      ok: false,
-      status: 500,
-      statusText: 'Server Error',
-      headers: { get: () => 'application/json' },
-      json: async () => ({ error: 'fail' }),
-    });
-
+    mockFetchError();
     const err = {
       status: 500,
       message: 'Server Error',
       details: '{"error":"fail"}',
     };
-
     await expect(login('u@example.com', 'p')).rejects.toEqual(err);
     await expect(logout()).rejects.toEqual(err);
     await expect(requestPasswordReset('u@example.com')).rejects.toEqual(err);

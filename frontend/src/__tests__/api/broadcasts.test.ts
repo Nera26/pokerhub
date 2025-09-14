@@ -5,6 +5,7 @@ import {
   sendBroadcast,
   fetchBroadcastTemplates,
 } from '@/lib/api/broadcasts';
+import { mockFetchError } from '@/test-utils/mockFetch';
 
 describe('broadcasts api', () => {
   afterEach(() => {
@@ -61,14 +62,7 @@ describe('broadcasts api', () => {
   });
 
   it('throws ApiError on failure', async () => {
-    (fetch as jest.Mock).mockResolvedValue({
-      ok: false,
-      status: 500,
-      statusText: 'Server Error',
-      headers: { get: () => 'application/json' },
-      json: async () => ({ error: 'fail' }),
-    });
-
+    mockFetchError();
     await expect(fetchBroadcasts()).rejects.toMatchObject({
       message: 'Failed to fetch broadcasts: Server Error',
     });
