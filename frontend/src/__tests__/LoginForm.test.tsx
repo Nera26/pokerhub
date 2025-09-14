@@ -28,6 +28,21 @@ describe('LoginForm', () => {
     );
   }
 
+  async function fillCredentials(
+    user: ReturnType<typeof userEvent.setup>,
+    email = 'test@example.com',
+    password = 'password',
+  ) {
+    await user.type(screen.getByLabelText('Email Address'), email);
+    await user.type(screen.getByLabelText('Password'), password);
+  }
+
+  async function submitLogin(user: ReturnType<typeof userEvent.setup>) {
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: /login/i }));
+    });
+  }
+
   const push = jest.fn<void, [string]>();
   const mockUseRouter = useRouter as jest.MockedFunction<typeof useRouter>;
   const mockUseAuthActions =
@@ -62,64 +77,59 @@ describe('LoginForm', () => {
     const user = userEvent.setup();
     renderWithClient(<LoginForm />);
 
-    await act(async () => {
-      await user.type(
-        screen.getByLabelText('Email Address'),
-        'test@example.com',
-      );
-      await user.type(screen.getByLabelText('Password'), 'password');
-      await user.click(screen.getByRole('button', { name: /login/i }));
-    });
+    await fillCredentials(user);
+    await submitLogin(user);
 
     await waitFor(() => expect(setToken).toHaveBeenCalledWith('abc'));
     expect(push).toHaveBeenCalledWith('/');
     expect(mockLogin).toHaveBeenCalledWith('test@example.com', 'password');
   });
 
-  it('shows API field errors on failed login', async () => {
-    const error: ApiError = {
-      details: JSON.stringify({
-        errors: { email: 'Bad email', password: 'Bad password' },
-        message: 'Invalid credentials',
-      }),
-    };
-    mockLogin.mockImplementationOnce(async () => {
-      throw error;
+  describe('error scenarios', () => {
+    const cases: Array<{
+      name: string;
+      error: unknown;
+      assertions: () => Promise<void>;
+    }> = [
+      {
+        name: 'API field errors on failed login',
+        error: {
+          details: JSON.stringify({
+            errors: { email: 'Bad email', password: 'Bad password' },
+            message: 'Invalid credentials',
+          }),
+        } as ApiError,
+        assertions: async () => {
+          expect(await screen.findByText('Bad email')).toBeInTheDocument();
+          expect(await screen.findByText('Bad password')).toBeInTheDocument();
+          expect(
+            await screen.findByText('Invalid credentials'),
+          ).toBeInTheDocument();
+        },
+      },
+      {
+        name: 'unexpected failures',
+        error: new Error('Network error'),
+        assertions: async () => {
+          expect(await screen.findByText('Network error')).toBeInTheDocument();
+        },
+      },
+    ];
+
+    it.each(cases)('$name', async ({ error, assertions }) => {
+      mockLogin.mockImplementationOnce(async () => {
+        throw error;
+      });
+
+      const user = userEvent.setup();
+      renderWithClient(<LoginForm />);
+
+      await fillCredentials(user);
+      await submitLogin(user);
+
+      await waitFor(() => expect(mockLogin).toHaveBeenCalled());
+      await assertions();
     });
-
-    const user = userEvent.setup();
-    renderWithClient(<LoginForm />);
-
-    await act(async () => {
-      await user.type(
-        screen.getByLabelText('Email Address'),
-        'test@example.com',
-      );
-      await user.type(screen.getByLabelText('Password'), 'password');
-      await user.click(screen.getByRole('button', { name: /login/i }));
-    });
-
-    await waitFor(() => expect(mockLogin).toHaveBeenCalled());
-    expect(await screen.findByText('Bad email')).toBeInTheDocument();
-    expect(await screen.findByText('Bad password')).toBeInTheDocument();
-    expect(await screen.findByText('Invalid credentials')).toBeInTheDocument();
-  });
-
-  it('displays error message for unexpected failures', async () => {
-    mockLogin.mockImplementationOnce(async () => {
-      throw new Error('Network error');
-    });
-
-    const user = userEvent.setup();
-    renderWithClient(<LoginForm />);
-
-    await user.type(screen.getByLabelText('Email Address'), 'test@example.com');
-    await user.type(screen.getByLabelText('Password'), 'password');
-    await act(async () => {
-      await user.click(screen.getByRole('button', { name: /login/i }));
-    });
-
-    await waitFor(() => expect(mockLogin).toHaveBeenCalled());
   });
 
   it('only re-renders when setToken reference changes', () => {
