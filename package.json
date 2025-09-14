@@ -2,6 +2,9 @@
   "name": "pokerhub",
   "version": "1.0.0",
   "private": true,
+  "bin": {
+    "verify": "bin/verify"
+  },
   "scripts": {
     "build": "tsc -b",
     "prepublishOnly": "npm run build",

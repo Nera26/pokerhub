@@ -40,11 +40,14 @@ test.describe('hand proof fairness', () => {
     await expect(page.getByText('Verification: valid')).toBeVisible();
 
     if (process.env.VERIFY_DECK === 'true') {
-      const cmd = path.resolve(__dirname, '../../bin/verify-proof');
-      const output = execSync(`${cmd} ${handId} --base http://localhost:3000`, {
-        cwd: path.resolve(__dirname, '..', '..'),
-        encoding: 'utf8',
-      });
+      const cmd = path.resolve(__dirname, '../../bin/verify');
+      const output = execSync(
+        `${cmd} proof ${handId} --base http://localhost:3000`,
+        {
+          cwd: path.resolve(__dirname, '..', '..'),
+          encoding: 'utf8',
+        },
+      );
       expect(output).toContain('Proof verified');
     }
 

@@ -48,7 +48,7 @@ afterAll((done) => {
   server.close(done);
 });
 
-describe('verify-proof CLI', () => {
+describe('verify hand proof', () => {
   it('passes on valid hand', async () => {
     await expect(verifyHandProof('good', baseUrl)).resolves.toBeUndefined();
   });

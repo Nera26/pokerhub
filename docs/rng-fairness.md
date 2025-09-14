@@ -86,7 +86,7 @@ npx ts-node shared/verify/index.ts <seed> <nonce> [commitment]
 A convenience script fetches the hand's proof and log to validate the deck order:
 
 ```sh
-bin/verify-hand <handId> [baseUrl]
+bin/verify hand <handId> [--base <url>]
 ```
 
 It verifies the commitment and asserts that the recorded deck matches the
@@ -99,7 +99,7 @@ Proofs can be downloaded directly via the `/hands/{id}/proof` API endpoint.
 You can validate any completed hand directly against the API:
 
 ```sh
-bin/verify-proof <handId> [--base <url>]
+bin/verify proof <handId> [--base <url>]
 ```
 
 The command fetches `/hands/{id}/proof` and the associated hand log, recomputes
@@ -111,7 +111,7 @@ order. It exits with code `1` on failure.
 The proof can also be checked directly from the command line:
 
 ```sh
-npx ts-node bin/verify-proof.ts <seed> <nonce> <commitment>
+npx ts-node shared/verify/index.ts <seed> <nonce> <commitment>
 ```
 
 The script prints `valid` if the commitment matches `sha256(seed || nonce)` and
