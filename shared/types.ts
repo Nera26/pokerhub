@@ -18,15 +18,6 @@ export type ServiceStatusResponse = z.infer<
   typeof ServiceStatusResponseSchema
 >;
 
-// Wallet types are available via @shared/wallet.schema
-
-export {
-  TransactionColumnsResponseSchema,
-} from '../backend/src/schemas/transactions';
-export type {
-  TransactionColumnsResponse,
-} from '../backend/src/schemas/transactions';
-
 // Language selector
 export const LanguageSchema = z.object({
   code: z.string(),
@@ -35,9 +26,6 @@ export const LanguageSchema = z.object({
 export type Language = z.infer<typeof LanguageSchema>;
 export const LanguagesResponseSchema = z.array(LanguageSchema);
 export type LanguagesResponse = z.infer<typeof LanguagesResponseSchema>;
-
-export { TranslationsResponseSchema } from '../backend/src/schemas/translations';
-export type { TranslationsResponse } from '../backend/src/schemas/translations';
 
 // Navigation icons
 export const NavIconSchema = z.object({
