@@ -1,31 +1,13 @@
 import { renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
+import {
+  mockFetchLoading,
+  mockFetchSuccess,
+  mockFetchError,
+} from '../../../../test-utils';
 
-export function mockFetchLoading() {
-  global.fetch = jest.fn(
-    () => new Promise(() => {}),
-  ) as unknown as typeof fetch;
-}
-
-export function mockFetchSuccess(data: any) {
-  global.fetch = jest.fn().mockResolvedValue({
-    ok: true,
-    status: 200,
-    json: async () => data,
-    headers: { get: () => 'application/json' },
-  }) as unknown as typeof fetch;
-}
-
-export function mockFetchError(message = 'fail') {
-  global.fetch = jest.fn().mockResolvedValue({
-    ok: false,
-    status: 500,
-    statusText: 'Server error',
-    json: async () => ({ message }),
-    headers: { get: () => 'application/json' },
-  }) as unknown as typeof fetch;
-}
+export { mockFetchLoading, mockFetchSuccess, mockFetchError };
 
 export function renderHookWithClient<T>(hook: () => T, client?: QueryClient) {
   const queryClient =
