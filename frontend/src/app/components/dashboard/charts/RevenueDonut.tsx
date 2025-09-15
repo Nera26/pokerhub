@@ -20,15 +20,17 @@ export default function RevenueDonut({ streams }: RevenueDonutProps) {
   const { data: palette, isError } = useChartPalette();
 
   const config: ChartConfiguration<'doughnut'> = useMemo(() => {
-    // Fallback to default accent colors when palette fails or is empty
-    const backgroundColor =
-      !isError && palette && palette.length > 0
-        ? palette
-        : [
-            'var(--color-accent-green)',
-            'var(--color-accent-yellow)',
-            'var(--color-accent-blue)',
-          ];
+    const defaultColors = [
+      'var(--color-accent-green)',
+      'var(--color-accent-yellow)',
+      'var(--color-accent-blue)',
+    ];
+
+    // Choose palette if available; otherwise use defaults. Always cycle to match stream count.
+    const colorSource =
+      !isError && palette && palette.length > 0 ? palette : defaultColors;
+
+    const backgroundColor = streams.map((_, i) => colorSource[i % colorSource.length]);
 
     return {
       type: 'doughnut',
@@ -59,8 +61,10 @@ export default function RevenueDonut({ streams }: RevenueDonutProps) {
               label: (ctx: TooltipItem<'doughnut'>) => {
                 const stream = streams[ctx.dataIndex];
                 const pct = stream?.pct ?? 0;
-                const val = stream?.value ?? 0;
-                return `${stream?.label ?? ctx.label}: ${pct}% ($${val.toLocaleString()})`;
+                const val = stream?.value;
+                const valueText =
+                  typeof val === 'number' ? ` ($${val.toLocaleString()})` : '';
+                return `${stream?.label ?? ctx.label}: ${pct}%${valueText}`;
               },
             },
           },
