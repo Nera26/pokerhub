@@ -4,9 +4,12 @@ import {
   BroadcastTypesResponseSchema,
   type BroadcastTypesResponse,
 } from '@shared/types';
-import { createGetHook } from './useApiQuery';
+import { createLookupHook } from './createLookupHook';
 
-export const useBroadcastTypes = createGetHook<BroadcastTypesResponse>(
+const useBroadcastTypes = createLookupHook<BroadcastTypesResponse>(
   '/api/broadcasts/types',
   BroadcastTypesResponseSchema,
 );
+
+export { useBroadcastTypes };
+export default useBroadcastTypes;
