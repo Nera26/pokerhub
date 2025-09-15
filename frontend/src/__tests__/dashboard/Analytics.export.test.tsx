@@ -20,6 +20,11 @@ jest.mock('@/lib/exportCsv', () => ({
   exportCsv: jest.fn(),
 }));
 
+jest.mock(
+  '@/app/components/dashboard/common/SearchInput',
+  () => (props: any) => <input {...props} />,
+);
+
 jest.mock('@/app/components/dashboard/analytics/SearchBar', () => () => (
   <div />
 ));

@@ -2,6 +2,7 @@
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
+import SearchInput from '../common/SearchInput';
 import type { AuditLogType } from '@shared/types';
 import { useAuditLogTypes } from '@/hooks/lookups';
 import CenteredMessage from '@/components/CenteredMessage';
@@ -35,15 +36,14 @@ export default function SearchBar({
       <h3 className="text-lg font-bold mb-4">Search Logs</h3>
       <div className="flex gap-3">
         <div className="flex-1">
-          <input
-            type="text"
-            placeholder="Search by description, user, or event type..."
+          <SearchInput
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by description, user, or event type..."
             onKeyDown={(e) => {
               if (e.key === 'Enter') onSubmit();
             }}
-            className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 text-sm focus:border-accent-yellow focus:outline-none"
+            className="py-3"
           />
         </div>
         <select
