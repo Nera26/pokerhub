@@ -2,6 +2,21 @@ import { http, HttpResponse, delay } from 'msw';
 
 type Options = { status?: number; once?: boolean; statusText?: string };
 
+// In-memory store for profile data used by tests.
+export const profileStore: { profile: unknown } = { profile: undefined };
+
+export function getProfile({
+  status = 200,
+  once = false,
+  statusText,
+}: Options = {}) {
+  return http.get(
+    '/api/user/profile',
+    () => HttpResponse.json(profileStore.profile, { status, statusText }),
+    { once },
+  );
+}
+
 export function mockSuccess(
   data: unknown,
   { status = 200, once = false, statusText }: Options = {},

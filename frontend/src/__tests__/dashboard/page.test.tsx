@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Page from '@/app/dashboard/page';
-import { mockProfile } from '../utils/mockProfile';
+import { server, profileStore, getProfile } from '@/test-utils';
 
 const replace = jest.fn();
 let searchParams = new URLSearchParams('?tab=users');
@@ -72,12 +72,23 @@ jest.mock('@tanstack/react-query', () => ({
     isError: false,
   })),
 }));
-jest.mock('@/lib/api/profile', () => mockProfile());
 
 describe('Dashboard page', () => {
   beforeEach(() => {
     replace.mockClear();
     searchParams = new URLSearchParams('?tab=users');
+    profileStore.profile = {
+      username: 'Admin',
+      email: 'admin@example.com',
+      avatarUrl: '/a.png',
+      bank: '',
+      location: '',
+      joined: '2024-01-01T00:00:00Z',
+      bio: '',
+      experience: 0,
+      balance: 0,
+    };
+    server.use(getProfile());
   });
 
   it('uses ?tab param for initial state', async () => {
