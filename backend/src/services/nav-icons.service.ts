@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { readFile } from 'fs/promises';
+import path from 'path';
 import type { NavIcon } from '@shared/types';
 import { NavIconEntity } from '../database/entities/nav-icon.entity';
 import { SimpleListService } from './simple-list.service';
@@ -31,5 +33,12 @@ export class NavIconsService extends SimpleListService<NavIconEntity> {
 
   async remove(name: string): Promise<void> {
     await this.repo.delete({ name });
+  }
+
+  async seed(file = path.join(__dirname, '../seeds/nav-icons.json')): Promise<NavIcon[]> {
+    const data = await readFile(file, 'utf8');
+    const icons: NavIcon[] = JSON.parse(data);
+    await this.repo.upsert(icons, ['name']);
+    return this.list();
   }
 }

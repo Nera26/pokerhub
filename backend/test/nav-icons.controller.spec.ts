@@ -7,8 +7,11 @@ import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
 import request from 'supertest';
 import { NavIconsController } from '../src/routes/nav-icons.controller';
+import { AdminNavIconsController } from '../src/routes/admin-nav-icons.controller';
 import { NavIconsService } from '../src/services/nav-icons.service';
 import { NavIconEntity } from '../src/database/entities/nav-icon.entity';
+import { AuthGuard } from '../src/auth/auth.guard';
+import { AdminGuard } from '../src/auth/admin.guard';
 import { NavIconSchema, NavIconsResponseSchema, type NavIconsResponse, type NavIcon } from '@shared/types';
 
 describe('NavIconsController', () => {
@@ -43,9 +46,14 @@ describe('NavIconsController', () => {
         }),
         TypeOrmModule.forFeature([NavIconEntity]),
       ],
-      controllers: [NavIconsController],
-      providers: [NavIconsService],
-    }).compile();
+        controllers: [NavIconsController, AdminNavIconsController],
+        providers: [NavIconsService],
+      })
+        .overrideGuard(AuthGuard)
+        .useValue({ canActivate: () => true })
+        .overrideGuard(AdminGuard)
+        .useValue({ canActivate: () => true })
+        .compile();
 
     app = moduleRef.createNestApplication();
     service = moduleRef.get(NavIconsService);
@@ -81,7 +89,7 @@ describe('NavIconsController', () => {
   it('creates a navigation icon', async () => {
     const icon: NavIcon = { name: 'baz', svg: '<svg>baz</svg>' };
     const res = await request(app.getHttpServer())
-      .post('/nav-icons')
+      .post('/admin/nav-icons')
       .send(icon)
       .expect(200);
     expect(NavIconSchema.parse(res.body)).toEqual(icon);
@@ -91,7 +99,7 @@ describe('NavIconsController', () => {
 
   it('updates a navigation icon', async () => {
     const res = await request(app.getHttpServer())
-      .put('/nav-icons/foo')
+      .put('/admin/nav-icons/foo')
       .send({ name: 'foo', svg: '<svg>updated</svg>' })
       .expect(200);
     expect(NavIconSchema.parse(res.body)).toEqual({ name: 'foo', svg: '<svg>updated</svg>' });
@@ -99,7 +107,7 @@ describe('NavIconsController', () => {
 
   it('deletes a navigation icon', async () => {
     await request(app.getHttpServer())
-      .delete('/nav-icons/bar')
+      .delete('/admin/nav-icons/bar')
       .expect(204);
     const repo = dataSource.getRepository(NavIconEntity);
     expect(await repo.findOne({ where: { name: 'bar' } })).toBeNull();

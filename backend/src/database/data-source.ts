@@ -22,6 +22,7 @@ import { BroadcastEntity } from './entities/broadcast.entity';
 import { BroadcastTypeEntity } from './entities/broadcast-type.entity';
 import { BroadcastTemplateEntity } from './entities/broadcast-template.entity';
 import { TranslationEntity } from './entities/translation.entity';
+import { NavIconEntity } from './entities/nav-icon.entity';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -46,8 +47,9 @@ export const AppDataSource = new DataSource({
     Tier,
     BroadcastEntity,
     BroadcastTypeEntity,
-    BroadcastTemplateEntity,
-    TranslationEntity,
-  ],
+      BroadcastTemplateEntity,
+      TranslationEntity,
+      NavIconEntity,
+    ],
   migrations: [path.join(__dirname, 'migrations', '*.{ts,js}')],
 });

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.26.0
+  version: 2.27.0
 paths:
   /status:
     get:
@@ -33,6 +33,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NavIconsResponse'
+  /admin/nav-icons:
+    get:
+      summary: List navigation icon metadata
+      responses:
+        '200':
+          description: Navigation icons
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NavIconsResponse'
     post:
       summary: Create navigation icon
       requestBody:
@@ -48,7 +58,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NavIcon'
-  /nav-icons/{name}:
+  /admin/nav-icons/{name}:
     put:
       summary: Update navigation icon
       parameters:
@@ -81,6 +91,16 @@ paths:
       responses:
         '204':
           description: Deleted
+  /admin/nav-icons/seed:
+    post:
+      summary: Seed navigation icons from defaults
+      responses:
+        '200':
+          description: Seeded navigation icons
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NavIconsResponse'
   /nav-items:
     get:
       summary: List navigation items

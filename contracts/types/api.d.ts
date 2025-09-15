@@ -43,6 +43,19 @@ export interface paths {
         };
       };
     };
+  };
+  "/admin/nav-icons": {
+    /** List navigation icon metadata */
+    get: {
+      responses: {
+        /** @description Navigation icons */
+        200: {
+          content: {
+            "application/json": components["schemas"]["NavIconsResponse"];
+          };
+        };
+      };
+    };
     /** Create navigation icon */
     post: {
       requestBody: {
@@ -60,7 +73,7 @@ export interface paths {
       };
     };
   };
-  "/nav-icons/{name}": {
+  "/admin/nav-icons/{name}": {
     /** Update navigation icon */
     put: {
       parameters: {
@@ -93,6 +106,19 @@ export interface paths {
         /** @description Deleted */
         204: {
           content: never;
+        };
+      };
+    };
+  };
+  "/admin/nav-icons/seed": {
+    /** Seed navigation icons from defaults */
+    post: {
+      responses: {
+        /** @description Seeded navigation icons */
+        200: {
+          content: {
+            "application/json": components["schemas"]["NavIconsResponse"];
+          };
         };
       };
     };
