@@ -2,7 +2,7 @@
 
 import { useTables, useTournaments, useCTAs } from '@/hooks/useLobbyData';
 import { useGameTypes } from '@/hooks/useGameTypes';
-import SkeletonSection from './SkeletonSection';
+import SkeletonSection from '@/app/components/common/SkeletonSection';
 
 export default function HomeLoadingSkeleton() {
   const { data: tables } = useTables();

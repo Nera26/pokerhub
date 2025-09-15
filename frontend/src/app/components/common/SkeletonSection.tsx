@@ -3,6 +3,9 @@ import type { PropsWithChildren } from 'react';
 import SkeletonGrid from '@/app/components/common/SkeletonGrid';
 
 interface SkeletonSectionProps {
+  id?: string;
+  layout?: 'cash' | 'tournament';
+  repeat?: number;
   className?: string;
   wrapperClassName?: string;
   rows?: number;
@@ -15,10 +18,30 @@ export default function SkeletonSection({
   className,
   wrapperClassName = 'animate-pulse space-y-6',
   rows,
+  repeat,
   cardHeight,
   fullPage = true,
+  id,
+  layout,
 }: PropsWithChildren<SkeletonSectionProps>) {
-  const grid = <SkeletonGrid rows={rows} cardHeight={cardHeight} />;
+  const gridRows = repeat ?? rows;
+  const grid = <SkeletonGrid rows={gridRows} cardHeight={cardHeight} />;
+
+  if (id && layout) {
+    const titleWidths = {
+      cash: 'w-40 sm:w-48',
+      tournament: 'w-44 sm:w-56',
+    } as const;
+
+    return (
+      <section id={id} aria-busy="true" className="mb-6 md:mb-8">
+        <div
+          className={`h-8 ${titleWidths[layout]} mb-4 sm:mb-6 rounded bg-card-bg animate-pulse`}
+        />
+        {grid}
+      </section>
+    );
+  }
 
   if (!fullPage) {
     return (
