@@ -6,22 +6,32 @@ jest.mock('@tanstack/react-query', () => ({ useQuery: jest.fn() }));
 
 const register = jest.fn(() => ({}));
 
+const mockOptions = {
+  types: [{ value: 'deposit', label: 'Deposit Match' }],
+  eligibilities: [{ value: 'all', label: 'All Players' }],
+  statuses: [{ value: 'active', label: 'Active' }],
+};
+
+function renderBonusForm(
+  queryOverrides: Partial<{ data: unknown; error: unknown }> = {},
+  props: Record<string, unknown> = {},
+) {
+  (useQuery as jest.Mock).mockReturnValue({
+    data: mockOptions,
+    error: null,
+    ...queryOverrides,
+  });
+
+  return render(<BonusForm register={register} errors={{}} {...props} />);
+}
+
 describe('BonusForm', () => {
   beforeEach(() => {
     (useQuery as jest.Mock).mockReset();
   });
 
   it('renders labels from API options', () => {
-    (useQuery as jest.Mock).mockReturnValue({
-      data: {
-        types: [{ value: 'deposit', label: 'Deposit Match' }],
-        eligibilities: [{ value: 'all', label: 'All Players' }],
-        statuses: [{ value: 'active', label: 'Active' }],
-      },
-      error: null,
-    });
-
-    render(<BonusForm register={register} errors={{}} />);
+    renderBonusForm();
 
     expect(screen.getByText('Deposit Match')).toBeInTheDocument();
     expect(screen.getByText('All Players')).toBeInTheDocument();
@@ -29,12 +39,7 @@ describe('BonusForm', () => {
   });
 
   it('shows error message when API fails', () => {
-    (useQuery as jest.Mock).mockReturnValue({
-      data: undefined,
-      error: { message: 'fail' },
-    });
-
-    render(<BonusForm register={register} errors={{}} />);
+    renderBonusForm({ data: undefined, error: { message: 'fail' } });
 
     expect(
       screen.getByText('Failed to load bonus options'),
@@ -42,29 +47,17 @@ describe('BonusForm', () => {
   });
 
   it('applies defaults and displays field errors', () => {
-    (useQuery as jest.Mock).mockReturnValue({
-      data: {
-        types: [{ value: 'deposit', label: 'Deposit Match' }],
-        eligibilities: [{ value: 'all', label: 'All Players' }],
-        statuses: [{ value: 'active', label: 'Active' }],
+    renderBonusForm({}, {
+      errors: {
+        description: { message: 'Required' } as any,
+        type: { message: 'Type required' } as any,
       },
-      error: null,
+      defaults: {
+        description: 'Default desc',
+        name: 'Promo',
+        type: 'deposit',
+      },
     });
-
-    render(
-      <BonusForm
-        register={register}
-        errors={{
-          description: { message: 'Required' } as any,
-          type: { message: 'Type required' } as any,
-        }}
-        defaults={{
-          description: 'Default desc',
-          name: 'Promo',
-          type: 'deposit',
-        }}
-      />,
-    );
 
     expect(screen.getByDisplayValue('Promo')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Default desc')).toBeInTheDocument();
