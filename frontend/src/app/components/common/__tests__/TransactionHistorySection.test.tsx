@@ -1,8 +1,14 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import TransactionHistorySection from '../TransactionHistorySection';
 import { renderWithClient, mockMetadataFetch } from './helpers';
 
-const columnIndex = { value: 1 };
+type Txn = {
+  amount: number;
+  status: string;
+  date: string;
+  type: string;
+};
 
 const defaultColumns = [
   { id: 'type', label: 'Type' },
@@ -18,30 +24,13 @@ const germanColumns = [
   { id: 'status', label: 'Status' },
 ];
 
-jest.mock('../../dashboard/transactions/TransactionHistory', () => ({
-  __esModule: true,
-  default: ({ columns, data, headerSlot, actions }: any) => (
-    <div>
-      {headerSlot}
-      <span data-testid="header">{columns[columnIndex.value].header}</span>
-      {columns[columnIndex.value].cell(data[0])}
-      {actions?.map((a: any, i: number) => (
-        <button key={i} onClick={() => a.onClick(data[0])}>
-          {a.label}
-        </button>
-      ))}
-    </div>
-  ),
-}));
-
 describe('TransactionHistorySection', () => {
   afterEach(() => {
     jest.resetAllMocks();
   });
 
   it('formats amounts using provided currency', async () => {
-    columnIndex.value = 1;
-    const data = [
+    const data: Txn[] = [
       { amount: 10, status: 'Completed', date: '2024-01-01', type: 'Deposit' },
     ];
 
@@ -58,57 +47,45 @@ describe('TransactionHistorySection', () => {
     expect(await screen.findByText(`+${formatted}`)).toBeInTheDocument();
   });
 
-  it.each([
-    {
-      name: 'maps status codes to labels and styles',
-      column: 3,
-      data: [
-        { amount: 10, status: 'pending', date: '2024-01-01', type: 'Deposit' },
-      ],
-      metadata: {
-        statuses: {
-          pending: {
-            label: 'Pending',
-            style: 'bg-accent-yellow/20 text-accent-yellow',
-          },
+  it('maps status codes to labels and styles', async () => {
+    const data: Txn[] = [
+      { amount: 10, status: 'pending', date: '2024-01-01', type: 'Deposit' },
+    ];
+
+    mockMetadataFetch({
+      columns: defaultColumns,
+      statuses: {
+        pending: {
+          label: 'Pending',
+          style: 'bg-accent-yellow/20 text-accent-yellow',
         },
-        columns: defaultColumns,
       },
-      check: async () => {
-        await waitFor(() => screen.getByText('Pending'));
-        const statusEl = screen.getByText('Pending');
-        expect(statusEl).toHaveClass('bg-accent-yellow/20');
-        expect(statusEl).toHaveClass('text-accent-yellow');
-      },
-    },
-    {
-      name: 'renders labels from transaction metadata',
-      column: 1,
-      data: [
-        { amount: 5, status: 'Completed', date: '2024-01-01', type: 'Deposit' },
-      ],
-      metadata: {
-        columns: germanColumns,
-      },
-      check: async () => {
-        await waitFor(() =>
-          expect(screen.getByTestId('header')).toHaveTextContent('Betrag'),
-        );
-      },
-    },
-  ])('$name', async ({ column, data, metadata, check }) => {
-    columnIndex.value = column;
-    mockMetadataFetch(metadata);
+    });
+
     renderWithClient(<TransactionHistorySection data={data} currency="USD" />);
-    await check();
+
+    const statusEl = await screen.findByText('Pending');
+    expect(statusEl).toHaveClass('bg-accent-yellow/20');
+    expect(statusEl).toHaveClass('text-accent-yellow');
   });
 
-  it('renders title, filters, and actions', async () => {
-    columnIndex.value = 1;
-    const data = [
+  it('renders labels from transaction metadata', async () => {
+    const data: Txn[] = [
+      { amount: 5, status: 'Completed', date: '2024-01-01', type: 'Deposit' },
+    ];
+
+    mockMetadataFetch({ columns: germanColumns });
+    renderWithClient(<TransactionHistorySection data={data} currency="USD" />);
+
+    expect(await screen.findByText('Betrag')).toBeInTheDocument();
+  });
+
+  it('renders title, filters, actions, and export', async () => {
+    const data: Txn[] = [
       { amount: 5, status: 'Completed', date: '2024-01-01', type: 'Bonus' },
     ];
     const onAction = jest.fn();
+    const onExport = jest.fn();
 
     mockMetadataFetch({ columns: defaultColumns });
     renderWithClient(
@@ -117,6 +94,7 @@ describe('TransactionHistorySection', () => {
         currency="USD"
         title="History"
         filters={<div>filters</div>}
+        onExport={onExport}
         actions={[{ label: 'Action', onClick: onAction, className: '' }]}
       />,
     );
@@ -124,8 +102,10 @@ describe('TransactionHistorySection', () => {
     expect(await screen.findByText('History')).toBeInTheDocument();
     expect(await screen.findByText('filters')).toBeInTheDocument();
     const actionBtn = await screen.findByRole('button', { name: 'Action' });
-    expect(actionBtn).toBeInTheDocument();
-    actionBtn.click();
+    await userEvent.click(actionBtn);
     expect(onAction).toHaveBeenCalledWith(data[0]);
+    const exportBtn = await screen.findByRole('button', { name: /export/i });
+    await userEvent.click(exportBtn);
+    expect(onExport).toHaveBeenCalled();
   });
 });

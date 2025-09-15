@@ -23,7 +23,7 @@
       "@contracts/*": ["../contracts/types/*"],
       "@/test-utils/*": ["./test-utils/*"]
     },
-    "types": ["node", "react", "jest", "@testing-library/jest-dom"],
+    "types": ["node", "react", "jest"],
     "typeRoots": ["./node_modules/@types", "../contracts/types"],
     "allowJs": true
   },

@@ -9,6 +9,7 @@ import {
   fetchTransactionTypes,
   fetchAdminPlayers,
 } from '@/lib/api/wallet';
+import { mockMetadataFetch } from '../../../common/__tests__/helpers';
 
 jest.mock('@/lib/api/wallet', () => ({
   fetchTransactionsLog: jest.fn(),
@@ -28,6 +29,14 @@ describe('Dashboard TransactionHistory', () => {
     (fetchTransactionTypes as jest.Mock).mockResolvedValue([]);
     (fetchAdminPlayers as jest.Mock).mockResolvedValue([]);
     server.use(mockSuccess({}));
+    mockMetadataFetch({
+      columns: [
+        { id: 'type', label: 'Type' },
+        { id: 'amount', label: 'Amount' },
+        { id: 'date', label: 'Date' },
+        { id: 'status', label: 'Status' },
+      ],
+    });
   });
 
   afterEach(() => {
@@ -71,5 +80,32 @@ describe('Dashboard TransactionHistory', () => {
         ),
       ).toBe(true),
     );
+  });
+
+  it('requests next page on pagination', async () => {
+    const logData = Array.from({ length: 10 }, (_, i) => ({
+      datetime: `2024-01-0${i + 1}T00:00:00Z`,
+      action: 'Deposit',
+      amount: 10,
+      by: 'Admin',
+      notes: '',
+      status: 'Completed',
+    }));
+    (fetchTransactionsLog as jest.Mock).mockResolvedValue(logData);
+    renderWithClient(<TransactionHistory onExport={() => {}} />);
+    const next = await screen.findByRole('button', { name: 'Next' });
+    await userEvent.click(next);
+    await waitFor(() =>
+      expect((fetchTransactionsLog as jest.Mock).mock.calls[1][0].page).toBe(2),
+    );
+  });
+
+  it('triggers export callback', async () => {
+    (fetchTransactionsLog as jest.Mock).mockResolvedValue([]);
+    const onExport = jest.fn();
+    renderWithClient(<TransactionHistory onExport={onExport} />);
+    const btn = await screen.findByRole('button', { name: /export/i });
+    await userEvent.click(btn);
+    expect(onExport).toHaveBeenCalled();
   });
 });
