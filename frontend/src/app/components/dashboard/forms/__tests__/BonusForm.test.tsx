@@ -40,4 +40,35 @@ describe('BonusForm', () => {
       screen.getByText('Failed to load bonus options'),
     ).toBeInTheDocument();
   });
+
+  it('applies defaults and displays field errors', () => {
+    (useQuery as jest.Mock).mockReturnValue({
+      data: {
+        types: [{ value: 'deposit', label: 'Deposit Match' }],
+        eligibilities: [{ value: 'all', label: 'All Players' }],
+        statuses: [{ value: 'active', label: 'Active' }],
+      },
+      error: null,
+    });
+
+    render(
+      <BonusForm
+        register={register}
+        errors={{
+          description: { message: 'Required' },
+          type: { message: 'Type required' },
+        }}
+        defaults={{
+          description: 'Default desc',
+          name: 'Promo',
+          type: 'deposit',
+        }}
+      />,
+    );
+
+    expect(screen.getByDisplayValue('Promo')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Default desc')).toBeInTheDocument();
+    expect(screen.getByText('Required')).toBeInTheDocument();
+    expect(screen.getByText('Type required')).toBeInTheDocument();
+  });
 });
