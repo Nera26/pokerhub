@@ -3,9 +3,9 @@ import request from 'supertest';
 import {
   bootstrapHandController,
   auth,
-  writeHandLog,
   removeHandLog,
 } from './hand-test-utils';
+import { buildHandLog, post } from './fixtures';
 
 describe('HandController state', () => {
   let app: INestApplication;
@@ -13,31 +13,7 @@ describe('HandController state', () => {
   beforeAll(async () => {
     ({ app } = await bootstrapHandController());
 
-    const pre = {
-      phase: 'BETTING_ROUND',
-      street: 'preflop',
-      pot: 0,
-      sidePots: [] as any[],
-      currentBet: 0,
-      players: [
-        { id: 'u1', stack: 100, folded: false, bet: 0, allIn: false },
-      ],
-      deck: [],
-      communityCards: [],
-    };
-    const post = {
-      phase: 'BETTING_ROUND',
-      street: 'preflop',
-      pot: 10,
-      sidePots: [] as any[],
-      currentBet: 10,
-      players: [
-        { id: 'u1', stack: 90, folded: false, bet: 10, allIn: false },
-      ],
-      deck: [],
-      communityCards: [],
-    };
-    writeHandLog('handS', [0, { type: 'start' }, pre, post]);
+    buildHandLog('handS');
   });
 
   afterAll(async () => {
@@ -48,15 +24,13 @@ describe('HandController state', () => {
   const expected = {
     version: '1',
     tick: 1,
-    phase: 'BETTING_ROUND',
-    street: 'preflop',
-    pot: 10,
-    sidePots: [] as any[],
-    currentBet: 10,
-    players: [
-      { id: 'u1', stack: 90, folded: false, bet: 10, allIn: false },
-    ],
-    communityCards: [],
+    phase: post.phase,
+    street: post.street,
+    pot: post.pot,
+    sidePots: post.sidePots,
+    currentBet: post.currentBet,
+    players: post.players,
+    communityCards: post.communityCards,
   };
 
   it('returns state for participant', () => {
