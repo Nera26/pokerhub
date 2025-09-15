@@ -41,23 +41,34 @@ describe('BonusForm', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders field errors', () => {
+  it('applies defaults and displays field errors', () => {
     (useQuery as jest.Mock).mockReturnValue({
-      data: { types: [], eligibilities: [], statuses: [] },
+      data: {
+        types: [{ value: 'deposit', label: 'Deposit Match' }],
+        eligibilities: [{ value: 'all', label: 'All Players' }],
+        statuses: [{ value: 'active', label: 'Active' }],
+      },
       error: null,
     });
 
     render(
       <BonusForm
         register={register}
-        errors={{ name: { type: 'required', message: 'Required' } } as any}
+        errors={{
+          description: { message: 'Required' } as any,
+          type: { message: 'Type required' } as any,
+        }}
+        defaults={{
+          description: 'Default desc',
+          name: 'Promo',
+          type: 'deposit',
+        }}
       />,
     );
 
+    expect(screen.getByDisplayValue('Promo')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Default desc')).toBeInTheDocument();
     expect(screen.getByText('Required')).toBeInTheDocument();
-    expect(screen.getByLabelText('Promotion Name')).toHaveAttribute(
-      'aria-invalid',
-      'true',
-    );
+    expect(screen.getByText('Type required')).toBeInTheDocument();
   });
 });

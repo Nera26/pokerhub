@@ -71,9 +71,9 @@ export default function BonusForm({
           defaultValue={defaults.description}
           {...register('description')}
         />
-        {errors.description && (
-          <p className="text-xs text-danger-red mt-1">
-            {errors.description.message}
+        {errors.description?.message && (
+          <p className="mt-1 text-xs text-danger-red" role="alert">
+            {String(errors.description.message)}
           </p>
         )}
       </div>

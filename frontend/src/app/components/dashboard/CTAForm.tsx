@@ -84,8 +84,9 @@ export default function CTAForm({ cta, onSuccess }: CTAFormProps) {
         register={register}
         errors={errors}
         options={variants.map((v) => ({ value: v, label: v }))}
-        defaultValue={cta?.variant}
+        defaultValue={cta?.variant ?? 'primary'}
       />
+
       {error && (
         <p role="alert" className="text-danger-red text-sm">
           {error}
