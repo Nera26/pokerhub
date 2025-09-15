@@ -8,8 +8,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { CTASchema, CTAVariantSchema, type CTA } from '@shared/types';
 import { createCTA, updateCTA } from '@/lib/api/lobby';
 import type { ApiError } from '@/lib/api/client';
-import Input from '../ui/Input';
 import Button from '../ui/Button';
+import { TextField, SelectField } from './forms/fields';
 
 const schema = CTASchema;
 export type CTAFormValues = z.infer<typeof schema>;
@@ -55,45 +55,38 @@ export default function CTAForm({ cta, onSuccess }: CTAFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-md">
-      <Input
+      <TextField
         id="cta-id"
         label="ID"
+        name="id"
         disabled={!!cta}
-        error={errors.id?.message}
-        {...register('id')}
+        register={register}
+        errors={errors}
       />
-      <Input
+      <TextField
         id="cta-label"
         label="Label"
-        error={errors.label?.message}
-        {...register('label')}
+        name="label"
+        register={register}
+        errors={errors}
       />
-      <Input
+      <TextField
         id="cta-href"
         label="Href"
-        error={errors.href?.message}
-        {...register('href')}
+        name="href"
+        register={register}
+        errors={errors}
       />
-      <div>
-        <label htmlFor="cta-variant" className="block text-sm font-semibold mb-2">
-          Variant
-        </label>
-        <select
-          id="cta-variant"
-          className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 text-text-primary focus:border-accent-yellow focus:outline-none"
-          defaultValue={cta?.variant}
-          {...register('variant')}
-        >
-          {variants.map((v) => (
-            <option key={v} value={v}>
-              {v}
-            </option>
-          ))}
-        </select>
-        {errors.variant && (
-          <p className="text-xs text-danger-red mt-1">{errors.variant.message}</p>
-        )}
-      </div>
+      <SelectField
+        id="cta-variant"
+        label="Variant"
+        name="variant"
+        register={register}
+        errors={errors}
+        options={variants.map((v) => ({ value: v, label: v }))}
+        defaultValue={cta?.variant ?? 'primary'}
+      />
+
       {error && (
         <p role="alert" className="text-danger-red text-sm">
           {error}
@@ -105,4 +98,3 @@ export default function CTAForm({ cta, onSuccess }: CTAFormProps) {
     </form>
   );
 }
-
