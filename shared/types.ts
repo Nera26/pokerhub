@@ -7,6 +7,7 @@ import {
   TournamentHistoryEntrySchema,
   TransactionEntrySchema,
 } from './schemas/history';
+import { CurrencySchema } from './wallet.schema';
 
 export type { GameAction } from './schemas/game';
 export type { HandLogEntry } from '../backend/src/game/hand-log';
@@ -98,6 +99,27 @@ export type {
   DefaultAvatarResponse,
   PerformanceThresholdsResponse,
 } from '../backend/src/schemas/config';
+
+// Withdrawals
+export const PendingWithdrawalSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  amount: z.number().int(),
+  currency: CurrencySchema,
+  status: z.enum(['pending', 'completed', 'rejected']),
+  createdAt: z.string().datetime(),
+  avatar: z.string(),
+  bank: z.string(),
+  maskedAccount: z.string(),
+  bankInfo: z.string().optional(),
+});
+export type PendingWithdrawal = z.infer<typeof PendingWithdrawalSchema>;
+export const PendingWithdrawalsResponseSchema = z.object({
+  withdrawals: z.array(PendingWithdrawalSchema),
+});
+export type PendingWithdrawalsResponse = z.infer<
+  typeof PendingWithdrawalsResponseSchema
+>;
 
 // Backend re-exports
 export {
