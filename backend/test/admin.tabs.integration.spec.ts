@@ -50,7 +50,22 @@ describe('Admin tabs integration', () => {
       controllers: [AdminController],
       providers: [
         SidebarService,
-        { provide: ConfigService, useValue: { get: () => undefined } },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: (key: string) =>
+              key === 'admin.sidebar'
+                ? [
+                    {
+                      id: 'events',
+                      label: 'Events',
+                      icon: 'faBell',
+                      component: '@/app/components/dashboard/AdminEvents',
+                    },
+                  ]
+                : undefined,
+          },
+        },
         { provide: AnalyticsService, useValue: {} },
         { provide: KycService, useValue: {} },
         { provide: RevenueService, useValue: {} },
@@ -94,6 +109,11 @@ describe('Admin tabs integration', () => {
 
   it('returns pre-seeded tabs', async () => {
     const tabs = [
+      {
+        id: 'events',
+        title: 'Events',
+        component: '@/app/components/dashboard/AdminEvents',
+      },
       {
         id: 'users',
         title: 'Users',
