@@ -22,6 +22,7 @@ import {
   tournamentConfig,
   systemConfig,
   siteConfig,
+  adminConfig,
 } from './config';
 import { validationSchema } from './config/env.validation';
 
@@ -106,6 +107,7 @@ import { NavModule } from './nav/nav.module';
         tournamentConfig,
         systemConfig,
         siteConfig,
+        adminConfig,
       ],
     }),
 

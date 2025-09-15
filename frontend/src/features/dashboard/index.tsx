@@ -22,12 +22,6 @@ import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import DashboardModule from '@/app/components/dashboard/DashboardModule';
 import { getSiteMetadata } from '@/lib/metadata';
 
-const tabComponentMap: Partial<
-  Record<SidebarTab, () => Promise<{ default: ComponentType<object> }>>
-> = {
-  events: () => import('@/app/components/dashboard/AdminEvents'),
-};
-
 function isSidebarTab(v: string | null, tabs: SidebarTab[]): v is SidebarTab {
   return !!v && tabs.includes(v as SidebarTab);
 }
@@ -74,7 +68,6 @@ function DashboardPage() {
     data: tabsData,
     isLoading: tabsLoading,
     isError: tabsError,
-    error: tabsFetchError,
   } = useQuery({
     queryKey: ['admin-tabs'],
     queryFn: ({ signal }) => fetchAdminTabs({ signal }),
@@ -96,9 +89,7 @@ function DashboardPage() {
         tabItems.map((t) => [
           t.id,
           {
-            loader:
-              tabComponentMap[t.id as SidebarTab] ??
-              (() => import(/* @vite-ignore */ t.component)),
+            loader: () => import(/* @vite-ignore */ t.component),
             loading: <div>Loading {t.title.toLowerCase()}...</div>,
             error: <div>Error loading {t.title.toLowerCase()}.</div>,
           },
@@ -167,23 +158,12 @@ function DashboardPage() {
       return () => controller.abort();
     }
   }, [avatarUrl, setAvatarUrl]);
-  if (tabsLoading) {
-    return <div>Loading tabs...</div>;
-  }
-
-  if (!tabsError && tabs.length === 0) {
-    return <div>No tabs available.</div>;
+  if (tabsLoading || tabsError || tabs.length === 0) {
+    return <TabFallback tab={tab} online={metrics?.online} />;
   }
 
   return (
     <div className="min-h-screen bg-primary-bg text-text-primary">
-      {tabsError && (
-        <div role="alert" className="text-red-500 p-4">
-          {tabsFetchError instanceof Error
-            ? tabsFetchError.message
-            : 'Error loading tabs.'}
-        </div>
-      )}
       {/* Header */}
       <header className="bg-card-bg border-b border-dark p-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

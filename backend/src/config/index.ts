@@ -13,3 +13,4 @@ export { default as gameConfig } from './game.config';
 export { default as tournamentConfig } from './tournament.config';
 export { default as systemConfig } from './system.config';
 export { default as siteConfig } from './site.config';
+export { default as adminConfig } from './admin.config';
