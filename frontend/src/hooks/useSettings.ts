@@ -1,14 +1,10 @@
 'use client';
 
 import { createQueryHook } from './createQueryHook';
-import {
-  DefaultAvatarResponseSchema,
-  type DefaultAvatarResponse,
-} from '@shared/types';
+import { fetchDefaultAvatar, type DefaultAvatarResponse } from '@/lib/api';
 
 export const useSettings = createQueryHook<DefaultAvatarResponse>(
   'settings',
-  (client, opts) =>
-    client('/api/config/default-avatar', DefaultAvatarResponseSchema, opts),
+  (_client, opts) => fetchDefaultAvatar(opts),
   'settings',
 );
