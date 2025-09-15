@@ -24,3 +24,7 @@ Simulates tournament structures using a Monte Carlo model.
   "durationVariance": 400
 }
 ```
+
+## Sidebar Configuration
+
+Additional admin sidebar items may be seeded through the `admin.sidebar` configuration key. These entries merge with rows from the `admin_tab` table so that any item defined in both sources appears only once.
