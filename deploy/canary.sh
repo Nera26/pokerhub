@@ -55,7 +55,7 @@ export APP_NAME NAMESPACE STABLE_DEPLOYMENT CANARY_DEPLOYMENT
 
 rollback() {
   echo "Rolling back canary deployment"
-  "$(dirname "$0")/canary-rollback.sh" || true
+  "$(dirname "$0")/rollback.sh" --canary || true
 }
 
 trap rollback ERR
