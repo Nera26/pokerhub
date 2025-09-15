@@ -1,12 +1,14 @@
 import dynamic from 'next/dynamic';
-import LoadingSection from '@/components/LoadingSection';
+import SkeletonSection from '@/app/components/common/SkeletonSection';
 
 interface PageProps {
   params: { id: string };
 }
 
 const TablePageClient = dynamic(() => import('./TablePageClient'), {
-  loading: () => <LoadingSection />,
+  loading: () => (
+    <SkeletonSection rows={2} cardHeight="h-10" fullPage={false} />
+  ),
 });
 
 export default function TablePage({ params }: PageProps) {

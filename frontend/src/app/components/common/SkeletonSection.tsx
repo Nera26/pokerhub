@@ -1,21 +1,34 @@
 import clsx from 'clsx';
-import SkeletonGrid from '@/app/components/common/SkeletonGrid';
 import type { PropsWithChildren } from 'react';
+import SkeletonGrid from '@/app/components/common/SkeletonGrid';
 
-interface RouteSkeletonProps {
+interface SkeletonSectionProps {
   className?: string;
   wrapperClassName?: string;
   rows?: number;
   cardHeight?: string;
+  fullPage?: boolean;
 }
 
-export default function RouteSkeleton({
+export default function SkeletonSection({
   children,
   className,
   wrapperClassName = 'animate-pulse space-y-6',
   rows,
   cardHeight,
-}: PropsWithChildren<RouteSkeletonProps>) {
+  fullPage = true,
+}: PropsWithChildren<SkeletonSectionProps>) {
+  const grid = <SkeletonGrid rows={rows} cardHeight={cardHeight} />;
+
+  if (!fullPage) {
+    return (
+      <>
+        {children}
+        {grid}
+      </>
+    );
+  }
+
   return (
     <>
       <div className="h-20 bg-card-bg animate-pulse" />
@@ -28,7 +41,7 @@ export default function RouteSkeleton({
       >
         <div className={wrapperClassName}>
           {children}
-          <SkeletonGrid rows={rows} cardHeight={cardHeight} />
+          {grid}
         </div>
       </main>
       <div className="h-20 bg-card-bg animate-pulse" />
