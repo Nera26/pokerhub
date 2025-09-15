@@ -81,7 +81,11 @@ jobs:
         version: v3.13.0
 
     - name: Run canary deploy
-      run: bash deploy/canary.sh ${{ github.sha }}
+      run: |
+        bash deploy/canary.sh \
+          --image "$ARTIFACT_REGISTRY/pokerhub:${{ github.sha }}" \
+          --namespace "$K8S_NAMESPACE" \
+          --health-url "$HEALTH_CHECK_URL"
 
   spectator-privacy:
     if: ${{ always() }}

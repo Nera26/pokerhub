@@ -15,9 +15,9 @@ Use this guide to mitigate critical production issues when a rapid rollback or h
 
 1. Commit the fix on a dedicated branch.
 2. Run through the normal CI pipeline – all stages must pass.
-3. Use `scripts/canary-deploy.sh` to ship a guarded canary:
+3. Use `deploy/canary.sh` to ship a guarded canary:
    ```bash
-   DEPLOY_ENV=production scripts/canary-deploy.sh
+   DEPLOY_ENV=production bash deploy/canary.sh --image "$ARTIFACT_REGISTRY/pokerhub:<tag>" --namespace production --health-url "$HEALTH_CHECK_URL"
    ```
 4. Monitor `$HEALTH_CHECK_URL` and Prometheus metrics. The script will auto‑rollback on failures.
 

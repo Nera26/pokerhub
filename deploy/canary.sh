@@ -6,33 +6,75 @@ set -euo pipefail
 # or rely on Workload Identity in CI. Ensure the kube-context is set via:
 #   gcloud container clusters get-credentials CLUSTER_NAME --zone ZONE --project PROJECT_ID
 
-APP_NAME=${APP_NAME:-pokerhub}
-IMAGE_TAG=${1:-latest}
-NAMESPACE=${NAMESPACE:-default}
-ARTIFACT_REGISTRY=${ARTIFACT_REGISTRY:?ARTIFACT_REGISTRY env var must be set}
-CANARY_SUFFIX="-canary"
+usage() {
+  echo "Usage: $0 --image IMAGE [--namespace NAMESPACE] [--health-url URL]" >&2
+  exit 1
+}
+
+IMAGE=""
+NAMESPACE="${NAMESPACE:-default}"
+APP_NAME="${APP_NAME:-pokerhub}"
+CANARY_DEPLOYMENT="${CANARY_DEPLOYMENT:-${APP_NAME}-canary}"
+STABLE_DEPLOYMENT="${STABLE_DEPLOYMENT:-${APP_NAME}}"
+HEALTH_CHECK_URL=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -i|--image)
+      IMAGE="$2"
+      shift 2
+      ;;
+    -n|--namespace)
+      NAMESPACE="$2"
+      shift 2
+      ;;
+    -u|--health-url)
+      HEALTH_CHECK_URL="$2"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      usage
+      ;;
+  esac
+done
+
+if [[ -z "$IMAGE" ]]; then
+  echo "--image is required" >&2
+  usage
+fi
+
+if [[ -z "$HEALTH_CHECK_URL" ]]; then
+  HEALTH_CHECK_URL="http://${CANARY_DEPLOYMENT}:80/health"
+fi
+
+export APP_NAME NAMESPACE STABLE_DEPLOYMENT CANARY_DEPLOYMENT
 
 rollback() {
-  echo "Rolling back $APP_NAME deployment"
-  kubectl rollout undo deployment/$APP_NAME -n "$NAMESPACE" || true
+  echo "Rolling back canary deployment"
+  "$(dirname "$0")/canary-rollback.sh" || true
 }
 
 trap rollback ERR
 
-echo "Deploying canary $APP_NAME$CANARY_SUFFIX with image tag $IMAGE_TAG"
-kubectl set image deployment/${APP_NAME}${CANARY_SUFFIX} ${APP_NAME}=${ARTIFACT_REGISTRY}/${APP_NAME}:${IMAGE_TAG} -n "$NAMESPACE"
-kubectl rollout status deployment/${APP_NAME}${CANARY_SUFFIX} -n "$NAMESPACE" --timeout=60s
+echo "Deploying canary ${CANARY_DEPLOYMENT} with image ${IMAGE}"
+kubectl set image deployment/"${CANARY_DEPLOYMENT}" "${APP_NAME}"="${IMAGE}" -n "$NAMESPACE"
+kubectl rollout status deployment/"${CANARY_DEPLOYMENT}" -n "$NAMESPACE" --timeout=60s
 
 echo "Running database migrations"
-kubectl exec deployment/${APP_NAME}${CANARY_SUFFIX} -n "$NAMESPACE" -- npm run migration:run
+kubectl exec deployment/"${CANARY_DEPLOYMENT}" -n "$NAMESPACE" -- npm run migration:run
 
-# basic health check
-if ! kubectl run ${APP_NAME}-probe --rm -i --restart=Never --image=curlimages/curl:8.6.0 -n "$NAMESPACE" -- \
-  curl -fsS http://${APP_NAME}${CANARY_SUFFIX}:80/health; then
-  echo "Canary health check failed"
-  exit 1
-fi
+echo "Verifying canary health"
+kubectl run "${APP_NAME}"-probe --rm -i --restart=Never --image=curlimages/curl:8.6.0 -n "$NAMESPACE" -- \
+  curl -fsS "$HEALTH_CHECK_URL"
 
-echo "Promoting canary to production"
-kubectl set image deployment/${APP_NAME} ${APP_NAME}=${ARTIFACT_REGISTRY}/${APP_NAME}:${IMAGE_TAG} -n "$NAMESPACE"
-kubectl rollout status deployment/${APP_NAME} -n "$NAMESPACE" --timeout=60s
+echo "Promoting canary to ${STABLE_DEPLOYMENT}"
+kubectl set image deployment/"${STABLE_DEPLOYMENT}" "${APP_NAME}"="${IMAGE}" -n "$NAMESPACE"
+kubectl rollout status deployment/"${STABLE_DEPLOYMENT}" -n "$NAMESPACE" --timeout=60s
+
+trap - ERR
+echo "Canary deployment complete"
+
