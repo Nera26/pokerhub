@@ -12,28 +12,13 @@ import Header from '@/app/components/common/Header';
 import BottomNav from '@/app/components/common/BottomNav';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { TournamentFilter } from '@/app/components/tournaments/TournamentFilters';
-import type { TournamentStatus } from '@/app/components/tournaments/TournamentCard';
 import ErrorBoundary from '@/app/components/ui/ErrorBoundary';
 import TournamentFilters from '@/app/components/tournaments/TournamentFilters';
-import TournamentCard from '@/app/components/tournaments/TournamentCard';
 import TournamentRegisterModalContent from '@/app/components/tournaments/TournamentRegisterModalContent';
 import Modal from '@/app/components/ui/Modal';
 import ToastNotification from '@/app/components/ui/ToastNotification';
-import VirtualizedList from '@/components/VirtualizedList';
-
-interface Tournament {
-  id: string;
-  status: TournamentStatus;
-  name: string;
-  gameType: string;
-  buyin: number;
-  rebuy: string;
-  prizepool: number;
-  players: number;
-  maxPlayers: number;
-  startIn?: string;
-  registered: boolean;
-}
+import TournamentList from '@/components/TournamentList';
+import { mapApiTournament } from '@/lib/tournaments';
 
 function isTournamentFilter(v: string | null): v is TournamentFilter {
   return v === 'active' || v === 'upcoming' || v === 'past';
@@ -64,33 +49,7 @@ export default function Page() {
     queryFn: ({ signal }) => fetchTournaments({ signal }),
   });
 
-  const statusMap: Record<ApiTournament['state'], TournamentStatus> = {
-    REG_OPEN: 'upcoming',
-    RUNNING: 'running',
-    PAUSED: 'running',
-    FINISHED: 'past',
-    CANCELLED: 'past',
-  };
-
-  const tournaments: Tournament[] = useMemo(
-    () =>
-      (data ?? []).map((t) => ({
-        id: t.id,
-        status: statusMap[t.state],
-        name: t.title,
-        gameType: t.gameType,
-        buyin: t.buyIn,
-        rebuy: t.fee ? `${t.fee} fee` : 'None',
-        prizepool:
-          typeof t.prizePool === 'number'
-            ? t.prizePool
-            : Number(t.prizePool) || 0,
-        players: t.players.current,
-        maxPlayers: t.players.max,
-        registered: t.registered,
-      })),
-    [data],
-  );
+  const mapped = useMemo(() => (data ?? []).map(mapApiTournament), [data]);
 
   // 3) modal & toast state
   const [openModalId, setOpenModalId] = useState<string | null>(null);
@@ -107,17 +66,18 @@ export default function Page() {
   // 4) derive filtered list
   const visible = useMemo(
     () =>
-      tournaments.filter((t) => {
+      mapped.filter((t) => {
         if (filter === 'active')
           return t.status === 'running' || t.status === 'upcoming';
         if (filter === 'upcoming') return t.status === 'upcoming';
         return t.status === 'past';
       }),
-    [tournaments, filter],
+    [mapped, filter],
   );
 
   // 5) handlers
   const handleRegisterClick = (id: string) => setOpenModalId(id);
+  const handleViewDetails = (id: string) => setOpenModalId(id);
   const handleModalClose = () => setOpenModalId(null);
 
   const handleConfirm = async (id: string) => {
@@ -193,36 +153,11 @@ export default function Page() {
             </p>
           </div>
         ) : (
-          <VirtualizedList
-            items={visible}
-            className="h-96 overflow-auto"
-            virtualizationThreshold={0}
-            renderItem={(t, style) => (
-              <li key={t.id} style={style} className="mb-6">
-                <ErrorBoundary
-                  fallback={
-                    <div className="h-64 w-full rounded-2xl bg-card-bg flex items-center justify-center">
-                      Error loading tournament.
-                    </div>
-                  }
-                >
-                  <TournamentCard
-                    id={t.id}
-                    status={t.status}
-                    name={t.name}
-                    gameType={t.gameType}
-                    buyin={t.buyin}
-                    rebuy={t.rebuy}
-                    prizepool={t.prizepool}
-                    players={t.players}
-                    maxPlayers={t.maxPlayers}
-                    startIn={t.startIn}
-                    onRegister={handleRegisterClick}
-                    registered={t.registered}
-                  />
-                </ErrorBoundary>
-              </li>
-            )}
+          <TournamentList
+            tournaments={visible}
+            hidden={false}
+            onRegister={handleRegisterClick}
+            onViewDetails={handleViewDetails}
           />
         )}
       </main>
