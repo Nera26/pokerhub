@@ -3,7 +3,7 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import type { AuditLogType } from '@shared/types';
-import useAuditLogTypes from '@/hooks/useAuditLogTypes';
+import { useAuditLogTypes } from '@/hooks/lookups';
 import CenteredMessage from '@/components/CenteredMessage';
 
 interface Props {

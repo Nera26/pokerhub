@@ -1,7 +1,7 @@
 import { waitFor } from '@testing-library/react';
 import { server } from '@/test-utils/server';
 import { mockLoading, mockSuccess, mockError } from '@/test-utils/handlers';
-import useAuditLogTypes from '../useAuditLogTypes';
+import { useAuditLogTypes } from '../lookups';
 import type { ApiError } from '@/lib/api/client';
 import { renderHookWithClient } from './utils/renderHookWithClient';
 
