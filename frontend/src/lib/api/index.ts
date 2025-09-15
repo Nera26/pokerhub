@@ -8,8 +8,12 @@ import {
 
 export type { DefaultAvatarResponse, PendingWithdrawalsResponse };
 
-export async function fetchDefaultAvatar(): Promise<DefaultAvatarResponse> {
-  return apiClient('/config/default-avatar', DefaultAvatarResponseSchema);
+export async function fetchDefaultAvatar(
+  opts: { signal?: AbortSignal } = {},
+): Promise<DefaultAvatarResponse> {
+  return apiClient('/config/default-avatar', DefaultAvatarResponseSchema, {
+    ...(opts.signal && { signal: opts.signal }),
+  });
 }
 
 export async function fetchPendingWithdrawals(

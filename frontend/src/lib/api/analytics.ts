@@ -1,8 +1,6 @@
 import { safeApiClient } from './utils';
 import { apiClient } from './client';
 import {
-  AdminOverviewResponseSchema,
-  type AdminOverview,
   LogTypeClassesSchema,
   type LogTypeClasses,
   ActivityResponseSchema,
@@ -12,16 +10,6 @@ import {
   ErrorCategoriesResponseSchema,
   type ErrorCategoriesResponse,
 } from '@shared/types';
-
-export async function fetchAdminOverview({
-  signal,
-}: { signal?: AbortSignal } = {}): Promise<AdminOverview[]> {
-  return safeApiClient(
-    '/api/analytics/admin-overview',
-    AdminOverviewResponseSchema,
-    { signal, errorMessage: 'Failed to fetch admin overview' },
-  );
-}
 
 export function fetchLogTypeClasses(): Promise<LogTypeClasses> {
   return safeApiClient('/api/admin/log-types', LogTypeClassesSchema, {
