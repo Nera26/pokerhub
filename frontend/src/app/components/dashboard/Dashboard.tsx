@@ -28,6 +28,7 @@ import FeatureFlagsPanel from './FeatureFlagsPanel';
 import CenteredMessage from '@/components/CenteredMessage';
 import { Card, CardTitle, CardContent } from '@/app/components/ui/Card';
 import Analytics from './analytics/Analytics';
+import { ThemeColor, themeColorMap } from '@/app/components/ui/colors';
 
 const ActivityChart = dynamic(() => import('./charts/ActivityChart'), {
   loading: () => (
@@ -54,19 +55,13 @@ function PillBtn({
   onClick,
 }: {
   children: React.ReactNode;
-  color: 'blue' | 'red' | 'green' | 'yellow';
+  color: ThemeColor;
   onClick?: () => void;
 }) {
-  const map = {
-    blue: 'bg-info hover:brightness-110 text-white',
-    red: 'bg-danger hover:brightness-110 text-white',
-    green: 'bg-success hover:brightness-110 text-white',
-    yellow: 'bg-accent hover:brightness-110 text-black',
-  } as const;
   return (
     <button
       onClick={onClick}
-      className={`${map[color]} px-3 py-1 rounded text-xs font-semibold`}
+      className={`${themeColorMap[color]} px-3 py-1 rounded text-xs font-semibold`}
     >
       {children}
     </button>
@@ -269,8 +264,8 @@ export default function Dashboard() {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <PillBtn color="blue">Edit</PillBtn>
-                        <PillBtn color="red">Ban</PillBtn>
+                        <PillBtn color={ThemeColor.Blue}>Edit</PillBtn>
+                        <PillBtn color={ThemeColor.Red}>Ban</PillBtn>
                       </div>
                     </div>
                   );
@@ -307,8 +302,8 @@ export default function Dashboard() {
                       {`${t.gameType} • $${t.stakes.small}/${t.stakes.big}`}
                     </p>
                     <div className="flex gap-2">
-                      <PillBtn color="blue">Config</PillBtn>
-                      <PillBtn color="red">Close</PillBtn>
+                      <PillBtn color={ThemeColor.Blue}>Config</PillBtn>
+                      <PillBtn color={ThemeColor.Red}>Close</PillBtn>
                     </div>
                   </div>
                 ))}
