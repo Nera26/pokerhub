@@ -96,9 +96,15 @@ describe('CTAForm', () => {
     });
   });
 
-  it('shows validation errors', async () => {
-    renderForm(<CTAForm />);
+  it('shows validation errors and prevents submit when empty', async () => {
+    const onSuccess = jest.fn();
+    renderForm(<CTAForm onSuccess={onSuccess} />);
     await user.click(screen.getByRole('button', { name: /save cta/i }));
-    expect(await screen.findAllByText('Required')).toHaveLength(3);
+
+    const errors = await screen.findAllByText('Required');
+    expect(errors).toHaveLength(3);
+
+    expect(screen.getByLabelText(/id/i)).toHaveAttribute('aria-invalid', 'true');
+    expect(onSuccess).not.toHaveBeenCalled();
   });
 });

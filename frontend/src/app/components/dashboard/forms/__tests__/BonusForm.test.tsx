@@ -55,8 +55,8 @@ describe('BonusForm', () => {
       <BonusForm
         register={register}
         errors={{
-          description: { message: 'Required' },
-          type: { message: 'Type required' },
+          description: { message: 'Required' } as any,
+          type: { message: 'Type required' } as any,
         }}
         defaults={{
           description: 'Default desc',
