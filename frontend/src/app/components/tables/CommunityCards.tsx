@@ -1,9 +1,12 @@
 'use client';
 
 import type { CSSProperties, HTMLAttributes } from 'react';
-import PlayingCard, { type Suit } from './PlayingCard';
+import PlayingCard from './PlayingCard';
+import { suitFromChar, type SuitChar } from '@shared/poker/cards';
 
-const motion = { div: (props: HTMLAttributes<HTMLDivElement>) => <div {...props} /> };
+const motion = {
+  div: (props: HTMLAttributes<HTMLDivElement>) => <div {...props} />,
+};
 
 function CardBack() {
   return (
@@ -36,19 +39,19 @@ export default function CommunityCards({ cards = [] }: CommunityCardsProps) {
       >
         {(cards ?? []).map((card, idx) => {
           const rank = card.slice(0, -1);
-          const suitChar = card.slice(-1);
-          const suitMap: Record<string, Suit> = {
-            '♥': 'hearts',
-            '♦': 'diamonds',
-            '♣': 'clubs',
-            '♠': 'spades',
-          };
+          const suitChar = card.slice(-1) as SuitChar;
+          const suit = suitFromChar(suitChar);
 
           return (
             <motion.div
               key={`cc-${idx}`}
               className="relative will-change-transform"
-              style={{ '--x': `${idx * 6}px`, '--delay': `${idx * 120}ms` } as CSSProperties}
+              style={
+                {
+                  '--x': `${idx * 6}px`,
+                  '--delay': `${idx * 120}ms`,
+                } as CSSProperties
+              }
             >
               <div
                 className="relative w-[64px] h-[92px] md:w-[72px] md:h-[104px]"
@@ -65,11 +68,14 @@ export default function CommunityCards({ cards = [] }: CommunityCardsProps) {
                 </div>
                 <div
                   className="absolute inset-0"
-                  style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                  style={{
+                    backfaceVisibility: 'hidden',
+                    transform: 'rotateY(180deg)',
+                  }}
                 >
                   <PlayingCard
                     rank={rank}
-                    suit={suitMap[suitChar]}
+                    suit={suit}
                     size="md"
                     className="shadow-[0_12px_26px_rgba(0,0,0,0.5)] ring-1 ring-white/20"
                   />
