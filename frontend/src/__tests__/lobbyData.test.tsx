@@ -1,12 +1,10 @@
-import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, renderHook, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HomePageClient } from '@/app/(site)/HomePageClient';
 import type { CashGameListProps } from '@/app/components/home/CashGameList';
 import type { TournamentListProps } from '@/components/TournamentList';
 import { useTables, useTournaments } from '@/hooks/useLobbyData';
-import type { ApiError } from '@/lib/api/client';
 import {
   server,
   getTablesError,
@@ -15,6 +13,7 @@ import {
   getTournamentsSuccess,
 } from '@/test-utils';
 import { runLobbyCacheTest } from './utils/lobbyCacheTest';
+import { runLobbyErrorTest } from './utils/lobbyErrorTest';
 
 jest.mock('@/hooks/useGameTypes', () => ({
   useGameTypes: () => ({
@@ -46,73 +45,39 @@ describe('useTournaments caching', () => {
 });
 
 describe('lobby data error handling', () => {
-  function createWrapper() {
-    const client = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    });
-    const wrapper = ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
-    return { wrapper } as const;
-  }
-
   it('returns a meaningful message when table fetch fails', async () => {
-    server.use(getTablesError({ message: 'Network down' }));
-    const fetchMock = jest.spyOn(global, 'fetch');
-    const { wrapper } = createWrapper();
-    const { result } = renderHook(() => useTables(), { wrapper });
-    await waitFor(() => expect(result.current.error).not.toBeNull());
-    expect((result.current.error as ApiError).message).toBe(
+    await runLobbyErrorTest(
+      useTables,
+      getTablesError({ message: 'Network down' }),
       'Failed to fetch tables: Network down',
     );
-    expect(fetchMock).toHaveBeenCalled();
-    fetchMock.mockRestore();
   });
 
   it('returns a meaningful message when tournament fetch fails', async () => {
-    server.use(getTournamentsError({ message: 'Connection lost' }));
-    const fetchMock = jest.spyOn(global, 'fetch');
-    const { wrapper } = createWrapper();
-    const { result } = renderHook(() => useTournaments(), { wrapper });
-    await waitFor(() => expect(result.current.error).not.toBeNull());
-    expect((result.current.error as ApiError).message).toBe(
+    await runLobbyErrorTest(
+      useTournaments,
+      getTournamentsError({ message: 'Connection lost' }),
       'Failed to fetch tournaments: Connection lost',
     );
-    expect(fetchMock).toHaveBeenCalled();
-    fetchMock.mockRestore();
   });
 
   it('includes status and details when table fetch returns HTTP error', async () => {
-    server.use(
+    await runLobbyErrorTest(
+      useTables,
       getTablesError('boom', { status: 500, statusText: 'Server Error' }),
-    );
-    const fetchMock = jest.spyOn(global, 'fetch');
-    const { wrapper } = createWrapper();
-    const { result } = renderHook(() => useTables(), { wrapper });
-    await waitFor(() => expect(result.current.error).not.toBeNull());
-    expect((result.current.error as ApiError).message).toBe(
       'Failed to fetch tables: Server Error',
     );
-    expect(fetchMock).toHaveBeenCalled();
-    fetchMock.mockRestore();
   });
 
   it('includes status and details when tournament fetch returns HTTP error', async () => {
-    server.use(
+    await runLobbyErrorTest(
+      useTournaments,
       getTournamentsError('missing', {
         status: 404,
         statusText: 'Not Found',
       }),
-    );
-    const fetchMock = jest.spyOn(global, 'fetch');
-    const { wrapper } = createWrapper();
-    const { result } = renderHook(() => useTournaments(), { wrapper });
-    await waitFor(() => expect(result.current.error).not.toBeNull());
-    expect((result.current.error as ApiError).message).toBe(
       'Failed to fetch tournaments: Not Found',
     );
-    expect(fetchMock).toHaveBeenCalled();
-    fetchMock.mockRestore();
   });
 });
 
