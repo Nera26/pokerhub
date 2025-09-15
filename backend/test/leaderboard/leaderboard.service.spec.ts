@@ -6,6 +6,27 @@ import { join } from 'path';
 import { ConfigService } from '@nestjs/config';
 import { writeSyntheticEvents } from './synthetic-events';
 import { LeaderboardResponseSchema } from '@shared/types';
+import { LeaderboardConfigService } from '../../src/leaderboard/leaderboard-config.service';
+
+class MockConfigRepo {
+  rows: any[] = [];
+  async find(): Promise<any[]> {
+    return this.rows;
+  }
+  async insert(entry: any): Promise<void> {
+    this.rows.push(entry);
+  }
+  async update(criteria: any, entry: any): Promise<void> {
+    this.rows = this.rows.map((r) =>
+      r.range === criteria.range && r.mode === criteria.mode ? entry : r,
+    );
+  }
+  async delete(criteria: any): Promise<void> {
+    this.rows = this.rows.filter(
+      (r) => !(r.range === criteria.range && r.mode === criteria.mode),
+    );
+  }
+}
 
 class MockCache {
   store = new Map<string, any>();
@@ -71,6 +92,8 @@ describe('LeaderboardService', () => {
   let cache: MockCache;
   let analytics: MockAnalytics;
   let leaderboardRepo: MockLeaderboardRepo;
+  let configRepo: MockConfigRepo;
+  let configService: LeaderboardConfigService;
   let service: LeaderboardService;
 
   beforeEach(() => {
@@ -78,11 +101,21 @@ describe('LeaderboardService', () => {
     cache = new MockCache();
     analytics = new MockAnalytics();
     leaderboardRepo = new MockLeaderboardRepo();
+    configRepo = new MockConfigRepo();
+    configRepo.rows = [
+      { range: 'daily', mode: 'cash' },
+      { range: 'weekly', mode: 'tournament' },
+    ];
+    configService = new LeaderboardConfigService(
+      configRepo as any,
+    );
+    await configService.onModuleInit();
     service = new LeaderboardService(
       cache as unknown as Cache,
       {} as any,
       leaderboardRepo as any,
       analytics as unknown as any,
+      configService,
       new ConfigService(),
     );
   });
@@ -91,10 +124,16 @@ describe('LeaderboardService', () => {
     jest.useRealTimers();
   });
 
-  it('returns time ranges', () => {
-    expect(service.getRanges()).toEqual({
-      ranges: ['daily', 'weekly', 'monthly'],
-    });
+  it('loads ranges and modes from config service', () => {
+    expect(service.getRanges()).toEqual({ ranges: ['daily', 'weekly'] });
+    expect(service.getModes()).toEqual({ modes: ['cash', 'tournament'] });
+  });
+
+  it('updates ranges when config changes', async () => {
+    await configService.create({ range: 'monthly', mode: 'cash' });
+    expect(service.getRanges()).toEqual({ ranges: ['daily', 'weekly', 'monthly'] });
+    await configService.remove({ range: 'daily', mode: 'cash' });
+    expect(service.getRanges()).toEqual({ ranges: ['weekly', 'monthly'] });
   });
 
   it('returns leaderboard with points, ROI and finish counts', async () => {

@@ -6,6 +6,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { metrics } from '@opentelemetry/api';
 import { ConfigService } from '@nestjs/config';
+import { LeaderboardConfigService } from './leaderboard-config.service';
 import { User } from '../database/entities/user.entity';
 import { Leaderboard } from '../database/entities/leaderboard.entity';
 import { AnalyticsService } from '../analytics/analytics.service';
@@ -20,8 +21,6 @@ import type {
   LeaderboardEntry,
   LeaderboardRangesResponse,
   LeaderboardModesResponse,
-  TimeFilter,
-  ModeFilter,
 } from '@shared/types';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -31,8 +30,6 @@ export class LeaderboardService implements OnModuleInit {
   private readonly cacheKey = 'leaderboard:hot';
   private readonly dataKey = 'leaderboard:data';
   private readonly ttl = 30; // seconds
-  private readonly ranges: TimeFilter[] = ['daily', 'weekly', 'monthly'];
-  private readonly modes: ModeFilter[] = ['cash', 'tournament'];
   private scores = new Map<string, ScoreEntry>();
   private static readonly meter = metrics.getMeter('leaderboard');
   private static readonly rebuildEventsDuration =
@@ -68,6 +65,7 @@ export class LeaderboardService implements OnModuleInit {
     @InjectRepository(Leaderboard)
     private readonly _leaderboardRepo: Repository<Leaderboard>,
     private readonly analytics: AnalyticsService,
+    private readonly configService: LeaderboardConfigService,
     config: ConfigService,
   ) {
     this.rebuildMaxMs = config.get<number>('LEADERBOARD_REBUILD_MAX_MS', 30 * 60 * 1000);
@@ -80,11 +78,11 @@ export class LeaderboardService implements OnModuleInit {
   }
 
   getRanges(): LeaderboardRangesResponse {
-    return { ranges: this.ranges };
+    return { ranges: this.configService.getRanges() };
   }
 
   getModes(): LeaderboardModesResponse {
-    return { modes: this.modes };
+    return { modes: this.configService.getModes() };
   }
 
   async onModuleInit(): Promise<void> {
