@@ -5,16 +5,28 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import Analytics from '../Analytics';
 import { rebuildLeaderboard } from '@/lib/api/leaderboard';
-import {
-  fetchLogTypeClasses,
-  fetchErrorCategories,
-  fetchAdminOverview,
-} from '@/lib/api/analytics';
+import { fetchLogTypeClasses, fetchErrorCategories } from '@/lib/api/analytics';
 
 const useActivity = mockUseActivity();
+const useAuditSummaryMock = jest.fn();
+
+jest.mock('@/hooks/useAuditSummary', () => ({
+  useAuditSummary: (...args: any[]) => useAuditSummaryMock(...args),
+}));
 
 jest.mock('../SearchBar', () => () => <div>SearchBar</div>);
-jest.mock('../QuickStats', () => () => <div>QuickStats</div>);
+jest.mock('../QuickStats', () => ({
+  __esModule: true,
+  default: ({
+    total,
+    errors,
+    logins,
+  }: {
+    total: number;
+    errors: number;
+    logins: number;
+  }) => <div>{`QuickStats ${total} ${errors} ${logins}`}</div>,
+}));
 jest.mock('../SecurityAlerts', () => () => <div>SecurityAlerts</div>);
 jest.mock('../../charts/ActivityChart', () => () => <div>ActivityChart</div>);
 jest.mock('../ErrorChart', () => ({ data }: { data?: number[] }) => (
@@ -39,7 +51,6 @@ jest.mock('@/lib/api/leaderboard', () => ({
 jest.mock('@/lib/api/analytics', () => ({
   fetchLogTypeClasses: jest.fn(),
   fetchErrorCategories: jest.fn(),
-  fetchAdminOverview: jest.fn(),
 }));
 
 describe('Analytics', () => {
@@ -54,32 +65,11 @@ describe('Analytics', () => {
       labels: ['Payment'],
       counts: [1],
     });
-    (fetchAdminOverview as jest.Mock).mockResolvedValue([
-      {
-        name: 'Total',
-        avatar: '',
-        lastAction: '',
-        total24h: 1,
-        login: '',
-        loginTitle: '',
-      },
-      {
-        name: 'Errors',
-        avatar: '',
-        lastAction: '',
-        total24h: 0,
-        login: '',
-        loginTitle: '',
-      },
-      {
-        name: 'Logins',
-        avatar: '',
-        lastAction: '',
-        total24h: 0,
-        login: '',
-        loginTitle: '',
-      },
-    ]);
+    useAuditSummaryMock.mockReturnValue({
+      data: { total: 1, errors: 0, logins: 0 },
+      isLoading: false,
+      isError: false,
+    });
     useAuditLogsMock.mockReturnValue({
       data: { logs: [], total: 0 },
       isLoading: false,
@@ -134,13 +124,17 @@ describe('Analytics', () => {
     expect(await screen.findByText(/no data/i)).toBeInTheDocument();
   });
 
-  it('renders quick stats when overview loads', async () => {
+  it('renders quick stats with summary totals', async () => {
     renderWithClient(<Analytics />);
-    expect(await screen.findByText('QuickStats')).toBeInTheDocument();
+    expect(await screen.findByText(/QuickStats 1 0 0/)).toBeInTheDocument();
   });
 
-  it('shows error when overview fetch fails', async () => {
-    (fetchAdminOverview as jest.Mock).mockRejectedValueOnce(new Error('fail'));
+  it('shows error when summary fetch fails', async () => {
+    useAuditSummaryMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+    });
     renderWithClient(<Analytics />);
     expect(
       await screen.findByText(/failed to load overview/i),
