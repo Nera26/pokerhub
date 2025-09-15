@@ -1,15 +1,10 @@
-import { HistoryTabsResponseSchema, type HistoryTabItem } from '@shared/types';
-import { safeApiClient } from './utils';
+import { HistoryTabItemSchema, type HistoryTabItem } from '@shared/types';
+import { fetchList } from './fetchList';
 
-export async function fetchHistoryTabs({
+export function fetchHistoryTabs({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<HistoryTabItem[]> {
-  const { tabs } = await safeApiClient(
-    '/api/history-tabs',
-    HistoryTabsResponseSchema,
-    { signal, errorMessage: 'Failed to fetch history tabs' },
-  );
-  return tabs;
+  return fetchList('/api/history-tabs', HistoryTabItemSchema, { signal });
 }
 
 export type { ApiError } from './client';

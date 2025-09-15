@@ -1,23 +1,23 @@
 import { fetchHistoryTabs } from '@/lib/api/historyTabs';
-import { safeApiClient } from '@/lib/api/utils';
-import { HistoryTabsResponseSchema } from '@shared/types';
+import { fetchList } from '@/lib/api/fetchList';
+import { HistoryTabItemSchema } from '@shared/types';
 
-jest.mock('@/lib/api/utils', () => ({ safeApiClient: jest.fn() }));
+jest.mock('@/lib/api/fetchList', () => ({ fetchList: jest.fn() }));
 
-const safeApiClientMock = safeApiClient as jest.Mock;
+const fetchListMock = fetchList as jest.Mock;
 
 describe('fetchHistoryTabs', () => {
   afterEach(() => {
-    safeApiClientMock.mockReset();
+    fetchListMock.mockReset();
   });
 
-  it('invokes safeApiClient with correct arguments and returns tabs', async () => {
-    safeApiClientMock.mockResolvedValue({ tabs: [] });
+  it('invokes fetchList with correct arguments and returns tabs', async () => {
+    fetchListMock.mockResolvedValue([]);
     const result = await fetchHistoryTabs();
-    expect(safeApiClientMock).toHaveBeenCalledWith(
+    expect(fetchListMock).toHaveBeenCalledWith(
       '/api/history-tabs',
-      HistoryTabsResponseSchema,
-      { signal: undefined, errorMessage: 'Failed to fetch history tabs' },
+      HistoryTabItemSchema,
+      { signal: undefined },
     );
     expect(result).toEqual([]);
   });
