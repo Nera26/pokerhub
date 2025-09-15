@@ -15,30 +15,22 @@ describe('RevenueDonut', () => {
     { label: 'Rake', pct: 20, value: 2000 },
   ];
 
-  it('renders dynamic labels and default colors when palette is missing', () => {
-    // No palette provided → falls back to default accent colors
-    useChartPaletteMock.mockReturnValue({ data: undefined });
+  it('shows empty state when palette is missing', () => {
+    useChartPaletteMock.mockReturnValue({ data: undefined, isError: false });
 
-    renderChart(<RevenueDonut streams={streams} />);
+    const { container, getByText } = renderChart(
+      <RevenueDonut streams={streams} />,
+    );
 
-    const config = useChartMock.mock.calls[0][0] as {
-      data: {
-        labels: string[];
-        datasets: { data: number[]; backgroundColor: string[] }[];
-      };
-    };
-
-    expect(config.data.labels).toEqual(streams.map((s) => s.label));
-    expect(config.data.datasets[0].data).toEqual(streams.map((s) => s.pct));
-    expect(config.data.datasets[0].backgroundColor).toEqual([
-      'var(--color-accent-green)',
-      'var(--color-accent-yellow)',
-      'var(--color-accent-blue)',
-    ]);
+    expect(getByText(/no data/i)).toBeInTheDocument();
+    expect(container.querySelector('canvas')).not.toBeInTheDocument();
   });
 
   it('uses colors from chart palette', () => {
-    useChartPaletteMock.mockReturnValue({ data: ['#111', '#222', '#333'] });
+    useChartPaletteMock.mockReturnValue({
+      data: ['#111', '#222', '#333'],
+      isError: false,
+    });
 
     renderChart(<RevenueDonut streams={streams} />);
 
