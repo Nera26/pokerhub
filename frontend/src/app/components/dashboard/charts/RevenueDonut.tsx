@@ -26,11 +26,13 @@ export default function RevenueDonut({ streams }: RevenueDonutProps) {
       'var(--color-accent-blue)',
     ];
 
-    // Choose palette if available; otherwise use defaults. Always cycle to match stream count.
+    // Use palette if available; otherwise defaults. Always cycle to match stream count.
     const colorSource =
       !isError && palette && palette.length > 0 ? palette : defaultColors;
 
-    const backgroundColor = streams.map((_, i) => colorSource[i % colorSource.length]);
+    const backgroundColor = streams.map(
+      (_, i) => colorSource[i % colorSource.length],
+    );
 
     return {
       type: 'doughnut',
