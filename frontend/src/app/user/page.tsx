@@ -6,6 +6,7 @@ import ProfileSection from '../components/user/ProfileSection';
 import GameStatistics from '../components/user/GameStatistics';
 import HistoryTabs from '../components/user/HistoryTabs';
 import HistoryList from '../components/user/HistoryList';
+import FilterDropdown from '../components/user/FilterDropdown';
 import EditProfileModal from '../components/user/EditProfileModal';
 import LogoutModal from '../components/user/LogoutModal';
 import ReplayModal from '../components/user/ReplayModal';
@@ -20,6 +21,11 @@ export default function UserPage() {
   const [activeTab, setActiveTab] = useState<
     'game-history' | 'tournament-history' | 'transaction-history'
   >('game-history');
+  const [filters, setFilters] = useState({
+    gameType: 'any',
+    profitLoss: 'any',
+    date: '',
+  });
   const [isEditOpen, setEditOpen] = useState(false);
   const [isLogoutOpen, setLogoutOpen] = useState(false);
 
@@ -58,8 +64,11 @@ export default function UserPage() {
         onChange={(t) => setActiveTab(t as any)}
       />
 
+      <FilterDropdown filters={filters} onChange={setFilters} />
+
       <HistoryList
         type={activeTab}
+        filters={filters}
         onViewBracket={(title) => setBracketTitle(title)}
         onWatchReplay={(id) => setReplayHandId(id)}
       />

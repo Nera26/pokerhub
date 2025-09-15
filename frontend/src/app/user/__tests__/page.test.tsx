@@ -25,6 +25,8 @@ jest.mock('../../components/user/HistoryList', () => (props: any) => (
   </button>
 ));
 
+jest.mock('../../components/user/FilterDropdown', () => () => null);
+
 jest.mock(
   '../../components/user/BracketModal',
   () =>

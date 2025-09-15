@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import FilterDropdown from '../FilterDropdown';
 import { useGameTypes } from '@/hooks/useGameTypes';
 
@@ -12,10 +13,8 @@ const mockUseGameTypes = useGameTypes as jest.MockedFunction<
 
 describe('FilterDropdown', () => {
   const baseProps = {
-    open: true,
     filters: { gameType: 'any', profitLoss: 'any', date: '' },
-    onApply: jest.fn(),
-    onReset: jest.fn(),
+    onChange: jest.fn(),
   };
 
   beforeEach(() => {
@@ -73,5 +72,31 @@ describe('FilterDropdown', () => {
     });
     render(<FilterDropdown {...baseProps} />);
     expect(screen.getByText(/failed to load game types/i)).toBeInTheDocument();
+  });
+
+  it('calls onChange when applying filters', async () => {
+    mockUseGameTypes.mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null,
+    });
+    render(<FilterDropdown {...baseProps} />);
+    await userEvent.click(screen.getByRole('button', { name: /apply/i }));
+    expect(baseProps.onChange).toHaveBeenCalled();
+  });
+
+  it('resets filters on reset click', async () => {
+    mockUseGameTypes.mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null,
+    });
+    render(<FilterDropdown {...baseProps} />);
+    await userEvent.click(screen.getByRole('button', { name: /reset/i }));
+    expect(baseProps.onChange).toHaveBeenCalledWith({
+      gameType: 'any',
+      profitLoss: 'any',
+      date: '',
+    });
   });
 });
