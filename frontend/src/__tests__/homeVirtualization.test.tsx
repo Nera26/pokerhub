@@ -1,12 +1,11 @@
-import { mockHomeDependencies } from './utils/homePageMocks';
+import { setupHomeTests } from './utils/homeTestSetup';
 import { render, screen } from '@testing-library/react';
 import { HomePageClient } from '@/app/(site)/HomePageClient';
 import { useTables, useTournaments, useCTAs } from '@/hooks/useLobbyData';
 import type { CashGameListProps } from '@/app/components/home/CashGameList';
 import type { TournamentListProps } from '@/components/TournamentList';
 
-jest.mock('@/hooks/useLobbyData');
-mockHomeDependencies();
+setupHomeTests();
 
 // Next.js Link mock
 jest.mock('next/link', () => ({
