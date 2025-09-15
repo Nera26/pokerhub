@@ -173,6 +173,7 @@ export {
   RevenueStreamSchema,
   RevenueBreakdownSchema,
   ActivityResponseSchema,
+  ErrorCategoriesResponseSchema,
 } from './schemas/analytics';
 export type {
   AuditLogType,
@@ -188,6 +189,7 @@ export type {
   RevenueStream,
   RevenueBreakdown,
   ActivityResponse,
+  ErrorCategoriesResponse,
 } from './schemas/analytics';
 
 // Analytics log types
@@ -268,6 +270,9 @@ export {
   TournamentFiltersResponseSchema,
   TournamentSimulateRequestSchema,
   TournamentSimulateResponseSchema,
+  TournamentStateSchema,
+  TournamentStatusSchema,
+  TournamentStateMap,
 } from '../backend/src/schemas/tournaments';
 export type {
   Tournament,
@@ -280,6 +285,8 @@ export type {
   TournamentFiltersResponse,
   TournamentSimulateRequest,
   TournamentSimulateResponse,
+  TournamentState,
+  TournamentStatus,
 } from '../backend/src/schemas/tournaments';
 
 export {

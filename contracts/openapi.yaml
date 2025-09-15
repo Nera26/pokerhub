@@ -1338,6 +1338,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ActivityResponse'
+  /analytics/error-categories:
+    get:
+      summary: Get error categories data
+      responses:
+        '200':
+          description: Error categories data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorCategoriesResponse'
   /analytics/collusion/flagged:
     get:
       summary: List collusion flagged sessions
@@ -2731,6 +2741,20 @@ components:
       required:
         - labels
         - data
+    ErrorCategoriesResponse:
+      type: object
+      properties:
+        labels:
+          type: array
+          items:
+            type: string
+        counts:
+          type: array
+          items:
+            type: number
+      required:
+        - labels
+        - counts
     AlertItem:
       type: object
       properties:

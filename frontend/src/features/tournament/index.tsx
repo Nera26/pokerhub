@@ -17,6 +17,7 @@ import TournamentFilters from '@/app/components/tournaments/TournamentFilters';
 import TournamentRegisterModalContent from '@/app/components/tournaments/TournamentRegisterModalContent';
 import Modal from '@/app/components/ui/Modal';
 import ToastNotification from '@/app/components/ui/ToastNotification';
+
 import TournamentList from '@/components/TournamentList';
 import { mapApiTournament } from '@/lib/tournaments';
 
@@ -26,6 +27,7 @@ function isTournamentFilter(v: string | null): v is TournamentFilter {
 
 export default function Page() {
   const queryClient = useQueryClient();
+
   // 1) filter state synced with URL
   const router = useRouter();
   const pathname = usePathname();
@@ -41,6 +43,7 @@ export default function Page() {
       qs.set('filter', filter);
       router.replace(`${pathname}?${qs.toString()}`);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, router, pathname, search]);
 
   // 2) fetch tournaments data
@@ -49,6 +52,7 @@ export default function Page() {
     queryFn: ({ signal }) => fetchTournaments({ signal }),
   });
 
+  // Normalize API → UI model
   const mapped = useMemo(() => (data ?? []).map(mapApiTournament), [data]);
 
   // 3) modal & toast state
@@ -67,8 +71,9 @@ export default function Page() {
   const visible = useMemo(
     () =>
       mapped.filter((t) => {
-        if (filter === 'active')
+        if (filter === 'active') {
           return t.status === 'running' || t.status === 'upcoming';
+        }
         if (filter === 'upcoming') return t.status === 'upcoming';
         return t.status === 'past';
       }),
@@ -101,6 +106,7 @@ export default function Page() {
 
   const closeToast = () => setToast((t) => ({ ...t, isOpen: false }));
 
+  // details for modal
   const {
     data: modalData,
     isLoading: modalLoading,
@@ -112,7 +118,7 @@ export default function Page() {
   });
 
   const modalEmpty =
-    modalData &&
+    !!modalData &&
     modalData.overview.length === 0 &&
     modalData.structure.length === 0 &&
     modalData.prizes.length === 0;

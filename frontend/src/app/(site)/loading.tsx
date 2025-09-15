@@ -1,9 +1,9 @@
-import RouteSkeleton from '@/components/RouteSkeleton';
+import SkeletonSection from '@/app/components/common/SkeletonSection';
 
 export default function Loading() {
   return (
-    <RouteSkeleton>
+    <SkeletonSection>
       <div className="h-8 w-48 bg-card-bg rounded" />
-    </RouteSkeleton>
+    </SkeletonSection>
   );
 }

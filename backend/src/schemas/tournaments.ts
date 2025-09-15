@@ -72,6 +72,29 @@ export type TournamentSimulateResponse = z.infer<
   typeof TournamentSimulateResponseSchema
 >;
 
+export const TournamentStateSchema = z.enum([
+  'REG_OPEN',
+  'RUNNING',
+  'PAUSED',
+  'FINISHED',
+  'CANCELLED',
+]);
+export type TournamentState = z.infer<typeof TournamentStateSchema>;
+
+export const TournamentStatusSchema = z.enum(['upcoming', 'running', 'past']);
+export type TournamentStatus = z.infer<typeof TournamentStatusSchema>;
+
+export const TournamentStateMap: Record<
+  TournamentState,
+  TournamentStatus
+> = {
+  REG_OPEN: 'upcoming',
+  RUNNING: 'running',
+  PAUSED: 'running',
+  FINISHED: 'past',
+  CANCELLED: 'past',
+};
+
 export const TournamentSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -79,7 +102,7 @@ export const TournamentSchema = z.object({
   buyIn: z.number(),
   fee: z.number().optional(),
   prizePool: z.number(),
-  state: z.enum(['REG_OPEN', 'RUNNING', 'PAUSED', 'FINISHED', 'CANCELLED']),
+  state: TournamentStateSchema,
   players: z.object({ current: z.number(), max: z.number() }),
   registered: z.boolean(),
 });

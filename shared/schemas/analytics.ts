@@ -85,3 +85,11 @@ export const ActivityResponseSchema = z.object({
   data: z.array(z.number()),
 });
 export type ActivityResponse = z.infer<typeof ActivityResponseSchema>;
+
+export const ErrorCategoriesResponseSchema = z.object({
+  labels: z.array(z.string()),
+  counts: z.array(z.number()),
+});
+export type ErrorCategoriesResponse = z.infer<
+  typeof ErrorCategoriesResponseSchema
+>;

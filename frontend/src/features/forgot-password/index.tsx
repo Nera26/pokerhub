@@ -1,16 +1,26 @@
 'use client';
 
-import AuthPageLayout from '@/app/components/auth/AuthPageLayout';
+import AuthFormPage from '@/features/auth/AuthFormPage';
 import ForgotPasswordForm from '@/app/components/auth/ForgotPasswordForm';
-import { useRouter } from 'next/navigation';
+import SocialLoginButtons from '@/app/components/auth/SocialLoginButtons';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
 export default function ForgotPasswordPage() {
-  const router = useRouter();
   return (
-    <AuthPageLayout title="Forgot Password">
-      <ForgotPasswordForm onBack={() => router.push('/login')} />
-    </AuthPageLayout>
+    <AuthFormPage
+      title="Forgot Password"
+      footer={
+        <>
+          <SocialLoginButtons />
+          <Link href="/login" className="text-accent-yellow hover:underline">
+            Back to Login
+          </Link>
+        </>
+      }
+    >
+      <ForgotPasswordForm />
+    </AuthFormPage>
   );
 }

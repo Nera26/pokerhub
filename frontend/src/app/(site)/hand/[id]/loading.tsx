@@ -1,7 +1,6 @@
 'use client';
 
-import RouteSkeleton from '@/components/RouteSkeleton';
-import LoadingSection from '@/components/LoadingSection';
+import SkeletonSection from '@/app/components/common/SkeletonSection';
 import { useHandState } from '@/hooks/useHandState';
 import { useParams, useSearchParams } from 'next/navigation';
 
@@ -13,7 +12,7 @@ export default function LoadingHandPage() {
   const { data, error, isLoading } = useHandState(id as string, frame);
 
   return (
-    <RouteSkeleton className="px-4 py-6 text-text-primary" rows={0}>
+    <SkeletonSection className="px-4 py-6 text-text-primary" rows={0}>
       {error && <p className="mb-4 text-error">{(error as Error).message}</p>}
 
       {data && (
@@ -24,7 +23,9 @@ export default function LoadingHandPage() {
         </>
       )}
 
-      {isLoading && <LoadingSection />}
-    </RouteSkeleton>
+      {isLoading && (
+        <SkeletonSection rows={2} cardHeight="h-10" fullPage={false} />
+      )}
+    </SkeletonSection>
   );
 }

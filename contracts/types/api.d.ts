@@ -1423,6 +1423,19 @@ export interface paths {
       };
     };
   };
+  "/analytics/error-categories": {
+    /** Get error categories data */
+    get: {
+      responses: {
+        /** @description Error categories data */
+        200: {
+          content: {
+            "application/json": components["schemas"]["ErrorCategoriesResponse"];
+          };
+        };
+      };
+    };
+  };
   "/analytics/collusion/flagged": {
     /** List collusion flagged sessions */
     get: {
@@ -2597,6 +2610,10 @@ export interface components {
       /** @description labels[i] corresponds to 4-hour increments beginning at midnight */
       labels: string[];
       data: number[];
+    };
+    ErrorCategoriesResponse: {
+      labels: string[];
+      counts: number[];
     };
     AlertItem: {
       id: string;

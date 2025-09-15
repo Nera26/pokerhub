@@ -4,6 +4,7 @@ import { AnalyticsService } from './analytics.service';
 import {
   AuditLogsQuerySchema,
   ActivityResponseSchema,
+  ErrorCategoriesResponseSchema,
 } from '@shared/schemas/analytics';
 import { AdminGuard } from '../auth/admin.guard';
 
@@ -34,5 +35,13 @@ export class AnalyticsController {
   async activity() {
     const data = await this.analytics.getActivity();
     return ActivityResponseSchema.parse(data);
+  }
+
+  @Get('error-categories')
+  @ApiOperation({ summary: 'Get error categories' })
+  @ApiResponse({ status: 200, description: 'Error categories' })
+  async errorCategories() {
+    const data = await this.analytics.getErrorCategories();
+    return ErrorCategoriesResponseSchema.parse(data);
   }
 }
