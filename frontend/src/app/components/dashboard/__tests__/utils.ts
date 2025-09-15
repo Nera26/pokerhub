@@ -3,8 +3,6 @@ import { screen } from '@testing-library/react';
 import Dashboard from '../Dashboard';
 import { renderWithClient } from './renderWithClient';
 
-export const mockMetrics = jest.fn();
-
 export function renderDashboard() {
   return renderWithClient(React.createElement(Dashboard));
 }
