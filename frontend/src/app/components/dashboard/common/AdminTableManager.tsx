@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useLocale } from 'next-intl';
+import { useTranslations } from '@/hooks/useTranslations';
 import Card, { CardContent } from '../../ui/Card';
 import {
   Table as UiTable,
@@ -31,13 +33,20 @@ export default function AdminTableManager<T>({
   header,
   renderRow,
   searchFilter,
-  searchPlaceholder = 'Search...',
+  searchPlaceholder,
   caption,
-  emptyMessage = 'No results found.',
+  emptyMessage,
   pageSize = 5,
 }: AdminTableManagerProps<T>) {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const locale = useLocale();
+  const { data: t } = useTranslations(locale);
+
+  const searchPlaceholderText =
+    searchPlaceholder ?? t?.searchPlaceholder ?? 'Search...';
+  const emptyMessageText =
+    emptyMessage ?? t?.noResultsFound ?? 'No results found.';
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -61,7 +70,7 @@ export default function AdminTableManager<T>({
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder={searchPlaceholder}
+          placeholder={searchPlaceholderText}
           className="bg-card-bg border border-dark rounded-xl pl-10 pr-4 py-2 text-text-primary focus:border-accent-yellow focus:outline-none w-full"
         />
       </div>
@@ -77,7 +86,7 @@ export default function AdminTableManager<T>({
                     colSpan={100}
                     className="py-10 text-center text-text-secondary"
                   >
-                    {emptyMessage}
+                    {emptyMessageText}
                   </TableCell>
                 </TableRow>
               )}

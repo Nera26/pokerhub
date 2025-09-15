@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLocale } from 'next-intl';
+import { useTranslations } from '@/hooks/useTranslations';
 import {
   fetchTables,
   createTable,
@@ -21,6 +23,8 @@ import AdminTableManager from './common/AdminTableManager';
 
 export default function ManageTables() {
   const queryClient = useQueryClient();
+  const locale = useLocale();
+  const { data: t } = useTranslations(locale);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTable, setEditingTable] = useState<Table | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
@@ -119,7 +123,7 @@ export default function ManageTables() {
           </TableRow>
         )}
         searchFilter={(t, q) => t.tableName.toLowerCase().includes(q)}
-        emptyMessage="No tables found"
+        emptyMessage={t?.noTablesFound ?? 'No tables found'}
       />
 
       <TableModal

@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLocale } from 'next-intl';
+import { useTranslations } from '@/hooks/useTranslations';
 import {
   fetchAdminTournaments,
   createAdminTournament,
@@ -32,6 +34,8 @@ type Tournament = AdminTournament;
 
 export default function ManageTournaments() {
   const queryClient = useQueryClient();
+  const locale = useLocale();
+  const { data: t } = useTranslations(locale);
   const {
     data: rows = [],
     isLoading,
@@ -256,8 +260,8 @@ export default function ManageTournaments() {
           t.gameType.toLowerCase().includes(q) ||
           t.format.toLowerCase().includes(q)
         }
-        searchPlaceholder="Search tournaments..."
-        emptyMessage="No tournaments found."
+        searchPlaceholder={t?.searchTournaments ?? 'Search tournaments...'}
+        emptyMessage={t?.noTournamentsFound ?? 'No tournaments found.'}
         caption="Admin view of tournaments"
       />
 
