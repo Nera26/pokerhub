@@ -1,14 +1,17 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { existsSync, unlinkSync, writeFileSync, mkdirSync } from 'fs';
-import { join } from 'path';
-import request from 'supertest';
 import jwt from 'jsonwebtoken';
+import { ConfigService } from '@nestjs/config';
 import { HandController } from '../../src/game/hand.controller';
 import { Hand } from '../../src/database/entities/hand.entity';
 import type { HandProofResponse } from '@shared/types';
-import { ConfigService } from '@nestjs/config';
+import {
+  createHand,
+  cleanupHand,
+  expectProof,
+  expectProofStatus,
+} from './proofTestUtils';
 
 describe('HandController proof', () => {
   let app: INestApplication;
@@ -50,84 +53,46 @@ describe('HandController proof', () => {
       commitment: 'fc',
       deck: [1, 2, 3],
     };
-    const dir = join(__dirname, '../../../storage/hand-logs');
-    mkdirSync(dir, { recursive: true });
-    const file = join(dir, 'hand1.jsonl');
-    const logEntry = [0, { type: 'start' }, { players: [{ id: 'u1' }] }, {}];
-    writeFileSync(file, `${JSON.stringify(logEntry)}\n${JSON.stringify({ proof })}\n`);
-    store.set('hand1', {
-      id: 'hand1',
-      log: `${JSON.stringify(logEntry)}\n`,
-      commitment: 'db',
-      seed: 'dbs',
-      nonce: 'dbn',
-      settled: true,
-    } as unknown as Hand);
+    createHand({
+      handId: 'hand1',
+      playerId: 'u1',
+      logProof: proof,
+      entityProof: { seed: 'dbs', nonce: 'dbn', commitment: 'db' },
+      store,
+    });
 
-    await request(app.getHttpServer())
-      .get('/hands/hand1/proof')
-      .set('Authorization', auth('u1'))
-      .expect(200)
-      .expect(proof);
-
-    if (existsSync(file)) unlinkSync(file);
+    await expectProof(app, 'hand1', auth('u1'), proof);
+    cleanupHand('hand1', store);
   });
 
-  it('falls back to hand entity when log missing', () => {
+  it('falls back to hand entity when log missing', async () => {
     const proof: HandProofResponse = { seed: 's', nonce: 'n', commitment: 'c' };
-    const logEntry = [0, { type: 'start' }, { players: [{ id: 'u1' }] }, {}];
-    store.set('hand2', {
-      id: 'hand2',
-      log: `${JSON.stringify(logEntry)}\n`,
-      commitment: proof.commitment,
-      seed: proof.seed,
-      nonce: proof.nonce,
-      settled: true,
-    } as unknown as Hand);
+    createHand({
+      handId: 'hand2',
+      playerId: 'u1',
+      entityProof: proof,
+      store,
+      writeLog: false,
+    });
 
-    return request(app.getHttpServer())
-      .get('/hands/hand2/proof')
-      .set('Authorization', auth('u1'))
-      .expect(200)
-      .expect(proof);
+    await expectProof(app, 'hand2', auth('u1'), proof);
+    cleanupHand('hand2', store);
   });
 
   it('returns 403 for non-participant', async () => {
     const proof: HandProofResponse = { seed: 's3', nonce: 'n3', commitment: 'c3' };
-    const dir = join(__dirname, '../../../storage/hand-logs');
-    mkdirSync(dir, { recursive: true });
-    const file = join(dir, 'hand3.jsonl');
-    const logEntry = [0, { type: 'start' }, { players: [{ id: 'u1' }] }, {}];
-    writeFileSync(
-      file,
-      `${JSON.stringify(logEntry)}\n${JSON.stringify({ proof })}\n`,
-    );
+    createHand({ handId: 'hand3', playerId: 'u1', logProof: proof, store });
 
-    await request(app.getHttpServer())
-      .get('/hands/hand3/proof')
-      .set('Authorization', auth('u2'))
-      .expect(403);
-
-    if (existsSync(file)) unlinkSync(file);
+    await expectProofStatus(app, 'hand3', auth('u2'), 403);
+    cleanupHand('hand3', store);
   });
 
   it('allows admin to access proof', async () => {
     const proof: HandProofResponse = { seed: 's4', nonce: 'n4', commitment: 'c4' };
-    const dir = join(__dirname, '../../../storage/hand-logs');
-    mkdirSync(dir, { recursive: true });
-    const file = join(dir, 'hand4.jsonl');
-    const logEntry = [0, { type: 'start' }, { players: [{ id: 'u1' }] }, {}];
-    writeFileSync(
-      file,
-      `${JSON.stringify(logEntry)}\n${JSON.stringify({ proof })}\n`,
-    );
+    createHand({ handId: 'hand4', playerId: 'u1', logProof: proof, store });
 
-    await request(app.getHttpServer())
-      .get('/hands/hand4/proof')
-      .set('Authorization', auth('admin', 'admin'))
-      .expect(200)
-      .expect(proof);
-
-    if (existsSync(file)) unlinkSync(file);
+    await expectProof(app, 'hand4', auth('admin', 'admin'), proof);
+    cleanupHand('hand4', store);
   });
 });
+
