@@ -2885,6 +2885,7 @@ export interface components {
       username: string;
       avatarKey?: string;
       balance: number;
+      currency: string;
       banned: boolean;
     };
     /** @enum {string} */

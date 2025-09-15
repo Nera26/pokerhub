@@ -61,6 +61,7 @@ export class AdminUsersController {
         avatarKey: created.avatarKey ?? undefined,
         balance: created.balance,
         banned: created.banned,
+        currency: 'USD',
       });
     } catch (err) {
       if (err instanceof ZodError) {
@@ -83,6 +84,7 @@ export class AdminUsersController {
         avatarKey: u.avatarKey ?? undefined,
         balance: u.balance,
         banned: u.banned,
+        currency: u.currency,
       })),
     );
   }

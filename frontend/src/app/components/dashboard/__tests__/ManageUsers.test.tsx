@@ -47,7 +47,15 @@ function renderWithClient() {
 beforeEach(() => {
   jest.clearAllMocks();
   mockUseDashboardUsers.mockReturnValue({
-    data: [{ id: 'u1', username: 'alice', balance: 100, banned: false }],
+    data: [
+      {
+        id: 'u1',
+        username: 'alice',
+        balance: 100,
+        banned: false,
+        currency: 'USD',
+      },
+    ],
     isLoading: false,
     error: null,
   } as any);
@@ -83,6 +91,19 @@ it('submits positive adjustment', async () => {
 });
 
 it('submits negative adjustment', async () => {
+  mockUseDashboardUsers.mockReturnValue({
+    data: [
+      {
+        id: 'u1',
+        username: 'alice',
+        balance: 100,
+        banned: false,
+        currency: 'EUR',
+      },
+    ],
+    isLoading: false,
+    error: null,
+  } as any);
   renderWithClient();
 
   await waitFor(() => expect(screen.getByText('alice')).toBeInTheDocument());
@@ -104,7 +125,7 @@ it('submits negative adjustment', async () => {
     expect(mockAdjust).toHaveBeenCalledWith('u1', {
       action: 'remove',
       amount: 20,
-      currency: 'USD',
+      currency: 'EUR',
       notes: '',
     }),
   );

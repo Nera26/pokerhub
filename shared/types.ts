@@ -433,6 +433,7 @@ export const DashboardUserSchema = z.object({
   username: z.string(),
   avatarKey: z.string().optional(),
   balance: z.number(),
+  currency: z.string(),
   banned: z.boolean(),
 });
 export const DashboardUserListSchema = z.array(DashboardUserSchema);
