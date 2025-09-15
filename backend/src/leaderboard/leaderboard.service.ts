@@ -12,6 +12,7 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import {
   initScoreEntry,
   toLeaderboardEntry,
+  toLeaderboardRow,
   updateScoreEntry,
   type ScoreEntry,
 } from './score-utils';
@@ -116,19 +117,7 @@ export class LeaderboardService implements OnModuleInit {
         const diff = b[1].rating - a[1].rating;
         return diff !== 0 ? diff : a[0].localeCompare(b[0]);
       })
-      .map(([id, v], idx) => ({
-        playerId: id,
-        rank: idx + 1,
-        rating: v.rating,
-        rd: v.rd,
-        volatility: v.volatility,
-        net: v.net,
-        bb: v.bb,
-        hands: v.hands,
-        duration: v.duration,
-        buyIn: v.buyIn,
-        finishes: v.finishes,
-      }));
+      .map(([id, v], idx) => toLeaderboardRow(id, v, idx + 1));
 
     await this._leaderboardRepo.clear();
     if (rows.length) {

@@ -78,7 +78,7 @@ export function updateScoreEntry(entry: ScoreEntry, delta: ScoreDelta): void {
   }
 }
 
-export function toLeaderboardEntry(row: {
+export interface LeaderboardRow {
   playerId: string;
   rank: number;
   rating: number;
@@ -89,8 +89,30 @@ export function toLeaderboardEntry(row: {
   hands: number;
   duration: number;
   buyIn: number;
-  finishes: Record<number, number> | null | undefined;
-}): LeaderboardEntry {
+  finishes?: Record<number, number> | null;
+}
+
+export function toLeaderboardRow(
+  playerId: string,
+  entry: ScoreEntry,
+  rank: number,
+): LeaderboardRow {
+  return {
+    playerId,
+    rank,
+    rating: entry.rating,
+    rd: entry.rd,
+    volatility: entry.volatility,
+    net: entry.net,
+    bb: entry.bb,
+    hands: entry.hands,
+    duration: entry.duration,
+    buyIn: entry.buyIn,
+    finishes: entry.finishes,
+  };
+}
+
+export function toLeaderboardEntry(row: LeaderboardRow): LeaderboardEntry {
   return {
     playerId: row.playerId,
     rank: row.rank,
