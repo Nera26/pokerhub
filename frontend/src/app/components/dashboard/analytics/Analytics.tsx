@@ -18,7 +18,6 @@ import AuditTable from './AuditTable';
 import AdvancedFilterModal from './AdvancedFilterModal';
 import DetailModal from './DetailModal';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
-import { useAuditSummary } from '@/hooks/useAuditSummary';
 import { useActivity } from '@/hooks/useActivity';
 import SecurityAlerts from './SecurityAlerts';
 import CenteredMessage from '@/components/CenteredMessage';
@@ -33,6 +32,7 @@ import { AuditLogEntrySchema } from '@shared/schemas/analytics';
 import {
   fetchLogTypeClasses,
   fetchErrorCategories,
+  fetchAdminOverview,
   type ErrorCategoriesResponse,
 } from '@/lib/api/analytics';
 import useToasts from '@/hooks/useToasts';
@@ -77,7 +77,14 @@ export default function Analytics() {
   const total = logData?.total ?? 0;
   const pageCount = Math.max(1, Math.ceil(total / resultLimit));
   const start = (page - 1) * resultLimit;
-  const { data: summary } = useAuditSummary();
+  const {
+    data: overview,
+    isLoading: overviewLoading,
+    isError: overviewError,
+  } = useQuery({
+    queryKey: ['admin-overview'],
+    queryFn: fetchAdminOverview,
+  });
   const {
     data: activity,
     isLoading: activityLoading,
@@ -107,9 +114,18 @@ export default function Analytics() {
     return <CenteredMessage>No log types found</CenteredMessage>;
 
   const rows = logs;
-  const statTotal = summary?.total ?? 0;
-  const statErrors = summary?.errors ?? 0;
-  const statLogins = summary?.logins ?? 0;
+  const statTotal =
+    overview?.find(
+      (o) =>
+        o.name.toLowerCase().includes('total') ||
+        o.name.toLowerCase().includes('event'),
+    )?.total24h ?? 0;
+  const statErrors =
+    overview?.find((o) => o.name.toLowerCase().includes('error'))?.total24h ??
+    0;
+  const statLogins =
+    overview?.find((o) => o.name.toLowerCase().includes('login'))?.total24h ??
+    0;
 
   const exportCSV = () => {
     const keys = Object.keys(
@@ -189,7 +205,17 @@ export default function Analytics() {
           }}
           onSubmit={() => setPage(1)}
         />
-        <QuickStats total={statTotal} errors={statErrors} logins={statLogins} />
+        {overviewLoading ? (
+          <CenteredMessage>Loading overview...</CenteredMessage>
+        ) : overviewError ? (
+          <CenteredMessage>Failed to load overview</CenteredMessage>
+        ) : (
+          <QuickStats
+            total={statTotal}
+            errors={statErrors}
+            logins={statLogins}
+          />
+        )}
         <SecurityAlerts />
       </section>
 
