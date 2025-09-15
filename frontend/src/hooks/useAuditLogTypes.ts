@@ -1,19 +1,14 @@
-import { createQueryHook } from './createQueryHook';
-import { apiClient } from '@/lib/api/client';
+'use client';
+
+import { createLookupHook } from './createLookupHook';
 import {
   AuditLogTypesResponseSchema,
   type AuditLogTypesResponse,
 } from '@shared/types';
 
-const fetchAuditLogTypes = (
-  _client: typeof apiClient,
-  opts: { signal?: AbortSignal },
-) => apiClient('/api/admin/audit/log-types', AuditLogTypesResponseSchema, opts);
-
-const useAuditLogTypes = createQueryHook<AuditLogTypesResponse>(
-  'audit-log-types',
-  fetchAuditLogTypes,
-  'audit log types',
+const useAuditLogTypes = createLookupHook<AuditLogTypesResponse>(
+  '/api/admin/audit/log-types',
+  AuditLogTypesResponseSchema,
 );
 
 export default useAuditLogTypes;
