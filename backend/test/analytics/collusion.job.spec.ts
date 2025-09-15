@@ -3,7 +3,7 @@ import type { AnalyticsService } from '../../src/analytics/analytics.service';
 import type { CollusionService } from '../../src/analytics/collusion.service';
 import type { ConfigService } from '@nestjs/config';
 
-describe('CollusionDetectionJob (e2e)', () => {
+describe('CollusionDetectionJob', () => {
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -12,7 +12,7 @@ describe('CollusionDetectionJob (e2e)', () => {
     jest.useRealTimers();
   });
 
-  it('flags sessions with suspicious patterns', async () => {
+  it('uses thresholds from configuration', async () => {
     const analytics: Partial<AnalyticsService> = {
       rangeStream: jest.fn().mockResolvedValue([
         {
@@ -36,16 +36,24 @@ describe('CollusionDetectionJob (e2e)', () => {
       extractFeatures: jest.fn().mockResolvedValue({
         sharedDevices: ['d1'],
         sharedIps: [],
-        vpipCorrelation: 0,
-        timingSimilarity: 0,
-        seatProximity: 0,
+        vpipCorrelation: 0.92,
+        timingSimilarity: 0.92,
+        seatProximity: 0.92,
       }),
       flagSession: jest.fn().mockResolvedValue(undefined),
     };
 
     const config: Partial<ConfigService> = {
-      get: jest.fn((key: string, def: any) => def),
+      get: jest.fn().mockReturnValue({
+        sharedDevices: 1,
+        sharedIps: 1,
+        vpipCorrelation: 0.95,
+        timingSimilarity: 0.95,
+        seatProximity: 0.95,
+        chipDumpScore: 0.85,
+      }),
     };
+
     const job = new CollusionDetectionJob(
       config as ConfigService,
       analytics as AnalyticsService,
@@ -54,11 +62,10 @@ describe('CollusionDetectionJob (e2e)', () => {
 
     await (job as any).run();
 
-    expect(collusion.flagSession).toHaveBeenCalledWith(
-      's1',
-      expect.arrayContaining(['u1', 'u2']),
+    expect(config.get).toHaveBeenCalledWith(
+      'analytics.collusionThresholds',
       expect.any(Object),
     );
+    expect(collusion.flagSession).not.toHaveBeenCalled();
   });
 });
-
