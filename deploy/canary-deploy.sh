@@ -12,7 +12,9 @@ HEALTH_CHECK_URL=${HEALTH_CHECK_URL:-http://${CANARY_DEPLOYMENT}:80/health}
 
 rollback() {
   echo "Rolling back canary deployment"
-  "$(dirname "$0")/canary-rollback.sh" || true
+  HEALTH_CHECK_URL="http://${CANARY_DEPLOYMENT}:80/health" "$(dirname "$0")/rollback.sh" --canary "$APP_NAME" || true
+  echo "Rolling back stable deployment"
+  HEALTH_CHECK_URL="http://${STABLE_DEPLOYMENT}:80/health" "$(dirname "$0")/rollback.sh" "$APP_NAME" || true
 }
 trap rollback ERR
 
