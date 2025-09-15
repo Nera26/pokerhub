@@ -9,7 +9,8 @@ import {
   type ProfileStatsResponse,
 } from '@shared/types';
 import { UserRepository } from './user.repository';
-import { QueryFailedError } from 'typeorm';
+import { QueryFailedError, In } from 'typeorm';
+import { Account } from '../wallet/account.entity';
 import { Leaderboard } from '../database/entities/leaderboard.entity';
 
 @Injectable()
@@ -132,13 +133,18 @@ export class UsersService {
     });
   }
 
-  async list(limit?: number): Promise<User[]> {
+  async list(limit?: number): Promise<(User & { currency: string })[]> {
     return withSpan('users.list', async (span) => {
       const users = await this.users.find({
         order: { joined: 'DESC' },
         take: limit,
       });
-      return users;
+      const accountRepo = this.users.manager.getRepository(Account);
+      const accounts = await accountRepo.findBy({
+        id: In(users.map((u) => u.id)),
+      });
+      const accountMap = new Map(accounts.map((a) => [a.id, a.currency]));
+      return users.map((u) => ({ ...u, currency: accountMap.get(u.id) ?? 'USD' }));
     });
   }
 

@@ -3326,12 +3326,15 @@ components:
           type: string
         balance:
           type: integer
+        currency:
+          type: string
         banned:
           type: boolean
       required:
         - id
         - username
         - balance
+        - currency
         - banned
     UserRole:
       type: string

@@ -41,13 +41,21 @@ describe('AdminUsersController', () => {
 
   it('returns users list with limit', async () => {
     list.mockResolvedValue([
-      { id: '1', username: 'alice', avatarKey: undefined, balance: 0, banned: false },
+      {
+        id: '1',
+        username: 'alice',
+        avatarKey: undefined,
+        balance: 0,
+        banned: false,
+        currency: 'USD',
+      },
     ]);
     const res = await request(app.getHttpServer())
       .get('/admin/users?limit=5')
       .expect(200);
     const parsed = DashboardUserListSchema.parse(res.body);
     expect(parsed[0].username).toBe('alice');
+    expect(parsed[0].currency).toBe('USD');
     expect(list).toHaveBeenCalledWith(5);
   });
 
@@ -74,6 +82,7 @@ describe('AdminUsersController', () => {
       .expect(201);
     const parsed = DashboardUserSchema.parse(res.body);
     expect(parsed.username).toBe('bob');
+    expect(parsed.currency).toBe('USD');
     expect(create).toHaveBeenCalledWith({ username: 'bob' });
   });
 

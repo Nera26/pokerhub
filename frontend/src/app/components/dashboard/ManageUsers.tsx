@@ -37,7 +37,8 @@ export default function ManageUsers() {
 
   // Ban user
   const ban = useMutation({
-    mutationFn: (id: string) => fetch(`/api/users/${id}/ban`, { method: 'POST' }),
+    mutationFn: (id: string) =>
+      fetch(`/api/users/${id}/ban`, { method: 'POST' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard-users'] });
       setIsBanModalOpen(false);
@@ -73,7 +74,7 @@ export default function ManageUsers() {
         // API expects integer cents/smallest unit if that’s your convention,
         // but previous code used integers. Keep parity with your backend:
         amount: Math.round(args.amount),
-        currency: 'USD',
+        currency: adjustTarget?.currency ?? 'USD',
         notes: args.notes,
       }),
     onSuccess: () => {
@@ -154,7 +155,10 @@ export default function ManageUsers() {
                 </TableCell>
                 <TableCell>{u.banned ? 'Banned' : 'Active'}</TableCell>
                 <TableCell className="text-right space-x-2">
-                  <Button variant="secondary" onClick={() => openAdjustModal(u)}>
+                  <Button
+                    variant="secondary"
+                    onClick={() => openAdjustModal(u)}
+                  >
                     Adjust Balance
                   </Button>
                   <Button variant="danger" onClick={() => openBanModal(u)}>
