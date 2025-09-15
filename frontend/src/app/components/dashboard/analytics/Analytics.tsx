@@ -19,6 +19,7 @@ import AdvancedFilterModal from './AdvancedFilterModal';
 import DetailModal from './DetailModal';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { useActivity } from '@/hooks/useActivity';
+import { useAuditSummary } from '@/hooks/useAuditSummary';
 import SecurityAlerts from './SecurityAlerts';
 import CenteredMessage from '@/components/CenteredMessage';
 import ToastNotification from '../../ui/ToastNotification';
@@ -32,7 +33,6 @@ import { AuditLogEntrySchema } from '@shared/schemas/analytics';
 import {
   fetchLogTypeClasses,
   fetchErrorCategories,
-  fetchAdminOverview,
   type ErrorCategoriesResponse,
 } from '@/lib/api/analytics';
 import useToasts from '@/hooks/useToasts';
@@ -78,13 +78,10 @@ export default function Analytics() {
   const pageCount = Math.max(1, Math.ceil(total / resultLimit));
   const start = (page - 1) * resultLimit;
   const {
-    data: overview,
-    isLoading: overviewLoading,
-    isError: overviewError,
-  } = useQuery({
-    queryKey: ['admin-overview'],
-    queryFn: fetchAdminOverview,
-  });
+    data: summary,
+    isLoading: summaryLoading,
+    isError: summaryError,
+  } = useAuditSummary();
   const {
     data: activity,
     isLoading: activityLoading,
@@ -114,18 +111,6 @@ export default function Analytics() {
     return <CenteredMessage>No log types found</CenteredMessage>;
 
   const rows = logs;
-  const statTotal =
-    overview?.find(
-      (o) =>
-        o.name.toLowerCase().includes('total') ||
-        o.name.toLowerCase().includes('event'),
-    )?.total24h ?? 0;
-  const statErrors =
-    overview?.find((o) => o.name.toLowerCase().includes('error'))?.total24h ??
-    0;
-  const statLogins =
-    overview?.find((o) => o.name.toLowerCase().includes('login'))?.total24h ??
-    0;
 
   const exportCSV = () => {
     const keys = Object.keys(
@@ -205,15 +190,15 @@ export default function Analytics() {
           }}
           onSubmit={() => setPage(1)}
         />
-        {overviewLoading ? (
+        {summaryLoading ? (
           <CenteredMessage>Loading overview...</CenteredMessage>
-        ) : overviewError ? (
+        ) : summaryError ? (
           <CenteredMessage>Failed to load overview</CenteredMessage>
         ) : (
           <QuickStats
-            total={statTotal}
-            errors={statErrors}
-            logins={statLogins}
+            total={summary.total}
+            errors={summary.errors}
+            logins={summary.logins}
           />
         )}
         <SecurityAlerts />
