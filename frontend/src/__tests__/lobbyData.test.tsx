@@ -11,7 +11,7 @@ import {
   getTournamentsError,
   getTablesSuccess,
   getTournamentsSuccess,
-} from '@/test-utils';
+} from '@/test-utils/index';
 import { runLobbyCacheTest } from './utils/lobbyCacheTest';
 import { runLobbyErrorTest } from './utils/lobbyErrorTest';
 
@@ -31,6 +31,16 @@ jest.mock('@/app/components/common/chat/ChatWidget', () => ({
   __esModule: true,
   default: () => <div />,
 }));
+
+const tablesErrorHandlers = [
+  getTablesError({ message: 'Network down' }),
+  getTournamentsSuccess([]),
+] as const;
+
+const tournamentsErrorHandlers = [
+  getTablesSuccess([]),
+  getTournamentsError({ message: 'Connection lost' }),
+] as const;
 
 describe('useTables caching', () => {
   it('serves cached data until stale time expires', async () => {
@@ -83,10 +93,7 @@ describe('lobby data error handling', () => {
 
 describe('home page lobby fallback messages', () => {
   it('shows tables error message when table fetch fails', async () => {
-    server.use(
-      getTablesError({ message: 'Network down' }),
-      getTournamentsSuccess([]),
-    );
+    server.use(...tablesErrorHandlers);
     const fetchMock = jest.spyOn(global, 'fetch');
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -112,10 +119,7 @@ describe('home page lobby fallback messages', () => {
   });
 
   it('shows tournaments error message when tournament fetch fails', async () => {
-    server.use(
-      getTablesSuccess([]),
-      getTournamentsError({ message: 'Connection lost' }),
-    );
+    server.use(...tournamentsErrorHandlers);
     const user = userEvent.setup();
     const fetchMock = jest.spyOn(global, 'fetch');
     const client = new QueryClient({
