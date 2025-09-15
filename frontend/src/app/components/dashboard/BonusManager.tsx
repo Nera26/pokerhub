@@ -5,6 +5,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
+import { useLocale } from 'next-intl';
+import { useTranslations } from '@/hooks/useTranslations';
 import {
   fetchBonuses,
   createBonus,
@@ -86,6 +88,8 @@ function isExpired(iso?: string) {
 }
 
 export default function BonusManager() {
+  const locale = useLocale();
+  const { data: t } = useTranslations(locale);
   const {
     data: bonuses = [],
     isLoading,
@@ -418,8 +422,11 @@ export default function BonusManager() {
                 ).toLowerCase();
                 return !q || t.includes(q);
               }}
-              searchPlaceholder="Search promotions..."
-              emptyMessage="No promotions match your filters."
+              searchPlaceholder={t?.searchPromotions ?? 'Search promotions...'}
+              emptyMessage={
+                t?.noPromotionsMatchFilters ??
+                'No promotions match your filters.'
+              }
               caption="Admin view of bonuses"
             />
           )}
