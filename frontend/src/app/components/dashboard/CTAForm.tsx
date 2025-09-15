@@ -10,6 +10,7 @@ import { createCTA, updateCTA } from '@/lib/api/lobby';
 import type { ApiError } from '@/lib/api/client';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
+import useFormField, { FieldError } from './forms/formUtils';
 
 const schema = CTASchema;
 export type CTAFormValues = z.infer<typeof schema>;
@@ -31,6 +32,11 @@ export default function CTAForm({ cta, onSuccess }: CTAFormProps) {
     resolver: zodResolver(schema),
     defaultValues: cta ?? { id: '', label: '', href: '', variant: 'primary' },
   });
+  const field = useFormField(register, errors, cta);
+  const idField = field('id');
+  const labelField = field('label');
+  const hrefField = field('href');
+  const variantField = field('variant');
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,30 +65,36 @@ export default function CTAForm({ cta, onSuccess }: CTAFormProps) {
         id="cta-id"
         label="ID"
         disabled={!!cta}
-        error={errors.id?.message}
-        {...register('id')}
+        error={idField.error}
+        defaultValue={idField.defaultValue}
+        {...idField.register}
       />
       <Input
         id="cta-label"
         label="Label"
-        error={errors.label?.message}
-        {...register('label')}
+        error={labelField.error}
+        defaultValue={labelField.defaultValue}
+        {...labelField.register}
       />
       <Input
         id="cta-href"
         label="Href"
-        error={errors.href?.message}
-        {...register('href')}
+        error={hrefField.error}
+        defaultValue={hrefField.defaultValue}
+        {...hrefField.register}
       />
       <div>
-        <label htmlFor="cta-variant" className="block text-sm font-semibold mb-2">
+        <label
+          htmlFor="cta-variant"
+          className="block text-sm font-semibold mb-2"
+        >
           Variant
         </label>
         <select
           id="cta-variant"
           className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 text-text-primary focus:border-accent-yellow focus:outline-none"
-          defaultValue={cta?.variant}
-          {...register('variant')}
+          defaultValue={variantField.defaultValue}
+          {...variantField.register}
         >
           {variants.map((v) => (
             <option key={v} value={v}>
@@ -90,9 +102,7 @@ export default function CTAForm({ cta, onSuccess }: CTAFormProps) {
             </option>
           ))}
         </select>
-        {errors.variant && (
-          <p className="text-xs text-danger-red mt-1">{errors.variant.message}</p>
-        )}
+        <FieldError message={variantField.error} />
       </div>
       {error && (
         <p role="alert" className="text-danger-red text-sm">
@@ -105,4 +115,3 @@ export default function CTAForm({ cta, onSuccess }: CTAFormProps) {
     </form>
   );
 }
-

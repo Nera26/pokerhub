@@ -7,6 +7,7 @@ import type { BonusFormValues } from '../BonusManager';
 import { fetchBonusOptions } from '@/lib/api/admin';
 import type { ApiError } from '@/lib/api/client';
 import { type BonusOptionsResponse } from '@shared/types';
+import useFormField, { FieldError } from './formUtils';
 
 export interface BonusFormProps {
   register: UseFormRegister<BonusFormValues>;
@@ -34,15 +35,25 @@ export default function BonusForm({
 
   if (!options) return null;
 
+  const field = useFormField(register, errors, defaults);
+  const nameField = field('name');
+  const typeField = field('type');
+  const descriptionField = field('description');
+  const bonusPercentField = field('bonusPercent', { valueAsNumber: true });
+  const maxBonusField = field('maxBonusUsd', { valueAsNumber: true });
+  const expiryField = field('expiryDate');
+  const eligibilityField = field('eligibility');
+  const statusField = field('status');
+
   return (
     <>
       <Input
         id="bonus-name"
         label="Promotion Name"
         placeholder="Enter promotion name..."
-        error={errors.name?.message}
-        defaultValue={defaults.name}
-        {...register('name')}
+        error={nameField.error}
+        defaultValue={nameField.defaultValue}
+        {...nameField.register}
       />
 
       <div>
@@ -55,8 +66,8 @@ export default function BonusForm({
         <select
           id="bonus-type"
           className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 text-text-primary focus:border-accent-yellow focus:outline-none"
-          defaultValue={defaults.type}
-          {...register('type')}
+          defaultValue={typeField.defaultValue}
+          {...typeField.register}
         >
           {options.types.map((t) => (
             <option key={t.value} value={t.value}>
@@ -64,6 +75,7 @@ export default function BonusForm({
             </option>
           ))}
         </select>
+        <FieldError message={typeField.error} />
       </div>
 
       <div>
@@ -78,14 +90,10 @@ export default function BonusForm({
           rows={3}
           placeholder="Enter promotion description..."
           className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 text-text-primary focus:border-accent-yellow focus:outline-none resize-none"
-          defaultValue={defaults.description}
-          {...register('description')}
+          defaultValue={descriptionField.defaultValue}
+          {...descriptionField.register}
         />
-        {errors.description && (
-          <p className="text-xs text-danger-red mt-1">
-            {errors.description.message}
-          </p>
-        )}
+        <FieldError message={descriptionField.error} />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -94,18 +102,18 @@ export default function BonusForm({
           label="Bonus Amount (%)"
           type="number"
           placeholder="0"
-          error={errors.bonusPercent?.message}
-          defaultValue={defaults.bonusPercent}
-          {...register('bonusPercent', { valueAsNumber: true })}
+          error={bonusPercentField.error}
+          defaultValue={bonusPercentField.defaultValue}
+          {...bonusPercentField.register}
         />
         <Input
           id="max-bonus-usd"
           label="Max $"
           type="number"
           placeholder="0"
-          error={errors.maxBonusUsd?.message}
-          defaultValue={defaults.maxBonusUsd}
-          {...register('maxBonusUsd', { valueAsNumber: true })}
+          error={maxBonusField.error}
+          defaultValue={maxBonusField.defaultValue}
+          {...maxBonusField.register}
         />
       </div>
 
@@ -113,9 +121,9 @@ export default function BonusForm({
         id="expiry-date"
         label="Expiry Date"
         type="date"
-        error={errors.expiryDate?.message}
-        defaultValue={defaults.expiryDate}
-        {...register('expiryDate')}
+        error={expiryField.error}
+        defaultValue={expiryField.defaultValue}
+        {...expiryField.register}
       />
 
       <div className="grid grid-cols-2 gap-4">
@@ -129,8 +137,8 @@ export default function BonusForm({
           <select
             id="eligibility"
             className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 text-text-primary focus:border-accent-yellow focus:outline-none"
-            defaultValue={defaults.eligibility}
-            {...register('eligibility')}
+            defaultValue={eligibilityField.defaultValue}
+            {...eligibilityField.register}
           >
             {options.eligibilities.map((e) => (
               <option key={e.value} value={e.value}>
@@ -138,6 +146,7 @@ export default function BonusForm({
               </option>
             ))}
           </select>
+          <FieldError message={eligibilityField.error} />
         </div>
 
         <div>
@@ -147,8 +156,8 @@ export default function BonusForm({
           <select
             id="status"
             className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 text-text-primary focus:border-accent-yellow focus:outline-none"
-            defaultValue={defaults.status}
-            {...register('status')}
+            defaultValue={statusField.defaultValue}
+            {...statusField.register}
           >
             {options.statuses.map((s) => (
               <option key={s.value} value={s.value}>
@@ -156,6 +165,7 @@ export default function BonusForm({
               </option>
             ))}
           </select>
+          <FieldError message={statusField.error} />
         </div>
       </div>
     </>
