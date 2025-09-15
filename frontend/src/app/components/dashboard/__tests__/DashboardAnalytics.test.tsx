@@ -2,8 +2,6 @@ import { setupDashboardMocks } from './dashboardMocks';
 import { renderWithClient } from './renderWithClient';
 import { screen } from '@testing-library/react';
 
-setupDashboardMocks();
-
 jest.mock('../analytics/Analytics', () => () => (
   <div data-testid="analytics" />
 ));
@@ -17,6 +15,7 @@ const adminToken = 'a.eyJyb2xlIjoiYWRtaW4ifQ==.b';
 
 describe('Dashboard analytics', () => {
   beforeEach(() => {
+    setupDashboardMocks();
     authMock.mockReset();
   });
 

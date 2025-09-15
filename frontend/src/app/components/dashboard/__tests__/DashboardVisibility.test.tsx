@@ -2,8 +2,6 @@ import { setupDashboardMocks } from './dashboardMocks';
 import { screen } from '@testing-library/react';
 import { renderWithClient } from './renderWithClient';
 
-setupDashboardMocks();
-
 jest.mock('../AdminEvents', () => () => <div data-testid="admin-events" />);
 jest.mock('../FeatureFlagsPanel', () => () => (
   <div data-testid="feature-flags" />
@@ -26,6 +24,7 @@ const cases = [
 
 describe('Dashboard component visibility', () => {
   beforeEach(() => {
+    setupDashboardMocks();
     authMock.mockReset();
   });
 
