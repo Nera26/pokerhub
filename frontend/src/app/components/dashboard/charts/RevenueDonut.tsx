@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { useChart } from '@/lib/useChart';
+import { useChartPalette } from '@/hooks/useChartPalette';
 import type { ChartConfiguration, TooltipItem } from 'chart.js';
 
 export interface RevenueStream {
@@ -16,19 +17,27 @@ interface RevenueDonutProps {
 }
 
 export default function RevenueDonut({ streams }: RevenueDonutProps) {
-  const config: ChartConfiguration<'doughnut'> = useMemo(
-    () => ({
+  const { data: palette, isError } = useChartPalette();
+
+  const config: ChartConfiguration<'doughnut'> = useMemo(() => {
+    // Fallback to default accent colors when palette fails or is empty
+    const backgroundColor =
+      !isError && palette && palette.length > 0
+        ? palette
+        : [
+            'var(--color-accent-green)',
+            'var(--color-accent-yellow)',
+            'var(--color-accent-blue)',
+          ];
+
+    return {
       type: 'doughnut',
       data: {
         labels: streams.map((s) => s.label),
         datasets: [
           {
             data: streams.map((s) => s.pct),
-            backgroundColor: [
-              'var(--color-accent-green)',
-              'var(--color-accent-yellow)',
-              'var(--color-accent-blue)',
-            ],
+            backgroundColor,
           },
         ],
       },
@@ -57,9 +66,8 @@ export default function RevenueDonut({ streams }: RevenueDonutProps) {
           },
         },
       },
-    }),
-    [streams],
-  );
+    };
+  }, [streams, palette, isError]);
 
   const { ref, ready } = useChart(config, [config]);
 
