@@ -3,13 +3,14 @@ import LoginPage from '@/features/login';
 import ForgotPasswordPage from '@/features/forgot-password';
 
 jest.mock('@/app/components/auth/LoginForm', () => () => <div>Login Form</div>);
-jest.mock('@/app/components/auth/ForgotPasswordForm', () => () => <div>Forgot Password Form</div>);
+jest.mock('@/app/components/auth/ForgotPasswordForm', () => () => (
+  <div>Forgot Password Form</div>
+));
+jest.mock('@/app/components/auth/SocialLoginButtons', () => () => (
+  <div>Social Login Buttons</div>
+));
 
-jest.mock('next/navigation', () => ({
-  useRouter: () => ({ push: jest.fn(), prefetch: jest.fn() }),
-}));
-
-describe('AuthPageLayout', () => {
+describe('AuthFormPage', () => {
   it('renders login page correctly', () => {
     const { container } = render(<LoginPage />);
     expect(container).toMatchSnapshot();
