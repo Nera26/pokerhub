@@ -5,6 +5,7 @@ import TournamentCard, {
   type TournamentStatus,
 } from '@/app/components/tournaments/TournamentCard';
 import VirtualizedList from '@/components/VirtualizedList';
+import { TournamentStateMap } from '@shared/types';
 
 export interface TournamentListProps<T extends Tournament> {
   tournaments: T[];
@@ -19,20 +20,6 @@ export default function TournamentList<T extends Tournament>({
   onRegister,
   onViewDetails,
 }: TournamentListProps<T>) {
-  const mapStatus = (state: T['state']): TournamentStatus => {
-    switch (state) {
-      case 'REG_OPEN':
-        return 'upcoming';
-      case 'RUNNING':
-      case 'PAUSED':
-        return 'running';
-      case 'FINISHED':
-      case 'CANCELLED':
-      default:
-        return 'past';
-    }
-  };
-
   return (
     <VirtualizedList<T>
       id="tournaments-panel"
@@ -46,7 +33,7 @@ export default function TournamentList<T extends Tournament>({
         <li key={t.id} style={style} className="mb-4">
           <TournamentCard
             id={t.id}
-            status={mapStatus(t.state)}
+            status={TournamentStateMap[t.state] as TournamentStatus}
             name={t.title}
             gameType={t.gameType}
             buyin={t.buyIn + (t.fee ?? 0)}

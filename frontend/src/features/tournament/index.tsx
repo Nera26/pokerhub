@@ -20,6 +20,7 @@ import TournamentRegisterModalContent from '@/app/components/tournaments/Tournam
 import Modal from '@/app/components/ui/Modal';
 import ToastNotification from '@/app/components/ui/ToastNotification';
 import VirtualizedList from '@/components/VirtualizedList';
+import { TournamentStateMap } from '@shared/types';
 
 interface Tournament {
   id: string;
@@ -64,19 +65,11 @@ export default function Page() {
     queryFn: ({ signal }) => fetchTournaments({ signal }),
   });
 
-  const statusMap: Record<ApiTournament['state'], TournamentStatus> = {
-    REG_OPEN: 'upcoming',
-    RUNNING: 'running',
-    PAUSED: 'running',
-    FINISHED: 'past',
-    CANCELLED: 'past',
-  };
-
   const tournaments: Tournament[] = useMemo(
     () =>
       (data ?? []).map((t) => ({
         id: t.id,
-        status: statusMap[t.state],
+        status: TournamentStateMap[t.state],
         name: t.title,
         gameType: t.gameType,
         buyin: t.buyIn,
