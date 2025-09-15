@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event';
 import Analytics from '@/app/components/dashboard/analytics/Analytics';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
-import { useAuditSummary } from '@/hooks/useAuditSummary';
 import useToasts from '@/hooks/useToasts';
 import { exportCsv, toCsv } from '@/lib/exportCsv';
 
@@ -14,10 +13,6 @@ jest.mock('@tanstack/react-query');
 jest.mock('@/hooks/useAuditLogs', () => ({
   __esModule: true,
   useAuditLogs: jest.fn(),
-}));
-jest.mock('@/hooks/useAuditSummary', () => ({
-  __esModule: true,
-  useAuditSummary: jest.fn(),
 }));
 jest.mock('@/hooks/useToasts');
 jest.mock('@/lib/exportCsv', () => ({
@@ -53,10 +48,39 @@ jest.mock('@/app/components/ui/ToastNotification', () => () => null);
 describe('Analytics CSV export', () => {
   beforeEach(() => {
     (useMutation as jest.Mock).mockReturnValue({ mutate: jest.fn() });
-    (useQuery as jest.Mock).mockReturnValue({
-      data: { Login: '' },
-      isLoading: false,
-      isError: false,
+    (useQuery as jest.Mock).mockImplementation(({ queryKey }) => {
+      const key = Array.isArray(queryKey) ? queryKey[0] : queryKey;
+      if (key === 'log-type-classes') {
+        return {
+          data: { Login: '' },
+          isLoading: false,
+          isError: false,
+        };
+      }
+      if (key === 'error-categories') {
+        return {
+          data: { labels: [], counts: [] },
+          isLoading: false,
+          isError: false,
+        };
+      }
+      if (key === 'admin-overview') {
+        return {
+          data: [
+            {
+              name: 'Total',
+              avatar: '',
+              lastAction: '',
+              total24h: 1,
+              login: '',
+              loginTitle: '',
+            },
+          ],
+          isLoading: false,
+          isError: false,
+        };
+      }
+      return { data: undefined, isLoading: false, isError: false };
     });
     (useAuditLogs as jest.Mock).mockReturnValue({
       data: {
@@ -71,9 +95,6 @@ describe('Analytics CSV export', () => {
           },
         ],
       },
-    });
-    (useAuditSummary as jest.Mock).mockReturnValue({
-      data: { total: 1, errors: 0, logins: 1 },
     });
     useActivity.mockReturnValue({
       data: { labels: [], data: [] },

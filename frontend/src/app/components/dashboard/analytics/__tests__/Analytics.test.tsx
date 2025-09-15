@@ -5,9 +5,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import Analytics from '../Analytics';
 import { rebuildLeaderboard } from '@/lib/api/leaderboard';
-import { fetchLogTypeClasses, fetchErrorCategories } from '@/lib/api/analytics';
+import {
+  fetchLogTypeClasses,
+  fetchErrorCategories,
+  fetchAdminOverview,
+} from '@/lib/api/analytics';
 
-mockUseActivity();
+const useActivity = mockUseActivity();
 
 jest.mock('../SearchBar', () => () => <div>SearchBar</div>);
 jest.mock('../QuickStats', () => () => <div>QuickStats</div>);
@@ -28,9 +32,6 @@ const useAuditLogsMock = jest.fn(() => ({
 jest.mock('@/hooks/useAuditLogs', () => ({
   useAuditLogs: (...args: any[]) => useAuditLogsMock(...args),
 }));
-jest.mock('@/hooks/useAuditSummary', () => ({
-  useAuditSummary: () => ({ data: {} }),
-}));
 
 jest.mock('@/lib/api/leaderboard', () => ({
   rebuildLeaderboard: jest.fn(),
@@ -38,6 +39,7 @@ jest.mock('@/lib/api/leaderboard', () => ({
 jest.mock('@/lib/api/analytics', () => ({
   fetchLogTypeClasses: jest.fn(),
   fetchErrorCategories: jest.fn(),
+  fetchAdminOverview: jest.fn(),
 }));
 
 describe('Analytics', () => {
@@ -52,10 +54,41 @@ describe('Analytics', () => {
       labels: ['Payment'],
       counts: [1],
     });
+    (fetchAdminOverview as jest.Mock).mockResolvedValue([
+      {
+        name: 'Total',
+        avatar: '',
+        lastAction: '',
+        total24h: 1,
+        login: '',
+        loginTitle: '',
+      },
+      {
+        name: 'Errors',
+        avatar: '',
+        lastAction: '',
+        total24h: 0,
+        login: '',
+        loginTitle: '',
+      },
+      {
+        name: 'Logins',
+        avatar: '',
+        lastAction: '',
+        total24h: 0,
+        login: '',
+        loginTitle: '',
+      },
+    ]);
     useAuditLogsMock.mockReturnValue({
       data: { logs: [], total: 0 },
       isLoading: false,
       isError: false,
+    });
+    useActivity.mockReturnValue({
+      data: { labels: [], data: [] },
+      isLoading: false,
+      error: null,
     });
   });
 
@@ -64,7 +97,9 @@ describe('Analytics', () => {
   });
 
   function renderWithClient(ui: React.ReactElement) {
-    const queryClient = new QueryClient();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
     return render(
       <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
     );
@@ -97,5 +132,18 @@ describe('Analytics', () => {
 
     renderWithClient(<Analytics />);
     expect(await screen.findByText(/no data/i)).toBeInTheDocument();
+  });
+
+  it('renders quick stats when overview loads', async () => {
+    renderWithClient(<Analytics />);
+    expect(await screen.findByText('QuickStats')).toBeInTheDocument();
+  });
+
+  it('shows error when overview fetch fails', async () => {
+    (fetchAdminOverview as jest.Mock).mockRejectedValueOnce(new Error('fail'));
+    renderWithClient(<Analytics />);
+    expect(
+      await screen.findByText(/failed to load overview/i),
+    ).toBeInTheDocument();
   });
 });
