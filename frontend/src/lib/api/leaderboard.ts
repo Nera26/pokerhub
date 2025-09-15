@@ -10,14 +10,23 @@ import {
   type LeaderboardRangesResponse,
   type LeaderboardModesResponse,
   type StatusResponse,
+  type TimeFilter,
 } from '@shared/types';
 
 export async function fetchLeaderboard({
   signal,
-}: { signal?: AbortSignal } = {}): Promise<LeaderboardEntry[]> {
-  return await apiClient('/api/leaderboard', LeaderboardResponseSchema, {
-    signal,
-  });
+  range,
+}: { signal?: AbortSignal; range?: TimeFilter } = {}): Promise<
+  LeaderboardEntry[]
+> {
+  const query = range ? `?range=${range}` : '';
+  return await apiClient(
+    `/api/leaderboard${query}`,
+    LeaderboardResponseSchema,
+    {
+      signal,
+    },
+  );
 }
 
 export async function rebuildLeaderboard(days = 30): Promise<StatusResponse> {
