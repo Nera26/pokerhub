@@ -18,11 +18,13 @@ These scripts perform canary deployments and rollbacks to GKE.
 ## Usage
 
 These scripts assume that `gcloud container clusters get-credentials` has been executed to set the kubectl context.
-Set `ARTIFACT_REGISTRY` before invoking any script, e.g.:
+Provide the fully-qualified image and target namespace:
 
 ```bash
 export ARTIFACT_REGISTRY=us-docker.pkg.dev/$GCP_PROJECT_ID/pokerhub
-bash deploy/canary.sh <image-tag>
+bash deploy/canary.sh --image "$ARTIFACT_REGISTRY/pokerhub:<tag>" --namespace production
 ```
+
+Override the default health check with `--health-url` if needed.
 
 For recovery and remediation procedures, see the [GCP Ops Runbook](../docs/gcp-ops-runbook.md).
