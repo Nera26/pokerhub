@@ -1,5 +1,5 @@
 import { createHmac } from 'crypto';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Repository, EntityTarget } from 'typeorm';
 import { createDataSource } from '../utils/pgMem';
 import * as handLedger from '../../src/wallet/hand-ledger';
 import { Account } from '../../src/wallet/account.entity';
@@ -19,8 +19,18 @@ import { verifySignature } from '../../src/wallet/verify-signature';
 import * as fc from 'fast-check';
 import { walletAccounts } from './accounts.fixture';
 
-// Re-exported for compatibility with legacy tests
-export { createDataSource as createInMemoryDb } from '../utils/pgMem';
+export async function createInMemoryDb(
+  entities: EntityTarget<any>[] = [
+    Account,
+    JournalEntry,
+    Disbursement,
+    SettlementJournal,
+    PendingDeposit,
+  ],
+): Promise<DataSource> {
+  return createDataSource(entities);
+}
+
 export { walletAccounts };
 
 export function createWalletServices(dataSource: DataSource) {

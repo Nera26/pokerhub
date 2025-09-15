@@ -1,39 +1,62 @@
+import { DataSource } from 'typeorm';
 import { WalletService } from '../../src/wallet/wallet.service';
-import { Account } from '../../src/wallet/account.entity';
 import { Disbursement } from '../../src/wallet/disbursement.entity';
+import { createInMemoryDb, createWalletServices } from './test-utils';
 
 describe('WalletService.refundDisbursement', () => {
+  let dataSource: DataSource;
+  let service: WalletService;
+  let repos: ReturnType<typeof createWalletServices>['repos'];
+
+  beforeAll(async () => {
+    dataSource = await createInMemoryDb();
+    ({ service, repos } = createWalletServices(dataSource));
+
+    await repos.account.save([
+      {
+        id: '11111111-1111-1111-1111-111111111111',
+        name: 'user',
+        balance: 0,
+        currency: 'USD',
+      },
+      {
+        id: '00000000-0000-0000-0000-000000000010',
+        name: 'house',
+        balance: 0,
+        currency: 'USD',
+      },
+    ]);
+    (service as any).record = jest.fn();
+  });
+
+  afterAll(async () => {
+    await dataSource.destroy();
+  });
+
   it('records refund from house to user', async () => {
-    const accounts: any = { findOneByOrFail: jest.fn() };
-    const wallet = new WalletService(
-      accounts,
-      {} as any,
-      {} as any,
-      {} as any,
-      { emit: jest.fn() } as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-    );
-    const user: Account = { id: 'u', currency: 'USD' } as any;
-    const house: Account = { id: 'h', name: 'house', currency: 'USD' } as any;
-    accounts.findOneByOrFail
-      .mockResolvedValueOnce(user)
-      .mockResolvedValueOnce(house);
-    (wallet as any).record = jest.fn();
     const disb: Disbursement = {
       id: 'd',
-      accountId: 'u',
+      accountId: '11111111-1111-1111-1111-111111111111',
       amount: 100,
       idempotencyKey: 'k',
       status: 'pending',
       createdAt: new Date(),
     } as any;
-    await wallet.refundDisbursement(disb);
-    expect((wallet as any).record).toHaveBeenCalledWith('withdraw_reject', disb.id, [
-      { account: house, amount: -disb.amount },
-      { account: user, amount: disb.amount },
+
+    await service.refundDisbursement(disb);
+    expect((service as any).record).toHaveBeenCalledWith('withdraw_reject', disb.id, [
+      {
+        account: expect.objectContaining({
+          id: '00000000-0000-0000-0000-000000000010',
+        }),
+        amount: -disb.amount,
+      },
+      {
+        account: expect.objectContaining({
+          id: '11111111-1111-1111-1111-111111111111',
+        }),
+        amount: disb.amount,
+      },
     ]);
   });
 });
