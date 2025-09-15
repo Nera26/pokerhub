@@ -35,6 +35,7 @@ import { TranslationsController } from './routes/translations.controller';
 import { ConfigController } from './routes/config.controller';
 import { PrecacheController } from './routes/precache.controller';
 import { NavIconsController } from './routes/nav-icons.controller';
+import { AdminNavIconsController } from './routes/admin-nav-icons.controller';
 import { HistoryTabsController } from './routes/history-tabs.controller';
 import { ChartController } from './routes/chart.controller';
 import { MetadataController } from './routes/metadata.controller';
@@ -177,6 +178,7 @@ import { NavModule } from './nav/nav.module';
       ConfigController,
       PrecacheController,
       NavIconsController,
+      AdminNavIconsController,
       HistoryTabsController,
       ChartController,
       MetadataController,
