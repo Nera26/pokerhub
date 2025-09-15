@@ -22,6 +22,12 @@ import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import DashboardModule from '@/app/components/dashboard/DashboardModule';
 import { getSiteMetadata } from '@/lib/metadata';
 
+const tabComponentMap: Partial<
+  Record<SidebarTab, () => Promise<{ default: ComponentType<object> }>>
+> = {
+  events: () => import('@/app/components/dashboard/AdminEvents'),
+};
+
 function isSidebarTab(v: string | null, tabs: SidebarTab[]): v is SidebarTab {
   return !!v && tabs.includes(v as SidebarTab);
 }
@@ -90,7 +96,9 @@ function DashboardPage() {
         tabItems.map((t) => [
           t.id,
           {
-            loader: () => import(/* @vite-ignore */ t.component),
+            loader:
+              tabComponentMap[t.id as SidebarTab] ??
+              (() => import(/* @vite-ignore */ t.component)),
             loading: <div>Loading {t.title.toLowerCase()}...</div>,
             error: <div>Error loading {t.title.toLowerCase()}.</div>,
           },
