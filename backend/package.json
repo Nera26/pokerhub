@@ -95,7 +95,7 @@
     "@types/geoip-lite": "^1.4.4",
     "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^22.10.7",
+    "@types/node": "^24.4.0",
     "@types/supertest": "^6.0.2",
     "@typescript-eslint/eslint-plugin": "^8.20.0",
     "@typescript-eslint/parser": "^8.20.0",
