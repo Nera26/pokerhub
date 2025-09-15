@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useActivity } from '@/hooks/useActivity';
+import { mockDashboardMetrics } from '@/hooks/__tests__/helpers/metricsMock';
 import type { ApiError } from '@/lib/api/client';
 
 describe('useActivity', () => {
@@ -28,12 +29,7 @@ describe('useActivity', () => {
   });
 
   it('returns activity data', async () => {
-    const fetchMock = jest.fn<Promise<Response>, []>().mockResolvedValue({
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-      json: async () => ({ labels: ['a'], data: [1] }),
-    } as unknown as Response);
+    const fetchMock = mockDashboardMetrics({ labels: ['a'], data: [1] });
     global.fetch = fetchMock as unknown as typeof fetch;
 
     const { result } = renderHook(() => useActivity(), { wrapper });
