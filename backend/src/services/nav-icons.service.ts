@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import type { NavIcon } from '@shared/types';
@@ -15,5 +15,21 @@ export class NavIconsService extends SimpleListService<NavIconEntity> {
 
   async list(): Promise<NavIcon[]> {
     return this.find();
+  }
+
+  async create(icon: NavIcon): Promise<NavIcon> {
+    const entity = this.repo.create(icon);
+    return this.repo.save(entity);
+  }
+
+  async update(name: string, icon: NavIcon): Promise<NavIcon> {
+    const existing = await this.repo.findOne({ where: { name } });
+    if (!existing) throw new NotFoundException('Nav icon not found');
+    const merged = { ...existing, ...icon };
+    return this.repo.save(merged);
+  }
+
+  async remove(name: string): Promise<void> {
+    await this.repo.delete({ name });
   }
 }

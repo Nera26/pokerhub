@@ -20,7 +20,6 @@ jest.mock('@/lib/api/profile', () => ({
 }));
 
 jest.mock('@/lib/api/admin', () => ({
-  fetchSidebarItems: jest.fn().mockResolvedValue([]),
   fetchAdminTabs: jest.fn().mockResolvedValue([
     {
       id: 'users',
@@ -39,6 +38,10 @@ jest.mock('@/lib/api/admin', () => ({
     },
   ]),
   fetchAdminTabMeta: jest.fn(),
+}));
+
+jest.mock('@/lib/api/nav', () => ({
+  fetchNavItems: jest.fn().mockResolvedValue([]),
 }));
 
 jest.mock('@/app/components/dashboard/ManageUsers', () => () => (

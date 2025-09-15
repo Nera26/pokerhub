@@ -43,6 +43,59 @@ export interface paths {
         };
       };
     };
+    /** Create navigation icon */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["NavIcon"];
+        };
+      };
+      responses: {
+        /** @description Created navigation icon */
+        200: {
+          content: {
+            "application/json": components["schemas"]["NavIcon"];
+          };
+        };
+      };
+    };
+  };
+  "/nav-icons/{name}": {
+    /** Update navigation icon */
+    put: {
+      parameters: {
+        path: {
+          name: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["NavIcon"];
+        };
+      };
+      responses: {
+        /** @description Updated navigation icon */
+        200: {
+          content: {
+            "application/json": components["schemas"]["NavIcon"];
+          };
+        };
+      };
+    };
+    /** Delete navigation icon */
+    delete: {
+      parameters: {
+        path: {
+          name: string;
+        };
+      };
+      responses: {
+        /** @description Deleted */
+        204: {
+          content: never;
+        };
+      };
+    };
   };
   "/nav-items": {
     /** List navigation items */

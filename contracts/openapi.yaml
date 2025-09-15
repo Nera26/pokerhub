@@ -33,6 +33,54 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NavIconsResponse'
+    post:
+      summary: Create navigation icon
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NavIcon'
+      responses:
+        '200':
+          description: Created navigation icon
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NavIcon'
+  /nav-icons/{name}:
+    put:
+      summary: Update navigation icon
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NavIcon'
+      responses:
+        '200':
+          description: Updated navigation icon
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NavIcon'
+    delete:
+      summary: Delete navigation icon
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted
   /nav-items:
     get:
       summary: List navigation items
