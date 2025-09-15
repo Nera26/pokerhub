@@ -3,10 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBell } from '@fortawesome/free-solid-svg-icons/faBell';
-import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '@/context/AuthContext';
-import { fetchNavItems } from '@/lib/api/nav';
+import { useNavItems } from '@/hooks/useNavItems';
 import { useSettings } from '@/hooks/useSettings';
 
 interface NavigationLinksProps {
@@ -14,15 +11,12 @@ interface NavigationLinksProps {
 }
 
 export default function NavigationLinks({ balance }: NavigationLinksProps) {
-  const { avatarUrl } = useAuth();
+  const { items, loading } = useNavItems();
   const { data: settings } = useSettings();
-  const {
-    data: items = [],
-    isLoading,
-    error,
-  } = useQuery({ queryKey: ['nav-items'], queryFn: fetchNavItems });
 
-  if (isLoading || error) return null;
+  if (loading) return null;
+
+  const notifItem = items.find((item) => item.flag === 'notifications');
 
   return (
     <>
@@ -39,7 +33,7 @@ export default function NavigationLinks({ balance }: NavigationLinksProps) {
               >
                 <Image
                   src={
-                    avatarUrl ||
+                    item.avatar ||
                     settings?.defaultAvatar ||
                     'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='
                   }
@@ -83,14 +77,23 @@ export default function NavigationLinks({ balance }: NavigationLinksProps) {
             </Link>
           );
         })}
-      <Link
-        href="/notifications"
-        prefetch
-        className="text-text-secondary hover:text-accent-yellow transition-colors duration-200 flex items-center"
-      >
-        <FontAwesomeIcon icon={faBell} className="mr-2" />
-        <span>Alerts</span>
-      </Link>
+      {notifItem && (
+        <Link
+          href={notifItem.href}
+          prefetch
+          className="text-text-secondary hover:text-accent-yellow transition-colors duration-200 flex items-center relative"
+        >
+          {notifItem.badge && (
+            <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-danger-red text-xs text-white">
+              {notifItem.badge}
+            </span>
+          )}
+          {notifItem.icon && (
+            <FontAwesomeIcon icon={notifItem.icon} className="mr-2" />
+          )}
+          <span>{notifItem.label}</span>
+        </Link>
+      )}
     </>
   );
 }

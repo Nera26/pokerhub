@@ -4,44 +4,17 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Image from 'next/image';
-import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '@/context/AuthContext';
-import { useNotifications } from '@/hooks/notifications';
-import { fetchNavItems, type NavItem } from '@/lib/api/nav';
+import { useNavItems, type NavItem } from '@/hooks/useNavItems';
 
 export default function BottomNav() {
   const pathname = usePathname();
-  const { avatarUrl } = useAuth();
-  const {
-    data: notifData,
-    isLoading: notifLoading,
-    error: notifError,
-  } = useNotifications();
+  const { items, loading } = useNavItems();
 
-  const {
-    data: items = [],
-    isLoading: navLoading,
-    error: navError,
-  } = useQuery({ queryKey: ['nav-items'], queryFn: fetchNavItems });
-
-  if (navLoading || navError) {
+  if (loading) {
     return null;
   }
 
-  const itemsWithDynamic = items.map((item) => {
-    if (item.flag === 'notifications') {
-      return {
-        ...item,
-        badge: !notifLoading && !notifError ? notifData?.unread : undefined,
-      };
-    }
-    if (item.flag === 'profile') {
-      return { ...item, avatar: avatarUrl || undefined };
-    }
-    return item;
-  });
-
-  const navItems: Omit<NavItem, 'flag'>[] = itemsWithDynamic.map(
+  const navItems: Omit<NavItem, 'flag'>[] = items.map(
     ({ flag: _flag, ...item }) => item,
   );
 
