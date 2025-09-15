@@ -24,7 +24,7 @@ jobs:
       with:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
     - name: Run nightly PITR backup
-      run: bash infra/disaster-recovery/tests/pitr-nightly.sh | tee 
+      run: bash infra/disaster-recovery/pitr-nightly.sh | tee
         pitr-nightly.log
       env:
         PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
