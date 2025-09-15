@@ -1,54 +1,32 @@
-import { readdirSync, readFileSync } from 'fs';
+import { readdirSync } from 'fs';
 import { join } from 'path';
 import { GameEngine } from '../../src/game/engine';
+import { collectGcPauses, replayHandLogs } from './utils';
 
 // Directory containing recorded hand logs
 const logsDir = join(__dirname, '../../../storage/hand-logs');
-const files = readdirSync(logsDir).filter((f) => f.endsWith('.jsonl'));
+const files = readdirSync(logsDir)
+  .filter((f) => f.endsWith('.jsonl'))
+  .map((f) => join(logsDir, f));
 if (files.length === 0) {
   console.error('No hand logs found in', logsDir);
   process.exit(1);
 }
 
-// Capture GC pause durations from --trace-gc output
-const gcPauses: number[] = [];
-const origWrite = process.stderr.write.bind(process.stderr);
-(process.stderr as unknown as { write: typeof process.stderr.write }).write = (
-  chunk: any,
-  encoding?: any,
-  cb?: any,
-) => {
-  const str = chunk.toString();
-  const match = str.match(/\s(\d+(?:\.\d+)?) ms:/);
-  if (match) {
-    gcPauses.push(parseFloat(match[1]));
-  }
-  return origWrite(chunk, encoding, cb);
-};
+const gcPauses = collectGcPauses();
 
 const startHeap = process.memoryUsage().heapUsed;
 const endTime = Date.now() + 24 * 60 * 60 * 1000; // 24h
 
 async function run() {
   while (Date.now() < endTime) {
-    for (const file of files) {
-      const lines = readFileSync(join(logsDir, file), 'utf8')
-        .trim()
-        .split('\n')
-        .filter(Boolean);
-      if (lines.length === 0) continue;
-      const first = JSON.parse(lines[0]);
-      const players = (first[2]?.players ?? []).map((p: any) => p.id);
-      const engine = await GameEngine.create(
-        players,
-        { startingStack: 100, smallBlind: 1, bigBlind: 2 },
-      );
-      for (const line of lines) {
-        const entry = JSON.parse(line);
-        const action = entry[1];
-        engine.applyAction(action);
-      }
-    }
+    await replayHandLogs(files, (players) =>
+      GameEngine.create(players, {
+        startingStack: 100,
+        smallBlind: 1,
+        bigBlind: 2,
+      }),
+    );
   }
 
   const endHeap = process.memoryUsage().heapUsed;
