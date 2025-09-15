@@ -1,11 +1,7 @@
-import { afterEach, describe, expect, it } from '@jest/globals';
+import { describe, expect, it } from '@jest/globals';
+import './setupFetch';
 
 describe('api client', () => {
-  afterEach(() => {
-    // ensure fetch mock is cleared
-    (global.fetch as jest.Mock | undefined)?.mockReset?.();
-  });
-
   it('propagates auth token in headers', async () => {
     jest.resetModules();
     process.env.NEXT_PUBLIC_BASE_URL = 'http://example.com';
