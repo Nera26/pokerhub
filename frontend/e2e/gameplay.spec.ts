@@ -3,8 +3,8 @@ import { io } from 'socket.io-client';
 import { createHash } from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import { execSync } from 'child_process';
 import { z } from 'zod';
+import { bringUp, tearDown, waitFor } from './utils/handProof';
 
 const HandProofResponseSchema = z.object({
   seed: z.string(),
@@ -12,36 +12,10 @@ const HandProofResponseSchema = z.object({
   commitment: z.string(),
 });
 
-async function waitFor(url: string, timeout = 60_000) {
-  const start = Date.now();
-  while (Date.now() - start < timeout) {
-    try {
-      const res = await fetch(url);
-      if (res.ok) return;
-    } catch {
-      // ignore
-    }
-    await new Promise((r) => setTimeout(r, 1000));
-  }
-  throw new Error(`Timed out waiting for ${url}`);
-}
-
 test.describe('play hand end-to-end', () => {
-  test.beforeAll(async () => {
-    execSync('docker compose -f ../../docker-compose.yml -f ../../docker-compose.test.yml up -d', {
-      stdio: 'inherit',
-      cwd: path.resolve(__dirname, '..', '..'),
-    });
-    await waitFor('http://localhost:3001');
-    await waitFor('http://localhost:3000/status');
-  });
+  test.beforeAll(bringUp);
 
-  test.afterAll(() => {
-    execSync('docker compose -f ../../docker-compose.yml -f ../../docker-compose.test.yml down -v', {
-      stdio: 'inherit',
-      cwd: path.resolve(__dirname, '..', '..'),
-    });
-  });
+  test.afterAll(tearDown);
 
   test('login, join, play, and verify RNG proof', async ({ page }) => {
     const socket = io('http://localhost:4000', { transports: ['websocket'] });
@@ -61,14 +35,19 @@ test.describe('play hand end-to-end', () => {
       .poll(() => events.end?.handId, { timeout: 60_000 })
       .not.toBeUndefined();
 
-    await expect(page.getByRole('heading', { name: 'Hand Proof' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Hand Proof' }),
+    ).toBeVisible();
     await expect(page.getByText('Seed:')).toBeVisible();
     await expect(page.getByText('Nonce:')).toBeVisible();
     await expect(page.getByText('Commitment:')).toBeVisible();
     await page.getByRole('button', { name: 'Verify' }).click();
     await expect(page.getByText('Commitment valid: yes')).toBeVisible();
 
-    const res = await page.request.get(`http://localhost:3000/hands/${events.end.handId}/proof`);
+    await waitFor(`http://localhost:3000/hands/${events.end.handId}/proof`);
+    const res = await page.request.get(
+      `http://localhost:3000/hands/${events.end.handId}/proof`,
+    );
     const proofJson = await res.json();
     const proof = HandProofResponseSchema.parse(proofJson);
     const hash = createHash('sha256')
