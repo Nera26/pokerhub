@@ -3,43 +3,12 @@ import { TournamentService } from '../../src/tournament/tournament.service';
 import { Table } from '../../src/database/entities/table.entity';
 import { Seat } from '../../src/database/entities/seat.entity';
 import { Tournament, TournamentState } from '../../src/database/entities/tournament.entity';
-import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import type Redis from 'ioredis';
 import { createInMemoryRedis } from '../utils/mock-redis';
+import { createSeatRepo, createTournamentRepo } from './helpers';
 
 describe('TableBalancerService avoidWithin', () => {
-  function createTournamentRepo(initial: Tournament[]): any {
-    const items = new Map(initial.map((t) => [t.id, t]));
-    return {
-      find: jest.fn(async () => Array.from(items.values())),
-      findOne: jest.fn(async ({ where: { id } }) => items.get(id)),
-      save: jest.fn(async (obj: Tournament) => {
-        items.set(obj.id, obj);
-        return obj;
-      }),
-    } as Repository<Tournament>;
-  }
-
-  function createSeatRepo(tables: Table[]): any {
-    const seats = tables.flatMap((t) => t.seats);
-    const items = new Map(seats.map((s) => [s.id, s]));
-    return {
-      find: jest.fn(async () => Array.from(items.values())),
-      save: jest.fn(async (seat: Seat | Seat[]) => {
-        const arr = Array.isArray(seat) ? seat : [seat];
-        arr.forEach((s) => {
-          tables.forEach((tbl) => {
-            tbl.seats = tbl.seats.filter((st) => st.id !== s.id);
-          });
-          s.table.seats.push(s);
-          items.set(s.id, s);
-        });
-        return seat;
-      }),
-    } as Repository<Seat>;
-  }
-
   test.each([false, true])(
     'avoids moving the same player twice across rapid rebalances (redis=%s)',
     async (useRedis) => {
