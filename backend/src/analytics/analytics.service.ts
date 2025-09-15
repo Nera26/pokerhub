@@ -324,6 +324,13 @@ export class AnalyticsService {
     return { labels, data };
   }
 
+  async getErrorCategories(): Promise<{ labels: string[]; counts: number[] }> {
+    const entries = await this.redis.hgetall('metrics:error-categories');
+    const labels = Object.keys(entries);
+    const counts = labels.map((l) => Number(entries[l]));
+    return { labels, counts };
+  }
+
   async getSecurityAlerts(): Promise<AlertItem[]> {
     const entries = await this.redis.lrange('security-alerts', 0, -1);
     return entries.map((e) => JSON.parse(e) as AlertItem);

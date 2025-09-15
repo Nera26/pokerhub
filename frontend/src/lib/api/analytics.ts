@@ -9,16 +9,9 @@ import {
   type ActivityResponse,
   ChartPaletteResponseSchema,
   type ChartPaletteResponse,
+  ErrorCategoriesResponseSchema,
+  type ErrorCategoriesResponse,
 } from '@shared/types';
-import { z } from 'zod';
-
-const ErrorCategoriesResponseSchema = z.object({
-  labels: z.array(z.string()),
-  counts: z.array(z.number()),
-});
-export type ErrorCategoriesResponse = z.infer<
-  typeof ErrorCategoriesResponseSchema
->;
 
 export async function fetchAdminOverview({
   signal,
