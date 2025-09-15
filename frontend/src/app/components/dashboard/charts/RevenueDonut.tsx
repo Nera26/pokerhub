@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { useChart } from '@/lib/useChart';
+import { useChartPalette } from '@/hooks/useChartPalette';
 import type { ChartConfiguration, TooltipItem } from 'chart.js';
 
 export interface RevenueStream {
@@ -16,6 +17,8 @@ interface RevenueDonutProps {
 }
 
 export default function RevenueDonut({ streams }: RevenueDonutProps) {
+  const { data: palette } = useChartPalette();
+
   const config: ChartConfiguration<'doughnut'> = useMemo(
     () => ({
       type: 'doughnut',
@@ -24,7 +27,7 @@ export default function RevenueDonut({ streams }: RevenueDonutProps) {
         datasets: [
           {
             data: streams.map((s) => s.pct),
-            backgroundColor: [
+            backgroundColor: palette ?? [
               'var(--color-accent-green)',
               'var(--color-accent-yellow)',
               'var(--color-accent-blue)',
@@ -58,7 +61,7 @@ export default function RevenueDonut({ streams }: RevenueDonutProps) {
         },
       },
     }),
-    [streams],
+    [streams, palette],
   );
 
   const { ref, ready } = useChart(config, [config]);
