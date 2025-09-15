@@ -12,10 +12,10 @@ import {
 } from '../../ui/Table';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faSearch,
   faChevronLeft,
   faChevronRight,
 } from '@fortawesome/free-solid-svg-icons';
+import SearchInput from './SearchInput';
 
 interface AdminTableManagerProps<T> {
   items: T[];
@@ -62,18 +62,13 @@ export default function AdminTableManager<T>({
 
   return (
     <div className="space-y-4">
-      <div className="relative max-w-xs ml-auto">
-        <FontAwesomeIcon
-          icon={faSearch}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary"
-        />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={searchPlaceholderText}
-          className="bg-card-bg border border-dark rounded-xl pl-10 pr-4 py-2 text-text-primary focus:border-accent-yellow focus:outline-none w-full"
-        />
-      </div>
+      <SearchInput
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder={searchPlaceholderText}
+        containerClassName="max-w-xs ml-auto"
+        className="bg-card-bg"
+      />
       <Card>
         <CardContent>
           <UiTable className="w-full">

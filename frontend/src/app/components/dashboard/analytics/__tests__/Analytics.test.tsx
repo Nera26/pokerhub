@@ -14,6 +14,11 @@ jest.mock('@/hooks/useAuditSummary', () => ({
   useAuditSummary: (...args: any[]) => useAuditSummaryMock(...args),
 }));
 
+jest.mock(
+  '@/app/components/dashboard/common/SearchInput',
+  () => (props: any) => <input {...props} />,
+);
+
 jest.mock('../SearchBar', () => () => <div>SearchBar</div>);
 jest.mock('../QuickStats', () => ({
   __esModule: true,
