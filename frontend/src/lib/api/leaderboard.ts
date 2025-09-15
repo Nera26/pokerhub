@@ -7,10 +7,14 @@ import {
   StatusResponseSchema,
   LeaderboardRangesResponseSchema,
   LeaderboardModesResponseSchema,
+  LeaderboardConfigListResponseSchema,
   type LeaderboardRangesResponse,
   type LeaderboardModesResponse,
   type StatusResponse,
   type TimeFilter,
+  type LeaderboardConfig,
+  type LeaderboardConfigListResponse,
+  type LeaderboardConfigUpdate,
 } from '@shared/types';
 
 export async function fetchLeaderboard({
@@ -51,4 +55,53 @@ export function useLeaderboardModes() {
     queryFn: () =>
       apiClient('/api/leaderboard/modes', LeaderboardModesResponseSchema),
   });
+}
+
+export async function listLeaderboardConfig(): Promise<LeaderboardConfigListResponse> {
+  return apiClient(
+    '/api/admin/leaderboard-config',
+    LeaderboardConfigListResponseSchema,
+  );
+}
+
+export async function createLeaderboardConfig(
+  entry: LeaderboardConfig,
+): Promise<LeaderboardConfigListResponse> {
+  return apiClient(
+    '/api/admin/leaderboard-config',
+    LeaderboardConfigListResponseSchema,
+    {
+      method: 'POST',
+      body: JSON.stringify(entry),
+      headers: { 'Content-Type': 'application/json' },
+    },
+  );
+}
+
+export async function updateLeaderboardConfig(
+  payload: LeaderboardConfigUpdate,
+): Promise<LeaderboardConfigListResponse> {
+  return apiClient(
+    '/api/admin/leaderboard-config',
+    LeaderboardConfigListResponseSchema,
+    {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+    },
+  );
+}
+
+export async function deleteLeaderboardConfig(
+  entry: LeaderboardConfig,
+): Promise<LeaderboardConfigListResponse> {
+  return apiClient(
+    '/api/admin/leaderboard-config',
+    LeaderboardConfigListResponseSchema,
+    {
+      method: 'DELETE',
+      body: JSON.stringify(entry),
+      headers: { 'Content-Type': 'application/json' },
+    },
+  );
 }

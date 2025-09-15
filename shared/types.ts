@@ -378,12 +378,18 @@ export type GameState = z.infer<typeof GameStateSchema>;
 export {
   LeaderboardRangesResponseSchema,
   LeaderboardModesResponseSchema,
+  LeaderboardConfigSchema,
+  LeaderboardConfigListResponseSchema,
+  LeaderboardConfigUpdateSchema,
 } from '../backend/src/schemas/leaderboard';
 export type {
   TimeFilter,
   ModeFilter,
   LeaderboardRangesResponse,
   LeaderboardModesResponse,
+  LeaderboardConfig,
+  LeaderboardConfigListResponse,
+  LeaderboardConfigUpdate,
 } from '../backend/src/schemas/leaderboard';
 
 export {

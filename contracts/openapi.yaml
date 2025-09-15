@@ -1222,6 +1222,69 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusResponse'
+  /admin/leaderboard-config:
+    get:
+      summary: List leaderboard config
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Config entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaderboardConfigListResponse'
+    post:
+      summary: Create leaderboard config entry
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaderboardConfig'
+      responses:
+        '200':
+          description: Updated config entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaderboardConfigListResponse'
+    put:
+      summary: Update leaderboard config entry
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaderboardConfigUpdate'
+      responses:
+        '200':
+          description: Updated config entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaderboardConfigListResponse'
+    delete:
+      summary: Delete leaderboard config entry
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaderboardConfig'
+      responses:
+        '200':
+          description: Updated config entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaderboardConfigListResponse'
   /hands/{id}/proof:
     get:
       summary: Get stored RNG proof for a hand
@@ -4335,15 +4398,8 @@ components:
       - bigBlind
   TimeFilter:
     type: string
-    enum:
-      - daily
-      - weekly
-      - monthly
   ModeFilter:
     type: string
-    enum:
-      - cash
-      - tournament
   LeaderboardRangesResponse:
     type: object
     properties:
@@ -4362,6 +4418,37 @@ components:
           $ref: '#/components/schemas/ModeFilter'
     required:
       - modes
+  LeaderboardConfig:
+    type: object
+    properties:
+      range:
+        type: string
+      mode:
+        type: string
+    required:
+      - range
+      - mode
+  LeaderboardConfigListResponse:
+    type: object
+    properties:
+      configs:
+        type: array
+        items:
+          $ref: '#/components/schemas/LeaderboardConfig'
+    required:
+      - configs
+  LeaderboardConfigUpdate:
+    allOf:
+      - $ref: '#/components/schemas/LeaderboardConfig'
+      - type: object
+        properties:
+          newRange:
+            type: string
+          newMode:
+            type: string
+        required:
+          - newRange
+          - newMode
   LeaderboardResponse:
     type: array
     items:

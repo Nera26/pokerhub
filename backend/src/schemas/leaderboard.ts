@@ -13,10 +13,10 @@ export const LeaderboardRebuildQuerySchema = z.object({
   days: z.number().int().positive().max(30).optional(),
 });
 
-export const TimeFilterSchema = z.enum(['daily', 'weekly', 'monthly']);
+export const TimeFilterSchema = z.string();
 export type TimeFilter = z.infer<typeof TimeFilterSchema>;
 
-export const ModeFilterSchema = z.enum(['cash', 'tournament']);
+export const ModeFilterSchema = z.string();
 export type ModeFilter = z.infer<typeof ModeFilterSchema>;
 
 export const LeaderboardRangesResponseSchema = z.object({
@@ -32,3 +32,22 @@ export const LeaderboardModesResponseSchema = z.object({
 export type LeaderboardModesResponse = z.infer<
   typeof LeaderboardModesResponseSchema
 >;
+
+export const LeaderboardConfigSchema = z.object({
+  range: z.string(),
+  mode: z.string(),
+});
+export type LeaderboardConfig = z.infer<typeof LeaderboardConfigSchema>;
+
+export const LeaderboardConfigListResponseSchema = z.object({
+  configs: z.array(LeaderboardConfigSchema),
+});
+export type LeaderboardConfigListResponse = z.infer<
+  typeof LeaderboardConfigListResponseSchema
+>;
+
+export const LeaderboardConfigUpdateSchema = LeaderboardConfigSchema.extend({
+  newRange: z.string(),
+  newMode: z.string(),
+});
+export type LeaderboardConfigUpdate = z.infer<typeof LeaderboardConfigUpdateSchema>;
