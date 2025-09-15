@@ -4,22 +4,31 @@ import request from 'supertest';
 import { MetadataController } from '../src/routes/metadata.controller';
 import type { SiteMetadataResponse } from '@shared/types';
 import { DefaultAvatarService } from '../src/services/default-avatar.service';
+import { ConfigService } from '@nestjs/config';
 
 describe('MetadataController', () => {
   let app: INestApplication;
   const defaultAvatar = 'https://example.com/avatar.png';
+  const config: Record<string, string> = {
+    'site.title': 'My Title',
+    'site.description': 'My Desc',
+    'site.imagePath': '/logo.png',
+  };
+  const configService = {
+    get: jest.fn((key: string) => config[key]),
+  } as unknown as ConfigService;
 
   beforeAll(async () => {
-    process.env.SITE_TITLE = 'My Title';
-    process.env.SITE_DESCRIPTION = 'My Desc';
-    process.env.SITE_IMAGE_PATH = '/logo.png';
-
     const moduleRef: TestingModule = await Test.createTestingModule({
       controllers: [MetadataController],
       providers: [
         {
           provide: DefaultAvatarService,
           useValue: { get: jest.fn().mockResolvedValue(defaultAvatar) },
+        },
+        {
+          provide: ConfigService,
+          useValue: configService,
         },
       ],
     }).compile();
@@ -43,5 +52,8 @@ describe('MetadataController', () => {
       imagePath: '/logo.png',
       defaultAvatar,
     });
+    expect(configService.get).toHaveBeenCalledWith('site.title', expect.anything());
+    expect(configService.get).toHaveBeenCalledWith('site.description', expect.anything());
+    expect(configService.get).toHaveBeenCalledWith('site.imagePath', expect.anything());
   });
 });
