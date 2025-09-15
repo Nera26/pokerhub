@@ -9,7 +9,7 @@ import request from 'supertest';
 import { NavIconsController } from '../src/routes/nav-icons.controller';
 import { NavIconsService } from '../src/services/nav-icons.service';
 import { NavIconEntity } from '../src/database/entities/nav-icon.entity';
-import { NavIconsResponseSchema, type NavIconsResponse } from '@shared/types';
+import { NavIconSchema, NavIconsResponseSchema, type NavIconsResponse, type NavIcon } from '@shared/types';
 
 describe('NavIconsController', () => {
   let app: INestApplication;
@@ -76,5 +76,32 @@ describe('NavIconsController', () => {
     body.sort((a, b) => a.name.localeCompare(b.name));
     expected.sort((a, b) => a.name.localeCompare(b.name));
     expect(body).toEqual(expected);
+  });
+
+  it('creates a navigation icon', async () => {
+    const icon: NavIcon = { name: 'baz', svg: '<svg>baz</svg>' };
+    const res = await request(app.getHttpServer())
+      .post('/nav-icons')
+      .send(icon)
+      .expect(200);
+    expect(NavIconSchema.parse(res.body)).toEqual(icon);
+    const repo = dataSource.getRepository(NavIconEntity);
+    expect(await repo.findOne({ where: { name: 'baz' } })).toBeTruthy();
+  });
+
+  it('updates a navigation icon', async () => {
+    const res = await request(app.getHttpServer())
+      .put('/nav-icons/foo')
+      .send({ name: 'foo', svg: '<svg>updated</svg>' })
+      .expect(200);
+    expect(NavIconSchema.parse(res.body)).toEqual({ name: 'foo', svg: '<svg>updated</svg>' });
+  });
+
+  it('deletes a navigation icon', async () => {
+    await request(app.getHttpServer())
+      .delete('/nav-icons/bar')
+      .expect(204);
+    const repo = dataSource.getRepository(NavIconEntity);
+    expect(await repo.findOne({ where: { name: 'bar' } })).toBeNull();
   });
 });

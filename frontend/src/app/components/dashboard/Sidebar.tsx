@@ -1,18 +1,11 @@
 'use client';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
-import { faChartLine } from '@fortawesome/free-solid-svg-icons';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchSidebarItems } from '@/lib/api/admin';
-import type { SidebarItem } from '@shared/types';
+import { fetchNavItems, type NavItem } from '@/lib/api/nav';
 
-export type SidebarTab = SidebarItem['id'];
-
-interface SidebarItemWithIcon extends Omit<SidebarItem, 'icon'> {
-  icon: IconDefinition;
-}
+export type SidebarTab = NavItem['flag'];
 
 interface SidebarProps {
   active?: SidebarTab;
@@ -33,24 +26,15 @@ export default function Sidebar({
   const sidebarOpen = open ?? internalOpen;
   const updateOpen = setOpen ?? setInternalOpen;
   const router = useRouter();
-  const [items, setItems] = useState<SidebarItemWithIcon[]>([]);
+  const [items, setItems] = useState<NavItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [data, icons] = await Promise.all([
-          fetchSidebarItems(),
-          import('@fortawesome/free-solid-svg-icons'),
-        ]);
-        setItems(
-          data.map((it) => ({
-            ...it,
-            icon:
-              (icons as Record<string, IconDefinition>)[it.icon] ?? faChartLine,
-          })),
-        );
+        const data = await fetchNavItems();
+        setItems(data);
       } catch {
         setError(true);
       } finally {
@@ -60,15 +44,14 @@ export default function Sidebar({
     void load();
   }, []);
 
-  const change = (id: SidebarTab, disabled?: boolean, path?: string) => {
-    if (disabled) return;
-    if (path) {
-      router.push(path);
+  const change = (flag: SidebarTab, href?: string) => {
+    if (href) {
+      router.push(href);
       updateOpen(false);
       return;
     }
-    if (onChange) onChange(id);
-    else setInternal(id);
+    if (onChange) onChange(flag);
+    else setInternal(flag);
     updateOpen(false);
   };
   if (loading) {
@@ -87,17 +70,14 @@ export default function Sidebar({
         )}
         <nav aria-label="Dashboard sidebar" className="space-y-2">
           {items.map((it) => {
-            const isActive = current === it.id;
-            const disabled = !!it.disabled;
-
+            const isActive = current === it.flag;
             return (
               <button
-                key={it.id}
-                onClick={() => change(it.id, disabled, it.path)}
-                disabled={disabled}
+                key={it.flag}
+                onClick={() => change(it.flag, it.href)}
                 aria-current={isActive ? 'page' : undefined}
                 className={`w-full flex items-center gap-3 rounded-xl px-3 py-2 text-left transition
-                ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-hover-bg'}
+                hover:bg-hover-bg
                 ${isActive ? 'bg-accent-yellow text-black font-semibold' : 'text-text-secondary hover:text-text-primary'}
               `}
               >
@@ -106,10 +86,12 @@ export default function Sidebar({
                   ${isActive ? 'border-transparent bg-black/10' : 'border-dark'}
                 `}
                 >
-                  <FontAwesomeIcon
-                    icon={it.icon}
-                    className={`${isActive ? 'text-black' : 'text-text-secondary'}`}
-                  />
+                  {it.icon && (
+                    <FontAwesomeIcon
+                      icon={it.icon}
+                      className={`${isActive ? 'text-black' : 'text-text-secondary'}`}
+                    />
+                  )}
                 </span>
                 <span className="font-medium">{it.label}</span>
               </button>

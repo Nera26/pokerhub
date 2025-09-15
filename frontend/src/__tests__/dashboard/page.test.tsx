@@ -23,25 +23,28 @@ jest.mock('@/hooks/useDashboardMetrics', () => ({
     isLoading: false,
   }),
 }));
-jest.mock('@/lib/api/admin', () => ({
-  fetchSidebarItems: jest.fn().mockResolvedValue([
+jest.mock('@/lib/api/admin', () => ({}));
+
+import {
+  faChartLine,
+  faUsers,
+  faChartBar,
+} from '@fortawesome/free-solid-svg-icons';
+
+jest.mock('@/lib/api/nav', () => ({
+  fetchNavItems: jest.fn().mockResolvedValue([
     {
-      id: 'dashboard',
+      flag: 'dashboard',
+      href: '/dashboard',
       label: 'Dashboard',
-      icon: 'faChartLine',
-      component: '@/app/components/dashboard/DashboardModule',
+      icon: faChartLine,
     },
+    { flag: 'users', href: '/users', label: 'Users', icon: faUsers },
     {
-      id: 'users',
-      label: 'Users',
-      icon: 'faUsers',
-      component: '@/app/components/dashboard/DashboardModule',
-    },
-    {
-      id: 'analytics',
+      flag: 'analytics',
+      href: '/analytics',
       label: 'Analytics',
-      icon: 'faChartBar',
-      component: '@/app/components/dashboard/DashboardModule',
+      icon: faChartBar,
     },
   ]),
 }));
