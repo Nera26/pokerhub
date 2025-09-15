@@ -8,8 +8,14 @@ jest.mock('@/app/components/common/TransactionHistoryTable', () => {
   };
 });
 
+jest.mock('@/hooks/useTransactionColumns', () => ({
+  __esModule: true,
+  default: jest.fn(),
+}));
+
 import TransactionHistoryModal from '@/app/components/modals/TransactionHistoryModal';
 import TransactionHistoryTable from '@/app/components/common/TransactionHistoryTable';
+import useTransactionColumns from '@/hooks/useTransactionColumns';
 import { z } from 'zod';
 import { AdminTransactionEntriesSchema } from '@shared/transactions.schema';
 
@@ -28,26 +34,46 @@ jest.mock('@/lib/api/transactions', () => ({
 }));
 
 describe('TransactionHistoryModal', () => {
-  const entries: AdminTransactionEntry[] = [
-    {
-      date: '2024-01-01 10:00',
-      action: 'Deposit',
-      amount: 100,
-      performedBy: 'User',
-      notes: '',
-      status: 'Completed',
-    },
-    {
-      date: '2024-01-02 12:00',
-      action: 'Withdrawal',
-      amount: -50,
-      performedBy: 'Admin',
-      notes: '',
-      status: 'Pending',
-    },
+  const columnsMeta = [
+    { id: 'datetime', label: 'Date & Time' },
+    { id: 'action', label: 'Action' },
+    { id: 'amount', label: 'Amount' },
+    { id: 'by', label: 'Performed By' },
+    { id: 'notes', label: 'Notes' },
+    { id: 'status', label: 'Status' },
   ];
 
-  it('uses TransactionHistoryTable and filters data', async () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('renders fetched columns and filters data', async () => {
+    const entries: Array<AdminTransactionEntry & { currency?: string }> = [
+      {
+        date: '2024-01-01 10:00',
+        action: 'Deposit',
+        amount: 100,
+        performedBy: 'User',
+        notes: '',
+        status: 'Completed',
+        currency: 'EUR',
+      },
+      {
+        date: '2024-01-02 12:00',
+        action: 'Withdrawal',
+        amount: -50,
+        performedBy: 'Admin',
+        notes: '',
+        status: 'Pending',
+        currency: 'EUR',
+      },
+    ];
+
+    (useTransactionColumns as jest.Mock).mockReturnValue({
+      data: columnsMeta,
+      isLoading: false,
+      error: null,
+    });
     const onFilter = jest.fn();
     const user = userEvent.setup();
     (fetchTransactionFilters as jest.Mock).mockResolvedValue({
@@ -70,41 +96,87 @@ describe('TransactionHistoryModal', () => {
       </QueryClientProvider>,
     );
 
-    // table rendered via shared component
     expect(await screen.findByTestId('tx-table')).toBeInTheDocument();
     const tableMock = TransactionHistoryTable as unknown as jest.Mock;
-    expect(tableMock).toHaveBeenCalled();
+    const call = tableMock.mock.calls[tableMock.mock.calls.length - 1][0];
+    expect(call.columns.map((c: any) => c.header)).toEqual(
+      columnsMeta.map((c) => c.label),
+    );
+
     const expectedTableData = entries.map(({ date, performedBy, ...rest }) => ({
       datetime: date,
       by: performedBy,
       ...rest,
     }));
-    expect(
-      tableMock.mock.calls[tableMock.mock.calls.length - 1][0].data,
-    ).toEqual(expectedTableData);
+    expect(call.data).toEqual(expectedTableData);
 
-    // apply filter
     await user.selectOptions(screen.getByDisplayValue('All Types'), 'Deposit');
     await user.click(screen.getByRole('button', { name: /apply/i }));
 
     expect(onFilter).toHaveBeenCalledWith([entries[0]]);
-    const last = tableMock.mock.calls[tableMock.mock.calls.length - 1][0].data;
-    expect(last).toEqual([
-      {
-        datetime: entries[0].date,
-        by: entries[0].performedBy,
-        action: entries[0].action,
-        amount: entries[0].amount,
-        notes: entries[0].notes,
-        status: entries[0].status,
-      },
-    ]);
   });
 
+  it.each([{ currency: 'EUR' }, { currency: undefined }])(
+    'formats amounts using currency %#',
+    async ({ currency }) => {
+      const entries: Array<AdminTransactionEntry & { currency?: string }> = [
+        {
+          date: '2024-01-01 10:00',
+          action: 'Deposit',
+          amount: 100,
+          performedBy: 'User',
+          notes: '',
+          status: 'Completed',
+          ...(currency ? { currency } : {}),
+        },
+      ];
+
+      (useTransactionColumns as jest.Mock).mockReturnValue({
+        data: columnsMeta,
+        isLoading: false,
+        error: null,
+      });
+      (fetchTransactionFilters as jest.Mock).mockResolvedValue({
+        types: ['All Types'],
+        performedBy: ['All'],
+      });
+      (fetchUserTransactions as jest.Mock).mockResolvedValue(entries);
+      const client = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      });
+      render(
+        <QueryClientProvider client={client}>
+          <TransactionHistoryModal
+            isOpen
+            onClose={() => {}}
+            userName="Test"
+            userId="1"
+          />
+        </QueryClientProvider>,
+      );
+
+      await screen.findByTestId('tx-table');
+      const tableMock = TransactionHistoryTable as unknown as jest.Mock;
+      const { columns, data } = tableMock.mock.calls[0][0];
+      const amountCol = columns.find((c: any) => c.header === 'Amount');
+      const { getByText } = render(amountCol.cell(data[0]));
+      const expected = new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: currency ?? 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(100);
+      expect(getByText(`+${expected}`)).toBeInTheDocument();
+    },
+  );
+
   it('shows error when data fetching fails', async () => {
-    (fetchTransactionFilters as jest.Mock).mockRejectedValue(
-      new Error('fail'),
-    );
+    (useTransactionColumns as jest.Mock).mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: new Error('fail'),
+    });
+    (fetchTransactionFilters as jest.Mock).mockRejectedValue(new Error('fail'));
     (fetchUserTransactions as jest.Mock).mockRejectedValue(new Error('fail'));
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },

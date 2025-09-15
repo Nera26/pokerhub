@@ -19,6 +19,7 @@ import {
 import type { FilterOptions } from '@shared/transactions.schema';
 import { AdminTransactionEntriesSchema } from '@shared/transactions.schema';
 import { z } from 'zod';
+import useTransactionColumns from '@/hooks/useTransactionColumns';
 
 export type Transaction = {
   datetime: string;
@@ -46,40 +47,6 @@ const commonOpts = {
   cellClassName: 'py-3 px-2',
 };
 
-const transactionColumns: Column<Transaction>[] = [
-  {
-    header: 'Date & Time',
-    ...commonOpts,
-    cell: (t) => t.datetime,
-  },
-  {
-    header: 'Action',
-    ...commonOpts,
-    cell: (t) => t.action,
-  },
-  {
-    header: 'Amount',
-    ...commonOpts,
-    cell: (t) => <AmountCell amount={t.amount} currency="USD" />, // default
-  },
-  {
-    header: 'Performed By',
-    ...commonOpts,
-    cell: (t) => t.by,
-  },
-  {
-    header: 'Notes',
-    ...commonOpts,
-    cell: (t) => t.notes,
-    cellClassName: 'py-3 px-2 text-text-secondary',
-  },
-  {
-    header: 'Status',
-    ...commonOpts,
-    cell: (t) => <StatusCell status={t.status} />,
-  },
-];
-
 export default function TransactionHistoryModal({
   isOpen,
   onClose,
@@ -106,8 +73,39 @@ export default function TransactionHistoryModal({
     enabled: isOpen && !!userId,
   });
 
-  const loading = filtersLoading || txLoading;
-  const error = filtersError || txError;
+  const {
+    data: colMeta = [],
+    isLoading: colsLoading,
+    error: colsError,
+  } = useTransactionColumns();
+
+  const currency = (entries as any)[0]?.currency ?? 'USD';
+
+  const columns = useMemo<Column<Transaction>[]>(
+    () =>
+      colMeta.map((c) => ({
+        header: c.label,
+        headerClassName: commonOpts.headerClassName,
+        cellClassName:
+          c.id === 'notes'
+            ? 'py-3 px-2 text-text-secondary'
+            : commonOpts.cellClassName,
+        cell: (t: Transaction) => {
+          switch (c.id) {
+            case 'amount':
+              return <AmountCell amount={t.amount} currency={currency} />;
+            case 'status':
+              return <StatusCell status={t.status} />;
+            default:
+              return (t as any)[c.id as keyof Transaction] ?? '';
+          }
+        },
+      })),
+    [colMeta, currency],
+  );
+
+  const loading = filtersLoading || txLoading || colsLoading;
+  const error = filtersError || txError || colsError;
   // inputs (pending)
   const [start, setStart] = useState<string>('');
   const [end, setEnd] = useState<string>('');
@@ -260,7 +258,7 @@ export default function TransactionHistoryModal({
 
           <TransactionHistoryTable
             data={tableData}
-            columns={transactionColumns}
+            columns={columns}
             getRowKey={(_, idx) => idx}
             estimateSize={52}
             containerClassName="max-h-96 overflow-auto"
