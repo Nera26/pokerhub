@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import LeaderboardTable from './LeaderboardTable';
+import LeaderboardTabs from './LeaderboardTabs';
 import { useLeaderboard } from './useLeaderboard';
-import type { LeaderboardEntry } from '@shared/types';
+import type { LeaderboardEntry, TimeFilter } from '@shared/types';
 
 interface LeaderboardBaseProps {
   onPlayerClick?: (player: LeaderboardEntry) => void;
@@ -11,7 +13,8 @@ interface LeaderboardBaseProps {
 export default function LeaderboardBase({
   onPlayerClick,
 }: LeaderboardBaseProps) {
-  const { data, isLoading, error } = useLeaderboard();
+  const [range, setRange] = useState<TimeFilter>('daily');
+  const { data, isLoading, error } = useLeaderboard(range);
   const players = data ?? [];
 
   if (isLoading) {
@@ -22,5 +25,10 @@ export default function LeaderboardBase({
     return <p>Failed to load leaderboard</p>;
   }
 
-  return <LeaderboardTable data={players} onPlayerClick={onPlayerClick} />;
+  return (
+    <>
+      <LeaderboardTabs selected={range} onChange={setRange} />
+      <LeaderboardTable data={players} onPlayerClick={onPlayerClick} />
+    </>
+  );
 }
