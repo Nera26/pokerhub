@@ -4,9 +4,9 @@ import {
   BroadcastTypesResponseSchema,
   type BroadcastTypesResponse,
 } from '@shared/types';
-import { createLookupHook } from './createLookupHook';
+import { createGetHook } from './useApiQuery';
 
-const useBroadcastTypes = createLookupHook<BroadcastTypesResponse>(
+const useBroadcastTypes = createGetHook<BroadcastTypesResponse>(
   '/api/broadcasts/types',
   BroadcastTypesResponseSchema,
 );

@@ -1,12 +1,12 @@
 'use client';
 
-import { createLookupHook } from './createLookupHook';
+import { createGetHook } from './useApiQuery';
 import {
   AuditLogTypesResponseSchema,
   type AuditLogTypesResponse,
 } from '@shared/types';
 
-const useAuditLogTypes = createLookupHook<AuditLogTypesResponse>(
+const useAuditLogTypes = createGetHook<AuditLogTypesResponse>(
   '/api/admin/audit/log-types',
   AuditLogTypesResponseSchema,
 );
