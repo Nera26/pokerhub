@@ -17,8 +17,10 @@ export const client = createApiClient();
 export type DefaultAvatarResponse =
   paths['/config/default-avatar']['get']['responses']['200']['content']['application/json'];
 
-export async function fetchDefaultAvatar(): Promise<DefaultAvatarResponse> {
-  const { data } = await client.GET('/config/default-avatar');
+export async function fetchDefaultAvatar({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<DefaultAvatarResponse> {
+  const { data } = await client.GET('/config/default-avatar', { signal });
   return data!;
 }
 
