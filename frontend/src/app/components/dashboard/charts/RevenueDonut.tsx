@@ -17,19 +17,10 @@ interface RevenueDonutProps {
 }
 
 export default function RevenueDonut({ streams }: RevenueDonutProps) {
-  const { data: palette, isError } = useChartPalette();
+  const { data: palette, isError, isLoading } = useChartPalette();
 
   const config: ChartConfiguration<'doughnut'> = useMemo(() => {
-    const defaultColors = [
-      'var(--color-accent-green)',
-      'var(--color-accent-yellow)',
-      'var(--color-accent-blue)',
-    ];
-
-    // Use palette if available; otherwise defaults. Always cycle to match stream count.
-    const colorSource =
-      !isError && palette && palette.length > 0 ? palette : defaultColors;
-
+    const colorSource = palette ?? [];
     const backgroundColor = streams.map(
       (_, i) => colorSource[i % colorSource.length],
     );
@@ -73,14 +64,22 @@ export default function RevenueDonut({ streams }: RevenueDonutProps) {
         },
       },
     };
-  }, [streams, palette, isError]);
+  }, [streams, palette]);
 
   const { ref, ready } = useChart(config, [config]);
 
-  if (!ready) {
+  if (isLoading || !ready) {
     return (
       <div className="h-64 flex items-center justify-center text-text-secondary">
         Loading chart...
+      </div>
+    );
+  }
+
+  if (isError || !palette || palette.length === 0) {
+    return (
+      <div className="h-64 flex items-center justify-center text-text-secondary">
+        No data
       </div>
     );
   }
