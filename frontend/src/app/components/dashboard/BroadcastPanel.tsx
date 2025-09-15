@@ -3,7 +3,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { sendBroadcast } from '@/lib/api/broadcasts';
 import { useApiError } from '@/hooks/useApiError';
-import useBroadcastTypes from '@/hooks/useBroadcastTypes';
+import { useBroadcastTypes } from '@/hooks/lookups';
 import { useAdminMessages } from '@/hooks/useAdminMessageActions';
 import AdminMessageList from './AdminMessageList';
 import type { BroadcastType } from '@shared/types';

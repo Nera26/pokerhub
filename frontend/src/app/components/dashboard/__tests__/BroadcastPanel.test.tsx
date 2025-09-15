@@ -3,7 +3,7 @@ import { renderWithClient } from './renderWithClient';
 import BroadcastPanel from '../BroadcastPanel';
 import { fetchMessages } from '@/lib/api/messages';
 import { sendBroadcast } from '@/lib/api/broadcasts';
-import useBroadcastTypes from '@/hooks/useBroadcastTypes';
+import { useBroadcastTypes } from '@/hooks/lookups';
 
 jest.mock('@/hooks/useApiError', () => ({ useApiError: () => {} }));
 jest.mock('@/lib/api/messages', () => ({
@@ -12,9 +12,9 @@ jest.mock('@/lib/api/messages', () => ({
 jest.mock('@/lib/api/broadcasts', () => ({
   sendBroadcast: jest.fn(),
 }));
-jest.mock('@/hooks/useBroadcastTypes', () => ({
+jest.mock('@/hooks/lookups', () => ({
   __esModule: true,
-  default: jest.fn(),
+  useBroadcastTypes: jest.fn(),
 }));
 
 const mockUseBroadcastTypes = useBroadcastTypes as jest.Mock;
