@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { detectChipDump } from '@shared/analytics/collusion';
 import { AnalyticsService } from './analytics.service';
 import { CollusionService } from './collusion.service';
@@ -17,11 +18,28 @@ interface GameEvent {
 export class CollusionDetectionJob {
   private readonly logger = new Logger(CollusionDetectionJob.name);
   private lastCheck = Date.now();
+  private readonly thresholds: {
+    sharedDevices: number;
+    sharedIps: number;
+    vpipCorrelation: number;
+    timingSimilarity: number;
+    seatProximity: number;
+    chipDumpScore: number;
+  };
 
   constructor(
+    private readonly config: ConfigService,
     private readonly analytics: AnalyticsService,
     private readonly collusion: CollusionService,
   ) {
+    this.thresholds = this.config.get('analytics.collusionThresholds', {
+      sharedDevices: 0,
+      sharedIps: 0,
+      vpipCorrelation: 0.9,
+      timingSimilarity: 0.9,
+      seatProximity: 0.9,
+      chipDumpScore: 0.8,
+    });
     setInterval(() => void this.run(), 10 * 60_000);
   }
 
@@ -68,12 +86,12 @@ export class CollusionDetectionJob {
           );
           const dumpScore = detectChipDump(transfers);
           const flagged =
-            features.sharedDevices.length > 0 ||
-            features.sharedIps.length > 0 ||
-            features.vpipCorrelation > 0.9 ||
-            features.timingSimilarity > 0.9 ||
-            features.seatProximity > 0.9 ||
-            dumpScore > 0.8;
+            features.sharedDevices.length > this.thresholds.sharedDevices ||
+            features.sharedIps.length > this.thresholds.sharedIps ||
+            features.vpipCorrelation > this.thresholds.vpipCorrelation ||
+            features.timingSimilarity > this.thresholds.timingSimilarity ||
+            features.seatProximity > this.thresholds.seatProximity ||
+            dumpScore > this.thresholds.chipDumpScore;
           if (flagged) {
             await this.collusion.flagSession(sessionId, [a, b], {
               ...features,
