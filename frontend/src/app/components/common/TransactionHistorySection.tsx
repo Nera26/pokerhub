@@ -2,9 +2,12 @@
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faReceipt } from '@fortawesome/free-solid-svg-icons/faReceipt';
+import { faDownload } from '@fortawesome/free-solid-svg-icons/faDownload';
 import { useMemo, type ReactNode } from 'react';
-import TransactionHistory from '../dashboard/transactions/TransactionHistory';
-import type { Action, Column } from './TransactionHistoryTable';
+import TransactionHistoryTable, {
+  type Action,
+  type Column,
+} from './TransactionHistoryTable';
 import useTransactionColumns from '@/hooks/useTransactionColumns';
 import { AmountCell, StatusCell } from './transactionCells';
 import CenteredMessage from '@/components/CenteredMessage';
@@ -26,9 +29,6 @@ export interface TransactionHistorySectionProps<T extends TransactionLike> {
   filters?: ReactNode;
   onExport?: () => void;
   emptyMessage?: string;
-  page?: number;
-  pageSize?: number;
-  onPageChange?: (page: number) => void;
   actions?: Action<T>[];
 }
 
@@ -39,9 +39,6 @@ export default function TransactionHistorySection<T extends TransactionLike>({
   filters,
   onExport,
   emptyMessage = 'No transaction history found.',
-  page,
-  pageSize,
-  onPageChange,
   actions,
 }: TransactionHistorySectionProps<T>) {
   const {
@@ -97,16 +94,25 @@ export default function TransactionHistorySection<T extends TransactionLike>({
     <section>
       <div className="bg-card-bg p-6 rounded-2xl card-shadow">
         {title && <h3 className="text-lg font-bold mb-4">{title}</h3>}
-        <TransactionHistory
+        {(filters || onExport) && (
+          <div className="flex items-center justify-between mb-4">
+            {filters}
+            {onExport && (
+              <button
+                onClick={onExport}
+                className="bg-accent-blue hover:bg-blue-600 px-4 py-2 rounded-xl font-semibold text-white flex items-center gap-2"
+              >
+                <FontAwesomeIcon icon={faDownload} />
+                Export
+              </button>
+            )}
+          </div>
+        )}
+        <TransactionHistoryTable
           data={data}
           columns={columns}
-          headerSlot={filters}
-          onExport={onExport}
-          emptyState={emptyState}
-          page={page}
-          pageSize={pageSize}
-          onPageChange={onPageChange}
           actions={actions}
+          noDataMessage={emptyState}
         />
       </div>
     </section>

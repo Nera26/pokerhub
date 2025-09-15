@@ -10,16 +10,25 @@ export async function runLobbyErrorTest(
   expectedMessage: string,
 ): Promise<void> {
   server.use(serverOverride);
+
   const fetchMock = jest.spyOn(global, 'fetch');
+
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );
-  const { result } = renderHook(hook, { wrapper });
-  await waitFor(() => expect(result.current.error).not.toBeNull());
-  expect((result.current.error as ApiError).message).toBe(expectedMessage);
-  expect(fetchMock).toHaveBeenCalled();
-  fetchMock.mockRestore();
+
+  try {
+    const { result } = renderHook(hook, { wrapper });
+
+    await waitFor(() => expect(result.current.error).not.toBeNull());
+
+    expect((result.current.error as ApiError).message).toBe(expectedMessage);
+    expect(fetchMock).toHaveBeenCalled();
+  } finally {
+    fetchMock.mockRestore();
+  }
 }

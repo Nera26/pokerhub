@@ -2,22 +2,10 @@ import { screen } from '@testing-library/react';
 import { renderWithClient } from './renderWithClient';
 import Withdrawals from '../Withdrawals';
 import { fetchPendingWithdrawals } from '@/lib/api';
+import { mockMetadataFetch } from '../../common/__tests__/helpers';
 
 jest.mock('@/lib/api', () => ({
   fetchPendingWithdrawals: jest.fn(),
-}));
-
-jest.mock('../transactions/TransactionHistory', () => ({
-  __esModule: true,
-  default: ({ actions, data }: any) => (
-    <div>
-      {actions?.map((a: any, i: number) => (
-        <button key={i} onClick={() => a.onClick(data[0])}>
-          {a.label}
-        </button>
-      ))}
-    </div>
-  ),
 }));
 
 describe('Withdrawals', () => {
@@ -37,6 +25,14 @@ describe('Withdrawals', () => {
     jest.clearAllMocks();
     (fetchPendingWithdrawals as jest.Mock).mockResolvedValue({
       withdrawals: [withdrawal],
+    });
+    mockMetadataFetch({
+      columns: [
+        { id: 'type', label: 'Type' },
+        { id: 'amount', label: 'Amount' },
+        { id: 'date', label: 'Date' },
+        { id: 'status', label: 'Status' },
+      ],
     });
   });
 

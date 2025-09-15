@@ -151,21 +151,31 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
   if (logError) {
     return <p role="alert">Failed to load transaction history.</p>;
   }
-
-  if (log.length === 0) {
-    return <p>No transaction history.</p>;
-  }
-
   return (
-    <TransactionHistorySection
-      data={log}
-      currency={currency}
-      filters={filters}
-      onExport={onExport}
-      emptyMessage="No transaction history."
-      page={page}
-      pageSize={pageSize}
-      onPageChange={setPage}
-    />
+    <>
+      <TransactionHistorySection
+        data={log}
+        currency={currency}
+        filters={filters}
+        onExport={onExport}
+        emptyMessage="No transaction history."
+      />
+      <div className="flex justify-end gap-2 mt-4">
+        <button
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          disabled={page === 1}
+          className="px-3 py-1 rounded bg-primary-bg border border-dark disabled:opacity-50"
+        >
+          Previous
+        </button>
+        <button
+          onClick={() => setPage((p) => p + 1)}
+          disabled={log.length < pageSize}
+          className="px-3 py-1 rounded bg-primary-bg border border-dark disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
+    </>
   );
 }
