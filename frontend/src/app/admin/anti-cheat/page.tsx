@@ -1,12 +1,12 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
-import { fetchFlags, updateFlag, type Flag } from '@/lib/api/antiCheat';
-
-const next: Record<Flag['action'], Flag['action']> = {
-  warn: 'restrict',
-  restrict: 'ban',
-  ban: 'ban',
-};
+import {
+  fetchFlags,
+  updateFlag,
+  fetchNextAction,
+  type Flag,
+} from '@/lib/api/antiCheat';
+import { useState } from 'react';
 
 export default function AntiCheatPage() {
   const {
@@ -19,9 +19,21 @@ export default function AntiCheatPage() {
     queryFn: fetchFlags,
   });
 
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
   const escalate = async (id: string, action: Flag['action']) => {
-    await updateFlag(id, next[action]);
-    await refetch();
+    setLoadingId(id);
+    setError(null);
+    try {
+      const next = await fetchNextAction(action);
+      await updateFlag(id, next);
+      await refetch();
+    } catch {
+      setError('Failed to escalate');
+    } finally {
+      setLoadingId(null);
+    }
   };
 
   if (isLoading) return <div>Loading...</div>;
@@ -31,6 +43,7 @@ export default function AntiCheatPage() {
   return (
     <div>
       <h1>Anti-Cheat Review</h1>
+      {error && <div role="alert">{error}</div>}
       <ul>
         {flags.map((f) => (
           <li key={f.id} className="mb-4">
@@ -40,7 +53,10 @@ export default function AntiCheatPage() {
                 <li key={i}>{h}</li>
               ))}
             </ul>
-            <button onClick={() => escalate(f.id, f.action)}>
+            <button
+              onClick={() => escalate(f.id, f.action)}
+              disabled={loadingId === f.id}
+            >
               {f.action.charAt(0).toUpperCase() + f.action.slice(1)}
             </button>
           </li>
