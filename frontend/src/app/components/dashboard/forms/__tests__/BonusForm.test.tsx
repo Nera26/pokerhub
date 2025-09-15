@@ -40,4 +40,24 @@ describe('BonusForm', () => {
       screen.getByText('Failed to load bonus options'),
     ).toBeInTheDocument();
   });
+
+  it('renders field errors', () => {
+    (useQuery as jest.Mock).mockReturnValue({
+      data: { types: [], eligibilities: [], statuses: [] },
+      error: null,
+    });
+
+    render(
+      <BonusForm
+        register={register}
+        errors={{ name: { type: 'required', message: 'Required' } } as any}
+      />,
+    );
+
+    expect(screen.getByText('Required')).toBeInTheDocument();
+    expect(screen.getByLabelText('Promotion Name')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+  });
 });

@@ -7,9 +7,9 @@ jest.mock('@shared/types', () => {
   const { z } = require('zod');
   const CTAVariantSchema = z.enum(['primary', 'secondary']);
   const CTASchema = z.object({
-    id: z.string(),
-    label: z.string(),
-    href: z.string(),
+    id: z.string().min(1, { message: 'Required' }),
+    label: z.string().min(1, { message: 'Required' }),
+    href: z.string().min(1, { message: 'Required' }),
     variant: CTAVariantSchema,
   });
   return { CTASchema, CTAVariantSchema };
@@ -94,5 +94,18 @@ describe('CTAForm', () => {
         variant: 'primary',
       });
     });
+  });
+
+  it('shows validation errors', async () => {
+    const onSuccess = jest.fn();
+    renderForm(<CTAForm onSuccess={onSuccess} />);
+    await user.click(screen.getByRole('button', { name: /save cta/i }));
+    const errors = await screen.findAllByText('Required');
+    expect(errors.length).toBe(3);
+    expect(screen.getByLabelText(/id/i)).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+    expect(onSuccess).not.toHaveBeenCalled();
   });
 });
