@@ -27,6 +27,7 @@ import WalletReconcileMismatches from './WalletReconcileMismatches';
 import FeatureFlagsPanel from './FeatureFlagsPanel';
 import CenteredMessage from '@/components/CenteredMessage';
 import { Card, CardTitle, CardContent } from '@/app/components/ui/Card';
+import Analytics from './analytics/Analytics';
 
 const ActivityChart = dynamic(() => import('./charts/ActivityChart'), {
   loading: () => (
@@ -367,6 +368,8 @@ export default function Dashboard() {
           <DashboardTransactionHistory onExport={() => {}} />
         </CardContent>
       </Card>
+
+      {isAdmin && <Analytics />}
     </div>
   );
 }

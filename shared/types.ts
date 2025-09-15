@@ -173,6 +173,7 @@ export {
   RevenueStreamSchema,
   RevenueBreakdownSchema,
   ActivityResponseSchema,
+  ErrorCategoriesResponseSchema,
 } from './schemas/analytics';
 export type {
   AuditLogType,
@@ -188,6 +189,7 @@ export type {
   RevenueStream,
   RevenueBreakdown,
   ActivityResponse,
+  ErrorCategoriesResponse,
 } from './schemas/analytics';
 
 // Analytics log types
