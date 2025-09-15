@@ -38,10 +38,20 @@ describe('HomeLoadingSkeleton', () => {
       '#tournaments-section',
     ) as HTMLElement;
 
-    expect(within(cashSection).queryAllByTestId('skeleton-card')).toHaveLength(0);
     expect(
-      within(tournamentSection).queryAllByTestId('skeleton-card'),
+      within(cashSection).queryAllByLabelText('Loading table'),
     ).toHaveLength(0);
+    expect(
+      within(tournamentSection).queryAllByLabelText('Loading table'),
+    ).toHaveLength(0);
+
+    const cashTitle = cashSection.querySelector('div') as HTMLElement;
+    const tournamentTitle = tournamentSection.querySelector(
+      'div',
+    ) as HTMLElement;
+
+    expect(cashTitle).toHaveClass('w-40');
+    expect(tournamentTitle).toHaveClass('w-44');
   });
 
   it('renders skeletons based on query sizes', () => {
@@ -62,9 +72,19 @@ describe('HomeLoadingSkeleton', () => {
       '#tournaments-section',
     ) as HTMLElement;
 
-    expect(within(cashSection).getAllByTestId('skeleton-card')).toHaveLength(5);
+    expect(within(cashSection).getAllByLabelText('Loading table')).toHaveLength(
+      5,
+    );
     expect(
-      within(tournamentSection).getAllByTestId('skeleton-card'),
+      within(tournamentSection).getAllByLabelText('Loading table'),
     ).toHaveLength(2);
+
+    const cashTitle = cashSection.querySelector('div') as HTMLElement;
+    const tournamentTitle = tournamentSection.querySelector(
+      'div',
+    ) as HTMLElement;
+
+    expect(cashTitle).toHaveClass('w-40');
+    expect(tournamentTitle).toHaveClass('w-44');
   });
 });
