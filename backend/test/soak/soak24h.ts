@@ -1,7 +1,9 @@
-import { readdirSync, readFileSync } from 'fs';
+import { readdirSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 import { performance } from 'perf_hooks';
+
+import { collectGcPauses, replayHandLogs } from './utils';
 
 import { GameGateway } from '../../src/game/game.gateway';
 import { ClockService } from '../../src/game/clock.service';
@@ -9,28 +11,16 @@ import { GameEngine } from '../../src/game/engine';
 
 // Directory containing recorded hand logs
 const logsDir = join(__dirname, '../../../storage/hand-logs');
-const files = readdirSync(logsDir).filter((f) => f.endsWith('.jsonl'));
+const files = readdirSync(logsDir)
+  .filter((f) => f.endsWith('.jsonl'))
+  .map((f) => join(logsDir, f));
 if (files.length === 0) {
   console.error('No hand logs found in', logsDir);
   process.exit(1);
 }
 
-// Capture GC pause durations from --trace-gc output
-const gcPauses: number[] = [];
+const gcPauses = collectGcPauses();
 const latencies: number[] = [];
-const origWrite = process.stderr.write.bind(process.stderr);
-(process.stderr as unknown as { write: typeof process.stderr.write }).write = (
-  chunk: any,
-  encoding?: any,
-  cb?: any,
-) => {
-  const str = chunk.toString();
-  const match = str.match(/\s(\d+(?:\.\d+)?) ms:/);
-  if (match) {
-    gcPauses.push(parseFloat(match[1]));
-  }
-  return origWrite(chunk, encoding, cb);
-};
 
 // Simple stubs for external dependencies
 class DummyAnalytics {
@@ -142,21 +132,11 @@ async function run() {
     handshake: { auth: {}, headers: {} },
   };
 
-  while (Date.now() < endTime) {
-    for (const file of files) {
-      const lines = readFileSync(join(logsDir, file), 'utf8')
-        .trim()
-        .split('\n')
-        .filter(Boolean);
-      if (lines.length === 0) continue;
-      const first = JSON.parse(lines[0]);
-      const players = (first[2]?.players ?? []).map((p: any) => p.id);
-      const tableId = randomUUID();
-      await rooms.create(tableId, players);
-
-      for (const line of lines) {
-        const entry = JSON.parse(line);
-        const action = entry[1];
+  const engineFactory = async (players: string[]) => {
+    const tableId = randomUUID();
+    await rooms.create(tableId, players);
+    return {
+      applyAction: async (action: any) => {
         const start = performance.now();
         await gateway.handleAction(client, {
           ...action,
@@ -171,10 +151,13 @@ async function run() {
           console.log(`Heap used: ${heapMb.toFixed(2)} MB`);
           nextLog = Date.now() + 60 * 1000; // log every minute
         }
-      }
+      },
+      close: () => rooms.close(tableId),
+    };
+  };
 
-      rooms.close(tableId);
-    }
+  while (Date.now() < endTime) {
+    await replayHandLogs(files, engineFactory);
   }
 
   const endHeap = process.memoryUsage().heapUsed;
