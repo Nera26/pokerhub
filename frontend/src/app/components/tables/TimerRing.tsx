@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { useTableThemeData } from '@/hooks/useTableThemeData';
+import { useTableTheme } from '@/hooks/useTableTheme';
 import PlayerAvatar from './PlayerAvatar';
 import type { Player } from './types';
 import { getServerTime } from '@/lib/server-time';
@@ -20,8 +20,8 @@ export default function TimerRing({
   const [timeLeft, setTimeLeft] = useState(player.timeLeft ?? 0);
   const totalTimeRef = useRef(player.timeLeft ?? 0);
 
-  const { status, positions } = useTableThemeData();
-  if (status === 'loading') {
+  const { status, positions } = useTableTheme();
+  if (status === 'pending') {
     return <div>Loading table theme...</div>;
   }
   if (status === 'error' || !positions) {

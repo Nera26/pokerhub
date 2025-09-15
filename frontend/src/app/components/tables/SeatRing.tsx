@@ -9,7 +9,7 @@ import ChipAnimator from './ChipAnimator';
 import { useQueryClient } from '@tanstack/react-query';
 import type { TableState } from '../../store/tableStore';
 import { TableUiProvider } from './TableUiContext';
-import { useTableThemeData } from '@/hooks/useTableThemeData';
+import { useTableTheme } from '@/hooks/useTableTheme';
 
 export interface SeatRingProps {
   players: Player[];
@@ -120,8 +120,8 @@ export default function SeatRing({
     queryClient.setQueryData(['table', 'local'], tableState);
   }, [players, pot, street, sidePots, handNumber, queryClient]);
 
-  const { status, positions } = useTableThemeData();
-  if (status === 'loading') {
+  const { status, positions } = useTableTheme();
+  if (status === 'pending') {
     return <div>Loading table theme...</div>;
   }
   if (status === 'error' || !positions) {
