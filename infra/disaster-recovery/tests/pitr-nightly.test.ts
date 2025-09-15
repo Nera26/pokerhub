@@ -59,7 +59,7 @@ const env = {
   CLOUD_SQL_ACCESS_TOKEN: 'token'
 };
 
-const result = spawnSync('bash', ['infra/disaster-recovery/tests/pitr-nightly.sh'], {
+const result = spawnSync('bash', ['infra/disaster-recovery/pitr-nightly.sh'], {
   env,
   stdio: 'inherit'
 });
