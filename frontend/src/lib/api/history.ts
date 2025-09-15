@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { apiClient } from './client';
+import { type ZodType } from 'zod';
+import { fetchList } from './fetchList';
 import {
   GameHistoryEntrySchema,
   TournamentHistoryEntrySchema,
@@ -11,9 +11,9 @@ import {
 
 export type { GameHistoryEntry, TournamentHistoryEntry, TransactionEntry };
 
-function createHistoryFetcher<T>(path: string, schema: z.ZodType<T>) {
+function createHistoryFetcher<T>(path: string, schema: ZodType<T>) {
   return (opts: { signal?: AbortSignal } = {}): Promise<T[]> =>
-    apiClient(path, z.array(schema), { signal: opts.signal });
+    fetchList(path, schema, opts);
 }
 
 export const fetchGameHistory = createHistoryFetcher(
