@@ -34,8 +34,8 @@ The CI/CD pipeline promotes builds through several gated stages:
 5. **Load** – post-deploy k6 scripts (`load/k6-*.js`) stress critical paths before promotion.
 
 Canary releases run via `deploy/canary.sh`, which verifies service metrics with
-`scripts/check-metrics.sh` prior to promotion.  A failed health check, metric threshold,
-or load test triggers `deploy/canary-rollback.sh` to restore the previous version.
+`scripts/check-metrics.sh` prior to promotion. A failed health check, metric threshold,
+or load test triggers `deploy/rollback.sh --canary` to restore the previous version.
 
 ### Rollback Triggers
 
