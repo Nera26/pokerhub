@@ -14,7 +14,18 @@ export class SidebarService {
   ) {}
 
   async getItems(): Promise<SidebarItem[]> {
-    const items = this.config.get<SidebarItem[]>('admin.sidebar', []) ?? [];
+    let items = this.config.get<SidebarItem[]>('admin.sidebar', []) ?? [];
+    if (!items.some((t) => t.id === 'events')) {
+      items = [
+        ...items,
+        {
+          id: 'events',
+          label: 'Events',
+          icon: 'faBell',
+          component: '@/app/components/dashboard/AdminEvents',
+        },
+      ];
+    }
     const requiredEntities = await this.repo.find();
     const required: SidebarItem[] = requiredEntities.map((e) => ({
       id: e.id,
