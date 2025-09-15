@@ -1,44 +1,32 @@
 'use client';
-import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { fetchFlags, updateFlag, type Flag } from '@/lib/api/antiCheat';
 
-type Action = 'warn' | 'restrict' | 'ban';
-
-interface Flag {
-  id: string;
-  player: string;
-  history: string[];
-  action: Action;
-}
-
-const next: Record<Action, Action> = {
+const next: Record<Flag['action'], Flag['action']> = {
   warn: 'restrict',
   restrict: 'ban',
   ban: 'ban',
 };
 
 export default function AntiCheatPage() {
-  const [flags, setFlags] = useState<Flag[]>([
-    {
-      id: '1',
-      player: 'PlayerOne',
-      history: ['vpip correlation high'],
-      action: 'warn',
-    },
-    {
-      id: '2',
-      player: 'PlayerTwo',
-      history: ['timing similarity'],
-      action: 'restrict',
-    },
-  ]);
+  const {
+    data: flags = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery<Flag[], Error>({
+    queryKey: ['anti-cheat', 'flags'],
+    queryFn: fetchFlags,
+  });
 
-  const escalate = (id: string) => {
-    setFlags((fs) =>
-      fs.map((f) =>
-        f.id === id ? { ...f, action: next[f.action] } : f,
-      ),
-    );
+  const escalate = async (id: string, action: Flag['action']) => {
+    await updateFlag(id, next[action]);
+    await refetch();
   };
+
+  if (isLoading) return <div>Loading...</div>;
+  if (isError) return <div>Error loading flags</div>;
+  if (!flags.length) return <div>No flags</div>;
 
   return (
     <div>
@@ -52,7 +40,7 @@ export default function AntiCheatPage() {
                 <li key={i}>{h}</li>
               ))}
             </ul>
-            <button onClick={() => escalate(f.id)}>
+            <button onClick={() => escalate(f.id, f.action)}>
               {f.action.charAt(0).toUpperCase() + f.action.slice(1)}
             </button>
           </li>
