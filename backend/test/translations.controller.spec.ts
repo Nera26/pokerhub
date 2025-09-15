@@ -57,6 +57,14 @@ describe('TranslationsController', () => {
     await repo.insert([
       { lang: 'en', key: 'login.title', value: 'Login' },
       { lang: 'es', key: 'login.title', value: 'Iniciar sesión' },
+      { lang: 'en', key: 'searchPlaceholder', value: 'Search...' },
+      { lang: 'es', key: 'searchPlaceholder', value: 'Buscar...' },
+      { lang: 'en', key: 'noResultsFound', value: 'No results found' },
+      {
+        lang: 'es',
+        key: 'noResultsFound',
+        value: 'No se encontraron resultados',
+      },
     ]);
   });
 
@@ -65,31 +73,33 @@ describe('TranslationsController', () => {
   });
 
   it('returns translations for supported language', async () => {
-    const res = await request(app.getHttpServer())
-      .get('/translations/es')
-      .expect(200);
-    expect(res.body.messages['login.title']).toBe('Iniciar sesión');
+    const server = app.getHttpServer() as Parameters<typeof request>[0];
+    const res = await request(server).get('/translations/es').expect(200);
+    const body = res.body as { messages: Record<string, string> };
+    expect(body.messages['login.title']).toBe('Iniciar sesión');
+    expect(body.messages.searchPlaceholder).toBe('Buscar...');
+    expect(body.messages.noResultsFound).toBe('No se encontraron resultados');
   });
 
   it('falls back to English for unsupported language', async () => {
-    const res = await request(app.getHttpServer())
-      .get('/translations/fr')
-      .expect(200);
-    expect(res.body.messages['login.title']).toBe('Login');
+    const server = app.getHttpServer() as Parameters<typeof request>[0];
+    const res = await request(server).get('/translations/fr').expect(200);
+    const body = res.body as { messages: Record<string, string> };
+    expect(body.messages['login.title']).toBe('Login');
+    expect(body.messages.searchPlaceholder).toBe('Search...');
+    expect(body.messages.noResultsFound).toBe('No results found');
   });
 
   it('sets cache headers', async () => {
-    const res = await request(app.getHttpServer())
-      .get('/translations/en')
-      .expect(200);
+    const server = app.getHttpServer() as Parameters<typeof request>[0];
+    const res = await request(server).get('/translations/en').expect(200);
     expect(res.headers['cache-control']).toBe(`public, max-age=${CACHE_TTL}`);
   });
 
   it('handles service errors', async () => {
     const svc = app.get(TranslationsService);
     jest.spyOn(svc, 'get').mockRejectedValueOnce(new Error('boom'));
-    await request(app.getHttpServer())
-      .get('/translations/en')
-      .expect(500);
+    const server = app.getHttpServer() as Parameters<typeof request>[0];
+    await request(server).get('/translations/en').expect(500);
   });
 });
