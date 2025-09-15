@@ -268,6 +268,9 @@ export {
   TournamentFiltersResponseSchema,
   TournamentSimulateRequestSchema,
   TournamentSimulateResponseSchema,
+  TournamentStateSchema,
+  TournamentStatusSchema,
+  TournamentStateMap,
 } from '../backend/src/schemas/tournaments';
 export type {
   Tournament,
@@ -280,6 +283,8 @@ export type {
   TournamentFiltersResponse,
   TournamentSimulateRequest,
   TournamentSimulateResponse,
+  TournamentState,
+  TournamentStatus,
 } from '../backend/src/schemas/tournaments';
 
 export {
