@@ -5,23 +5,19 @@ import { useGameTypes } from '@/hooks/useGameTypes';
 import type { GameFilter, ProfitLossFilter } from '@/types/filters';
 
 interface FilterDropdownProps {
-  open: boolean;
   filters: { gameType: GameFilter; profitLoss: ProfitLossFilter; date: string };
-  onApply(filters: {
+  onChange(filters: {
     gameType: GameFilter;
     profitLoss: ProfitLossFilter;
     date: string;
   }): void;
-  onReset(): void;
   /** accept extra class for positioning */
   className?: string;
 }
 
 function FilterDropdown({
-  open,
   filters,
-  onApply,
-  onReset,
+  onChange,
   className = '',
 }: FilterDropdownProps) {
   const [local, setLocal] = useState(filters);
@@ -35,7 +31,11 @@ function FilterDropdown({
     setLocal(filters);
   }, [filters]);
 
-  if (!open) return null;
+  const handleReset = () => {
+    const resetFilters = { gameType: 'any', profitLoss: 'any', date: '' };
+    setLocal(resetFilters);
+    onChange(resetFilters);
+  };
 
   return (
     <div
@@ -98,14 +98,14 @@ function FilterDropdown({
           <button
             type="button"
             className="text-text-secondary hover:text-accent-yellow"
-            onClick={onReset}
+            onClick={handleReset}
           >
             Reset
           </button>
           <button
             type="button"
             className="bg-accent-green text-white font-semibold py-1 px-3 rounded-xl hover-glow-green"
-            onClick={() => onApply(local)}
+            onClick={() => onChange(local)}
           >
             Apply
           </button>
