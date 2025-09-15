@@ -5,6 +5,7 @@ import { Table as TableEntity } from '../database/entities/table.entity';
 import { User } from '../database/entities/user.entity';
 import { RoomManager } from './room.service';
 import { ChatService } from './chat.service';
+import { RANKS, SUITS } from '@shared/poker/cards';
 import type {
   Table as TableDto,
   TableData,
@@ -187,10 +188,8 @@ export class TablesService {
   }
 
   private cardToString(card: number): string {
-    const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
-    const suits = ['♣', '♦', '♥', '♠'];
-    const rank = ranks[Math.floor(card / 4)] ?? '?';
-    const suit = suits[card % 4] ?? '?';
+    const rank = RANKS[Math.floor(card / 4)] ?? '?';
+    const suit = SUITS[card % 4] ?? '?';
     return `${rank}${suit}`;
   }
 
