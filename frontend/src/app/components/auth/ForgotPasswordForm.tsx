@@ -317,14 +317,16 @@ export default function ForgotPasswordForm({
           </form>
         )}
 
-        <div className="text-center mt-4">
-          <button
-            className="text-accent-yellow text-sm hover:underline"
-            onClick={() => onBack?.()}
-          >
-            Back to Login
-          </button>
-        </div>
+        {onBack && (
+          <div className="text-center mt-4">
+            <button
+              className="text-accent-yellow text-sm hover:underline"
+              onClick={onBack}
+            >
+              Back to Login
+            </button>
+          </div>
+        )}
       </div>
     </FormProvider>
   );
