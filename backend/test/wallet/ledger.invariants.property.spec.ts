@@ -1,22 +1,19 @@
 import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
-import { Account } from '../../src/wallet/account.entity';
-import { JournalEntry } from '../../src/wallet/journal-entry.entity';
-import { Disbursement } from '../../src/wallet/disbursement.entity';
-import { SettlementJournal } from '../../src/wallet/settlement-journal.entity';
-import { PendingDeposit } from '../../src/wallet/pending-deposit.entity';
 import { WalletService } from '../../src/wallet/wallet.service';
 import { EventPublisher } from '../../src/events/events.service';
-import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
-import { KycService } from '../../src/wallet/kyc.service';
 import { runReconcile } from '../../src/wallet/reconcile.job';
-import { SettlementService } from '../../src/wallet/settlement.service';
-import { ConfigService } from '@nestjs/config';
 import * as fc from 'fast-check';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { assertLedgerInvariant, resetLedger, walletBatchArb, runWalletBatch } from './test-utils';
+import {
+  assertLedgerInvariant,
+  resetLedger,
+  walletBatchArb,
+  runWalletBatch,
+  createInMemoryDb,
+  createWalletServices,
+} from './test-utils';
 
 const runInTmp = async (fn: () => Promise<void>) => {
   const cwd = process.cwd();
@@ -34,74 +31,18 @@ const runInTmp = async (fn: () => Promise<void>) => {
 describe('Wallet ledger invariants', () => {
   let dataSource: DataSource;
   let service: WalletService;
-  const events: EventPublisher = { emit: jest.fn() } as any;
+  let events: EventPublisher;
+  let repos: ReturnType<typeof createWalletServices>['repos'];
   const userId = '11111111-1111-1111-1111-111111111111';
   const reserveId = '00000000-0000-0000-0000-000000000001';
   const rakeId = '00000000-0000-0000-0000-000000000002';
   const prizeId = '00000000-0000-0000-0000-000000000003';
 
   beforeAll(async () => {
-    const db = newDb();
-    db.public.registerFunction({
-      name: 'version',
-      returns: 'text',
-      implementation: () => 'pg-mem',
-    });
-    db.public.registerFunction({
-      name: 'current_database',
-      returns: 'text',
-      implementation: () => 'test',
-    });
-    let seq = 1;
-    db.public.registerFunction({
-      name: 'uuid_generate_v4',
-      returns: 'text',
-      implementation: () => {
-        const id = seq.toString(16).padStart(32, '0');
-        seq++;
-        return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(16, 20)}-${id.slice(20)}`;
-      },
-    });
-    dataSource = db.adapters.createTypeormDataSource({
-      type: 'postgres',
-      entities: [
-        Account,
-        JournalEntry,
-        Disbursement,
-        SettlementJournal,
-        PendingDeposit,
-      ],
-      synchronize: true,
-    }) as DataSource;
-    await dataSource.initialize();
+    dataSource = await createInMemoryDb();
+    ({ service, events, repos } = createWalletServices(dataSource));
 
-    const accountRepo = dataSource.getRepository(Account);
-    const journalRepo = dataSource.getRepository(JournalEntry);
-    const redis: any = { incr: jest.fn(), expire: jest.fn() };
-    const disbRepo = dataSource.getRepository(Disbursement);
-    const settleRepo = dataSource.getRepository(SettlementJournal);
-    const pendingRepo = dataSource.getRepository(PendingDeposit);
-    const provider = {} as unknown as PaymentProviderService;
-    const kyc = { validate: jest.fn(), getDenialReason: jest.fn() } as unknown as KycService;
-    const settleSvc = new SettlementService(settleRepo);
-    const config = {
-      get: jest.fn().mockReturnValue(['reserve', 'house', 'rake', 'prize']),
-    } as unknown as ConfigService;
-    service = new WalletService(
-      accountRepo,
-      journalRepo,
-      disbRepo,
-      settleRepo,
-      pendingRepo,
-      events,
-      redis,
-      provider,
-      kyc,
-      settleSvc,
-      config,
-    );
-
-    await accountRepo.save([
+    await repos.account.save([
       { id: userId, name: 'user', balance: 0, currency: 'USD' },
       { id: reserveId, name: 'reserve', balance: 0, currency: 'USD' },
       { id: rakeId, name: 'rake', balance: 0, currency: 'USD' },
@@ -120,14 +61,7 @@ describe('Wallet ledger invariants', () => {
         fc.asyncProperty(
           walletBatchArb(),
           async (batch) => {
-            const accountRepo = dataSource.getRepository(Account);
-            const journalRepo = dataSource.getRepository(JournalEntry);
-            await runWalletBatch(
-              service,
-              { account: accountRepo, journal: journalRepo },
-              batch,
-              userId,
-            );
+            await runWalletBatch(service, repos, batch, userId);
           },
         ),
         { numRuns: 25 },
@@ -143,21 +77,13 @@ describe('Wallet ledger invariants', () => {
         fc.asyncProperty(
           walletBatchArb(),
           async (batch) => {
-            const accountRepo = dataSource.getRepository(Account);
-            const journalRepo = dataSource.getRepository(JournalEntry);
-
-            await runWalletBatch(
-              service,
-              { account: accountRepo, journal: journalRepo },
-              batch,
-              userId,
-            );
+            await runWalletBatch(service, repos, batch, userId);
 
             await runInTmp(() => runReconcile(service, events));
 
-            const user = await accountRepo.findOneByOrFail({ id: userId });
+            const user = await repos.account.findOneByOrFail({ id: userId });
             user.balance += 1;
-            await accountRepo.save(user);
+            await repos.account.save(user);
             await runInTmp(async () => {
               await expect(runReconcile(service, events)).rejects.toThrow(
                 'wallet reconciliation discrepancies',
@@ -192,8 +118,8 @@ describe('Wallet ledger invariants', () => {
             { maxLength: 10 },
           ),
           async (batch) => {
-            const accountRepo = dataSource.getRepository(Account);
-            const journalRepo = dataSource.getRepository(JournalEntry);
+            const accountRepo = repos.account;
+            const journalRepo = repos.journal;
 
             await resetLedger({ account: accountRepo, journal: journalRepo });
 
