@@ -1,4 +1,4 @@
-import { mockHomeDependencies } from './utils/homePageMocks';
+import { setupHomeTests } from './utils/homeTestSetup';
 import { render, screen, within } from '@testing-library/react';
 import { HomePageClient } from '@/app/(site)/HomePageClient';
 import LiveTableCard, {
@@ -43,8 +43,7 @@ jest.mock('@/hooks/useVirtualizedList', () => {
       actual.default({ ...opts, createVirtualizer: virtualizerStub }),
   };
 });
-jest.mock('@/hooks/useLobbyData');
-mockHomeDependencies();
+setupHomeTests();
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: jest.fn(), prefetch: jest.fn() }),
 }));
