@@ -7,6 +7,8 @@ import { TransactionType } from '../src/wallet/transaction-type.entity';
 import { Transaction } from '../src/wallet/transaction.entity';
 import { TransactionStatus } from '../src/wallet/transaction-status.entity';
 import { TransactionTabEntity } from '../src/wallet/transaction-tab.entity';
+import { TransactionColumnEntity } from '../src/wallet/transaction-column.entity';
+import { TransactionColumnRepository } from '../src/wallet/transaction-column.repository';
 
 describe('TransactionsService', () => {
   let service: TransactionsService;
@@ -14,6 +16,7 @@ describe('TransactionsService', () => {
   let txnRepo: Repository<Transaction>;
   let statusRepo: Repository<TransactionStatus>;
   let tabRepo: Repository<TransactionTabEntity>;
+  let columnRepo: TransactionColumnRepository;
 
   beforeEach(async () => {
     let dataSource: DataSource;
@@ -50,6 +53,7 @@ describe('TransactionsService', () => {
                 Transaction,
                 TransactionStatus,
                 TransactionTabEntity,
+                TransactionColumnEntity,
               ],
               synchronize: true,
             }) as DataSource;
@@ -62,9 +66,10 @@ describe('TransactionsService', () => {
           Transaction,
           TransactionStatus,
           TransactionTabEntity,
+          TransactionColumnEntity,
         ]),
       ],
-      providers: [TransactionsService],
+      providers: [TransactionsService, TransactionColumnRepository],
     }).compile();
 
     service = moduleRef.get(TransactionsService);
@@ -72,6 +77,7 @@ describe('TransactionsService', () => {
     txnRepo = moduleRef.get(getRepositoryToken(Transaction));
     statusRepo = moduleRef.get(getRepositoryToken(TransactionStatus));
     tabRepo = moduleRef.get(getRepositoryToken(TransactionTabEntity));
+    columnRepo = moduleRef.get(TransactionColumnRepository);
 
     await typeRepo.save([
       { id: 'deposit', label: 'Deposit' },
@@ -143,5 +149,35 @@ describe('TransactionsService', () => {
     const entries = await service.getUserTransactions('user1');
     expect(entries).toHaveLength(2);
     expect(entries[0]).toHaveProperty('action');
+  });
+
+  describe('getTransactionColumns', () => {
+    it('returns an empty list when no columns exist', async () => {
+      const columns = await service.getTransactionColumns();
+      expect(columns).toEqual([]);
+    });
+
+    it('maps stored columns to the response schema', async () => {
+      await columnRepo.save([
+        { id: 'type', label: 'Type' },
+        { id: 'amount', label: 'Amount' },
+      ]);
+
+      const columns = await service.getTransactionColumns();
+      expect(columns).toEqual([
+        { id: 'type', label: 'Type' },
+        { id: 'amount', label: 'Amount' },
+      ]);
+    });
+
+    it('propagates repository errors', async () => {
+      jest
+        .spyOn(columnRepo, 'find')
+        .mockRejectedValueOnce(new Error('database unavailable'));
+
+      await expect(service.getTransactionColumns()).rejects.toThrow(
+        'database unavailable',
+      );
+    });
   });
 });

@@ -86,6 +86,20 @@ describe('NavIconsController', () => {
     expect(body).toEqual(expected);
   });
 
+  it('returns navigation icons for admin route', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/admin/nav-icons')
+      .expect(200);
+    const body = NavIconsResponseSchema.parse(res.body);
+    const expected: NavIconsResponse = [
+      { name: 'foo', svg: '<svg>foo</svg>' },
+      { name: 'bar', svg: '<svg>bar</svg>' },
+    ];
+    body.sort((a, b) => a.name.localeCompare(b.name));
+    expected.sort((a, b) => a.name.localeCompare(b.name));
+    expect(body).toEqual(expected);
+  });
+
   it('creates a navigation icon', async () => {
     const icon: NavIcon = { name: 'baz', svg: '<svg>baz</svg>' };
     const res = await request(app.getHttpServer())

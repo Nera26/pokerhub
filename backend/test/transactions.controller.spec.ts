@@ -10,6 +10,8 @@ import { TransactionType } from '../src/wallet/transaction-type.entity';
 import { Transaction } from '../src/wallet/transaction.entity';
 import { TransactionStatus } from '../src/wallet/transaction-status.entity';
 import { TransactionTabEntity } from '../src/wallet/transaction-tab.entity';
+import { TransactionColumnEntity } from '../src/wallet/transaction-column.entity';
+import { TransactionColumnRepository } from '../src/wallet/transaction-column.repository';
 import { DataSource, Repository } from 'typeorm';
 import { newDb } from 'pg-mem';
 
@@ -19,6 +21,7 @@ describe('TransactionsController', () => {
   let txnRepo: Repository<Transaction>;
   let statusRepo: Repository<TransactionStatus>;
   let tabRepo: Repository<TransactionTabEntity>;
+  let columnRepo: TransactionColumnRepository;
 
   beforeAll(async () => {
     let dataSource: DataSource;
@@ -54,6 +57,7 @@ describe('TransactionsController', () => {
                 Transaction,
                 TransactionStatus,
                 TransactionTabEntity,
+                TransactionColumnEntity,
               ],
               synchronize: true,
             }) as DataSource;
@@ -66,10 +70,11 @@ describe('TransactionsController', () => {
           Transaction,
           TransactionStatus,
           TransactionTabEntity,
+          TransactionColumnEntity,
         ]),
       ],
       controllers: [TransactionsController],
-      providers: [TransactionsService],
+      providers: [TransactionsService, TransactionColumnRepository],
     })
       .overrideGuard(AuthGuard)
       .useValue({ canActivate: () => true })
@@ -81,6 +86,7 @@ describe('TransactionsController', () => {
     txnRepo = moduleRef.get(getRepositoryToken(Transaction));
     statusRepo = moduleRef.get(getRepositoryToken(TransactionStatus));
     tabRepo = moduleRef.get(getRepositoryToken(TransactionTabEntity));
+    columnRepo = moduleRef.get(TransactionColumnRepository);
     await typeRepo.save([
       { id: 'deposit', label: 'Deposit' },
       { id: 'withdrawal', label: 'Withdrawal' },
@@ -93,6 +99,12 @@ describe('TransactionsController', () => {
       },
     ]);
     await tabRepo.save([{ id: 'all', label: 'All' }]);
+    await columnRepo.save([
+      { id: 'type', label: 'Type' },
+      { id: 'amount', label: 'Amount' },
+      { id: 'date', label: 'Date & Time' },
+      { id: 'status', label: 'Status' },
+    ]);
     await txnRepo.save({
       userId: 'user1',
       typeId: 'deposit',
