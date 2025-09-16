@@ -7,13 +7,15 @@ import TransactionHistory from '../TransactionHistory';
 import {
   fetchTransactionsLog,
   fetchTransactionTypes,
-  fetchAdminPlayers,
-} from '@/lib/api/wallet';
+} from '@/lib/api/transactions';
+import { fetchAdminPlayers } from '@/lib/api/wallet';
 import { mockMetadataFetch } from '../../../common/__tests__/helpers';
 
-jest.mock('@/lib/api/wallet', () => ({
+jest.mock('@/lib/api/transactions', () => ({
   fetchTransactionsLog: jest.fn(),
   fetchTransactionTypes: jest.fn(),
+}));
+jest.mock('@/lib/api/wallet', () => ({
   fetchAdminPlayers: jest.fn(),
 }));
 
