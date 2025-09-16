@@ -10,7 +10,13 @@ import {
   type TransactionTypesResponse,
 } from '@shared/transactions.schema';
 
-export async function fetchTransactionFilters() {
+/**
+ * Fetch transaction filter options and prepend UI-friendly "All" choices.
+ */
+export async function fetchTransactionFilters(): Promise<{
+  types: string[];
+  performedBy: string[];
+}> {
   const res = await apiClient('/api/transactions/filters', FilterOptionsSchema);
   return {
     types: ['All Types', ...res.types],
@@ -67,6 +73,7 @@ export async function fetchTransactionsLog(
     page = 1,
     pageSize = 10,
   } = opts;
+
   const params = new URLSearchParams();
   if (playerId) params.set('playerId', playerId);
   if (type) params.set('type', type);
@@ -74,7 +81,9 @@ export async function fetchTransactionsLog(
   if (endDate) params.set('endDate', endDate);
   params.set('page', String(page));
   params.set('pageSize', String(pageSize));
+
   const query = params.toString();
+
   try {
     return await apiClient(
       `/api/admin/transactions?${query}`,
