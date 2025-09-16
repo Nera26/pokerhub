@@ -110,15 +110,68 @@ export interface paths {
       };
     };
   };
-  "/admin/nav-icons/seed": {
-    /** Seed navigation icons from defaults */
-    post: {
+  "/admin/blocked-countries": {
+    /** List blocked countries */
+    get: {
       responses: {
-        /** @description Seeded navigation icons */
+        /** @description Blocked countries */
         200: {
           content: {
-            "application/json": components["schemas"]["NavIconsResponse"];
+            "application/json": components["schemas"]["BlockedCountriesResponse"];
           };
+        };
+      };
+    };
+    /** Add blocked country */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["BlockedCountry"];
+        };
+      };
+      responses: {
+        /** @description Created blocked country */
+        200: {
+          content: {
+            "application/json": components["schemas"]["BlockedCountry"];
+          };
+        };
+      };
+    };
+  };
+  "/admin/blocked-countries/{country}": {
+    /** Update blocked country */
+    put: {
+      parameters: {
+        path: {
+          country: components["schemas"]["CountryCode"];
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["BlockedCountry"];
+        };
+      };
+      responses: {
+        /** @description Updated blocked country */
+        200: {
+          content: {
+            "application/json": components["schemas"]["BlockedCountry"];
+          };
+        };
+      };
+    };
+    /** Remove blocked country */
+    delete: {
+      parameters: {
+        path: {
+          country: components["schemas"]["CountryCode"];
+        };
+      };
+      responses: {
+        /** @description Removed */
+        204: {
+          content: never;
         };
       };
     };
@@ -3261,6 +3314,11 @@ export interface components {
         [key: string]: string;
       };
     };
+    CountryCode: string;
+    BlockedCountry: {
+      country: components["schemas"]["CountryCode"];
+    };
+    BlockedCountriesResponse: components["schemas"]["BlockedCountry"][];
     NavIcon: {
       name: string;
       svg: string;

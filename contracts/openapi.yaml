@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.28.0
+  version: 2.29.0
 paths:
   /status:
     get:
@@ -91,16 +91,6 @@ paths:
       responses:
         '204':
           description: Deleted
-  /admin/nav-icons/seed:
-    post:
-      summary: Seed navigation icons from defaults
-      responses:
-        '200':
-          description: Seeded navigation icons
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NavIconsResponse'
   /admin/blocked-countries:
     get:
       summary: List blocked countries
