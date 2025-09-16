@@ -19,7 +19,7 @@ import type {
   Session as CollusionSession,
   Transfer as CollusionTransfer,
   BetEvent as CollusionBetEvent,
-} from '@shared/analytics';
+} from '@shared/analytics/collusion';
 import { EtlService } from './etl.service';
 
 interface AuditLog {
