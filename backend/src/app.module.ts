@@ -37,7 +37,7 @@ import { PrecacheController } from './routes/precache.controller';
 import { NavIconsController } from './routes/nav-icons.controller';
 import { AdminNavIconsController } from './routes/admin-nav-icons.controller';
 import { HistoryTabsController } from './routes/history-tabs.controller';
-import { ChartController } from './routes/chart.controller';
+import { SettingsController } from './routes/settings.controller';
 import { MetadataController } from './routes/metadata.controller';
 import { AppService } from './app.service';
 import { API_CONTRACT_VERSION } from '@shared/constants';
@@ -86,6 +86,7 @@ import { NavIconEntity } from './database/entities/nav-icon.entity';
 import { HistoryTabEntity } from './database/entities/history-tab.entity';
 import { DefaultAvatarEntity } from './database/entities/default-avatar.entity';
 import { NavModule } from './nav/nav.module';
+import { ChartPaletteEntity } from './database/entities/chart-palette.entity';
 
 @Module({
   imports: [
@@ -143,6 +144,7 @@ import { NavModule } from './nav/nav.module';
       DefaultAvatarEntity,
       NavIconEntity,
       HistoryTabEntity,
+      ChartPaletteEntity,
     ]),
 
     // Messaging / Infra
@@ -180,7 +182,7 @@ import { NavModule } from './nav/nav.module';
       NavIconsController,
       AdminNavIconsController,
       HistoryTabsController,
-      ChartController,
+      SettingsController,
       MetadataController,
     ],
   providers: [

@@ -215,7 +215,7 @@ export interface paths {
       };
     };
   };
-  "/chart/palette": {
+  "/settings/chart-palette": {
     /** Get chart palette colors */
     get: {
       responses: {

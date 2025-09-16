@@ -22,7 +22,7 @@ describe('useChartPalette', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual(['#111', '#222']);
     expect(global.fetch).toHaveBeenCalledWith(
-      'http://localhost:3000/api/chart/palette',
+      'http://localhost:3000/api/settings/chart-palette',
       expect.any(Object),
     );
   });
