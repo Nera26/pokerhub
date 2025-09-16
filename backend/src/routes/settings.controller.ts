@@ -8,24 +8,24 @@ import {
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 
-@ApiTags('chart')
-@Controller('chart')
-export class ChartController {
+@ApiTags('settings')
+@Controller('settings')
+export class SettingsController {
   constructor(private readonly settings: SettingsService) {}
 
-  @Get('palette')
+  @Get('chart-palette')
   @ApiOperation({ summary: 'Get chart palette colors' })
   @ApiResponse({ status: 200, description: 'Chart palette colors' })
-  async getPalette(): Promise<ChartPaletteResponse> {
+  async getChartPalette(): Promise<ChartPaletteResponse> {
     const palette = await this.settings.getChartPalette();
     return ChartPaletteResponseSchema.parse(palette);
   }
 
-  @Put('palette')
+  @Put('chart-palette')
   @UseGuards(AuthGuard, AdminGuard)
   @ApiOperation({ summary: 'Update chart palette colors' })
   @ApiResponse({ status: 200, description: 'Updated chart palette colors' })
-  async setPalette(
+  async updateChartPalette(
     @Body() body: ChartPaletteResponse,
   ): Promise<ChartPaletteResponse> {
     const palette = ChartPaletteResponseSchema.parse(body);

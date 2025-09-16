@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { ChartController } from '../src/routes/chart.controller';
+import { SettingsController } from '../src/routes/settings.controller';
 import { SettingsService } from '../src/services/settings.service';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
 
-describe('ChartController', () => {
+describe('SettingsController', () => {
   let app: INestApplication | null = null;
 
   afterEach(async () => {
@@ -21,7 +21,7 @@ describe('ChartController', () => {
       getChartPalette: jest.fn().mockResolvedValue(['#111', '#222']),
     };
     const moduleRef: TestingModule = await Test.createTestingModule({
-      controllers: [ChartController],
+      controllers: [SettingsController],
       providers: [{ provide: SettingsService, useValue: mock }],
     })
       .overrideGuard(AuthGuard)
@@ -34,7 +34,7 @@ describe('ChartController', () => {
     await app.init();
 
     await request(app.getHttpServer())
-      .get('/chart/palette')
+      .get('/settings/chart-palette')
       .expect(200)
       .expect(['#111', '#222']);
 
@@ -46,7 +46,7 @@ describe('ChartController', () => {
       setChartPalette: jest.fn().mockResolvedValue(['#333']),
     };
     const moduleRef: TestingModule = await Test.createTestingModule({
-      controllers: [ChartController],
+      controllers: [SettingsController],
       providers: [{ provide: SettingsService, useValue: mock }],
     })
       .overrideGuard(AuthGuard)
@@ -59,7 +59,7 @@ describe('ChartController', () => {
     await app.init();
 
     await request(app.getHttpServer())
-      .put('/chart/palette')
+      .put('/settings/chart-palette')
       .send(['#333'])
       .expect(200)
       .expect(['#333']);

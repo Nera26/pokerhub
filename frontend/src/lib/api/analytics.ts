@@ -40,7 +40,7 @@ export async function updateChartPalette(
   palette: string[],
   { signal }: { signal?: AbortSignal } = {},
 ): Promise<ChartPaletteResponse> {
-  return apiClient('/api/chart/palette', ChartPaletteResponseSchema, {
+  return apiClient('/api/settings/chart-palette', ChartPaletteResponseSchema, {
     method: 'PUT',
     body: palette,
     signal,

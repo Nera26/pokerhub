@@ -29,7 +29,7 @@ describe('updateChartPalette', () => {
     apiClientMock.mockResolvedValue([]);
     await updateChartPalette(['#fff']);
     expect(apiClientMock).toHaveBeenCalledWith(
-      '/api/chart/palette',
+      '/api/settings/chart-palette',
       ChartPaletteResponseSchema,
       { method: 'PUT', body: ['#fff'], signal: undefined },
     );
