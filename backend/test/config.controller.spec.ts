@@ -21,7 +21,12 @@ import { ChipDenominationEntity } from '../src/database/entities/chip-denominati
 import { TableThemeEntity } from '../src/database/entities/table-theme.entity';
 import { DefaultAvatarEntity } from '../src/database/entities/default-avatar.entity';
 
-import type { ChipDenominationsResponse, TableThemeResponse } from '@shared/types';
+import {
+  TableThemeResponseSchema,
+  type ChipDenominationsResponse,
+  type TableThemeResponse,
+} from '@shared/types';
+import { listTables } from './utils/table';
 
 const defaultChips: ChipDenominationsResponse = { denoms: [1000, 100, 25] };
 const mockTheme: TableThemeResponse = {
@@ -159,11 +164,12 @@ describe('ConfigController', () => {
   });
 
   it('returns table theme', async () => {
-    const res = await request(app.getHttpServer())
-      .get('/config/table-theme')
-      .expect(200);
+    const theme = await listTables(app, undefined, {
+      path: '/config/table-theme',
+      schema: TableThemeResponseSchema,
+    });
 
-    expect(res.body).toEqual(mockTheme);
+    expect(theme).toEqual(mockTheme);
   });
 
   it('updates table theme', async () => {
@@ -173,11 +179,12 @@ describe('ConfigController', () => {
       .send(updated)
       .expect(200);
 
-    const res = await request(app.getHttpServer())
-      .get('/config/table-theme')
-      .expect(200);
+    const theme = await listTables(app, undefined, {
+      path: '/config/table-theme',
+      schema: TableThemeResponseSchema,
+    });
 
-    expect(res.body).toEqual(updated);
+    expect(theme).toEqual(updated);
   });
 
   it('returns default avatar', async () => {
