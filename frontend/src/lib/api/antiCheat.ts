@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { apiClient } from './client';
-export type { ApiError } from './client';
 
 const FlagSchema = z.object({
   id: z.string(),
