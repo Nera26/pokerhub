@@ -9,7 +9,39 @@ import { Repository } from 'typeorm';
 import { RebuyService } from '../../src/tournament/rebuy.service';
 import { PkoService } from '../../src/tournament/pko.service';
 
-function setup(useTx = false, failSave = false) {
+interface SetupTournamentServiceOptions {
+  useTransactionManager?: boolean;
+  failSave?: boolean;
+}
+
+interface SeatRepositoryMocks {
+  create: jest.Mock;
+  save: jest.Mock;
+  remove: jest.Mock;
+  findOne: jest.Mock;
+  manager?: {
+    transaction: jest.Mock;
+  };
+}
+
+interface TransactionManagerMocks {
+  find: jest.Mock;
+  findOne: jest.Mock;
+  getRepository: jest.Mock;
+}
+
+interface SetupTournamentServiceResult {
+  service: TournamentService;
+  seatRepo: SeatRepositoryMocks;
+  wallet: Record<'reserve' | 'rollback', jest.Mock>;
+  setSeatLookup: (seat: Seat) => void;
+  txManager?: TransactionManagerMocks;
+}
+
+function setupTournamentService({
+  useTransactionManager = false,
+  failSave = false,
+}: SetupTournamentServiceOptions = {}): SetupTournamentServiceResult {
   const tournament: Tournament = {
     id: 't1',
     title: 'Daily',
@@ -35,7 +67,7 @@ function setup(useTx = false, failSave = false) {
   };
 
   const seats = new Set<Seat>();
-  const seatRepo: any = {
+  const seatRepo: SeatRepositoryMocks = {
     create: jest.fn((obj: Seat) => obj),
     save: jest.fn(async (obj: Seat) => {
       if (failSave) throw new Error('fail');
@@ -48,7 +80,7 @@ function setup(useTx = false, failSave = false) {
     findOne: jest.fn(async () => Array.from(seats)[0]),
   };
 
-  const wallet = {
+  const wallet: Record<'reserve' | 'rollback', jest.Mock> = {
     reserve: jest.fn(async () => {}),
     rollback: jest.fn(async () => {}),
   };
@@ -69,11 +101,14 @@ function setup(useTx = false, failSave = false) {
     flags as any,
     events,
     undefined,
+    undefined,
+    undefined,
+    undefined,
     wallet as any,
   );
 
-  if (useTx) {
-    const txManager = {
+  if (useTransactionManager) {
+    const txManager: TransactionManagerMocks = {
       find: jest.fn(tablesRepo.find),
       findOne: jest.fn(async () => Array.from(seats)[0]),
       getRepository: jest.fn(() => seatRepo),
@@ -81,55 +116,71 @@ function setup(useTx = false, failSave = false) {
     seatRepo.manager = {
       transaction: jest.fn(async (cb: any) => cb(txManager)),
     };
-    return { service, seatRepo, wallet, txManager };
+    return {
+      service,
+      seatRepo,
+      wallet,
+      txManager,
+      setSeatLookup: (seat: Seat) => {
+        txManager.findOne.mockResolvedValue(seat);
+        seatRepo.findOne.mockResolvedValue(seat);
+      },
+    };
   }
-  return { service, seatRepo, wallet };
+
+  return {
+    service,
+    seatRepo,
+    wallet,
+    setSeatLookup: (seat: Seat) => {
+      seatRepo.findOne.mockResolvedValue(seat);
+    },
+  };
 }
 
 describe('manageSeat helper', () => {
-  describe('with transaction manager', () => {
-    it('joins and withdraws a player once', async () => {
-      const { service, seatRepo, wallet, txManager } = setup(true);
-      const seat = await service.join('t1', 'u1');
-      expect(seatRepo.create).toHaveBeenCalledTimes(1);
-      expect(seatRepo.save).toHaveBeenCalledTimes(1);
-      expect(wallet.reserve).toHaveBeenCalledTimes(1);
+  const scenarios: Array<{
+    description: string;
+    options?: SetupTournamentServiceOptions;
+  }> = [
+    {
+      description: 'with transaction manager',
+      options: { useTransactionManager: true },
+    },
+    {
+      description: 'without transaction manager',
+    },
+  ];
 
-      txManager.findOne.mockResolvedValue(seat);
-      await service.withdraw('t1', 'u1');
-      expect(seatRepo.remove).toHaveBeenCalledTimes(1);
-      expect(wallet.rollback).toHaveBeenCalledTimes(1);
+  describe.each(scenarios)('$description', ({ options }) => {
+    const baseOptions: SetupTournamentServiceOptions = {
+      ...(options ?? {}),
+    };
+
+    const createContext = (
+      overrides?: Partial<SetupTournamentServiceOptions>,
+    ): SetupTournamentServiceResult =>
+      setupTournamentService({ ...baseOptions, ...overrides });
+
+    it('joins and withdraws a player once', async () => {
+      const context = createContext();
+      const seat = await context.service.join('t1', 'u1');
+      expect(context.seatRepo.create).toHaveBeenCalledTimes(1);
+      expect(context.seatRepo.save).toHaveBeenCalledTimes(1);
+      expect(context.wallet.reserve).toHaveBeenCalledTimes(1);
+
+      context.setSeatLookup(seat);
+      await context.service.withdraw('t1', 'u1');
+      expect(context.seatRepo.remove).toHaveBeenCalledTimes(1);
+      expect(context.wallet.rollback).toHaveBeenCalledTimes(1);
     });
 
     it('rolls back seat creation failures', async () => {
-      const { service, seatRepo, wallet } = setup(true, true);
-      await expect(service.join('t1', 'u1')).rejects.toThrow('fail');
-      expect(wallet.reserve).toHaveBeenCalledTimes(1);
-      expect(wallet.rollback).toHaveBeenCalledTimes(1);
-      expect(seatRepo.save).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  describe('without transaction manager', () => {
-    it('joins and withdraws a player once', async () => {
-      const { service, seatRepo, wallet } = setup(false);
-      const seat = await service.join('t1', 'u1');
-      expect(seatRepo.create).toHaveBeenCalledTimes(1);
-      expect(seatRepo.save).toHaveBeenCalledTimes(1);
-      expect(wallet.reserve).toHaveBeenCalledTimes(1);
-
-      seatRepo.findOne.mockResolvedValue(seat);
-      await service.withdraw('t1', 'u1');
-      expect(seatRepo.remove).toHaveBeenCalledTimes(1);
-      expect(wallet.rollback).toHaveBeenCalledTimes(1);
-    });
-
-    it('rolls back seat creation failures', async () => {
-      const { service, seatRepo, wallet } = setup(false, true);
-      await expect(service.join('t1', 'u1')).rejects.toThrow('fail');
-      expect(wallet.reserve).toHaveBeenCalledTimes(1);
-      expect(wallet.rollback).toHaveBeenCalledTimes(1);
-      expect(seatRepo.save).toHaveBeenCalledTimes(1);
+      const context = createContext({ failSave: true });
+      await expect(context.service.join('t1', 'u1')).rejects.toThrow('fail');
+      expect(context.wallet.reserve).toHaveBeenCalledTimes(1);
+      expect(context.wallet.rollback).toHaveBeenCalledTimes(1);
+      expect(context.seatRepo.save).toHaveBeenCalledTimes(1);
     });
   });
 });
