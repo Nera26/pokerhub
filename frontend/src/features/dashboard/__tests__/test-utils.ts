@@ -33,8 +33,15 @@ const defaultSiteMetadata = {
 export const mockGetSiteMetadata: jest.MockedFunction<getSiteMetadataType> =
   jest.fn();
 
+export function mockSiteMeta(defaultAvatar = ''): void {
+  mockGetSiteMetadata.mockResolvedValue({
+    ...defaultSiteMetadata,
+    defaultAvatar,
+  });
+}
+
 mockFetchProfile.mockResolvedValue({ avatarUrl: null });
-mockGetSiteMetadata.mockResolvedValue(defaultSiteMetadata);
+mockSiteMeta();
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ replace: jest.fn() }),
@@ -89,7 +96,7 @@ export function resetDashboardMocks(): void {
   mockFetchProfile.mockReset();
   mockFetchProfile.mockResolvedValue({ avatarUrl: null });
   mockGetSiteMetadata.mockReset();
-  mockGetSiteMetadata.mockResolvedValue(defaultSiteMetadata);
+  mockSiteMeta();
 }
 
 export function renderDashboard() {
@@ -105,4 +112,10 @@ export function renderDashboard() {
   );
 
   return { ...rendered, queryClient };
+}
+
+export function renderDashboardPage() {
+  const { queryClient, ...rendered } = renderDashboard();
+  void queryClient;
+  return rendered;
 }
