@@ -9,7 +9,8 @@ import request from 'supertest';
 import { TablesController } from '../../src/routes/tables.controller';
 import { TablesService } from '../../src/game/tables.service';
 import { Table } from '../../src/database/entities/table.entity';
-import { TableListSchema, TableDataSchema } from '@shared/types';
+import { TableDataSchema } from '@shared/types';
+import { listTables } from '../utils/table';
 
 function createTestModule() {
   let dataSource: DataSource;
@@ -74,18 +75,14 @@ describe('TablesController', () => {
   });
 
   it('returns lobby tables', async () => {
-    const res = await request(app.getHttpServer()).get('/tables').expect(200);
-    const parsed = TableListSchema.parse(res.body);
-    expect(parsed).toHaveLength(1);
-    expect(parsed[0].tableName).toBe('Test Table');
+    const tables = await listTables(app);
+    expect(tables).toHaveLength(1);
+    expect(tables[0].tableName).toBe('Test Table');
   });
 
   it('filters by active status', async () => {
-    const res = await request(app.getHttpServer())
-      .get('/tables?status=active')
-      .expect(200);
-    const parsed = TableListSchema.parse(res.body);
-    expect(parsed).toHaveLength(0);
+    const tables = await listTables(app, { status: 'active' });
+    expect(tables).toHaveLength(0);
   });
 
   it('returns table data', async () => {
