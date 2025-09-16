@@ -9,5 +9,3 @@ export function createSimpleGetHook<Output>(
 ) {
   return createGetHook<Output>(endpoint, schema);
 }
-
-export default createSimpleGetHook;
