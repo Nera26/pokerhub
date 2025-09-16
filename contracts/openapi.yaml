@@ -1956,6 +1956,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BonusOptionsResponse'
+  /admin/bonus/defaults:
+    get:
+      summary: Get bonus form defaults
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Bonus defaults
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BonusDefaultsResponse'
   /admin/transactions:
     get:
       summary: List transactions
@@ -5012,3 +5024,28 @@ components:
         - types
         - eligibilities
         - statuses
+    BonusDefaultsResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        description:
+          type: string
+        bonusPercent:
+          type: number
+        maxBonusUsd:
+          type: number
+        expiryDate:
+          type: string
+        eligibility:
+          type: string
+        status:
+          type: string
+      required:
+        - name
+        - type
+        - description
+        - eligibility
+        - status

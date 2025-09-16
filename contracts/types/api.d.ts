@@ -1969,6 +1969,19 @@ export interface paths {
       };
     };
   };
+  "/admin/bonus/defaults": {
+    /** Get bonus form defaults */
+    get: {
+      responses: {
+        /** @description Bonus defaults */
+        200: {
+          content: {
+            "application/json": components["schemas"]["BonusDefaultsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/admin/transactions": {
     /** List transactions */
     get: {
@@ -2636,6 +2649,33 @@ export interface components {
       eta?: string;
     };
     PromotionsResponse: components["schemas"]["Promotion"][];
+    BonusTypeOption: {
+      value: string;
+      label: string;
+    };
+    BonusEligibilityOption: {
+      value: string;
+      label: string;
+    };
+    BonusStatusOption: {
+      value: string;
+      label: string;
+    };
+    BonusOptionsResponse: {
+      types: components["schemas"]["BonusTypeOption"][];
+      eligibilities: components["schemas"]["BonusEligibilityOption"][];
+      statuses: components["schemas"]["BonusStatusOption"][];
+    };
+    BonusDefaultsResponse: {
+      name: string;
+      type: string;
+      description: string;
+      bonusPercent?: number;
+      maxBonusUsd?: number;
+      expiryDate?: string;
+      eligibility: string;
+      status: string;
+    };
     /** @enum {string} */
     TournamentFormat: "Regular" | "Turbo" | "Deepstack" | "Bounty" | "Freeroll";
     ReplyMessageRequest: {

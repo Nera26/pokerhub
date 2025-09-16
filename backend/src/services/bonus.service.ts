@@ -3,9 +3,22 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BonusOptionEntity } from '../database/entities/bonus-option.entity';
 import {
+  BonusDefaultsResponse,
+  BonusDefaultsResponseSchema,
   BonusOptionsResponse,
   BonusOptionsResponseSchema,
 } from '../schemas/bonus';
+
+const BONUS_DEFAULTS = BonusDefaultsResponseSchema.parse({
+  name: '',
+  type: 'deposit',
+  description: '',
+  bonusPercent: undefined,
+  maxBonusUsd: undefined,
+  expiryDate: '',
+  eligibility: 'all',
+  status: 'active',
+});
 
 @Injectable()
 export class BonusService {
@@ -27,5 +40,9 @@ export class BonusService {
         .filter((r) => r.status)
         .map((r) => ({ value: r.status as string, label: r.label })),
     });
+  }
+
+  async getDefaults(): Promise<BonusDefaultsResponse> {
+    return { ...BONUS_DEFAULTS };
   }
 }

@@ -3,6 +3,8 @@ import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AdminController } from './admin-base.controller';
 import { BonusService } from '../services/bonus.service';
 import {
+  BonusDefaultsResponse,
+  BonusDefaultsResponseSchema,
   BonusOptionsResponse,
   BonusOptionsResponseSchema,
 } from '../schemas/bonus';
@@ -18,5 +20,14 @@ export class AdminBonusController {
     return this.bonusService
       .listOptions()
       .then((res) => BonusOptionsResponseSchema.parse(res));
+  }
+
+  @Get('defaults')
+  @ApiOperation({ summary: 'Get bonus form defaults' })
+  @ApiResponse({ status: 200, description: 'Bonus defaults' })
+  defaults(): Promise<BonusDefaultsResponse> {
+    return this.bonusService
+      .getDefaults()
+      .then((res) => BonusDefaultsResponseSchema.parse(res));
   }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,8 +14,10 @@ import {
   deleteBonus,
   type Bonus,
 } from '@/lib/api/admin';
+import { fetchBonusDefaults } from '@/lib/api/bonus';
 import { useInvalidateMutation } from '@/hooks/useInvalidateMutation';
 import type { ApiError } from '@/lib/api/client';
+import type { BonusDefaultsResponse } from '@shared/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faChartLine,
@@ -60,17 +62,6 @@ const bonusFormSchema = z.object({
 });
 export type BonusFormValues = z.infer<typeof bonusFormSchema>;
 
-const formDefaults: BonusFormValues = {
-  name: '',
-  type: 'deposit',
-  description: '',
-  bonusPercent: undefined,
-  maxBonusUsd: undefined,
-  expiryDate: '',
-  eligibility: 'all',
-  status: 'active',
-};
-
 function dateLabel(iso?: string) {
   if (!iso) return 'Ongoing';
   const d = new Date(iso + 'T00:00:00');
@@ -98,6 +89,14 @@ export default function BonusManager() {
     queryKey: ['admin-bonuses'],
     queryFn: ({ signal }) => fetchBonuses({ signal }),
   });
+  const {
+    data: bonusDefaults,
+    isLoading: defaultsLoading,
+    error: defaultsError,
+  } = useQuery<BonusDefaultsResponse, ApiError>({
+    queryKey: ['admin-bonus-defaults'],
+    queryFn: ({ signal }) => fetchBonusDefaults({ signal }),
+  });
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [editOpen, setEditOpen] = useState(false);
   const [pauseOpen, setPauseOpen] = useState(false);
@@ -111,7 +110,7 @@ export default function BonusManager() {
     formState: { errors: createErrors },
   } = useForm<BonusFormValues>({
     resolver: zodResolver(bonusFormSchema),
-    defaultValues: formDefaults,
+    defaultValues: bonusDefaults ?? undefined,
   });
 
   const {
@@ -121,8 +120,14 @@ export default function BonusManager() {
     formState: { errors: editErrors },
   } = useForm<BonusFormValues>({
     resolver: zodResolver(bonusFormSchema),
-    defaultValues: formDefaults,
+    defaultValues: bonusDefaults ?? undefined,
   });
+
+  useEffect(() => {
+    if (bonusDefaults) {
+      resetCreate(bonusDefaults);
+    }
+  }, [bonusDefaults, resetCreate]);
 
   const [toast, setToast] = useState<{
     open: boolean;
@@ -437,19 +442,29 @@ export default function BonusManager() {
 
           <Card className="border border-dark">
             <CardContent>
-              <form className="space-y-6" onSubmit={createPromotion}>
-                <BonusForm
-                  register={registerCreate}
-                  errors={createErrors}
-                  defaults={formDefaults}
-                  statusLabel="Initial Status"
-                />
+              {defaultsError && (
+                <p role="alert" className="mb-4 text-sm text-danger-red">
+                  {defaultsError.message ?? 'Failed to load bonus defaults'}
+                </p>
+              )}
 
-                <Button type="submit" className="w-full">
-                  <FontAwesomeIcon icon={faPlus} />
-                  CREATE PROMOTION
-                </Button>
-              </form>
+              {defaultsLoading && !bonusDefaults ? (
+                <p>Loading bonus defaults...</p>
+              ) : (
+                <form className="space-y-6" onSubmit={createPromotion}>
+                  <BonusForm
+                    register={registerCreate}
+                    errors={createErrors}
+                    defaults={bonusDefaults ?? {}}
+                    statusLabel="Initial Status"
+                  />
+
+                  <Button type="submit" className="w-full">
+                    <FontAwesomeIcon icon={faPlus} />
+                    CREATE PROMOTION
+                  </Button>
+                </form>
+              )}
             </CardContent>
           </Card>
 
