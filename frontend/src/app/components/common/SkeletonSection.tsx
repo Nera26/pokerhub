@@ -2,6 +2,13 @@ import clsx from 'clsx';
 import type { PropsWithChildren } from 'react';
 import SkeletonGrid from '@/app/components/common/SkeletonGrid';
 
+interface HorizontalListOptions {
+  count?: number;
+  containerClassName?: string;
+  itemClassName?: string;
+  itemTestId?: string;
+}
+
 interface SkeletonSectionProps {
   id?: string;
   layout?: 'cash' | 'tournament';
@@ -11,6 +18,7 @@ interface SkeletonSectionProps {
   rows?: number;
   cardHeight?: string;
   fullPage?: boolean;
+  horizontalList?: HorizontalListOptions;
 }
 
 export default function SkeletonSection({
@@ -23,9 +31,40 @@ export default function SkeletonSection({
   fullPage = true,
   id,
   layout,
+  horizontalList,
 }: PropsWithChildren<SkeletonSectionProps>) {
   const gridRows = repeat ?? rows;
-  const grid = <SkeletonGrid rows={gridRows} cardHeight={cardHeight} />;
+  const showGrid = gridRows === undefined || (gridRows ?? 0) > 0;
+  const grid = showGrid ? (
+    <SkeletonGrid rows={gridRows} cardHeight={cardHeight} />
+  ) : null;
+
+  const listCount = horizontalList?.count ?? 0;
+  const showHorizontalList = listCount > 0;
+  const horizontalListElement =
+    horizontalList && showHorizontalList ? (
+      <div className={clsx('flex', horizontalList.containerClassName)}>
+        {Array.from({ length: listCount }).map((_, index) => (
+          <div
+            key={index}
+            data-testid={horizontalList.itemTestId}
+            className={clsx(
+              'rounded-xl bg-card-bg animate-pulse',
+              horizontalList.itemClassName,
+            )}
+            aria-hidden="true"
+          />
+        ))}
+      </div>
+    ) : null;
+
+  const content = (
+    <>
+      {children}
+      {horizontalListElement}
+      {grid}
+    </>
+  );
 
   if (id && layout) {
     const titleWidths = {
@@ -38,18 +77,13 @@ export default function SkeletonSection({
         <div
           className={`h-8 ${titleWidths[layout]} mb-4 sm:mb-6 rounded bg-card-bg animate-pulse`}
         />
-        {grid}
+        {content}
       </section>
     );
   }
 
   if (!fullPage) {
-    return (
-      <>
-        {children}
-        {grid}
-      </>
-    );
+    return content;
   }
 
   return (
@@ -62,10 +96,7 @@ export default function SkeletonSection({
           className,
         )}
       >
-        <div className={wrapperClassName}>
-          {children}
-          {grid}
-        </div>
+        <div className={wrapperClassName}>{content}</div>
       </main>
       <div className="h-20 bg-card-bg animate-pulse" />
     </>

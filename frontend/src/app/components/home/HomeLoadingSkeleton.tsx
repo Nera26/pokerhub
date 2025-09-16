@@ -21,27 +21,29 @@ export default function HomeLoadingSkeleton() {
       className="container mx-auto px-4 sm:px-6 lg:px-8 pt-6 md:pt-8 pb-[calc(env(safe-area-inset-bottom)+72px)] bg-primary-bg text-text-primary"
     >
       {/* Top CTAs */}
-      <div className="flex gap-4 mb-6">
-        {Array.from({ length: ctaCount }).map((_, i) => (
-          <div
-            key={i}
-            data-testid="cta-skeleton"
-            className="h-12 flex-1 rounded-xl bg-card-bg animate-pulse"
-          />
-        ))}
-      </div>
+      <SkeletonSection
+        fullPage={false}
+        rows={0}
+        horizontalList={{
+          count: ctaCount,
+          containerClassName: 'gap-4 mb-6',
+          itemClassName: 'h-12 flex-1',
+          itemTestId: 'cta-skeleton',
+        }}
+      />
 
       {/* Game Tabs */}
       <section className="mb-6 md:mb-8">
-        <div className="flex space-x-2 sm:space-x-4 overflow-x-auto pb-2">
-          {Array.from({ length: tabCount }).map((_, i) => (
-            <div
-              key={i}
-              data-testid="tab-skeleton"
-              className="h-12 w-24 sm:w-32 rounded-xl bg-card-bg animate-pulse"
-            />
-          ))}
-        </div>
+        <SkeletonSection
+          fullPage={false}
+          rows={0}
+          horizontalList={{
+            count: tabCount,
+            containerClassName: 'space-x-2 sm:space-x-4 overflow-x-auto pb-2',
+            itemClassName: 'h-12 w-24 sm:w-32',
+            itemTestId: 'tab-skeleton',
+          }}
+        />
       </section>
 
       {/* Cash Games */}
