@@ -66,21 +66,21 @@ export async function fetchNavItems({
 export async function createNavItem(
   body: NavItemRequest,
 ): Promise<NavItemResponse> {
-  return apiClient('/api/nav-items', NavItemSchema, { method: 'POST', body });
+  return apiClient('/api/admin/nav', NavItemSchema, { method: 'POST', body });
 }
 
 export async function updateNavItem(
   flag: string,
   body: NavItemRequest,
 ): Promise<NavItemResponse> {
-  return apiClient(`/api/nav-items/${flag}`, NavItemSchema, {
+  return apiClient(`/api/admin/nav/${flag}`, NavItemSchema, {
     method: 'PUT',
     body,
   });
 }
 
 export async function deleteNavItem(flag: string): Promise<void> {
-  await apiClient(`/api/nav-items/${flag}`, z.void(), {
+  await apiClient(`/api/admin/nav/${flag}`, z.void(), {
     method: 'DELETE',
   });
 }

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.27.0
+  version: 2.28.0
 paths:
   /status:
     get:
@@ -111,6 +111,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NavItemsResponse'
+  /admin/nav:
+    get:
+      summary: List navigation items
+      responses:
+        '200':
+          description: Navigation items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NavItemsResponse'
     post:
       summary: Create navigation item
       requestBody:
@@ -126,7 +136,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NavItem'
-  /nav-items/{flag}:
+  /admin/nav/{flag}:
     put:
       summary: Update navigation item
       parameters:

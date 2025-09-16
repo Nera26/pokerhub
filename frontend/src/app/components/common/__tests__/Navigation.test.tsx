@@ -12,6 +12,10 @@ jest.mock('@/hooks/useNavItems', () => ({
   useNavItems: () => mockUseNavItems(),
 }));
 
+jest.mock('@/lib/api/nav', () => ({
+  fetchNavItems: jest.fn().mockResolvedValue([]),
+}));
+
 jest.mock('next/navigation', () => ({
   usePathname: () => mockUsePathname(),
 }));

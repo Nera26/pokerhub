@@ -7,6 +7,7 @@ import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
 import request from 'supertest';
 import { NavController } from '../src/nav/nav.controller';
+import { AdminNavController } from '../src/nav/admin-nav.controller';
 import { NavService } from '../src/nav/nav.service';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
@@ -44,7 +45,7 @@ describe('NavController', () => {
         }),
         TypeOrmModule.forFeature([NavItemEntity]),
       ],
-      controllers: [NavController],
+      controllers: [NavController, AdminNavController],
       providers: [NavService],
     })
       .overrideGuard(AuthGuard)
@@ -79,7 +80,7 @@ describe('NavController', () => {
 
   it('creates and deletes nav items', async () => {
     await request(app.getHttpServer())
-      .post('/nav-items')
+      .post('/admin/nav')
       .send({
         flag: 'help',
         href: '/help',
@@ -96,7 +97,7 @@ describe('NavController', () => {
     );
 
     await request(app.getHttpServer())
-      .delete('/nav-items/help')
+      .delete('/admin/nav/help')
       .expect(204);
 
     res = await request(app.getHttpServer()).get('/nav-items').expect(200);
