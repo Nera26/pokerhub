@@ -33,6 +33,21 @@ export type Language = z.infer<typeof LanguageSchema>;
 export const LanguagesResponseSchema = z.array(LanguageSchema);
 export type LanguagesResponse = z.infer<typeof LanguagesResponseSchema>;
 
+const CountryCodeSchema = z
+  .string()
+  .trim()
+  .regex(/^[A-Za-z]{2}$/)
+  .transform((value) => value.toUpperCase());
+
+export const BlockedCountrySchema = z.object({
+  country: CountryCodeSchema,
+});
+export type BlockedCountry = z.infer<typeof BlockedCountrySchema>;
+export const BlockedCountriesResponseSchema = z.array(BlockedCountrySchema);
+export type BlockedCountriesResponse = z.infer<
+  typeof BlockedCountriesResponseSchema
+>;
+
 // Navigation icons
 export const NavIconSchema = z.object({
   name: z.string(),

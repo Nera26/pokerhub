@@ -170,6 +170,37 @@ describe('KycService common', () => {
     );
   });
 
+  it('refreshes blocked countries from the database', async () => {
+    const blockedResults = [[], [{ country: 'CA' }]];
+    const query = jest.fn().mockImplementation((sql: string) => {
+      if (sql.includes('blocked_countries')) {
+        return Promise.resolve(blockedResults.shift() ?? []);
+      }
+      return Promise.resolve([]);
+    });
+    const accounts = { query } as unknown as Repository<Account>;
+    const provider: CountryProvider = {
+      getCountry: () => Promise.resolve('CA'),
+    };
+    const service = new KycService(
+      accounts,
+      provider,
+      undefined as any,
+      undefined as any,
+      undefined as any,
+      undefined,
+    );
+    await service.onModuleInit();
+    await expect(
+      service.runChecks('User', '1.1.1.1', '1990-01-01'),
+    ).resolves.toEqual({ country: 'CA' });
+    await service.refreshBlockedCountries();
+    expect((service as any).blockedCountries).toEqual(['CA']);
+    await expect(
+      service.runChecks('User', '1.1.1.1', '1990-01-01'),
+    ).rejects.toThrow('Blocked jurisdiction');
+  });
+
   describe('wallet flows', () => {
     let dataSource: DataSource;
     let service: KycService;

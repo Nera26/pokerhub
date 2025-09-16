@@ -36,6 +36,7 @@ import { ConfigController } from './routes/config.controller';
 import { PrecacheController } from './routes/precache.controller';
 import { NavIconsController } from './routes/nav-icons.controller';
 import { AdminNavIconsController } from './routes/admin-nav-icons.controller';
+import { AdminBlockedCountriesController } from './routes/admin-blocked-countries.controller';
 import { HistoryTabsController } from './routes/history-tabs.controller';
 import { SettingsController } from './routes/settings.controller';
 import { MetadataController } from './routes/metadata.controller';
@@ -75,6 +76,7 @@ import { BonusService } from './services/bonus.service';
 import { ChipDenomsService } from './services/chip-denoms.service';
 import { TableThemeService } from './services/table-theme.service';
 import { NavIconsService } from './services/nav-icons.service';
+import { BlockedCountriesService } from './services/blocked-countries.service';
 import { HistoryTabsService } from './services/history-tabs.service';
 import { SettingsService } from './services/settings.service';
 import { DefaultAvatarService } from './services/default-avatar.service';
@@ -83,6 +85,7 @@ import { BonusOptionEntity } from './database/entities/bonus-option.entity';
 import { ChipDenominationEntity } from './database/entities/chip-denomination.entity';
 import { TableThemeEntity } from './database/entities/table-theme.entity';
 import { NavIconEntity } from './database/entities/nav-icon.entity';
+import { BlockedCountryEntity } from './database/entities/blocked-country.entity';
 import { HistoryTabEntity } from './database/entities/history-tab.entity';
 import { DefaultAvatarEntity } from './database/entities/default-avatar.entity';
 import { NavModule } from './nav/nav.module';
@@ -145,6 +148,7 @@ import { ChartPaletteEntity } from './database/entities/chart-palette.entity';
       NavIconEntity,
       HistoryTabEntity,
       ChartPaletteEntity,
+      BlockedCountryEntity,
     ]),
 
     // Messaging / Infra
@@ -184,6 +188,7 @@ import { ChartPaletteEntity } from './database/entities/chart-palette.entity';
       HistoryTabsController,
       SettingsController,
       MetadataController,
+      AdminBlockedCountriesController,
     ],
   providers: [
     AppService,
@@ -201,6 +206,7 @@ import { ChartPaletteEntity } from './database/entities/chart-palette.entity';
     BonusService,
     ChipDenomsService,
     TableThemeService,
+    BlockedCountriesService,
   ],
 })
 export class AppModule implements NestModule {
