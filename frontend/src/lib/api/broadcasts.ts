@@ -8,8 +8,6 @@ import {
   type SendBroadcastRequest,
   BroadcastTemplatesResponseSchema,
   type BroadcastTemplatesResponse,
-  BroadcastTypesResponseSchema,
-  type BroadcastTypesResponse,
 } from '@shared/types';
 
 export async function fetchBroadcasts({
@@ -41,13 +39,4 @@ export async function fetchBroadcastTemplates({
       errorMessage: 'Failed to fetch broadcast templates',
     },
   );
-}
-
-export async function fetchBroadcastTypes({
-  signal,
-}: { signal?: AbortSignal } = {}): Promise<BroadcastTypesResponse> {
-  return safeApiClient('/api/broadcasts/types', BroadcastTypesResponseSchema, {
-    signal,
-    errorMessage: 'Failed to fetch broadcast types',
-  });
 }
