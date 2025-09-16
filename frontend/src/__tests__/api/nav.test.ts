@@ -12,8 +12,15 @@ import { mockSuccess } from '@/test-utils/handlers';
 process.env.NEXT_PUBLIC_BASE_URL = '';
 
 describe('nav api', () => {
+  let fetchMock: jest.SpyInstance;
+
+  beforeEach(() => {
+    fetchMock = jest.spyOn(global, 'fetch');
+  });
+
   afterEach(() => {
-    jest.resetAllMocks();
+    jest.clearAllMocks();
+    fetchMock.mockRestore();
   });
 
   it('constructs icons from API metadata', async () => {
@@ -62,8 +69,8 @@ describe('nav api', () => {
       label: 'About',
       order: 1,
     });
-    expect(fetch).toHaveBeenLastCalledWith(
-      expect.stringContaining('/api/nav-items'),
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      expect.stringContaining('/api/admin/nav'),
       expect.objectContaining({ method: 'POST' }),
     );
 
@@ -79,15 +86,15 @@ describe('nav api', () => {
       label: 'About',
       order: 1,
     });
-    expect(fetch).toHaveBeenLastCalledWith(
-      expect.stringContaining('/api/nav-items/about'),
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      expect.stringContaining('/api/admin/nav/about'),
       expect.objectContaining({ method: 'PUT' }),
     );
 
     server.use(mockSuccess(null, { status: 204, once: true }));
     await deleteNavItem('about');
-    expect(fetch).toHaveBeenLastCalledWith(
-      expect.stringContaining('/api/nav-items/about'),
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      expect.stringContaining('/api/admin/nav/about'),
       expect.objectContaining({ method: 'DELETE' }),
     );
   });

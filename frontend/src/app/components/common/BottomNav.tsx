@@ -1,13 +1,27 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Image from 'next/image';
+import { useQueryClient } from '@tanstack/react-query';
+import { fetchNavItems } from '@/lib/api/nav';
 import { useNavItems, type NavItem } from '@/hooks/useNavItems';
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void queryClient.prefetchQuery({
+      queryKey: ['nav-items'],
+      queryFn: () => fetchNavItems({ signal: controller.signal }),
+    });
+    return () => controller.abort();
+  }, [queryClient]);
+
   const { items, loading } = useNavItems();
 
   if (loading) {

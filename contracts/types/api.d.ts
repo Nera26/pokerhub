@@ -135,6 +135,19 @@ export interface paths {
         };
       };
     };
+  };
+  "/admin/nav": {
+    /** List navigation items */
+    get: {
+      responses: {
+        /** @description Navigation items */
+        200: {
+          content: {
+            "application/json": components["schemas"]["NavItemsResponse"];
+          };
+        };
+      };
+    };
     /** Create navigation item */
     post: {
       requestBody: {
@@ -152,7 +165,7 @@ export interface paths {
       };
     };
   };
-  "/nav-items/{flag}": {
+  "/admin/nav/{flag}": {
     /** Update navigation item */
     put: {
       parameters: {
@@ -1330,6 +1343,67 @@ export interface paths {
         202: {
           content: {
             "application/json": components["schemas"]["StatusResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/admin/leaderboard-config": {
+    /** List leaderboard config */
+    get: {
+      responses: {
+        /** @description Config entries */
+        200: {
+          content: {
+            "application/json": components["schemas"]["LeaderboardConfigListResponse"];
+          };
+        };
+      };
+    };
+    /** Update leaderboard config entry */
+    put: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["LeaderboardConfigUpdate"];
+        };
+      };
+      responses: {
+        /** @description Updated config entries */
+        200: {
+          content: {
+            "application/json": components["schemas"]["LeaderboardConfigListResponse"];
+          };
+        };
+      };
+    };
+    /** Create leaderboard config entry */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["LeaderboardConfig"];
+        };
+      };
+      responses: {
+        /** @description Updated config entries */
+        200: {
+          content: {
+            "application/json": components["schemas"]["LeaderboardConfigListResponse"];
+          };
+        };
+      };
+    };
+    /** Delete leaderboard config entry */
+    delete: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["LeaderboardConfig"];
+        };
+      };
+      responses: {
+        /** @description Updated config entries */
+        200: {
+          content: {
+            "application/json": components["schemas"]["LeaderboardConfigListResponse"];
           };
         };
       };
@@ -2649,33 +2723,6 @@ export interface components {
       eta?: string;
     };
     PromotionsResponse: components["schemas"]["Promotion"][];
-    BonusTypeOption: {
-      value: string;
-      label: string;
-    };
-    BonusEligibilityOption: {
-      value: string;
-      label: string;
-    };
-    BonusStatusOption: {
-      value: string;
-      label: string;
-    };
-    BonusOptionsResponse: {
-      types: components["schemas"]["BonusTypeOption"][];
-      eligibilities: components["schemas"]["BonusEligibilityOption"][];
-      statuses: components["schemas"]["BonusStatusOption"][];
-    };
-    BonusDefaultsResponse: {
-      name: string;
-      type: string;
-      description: string;
-      bonusPercent?: number;
-      maxBonusUsd?: number;
-      expiryDate?: string;
-      eligibility: string;
-      status: string;
-    };
     /** @enum {string} */
     TournamentFormat: "Regular" | "Turbo" | "Deepstack" | "Bounty" | "Freeroll";
     ReplyMessageRequest: {
