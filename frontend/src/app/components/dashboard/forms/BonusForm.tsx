@@ -8,7 +8,7 @@ import { fetchBonusOptions } from '@/lib/api/admin';
 import type { ApiError } from '@/lib/api/client';
 import { type BonusOptionsResponse } from '@shared/types';
 
-export interface BonusFormProps {
+interface BonusFormProps {
   register: UseFormRegister<BonusFormValues>;
   errors: FieldErrors<BonusFormValues>;
   defaults?: Partial<BonusFormValues>;

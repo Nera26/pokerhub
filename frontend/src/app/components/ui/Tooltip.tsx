@@ -9,7 +9,7 @@ import {
   useEffect,
 } from 'react';
 
-export interface TooltipProps {
+interface TooltipProps {
   /** The text to display inside the tooltip */
   text: string;
   /** The element that triggers the tooltip */

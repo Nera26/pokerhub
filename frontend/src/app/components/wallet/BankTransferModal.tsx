@@ -32,7 +32,7 @@ interface WithdrawProps extends BaseProps {
   };
 }
 
-export type BankTransferModalProps = DepositProps | WithdrawProps;
+type BankTransferModalProps = DepositProps | WithdrawProps;
 
 export default function BankTransferModal(props: BankTransferModalProps) {
   const { mode, onClose, currency } = props;

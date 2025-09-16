@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Button from '../ui/Button';
 import AmountInput from './AmountInput';
 
-export interface BankTransferFormProps {
+interface BankTransferFormProps {
   currency: string;
   submitLabel: string;
   amountInputId: string;
@@ -39,8 +39,7 @@ export default function BankTransferForm({
         { message: 'Enter a valid amount' },
       )
       .refine(
-        (val) =>
-          maxAmount === undefined ? true : Number(val) <= maxAmount,
+        (val) => (maxAmount === undefined ? true : Number(val) <= maxAmount),
         { message: 'Insufficient funds' },
       ),
   });
@@ -93,4 +92,3 @@ export default function BankTransferForm({
     </form>
   );
 }
-
