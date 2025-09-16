@@ -1,60 +1,48 @@
 import AdminDepositsController from '../../src/routes/admin-deposits.controller';
-import { setupWalletTest, WalletTestContext } from './test-utils';
+import { initPendingDeposit, PendingDepositTestContext } from './test-utils';
 
 jest.setTimeout(20000);
 
 describe('Pending deposits', () => {
-  let ctx: WalletTestContext;
-  let removeJob: jest.Mock;
+  let ctx: PendingDepositTestContext;
   const userId = '11111111-1111-1111-1111-111111111111';
 
-  beforeAll(async () => {
-    process.env.BANK_NAME = 'Test Bank';
-    process.env.BANK_ACCOUNT_NUMBER = '123456789';
-    process.env.BANK_ROUTING_CODE = '987654';
-    ctx = await setupWalletTest();
-    removeJob = jest.fn();
-    (ctx.service as any).pendingQueue = {
-      add: jest.fn(),
-      getJob: jest.fn().mockResolvedValue({ remove: removeJob }),
+  const pendingQueue = () =>
+    (ctx.service as any).pendingQueue as {
+      add: jest.Mock;
+      getJob: jest.Mock;
     };
-    await ctx.repos.account.save([
-      { id: userId, name: 'user', balance: 0, currency: 'USD' },
-      {
-        id: '00000000-0000-0000-0000-000000000010',
-        name: 'house',
-        balance: 0,
-        currency: 'USD',
-      },
-    ]);
+
+  beforeAll(async () => {
+    ctx = await initPendingDeposit({ userId });
   });
 
   afterAll(async () => {
-    await ctx.repos.dataSource.destroy();
+    await ctx.dataSource.destroy();
   });
 
   async function verifyPendingDeposit(id: string) {
-    ((ctx.service as any).events.emit as jest.Mock).mockClear();
+    (ctx.events.emit as jest.Mock).mockClear();
     await ctx.service.markActionRequiredIfPending(id, id);
     const after = await ctx.repos.pending.findOneByOrFail({ id });
     expect(after.actionRequired).toBe(false);
     const list = await ctx.service.listPendingDeposits();
     expect(list.find((d) => d.id === id)).toBeUndefined();
-    expect((ctx.service as any).events.emit).not.toHaveBeenCalled();
+    expect(ctx.events.emit as jest.Mock).not.toHaveBeenCalled();
   }
 
   function expectQueueAndNotification(id: string, message: string) {
-    expect((ctx.service as any).pendingQueue.getJob).toHaveBeenCalledWith(id);
-    expect(removeJob).toHaveBeenCalled();
-    expect((ctx.service as any).events.emit).toHaveBeenCalledWith(
+    expect(pendingQueue().getJob).toHaveBeenCalledWith(id);
+    expect(ctx.removeJob).toHaveBeenCalled();
+    expect(ctx.events.emit as jest.Mock).toHaveBeenCalledWith(
       'notification.create',
       expect.objectContaining({ userId, message }),
     );
   }
 
   it('confirms deposit, removes job and credits account without re-triggering events', async () => {
-    (ctx.service as any).pendingQueue.getJob.mockClear();
-    removeJob.mockClear();
+    pendingQueue().getJob.mockClear();
+    ctx.removeJob.mockClear();
 
     const res = await ctx.service.initiateBankTransfer(
       userId,
@@ -66,11 +54,11 @@ describe('Pending deposits', () => {
     const deposit = await ctx.repos.pending.findOneByOrFail({ reference: res.reference });
     expect(deposit.currency).toBe('USD');
 
-    ((ctx.service as any).events.emit as jest.Mock).mockClear();
+    (ctx.events.emit as jest.Mock).mockClear();
     await ctx.service.confirmPendingDeposit(deposit.id, 'admin');
 
     expectQueueAndNotification(deposit.id, 'Deposit confirmed');
-    expect((ctx.service as any).events.emit).toHaveBeenCalledWith(
+    expect(ctx.events.emit as jest.Mock).toHaveBeenCalledWith(
       'wallet.deposit.confirmed',
       expect.objectContaining({
         accountId: userId,
@@ -79,7 +67,7 @@ describe('Pending deposits', () => {
         currency: 'USD',
       }),
     );
-    expect((ctx.service as any).events.emit).toHaveBeenCalledWith('admin.deposit.confirmed', {
+    expect(ctx.events.emit as jest.Mock).toHaveBeenCalledWith('admin.deposit.confirmed', {
       depositId: deposit.id,
     });
 
@@ -88,11 +76,11 @@ describe('Pending deposits', () => {
     expect(user.balance).toBe(100);
 
     // idempotent
-    ((ctx.service as any).events.emit as jest.Mock).mockClear();
+    (ctx.events.emit as jest.Mock).mockClear();
     await ctx.service.confirmPendingDeposit(deposit.id, 'admin');
     const userAgain = await accountRepo.findOneByOrFail({ id: userId });
     expect(userAgain.balance).toBe(100);
-    expect((ctx.service as any).events.emit).not.toHaveBeenCalled();
+    expect(ctx.events.emit as jest.Mock).not.toHaveBeenCalled();
 
     await verifyPendingDeposit(deposit.id);
   });
@@ -105,15 +93,15 @@ describe('Pending deposits', () => {
 
     const updated = await ctx.repos.pending.findOneByOrFail({ id: deposit.id });
     expect(updated.status).toBe('rejected');
-    expect((ctx.service as any).events.emit).toHaveBeenCalledWith(
+    expect(ctx.events.emit as jest.Mock).toHaveBeenCalledWith(
       'wallet.deposit.rejected',
       expect.objectContaining({ depositId: deposit.id, currency: 'USD' }),
     );
   });
 
   it('flags deposit for review with queue delay and emits admin event', async () => {
-    ((ctx.service as any).events.emit as jest.Mock).mockClear();
-    const addSpy = jest.spyOn((ctx.service as any).pendingQueue, 'add');
+    (ctx.events.emit as jest.Mock).mockClear();
+    pendingQueue().add.mockClear();
 
     const res = await ctx.service.initiateBankTransfer(userId, 25, 'dev3', '1.1.1.3', 'USD');
     const repo = ctx.repos.pending;
@@ -127,11 +115,7 @@ describe('Pending deposits', () => {
     ).toBeUndefined();
 
     // queued with expected delay
-    expect(addSpy).toHaveBeenCalledWith(
-      'check',
-      expect.objectContaining({ id: dep.id }),
-      expect.objectContaining({ delay: 10_000 }),
-    );
+    ctx.expectScheduledCheck(dep.id);
 
     // mark and verify event emission + persisted state
     await ctx.service.markActionRequiredIfPending(dep.id, 'job-123');
@@ -139,14 +123,16 @@ describe('Pending deposits', () => {
     expect(updated.actionRequired).toBe(true);
     const listed = await ctx.service.listPendingDeposits();
     expect(listed.find((d) => d.id === dep.id)).toBeDefined();
-    expect((ctx.service as any).events.emit).toHaveBeenCalledWith('admin.deposit.pending', {
+    expect(ctx.events.emit as jest.Mock).toHaveBeenCalledWith('admin.deposit.pending', {
       depositId: dep.id,
       jobId: 'job-123',
     });
   });
 
   it('cancels deposit and prevents action required/listing', async () => {
-    ((ctx.service as any).events.emit as jest.Mock).mockClear();
+    (ctx.events.emit as jest.Mock).mockClear();
+    pendingQueue().getJob.mockClear();
+    ctx.removeJob.mockClear();
 
     const res = await ctx.service.initiateBankTransfer(userId, 75, 'dev4', '1.1.1.4', 'USD');
     const deposit = await ctx.repos.pending.findOneByOrFail({ reference: res.reference });
@@ -154,7 +140,7 @@ describe('Pending deposits', () => {
     await ctx.service.cancelPendingDeposit(userId, deposit.id);
 
     expectQueueAndNotification(deposit.id, 'Deposit cancelled');
-    expect((ctx.service as any).events.emit).toHaveBeenCalledWith(
+    expect(ctx.events.emit as jest.Mock).toHaveBeenCalledWith(
       'wallet.deposit.rejected',
       expect.objectContaining({ depositId: deposit.id, currency: 'USD' }),
     );
@@ -166,7 +152,7 @@ describe('Pending deposits', () => {
   });
 
   it('emits admin notification after delay and confirms deposit via controller', async () => {
-    ((ctx.service as any).events.emit as jest.Mock).mockClear();
+    (ctx.events.emit as jest.Mock).mockClear();
 
     const jobs = new Set<string>();
     (ctx.service as any).pendingQueue = {
@@ -183,13 +169,13 @@ describe('Pending deposits', () => {
     const res = await ctx.service.initiateBankTransfer(userId, 20, 'dev5', '1.1.1.5', 'USD');
     const deposit = await ctx.repos.pending.findOneByOrFail({ reference: res.reference });
 
-    expect((ctx.service as any).events.emit).not.toHaveBeenCalled();
+    expect(ctx.events.emit as jest.Mock).not.toHaveBeenCalled();
 
     // simulate check after >10s delay
     await ctx.service.markActionRequiredIfPending(deposit.id, deposit.id);
     jobs.delete(deposit.id);
 
-    expect((ctx.service as any).events.emit).toHaveBeenCalledWith('admin.deposit.pending', {
+    expect(ctx.events.emit as jest.Mock).toHaveBeenCalledWith('admin.deposit.pending', {
       depositId: deposit.id,
       jobId: deposit.id,
     });
@@ -200,11 +186,11 @@ describe('Pending deposits', () => {
     const user = await accountRepo.findOneByOrFail({ id: userId });
     expect(user.balance).toBe(start.balance + 20);
 
-    expect(await (ctx.service as any).pendingQueue.getJob(deposit.id)).toBeNull();
+    expect(await pendingQueue().getJob(deposit.id)).toBeNull();
   });
 
   it('auto rejects expired deposits', async () => {
-    ((ctx.service as any).events.emit as jest.Mock).mockClear();
+    (ctx.events.emit as jest.Mock).mockClear();
 
     const res = await ctx.service.initiateBankTransfer(userId, 20, 'dev6', '1.1.1.6', 'USD');
     const repo = ctx.repos.pending;
@@ -216,11 +202,11 @@ describe('Pending deposits', () => {
 
     const updated = await repo.findOneByOrFail({ id: dep.id });
     expect(updated.status).toBe('rejected');
-    expect((ctx.service as any).events.emit).toHaveBeenCalledWith(
+    expect(ctx.events.emit as jest.Mock).toHaveBeenCalledWith(
       'wallet.deposit.rejected',
       expect.objectContaining({ depositId: dep.id, reason: 'expired' }),
     );
-    expect((ctx.service as any).events.emit).toHaveBeenCalledWith(
+    expect(ctx.events.emit as jest.Mock).toHaveBeenCalledWith(
       'admin.deposit.rejected',
       expect.objectContaining({ depositId: dep.id, reason: 'expired' }),
     );

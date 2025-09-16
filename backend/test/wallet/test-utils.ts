@@ -181,6 +181,8 @@ export async function createWalletTestContext() {
   return { dataSource, ...createWalletServices(dataSource) };
 }
 
+export type WalletTestContext = Awaited<ReturnType<typeof createWalletTestContext>>;
+
 export async function setupTestWallet(opts: { mockLedger?: boolean } = {}) {
   const ctx = await createWalletTestContext();
   let writeHandLedgerMock: jest.SpyInstance | undefined;
@@ -190,6 +192,66 @@ export async function setupTestWallet(opts: { mockLedger?: boolean } = {}) {
       .mockResolvedValue(undefined);
   }
   return { ...ctx, writeHandLedger: writeHandLedgerMock };
+}
+
+export type PendingDepositTestContext = WalletTestContext & {
+  userId: string;
+  removeJob: jest.Mock;
+  expectScheduledCheck: (depositId: string, delay?: number) => void;
+};
+
+export async function initPendingDeposit(
+  options: { userId?: string } = {},
+): Promise<PendingDepositTestContext> {
+  const userId = options.userId ?? '11111111-1111-1111-1111-111111111111';
+
+  process.env.BANK_NAME = 'Test Bank';
+  process.env.BANK_ACCOUNT_NUMBER = '123456789';
+  process.env.BANK_ROUTING_CODE = '987654';
+
+  const ctx = await createWalletTestContext();
+
+  const removeJob = jest.fn();
+  (ctx.service as any).pendingQueue = {
+    add: jest.fn(),
+    getJob: jest.fn().mockResolvedValue({ remove: removeJob }),
+  };
+
+  await ctx.repos.account.save([
+    {
+      id: userId,
+      name: 'user',
+      balance: 0,
+      currency: 'USD',
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000010',
+      name: 'house',
+      balance: 0,
+      currency: 'USD',
+    },
+  ]);
+
+  const expectScheduledCheck: PendingDepositTestContext['expectScheduledCheck'] = (
+    depositId,
+    delay = 10_000,
+  ) => {
+    const queue = (ctx.service as any).pendingQueue as {
+      add: jest.Mock;
+    };
+    expect(queue.add).toHaveBeenCalledWith(
+      'check',
+      expect.objectContaining({ id: depositId }),
+      expect.objectContaining({ delay }),
+    );
+  };
+
+  return {
+    ...ctx,
+    userId,
+    removeJob,
+    expectScheduledCheck,
+  };
 }
 
 export async function createWalletWebhookContext() {
@@ -309,4 +371,3 @@ export async function assertLedgerInvariant(service: WalletService) {
 }
 
 export { createWalletTestContext as setupWalletTest };
-export type WalletTestContext = Awaited<ReturnType<typeof createWalletTestContext>>;

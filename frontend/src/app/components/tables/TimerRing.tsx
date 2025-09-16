@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { useTableTheme } from '@/hooks/useTableTheme';
 import PlayerAvatar from './PlayerAvatar';
 import type { Player } from './types';
 import { getServerTime } from '@/lib/server-time';
+import TableThemeGate from './TableThemeGate';
 
 interface TimerRingProps {
   player: Player;
@@ -19,14 +19,6 @@ export default function TimerRing({
 }: TimerRingProps) {
   const [timeLeft, setTimeLeft] = useState(player.timeLeft ?? 0);
   const totalTimeRef = useRef(player.timeLeft ?? 0);
-
-  const { status, positions } = useTableTheme();
-  if (status === 'pending') {
-    return <div>Loading table theme...</div>;
-  }
-  if (status === 'error' || !positions) {
-    return <div>Failed to load theme</div>;
-  }
 
   useEffect(() => {
     totalTimeRef.current = player.timeLeft ?? 0;
@@ -53,38 +45,46 @@ export default function TimerRing({
   const progress =
     totalTime > 0 ? Math.max(0, Math.min(1, timeLeft / totalTime)) : 1;
 
-  const ring = positions[player.pos ?? ''];
-  const baseRingColor = ring?.color ?? 'rgba(255,255,255,0.4)';
-  const ringColor = player.isActive ? 'rgba(255,255,255,0.9)' : baseRingColor;
-
-  const avatarRingStyle: CSSProperties = {
-    // Expose CSS var consumed by PlayerAvatar's SVG ring
-    ...({ ['--ring-color']: ringColor } as any),
-  };
-
   const progressStyle: CSSProperties = {
     transform: `scale(${progress})`,
     opacity: progress,
   };
 
   return (
-    <div
-      className="w-full flex justify-center transition-transform"
-      style={progressStyle}
-    >
-      <PlayerAvatar
-        player={player}
-        pos={player.pos}
-        wrapperClass={[
-          'transition-transform',
-          player.isActive ? 'scale-105' : '',
-          winPulse ? 'winner-pulse' : '',
-        ]
-          .filter(Boolean)
-          .join(' ')}
-        avatarClass={avatarClass}
-        avatarRingStyle={avatarRingStyle}
-      />
-    </div>
+    <TableThemeGate>
+      {({ positions }) => {
+        const ring = positions[player.pos ?? ''];
+        const baseRingColor = ring?.color ?? 'rgba(255,255,255,0.4)';
+        const ringColor = player.isActive
+          ? 'rgba(255,255,255,0.9)'
+          : baseRingColor;
+
+        const avatarRingStyle: CSSProperties = {
+          // Expose CSS var consumed by PlayerAvatar's SVG ring
+          ...({ ['--ring-color']: ringColor } as any),
+        };
+
+        return (
+          <div
+            className="w-full flex justify-center transition-transform"
+            style={progressStyle}
+          >
+            <PlayerAvatar
+              player={player}
+              pos={player.pos}
+              wrapperClass={[
+                'transition-transform',
+                player.isActive ? 'scale-105' : '',
+                winPulse ? 'winner-pulse' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              avatarClass={avatarClass}
+              avatarRingStyle={avatarRingStyle}
+            />
+          </div>
+        );
+      }}
+    </TableThemeGate>
   );
 }

@@ -2,6 +2,7 @@
 
 import {
   fetchLeaderboard,
+  createLeaderboardMetaQuery,
   useLeaderboardRanges,
   useLeaderboardModes,
   listLeaderboardConfig,
@@ -40,6 +41,40 @@ describe('leaderboard api', () => {
       '/api/leaderboard',
       LeaderboardResponseSchema,
       { signal: undefined },
+    );
+  });
+});
+
+describe('createLeaderboardMetaQuery', () => {
+  beforeEach(() => {
+    useQueryMock.mockReturnValue({});
+    apiClientMock.mockResolvedValue({ ranges: [] });
+  });
+
+  afterEach(() => {
+    useQueryMock.mockReset();
+    apiClientMock.mockReset();
+  });
+
+  it('creates a leaderboard metadata query', async () => {
+    const result = createLeaderboardMetaQuery(
+      'ranges',
+      '/api/leaderboard/ranges',
+      LeaderboardRangesResponseSchema,
+    );
+
+    expect(result).toEqual({});
+    expect(useQueryMock).toHaveBeenCalledWith({
+      queryKey: ['leaderboard', 'ranges'],
+      queryFn: expect.any(Function),
+    });
+
+    const { queryFn } = useQueryMock.mock.calls[0][0];
+    await queryFn();
+
+    expect(apiClientMock).toHaveBeenCalledWith(
+      '/api/leaderboard/ranges',
+      LeaderboardRangesResponseSchema,
     );
   });
 });
