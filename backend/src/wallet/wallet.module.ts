@@ -38,6 +38,8 @@ import { AdminBalanceController } from '../routes/admin-balance.controller';
 import { DepositIban } from './deposit-iban.entity';
 import { DepositIbanHistory } from './deposit-iban-history.entity';
 import { AdminTabEntity } from '../database/entities/admin-tab.entity';
+import { TransactionColumnEntity } from './transaction-column.entity';
+import { TransactionColumnRepository } from './transaction-column.repository';
 
 @Injectable()
 class PayoutWorker implements OnModuleInit {
@@ -71,6 +73,7 @@ class PendingDepositWorker implements OnModuleInit {
       Transaction,
       TransactionStatus,
       TransactionTabEntity,
+      TransactionColumnEntity,
       DepositIban,
       DepositIbanHistory,
       AdminTabEntity,
@@ -94,6 +97,7 @@ class PendingDepositWorker implements OnModuleInit {
     BankReconciliationService,
     SidebarService,
     TransactionsService,
+    TransactionColumnRepository,
     RevenueService,
   ],
   controllers: [

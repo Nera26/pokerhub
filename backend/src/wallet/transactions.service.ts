@@ -6,6 +6,7 @@ import { TransactionType } from './transaction-type.entity';
 import { Transaction } from './transaction.entity';
 import { TransactionStatus } from './transaction-status.entity';
 import { TransactionTabEntity } from './transaction-tab.entity';
+import { TransactionColumnRepository } from './transaction-column.repository';
 import {
   FilterOptionsSchema,
   AdminTransactionEntriesSchema,
@@ -30,6 +31,7 @@ export class TransactionsService {
     private readonly statusRepo: Repository<TransactionStatus>,
     @InjectRepository(TransactionTabEntity)
     private readonly tabRepo: Repository<TransactionTabEntity>,
+    private readonly columnRepo: TransactionColumnRepository,
   ) {}
 
   async getFilterOptions(): Promise<FilterOptions> {
@@ -63,12 +65,13 @@ export class TransactionsService {
   }
 
   async getTransactionColumns() {
-    return TransactionColumnsResponseSchema.parse([
-      { id: 'type', label: 'Type' },
-      { id: 'amount', label: 'Amount' },
-      { id: 'date', label: 'Date & Time' },
-      { id: 'status', label: 'Status' },
-    ]);
+    const columns = await this.columnRepo.find();
+    return TransactionColumnsResponseSchema.parse(
+      columns.map((column) => ({
+        id: column.id,
+        label: column.label,
+      })),
+    );
   }
 
   async getUserTransactions(
