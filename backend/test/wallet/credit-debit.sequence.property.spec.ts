@@ -1,10 +1,5 @@
 import fc from 'fast-check';
-import {
-  setupFlow,
-  seedDefaultAccounts,
-  USER_ID,
-} from './flow-test-utils';
-import { applyOperation } from './apply-operations';
+import { runSequence } from './helpers/sequence';
 import {
   depositArb,
   withdrawArb,
@@ -15,8 +10,6 @@ import {
 jest.setTimeout(20000);
 
 describe('WalletService credit/debit zero-sum property', () => {
-  const userId = USER_ID;
-
   const opArb = fc.oneof(
     depositArb(),
     withdrawArb(),
@@ -31,25 +24,12 @@ describe('WalletService credit/debit zero-sum property', () => {
   it('maintains zero-sum across accounts', async () => {
     await fc.assert(
       fc.asyncProperty(batchArb, async (batches) => {
-        const { dataSource, service, accountRepo } = await setupFlow();
-        const accounts = await seedDefaultAccounts(accountRepo);
+        const sequence = await runSequence(batches);
         try {
-          for (const batch of batches) {
-            await Promise.all(
-              batch.map((op) =>
-                applyOperation(service, accounts, userId, op),
-              ),
-            );
-          }
-          const total =
-            accounts.user.balance +
-            accounts.reserve.balance +
-            accounts.house.balance +
-            accounts.rake.balance +
-            accounts.prize.balance;
-          expect(total).toBe(0);
+          await sequence.apply();
+          expect(sequence.total()).toBe(0);
         } finally {
-          await dataSource.destroy();
+          await sequence.cleanup();
         }
       }),
       { numRuns: 25 },
