@@ -6,7 +6,7 @@ import {
   fetchTransactionTypes,
 } from '@/lib/api/transactions';
 import { fetchAdminPlayers } from '@/lib/api/wallet';
-import { setupTransactionTestData } from '../test-utils';
+import { setupTransactionTestData } from './test-utils';
 
 jest.mock('@/lib/api/transactions', () => ({
   fetchTransactionsLog: jest.fn(),
