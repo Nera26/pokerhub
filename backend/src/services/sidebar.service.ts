@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import type { SidebarItem } from '../schemas/admin';
 import { AdminTabEntity } from '../database/entities/admin-tab.entity';
+import { normalizeSidebarIcon } from './sidebar-icon.util';
 
 @Injectable()
 export class SidebarService {
@@ -28,16 +29,7 @@ export class SidebarService {
     ];
     return merged.map((it) => ({
       ...it,
-      icon: this.formatIcon(it.icon),
+      icon: normalizeSidebarIcon(it.icon),
     }));
-  }
-
-  private formatIcon(name: string): string {
-    if (name.startsWith('fa')) return name;
-    const pascal = name
-      .split('-')
-      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
-      .join('');
-    return `fa${pascal}`;
   }
 }

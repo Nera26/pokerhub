@@ -8,6 +8,11 @@ import {
   type BonusOptionsResponse,
   AdminTabResponseSchema,
   type AdminTab,
+  AdminTabSchema,
+  AdminTabCreateRequestSchema,
+  type CreateAdminTabRequest,
+  AdminTabUpdateRequestSchema,
+  type UpdateAdminTabRequest,
   TournamentFormatsResponseSchema,
   type TournamentFormatsResponse,
   UserMetaResponseSchema,
@@ -27,6 +32,29 @@ export async function fetchAdminTabs({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<AdminTab[]> {
   return apiClient('/api/admin/tabs', AdminTabResponseSchema, { signal });
+}
+
+export async function createAdminTab(
+  body: CreateAdminTabRequest,
+): Promise<AdminTab> {
+  return apiClient('/api/admin/tabs', AdminTabSchema, {
+    method: 'POST',
+    body: AdminTabCreateRequestSchema.parse(body),
+  });
+}
+
+export async function updateAdminTab(
+  id: string,
+  body: UpdateAdminTabRequest,
+): Promise<AdminTab> {
+  return apiClient(`/api/admin/tabs/${id}`, AdminTabSchema, {
+    method: 'PUT',
+    body: AdminTabUpdateRequestSchema.parse(body),
+  });
+}
+
+export async function deleteAdminTab(id: string): Promise<void> {
+  await apiClient(`/api/admin/tabs/${id}`, z.void(), { method: 'DELETE' });
 }
 
 const AdminTabMetaSchema = z.object({

@@ -1,4 +1,15 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 import { KycDenialResponse, KycDenialResponseSchema } from '@shared/wallet.schema';
@@ -20,6 +31,11 @@ import {
   AdminTabResponseSchema,
   AdminEvent,
   AdminEventsResponseSchema,
+  AdminTabCreateRequestSchema,
+  type CreateAdminTabRequest,
+  AdminTabUpdateRequestSchema,
+  type UpdateAdminTabRequest,
+  AdminTabSchema,
 } from '../schemas/admin';
 import { SidebarService } from '../services/sidebar.service';
 import { KycService } from '../wallet/kyc.service';
@@ -27,6 +43,7 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import { RevenueService } from '../wallet/revenue.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
+import { AdminTabsService } from '../services/admin-tabs.service';
 
 @ApiTags('admin')
 @UseGuards(AuthGuard, AdminGuard)
@@ -36,6 +53,7 @@ export class AdminController {
     private readonly kyc: KycService,
     private readonly analytics: AnalyticsService,
     private readonly sidebar: SidebarService,
+    private readonly tabs: AdminTabsService,
     private readonly revenue: RevenueService,
   ) {}
 
@@ -92,13 +110,49 @@ export class AdminController {
   @ApiOperation({ summary: 'Get admin dashboard tabs' })
   @ApiResponse({ status: 200, description: 'Dashboard tabs' })
   async getTabs(): Promise<AdminTab[]> {
-    const items = await this.sidebar.getItems();
+    const [items, dbTabs] = await Promise.all([
+      this.sidebar.getItems(),
+      this.tabs.list(),
+    ]);
+    const dbIds = new Set(dbTabs.map((t) => t.id));
     const tabs = items.map((s) => ({
       id: s.id,
       title: s.label,
       component: s.component,
+      icon: s.icon,
+      source: dbIds.has(s.id) ? 'database' : 'config',
     }));
     return AdminTabResponseSchema.parse(tabs);
+  }
+
+  @Post('tabs')
+  @ApiOperation({ summary: 'Create admin dashboard tab' })
+  @ApiResponse({ status: 200, description: 'Created admin tab' })
+  @HttpCode(200)
+  async createTab(@Body() body: CreateAdminTabRequest): Promise<AdminTab> {
+    const parsed = AdminTabCreateRequestSchema.parse(body);
+    const created = await this.tabs.create(parsed);
+    return AdminTabSchema.parse({ ...created, source: 'database' });
+  }
+
+  @Put('tabs/:id')
+  @ApiOperation({ summary: 'Update admin dashboard tab' })
+  @ApiResponse({ status: 200, description: 'Updated admin tab' })
+  async updateTab(
+    @Param('id') id: string,
+    @Body() body: UpdateAdminTabRequest,
+  ): Promise<AdminTab> {
+    const parsed = AdminTabUpdateRequestSchema.parse(body);
+    const updated = await this.tabs.update(id, parsed);
+    return AdminTabSchema.parse({ ...updated, source: 'database' });
+  }
+
+  @Delete('tabs/:id')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Delete admin dashboard tab' })
+  @ApiResponse({ status: 204, description: 'Admin tab deleted' })
+  async deleteTab(@Param('id') id: string): Promise<void> {
+    await this.tabs.remove(id);
   }
 
   @Get('revenue-breakdown')

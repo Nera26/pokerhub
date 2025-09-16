@@ -1335,6 +1335,67 @@ export interface paths {
       };
     };
   };
+  "/admin/leaderboard-config": {
+    /** List leaderboard config */
+    get: {
+      responses: {
+        /** @description Config entries */
+        200: {
+          content: {
+            "application/json": components["schemas"]["LeaderboardConfigListResponse"];
+          };
+        };
+      };
+    };
+    /** Update leaderboard config entry */
+    put: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["LeaderboardConfigUpdate"];
+        };
+      };
+      responses: {
+        /** @description Updated config entries */
+        200: {
+          content: {
+            "application/json": components["schemas"]["LeaderboardConfigListResponse"];
+          };
+        };
+      };
+    };
+    /** Create leaderboard config entry */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["LeaderboardConfig"];
+        };
+      };
+      responses: {
+        /** @description Updated config entries */
+        200: {
+          content: {
+            "application/json": components["schemas"]["LeaderboardConfigListResponse"];
+          };
+        };
+      };
+    };
+    /** Delete leaderboard config entry */
+    delete: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["LeaderboardConfig"];
+        };
+      };
+      responses: {
+        /** @description Updated config entries */
+        200: {
+          content: {
+            "application/json": components["schemas"]["LeaderboardConfigListResponse"];
+          };
+        };
+      };
+    };
+  };
   "/hands/{id}/proof": {
     /** Get stored RNG proof for a hand */
     get: {
@@ -1807,6 +1868,59 @@ export interface paths {
           content: {
             "application/json": components["schemas"]["AdminTabResponse"];
           };
+        };
+      };
+    };
+    /** Create admin dashboard tab */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["CreateAdminTabRequest"];
+        };
+      };
+      responses: {
+        /** @description Created admin tab */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AdminTab"];
+          };
+        };
+      };
+    };
+  };
+  "/admin/tabs/{id}": {
+    /** Update admin dashboard tab */
+    put: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["UpdateAdminTabRequest"];
+        };
+      };
+      responses: {
+        /** @description Updated admin tab */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AdminTab"];
+          };
+        };
+      };
+    };
+    /** Delete admin dashboard tab */
+    delete: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Admin tab deleted */
+        204: {
+          content: never;
         };
       };
     };
@@ -2649,33 +2763,6 @@ export interface components {
       eta?: string;
     };
     PromotionsResponse: components["schemas"]["Promotion"][];
-    BonusTypeOption: {
-      value: string;
-      label: string;
-    };
-    BonusEligibilityOption: {
-      value: string;
-      label: string;
-    };
-    BonusStatusOption: {
-      value: string;
-      label: string;
-    };
-    BonusOptionsResponse: {
-      types: components["schemas"]["BonusTypeOption"][];
-      eligibilities: components["schemas"]["BonusEligibilityOption"][];
-      statuses: components["schemas"]["BonusStatusOption"][];
-    };
-    BonusDefaultsResponse: {
-      name: string;
-      type: string;
-      description: string;
-      bonusPercent?: number;
-      maxBonusUsd?: number;
-      expiryDate?: string;
-      eligibility: string;
-      status: string;
-    };
     /** @enum {string} */
     TournamentFormat: "Regular" | "Turbo" | "Deepstack" | "Bounty" | "Freeroll";
     ReplyMessageRequest: {
