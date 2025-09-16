@@ -1,15 +1,12 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { server } from '@/test-utils/server';
-import { mockSuccess } from '@/test-utils/handlers';
 import TransactionHistory from '../TransactionHistory';
 import {
   fetchTransactionsLog,
   fetchTransactionTypes,
 } from '@/lib/api/transactions';
 import { fetchAdminPlayers } from '@/lib/api/wallet';
-import { mockMetadataFetch } from '../../../common/__tests__/helpers';
+import { setupTransactionTestData } from '../test-utils';
 
 jest.mock('@/lib/api/transactions', () => ({
   fetchTransactionsLog: jest.fn(),
@@ -19,26 +16,17 @@ jest.mock('@/lib/api/wallet', () => ({
   fetchAdminPlayers: jest.fn(),
 }));
 
-function renderWithClient(ui: React.ReactElement) {
-  const client = new QueryClient();
-  return render(
-    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
-  );
-}
-
 describe('Dashboard TransactionHistory', () => {
+  let renderWithClient: ReturnType<
+    typeof setupTransactionTestData
+  >['renderWithClient'];
+
   beforeEach(() => {
-    (fetchTransactionTypes as jest.Mock).mockResolvedValue([]);
+    ({ renderWithClient } = setupTransactionTestData());
+    (fetchTransactionTypes as jest.Mock).mockResolvedValue([
+      { id: 'deposit', label: 'Deposit' },
+    ]);
     (fetchAdminPlayers as jest.Mock).mockResolvedValue([]);
-    server.use(mockSuccess({}));
-    mockMetadataFetch({
-      columns: [
-        { id: 'type', label: 'Type' },
-        { id: 'amount', label: 'Amount' },
-        { id: 'date', label: 'Date' },
-        { id: 'status', label: 'Status' },
-      ],
-    });
   });
 
   afterEach(() => {
@@ -63,6 +51,7 @@ describe('Dashboard TransactionHistory', () => {
     (fetchTransactionsLog as jest.Mock).mockResolvedValue([
       {
         datetime: '2024-01-01T00:00:00Z',
+        date: '2024-01-01',
         action: 'Deposit',
         amount: 10,
         by: 'Admin',
@@ -87,6 +76,7 @@ describe('Dashboard TransactionHistory', () => {
   it('requests next page on pagination', async () => {
     const logData = Array.from({ length: 10 }, (_, i) => ({
       datetime: `2024-01-0${i + 1}T00:00:00Z`,
+      date: `2024-01-0${i + 1}`,
       action: 'Deposit',
       amount: 10,
       by: 'Admin',

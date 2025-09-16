@@ -1,8 +1,7 @@
 import { screen } from '@testing-library/react';
-import { renderWithClient } from './renderWithClient';
 import Withdrawals from '../Withdrawals';
 import { fetchPendingWithdrawals } from '@/lib/api';
-import { mockMetadataFetch } from '../../common/__tests__/helpers';
+import { setupTransactionTestData } from '../transactions/test-utils';
 
 jest.mock('@/lib/api', () => ({
   fetchPendingWithdrawals: jest.fn(),
@@ -21,18 +20,15 @@ describe('Withdrawals', () => {
     maskedAccount: '****',
   };
 
+  let renderWithClient: ReturnType<
+    typeof setupTransactionTestData
+  >['renderWithClient'];
+
   beforeEach(() => {
     jest.clearAllMocks();
+    ({ renderWithClient } = setupTransactionTestData());
     (fetchPendingWithdrawals as jest.Mock).mockResolvedValue({
       withdrawals: [withdrawal],
-    });
-    mockMetadataFetch({
-      columns: [
-        { id: 'type', label: 'Type' },
-        { id: 'amount', label: 'Amount' },
-        { id: 'date', label: 'Date' },
-        { id: 'status', label: 'Status' },
-      ],
     });
   });
 
