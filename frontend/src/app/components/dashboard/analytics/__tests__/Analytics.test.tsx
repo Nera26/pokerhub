@@ -9,9 +9,14 @@ import { fetchLogTypeClasses, fetchErrorCategories } from '@/lib/api/analytics';
 
 const useActivity = mockUseActivity();
 const useAuditSummaryMock = jest.fn();
+const useRevenueBreakdownMock = jest.fn();
 
 jest.mock('@/hooks/useAuditSummary', () => ({
   useAuditSummary: (...args: any[]) => useAuditSummaryMock(...args),
+}));
+
+jest.mock('@/hooks/useRevenueBreakdown', () => ({
+  useRevenueBreakdown: (...args: any[]) => useRevenueBreakdownMock(...args),
 }));
 
 jest.mock(
@@ -37,6 +42,12 @@ jest.mock('../../charts/ActivityChart', () => () => <div>ActivityChart</div>);
 jest.mock('../ErrorChart', () => ({ data }: { data?: number[] }) => (
   <div>{data && data.length ? 'ErrorChart' : 'No data'}</div>
 ));
+jest.mock('../../charts/RevenueDonut', () => ({
+  __esModule: true,
+  default: ({ streams }: { streams: { label: string }[] }) => (
+    <div>{`RevenueDonut: ${streams.map((s) => s.label).join(', ')}`}</div>
+  ),
+}));
 jest.mock('../AuditTable', () => () => <div>AuditTable</div>);
 jest.mock('../AdvancedFilterModal', () => () => <div>AdvancedFilterModal</div>);
 jest.mock('../DetailModal', () => () => <div>DetailModal</div>);
@@ -84,6 +95,14 @@ describe('Analytics', () => {
       data: { labels: [], data: [] },
       isLoading: false,
       error: null,
+    });
+    useRevenueBreakdownMock.mockReturnValue({
+      data: [
+        { label: 'Cash Games', pct: 55 },
+        { label: 'Tournaments', pct: 30 },
+      ],
+      isLoading: false,
+      isError: false,
     });
   });
 
@@ -143,6 +162,14 @@ describe('Analytics', () => {
     renderWithClient(<Analytics />);
     expect(
       await screen.findByText(/failed to load overview/i),
+    ).toBeInTheDocument();
+  });
+
+  it('renders revenue donut when revenue data is available', async () => {
+    renderWithClient(<Analytics />);
+
+    expect(
+      await screen.findByText(/RevenueDonut: Cash Games, Tournaments/i),
     ).toBeInTheDocument();
   });
 });
