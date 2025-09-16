@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowDown } from '@fortawesome/free-solid-svg-icons/faArrowDown';
 import { faArrowUp } from '@fortawesome/free-solid-svg-icons/faArrowUp';
 
-export interface WalletSummaryProps {
+interface WalletSummaryProps {
   /** User's real (withdrawable) balance */
   realBalance: number;
   /** User's credit balance (in-game only) */
@@ -45,7 +45,9 @@ export default function WalletSummary({
     <section className="bg-card-bg rounded-2xl p-8 md:p-12 mb-6 md:mb-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between">
         <div>
-          <p className="text-text-secondary text-sm sm:text-base">Total Balance</p>
+          <p className="text-text-secondary text-sm sm:text-base">
+            Total Balance
+          </p>
           <p className="text-3xl sm:text-4xl font-bold text-accent-yellow mb-1">
             {format(totalBalance)}
           </p>
@@ -56,7 +58,9 @@ export default function WalletSummary({
             <span className="font-medium">• Real: {format(realBalance)}</span>
             &nbsp;|&nbsp;
             <Tooltip text="Credits can only be used for games and cannot be withdrawn.">
-              <span className="font-medium">• Credit: {format(creditBalance)}</span>
+              <span className="font-medium">
+                • Credit: {format(creditBalance)}
+              </span>
             </Tooltip>
           </p>
         </div>

@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 
-export type ToastType = 'success' | 'error' | 'loading';
+type ToastType = 'success' | 'error' | 'loading';
 
-export interface ToastNotificationProps {
+interface ToastNotificationProps {
   /** The message to display in the toast */
   message: string;
   /** Type controls background color: green for success, red for error */
