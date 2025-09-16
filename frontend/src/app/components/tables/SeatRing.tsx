@@ -9,7 +9,7 @@ import ChipAnimator from './ChipAnimator';
 import { useQueryClient } from '@tanstack/react-query';
 import type { TableState } from '../../store/tableStore';
 import { TableUiProvider } from './TableUiContext';
-import { useTableTheme } from '@/hooks/useTableTheme';
+import TableThemeGate from './TableThemeGate';
 
 export interface SeatRingProps {
   players: Player[];
@@ -120,77 +120,73 @@ export default function SeatRing({
     queryClient.setQueryData(['table', 'local'], tableState);
   }, [players, pot, street, sidePots, handNumber, queryClient]);
 
-  const { status, positions } = useTableTheme();
-  if (status === 'pending') {
-    return <div>Loading table theme...</div>;
-  }
-  if (status === 'error' || !positions) {
-    return <div>Failed to load theme</div>;
-  }
-
   return (
-    <TableUiProvider>
-      <div className="flex-1">
-        <div className="relative mx-auto w-[min(1450px,96vw)] p-6">
-          <div
-            ref={tableRef}
-            className="relative w-full
+    <TableThemeGate>
+      {({ positions }) => (
+        <TableUiProvider>
+          <div className="flex-1">
+            <div className="relative mx-auto w-[min(1450px,96vw)] p-6">
+              <div
+                ref={tableRef}
+                className="relative w-full
                            h-[min(78vh,780px)]
                            rounded-full
                            overflow-hidden"
-            style={{
-              ...TABLE_COLORS,
-              backgroundImage: `
+                style={{
+                  ...TABLE_COLORS,
+                  backgroundImage: `
                 radial-gradient(ellipse at center, var(--felt-start) 0%, var(--felt-mid) 70%, var(--felt-end) 100%),
                 url("${FELT_TEXTURE}"),
                 radial-gradient(ellipse at center, rgba(0,0,0,0) 60%, var(--felt-vignette) 100%)
               `,
-              backgroundBlendMode: 'normal, overlay, multiply',
-              backgroundSize: '100% 100%, 120px 120px, 100% 100%',
-              border: '2px solid var(--table-rim)',
-              boxShadow:
-                '0 0 12px var(--table-rim-glow), 0 25px 50px -12px rgba(0,0,0,0.25)',
-            }}
-          >
-            <ChipAnimator soundEnabled={soundEnabled}>
-              <>
-                {/* Center: community cards and pot */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-                  <CommunityCards cards={communityCards ?? []} />
+                  backgroundBlendMode: 'normal, overlay, multiply',
+                  backgroundSize: '100% 100%, 120px 120px, 100% 100%',
+                  border: '2px solid var(--table-rim)',
+                  boxShadow:
+                    '0 0 12px var(--table-rim-glow), 0 25px 50px -12px rgba(0,0,0,0.25)',
+                }}
+              >
+                <ChipAnimator soundEnabled={soundEnabled}>
+                  <>
+                    {/* Center: community cards and pot */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+                      <CommunityCards cards={communityCards ?? []} />
 
-                  <Pot />
+                      <Pot />
 
-                  {/* Side pots (if any) */}
-                  <div className="mt-3 min-h-5 text-[11px] md:text-xs text-text-secondary">
-                    {sidePots.length > 0 ? (
-                      sidePots.map((amt, i) => (
-                        <div key={i}>
-                          Side Pot {i + 1}: ${amt}
-                        </div>
-                      ))
-                    ) : (
-                      <span>&nbsp;</span>
-                    )}
-                  </div>
-                </div>
+                      {/* Side pots (if any) */}
+                      <div className="mt-3 min-h-5 text-[11px] md:text-xs text-text-secondary">
+                        {sidePots.length > 0 ? (
+                          sidePots.map((amt, i) => (
+                            <div key={i}>
+                              Side Pot {i + 1}: ${amt}
+                            </div>
+                          ))
+                        ) : (
+                          <span>&nbsp;</span>
+                        )}
+                      </div>
+                    </div>
 
-                {/* Seats */}
-                {(players ?? []).map((p, idx) => (
-                  <PlayerSeat
-                    key={p.id}
-                    player={p}
-                    style={seatStyles[idx]}
-                    street={street}
-                    density={density}
-                    badge={positions[p.pos ?? '']?.badge}
-                  />
-                ))}
-              </>
-            </ChipAnimator>
+                    {/* Seats */}
+                    {(players ?? []).map((p, idx) => (
+                      <PlayerSeat
+                        key={p.id}
+                        player={p}
+                        style={seatStyles[idx]}
+                        street={street}
+                        density={density}
+                        badge={positions[p.pos ?? '']?.badge}
+                      />
+                    ))}
+                  </>
+                </ChipAnimator>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    </TableUiProvider>
+        </TableUiProvider>
+      )}
+    </TableThemeGate>
   );
 }
 
