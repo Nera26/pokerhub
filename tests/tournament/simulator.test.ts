@@ -6,6 +6,7 @@ import {
   HANDS_PER_LEVEL,
   MS_PER_MINUTE_SCALED,
   simulateTournament,
+  simulateTournamentDurations,
 } from './utils/simulator.ts';
 
 interface Level {
@@ -37,4 +38,27 @@ test('tournament simulation matches documented hand durations and timeline', () 
   );
   const totalDiff = Math.abs(result.totalDuration - expectedTotal);
   assert(totalDiff <= expectedTotal * 0.05);
+
+  const profiles = [
+    { name: 'default', proportion: 1, bustMultiplier: 1 },
+  ];
+  const summary = simulateTournamentDurations(
+    structure.levels,
+    10000,
+    4,
+    profiles,
+    42,
+  );
+  const summaryRepeat = simulateTournamentDurations(
+    structure.levels,
+    10000,
+    4,
+    profiles,
+    42,
+  );
+
+  assert(summary.averageDuration > 0);
+  assert(summary.durationVariance >= 0);
+  assert(Math.abs(summary.averageDuration - summaryRepeat.averageDuration) < 1e-9);
+  assert(Math.abs(summary.durationVariance - summaryRepeat.durationVariance) < 1e-9);
 });
