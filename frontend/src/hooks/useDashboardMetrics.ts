@@ -1,9 +1,9 @@
 'use client';
 
-import { DashboardMetricsSchema, type DashboardMetrics } from '@shared/types';
-import { createGetHook } from './useApiQuery';
+import { DashboardMetricsSchema } from '@shared/types';
+import { createSimpleGetHook } from './useSimpleGet';
 
-export const useDashboardMetrics = createGetHook<DashboardMetrics>(
+export const useDashboardMetrics = createSimpleGetHook(
   '/api/dashboard/metrics',
   DashboardMetricsSchema,
 );
