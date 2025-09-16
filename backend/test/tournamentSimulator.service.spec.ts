@@ -19,7 +19,10 @@ describe('tournamentSimulator service', () => {
     const profiles: BotProfile[] = [
       { name: 'test', proportion: 1, bustMultiplier: 1 },
     ];
-    const res = simulate(structure, 2, 1, profiles);
+    const res = simulate(structure, 2, {
+      runs: 1,
+      botProfiles: profiles,
+    });
     expect(res).toEqual({ averageDuration: 1, durationVariance: 0 });
   });
 
@@ -31,7 +34,10 @@ describe('tournamentSimulator service', () => {
     const profiles: BotProfile[] = [
       { name: 'p', proportion: 1, bustMultiplier: 1 },
     ];
-    const res = simulate(structure, 10, 2, profiles);
+    const res = simulate(structure, 10, {
+      runs: 2,
+      botProfiles: profiles,
+    });
     expect(res.averageDuration).toBeGreaterThan(0);
     expect(res.durationVariance).toBeGreaterThanOrEqual(0);
   });
@@ -48,8 +54,14 @@ describe('tournamentSimulator service', () => {
     const fast: BotProfile[] = [
       { name: 'fast', proportion: 1, bustMultiplier: 2 },
     ];
-    const slowRes = simulate(structure, 100, 1, slow);
-    const fastRes = simulate(structure, 100, 1, fast);
+    const slowRes = simulate(structure, 100, {
+      runs: 1,
+      botProfiles: slow,
+    });
+    const fastRes = simulate(structure, 100, {
+      runs: 1,
+      botProfiles: fast,
+    });
     expect(fastRes.averageDuration).toBeLessThan(slowRes.averageDuration);
   });
 });

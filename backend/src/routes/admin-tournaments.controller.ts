@@ -65,7 +65,7 @@ export class AdminTournamentsController {
       );
       const profiles = await this.service.getBotProfiles();
       const parsed = BotProfilesResponseSchema.parse(profiles);
-      return simulate(structure, entrants, runs, parsed);
+      return simulate(structure, entrants, { runs, botProfiles: parsed });
     } catch (err) {
       if (err instanceof ZodError) {
         throw new BadRequestException(err.errors);

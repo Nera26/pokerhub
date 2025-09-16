@@ -7,7 +7,15 @@ export interface BlindLevel {
   smallBlind?: number;
   bigBlind?: number;
   ante?: number;
+  /** Optional multiplier that represents how quickly blinds ramp up */
+  blindMultiplier?: number;
   durationMinutes: number;
+}
+
+export interface BotProfile {
+  name: string;
+  proportion: number;
+  bustMultiplier: number;
 }
 
 interface Seed {
@@ -22,52 +30,137 @@ function rand(seed: Seed): number {
   return seed.value / 0xffffffff;
 }
 
-class Bot {
-  constructor(private readonly seed: Seed) {}
+const DEFAULT_PROFILE: BotProfile = {
+  name: 'default',
+  proportion: 1,
+  bustMultiplier: 1,
+};
 
-  playHand(expected: number): number {
-    const variance = 0.9 + 0.2 * rand(this.seed);
-    return expected * variance;
+const DEFAULT_HANDS_PER_LEVEL = 20;
+const DEFAULT_MS_PER_MINUTE = 1;
+const DEFAULT_RUNS = 25;
+
+function normalizeProfiles(
+  profiles?: ReadonlyArray<BotProfile>,
+): ReadonlyArray<BotProfile> {
+  const filtered = profiles?.filter(
+    (profile) => profile.proportion > 0 && profile.bustMultiplier > 0,
+  );
+  if (!filtered || filtered.length === 0) {
+    return [DEFAULT_PROFILE];
   }
+
+  const total = filtered.reduce((acc, profile) => acc + profile.proportion, 0);
+  if (total <= 0) {
+    return [DEFAULT_PROFILE];
+  }
+
+  return filtered.map((profile) => ({
+    ...profile,
+    proportion: profile.proportion / total,
+  }));
+}
+
+function weightedBustMultiplier(profiles: ReadonlyArray<BotProfile>): number {
+  return profiles.reduce(
+    (acc, profile) => acc + profile.proportion * profile.bustMultiplier,
+    0,
+  );
+}
+
+export function mean(values: ReadonlyArray<number>): number {
+  if (values.length === 0) {
+    return 0;
+  }
+  const total = values.reduce((acc, value) => acc + value, 0);
+  return total / values.length;
+}
+
+export function variance(values: ReadonlyArray<number>): number {
+  if (values.length <= 1) {
+    return 0;
+  }
+  const avg = mean(values);
+  return (
+    values.reduce((acc, value) => {
+      const diff = value - avg;
+      return acc + diff * diff;
+    }, 0) / values.length
+  );
 }
 
 interface SimulationOptions {
   /** Number of hands to simulate per blind level */
-  handsPerLevel: number;
+  handsPerLevel?: number;
   /** Number of milliseconds that represent one minute */
-  msPerMinute: number;
+  msPerMinute?: number;
+  /** Number of simulation runs */
+  runs?: number;
   /** Optional seed for deterministic results */
   seedValue?: number;
+  /** Bot behavioural profiles */
+  botProfiles?: ReadonlyArray<BotProfile>;
 }
 
-interface SimulationResult {
-  levelAverages: number[];
-  totalDuration: number;
+export interface SimulationSummary {
+  averageDuration: number;
+  durationVariance: number;
 }
 
 /**
- * Simulate a tournament structure with a simple bot model.
+ * Simulate a tournament structure by approximating eliminations across blind levels.
  */
 export function simulate(
   structure: ReadonlyArray<BlindLevel>,
-  _entrants: number,
-  { handsPerLevel, msPerMinute, seedValue = 1 }: SimulationOptions,
-): SimulationResult {
-  const seed: Seed = { value: seedValue };
-  const bot = new Bot(seed);
-  const levelAverages: number[] = [];
-  let total = 0;
-
-  for (const lvl of structure) {
-    const expected = lvl.durationMinutes * msPerMinute;
-    let levelTotal = 0;
-    for (let i = 0; i < handsPerLevel; i++) {
-      levelTotal += bot.playHand(expected);
-    }
-    levelAverages.push(levelTotal / handsPerLevel);
-    total += levelTotal;
+  entrants: number,
+  options: SimulationOptions = {},
+): SimulationSummary {
+  if (structure.length === 0 || entrants <= 1) {
+    return { averageDuration: 0, durationVariance: 0 };
   }
 
-  return { levelAverages, totalDuration: total };
+  const seed: Seed = { value: options.seedValue ?? 1 };
+  const handsPerLevel = Math.max(
+    1,
+    Math.floor(options.handsPerLevel ?? DEFAULT_HANDS_PER_LEVEL),
+  );
+  const msPerMinute = options.msPerMinute ?? DEFAULT_MS_PER_MINUTE;
+  const runs = Math.max(1, Math.floor(options.runs ?? DEFAULT_RUNS));
+  const profiles = normalizeProfiles(options.botProfiles);
+  const bustPressure = weightedBustMultiplier(profiles);
+
+  const durations: number[] = [];
+
+  for (let run = 0; run < runs; run++) {
+    let playersRemaining = entrants;
+    let totalDuration = 0;
+    let levelIndex = 0;
+
+    while (playersRemaining > 1) {
+      const level = structure[levelIndex % structure.length];
+      const blindFactor = level.blindMultiplier ?? 1;
+      const randomPressure = 0.75 + 0.5 * rand(seed);
+      const eliminationRate =
+        (blindFactor * bustPressure * randomPressure) / handsPerLevel;
+      const eliminated = Math.max(
+        1,
+        Math.min(
+          playersRemaining - 1,
+          Math.round(playersRemaining * eliminationRate),
+        ),
+      );
+
+      playersRemaining -= eliminated;
+      totalDuration += level.durationMinutes * msPerMinute;
+      levelIndex++;
+    }
+
+    durations.push(totalDuration);
+  }
+
+  return {
+    averageDuration: mean(durations),
+    durationVariance: variance(durations),
+  };
 }
 
