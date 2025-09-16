@@ -2,20 +2,51 @@
 
 import { fetchTables } from '@/lib/api/table';
 import { fetchTournamentDetails, createCTA, updateCTA } from '@/lib/api/lobby';
-import { tables, tournamentDetails } from '../fixtures/lobby';
 import { server } from '@/test-utils/server';
 import { mockSuccess } from '@/test-utils/handlers';
+import type { Table, TournamentDetails } from '@shared/types';
+
+const originalFetch = global.fetch;
+
+const mockTables: Table[] = [
+  {
+    id: '1',
+    tableName: 'Test Table',
+    gameType: 'texas',
+    stakes: { small: 1, big: 2 },
+    players: { current: 1, max: 6 },
+    buyIn: { min: 40, max: 200 },
+    stats: { handsPerHour: 10, avgPot: 5, rake: 1 },
+    createdAgo: '1m',
+  },
+];
+
+const mockTournamentDetails: TournamentDetails = {
+  id: 't1',
+  title: 'Spring Poker',
+  buyIn: 100,
+  prizePool: 1000,
+  state: 'REG_OPEN',
+  gameType: 'texas',
+  players: { current: 0, max: 100 },
+  registered: false,
+  registration: { open: null, close: null },
+  overview: [{ title: 'Format', description: 'NLH' }],
+  structure: [],
+  prizes: [],
+};
 
 describe('lobby api', () => {
   beforeAll(() => {
-    // Ensure fetch exists in node test env
-    if (!(global as any).fetch) {
-      (global as any).fetch = jest.fn();
-    }
+    global.fetch = jest.fn();
   });
 
   beforeEach(() => {
     (fetch as jest.Mock).mockReset();
+  });
+
+  afterAll(() => {
+    global.fetch = originalFetch;
   });
 
   it('fetches tables', async () => {
@@ -23,10 +54,10 @@ describe('lobby api', () => {
       ok: true,
       status: 200,
       headers: { get: () => 'application/json' },
-      json: async () => tables,
+      json: async () => mockTables,
     });
 
-    await expect(fetchTables()).resolves.toEqual(tables);
+    await expect(fetchTables()).resolves.toEqual(mockTables);
   });
 
   it('throws ApiError on failure', async () => {
@@ -49,11 +80,11 @@ describe('lobby api', () => {
       ok: true,
       status: 200,
       headers: { get: () => 'application/json' },
-      json: async () => tournamentDetails,
+      json: async () => mockTournamentDetails,
     });
 
     await expect(fetchTournamentDetails('t1')).resolves.toEqual(
-      tournamentDetails,
+      mockTournamentDetails,
     );
   });
 

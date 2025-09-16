@@ -5,9 +5,38 @@ import type { ReactNode } from 'react';
 import LeaderboardBase from '@/features/leaderboard/LeaderboardBase';
 import LeaderboardTabs from '@/features/leaderboard/LeaderboardTabs';
 import { fetchLeaderboard, useLeaderboardRanges } from '@/lib/api/leaderboard';
-import { leaderboard as daily } from './fixtures/leaderboard';
+import type { LeaderboardEntry } from '@shared/types';
 
-const weekly = [{ ...daily[0], playerId: 'carol' }];
+const daily: LeaderboardEntry[] = [
+  {
+    playerId: 'alice',
+    rank: 1,
+    points: 100,
+    rd: 40,
+    volatility: 0.06,
+    net: 10,
+    bb100: 5,
+    hours: 2,
+    roi: 0.2,
+    finishes: { 1: 1 },
+  },
+  {
+    playerId: 'bob',
+    rank: 2,
+    points: 90,
+    rd: 40,
+    volatility: 0.06,
+    net: 8,
+    bb100: 4,
+    hours: 1.5,
+    roi: -0.1,
+    finishes: { 2: 1 },
+  },
+];
+
+const weekly: LeaderboardEntry[] = [
+  { ...daily[0], playerId: 'carol', rank: 1 },
+];
 
 jest.mock('@/lib/api/leaderboard', () => {
   const actual = jest.requireActual('@/lib/api/leaderboard');
