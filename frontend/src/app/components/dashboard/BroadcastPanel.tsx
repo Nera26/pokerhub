@@ -33,12 +33,20 @@ export default function BroadcastPanel() {
 
   return (
     <>
-      <Link
-        href="/admin/ctas"
-        className="block w-full bg-accent-yellow hover:brightness-110 text-black py-2 rounded-xl font-semibold text-center mb-4"
-      >
-        Manage CTAs
-      </Link>
+      <div className="mb-4 space-y-2">
+        <Link
+          href="/admin/ctas"
+          className="block w-full rounded-xl bg-accent-yellow py-2 text-center font-semibold text-black hover:brightness-110"
+        >
+          Manage CTAs
+        </Link>
+        <Link
+          href="/admin/blocked-countries"
+          className="block w-full rounded-xl bg-card-bg py-2 text-center font-semibold text-text-primary border border-border-dark hover:bg-hover-bg"
+        >
+          Manage Blocked Countries
+        </Link>
+      </div>
       <AdminMessageList
         messages={messages}
         isLoading={isLoading}
