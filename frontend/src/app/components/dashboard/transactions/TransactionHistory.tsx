@@ -3,11 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons/faSpinner';
 import TransactionHistorySection from '@/app/components/common/TransactionHistorySection';
+import { fetchAdminPlayers } from '@/lib/api/wallet';
 import {
-  fetchAdminPlayers,
   fetchTransactionTypes,
   fetchTransactionsLog,
-} from '@/lib/api/wallet';
+} from '@/lib/api/transactions';
 import { useApiError } from '@/hooks/useApiError';
 
 interface Props {

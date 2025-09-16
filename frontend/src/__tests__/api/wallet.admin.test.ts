@@ -6,9 +6,9 @@ import {
   confirmWithdrawal,
   rejectWithdrawal,
   fetchBalances,
-  fetchTransactionsLog,
   adminAdjustBalance,
 } from '@/lib/api/wallet';
+import { fetchTransactionsLog } from '@/lib/api/transactions';
 import { PendingDepositsResponseSchema } from '@shared/wallet.schema';
 import {
   PendingWithdrawalsResponseSchema,
