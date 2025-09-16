@@ -9,9 +9,14 @@ import { fetchLogTypeClasses, fetchErrorCategories } from '@/lib/api/analytics';
 
 const useActivity = mockUseActivity();
 const useAuditSummaryMock = jest.fn();
+const useRevenueBreakdownMock = jest.fn();
 
 jest.mock('@/hooks/useAuditSummary', () => ({
   useAuditSummary: (...args: any[]) => useAuditSummaryMock(...args),
+}));
+
+jest.mock('@/hooks/useRevenueBreakdown', () => ({
+  useRevenueBreakdown: (...args: any[]) => useRevenueBreakdownMock(...args),
 }));
 
 jest.mock(
@@ -34,6 +39,12 @@ jest.mock('../QuickStats', () => ({
 }));
 jest.mock('../SecurityAlerts', () => () => <div>SecurityAlerts</div>);
 jest.mock('../../charts/ActivityChart', () => () => <div>ActivityChart</div>);
+jest.mock('../../charts/RevenueDonut', () => ({
+  __esModule: true,
+  default: ({ streams }: { streams: Array<{ label: string }> }) => (
+    <div>{streams.map((s) => s.label).join(', ') || 'No streams'}</div>
+  ),
+}));
 jest.mock('../ErrorChart', () => ({ data }: { data?: number[] }) => (
   <div>{data && data.length ? 'ErrorChart' : 'No data'}</div>
 ));
@@ -79,6 +90,12 @@ describe('Analytics', () => {
       data: { logs: [], total: 0 },
       isLoading: false,
       isError: false,
+    });
+    useRevenueBreakdownMock.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+      error: null,
     });
     useActivity.mockReturnValue({
       data: { labels: [], data: [] },
@@ -144,5 +161,52 @@ describe('Analytics', () => {
     expect(
       await screen.findByText(/failed to load overview/i),
     ).toBeInTheDocument();
+  });
+
+  it('shows revenue loading state', async () => {
+    useRevenueBreakdownMock.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+      error: null,
+    });
+
+    renderWithClient(<Analytics />);
+
+    expect(
+      await screen.findByText(/loading revenue breakdown/i),
+    ).toBeInTheDocument();
+  });
+
+  it('shows revenue error state', async () => {
+    useRevenueBreakdownMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: { message: 'Failed to fetch revenue breakdown: oops' },
+    });
+
+    renderWithClient(<Analytics />);
+
+    expect(
+      await screen.findByText(/failed to fetch revenue breakdown/i),
+    ).toBeInTheDocument();
+  });
+
+  it('renders revenue data when available', async () => {
+    useRevenueBreakdownMock.mockReturnValue({
+      data: [
+        { label: 'VIP Tables', pct: 60, value: 120000 },
+        { label: 'Cash Games', pct: 40, value: 80000 },
+      ],
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    renderWithClient(<Analytics />);
+
+    expect(await screen.findByText(/revenue breakdown/i)).toBeInTheDocument();
+    expect(screen.getByText(/\$120,000/)).toBeInTheDocument();
   });
 });

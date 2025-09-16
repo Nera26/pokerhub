@@ -23,6 +23,8 @@ import { useAuditSummary } from '@/hooks/useAuditSummary';
 import SecurityAlerts from './SecurityAlerts';
 import CenteredMessage from '@/components/CenteredMessage';
 import ToastNotification from '../../ui/ToastNotification';
+import RevenueBreakdownCard from './RevenueBreakdownCard';
+import { useRevenueBreakdown } from '@/hooks/useRevenueBreakdown';
 import { rebuildLeaderboard } from '@/lib/api/leaderboard';
 import type {
   AuditLogEntry,
@@ -102,6 +104,12 @@ export default function Analytics() {
     onError: () =>
       pushToast('Failed to rebuild leaderboard', { variant: 'error' }),
   });
+  const {
+    data: revenueBreakdown,
+    isLoading: revenueLoading,
+    isError: revenueError,
+    error: revenueErrorDetails,
+  } = useRevenueBreakdown('all');
 
   if (badgeLoading)
     return <CenteredMessage>Loading log types...</CenteredMessage>;
@@ -226,6 +234,19 @@ export default function Analytics() {
             data={errorCategories?.counts}
           />
         )}
+      </section>
+
+      <section className="grid grid-cols-1 gap-6">
+        <RevenueBreakdownCard
+          streams={revenueBreakdown}
+          loading={revenueLoading}
+          error={
+            revenueError
+              ? (revenueErrorDetails?.message ??
+                'Failed to load revenue breakdown')
+              : undefined
+          }
+        />
       </section>
 
       <section className="grid grid-cols-1 gap-6">
