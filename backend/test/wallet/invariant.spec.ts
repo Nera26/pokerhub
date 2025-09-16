@@ -1,4 +1,5 @@
 import fc from 'fast-check';
+import { assertBalance } from './helpers/assertBalance';
 import { setupPropertyTest, opArb, USER_ID } from './property-utils';
 
 jest.setTimeout(20000);
@@ -10,21 +11,13 @@ describe('WalletService balance invariants', () => {
         const { dataSource, service } = await setupPropertyTest();
         const initial = await service.totalBalance();
         try {
-          for (const op of ops) {
-            switch (op.type) {
-              case 'reserve':
-                await service.reserve(USER_ID, op.amount, op.ref, 'USD');
-                break;
-              case 'commit':
-                await service.commit(op.ref, op.amount, op.rake, 'USD');
-                break;
-              case 'rollback':
-                await service.rollback(USER_ID, op.amount, op.ref, 'USD');
-                break;
-            }
-            const total = await service.totalBalance();
-            expect(total).toBe(initial);
-          }
+          await assertBalance({
+            service,
+            ops,
+            userId: USER_ID,
+            expected: initial,
+            getBalance: () => service.totalBalance(),
+          });
         } finally {
           await dataSource.destroy();
         }
