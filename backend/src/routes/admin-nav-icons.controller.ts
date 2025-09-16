@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Delete,
-  Get,
   HttpCode,
   Param,
   Post,
@@ -14,19 +13,14 @@ import { NavIconSchema, NavIconsResponseSchema, type NavIcon } from '@shared/typ
 import { NavIconsService } from '../services/nav-icons.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
+import { NavIconsController } from './nav-icons.controller';
 
 @ApiTags('admin')
 @Controller('admin/nav-icons')
 @UseGuards(AuthGuard, AdminGuard)
-export class AdminNavIconsController {
-  constructor(private readonly icons: NavIconsService) {}
-
-  @Get()
-  @ApiOperation({ summary: 'List navigation icon metadata' })
-  @ApiResponse({ status: 200, description: 'Navigation icons' })
-  async list(): Promise<NavIcon[]> {
-    const icons = await this.icons.list();
-    return NavIconsResponseSchema.parse(icons);
+export class AdminNavIconsController extends NavIconsController {
+  constructor(icons: NavIconsService) {
+    super(icons);
   }
 
   @Post()

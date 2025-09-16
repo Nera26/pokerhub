@@ -6,7 +6,7 @@ import { NavIconsService } from '../services/nav-icons.service';
 @ApiTags('nav')
 @Controller('nav-icons')
 export class NavIconsController {
-  constructor(private readonly icons: NavIconsService) {}
+  constructor(protected readonly icons: NavIconsService) {}
 
   @Get()
   @ApiOperation({ summary: 'List navigation icon metadata' })
