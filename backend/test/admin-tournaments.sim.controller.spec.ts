@@ -6,10 +6,7 @@ import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
 import { TournamentSimulateResponseSchema } from '@shared/types';
 import { TournamentService } from '../src/tournament/tournament.service';
-
-jest.mock('../src/services/tournamentSimulator', () => ({
-  simulate: () => ({ averageDuration: 1, durationVariance: 0 }),
-}));
+import { simulate, type BlindLevel } from '@shared/utils/tournamentSimulator';
 
 describe('AdminTournamentsController simulate', () => {
   let app: INestApplication;
@@ -49,17 +46,32 @@ describe('AdminTournamentsController simulate', () => {
   });
 
   it('returns simulation result', async () => {
+    const payload = {
+      levels: 2,
+      levelMinutes: 1,
+      increment: 0.5,
+      entrants: 5,
+      runs: 3,
+    };
+
     const res = await request(app.getHttpServer())
       .post('/admin/tournaments/simulate')
-      .send({
-        levels: 1,
-        levelMinutes: 1,
-        increment: 1,
-        entrants: 2,
-        runs: 1,
-      })
+      .send(payload)
       .expect(200);
+
     const parsed = TournamentSimulateResponseSchema.parse(res.body);
-    expect(parsed).toEqual({ averageDuration: 1, durationVariance: 0 });
+
+    const structure: BlindLevel[] = Array.from({ length: payload.levels }, (_, i) => ({
+      level: i + 1,
+      durationMinutes: payload.levelMinutes,
+      blindMultiplier: 1 + i * payload.increment,
+    }));
+
+    const expected = simulate(structure, payload.entrants, payload.runs, [
+      { name: 'test', proportion: 1, bustMultiplier: 1 },
+    ]);
+
+    expect(parsed.averageDuration).toBeCloseTo(expected.averageDuration);
+    expect(parsed.durationVariance).toBeCloseTo(expected.durationVariance);
   });
 });
