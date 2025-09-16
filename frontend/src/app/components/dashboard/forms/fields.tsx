@@ -95,5 +95,3 @@ export function SelectField<T extends FieldValues>({
     </div>
   );
 }
-
-export default { TextField, SelectField };
