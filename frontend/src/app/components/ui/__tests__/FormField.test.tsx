@@ -1,9 +1,10 @@
+import './setupLoggerMock';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { TextField, SelectField } from '../fields';
+import { SelectField, TextField } from '../FormField';
 
 function TextFieldForm() {
   const schema = z.object({ name: z.string().min(1, { message: 'Required' }) });
@@ -12,9 +13,16 @@ function TextFieldForm() {
     handleSubmit,
     formState: { errors },
   } = useForm<{ name: string }>({ resolver: zodResolver(schema) });
+
   return (
     <form onSubmit={handleSubmit(() => {})}>
-      <TextField name="name" label="Name" register={register} errors={errors} />
+      <TextField
+        id="name"
+        label="Name"
+        name="name"
+        register={register}
+        errors={errors}
+      />
       <button type="submit">Submit</button>
     </form>
   );
@@ -32,13 +40,17 @@ function SelectFieldForm() {
     resolver: zodResolver(schema),
     defaultValues: { color: '' },
   });
+
   const options = [
     { value: '', label: 'Select a color' },
     { value: 'red', label: 'Red' },
+    { value: 'blue', label: 'Blue' },
   ];
+
   return (
     <form onSubmit={handleSubmit(() => {})}>
       <SelectField
+        id="color"
         name="color"
         label="Color"
         register={register}
@@ -51,12 +63,13 @@ function SelectFieldForm() {
   );
 }
 
-describe('fields', () => {
-  const user = userEvent.setup();
-
-  it('shows TextField errors', async () => {
+describe('FormField', () => {
+  it('shows TextField validation errors', async () => {
+    const user = userEvent.setup();
     render(<TextFieldForm />);
+
     await user.click(screen.getByRole('button', { name: /submit/i }));
+
     expect(await screen.findByText('Required')).toBeInTheDocument();
     expect(screen.getByLabelText('Name')).toHaveAttribute(
       'aria-invalid',
@@ -64,9 +77,17 @@ describe('fields', () => {
     );
   });
 
-  it('shows SelectField errors', async () => {
+  it('renders select options and shows errors', async () => {
+    const user = userEvent.setup();
     render(<SelectFieldForm />);
+
+    const optionTexts = screen
+      .getAllByRole('option')
+      .map((option) => option.textContent);
+    expect(optionTexts).toEqual(['Select a color', 'Red', 'Blue']);
+
     await user.click(screen.getByRole('button', { name: /submit/i }));
+
     expect(await screen.findByText('Required')).toBeInTheDocument();
     expect(screen.getByLabelText('Color')).toHaveAttribute(
       'aria-invalid',

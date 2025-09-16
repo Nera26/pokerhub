@@ -9,7 +9,7 @@ import { CTASchema, CTAVariantSchema, type CTA } from '@shared/types';
 import { createCTA, updateCTA } from '@/lib/api/lobby';
 import type { ApiError } from '@/lib/api/client';
 import Button from '../ui/Button';
-import { TextField, SelectField } from './forms/fields';
+import { TextField, SelectField } from '../ui/FormField';
 
 const schema = CTASchema;
 export type CTAFormValues = z.infer<typeof schema>;
