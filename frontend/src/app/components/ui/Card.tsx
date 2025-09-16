@@ -1,6 +1,6 @@
 import React from 'react';
 
-export function Card({
+export default function Card({
   className = '',
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
@@ -25,5 +25,3 @@ export function CardContent({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return <div {...props} className={`p-6 ${className}`} />;
 }
-
-export default Card;
