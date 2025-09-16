@@ -11,7 +11,7 @@ import { BonusService } from '../src/services/bonus.service';
 import { BonusOptionEntity } from '../src/database/entities/bonus-option.entity';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
-import { bonusEntities, expectedOptions } from './bonus/fixtures';
+import { bonusEntities, expectedOptions, expectedDefaults } from './bonus/fixtures';
 
 function createTestModule() {
   let dataSource: DataSource;
@@ -79,5 +79,22 @@ describe('AdminBonusController', () => {
       .get('/admin/bonus/options')
       .expect(200)
       .expect(expectedOptions());
+  });
+
+  it('returns bonus defaults', async () => {
+    const {
+      bonusPercent: _bonusPercent,
+      maxBonusUsd: _maxBonusUsd,
+      ...responseDefaults
+    } = expectedDefaults();
+
+    await request(app.getHttpServer())
+      .get('/admin/bonus/defaults')
+      .expect(200)
+      .expect(responseDefaults)
+      .expect(({ body }) => {
+        expect(body.bonusPercent).toBeUndefined();
+        expect(body.maxBonusUsd).toBeUndefined();
+      });
   });
 });

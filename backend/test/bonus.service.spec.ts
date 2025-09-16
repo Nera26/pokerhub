@@ -7,7 +7,7 @@ import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
 import { BonusService } from '../src/services/bonus.service';
 import { BonusOptionEntity } from '../src/database/entities/bonus-option.entity';
-import { bonusEntities, expectedOptions } from './bonus/fixtures';
+import { bonusEntities, expectedOptions, expectedDefaults } from './bonus/fixtures';
 
 function createTestModule() {
   let dataSource: DataSource;
@@ -64,5 +64,9 @@ describe('BonusService', () => {
 
   it('lists options', async () => {
     await expect(service.listOptions()).resolves.toEqual(expectedOptions());
+  });
+
+  it('provides default form values', async () => {
+    await expect(service.getDefaults()).resolves.toEqual(expectedDefaults());
   });
 });

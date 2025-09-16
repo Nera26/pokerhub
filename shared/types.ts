@@ -238,6 +238,16 @@ export type {
   UnreadCountResponse,
 } from '../backend/src/schemas/notifications';
 
+/** ---- Bonuses ---- */
+export {
+  BonusOptionsResponseSchema,
+  BonusDefaultsResponseSchema,
+} from '../backend/src/schemas/bonus';
+export type {
+  BonusOptionsResponse,
+  BonusDefaultsResponse,
+} from '../backend/src/schemas/bonus';
+
 /** ---- Promotions ---- */
 const PromotionProgressSchema = z.object({
   current: z.number(),

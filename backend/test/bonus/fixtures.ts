@@ -37,3 +37,16 @@ export function expectedOptions() {
     ],
   };
 }
+
+export function expectedDefaults() {
+  return {
+    name: '',
+    type: 'deposit',
+    description: '',
+    bonusPercent: undefined,
+    maxBonusUsd: undefined,
+    expiryDate: '',
+    eligibility: 'all',
+    status: 'active',
+  };
+}

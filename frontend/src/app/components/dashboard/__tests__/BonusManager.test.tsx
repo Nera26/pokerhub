@@ -13,6 +13,22 @@ jest.mock('@/lib/api/admin', () => ({
   deleteBonus: jest.fn(),
   fetchBonusOptions: jest.fn(),
 }));
+jest.mock('@/lib/api/bonus', () => ({
+  fetchBonusDefaults: jest.fn(),
+}));
+jest.mock('next-intl', () => ({
+  useLocale: () => 'en',
+}));
+jest.mock('@/hooks/useTranslations', () => ({
+  useTranslations: () => ({ data: undefined }),
+}));
+jest.mock('../../ui/Modal', () => ({
+  __esModule: true,
+  default: ({ isOpen, children }: { isOpen: boolean; children: any }) =>
+    isOpen
+      ? require('react').createElement('div', { role: 'dialog' }, children)
+      : null,
+}));
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -24,6 +40,7 @@ describe('BonusManager status toggle', () => {
 
     renderBonusManager();
 
+    await screen.findByRole('button', { name: /create promotion/i });
     const pauseBtn = await screen.findByRole('button', { name: /pause/i });
     fireEvent.click(pauseBtn);
     const confirm = await screen.findByRole('button', {
@@ -40,6 +57,7 @@ describe('BonusManager status toggle', () => {
 
     renderBonusManager();
 
+    await screen.findByRole('button', { name: /create promotion/i });
     const resumeBtn = await screen.findByRole('button', { name: /resume/i });
     fireEvent.click(resumeBtn);
     const confirm = await screen.findByRole('button', {

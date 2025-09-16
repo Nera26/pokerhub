@@ -1,6 +1,7 @@
 import BonusManager from '../BonusManager';
 import { renderWithClient } from './renderWithClient';
 import { fetchBonuses, updateBonus, fetchBonusOptions } from '@/lib/api/admin';
+import { fetchBonusDefaults } from '@/lib/api/bonus';
 import type { Bonus } from '@/lib/api/admin';
 
 export const bonusFixture: Bonus = {
@@ -38,6 +39,16 @@ export function renderBonusManager() {
       { value: 'active', label: 'Active' },
       { value: 'paused', label: 'Paused' },
     ],
+  });
+  (fetchBonusDefaults as jest.Mock).mockResolvedValue({
+    name: '',
+    type: 'deposit',
+    description: '',
+    bonusPercent: undefined,
+    maxBonusUsd: undefined,
+    expiryDate: '',
+    eligibility: 'all',
+    status: 'active',
   });
   return renderWithClient(<BonusManager />);
 }
