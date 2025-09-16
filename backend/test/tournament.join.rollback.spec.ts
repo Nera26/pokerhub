@@ -64,6 +64,7 @@ describe('TournamentService.join rollback', () => {
       flags,
       events,
       undefined,
+      undefined,
       wallet,
     );
   });

@@ -23,6 +23,7 @@ import { BroadcastTypeEntity } from './entities/broadcast-type.entity';
 import { BroadcastTemplateEntity } from './entities/broadcast-template.entity';
 import { TranslationEntity } from './entities/translation.entity';
 import { NavIconEntity } from './entities/nav-icon.entity';
+import { TournamentFilterOptionEntity } from '../tournament/tournament-filter-option.entity';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -47,9 +48,10 @@ export const AppDataSource = new DataSource({
     Tier,
     BroadcastEntity,
     BroadcastTypeEntity,
-      BroadcastTemplateEntity,
-      TranslationEntity,
-      NavIconEntity,
-    ],
+    BroadcastTemplateEntity,
+    TranslationEntity,
+    NavIconEntity,
+    TournamentFilterOptionEntity,
+  ],
   migrations: [path.join(__dirname, 'migrations', '*.{ts,js}')],
 });
