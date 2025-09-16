@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import type { FieldErrors, UseFormRegister } from 'react-hook-form';
-import { TextField, SelectField } from './fields';
+import { TextField, SelectField } from '../../ui/FormField';
 import type { BonusFormValues } from '../BonusManager';
 import { fetchBonusOptions } from '@/lib/api/admin';
 import type { ApiError } from '@/lib/api/client';

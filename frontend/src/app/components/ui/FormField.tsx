@@ -1,16 +1,17 @@
 'use client';
 
-import type {
-  FieldErrors,
-  FieldValues,
-  UseFormRegister,
-  Path,
+import type { ComponentProps, SelectHTMLAttributes } from 'react';
+import {
+  get,
+  type FieldErrors,
+  type FieldValues,
+  type Path,
+  type UseFormRegister,
 } from 'react-hook-form';
-import Input from '../../ui/Input';
-import type { SelectHTMLAttributes } from 'react';
+import Input from './Input';
 
-interface TextFieldProps<T extends FieldValues>
-  extends React.ComponentProps<typeof Input> {
+export interface TextFieldProps<T extends FieldValues>
+  extends Omit<ComponentProps<typeof Input>, 'name'> {
   name: Path<T>;
   register: UseFormRegister<T>;
   errors: FieldErrors<T>;
@@ -26,7 +27,9 @@ export function TextField<T extends FieldValues>({
   ...props
 }: TextFieldProps<T>) {
   const fieldId = id ?? String(name);
-  const error = errors?.[name]?.message as string | undefined;
+  const fieldError = get(errors, name);
+  const error = fieldError?.message as string | undefined;
+
   return (
     <Input
       id={fieldId}
@@ -37,18 +40,18 @@ export function TextField<T extends FieldValues>({
   );
 }
 
-interface SelectFieldOption {
+export interface SelectFieldOption {
   value: string;
   label: string;
 }
 
-interface SelectFieldProps<T extends FieldValues>
+export interface SelectFieldProps<T extends FieldValues>
   extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'name'> {
   name: Path<T>;
   register: UseFormRegister<T>;
   errors: FieldErrors<T>;
   label: string;
-  options: SelectFieldOption[];
+  options: ReadonlyArray<SelectFieldOption>;
   id?: string;
   registerOptions?: Parameters<UseFormRegister<T>>[1];
 }
@@ -61,11 +64,21 @@ export function SelectField<T extends FieldValues>({
   options,
   id,
   defaultValue,
+  className = '',
   registerOptions,
   ...props
 }: SelectFieldProps<T>) {
   const fieldId = id ?? String(name);
-  const error = errors?.[name]?.message as string | undefined;
+  const fieldError = get(errors, name);
+  const error = fieldError?.message as string | undefined;
+  const errorId = error ? `${fieldId}-error` : undefined;
+  const selectClassName = [
+    'w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 text-text-primary focus:border-accent-yellow focus:outline-none',
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <div>
       <label htmlFor={fieldId} className="block text-sm font-semibold mb-2">
@@ -73,25 +86,28 @@ export function SelectField<T extends FieldValues>({
       </label>
       <select
         id={fieldId}
-        className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 text-text-primary focus:border-accent-yellow focus:outline-none"
+        className={selectClassName}
         aria-invalid={!!error}
+        aria-describedby={errorId}
         defaultValue={
           defaultValue as string | number | readonly string[] | undefined
         }
         {...register(name, registerOptions)}
         {...props}
       >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
           </option>
         ))}
       </select>
       {error && (
-        <p role="alert" className="text-xs text-danger-red mt-1">
+        <p id={errorId} role="alert" className="text-xs text-danger-red mt-1">
           {error}
         </p>
       )}
     </div>
   );
 }
+
+export default TextField;
