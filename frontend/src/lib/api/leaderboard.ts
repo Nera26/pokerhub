@@ -1,5 +1,6 @@
 /* istanbul ignore file */
 import { useQuery } from '@tanstack/react-query';
+import type { ZodTypeAny, output as ZodOutput } from 'zod';
 import { apiClient, type ApiError } from './client';
 import {
   LeaderboardEntry,
@@ -41,20 +42,31 @@ export async function rebuildLeaderboard(days = 30): Promise<StatusResponse> {
   );
 }
 
-export function useLeaderboardRanges() {
-  return useQuery<LeaderboardRangesResponse, ApiError>({
-    queryKey: ['leaderboard', 'ranges'],
-    queryFn: () =>
-      apiClient('/api/leaderboard/ranges', LeaderboardRangesResponseSchema),
+export function createLeaderboardMetaQuery<TSchema extends ZodTypeAny>(
+  key: string,
+  path: string,
+  schema: TSchema,
+) {
+  return useQuery<ZodOutput<TSchema>, ApiError>({
+    queryKey: ['leaderboard', key] as const,
+    queryFn: () => apiClient(path, schema),
   });
 }
 
+export function useLeaderboardRanges() {
+  return createLeaderboardMetaQuery(
+    'ranges',
+    '/api/leaderboard/ranges',
+    LeaderboardRangesResponseSchema,
+  );
+}
+
 export function useLeaderboardModes() {
-  return useQuery<LeaderboardModesResponse, ApiError>({
-    queryKey: ['leaderboard', 'modes'],
-    queryFn: () =>
-      apiClient('/api/leaderboard/modes', LeaderboardModesResponseSchema),
-  });
+  return createLeaderboardMetaQuery(
+    'modes',
+    '/api/leaderboard/modes',
+    LeaderboardModesResponseSchema,
+  );
 }
 
 export async function listLeaderboardConfig(): Promise<LeaderboardConfigListResponse> {
