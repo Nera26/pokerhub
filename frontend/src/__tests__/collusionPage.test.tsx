@@ -1,11 +1,24 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import CollusionReviewPage from '@/features/collusion';
+import CollusionPage from '@/features/collusion';
+import { CollusionReviewPage } from '@/app/admin/collusion/page';
 import {
   listFlaggedSessions,
   applyAction,
   getActionHistory,
 } from '@/lib/api/collusion';
+import { useRequireAdmin } from '@/hooks/useRequireAdmin';
+
+jest.mock('next/dynamic', () => {
+  const dynamic = () => () => (
+    <div data-testid="collusion-admin">Collusion Admin</div>
+  );
+  return dynamic;
+});
+
+jest.mock('@/hooks/useRequireAdmin', () => ({
+  useRequireAdmin: jest.fn(),
+}));
 
 jest.mock('@/lib/api/collusion', () => ({
   listFlaggedSessions: jest.fn(),
@@ -18,7 +31,11 @@ jest.mock('@/app/store/authStore', () => ({
   usePlayerId: () => 'r1',
 }));
 
-describe('CollusionReviewPage', () => {
+const mockUseRequireAdmin = useRequireAdmin as jest.MockedFunction<
+  typeof useRequireAdmin
+>;
+
+describe('CollusionPage', () => {
   it('optimistically adds reviewer and reconciles with server', async () => {
     (listFlaggedSessions as jest.Mock).mockResolvedValue([
       { id: 's1', users: ['u1', 'u2'], status: 'flagged' },
@@ -35,7 +52,7 @@ describe('CollusionReviewPage', () => {
     });
     render(
       <QueryClientProvider client={client}>
-        <CollusionReviewPage />
+        <CollusionPage />
       </QueryClientProvider>,
     );
     const btn = await screen.findByText('warn');
@@ -44,5 +61,14 @@ describe('CollusionReviewPage', () => {
     resolveAction({ action: 'warn', timestamp: 123, reviewerId: 'srv1' });
     expect(await screen.findByText('warn by srv1')).toBeInTheDocument();
     expect(applyAction).toHaveBeenCalledWith('s1', 'warn', 'token', 'r1');
+  });
+});
+
+describe('Collusion admin route', () => {
+  it('renders the collusion page for admins', () => {
+    mockUseRequireAdmin.mockClear();
+    render(<CollusionReviewPage />);
+    expect(mockUseRequireAdmin).toHaveBeenCalled();
+    expect(screen.getByTestId('collusion-admin')).toBeInTheDocument();
   });
 });
