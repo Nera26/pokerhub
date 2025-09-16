@@ -77,8 +77,8 @@ describe('TransactionHistoryModal', () => {
     const onFilter = jest.fn();
     const user = userEvent.setup();
     (fetchTransactionFilters as jest.Mock).mockResolvedValue({
-      types: ['All Types', 'Deposit', 'Withdrawal'],
-      performedBy: ['All', 'Admin', 'User'],
+      types: ['Deposit', 'Withdrawal'],
+      performedBy: ['Admin', 'User'],
     });
     (fetchUserTransactions as jest.Mock).mockResolvedValue(entries);
     const client = new QueryClient({
@@ -137,8 +137,8 @@ describe('TransactionHistoryModal', () => {
         error: null,
       });
       (fetchTransactionFilters as jest.Mock).mockResolvedValue({
-        types: ['All Types'],
-        performedBy: ['All'],
+        types: [],
+        performedBy: [],
       });
       (fetchUserTransactions as jest.Mock).mockResolvedValue(entries);
       const client = new QueryClient({

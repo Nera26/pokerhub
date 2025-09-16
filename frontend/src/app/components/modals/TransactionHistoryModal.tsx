@@ -124,26 +124,33 @@ export default function TransactionHistoryModal({
     type: '',
     by: '',
   });
-  const performedByOptions =
-    filterOptions?.performedBy.map((p) => ({
+  const typeOptions = useMemo(() => {
+    const fromServer = filterOptions?.types ?? [];
+    const withoutAll = fromServer.filter((type) => type !== 'All Types');
+    return ['All Types', ...withoutAll];
+  }, [filterOptions]);
+
+  const performedByOptions = useMemo(() => {
+    const fromServer = filterOptions?.performedBy ?? [];
+    const withoutAll = fromServer.filter((value) => value !== 'All');
+    return ['All', ...withoutAll].map((p) => ({
       label: p === 'All' ? 'Performed By: All' : p,
       value: p,
-    })) ?? [];
-  const typeOptions = filterOptions?.types ?? [];
+    }));
+  }, [filterOptions]);
 
   useEffect(() => {
-    if (filterOptions) {
-      const defaultType = filterOptions.types[0] ?? '';
-      const defaultBy = filterOptions.performedBy[0] ?? '';
-      setType((prev) => prev || defaultType);
-      setBy((prev) => prev || defaultBy);
-      setApplied((prev) => ({
-        ...prev,
-        type: prev.type || defaultType,
-        by: prev.by || defaultBy,
-      }));
-    }
-  }, [filterOptions]);
+    const defaultType = typeOptions[0] ?? '';
+    const defaultBy = performedByOptions[0]?.value ?? '';
+    if (!defaultType && !defaultBy) return;
+    setType((prev) => prev || defaultType);
+    setBy((prev) => prev || defaultBy);
+    setApplied((prev) => ({
+      ...prev,
+      type: prev.type || defaultType,
+      by: prev.by || defaultBy,
+    }));
+  }, [typeOptions, performedByOptions]);
 
   const defaultType = typeOptions[0];
   const defaultBy = performedByOptions[0]?.value;
