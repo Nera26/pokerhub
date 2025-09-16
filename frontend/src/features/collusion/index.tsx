@@ -8,7 +8,7 @@ import {
 } from '@/hooks/collusion';
 import { useAuthToken, usePlayerId } from '@/app/store/authStore';
 
-export default function CollusionReviewPage() {
+export default function CollusionPage() {
   const token = useAuthToken();
   const reviewerId = usePlayerId();
   const { data: sessions = [], isLoading, isError } = useFlaggedSessions(token);
