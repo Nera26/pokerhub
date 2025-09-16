@@ -26,6 +26,33 @@ jest.mock('@tanstack/react-query', () => ({ useQuery: jest.fn() }));
 const useQueryMock = useQuery as unknown as jest.Mock;
 const apiClientMock = apiClient as jest.Mock;
 
+type LeaderboardMetaCase = {
+  key: 'ranges' | 'modes';
+  endpoint: string;
+  schema:
+    | typeof LeaderboardRangesResponseSchema
+    | typeof LeaderboardModesResponseSchema;
+  hook: () => unknown;
+  mockResponse: Record<string, unknown>;
+};
+
+const leaderboardMetaCases: LeaderboardMetaCase[] = [
+  {
+    key: 'ranges',
+    endpoint: '/api/leaderboard/ranges',
+    schema: LeaderboardRangesResponseSchema,
+    hook: useLeaderboardRanges,
+    mockResponse: { ranges: [] },
+  },
+  {
+    key: 'modes',
+    endpoint: '/api/leaderboard/modes',
+    schema: LeaderboardModesResponseSchema,
+    hook: useLeaderboardModes,
+    mockResponse: { modes: [] },
+  },
+];
+
 const mockLeaderboard: LeaderboardEntry[] = [
   {
     playerId: 'alice',
@@ -72,89 +99,49 @@ describe('leaderboard api', () => {
   });
 });
 
-describe('createLeaderboardMetaQuery', () => {
-  beforeEach(() => {
-    useQueryMock.mockReturnValue({});
-    apiClientMock.mockResolvedValue({ ranges: [] });
-  });
-
-  afterEach(() => {
-    useQueryMock.mockReset();
-    apiClientMock.mockReset();
-  });
-
-  it('creates a leaderboard metadata query', async () => {
-    const result = createLeaderboardMetaQuery(
-      'ranges',
-      '/api/leaderboard/ranges',
-      LeaderboardRangesResponseSchema,
-    );
-
-    expect(result).toEqual({});
-    expect(useQueryMock).toHaveBeenCalledWith({
-      queryKey: ['leaderboard', 'ranges'],
-      queryFn: expect.any(Function),
+describe.each(leaderboardMetaCases)(
+  'leaderboard $key metadata helpers',
+  ({ key, endpoint, schema, hook, mockResponse }) => {
+    beforeEach(() => {
+      useQueryMock.mockReturnValue({});
+      apiClientMock.mockResolvedValue(mockResponse);
     });
 
-    const { queryFn } = useQueryMock.mock.calls[0][0];
-    await queryFn();
-
-    expect(apiClientMock).toHaveBeenCalledWith(
-      '/api/leaderboard/ranges',
-      LeaderboardRangesResponseSchema,
-    );
-  });
-});
-
-describe('useLeaderboardRanges', () => {
-  beforeEach(() => {
-    useQueryMock.mockReturnValue({});
-    apiClientMock.mockResolvedValue({ ranges: [] });
-  });
-  afterEach(() => {
-    useQueryMock.mockReset();
-    apiClientMock.mockReset();
-  });
-
-  it('invokes apiClient with correct arguments', async () => {
-    useLeaderboardRanges();
-    expect(useQueryMock).toHaveBeenCalledWith({
-      queryKey: ['leaderboard', 'ranges'],
-      queryFn: expect.any(Function),
+    afterEach(() => {
+      useQueryMock.mockReset();
+      apiClientMock.mockReset();
     });
-    const { queryFn } = useQueryMock.mock.calls[0][0];
-    await queryFn();
-    expect(apiClientMock).toHaveBeenCalledWith(
-      '/api/leaderboard/ranges',
-      LeaderboardRangesResponseSchema,
-    );
-  });
-});
 
-describe('useLeaderboardModes', () => {
-  beforeEach(() => {
-    useQueryMock.mockReturnValue({});
-    apiClientMock.mockResolvedValue({ modes: [] });
-  });
-  afterEach(() => {
-    useQueryMock.mockReset();
-    apiClientMock.mockReset();
-  });
+    it('creates a leaderboard metadata query', async () => {
+      const result = createLeaderboardMetaQuery(key, endpoint, schema);
 
-  it('invokes apiClient with correct arguments', async () => {
-    useLeaderboardModes();
-    expect(useQueryMock).toHaveBeenCalledWith({
-      queryKey: ['leaderboard', 'modes'],
-      queryFn: expect.any(Function),
+      expect(result).toEqual({});
+      expect(useQueryMock).toHaveBeenCalledWith({
+        queryKey: ['leaderboard', key],
+        queryFn: expect.any(Function),
+      });
+
+      const { queryFn } = useQueryMock.mock.calls[0][0];
+      await queryFn();
+
+      expect(apiClientMock).toHaveBeenCalledWith(endpoint, schema);
     });
-    const { queryFn } = useQueryMock.mock.calls[0][0];
-    await queryFn();
-    expect(apiClientMock).toHaveBeenCalledWith(
-      '/api/leaderboard/modes',
-      LeaderboardModesResponseSchema,
-    );
-  });
-});
+
+    it('invokes the leaderboard metadata hook', async () => {
+      hook();
+
+      expect(useQueryMock).toHaveBeenCalledWith({
+        queryKey: ['leaderboard', key],
+        queryFn: expect.any(Function),
+      });
+
+      const { queryFn } = useQueryMock.mock.calls[0][0];
+      await queryFn();
+
+      expect(apiClientMock).toHaveBeenCalledWith(endpoint, schema);
+    });
+  },
+);
 
 describe('admin leaderboard config api', () => {
   beforeEach(() => {
