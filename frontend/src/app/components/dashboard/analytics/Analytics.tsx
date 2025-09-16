@@ -12,6 +12,7 @@ import {
 import SearchBar from './SearchBar';
 import QuickStats from './QuickStats';
 import ActivityChart from '../charts/ActivityChart';
+import RevenueDonut from '../charts/RevenueDonut';
 import ErrorChart from './ErrorChart';
 import PaletteEditor from './PaletteEditor';
 import AuditTable from './AuditTable';
@@ -20,6 +21,7 @@ import DetailModal from './DetailModal';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { useActivity } from '@/hooks/useActivity';
 import { useAuditSummary } from '@/hooks/useAuditSummary';
+import { useRevenueBreakdown } from '@/hooks/useRevenueBreakdown';
 import SecurityAlerts from './SecurityAlerts';
 import CenteredMessage from '@/components/CenteredMessage';
 import ToastNotification from '../../ui/ToastNotification';
@@ -97,6 +99,11 @@ export default function Analytics() {
     queryKey: ['error-categories'],
     queryFn: fetchErrorCategories,
   });
+  const {
+    data: revenueStreams,
+    isLoading: revenueLoading,
+    isError: revenueError,
+  } = useRevenueBreakdown('all');
   const { toasts, pushToast } = useToasts();
   const rebuild = useMutation({
     mutationFn: () => rebuildLeaderboard(),
@@ -212,7 +219,7 @@ export default function Analytics() {
         <SecurityAlerts />
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {activityLoading ? (
           <CenteredMessage>Loading activity...</CenteredMessage>
         ) : activityError ? (
@@ -234,6 +241,18 @@ export default function Analytics() {
             data={errorCategories?.counts}
           />
         )}
+        <div className="bg-card-bg p-6 rounded-2xl shadow-[0_4px_8px_rgba(0,0,0,0.3)]">
+          <h3 className="text-lg font-bold mb-4">Revenue Breakdown</h3>
+          {revenueLoading ? (
+            <CenteredMessage>Loading revenue...</CenteredMessage>
+          ) : revenueError ? (
+            <CenteredMessage>Failed to load revenue</CenteredMessage>
+          ) : !revenueStreams || revenueStreams.length === 0 ? (
+            <CenteredMessage>No data</CenteredMessage>
+          ) : (
+            <RevenueDonut streams={revenueStreams} />
+          )}
+        </div>
       </section>
 
       <section className="grid grid-cols-1 gap-6">

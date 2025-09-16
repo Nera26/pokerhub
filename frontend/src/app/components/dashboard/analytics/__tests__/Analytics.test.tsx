@@ -39,12 +39,15 @@ jest.mock('../QuickStats', () => ({
 }));
 jest.mock('../SecurityAlerts', () => () => <div>SecurityAlerts</div>);
 jest.mock('../../charts/ActivityChart', () => () => <div>ActivityChart</div>);
+
+// Single, consistent mock for RevenueDonut
 jest.mock('../../charts/RevenueDonut', () => ({
   __esModule: true,
-  default: ({ streams }: { streams: Array<{ label: string }> }) => (
-    <div>{streams.map((s) => s.label).join(', ') || 'No streams'}</div>
+  default: ({ streams }: { streams: { label: string }[] }) => (
+    <div>{`RevenueDonut: ${streams.map((s) => s.label).join(', ')}`}</div>
   ),
 }));
+
 jest.mock('../ErrorChart', () => ({ data }: { data?: number[] }) => (
   <div>{data && data.length ? 'ErrorChart' : 'No data'}</div>
 ));
@@ -81,25 +84,33 @@ describe('Analytics', () => {
       labels: ['Payment'],
       counts: [1],
     });
+
     useAuditSummaryMock.mockReturnValue({
       data: { total: 1, errors: 0, logins: 0 },
       isLoading: false,
       isError: false,
     });
+
     useAuditLogsMock.mockReturnValue({
       data: { logs: [], total: 0 },
       isLoading: false,
       isError: false,
     });
-    useRevenueBreakdownMock.mockReturnValue({
-      data: [],
-      isLoading: false,
-      isError: false,
-      error: null,
-    });
+
     useActivity.mockReturnValue({
       data: { labels: [], data: [] },
       isLoading: false,
+      error: null,
+    });
+
+    // Default: some revenue streams present
+    useRevenueBreakdownMock.mockReturnValue({
+      data: [
+        { label: 'Cash Games', pct: 55 },
+        { label: 'Tournaments', pct: 30 },
+      ],
+      isLoading: false,
+      isError: false,
       error: null,
     });
   });
@@ -163,6 +174,7 @@ describe('Analytics', () => {
     ).toBeInTheDocument();
   });
 
+  // From "main" branch: loading/error/data states for revenue breakdown
   it('shows revenue loading state', async () => {
     useRevenueBreakdownMock.mockReturnValue({
       data: undefined,
@@ -208,5 +220,14 @@ describe('Analytics', () => {
 
     expect(await screen.findByText(/revenue breakdown/i)).toBeInTheDocument();
     expect(screen.getByText(/\$120,000/)).toBeInTheDocument();
+  });
+
+  // From "codex" branch: ensure the donut renders with labels when data exists
+  it('renders revenue donut when revenue data is available', async () => {
+    renderWithClient(<Analytics />);
+
+    expect(
+      await screen.findByText(/RevenueDonut: Cash Games, Tournaments/i),
+    ).toBeInTheDocument();
   });
 });
