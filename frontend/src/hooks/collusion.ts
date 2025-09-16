@@ -11,6 +11,7 @@ import {
   getActionHistory,
   applyAction,
 } from '@/lib/api/collusion';
+import { useAuthToken } from '@/app/store/authStore';
 import type {
   FlaggedSession,
   ReviewAction,
@@ -32,19 +33,21 @@ export function nextAction(
   }
 }
 
-export function useFlaggedSessions(token?: string) {
+export function useFlaggedSessions() {
+  const token = useAuthToken();
   return useQuery({
     queryKey: ['flagged-sessions', token],
-    queryFn: () => listFlaggedSessions(token!),
+    queryFn: () => listFlaggedSessions(),
     enabled: !!token,
   });
 }
 
-export function useActionHistory(sessions: FlaggedSession[], token?: string) {
+export function useActionHistory(sessions: FlaggedSession[]) {
+  const token = useAuthToken();
   const results = useQueries({
     queries: sessions.map((s) => ({
       queryKey: ['collusion-history', token, s.id],
-      queryFn: () => getActionHistory(s.id, token!),
+      queryFn: () => getActionHistory(s.id),
       enabled: !!token,
     })),
   });
@@ -57,7 +60,8 @@ export function useActionHistory(sessions: FlaggedSession[], token?: string) {
   );
 }
 
-export function useApplyCollusionAction(token?: string, reviewerId?: string) {
+export function useApplyCollusionAction(reviewerId?: string) {
+  const token = useAuthToken();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -71,7 +75,7 @@ export function useApplyCollusionAction(token?: string, reviewerId?: string) {
       if (!token || !reviewerId || !action) {
         throw new Error('Invalid action');
       }
-      return applyAction(id, action, token, reviewerId);
+      return applyAction(id, action, reviewerId);
     },
     onMutate: async ({ id, status }) => {
       const action = nextAction(status);

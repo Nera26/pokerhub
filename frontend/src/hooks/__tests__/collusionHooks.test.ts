@@ -17,9 +17,15 @@ import {
   useApplyCollusionAction,
 } from '@/hooks/collusion';
 import type { FlaggedSession, ReviewActionLog } from '@shared/types';
+import { useAuthStore } from '@/app/store/authStore';
 
 describe('collusion hooks', () => {
+  beforeEach(() => {
+    useAuthStore.setState({ token: 't' });
+  });
+
   afterEach(() => {
+    useAuthStore.setState({ token: null });
     jest.clearAllMocks();
   });
 
@@ -34,8 +40,8 @@ describe('collusion hooks', () => {
     (getActionHistory as jest.Mock).mockResolvedValueOnce(history);
 
     const { result } = renderHookWithClient(() => {
-      const flagged = useFlaggedSessions('t');
-      const historyMap = useActionHistory(flagged.data ?? [], 't');
+      const flagged = useFlaggedSessions();
+      const historyMap = useActionHistory(flagged.data ?? []);
       return { flagged, historyMap };
     });
 
@@ -49,7 +55,7 @@ describe('collusion hooks', () => {
   it('handles network error', async () => {
     (listFlaggedSessions as jest.Mock).mockRejectedValueOnce(new Error('fail'));
 
-    const { result } = renderHookWithClient(() => useFlaggedSessions('t'));
+    const { result } = renderHookWithClient(() => useFlaggedSessions());
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
 
@@ -62,9 +68,9 @@ describe('collusion hooks', () => {
     (applyAction as jest.Mock).mockRejectedValueOnce(new Error('fail'));
 
     const { result, queryClient } = renderHookWithClient(() => {
-      const flagged = useFlaggedSessions('t');
-      const historyMap = useActionHistory(flagged.data ?? [], 't');
-      const mutation = useApplyCollusionAction('t', 'rev');
+      const flagged = useFlaggedSessions();
+      const historyMap = useActionHistory(flagged.data ?? []);
+      const mutation = useApplyCollusionAction('rev');
       return { flagged, historyMap, mutation };
     });
 
