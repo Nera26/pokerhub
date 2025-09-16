@@ -26,7 +26,6 @@ import SecurityAlerts from './SecurityAlerts';
 import CenteredMessage from '@/components/CenteredMessage';
 import ToastNotification from '../../ui/ToastNotification';
 import RevenueBreakdownCard from './RevenueBreakdownCard';
-import { useRevenueBreakdown } from '@/hooks/useRevenueBreakdown';
 import { rebuildLeaderboard } from '@/lib/api/leaderboard';
 import type {
   AuditLogEntry,
@@ -103,7 +102,9 @@ export default function Analytics() {
     data: revenueStreams,
     isLoading: revenueLoading,
     isError: revenueError,
+    error: revenueErrorDetails,
   } = useRevenueBreakdown('all');
+  const revenueBreakdown = revenueStreams;
   const { toasts, pushToast } = useToasts();
   const rebuild = useMutation({
     mutationFn: () => rebuildLeaderboard(),
@@ -111,12 +112,6 @@ export default function Analytics() {
     onError: () =>
       pushToast('Failed to rebuild leaderboard', { variant: 'error' }),
   });
-  const {
-    data: revenueBreakdown,
-    isLoading: revenueLoading,
-    isError: revenueError,
-    error: revenueErrorDetails,
-  } = useRevenueBreakdown('all');
 
   if (badgeLoading)
     return <CenteredMessage>Loading log types...</CenteredMessage>;
