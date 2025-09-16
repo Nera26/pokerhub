@@ -101,6 +101,64 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NavIconsResponse'
+  /admin/blocked-countries:
+    get:
+      summary: List blocked countries
+      responses:
+        '200':
+          description: Blocked countries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockedCountriesResponse'
+    post:
+      summary: Add blocked country
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockedCountry'
+      responses:
+        '200':
+          description: Created blocked country
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockedCountry'
+  /admin/blocked-countries/{country}:
+    put:
+      summary: Update blocked country
+      parameters:
+        - in: path
+          name: country
+          required: true
+          schema:
+            $ref: '#/components/schemas/CountryCode'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockedCountry'
+      responses:
+        '200':
+          description: Updated blocked country
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockedCountry'
+    delete:
+      summary: Remove blocked country
+      parameters:
+        - in: path
+          name: country
+          required: true
+          schema:
+            $ref: '#/components/schemas/CountryCode'
+      responses:
+        '204':
+          description: Removed
   /nav-items:
     get:
       summary: List navigation items
@@ -3977,6 +4035,21 @@ components:
           type: object
           additionalProperties:
             type: string
+    CountryCode:
+      type: string
+      pattern: '^[A-Z]{2}$'
+      minLength: 2
+      maxLength: 2
+    BlockedCountry:
+      type: object
+      required: [country]
+      properties:
+        country:
+          $ref: '#/components/schemas/CountryCode'
+    BlockedCountriesResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/BlockedCountry'
     NavIcon:
       type: object
       required: [name, svg]

@@ -83,16 +83,46 @@ export class KycService implements OnModuleInit {
     }
   }
 
+  private getConfiguredBlockedCountries(): string[] {
+    const configured = this.config?.get<string[]>('kyc.blockedCountries') ?? [];
+    return configured.map((c) => c.toUpperCase());
+  }
+
+  private applyBlockedCountries(
+    blocked: string[] | undefined,
+    {
+      fallbackToConfig,
+      warnOnEmpty,
+    }: { fallbackToConfig: boolean; warnOnEmpty: boolean },
+  ): string[] {
+    let normalized = blocked?.map((c) => c.toUpperCase());
+    if (normalized === undefined && fallbackToConfig) {
+      normalized = this.getConfiguredBlockedCountries();
+    }
+    if (!normalized || normalized.length === 0) {
+      if (warnOnEmpty) {
+        this.logger.warn('No blocked countries configured; using empty list');
+      }
+      normalized = [];
+    }
+    this.blockedCountries = normalized;
+    return this.blockedCountries;
+  }
+
+  async refreshBlockedCountries({
+    warnOnEmpty = false,
+    fallbackToConfig = false,
+  }: { warnOnEmpty?: boolean; fallbackToConfig?: boolean } = {}): Promise<string[]> {
+    const blocked = await this.loadListFromDb('blocked_countries', 'country');
+    const shouldFallback = blocked === undefined && fallbackToConfig;
+    return this.applyBlockedCountries(blocked, {
+      fallbackToConfig: shouldFallback,
+      warnOnEmpty,
+    });
+  }
+
   async onModuleInit(): Promise<void> {
-    let blocked = this.config?.get<string[]>('kyc.blockedCountries');
-    if (!blocked || blocked.length === 0) {
-      blocked = await this.loadListFromDb('blocked_countries', 'country');
-    }
-    if (!blocked || blocked.length === 0) {
-      this.logger.warn('No blocked countries configured; using empty list');
-      blocked = [];
-    }
-    this.blockedCountries = blocked.map((c) => c.toUpperCase());
+    await this.refreshBlockedCountries({ warnOnEmpty: true, fallbackToConfig: true });
 
     let sanctioned = this.config?.get<string[]>('kyc.sanctionedNames');
     if (!sanctioned || sanctioned.length === 0) {
@@ -157,7 +187,8 @@ export class KycService implements OnModuleInit {
       return { country: 'unknown' };
     }
     const country = await this.provider.getCountry(ip);
-    if (this.blockedCountries.includes(country)) {
+    const normalizedCountry = country.toUpperCase();
+    if (this.blockedCountries.includes(normalizedCountry)) {
       throw new Error('Blocked jurisdiction');
     }
     const lowered = name.toLowerCase();

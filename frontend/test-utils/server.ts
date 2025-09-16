@@ -2,6 +2,7 @@ let server: {
   listen: () => void;
   resetHandlers: () => void;
   close: () => void;
+  use: (...handlers: unknown[]) => void;
 };
 
 try {
@@ -13,6 +14,7 @@ try {
     listen: () => undefined,
     resetHandlers: () => undefined,
     close: () => undefined,
+    use: () => undefined,
   };
 }
 
