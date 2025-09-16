@@ -1,9 +1,9 @@
 'use client';
 
-import { createGetHook } from './useApiQuery';
-import { AuditSummarySchema, type AuditSummary } from '@shared/types';
+import { createSimpleGetHook } from './useSimpleGet';
+import { AuditSummarySchema } from '@shared/types';
 
-export const useAuditSummary = createGetHook<AuditSummary>(
+export const useAuditSummary = createSimpleGetHook(
   '/api/analytics/summary',
   AuditSummarySchema,
 );
