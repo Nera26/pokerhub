@@ -47,16 +47,24 @@ describe('TablePageClient fairness features', () => {
     return socket;
   }
 
-  it('renders proof download link when hand ends', async () => {
-    const socket = setup();
-    render(<TablePageClient tableId="t1" />);
-
+  function emitHandEnd(
+    socket: EventEmitter,
+    overrides: Partial<{ handId: string; version: number }> = {},
+  ) {
     act(() => {
       socket.emit('hand.end', {
         handId: 'h123',
         version: EVENT_SCHEMA_VERSION,
+        ...overrides,
       });
     });
+  }
+
+  it('renders proof download link when hand ends', async () => {
+    const socket = setup();
+    render(<TablePageClient tableId="t1" />);
+
+    emitHandEnd(socket);
 
     const link = await screen.findByRole('link', { name: /download proof/i });
     expect(link).toHaveAttribute('href', '/api/hands/h123/proof');
@@ -67,12 +75,7 @@ describe('TablePageClient fairness features', () => {
     const socket = setup();
     render(<TablePageClient tableId="t1" />);
 
-    act(() => {
-      socket.emit('hand.end', {
-        handId: 'h123',
-        version: EVENT_SCHEMA_VERSION,
-      });
-    });
+    emitHandEnd(socket);
 
     const button = await screen.findByRole('button', { name: /verify hand/i });
     fireEvent.click(button);

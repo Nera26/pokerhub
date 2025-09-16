@@ -34,58 +34,117 @@ async function renderHistoryList(
   expect(await screen.findByText(expectedText)).toBeInTheDocument();
 }
 
-describe('HistoryList game history', () => {
-  const gameMock = fetchGameHistory as jest.MockedFunction<
-    typeof fetchGameHistory
-  >;
-  const replayMock = fetchHandReplay as jest.MockedFunction<
-    typeof fetchHandReplay
-  >;
+const fetchGameHistoryMock = fetchGameHistory as jest.MockedFunction<
+  typeof fetchGameHistory
+>;
+const fetchTournamentHistoryMock =
+  fetchTournamentHistory as jest.MockedFunction<typeof fetchTournamentHistory>;
+const fetchTransactionsMock = fetchTransactions as jest.MockedFunction<
+  typeof fetchTransactions
+>;
+const fetchHandReplayMock = fetchHandReplay as jest.MockedFunction<
+  typeof fetchHandReplay
+>;
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
+const gameHistoryEntries: GameHistoryEntry[] = [
+  {
+    id: '1',
+    type: "Texas Hold'em",
+    stakes: '$1/$2',
+    buyin: '$100',
+    date: '2023-01-01',
+    profit: true,
+    amount: '+$50',
+  },
+];
 
-  it('renders entries on success', async () => {
-    const data: GameHistoryEntry[] = [
-      {
-        id: '1',
-        type: "Texas Hold'em",
-        stakes: '$1/$2',
-        buyin: '$100',
-        date: '2023-01-01',
-        profit: true,
-        amount: '+$50',
-      },
-    ];
-    gameMock.mockResolvedValueOnce(data);
-    await renderHistoryList('game-history', /Table #1/);
-  });
+const tournamentHistoryEntries: TournamentHistoryEntry[] = [
+  {
+    name: 'Sunday Million',
+    place: '1st',
+    buyin: '$100',
+    prize: '$1000',
+    duration: '1h',
+  },
+];
 
-  it('renders empty state', async () => {
-    gameMock.mockResolvedValueOnce([]);
-    await renderHistoryList('game-history', 'No game history found.');
-  });
+const transactionEntries: TransactionEntry[] = [
+  {
+    date: 'May 1',
+    type: 'Deposit',
+    amount: '+$100',
+    status: 'Completed',
+  },
+];
 
-  it('renders error state', async () => {
-    gameMock.mockRejectedValueOnce(new Error('fail'));
-    await renderHistoryList('game-history', 'Failed to load game history.');
-  });
+type HistoryCase = {
+  name: string;
+  type: ComponentProps<typeof HistoryList>['type'];
+  fetchMock: jest.Mock;
+  successData: unknown[];
+  successText: RegExp | string;
+  emptyText: string;
+  errorText: string;
+};
 
+const historyCases: HistoryCase[] = [
+  {
+    name: 'game history',
+    type: 'game-history',
+    fetchMock: fetchGameHistoryMock,
+    successData: gameHistoryEntries,
+    successText: /Table #1/,
+    emptyText: 'No game history found.',
+    errorText: 'Failed to load game history.',
+  },
+  {
+    name: 'tournament history',
+    type: 'tournament-history',
+    fetchMock: fetchTournamentHistoryMock,
+    successData: tournamentHistoryEntries,
+    successText: 'Sunday Million',
+    emptyText: 'No tournament history found.',
+    errorText: 'Failed to load tournament history.',
+  },
+  {
+    name: 'transaction history',
+    type: 'transaction-history',
+    fetchMock: fetchTransactionsMock,
+    successData: transactionEntries,
+    successText: 'Deposit',
+    emptyText: 'No transactions found.',
+    errorText: 'Failed to load transactions.',
+  },
+];
+
+afterEach(() => {
+  jest.clearAllMocks();
+});
+
+describe.each(historyCases)(
+  'HistoryList $name',
+  ({ type, fetchMock, successData, successText, emptyText, errorText }) => {
+    it('renders entries on success', async () => {
+      fetchMock.mockResolvedValueOnce(successData);
+      await renderHistoryList(type, successText);
+    });
+
+    it('renders empty state', async () => {
+      fetchMock.mockResolvedValueOnce([]);
+      await renderHistoryList(type, emptyText);
+    });
+
+    it('renders error state', async () => {
+      fetchMock.mockRejectedValueOnce(new Error('fail'));
+      await renderHistoryList(type, errorText);
+    });
+  },
+);
+
+describe('HistoryList game history replay', () => {
   it('opens replay modal and fetches data', async () => {
-    const data: GameHistoryEntry[] = [
-      {
-        id: '1',
-        type: "Texas Hold'em",
-        stakes: '$1/$2',
-        buyin: '$100',
-        date: '2023-01-01',
-        profit: true,
-        amount: '+$50',
-      },
-    ];
-    gameMock.mockResolvedValueOnce(data);
-    replayMock.mockResolvedValueOnce([]);
+    fetchGameHistoryMock.mockResolvedValueOnce(gameHistoryEntries);
+    fetchHandReplayMock.mockResolvedValueOnce([]);
 
     function Wrapper() {
       const [handId, setHandId] = useState<string | null>(null);
@@ -109,83 +168,7 @@ describe('HistoryList game history', () => {
     const user = userEvent.setup();
     await user.click(await screen.findByText('Watch Replay'));
 
-    expect(replayMock).toHaveBeenCalledWith('1');
+    expect(fetchHandReplayMock).toHaveBeenCalledWith('1');
     expect(await screen.findByText('Game Replay')).toBeInTheDocument();
-  });
-});
-
-describe('HistoryList tournament history', () => {
-  const tournamentMock = fetchTournamentHistory as jest.MockedFunction<
-    typeof fetchTournamentHistory
-  >;
-
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('renders entries on success', async () => {
-    const data: TournamentHistoryEntry[] = [
-      {
-        name: 'Sunday Million',
-        place: '1st',
-        buyin: '$100',
-        prize: '$1000',
-        duration: '1h',
-      },
-    ];
-    tournamentMock.mockResolvedValueOnce(data);
-    await renderHistoryList('tournament-history', 'Sunday Million');
-  });
-
-  it('renders empty state', async () => {
-    tournamentMock.mockResolvedValueOnce([]);
-    await renderHistoryList(
-      'tournament-history',
-      'No tournament history found.',
-    );
-  });
-
-  it('renders error state', async () => {
-    tournamentMock.mockRejectedValueOnce(new Error('fail'));
-    await renderHistoryList(
-      'tournament-history',
-      'Failed to load tournament history.',
-    );
-  });
-});
-
-describe('HistoryList transaction history', () => {
-  const txMock = fetchTransactions as jest.MockedFunction<
-    typeof fetchTransactions
-  >;
-
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('renders entries on success', async () => {
-    const data: TransactionEntry[] = [
-      {
-        date: 'May 1',
-        type: 'Deposit',
-        amount: '+$100',
-        status: 'Completed',
-      },
-    ];
-    txMock.mockResolvedValueOnce(data);
-    await renderHistoryList('transaction-history', 'Deposit');
-  });
-
-  it('renders empty state', async () => {
-    txMock.mockResolvedValueOnce([]);
-    await renderHistoryList('transaction-history', 'No transactions found.');
-  });
-
-  it('renders error state', async () => {
-    txMock.mockRejectedValueOnce(new Error('fail'));
-    await renderHistoryList(
-      'transaction-history',
-      'Failed to load transactions.',
-    );
   });
 });
