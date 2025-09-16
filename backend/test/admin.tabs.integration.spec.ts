@@ -15,6 +15,7 @@ import { RevenueService } from '../src/wallet/revenue.service';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
 import { AdminTabEntity } from '../src/database/entities/admin-tab.entity';
+import { AdminTabsService } from '../src/services/admin-tabs.service';
 
 describe('Admin tabs integration', () => {
   let app: INestApplication;
@@ -50,6 +51,7 @@ describe('Admin tabs integration', () => {
       controllers: [AdminController],
       providers: [
         SidebarService,
+        AdminTabsService,
         {
           provide: ConfigService,
           useValue: {
@@ -113,26 +115,89 @@ describe('Admin tabs integration', () => {
         id: 'events',
         title: 'Events',
         component: '@/app/components/dashboard/AdminEvents',
+        icon: 'faBell',
+        source: 'config',
       },
       {
         id: 'users',
         title: 'Users',
         component: '@/app/components/dashboard/ManageUsers',
+        icon: 'faUsers',
+        source: 'database',
       },
       {
         id: 'tables',
         title: 'Tables',
         component: '@/app/components/dashboard/ManageTables',
+        icon: 'faTable',
+        source: 'database',
       },
       {
         id: 'tournaments',
         title: 'Tournaments',
         component: '@/app/components/dashboard/ManageTournaments',
+        icon: 'faTrophy',
+        source: 'database',
       },
     ];
     await request(app.getHttpServer())
       .get('/admin/tabs')
       .expect(200)
       .expect(tabs);
+  });
+
+  it('supports CRUD operations for admin tabs', async () => {
+    const createResponse = await request(app.getHttpServer())
+      .post('/admin/tabs')
+      .send({
+        id: 'reports',
+        title: 'Reports',
+        icon: 'chart-bar',
+        component: 'reports-component',
+      })
+      .expect(200);
+    expect(createResponse.body).toEqual({
+      id: 'reports',
+      title: 'Reports',
+      icon: 'faChartBar',
+      component: 'reports-component',
+      source: 'database',
+    });
+
+    const updateResponse = await request(app.getHttpServer())
+      .put('/admin/tabs/reports')
+      .send({
+        title: 'Updated Reports',
+        icon: 'faChartLine',
+        component: 'reports-component',
+      })
+      .expect(200);
+    expect(updateResponse.body).toEqual({
+      id: 'reports',
+      title: 'Updated Reports',
+      icon: 'faChartLine',
+      component: 'reports-component',
+      source: 'database',
+    });
+
+    const listResponse = await request(app.getHttpServer())
+      .get('/admin/tabs')
+      .expect(200);
+    expect(listResponse.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'reports', title: 'Updated Reports' }),
+      ]),
+    );
+
+    await request(app.getHttpServer())
+      .delete('/admin/tabs/reports')
+      .expect(204);
+
+    const finalList = await request(app.getHttpServer())
+      .get('/admin/tabs')
+      .expect(200);
+    expect(finalList.body).toEqual(
+      expect.not.arrayContaining([expect.objectContaining({ id: 'reports' })]),
+    );
   });
 });

@@ -1884,6 +1884,59 @@ export interface paths {
         };
       };
     };
+    /** Create admin dashboard tab */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["CreateAdminTabRequest"];
+        };
+      };
+      responses: {
+        /** @description Created admin tab */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AdminTab"];
+          };
+        };
+      };
+    };
+  };
+  "/admin/tabs/{id}": {
+    /** Update admin dashboard tab */
+    put: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["UpdateAdminTabRequest"];
+        };
+      };
+      responses: {
+        /** @description Updated admin tab */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AdminTab"];
+          };
+        };
+      };
+    };
+    /** Delete admin dashboard tab */
+    delete: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Admin tab deleted */
+        204: {
+          content: never;
+        };
+      };
+    };
   };
   "/admin/revenue-breakdown": {
     /** Get revenue breakdown */

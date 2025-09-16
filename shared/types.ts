@@ -57,6 +57,27 @@ export const NavItemRequestSchema = NavItemSchema.extend({
 });
 export type NavItemRequest = z.infer<typeof NavItemRequestSchema>;
 
+export {
+  SidebarTabSchema,
+  SidebarItemSchema,
+  SidebarItemsResponseSchema,
+  AdminTabSchema,
+  AdminTabResponseSchema,
+  AdminTabCreateRequestSchema,
+  AdminTabUpdateRequestSchema,
+  AdminTabConfigSchema,
+} from '../backend/src/schemas/admin';
+export type {
+  SidebarTab,
+  SidebarItem,
+  SidebarItemsResponse,
+  AdminTab,
+  AdminTabResponse,
+  CreateAdminTabRequest,
+  UpdateAdminTabRequest,
+  AdminTabConfig,
+} from '../backend/src/schemas/admin';
+
 // Site metadata
 export {
   SiteMetadataResponseSchema,

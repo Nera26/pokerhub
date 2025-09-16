@@ -40,6 +40,7 @@ import { DepositIbanHistory } from './deposit-iban-history.entity';
 import { AdminTabEntity } from '../database/entities/admin-tab.entity';
 import { TransactionColumnEntity } from './transaction-column.entity';
 import { TransactionColumnRepository } from './transaction-column.repository';
+import { AdminTabsService } from '../services/admin-tabs.service';
 
 @Injectable()
 class PayoutWorker implements OnModuleInit {
@@ -96,6 +97,7 @@ class PendingDepositWorker implements OnModuleInit {
     GeoIpService,
     BankReconciliationService,
     SidebarService,
+    AdminTabsService,
     TransactionsService,
     TransactionColumnRepository,
     RevenueService,

@@ -9,6 +9,7 @@ import { AnalyticsService } from '../src/analytics/analytics.service';
 import { SidebarService } from '../src/services/sidebar.service';
 import type { SidebarItem } from '../src/schemas/admin';
 import { RevenueService } from '../src/wallet/revenue.service';
+import { AdminTabsService } from '../src/services/admin-tabs.service';
 
 describe('AdminController', () => {
   let app: INestApplication;
@@ -24,6 +25,12 @@ describe('AdminController', () => {
     getBreakdown: jest.fn(),
   } as Partial<RevenueService>;
   const sidebarItems: SidebarItem[] = [
+    {
+      id: 'events',
+      label: 'Events',
+      icon: 'faBell',
+      component: '@/app/components/dashboard/AdminEvents',
+    },
     {
       id: 'users',
       label: 'Users',
@@ -52,6 +59,20 @@ describe('AdminController', () => {
   const sidebar = {
     getItems: jest.fn().mockResolvedValue(sidebarItems),
   } as Partial<SidebarService>;
+  const adminTabs = {
+    list: jest
+      .fn()
+      .mockResolvedValue(
+        sidebarItems
+          .filter((item) => item.id !== 'events')
+          .map((item) => ({
+            id: item.id,
+            title: item.label,
+            component: item.component,
+            icon: item.icon,
+          })),
+      ),
+  } as Partial<AdminTabsService>;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -60,6 +81,7 @@ describe('AdminController', () => {
         { provide: KycService, useValue: kyc },
         { provide: AnalyticsService, useValue: analytics },
         { provide: SidebarService, useValue: sidebar },
+        { provide: AdminTabsService, useValue: adminTabs },
         { provide: RevenueService, useValue: revenue },
       ],
     })
@@ -138,6 +160,8 @@ describe('AdminController', () => {
       id: s.id,
       title: s.label,
       component: s.component,
+      icon: s.icon,
+      source: s.id === 'events' ? 'config' : 'database',
     }));
     await request(app.getHttpServer())
       .get('/admin/tabs')

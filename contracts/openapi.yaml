@@ -1808,6 +1808,60 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminTabResponse'
+    post:
+      summary: Create admin dashboard tab
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAdminTabRequest'
+      responses:
+        '200':
+          description: Created admin tab
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTab'
+  /admin/tabs/{id}:
+    put:
+      summary: Update admin dashboard tab
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAdminTabRequest'
+      responses:
+        '200':
+          description: Updated admin tab
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTab'
+    delete:
+      summary: Delete admin dashboard tab
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Admin tab deleted
   /admin/revenue-breakdown:
     get:
       summary: Get revenue breakdown
@@ -4937,6 +4991,12 @@ components:
           type: string
         component:
           type: string
+        icon:
+          type: string
+          description: Normalized Font Awesome icon name (e.g., faUsers)
+        source:
+          type: string
+          enum: [config, database]
       required:
         - id
         - title
@@ -4945,6 +5005,35 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/AdminTab'
+    CreateAdminTabRequest:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/SidebarTab'
+        title:
+          type: string
+        icon:
+          type: string
+        component:
+          type: string
+      required:
+        - id
+        - title
+        - icon
+        - component
+    UpdateAdminTabRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        icon:
+          type: string
+        component:
+          type: string
+      required:
+        - title
+        - icon
+        - component
     AdminEvent:
       type: object
       properties:
