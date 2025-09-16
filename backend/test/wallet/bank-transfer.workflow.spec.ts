@@ -1,42 +1,20 @@
-import { DataSource } from 'typeorm';
-import { WalletService } from '../../src/wallet/wallet.service';
-import { EventPublisher } from '../../src/events/events.service';
 import AdminDepositsController from '../../src/routes/admin-deposits.controller';
-import { createInMemoryDb, createWalletServices } from './test-utils';
+import { initPendingDeposit, PendingDepositTestContext } from './test-utils';
 
 /**
  * User initiates bank transfer -> worker flags after 10s -> admin confirms -> wallet balance increases.
  * Kafka/WebSocket events are mocked via EventPublisher spy.
  */
 describe('Bank transfer deposit workflow', () => {
-  let dataSource: DataSource;
-  let service: WalletService;
-  let events: EventPublisher;
-  let repos: ReturnType<typeof createWalletServices>['repos'];
-
+  let ctx: PendingDepositTestContext;
   const userId = '11111111-1111-1111-1111-111111111111';
 
   beforeAll(async () => {
-    process.env.BANK_NAME = 'Test Bank';
-    process.env.BANK_ACCOUNT_NUMBER = '123456789';
-    process.env.BANK_ROUTING_CODE = '987654';
-
-    dataSource = await createInMemoryDb();
-    ({ service, events, repos } = createWalletServices(dataSource));
-
-    await repos.account.save([
-      { id: userId, name: 'user', balance: 0, currency: 'USD' },
-      {
-        id: '00000000-0000-0000-0000-000000000010',
-        name: 'house',
-        balance: 0,
-        currency: 'USD',
-      },
-    ]);
+    ctx = await initPendingDeposit({ userId });
   });
 
   afterAll(async () => {
-    await dataSource.destroy();
+    await ctx.dataSource.destroy();
   });
 
   beforeEach(() => {
@@ -44,32 +22,28 @@ describe('Bank transfer deposit workflow', () => {
   });
 
   it('credits wallet after admin confirms flagged deposit', async () => {
-    const start = await repos.account.findOneByOrFail({ id: userId });
+    const start = await ctx.repos.account.findOneByOrFail({ id: userId });
 
-    const res = await service.initiateBankTransfer(userId, 50, 'dev1', '1.1.1.1', 'USD');
-    const deposit = await repos.pending.findOneByOrFail({ reference: res.reference });
+    const res = await ctx.service.initiateBankTransfer(userId, 50, 'dev1', '1.1.1.1', 'USD');
+    const deposit = await ctx.repos.pending.findOneByOrFail({ reference: res.reference });
 
     // worker schedules check after 10s
-    expect((service as any).pendingQueue.add).toHaveBeenCalledWith(
-      'check',
-      expect.objectContaining({ id: deposit.id }),
-      expect.objectContaining({ delay: 10_000 }),
-    );
+    ctx.expectScheduledCheck(deposit.id);
 
     // worker flags deposit for review
-    await service.markActionRequiredIfPending(deposit.id, deposit.id);
-    expect(events.emit).toHaveBeenCalledWith('admin.deposit.pending', {
+    await ctx.service.markActionRequiredIfPending(deposit.id, deposit.id);
+    expect(ctx.events.emit as jest.Mock).toHaveBeenCalledWith('admin.deposit.pending', {
       depositId: deposit.id,
       jobId: deposit.id,
     });
 
-    const controller = new AdminDepositsController(service);
+    const controller = new AdminDepositsController(ctx.service);
     await controller.confirm(deposit.id, { userId: 'admin' } as any);
 
-    const user = await repos.account.findOneByOrFail({ id: userId });
+    const user = await ctx.repos.account.findOneByOrFail({ id: userId });
     expect(user.balance).toBe(start.balance + 50);
 
-    expect(events.emit).toHaveBeenCalledWith(
+    expect(ctx.events.emit as jest.Mock).toHaveBeenCalledWith(
       'wallet.deposit.confirmed',
       expect.objectContaining({ accountId: userId, amount: 50, currency: 'USD' }),
     );
