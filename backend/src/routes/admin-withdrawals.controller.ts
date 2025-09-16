@@ -1,9 +1,12 @@
 import AdminPendingTransactionsController from './admin-pending.controller';
 import {
-  PendingWithdrawalsResponseSchema,
   WithdrawalDecisionRequestSchema,
   type WithdrawalDecisionRequest,
 } from '../schemas/withdrawals';
+import {
+  PendingWithdrawalsResponseSchema,
+  type PendingWithdrawalsResponse,
+} from '@shared/types';
 import type { WalletService } from '../wallet/wallet.service';
 import type { Request } from 'express';
 
@@ -11,7 +14,7 @@ export default AdminPendingTransactionsController({
   path: 'admin/withdrawals',
   response: PendingWithdrawalsResponseSchema,
   request: WithdrawalDecisionRequestSchema,
-  async list(wallet: WalletService) {
+  async list(wallet: WalletService): Promise<PendingWithdrawalsResponse> {
     const withdrawals = await wallet.listPendingWithdrawals();
     return { withdrawals };
   },

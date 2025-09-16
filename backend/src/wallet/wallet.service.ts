@@ -35,6 +35,7 @@ import type {
   IbanHistoryResponse,
   IbanUpdateRequest,
 } from '@shared/wallet.schema';
+import type { PendingWithdrawal } from '@shared/types';
 
 interface Movement {
   account: Account;
@@ -1106,7 +1107,7 @@ async rejectExpiredPendingDeposits(): Promise<void> {
     }
   }
 
-  async listPendingWithdrawals() {
+  async listPendingWithdrawals(): Promise<PendingWithdrawal[]> {
     const disbs = await this.disbursements.find({
       where: { status: 'pending' },
       order: { createdAt: 'ASC' },
@@ -1114,13 +1115,13 @@ async rejectExpiredPendingDeposits(): Promise<void> {
     const accounts = await this.accounts.find({
       where: { id: In(disbs.map((d) => d.accountId)) },
     });
-    return disbs.map((d) => ({
+    return disbs.map<PendingWithdrawal>((d) => ({
       id: d.id,
       userId: d.accountId,
       amount: d.amount,
       currency: accounts.find((a) => a.id === d.accountId)?.currency ?? '',
       status: d.status,
-      createdAt: d.createdAt,
+      createdAt: new Date(d.createdAt).toISOString(),
       avatar: '',
       bank: '',
       maskedAccount: '',

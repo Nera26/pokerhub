@@ -1,14 +1,16 @@
 import type { INestApplication } from '@nestjs/common';
 import AdminWithdrawalsController from '../src/routes/admin-withdrawals.controller';
 import setupAdminAuth from './utils/admin-auth';
+import type { PendingWithdrawal } from '@shared/types';
+import type { WalletService } from '../src/wallet/wallet.service';
 
 describe('AdminWithdrawalsController auth', () => {
   let app: INestApplication;
   let expectUnauthenticated: () => Promise<any>;
   let expectForbidden: () => Promise<any>;
   const wallet = {
-    listPendingWithdrawals: jest.fn(),
-  } as any;
+    listPendingWithdrawals: jest.fn<Promise<PendingWithdrawal[]>, []>(),
+  } as jest.Mocked<Pick<WalletService, 'listPendingWithdrawals'>>;
 
   beforeAll(async () => {
     ({ app, expectUnauthenticated, expectForbidden } = await setupAdminAuth(
