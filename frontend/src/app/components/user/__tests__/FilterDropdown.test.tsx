@@ -29,23 +29,31 @@ describe('FilterDropdown', () => {
     onChange: jest.fn(),
   };
 
+  const renderFilterDropdown = (overrides: Record<string, unknown> = {}) => {
+    mockUseGameTypes.mockReturnValue(
+      createGameTypesResult({
+        data: [],
+        isLoading: false,
+        error: null,
+        ...overrides,
+      }),
+    );
+
+    return render(<FilterDropdown {...baseProps} />);
+  };
+
   beforeEach(() => {
     mockUseGameTypes.mockReset();
     baseProps.onChange.mockReset();
   });
 
   it('renders game type options from hook', () => {
-    mockUseGameTypes.mockReturnValue(
-      createGameTypesResult({
-        data: [
-          { id: 'texas', label: "Texas Hold'em" },
-          { id: 'omaha', label: 'Omaha' },
-        ],
-        isLoading: false,
-        error: null,
-      }),
-    );
-    render(<FilterDropdown {...baseProps} />);
+    renderFilterDropdown({
+      data: [
+        { id: 'texas', label: "Texas Hold'em" },
+        { id: 'omaha', label: 'Omaha' },
+      ],
+    });
     const select = screen.getAllByRole('combobox')[0];
     expect(
       within(select).getByRole('option', { name: "Texas Hold'em" }),
@@ -56,27 +64,13 @@ describe('FilterDropdown', () => {
   });
 
   it('disables select while loading', () => {
-    mockUseGameTypes.mockReturnValue(
-      createGameTypesResult({
-        data: [],
-        isLoading: true,
-        error: null,
-      }),
-    );
-    render(<FilterDropdown {...baseProps} />);
+    renderFilterDropdown({ isLoading: true });
     const select = screen.getAllByRole('combobox')[0];
     expect(select).toBeDisabled();
   });
 
   it('renders only default option when empty', () => {
-    mockUseGameTypes.mockReturnValue(
-      createGameTypesResult({
-        data: [],
-        isLoading: false,
-        error: null,
-      }),
-    );
-    render(<FilterDropdown {...baseProps} />);
+    renderFilterDropdown();
     const select = screen.getAllByRole('combobox')[0];
     const options = within(select).getAllByRole('option');
     expect(options).toHaveLength(1);
@@ -84,39 +78,18 @@ describe('FilterDropdown', () => {
   });
 
   it('shows error message when fetching fails', () => {
-    mockUseGameTypes.mockReturnValue(
-      createGameTypesResult({
-        data: undefined,
-        isLoading: false,
-        error: new Error('fail'),
-      }),
-    );
-    render(<FilterDropdown {...baseProps} />);
+    renderFilterDropdown({ data: undefined, error: new Error('fail') });
     expect(screen.getByText(/failed to load game types/i)).toBeInTheDocument();
   });
 
   it('calls onChange when applying filters', async () => {
-    mockUseGameTypes.mockReturnValue(
-      createGameTypesResult({
-        data: [],
-        isLoading: false,
-        error: null,
-      }),
-    );
-    render(<FilterDropdown {...baseProps} />);
+    renderFilterDropdown();
     await userEvent.click(screen.getByRole('button', { name: /apply/i }));
     expect(baseProps.onChange).toHaveBeenCalled();
   });
 
   it('resets filters on reset click', async () => {
-    mockUseGameTypes.mockReturnValue(
-      createGameTypesResult({
-        data: [],
-        isLoading: false,
-        error: null,
-      }),
-    );
-    render(<FilterDropdown {...baseProps} />);
+    renderFilterDropdown();
     await userEvent.click(screen.getByRole('button', { name: /reset/i }));
     expect(baseProps.onChange).toHaveBeenCalledWith({
       gameType: 'any',
