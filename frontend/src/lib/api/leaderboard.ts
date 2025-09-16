@@ -18,6 +18,8 @@ import {
   type LeaderboardConfigUpdate,
 } from '@shared/types';
 
+const ADMIN_LEADERBOARD_CONFIG_PATH = '/api/admin/leaderboard-config' as const;
+
 export async function fetchLeaderboard({
   signal,
   range,
@@ -71,7 +73,7 @@ export function useLeaderboardModes() {
 
 export async function listLeaderboardConfig(): Promise<LeaderboardConfigListResponse> {
   return apiClient(
-    '/api/admin/leaderboard-config',
+    ADMIN_LEADERBOARD_CONFIG_PATH,
     LeaderboardConfigListResponseSchema,
   );
 }
@@ -80,7 +82,7 @@ export async function createLeaderboardConfig(
   entry: LeaderboardConfig,
 ): Promise<LeaderboardConfigListResponse> {
   return apiClient(
-    '/api/admin/leaderboard-config',
+    ADMIN_LEADERBOARD_CONFIG_PATH,
     LeaderboardConfigListResponseSchema,
     {
       method: 'POST',
@@ -94,7 +96,7 @@ export async function updateLeaderboardConfig(
   payload: LeaderboardConfigUpdate,
 ): Promise<LeaderboardConfigListResponse> {
   return apiClient(
-    '/api/admin/leaderboard-config',
+    ADMIN_LEADERBOARD_CONFIG_PATH,
     LeaderboardConfigListResponseSchema,
     {
       method: 'PUT',
@@ -108,7 +110,7 @@ export async function deleteLeaderboardConfig(
   entry: LeaderboardConfig,
 ): Promise<LeaderboardConfigListResponse> {
   return apiClient(
-    '/api/admin/leaderboard-config',
+    ADMIN_LEADERBOARD_CONFIG_PATH,
     LeaderboardConfigListResponseSchema,
     {
       method: 'DELETE',
