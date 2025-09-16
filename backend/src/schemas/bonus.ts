@@ -1,24 +1,10 @@
+import { OptionSchema } from '@shared/option.schema';
 import { z } from 'zod';
 
-const BonusTypeOptionSchema = z.object({
-  value: z.string(),
-  label: z.string(),
-});
-
-const BonusEligibilityOptionSchema = z.object({
-  value: z.string(),
-  label: z.string(),
-});
-
-const BonusStatusOptionSchema = z.object({
-  value: z.string(),
-  label: z.string(),
-});
-
 export const BonusOptionsResponseSchema = z.object({
-  types: z.array(BonusTypeOptionSchema),
-  eligibilities: z.array(BonusEligibilityOptionSchema),
-  statuses: z.array(BonusStatusOptionSchema),
+  types: z.array(OptionSchema),
+  eligibilities: z.array(OptionSchema),
+  statuses: z.array(OptionSchema),
 });
 
 export type BonusOptionsResponse = z.infer<typeof BonusOptionsResponseSchema>;
