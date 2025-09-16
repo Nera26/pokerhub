@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { detectChipDump } from '@shared/analytics/collusion';
 import { AnalyticsService } from './analytics.service';
 import { CollusionService } from './collusion.service';
-import type { Transfer } from '@shared/analytics';
+import type { Transfer } from '@shared/analytics/collusion';
 
 interface GameEvent {
   sessionId: string;
