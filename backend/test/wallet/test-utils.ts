@@ -116,6 +116,60 @@ export function createWalletServices(dataSource: DataSource) {
   };
 }
 
+export type WalletRepos = ReturnType<typeof createWalletServices>['repos'];
+
+export async function completeBankTransferDepositWorkflow(options: {
+  service: WalletService;
+  repos: WalletRepos;
+  events: EventPublisher;
+  depositId: string;
+  jobId: string;
+  userId: string;
+  amount: number;
+  currency: string;
+  confirmDeposit: (depositId: string) => Promise<void> | void;
+  expectedBalance?: number;
+  pendingEvent?: Record<string, unknown>;
+  confirmedEvent?: Record<string, unknown>;
+}) {
+  const {
+    service,
+    repos,
+    events,
+    depositId,
+    jobId,
+    userId,
+    amount,
+    currency,
+    confirmDeposit,
+    expectedBalance,
+    pendingEvent,
+    confirmedEvent,
+  } = options;
+
+  await service.markActionRequiredIfPending(depositId, jobId);
+
+  const flaggedDeposit = await repos.pending.findOneByOrFail({ id: depositId });
+  expect(flaggedDeposit.actionRequired).toBe(true);
+
+  const pendingMatcher = expect.objectContaining(pendingEvent ?? { depositId, jobId });
+  expect(events.emit).toHaveBeenCalledWith('admin.deposit.pending', pendingMatcher);
+
+  await Promise.resolve(confirmDeposit(depositId));
+
+  const user = await repos.account.findOneByOrFail({ id: userId });
+  if (expectedBalance !== undefined) {
+    expect(user.balance).toBe(expectedBalance);
+  }
+
+  const confirmedMatcher = expect.objectContaining(
+    confirmedEvent ?? { accountId: userId, amount, currency },
+  );
+  expect(events.emit).toHaveBeenCalledWith('wallet.deposit.confirmed', confirmedMatcher);
+
+  return { user, flaggedDeposit };
+}
+
 export async function createWalletTestContext() {
   const dataSource = await createDataSource([
     Account,

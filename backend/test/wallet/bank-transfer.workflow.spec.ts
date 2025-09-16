@@ -2,7 +2,7 @@ import { DataSource } from 'typeorm';
 import { WalletService } from '../../src/wallet/wallet.service';
 import { EventPublisher } from '../../src/events/events.service';
 import AdminDepositsController from '../../src/routes/admin-deposits.controller';
-import { createInMemoryDb, createWalletServices } from './test-utils';
+import { createInMemoryDb, createWalletServices, completeBankTransferDepositWorkflow } from './test-utils';
 
 /**
  * User initiates bank transfer -> worker flags after 10s -> admin confirms -> wallet balance increases.
@@ -56,23 +56,21 @@ describe('Bank transfer deposit workflow', () => {
       expect.objectContaining({ delay: 10_000 }),
     );
 
-    // worker flags deposit for review
-    await service.markActionRequiredIfPending(deposit.id, deposit.id);
-    expect(events.emit).toHaveBeenCalledWith('admin.deposit.pending', {
+    const controller = new AdminDepositsController(service);
+
+    await completeBankTransferDepositWorkflow({
+      service,
+      repos,
+      events,
       depositId: deposit.id,
       jobId: deposit.id,
+      userId,
+      amount: 50,
+      currency: 'USD',
+      expectedBalance: start.balance + 50,
+      confirmDeposit: (id) => controller.confirm(id, { userId: 'admin' } as any),
+      confirmedEvent: { accountId: userId, amount: 50, currency: 'USD' },
     });
-
-    const controller = new AdminDepositsController(service);
-    await controller.confirm(deposit.id, { userId: 'admin' } as any);
-
-    const user = await repos.account.findOneByOrFail({ id: userId });
-    expect(user.balance).toBe(start.balance + 50);
-
-    expect(events.emit).toHaveBeenCalledWith(
-      'wallet.deposit.confirmed',
-      expect.objectContaining({ accountId: userId, amount: 50, currency: 'USD' }),
-    );
   });
 });
 
