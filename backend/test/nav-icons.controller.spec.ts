@@ -10,6 +10,11 @@ import { NavIconsController } from '../src/routes/nav-icons.controller';
 import { AdminNavIconsController } from '../src/routes/admin-nav-icons.controller';
 import { NavIconsService } from '../src/services/nav-icons.service';
 import { NavIconEntity } from '../src/database/entities/nav-icon.entity';
+import { NavIcons1757058400005 } from '../src/database/migrations/1757058400005-NavIcons';
+import {
+  NAV_ICON_DATA,
+  SeedNavIcons1757058400017,
+} from '../src/database/migrations/1757058400017-SeedNavIcons';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
 import { NavIconSchema, NavIconsResponseSchema, type NavIconsResponse, type NavIcon } from '@shared/types';
@@ -35,12 +40,13 @@ describe('NavIconsController', () => {
               returns: 'text',
               implementation: () => 'test',
             });
-            dataSource = db.adapters.createTypeormDataSource({
+            const options = {
               type: 'postgres',
               entities: [NavIconEntity],
-              synchronize: true,
-            }) as DataSource;
-            return dataSource.options;
+              synchronize: false,
+            } as const;
+            dataSource = db.adapters.createTypeormDataSource(options) as DataSource;
+            return options;
           },
           dataSourceFactory: async () => dataSource.initialize(),
         }),
@@ -59,15 +65,21 @@ describe('NavIconsController', () => {
     service = moduleRef.get(NavIconsService);
     await app.init();
 
-    const repo = dataSource.getRepository(NavIconEntity);
-    await repo.insert([
-      { name: 'foo', svg: '<svg>foo</svg>' },
-      { name: 'bar', svg: '<svg>bar</svg>' },
-    ]);
+    const queryRunner = dataSource.createQueryRunner();
+    await queryRunner.connect();
+    try {
+      await new NavIcons1757058400005().up(queryRunner);
+      await new SeedNavIcons1757058400017().up(queryRunner);
+    } finally {
+      await queryRunner.release();
+    }
   });
 
   afterAll(async () => {
     await app.close();
+    if (dataSource.isInitialized) {
+      await dataSource.destroy();
+    }
   });
 
   it('returns navigation icons', async () => {
@@ -77,10 +89,7 @@ describe('NavIconsController', () => {
       .expect(200);
     expect(listSpy).toHaveBeenCalledTimes(1);
     const body = NavIconsResponseSchema.parse(res.body);
-    const expected: NavIconsResponse = [
-      { name: 'foo', svg: '<svg>foo</svg>' },
-      { name: 'bar', svg: '<svg>bar</svg>' },
-    ];
+    const expected: NavIconsResponse = NAV_ICON_DATA.map((icon) => ({ ...icon }));
     body.sort((a, b) => a.name.localeCompare(b.name));
     expected.sort((a, b) => a.name.localeCompare(b.name));
     expect(body).toEqual(expected);
@@ -91,39 +100,49 @@ describe('NavIconsController', () => {
       .get('/admin/nav-icons')
       .expect(200);
     const body = NavIconsResponseSchema.parse(res.body);
-    const expected: NavIconsResponse = [
-      { name: 'foo', svg: '<svg>foo</svg>' },
-      { name: 'bar', svg: '<svg>bar</svg>' },
-    ];
+    const expected: NavIconsResponse = NAV_ICON_DATA.map((icon) => ({ ...icon }));
     body.sort((a, b) => a.name.localeCompare(b.name));
     expected.sort((a, b) => a.name.localeCompare(b.name));
     expect(body).toEqual(expected);
   });
 
   it('creates a navigation icon', async () => {
-    const icon: NavIcon = { name: 'baz', svg: '<svg>baz</svg>' };
+    const icon: NavIcon = {
+      name: 'custom',
+      svg: '<svg viewBox="0 0 32 32"><path d="M0 0h32v32H0z"/></svg>',
+    };
     const res = await request(app.getHttpServer())
       .post('/admin/nav-icons')
       .send(icon)
       .expect(200);
     expect(NavIconSchema.parse(res.body)).toEqual(icon);
     const repo = dataSource.getRepository(NavIconEntity);
-    expect(await repo.findOne({ where: { name: 'baz' } })).toBeTruthy();
+    expect(await repo.findOne({ where: { name: 'custom' } })).toBeTruthy();
+
+    const list = await request(app.getHttpServer()).get('/nav-icons').expect(200);
+    const icons = NavIconsResponseSchema.parse(list.body);
+    expect(icons).toEqual(expect.arrayContaining([icon]));
   });
 
   it('updates a navigation icon', async () => {
     const res = await request(app.getHttpServer())
-      .put('/admin/nav-icons/foo')
-      .send({ name: 'foo', svg: '<svg>updated</svg>' })
+      .put('/admin/nav-icons/home')
+      .send({
+        name: 'home',
+        svg: '<svg viewBox="0 0 16 16"><path d="M0 0h16v16H0z"/></svg>',
+      })
       .expect(200);
-    expect(NavIconSchema.parse(res.body)).toEqual({ name: 'foo', svg: '<svg>updated</svg>' });
+    expect(NavIconSchema.parse(res.body)).toEqual({
+      name: 'home',
+      svg: '<svg viewBox="0 0 16 16"><path d="M0 0h16v16H0z"/></svg>',
+    });
   });
 
   it('deletes a navigation icon', async () => {
     await request(app.getHttpServer())
-      .delete('/admin/nav-icons/bar')
+      .delete('/admin/nav-icons/wallet')
       .expect(204);
     const repo = dataSource.getRepository(NavIconEntity);
-    expect(await repo.findOne({ where: { name: 'bar' } })).toBeNull();
+    expect(await repo.findOne({ where: { name: 'wallet' } })).toBeNull();
   });
 });
