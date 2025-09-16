@@ -7,7 +7,7 @@ import { LeaderboardController } from './leaderboard.controller';
 import { AdminLeaderboardConfigController } from './admin-leaderboard-config.controller';
 import { User } from '../database/entities/user.entity';
 import { Leaderboard } from '../database/entities/leaderboard.entity';
-import { LeaderboardConfig } from '../database/entities/leaderboard-config.entity';
+import { LeaderboardConfigEntity } from '../database/entities/leaderboard-config.entity';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { LeaderboardConfigService } from './leaderboard-config.service';
 
@@ -24,7 +24,7 @@ class RebuildWorker implements OnModuleInit {
 @Module({
   imports: [
     RedisModule,
-    TypeOrmModule.forFeature([User, Leaderboard, LeaderboardConfig]),
+    TypeOrmModule.forFeature([User, Leaderboard, LeaderboardConfigEntity]),
     AnalyticsModule,
   ],
   providers: [LeaderboardService, LeaderboardConfigService, RebuildWorker],

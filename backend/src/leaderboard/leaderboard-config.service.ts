@@ -1,8 +1,12 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { LeaderboardConfig } from '../database/entities/leaderboard-config.entity';
-import type { TimeFilter, ModeFilter } from '@shared/types';
+import { LeaderboardConfigEntity } from '../database/entities/leaderboard-config.entity';
+import type {
+  TimeFilter,
+  ModeFilter,
+  LeaderboardConfig as LeaderboardConfigDto,
+} from '@shared/types';
 
 @Injectable()
 export class LeaderboardConfigService implements OnModuleInit {
@@ -10,8 +14,8 @@ export class LeaderboardConfigService implements OnModuleInit {
   private modes: ModeFilter[] = [];
 
   constructor(
-    @InjectRepository(LeaderboardConfig)
-    private readonly repo: Repository<LeaderboardConfig>,
+    @InjectRepository(LeaderboardConfigEntity)
+    private readonly repo: Repository<LeaderboardConfigEntity>,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -32,24 +36,24 @@ export class LeaderboardConfigService implements OnModuleInit {
     return this.modes;
   }
 
-  async list(): Promise<LeaderboardConfig[]> {
+  async list(): Promise<LeaderboardConfigDto[]> {
     return this.repo.find();
   }
 
-  async create(entry: LeaderboardConfig): Promise<void> {
+  async create(entry: LeaderboardConfigDto): Promise<void> {
     await this.repo.insert(entry);
     await this.load();
   }
 
   async update(
-    criteria: LeaderboardConfig,
-    entry: LeaderboardConfig,
+    criteria: LeaderboardConfigDto,
+    entry: LeaderboardConfigDto,
   ): Promise<void> {
     await this.repo.update(criteria, entry);
     await this.load();
   }
 
-  async remove(entry: LeaderboardConfig): Promise<void> {
+  async remove(entry: LeaderboardConfigDto): Promise<void> {
     await this.repo.delete(entry);
     await this.load();
   }

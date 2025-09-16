@@ -88,6 +88,8 @@ class MockLeaderboardRepo {
   }
 }
 
+const sorted = (values: string[]) => [...values].sort();
+
 describe('LeaderboardService', () => {
   let cache: MockCache;
   let analytics: MockAnalytics;
@@ -96,7 +98,7 @@ describe('LeaderboardService', () => {
   let configService: LeaderboardConfigService;
   let service: LeaderboardService;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.useFakeTimers({ doNotFake: ['Date'] });
     cache = new MockCache();
     analytics = new MockAnalytics();
@@ -106,9 +108,7 @@ describe('LeaderboardService', () => {
       { range: 'daily', mode: 'cash' },
       { range: 'weekly', mode: 'tournament' },
     ];
-    configService = new LeaderboardConfigService(
-      configRepo as any,
-    );
+    configService = new LeaderboardConfigService(configRepo as any);
     await configService.onModuleInit();
     service = new LeaderboardService(
       cache as unknown as Cache,
@@ -129,11 +129,43 @@ describe('LeaderboardService', () => {
     expect(service.getModes()).toEqual({ modes: ['cash', 'tournament'] });
   });
 
-  it('updates ranges when config changes', async () => {
+  it('updates ranges and modes when config changes', async () => {
+    expect(service.getRanges()).toEqual({ ranges: ['daily', 'weekly'] });
+    expect(service.getModes()).toEqual({ modes: ['cash', 'tournament'] });
+
     await configService.create({ range: 'monthly', mode: 'cash' });
-    expect(service.getRanges()).toEqual({ ranges: ['daily', 'weekly', 'monthly'] });
-    await configService.remove({ range: 'daily', mode: 'cash' });
-    expect(service.getRanges()).toEqual({ ranges: ['weekly', 'monthly'] });
+    await configService.create({ range: 'daily', mode: 'sitngo' });
+    expect(sorted(service.getRanges().ranges)).toEqual(
+      ['daily', 'weekly', 'monthly'].sort(),
+    );
+    expect(sorted(service.getModes().modes)).toEqual(
+      ['cash', 'tournament', 'sitngo'].sort(),
+    );
+
+    await configService.update(
+      { range: 'weekly', mode: 'tournament' },
+      { range: 'yearly', mode: 'series' },
+    );
+    expect(sorted(service.getRanges().ranges)).toEqual(
+      ['daily', 'monthly', 'yearly'].sort(),
+    );
+    expect(sorted(service.getModes().modes)).toEqual(
+      ['cash', 'sitngo', 'series'].sort(),
+    );
+
+    await configService.remove({ range: 'monthly', mode: 'cash' });
+    expect(sorted(service.getRanges().ranges)).toEqual(
+      ['daily', 'yearly'].sort(),
+    );
+    expect(sorted(service.getModes().modes)).toEqual(
+      ['cash', 'series', 'sitngo'].sort(),
+    );
+
+    await configService.remove({ range: 'daily', mode: 'sitngo' });
+    expect(sorted(service.getRanges().ranges)).toEqual(
+      ['daily', 'yearly'].sort(),
+    );
+    expect(sorted(service.getModes().modes)).toEqual(['cash', 'series'].sort());
   });
 
   it('returns leaderboard with points, ROI and finish counts', async () => {

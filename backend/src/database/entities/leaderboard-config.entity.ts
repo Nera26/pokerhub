@@ -1,7 +1,7 @@
 import { Entity, PrimaryColumn } from 'typeorm';
 
 @Entity({ name: 'leaderboard_config' })
-export class LeaderboardConfig {
+export class LeaderboardConfigEntity {
   @PrimaryColumn('text')
   range: string;
 
