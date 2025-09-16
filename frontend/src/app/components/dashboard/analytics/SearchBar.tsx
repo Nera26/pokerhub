@@ -2,9 +2,11 @@
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
+import { useLocale } from 'next-intl';
 import SearchInput from '../common/SearchInput';
 import type { AuditLogType } from '@shared/types';
 import { useAuditLogTypes } from '@/hooks/lookups';
+import { useTranslations } from '@/hooks/useTranslations';
 import CenteredMessage from '@/components/CenteredMessage';
 
 interface Props {
@@ -22,6 +24,8 @@ export default function SearchBar({
   setType,
   onSubmit,
 }: Props) {
+  const locale = useLocale();
+  const { data: t } = useTranslations(locale);
   const { data, isLoading, isError } = useAuditLogTypes();
   const logTypes = data?.types ?? [];
 
@@ -39,7 +43,7 @@ export default function SearchBar({
           <SearchInput
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by description, user, or event type..."
+            placeholder={t?.auditSearchPlaceholder ?? 'Search…'}
             onKeyDown={(e) => {
               if (e.key === 'Enter') onSubmit();
             }}

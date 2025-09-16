@@ -1,0 +1,77 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Analytics SearchBar translations falls back to default placeholder when translation is missing 1`] = `
+<div>
+  <div
+    class="bg-card-bg p-6 rounded-2xl shadow-[0_4px_8px_rgba(0,0,0,0.3)]"
+  >
+    <h3
+      class="text-lg font-bold mb-4"
+    >
+      Search Logs
+    </h3>
+    <div
+      class="flex gap-3"
+    >
+      <div
+        class="flex-1"
+      >
+        <div
+          class="relative"
+        >
+          <svg
+            aria-hidden="true"
+            class="svg-inline--fa fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary"
+            data-icon="magnifying-glass"
+            data-prefix="fas"
+            role="img"
+            viewBox="0 0 512 512"
+          >
+            <path
+              d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376C296.3 401.1 253.9 416 208 416 93.1 416 0 322.9 0 208S93.1 0 208 0 416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z"
+              fill="currentColor"
+            />
+          </svg>
+          <input
+            class="w-full bg-primary-bg border border-dark rounded-xl pl-10 pr-4 text-sm text-text-primary focus:border-accent-yellow focus:outline-none py-3"
+            placeholder="Search…"
+            value=""
+          />
+        </div>
+      </div>
+      <select
+        class="bg-primary-bg border border-dark rounded-xl px-4 py-3 text-sm"
+      >
+        <option
+          value="all"
+        >
+          All Types
+        </option>
+        <option
+          value="security"
+        >
+          security
+        </option>
+      </select>
+      <button
+        class="bg-accent-green px-6 py-3 rounded-xl font-semibold hover:shadow-[0_0_20px_rgba(28,139,76,0.3)]"
+        title="Search"
+      >
+        <svg
+          aria-hidden="true"
+          class="svg-inline--fa fa-magnifying-glass "
+          data-icon="magnifying-glass"
+          data-prefix="fas"
+          role="img"
+          viewBox="0 0 512 512"
+        >
+          <path
+            d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376C296.3 401.1 253.9 416 208 416 93.1 416 0 322.9 0 208S93.1 0 208 0 416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z"
+            fill="currentColor"
+          />
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+`;
