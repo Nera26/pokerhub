@@ -13,6 +13,7 @@ import ReplayModal from '../components/user/ReplayModal';
 import BracketModal from '../components/user/BracketModal';
 import { Button } from '../components/ui/Button';
 import { fetchProfile, fetchStats, updateProfile } from '@/lib/api/profile';
+import type { GameFilter, ProfitLossFilter } from '@/types/filters';
 import type { ProfileStatsResponse, UserProfile } from '@shared/types';
 
 export default function UserPage() {
@@ -21,7 +22,11 @@ export default function UserPage() {
   const [activeTab, setActiveTab] = useState<
     'game-history' | 'tournament-history' | 'transaction-history'
   >('game-history');
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<{
+    gameType: GameFilter;
+    profitLoss: ProfitLossFilter;
+    date: string;
+  }>({
     gameType: 'any',
     profitLoss: 'any',
     date: '',

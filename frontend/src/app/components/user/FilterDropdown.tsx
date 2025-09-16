@@ -32,7 +32,11 @@ function FilterDropdown({
   }, [filters]);
 
   const handleReset = () => {
-    const resetFilters = { gameType: 'any', profitLoss: 'any', date: '' };
+    const resetFilters: FilterDropdownProps['filters'] = {
+      gameType: 'any',
+      profitLoss: 'any',
+      date: '',
+    };
     setLocal(resetFilters);
     onChange(resetFilters);
   };
