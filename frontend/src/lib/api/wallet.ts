@@ -8,9 +8,6 @@ import {
   BankTransferDepositRequestSchema,
   BankTransferDepositResponseSchema,
   WalletStatusResponseSchema,
-  WalletTransactionsResponseSchema,
-  PendingTransactionsResponseSchema,
-  PendingDepositsResponseSchema,
   DepositDecisionRequestSchema,
   IbanResponseSchema,
   IbanHistoryResponseSchema,
@@ -18,9 +15,6 @@ import {
   IbanDetailsSchema,
   WalletReconcileMismatchesResponseSchema,
   type WalletStatusResponse,
-  type WalletTransactionsResponse,
-  type PendingTransactionsResponse,
-  type PendingDepositsResponse,
   type IbanResponse,
   type IbanHistoryResponse,
   type IbanUpdateRequest,
@@ -172,40 +166,6 @@ export function getStatus(
   );
 }
 
-export function fetchTransactions(
-  playerId: string,
-  opts: { signal?: AbortSignal } = {},
-): Promise<WalletTransactionsResponse> {
-  return apiClient(
-    `/api/wallet/${playerId}/transactions`,
-    WalletTransactionsResponseSchema,
-    {
-      signal: opts.signal,
-    },
-  );
-}
-
-export function fetchPending(
-  playerId: string,
-  opts: { signal?: AbortSignal } = {},
-): Promise<PendingTransactionsResponse> {
-  return apiClient(
-    `/api/wallet/${playerId}/pending`,
-    PendingTransactionsResponseSchema,
-    {
-      signal: opts.signal,
-    },
-  );
-}
-
-export function fetchPendingDeposits(
-  opts: { signal?: AbortSignal } = {},
-): Promise<PendingDepositsResponse> {
-  return apiClient(`/api/admin/deposits`, PendingDepositsResponseSchema, {
-    signal: opts.signal,
-  });
-}
-
 export function fetchWalletReconcileMismatches(
   opts: { signal?: AbortSignal } = {},
 ): Promise<WalletReconcileMismatchesResponse> {
@@ -309,23 +269,6 @@ export function fetchAdminPlayers(
   opts: { signal?: AbortSignal } = {},
 ): Promise<AdminPlayer[]> {
   return apiClient(`/api/admin/players`, z.array(AdminPlayerSchema), {
-    signal: opts.signal,
-  });
-}
-
-const BankAccountSchema = z.object({
-  name: z.string(),
-  accountName: z.string(),
-  address: z.string(),
-  masked: z.string(),
-});
-export type BankAccount = z.infer<typeof BankAccountSchema>;
-
-export function fetchBankAccount(
-  playerId: string,
-  opts: { signal?: AbortSignal } = {},
-): Promise<BankAccount> {
-  return apiClient(`/api/wallet/${playerId}/bank-account`, BankAccountSchema, {
     signal: opts.signal,
   });
 }

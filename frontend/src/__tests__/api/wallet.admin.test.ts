@@ -1,6 +1,5 @@
 import { apiClient } from '@/lib/api/client';
 import {
-  fetchPendingDeposits,
   confirmDeposit,
   rejectDeposit,
   confirmWithdrawal,
@@ -24,15 +23,6 @@ const apiClientMock = apiClient as jest.Mock;
 describe('wallet admin api client', () => {
   beforeEach(() => apiClientMock.mockResolvedValue({}));
   afterEach(() => apiClientMock.mockReset());
-
-  it('fetchPendingDeposits calls correct endpoint', async () => {
-    await fetchPendingDeposits();
-    expect(apiClientMock).toHaveBeenCalledWith(
-      '/api/admin/deposits',
-      PendingDepositsResponseSchema,
-      { signal: undefined },
-    );
-  });
 
   it('confirmDeposit posts to endpoint', async () => {
     await confirmDeposit('123');
