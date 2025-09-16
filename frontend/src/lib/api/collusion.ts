@@ -1,5 +1,6 @@
 import { apiClient } from './client';
-export type { ApiError } from './client';
+import { getAuthToken } from '@/context/AuthContext';
+import type { ApiError } from '@shared/utils/http';
 import {
   FlaggedSessionsResponse,
   FlaggedSessionsResponseSchema,
@@ -12,11 +13,19 @@ import {
   MessageResponseSchema,
 } from '@shared/types';
 
+function requireAuthToken(): string {
+  const token = getAuthToken();
+  if (!token) {
+    throw { status: 401, message: 'Unauthorized' } satisfies ApiError;
+  }
+  return token;
+}
+
 export async function listFlaggedSessions(
-  token: string,
   page = 1,
   status?: ReviewStatus,
 ): Promise<FlaggedSessionsResponse> {
+  const token = requireAuthToken();
   const params = new URLSearchParams({ page: page.toString() });
   if (status) params.set('status', status);
   return apiClient(
@@ -28,8 +37,8 @@ export async function listFlaggedSessions(
 
 export async function getActionHistory(
   id: string,
-  token: string,
 ): Promise<ReviewActionLogsResponse> {
+  const token = requireAuthToken();
   return apiClient(
     `/api/analytics/collusion/${id}/audit`,
     ReviewActionLogsResponseSchema,
@@ -44,9 +53,9 @@ const ReviewActionResponseSchema = ReviewActionLogSchema.or(
 export async function applyAction(
   id: string,
   action: ReviewAction,
-  token: string,
   reviewerId: string,
 ): Promise<ReviewActionLog> {
+  const token = requireAuthToken();
   const res = await apiClient(
     `/api/analytics/collusion/${id}/${action}`,
     ReviewActionResponseSchema,

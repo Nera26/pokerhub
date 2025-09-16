@@ -6,14 +6,13 @@ import {
   useApplyCollusionAction,
   nextAction,
 } from '@/hooks/collusion';
-import { useAuthToken, usePlayerId } from '@/app/store/authStore';
+import { usePlayerId } from '@/app/store/authStore';
 
 export default function CollusionPage() {
-  const token = useAuthToken();
   const reviewerId = usePlayerId();
-  const { data: sessions = [], isLoading, isError } = useFlaggedSessions(token);
-  const history = useActionHistory(sessions, token);
-  const act = useApplyCollusionAction(token, reviewerId);
+  const { data: sessions = [], isLoading, isError } = useFlaggedSessions();
+  const history = useActionHistory(sessions);
+  const act = useApplyCollusionAction(reviewerId);
 
   if (isLoading) {
     return (

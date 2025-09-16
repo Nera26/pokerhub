@@ -36,6 +36,10 @@ const mockUseRequireAdmin = useRequireAdmin as jest.MockedFunction<
 >;
 
 describe('CollusionPage', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('optimistically adds reviewer and reconciles with server', async () => {
     (listFlaggedSessions as jest.Mock).mockResolvedValue([
       { id: 's1', users: ['u1', 'u2'], status: 'flagged' },
@@ -60,7 +64,42 @@ describe('CollusionPage', () => {
     expect(await screen.findByText('warn by r1')).toBeInTheDocument();
     resolveAction({ action: 'warn', timestamp: 123, reviewerId: 'srv1' });
     expect(await screen.findByText('warn by srv1')).toBeInTheDocument();
-    expect(applyAction).toHaveBeenCalledWith('s1', 'warn', 'token', 'r1');
+    expect(applyAction).toHaveBeenCalledWith('s1', 'warn', 'r1');
+  });
+
+  it('shows loading state while fetching sessions', () => {
+    (listFlaggedSessions as jest.Mock).mockReturnValue(new Promise(() => {}));
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      <QueryClientProvider client={client}>
+        <CollusionPage />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
+  });
+
+  it('displays error message on unauthorized response', async () => {
+    (listFlaggedSessions as jest.Mock).mockRejectedValue({
+      status: 401,
+      message: 'Unauthorized',
+    });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      <QueryClientProvider client={client}>
+        <CollusionPage />
+      </QueryClientProvider>,
+    );
+
+    expect(
+      await screen.findByText('Failed to load sessions'),
+    ).toBeInTheDocument();
   });
 });
 
