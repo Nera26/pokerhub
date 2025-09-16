@@ -1,5 +1,6 @@
 import { apiClient, type ApiError } from './client';
 import { z } from 'zod';
+import { OptionSchema } from '@shared/option.schema';
 import {
   MessageResponseSchema,
   AdminTournamentSchema,
@@ -17,6 +18,7 @@ import { DashboardUserSchema, type DashboardUser } from '@shared/types';
 import type { CreateUserRequest } from '@shared/types';
 export { AdminTournamentSchema } from '@shared/types';
 export type { AdminTournament } from '@shared/types';
+export type Option = z.infer<typeof OptionSchema>;
 
 /** =======================
  *  Admin Tournaments
