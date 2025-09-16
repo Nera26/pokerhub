@@ -24,20 +24,45 @@ describe('Bank transfer deposit workflow', () => {
   it('credits wallet after admin confirms flagged deposit', async () => {
     const start = await ctx.repos.account.findOneByOrFail({ id: userId });
 
-    const res = await ctx.service.initiateBankTransfer(userId, 50, 'dev1', '1.1.1.1', 'USD');
-    const deposit = await ctx.repos.pending.findOneByOrFail({ reference: res.reference });
+    const res = await ctx.service.initiateBankTransfer(
+      userId,
+      50,
+      'dev1',
+      '1.1.1.1',
+      'USD',
+    );
+
+    const deposit = await ctx.repos.pending.findOneByOrFail({
+      reference: res.reference,
+    });
 
     // worker schedules check after 10s
     ctx.expectScheduledCheck(deposit.id);
 
+    const controller = new AdminDepositsController(ctx.service);
+
     // worker flags deposit for review
     await ctx.service.markActionRequiredIfPending(deposit.id, deposit.id);
-    expect(ctx.events.emit as jest.Mock).toHaveBeenCalledWith('admin.deposit.pending', {
-      depositId: deposit.id,
-      jobId: deposit.id,
-    });
 
-    const controller = new AdminDepositsController(ctx.service);
+    expect(ctx.events.emit as jest.Mock).toHaveBeenCalledWith(
+      'admin.deposit.pending',
+      expect.objectContaining({
+        depositId: deposit.id,
+        jobId: deposit.id,
+        userId,
+        amount: 50,
+        currency: 'USD',
+        expectedBalance: start.balance + 50,
+        confirmDeposit: expect.any(Function),
+        confirmedEvent: expect.objectContaining({
+          accountId: userId,
+          amount: 50,
+          currency: 'USD',
+        }),
+      }),
+    );
+
+    // admin confirms
     await controller.confirm(deposit.id, { userId: 'admin' } as any);
 
     const user = await ctx.repos.account.findOneByOrFail({ id: userId });
@@ -45,8 +70,11 @@ describe('Bank transfer deposit workflow', () => {
 
     expect(ctx.events.emit as jest.Mock).toHaveBeenCalledWith(
       'wallet.deposit.confirmed',
-      expect.objectContaining({ accountId: userId, amount: 50, currency: 'USD' }),
+      expect.objectContaining({
+        accountId: userId,
+        amount: 50,
+        currency: 'USD',
+      }),
     );
   });
 });
-

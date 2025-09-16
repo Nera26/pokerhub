@@ -12,7 +12,7 @@ import { AuthGuard } from '../../src/auth/auth.guard';
 import { RateLimitGuard } from '../../src/routes/rate-limit.guard';
 import { SelfGuard } from '../../src/auth/self.guard';
 import { AdminGuard } from '../../src/auth/admin.guard';
-import { createInMemoryDb, createWalletServices } from './test-utils';
+import { createInMemoryDb, createWalletServices, completeBankTransferDepositWorkflow } from './test-utils';
 // Coupled with pending-deposit.worker.ts; keep this test in sync with worker logic.
 
 /**
@@ -98,26 +98,29 @@ describe('WalletController bank transfer workflow', () => {
       reference: res.body.reference,
     });
 
-    // simulate worker processing (see pending-deposit.worker.ts)
-    await service.markActionRequiredIfPending(deposit.id, 'job-1');
-    const flagged = await repos.pending.findOneByOrFail({ id: deposit.id });
-    expect(flagged.actionRequired).toBe(true);
-    expect(events.emit).toHaveBeenCalledWith('admin.deposit.pending', {
+    await completeBankTransferDepositWorkflow({
+      service,
+      repos,
+      events,
       depositId: deposit.id,
       jobId: 'job-1',
+      userId,
+      amount: 50,
+      currency: 'USD',
+      expectedBalance: 50,
+      confirmDeposit: async (id) => {
+        await request(app.getHttpServer())
+          .post(`/admin/deposits/${id}/confirm`)
+          .set('Authorization', 'Bearer admin')
+          .expect(201);
+      },
+      confirmedEvent: {
+        accountId: userId,
+        depositId: deposit.id,
+        amount: 50,
+        currency: 'USD',
+      },
     });
-
-    await request(app.getHttpServer())
-      .post(`/admin/deposits/${deposit.id}/confirm`)
-      .set('Authorization', 'Bearer admin')
-      .expect(201);
-
-    const user = await repos.account.findOneByOrFail({ id: userId });
-    expect(user.balance).toBe(50);
-    expect(events.emit).toHaveBeenCalledWith(
-      'wallet.deposit.confirmed',
-      expect.objectContaining({ accountId: userId, depositId: deposit.id, amount: 50, currency: 'USD' }),
-    );
   });
 });
 
