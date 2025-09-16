@@ -1,6 +1,12 @@
 import { TableThemeService } from '../src/services/table-theme.service';
 import { TableThemeEntity } from '../src/database/entities/table-theme.entity';
+import { newDb } from 'pg-mem';
+import { DataSource } from 'typeorm';
 import type { Repository } from 'typeorm';
+import {
+  ConfigTables1756798403193,
+  TABLE_THEME_SEED,
+} from '../src/database/migrations/1756798403193-ConfigTables';
 import type { TableThemeResponse } from '@shared/types';
 
 describe('TableThemeService', () => {
@@ -47,5 +53,52 @@ describe('TableThemeService', () => {
     const res = await service.update({ hairline: undefined as any, positions: undefined as any });
     expect(res).toEqual(defaultTheme);
     expect(await service.get()).toEqual(defaultTheme);
+  });
+});
+
+describe('TableThemeService migrations', () => {
+  it('seeds the default table theme via migration', async () => {
+    const db = newDb();
+    db.public.registerFunction({
+      name: 'version',
+      returns: 'text',
+      implementation: () => 'pg-mem',
+    });
+    db.public.registerFunction({
+      name: 'current_database',
+      returns: 'text',
+      implementation: () => 'test',
+    });
+
+    const dataSource = db.adapters.createTypeormDataSource({
+      type: 'postgres',
+      entities: [TableThemeEntity],
+      migrations: [ConfigTables1756798403193],
+    }) as DataSource;
+
+    await dataSource.initialize();
+
+    try {
+      await dataSource.runMigrations();
+
+      const repository = dataSource.getRepository(TableThemeEntity);
+      const seeded = await repository.find();
+
+      expect(seeded).toHaveLength(1);
+      expect(seeded[0]).toMatchObject({
+        hairline: TABLE_THEME_SEED.hairline,
+        positions: TABLE_THEME_SEED.positions,
+      });
+
+      const service = new TableThemeService(repository);
+      await expect(service.get()).resolves.toEqual({
+        hairline: TABLE_THEME_SEED.hairline,
+        positions: TABLE_THEME_SEED.positions,
+      });
+    } finally {
+      if (dataSource.isInitialized) {
+        await dataSource.destroy();
+      }
+    }
   });
 });
