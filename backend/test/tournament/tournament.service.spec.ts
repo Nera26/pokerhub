@@ -85,6 +85,7 @@ describe('TournamentService algorithms', () => {
       events,
       producer,
       undefined,
+      undefined,
       wallet,
     );
   });
