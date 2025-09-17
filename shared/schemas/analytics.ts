@@ -4,12 +4,15 @@ export const AuditLogTypeSchema = z.string();
 export type AuditLogType = z.infer<typeof AuditLogTypeSchema>;
 
 export const AuditLogEntrySchema = z.object({
-  id: z.number().int(),
+  id: z.string(),
   timestamp: z.string().datetime(),
   type: AuditLogTypeSchema,
   description: z.string(),
   user: z.string(),
   ip: z.string(),
+  reviewed: z.boolean(),
+  reviewedBy: z.string().nullable(),
+  reviewedAt: z.string().datetime().nullable(),
 });
 export type AuditLogEntry = z.infer<typeof AuditLogEntrySchema>;
 

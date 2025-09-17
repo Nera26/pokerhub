@@ -1886,6 +1886,24 @@ export interface paths {
       };
     };
   };
+  "/admin/audit-logs/{id}/review": {
+    /** Mark audit log reviewed */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Updated audit log entry */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AuditLogEntry"];
+          };
+        };
+      };
+    };
+  };
   "/admin/security-alerts": {
     /** Get security alerts */
     get: {
@@ -2858,13 +2876,17 @@ export interface components {
     };
     AuditLogType: string;
     AuditLogEntry: {
-      id: number;
+      id: string;
       /** Format: date-time */
       timestamp: string;
       type: components["schemas"]["AuditLogType"];
       description: string;
       user: string;
       ip: string;
+      reviewed: boolean;
+      reviewedBy: string | null;
+      /** Format: date-time */
+      reviewedAt: string | null;
     };
     AuditLogsResponse: {
       logs: components["schemas"]["AuditLogEntry"][];

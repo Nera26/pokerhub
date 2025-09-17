@@ -1,6 +1,8 @@
 import { safeApiClient } from './utils';
 import { apiClient } from './client';
 import {
+  AuditLogEntrySchema,
+  type AuditLogEntry,
   LogTypeClassesSchema,
   type LogTypeClasses,
   ActivityResponseSchema,
@@ -45,4 +47,19 @@ export async function updateChartPalette(
     body: palette,
     signal,
   });
+}
+
+export async function markAuditLogReviewed(
+  id: AuditLogEntry['id'],
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<AuditLogEntry> {
+  const encodedId = encodeURIComponent(String(id));
+  return apiClient(
+    `/api/admin/audit-logs/${encodedId}/review`,
+    AuditLogEntrySchema,
+    {
+      method: 'POST',
+      signal,
+    },
+  );
 }
