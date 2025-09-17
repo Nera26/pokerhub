@@ -11,6 +11,7 @@ import type { UserFormValues } from '../forms/UserForm';
 import BanUserModal from '../modals/BanUserModal';
 import UserModal from '../modals/UserModal';
 import ManageBalanceModal from '../modals/ManageBalanceModal';
+import TransactionHistoryModal from '../modals/TransactionHistoryModal';
 import { Button } from '../ui/Button';
 import {
   Table,
@@ -34,6 +35,8 @@ export default function ManageUsers() {
 
   const [isAdjustOpen, setIsAdjustOpen] = useState(false);
   const [adjustTarget, setAdjustTarget] = useState<DashboardUser | null>(null);
+  const [transactionTarget, setTransactionTarget] =
+    useState<DashboardUser | null>(null);
 
   // Ban user
   const ban = useMutation({
@@ -101,6 +104,10 @@ export default function ManageUsers() {
     setIsAdjustOpen(true);
   };
 
+  const openTransactionHistory = (u: DashboardUser) => {
+    setTransactionTarget(u);
+  };
+
   const submitCreate = (values: UserFormValues) => {
     const payload = CreateUserSchema.parse({
       username: values.username,
@@ -161,6 +168,9 @@ export default function ManageUsers() {
                   >
                     Adjust Balance
                   </Button>
+                  <Button onClick={() => openTransactionHistory(u)}>
+                    View Transactions
+                  </Button>
                   <Button variant="danger" onClick={() => openBanModal(u)}>
                     Ban
                   </Button>
@@ -202,6 +212,16 @@ export default function ManageUsers() {
           userName={adjustTarget.username}
           currentBalance={Number(adjustTarget.balance)}
           onSubmit={submitAdjust}
+        />
+      )}
+
+      {/* Transaction history modal */}
+      {transactionTarget && (
+        <TransactionHistoryModal
+          isOpen={!!transactionTarget}
+          onClose={() => setTransactionTarget(null)}
+          userId={transactionTarget.id}
+          userName={transactionTarget.username}
         />
       )}
     </div>
