@@ -1,9 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useLocale } from 'next-intl';
-import { useTranslations } from '@/hooks/useTranslations';
+import { useState, type PropsWithChildren } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   fetchAdminTournaments,
   createAdminTournament,
@@ -13,6 +11,7 @@ import {
 } from '@/lib/api/admin';
 import { z } from 'zod';
 import { type AdminTournament } from '@shared/types';
+import { useCrudManager } from '@/hooks/admin/useCrudManager';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faPlus,
@@ -26,31 +25,13 @@ import { TableHead, TableRow } from '../ui/Table';
 import ToastNotification from '../ui/ToastNotification';
 import TournamentRow from './TournamentRow';
 import TournamentModal from '../modals/TournamentModal';
-import AdminTableManager from './common/AdminTableManager';
 
 const statusEnum = z.enum(['scheduled', 'running', 'finished', 'cancelled']);
 type Status = z.infer<typeof statusEnum>;
 type Tournament = AdminTournament;
 
 export default function ManageTournaments() {
-  const queryClient = useQueryClient();
-  const locale = useLocale();
-  const { data: t } = useTranslations(locale);
-  const {
-    data: rows = [],
-    isLoading,
-    error,
-  } = useQuery<Tournament[]>({
-    queryKey: ['admin', 'tournaments'],
-    queryFn: fetchAdminTournaments,
-  });
   const [statusFilter, setStatusFilter] = useState<'all' | Status>('all');
-
-  // modals
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [selected, setSelected] = useState<Tournament | null>(null);
 
   // toast
   const [toast, setToast] = useState<{
@@ -63,88 +44,89 @@ export default function ManageTournaments() {
     type: 'success',
   });
 
+  const crud = useCrudManager<
+    Tournament,
+    Tournament,
+    { id: number; body: Tournament },
+    number
+  >({
+    queryKey: ['admin', 'tournaments'],
+    fetchItems: fetchAdminTournaments,
+    getItemId: (tournament) => tournament.id,
+    create: {
+      mutationFn: createAdminTournament,
+    },
+    update: {
+      mutationFn: ({ id, body }) => updateAdminTournament(id, body),
+    },
+    remove: {
+      mutationFn: deleteAdminTournament,
+    },
+    transformItems: (items) =>
+      items.filter((t) =>
+        statusFilter === 'all' ? true : t.status === statusFilter,
+      ),
+    table: {
+      header: (
+        <TableRow>
+          <TableHead className="font-semibold">Tournament Name</TableHead>
+          <TableHead className="font-semibold">Start Time</TableHead>
+          <TableHead className="font-semibold">Buy-in & Fee</TableHead>
+          <TableHead className="font-semibold">Prize Pool</TableHead>
+          <TableHead className="font-semibold">Status</TableHead>
+          <TableHead className="text-right font-semibold">Actions</TableHead>
+        </TableRow>
+      ),
+      renderRow: (tournament, { openEdit, openDelete }) => (
+        <TournamentRow
+          key={tournament.id}
+          tournament={tournament}
+          onEdit={openEdit}
+          onDelete={openDelete}
+        />
+      ),
+      searchFilter: (t, q) =>
+        !q ||
+        t.name.toLowerCase().includes(q) ||
+        t.gameType.toLowerCase().includes(q) ||
+        t.format.toLowerCase().includes(q),
+      searchPlaceholder: 'Search tournaments...',
+      emptyMessage: 'No tournaments found.',
+      caption: 'Admin view of tournaments',
+    },
+    translationKeys: {
+      searchPlaceholder: 'searchTournaments',
+      emptyMessage: 'noTournamentsFound',
+    },
+    onSuccess: {
+      create: () =>
+        setToast({ open: true, msg: 'Tournament created', type: 'success' }),
+      update: () =>
+        setToast({ open: true, msg: 'Changes saved', type: 'success' }),
+      delete: () =>
+        setToast({ open: true, msg: 'Tournament deleted', type: 'success' }),
+    },
+    onError: {
+      create: () =>
+        setToast({ open: true, msg: 'Failed to create', type: 'error' }),
+      update: () =>
+        setToast({ open: true, msg: 'Failed to save', type: 'error' }),
+      delete: () =>
+        setToast({ open: true, msg: 'Failed to delete', type: 'error' }),
+    },
+  });
+
   const { data: defaults } = useQuery({
     queryKey: ['admin', 'tournaments', 'defaults'],
     queryFn: fetchAdminTournamentDefaults,
-    enabled: createOpen,
+    enabled: crud.modals.isCreateOpen,
   });
 
-  const filteredByStatus = useMemo(() => {
-    return rows.filter((t) =>
-      statusFilter === 'all' ? true : t.status === statusFilter,
-    );
-  }, [rows, statusFilter]);
+  const TableView = crud.table.View;
+  const selected = crud.modals.selected;
 
-  // actions
-  const create = useMutation({
-    mutationFn: (body: Tournament) => createAdminTournament(body),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['admin', 'tournaments'] }),
-  });
-  const update = useMutation({
-    mutationFn: ({ id, body }: { id: number; body: Tournament }) =>
-      updateAdminTournament(id, body),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['admin', 'tournaments'] }),
-  });
-  const remove = useMutation({
-    mutationFn: (id: number) => deleteAdminTournament(id),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['admin', 'tournaments'] }),
-  });
-  const openCreate = () => {
-    setSelected(null);
-    setCreateOpen(true);
-  };
-  const openEdit = (t: Tournament) => {
-    setSelected(t);
-    setEditOpen(true);
-  };
-  const openDelete = (t: Tournament) => {
-    setSelected(t);
-    setDeleteOpen(true);
-  };
-
-  const onCreate = (data: Tournament) => {
-    create.mutate(data, {
-      onSuccess: () => {
-        setCreateOpen(false);
-        setPage(1);
-        setToast({ open: true, msg: 'Tournament created', type: 'success' });
-      },
-      onError: () =>
-        setToast({ open: true, msg: 'Failed to create', type: 'error' }),
-    });
-  };
-  const onEdit = (data: Tournament) => {
-    if (!selected) return;
-    update.mutate(
-      { id: selected.id, body: data },
-      {
-        onSuccess: () => {
-          setEditOpen(false);
-          setToast({ open: true, msg: 'Changes saved', type: 'success' });
-        },
-        onError: () =>
-          setToast({ open: true, msg: 'Failed to save', type: 'error' }),
-      },
-    );
-  };
   const confirmDelete = () => {
-    if (!selected) return;
-    remove.mutate(selected.id, {
-      onSuccess: () => {
-        setDeleteOpen(false);
-        setSelected(null);
-        setToast({
-          open: true,
-          msg: 'Tournament deleted',
-          type: 'success',
-        });
-      },
-      onError: () =>
-        setToast({ open: true, msg: 'Failed to delete', type: 'error' }),
-    });
+    crud.actions.submitDelete();
   };
 
   const FilterBtn = ({
@@ -152,7 +134,7 @@ export default function ManageTournaments() {
     onClick,
     className,
     children,
-  }: React.PropsWithChildren<{
+  }: PropsWithChildren<{
     active?: boolean;
     onClick: () => void;
     className?: string;
@@ -168,11 +150,11 @@ export default function ManageTournaments() {
       {children}
     </button>
   );
-  if (isLoading) {
+  if (crud.isLoading) {
     return <div>Loading tournaments...</div>;
   }
 
-  if (error) {
+  if (crud.error) {
     return (
       <div role="alert" className="text-red-500">
         Failed to load tournaments.
@@ -189,7 +171,10 @@ export default function ManageTournaments() {
             Create, edit, delete, and monitor tournaments
           </p>
         </div>
-        <Button onClick={openCreate} className="flex items-center gap-2">
+        <Button
+          onClick={crud.modals.openCreate}
+          className="flex items-center gap-2"
+        >
           <FontAwesomeIcon icon={faPlus} /> New Tournament
         </Button>
       </section>
@@ -234,57 +219,31 @@ export default function ManageTournaments() {
         </div>
       </section>
 
-      <AdminTableManager
-        items={filteredByStatus}
-        header={
-          <TableRow>
-            <TableHead className="font-semibold">Tournament Name</TableHead>
-            <TableHead className="font-semibold">Start Time</TableHead>
-            <TableHead className="font-semibold">Buy-in & Fee</TableHead>
-            <TableHead className="font-semibold">Prize Pool</TableHead>
-            <TableHead className="font-semibold">Status</TableHead>
-            <TableHead className="text-right font-semibold">Actions</TableHead>
-          </TableRow>
-        }
-        renderRow={(t) => (
-          <TournamentRow
-            key={t.id}
-            tournament={t}
-            onEdit={openEdit}
-            onDelete={openDelete}
-          />
-        )}
-        searchFilter={(t, q) =>
-          !q ||
-          t.name.toLowerCase().includes(q) ||
-          t.gameType.toLowerCase().includes(q) ||
-          t.format.toLowerCase().includes(q)
-        }
-        searchPlaceholder={t?.searchTournaments ?? 'Search tournaments...'}
-        emptyMessage={t?.noTournamentsFound ?? 'No tournaments found.'}
-        caption="Admin view of tournaments"
-      />
+      <TableView />
 
       {/* CREATE */}
       <TournamentModal
-        isOpen={createOpen}
-        onClose={() => setCreateOpen(false)}
+        isOpen={crud.modals.isCreateOpen}
+        onClose={crud.modals.close}
         mode="create"
         defaultValues={defaults}
-        onSubmit={onCreate}
+        onSubmit={(values) => crud.actions.submitCreate(values)}
       />
 
       {/* EDIT */}
       <TournamentModal
-        isOpen={editOpen}
-        onClose={() => setEditOpen(false)}
+        isOpen={crud.modals.isEditOpen}
+        onClose={crud.modals.close}
         mode="edit"
         defaultValues={selected ?? undefined}
-        onSubmit={onEdit}
+        onSubmit={(values) => {
+          if (!selected) return;
+          crud.actions.submitUpdate({ id: selected.id, body: values });
+        }}
       />
 
       {/* DELETE */}
-      <Modal isOpen={deleteOpen} onClose={() => setDeleteOpen(false)}>
+      <Modal isOpen={crud.modals.isDeleteOpen} onClose={crud.modals.close}>
         <div className="text-center">
           <FontAwesomeIcon
             icon={faExclamationTriangle}
@@ -298,7 +257,7 @@ export default function ManageTournaments() {
           <div className="flex justify-center gap-3">
             <Button
               variant="ghost"
-              onClick={() => setDeleteOpen(false)}
+              onClick={crud.modals.close}
               className="border border-text-secondary"
             >
               Cancel

@@ -1,9 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useLocale } from 'next-intl';
-import { useTranslations } from '@/hooks/useTranslations';
 import {
   fetchTables,
   createTable,
@@ -15,136 +11,115 @@ import type {
   CreateTableRequest,
   UpdateTableRequest,
 } from '@shared/types';
-import { CreateTableSchema } from '@shared/types';
-import { Button } from '../ui/Button';
+import { CreateTableSchema, UpdateTableSchema } from '@shared/types';
+import { useCrudManager } from '@/hooks/admin/useCrudManager';
+import Button from '../ui/Button';
 import { TableCell, TableHead, TableRow } from '../ui/Table';
 import TableModal from '../modals/TableModal';
-import AdminTableManager from './common/AdminTableManager';
 
 export default function ManageTables() {
-  const queryClient = useQueryClient();
-  const locale = useLocale();
-  const { data: t } = useTranslations(locale);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingTable, setEditingTable] = useState<Table | null>(null);
-  const [modalError, setModalError] = useState<string | null>(null);
-
-  const {
-    data: tables = [],
-    isLoading,
-    error,
-  } = useQuery<Table[]>({
+  const crud = useCrudManager<
+    Table,
+    CreateTableRequest,
+    { id: string; body: UpdateTableRequest },
+    string
+  >({
     queryKey: ['tables'],
-    queryFn: () => fetchTables(),
-  });
-
-  const create = useMutation({
-    mutationFn: (body: CreateTableRequest) => createTable(body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tables'] });
-      setIsModalOpen(false);
+    fetchItems: () => fetchTables(),
+    getItemId: (table) => table.id,
+    create: {
+      mutationFn: createTable,
+      parse: (values) => CreateTableSchema.parse(values),
     },
-    onError: () => setModalError('Failed to create table'),
-  });
-
-  const update = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: UpdateTableRequest }) =>
-      updateTable(id, body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tables'] });
-      setIsModalOpen(false);
+    update: {
+      mutationFn: ({ id, body }) => updateTable(id, body),
+      parse: ({ id, body }) => ({ id, body: UpdateTableSchema.parse(body) }),
     },
-    onError: () => setModalError('Failed to update table'),
+    remove: {
+      mutationFn: deleteTable,
+    },
+    table: {
+      header: (
+        <TableRow>
+          <TableHead>Name</TableHead>
+          <TableHead>Stakes</TableHead>
+          <TableHead>Players</TableHead>
+          <TableHead />
+        </TableRow>
+      ),
+      renderRow: (table, { openEdit, deleteItem }) => (
+        <TableRow key={table.id}>
+          <TableCell>{table.tableName}</TableCell>
+          <TableCell>{`$${table.stakes.small}/${table.stakes.big}`}</TableCell>
+          <TableCell>
+            {table.players.current}/{table.players.max}
+          </TableCell>
+          <TableCell className="space-x-2">
+            <Button variant="secondary" onClick={() => openEdit(table)}>
+              Update
+            </Button>
+            <Button variant="danger" onClick={() => deleteItem(table)}>
+              Delete
+            </Button>
+          </TableCell>
+        </TableRow>
+      ),
+      searchFilter: (table, query) =>
+        table.tableName.toLowerCase().includes(query),
+    },
+    translationKeys: {
+      emptyMessage: 'noTablesFound',
+      searchPlaceholder: 'searchTables',
+    },
+    errorMessages: {
+      create: 'Failed to create table',
+      update: 'Failed to update table',
+    },
   });
 
-  const remove = useMutation({
-    mutationFn: (id: string) => deleteTable(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tables'] }),
-  });
-
-  const openCreateModal = () => {
-    setEditingTable(null);
-    setModalError(null);
-    setIsModalOpen(true);
-  };
-
-  const openEditModal = (t: Table) => {
-    setEditingTable(t);
-    setModalError(null);
-    setIsModalOpen(true);
-  };
-
-  const submitTable = (values: CreateTableRequest) => {
-    const parsed = CreateTableSchema.parse(values);
-    if (editingTable) {
-      update.mutate({ id: editingTable.id, body: parsed });
-    } else {
-      create.mutate(parsed);
-    }
-  };
-
-  if (isLoading) {
+  if (crud.isLoading) {
     return <div>Loading tables...</div>;
   }
 
-  if (error) {
+  if (crud.error) {
     return <div>Error loading tables</div>;
   }
 
+  const TableView = crud.table.View;
+  const selected = crud.modals.selected;
+  const isEditMode = crud.modals.mode === 'edit';
+
   return (
     <div className="space-y-4">
-      <Button onClick={openCreateModal}>Create Table</Button>
+      <Button onClick={crud.modals.openCreate}>Create Table</Button>
 
-      <AdminTableManager
-        items={tables}
-        header={
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Stakes</TableHead>
-            <TableHead>Players</TableHead>
-            <TableHead />
-          </TableRow>
-        }
-        renderRow={(t) => (
-          <TableRow key={t.id}>
-            <TableCell>{t.tableName}</TableCell>
-            <TableCell>{`$${t.stakes.small}/${t.stakes.big}`}</TableCell>
-            <TableCell>
-              {t.players.current}/{t.players.max}
-            </TableCell>
-            <TableCell className="space-x-2">
-              <Button variant="secondary" onClick={() => openEditModal(t)}>
-                Update
-              </Button>
-              <Button variant="danger" onClick={() => remove.mutate(t.id)}>
-                Delete
-              </Button>
-            </TableCell>
-          </TableRow>
-        )}
-        searchFilter={(t, q) => t.tableName.toLowerCase().includes(q)}
-        emptyMessage={t?.noTablesFound ?? 'No tables found'}
-      />
+      <TableView />
 
       <TableModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={submitTable}
-        title={editingTable ? 'Edit Table' : 'Create Table'}
-        submitLabel={editingTable ? 'Update Table' : 'Create Table'}
+        isOpen={crud.modals.isCreateOpen || crud.modals.isEditOpen}
+        onClose={crud.modals.close}
+        onSubmit={(values) => {
+          if (isEditMode && selected) {
+            crud.actions.submitUpdate({ id: selected.id, body: values });
+          } else {
+            crud.actions.submitCreate(values);
+          }
+        }}
+        title={isEditMode ? 'Edit Table' : 'Create Table'}
+        submitLabel={isEditMode ? 'Update Table' : 'Create Table'}
         defaultValues={
-          editingTable
+          isEditMode && selected
             ? {
-                tableName: editingTable.tableName,
-                gameType: editingTable.gameType,
-                stakes: editingTable.stakes,
-                startingStack: editingTable.startingStack,
-                players: { max: editingTable.players.max },
-                buyIn: editingTable.buyIn,
+                tableName: selected.tableName,
+                gameType: selected.gameType,
+                stakes: selected.stakes,
+                startingStack: selected.startingStack,
+                players: { max: selected.players.max },
+                buyIn: selected.buyIn,
               }
             : undefined
         }
-        error={modalError}
+        error={crud.formError}
       />
     </div>
   );

@@ -10,6 +10,14 @@ import {
 } from '@/lib/api/admin';
 import { makeTournaments, defaultTournament } from './testUtils';
 
+jest.mock('next-intl', () => ({
+  useLocale: () => 'en',
+}));
+
+jest.mock('@/hooks/useTranslations', () => ({
+  useTranslations: () => ({ data: {} }),
+}));
+
 jest.mock('@/lib/api/admin', () => ({
   fetchAdminTournaments: jest.fn(),
   createAdminTournament: jest.fn(),

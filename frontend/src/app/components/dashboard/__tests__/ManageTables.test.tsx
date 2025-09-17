@@ -19,14 +19,24 @@ jest.mock('next-intl', () => ({
   useLocale: () => 'en',
 }));
 
+jest.mock('@/hooks/useTranslations', () => ({
+  useTranslations: () => ({ data: {} }),
+}));
+
 jest.mock('@/hooks/useGameTypes', () => ({
   useGameTypes: jest.fn(),
 }));
 
 describe('ManageTables', () => {
-  const mockFetchTables = fetchTables as jest.MockedFunction<typeof fetchTables>;
-  const mockCreateTable = createTable as jest.MockedFunction<typeof createTable>;
-  const mockUpdateTable = updateTable as jest.MockedFunction<typeof updateTable>;
+  const mockFetchTables = fetchTables as jest.MockedFunction<
+    typeof fetchTables
+  >;
+  const mockCreateTable = createTable as jest.MockedFunction<
+    typeof createTable
+  >;
+  const mockUpdateTable = updateTable as jest.MockedFunction<
+    typeof updateTable
+  >;
   const mockUseGameTypes = useGameTypes as jest.MockedFunction<
     typeof useGameTypes
   >;
