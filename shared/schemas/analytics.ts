@@ -65,7 +65,7 @@ export const AlertItemSchema = z.object({
   title: z.string(),
   body: z.string(),
   time: z.string(),
-  resolved: z.boolean().optional(),
+  resolved: z.boolean().default(false),
 });
 export type AlertItem = z.infer<typeof AlertItemSchema>;
 

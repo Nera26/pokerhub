@@ -1922,6 +1922,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SecurityAlertsResponse'
+  /admin/security-alerts/{id}/ack:
+    post:
+      summary: Acknowledge a security alert
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Acknowledged security alert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertItem'
+        '404':
+          description: Security alert not found
   /admin/events:
     get:
       summary: Get admin events
@@ -3290,6 +3310,7 @@ components:
         - title
         - body
         - time
+        - resolved
     SecurityAlertsResponse:
       type: array
       items:

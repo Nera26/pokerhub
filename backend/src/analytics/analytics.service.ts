@@ -1,4 +1,10 @@
-import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+  forwardRef,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, ClickHouseClient } from '@clickhouse/client';
 import { randomUUID } from 'crypto';
@@ -13,7 +19,7 @@ import {
   detectSharedIP,
   detectSynchronizedBetting,
 } from '@shared/analytics/collusion';
-import { AlertItem } from '@shared/schemas/analytics';
+import { AlertItem, AlertItemSchema } from '@shared/schemas/analytics';
 import { AdminEvent } from '../schemas/admin';
 import type {
   Session as CollusionSession,
@@ -358,7 +364,36 @@ export class AnalyticsService {
 
   async getSecurityAlerts(): Promise<AlertItem[]> {
     const entries = await this.redis.lrange('security-alerts', 0, -1);
-    return entries.map((e) => JSON.parse(e) as AlertItem);
+    return entries.map((entry) =>
+      AlertItemSchema.parse(JSON.parse(entry) as unknown),
+    );
+  }
+
+  async acknowledgeSecurityAlert(id: string): Promise<AlertItem> {
+    const key = 'security-alerts';
+
+    for (;;) {
+      await this.redis.watch(key);
+      const entries = await this.redis.lrange(key, 0, -1);
+      const parsed = entries.map((entry) =>
+        AlertItemSchema.parse(JSON.parse(entry) as unknown),
+      );
+      const index = parsed.findIndex((alert) => alert.id === id);
+      if (index === -1) {
+        await this.redis.unwatch();
+        throw new NotFoundException('Security alert not found');
+      }
+
+      const updated: AlertItem = { ...parsed[index], resolved: true };
+      const multi = this.redis.multi();
+      multi.lset(key, index, JSON.stringify(updated));
+      const result = await multi.exec();
+      if (result) {
+        return updated;
+      }
+
+      await this.redis.unwatch();
+    }
   }
 
   async getAdminEvents(): Promise<AdminEvent[]> {

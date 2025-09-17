@@ -116,6 +116,15 @@ export class AdminController {
     return z.array(AlertItemSchema).parse(alerts);
   }
 
+  @Post('security-alerts/:id/ack')
+  @ApiOperation({ summary: 'Acknowledge security alert' })
+  @ApiResponse({ status: 200, description: 'Security alert acknowledged' })
+  @HttpCode(200)
+  async acknowledgeSecurityAlert(@Param('id') id: string): Promise<AlertItem> {
+    const updated = await this.analytics.acknowledgeSecurityAlert(id);
+    return AlertItemSchema.parse(updated);
+  }
+
   @Get('events')
   @ApiOperation({ summary: 'Get admin events' })
   @ApiResponse({ status: 200, description: 'Admin events' })

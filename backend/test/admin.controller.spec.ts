@@ -24,6 +24,7 @@ describe('AdminController', () => {
     getAdminEvents: jest.fn(),
     getAuditLogTypes: jest.fn(),
     markAuditLogReviewed: jest.fn(),
+    acknowledgeSecurityAlert: jest.fn(),
   } as Partial<AnalyticsService>;
   const revenue = {
     getBreakdown: jest.fn(),
@@ -199,6 +200,23 @@ describe('AdminController', () => {
       .get('/admin/security-alerts')
       .expect(200)
       .expect([]);
+  });
+
+  it('acknowledges a security alert', async () => {
+    const alert = {
+      id: 'alert-1',
+      severity: 'danger',
+      title: 'Alert',
+      body: 'Body',
+      time: 'now',
+      resolved: true,
+    };
+    (analytics.acknowledgeSecurityAlert as jest.Mock).mockResolvedValue(alert);
+    await request(app.getHttpServer())
+      .post('/admin/security-alerts/alert-1/ack')
+      .expect(200)
+      .expect(alert);
+    expect(analytics.acknowledgeSecurityAlert).toHaveBeenCalledWith('alert-1');
   });
 
   it('returns admin events', async () => {

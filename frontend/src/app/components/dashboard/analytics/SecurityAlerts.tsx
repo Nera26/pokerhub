@@ -6,6 +6,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuditAlerts } from '@/hooks/admin';
 import ToastNotification from '../../ui/ToastNotification';
 import useToasts from '@/hooks/useToasts';
+import { acknowledgeSecurityAlert } from '@/lib/api/analytics';
+import type { AlertItem } from '@shared/types';
 
 export default function SecurityAlerts() {
   const queryClient = useQueryClient();
@@ -27,11 +29,52 @@ export default function SecurityAlerts() {
       });
   }, [alerts, pushToast]);
 
-  const acknowledge = useMutation({
-    mutationFn: (id: string) =>
-      fetch(`/api/admin/security-alerts/${id}/ack`, { method: 'POST' }),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['admin-security-alerts'] }),
+  const acknowledge = useMutation<
+    AlertItem,
+    Error,
+    string,
+    { previousAlerts?: AlertItem[] | undefined }
+  >({
+    mutationFn: (id: string) => acknowledgeSecurityAlert(id),
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ['admin-security-alerts'] });
+      const previousAlerts = queryClient.getQueryData<AlertItem[]>([
+        'admin-security-alerts',
+      ]);
+      queryClient.setQueryData<AlertItem[]>(
+        ['admin-security-alerts'],
+        (alerts) => {
+          if (!alerts) {
+            return alerts;
+          }
+          return alerts.map((alert) =>
+            alert.id === id ? { ...alert, resolved: true } : alert,
+          );
+        },
+      );
+      return { previousAlerts };
+    },
+    onError: (_error, _id, context) => {
+      if (context?.previousAlerts) {
+        queryClient.setQueryData(
+          ['admin-security-alerts'],
+          context.previousAlerts,
+        );
+      }
+    },
+    onSuccess: (updated) => {
+      queryClient.setQueryData<AlertItem[]>(
+        ['admin-security-alerts'],
+        (alerts) => {
+          if (!alerts) {
+            return [updated];
+          }
+          return alerts.map((alert) =>
+            alert.id === updated.id ? { ...alert, ...updated } : alert,
+          );
+        },
+      );
+    },
   });
 
   if (isLoading)

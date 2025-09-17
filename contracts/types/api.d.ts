@@ -2005,6 +2005,28 @@ export interface paths {
       };
     };
   };
+  "/admin/security-alerts/{id}/ack": {
+    /** Acknowledge a security alert */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Acknowledged security alert */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AlertItem"];
+          };
+        };
+        /** @description Security alert not found */
+        404: {
+          content: never;
+        };
+      };
+    };
+  };
   "/admin/events": {
     /** Get admin events */
     get: {
@@ -3086,7 +3108,7 @@ export interface components {
       title: string;
       body: string;
       time: string;
-      resolved?: boolean;
+      resolved: boolean;
     };
     SecurityAlertsResponse: components["schemas"]["AlertItem"][];
     WithdrawalDecisionRequest: {
