@@ -176,6 +176,70 @@ export interface paths {
       };
     };
   };
+  "/anti-cheat/flags": {
+    /** List anti-cheat review flags */
+    get: {
+      responses: {
+        /** @description Active anti-cheat flags */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AntiCheatFlagsResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/anti-cheat/flags/{id}": {
+    /** Escalate anti-cheat action for a session */
+    put: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["AntiCheatUpdateRequest"];
+        };
+      };
+      responses: {
+        /** @description Updated flag with history */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AntiCheatFlag"];
+          };
+        };
+        /** @description Invalid escalation */
+        400: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+        /** @description Flag not found */
+        404: {
+          content: never;
+        };
+      };
+    };
+  };
+  "/anti-cheat/next-action": {
+    /** Determine the next anti-cheat action */
+    get: {
+      parameters: {
+        query: {
+          current: components["schemas"]["AntiCheatReviewStatus"];
+        };
+      };
+      responses: {
+        /** @description Next escalation step when available */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AntiCheatNextActionResponse"];
+          };
+        };
+      };
+    };
+  };
   "/nav-items": {
     /** List navigation items */
     get: {
@@ -2791,6 +2855,29 @@ export interface components {
     };
     MessageResponse: {
       message: string;
+    };
+    /** @enum {string} */
+    AntiCheatReviewStatus: "flagged" | "warn" | "restrict" | "ban";
+    /** @enum {string} */
+    AntiCheatReviewAction: "warn" | "restrict" | "ban";
+    AntiCheatHistoryEntry: {
+      action: components["schemas"]["AntiCheatReviewAction"];
+      /** Format: int64 */
+      timestamp: number;
+      reviewerId: string;
+    };
+    AntiCheatFlag: {
+      id: string;
+      users: string[];
+      status: components["schemas"]["AntiCheatReviewStatus"];
+      history: components["schemas"]["AntiCheatHistoryEntry"][];
+    };
+    AntiCheatFlagsResponse: components["schemas"]["AntiCheatFlag"][];
+    AntiCheatUpdateRequest: {
+      action: components["schemas"]["AntiCheatReviewAction"];
+    };
+    AntiCheatNextActionResponse: {
+      next?: components["schemas"]["AntiCheatReviewAction"] | null;
     };
     AuthProvider: {
       name: string;
