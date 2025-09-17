@@ -13,14 +13,27 @@ jest.mock('@/lib/api/wallet', () => ({
 jest.mock('@/lib/api/admin', () => ({
   createAdminUser: jest.fn(),
 }));
-jest.mock('../modals/UserModal', () => ({
+const mockTransactionHistoryModal = jest.fn(
+  ({ isOpen, onClose, userName }: any) =>
+    isOpen ? (
+      <div>
+        <span>Transactions for {userName}</span>
+        <button onClick={onClose}>Close Transactions</button>
+      </div>
+    ) : null,
+);
+jest.mock('@/app/components/modals/UserModal', () => ({
   __esModule: true,
   default: ({ isOpen, onSubmit }: any) =>
     isOpen ? (
-      <button onClick={() => onSubmit({ username: 'bob', avatar: null })}>
+      <button onClick={() => onSubmit({ username: 'bob', avatar: undefined })}>
         Submit User
       </button>
     ) : null,
+}));
+jest.mock('@/app/components/modals/TransactionHistoryModal', () => ({
+  __esModule: true,
+  default: (props: any) => mockTransactionHistoryModal(props),
 }));
 
 const mockUseDashboardUsers = useDashboardUsers as jest.MockedFunction<
@@ -46,6 +59,7 @@ function renderWithClient() {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockTransactionHistoryModal.mockClear();
   mockUseDashboardUsers.mockReturnValue({
     data: [
       {
@@ -142,7 +156,39 @@ it('creates a user via mutation', async () => {
   await waitFor(() =>
     expect(mockCreate).toHaveBeenCalledWith({
       username: 'bob',
-      avatarKey: null,
     }),
+  );
+});
+
+it('opens transaction history modal and clears selection on close', async () => {
+  renderWithClient();
+
+  await waitFor(() => expect(screen.getByText('alice')).toBeInTheDocument());
+
+  expect(screen.queryByText('Transactions for alice')).not.toBeInTheDocument();
+
+  await userEvent.click(
+    screen.getByRole('button', { name: /view transactions/i }),
+  );
+
+  await waitFor(() =>
+    expect(screen.getByText('Transactions for alice')).toBeInTheDocument(),
+  );
+  expect(mockTransactionHistoryModal).toHaveBeenCalledWith(
+    expect.objectContaining({
+      isOpen: true,
+      userId: 'u1',
+      userName: 'alice',
+    }),
+  );
+
+  await userEvent.click(
+    screen.getByRole('button', { name: /close transactions/i }),
+  );
+
+  await waitFor(() =>
+    expect(
+      screen.queryByText('Transactions for alice'),
+    ).not.toBeInTheDocument(),
   );
 });
