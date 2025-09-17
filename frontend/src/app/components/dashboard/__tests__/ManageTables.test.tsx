@@ -4,12 +4,17 @@ import ManageTables from '../ManageTables';
 import { fetchTables, createTable, updateTable } from '@/lib/api/table';
 import { renderWithClient } from './renderWithClient';
 import { fillTableForm } from './fillTableForm';
+import { useGameTypes } from '@/hooks/useGameTypes';
 
 jest.mock('@/lib/api/table', () => ({
   fetchTables: jest.fn(),
   createTable: jest.fn(),
   updateTable: jest.fn(),
   deleteTable: jest.fn(),
+}));
+
+jest.mock('@/hooks/useGameTypes', () => ({
+  useGameTypes: jest.fn(),
 }));
 
 describe('ManageTables', () => {
@@ -22,6 +27,22 @@ describe('ManageTables', () => {
   const mockUpdateTable = updateTable as jest.MockedFunction<
     typeof updateTable
   >;
+  const mockUseGameTypes = useGameTypes as jest.MockedFunction<
+    typeof useGameTypes
+  >;
+
+  const createGameTypesResult = (
+    overrides: Record<string, unknown> = {},
+  ): ReturnType<typeof useGameTypes> =>
+    ({
+      data: [
+        { id: 'texas', label: "Texas Hold'em" },
+        { id: 'omaha', label: 'Omaha' },
+      ],
+      isLoading: false,
+      error: null,
+      ...overrides,
+    }) as unknown as ReturnType<typeof useGameTypes>;
 
   async function openEditTable() {
     mockFetchTables.mockResolvedValueOnce([
@@ -43,6 +64,7 @@ describe('ManageTables', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUseGameTypes.mockReturnValue(createGameTypesResult());
   });
 
   it('submits form to create table', async () => {

@@ -55,7 +55,8 @@ const gameHistoryEntries: GameHistoryEntry[] = [
     buyin: '$100',
     date: '2023-01-01',
     profit: true,
-    amount: '+$50',
+    amount: 50,
+    currency: 'USD',
   },
 ];
 
@@ -73,7 +74,8 @@ const transactionEntries: TransactionEntry[] = [
   {
     date: 'May 1',
     type: 'Deposit',
-    amount: '+$100',
+    amount: 100,
+    currency: 'USD',
     status: 'Completed',
   },
 ];

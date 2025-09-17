@@ -25,8 +25,23 @@ interface Props {
   onViewBracket?(title: string): void;
 }
 
+function formatAmount(amount: number, currency: string): string {
+  const formatter = new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const formatted = formatter.format(amount);
+  if (amount > 0) return `+${formatted}`;
+  if (amount < 0) return formatted;
+  return formatter.format(0);
+}
+
 function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
   const isTransactionHistory = type === 'transaction-history';
+
+  // GAME
   const {
     data: gameData,
     isLoading: gameLoading,
@@ -37,6 +52,7 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
     enabled: type === 'game-history',
   });
 
+  // TOURNAMENTS
   const {
     data: tournamentData,
     isLoading: tournamentLoading,
@@ -47,6 +63,7 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
     enabled: type === 'tournament-history',
   });
 
+  // TRANSACTIONS
   const {
     data: transactionData,
     isLoading: transactionLoading,
@@ -83,8 +100,7 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
     }
     const entries = (gameData ?? []).filter((e) => {
       if (!filters) return true;
-      if (filters.gameType !== 'any' && e.type !== filters.gameType)
-        return false;
+      if (filters.gameType !== 'any' && e.type !== filters.gameType) return false;
       if (filters.profitLoss === 'win' && !e.profit) return false;
       if (filters.profitLoss === 'loss' && e.profit) return false;
       if (filters.date && e.date !== filters.date) return false;
@@ -114,12 +130,8 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
               <p className="text-text-secondary text-xs mt-1">{e.date}</p>
             </div>
             <div className="text-right">
-              <p
-                className={`font-semibold ${
-                  e.profit ? 'text-accent-green' : 'text-danger-red'
-                }`}
-              >
-                {e.amount}
+              <p className={`font-semibold ${e.profit ? 'text-accent-green' : 'text-danger-red'}`}>
+                {formatAmount(e.amount, e.currency)}
               </p>
               <button
                 onClick={() => onWatchReplay?.(e.id)}
@@ -170,14 +182,7 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
           <table className="min-w-[640px] w-full text-left table-auto">
             <thead>
               <tr>
-                {[
-                  'Name',
-                  'Place',
-                  'Buy-in',
-                  'Prize',
-                  'Duration',
-                  'Details',
-                ].map((h) => (
+                {['Name', 'Place', 'Buy-in', 'Prize', 'Duration', 'Details'].map((h) => (
                   <th key={h} className="pb-2 pr-6 whitespace-nowrap">
                     {h}
                   </th>
@@ -191,9 +196,7 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
                   <td className="py-2 pr-6 whitespace-nowrap">{row.place}</td>
                   <td className="py-2 pr-6 whitespace-nowrap">{row.buyin}</td>
                   <td className="py-2 pr-6 whitespace-nowrap">{row.prize}</td>
-                  <td className="py-2 pr-6 whitespace-nowrap">
-                    {row.duration}
-                  </td>
+                  <td className="py-2 pr-6 whitespace-nowrap">{row.duration}</td>
                   <td className="py-2 pr-6 whitespace-nowrap">
                     <button
                       onClick={() => onViewBracket?.(row.name)}
@@ -234,14 +237,14 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
         </div>
       );
     }
+
     const defaultColumns = [
       { id: 'date', label: 'Date' },
       { id: 'type', label: 'Type' },
       { id: 'amount', label: 'Amount' },
       { id: 'status', label: 'Status' },
     ];
-
-    const columns = columnMeta.length > 0 ? columnMeta : defaultColumns;
+    const columns = Array.isArray(columnMeta) && columnMeta.length > 0 ? columnMeta : defaultColumns;
 
     return (
       <div className="bg-card-bg rounded-2xl p-8">
@@ -260,47 +263,57 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
             <tbody>
               {transactionData.map((row, index) => (
                 <tr
-                  key={`${row.date}-${row.type}-${index}`}
+                  key={`${(row as any).id ?? row.date ?? index}-${index}`}
                   className="border-b border-border-dark"
                 >
                   {columns.map((column) => {
+                    // STATUS column: use status mapping for label/style if available
                     if (column.id === 'status') {
-                      const { label, style } = getStatusInfo(row.status);
+                      const info = getStatusInfo(row.status as any);
+                      const label = info?.label ?? String(row.status ?? '');
+                      const style = info?.style ?? '';
                       return (
-                        <td
-                          key={`${column.id}-${index}`}
-                          className="py-2 pr-6 whitespace-nowrap"
-                        >
-                          <span
-                            className={`${style} px-2 py-1 rounded-md font-medium`}
-                          >
-                            {label}
-                          </span>
+                        <td key={`${column.id}-${index}`} className="py-2 pr-6 whitespace-nowrap">
+                          <span className={`${style} px-2 py-1 rounded-md font-medium`}>{label}</span>
                         </td>
                       );
                     }
+
+                    // AMOUNT column: support both numeric and preformatted strings
                     if (column.id === 'amount') {
-                      const isPositive = row.amount.trim().startsWith('+');
+                      const raw: any = (row as any).amount;
+                      let text = '';
+                      let positive = false;
+                      let negative = false;
+
+                      if (typeof raw === 'number') {
+                        text = formatAmount(raw, (row as any).currency ?? 'USD');
+                        positive = raw > 0;
+                        negative = raw < 0;
+                      } else if (typeof raw === 'string') {
+                        text = raw;
+                        const trimmed = raw.trim();
+                        positive = trimmed.startsWith('+');
+                        negative = trimmed.startsWith('-');
+                      }
+
                       return (
                         <td
                           key={`${column.id}-${index}`}
                           className={`py-2 pr-6 whitespace-nowrap ${
-                            isPositive ? 'text-accent-green' : 'text-danger-red'
+                            positive ? 'text-accent-green' : negative ? 'text-danger-red' : ''
                           }`}
                         >
-                          {row.amount}
+                          {text}
                         </td>
                       );
                     }
-                    const value =
-                      (row as Record<string, string | undefined>)[column.id] ??
-                      '';
+
+                    // Default: print by dynamic key
+                    const value = (row as Record<string, unknown>)[column.id];
                     return (
-                      <td
-                        key={`${column.id}-${index}`}
-                        className="py-2 pr-6 whitespace-nowrap"
-                      >
-                        {value}
+                      <td key={`${column.id}-${index}`} className="py-2 pr-6 whitespace-nowrap">
+                        {value as any}
                       </td>
                     );
                   })}

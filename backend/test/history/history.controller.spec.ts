@@ -113,8 +113,9 @@ describe('HistoryController', () => {
       stakes: '$1/$2',
       buyin: '$100',
       profit: true,
-      amount: '$50',
+      currency: 'USD',
     });
+    expect(res.body[0].amount).toBe(50);
   });
 
   it('returns tournament history', async () => {
@@ -140,9 +141,10 @@ describe('HistoryController', () => {
     expect(res.body).toHaveLength(1);
     expect(res.body[0]).toMatchObject({
       type: 'deposit',
-      amount: '$100',
       status: 'completed',
+      currency: 'USD',
     });
+    expect(res.body[0].amount).toBe(100);
   });
 });
 
