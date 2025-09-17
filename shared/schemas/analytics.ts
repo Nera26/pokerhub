@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CurrencySchema } from '../wallet.schema';
 
 export const WebVitalMetricSchema = z.object({
   name: z.enum(['CLS', 'FCP', 'FID', 'INP', 'LCP', 'TTFB']),
@@ -92,7 +93,10 @@ export const RevenueStreamSchema = z.object({
 });
 export type RevenueStream = z.infer<typeof RevenueStreamSchema>;
 
-export const RevenueBreakdownSchema = z.array(RevenueStreamSchema);
+export const RevenueBreakdownSchema = z.object({
+  currency: CurrencySchema.transform((value) => value.toUpperCase()),
+  streams: z.array(RevenueStreamSchema),
+});
 export type RevenueBreakdown = z.infer<typeof RevenueBreakdownSchema>;
 
 export const ActivityResponseSchema = z.object({

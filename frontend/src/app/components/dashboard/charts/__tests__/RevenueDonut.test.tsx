@@ -44,4 +44,28 @@ describe('RevenueDonut', () => {
       '#333',
     ]);
   });
+
+  it('formats tooltip values with the provided currency', () => {
+    useChartPaletteMock.mockReturnValue({
+      data: ['#111'],
+      isError: false,
+    });
+
+    renderChart(<RevenueDonut streams={streams} currency="eur" />);
+
+    const config = useChartMock.mock.calls[0][0] as {
+      options: {
+        plugins: {
+          tooltip: { callbacks: { label: (ctx: any) => string } };
+        };
+      };
+    };
+
+    const label = config.options.plugins.tooltip.callbacks.label({
+      dataIndex: 0,
+      label: streams[0].label,
+    });
+
+    expect(label).toBe('Cash: 50% (€5,000.00)');
+  });
 });

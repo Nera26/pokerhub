@@ -43,8 +43,18 @@ jest.mock('../../charts/ActivityChart', () => () => <div>ActivityChart</div>);
 // Single, consistent mock for RevenueDonut
 jest.mock('../../charts/RevenueDonut', () => ({
   __esModule: true,
-  default: ({ streams }: { streams: { label: string }[] }) => (
-    <div>{`RevenueDonut: ${streams.map((s) => s.label).join(', ')}`}</div>
+  default: ({
+    streams,
+    currency,
+  }: {
+    streams: { label: string }[];
+    currency?: string;
+  }) => (
+    <div>
+      {`RevenueDonut: ${streams.map((s) => s.label).join(', ')}${
+        currency ? ` (${currency})` : ''
+      }`}
+    </div>
   ),
 }));
 
@@ -105,10 +115,13 @@ describe('Analytics', () => {
 
     // Default: some revenue streams present
     useRevenueBreakdownMock.mockReturnValue({
-      data: [
-        { label: 'Cash Games', pct: 55 },
-        { label: 'Tournaments', pct: 30 },
-      ],
+      data: {
+        currency: 'USD',
+        streams: [
+          { label: 'Cash Games', pct: 55 },
+          { label: 'Tournaments', pct: 30 },
+        ],
+      },
       isLoading: false,
       isError: false,
       error: null,
@@ -207,10 +220,13 @@ describe('Analytics', () => {
 
   it('renders revenue data when available', async () => {
     useRevenueBreakdownMock.mockReturnValue({
-      data: [
-        { label: 'VIP Tables', pct: 60, value: 120000 },
-        { label: 'Cash Games', pct: 40, value: 80000 },
-      ],
+      data: {
+        currency: 'EUR',
+        streams: [
+          { label: 'VIP Tables', pct: 60, value: 120000 },
+          { label: 'Cash Games', pct: 40, value: 80000 },
+        ],
+      },
       isLoading: false,
       isError: false,
       error: null,
@@ -218,16 +234,19 @@ describe('Analytics', () => {
 
     renderWithClient(<Analytics />);
 
-    expect(await screen.findByText(/revenue breakdown/i)).toBeInTheDocument();
-    expect(screen.getByText(/\$120,000/)).toBeInTheDocument();
+    expect(
+      (await screen.findAllByText(/revenue breakdown/i)).length,
+    ).toBeGreaterThan(0);
+    expect(screen.getByText(/€120,000\.00/)).toBeInTheDocument();
   });
 
   // From "codex" branch: ensure the donut renders with labels when data exists
   it('renders revenue donut when revenue data is available', async () => {
     renderWithClient(<Analytics />);
 
-    expect(
-      await screen.findByText(/RevenueDonut: Cash Games, Tournaments/i),
-    ).toBeInTheDocument();
+    const donutLabels = await screen.findAllByText(
+      /RevenueDonut: Cash Games, Tournaments \(USD\)/i,
+    );
+    expect(donutLabels.length).toBeGreaterThan(0);
   });
 });

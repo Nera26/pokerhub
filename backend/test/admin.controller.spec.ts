@@ -256,13 +256,17 @@ describe('AdminController', () => {
   });
 
   it('returns revenue breakdown', async () => {
-    (revenue.getBreakdown as jest.Mock).mockResolvedValue([
-      { label: 'Cash', pct: 100, value: 200 },
-    ]);
+    (revenue.getBreakdown as jest.Mock).mockResolvedValue({
+      currency: 'GBP',
+      streams: [{ label: 'Cash', pct: 100, value: 200 }],
+    });
     await request(app.getHttpServer())
       .get('/admin/revenue-breakdown?range=all')
       .expect(200)
-      .expect([{ label: 'Cash', pct: 100, value: 200 }]);
+      .expect({
+        currency: 'GBP',
+        streams: [{ label: 'Cash', pct: 100, value: 200 }],
+      });
   });
 
   it('returns wallet reconcile mismatches with computed delta', async () => {

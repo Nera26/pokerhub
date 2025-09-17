@@ -103,12 +103,12 @@ export default function Analytics() {
     queryFn: fetchErrorCategories,
   });
   const {
-    data: revenueStreams,
+    data: revenueData,
     isLoading: revenueLoading,
     isError: revenueError,
     error: revenueErrorDetails,
   } = useRevenueBreakdown('all');
-  const revenueBreakdown = revenueStreams;
+  const revenueStreams = revenueData?.streams;
   const { toasts, pushToast } = useToasts();
   const reviewMutation = useMutation({
     mutationFn: (id: AuditLogEntry['id']) => markAuditLogReviewed(id),
@@ -291,14 +291,17 @@ export default function Analytics() {
           ) : !revenueStreams || revenueStreams.length === 0 ? (
             <CenteredMessage>No data</CenteredMessage>
           ) : (
-            <RevenueDonut streams={revenueStreams} />
+            <RevenueDonut
+              streams={revenueStreams}
+              currency={revenueData?.currency}
+            />
           )}
         </div>
       </section>
 
       <section className="grid grid-cols-1 gap-6">
         <RevenueBreakdownCard
-          streams={revenueBreakdown}
+          data={revenueData}
           loading={revenueLoading}
           error={
             revenueError

@@ -5,8 +5,8 @@ import RevenueDonut from '../charts/RevenueDonut';
 import type { RevenueBreakdown } from '@shared/types';
 
 interface RevenueBreakdownCardProps {
-  /** Revenue streams returned from the analytics API */
-  streams?: RevenueBreakdown;
+  /** Revenue data returned from the analytics API */
+  data?: RevenueBreakdown;
   /** Whether the data is currently loading */
   loading?: boolean;
   /** Optional error message to display */
@@ -14,21 +14,30 @@ interface RevenueBreakdownCardProps {
 }
 
 export default function RevenueBreakdownCard({
-  streams,
+  data,
   loading = false,
   error,
 }: RevenueBreakdownCardProps) {
-  const formatCurrency = useMemo(
-    () =>
-      new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        maximumFractionDigits: 0,
-      }),
-    [],
-  );
+  const currency = data?.currency;
+  const resolvedCurrency = useMemo(() => currency ?? 'USD', [currency]);
 
-  const hasData = Array.isArray(streams) && streams.length > 0;
+  const formatCurrency = useMemo(() => {
+    const fallback = new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: 'USD',
+    });
+    try {
+      return new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: resolvedCurrency.toUpperCase(),
+      });
+    } catch {
+      return fallback;
+    }
+  }, [resolvedCurrency]);
+
+  const streams = data?.streams ?? [];
+  const hasData = streams.length > 0;
 
   let content: ReactNode;
   if (loading) {
@@ -52,7 +61,7 @@ export default function RevenueBreakdownCard({
   } else {
     content = (
       <>
-        <RevenueDonut streams={streams} />
+        <RevenueDonut streams={streams} currency={resolvedCurrency} />
         <ul className="space-y-2 text-sm text-text-secondary">
           {streams.map((stream) => (
             <li

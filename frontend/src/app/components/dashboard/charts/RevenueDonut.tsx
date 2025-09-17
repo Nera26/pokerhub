@@ -14,10 +14,36 @@ export interface RevenueStream {
 interface RevenueDonutProps {
   /** Revenue streams with label, percentage and optional raw value */
   streams: RevenueStream[];
+  /** Currency code used for formatting values */
+  currency?: string;
 }
 
-export default function RevenueDonut({ streams }: RevenueDonutProps) {
+function createCurrencyFormatter(currency?: string) {
+  const fallback = new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'USD',
+  });
+
+  if (!currency) {
+    return fallback;
+  }
+
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: currency.toUpperCase(),
+    });
+  } catch {
+    return fallback;
+  }
+}
+
+export default function RevenueDonut({ streams, currency }: RevenueDonutProps) {
   const { data: palette, isError, isLoading } = useChartPalette();
+  const currencyFormatter = useMemo(
+    () => createCurrencyFormatter(currency),
+    [currency],
+  );
 
   const config: ChartConfiguration<'doughnut'> = useMemo(() => {
     const colorSource = palette ?? [];
@@ -56,7 +82,9 @@ export default function RevenueDonut({ streams }: RevenueDonutProps) {
                 const pct = stream?.pct ?? 0;
                 const val = stream?.value;
                 const valueText =
-                  typeof val === 'number' ? ` ($${val.toLocaleString()})` : '';
+                  typeof val === 'number'
+                    ? ` (${currencyFormatter.format(val)})`
+                    : '';
                 return `${stream?.label ?? ctx.label}: ${pct}%${valueText}`;
               },
             },
@@ -64,7 +92,7 @@ export default function RevenueDonut({ streams }: RevenueDonutProps) {
         },
       },
     };
-  }, [streams, palette]);
+  }, [streams, palette, currencyFormatter]);
 
   const { ref, ready } = useChart(config, [config]);
 

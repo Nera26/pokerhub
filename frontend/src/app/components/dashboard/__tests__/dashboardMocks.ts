@@ -13,7 +13,9 @@ export function setupDashboardMocks() {
       }),
     ),
     // Revenue breakdown
-    http.get('/api/admin/revenue-breakdown', () => HttpResponse.json([])),
+    http.get('/api/admin/revenue-breakdown', () =>
+      HttpResponse.json({ currency: 'USD', streams: [] }),
+    ),
     // Recent dashboard users
     http.get('/api/admin/users', () => HttpResponse.json([])),
     // Active tables

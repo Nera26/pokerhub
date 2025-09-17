@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Transaction } from './transaction.entity';
@@ -8,10 +9,16 @@ export type TimeRange = 'today' | 'week' | 'month' | 'all';
 
 @Injectable()
 export class RevenueService {
+  private readonly currency: string;
+
   constructor(
     @InjectRepository(Transaction)
     private readonly txRepo: Repository<Transaction>,
-  ) {}
+    private readonly config: ConfigService,
+  ) {
+    const configured = this.config.get<string>('DEFAULT_CURRENCY') ?? 'usd';
+    this.currency = configured.toUpperCase();
+  }
 
   async getBreakdown(range: TimeRange): Promise<RevenueBreakdown> {
     const txs = await this.txRepo.find({ relations: ['type'] });
@@ -26,11 +33,14 @@ export class RevenueService {
       totals[label] = (totals[label] ?? 0) + tx.amount;
       total += tx.amount;
     }
-    return Object.entries(totals).map(([label, value]) => ({
-      label,
-      pct: total === 0 ? 0 : (value / total) * 100,
-      value,
-    }));
+    return {
+      currency: this.currency,
+      streams: Object.entries(totals).map(([label, value]) => ({
+        label,
+        pct: total === 0 ? 0 : (value / total) * 100,
+        value,
+      })),
+    };
   }
 
   private getStartDate(range: TimeRange): Date | null {
