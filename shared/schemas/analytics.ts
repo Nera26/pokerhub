@@ -41,6 +41,9 @@ export const AuditLogTypesResponseSchema = z.object({
 });
 export type AuditLogTypesResponse = z.infer<typeof AuditLogTypesResponseSchema>;
 
+export const LogTypeClassesSchema = z.record(z.string());
+export type LogTypeClasses = z.infer<typeof LogTypeClassesSchema>;
+
 export const AuditSummarySchema = z.object({
   total: z.number().int(),
   errors: z.number().int(),

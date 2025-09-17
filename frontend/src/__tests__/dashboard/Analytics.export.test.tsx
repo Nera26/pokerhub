@@ -69,6 +69,13 @@ describe('Analytics CSV export', () => {
           isError: false,
         };
       }
+      if (key === 'analytics-summary') {
+        return {
+          data: { total: 1, errors: 0, logins: 0 },
+          isLoading: false,
+          isError: false,
+        };
+      }
       if (key === 'admin-overview') {
         return {
           data: [
@@ -97,6 +104,9 @@ describe('Analytics CSV export', () => {
             description: 'desc',
             user: 'alice',
             ip: '1.1.1.1',
+            reviewed: false,
+            reviewedBy: null,
+            reviewedAt: null,
           },
         ],
       },

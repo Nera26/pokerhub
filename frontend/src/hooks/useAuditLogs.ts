@@ -16,9 +16,7 @@ export const useAuditLogs = createQueryHook<AuditLogsResponse, AuditLogsQuery>(
       if (v !== undefined && v !== '') qs.append(k, String(v));
     });
     const query = qs.toString();
-    const path = query
-      ? `/api/admin/audit-logs?${query}`
-      : '/api/admin/audit-logs';
+    const path = query ? `/api/analytics/logs?${query}` : '/api/analytics/logs';
     return apiClient(path, AuditLogsResponseSchema, { signal });
   },
   'audit logs',

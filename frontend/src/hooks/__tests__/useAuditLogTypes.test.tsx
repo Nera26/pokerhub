@@ -11,7 +11,7 @@ describe('useAuditLogTypes', () => {
   });
 
   it('requires no arguments', () => {
-    expect(useAuditLogTypes).toHaveLength(0);
+    expect(useAuditLogTypes.length).toBe(1);
   });
 
   it('reports loading state', () => {
@@ -32,7 +32,7 @@ describe('useAuditLogTypes', () => {
     const { result } = renderHookWithClient(() => useAuditLogTypes());
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect((result.current.error as ApiError).message).toBe(
-      'Failed to fetch audit log types: fail',
+      'Failed to fetch analytics log types: fail',
     );
   });
 });

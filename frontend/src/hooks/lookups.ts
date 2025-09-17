@@ -14,6 +14,6 @@ export const useBroadcastTypes = createGetHook<BroadcastTypesResponse>(
 );
 
 export const useAuditLogTypes = createGetHook<AuditLogTypesResponse>(
-  '/api/admin/audit/log-types',
+  '/api/analytics/log-types',
   AuditLogTypesResponseSchema,
 );

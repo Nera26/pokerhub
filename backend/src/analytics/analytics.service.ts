@@ -160,6 +160,38 @@ const ParquetSchemas: Record<string, ParquetSchema> = {
   'wallet.chargeback_flag': WalletChargebackFlagSchema,
 };
 
+const LOG_TYPE_CLASS_OVERRIDES: Record<string, string> = {
+  Login: 'bg-accent-green/20 text-accent-green',
+  Error: 'bg-danger-red/20 text-danger-red',
+  Broadcast: 'bg-accent-yellow/20 text-accent-yellow',
+  'Security Alert': 'bg-danger-red/20 text-danger-red',
+};
+
+const LOG_TYPE_CLASS_MATCHERS: Array<{ pattern: RegExp; className: string }> = [
+  { pattern: /(error|fail|denied|reject|blocked|fraud|chargeback|alert|flag)/i, className: 'bg-danger-red/20 text-danger-red' },
+  { pattern: /(login|auth|session|register|signup|verification)/i, className: 'bg-accent-green/20 text-accent-green' },
+  {
+    pattern:
+      /(wallet|payment|balance|deposit|withdraw|payout|reserve|commit|rollback|transfer|credit|debit|transaction)/i,
+    className: 'bg-accent-blue/20 text-accent-blue',
+  },
+  { pattern: /(broadcast|notification|message|email|communication|announcement)/i, className: 'bg-accent-yellow/20 text-accent-yellow' },
+  { pattern: /(table|tournament|hand|leaderboard|game|seat|match)/i, className: 'bg-accent-blue/20 text-accent-blue' },
+  { pattern: /(kyc|compliance|security|anti|monitor)/i, className: 'bg-danger-red/20 text-danger-red' },
+];
+
+const DEFAULT_LOG_TYPE_CLASS = 'bg-card-bg text-text-secondary';
+
+function resolveLogTypeClass(type: string): string {
+  if (!type) return DEFAULT_LOG_TYPE_CLASS;
+  const override = LOG_TYPE_CLASS_OVERRIDES[type];
+  if (override) return override;
+  for (const { pattern, className } of LOG_TYPE_CLASS_MATCHERS) {
+    if (pattern.test(type)) return className;
+  }
+  return DEFAULT_LOG_TYPE_CLASS;
+}
+
 function scheduleDaily(task: () => void): void {
   const oneDay = 24 * 60 * 60 * 1000;
   const now = new Date();
@@ -207,6 +239,13 @@ export class AnalyticsService {
     });
     const rows = (await res.json()) as { name: string }[];
     return rows.map((r) => r.name);
+  }
+
+  async getAuditLogTypeClasses(): Promise<Record<string, string>> {
+    const types = await this.getAuditLogTypes();
+    return Object.fromEntries(
+      types.map((type) => [type, resolveLogTypeClass(type)]),
+    );
   }
 
   async getAuditLogs({
@@ -559,6 +598,7 @@ export class AnalyticsService {
   private formatAuditLogId(id: string): string {
     return /^\d+$/.test(id) ? id : JSON.stringify(id);
   }
+
 
   private buildSchema(record: Record<string, unknown>): ParquetSchema {
     const fields: Record<string, unknown> = {};

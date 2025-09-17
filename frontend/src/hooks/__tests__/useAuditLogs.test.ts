@@ -21,7 +21,7 @@ describe('useAuditLogs', () => {
       expect(result.current.data).toEqual({ logs: [], total: 0 }),
     );
     expect(global.fetch).toHaveBeenCalledWith(
-      'http://localhost:3000/api/admin/audit-logs?search=x&page=2&limit=10',
+      'http://localhost:3000/api/analytics/logs?search=x&page=2&limit=10',
       expect.objectContaining({ method: 'GET' }),
     );
   });

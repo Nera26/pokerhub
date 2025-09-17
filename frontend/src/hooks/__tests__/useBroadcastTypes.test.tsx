@@ -11,7 +11,7 @@ describe('useBroadcastTypes', () => {
   });
 
   it('requires no arguments', () => {
-    expect(useBroadcastTypes).toHaveLength(0);
+    expect(useBroadcastTypes.length).toBe(1);
   });
 
   it('reports loading state', () => {

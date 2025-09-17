@@ -1691,6 +1691,32 @@ export interface paths {
       };
     };
   };
+  "/analytics/log-types": {
+    /** Get audit log types */
+    get: {
+      responses: {
+        /** @description Audit log types */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AuditLogTypesResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/analytics/log-types/classes": {
+    /** Get audit log type classes */
+    get: {
+      responses: {
+        /** @description Audit log type classes */
+        200: {
+          content: {
+            "application/json": components["schemas"]["LogTypeClasses"];
+          };
+        };
+      };
+    };
+  };
   "/analytics/summary": {
     /** Get audit log summary */
     get: {
@@ -1969,6 +1995,19 @@ export interface paths {
         200: {
           content: {
             "application/json": components["schemas"]["AuditLogTypesResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/admin/log-types": {
+    /** Get audit log type classes */
+    get: {
+      responses: {
+        /** @description Audit log type classes */
+        200: {
+          content: {
+            "application/json": components["schemas"]["LogTypeClasses"];
           };
         };
       };
@@ -3086,6 +3125,9 @@ export interface components {
     };
     AuditLogTypesResponse: {
       types: components["schemas"]["AuditLogType"][];
+    };
+    LogTypeClasses: {
+      [key: string]: string;
     };
     AuditSummaryResponse: {
       total: number;
