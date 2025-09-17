@@ -2091,6 +2091,19 @@ export interface paths {
       };
     };
   };
+  "/admin/wallet/reconcile/mismatches": {
+    /** List wallet reconciliation mismatches */
+    get: {
+      responses: {
+        /** @description Wallet reconciliation mismatches */
+        200: {
+          content: {
+            "application/json": components["schemas"]["WalletReconcileMismatchesResponse"];
+          };
+        };
+      };
+    };
+  };
   "/admin/messages": {
     /** List user messages */
     get: {
@@ -3096,6 +3109,17 @@ export interface components {
       realBalance: number;
       creditBalance: number;
       transactions: components["schemas"]["WalletTransaction"][];
+    };
+    WalletReconcileMismatch: {
+      account: string;
+      balance: number;
+      journal: number;
+      delta: number;
+      /** Format: date-time */
+      date: string;
+    };
+    WalletReconcileMismatchesResponse: {
+      mismatches: components["schemas"]["WalletReconcileMismatch"][];
     };
     PendingTransaction: {
       id: string;

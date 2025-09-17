@@ -10,6 +10,7 @@ import { SidebarService } from '../src/services/sidebar.service';
 import type { SidebarItem } from '../src/schemas/admin';
 import { RevenueService } from '../src/wallet/revenue.service';
 import { AdminTabsService } from '../src/services/admin-tabs.service';
+import { WalletService } from '../src/wallet/wallet.service';
 
 describe('AdminController', () => {
   let app: INestApplication;
@@ -74,6 +75,9 @@ describe('AdminController', () => {
           })),
       ),
   } as Partial<AdminTabsService>;
+  const wallet = {
+    reconcile: jest.fn(),
+  } as Partial<WalletService>;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -84,6 +88,7 @@ describe('AdminController', () => {
         { provide: SidebarService, useValue: sidebar },
         { provide: AdminTabsService, useValue: adminTabs },
         { provide: RevenueService, useValue: revenue },
+        { provide: WalletService, useValue: wallet },
       ],
     })
       .overrideGuard(AuthGuard)
@@ -94,6 +99,11 @@ describe('AdminController', () => {
 
     app = moduleRef.createNestApplication();
     await app.init();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    jest.useRealTimers();
   });
 
   afterAll(async () => {
@@ -198,5 +208,30 @@ describe('AdminController', () => {
       .get('/admin/revenue-breakdown?range=all')
       .expect(200)
       .expect([{ label: 'Cash', pct: 100, value: 200 }]);
+  });
+
+  it('returns wallet reconcile mismatches with computed delta', async () => {
+    const now = new Date('2024-01-01T12:00:00.000Z');
+    jest.useFakeTimers().setSystemTime(now);
+    (wallet.reconcile as jest.Mock).mockResolvedValue([
+      { account: 'player:1', balance: 1500, journal: 1200 },
+    ]);
+
+    const { body } = await request(app.getHttpServer())
+      .get('/admin/wallet/reconcile/mismatches')
+      .expect(200);
+
+    expect(wallet.reconcile).toHaveBeenCalledTimes(1);
+    expect(body).toEqual({
+      mismatches: [
+        {
+          account: 'player:1',
+          balance: 1500,
+          journal: 1200,
+          delta: 300,
+          date: now.toISOString(),
+        },
+      ],
+    });
   });
 });

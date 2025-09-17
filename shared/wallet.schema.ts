@@ -175,8 +175,11 @@ export type BankReconciliationRequest = z.infer<
 >;
 
 export const WalletReconcileMismatchSchema = z.object({
-  date: z.string(),
-  total: z.number(),
+  account: z.string(),
+  balance: z.number(),
+  journal: z.number(),
+  delta: z.number(),
+  date: z.string().datetime(),
 });
 export type WalletReconcileMismatch = z.infer<
   typeof WalletReconcileMismatchSchema

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.29.0
+  version: 2.30.0
 paths:
   /status:
     get:
@@ -2008,6 +2008,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RevenueBreakdown'
+  /admin/wallet/reconcile/mismatches:
+    get:
+      summary: List wallet reconciliation mismatches
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Wallet reconciliation mismatches
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletReconcileMismatchesResponse'
   /admin/messages:
     get:
       summary: List user messages
@@ -3412,6 +3424,35 @@ components:
         - realBalance
         - creditBalance
         - transactions
+    WalletReconcileMismatch:
+      type: object
+      properties:
+        account:
+          type: string
+        balance:
+          type: number
+        journal:
+          type: number
+        delta:
+          type: number
+        date:
+          type: string
+          format: date-time
+      required:
+        - account
+        - balance
+        - journal
+        - delta
+        - date
+    WalletReconcileMismatchesResponse:
+      type: object
+      properties:
+        mismatches:
+          type: array
+          items:
+            $ref: '#/components/schemas/WalletReconcileMismatch'
+      required:
+        - mismatches
     PendingTransaction:
       type: object
       properties:
