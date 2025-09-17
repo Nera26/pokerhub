@@ -9,6 +9,12 @@ export default registerAs('admin', () => ({
       component: '@/app/components/dashboard/AdminEvents',
     },
     {
+      id: 'analytics',
+      label: 'Analytics',
+      icon: 'faChartLine',
+      component: '@/app/components/dashboard/analytics/Analytics',
+    },
+    {
       id: 'feature-flags',
       label: 'Feature Flags',
       icon: 'faToggleOn',

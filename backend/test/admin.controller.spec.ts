@@ -37,6 +37,12 @@ describe('AdminController', () => {
       component: '@/app/components/dashboard/AdminEvents',
     },
     {
+      id: 'analytics',
+      label: 'Analytics',
+      icon: 'faChartLine',
+      component: '@/app/components/dashboard/analytics/Analytics',
+    },
+    {
       id: 'feature-flags',
       label: 'Feature Flags',
       icon: 'faToggleOn',
@@ -75,7 +81,7 @@ describe('AdminController', () => {
       .fn()
       .mockResolvedValue(
         sidebarItems
-          .filter((item) => !['events', 'feature-flags'].includes(item.id))
+          .filter((item) => !['events', 'feature-flags', 'analytics'].includes(item.id))
           .map((item) => ({
             id: item.id,
             title: item.label,
@@ -240,7 +246,9 @@ describe('AdminController', () => {
       title: s.label,
       component: s.component,
       icon: s.icon,
-      source: ['events', 'feature-flags'].includes(s.id) ? 'config' : 'database',
+      source: ['events', 'feature-flags', 'analytics'].includes(s.id)
+        ? 'config'
+        : 'database',
     }));
     const response = await request(app.getHttpServer())
       .get('/admin/tabs')
@@ -251,6 +259,13 @@ describe('AdminController', () => {
       title: 'Feature Flags',
       component: '@/app/components/dashboard/FeatureFlagsPanel',
       icon: 'faToggleOn',
+      source: 'config',
+    });
+    expect(response.body).toContainEqual({
+      id: 'analytics',
+      title: 'Analytics',
+      component: '@/app/components/dashboard/analytics/Analytics',
+      icon: 'faChartLine',
       source: 'config',
     });
   });
