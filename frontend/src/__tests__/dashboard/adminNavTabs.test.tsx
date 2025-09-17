@@ -32,9 +32,19 @@ jest.mock('@/lib/api/admin', () => ({
       component: '@/app/components/dashboard/ManageTables',
     },
     {
+      id: 'feature-flags',
+      title: 'Feature Flags',
+      component: '@/app/components/dashboard/FeatureFlagsPanel',
+    },
+    {
       id: 'tournaments',
       title: 'Tournaments',
       component: '@/app/components/dashboard/ManageTournaments',
+    },
+    {
+      id: 'broadcast',
+      title: 'Broadcasts',
+      component: '@/app/components/dashboard/BroadcastPanel',
     },
   ]),
   fetchAdminTabMeta: jest.fn(),
@@ -50,8 +60,14 @@ jest.mock('@/app/components/dashboard/ManageUsers', () => () => (
 jest.mock('@/app/components/dashboard/ManageTables', () => () => (
   <div>Tables Module</div>
 ));
+jest.mock('@/app/components/dashboard/FeatureFlagsPanel', () => () => (
+  <div>Feature Flags Module</div>
+));
 jest.mock('@/app/components/dashboard/ManageTournaments', () => () => (
   <div>Tournaments Module</div>
+));
+jest.mock('@/app/components/dashboard/BroadcastPanel', () => () => (
+  <div>Broadcast Module</div>
 ));
 
 export function setSearchParams(qs: string) {
@@ -79,6 +95,8 @@ describe('admin nav tabs', () => {
   it.each([
     ['users', 'Users Module'],
     ['tables', 'Tables Module'],
+    ['feature-flags', 'Feature Flags Module'],
+    ['broadcast', 'Broadcast Module'],
   ])('renders %s module', async (tab, text) => {
     setSearchParams(`tab=${tab}`);
     renderPage();

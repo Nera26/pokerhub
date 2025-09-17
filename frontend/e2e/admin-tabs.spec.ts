@@ -59,6 +59,9 @@ test('admin can create tabs at runtime', async ({ page }) => {
 
     await page.goto('/admin/nav');
 
+    await expect(
+      page.getByRole('button', { name: 'Broadcasts' }),
+    ).toBeVisible();
     await expect(page.getByText('QA Reports')).toBeVisible();
   } finally {
     try {
