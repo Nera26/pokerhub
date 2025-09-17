@@ -3329,6 +3329,7 @@ export interface components {
       href: string;
       label: string;
       icon?: string;
+      order: number;
     };
     NavItemRequest: {
       flag: string;

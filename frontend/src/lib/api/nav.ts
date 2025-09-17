@@ -13,6 +13,8 @@ export type NavItem = {
   flag: string;
   href: string;
   label: string;
+  order: number;
+  iconName?: string;
   icon?: IconDefinition;
   badge?: number;
   avatar?: string;
@@ -52,10 +54,13 @@ export async function fetchNavItems({
       const def = toIconDefinition(name, svg);
       if (def) iconMap.set(name, def);
     }
-    return items.map(({ icon, ...rest }: NavItemResponse) => ({
-      ...rest,
-      ...(icon && iconMap.has(icon) ? { icon: iconMap.get(icon)! } : {}),
-    }));
+    return items
+      .map(({ icon, ...rest }: NavItemResponse) => ({
+        ...rest,
+        iconName: icon ?? undefined,
+        ...(icon && iconMap.has(icon) ? { icon: iconMap.get(icon)! } : {}),
+      }))
+      .sort((a, b) => a.order - b.order);
   } catch (err) {
     const message =
       err instanceof Error ? err.message : (err as ApiError).message;

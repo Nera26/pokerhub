@@ -72,8 +72,8 @@ describe('NavController', () => {
     const res = await request(app.getHttpServer()).get('/nav-items').expect(200);
     const body: NavItemsResponse = res.body;
     const expected: NavItemsResponse = [
-      { flag: 'lobby', href: '/', label: 'Lobby', icon: 'home' },
-      { flag: 'profile', href: '/user', label: 'Profile' },
+      { flag: 'lobby', href: '/', label: 'Lobby', icon: 'home', order: 1 },
+      { flag: 'profile', href: '/user', label: 'Profile', order: 2 },
     ];
     expect(body).toEqual(expected);
   });
@@ -92,7 +92,7 @@ describe('NavController', () => {
     let res = await request(app.getHttpServer()).get('/nav-items').expect(200);
     expect(res.body).toEqual(
       expect.arrayContaining([
-        { flag: 'help', href: '/help', label: 'Help' },
+        { flag: 'help', href: '/help', label: 'Help', order: 3 },
       ]),
     );
 
@@ -105,6 +105,7 @@ describe('NavController', () => {
       flag: 'help',
       href: '/help',
       label: 'Help',
+      order: 3,
     });
   });
 });

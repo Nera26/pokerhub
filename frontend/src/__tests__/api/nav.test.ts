@@ -26,7 +26,15 @@ describe('nav api', () => {
   it('constructs icons from API metadata', async () => {
     server.use(
       mockSuccess(
-        [{ flag: 'lobby', href: '/', label: 'Lobby', icon: 'home' }],
+        [
+          {
+            flag: 'lobby',
+            href: '/',
+            label: 'Lobby',
+            icon: 'home',
+            order: 1,
+          },
+        ],
         { once: true },
       ),
       mockSuccess(
@@ -42,12 +50,22 @@ describe('nav api', () => {
     const items = await fetchNavItems();
     expect(items[0].icon).toBeDefined();
     expect(items[0].icon?.iconName).toBe('home');
+    expect(items[0].order).toBe(1);
+    expect(items[0].iconName).toBe('home');
   });
 
   it('omits unknown or invalid icons', async () => {
     server.use(
       mockSuccess(
-        [{ flag: 'lobby', href: '/', label: 'Lobby', icon: 'missing' }],
+        [
+          {
+            flag: 'lobby',
+            href: '/',
+            label: 'Lobby',
+            icon: 'missing',
+            order: 1,
+          },
+        ],
         { once: true },
       ),
       mockSuccess([{ name: 'home' } as any], { once: true }),
@@ -59,7 +77,7 @@ describe('nav api', () => {
   it('creates, updates and deletes nav items', async () => {
     server.use(
       mockSuccess(
-        { flag: 'about', href: '/about', label: 'About' },
+        { flag: 'about', href: '/about', label: 'About', order: 1 },
         { once: true },
       ),
     );
@@ -76,7 +94,7 @@ describe('nav api', () => {
 
     server.use(
       mockSuccess(
-        { flag: 'about', href: '/info', label: 'About' },
+        { flag: 'about', href: '/info', label: 'About', order: 1 },
         { once: true },
       ),
     );

@@ -13,10 +13,11 @@ export class NavService {
 
   async list(): Promise<NavItem[]> {
     const items = await this.repo.find({ order: { order: 'ASC' } });
-    return items.map(({ flag, href, label, icon }) => ({
+    return items.map(({ flag, href, label, icon, order }) => ({
       flag,
       href,
       label,
+      order,
       ...(icon ? { icon } : {}),
     }));
   }
@@ -24,8 +25,8 @@ export class NavService {
   async create(item: NavItemRequest): Promise<NavItem> {
     const entity = this.repo.create(item);
     const saved = await this.repo.save(entity);
-    const { flag, href, label, icon } = saved;
-    return { flag, href, label, ...(icon ? { icon } : {}) };
+    const { flag, href, label, icon, order } = saved;
+    return { flag, href, label, order, ...(icon ? { icon } : {}) };
   }
 
   async update(flag: string, item: NavItemRequest): Promise<NavItem> {
@@ -33,8 +34,14 @@ export class NavService {
     if (!existing) throw new NotFoundException('Nav item not found');
     const merged = { ...existing, ...item };
     const saved = await this.repo.save(merged);
-    const { href, label, icon } = saved;
-    return { flag: saved.flag, href, label, ...(icon ? { icon } : {}) };
+    const { href, label, icon, order: savedOrder } = saved;
+    return {
+      flag: saved.flag,
+      href,
+      label,
+      order: savedOrder,
+      ...(icon ? { icon } : {}),
+    };
   }
 
   async remove(flag: string): Promise<void> {
