@@ -11,6 +11,8 @@ import {
   type TournamentHistoryEntry,
   type TransactionEntry,
 } from '@/lib/api/history';
+import useTransactionColumns from '@/hooks/useTransactionColumns';
+import { useStatusInfo } from '../common/status';
 
 interface Props {
   type: 'game-history' | 'tournament-history' | 'transaction-history';
@@ -24,6 +26,7 @@ interface Props {
 }
 
 function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
+  const isTransactionHistory = type === 'transaction-history';
   const {
     data: gameData,
     isLoading: gameLoading,
@@ -51,8 +54,16 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
   } = useQuery<TransactionEntry[]>({
     queryKey: ['transaction-history'],
     queryFn: ({ signal }) => fetchTransactions({ signal }),
-    enabled: type === 'transaction-history',
+    enabled: isTransactionHistory,
   });
+
+  const {
+    data: columnMeta,
+    isLoading: columnsLoading,
+    error: columnsError,
+  } = useTransactionColumns({ enabled: isTransactionHistory });
+
+  const getStatusInfo = useStatusInfo({ enabled: isTransactionHistory });
 
   // --- GAME HISTORY ---
   if (type === 'game-history') {
@@ -202,14 +213,14 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
 
   // --- TRANSACTION HISTORY ---
   if (type === 'transaction-history') {
-    if (transactionLoading) {
+    if (transactionLoading || columnsLoading) {
       return (
         <div role="status" className="p-8 text-center text-text-secondary">
           Loading...
         </div>
       );
     }
-    if (transactionError) {
+    if (transactionError || columnsError) {
       return (
         <div role="alert" className="p-8 text-center text-danger-red">
           Failed to load transactions.
@@ -223,6 +234,15 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
         </div>
       );
     }
+    const defaultColumns = [
+      { id: 'date', label: 'Date' },
+      { id: 'type', label: 'Type' },
+      { id: 'amount', label: 'Amount' },
+      { id: 'status', label: 'Status' },
+    ];
+
+    const columns = columnMeta.length > 0 ? columnMeta : defaultColumns;
+
     return (
       <div className="bg-card-bg rounded-2xl p-8">
         <h3 className="text-lg font-semibold mb-4">Wallet Activity</h3>
@@ -230,40 +250,60 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
           <table className="min-w-[640px] w-full text-left table-auto">
             <thead>
               <tr>
-                {['Date', 'Type', 'Amount', 'Status'].map((h) => (
-                  <th key={h} className="pb-2 pr-6 whitespace-nowrap">
-                    {h}
+                {columns.map((column) => (
+                  <th key={column.id} className="pb-2 pr-6 whitespace-nowrap">
+                    {column.label}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {transactionData.map((row) => (
-                <tr key={row.date} className="border-b border-border-dark">
-                  <td className="py-2 pr-6 whitespace-nowrap">{row.date}</td>
-                  <td className="py-2 pr-6 whitespace-nowrap">{row.type}</td>
-                  <td
-                    className={`py-2 pr-6 whitespace-nowrap ${
-                      row.amount.startsWith('+')
-                        ? 'text-accent-green'
-                        : 'text-danger-red'
-                    }`}
-                  >
-                    {row.amount}
-                  </td>
-                  <td className="py-2 pr-6 whitespace-nowrap">
-                    <span
-                      className={
-                        row.status === 'Completed'
-                          ? 'text-accent-green'
-                          : row.status === 'Failed'
-                            ? 'text-danger-red'
-                            : ''
-                      }
-                    >
-                      {row.status}
-                    </span>
-                  </td>
+              {transactionData.map((row, index) => (
+                <tr
+                  key={`${row.date}-${row.type}-${index}`}
+                  className="border-b border-border-dark"
+                >
+                  {columns.map((column) => {
+                    if (column.id === 'status') {
+                      const { label, style } = getStatusInfo(row.status);
+                      return (
+                        <td
+                          key={`${column.id}-${index}`}
+                          className="py-2 pr-6 whitespace-nowrap"
+                        >
+                          <span
+                            className={`${style} px-2 py-1 rounded-md font-medium`}
+                          >
+                            {label}
+                          </span>
+                        </td>
+                      );
+                    }
+                    if (column.id === 'amount') {
+                      const isPositive = row.amount.trim().startsWith('+');
+                      return (
+                        <td
+                          key={`${column.id}-${index}`}
+                          className={`py-2 pr-6 whitespace-nowrap ${
+                            isPositive ? 'text-accent-green' : 'text-danger-red'
+                          }`}
+                        >
+                          {row.amount}
+                        </td>
+                      );
+                    }
+                    const value =
+                      (row as Record<string, string | undefined>)[column.id] ??
+                      '';
+                    return (
+                      <td
+                        key={`${column.id}-${index}`}
+                        className="py-2 pr-6 whitespace-nowrap"
+                      >
+                        {value}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>
