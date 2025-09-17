@@ -26,7 +26,9 @@ describe('Dashboard TransactionHistory', () => {
     (fetchTransactionTypes as jest.Mock).mockResolvedValue([
       { id: 'deposit', label: 'Deposit' },
     ]);
-    (fetchAdminPlayers as jest.Mock).mockResolvedValue([]);
+    (fetchAdminPlayers as jest.Mock).mockResolvedValue([
+      { id: 'player-1', username: 'Alice' },
+    ]);
   });
 
   afterEach(() => {
@@ -45,6 +47,14 @@ describe('Dashboard TransactionHistory', () => {
     expect(
       await screen.findByText('No transaction history.'),
     ).toBeInTheDocument();
+  });
+
+  it('renders player filter options', async () => {
+    (fetchTransactionsLog as jest.Mock).mockResolvedValue([]);
+    renderWithClient(<TransactionHistory onExport={() => {}} />);
+
+    const option = await screen.findByRole('option', { name: 'Alice' });
+    expect(option).toBeInTheDocument();
   });
 
   it('calls fetchTransactionsLog with type filter', async () => {

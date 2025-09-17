@@ -14,7 +14,12 @@ import {
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 import type { Request } from 'express';
-import { KycDenialResponse, KycDenialResponseSchema } from '@shared/wallet.schema';
+import {
+  KycDenialResponse,
+  KycDenialResponseSchema,
+  WalletReconcileMismatchesResponseSchema,
+  type WalletReconcileMismatchesResponse,
+} from '@shared/wallet.schema';
 import {
   AuditLogEntry,
   AuditLogEntrySchema,
@@ -45,6 +50,7 @@ import { SidebarService } from '../services/sidebar.service';
 import { KycService } from '../wallet/kyc.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { RevenueService } from '../wallet/revenue.service';
+import { WalletService } from '../wallet/wallet.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { AdminTabsService } from '../services/admin-tabs.service';
@@ -59,6 +65,7 @@ export class AdminController {
     private readonly sidebar: SidebarService,
     private readonly tabs: AdminTabsService,
     private readonly revenue: RevenueService,
+    private readonly wallet: WalletService,
   ) {}
 
   @Get('kyc/:id/denial')
@@ -179,5 +186,20 @@ export class AdminController {
     const r = z.enum(['today', 'week', 'month', 'all']).parse(range ?? 'all');
     const data = await this.revenue.getBreakdown(r);
     return RevenueBreakdownSchema.parse(data);
+  }
+
+  @Get('wallet/reconcile/mismatches')
+  @ApiOperation({ summary: 'List wallet reconciliation mismatches' })
+  @ApiResponse({ status: 200, description: 'Wallet mismatches' })
+  async walletReconcileMismatches(): Promise<WalletReconcileMismatchesResponse> {
+    const report = await this.wallet.reconcile();
+    const mismatches = report.map((row) => ({
+      account: row.account,
+      balance: row.balance,
+      journal: row.journal,
+      delta: row.balance - row.journal,
+      date: new Date().toISOString(),
+    }));
+    return WalletReconcileMismatchesResponseSchema.parse({ mismatches });
   }
 }

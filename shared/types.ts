@@ -538,6 +538,13 @@ export const DashboardUserListSchema = z.array(DashboardUserSchema);
 export type DashboardUser = z.infer<typeof DashboardUserSchema>;
 export type DashboardUserList = z.infer<typeof DashboardUserListSchema>;
 
+export const AdminPlayerSchema = z.object({
+  id: z.string(),
+  username: z.string(),
+});
+export const AdminPlayerListSchema = z.array(AdminPlayerSchema);
+export type AdminPlayer = z.infer<typeof AdminPlayerSchema>;
+
 export const AdminUsersQuerySchema = z.object({
   limit: z.coerce.number().int().positive().optional(),
 });

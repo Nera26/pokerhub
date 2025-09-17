@@ -27,6 +27,8 @@ import {
 import {
   WithdrawalDecisionRequestSchema,
   type MessageResponse,
+  AdminPlayerSchema,
+  type AdminPlayer,
 } from '@shared/types';
 
 export type { IbanDetails };
@@ -259,18 +261,20 @@ export function adminAdjustBalance(
   });
 }
 
-const AdminPlayerSchema = z.object({
-  id: z.string(),
-  username: z.string(),
-});
-export type AdminPlayer = z.infer<typeof AdminPlayerSchema>;
-
 export function fetchAdminPlayers(
-  opts: { signal?: AbortSignal } = {},
+  opts: { signal?: AbortSignal; limit?: number } = {},
 ): Promise<AdminPlayer[]> {
-  return apiClient(`/api/admin/players`, z.array(AdminPlayerSchema), {
-    signal: opts.signal,
-  });
+  const query =
+    typeof opts.limit === 'number'
+      ? `?limit=${encodeURIComponent(opts.limit)}`
+      : '';
+  return apiClient(
+    `/api/admin/users/players${query}`,
+    z.array(AdminPlayerSchema),
+    {
+      signal: opts.signal,
+    },
+  );
 }
 
 export function fetchIbanDetails(

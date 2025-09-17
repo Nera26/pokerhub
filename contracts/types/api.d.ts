@@ -2091,6 +2091,19 @@ export interface paths {
       };
     };
   };
+  "/admin/wallet/reconcile/mismatches": {
+    /** List wallet reconciliation mismatches */
+    get: {
+      responses: {
+        /** @description Wallet reconciliation mismatches */
+        200: {
+          content: {
+            "application/json": components["schemas"]["WalletReconcileMismatchesResponse"];
+          };
+        };
+      };
+    };
+  };
   "/admin/messages": {
     /** List user messages */
     get: {
@@ -2140,6 +2153,24 @@ export interface paths {
         200: {
           content: {
             "application/json": components["schemas"]["DashboardUser"][];
+          };
+        };
+      };
+    };
+  };
+  "/admin/users/players": {
+    /** List player ids for filters */
+    get: {
+      parameters: {
+        query?: {
+          limit?: number;
+        };
+      };
+      responses: {
+        /** @description Player handles */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AdminPlayer"][];
           };
         };
       };
@@ -3097,6 +3128,17 @@ export interface components {
       creditBalance: number;
       transactions: components["schemas"]["WalletTransaction"][];
     };
+    WalletReconcileMismatch: {
+      account: string;
+      balance: number;
+      journal: number;
+      delta: number;
+      /** Format: date-time */
+      date: string;
+    };
+    WalletReconcileMismatchesResponse: {
+      mismatches: components["schemas"]["WalletReconcileMismatch"][];
+    };
     PendingTransaction: {
       id: string;
       type: string;
@@ -3215,6 +3257,10 @@ export interface components {
       balance: number;
       currency: string;
       banned: boolean;
+    };
+    AdminPlayer: {
+      id: string;
+      username: string;
     };
     /** @enum {string} */
     UserRole: "Player" | "Admin";

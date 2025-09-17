@@ -22,6 +22,12 @@ jest.mock('@/lib/api/profile', () => ({
 jest.mock('@/lib/api/admin', () => ({
   fetchAdminTabs: jest.fn().mockResolvedValue([
     {
+      id: 'feature-flags',
+      title: 'Feature Flags',
+      component: '@/app/components/dashboard/FeatureFlagsPanel',
+      source: 'config',
+    },
+    {
       id: 'users',
       title: 'Users',
       component: '@/app/components/dashboard/ManageUsers',
@@ -54,6 +60,9 @@ jest.mock('@/lib/api/nav', () => ({
   fetchNavItems: jest.fn().mockResolvedValue([]),
 }));
 
+jest.mock('@/app/components/dashboard/FeatureFlagsPanel', () => () => (
+  <div>Feature Flags Module</div>
+));
 jest.mock('@/app/components/dashboard/ManageUsers', () => () => (
   <div>Users Module</div>
 ));
@@ -93,6 +102,7 @@ describe('admin nav tabs', () => {
   });
 
   it.each([
+    ['feature-flags', 'Feature Flags Module'],
     ['users', 'Users Module'],
     ['tables', 'Tables Module'],
     ['feature-flags', 'Feature Flags Module'],

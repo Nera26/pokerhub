@@ -10,6 +10,7 @@ import { SidebarService } from '../src/services/sidebar.service';
 import type { SidebarItem } from '../src/schemas/admin';
 import { RevenueService } from '../src/wallet/revenue.service';
 import { AdminTabsService } from '../src/services/admin-tabs.service';
+import { WalletService } from '../src/wallet/wallet.service';
 
 describe('AdminController', () => {
   let app: INestApplication;
@@ -31,6 +32,12 @@ describe('AdminController', () => {
       label: 'Events',
       icon: 'faBell',
       component: '@/app/components/dashboard/AdminEvents',
+    },
+    {
+      id: 'feature-flags',
+      label: 'Feature Flags',
+      icon: 'faToggleOn',
+      component: '@/app/components/dashboard/FeatureFlagsPanel',
     },
     {
       id: 'users',
@@ -65,7 +72,7 @@ describe('AdminController', () => {
       .fn()
       .mockResolvedValue(
         sidebarItems
-          .filter((item) => item.id !== 'events')
+          .filter((item) => !['events', 'feature-flags'].includes(item.id))
           .map((item) => ({
             id: item.id,
             title: item.label,
@@ -74,6 +81,9 @@ describe('AdminController', () => {
           })),
       ),
   } as Partial<AdminTabsService>;
+  const wallet = {
+    reconcile: jest.fn(),
+  } as Partial<WalletService>;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -84,6 +94,7 @@ describe('AdminController', () => {
         { provide: SidebarService, useValue: sidebar },
         { provide: AdminTabsService, useValue: adminTabs },
         { provide: RevenueService, useValue: revenue },
+        { provide: WalletService, useValue: wallet },
       ],
     })
       .overrideGuard(AuthGuard)
@@ -94,6 +105,11 @@ describe('AdminController', () => {
 
     app = moduleRef.createNestApplication();
     await app.init();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    jest.useRealTimers();
   });
 
   afterAll(async () => {
@@ -182,12 +198,19 @@ describe('AdminController', () => {
       title: s.label,
       component: s.component,
       icon: s.icon,
-      source: s.id === 'events' ? 'config' : 'database',
+      source: ['events', 'feature-flags'].includes(s.id) ? 'config' : 'database',
     }));
-    await request(app.getHttpServer())
+    const response = await request(app.getHttpServer())
       .get('/admin/tabs')
-      .expect(200)
-      .expect(tabs);
+      .expect(200);
+    expect(response.body).toEqual(tabs);
+    expect(response.body).toContainEqual({
+      id: 'feature-flags',
+      title: 'Feature Flags',
+      component: '@/app/components/dashboard/FeatureFlagsPanel',
+      icon: 'faToggleOn',
+      source: 'config',
+    });
   });
 
   it('returns revenue breakdown', async () => {
@@ -198,5 +221,30 @@ describe('AdminController', () => {
       .get('/admin/revenue-breakdown?range=all')
       .expect(200)
       .expect([{ label: 'Cash', pct: 100, value: 200 }]);
+  });
+
+  it('returns wallet reconcile mismatches with computed delta', async () => {
+    const now = new Date('2024-01-01T12:00:00.000Z');
+    jest.useFakeTimers().setSystemTime(now);
+    (wallet.reconcile as jest.Mock).mockResolvedValue([
+      { account: 'player:1', balance: 1500, journal: 1200 },
+    ]);
+
+    const { body } = await request(app.getHttpServer())
+      .get('/admin/wallet/reconcile/mismatches')
+      .expect(200);
+
+    expect(wallet.reconcile).toHaveBeenCalledTimes(1);
+    expect(body).toEqual({
+      mismatches: [
+        {
+          account: 'player:1',
+          balance: 1500,
+          journal: 1200,
+          delta: 300,
+          date: now.toISOString(),
+        },
+      ],
+    });
   });
 });

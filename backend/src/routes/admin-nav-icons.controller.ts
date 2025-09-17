@@ -14,18 +14,14 @@ import { NavIconSchema, type NavIcon } from '@shared/types';
 import { NavIconsService } from '../services/nav-icons.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
+import { NavIconsReadController } from './nav-icons.controller';
 
 @ApiTags('admin')
 @Controller('admin/nav-icons')
 @UseGuards(AuthGuard, AdminGuard)
-export class AdminNavIconsController {
-  constructor(private readonly icons: NavIconsService) {}
-
-  @Get()
-  @ApiOperation({ summary: 'List navigation icon metadata' })
-  @ApiResponse({ status: 200, description: 'Navigation icons' })
-  async list(): Promise<NavIcon[]> {
-    return this.icons.listValidated();
+export class AdminNavIconsController extends NavIconsReadController {
+  constructor(icons: NavIconsService) {
+    super(icons);
   }
 
   @Post()

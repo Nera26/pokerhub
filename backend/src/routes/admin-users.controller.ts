@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
+import { z } from 'zod';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { UsersService } from '../users/users.service';
@@ -22,6 +23,8 @@ import {
   UserMetaResponseSchema,
   type UserMetaResponse,
   ZodError,
+  AdminPlayerSchema,
+  type AdminPlayer,
 } from '@shared/types';
 
 @ApiTags('admin')
@@ -86,6 +89,17 @@ export class AdminUsersController {
         banned: u.banned,
         currency: u.currency,
       })),
+    );
+  }
+
+  @Get('players')
+  @ApiOperation({ summary: 'List player ids for filters' })
+  @ApiResponse({ status: 200, description: 'Player handles' })
+  async listPlayers(@Req() req: Request): Promise<AdminPlayer[]> {
+    const { limit } = AdminUsersQuerySchema.parse(req.query);
+    const users = await this.users.list(limit);
+    return z.array(AdminPlayerSchema).parse(
+      users.map((u) => ({ id: u.id, username: u.username })),
     );
   }
 }

@@ -30,15 +30,23 @@ export default function WalletReconcileMismatches() {
       <ul className="space-y-2">
         {mismatches.map((m) => (
           <li
-            key={`${m.type}-${m.date}`}
-            className="flex items-center justify-between"
+            key={`${m.account}-${m.date}`}
+            className="flex items-start justify-between gap-4"
           >
-            <span>
-              {m.type} -{' '}
+            <div className="flex flex-col">
+              <span className="font-semibold">{m.account}</span>
               <span className="text-sm text-text-secondary">{m.date}</span>
-            </span>
-            <div className="flex items-center gap-2">
-              <span>${m.total.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <div className="font-semibold">
+                  Δ ${m.delta.toLocaleString('en-US')}
+                </div>
+                <div className="text-xs text-text-secondary">
+                  Balance ${m.balance.toLocaleString('en-US')} · Journal $
+                  {m.journal.toLocaleString('en-US')}
+                </div>
+              </div>
               <Button size="sm" variant="secondary" onClick={() => refetch()}>
                 Acknowledge
               </Button>
