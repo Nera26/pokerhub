@@ -53,7 +53,13 @@ describe('history api', () => {
 
   it('fetches transactions', async () => {
     const payload = [
-      { date: 'May 1', type: 'Deposit', amount: '+$100', status: 'Completed' },
+      {
+        date: 'May 1',
+        type: 'Deposit',
+        amount: 100,
+        currency: 'USD',
+        status: 'Completed',
+      },
     ];
     (fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
