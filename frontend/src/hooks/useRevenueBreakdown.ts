@@ -8,7 +8,7 @@ export type TimeFilter = 'today' | 'week' | 'month' | 'all';
 export function useRevenueBreakdown(range: TimeFilter) {
   return createQueryHook<RevenueBreakdown>(
     `revenue-breakdown-${range}`,
-    (client, opts) =>
+    (client, _params, opts) =>
       client(
         `/api/admin/revenue-breakdown?range=${range}`,
         RevenueBreakdownSchema,

@@ -1,4 +1,5 @@
 import { RevenueService } from '../../src/wallet/revenue.service';
+import type { ConfigService } from '@nestjs/config';
 
 describe('RevenueService', () => {
   it('computes percentages', async () => {
@@ -9,12 +10,16 @@ describe('RevenueService', () => {
         { amount: 100, type: { label: 'Tournaments' }, createdAt: now },
       ]),
     } as any;
-    const service = new RevenueService(repo);
+    const config = { get: jest.fn().mockReturnValue('eur') } as unknown as ConfigService;
+    const service = new RevenueService(repo, config);
     const res = await service.getBreakdown('all');
-    expect(res).toEqual([
-      { label: 'Cash', pct: 50, value: 100 },
-      { label: 'Tournaments', pct: 50, value: 100 },
-    ]);
+    expect(res).toEqual({
+      currency: 'EUR',
+      streams: [
+        { label: 'Cash', pct: 50, value: 100 },
+        { label: 'Tournaments', pct: 50, value: 100 },
+      ],
+    });
   });
 
   it('filters by range', async () => {
@@ -26,8 +31,12 @@ describe('RevenueService', () => {
         { amount: 100, type: { label: 'Old' }, createdAt: old },
       ]),
     } as any;
-    const service = new RevenueService(repo);
+    const config = { get: jest.fn().mockReturnValue('usd') } as unknown as ConfigService;
+    const service = new RevenueService(repo, config);
     const res = await service.getBreakdown('week');
-    expect(res).toEqual([{ label: 'Recent', pct: 100, value: 100 }]);
+    expect(res).toEqual({
+      currency: 'USD',
+      streams: [{ label: 'Recent', pct: 100, value: 100 }],
+    });
   });
 });

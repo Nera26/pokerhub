@@ -3015,7 +3015,10 @@ export interface components {
       pct: number;
       value?: number;
     };
-    RevenueBreakdown: components["schemas"]["RevenueStream"][];
+    RevenueBreakdown: {
+      currency: string;
+      streams: components["schemas"]["RevenueStream"][];
+    };
     PromotionBreakdownItem: {
       label: string;
       value: number;
