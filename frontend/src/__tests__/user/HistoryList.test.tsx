@@ -13,6 +13,7 @@ import {
   type TransactionEntry,
 } from '@/lib/api/history';
 import { fetchHandReplay } from '@/lib/api/replay';
+import { mockMetadataFetch } from '@/app/components/common/__tests__/helpers';
 
 jest.mock('@/lib/api/history');
 jest.mock('@/lib/api/replay');
@@ -79,6 +80,21 @@ const transactionEntries: TransactionEntry[] = [
   },
 ];
 
+const defaultMetadata = {
+  columns: [
+    { id: 'date', label: 'Date' },
+    { id: 'type', label: 'Type' },
+    { id: 'amount', label: 'Amount' },
+    { id: 'status', label: 'Status' },
+  ],
+  statuses: {
+    Completed: {
+      label: 'Completed',
+      style: 'bg-accent-green/20 text-accent-green',
+    },
+  },
+};
+
 type HistoryCase = {
   name: string;
   type: ComponentProps<typeof HistoryList>['type'];
@@ -119,24 +135,36 @@ const historyCases: HistoryCase[] = [
   },
 ];
 
+const originalFetch = global.fetch;
+
 afterEach(() => {
   jest.clearAllMocks();
+  global.fetch = originalFetch;
 });
 
 describe.each(historyCases)(
   'HistoryList $name',
   ({ type, fetchMock, successData, successText, emptyText, errorText }) => {
     it('renders entries on success', async () => {
+      if (type === 'transaction-history') {
+        mockMetadataFetch(defaultMetadata);
+      }
       fetchMock.mockResolvedValueOnce(successData);
       await renderHistoryList(type, successText);
     });
 
     it('renders empty state', async () => {
+      if (type === 'transaction-history') {
+        mockMetadataFetch(defaultMetadata);
+      }
       fetchMock.mockResolvedValueOnce([]);
       await renderHistoryList(type, emptyText);
     });
 
     it('renders error state', async () => {
+      if (type === 'transaction-history') {
+        mockMetadataFetch(defaultMetadata);
+      }
       fetchMock.mockRejectedValueOnce(new Error('fail'));
       await renderHistoryList(type, errorText);
     });
@@ -172,5 +200,27 @@ describe('HistoryList game history replay', () => {
 
     expect(fetchHandReplayMock).toHaveBeenCalledWith('1');
     expect(await screen.findByText('Game Replay')).toBeInTheDocument();
+  });
+});
+
+describe('HistoryList transaction metadata', () => {
+  it('applies metadata-driven labels and styles', async () => {
+    mockMetadataFetch({
+      columns: defaultMetadata.columns,
+      statuses: {
+        Completed: {
+          label: 'Finished',
+          style: 'bg-accent-blue text-white',
+        },
+      },
+    });
+    fetchTransactionsMock.mockResolvedValueOnce(transactionEntries);
+
+    renderWithClient(<HistoryList type="transaction-history" />);
+
+    expect(await screen.findByText('Finished')).toBeInTheDocument();
+    const pill = await screen.findByText('Finished');
+    expect(pill).toHaveClass('bg-accent-blue');
+    expect(pill).toHaveClass('text-white');
   });
 });
