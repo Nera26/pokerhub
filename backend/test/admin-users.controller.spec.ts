@@ -5,10 +5,12 @@ import { AdminUsersController } from '../src/routes/admin-users.controller';
 import { UsersService } from '../src/users/users.service';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
+import { z } from 'zod';
 import {
   DashboardUserListSchema,
   DashboardUserSchema,
   UserMetaResponseSchema,
+  AdminPlayerSchema,
 } from '@shared/types';
 
 describe('AdminUsersController', () => {
@@ -57,6 +59,27 @@ describe('AdminUsersController', () => {
     expect(parsed[0].username).toBe('alice');
     expect(parsed[0].currency).toBe('USD');
     expect(list).toHaveBeenCalledWith(5);
+  });
+
+  it('returns player handles for dropdowns', async () => {
+    list.mockResolvedValue([
+      {
+        id: '1',
+        username: 'alice',
+        avatarKey: undefined,
+        balance: 0,
+        banned: false,
+        currency: 'USD',
+      },
+    ]);
+
+    const res = await request(app.getHttpServer())
+      .get('/admin/users/players?limit=10')
+      .expect(200);
+
+    const parsed = z.array(AdminPlayerSchema).parse(res.body);
+    expect(parsed).toEqual([{ id: '1', username: 'alice' }]);
+    expect(list).toHaveBeenCalledWith(10);
   });
 
   it('returns user meta', async () => {

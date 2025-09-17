@@ -2075,6 +2075,25 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/DashboardUser'
+  /admin/users/players:
+    get:
+      summary: List player ids for filters
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Player handles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminPlayer'
     post:
       summary: Create user
       security:
@@ -3741,6 +3760,16 @@ components:
         - balance
         - currency
         - banned
+    AdminPlayer:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+      required:
+        - id
+        - username
     UserRole:
       type: string
       enum:
