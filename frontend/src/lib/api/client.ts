@@ -42,6 +42,7 @@ export async function apiClient<T>(
     signal?: AbortSignal;
     headers?: Record<string, string>;
     cache?: RequestCache;
+    keepalive?: boolean;
   } = {},
 ): Promise<T> {
   const baseUrl = getBaseUrl();
@@ -65,6 +66,7 @@ export async function apiClient<T>(
       }),
       ...(opts.signal && { signal: opts.signal }),
       ...(opts.cache && { cache: opts.cache }),
+      ...(opts.keepalive !== undefined && { keepalive: opts.keepalive }),
     },
     token,
   );

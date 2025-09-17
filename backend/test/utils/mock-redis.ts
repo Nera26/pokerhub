@@ -133,6 +133,10 @@ export class MockRedis {
   async zadd(key: string, score: number, member: string) {
     if (!this.sorted.has(key)) this.sorted.set(key, []);
     const arr = this.sorted.get(key)!;
+    const existingIndex = arr.findIndex((entry) => entry.member === member);
+    if (existingIndex !== -1) {
+      arr.splice(existingIndex, 1);
+    }
     arr.push({ score, member });
     arr.sort((a, b) => a.score - b.score);
     return 1;
@@ -161,6 +165,21 @@ export class MockRedis {
     const list = this.lists.get(key)!;
     list.push(value);
     return list.length;
+  }
+
+  async lpush(key: string, value: string) {
+    if (!this.lists.has(key)) this.lists.set(key, []);
+    const list = this.lists.get(key)!;
+    list.unshift(value);
+    return list.length;
+  }
+
+  async ltrim(key: string, start: number, stop: number) {
+    const list = this.lists.get(key) ?? [];
+    const end = stop === -1 ? list.length : stop + 1;
+    const trimmed = list.slice(start, end);
+    this.lists.set(key, trimmed);
+    return 'OK';
   }
 
   async lrange(key: string, start: number, stop: number) {

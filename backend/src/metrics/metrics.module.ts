@@ -4,9 +4,10 @@ import { DashboardController } from '../routes/dashboard.controller';
 import { DashboardService } from './dashboard.service';
 import { MetricsWriterService } from './metrics-writer.service';
 import { gaugeFactory } from './gauge.factory';
+import { MonitoringController } from './monitoring.controller';
 
 @Module({
-  controllers: [DashboardController],
+  controllers: [DashboardController, MonitoringController],
   providers: [
     DashboardService,
     MetricsWriterService,

@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { onCLS, onINP, onLCP, Metric } from 'web-vitals';
 import { fetchPerformanceThresholds } from '@/lib/api/config';
+import { recordWebVital } from '@/lib/api/monitoring';
+import type { WebVitalMetric } from '@shared/types';
 import { env } from '@/lib/env';
 
 const DEFAULT_THRESHOLDS = {
@@ -12,16 +14,20 @@ const DEFAULT_THRESHOLDS = {
 } as const;
 
 function sendMetric(metric: Metric, overThreshold: boolean) {
-  const body = JSON.stringify({
-    name: metric.name,
+  const payload: WebVitalMetric = {
+    name: metric.name as WebVitalMetric['name'],
     value: metric.value,
     overThreshold,
-  });
-  if (navigator.sendBeacon) {
-    navigator.sendBeacon('/monitoring', body);
-  } else {
-    fetch('/monitoring', { method: 'POST', body, keepalive: true });
+  };
+  const body = JSON.stringify(payload);
+  const beaconSent =
+    typeof navigator !== 'undefined' &&
+    typeof navigator.sendBeacon === 'function' &&
+    navigator.sendBeacon('/api/monitoring', body);
+  if (beaconSent) {
+    return;
   }
+  void recordWebVital(payload, { keepalive: true }).catch(() => undefined);
 }
 
 export default function PerformanceMonitor() {

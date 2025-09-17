@@ -31,6 +31,30 @@ export interface paths {
       };
     };
   };
+  "/monitoring": {
+    /** Submit a web vital sample */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["WebVitalMetric"];
+        };
+      };
+      responses: {
+        /** @description Metric accepted */
+        202: {
+          content: {
+            "application/json": components["schemas"]["MonitoringAcceptedResponse"];
+          };
+        };
+        /** @description Invalid payload */
+        400: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
   "/nav-icons": {
     /** List navigation icon metadata */
     get: {
@@ -2904,6 +2928,16 @@ export interface components {
     };
     MessageResponse: {
       message: string;
+    };
+    MonitoringAcceptedResponse: {
+      /** @enum {string} */
+      status: "accepted";
+    };
+    WebVitalMetric: {
+      /** @enum {string} */
+      name: "CLS" | "FCP" | "FID" | "INP" | "LCP" | "TTFB";
+      value: number;
+      overThreshold: boolean;
     };
     /** @enum {string} */
     AntiCheatReviewStatus: "flagged" | "warn" | "restrict" | "ban";
