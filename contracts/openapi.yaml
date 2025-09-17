@@ -4176,6 +4176,8 @@ components:
             big:
               type: number
           required: [small, big]
+        startingStack:
+          type: number
         players:
           type: object
           properties:
@@ -4209,6 +4211,7 @@ components:
         - tableName
         - gameType
         - stakes
+        - startingStack
         - players
         - buyIn
         - stats

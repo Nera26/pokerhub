@@ -6,6 +6,7 @@ export const TableSchema = z.object({
   tableName: z.string(),
   gameType: GameTypeSchema,
   stakes: z.object({ small: z.number(), big: z.number() }),
+  startingStack: z.number(),
   players: z.object({ current: z.number(), max: z.number() }),
   buyIn: z.object({ min: z.number(), max: z.number() }),
   stats: z.object({

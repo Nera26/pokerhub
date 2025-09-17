@@ -168,6 +168,7 @@ export class TablesService {
       tableName: t.name,
       gameType: t.gameType as any,
       stakes: { small: t.smallBlind, big: t.bigBlind },
+      startingStack: t.startingStack,
       players: { current: t.playersCurrent, max: t.playersMax },
       buyIn: { min: t.minBuyIn, max: t.maxBuyIn },
       stats: {
