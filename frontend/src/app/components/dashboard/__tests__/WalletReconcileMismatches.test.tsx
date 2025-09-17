@@ -17,8 +17,20 @@ describe('WalletReconcileMismatches', () => {
     (useWalletReconcileMismatches as jest.Mock).mockReturnValue({
       data: {
         mismatches: [
-          { type: 'a', date: '2024-01-01', total: 10 },
-          { type: 'b', date: '2024-01-02', total: 20 },
+          {
+            account: 'player:1',
+            balance: 1500,
+            journal: 1200,
+            delta: 300,
+            date: '2024-01-01T00:00:00.000Z',
+          },
+          {
+            account: 'house',
+            balance: -1500,
+            journal: -1200,
+            delta: -300,
+            date: '2024-01-02T00:00:00.000Z',
+          },
         ],
       },
       isLoading: false,
@@ -27,6 +39,11 @@ describe('WalletReconcileMismatches', () => {
     });
     renderWithClient(<WalletReconcileMismatches />);
     expect(screen.getByText(/2 mismatches/i)).toBeInTheDocument();
+    expect(screen.getByText('player:1')).toBeInTheDocument();
+    expect(screen.getByText(/Δ \$300/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Balance \$1,500 · Journal \$1,200/),
+    ).toBeInTheDocument();
   });
 
   it('handles empty state', () => {
@@ -58,7 +75,17 @@ describe('WalletReconcileMismatches', () => {
   it('refetches on actions', () => {
     const refetch = jest.fn();
     (useWalletReconcileMismatches as jest.Mock).mockReturnValue({
-      data: { mismatches: [{ type: 'a', date: '2024-01-01', total: 10 }] },
+      data: {
+        mismatches: [
+          {
+            account: 'player:1',
+            balance: 1500,
+            journal: 1200,
+            delta: 300,
+            date: '2024-01-01T00:00:00.000Z',
+          },
+        ],
+      },
       isLoading: false,
       error: null,
       refetch,
