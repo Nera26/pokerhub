@@ -3436,6 +3436,7 @@ export interface components {
         small: number;
         big: number;
       };
+      startingStack: number;
       players: {
         current: number;
         max: number;

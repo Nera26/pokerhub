@@ -138,7 +138,7 @@ export default function ManageTables() {
                 tableName: editingTable.tableName,
                 gameType: editingTable.gameType,
                 stakes: editingTable.stakes,
-                startingStack: 100,
+                startingStack: editingTable.startingStack,
                 players: { max: editingTable.players.max },
                 buyIn: editingTable.buyIn,
               }

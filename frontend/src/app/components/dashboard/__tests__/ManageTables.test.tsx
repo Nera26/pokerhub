@@ -4,12 +4,17 @@ import ManageTables from '../ManageTables';
 import { fetchTables, createTable, updateTable } from '@/lib/api/table';
 import { renderWithClient } from './renderWithClient';
 import { fillTableForm } from './fillTableForm';
+import type { Table } from '@shared/types';
 
 jest.mock('@/lib/api/table', () => ({
   fetchTables: jest.fn(),
   createTable: jest.fn(),
   updateTable: jest.fn(),
   deleteTable: jest.fn(),
+}));
+
+jest.mock('next-intl', () => ({
+  useLocale: () => 'en',
 }));
 
 describe('ManageTables', () => {
@@ -24,21 +29,22 @@ describe('ManageTables', () => {
   >;
 
   async function openEditTable() {
-    mockFetchTables.mockResolvedValueOnce([
-      {
-        id: '1',
-        tableName: 'Table 1',
-        gameType: 'omaha',
-        stakes: { small: 1, big: 2 },
-        players: { current: 0, max: 6 },
-        buyIn: { min: 50, max: 200 },
-        stats: { handsPerHour: 0, avgPot: 0, rake: 0 },
-        createdAgo: '1m',
-      } as any,
-    ]);
+    const table: Table = {
+      id: '1',
+      tableName: 'Table 1',
+      gameType: 'omaha',
+      stakes: { small: 1, big: 2 },
+      startingStack: 500,
+      players: { current: 0, max: 6 },
+      buyIn: { min: 50, max: 200 },
+      stats: { handsPerHour: 0, avgPot: 0, rake: 0 },
+      createdAgo: '1m',
+    };
+    mockFetchTables.mockResolvedValueOnce([table]);
     renderWithClient(<ManageTables />);
     const updateBtn = await screen.findByRole('button', { name: /update/i });
     await userEvent.click(updateBtn);
+    return screen.getByLabelText(/starting stack/i) as HTMLInputElement;
   }
 
   beforeEach(() => {
@@ -101,5 +107,10 @@ describe('ManageTables', () => {
         'Failed to update table',
       ),
     );
+  });
+
+  it('prefills starting stack when editing table', async () => {
+    const startingStackInput = await openEditTable();
+    expect(startingStackInput).toHaveValue(500);
   });
 });
