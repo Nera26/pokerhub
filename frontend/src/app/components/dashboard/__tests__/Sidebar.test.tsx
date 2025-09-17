@@ -1,12 +1,13 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Sidebar from '../Sidebar';
-import { fetchNavItems, type NavItem } from '@/lib/api/nav';
 import {
   faChartLine,
   faChartBar,
   faUsers,
+  faBell,
 } from '@fortawesome/free-solid-svg-icons';
+import type { NavItem } from '@/hooks/useNavItems';
 
 const push = jest.fn();
 
@@ -14,15 +15,16 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({ push }),
 }));
 
-jest.mock('@/lib/api/nav', () => ({
-  fetchNavItems: jest.fn(),
+const mockUseNavItems = jest.fn();
+
+jest.mock('@/hooks/useNavItems', () => ({
+  useNavItems: () => mockUseNavItems(),
 }));
 
-const renderWithItems = async (items: NavItem[], selector: string) => {
-  (fetchNavItems as jest.Mock).mockResolvedValueOnce(items);
+const renderWithItems = (items: NavItem[], selector: string) => {
+  mockUseNavItems.mockReturnValueOnce({ items, loading: false, error: null });
   const { container } = render(<Sidebar open />);
-  await waitFor(() => expect(fetchNavItems).toHaveBeenCalled());
-  await waitFor(() =>
+  return waitFor(() =>
     expect(container.querySelector(selector)).toBeInTheDocument(),
   );
 };
@@ -30,51 +32,62 @@ const renderWithItems = async (items: NavItem[], selector: string) => {
 beforeEach(() => {
   jest.clearAllMocks();
   push.mockClear();
-  (fetchNavItems as jest.Mock).mockResolvedValue([
-    {
-      flag: 'dashboard',
-      href: '/dashboard',
-      label: 'Dashboard',
-      icon: faChartLine,
-      order: 1,
-    },
-    {
-      flag: 'analytics',
-      href: '/analytics',
-      label: 'Analytics',
-      icon: faChartBar,
-      order: 2,
-    },
-  ]);
-});
-
-describe('Sidebar', () => {
-  it('renders items from API', async () => {
-    (fetchNavItems as jest.Mock).mockResolvedValueOnce([
+  mockUseNavItems.mockReset();
+  mockUseNavItems.mockReturnValue({
+    items: [
       {
         flag: 'dashboard',
-        href: '/dashboard',
-        label: 'API Dashboard',
+        href: '',
+        label: 'Dashboard',
         icon: faChartLine,
         order: 1,
       },
       {
-        flag: 'users',
-        href: '/users',
-        label: 'API Users',
-        icon: faUsers,
+        flag: 'analytics',
+        href: '',
+        label: 'Analytics',
+        icon: faChartBar,
         order: 2,
       },
-    ]);
+    ],
+    loading: false,
+    error: null,
+  });
+});
+
+describe('Sidebar', () => {
+  it('renders items from API', async () => {
+    mockUseNavItems.mockReturnValueOnce({
+      items: [
+        {
+          flag: 'dashboard',
+          href: '/dashboard',
+          label: 'API Dashboard',
+          icon: faChartLine,
+          order: 1,
+        },
+        {
+          flag: 'users',
+          href: '/users',
+          label: 'API Users',
+          icon: faUsers,
+          order: 2,
+        },
+      ],
+      loading: false,
+      error: null,
+    });
     render(<Sidebar open />);
-    await waitFor(() => expect(fetchNavItems).toHaveBeenCalled());
     expect(await screen.findByText('API Users')).toBeInTheDocument();
   });
 
   it('shows error when API fails', async () => {
-    (fetchNavItems as jest.Mock).mockRejectedValueOnce(new Error('fail'));
+    mockUseNavItems.mockReturnValueOnce({
+      items: [],
+      loading: false,
+      error: new Error('fail'),
+    });
     render(<Sidebar open />);
-    await waitFor(() => expect(fetchNavItems).toHaveBeenCalled());
     expect(
       await screen.findByText('Failed to load sidebar'),
     ).toBeInTheDocument();
@@ -83,8 +96,6 @@ describe('Sidebar', () => {
   it('switches active tab when clicked', async () => {
     render(<Sidebar />);
     const user = userEvent.setup();
-
-    await waitFor(() => expect(fetchNavItems).toHaveBeenCalled());
 
     const dashboardTab = await screen.findByRole('button', {
       name: /dashboard/i,
@@ -107,8 +118,6 @@ describe('Sidebar', () => {
     render(<Sidebar active="users" onChange={onChange} />);
     const user = userEvent.setup();
 
-    await waitFor(() => expect(fetchNavItems).toHaveBeenCalled());
-
     const dashboardTab = await screen.findByRole('button', {
       name: /dashboard/i,
     });
@@ -130,5 +139,24 @@ describe('Sidebar', () => {
       ],
       'svg[data-icon="users"]',
     );
+  });
+
+  it('renders notification badge when provided', async () => {
+    mockUseNavItems.mockReturnValueOnce({
+      items: [
+        {
+          flag: 'notifications',
+          href: '/notifications',
+          label: 'Notifications',
+          icon: faBell,
+          order: 1,
+          badge: 5,
+        },
+      ],
+      loading: false,
+      error: null,
+    });
+    render(<Sidebar open />);
+    expect(await screen.findByText('5')).toBeInTheDocument();
   });
 });
