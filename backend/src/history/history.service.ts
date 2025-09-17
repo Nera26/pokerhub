@@ -14,6 +14,8 @@ import { GameHistory, TournamentHistory, WalletHistory } from './history.entity'
 
 @Injectable()
 export class HistoryService {
+  private static readonly DEFAULT_CURRENCY = 'USD';
+
   constructor(
     @Inject(GAME_HISTORY_REPOSITORY)
     private readonly games: HistoryRepository<GameHistory>,
@@ -32,7 +34,7 @@ export class HistoryService {
       buyin: r.buyin,
       date: r.date.toISOString(),
       profit: r.profit,
-      amount: r.amount,
+      ...this.parseAmount(r.amount),
     }));
   }
 
@@ -52,9 +54,36 @@ export class HistoryService {
     return rows.map((r) => ({
       date: r.date.toISOString(),
       type: r.type,
-      amount: r.amount,
+      ...this.parseAmount(r.amount),
       status: r.status,
     }));
+  }
+
+  private parseAmount(amount: string | null | undefined): {
+    amount: number;
+    currency: string;
+  } {
+    if (!amount) {
+      return { amount: 0, currency: HistoryService.DEFAULT_CURRENCY };
+    }
+
+    const trimmed = amount.trim();
+    const currencyMatch = trimmed.match(/([A-Za-z]{3})$/);
+    const symbolMatch = trimmed.match(/([$€£])/);
+    const symbolCurrency = symbolMatch
+      ? { $: 'USD', '€': 'EUR', '£': 'GBP' }[symbolMatch[1]]
+      : undefined;
+    const currency = (currencyMatch
+      ? currencyMatch[1].toUpperCase()
+      : symbolCurrency) ?? HistoryService.DEFAULT_CURRENCY;
+
+    const numericPart = trimmed.replace(/[^0-9.+-]/g, '');
+    const parsed = Number.parseFloat(numericPart);
+
+    return {
+      amount: Number.isFinite(parsed) ? parsed : 0,
+      currency,
+    };
   }
 }
 

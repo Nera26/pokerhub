@@ -5,6 +5,7 @@ import { fetchTables, createTable, updateTable } from '@/lib/api/table';
 import { renderWithClient } from './renderWithClient';
 import { fillTableForm } from './fillTableForm';
 import type { Table } from '@shared/types';
+import { useGameTypes } from '@/hooks/useGameTypes';
 
 jest.mock('@/lib/api/table', () => ({
   fetchTables: jest.fn(),
@@ -13,20 +14,35 @@ jest.mock('@/lib/api/table', () => ({
   deleteTable: jest.fn(),
 }));
 
+// If ManageTables uses next-intl, keep a minimal mock to avoid provider setup in tests
 jest.mock('next-intl', () => ({
   useLocale: () => 'en',
 }));
 
+jest.mock('@/hooks/useGameTypes', () => ({
+  useGameTypes: jest.fn(),
+}));
+
 describe('ManageTables', () => {
-  const mockFetchTables = fetchTables as jest.MockedFunction<
-    typeof fetchTables
+  const mockFetchTables = fetchTables as jest.MockedFunction<typeof fetchTables>;
+  const mockCreateTable = createTable as jest.MockedFunction<typeof createTable>;
+  const mockUpdateTable = updateTable as jest.MockedFunction<typeof updateTable>;
+  const mockUseGameTypes = useGameTypes as jest.MockedFunction<
+    typeof useGameTypes
   >;
-  const mockCreateTable = createTable as jest.MockedFunction<
-    typeof createTable
-  >;
-  const mockUpdateTable = updateTable as jest.MockedFunction<
-    typeof updateTable
-  >;
+
+  const createGameTypesResult = (
+    overrides: Record<string, unknown> = {},
+  ): ReturnType<typeof useGameTypes> =>
+    ({
+      data: [
+        { id: 'texas', label: "Texas Hold'em" },
+        { id: 'omaha', label: 'Omaha' },
+      ],
+      isLoading: false,
+      error: null,
+      ...overrides,
+    }) as unknown as ReturnType<typeof useGameTypes>;
 
   async function openEditTable() {
     const table: Table = {
@@ -49,6 +65,7 @@ describe('ManageTables', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUseGameTypes.mockReturnValue(createGameTypesResult());
   });
 
   it('submits form to create table', async () => {

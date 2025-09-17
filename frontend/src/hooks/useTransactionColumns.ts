@@ -17,7 +17,9 @@ const useTransactionColumnsQuery = createQueryHook<TransactionColumnsResponse>(
   'transaction columns',
 );
 
-export default function useTransactionColumns() {
-  const { data, isLoading, error } = useTransactionColumnsQuery();
+export default function useTransactionColumns(
+  options?: Parameters<typeof useTransactionColumnsQuery>[0],
+) {
+  const { data, isLoading, error } = useTransactionColumnsQuery(options);
   return { data: data ?? [], isLoading, error };
 }

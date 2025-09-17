@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { ForbiddenException, INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { TransactionsController } from '../src/routes/transactions.controller';
 import { AuthGuard } from '../src/auth/auth.guard';
@@ -22,6 +22,15 @@ describe('TransactionsController', () => {
   let statusRepo: Repository<TransactionStatus>;
   let tabRepo: Repository<TransactionTabEntity>;
   let columnRepo: TransactionColumnRepository;
+  const adminGuard = {
+    canActivate: jest.fn((context: any) => {
+      const req = context.switchToHttp().getRequest<{ headers: Record<string, string> }>();
+      if (req.headers['x-admin'] === '1') {
+        return true;
+      }
+      throw new ForbiddenException();
+    }),
+  };
 
   beforeAll(async () => {
     let dataSource: DataSource;
@@ -79,7 +88,7 @@ describe('TransactionsController', () => {
       .overrideGuard(AuthGuard)
       .useValue({ canActivate: () => true })
       .overrideGuard(AdminGuard)
-      .useValue({ canActivate: () => true })
+      .useValue(adminGuard)
       .compile();
 
     typeRepo = moduleRef.get(getRepositoryToken(TransactionType));
@@ -122,10 +131,15 @@ describe('TransactionsController', () => {
     await app.close();
   });
 
+  afterEach(() => {
+    adminGuard.canActivate.mockClear();
+  });
+
   it('returns transaction types', async () => {
     const res = await request(app.getHttpServer())
       .get('/transactions/types')
       .set('Authorization', 'Bearer test')
+      .set('x-admin', '1')
       .expect(200);
 
     expect(res.body).toEqual(
@@ -134,6 +148,7 @@ describe('TransactionsController', () => {
   });
 
   it('returns transaction statuses', async () => {
+    const callsBefore = adminGuard.canActivate.mock.calls.length;
     const res = await request(app.getHttpServer())
       .get('/transactions/statuses')
       .set('Authorization', 'Bearer test')
@@ -142,9 +157,11 @@ describe('TransactionsController', () => {
       label: 'Completed',
       style: 'bg-accent-green/20 text-accent-green',
     });
+    expect(adminGuard.canActivate.mock.calls.length).toBe(callsBefore);
   });
 
   it('returns transaction columns', async () => {
+    const callsBefore = adminGuard.canActivate.mock.calls.length;
     const res = await request(app.getHttpServer())
       .get('/transactions/columns')
       .set('Authorization', 'Bearer test')
@@ -155,12 +172,14 @@ describe('TransactionsController', () => {
         { id: 'status', label: 'Status' },
       ]),
     );
+    expect(adminGuard.canActivate.mock.calls.length).toBe(callsBefore);
   });
 
   it('returns user transactions', async () => {
     const res = await request(app.getHttpServer())
       .get('/users/user1/transactions')
       .set('Authorization', 'Bearer test')
+      .set('x-admin', '1')
       .expect(200);
     expect(res.body).toHaveLength(1);
     expect(res.body[0]).toHaveProperty('action', 'Deposit');
@@ -182,8 +201,16 @@ describe('TransactionsController', () => {
         '/admin/transactions?startDate=2024-03-01&endDate=2024-03-31&page=1&pageSize=10',
       )
       .set('Authorization', 'Bearer test')
+      .set('x-admin', '1')
       .expect(200);
     expect(res.body).toHaveLength(1);
     expect(res.body[0]).toHaveProperty('amount', 50);
+  });
+
+  it('rejects non-admin access to admin endpoints', async () => {
+    await request(app.getHttpServer())
+      .get('/transactions/types')
+      .set('Authorization', 'Bearer test')
+      .expect(403);
   });
 });

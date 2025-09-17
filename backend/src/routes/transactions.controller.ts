@@ -17,9 +17,10 @@ import type { Request } from 'express';
 
 @ApiTags('transactions')
 @Controller()
-@UseGuards(AuthGuard, AdminGuard)
+@UseGuards(AuthGuard)
 export class TransactionsController {
   constructor(private readonly txService: TransactionsService) {}
+  @UseGuards(AdminGuard)
   @Get('admin/transactions/tabs')
   @ApiOperation({ summary: 'Get transaction tabs' })
   @ApiResponse({ status: 200, description: 'Transaction tabs' })
@@ -27,6 +28,7 @@ export class TransactionsController {
     const res = await this.txService.getTransactionTabs();
     return TransactionTabsResponseSchema.parse(res);
   }
+  @UseGuards(AdminGuard)
   @Get('transactions/filters')
   @ApiOperation({ summary: 'Get transaction filter options' })
   @ApiResponse({ status: 200, description: 'Filter options' })
@@ -35,6 +37,7 @@ export class TransactionsController {
     return FilterOptionsSchema.parse(res);
   }
 
+  @UseGuards(AdminGuard)
   @Get('transactions/types')
   @ApiOperation({ summary: 'Get transaction types' })
   @ApiResponse({ status: 200, description: 'Transaction types' })
@@ -59,6 +62,7 @@ export class TransactionsController {
     return TransactionColumnsResponseSchema.parse(res);
   }
 
+  @UseGuards(AdminGuard)
   @Get('admin/transactions')
   @ApiOperation({ summary: 'List transactions' })
   @ApiResponse({ status: 200, description: 'Transactions list' })
@@ -68,6 +72,7 @@ export class TransactionsController {
     return TransactionLogResponseSchema.parse(res);
   }
 
+  @UseGuards(AdminGuard)
   @Get('users/:id/transactions')
   @ApiOperation({ summary: 'List user transactions' })
   @ApiResponse({ status: 200, description: 'Transactions list' })
