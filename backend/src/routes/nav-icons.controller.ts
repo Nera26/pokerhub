@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { NavIconsResponseSchema, type NavIcon } from '@shared/types';
+import type { NavIcon } from '@shared/types';
 import { NavIconsService } from '../services/nav-icons.service';
 
 @ApiTags('nav')
@@ -12,7 +12,6 @@ export class NavIconsController {
   @ApiOperation({ summary: 'List navigation icon metadata' })
   @ApiResponse({ status: 200, description: 'Navigation icons' })
   async list(): Promise<NavIcon[]> {
-    const icons = await this.icons.list();
-    return NavIconsResponseSchema.parse(icons);
+    return this.icons.listValidated();
   }
 }
