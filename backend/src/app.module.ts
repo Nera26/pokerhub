@@ -37,6 +37,7 @@ import { PrecacheController } from './routes/precache.controller';
 import { NavIconsController } from './routes/nav-icons.controller';
 import { AdminNavIconsController } from './routes/admin-nav-icons.controller';
 import { AdminBlockedCountriesController } from './routes/admin-blocked-countries.controller';
+import { AntiCheatController } from './routes/anti-cheat.controller';
 import { HistoryTabsController } from './routes/history-tabs.controller';
 import { SettingsController } from './routes/settings.controller';
 import { MetadataController } from './routes/metadata.controller';
@@ -189,6 +190,7 @@ import { ChartPaletteEntity } from './database/entities/chart-palette.entity';
       SettingsController,
       MetadataController,
       AdminBlockedCountriesController,
+      AntiCheatController,
     ],
   providers: [
     AppService,

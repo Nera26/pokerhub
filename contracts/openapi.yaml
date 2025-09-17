@@ -149,6 +149,68 @@ paths:
       responses:
         '204':
           description: Removed
+  /anti-cheat/flags:
+    get:
+      summary: List anti-cheat review flags
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Active anti-cheat flags
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AntiCheatFlagsResponse'
+  /anti-cheat/flags/{id}:
+    put:
+      summary: Escalate anti-cheat action for a session
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AntiCheatUpdateRequest'
+      responses:
+        '200':
+          description: Updated flag with history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AntiCheatFlag'
+        '400':
+          description: Invalid escalation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '404':
+          description: Flag not found
+  /anti-cheat/next-action:
+    get:
+      summary: Determine the next anti-cheat action
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: current
+          required: true
+          schema:
+            $ref: '#/components/schemas/AntiCheatReviewStatus'
+      responses:
+        '200':
+          description: Next escalation step when available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AntiCheatNextActionResponse'
   /nav-items:
     get:
       summary: List navigation items
@@ -2712,6 +2774,71 @@ components:
           type: string
       required:
         - message
+    AntiCheatReviewStatus:
+      type: string
+      enum:
+        - flagged
+        - warn
+        - restrict
+        - ban
+    AntiCheatReviewAction:
+      type: string
+      enum:
+        - warn
+        - restrict
+        - ban
+    AntiCheatHistoryEntry:
+      type: object
+      properties:
+        action:
+          $ref: '#/components/schemas/AntiCheatReviewAction'
+        timestamp:
+          type: integer
+          format: int64
+        reviewerId:
+          type: string
+      required:
+        - action
+        - timestamp
+        - reviewerId
+    AntiCheatFlag:
+      type: object
+      properties:
+        id:
+          type: string
+        users:
+          type: array
+          items:
+            type: string
+        status:
+          $ref: '#/components/schemas/AntiCheatReviewStatus'
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/AntiCheatHistoryEntry'
+      required:
+        - id
+        - users
+        - status
+        - history
+    AntiCheatFlagsResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/AntiCheatFlag'
+    AntiCheatUpdateRequest:
+      type: object
+      properties:
+        action:
+          $ref: '#/components/schemas/AntiCheatReviewAction'
+      required:
+        - action
+    AntiCheatNextActionResponse:
+      type: object
+      properties:
+        next:
+          oneOf:
+            - $ref: '#/components/schemas/AntiCheatReviewAction'
+            - type: 'null'
     AuthProvider:
       type: object
       properties:

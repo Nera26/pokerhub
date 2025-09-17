@@ -23,7 +23,12 @@ function renderPage() {
 describe('AntiCheatPage', () => {
   it('renders flags on success', async () => {
     (fetchFlags as jest.Mock).mockResolvedValue([
-      { id: '1', player: 'PlayerOne', history: ['h1'], action: 'warn' },
+      {
+        id: '1',
+        users: ['PlayerOne'],
+        history: [{ action: 'warn', timestamp: 1, reviewerId: 'admin' }],
+        status: 'flagged',
+      },
     ]);
     renderPage();
     expect(await screen.findByText('PlayerOne')).toBeInTheDocument();
@@ -38,22 +43,29 @@ describe('AntiCheatPage', () => {
   it('escalates flag using next action from API', async () => {
     (fetchFlags as jest.Mock)
       .mockResolvedValueOnce([
-        { id: '1', player: 'PlayerOne', history: [], action: 'warn' },
+        { id: '1', users: ['PlayerOne'], history: [], status: 'flagged' },
       ])
       .mockResolvedValueOnce([
-        { id: '1', player: 'PlayerOne', history: [], action: 'ban' },
+        {
+          id: '1',
+          users: ['PlayerOne'],
+          history: [{ action: 'warn', timestamp: 2, reviewerId: 'admin' }],
+          status: 'warn',
+        },
       ]);
-    (fetchNextAction as jest.Mock).mockResolvedValue('ban');
+    (fetchNextAction as jest.Mock).mockResolvedValue('warn');
     (updateFlag as jest.Mock).mockResolvedValue({});
 
     renderPage();
     const btn = await screen.findByRole('button', { name: 'Warn' });
     fireEvent.click(btn);
-    await waitFor(() => expect(fetchNextAction).toHaveBeenCalledWith('warn'));
-    await waitFor(() => expect(updateFlag).toHaveBeenCalledWith('1', 'ban'));
-    expect(btn).toBeDisabled();
+    await waitFor(() => expect(btn).toBeDisabled());
+    await waitFor(() =>
+      expect(fetchNextAction).toHaveBeenCalledWith('flagged'),
+    );
+    await waitFor(() => expect(updateFlag).toHaveBeenCalledWith('1', 'warn'));
     expect(
-      await screen.findByRole('button', { name: 'Ban' }),
+      await screen.findByRole('button', { name: 'Restrict' }),
     ).toBeInTheDocument();
   });
 });

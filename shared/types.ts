@@ -253,6 +253,27 @@ export type {
   ErrorCategoriesResponse,
 } from './schemas/analytics';
 
+export {
+  AntiCheatFlagSchema,
+  AntiCheatFlagsResponseSchema,
+  AntiCheatFlagUpdateRequestSchema,
+  AntiCheatHistoryEntrySchema,
+  AntiCheatNextActionQuerySchema,
+  AntiCheatNextActionResponseSchema,
+  AntiCheatReviewActionSchema,
+  AntiCheatReviewStatusSchema,
+} from '../backend/src/schemas/anti-cheat';
+export type {
+  AntiCheatFlag,
+  AntiCheatFlagsResponse,
+  AntiCheatFlagUpdateRequest,
+  AntiCheatHistoryEntry,
+  AntiCheatNextActionQuery,
+  AntiCheatNextActionResponse,
+  AntiCheatReviewAction,
+  AntiCheatReviewStatus,
+} from '../backend/src/schemas/anti-cheat';
+
 // Analytics log types
 export const LogTypeClassesSchema = z.record(z.string());
 export type LogTypeClasses = z.infer<typeof LogTypeClassesSchema>;
