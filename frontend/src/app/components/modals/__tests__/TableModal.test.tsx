@@ -1,6 +1,28 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TableModal from '../TableModal';
+import { useGameTypes } from '@/hooks/useGameTypes';
+
+jest.mock('@/hooks/useGameTypes', () => ({
+  useGameTypes: jest.fn(),
+}));
+
+const mockUseGameTypes = useGameTypes as jest.MockedFunction<
+  typeof useGameTypes
+>;
+
+const createGameTypesResult = (
+  overrides: Record<string, unknown> = {},
+): ReturnType<typeof useGameTypes> =>
+  ({
+    data: [
+      { id: 'texas', label: "Texas Hold'em" },
+      { id: 'omaha', label: 'Omaha' },
+    ],
+    isLoading: false,
+    error: null,
+    ...overrides,
+  }) as unknown as ReturnType<typeof useGameTypes>;
 
 const defaultValues = {
   tableName: 'Test Table',
@@ -14,6 +36,7 @@ const defaultValues = {
 const renderModal = () => {
   const onSubmit = jest.fn();
   const onClose = jest.fn();
+  mockUseGameTypes.mockReturnValue(createGameTypesResult());
   render(
     <TableModal
       isOpen
@@ -28,6 +51,10 @@ const renderModal = () => {
 };
 
 describe('TableModal', () => {
+  beforeEach(() => {
+    mockUseGameTypes.mockReset();
+  });
+
   it('submits form data', async () => {
     const { onSubmit } = renderModal();
 
