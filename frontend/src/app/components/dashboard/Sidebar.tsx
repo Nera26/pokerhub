@@ -1,9 +1,10 @@
 'use client';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { useEffect, useState } from 'react';
+import Image from 'next/image';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchNavItems, type NavItem } from '@/lib/api/nav';
+import { useNavItems, type NavItem } from '@/hooks/useNavItems';
 
 export type SidebarTab = NavItem['flag'];
 
@@ -26,23 +27,8 @@ export default function Sidebar({
   const sidebarOpen = open ?? internalOpen;
   const updateOpen = setOpen ?? setInternalOpen;
   const router = useRouter();
-  const [items, setItems] = useState<NavItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await fetchNavItems();
-        setItems(data);
-      } catch {
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-    void load();
-  }, []);
+  const { items, loading, error } = useNavItems();
+  const hasError = Boolean(error);
 
   const change = (flag: SidebarTab, href?: string) => {
     if (href) {
@@ -63,7 +49,7 @@ export default function Sidebar({
       <aside
         className={`h-full w-64 bg-card-bg border-r border-dark p-4 fixed inset-y-0 left-0 z-40 transform transition-transform md:static md:translate-x-0 md:shrink-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
-        {error && (
+        {hasError && (
           <div role="alert" className="text-red-500 mb-2">
             Failed to load sidebar
           </div>
@@ -86,14 +72,30 @@ export default function Sidebar({
                   ${isActive ? 'border-transparent bg-black/10' : 'border-dark'}
                 `}
                 >
-                  {it.icon && (
-                    <FontAwesomeIcon
-                      icon={it.icon}
-                      className={`${isActive ? 'text-black' : 'text-text-secondary'}`}
+                  {it.avatar ? (
+                    <Image
+                      src={it.avatar}
+                      alt={`${it.label} avatar`}
+                      width={32}
+                      height={32}
+                      sizes="32px"
+                      className="h-8 w-8 rounded-lg object-cover"
                     />
+                  ) : (
+                    it.icon && (
+                      <FontAwesomeIcon
+                        icon={it.icon}
+                        className={`${isActive ? 'text-black' : 'text-text-secondary'}`}
+                      />
+                    )
                   )}
                 </span>
-                <span className="font-medium">{it.label}</span>
+                <span className="font-medium flex-1 text-left">{it.label}</span>
+                {typeof it.badge === 'number' && it.badge > 0 && (
+                  <span className="ml-auto flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-danger-red px-1 text-xs font-semibold text-white">
+                    {it.badge}
+                  </span>
+                )}
               </button>
             );
           })}

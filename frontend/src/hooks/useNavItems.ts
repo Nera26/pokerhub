@@ -32,7 +32,11 @@ export function useNavItems() {
     return item;
   });
 
-  return { items: itemsWithDynamic, loading: navLoading || !!navError };
+  return {
+    items: itemsWithDynamic,
+    loading: navLoading || notifLoading,
+    error: navError ?? null,
+  };
 }
 
 export type { NavItem };
