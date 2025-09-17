@@ -2144,6 +2144,24 @@ export interface paths {
         };
       };
     };
+  };
+  "/admin/users/players": {
+    /** List player ids for filters */
+    get: {
+      parameters: {
+        query?: {
+          limit?: number;
+        };
+      };
+      responses: {
+        /** @description Player handles */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AdminPlayer"][];
+          };
+        };
+      };
+    };
     /** Create user */
     post: {
       requestBody: {
@@ -3215,6 +3233,10 @@ export interface components {
       balance: number;
       currency: string;
       banned: boolean;
+    };
+    AdminPlayer: {
+      id: string;
+      username: string;
     };
     /** @enum {string} */
     UserRole: "Player" | "Admin";
