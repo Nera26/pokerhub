@@ -8,12 +8,16 @@ import {
   Post,
   Put,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
+import type { Request } from 'express';
 import { KycDenialResponse, KycDenialResponseSchema } from '@shared/wallet.schema';
 import {
+  AuditLogEntry,
+  AuditLogEntrySchema,
   AuditLogsResponse,
   AuditLogsResponseSchema,
   AuditLogsQuerySchema,
@@ -72,6 +76,19 @@ export class AdminController {
     const params = AuditLogsQuerySchema.parse(query);
     const data = await this.analytics.getAuditLogs(params);
     return AuditLogsResponseSchema.parse(data);
+  }
+
+  @Post('audit-logs/:id/review')
+  @ApiOperation({ summary: 'Mark audit log reviewed' })
+  @ApiResponse({ status: 200, description: 'Audit log updated' })
+  @HttpCode(200)
+  async reviewAuditLog(
+    @Param('id') id: string,
+    @Req() req: Request,
+  ): Promise<AuditLogEntry> {
+    const adminId = (req as Request & { userId?: string }).userId ?? 'admin';
+    const updated = await this.analytics.markAuditLogReviewed(id, adminId);
+    return AuditLogEntrySchema.parse(updated);
   }
 
   @Get('audit/log-types')

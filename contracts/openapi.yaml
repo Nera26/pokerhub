@@ -1808,6 +1808,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuditLogTypesResponse'
+  /admin/audit-logs/{id}/review:
+    post:
+      summary: Mark audit log reviewed
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated audit log entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogEntry'
   /admin/security-alerts:
     get:
       summary: Get security alerts
@@ -2928,7 +2946,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         timestamp:
           type: string
           format: date-time
@@ -2940,6 +2958,15 @@ components:
           type: string
         ip:
           type: string
+        reviewed:
+          type: boolean
+        reviewedBy:
+          type: string
+          nullable: true
+        reviewedAt:
+          type: string
+          format: date-time
+          nullable: true
       required:
         - id
         - timestamp
@@ -2947,6 +2974,9 @@ components:
         - description
         - user
         - ip
+        - reviewed
+        - reviewedBy
+        - reviewedAt
     AuditLogsResponse:
       type: object
       properties:

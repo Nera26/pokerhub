@@ -20,6 +20,7 @@ describe('AdminController', () => {
     getSecurityAlerts: jest.fn(),
     getAdminEvents: jest.fn(),
     getAuditLogTypes: jest.fn(),
+    markAuditLogReviewed: jest.fn(),
   } as Partial<AnalyticsService>;
   const revenue = {
     getBreakdown: jest.fn(),
@@ -122,6 +123,26 @@ describe('AdminController', () => {
       .get('/admin/audit/log-types')
       .expect(200)
       .expect({ types: ['Login'] });
+  });
+
+  it('marks audit log as reviewed', async () => {
+    const log = {
+      id: 'log-1',
+      timestamp: '2024-01-01T00:00:00Z',
+      type: 'Login',
+      description: 'User logged in',
+      user: 'alice',
+      ip: '127.0.0.1',
+      reviewed: true,
+      reviewedBy: 'admin',
+      reviewedAt: '2024-01-02T00:00:00Z',
+    };
+    (analytics.markAuditLogReviewed as jest.Mock).mockResolvedValue(log);
+    await request(app.getHttpServer())
+      .post('/admin/audit-logs/log-1/review')
+      .expect(200)
+      .expect(log);
+    expect(analytics.markAuditLogReviewed).toHaveBeenCalledWith('log-1', 'admin');
   });
 
   it('returns empty audit log types', async () => {

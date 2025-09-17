@@ -9,9 +9,19 @@ interface Props {
   row: AuditLogEntry | null;
   onClose: () => void;
   badgeClasses: LogTypeClasses;
+  onMarkReviewed: () => void;
+  reviewLoading: boolean;
+  reviewError: string | null;
 }
 
-export default function DetailModal({ row, onClose, badgeClasses }: Props) {
+export default function DetailModal({
+  row,
+  onClose,
+  badgeClasses,
+  onMarkReviewed,
+  reviewLoading,
+  reviewError,
+}: Props) {
   return (
     <Modal isOpen={!!row} onClose={onClose}>
       {row && (
@@ -93,11 +103,34 @@ export default function DetailModal({ row, onClose, badgeClasses }: Props) {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-4">
-              <label className="flex items-center gap-2 mr-auto">
-                <input type="checkbox" className="rounded" />
-                <span className="text-sm">Mark as reviewed</span>
-              </label>
+            <div className="flex items-center justify-between gap-4 pt-4">
+              <div className="flex flex-col gap-1 mr-auto">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    className="rounded"
+                    checked={row.reviewed}
+                    disabled={row.reviewed || reviewLoading}
+                    onChange={() => {
+                      if (!row.reviewed) onMarkReviewed();
+                    }}
+                    aria-label="Mark as reviewed"
+                  />
+                  <span className="text-sm">Mark as reviewed</span>
+                </label>
+                {reviewLoading && (
+                  <span className="text-sm text-text-secondary">Saving…</span>
+                )}
+                {reviewError && (
+                  <span className="text-sm text-accent-red">{reviewError}</span>
+                )}
+                {row.reviewed && (
+                  <span className="text-xs text-text-secondary">
+                    Reviewed by {row.reviewedBy ?? 'Unknown reviewer'}
+                    {row.reviewedAt ? ` on ${row.reviewedAt}` : ''}
+                  </span>
+                )}
+              </div>
               <button
                 onClick={onClose}
                 className="bg-accent-blue hover:bg-blue-600 px-4 py-2 rounded-xl font-semibold"

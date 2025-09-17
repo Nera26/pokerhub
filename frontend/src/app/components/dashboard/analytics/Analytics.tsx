@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faDownload,
@@ -30,12 +30,14 @@ import { rebuildLeaderboard } from '@/lib/api/leaderboard';
 import type {
   AuditLogEntry,
   AuditLogType,
+  AuditLogsResponse,
   LogTypeClasses,
 } from '@shared/types';
 import { AuditLogEntrySchema } from '@shared/schemas/analytics';
 import {
   fetchLogTypeClasses,
   fetchErrorCategories,
+  markAuditLogReviewed,
   type ErrorCategoriesResponse,
 } from '@/lib/api/analytics';
 import useToasts from '@/hooks/useToasts';
@@ -53,6 +55,8 @@ export default function Analytics() {
   const [userFilter, setUserFilter] = useState('');
   const [resultLimit, setResultLimit] = useState(25);
   const [page, setPage] = useState(1);
+  const queryClient = useQueryClient();
+  const [reviewError, setReviewError] = useState<string | null>(null);
 
   const {
     data: badgeClasses,
@@ -106,12 +110,54 @@ export default function Analytics() {
   } = useRevenueBreakdown('all');
   const revenueBreakdown = revenueStreams;
   const { toasts, pushToast } = useToasts();
+  const reviewMutation = useMutation({
+    mutationFn: (id: AuditLogEntry['id']) => markAuditLogReviewed(id),
+    onSuccess: (updated) => {
+      queryClient.setQueriesData<AuditLogsResponse>(
+        { queryKey: ['audit-logs'] },
+        (prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            logs: prev.logs.map((log) =>
+              log.id === updated.id ? updated : log,
+            ),
+          };
+        },
+      );
+      setShowDetail((prev) =>
+        prev && prev.id === updated.id ? updated : prev,
+      );
+      setReviewError(null);
+      pushToast('Log marked as reviewed');
+    },
+    onError: () => {
+      setReviewError('Failed to mark log as reviewed');
+      pushToast('Failed to mark log as reviewed', { variant: 'error' });
+    },
+  });
   const rebuild = useMutation({
     mutationFn: () => rebuildLeaderboard(),
     onSuccess: () => pushToast('Leaderboard rebuild started'),
     onError: () =>
       pushToast('Failed to rebuild leaderboard', { variant: 'error' }),
   });
+
+  const handleReview = () => {
+    if (!showDetail || showDetail.reviewed || reviewMutation.isPending) return;
+    reviewMutation.mutate(showDetail.id);
+  };
+
+  const handleCloseDetail = () => {
+    setReviewError(null);
+    reviewMutation.reset();
+    setShowDetail(null);
+  };
+
+  const handleViewDetail = (row: AuditLogEntry) => {
+    setReviewError(null);
+    setShowDetail(row);
+  };
 
   if (badgeLoading)
     return <CenteredMessage>Loading log types...</CenteredMessage>;
@@ -281,7 +327,7 @@ export default function Analytics() {
           start={start}
           total={total}
           setPage={setPage}
-          onView={setShowDetail}
+          onView={handleViewDetail}
           badgeClasses={badgeClasses}
         />
       )}
@@ -303,8 +349,11 @@ export default function Analytics() {
 
       <DetailModal
         row={showDetail}
-        onClose={() => setShowDetail(null)}
+        onClose={handleCloseDetail}
         badgeClasses={badgeClasses}
+        onMarkReviewed={handleReview}
+        reviewLoading={reviewMutation.isPending}
+        reviewError={reviewError}
       />
 
       {toasts.map((t) => (

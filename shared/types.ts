@@ -220,6 +220,7 @@ export type {
 } from '../backend/src/schemas/tables';
 
 export {
+  AuditLogEntrySchema,
   AuditLogsResponseSchema,
   AuditLogTypesResponseSchema,
   AuditSummarySchema,

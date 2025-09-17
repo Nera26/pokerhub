@@ -27,8 +27,11 @@ interface AuditLog {
   timestamp: string;
   type: string;
   description: string;
-  user: string | null;
-  ip: string | null;
+  user: string;
+  ip: string;
+  reviewed: boolean;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
 }
 
 interface AuditSummaryRow {
@@ -172,6 +175,7 @@ export class AnalyticsService {
   private readonly collusionSessionsKey = 'collusion:sessions';
   private readonly collusionTransfersKey = 'collusion:transfers';
   private readonly collusionEventsKey = 'collusion:events';
+  private auditLogSchemaReady: Promise<void> | null = null;
 
   constructor(
     config: ConfigService,
@@ -218,6 +222,7 @@ export class AnalyticsService {
   }): Promise<{ logs: AuditLog[]; total: number }> {
     const offset = (page - 1) * limit;
     if (this.client) {
+      await this.ensureAuditLogTable();
       const where: string[] = [];
       const params: Record<string, any> = { limit, offset };
       if (search) {
@@ -244,11 +249,29 @@ export class AnalyticsService {
       }
       const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
       const res = await this.client.query({
-        query: `SELECT id, ts AS timestamp, type, description, user, ip FROM audit_log ${whereClause} ORDER BY ts DESC LIMIT {limit:UInt32} OFFSET {offset:UInt32}`,
+        query: `SELECT id, ts AS timestamp, type, description, user, ip, reviewed, reviewedBy, reviewedAt FROM audit_log ${whereClause} ORDER BY ts DESC LIMIT {limit:UInt32} OFFSET {offset:UInt32}`,
         query_params: params,
         format: 'JSONEachRow',
       });
-      const logs = (await res.json()) as AuditLog[];
+      const rows = (await res.json()) as Array<
+        {
+          id: string;
+          timestamp: string;
+          type: string;
+          description: string;
+          user: string | null;
+          ip: string | null;
+          reviewed: boolean | 0 | 1;
+          reviewedBy: string | null;
+          reviewedAt: string | null;
+        }
+      >;
+      const logs = rows.map((row) =>
+        this.applyAuditLogDefaults({
+          ...row,
+          reviewed: Boolean(row.reviewed),
+        }),
+      );
       const countRes = await this.client.query({
         query: `SELECT count() AS total FROM audit_log ${whereClause}`,
         query_params: params,
@@ -259,7 +282,9 @@ export class AnalyticsService {
     }
 
     const entries = await this.redis.lrange('audit-logs', 0, -1);
-    let logs = entries.map((e) => JSON.parse(e) as AuditLog);
+    let logs = entries.map((e) =>
+      this.applyAuditLogDefaults(JSON.parse(e) as Record<string, any>),
+    );
     if (search) {
       const s = search.toLowerCase();
       logs = logs.filter((l) =>
@@ -347,20 +372,92 @@ export class AnalyticsService {
     user: string;
     ip: string | null;
   }): Promise<void> {
-    const log = {
+    const log = this.applyAuditLogDefaults({
       id: randomUUID(),
       timestamp: new Date().toISOString(),
-      ...entry,
-    };
+      type: entry.type,
+      description: entry.description,
+      user: entry.user,
+      ip: entry.ip ?? '',
+      reviewed: false,
+      reviewedBy: null,
+      reviewedAt: null,
+    });
     await this.redis.lpush('audit-logs', JSON.stringify(log));
     await this.redis.ltrim('audit-logs', 0, 999);
     if (this.client) {
+      await this.ensureAuditLogTable();
       await this.client.insert({
         table: 'audit_log',
         values: [log],
         format: 'JSONEachRow',
       });
     }
+  }
+
+  async markAuditLogReviewed(id: string, adminId: string): Promise<AuditLog> {
+    const reviewedAt = new Date().toISOString();
+    let updated: AuditLog | null = null;
+
+    if (this.client) {
+      await this.ensureAuditLogTable();
+      const idExpr = this.formatAuditLogId(id);
+      await this.query(
+        `ALTER TABLE audit_log UPDATE reviewed = 1, reviewedBy = ${JSON.stringify(adminId)}, reviewedAt = parseDateTimeBestEffort(${JSON.stringify(
+          reviewedAt,
+        )}) WHERE id = ${idExpr}`,
+      );
+      const res = await this.client.query({
+        query: `SELECT id, ts AS timestamp, type, description, user, ip, reviewed, reviewedBy, reviewedAt FROM audit_log WHERE id = ${idExpr} LIMIT 1`,
+        format: 'JSONEachRow',
+      });
+      const [row] = (await res.json()) as Array<
+        {
+          id: string;
+          timestamp: string;
+          type: string;
+          description: string;
+          user: string | null;
+          ip: string | null;
+          reviewed: boolean | 0 | 1;
+          reviewedBy: string | null;
+          reviewedAt: string | null;
+        }
+      >;
+      if (row) {
+        updated = this.applyAuditLogDefaults({
+          ...row,
+          reviewed: Boolean(row.reviewed),
+        });
+      }
+    }
+
+    const entries = await this.redis.lrange('audit-logs', 0, -1);
+    for (let index = 0; index < entries.length; index++) {
+      const parsed = JSON.parse(entries[index]) as Record<string, any>;
+      if (String(parsed.id) === id) {
+        const normalized = this.applyAuditLogDefaults(parsed);
+        const merged: AuditLog = {
+          ...normalized,
+          reviewed: true,
+          reviewedBy: adminId,
+          reviewedAt,
+        };
+        await this.redis.lset('audit-logs', index, JSON.stringify(merged));
+        updated ??= merged;
+        break;
+      }
+    }
+
+    if (!updated) {
+      throw new Error('Audit log not found');
+    }
+
+    if (!updated.reviewedAt) {
+      updated = { ...updated, reviewedAt };
+    }
+
+    return updated;
   }
 
   async ingest<T extends Record<string, unknown>>(table: string, data: T) {
@@ -373,6 +470,59 @@ export class AnalyticsService {
       values: [data],
       format: 'JSONEachRow',
     });
+  }
+
+  private async ensureAuditLogTable(): Promise<void> {
+    if (!this.client) return;
+    if (!this.auditLogSchemaReady) {
+      this.auditLogSchemaReady = (async () => {
+        const createSql =
+          "CREATE TABLE IF NOT EXISTS audit_log (id UUID, ts DateTime, type String, description String, user String, ip String, reviewed UInt8 DEFAULT 0, reviewedBy Nullable(String), reviewedAt Nullable(DateTime)) ENGINE = MergeTree() ORDER BY (ts)";
+        await this.query(createSql);
+        await this.query(
+          'ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS reviewed UInt8 DEFAULT 0',
+        );
+        await this.query(
+          'ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS reviewedBy Nullable(String)',
+        );
+        await this.query(
+          'ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS reviewedAt Nullable(DateTime)',
+        );
+      })().catch((err) => {
+        this.auditLogSchemaReady = null;
+        this.logger.error('Failed to ensure audit_log schema', err as Error);
+        throw err;
+      });
+    }
+    await this.auditLogSchemaReady;
+  }
+
+  private applyAuditLogDefaults(log: {
+    id: string | number;
+    timestamp: string;
+    type: string;
+    description: string;
+    user?: string | null;
+    ip?: string | null;
+    reviewed?: boolean | 0 | 1 | null;
+    reviewedBy?: string | null;
+    reviewedAt?: string | null;
+  }): AuditLog {
+    return {
+      id: String(log.id),
+      timestamp: log.timestamp,
+      type: log.type,
+      description: log.description,
+      user: log.user ?? '',
+      ip: log.ip ?? '',
+      reviewed: Boolean(log.reviewed),
+      reviewedBy: log.reviewedBy ?? null,
+      reviewedAt: log.reviewedAt ?? null,
+    };
+  }
+
+  private formatAuditLogId(id: string): string {
+    return /^\d+$/.test(id) ? id : JSON.stringify(id);
   }
 
   private buildSchema(record: Record<string, unknown>): ParquetSchema {

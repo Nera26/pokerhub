@@ -141,3 +141,86 @@ describe('AnalyticsService getAuditLogTypes', () => {
     expect(types).toEqual(['Login', 'Error']);
   });
 });
+
+describe('AnalyticsService markAuditLogReviewed', () => {
+  it('updates redis when ClickHouse is unavailable', async () => {
+    const log = {
+      id: 'log-1',
+      timestamp: '2024-01-01T00:00:00Z',
+      type: 'Login',
+      description: 'User logged in',
+      user: 'alice',
+      ip: '127.0.0.1',
+      reviewed: false,
+      reviewedBy: null,
+      reviewedAt: null,
+    };
+    const redis = {
+      lrange: jest.fn().mockResolvedValue([JSON.stringify(log)]),
+      lset: jest.fn(),
+    };
+    const service: any = {
+      client: null,
+      redis,
+      applyAuditLogDefaults:
+        (AnalyticsService.prototype as any).applyAuditLogDefaults,
+    };
+    const result = await (AnalyticsService.prototype as any).markAuditLogReviewed.call(
+      service,
+      'log-1',
+      'reviewer-1',
+    );
+    expect(redis.lset).toHaveBeenCalledWith(
+      'audit-logs',
+      0,
+      expect.stringContaining('"reviewed":true'),
+    );
+    expect(result.reviewed).toBe(true);
+    expect(result.reviewedBy).toBe('reviewer-1');
+    expect(result.reviewedAt).toBeTruthy();
+  });
+
+  it('updates ClickHouse when available', async () => {
+    const redis = { lrange: jest.fn().mockResolvedValue([]), lset: jest.fn() };
+    const row = {
+      id: 'log-2',
+      timestamp: '2024-01-01T00:00:00Z',
+      type: 'Login',
+      description: 'User logged in',
+      user: 'bob',
+      ip: '127.0.0.1',
+      reviewed: 1,
+      reviewedBy: 'reviewer-2',
+      reviewedAt: '2024-01-02T00:00:00Z',
+    };
+    const service: any = {
+      client: {
+        query: jest.fn().mockResolvedValueOnce({ json: async () => [row] }),
+      },
+      redis,
+      ensureAuditLogTable: jest.fn(),
+      applyAuditLogDefaults:
+        (AnalyticsService.prototype as any).applyAuditLogDefaults,
+      query: jest.fn(),
+      formatAuditLogId: (AnalyticsService.prototype as any).formatAuditLogId,
+    };
+    const result = await (AnalyticsService.prototype as any).markAuditLogReviewed.call(
+      service,
+      'log-2',
+      'reviewer-2',
+    );
+    expect(service.ensureAuditLogTable).toHaveBeenCalled();
+    expect(service.query).toHaveBeenCalled();
+    expect(result).toEqual({
+      id: 'log-2',
+      timestamp: '2024-01-01T00:00:00Z',
+      type: 'Login',
+      description: 'User logged in',
+      user: 'bob',
+      ip: '127.0.0.1',
+      reviewed: true,
+      reviewedBy: 'reviewer-2',
+      reviewedAt: '2024-01-02T00:00:00Z',
+    });
+  });
+});
