@@ -55,6 +55,7 @@ describe('navigation components', () => {
           href: '/user',
           label: 'Profile',
           avatar: '/avatar.png',
+          order: 1,
         },
         {
           flag: 'notifications',
@@ -62,6 +63,7 @@ describe('navigation components', () => {
           label: 'Alerts',
           icon: faBell,
           badge: 3,
+          order: 2,
         },
       ],
     });

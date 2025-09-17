@@ -36,12 +36,14 @@ beforeEach(() => {
       href: '/dashboard',
       label: 'Dashboard',
       icon: faChartLine,
+      order: 1,
     },
     {
       flag: 'analytics',
       href: '/analytics',
       label: 'Analytics',
       icon: faChartBar,
+      order: 2,
     },
   ]);
 });
@@ -54,8 +56,15 @@ describe('Sidebar', () => {
         href: '/dashboard',
         label: 'API Dashboard',
         icon: faChartLine,
+        order: 1,
       },
-      { flag: 'users', href: '/users', label: 'API Users', icon: faUsers },
+      {
+        flag: 'users',
+        href: '/users',
+        label: 'API Users',
+        icon: faUsers,
+        order: 2,
+      },
     ]);
     render(<Sidebar open />);
     await waitFor(() => expect(fetchNavItems).toHaveBeenCalled());
@@ -110,7 +119,15 @@ describe('Sidebar', () => {
 
   it('renders icons provided by the server', async () => {
     await renderWithItems(
-      [{ flag: 'users', href: '/users', label: 'Users', icon: faUsers }],
+      [
+        {
+          flag: 'users',
+          href: '/users',
+          label: 'Users',
+          icon: faUsers,
+          order: 1,
+        },
+      ],
       'svg[data-icon="users"]',
     );
   });

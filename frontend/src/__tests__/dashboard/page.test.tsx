@@ -38,13 +38,15 @@ jest.mock('@/lib/api/nav', () => ({
       href: '/dashboard',
       label: 'Dashboard',
       icon: faChartLine,
+      order: 1,
     },
-    { flag: 'users', href: '/users', label: 'Users', icon: faUsers },
+    { flag: 'users', href: '/users', label: 'Users', icon: faUsers, order: 2 },
     {
       flag: 'analytics',
       href: '/analytics',
       label: 'Analytics',
       icon: faChartBar,
+      order: 3,
     },
   ]),
 }));

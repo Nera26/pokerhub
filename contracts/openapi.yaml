@@ -4054,7 +4054,7 @@ components:
         $ref: '#/components/schemas/NavIcon'
     NavItem:
       type: object
-      required: [flag, href, label]
+      required: [flag, href, label, order]
       properties:
         flag:
           type: string
@@ -4064,6 +4064,8 @@ components:
           type: string
         icon:
           type: string
+        order:
+          type: integer
     NavItemRequest:
       type: object
       required: [flag, href, label, order]
