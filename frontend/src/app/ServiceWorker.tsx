@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import Button from './components/ui/Button';
 import { env } from '@/lib/env';
+import useOffline from '@/hooks/useOffline';
 
 export default function ServiceWorker() {
   const t = useTranslations('serviceWorker');
@@ -11,13 +12,16 @@ export default function ServiceWorker() {
     null,
   );
   const [isUpdateAvailable, setIsUpdateAvailable] = useState(false);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const { online, retry } = useOffline();
 
   const handleRefresh = useCallback(() => {
     waitingWorker?.postMessage({ type: 'SKIP_WAITING' });
     setWaitingWorker(null);
-    window.location.reload();
-  }, [waitingWorker]);
+    retry();
+    if (!navigator.onLine) {
+      window.location.reload();
+    }
+  }, [retry, waitingWorker]);
 
   const handleDismiss = () => setIsUpdateAvailable(false);
 
@@ -52,15 +56,9 @@ export default function ServiceWorker() {
     };
 
     window.addEventListener('load', onLoad);
-    const onOnline = () => setIsOffline(false);
-    const onOffline = () => setIsOffline(true);
-    window.addEventListener('online', onOnline);
-    window.addEventListener('offline', onOffline);
 
     return () => {
       window.removeEventListener('load', onLoad);
-      window.removeEventListener('online', onOnline);
-      window.removeEventListener('offline', onOffline);
     };
   }, []);
 
@@ -68,7 +66,7 @@ export default function ServiceWorker() {
 
   return (
     <>
-      {isOffline && (
+      {!online && (
         <div className="fixed bottom-4 left-4 z-50 rounded-xl bg-card-bg p-4 text-text-primary shadow-lg border border-border-dark">
           <p>{t('offlineNotice')}</p>
         </div>

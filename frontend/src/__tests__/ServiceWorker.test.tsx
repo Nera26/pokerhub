@@ -13,13 +13,22 @@ jest.mock('next-intl', () => ({
     )[key],
 }));
 
+jest.mock('@/hooks/useOffline', () => ({
+  __esModule: true,
+  default: jest.fn(),
+}));
+
+const mockUseOffline = require('@/hooks/useOffline').default as jest.Mock;
+
 describe('ServiceWorker', () => {
   const originalServiceWorker = navigator.serviceWorker;
   let postMessage: jest.Mock;
   let consoleError: jest.SpyInstance;
+  let retry: jest.Mock;
 
   beforeEach(() => {
     postMessage = jest.fn();
+    retry = jest.fn();
     Object.assign(navigator, {
       serviceWorker: {
         register: jest.fn().mockResolvedValue({
@@ -28,6 +37,7 @@ describe('ServiceWorker', () => {
         }),
       },
     });
+    mockUseOffline.mockReturnValue({ online: true, retry });
     consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
@@ -48,18 +58,12 @@ describe('ServiceWorker', () => {
 
     await userEvent.click(button).catch(() => {});
     expect(postMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' });
+    expect(retry).toHaveBeenCalled();
   });
 
   it('shows offline notice on offline reload', () => {
-    Object.defineProperty(navigator, 'onLine', {
-      value: false,
-      configurable: true,
-    });
+    mockUseOffline.mockReturnValue({ online: false, retry: jest.fn() });
     render(<ServiceWorker />);
     expect(screen.getByText('You are offline')).toBeInTheDocument();
-    Object.defineProperty(navigator, 'onLine', {
-      value: true,
-      configurable: true,
-    });
   });
 });
