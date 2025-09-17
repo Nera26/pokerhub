@@ -17,7 +17,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import SearchInput from './SearchInput';
 
-interface AdminTableManagerProps<T> {
+export interface AdminTableManagerProps<T> {
   items: T[];
   header: React.ReactNode; // expects <TableRow> with <TableHead> children
   renderRow: (item: T) => React.ReactNode; // returns <TableRow>

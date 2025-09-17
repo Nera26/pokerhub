@@ -52,7 +52,7 @@ export async function fillTableForm({
   await userEvent.click(openBtn);
 
   await userEvent.type(screen.getByLabelText(/table name/i), 'My Table');
-  await screen.findByRole('option', { name: 'Omaha' });
+  await screen.findByRole('option', { name: /omaha/i });
   await userEvent.selectOptions(screen.getByLabelText(/game type/i), 'omaha');
   await userEvent.type(screen.getByLabelText(/small blind/i), '1');
   await userEvent.type(screen.getByLabelText(/big blind/i), '2');
