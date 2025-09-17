@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Analytics CSV export generates expected CSV 1`] = `
-"id,timestamp,type,description,user,ip
-1,2024-01-01,login,\"desc\",alice,1.1.1.1"
+"id,timestamp,type,description,user,ip,reviewed,reviewedBy,reviewedAt
+1,2024-01-01,login,\"desc\",alice,1.1.1.1,false,,"
 `;

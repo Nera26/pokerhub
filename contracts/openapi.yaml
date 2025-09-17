@@ -1591,6 +1591,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuditLogsResponse'
+  /analytics/log-types:
+    get:
+      summary: Get audit log types
+      responses:
+        '200':
+          description: Audit log types
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogTypesResponse'
+  /analytics/log-types/classes:
+    get:
+      summary: Get audit log type classes
+      responses:
+        '200':
+          description: Audit log type classes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogTypeClasses'
   /analytics/summary:
     get:
       summary: Get audit log summary
@@ -1892,6 +1912,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuditLogTypesResponse'
+  /admin/log-types:
+    get:
+      summary: Get audit log type classes
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Audit log type classes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogTypeClasses'
   /admin/audit-logs/{id}/review:
     post:
       summary: Mark audit log reviewed
@@ -3256,6 +3288,10 @@ components:
             $ref: '#/components/schemas/AuditLogType'
       required:
         - types
+    LogTypeClasses:
+      type: object
+      additionalProperties:
+        type: string
     AuditSummaryResponse:
       type: object
       properties:

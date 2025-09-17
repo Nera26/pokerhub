@@ -26,14 +26,12 @@ import {
   AuditLogEntry,
   AuditLogEntrySchema,
   AuditLogsResponse,
-  AuditLogsResponseSchema,
-  AuditLogsQuerySchema,
   AuditLogTypesResponse,
-  AuditLogTypesResponseSchema,
   AlertItem,
   AlertItemSchema,
   RevenueBreakdown,
   RevenueBreakdownSchema,
+  LogTypeClasses,
 } from '@shared/types';
 import {
   SidebarItem,
@@ -56,6 +54,11 @@ import { WalletService } from '../wallet/wallet.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { AdminTabsService } from '../services/admin-tabs.service';
+import {
+  getAuditLogClassMap,
+  getAuditLogsResponse,
+  getAuditLogTypesResponse,
+} from '../analytics/analytics.controller';
 
 @ApiTags('admin')
 @UseGuards(AuthGuard, AdminGuard)
@@ -82,9 +85,7 @@ export class AdminController {
   @ApiOperation({ summary: 'Get audit logs' })
   @ApiResponse({ status: 200, description: 'Audit logs' })
   async auditLogs(@Query() query: unknown): Promise<AuditLogsResponse> {
-    const params = AuditLogsQuerySchema.parse(query);
-    const data = await this.analytics.getAuditLogs(params);
-    return AuditLogsResponseSchema.parse(data);
+    return getAuditLogsResponse(this.analytics, query);
   }
 
   @Post('audit-logs/:id/review')
@@ -104,8 +105,14 @@ export class AdminController {
   @ApiOperation({ summary: 'Get audit log types' })
   @ApiResponse({ status: 200, description: 'Audit log types' })
   async auditLogTypes(): Promise<AuditLogTypesResponse> {
-    const types = await this.analytics.getAuditLogTypes();
-    return AuditLogTypesResponseSchema.parse({ types });
+    return getAuditLogTypesResponse(this.analytics);
+  }
+
+  @Get('log-types')
+  @ApiOperation({ summary: 'Get audit log type classes' })
+  @ApiResponse({ status: 200, description: 'Audit log type classes' })
+  async auditLogTypeClasses(): Promise<LogTypeClasses> {
+    return getAuditLogClassMap(this.analytics);
   }
 
   @Get('security-alerts')

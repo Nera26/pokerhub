@@ -142,6 +142,40 @@ describe('AnalyticsService getAuditLogTypes', () => {
   });
 });
 
+describe('AnalyticsService getAuditLogTypeClasses', () => {
+  it('uses overrides and matchers when resolving classes', async () => {
+    const service: any = {
+      getAuditLogTypes: jest.fn().mockResolvedValue([
+        'Login',
+        'wallet.commit',
+        'Broadcast',
+        'Unknown Event',
+        'Error',
+      ]),
+    };
+    const classes = await (AnalyticsService.prototype as any).getAuditLogTypeClasses.call(
+      service,
+    );
+    expect(classes).toEqual({
+      Login: 'bg-accent-green/20 text-accent-green',
+      'wallet.commit': 'bg-accent-blue/20 text-accent-blue',
+      Broadcast: 'bg-accent-yellow/20 text-accent-yellow',
+      'Unknown Event': 'bg-card-bg text-text-secondary',
+      Error: 'bg-danger-red/20 text-danger-red',
+    });
+  });
+
+  it('returns empty object when no types are available', async () => {
+    const service: any = {
+      getAuditLogTypes: jest.fn().mockResolvedValue([]),
+    };
+    const classes = await (AnalyticsService.prototype as any).getAuditLogTypeClasses.call(
+      service,
+    );
+    expect(classes).toEqual({});
+  });
+});
+
 describe('AnalyticsService markAuditLogReviewed', () => {
   it('updates redis when ClickHouse is unavailable', async () => {
     const log = {

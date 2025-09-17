@@ -23,6 +23,7 @@ describe('AdminController', () => {
     getSecurityAlerts: jest.fn(),
     getAdminEvents: jest.fn(),
     getAuditLogTypes: jest.fn(),
+    getAuditLogTypeClasses: jest.fn(),
     markAuditLogReviewed: jest.fn(),
     acknowledgeSecurityAlert: jest.fn(),
   } as Partial<AnalyticsService>;
@@ -170,6 +171,16 @@ describe('AdminController', () => {
       .get('/admin/audit/log-types')
       .expect(200)
       .expect({ types: ['Login'] });
+  });
+
+  it('returns audit log type classes', async () => {
+    (analytics.getAuditLogTypeClasses as jest.Mock).mockResolvedValue({
+      Login: 'bg-accent-green/20 text-accent-green',
+    });
+    await request(app.getHttpServer())
+      .get('/admin/log-types')
+      .expect(200)
+      .expect({ Login: 'bg-accent-green/20 text-accent-green' });
   });
 
   it('marks audit log as reviewed', async () => {

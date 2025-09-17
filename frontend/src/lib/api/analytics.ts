@@ -16,9 +16,13 @@ import {
 } from '@shared/types';
 
 export function fetchLogTypeClasses(): Promise<LogTypeClasses> {
-  return safeApiClient('/api/admin/log-types', LogTypeClassesSchema, {
-    errorMessage: 'Failed to fetch log type classes',
-  });
+  return safeApiClient(
+    '/api/analytics/log-types/classes',
+    LogTypeClassesSchema,
+    {
+      errorMessage: 'Failed to fetch log type classes',
+    },
+  );
 }
 
 export function fetchErrorCategories({

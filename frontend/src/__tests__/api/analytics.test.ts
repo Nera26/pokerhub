@@ -17,7 +17,7 @@ describe('fetchLogTypeClasses', () => {
     safeApiClientMock.mockResolvedValue({});
     await fetchLogTypeClasses();
     expect(safeApiClientMock).toHaveBeenCalledWith(
-      '/api/admin/log-types',
+      '/api/analytics/log-types/classes',
       LogTypeClassesSchema,
       { errorMessage: 'Failed to fetch log type classes' },
     );

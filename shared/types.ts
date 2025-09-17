@@ -19,10 +19,12 @@ export { ZodError };
 export {
   WebVitalMetricSchema,
   MonitoringAcceptedResponseSchema,
+  LogTypeClassesSchema,
 } from './schemas/analytics';
 export type {
   WebVitalMetric,
   MonitoringAcceptedResponse,
+  LogTypeClasses,
 } from './schemas/analytics';
 
 export const ServiceStatusResponseSchema = z.object({
@@ -282,10 +284,6 @@ export type {
   AntiCheatReviewAction,
   AntiCheatReviewStatus,
 } from '../backend/src/schemas/anti-cheat';
-
-// Analytics log types
-export const LogTypeClassesSchema = z.record(z.string());
-export type LogTypeClasses = z.infer<typeof LogTypeClassesSchema>;
 
 // Dashboard metrics (frontend-only)
 export const DashboardMetricsSchema = z.object({
