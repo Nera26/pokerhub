@@ -16,6 +16,7 @@ import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
 import { AdminTabEntity } from '../src/database/entities/admin-tab.entity';
 import { AdminTabsService } from '../src/services/admin-tabs.service';
+import { WalletService } from '../src/wallet/wallet.service';
 
 describe('Admin tabs integration', () => {
   let app: INestApplication;
@@ -65,6 +66,12 @@ describe('Admin tabs integration', () => {
                       component: '@/app/components/dashboard/AdminEvents',
                     },
                     {
+                      id: 'analytics',
+                      label: 'Analytics',
+                      icon: 'faChartLine',
+                      component: '@/app/components/dashboard/analytics/Analytics',
+                    },
+                    {
                       id: 'feature-flags',
                       label: 'Feature Flags',
                       icon: 'faToggleOn',
@@ -83,6 +90,7 @@ describe('Admin tabs integration', () => {
         { provide: AnalyticsService, useValue: {} },
         { provide: KycService, useValue: {} },
         { provide: RevenueService, useValue: {} },
+        { provide: WalletService, useValue: {} },
       ],
     })
       .overrideGuard(AuthGuard)
@@ -128,6 +136,13 @@ describe('Admin tabs integration', () => {
         title: 'Events',
         component: '@/app/components/dashboard/AdminEvents',
         icon: 'faBell',
+        source: 'config',
+      },
+      {
+        id: 'analytics',
+        title: 'Analytics',
+        component: '@/app/components/dashboard/analytics/Analytics',
+        icon: 'faChartLine',
         source: 'config',
       },
       {
