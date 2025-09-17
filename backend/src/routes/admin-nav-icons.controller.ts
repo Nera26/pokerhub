@@ -10,7 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { NavIconSchema, NavIconsResponseSchema, type NavIcon } from '@shared/types';
+import { NavIconSchema, type NavIcon } from '@shared/types';
 import { NavIconsService } from '../services/nav-icons.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
@@ -25,8 +25,7 @@ export class AdminNavIconsController {
   @ApiOperation({ summary: 'List navigation icon metadata' })
   @ApiResponse({ status: 200, description: 'Navigation icons' })
   async list(): Promise<NavIcon[]> {
-    const icons = await this.icons.list();
-    return NavIconsResponseSchema.parse(icons);
+    return this.icons.listValidated();
   }
 
   @Post()

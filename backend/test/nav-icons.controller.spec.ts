@@ -75,6 +75,10 @@ describe('NavIconsController', () => {
     }
   });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   afterAll(async () => {
     await app.close();
     if (dataSource.isInitialized) {
@@ -83,7 +87,7 @@ describe('NavIconsController', () => {
   });
 
   it('returns navigation icons', async () => {
-    const listSpy = jest.spyOn(service, 'list');
+    const listSpy = jest.spyOn(service, 'listValidated');
     const res = await request(app.getHttpServer())
       .get('/nav-icons')
       .expect(200);
@@ -96,9 +100,11 @@ describe('NavIconsController', () => {
   });
 
   it('returns navigation icons for admin route', async () => {
+    const listSpy = jest.spyOn(service, 'listValidated');
     const res = await request(app.getHttpServer())
       .get('/admin/nav-icons')
       .expect(200);
+    expect(listSpy).toHaveBeenCalledTimes(1);
     const body = NavIconsResponseSchema.parse(res.body);
     const expected: NavIconsResponse = NAV_ICON_DATA.map((icon) => ({ ...icon }));
     body.sort((a, b) => a.name.localeCompare(b.name));
