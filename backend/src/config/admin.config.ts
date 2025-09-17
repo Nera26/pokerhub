@@ -14,5 +14,11 @@ export default registerAs('admin', () => ({
       icon: 'faToggleOn',
       component: '@/app/components/dashboard/FeatureFlagsPanel',
     },
+    {
+      id: 'broadcast',
+      label: 'Broadcasts',
+      icon: 'faBullhorn',
+      component: '@/app/components/dashboard/BroadcastPanel',
+    },
   ],
 }));

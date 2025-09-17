@@ -64,6 +64,18 @@ describe('Admin tabs integration', () => {
                       icon: 'faBell',
                       component: '@/app/components/dashboard/AdminEvents',
                     },
+                    {
+                      id: 'feature-flags',
+                      label: 'Feature Flags',
+                      icon: 'faToggleOn',
+                      component: '@/app/components/dashboard/FeatureFlagsPanel',
+                    },
+                    {
+                      id: 'broadcast',
+                      label: 'Broadcasts',
+                      icon: 'faBullhorn',
+                      component: '@/app/components/dashboard/BroadcastPanel',
+                    },
                   ]
                 : undefined,
           },
@@ -116,6 +128,20 @@ describe('Admin tabs integration', () => {
         title: 'Events',
         component: '@/app/components/dashboard/AdminEvents',
         icon: 'faBell',
+        source: 'config',
+      },
+      {
+        id: 'feature-flags',
+        title: 'Feature Flags',
+        component: '@/app/components/dashboard/FeatureFlagsPanel',
+        icon: 'faToggleOn',
+        source: 'config',
+      },
+      {
+        id: 'broadcast',
+        title: 'Broadcasts',
+        component: '@/app/components/dashboard/BroadcastPanel',
+        icon: 'faBullhorn',
         source: 'config',
       },
       {
