@@ -192,6 +192,15 @@ export type WalletReconcileMismatchesResponse = z.infer<
   typeof WalletReconcileMismatchesResponseSchema
 >;
 
+export const WalletReconcileMismatchAcknowledgementSchema = z.object({
+  account: z.string(),
+  acknowledgedBy: z.string(),
+  acknowledgedAt: z.string().datetime(),
+});
+export type WalletReconcileMismatchAcknowledgement = z.infer<
+  typeof WalletReconcileMismatchAcknowledgementSchema
+>;
+
 export const IbanResponseSchema = z.object({
   iban: z.string(),
   masked: z.string(),

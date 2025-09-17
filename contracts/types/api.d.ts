@@ -2104,6 +2104,24 @@ export interface paths {
       };
     };
   };
+  "/admin/wallet/reconcile/mismatches/{account}/ack": {
+    /** Acknowledge wallet reconciliation mismatch */
+    post: {
+      parameters: {
+        path: {
+          account: string;
+        };
+      };
+      responses: {
+        /** @description Mismatch acknowledged */
+        200: {
+          content: {
+            "application/json": components["schemas"]["WalletReconcileMismatchAcknowledgement"];
+          };
+        };
+      };
+    };
+  };
   "/admin/messages": {
     /** List user messages */
     get: {
@@ -3135,6 +3153,12 @@ export interface components {
       delta: number;
       /** Format: date-time */
       date: string;
+    };
+    WalletReconcileMismatchAcknowledgement: {
+      account: string;
+      acknowledgedBy: string;
+      /** Format: date-time */
+      acknowledgedAt: string;
     };
     WalletReconcileMismatchesResponse: {
       mismatches: components["schemas"]["WalletReconcileMismatch"][];
