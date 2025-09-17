@@ -23,6 +23,23 @@ interface Props {
   onViewBracket?(title: string): void;
 }
 
+function formatAmount(amount: number, currency: string): string {
+  const formatter = new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const formatted = formatter.format(amount);
+  if (amount > 0) {
+    return `+${formatted}`;
+  }
+  if (amount < 0) {
+    return formatted;
+  }
+  return formatter.format(0);
+}
+
 function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
   const {
     data: gameData,
@@ -108,7 +125,7 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
                   e.profit ? 'text-accent-green' : 'text-danger-red'
                 }`}
               >
-                {e.amount}
+                {formatAmount(e.amount, e.currency)}
               </p>
               <button
                 onClick={() => onWatchReplay?.(e.id)}
@@ -244,12 +261,14 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
                   <td className="py-2 pr-6 whitespace-nowrap">{row.type}</td>
                   <td
                     className={`py-2 pr-6 whitespace-nowrap ${
-                      row.amount.startsWith('+')
+                      row.amount > 0
                         ? 'text-accent-green'
-                        : 'text-danger-red'
+                        : row.amount < 0
+                          ? 'text-danger-red'
+                          : ''
                     }`}
                   >
-                    {row.amount}
+                    {formatAmount(row.amount, row.currency)}
                   </td>
                   <td className="py-2 pr-6 whitespace-nowrap">
                     <span

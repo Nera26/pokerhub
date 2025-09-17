@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CurrencySchema } from '../wallet.schema';
 
 export const GameHistoryEntrySchema = z.object({
   id: z.string(),
@@ -7,7 +8,8 @@ export const GameHistoryEntrySchema = z.object({
   buyin: z.string(),
   date: z.string(),
   profit: z.boolean(),
-  amount: z.string(),
+  amount: z.number(),
+  currency: CurrencySchema,
 });
 export type GameHistoryEntry = z.infer<typeof GameHistoryEntrySchema>;
 
@@ -25,7 +27,8 @@ export type TournamentHistoryEntry = z.infer<
 export const TransactionEntrySchema = z.object({
   date: z.string(),
   type: z.string(),
-  amount: z.string(),
+  amount: z.number(),
+  currency: CurrencySchema,
   status: z.string(),
 });
 export type TransactionEntry = z.infer<typeof TransactionEntrySchema>;
