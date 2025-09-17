@@ -14,12 +14,14 @@ import {
   IbanUpdateRequestSchema,
   IbanDetailsSchema,
   WalletReconcileMismatchesResponseSchema,
+  WalletReconcileMismatchAcknowledgementSchema,
   type WalletStatusResponse,
   type IbanResponse,
   type IbanHistoryResponse,
   type IbanUpdateRequest,
   type IbanDetails,
   type WalletReconcileMismatchesResponse,
+  type WalletReconcileMismatchAcknowledgement,
   // Optionally validate before calling adminAdjustBalance
   AdminBalanceRequestSchema,
   type AdminBalanceRequest,
@@ -175,6 +177,20 @@ export function fetchWalletReconcileMismatches(
     `/api/admin/wallet/reconcile/mismatches`,
     WalletReconcileMismatchesResponseSchema,
     { signal: opts.signal },
+  );
+}
+
+export function markWalletMismatchAcknowledged(
+  account: string,
+  opts: { signal?: AbortSignal } = {},
+): Promise<WalletReconcileMismatchAcknowledgement> {
+  return apiClient(
+    `/api/admin/wallet/reconcile/mismatches/${encodeURIComponent(account)}/ack`,
+    WalletReconcileMismatchAcknowledgementSchema,
+    {
+      method: 'POST',
+      signal: opts.signal,
+    },
   );
 }
 

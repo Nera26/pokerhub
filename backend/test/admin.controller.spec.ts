@@ -11,6 +11,8 @@ import type { SidebarItem } from '../src/schemas/admin';
 import { RevenueService } from '../src/wallet/revenue.service';
 import { AdminTabsService } from '../src/services/admin-tabs.service';
 import { WalletService } from '../src/wallet/wallet.service';
+import type { ReconcileRow } from '../src/wallet/wallet.service';
+import type { WalletReconcileMismatchAcknowledgement } from '@shared/wallet.schema';
 
 describe('AdminController', () => {
   let app: INestApplication;
@@ -81,9 +83,8 @@ describe('AdminController', () => {
           })),
       ),
   } as Partial<AdminTabsService>;
-  const wallet = {
-    reconcile: jest.fn(),
-  } as Partial<WalletService>;
+  const wallet = {} as Partial<WalletService>;
+  let acknowledged: Map<string, WalletReconcileMismatchAcknowledgement>;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -105,6 +106,29 @@ describe('AdminController', () => {
 
     app = moduleRef.createNestApplication();
     await app.init();
+  });
+
+  beforeEach(() => {
+    acknowledged = new Map();
+    wallet.reconcile = jest.fn();
+    wallet.acknowledgeMismatch = jest
+      .fn()
+      .mockImplementation(
+        async (account: string, adminId: string) => {
+          const ack: WalletReconcileMismatchAcknowledgement = {
+            account,
+            acknowledgedBy: adminId,
+            acknowledgedAt: new Date().toISOString(),
+          };
+          acknowledged.set(account, ack);
+          return ack;
+        },
+      );
+    wallet.filterAcknowledgedMismatches = jest
+      .fn()
+      .mockImplementation((rows: ReconcileRow[]) =>
+        rows.filter((row) => acknowledged.has(row.account) === false),
+      );
   });
 
   afterEach(() => {
@@ -235,6 +259,9 @@ describe('AdminController', () => {
       .expect(200);
 
     expect(wallet.reconcile).toHaveBeenCalledTimes(1);
+    expect(wallet.filterAcknowledgedMismatches).toHaveBeenCalledWith([
+      { account: 'player:1', balance: 1500, journal: 1200 },
+    ]);
     expect(body).toEqual({
       mismatches: [
         {
@@ -246,5 +273,38 @@ describe('AdminController', () => {
         },
       ],
     });
+  });
+
+  it('acknowledges wallet mismatches and filters them from subsequent responses', async () => {
+    const now = new Date('2024-02-01T00:00:00.000Z');
+    jest.useFakeTimers().setSystemTime(now);
+    (wallet.reconcile as jest.Mock).mockResolvedValue([
+      { account: 'player:1', balance: 1500, journal: 1200 },
+    ]);
+
+    const initial = await request(app.getHttpServer())
+      .get('/admin/wallet/reconcile/mismatches')
+      .expect(200);
+    expect(initial.body.mismatches).toHaveLength(1);
+
+    const ackResponse = await request(app.getHttpServer())
+      .post('/admin/wallet/reconcile/mismatches/player:1/ack')
+      .expect(200);
+
+    expect(wallet.acknowledgeMismatch).toHaveBeenCalledWith('player:1', 'admin');
+    expect(ackResponse.body).toEqual({
+      account: 'player:1',
+      acknowledgedBy: 'admin',
+      acknowledgedAt: now.toISOString(),
+    });
+
+    const afterAck = await request(app.getHttpServer())
+      .get('/admin/wallet/reconcile/mismatches')
+      .expect(200);
+
+    expect(wallet.filterAcknowledgedMismatches).toHaveBeenLastCalledWith([
+      { account: 'player:1', balance: 1500, journal: 1200 },
+    ]);
+    expect(afterAck.body).toEqual({ mismatches: [] });
   });
 });

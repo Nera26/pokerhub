@@ -19,6 +19,8 @@ import {
   KycDenialResponseSchema,
   WalletReconcileMismatchesResponseSchema,
   type WalletReconcileMismatchesResponse,
+  WalletReconcileMismatchAcknowledgementSchema,
+  type WalletReconcileMismatchAcknowledgement,
 } from '@shared/wallet.schema';
 import {
   AuditLogEntry,
@@ -193,7 +195,8 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Wallet mismatches' })
   async walletReconcileMismatches(): Promise<WalletReconcileMismatchesResponse> {
     const report = await this.wallet.reconcile();
-    const mismatches = report.map((row) => ({
+    const filtered = this.wallet.filterAcknowledgedMismatches(report);
+    const mismatches = filtered.map((row) => ({
       account: row.account,
       balance: row.balance,
       journal: row.journal,
@@ -201,5 +204,21 @@ export class AdminController {
       date: new Date().toISOString(),
     }));
     return WalletReconcileMismatchesResponseSchema.parse({ mismatches });
+  }
+
+  @Post('wallet/reconcile/mismatches/:account/ack')
+  @ApiOperation({ summary: 'Acknowledge wallet reconciliation mismatch' })
+  @ApiResponse({ status: 200, description: 'Mismatch acknowledged' })
+  @HttpCode(200)
+  async acknowledgeWalletMismatch(
+    @Param('account') account: string,
+    @Req() req: Request,
+  ): Promise<WalletReconcileMismatchAcknowledgement> {
+    const adminId = (req as Request & { userId?: string }).userId ?? 'admin';
+    const acknowledgement = await this.wallet.acknowledgeMismatch(
+      account,
+      adminId,
+    );
+    return WalletReconcileMismatchAcknowledgementSchema.parse(acknowledgement);
   }
 }

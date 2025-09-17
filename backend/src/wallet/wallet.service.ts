@@ -34,6 +34,7 @@ import type {
   IbanResponse,
   IbanHistoryResponse,
   IbanUpdateRequest,
+  WalletReconcileMismatchAcknowledgement,
 } from '@shared/wallet.schema';
 import type { PendingWithdrawal } from '@shared/types';
 
@@ -59,6 +60,11 @@ export class WalletService {
     'wallet_transaction_duration_ms',
     { description: 'Duration of wallet operations', unit: 'ms' },
   );
+
+  private readonly acknowledgedMismatches = new Map<
+    string,
+    WalletReconcileMismatchAcknowledgement
+  >();
 
   constructor(
     @InjectRepository(Account) private readonly accounts: Repository<Account>,
@@ -490,6 +496,37 @@ export class WalletService {
       }
     }
     return report;
+  }
+
+  async acknowledgeMismatch(
+    account: string,
+    adminId: string,
+  ): Promise<WalletReconcileMismatchAcknowledgement> {
+    const acknowledgement: WalletReconcileMismatchAcknowledgement = {
+      account,
+      acknowledgedBy: adminId,
+      acknowledgedAt: new Date().toISOString(),
+    };
+    this.acknowledgedMismatches.set(account, acknowledgement);
+    await this.events.emit('wallet.reconcile.mismatch.resolved', acknowledgement);
+    return acknowledgement;
+  }
+
+  filterAcknowledgedMismatches(report: ReconcileRow[]): ReconcileRow[] {
+    const filtered: ReconcileRow[] = [];
+    const seen = new Set<string>();
+    for (const row of report) {
+      seen.add(row.account);
+      if (!this.acknowledgedMismatches.has(row.account)) {
+        filtered.push(row);
+      }
+    }
+    for (const account of this.acknowledgedMismatches.keys()) {
+      if (!seen.has(account)) {
+        this.acknowledgedMismatches.delete(account);
+      }
+    }
+    return filtered;
   }
 
   private async checkVelocity(

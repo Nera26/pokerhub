@@ -102,6 +102,12 @@ const WalletReconcileMismatchEvent = z.object({
   total: z.number(),
 });
 
+const WalletReconcileMismatchAcknowledgedEvent = z.object({
+  account: z.string(),
+  acknowledgedBy: z.string(),
+  acknowledgedAt: z.string().datetime(),
+});
+
 const NotificationCreateEvent = z.object({
   userId: z.string().uuid(),
   type: NotificationTypeSchema,
@@ -151,6 +157,7 @@ export const EventSchemas = {
   "antiCheat.flag": AntiCheatFlagEvent,
   "wallet.velocity.limit": WalletVelocityLimitEvent,
   "wallet.reconcile.mismatch": WalletReconcileMismatchEvent,
+  "wallet.reconcile.mismatch.resolved": WalletReconcileMismatchAcknowledgedEvent,
   "wallet.chargeback_flag": WalletChargebackFlagEvent,
   "notification.create": NotificationCreateEvent,
   "wallet.deposit.rejected": WalletDepositRejectedEvent,
@@ -175,6 +182,9 @@ export type Events = {
   "antiCheat.flag": z.infer<typeof AntiCheatFlagEvent>;
   "wallet.velocity.limit": z.infer<typeof WalletVelocityLimitEvent>;
   "wallet.reconcile.mismatch": z.infer<typeof WalletReconcileMismatchEvent>;
+  "wallet.reconcile.mismatch.resolved": z.infer<
+    typeof WalletReconcileMismatchAcknowledgedEvent
+  >;
   "wallet.chargeback_flag": z.infer<typeof WalletChargebackFlagEvent>;
   "notification.create": z.infer<typeof NotificationCreateEvent>;
   "wallet.deposit.rejected": z.infer<typeof WalletDepositRejectedEvent>;

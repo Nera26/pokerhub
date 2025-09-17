@@ -2020,6 +2020,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WalletReconcileMismatchesResponse'
+  /admin/wallet/reconcile/mismatches/{account}/ack:
+    post:
+      summary: Acknowledge wallet reconciliation mismatch
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: account
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Mismatch acknowledged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletReconcileMismatchAcknowledgement'
   /admin/messages:
     get:
       summary: List user messages
@@ -3463,6 +3481,20 @@ components:
         - journal
         - delta
         - date
+    WalletReconcileMismatchAcknowledgement:
+      type: object
+      properties:
+        account:
+          type: string
+        acknowledgedBy:
+          type: string
+        acknowledgedAt:
+          type: string
+          format: date-time
+      required:
+        - account
+        - acknowledgedBy
+        - acknowledgedAt
     WalletReconcileMismatchesResponse:
       type: object
       properties:
