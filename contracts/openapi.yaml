@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.30.0
+  version: 2.31.0
 paths:
   /status:
     get:
@@ -23,6 +23,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PrecacheResponse'
+  /monitoring:
+    post:
+      summary: Submit a web vital sample
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebVitalMetric'
+      responses:
+        '202':
+          description: Metric accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonitoringAcceptedResponse'
+        '400':
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /nav-icons:
     get:
       summary: List navigation icon metadata
@@ -2823,6 +2845,36 @@ components:
           type: string
       required:
         - message
+    MonitoringAcceptedResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - accepted
+      required:
+        - status
+    WebVitalMetric:
+      type: object
+      properties:
+        name:
+          type: string
+          enum:
+            - CLS
+            - FCP
+            - FID
+            - INP
+            - LCP
+            - TTFB
+        value:
+          type: number
+          minimum: 0
+        overThreshold:
+          type: boolean
+      required:
+        - name
+        - value
+        - overThreshold
     AntiCheatReviewStatus:
       type: string
       enum:

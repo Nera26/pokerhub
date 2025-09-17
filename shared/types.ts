@@ -16,6 +16,15 @@ export { GameActionSchema };
 
 export { ZodError };
 
+export {
+  WebVitalMetricSchema,
+  MonitoringAcceptedResponseSchema,
+} from './schemas/analytics';
+export type {
+  WebVitalMetric,
+  MonitoringAcceptedResponse,
+} from './schemas/analytics';
+
 export const ServiceStatusResponseSchema = z.object({
   status: z.string(),
   contractVersion: z.string(),

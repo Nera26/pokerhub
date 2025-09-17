@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import Redis from 'ioredis';
+import type { WebVitalMetric } from '@shared/types';
 
 /**
  * MetricsWriter persists dashboard metrics to Redis.
@@ -11,6 +12,8 @@ import Redis from 'ioredis';
 @Injectable()
 export class MetricsWriterService {
   private readonly onlineSet = 'metrics:online:users';
+  private readonly webVitalTtlSeconds = 24 * 60 * 60;
+  private readonly webVitalSampleLimit = 50;
 
   constructor(@Inject('REDIS_CLIENT') private readonly redis: Redis) {}
 
@@ -34,5 +37,17 @@ export class MetricsWriterService {
   async addRevenue(amount: number): Promise<void> {
     if (amount === 0) return;
     await this.redis.incrbyfloat('metrics:revenue', amount);
+  }
+
+  async recordWebVital(metric: WebVitalMetric): Promise<void> {
+    const key = `metrics:web-vitals:${metric.name.toLowerCase()}`;
+    const entry = JSON.stringify({
+      value: metric.value,
+      overThreshold: metric.overThreshold,
+      recordedAt: Date.now(),
+    });
+    await this.redis.lpush(key, entry);
+    await this.redis.ltrim(key, 0, this.webVitalSampleLimit - 1);
+    await this.redis.expire(key, this.webVitalTtlSeconds);
   }
 }

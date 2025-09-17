@@ -1,5 +1,19 @@
 import { z } from 'zod';
 
+export const WebVitalMetricSchema = z.object({
+  name: z.enum(['CLS', 'FCP', 'FID', 'INP', 'LCP', 'TTFB']),
+  value: z.number().nonnegative(),
+  overThreshold: z.boolean(),
+});
+export type WebVitalMetric = z.infer<typeof WebVitalMetricSchema>;
+
+export const MonitoringAcceptedResponseSchema = z.object({
+  status: z.literal('accepted'),
+});
+export type MonitoringAcceptedResponse = z.infer<
+  typeof MonitoringAcceptedResponseSchema
+>;
+
 export const AuditLogTypeSchema = z.string();
 export type AuditLogType = z.infer<typeof AuditLogTypeSchema>;
 
