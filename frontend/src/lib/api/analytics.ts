@@ -11,6 +11,8 @@ import {
   type ChartPaletteResponse,
   ErrorCategoriesResponseSchema,
   type ErrorCategoriesResponse,
+  AlertItemSchema,
+  type AlertItem,
 } from '@shared/types';
 
 export function fetchLogTypeClasses(): Promise<LogTypeClasses> {
@@ -57,6 +59,21 @@ export async function markAuditLogReviewed(
   return apiClient(
     `/api/admin/audit-logs/${encodedId}/review`,
     AuditLogEntrySchema,
+    {
+      method: 'POST',
+      signal,
+    },
+  );
+}
+
+export async function acknowledgeSecurityAlert(
+  id: AlertItem['id'],
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<AlertItem> {
+  const encodedId = encodeURIComponent(String(id));
+  return apiClient(
+    `/api/admin/security-alerts/${encodedId}/ack`,
+    AlertItemSchema,
     {
       method: 'POST',
       signal,

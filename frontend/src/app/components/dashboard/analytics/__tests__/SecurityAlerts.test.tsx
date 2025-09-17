@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import SecurityAlerts from '../SecurityAlerts';
 import { useAuditAlerts } from '@/hooks/admin';
+import { acknowledgeSecurityAlert } from '@/lib/api/analytics';
 
 jest.mock('@/hooks/admin', () => ({
   useAuditAlerts: jest.fn(),
@@ -17,9 +18,12 @@ jest.mock('@/hooks/useToasts', () => () => ({
   toasts: [],
   pushToast: jest.fn(),
 }));
+jest.mock('@/lib/api/analytics', () => ({
+  acknowledgeSecurityAlert: jest.fn(),
+}));
 
-function renderWithClient(ui: React.ReactElement) {
-  const queryClient = new QueryClient();
+function renderWithClient(ui: React.ReactElement, client?: QueryClient) {
+  const queryClient = client ?? new QueryClient();
   const utils = render(
     <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
   );
@@ -27,12 +31,8 @@ function renderWithClient(ui: React.ReactElement) {
 }
 
 describe('SecurityAlerts', () => {
-  beforeEach(() => {
-    (global.fetch as unknown as jest.Mock) = jest.fn();
-  });
-
   afterEach(() => {
-    (global.fetch as jest.Mock).mockReset();
+    jest.clearAllMocks();
   });
 
   it('shows loading state', () => {
@@ -58,33 +58,40 @@ describe('SecurityAlerts', () => {
   });
 
   it('renders alerts and acknowledges', async () => {
+    const alerts = [
+      {
+        id: '1',
+        severity: 'danger' as const,
+        title: 'Alert',
+        body: 'Body',
+        time: 'now',
+        resolved: false,
+      },
+    ];
     (useAuditAlerts as jest.Mock).mockReturnValue({
       isLoading: false,
       isError: false,
-      data: [
-        {
-          id: '1',
-          severity: 'danger',
-          title: 'Alert',
-          body: 'Body',
-          time: 'now',
-        },
-      ],
+      data: alerts,
     });
-    const { queryClient } = renderWithClient(<SecurityAlerts />);
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(['admin-security-alerts'], alerts);
     const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
-    (global.fetch as jest.Mock).mockResolvedValue({
-      ok: true,
-      json: async () => ({}),
+    (acknowledgeSecurityAlert as jest.Mock).mockResolvedValue({
+      ...alerts[0],
+      resolved: true,
     });
     const user = userEvent.setup();
+    renderWithClient(<SecurityAlerts />, queryClient);
     await user.click(screen.getByRole('button', { name: /acknowledge/i }));
-    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
     await waitFor(() =>
-      expect(invalidateSpy).toHaveBeenCalledWith({
-        queryKey: ['admin-security-alerts'],
-      }),
+      expect(acknowledgeSecurityAlert).toHaveBeenCalledWith('1'),
     );
+    await waitFor(() =>
+      expect(queryClient.getQueryData(['admin-security-alerts'])).toEqual([
+        { ...alerts[0], resolved: true },
+      ]),
+    );
+    expect(invalidateSpy).not.toHaveBeenCalled();
   });
 
   it('matches snapshot', () => {
@@ -98,6 +105,7 @@ describe('SecurityAlerts', () => {
           title: 'Alert',
           body: 'Body',
           time: 'now',
+          resolved: false,
         },
       ],
     });

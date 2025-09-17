@@ -224,3 +224,58 @@ describe('AnalyticsService markAuditLogReviewed', () => {
     });
   });
 });
+
+describe('AnalyticsService acknowledgeSecurityAlert', () => {
+  it('marks the alert as resolved in redis', async () => {
+    const alert = {
+      id: 'alert-1',
+      severity: 'danger',
+      title: 'Alert',
+      body: 'Body',
+      time: '2024-01-01T00:00:00Z',
+    };
+    const multi = {
+      lset: jest.fn().mockReturnThis(),
+      exec: jest.fn().mockResolvedValue([[null, 'OK']]),
+    };
+    const redis = {
+      watch: jest.fn().mockResolvedValue(undefined),
+      lrange: jest.fn().mockResolvedValue([JSON.stringify(alert)]),
+      multi: jest.fn().mockReturnValue(multi),
+      unwatch: jest.fn().mockResolvedValue('OK'),
+    };
+    const service: any = { redis };
+
+    const result = await (AnalyticsService.prototype as any).acknowledgeSecurityAlert.call(
+      service,
+      'alert-1',
+    );
+
+    expect(redis.watch).toHaveBeenCalledWith('security-alerts');
+    expect(multi.lset).toHaveBeenCalledWith(
+      'security-alerts',
+      0,
+      expect.stringContaining('"resolved":true'),
+    );
+    expect(result).toEqual({ ...alert, resolved: true });
+  });
+
+  it('throws when the alert is missing', async () => {
+    const redis = {
+      watch: jest.fn().mockResolvedValue(undefined),
+      lrange: jest.fn().mockResolvedValue([]),
+      multi: jest.fn(),
+      unwatch: jest.fn().mockResolvedValue('OK'),
+    };
+    const service: any = { redis };
+
+    await expect(
+      (AnalyticsService.prototype as any).acknowledgeSecurityAlert.call(
+        service,
+        'missing',
+      ),
+    ).rejects.toThrow('Security alert not found');
+    expect(redis.unwatch).toHaveBeenCalled();
+    expect(redis.multi).not.toHaveBeenCalled();
+  });
+});
