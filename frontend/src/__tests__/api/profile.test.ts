@@ -3,7 +3,6 @@
 import {
   fetchProfile,
   fetchMe,
-  fetchUserProfile,
   updateProfile,
   fetchStats,
 } from '@/lib/api/profile';
@@ -82,38 +81,6 @@ describe('profile API', () => {
 
       await expect(fetchStats()).rejects.toEqual({
         message: 'Failed to fetch profile stats: boom',
-      });
-    });
-  });
-
-  describe('fetchUserProfile', () => {
-    it('returns profile data on success', async () => {
-      const profile = {
-        username: 'PlayerOne23',
-        email: 'playerone23@example.com',
-        avatarUrl: 'avatar.jpg',
-        bank: '\\u2022\\u2022\\u2022\\u2022 1234',
-        location: 'United States',
-        joined: '2023-01-15T00:00:00.000Z',
-        bio: 'Texas grinder',
-        experience: 42,
-        balance: 100,
-      };
-      mockedApiClient.mockResolvedValueOnce(profile);
-
-      await expect(fetchUserProfile('alice')).resolves.toEqual(profile);
-      expect(mockedApiClient).toHaveBeenCalledWith(
-        '/api/user/alice/profile',
-        expect.anything(),
-        { signal: undefined },
-      );
-    });
-
-    it('throws ApiError with prefixed message on failure', async () => {
-      mockedApiClient.mockRejectedValueOnce({ message: 'boom' } as ApiError);
-
-      await expect(fetchUserProfile('alice')).rejects.toEqual({
-        message: 'Failed to fetch user profile: boom',
       });
     });
   });
