@@ -9,6 +9,12 @@ export default registerAs('admin', () => ({
       component: '@/app/components/dashboard/AdminEvents',
     },
     {
+      id: 'transactions',
+      label: 'Transactions',
+      icon: 'faMoneyBillWave',
+      component: '@/app/components/dashboard/transactions/TransactionHistory',
+    },
+    {
       id: 'analytics',
       label: 'Analytics',
       icon: 'faChartLine',

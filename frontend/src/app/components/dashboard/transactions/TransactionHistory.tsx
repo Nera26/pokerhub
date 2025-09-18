@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons/faSpinner';
@@ -9,10 +9,15 @@ import {
   fetchTransactionsLog,
 } from '@/lib/api/transactions';
 import { useApiError } from '@/hooks/useApiError';
+import { exportCsv } from '@/lib/exportCsv';
 
 interface Props {
-  onExport: () => void;
+  onExport?: () => void;
 }
+
+type TransactionLogEntry = Awaited<
+  ReturnType<typeof fetchTransactionsLog>
+>[number];
 
 export default function DashboardTransactionHistory({ onExport }: Props) {
   const [startDate, setStartDate] = useState('');
@@ -41,7 +46,7 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
     data: log = [],
     isLoading: logLoading,
     error: logError,
-  } = useQuery({
+  } = useQuery<Awaited<ReturnType<typeof fetchTransactionsLog>>>({
     queryKey: [
       'transactionsLog',
       playerId,
@@ -67,7 +72,58 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
   useApiError(typesError);
   useApiError(logError);
 
-  const currency = log[0]?.currency ?? 'USD';
+  const currency =
+    (log[0] as (TransactionLogEntry & { currency?: string }) | undefined)
+      ?.currency ?? 'USD';
+
+  const defaultExport = useCallback(() => {
+    const header = ['Date/Time', 'Action', 'Amount', 'By', 'Notes', 'Status'];
+    const toCsvCell = (value: unknown) => {
+      const str = String(value ?? '');
+      if (str === '') return '';
+      if (/[",\n]/.test(str)) {
+        const escaped = str.replace(/"/g, '""');
+        return `"${escaped}"`;
+      }
+      return str;
+    };
+
+    const rows = (
+      log as (TransactionLogEntry & {
+        date?: string;
+        type?: string;
+        performedBy?: string;
+      })[]
+    ).map((entry) => {
+      const amountRaw =
+        typeof entry.amount === 'number'
+          ? entry.amount.toString()
+          : String(entry.amount ?? '');
+      const amount = currency ? `${currency} ${amountRaw}`.trim() : amountRaw;
+
+      return [
+        toCsvCell(entry.datetime ?? entry.date ?? ''),
+        toCsvCell(entry.action ?? entry.type ?? ''),
+        toCsvCell(amount),
+        toCsvCell(entry.by ?? entry.performedBy ?? ''),
+        toCsvCell(entry.notes ?? ''),
+        toCsvCell(entry.status ?? ''),
+      ];
+    });
+
+    const filename = `transactions_${
+      new Date().toISOString().split('T')[0]
+    }.csv`;
+    exportCsv(filename, header, rows);
+  }, [currency, log]);
+
+  const handleExport = useCallback(() => {
+    if (onExport) {
+      onExport();
+      return;
+    }
+    defaultExport();
+  }, [defaultExport, onExport]);
 
   const filters = (
     <div className="flex flex-wrap gap-2 items-center">
@@ -157,7 +213,7 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
         data={log}
         currency={currency}
         filters={filters}
-        onExport={onExport}
+        onExport={handleExport}
         emptyMessage="No transaction history."
       />
       <div className="flex justify-end gap-2 mt-4">

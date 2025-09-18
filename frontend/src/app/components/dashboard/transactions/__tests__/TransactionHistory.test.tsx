@@ -6,6 +6,7 @@ import {
   fetchTransactionTypes,
 } from '@/lib/api/transactions';
 import { fetchAdminPlayers } from '@/lib/api/wallet';
+import { exportCsv } from '@/lib/exportCsv';
 import { setupTransactionTestData } from './test-utils';
 
 jest.mock('@/lib/api/transactions', () => ({
@@ -14,6 +15,9 @@ jest.mock('@/lib/api/transactions', () => ({
 }));
 jest.mock('@/lib/api/wallet', () => ({
   fetchAdminPlayers: jest.fn(),
+}));
+jest.mock('@/lib/exportCsv', () => ({
+  exportCsv: jest.fn(),
 }));
 
 describe('Dashboard TransactionHistory', () => {
@@ -37,13 +41,13 @@ describe('Dashboard TransactionHistory', () => {
 
   it('shows loading state', () => {
     (fetchTransactionsLog as jest.Mock).mockReturnValue(new Promise(() => {}));
-    renderWithClient(<TransactionHistory onExport={() => {}} />);
+    renderWithClient(<TransactionHistory />);
     expect(screen.getByLabelText('loading history')).toBeInTheDocument();
   });
 
   it('shows empty state', async () => {
     (fetchTransactionsLog as jest.Mock).mockResolvedValue([]);
-    renderWithClient(<TransactionHistory onExport={() => {}} />);
+    renderWithClient(<TransactionHistory />);
     expect(
       await screen.findByText('No transaction history.'),
     ).toBeInTheDocument();
@@ -51,7 +55,7 @@ describe('Dashboard TransactionHistory', () => {
 
   it('renders player filter options', async () => {
     (fetchTransactionsLog as jest.Mock).mockResolvedValue([]);
-    renderWithClient(<TransactionHistory onExport={() => {}} />);
+    renderWithClient(<TransactionHistory />);
 
     const option = await screen.findByRole('option', { name: 'Alice' });
     expect(option).toBeInTheDocument();
@@ -69,7 +73,7 @@ describe('Dashboard TransactionHistory', () => {
         status: 'Completed',
       },
     ]);
-    renderWithClient(<TransactionHistory onExport={() => {}} />);
+    renderWithClient(<TransactionHistory />);
 
     const select = await screen.findByLabelText('Filter by type');
     fireEvent.change(select, { target: { value: 'deposit' } });
@@ -94,7 +98,7 @@ describe('Dashboard TransactionHistory', () => {
       status: 'Completed',
     }));
     (fetchTransactionsLog as jest.Mock).mockResolvedValue(logData);
-    renderWithClient(<TransactionHistory onExport={() => {}} />);
+    renderWithClient(<TransactionHistory />);
     const next = await screen.findByRole('button', { name: 'Next' });
     await userEvent.click(next);
     await waitFor(() =>
@@ -109,5 +113,38 @@ describe('Dashboard TransactionHistory', () => {
     const btn = await screen.findByRole('button', { name: /export/i });
     await userEvent.click(btn);
     expect(onExport).toHaveBeenCalled();
+    expect(exportCsv).not.toHaveBeenCalled();
+  });
+
+  it('exports current log when no handler provided', async () => {
+    (fetchTransactionsLog as jest.Mock).mockResolvedValue([
+      {
+        datetime: '2024-01-01T00:00:00Z',
+        action: 'Deposit',
+        amount: 25,
+        by: 'Admin',
+        notes: 'Initial deposit',
+        status: 'Completed',
+      },
+    ]);
+
+    renderWithClient(<TransactionHistory />);
+    const btn = await screen.findByRole('button', { name: /export/i });
+    await userEvent.click(btn);
+
+    expect(exportCsv).toHaveBeenCalledWith(
+      expect.stringMatching(/^transactions_\d{4}-\d{2}-\d{2}\.csv$/),
+      ['Date/Time', 'Action', 'Amount', 'By', 'Notes', 'Status'],
+      [
+        [
+          '2024-01-01T00:00:00Z',
+          'Deposit',
+          'USD 25',
+          'Admin',
+          'Initial deposit',
+          'Completed',
+        ],
+      ],
+    );
   });
 });

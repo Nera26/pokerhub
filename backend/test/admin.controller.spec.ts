@@ -50,6 +50,12 @@ describe('AdminController', () => {
       component: '@/app/components/dashboard/FeatureFlagsPanel',
     },
     {
+      id: 'transactions',
+      label: 'Transactions',
+      icon: 'faMoneyBillWave',
+      component: '@/app/components/dashboard/transactions/TransactionHistory',
+    },
+    {
       id: 'users',
       label: 'Users',
       icon: 'faUsers',
@@ -82,7 +88,12 @@ describe('AdminController', () => {
       .fn()
       .mockResolvedValue(
         sidebarItems
-          .filter((item) => !['events', 'feature-flags', 'analytics'].includes(item.id))
+          .filter(
+            (item) =>
+              !['events', 'feature-flags', 'analytics', 'transactions'].includes(
+                item.id,
+              ),
+          )
           .map((item) => ({
             id: item.id,
             title: item.label,
@@ -257,7 +268,9 @@ describe('AdminController', () => {
       title: s.label,
       component: s.component,
       icon: s.icon,
-      source: ['events', 'feature-flags', 'analytics'].includes(s.id)
+      source: ['events', 'feature-flags', 'analytics', 'transactions'].includes(
+        s.id,
+      )
         ? 'config'
         : 'database',
     }));
@@ -277,6 +290,13 @@ describe('AdminController', () => {
       title: 'Analytics',
       component: '@/app/components/dashboard/analytics/Analytics',
       icon: 'faChartLine',
+      source: 'config',
+    });
+    expect(response.body).toContainEqual({
+      id: 'transactions',
+      title: 'Transactions',
+      component: '@/app/components/dashboard/transactions/TransactionHistory',
+      icon: 'faMoneyBillWave',
       source: 'config',
     });
   });
