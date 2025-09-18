@@ -1,9 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
 import ChartCard from '../charts/ChartCard';
 import { useChartPalette } from '@/hooks/useChartPalette';
-import { buildChartConfig } from '@/lib/useChart';
+import { useDonutChartConfig } from '../charts/useDonutChartConfig';
 
 interface ErrorChartProps {
   labels?: string[];
@@ -15,31 +14,11 @@ export default function ErrorChart({ labels, data }: ErrorChartProps) {
 
   const hasData = !!data && data.length > 0 && !!labels && labels.length > 0;
 
-  const config = useMemo(
-    () =>
-      buildChartConfig(() => {
-        const paletteArr = palette ?? [];
-        const backgroundColor =
-          labels?.map((_, i) => paletteArr[i % paletteArr.length]) ?? [];
-
-        return {
-          type: 'doughnut',
-          data: {
-            labels: labels ?? [],
-            datasets: [
-              {
-                data: data ?? [],
-                backgroundColor,
-              },
-            ],
-          },
-          options: {
-            plugins: { legend: { position: 'bottom' } },
-          },
-        };
-      }),
-    [labels, data, palette],
-  );
+  const config = useDonutChartConfig({
+    labels: labels ?? [],
+    data: data ?? [],
+    palette: palette ?? [],
+  });
 
   return (
     <ChartCard
