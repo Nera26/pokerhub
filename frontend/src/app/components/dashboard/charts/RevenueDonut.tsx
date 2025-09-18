@@ -3,7 +3,8 @@
 import { useMemo } from 'react';
 import { useChart } from '@/lib/useChart';
 import { useChartPalette } from '@/hooks/useChartPalette';
-import type { ChartConfiguration, TooltipItem } from 'chart.js';
+import type { TooltipItem } from 'chart.js';
+import { useDonutChartConfig } from './useDonutChartConfig';
 
 export interface RevenueStream {
   label: string;
@@ -45,54 +46,24 @@ export default function RevenueDonut({ streams, currency }: RevenueDonutProps) {
     [currency],
   );
 
-  const config: ChartConfiguration<'doughnut'> = useMemo(() => {
-    const colorSource = palette ?? [];
-    const backgroundColor = streams.map(
-      (_, i) => colorSource[i % colorSource.length],
-    );
+  const tooltipFormatter = useMemo(
+    () => (ctx: TooltipItem<'doughnut'>) => {
+      const stream = streams[ctx.dataIndex];
+      const pct = stream?.pct ?? 0;
+      const val = stream?.value;
+      const valueText =
+        typeof val === 'number' ? ` (${currencyFormatter.format(val)})` : '';
+      return `${stream?.label ?? ctx.label}: ${pct}%${valueText}`;
+    },
+    [streams, currencyFormatter],
+  );
 
-    return {
-      type: 'doughnut',
-      data: {
-        labels: streams.map((s) => s.label),
-        datasets: [
-          {
-            data: streams.map((s) => s.pct),
-            backgroundColor,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: { color: 'var(--color-text-secondary)' },
-          },
-          tooltip: {
-            backgroundColor: 'var(--color-card-bg)',
-            titleColor: 'var(--color-text-primary)',
-            bodyColor: 'var(--color-text-secondary)',
-            borderColor: 'var(--color-border-dark)',
-            borderWidth: 1,
-            callbacks: {
-              label: (ctx: TooltipItem<'doughnut'>) => {
-                const stream = streams[ctx.dataIndex];
-                const pct = stream?.pct ?? 0;
-                const val = stream?.value;
-                const valueText =
-                  typeof val === 'number'
-                    ? ` (${currencyFormatter.format(val)})`
-                    : '';
-                return `${stream?.label ?? ctx.label}: ${pct}%${valueText}`;
-              },
-            },
-          },
-        },
-      },
-    };
-  }, [streams, palette, currencyFormatter]);
+  const config = useDonutChartConfig({
+    labels: streams.map((s) => s.label),
+    data: streams.map((s) => s.pct),
+    palette: palette ?? [],
+    tooltipFormatter,
+  });
 
   const { ref, ready } = useChart(config, [config]);
 
