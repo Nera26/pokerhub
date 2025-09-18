@@ -13,10 +13,21 @@ export const NotificationSchema = z.object({
 });
 export type Notification = z.infer<typeof NotificationSchema>;
 
+export const NotificationFilterSchema = z.object({
+  label: z.string(),
+  value: NotificationTypeSchema,
+});
+export type NotificationFilter = z.infer<typeof NotificationFilterSchema>;
+
 export const NotificationsResponseSchema = z.object({
   notifications: z.array(NotificationSchema),
 });
 export type NotificationsResponse = z.infer<typeof NotificationsResponseSchema>;
+
+export const NotificationFiltersResponseSchema = z.array(NotificationFilterSchema);
+export type NotificationFiltersResponse = z.infer<
+  typeof NotificationFiltersResponseSchema
+>;
 
 export const UnreadCountResponseSchema = z.object({
   count: z.number().int().nonnegative(),

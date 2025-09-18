@@ -108,6 +108,52 @@ describe('Notifications', () => {
     expect(unread.body).toEqual({ count: 1 });
   });
 
+  it('returns distinct filters for the current user', async () => {
+    const userId = '22222222-2222-2222-2222-222222222222';
+    await repo.save({
+      id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      userId,
+      type: 'bonus',
+      title: 'Bonus',
+      message: 'bonus msg',
+      read: false,
+    });
+    await repo.save({
+      id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+      userId,
+      type: 'bonus',
+      title: 'Another Bonus',
+      message: 'another bonus',
+      read: true,
+    });
+    await repo.save({
+      id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+      userId,
+      type: 'system',
+      title: 'System',
+      message: 'system msg',
+      read: false,
+    });
+    await repo.save({
+      id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
+      userId: '33333333-3333-3333-3333-333333333333',
+      type: 'tournament',
+      title: 'Tournament',
+      message: 'tournament msg',
+      read: false,
+    });
+
+    const res = await request(app.getHttpServer())
+      .get('/notifications/filters')
+      .set('Authorization', `Bearer ${userId}`)
+      .expect(200);
+
+    expect(res.body).toEqual([
+      { label: 'Bonuses', value: 'bonus' },
+      { label: 'System', value: 'system' },
+    ]);
+  });
+
   it('returns 400 for invalid id on mark-one', async () => {
     await request(app.getHttpServer())
       .post('/notifications/not-a-uuid')

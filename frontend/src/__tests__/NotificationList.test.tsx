@@ -49,7 +49,7 @@ describe('NotificationList', () => {
     mockUseNotificationFilters.mockReturnValue({
       data: [],
       isLoading: false,
-      error: null,
+      error: undefined,
     } as any);
     mockFetchUnreadCount.mockResolvedValue({ count: 0 });
   });
@@ -104,7 +104,7 @@ describe('NotificationList', () => {
         { label: 'System', value: 'system' },
       ],
       isLoading: false,
-      error: null,
+      error: undefined,
     } as any);
     mockFetchNotifications.mockResolvedValue({
       notifications: [
@@ -134,5 +134,31 @@ describe('NotificationList', () => {
     fireEvent.click(screen.getByRole('button', { name: 'System' }));
     expect(screen.queryByText('bonus msg')).not.toBeInTheDocument();
     expect(screen.getByText('system msg')).toBeInTheDocument();
+  });
+
+  it('renders empty filter options with default button', async () => {
+    mockFetchNotifications.mockResolvedValue({ notifications: [] });
+    renderWithClient();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'All' })).toBeInTheDocument(),
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Bonuses' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('renders filter error state', async () => {
+    mockFetchNotifications.mockResolvedValue({ notifications: [] });
+    mockUseNotificationFilters.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error('boom'),
+    } as any);
+
+    renderWithClient();
+
+    await waitFor(() =>
+      expect(screen.getByText(/failed to load filters/i)).toBeInTheDocument(),
+    );
   });
 });
