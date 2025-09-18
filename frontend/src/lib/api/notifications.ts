@@ -1,20 +1,14 @@
-import { z } from 'zod';
 import { apiClient, ApiError } from './client';
 import {
   MessageResponseSchema,
   type MessageResponse,
-  NotificationTypeSchema,
   NotificationsResponseSchema,
   type NotificationsResponse,
+  NotificationFiltersResponseSchema,
+  type NotificationFilter,
   UnreadCountResponseSchema,
   type UnreadCountResponse,
 } from '@shared/types';
-
-const NotificationFilterSchema = z.object({
-  label: z.string(),
-  value: NotificationTypeSchema,
-});
-export type NotificationFilter = z.infer<typeof NotificationFilterSchema>;
 
 export async function fetchNotifications({
   signal,
@@ -49,7 +43,7 @@ export async function fetchNotificationFilters({
 }: { signal?: AbortSignal } = {}): Promise<NotificationFilter[]> {
   return apiClient(
     '/api/notifications/filters',
-    z.array(NotificationFilterSchema),
+    NotificationFiltersResponseSchema,
     { signal },
   );
 }
@@ -71,3 +65,4 @@ export async function fetchUnreadCount({
 }
 
 export type { ApiError } from './client';
+export type { NotificationFilter } from '@shared/types';

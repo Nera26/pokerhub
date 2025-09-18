@@ -296,12 +296,16 @@ export type DashboardMetrics = z.infer<typeof DashboardMetricsSchema>;
 
 export {
   NotificationTypeSchema,
+  NotificationFilterSchema,
   NotificationsResponseSchema,
+  NotificationFiltersResponseSchema,
   UnreadCountResponseSchema,
 } from '../backend/src/schemas/notifications';
 export type {
   NotificationType,
+  NotificationFilter,
   NotificationsResponse,
+  NotificationFiltersResponse,
   UnreadCountResponse,
 } from '../backend/src/schemas/notifications';
 

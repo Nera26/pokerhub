@@ -14,6 +14,7 @@ import {
   StatusResponse,
   UnreadCountResponse,
   NotificationsResponseSchema,
+  NotificationFiltersResponseSchema,
 } from '@shared/types';
 import type { Request } from 'express';
 
@@ -33,6 +34,14 @@ export class NotificationsController {
       timestamp: n.timestamp.toISOString(),
     }));
     return NotificationsResponseSchema.parse({ notifications: formatted });
+  }
+
+  @Get('filters')
+  @ApiOperation({ summary: 'List available notification filters' })
+  @ApiResponse({ status: 200, description: 'Notification filter options' })
+  async getFilters(@Req() req: Request) {
+    const filters = await this.notifications.getFilterOptions(req.userId);
+    return NotificationFiltersResponseSchema.parse(filters);
   }
 
   @Get('unread')
