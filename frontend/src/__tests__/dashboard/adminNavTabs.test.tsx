@@ -34,6 +34,12 @@ jest.mock('@/lib/api/admin', () => ({
       source: 'config',
     },
     {
+      id: 'transactions',
+      title: 'Transactions',
+      component: '@/app/components/dashboard/transactions/TransactionHistory',
+      source: 'config',
+    },
+    {
       id: 'users',
       title: 'Users',
       component: '@/app/components/dashboard/ManageUsers',
@@ -82,6 +88,10 @@ jest.mock('@/app/components/dashboard/ManageTables', () => () => (
 jest.mock('@/app/components/dashboard/FeatureFlagsPanel', () => () => (
   <div>Feature Flags Module</div>
 ));
+jest.mock(
+  '@/app/components/dashboard/transactions/TransactionHistory',
+  () => () => <div>Transactions Module</div>,
+);
 jest.mock('@/app/components/dashboard/ManageTournaments', () => () => (
   <div>Tournaments Module</div>
 ));
@@ -114,6 +124,7 @@ describe('admin nav tabs', () => {
   it.each([
     ['analytics', 'Analytics Module'],
     ['feature-flags', 'Feature Flags Module'],
+    ['transactions', 'Transactions Module'],
     ['users', 'Users Module'],
     ['tables', 'Tables Module'],
     ['feature-flags', 'Feature Flags Module'],
