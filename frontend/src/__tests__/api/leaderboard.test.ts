@@ -5,10 +5,6 @@ import {
   createLeaderboardMetaQuery,
   useLeaderboardRanges,
   useLeaderboardModes,
-  listLeaderboardConfig,
-  createLeaderboardConfig,
-  updateLeaderboardConfig,
-  deleteLeaderboardConfig,
 } from '@/lib/api/leaderboard';
 import { apiClient } from '@/lib/api/client';
 import { useQuery } from '@tanstack/react-query';
@@ -16,7 +12,6 @@ import {
   LeaderboardRangesResponseSchema,
   LeaderboardModesResponseSchema,
   LeaderboardResponseSchema,
-  LeaderboardConfigListResponseSchema,
 } from '@shared/types';
 import type { LeaderboardEntry } from '@shared/types';
 
@@ -142,52 +137,3 @@ describe.each(leaderboardMetaCases)(
     });
   },
 );
-
-describe('admin leaderboard config api', () => {
-  beforeEach(() => {
-    apiClientMock.mockResolvedValue({ configs: [] });
-  });
-  afterEach(() => {
-    apiClientMock.mockReset();
-  });
-
-  it('lists config', async () => {
-    await listLeaderboardConfig();
-    expect(apiClientMock).toHaveBeenCalledWith(
-      '/api/admin/leaderboard-config',
-      LeaderboardConfigListResponseSchema,
-    );
-  });
-
-  it('creates config', async () => {
-    await createLeaderboardConfig({ range: 'daily', mode: 'cash' });
-    expect(apiClientMock).toHaveBeenCalledWith(
-      '/api/admin/leaderboard-config',
-      LeaderboardConfigListResponseSchema,
-      expect.objectContaining({ method: 'POST' }),
-    );
-  });
-
-  it('updates config', async () => {
-    await updateLeaderboardConfig({
-      range: 'daily',
-      mode: 'cash',
-      newRange: 'weekly',
-      newMode: 'cash',
-    });
-    expect(apiClientMock).toHaveBeenCalledWith(
-      '/api/admin/leaderboard-config',
-      LeaderboardConfigListResponseSchema,
-      expect.objectContaining({ method: 'PUT' }),
-    );
-  });
-
-  it('deletes config', async () => {
-    await deleteLeaderboardConfig({ range: 'daily', mode: 'cash' });
-    expect(apiClientMock).toHaveBeenCalledWith(
-      '/api/admin/leaderboard-config',
-      LeaderboardConfigListResponseSchema,
-      expect.objectContaining({ method: 'DELETE' }),
-    );
-  });
-});
