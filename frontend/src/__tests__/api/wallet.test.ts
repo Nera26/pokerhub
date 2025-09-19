@@ -1,8 +1,9 @@
 jest.mock('@shared/wallet.schema', () => {
   const { z } = require('zod');
+  const CurrencySchema = z.string().length(3);
   const AmountSchema = z.object({
     amount: z.number().int().positive(),
-    currency: z.string(),
+    currency: CurrencySchema,
   });
   const AmountDeviceSchema = AmountSchema.extend({ deviceId: z.string() });
   const WalletStatusResponseSchema = z.object({
@@ -17,10 +18,12 @@ jest.mock('@shared/wallet.schema', () => {
     routingCode: z.string(),
   });
   return {
+    CurrencySchema,
     AmountSchema,
     WithdrawSchema: AmountDeviceSchema,
     DepositSchema: AmountDeviceSchema,
     BankTransferDepositRequestSchema: AmountDeviceSchema.extend({
+      ip: z.string().optional(),
       idempotencyKey: z.string().optional(),
     }),
     BankTransferDepositResponseSchema: z.object({
@@ -28,19 +31,22 @@ jest.mock('@shared/wallet.schema', () => {
       bank: BankDetailsSchema,
     }),
     WalletStatusResponseSchema,
+    WalletReconcileMismatchesResponseSchema: z.any(),
+    WalletReconcileMismatchAcknowledgementSchema: z.any(),
     WalletTransactionsResponseSchema: z.any(),
     PendingTransactionsResponseSchema: z.any(),
     PendingDepositsResponseSchema: z.any(),
     DepositDecisionRequestSchema: z.any(),
     IbanResponseSchema: z.any(),
     IbanHistoryResponseSchema: z.any(),
+    IbanUpdateRequestSchema: z.any(),
+    IbanDetailsSchema: z.any(),
+    WalletStatusSchema: WalletStatusResponseSchema,
+    AdminBalanceRequestSchema: z.any(),
   };
 });
 
 import {
-  reserve,
-  commit,
-  rollback,
   deposit,
   initiateBankTransfer,
   withdraw,
@@ -51,11 +57,8 @@ import { server } from '@/test-utils/server';
 import { mockSuccess, mockError } from '@/test-utils/handlers';
 
 describe('wallet api', () => {
-  it('handles reserve/commit/rollback/deposit/withdraw', async () => {
+  it('handles deposit/withdraw and status lookups', async () => {
     server.use(
-      mockSuccess({ message: 'ok' }, { once: true }),
-      mockSuccess({ message: 'ok' }, { once: true }),
-      mockSuccess({ message: 'ok' }, { once: true }),
       mockSuccess(
         {
           kycVerified: true,
@@ -96,9 +99,6 @@ describe('wallet api', () => {
       ),
     );
 
-    await expect(reserve('u1', 10, 'EUR')).resolves.toEqual({ message: 'ok' });
-    await expect(commit('u1', 10, 'EUR')).resolves.toEqual({ message: 'ok' });
-    await expect(rollback('u1', 10, 'EUR')).resolves.toEqual({ message: 'ok' });
     await expect(deposit('u1', 10, 'd1', 'EUR')).resolves.toEqual({
       kycVerified: true,
       realBalance: 20,
