@@ -17,20 +17,12 @@ import type {
   ReviewAction,
   ReviewActionLog,
 } from '@shared/types';
+import { nextCollusionAction } from '@shared/collusion';
 
 export function nextAction(
   status: FlaggedSession['status'],
 ): ReviewAction | null {
-  switch (status) {
-    case 'flagged':
-      return 'warn';
-    case 'warn':
-      return 'restrict';
-    case 'restrict':
-      return 'ban';
-    default:
-      return null;
-  }
+  return nextCollusionAction(status);
 }
 
 export function useFlaggedSessions() {
