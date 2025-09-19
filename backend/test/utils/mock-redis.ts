@@ -257,49 +257,41 @@ export class MockRedis {
   }
 }
 
-export function createInMemoryRedis(initial?: Record<string, string>) {
-  const redis = new MockRedis();
-  const store = new Map(Object.entries(initial ?? {}));
-  (redis as any).store = store;
-  return { redis, store };
-}
-
-/** @deprecated use createInMemoryRedis instead */
-export function createRedisMock() {
-  return new MockRedis();
-}
+export type InMemoryRedisStore = Map<string, string> & {
+  strings: Map<string, string>;
+  hashes: Map<string, Map<string, string>>;
+  sets: Map<string, Set<string>>;
+  lists: Map<string, string[]>;
+  sortedSets: Map<string, { score: number; member: string }[]>;
+  streams: Map<string, Array<[string, [string, string]]>>;
+};
 
 export function createInMemoryRedis(
   initial: Record<string, string> = {},
 ): {
   redis: Redis;
-  store: {
-    strings: Map<string, string>;
-    hashes: Map<string, Map<string, string>>;
-    sets: Map<string, Set<string>>;
-    lists: Map<string, string[]>;
-    sortedSets: Map<string, { score: number; member: string }[]>;
-    streams: Map<string, Array<[string, [string, string]]>>;
-  };
+  store: InMemoryRedisStore;
 } {
   const redis = new MockRedis();
   for (const [k, v] of Object.entries(initial)) {
     void redis.set(k, v);
   }
-  const store = {
-    strings: (redis as any).store as Map<string, string>,
-    hashes: (redis as any).hashes as Map<string, Map<string, string>>,
-    sets: (redis as any).sets as Map<string, Set<string>>,
-    lists: (redis as any).lists as Map<string, string[]>,
-    sortedSets: (redis as any).sorted as Map<
-      string,
-      { score: number; member: string }[]
-    >,
-    streams: (redis as any).streams as Map<
-      string,
-      Array<[string, [string, string]]>
-    >,
-  };
+
+  const strings = (redis as any).store as Map<string, string>;
+  const store = strings as InMemoryRedisStore;
+  store.strings = strings;
+  store.hashes = (redis as any).hashes as Map<string, Map<string, string>>;
+  store.sets = (redis as any).sets as Map<string, Set<string>>;
+  store.lists = (redis as any).lists as Map<string, string[]>;
+  store.sortedSets = (redis as any).sorted as Map<
+    string,
+    { score: number; member: string }[]
+  >;
+  store.streams = (redis as any).streams as Map<
+    string,
+    Array<[string, [string, string]]>
+  >;
+
   return { redis: redis as unknown as Redis, store };
 }
 
