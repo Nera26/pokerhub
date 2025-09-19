@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import Modal from '../ui/Modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner, faXmark } from '@fortawesome/free-solid-svg-icons';
@@ -20,6 +20,7 @@ import type { FilterOptions } from '@shared/transactions.schema';
 import { AdminTransactionEntriesSchema } from '@shared/transactions.schema';
 import { z } from 'zod';
 import useTransactionColumns from '@/hooks/useTransactionColumns';
+import useTransactionHistory from '@/app/components/common/useTransactionHistory';
 
 export type Transaction = {
   datetime: string;
@@ -63,15 +64,6 @@ export default function TransactionHistoryModal({
     queryFn: fetchTransactionFilters,
     enabled: isOpen,
   });
-  const {
-    data: entries = [],
-    isLoading: txLoading,
-    error: txError,
-  } = useQuery<AdminTransactionEntry[]>({
-    queryKey: ['userTransactions', userId],
-    queryFn: () => fetchUserTransactions(userId),
-    enabled: isOpen && !!userId,
-  });
 
   const {
     data: colMeta = [],
@@ -79,7 +71,81 @@ export default function TransactionHistoryModal({
     error: colsError,
   } = useTransactionColumns();
 
-  const currency = (entries as any)[0]?.currency ?? 'USD';
+  const typeOptions = useMemo(() => {
+    const fromServer = filterOptions?.types ?? [];
+    const withoutAll = fromServer.filter((type) => type !== 'All Types');
+    return ['All Types', ...withoutAll];
+  }, [filterOptions]);
+
+  const performedByOptions = useMemo(() => {
+    const fromServer = filterOptions?.performedBy ?? [];
+    const withoutAll = fromServer.filter((value) => value !== 'All');
+    return ['All', ...withoutAll].map((p) => ({
+      label: p === 'All' ? 'Performed By: All' : p,
+      value: p,
+    }));
+  }, [filterOptions]);
+
+  const defaultType = typeOptions[0] ?? '';
+  const defaultBy = performedByOptions[0]?.value ?? '';
+
+  const {
+    data: entries = [],
+    isLoading: historyLoading,
+    error: historyError,
+    currency,
+    filters,
+    updateFilter,
+    syncFilters,
+    applyFilters,
+  } = useTransactionHistory<AdminTransactionEntry>({
+    queryKey: ['userTransactions', userId],
+    fetchTransactions: async () => fetchUserTransactions(userId),
+    initialFilters: { start: '', end: '', type: '', by: '' },
+    manualFilters: true,
+    paginated: false,
+    enabled: isOpen && !!userId,
+    clientFilter: (allEntries, currentFilters) => {
+      let data = [...allEntries];
+      const appliedType = currentFilters.type;
+      const appliedBy = currentFilters.by;
+      if (appliedType && defaultType && appliedType !== defaultType) {
+        data = data.filter((entry) => entry.action === appliedType);
+      }
+      if (appliedBy && defaultBy && appliedBy !== defaultBy) {
+        data = data.filter((entry) => entry.performedBy === appliedBy);
+      }
+      if (currentFilters.start) {
+        data = data.filter(
+          (entry) => new Date(entry.date) >= new Date(currentFilters.start),
+        );
+      }
+      if (currentFilters.end) {
+        data = data.filter(
+          (entry) => new Date(entry.date) <= new Date(currentFilters.end),
+        );
+      }
+      return data;
+    },
+    onFiltersApplied: (filteredEntries) => {
+      onFilter?.(filteredEntries);
+    },
+    extractCurrency: (entry) =>
+      (entry as (AdminTransactionEntry & { currency?: string }) | undefined)
+        ?.currency,
+  });
+
+  useEffect(() => {
+    const nextType = filters.type || defaultType;
+    const nextBy = filters.by || defaultBy;
+    if (!nextType && !nextBy) return;
+    if (nextType === filters.type && nextBy === filters.by) return;
+    syncFilters({
+      ...filters,
+      type: nextType,
+      by: nextBy,
+    });
+  }, [defaultBy, defaultType, filters, syncFilters]);
 
   const columns = useMemo<Column<Transaction>[]>(
     () =>
@@ -104,95 +170,18 @@ export default function TransactionHistoryModal({
     [colMeta, currency],
   );
 
-  const loading = filtersLoading || txLoading || colsLoading;
-  const error = filtersError || txError || colsError;
-  // inputs (pending)
-  const [start, setStart] = useState<string>('');
-  const [end, setEnd] = useState<string>('');
-  const [type, setType] = useState('');
-  const [by, setBy] = useState('');
-
-  // applied filters (after clicking Apply)
-  const [applied, setApplied] = useState<{
-    start: string;
-    end: string;
-    type: string;
-    by: string;
-  }>({
-    start: '',
-    end: '',
-    type: '',
-    by: '',
-  });
-  const typeOptions = useMemo(() => {
-    const fromServer = filterOptions?.types ?? [];
-    const withoutAll = fromServer.filter((type) => type !== 'All Types');
-    return ['All Types', ...withoutAll];
-  }, [filterOptions]);
-
-  const performedByOptions = useMemo(() => {
-    const fromServer = filterOptions?.performedBy ?? [];
-    const withoutAll = fromServer.filter((value) => value !== 'All');
-    return ['All', ...withoutAll].map((p) => ({
-      label: p === 'All' ? 'Performed By: All' : p,
-      value: p,
-    }));
-  }, [filterOptions]);
-
-  useEffect(() => {
-    const defaultType = typeOptions[0] ?? '';
-    const defaultBy = performedByOptions[0]?.value ?? '';
-    if (!defaultType && !defaultBy) return;
-    setType((prev) => prev || defaultType);
-    setBy((prev) => prev || defaultBy);
-    setApplied((prev) => ({
-      ...prev,
-      type: prev.type || defaultType,
-      by: prev.by || defaultBy,
-    }));
-  }, [typeOptions, performedByOptions]);
-
-  const defaultType = typeOptions[0];
-  const defaultBy = performedByOptions[0]?.value;
-
-  const filtered = useMemo(() => {
-    let data = [...entries];
-    if (applied.type && defaultType && applied.type !== defaultType)
-      data = data.filter((e) => e.action === applied.type);
-    if (applied.by && defaultBy && applied.by !== defaultBy)
-      data = data.filter((e) => e.performedBy === applied.by);
-    if (applied.start)
-      data = data.filter((e) => new Date(e.date) >= new Date(applied.start));
-    if (applied.end)
-      data = data.filter((e) => new Date(e.date) <= new Date(applied.end));
-    return data;
-  }, [entries, applied]);
+  const loading = filtersLoading || historyLoading || colsLoading;
+  const error = filtersError || historyError || colsError;
 
   const tableData: Transaction[] = useMemo(
     () =>
-      filtered.map(({ date, performedBy, ...rest }) => ({
+      entries.map(({ date, performedBy, ...rest }) => ({
         datetime: date,
         by: performedBy,
         ...rest,
       })),
-    [filtered],
+    [entries],
   );
-
-  const apply = () => {
-    const next = { start, end, type, by };
-    setApplied(next);
-    onFilter?.(
-      [...entries].filter((e) => {
-        if (defaultType && next.type !== defaultType && e.action !== next.type)
-          return false;
-        if (defaultBy && next.by !== defaultBy && e.performedBy !== next.by)
-          return false;
-        if (next.start && new Date(e.date) < new Date(next.start)) return false;
-        if (next.end && new Date(e.date) > new Date(next.end)) return false;
-        return true;
-      }),
-    );
-  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
@@ -225,19 +214,19 @@ export default function TransactionHistoryModal({
           <div className="flex flex-wrap gap-3 pb-4 mb-4 border-b border-dark">
             <input
               type="date"
-              value={start}
-              onChange={(e) => setStart(e.target.value)}
+              value={filters.start ?? ''}
+              onChange={(e) => updateFilter('start', e.target.value)}
               className="bg-primary-bg border border-dark rounded-xl px-3 py-2 text-sm"
             />
             <input
               type="date"
-              value={end}
-              onChange={(e) => setEnd(e.target.value)}
+              value={filters.end ?? ''}
+              onChange={(e) => updateFilter('end', e.target.value)}
               className="bg-primary-bg border border-dark rounded-xl px-3 py-2 text-sm"
             />
             <select
-              value={type}
-              onChange={(e) => setType(e.target.value)}
+              value={filters.type || defaultType || ''}
+              onChange={(e) => updateFilter('type', e.target.value)}
               className="bg-primary-bg border border-dark rounded-xl px-3 py-2 text-sm"
             >
               {typeOptions.map((t) => (
@@ -245,8 +234,8 @@ export default function TransactionHistoryModal({
               ))}
             </select>
             <select
-              value={by}
-              onChange={(e) => setBy(e.target.value)}
+              value={filters.by || defaultBy || ''}
+              onChange={(e) => updateFilter('by', e.target.value)}
               className="bg-primary-bg border border-dark rounded-xl px-3 py-2 text-sm"
             >
               {performedByOptions.map((opt) => (
@@ -256,7 +245,7 @@ export default function TransactionHistoryModal({
               ))}
             </select>
             <button
-              onClick={apply}
+              onClick={() => applyFilters()}
               className="bg-accent-blue hover:bg-blue-600 px-4 py-2 rounded-xl text-sm font-semibold transition"
             >
               Apply
