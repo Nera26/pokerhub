@@ -18,6 +18,7 @@ import TransactionHistoryTable from '@/app/components/common/TransactionHistoryT
 import useTransactionColumns from '@/hooks/useTransactionColumns';
 import { z } from 'zod';
 import { AdminTransactionEntriesSchema } from '@shared/transactions.schema';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 type AdminTransactionEntry = z.infer<
   typeof AdminTransactionEntriesSchema
@@ -160,13 +161,8 @@ describe('TransactionHistoryModal', () => {
       const { columns, data } = tableMock.mock.calls[0][0];
       const amountCol = columns.find((c: any) => c.header === 'Amount');
       const { getByText } = render(amountCol.cell(data[0]));
-      const expected = new Intl.NumberFormat(undefined, {
-        style: 'currency',
-        currency: currency ?? 'USD',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(100);
-      expect(getByText(`+${expected}`)).toBeInTheDocument();
+      const expected = formatCurrency(100, currency, { signed: true });
+      expect(getByText(expected)).toBeInTheDocument();
     },
   );
 

@@ -13,6 +13,7 @@ import {
 } from '@/lib/api/history';
 import useTransactionColumns from '@/hooks/useTransactionColumns';
 import { useStatusInfo } from '../common/status';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 interface Props {
   type: 'game-history' | 'tournament-history' | 'transaction-history';
@@ -26,16 +27,7 @@ interface Props {
 }
 
 function formatAmount(amount: number, currency: string): string {
-  const formatter = new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  const formatted = formatter.format(amount);
-  if (amount > 0) return `+${formatted}`;
-  if (amount < 0) return formatted;
-  return formatter.format(0);
+  return formatCurrency(amount, currency, { signed: true });
 }
 
 function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {

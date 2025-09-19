@@ -5,6 +5,7 @@ import {
   resetChartMocks,
 } from '../../__tests__/chartTestUtils';
 import RevenueDonut, { type RevenueStream } from '../RevenueDonut';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 describe('RevenueDonut', () => {
   afterEach(resetChartMocks);
@@ -66,6 +67,8 @@ describe('RevenueDonut', () => {
       label: streams[0].label,
     });
 
-    expect(label).toBe('Cash: 50% (€5,000.00)');
+    const formatted = formatCurrency(streams[0].value ?? 0, 'eur');
+
+    expect(label).toBe(`Cash: 50% (${formatted})`);
   });
 });

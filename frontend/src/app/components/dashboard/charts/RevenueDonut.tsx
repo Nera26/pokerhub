@@ -5,6 +5,7 @@ import { useChart } from '@/lib/useChart';
 import { useChartPalette } from '@/hooks/useChartPalette';
 import type { TooltipItem } from 'chart.js';
 import { useDonutChartConfig } from './useDonutChartConfig';
+import { getCurrencyFormatter } from '@/lib/formatCurrency';
 
 export interface RevenueStream {
   label: string;
@@ -19,30 +20,10 @@ interface RevenueDonutProps {
   currency?: string;
 }
 
-function createCurrencyFormatter(currency?: string) {
-  const fallback = new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: 'USD',
-  });
-
-  if (!currency) {
-    return fallback;
-  }
-
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency: currency.toUpperCase(),
-    });
-  } catch {
-    return fallback;
-  }
-}
-
 export default function RevenueDonut({ streams, currency }: RevenueDonutProps) {
   const { data: palette, isError, isLoading } = useChartPalette();
   const currencyFormatter = useMemo(
-    () => createCurrencyFormatter(currency),
+    () => getCurrencyFormatter(currency),
     [currency],
   );
 
