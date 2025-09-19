@@ -29,6 +29,10 @@ import {
   type TournamentFormatsResponse,
   UserMetaResponseSchema,
   type UserMetaResponse,
+  BanUserSchema,
+  type BanUserRequest,
+  UserSchema,
+  type User,
 } from '@shared/types';
 import { DashboardUserSchema, type DashboardUser } from '@shared/types';
 import type { CreateUserRequest } from '@shared/types';
@@ -111,6 +115,16 @@ export async function createAdminUser(
   return apiClient('/api/admin/users', DashboardUserSchema, {
     method: 'POST',
     body,
+  });
+}
+
+export async function banUser(
+  id: string,
+  body?: BanUserRequest,
+): Promise<User> {
+  return apiClient(`/api/users/${id}/ban`, UserSchema, {
+    method: 'POST',
+    body: body ? BanUserSchema.parse(body) : undefined,
   });
 }
 

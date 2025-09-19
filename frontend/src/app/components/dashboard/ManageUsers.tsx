@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDashboardUsers } from '@/hooks/useDashboardUsers';
-import { createAdminUser } from '@/lib/api/admin';
+import { banUser, createAdminUser } from '@/lib/api/admin';
 import { adminAdjustBalance } from '@/lib/api/wallet';
 import type { DashboardUser, CreateUserRequest } from '@shared/types';
 import { CreateUserSchema } from '@shared/types';
@@ -40,8 +40,7 @@ export default function ManageUsers() {
 
   // Ban user
   const ban = useMutation({
-    mutationFn: (id: string) =>
-      fetch(`/api/users/${id}/ban`, { method: 'POST' }),
+    mutationFn: (id: string) => banUser(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard-users'] });
       setIsBanModalOpen(false);
