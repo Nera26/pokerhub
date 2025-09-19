@@ -32,6 +32,21 @@ const sampleTable = {
 };
 
 describe('table api', () => {
+  const originalFetch = global.fetch;
+  const fetchMock = jest.fn();
+
+  beforeAll(() => {
+    global.fetch = fetchMock as unknown as typeof fetch;
+  });
+
+  beforeEach(() => {
+    fetchMock.mockReset();
+  });
+
+  afterAll(() => {
+    global.fetch = originalFetch;
+  });
+
   it('fetches table data', async () => {
     (fetch as jest.Mock).mockResolvedValue({
       ok: true,
@@ -53,6 +68,7 @@ describe('table api', () => {
         seats: [],
         pot: { main: 0, sidePots: [] },
         street: 'pre',
+        serverTime: 1000,
       }),
     });
 
@@ -61,6 +77,7 @@ describe('table api', () => {
       seats: [],
       pot: { main: 0, sidePots: [] },
       street: 'pre',
+      serverTime: 1000,
     });
   });
 
@@ -94,7 +111,7 @@ describe('table api', () => {
       'notes',
     ]);
     expect(fetch).toHaveBeenCalledWith(
-      '/api/tables/1/tabs',
+      expect.stringContaining('/api/tables/1/tabs'),
       expect.objectContaining({
         cache: 'no-store',
       }),

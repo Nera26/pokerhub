@@ -116,6 +116,7 @@ export default function SeatRing({
       })),
       pot: { main: pot, sidePots },
       street,
+      serverTime: Date.now(),
     };
     queryClient.setQueryData(['table', 'local'], tableState);
   }, [players, pot, street, sidePots, handNumber, queryClient]);

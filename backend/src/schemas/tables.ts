@@ -91,6 +91,7 @@ export const TableStateSchema = z.object({
   seats: z.array(TableSeatSchema),
   pot: z.object({ main: z.number(), sidePots: z.array(z.number()) }),
   street: z.enum(['pre', 'flop', 'turn', 'river']),
+  serverTime: z.number(),
 });
 export type TableState = z.infer<typeof TableStateSchema>;
 

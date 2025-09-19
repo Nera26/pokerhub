@@ -7,7 +7,8 @@ export function sanitize(
 ): GameState {
   const { deck: _deck, players, ...rest } = state;
   return {
-    ...(rest as Omit<GameState, 'players'>),
+    ...(rest as Omit<GameState, 'players' | 'serverTime'>),
+    serverTime: Date.now(),
     players: players.map(({ id, stack, folded, bet, allIn, holeCards }) => ({
       id,
       stack,

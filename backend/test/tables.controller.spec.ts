@@ -8,6 +8,15 @@ process.env.GOOGLE_APPLICATION_CREDENTIALS = 'key.json';
 process.env.JWT_SECRET = 'secret';
 
 jest.mock('../src/game/chat.service');
+jest.mock('p-queue', () => ({
+  __esModule: true,
+  default: class {
+    add<T>(fn: () => Promise<T> | T): Promise<T> | T {
+      return fn();
+    }
+    clear() {}
+  },
+}));
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
@@ -15,6 +24,8 @@ import request from 'supertest';
 import { TablesController } from '../src/routes/tables.controller';
 import { TablesService } from '../src/game/tables.service';
 import { ChatService } from '../src/game/chat.service';
+import { AuthGuard } from '../src/auth/auth.guard';
+import { AdminGuard } from '../src/auth/admin.guard';
 
 describe('TablesController', () => {
   let app: INestApplication;
@@ -27,7 +38,12 @@ describe('TablesController', () => {
         { provide: TablesService, useValue: tables },
         { provide: ChatService, useValue: {} },
       ],
-    }).compile();
+    })
+      .overrideGuard(AuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(AdminGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     app = moduleRef.createNestApplication();
     await app.init();
@@ -43,16 +59,18 @@ describe('TablesController', () => {
       seats: [],
       pot: { main: 0, sidePots: [] },
       street: 'pre',
+      serverTime: 123,
     });
 
     const res = await request(app.getHttpServer())
-      .get('/tables/123/state')
+      .get('/tables/11111111-1111-1111-1111-111111111111/state')
       .expect(200);
     expect(res.body).toEqual({
       handId: 'h1',
       seats: [],
       pot: { main: 0, sidePots: [] },
       street: 'pre',
+      serverTime: 123,
     });
   });
 });
