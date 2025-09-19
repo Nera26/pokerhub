@@ -96,8 +96,7 @@ function HistoryList({
     }
     const entries = (gameData ?? []).filter((e) => {
       if (!filters) return true;
-      if (filters.gameType !== 'any' && e.type !== filters.gameType)
-        return false;
+      if (filters.gameType !== 'any' && e.type !== filters.gameType) return false;
       if (filters.profitLoss === 'win' && !e.profit) return false;
       if (filters.profitLoss === 'loss' && e.profit) return false;
       if (filters.date && e.date !== filters.date) return false;
@@ -128,7 +127,9 @@ function HistoryList({
             </div>
             <div className="text-right">
               <p
-                className={`font-semibold ${e.profit ? 'text-accent-green' : 'text-danger-red'}`}
+                className={`font-semibold ${
+                  e.profit ? 'text-accent-green' : 'text-danger-red'
+                }`}
               >
                 {formatAmount(e.amount, e.currency)}
               </p>
@@ -181,18 +182,13 @@ function HistoryList({
           <table className="min-w-[640px] w-full text-left table-auto">
             <thead>
               <tr>
-                {[
-                  'Name',
-                  'Place',
-                  'Buy-in',
-                  'Prize',
-                  'Duration',
-                  'Details',
-                ].map((h) => (
-                  <th key={h} className="pb-2 pr-6 whitespace-nowrap">
-                    {h}
-                  </th>
-                ))}
+                {['Name', 'Place', 'Buy-in', 'Prize', 'Duration', 'Details'].map(
+                  (h) => (
+                    <th key={h} className="pb-2 pr-6 whitespace-nowrap">
+                      {h}
+                    </th>
+                  ),
+                )}
               </tr>
             </thead>
             <tbody>
@@ -202,9 +198,7 @@ function HistoryList({
                   <td className="py-2 pr-6 whitespace-nowrap">{row.place}</td>
                   <td className="py-2 pr-6 whitespace-nowrap">{row.buyin}</td>
                   <td className="py-2 pr-6 whitespace-nowrap">{row.prize}</td>
-                  <td className="py-2 pr-6 whitespace-nowrap">
-                    {row.duration}
-                  </td>
+                  <td className="py-2 pr-6 whitespace-nowrap">{row.duration}</td>
                   <td className="py-2 pr-6 whitespace-nowrap">
                     <button
                       onClick={() => onViewBracket?.(row.name)}
@@ -238,12 +232,13 @@ function HistoryList({
         </div>
       );
     }
+
     const transactions = transactionData ?? [];
     const transactionCurrency =
       transactions.find((entry) => entry.currency)?.currency ?? 'USD';
 
     return (
-      <TransactionHistorySection
+      <TransactionHistorySection<TransactionEntry>
         data={transactions}
         currency={transactionCurrency}
         title={transactionTitle ?? 'Wallet Activity'}

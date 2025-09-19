@@ -17,6 +17,7 @@ import { KycVerification } from './entities/kycVerification.entity';
 import { ChatMessage } from './entities/chatMessage.entity';
 import { GameState } from './entities/game-state.entity';
 import { CollusionAudit } from '../analytics/collusion-audit.entity';
+import { AuditLogTypeClass } from '../analytics/audit-log-type-class.entity';
 import { Tier } from './entities/tier.entity';
 import { BroadcastEntity } from './entities/broadcast.entity';
 import { BroadcastTypeEntity } from './entities/broadcast-type.entity';
@@ -45,6 +46,7 @@ export const AppDataSource = new DataSource({
     ChatMessage,
     GameState,
     CollusionAudit,
+    AuditLogTypeClass,
     Tier,
     BroadcastEntity,
     BroadcastTypeEntity,

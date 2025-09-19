@@ -20,11 +20,23 @@ export {
   WebVitalMetricSchema,
   MonitoringAcceptedResponseSchema,
   LogTypeClassesSchema,
+  LogTypeClassSchema,
+  LogTypeClassOverrideSchema,
+  LogTypeClassOverrideListSchema,
+  CreateLogTypeClassOverrideSchema,
+  UpdateLogTypeClassOverrideSchema,
+  LogTypeClassParamsSchema,
 } from './schemas/analytics';
 export type {
   WebVitalMetric,
   MonitoringAcceptedResponse,
   LogTypeClasses,
+  LogTypeClass,
+  LogTypeClassOverride,
+  LogTypeClassOverrideList,
+  CreateLogTypeClassOverride,
+  UpdateLogTypeClassOverride,
+  LogTypeClassParams,
 } from './schemas/analytics';
 
 export const ServiceStatusResponseSchema = z.object({

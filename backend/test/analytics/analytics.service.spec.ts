@@ -11,11 +11,19 @@ describe('AnalyticsService', () => {
     const engageSpy = jest
       .spyOn(AnalyticsService.prototype as any, 'scheduleEngagementMetrics')
       .mockImplementation(() => undefined);
+    const repo: any = {
+      find: jest.fn(),
+      findOne: jest.fn(),
+      save: jest.fn(),
+      create: jest.fn(),
+      delete: jest.fn(),
+    };
     const service = new AnalyticsService(
       config,
       { xrange: jest.fn() } as any,
       {} as any,
       {} as any,
+      repo,
     );
     expect(service).toBeDefined();
     stakeSpy.mockRestore();
@@ -143,36 +151,122 @@ describe('AnalyticsService getAuditLogTypes', () => {
 });
 
 describe('AnalyticsService getAuditLogTypeClasses', () => {
-  it('uses overrides and matchers when resolving classes', async () => {
+  it('combines stored overrides with defaults for known types', async () => {
     const service: any = {
       getAuditLogTypes: jest.fn().mockResolvedValue([
         'Login',
         'wallet.commit',
         'Broadcast',
-        'Unknown Event',
         'Error',
       ]),
+      logTypeClassRepo: {
+        find: jest.fn().mockResolvedValue([
+          { type: 'Login', className: 'stored-login' },
+          { type: 'Custom', className: 'stored-custom' },
+        ]),
+      },
+    };
+    const classes = await (AnalyticsService.prototype as any).getAuditLogTypeClasses.call(
+      service,
+    );
+    expect(classes).toEqual({
+      Login: 'stored-login',
+      'wallet.commit': 'bg-accent-blue/20 text-accent-blue',
+      Broadcast: 'bg-accent-yellow/20 text-accent-yellow',
+      Error: 'bg-danger-red/20 text-danger-red',
+      Custom: 'stored-custom',
+    });
+    expect(service.logTypeClassRepo.find).toHaveBeenCalled();
+  });
+
+  it('uses regex defaults when no overrides are stored', async () => {
+    const service: any = {
+      getAuditLogTypes: jest.fn().mockResolvedValue(['Login', 'Unknown Event']),
+      logTypeClassRepo: {
+        find: jest.fn().mockResolvedValue([]),
+      },
     };
     const classes = await (AnalyticsService.prototype as any).getAuditLogTypeClasses.call(
       service,
     );
     expect(classes).toEqual({
       Login: 'bg-accent-green/20 text-accent-green',
-      'wallet.commit': 'bg-accent-blue/20 text-accent-blue',
-      Broadcast: 'bg-accent-yellow/20 text-accent-yellow',
       'Unknown Event': 'bg-card-bg text-text-secondary',
-      Error: 'bg-danger-red/20 text-danger-red',
     });
   });
+});
 
-  it('returns empty object when no types are available', async () => {
+describe('AnalyticsService log type class overrides management', () => {
+  it('lists overrides from repository', async () => {
     const service: any = {
-      getAuditLogTypes: jest.fn().mockResolvedValue([]),
+      logTypeClassRepo: {
+        find: jest
+          .fn()
+          .mockResolvedValue([{ type: 'Login', className: 'stored' }]),
+      },
     };
-    const classes = await (AnalyticsService.prototype as any).getAuditLogTypeClasses.call(
+    const overrides = await (AnalyticsService.prototype as any).listLogTypeClassOverrides.call(
       service,
     );
-    expect(classes).toEqual({});
+    expect(overrides).toEqual([{ type: 'Login', className: 'stored' }]);
+  });
+
+  it('creates new overrides when none exist', async () => {
+    const service: any = {
+      logTypeClassRepo: {
+        findOne: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockImplementation((value) => value),
+        save: jest.fn().mockResolvedValue({
+          type: 'Login',
+          className: 'custom',
+        }),
+      },
+    };
+    const result = await (AnalyticsService.prototype as any).upsertLogTypeClass.call(
+      service,
+      'Login',
+      'custom',
+    );
+    expect(service.logTypeClassRepo.create).toHaveBeenCalledWith({
+      type: 'Login',
+      className: 'custom',
+    });
+    expect(result).toEqual({ type: 'Login', className: 'custom' });
+  });
+
+  it('updates existing overrides', async () => {
+    const service: any = {
+      logTypeClassRepo: {
+        findOne: jest
+          .fn()
+          .mockResolvedValue({ type: 'Login', className: 'old' }),
+        save: jest.fn().mockImplementation(async (value) => value),
+      },
+    };
+    const result = await (AnalyticsService.prototype as any).upsertLogTypeClass.call(
+      service,
+      'Login',
+      'updated',
+    );
+    expect(service.logTypeClassRepo.save).toHaveBeenCalledWith({
+      type: 'Login',
+      className: 'updated',
+    });
+    expect(result).toEqual({ type: 'Login', className: 'updated' });
+  });
+
+  it('throws when deleting a non-existent override', async () => {
+    const service: any = {
+      logTypeClassRepo: {
+        delete: jest.fn().mockResolvedValue({ affected: 0 }),
+      },
+    };
+    await expect(
+      (AnalyticsService.prototype as any).removeLogTypeClass.call(
+        service,
+        'Missing',
+      ),
+    ).rejects.toThrow('Log type class override not found');
   });
 });
 
