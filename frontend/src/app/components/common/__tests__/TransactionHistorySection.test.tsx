@@ -2,6 +2,7 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TransactionHistorySection from '../TransactionHistorySection';
 import { renderWithClient, mockMetadataFetch } from './helpers';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 type Txn = {
   amount: number;
@@ -37,14 +38,9 @@ describe('TransactionHistorySection', () => {
     mockMetadataFetch({ columns: defaultColumns });
     renderWithClient(<TransactionHistorySection data={data} currency="EUR" />);
 
-    const formatted = new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(10);
+    const formatted = formatCurrency(10, 'EUR', { signed: true });
 
-    expect(await screen.findByText(`+${formatted}`)).toBeInTheDocument();
+    expect(await screen.findByText(formatted)).toBeInTheDocument();
   });
 
   it('maps status codes to labels and styles', async () => {

@@ -3,6 +3,7 @@
 import { useMemo, type ReactNode } from 'react';
 import RevenueDonut from '../charts/RevenueDonut';
 import type { RevenueBreakdown } from '@shared/types';
+import { getCurrencyFormatter } from '@/lib/formatCurrency';
 
 interface RevenueBreakdownCardProps {
   /** Revenue data returned from the analytics API */
@@ -21,20 +22,10 @@ export default function RevenueBreakdownCard({
   const currency = data?.currency;
   const resolvedCurrency = useMemo(() => currency ?? 'USD', [currency]);
 
-  const formatCurrency = useMemo(() => {
-    const fallback = new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency: 'USD',
-    });
-    try {
-      return new Intl.NumberFormat(undefined, {
-        style: 'currency',
-        currency: resolvedCurrency.toUpperCase(),
-      });
-    } catch {
-      return fallback;
-    }
-  }, [resolvedCurrency]);
+  const currencyFormatter = useMemo(
+    () => getCurrencyFormatter(resolvedCurrency),
+    [resolvedCurrency],
+  );
 
   const streams = data?.streams ?? [];
   const hasData = streams.length > 0;
@@ -74,7 +65,7 @@ export default function RevenueBreakdownCard({
               <span className="whitespace-nowrap">
                 {stream.pct}%
                 {typeof stream.value === 'number'
-                  ? ` (${formatCurrency.format(stream.value)})`
+                  ? ` (${currencyFormatter.format(stream.value)})`
                   : ''}
               </span>
             </li>

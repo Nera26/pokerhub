@@ -1,10 +1,12 @@
 'use client';
 
+import { useMemo } from 'react';
 import Tooltip from '../ui/Tooltip';
 import Button from '../ui/Button';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowDown } from '@fortawesome/free-solid-svg-icons/faArrowDown';
 import { faArrowUp } from '@fortawesome/free-solid-svg-icons/faArrowUp';
+import { getCurrencyFormatter } from '@/lib/formatCurrency';
 
 interface WalletSummaryProps {
   /** User's real (withdrawable) balance */
@@ -33,13 +35,11 @@ export default function WalletSummary({
   currency,
 }: WalletSummaryProps) {
   const totalBalance = realBalance + creditBalance;
-  const format = (value: number) =>
-    new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
+  const currencyFormatter = useMemo(
+    () => getCurrencyFormatter(currency),
+    [currency],
+  );
+  const format = (value: number) => currencyFormatter.format(value);
 
   return (
     <section className="bg-card-bg rounded-2xl p-8 md:p-12 mb-6 md:mb-8">

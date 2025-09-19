@@ -9,6 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { confirmWithdrawal, rejectWithdrawal } from '@/lib/api/wallet';
 import type { PendingWithdrawal } from '@shared/types';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 type Props = {
   onClose: () => void;
@@ -50,12 +51,10 @@ export default function ReviewWithdrawalModal({ onClose, request }: Props) {
     },
   });
 
-  const amountFormatted = useMemo(() => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: request.currency,
-    }).format(request.amount);
-  }, [request.amount, request.currency]);
+  const amountFormatted = useMemo(
+    () => formatCurrency(request.amount, request.currency),
+    [request.amount, request.currency],
+  );
 
   const bankInfo = useMemo(() => {
     return (
