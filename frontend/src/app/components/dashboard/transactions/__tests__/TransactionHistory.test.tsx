@@ -53,6 +53,14 @@ describe('Dashboard TransactionHistory', () => {
     ).toBeInTheDocument();
   });
 
+  it('shows error state when fetching fails', async () => {
+    (fetchTransactionsLog as jest.Mock).mockRejectedValue(new Error('fail'));
+    renderWithClient(<TransactionHistory />);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Failed to load transaction history.');
+  });
+
   it('renders player filter options', async () => {
     (fetchTransactionsLog as jest.Mock).mockResolvedValue([]);
     renderWithClient(<TransactionHistory />);

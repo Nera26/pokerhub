@@ -1,15 +1,15 @@
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons/faSpinner';
 import TransactionHistorySection from '@/app/components/common/TransactionHistorySection';
+import useTransactionHistory from '@/app/components/common/useTransactionHistory';
 import { fetchAdminPlayers } from '@/lib/api/wallet';
 import {
   fetchTransactionTypes,
   fetchTransactionsLog,
 } from '@/lib/api/transactions';
 import { useApiError } from '@/hooks/useApiError';
-import { exportCsv } from '@/lib/exportCsv';
 
 interface Props {
   onExport?: () => void;
@@ -20,11 +20,6 @@ type TransactionLogEntry = Awaited<
 >[number];
 
 export default function DashboardTransactionHistory({ onExport }: Props) {
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [playerId, setPlayerId] = useState('');
-  const [type, setType] = useState('');
-  const [page, setPage] = useState(1);
   const pageSize = 10;
 
   const {
@@ -42,119 +37,83 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
     queryFn: fetchTransactionTypes,
   });
 
+  useApiError(playersError);
+  useApiError(typesError);
+
   const {
     data: log = [],
-    isLoading: logLoading,
-    error: logError,
-  } = useQuery<Awaited<ReturnType<typeof fetchTransactionsLog>>>({
-    queryKey: [
-      'transactionsLog',
-      playerId,
-      type,
-      startDate,
-      endDate,
-      page,
-      pageSize,
-    ],
-    queryFn: ({ signal }) =>
+    isLoading: historyLoading,
+    error: historyError,
+    currency,
+    filters,
+    updateFilter,
+    page,
+    setPage,
+    hasMore,
+    exportToCsv,
+  } = useTransactionHistory<
+    Awaited<ReturnType<typeof fetchTransactionsLog>>[number]
+  >({
+    queryKey: ['transactionsLog', 'dashboard'],
+    fetchTransactions: ({ signal, page, pageSize, filters }) =>
       fetchTransactionsLog({
         signal,
-        playerId: playerId || undefined,
-        type: type || undefined,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
+        playerId: filters.playerId || undefined,
+        type: filters.type || undefined,
+        startDate: filters.startDate || undefined,
+        endDate: filters.endDate || undefined,
         page,
         pageSize,
       }),
+    initialFilters: {
+      startDate: '',
+      endDate: '',
+      playerId: '',
+      type: '',
+    },
+    pageSize,
+    extractCurrency: (entry) =>
+      (entry as (TransactionLogEntry & { currency?: string }) | undefined)
+        ?.currency,
   });
 
-  useApiError(playersError);
-  useApiError(typesError);
-  useApiError(logError);
-
-  const currency =
-    (log[0] as (TransactionLogEntry & { currency?: string }) | undefined)
-      ?.currency ?? 'USD';
-
-  const defaultExport = useCallback(() => {
-    const header = ['Date/Time', 'Action', 'Amount', 'By', 'Notes', 'Status'];
-    const toCsvCell = (value: unknown) => {
-      const str = String(value ?? '');
-      if (str === '') return '';
-      if (/[",\n]/.test(str)) {
-        const escaped = str.replace(/"/g, '""');
-        return `"${escaped}"`;
-      }
-      return str;
-    };
-
-    const rows = (
-      log as (TransactionLogEntry & {
-        date?: string;
-        type?: string;
-        performedBy?: string;
-      })[]
-    ).map((entry) => {
-      const amountRaw =
-        typeof entry.amount === 'number'
-          ? entry.amount.toString()
-          : String(entry.amount ?? '');
-      const amount = currency ? `${currency} ${amountRaw}`.trim() : amountRaw;
-
-      return [
-        toCsvCell(entry.datetime ?? entry.date ?? ''),
-        toCsvCell(entry.action ?? entry.type ?? ''),
-        toCsvCell(amount),
-        toCsvCell(entry.by ?? entry.performedBy ?? ''),
-        toCsvCell(entry.notes ?? ''),
-        toCsvCell(entry.status ?? ''),
-      ];
-    });
-
-    const filename = `transactions_${
-      new Date().toISOString().split('T')[0]
-    }.csv`;
-    exportCsv(filename, header, rows);
-  }, [currency, log]);
+  useApiError(historyError);
 
   const handleExport = useCallback(() => {
     if (onExport) {
       onExport();
       return;
     }
-    defaultExport();
-  }, [defaultExport, onExport]);
+    exportToCsv();
+  }, [exportToCsv, onExport]);
 
-  const filters = (
+  const filterControls = (
     <div className="flex flex-wrap gap-2 items-center">
       <input
         type="date"
         className="bg-primary-bg border border-dark rounded-2xl px-3 py-2 text-sm"
         aria-label="Start date"
-        value={startDate}
+        value={filters.startDate ?? ''}
         onChange={(e) => {
-          setStartDate(e.target.value);
-          setPage(1);
+          updateFilter('startDate', e.target.value);
         }}
       />
       <input
         type="date"
         className="bg-primary-bg border border-dark rounded-2xl px-3 py-2 text-sm"
         aria-label="End date"
-        value={endDate}
+        value={filters.endDate ?? ''}
         onChange={(e) => {
-          setEndDate(e.target.value);
-          setPage(1);
+          updateFilter('endDate', e.target.value);
         }}
       />
 
       <select
         className="bg-primary-bg border border-dark rounded-2xl px-3 py-2 text-sm"
         aria-label="Filter by player"
-        value={playerId}
+        value={filters.playerId ?? ''}
         onChange={(e) => {
-          setPlayerId(e.target.value);
-          setPage(1);
+          updateFilter('playerId', e.target.value);
         }}
       >
         <option value="">All Players</option>
@@ -174,10 +133,9 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
       <select
         className="bg-primary-bg border border-dark rounded-2xl px-3 py-2 text-sm"
         aria-label="Filter by type"
-        value={type}
+        value={filters.type ?? ''}
         onChange={(e) => {
-          setType(e.target.value);
-          setPage(1);
+          updateFilter('type', e.target.value);
         }}
       >
         <option value="">All Types</option>
@@ -196,7 +154,7 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
     </div>
   );
 
-  if (logLoading) {
+  if (historyLoading) {
     return (
       <div className="flex justify-center" aria-label="loading history">
         <FontAwesomeIcon icon={faSpinner} spin />
@@ -204,7 +162,7 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
     );
   }
 
-  if (logError) {
+  if (historyError) {
     return <p role="alert">Failed to load transaction history.</p>;
   }
   return (
@@ -212,21 +170,21 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
       <TransactionHistorySection
         data={log}
         currency={currency}
-        filters={filters}
+        filters={filterControls}
         onExport={handleExport}
         emptyMessage="No transaction history."
       />
       <div className="flex justify-end gap-2 mt-4">
         <button
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          onClick={() => setPage(page - 1)}
           disabled={page === 1}
           className="px-3 py-1 rounded bg-primary-bg border border-dark disabled:opacity-50"
         >
           Previous
         </button>
         <button
-          onClick={() => setPage((p) => p + 1)}
-          disabled={log.length < pageSize}
+          onClick={() => setPage(page + 1)}
+          disabled={!hasMore}
           className="px-3 py-1 rounded bg-primary-bg border border-dark disabled:opacity-50"
         >
           Next
