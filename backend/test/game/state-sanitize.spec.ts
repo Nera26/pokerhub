@@ -35,6 +35,7 @@ describe('state sanitize', () => {
   it('hides deck and hole cards from spectators', () => {
     const state = createState();
     const spectator = sanitize(state);
+    expect(spectator.serverTime).toEqual(expect.any(Number));
     expect((spectator as any).deck).toBeUndefined();
     for (const p of spectator.players) {
       expect(p.holeCards).toBeUndefined();
@@ -44,6 +45,7 @@ describe('state sanitize', () => {
   it('reveals hole cards only to the matching player', () => {
     const state = createState();
     const view = sanitize(state, 'p1');
+    expect(view.serverTime).toEqual(expect.any(Number));
     const p1 = view.players.find((p) => p.id === 'p1');
     const p2 = view.players.find((p) => p.id === 'p2');
     expect(p1?.holeCards).toEqual([1, 2]);

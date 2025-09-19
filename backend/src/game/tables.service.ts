@@ -90,6 +90,7 @@ export class TablesService {
     let seats: TableState['seats'] = [];
     let street: TableState['street'] = 'pre';
     let handId = '';
+    const serverTime = Date.now();
 
     try {
       const room = this.rooms.get(id);
@@ -114,7 +115,7 @@ export class TablesService {
       // fallback to defaults if room/state unavailable
     }
 
-    return { handId, seats, pot: { main: pot, sidePots }, street };
+    return { handId, seats, pot: { main: pot, sidePots }, street, serverTime };
   }
 
   async getSidePanelTabs(id: string): Promise<TabKey[]> {

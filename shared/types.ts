@@ -436,6 +436,7 @@ export const GameStateSchema = z
   .object({
     version: z.literal('1'),
     tick: z.number(),
+    serverTime: z.number(),
     phase: z.enum([
       'WAIT_BLINDS',
       'DEAL',
