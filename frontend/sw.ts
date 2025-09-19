@@ -1,21 +1,34 @@
+import { BackgroundSyncPlugin } from 'workbox-background-sync';
+import { clientsClaim } from 'workbox-core';
+import { ExpirationPlugin } from 'workbox-expiration';
 import { precacheAndRoute } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
 import {
-  StaleWhileRevalidate,
   CacheFirst,
   NetworkFirst,
   NetworkOnly,
+  StaleWhileRevalidate,
 } from 'workbox-strategies';
-import { ExpirationPlugin } from 'workbox-expiration';
-import { BackgroundSyncPlugin } from 'workbox-background-sync';
-import { clientsClaim } from 'workbox-core';
+import { fetchPrecacheManifest } from './src/lib/api/pwa';
 
 declare const self: ServiceWorkerGlobalScope;
 
-if (typeof self !== 'undefined') {
+export async function initializeServiceWorker(): Promise<void> {
+  if (typeof self === 'undefined') {
+    return;
+  }
+
   self.skipWaiting();
   clientsClaim();
-  precacheAndRoute(self.__WB_MANIFEST || []);
+
+  let manifest: string[] = [];
+  try {
+    manifest = await fetchPrecacheManifest();
+  } catch (error) {
+    console.error('Failed to load precache manifest', error);
+  }
+
+  precacheAndRoute(manifest);
 
   registerRoute(
     ({ request }) => request.destination === 'script',
@@ -79,3 +92,6 @@ if (typeof self !== 'undefined') {
     );
   });
 }
+
+export const serviceWorkerReady =
+  typeof self !== 'undefined' ? initializeServiceWorker() : Promise.resolve();

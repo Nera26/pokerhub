@@ -1,4 +1,2 @@
-import { z } from 'zod';
-
-export const PrecacheListResponseSchema = z.array(z.string());
-export type PrecacheListResponse = z.infer<typeof PrecacheListResponseSchema>;
+export { PrecacheListResponseSchema } from '@shared/schemas/precache';
+export type { PrecacheListResponse } from '@shared/schemas/precache';
