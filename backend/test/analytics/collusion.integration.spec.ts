@@ -16,6 +16,13 @@ describe('collusion heuristics integration', () => {
     } as unknown as ConfigService;
     const gcs = new MockGcsService();
     const etl = { runEtl: jest.fn() } as any;
+    const repo: any = {
+      find: jest.fn(),
+      findOne: jest.fn(),
+      save: jest.fn(),
+      create: jest.fn(),
+      delete: jest.fn(),
+    };
     jest
       .spyOn(AnalyticsService.prototype as any, 'scheduleStakeAggregates')
       .mockImplementation(() => undefined);
@@ -27,6 +34,7 @@ describe('collusion heuristics integration', () => {
       redis as unknown as Redis,
       gcs as any,
       etl,
+      repo,
     );
     const spy = jest.spyOn(analytics, 'emitAntiCheatFlag');
 
@@ -51,6 +59,7 @@ describe('collusion heuristics integration', () => {
       redis as unknown as Redis,
       gcs as any,
       etl,
+      repo,
     );
     const spy2 = jest.spyOn(analytics2, 'emitAntiCheatFlag');
     await analytics2.recordGameEvent({ handId: 'h2', playerId: 'p1', timeMs: 0 });

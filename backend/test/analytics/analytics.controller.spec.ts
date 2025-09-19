@@ -44,11 +44,72 @@ describe('AnalyticsController', () => {
       getAuditLogTypeClasses: jest
         .fn()
         .mockResolvedValue({ Login: 'bg-accent-green/20 text-accent-green' }),
+      listLogTypeClassOverrides: jest.fn(),
+      upsertLogTypeClass: jest.fn(),
+      removeLogTypeClass: jest.fn(),
     } as unknown as AnalyticsService;
     const controller = new AnalyticsController(service);
     await expect(controller.logTypeClasses()).resolves.toEqual({
       Login: 'bg-accent-green/20 text-accent-green',
     });
+  });
+
+  it('lists stored log type class overrides', async () => {
+    const service = {
+      listLogTypeClassOverrides: jest
+        .fn()
+        .mockResolvedValue([{ type: 'Login', className: 'stored' }]),
+    } as unknown as AnalyticsService;
+    const controller = new AnalyticsController(service);
+    await expect(controller.logTypeClassOverrides()).resolves.toEqual([
+      { type: 'Login', className: 'stored' },
+    ]);
+  });
+
+  it('creates a log type class override', async () => {
+    const service = {
+      upsertLogTypeClass: jest
+        .fn()
+        .mockImplementation(async (type: string, className: string) => ({
+          type,
+          className,
+        })),
+    } as unknown as AnalyticsService;
+    const controller = new AnalyticsController(service);
+    await expect(
+      controller.createLogTypeClass({ type: 'Login', className: 'stored' }),
+    ).resolves.toEqual({ type: 'Login', className: 'stored' });
+    expect(service.upsertLogTypeClass).toHaveBeenCalledWith(
+      'Login',
+      'stored',
+    );
+  });
+
+  it('updates a log type class override', async () => {
+    const service = {
+      upsertLogTypeClass: jest
+        .fn()
+        .mockResolvedValue({ type: 'Login', className: 'updated' }),
+    } as unknown as AnalyticsService;
+    const controller = new AnalyticsController(service);
+    await expect(
+      controller.updateLogTypeClass({ type: 'Login' }, { className: 'updated' }),
+    ).resolves.toEqual({ type: 'Login', className: 'updated' });
+    expect(service.upsertLogTypeClass).toHaveBeenCalledWith(
+      'Login',
+      'updated',
+    );
+  });
+
+  it('deletes a log type class override', async () => {
+    const service = {
+      removeLogTypeClass: jest.fn().mockResolvedValue(undefined),
+    } as unknown as AnalyticsService;
+    const controller = new AnalyticsController(service);
+    await expect(
+      controller.deleteLogTypeClass({ type: 'Login' }),
+    ).resolves.toBeUndefined();
+    expect(service.removeLogTypeClass).toHaveBeenCalledWith('Login');
   });
 });
 

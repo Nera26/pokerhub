@@ -1611,6 +1611,64 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LogTypeClasses'
+    post:
+      summary: Create an audit log type class override
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLogTypeClassOverride'
+      responses:
+        '201':
+          description: Created audit log type class override
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogTypeClassOverride'
+  /analytics/log-types/classes/overrides:
+    get:
+      summary: List stored audit log type class overrides
+      responses:
+        '200':
+          description: Stored audit log type class overrides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogTypeClassOverrideList'
+  /analytics/log-types/classes/{type}:
+    put:
+      summary: Update an audit log type class override
+      parameters:
+        - in: path
+          name: type
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLogTypeClassOverride'
+      responses:
+        '200':
+          description: Updated audit log type class override
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogTypeClassOverride'
+    delete:
+      summary: Delete an audit log type class override
+      parameters:
+        - in: path
+          name: type
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Override removed
   /analytics/summary:
     get:
       summary: Get audit log summary
@@ -3429,6 +3487,29 @@ components:
       type: object
       additionalProperties:
         type: string
+    LogTypeClassOverride:
+      type: object
+      properties:
+        type:
+          type: string
+        className:
+          type: string
+      required:
+        - type
+        - className
+    LogTypeClassOverrideList:
+      type: array
+      items:
+        $ref: '#/components/schemas/LogTypeClassOverride'
+    CreateLogTypeClassOverride:
+      $ref: '#/components/schemas/LogTypeClassOverride'
+    UpdateLogTypeClassOverride:
+      type: object
+      properties:
+        className:
+          type: string
+      required:
+        - className
     AuditSummaryResponse:
       type: object
       properties:
