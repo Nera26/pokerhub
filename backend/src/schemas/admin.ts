@@ -46,6 +46,15 @@ export const AdminTabConfigSchema = AdminTabSchema.extend({
 }).omit({ source: true });
 export type AdminTabConfig = z.infer<typeof AdminTabConfigSchema>;
 
+export const AdminTabMetaSchema = z.object({
+  id: SidebarTabSchema,
+  title: z.string(),
+  component: z.string(),
+  enabled: z.boolean(),
+  message: z.string(),
+});
+export type AdminTabMeta = z.infer<typeof AdminTabMetaSchema>;
+
 export const AdminEventSchema = z.object({
   id: z.string(),
   title: z.string(),

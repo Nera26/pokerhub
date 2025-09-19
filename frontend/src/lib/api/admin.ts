@@ -15,6 +15,8 @@ import {
   type CreateAdminTabRequest,
   AdminTabUpdateRequestSchema,
   type UpdateAdminTabRequest,
+  AdminTabMetaSchema,
+  type AdminTabMeta,
   TournamentFormatsResponseSchema,
   type TournamentFormatsResponse,
   UserMetaResponseSchema,
@@ -59,16 +61,6 @@ export async function updateAdminTab(
 export async function deleteAdminTab(id: string): Promise<void> {
   await apiClient(`/api/admin/tabs/${id}`, z.void(), { method: 'DELETE' });
 }
-
-const AdminTabMetaSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  component: z.string(),
-  enabled: z.boolean(),
-  message: z.string(),
-});
-
-export type AdminTabMeta = z.infer<typeof AdminTabMetaSchema>;
 
 export async function fetchAdminTabMeta(
   id: string,

@@ -45,6 +45,8 @@ import {
   AdminTabUpdateRequestSchema,
   type UpdateAdminTabRequest,
   AdminTabSchema,
+  AdminTabMetaSchema,
+  type AdminTabMeta,
 } from '../schemas/admin';
 import {
   MessageResponse,
@@ -181,6 +183,51 @@ export class AdminController {
       source: dbIds.has(s.id) ? 'database' : 'config',
     }));
     return AdminTabResponseSchema.parse(tabs);
+  }
+
+  @Get('tabs/:id')
+  @ApiOperation({ summary: 'Get admin tab metadata' })
+  @ApiResponse({ status: 200, description: 'Admin tab metadata' })
+  async getTabMeta(@Param('id') id: string): Promise<AdminTabMeta> {
+    const [items, dbTab] = await Promise.all([
+      this.sidebar.getItems(),
+      this.tabs.find(id),
+    ]);
+
+    if (dbTab) {
+      return AdminTabMetaSchema.parse({
+        id: dbTab.id,
+        title: dbTab.title,
+        component: dbTab.component,
+        enabled: true,
+        message: '',
+      });
+    }
+
+    const configTab = items.find((item) => item.id === id);
+    if (configTab) {
+      return AdminTabMetaSchema.parse({
+        id: configTab.id,
+        title: configTab.label,
+        component: configTab.component,
+        enabled: true,
+        message: '',
+      });
+    }
+
+    const title = id
+      .split(/[-_]/)
+      .filter(Boolean)
+      .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+      .join(' ');
+
+    return AdminTabMetaSchema.parse({
+      id,
+      title: title || id,
+      component: '',
+      enabled: false,
+      message: 'This section is coming soon.',
+    });
   }
 
   @Post('tabs')

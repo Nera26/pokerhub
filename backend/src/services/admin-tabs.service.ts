@@ -51,6 +51,11 @@ export class AdminTabsService {
     await this.repo.delete({ id });
   }
 
+  async find(id: string): Promise<AdminTabConfig | null> {
+    const entity = await this.repo.findOne({ where: { id } });
+    return entity ? this.toConfig(entity) : null;
+  }
+
   private toConfig(entity: AdminTabEntity): AdminTabConfig {
     return {
       id: entity.id,
