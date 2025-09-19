@@ -7,8 +7,7 @@ import { BroadcastTemplateEntity } from '../../src/database/entities/broadcast-t
 import { BroadcastTypeEntity } from '../../src/database/entities/broadcast-type.entity';
 import { BroadcastsService } from '../../src/messaging/broadcasts.service';
 import { BroadcastsController } from '../../src/messaging/broadcasts.controller';
-import { BroadcastTemplatesController } from '../../src/messaging/templates.controller';
-import { BroadcastTypesController } from '../../src/messaging/types.controller';
+import { BroadcastMetadataController } from '../../src/messaging/metadata.controller';
 import { AuthGuard } from '../../src/auth/auth.guard';
 import { AdminGuard } from '../../src/auth/admin.guard';
 
@@ -22,11 +21,7 @@ export async function setupBroadcasts() {
   const service = new BroadcastsService(dataSource);
 
   const moduleRef = await Test.createTestingModule({
-    controllers: [
-      BroadcastsController,
-      BroadcastTemplatesController,
-      BroadcastTypesController,
-    ],
+    controllers: [BroadcastsController, BroadcastMetadataController],
     providers: [{ provide: BroadcastsService, useValue: service }],
   })
     .overrideGuard(AuthGuard)

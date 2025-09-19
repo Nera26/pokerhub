@@ -8,8 +8,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
 import { TournamentScheduler } from '../tournament/scheduler.service';
 import { BroadcastsService } from './broadcasts.service';
 import { BroadcastsController } from './broadcasts.controller';
-import { BroadcastTemplatesController } from './templates.controller';
-import { BroadcastTypesController } from './types.controller';
+import { BroadcastMetadataController } from './metadata.controller';
 import { BroadcastEntity } from '../database/entities/broadcast.entity';
 import { BroadcastTemplateEntity } from '../database/entities/broadcast-template.entity';
 import { BroadcastTypeEntity } from '../database/entities/broadcast-type.entity';
@@ -44,8 +43,7 @@ import { BroadcastTypeEntity } from '../database/entities/broadcast-type.entity'
   controllers: [
     TournamentsConsumer,
     BroadcastsController,
-    BroadcastTemplatesController,
-    BroadcastTypesController,
+    BroadcastMetadataController,
   ],
   exports: [TournamentsProducer, BroadcastsService],
 })
