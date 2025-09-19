@@ -1,14 +1,25 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { BroadcastTypesResponseSchema } from '../schemas/broadcasts';
+import {
+  BroadcastTemplatesResponseSchema,
+  BroadcastTypesResponseSchema,
+} from '../schemas/broadcasts';
 import { BroadcastsService } from './broadcasts.service';
 
 @ApiTags('broadcast')
-@Controller('broadcasts')
-export class BroadcastTypesController {
+@Controller()
+export class BroadcastMetadataController {
   constructor(private readonly broadcasts: BroadcastsService) {}
 
-  @Get('types')
+  @Get('broadcast/templates')
+  @ApiOperation({ summary: 'Get broadcast templates' })
+  @ApiResponse({ status: 200, description: 'Broadcast templates' })
+  async templates() {
+    const templates = await this.broadcasts.listTemplates();
+    return BroadcastTemplatesResponseSchema.parse({ templates });
+  }
+
+  @Get('broadcasts/types')
   @ApiOperation({ summary: 'Get broadcast types' })
   @ApiResponse({ status: 200, description: 'Broadcast types' })
   async types() {
@@ -16,4 +27,3 @@ export class BroadcastTypesController {
     return BroadcastTypesResponseSchema.parse({ types });
   }
 }
-
