@@ -1,14 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import {
   fetchAdminTabs,
   createAdminTab,
   updateAdminTab,
   deleteAdminTab,
 } from '@/lib/api/admin';
-import type { AdminTab } from '@shared/types';
+import type {
+  AdminTab,
+  CreateAdminTabRequest,
+  UpdateAdminTabRequest,
+} from '@shared/types';
 import { useRequireAdmin } from '@/hooks/useRequireAdmin';
+import { useSimpleCrudPage } from '../useSimpleCrudPage';
 
 interface FormState {
   id: string;
@@ -30,138 +35,113 @@ function normalizeError(error: unknown) {
 
 export default function AdminTabsPage() {
   useRequireAdmin();
+  const getItemId = useCallback((item: AdminTab) => item.id, []);
+  const mapTabs = useCallback(
+    (tabList: AdminTab[]) => tabList.filter((tab) => tab.source !== 'config'),
+    [],
+  );
 
-  const [tabs, setTabs] = useState<AdminTab[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [editing, setEditing] = useState<AdminTab | null>(null);
-  const [form, setForm] = useState<FormState>({ ...EMPTY_FORM });
-
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-
-    fetchAdminTabs()
-      .then((data) => {
-        if (!active) return;
-        setTabs(data.filter((tab) => tab.source !== 'config'));
-        setError(null);
-      })
-      .catch((err) => {
-        if (!active) return;
-        setError(`Failed to load admin tabs: ${normalizeError(err)}`);
-      })
-      .finally(() => {
-        if (active) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const updateForm = (key: keyof FormState, value: string) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-    if (formError) {
-      setFormError(null);
-    }
-  };
-
-  const resetForm = () => {
-    setForm({ ...EMPTY_FORM });
-    setEditing(null);
-    setFormError(null);
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setFormError(null);
-
-    const trimmedId = form.id.trim();
-    const trimmedTitle = form.title.trim();
-    const trimmedComponent = form.component.trim();
-    const trimmedIcon = form.icon.trim();
-
-    if (!trimmedTitle || !trimmedComponent || (!editing && !trimmedId)) {
-      setFormError('ID, title, component, and icon are required');
-      return;
-    }
-
-    if (!trimmedIcon) {
-      setFormError('Icon is required');
-      return;
-    }
-
-    setSubmitting(true);
-
-    try {
-      if (editing) {
-        const updated = await updateAdminTab(editing.id, {
-          title: trimmedTitle,
-          component: trimmedComponent,
-          icon: trimmedIcon,
-        });
-        setTabs((prev) =>
-          prev.map((tab) => (tab.id === editing.id ? updated : tab)),
-        );
-      } else {
-        const created = await createAdminTab({
-          id: trimmedId,
-          title: trimmedTitle,
-          component: trimmedComponent,
-          icon: trimmedIcon,
-        });
-        setTabs((prev) => [...prev, created]);
-      }
-
-      resetForm();
-    } catch (err) {
-      setFormError(
-        `Failed to ${editing ? 'update' : 'create'} admin tab: ${normalizeError(
-          err,
-        )}`,
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const startEdit = (tab: AdminTab) => {
-    setEditing(tab);
-    setForm({
+  const formFromItem = useCallback(
+    (tab: AdminTab): FormState => ({
       id: tab.id,
       title: tab.title ?? '',
       component: tab.component ?? '',
       icon: tab.icon ?? '',
-    });
-    setFormError(null);
-  };
+    }),
+    [],
+  );
 
-  const cancelEdit = () => {
-    resetForm();
-  };
+  const prepareSubmit = useCallback(
+    (
+      formState: FormState,
+      { editingItem }: { editingItem: AdminTab | null },
+    ) => {
+      const trimmedId = formState.id.trim();
+      const trimmedTitle = formState.title.trim();
+      const trimmedComponent = formState.component.trim();
+      const trimmedIcon = formState.icon.trim();
 
-  const handleDelete = async (id: string) => {
-    setDeletingId(id);
-    setFormError(null);
-
-    try {
-      await deleteAdminTab(id);
-      setTabs((prev) => prev.filter((tab) => tab.id !== id));
-      if (editing?.id === id) {
-        resetForm();
+      if (!trimmedTitle || !trimmedComponent || (!editingItem && !trimmedId)) {
+        return {
+          error: 'ID, title, component, and icon are required',
+        } as const;
       }
-    } catch (err) {
-      setFormError(`Failed to delete admin tab: ${normalizeError(err)}`);
-    } finally {
-      setDeletingId(null);
-    }
-  };
+
+      if (!trimmedIcon) {
+        return { error: 'Icon is required' } as const;
+      }
+
+      if (editingItem) {
+        const payload: UpdateAdminTabRequest = {
+          title: trimmedTitle,
+          component: trimmedComponent,
+          icon: trimmedIcon,
+        };
+        return { type: 'update', payload } as const;
+      }
+
+      const payload: CreateAdminTabRequest = {
+        id: trimmedId,
+        title: trimmedTitle,
+        component: trimmedComponent,
+        icon: trimmedIcon,
+      };
+
+      return { type: 'create', payload } as const;
+    },
+    [],
+  );
+
+  const formatListError = useCallback((error: unknown) => {
+    return `Failed to load admin tabs: ${normalizeError(error)}`;
+  }, []);
+
+  const formatActionError = useCallback(
+    (action: 'create' | 'update' | 'delete', error: unknown) => {
+      const message = normalizeError(error);
+      const verb =
+        action === 'delete'
+          ? 'delete'
+          : action === 'update'
+            ? 'update'
+            : 'create';
+      return `Failed to ${verb} admin tab: ${message}`;
+    },
+    [],
+  );
+
+  const {
+    items: tabs,
+    loading,
+    listError: error,
+    actionError: formError,
+    form,
+    isEditing,
+    submitting,
+    deletingId,
+    setFormValue,
+    handleSubmit,
+    handleDelete,
+    startEdit,
+    cancelEdit,
+  } = useSimpleCrudPage<
+    AdminTab,
+    FormState,
+    CreateAdminTabRequest,
+    UpdateAdminTabRequest
+  >({
+    emptyForm: EMPTY_FORM,
+    fetchItems: fetchAdminTabs,
+    createItem: createAdminTab,
+    updateItem: updateAdminTab,
+    deleteItem: deleteAdminTab,
+    getItemId,
+    mapItems: mapTabs,
+    formFromItem,
+    prepareSubmit,
+    formatListError,
+    formatActionError,
+  });
 
   return (
     <div className="space-y-6 p-4">
@@ -184,10 +164,10 @@ export default function AdminTabsPage() {
               id="tab-id"
               name="id"
               value={form.id}
-              onChange={(event) => updateForm('id', event.target.value)}
+              onChange={(event) => setFormValue('id', event.target.value)}
               className="mt-1 rounded border border-gray-300 px-3 py-2"
               placeholder="analytics"
-              readOnly={!!editing}
+              readOnly={isEditing}
             />
           </label>
 
@@ -200,7 +180,7 @@ export default function AdminTabsPage() {
               id="tab-title"
               name="title"
               value={form.title}
-              onChange={(event) => updateForm('title', event.target.value)}
+              onChange={(event) => setFormValue('title', event.target.value)}
               className="mt-1 rounded border border-gray-300 px-3 py-2"
               placeholder="Analytics"
             />
@@ -215,7 +195,9 @@ export default function AdminTabsPage() {
               id="tab-component"
               name="component"
               value={form.component}
-              onChange={(event) => updateForm('component', event.target.value)}
+              onChange={(event) =>
+                setFormValue('component', event.target.value)
+              }
               className="mt-1 rounded border border-gray-300 px-3 py-2"
               placeholder="@/app/components/dashboard/AdminAnalytics"
             />
@@ -230,7 +212,7 @@ export default function AdminTabsPage() {
               id="tab-icon"
               name="icon"
               value={form.icon}
-              onChange={(event) => updateForm('icon', event.target.value)}
+              onChange={(event) => setFormValue('icon', event.target.value)}
               className="mt-1 rounded border border-gray-300 px-3 py-2"
               placeholder="faChartLine"
             />
@@ -252,9 +234,9 @@ export default function AdminTabsPage() {
             className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
             disabled={submitting}
           >
-            {editing ? 'Update tab' : 'Create tab'}
+            {isEditing ? 'Update tab' : 'Create tab'}
           </button>
-          {editing && (
+          {isEditing && (
             <button
               type="button"
               className="rounded border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-gray-100 disabled:opacity-50"
