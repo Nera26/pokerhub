@@ -11,6 +11,12 @@ import { TransactionColumnEntity } from '../src/wallet/transaction-column.entity
 import { TransactionColumnRepository } from '../src/wallet/transaction-column.repository';
 
 describe('TransactionsService', () => {
+  const DEFAULT_COLUMNS = [
+    { id: 'date', label: 'Date' },
+    { id: 'type', label: 'Type' },
+    { id: 'amount', label: 'Amount' },
+    { id: 'status', label: 'Status' },
+  ] as const;
   let service: TransactionsService;
   let typeRepo: Repository<TransactionType>;
   let txnRepo: Repository<Transaction>;
@@ -152,9 +158,17 @@ describe('TransactionsService', () => {
   });
 
   describe('getTransactionColumns', () => {
-    it('returns an empty list when no columns exist', async () => {
+    it('seeds default columns when no configuration exists', async () => {
       const columns = await service.getTransactionColumns();
-      expect(columns).toEqual([]);
+      expect(columns).toEqual(DEFAULT_COLUMNS);
+
+      const stored = await columnRepo.find();
+      expect(stored).toHaveLength(DEFAULT_COLUMNS.length);
+      for (const column of DEFAULT_COLUMNS) {
+        expect(stored).toEqual(
+          expect.arrayContaining([expect.objectContaining(column)]),
+        );
+      }
     });
 
     it('maps stored columns to the response schema', async () => {
