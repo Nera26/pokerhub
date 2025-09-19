@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState, type ComponentProps } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -124,15 +124,6 @@ const historyCases: HistoryCase[] = [
     emptyText: 'No tournament history found.',
     errorText: 'Failed to load tournament history.',
   },
-  {
-    name: 'transaction history',
-    type: 'transaction-history',
-    fetchMock: fetchTransactionsMock,
-    successData: transactionEntries,
-    successText: 'Deposit',
-    emptyText: 'No transactions found.',
-    errorText: 'Failed to load transactions.',
-  },
 ];
 
 const originalFetch = global.fetch;
@@ -146,25 +137,16 @@ describe.each(historyCases)(
   'HistoryList $name',
   ({ type, fetchMock, successData, successText, emptyText, errorText }) => {
     it('renders entries on success', async () => {
-      if (type === 'transaction-history') {
-        mockMetadataFetch(defaultMetadata);
-      }
       fetchMock.mockResolvedValueOnce(successData);
       await renderHistoryList(type, successText);
     });
 
     it('renders empty state', async () => {
-      if (type === 'transaction-history') {
-        mockMetadataFetch(defaultMetadata);
-      }
       fetchMock.mockResolvedValueOnce([]);
       await renderHistoryList(type, emptyText);
     });
 
     it('renders error state', async () => {
-      if (type === 'transaction-history') {
-        mockMetadataFetch(defaultMetadata);
-      }
       fetchMock.mockRejectedValueOnce(new Error('fail'));
       await renderHistoryList(type, errorText);
     });
@@ -203,7 +185,108 @@ describe('HistoryList game history replay', () => {
   });
 });
 
-describe('HistoryList transaction metadata', () => {
+describe('HistoryList transaction history', () => {
+  it('renders the shared transaction history section', async () => {
+    mockMetadataFetch(defaultMetadata);
+    fetchTransactionsMock.mockResolvedValueOnce(transactionEntries);
+
+    renderWithClient(<HistoryList type="transaction-history" />);
+
+    const formatted = new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(transactionEntries[0]!.amount);
+
+    expect(
+      await screen.findByRole('heading', { name: 'Wallet Activity' }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText(`+${formatted}`)).toBeInTheDocument();
+  });
+
+  it('forwards transaction-specific props to the shared section', async () => {
+    const onExport = jest.fn();
+    const onAction = jest.fn();
+
+    mockMetadataFetch(defaultMetadata);
+    fetchTransactionsMock.mockResolvedValueOnce(transactionEntries);
+
+    renderWithClient(
+      <HistoryList
+        type="transaction-history"
+        transactionTitle="Recent Wallet Activity"
+        transactionEmptyMessage="Nothing to see here."
+        transactionFilters={<div>filters</div>}
+        transactionOnExport={onExport}
+        transactionActions={[
+          { label: 'Refund', onClick: onAction, className: 'text-xs' },
+        ]}
+      />,
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: 'Recent Wallet Activity' }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText('filters')).toBeInTheDocument();
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Refund' }),
+    );
+    expect(onAction).toHaveBeenCalledWith(transactionEntries[0]);
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: /export/i }),
+    );
+    expect(onExport).toHaveBeenCalled();
+  });
+
+  it('shows a loading state while transactions are fetched', async () => {
+    mockMetadataFetch(defaultMetadata);
+    let resolveFetch: ((value: TransactionEntry[]) => void) | undefined;
+    fetchTransactionsMock.mockReturnValueOnce(
+      new Promise<TransactionEntry[]>((resolve) => {
+        resolveFetch = resolve;
+      }),
+    );
+
+    renderWithClient(<HistoryList type="transaction-history" />);
+
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
+
+    await act(async () => {
+      resolveFetch?.([]);
+    });
+
+    expect(
+      await screen.findByText('No transactions found.'),
+    ).toBeInTheDocument();
+  });
+
+  it('shows an error state when the request fails', async () => {
+    fetchTransactionsMock.mockRejectedValueOnce(new Error('fail'));
+
+    renderWithClient(<HistoryList type="transaction-history" />);
+
+    expect(
+      await screen.findByText('Failed to load transactions.'),
+    ).toBeInTheDocument();
+  });
+
+  it('renders the empty state copy from props', async () => {
+    mockMetadataFetch(defaultMetadata);
+    fetchTransactionsMock.mockResolvedValueOnce([]);
+
+    renderWithClient(
+      <HistoryList
+        type="transaction-history"
+        transactionEmptyMessage="Custom empty"
+      />,
+    );
+
+    expect(await screen.findByText('Custom empty')).toBeInTheDocument();
+  });
+
   it('applies metadata-driven labels and styles', async () => {
     mockMetadataFetch({
       columns: defaultMetadata.columns,
@@ -218,7 +301,6 @@ describe('HistoryList transaction metadata', () => {
 
     renderWithClient(<HistoryList type="transaction-history" />);
 
-    expect(await screen.findByText('Finished')).toBeInTheDocument();
     const pill = await screen.findByText('Finished');
     expect(pill).toHaveClass('bg-accent-blue');
     expect(pill).toHaveClass('text-white');
@@ -231,9 +313,7 @@ describe('HistoryList transaction metadata', () => {
     renderWithClient(<HistoryList type="transaction-history" />);
 
     expect(
-      await screen.findByText(
-        'Transaction history configuration is unavailable.',
-      ),
+      await screen.findByText('No transaction columns found'),
     ).toBeInTheDocument();
   });
 });
