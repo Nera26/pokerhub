@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import { AdminMessagesService } from '../src/notifications/admin-messages.service';
 import { AdminMessageEntity } from '../src/notifications/admin-message.entity';
 import type { Repository } from 'typeorm';
@@ -6,7 +7,7 @@ describe('AdminMessagesService', () => {
   const repo = {
     find: jest.fn(),
     findOne: jest.fn(),
-    update: jest.fn(),
+    save: jest.fn(),
   } as unknown as Repository<AdminMessageEntity>;
   const service = new AdminMessagesService(repo as any);
 
@@ -57,8 +58,29 @@ describe('AdminMessagesService', () => {
   });
 
   it('marks message as read', async () => {
-    repo.update = jest.fn().mockResolvedValue({});
-    await service.markRead(4);
-    expect(repo.update).toHaveBeenCalledWith(4, { read: true });
+    const entity = {
+      id: 4,
+      sender: 'Alice',
+      userId: 'u1',
+      avatar: '/a.png',
+      subject: 'Hi',
+      preview: 'Hi',
+      content: 'Hello',
+      time: new Date('2024-01-01T00:00:00Z'),
+      read: false,
+    } as AdminMessageEntity;
+    repo.findOne = jest.fn().mockResolvedValue(entity as any);
+    repo.save = jest.fn().mockResolvedValue({ ...entity, read: true });
+
+    const result = await service.markRead(4);
+
+    expect(repo.findOne).toHaveBeenCalledWith({ where: { id: 4 } });
+    expect(repo.save).toHaveBeenCalledWith({ ...entity, read: true });
+    expect(result.read).toBe(true);
+  });
+
+  it('throws when message missing', async () => {
+    repo.findOne = jest.fn().mockResolvedValue(null);
+    await expect(service.markRead(5)).rejects.toThrow(NotFoundException);
   });
 });

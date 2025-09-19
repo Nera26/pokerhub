@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AdminMessageEntity } from './admin-message.entity';
@@ -21,8 +21,13 @@ export class AdminMessagesService {
     return item ? this.toDto(item) : null;
   }
 
-  async markRead(id: number): Promise<void> {
-    await this.repo.update(id, { read: true });
+  async markRead(id: number): Promise<AdminMessage> {
+    const entity = await this.repo.findOne({ where: { id } });
+    if (!entity) {
+      throw new NotFoundException('Message not found');
+    }
+    const updated = await this.repo.save({ ...entity, read: true });
+    return this.toDto(updated);
   }
 
   private toDto(entity: AdminMessageEntity): AdminMessage {
