@@ -100,7 +100,8 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
     }
     const entries = (gameData ?? []).filter((e) => {
       if (!filters) return true;
-      if (filters.gameType !== 'any' && e.type !== filters.gameType) return false;
+      if (filters.gameType !== 'any' && e.type !== filters.gameType)
+        return false;
       if (filters.profitLoss === 'win' && !e.profit) return false;
       if (filters.profitLoss === 'loss' && e.profit) return false;
       if (filters.date && e.date !== filters.date) return false;
@@ -130,7 +131,9 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
               <p className="text-text-secondary text-xs mt-1">{e.date}</p>
             </div>
             <div className="text-right">
-              <p className={`font-semibold ${e.profit ? 'text-accent-green' : 'text-danger-red'}`}>
+              <p
+                className={`font-semibold ${e.profit ? 'text-accent-green' : 'text-danger-red'}`}
+              >
                 {formatAmount(e.amount, e.currency)}
               </p>
               <button
@@ -182,7 +185,14 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
           <table className="min-w-[640px] w-full text-left table-auto">
             <thead>
               <tr>
-                {['Name', 'Place', 'Buy-in', 'Prize', 'Duration', 'Details'].map((h) => (
+                {[
+                  'Name',
+                  'Place',
+                  'Buy-in',
+                  'Prize',
+                  'Duration',
+                  'Details',
+                ].map((h) => (
                   <th key={h} className="pb-2 pr-6 whitespace-nowrap">
                     {h}
                   </th>
@@ -196,7 +206,9 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
                   <td className="py-2 pr-6 whitespace-nowrap">{row.place}</td>
                   <td className="py-2 pr-6 whitespace-nowrap">{row.buyin}</td>
                   <td className="py-2 pr-6 whitespace-nowrap">{row.prize}</td>
-                  <td className="py-2 pr-6 whitespace-nowrap">{row.duration}</td>
+                  <td className="py-2 pr-6 whitespace-nowrap">
+                    {row.duration}
+                  </td>
                   <td className="py-2 pr-6 whitespace-nowrap">
                     <button
                       onClick={() => onViewBracket?.(row.name)}
@@ -230,6 +242,14 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
         </div>
       );
     }
+    if (!Array.isArray(columnMeta) || columnMeta.length === 0) {
+      return (
+        <div role="alert" className="p-8 text-center text-danger-red">
+          Transaction history configuration is unavailable.
+        </div>
+      );
+    }
+
     if (!transactionData || transactionData.length === 0) {
       return (
         <div className="bg-card-bg rounded-2xl p-8 text-center text-text-secondary">
@@ -238,13 +258,7 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
       );
     }
 
-    const defaultColumns = [
-      { id: 'date', label: 'Date' },
-      { id: 'type', label: 'Type' },
-      { id: 'amount', label: 'Amount' },
-      { id: 'status', label: 'Status' },
-    ];
-    const columns = Array.isArray(columnMeta) && columnMeta.length > 0 ? columnMeta : defaultColumns;
+    const columns = columnMeta;
 
     return (
       <div className="bg-card-bg rounded-2xl p-8">
@@ -273,8 +287,15 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
                       const label = info?.label ?? String(row.status ?? '');
                       const style = info?.style ?? '';
                       return (
-                        <td key={`${column.id}-${index}`} className="py-2 pr-6 whitespace-nowrap">
-                          <span className={`${style} px-2 py-1 rounded-md font-medium`}>{label}</span>
+                        <td
+                          key={`${column.id}-${index}`}
+                          className="py-2 pr-6 whitespace-nowrap"
+                        >
+                          <span
+                            className={`${style} px-2 py-1 rounded-md font-medium`}
+                          >
+                            {label}
+                          </span>
                         </td>
                       );
                     }
@@ -287,7 +308,10 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
                       let negative = false;
 
                       if (typeof raw === 'number') {
-                        text = formatAmount(raw, (row as any).currency ?? 'USD');
+                        text = formatAmount(
+                          raw,
+                          (row as any).currency ?? 'USD',
+                        );
                         positive = raw > 0;
                         negative = raw < 0;
                       } else if (typeof raw === 'string') {
@@ -301,7 +325,11 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
                         <td
                           key={`${column.id}-${index}`}
                           className={`py-2 pr-6 whitespace-nowrap ${
-                            positive ? 'text-accent-green' : negative ? 'text-danger-red' : ''
+                            positive
+                              ? 'text-accent-green'
+                              : negative
+                                ? 'text-danger-red'
+                                : ''
                           }`}
                         >
                           {text}
@@ -312,7 +340,10 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
                     // Default: print by dynamic key
                     const value = (row as Record<string, unknown>)[column.id];
                     return (
-                      <td key={`${column.id}-${index}`} className="py-2 pr-6 whitespace-nowrap">
+                      <td
+                        key={`${column.id}-${index}`}
+                        className="py-2 pr-6 whitespace-nowrap"
+                      >
                         {value as any}
                       </td>
                     );

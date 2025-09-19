@@ -20,6 +20,13 @@ import {
 } from '@shared/transactions.schema';
 import type { TransactionTab } from '@shared/wallet.schema';
 
+const DEFAULT_TRANSACTION_COLUMNS = [
+  { id: 'date', label: 'Date' },
+  { id: 'type', label: 'Type' },
+  { id: 'amount', label: 'Amount' },
+  { id: 'status', label: 'Status' },
+] as const;
+
 @Injectable()
 export class TransactionsService {
   constructor(
@@ -66,12 +73,23 @@ export class TransactionsService {
 
   async getTransactionColumns() {
     const columns = await this.columnRepo.find();
+    const normalized =
+      columns.length > 0 ? columns : await this.ensureDefaultColumns();
+
     return TransactionColumnsResponseSchema.parse(
-      columns.map((column) => ({
+      normalized.map((column) => ({
         id: column.id,
         label: column.label,
       })),
     );
+  }
+
+  private async ensureDefaultColumns() {
+    const created = DEFAULT_TRANSACTION_COLUMNS.map((column) =>
+      this.columnRepo.create(column),
+    );
+    await this.columnRepo.save(created);
+    return created;
   }
 
   async getUserTransactions(

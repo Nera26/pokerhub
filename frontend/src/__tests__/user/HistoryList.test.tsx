@@ -223,4 +223,17 @@ describe('HistoryList transaction metadata', () => {
     expect(pill).toHaveClass('bg-accent-blue');
     expect(pill).toHaveClass('text-white');
   });
+
+  it('renders an error state when column metadata is missing', async () => {
+    mockMetadataFetch({ columns: [] });
+    fetchTransactionsMock.mockResolvedValueOnce(transactionEntries);
+
+    renderWithClient(<HistoryList type="transaction-history" />);
+
+    expect(
+      await screen.findByText(
+        'Transaction history configuration is unavailable.',
+      ),
+    ).toBeInTheDocument();
+  });
 });

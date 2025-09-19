@@ -15,6 +15,13 @@ import { TransactionColumnRepository } from '../src/wallet/transaction-column.re
 import { DataSource, Repository } from 'typeorm';
 import { newDb } from 'pg-mem';
 
+const DEFAULT_COLUMNS = [
+  { id: 'date', label: 'Date' },
+  { id: 'type', label: 'Type' },
+  { id: 'amount', label: 'Amount' },
+  { id: 'status', label: 'Status' },
+] as const;
+
 describe('TransactionsController', () => {
   let app: INestApplication;
   let typeRepo: Repository<TransactionType>;
@@ -108,12 +115,9 @@ describe('TransactionsController', () => {
       },
     ]);
     await tabRepo.save([{ id: 'all', label: 'All' }]);
-    await columnRepo.save([
-      { id: 'type', label: 'Type' },
-      { id: 'amount', label: 'Amount' },
-      { id: 'date', label: 'Date & Time' },
-      { id: 'status', label: 'Status' },
-    ]);
+    await columnRepo.save(
+      DEFAULT_COLUMNS.map((column) => ({ ...column })),
+    );
     await txnRepo.save({
       userId: 'user1',
       typeId: 'deposit',
@@ -166,13 +170,26 @@ describe('TransactionsController', () => {
       .get('/transactions/columns')
       .set('Authorization', 'Bearer test')
       .expect(200);
-    expect(res.body).toEqual(
-      expect.arrayContaining([
-        { id: 'amount', label: 'Amount' },
-        { id: 'status', label: 'Status' },
-      ]),
-    );
+    expect(res.body).toEqual(expect.arrayContaining(DEFAULT_COLUMNS));
     expect(adminGuard.canActivate.mock.calls.length).toBe(callsBefore);
+  });
+
+  it('seeds default columns when configuration is missing', async () => {
+    await columnRepo.clear();
+
+    const res = await request(app.getHttpServer())
+      .get('/transactions/columns')
+      .set('Authorization', 'Bearer test')
+      .expect(200);
+
+    expect(res.body).toEqual(DEFAULT_COLUMNS);
+    const stored = await columnRepo.find();
+    expect(stored).toHaveLength(DEFAULT_COLUMNS.length);
+    for (const column of DEFAULT_COLUMNS) {
+      expect(stored).toEqual(
+        expect.arrayContaining([expect.objectContaining(column)]),
+      );
+    }
   });
 
   it('returns user transactions', async () => {
