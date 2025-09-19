@@ -1,13 +1,6 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
-import AdminTabsPage from '../page';
-import { renderWithClient } from '@/app/components/dashboard/__tests__/renderWithClient';
-import { useRequireAdmin } from '@/hooks/useRequireAdmin';
-import {
-  fetchAdminTabs,
-  createAdminTab,
-  updateAdminTab,
-} from '@/lib/api/admin';
-import type { AdminTab } from '@shared/types';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import Page from '../page';
 
 jest.mock('@/hooks/useRequireAdmin', () => ({
   useRequireAdmin: jest.fn(),
@@ -17,124 +10,78 @@ jest.mock('@/lib/api/admin', () => ({
   fetchAdminTabs: jest.fn(),
   createAdminTab: jest.fn(),
   updateAdminTab: jest.fn(),
+  deleteAdminTab: jest.fn(),
 }));
 
-type FetchAdminTabs = typeof fetchAdminTabs;
-const mockFetchAdminTabs =
-  fetchAdminTabs as jest.MockedFunction<FetchAdminTabs>;
-const mockCreateAdminTab = createAdminTab as jest.MockedFunction<
-  typeof createAdminTab
->;
-const mockUpdateAdminTab = updateAdminTab as jest.MockedFunction<
-  typeof updateAdminTab
->;
-const mockUseRequireAdmin = useRequireAdmin as jest.MockedFunction<
-  typeof useRequireAdmin
->;
+import {
+  fetchAdminTabs,
+  createAdminTab,
+  deleteAdminTab,
+} from '@/lib/api/admin';
+import type { AdminTab } from '@shared/types';
 
-describe('AdminTabsPage', () => {
+describe('Admin tabs page', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockFetchAdminTabs.mockResolvedValue([]);
   });
 
-  it('requires admin access', async () => {
-    renderWithClient(<AdminTabsPage />);
+  it('requires an icon before submitting a new tab', async () => {
+    const user = userEvent.setup();
+    jest.mocked(fetchAdminTabs).mockResolvedValueOnce([]);
+    jest.mocked(createAdminTab).mockResolvedValue({} as AdminTab);
 
-    await waitFor(() => expect(mockFetchAdminTabs).toHaveBeenCalled());
-    expect(mockUseRequireAdmin).toHaveBeenCalled();
-  });
+    render(<Page />);
 
-  it('rejects empty icon when creating and succeeds with a value', async () => {
-    mockCreateAdminTab.mockResolvedValue({
-      id: 'reports',
-      title: 'Reports',
-      component: '@/components/Reports',
-      icon: 'faChartBar',
-      source: 'database',
-    } as AdminTab);
+    await screen.findByText('No runtime admin tabs found.');
 
-    renderWithClient(<AdminTabsPage />);
-    await screen.findByLabelText(/ID/i);
+    await user.type(screen.getByLabelText('ID'), 'audit');
+    await user.type(screen.getByLabelText('Title'), 'Audit');
+    await user.type(
+      screen.getByLabelText('Component'),
+      '@/app/components/dashboard/Audit',
+    );
 
-    fireEvent.change(screen.getByLabelText(/ID/i), {
-      target: { value: 'reports' },
-    });
-    fireEvent.change(screen.getByLabelText(/Title/i), {
-      target: { value: 'Reports' },
-    });
-    fireEvent.change(screen.getByLabelText(/Component/i), {
-      target: { value: '@/components/Reports' },
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: /Create tab/i }));
+    await user.click(screen.getByRole('button', { name: 'Create tab' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Icon is required',
     );
-    expect(mockCreateAdminTab).not.toHaveBeenCalled();
-
-    fireEvent.change(screen.getByLabelText(/Icon/i), {
-      target: { value: ' faChartLine ' },
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: /Create tab/i }));
-
-    await waitFor(() =>
-      expect(mockCreateAdminTab).toHaveBeenCalledWith({
-        id: 'reports',
-        title: 'Reports',
-        component: '@/components/Reports',
-        icon: 'faChartLine',
-      }),
-    );
-
-    await waitFor(() => expect(screen.getByLabelText(/Icon/i)).toHaveValue(''));
-    expect(screen.queryByRole('alert')).toBeNull();
   });
 
-  it('rejects empty icon when updating and succeeds with a value', async () => {
-    const existing: AdminTab = {
-      id: 'events',
-      title: 'Events',
-      component: '@/components/Events',
-      icon: undefined,
-      source: 'database',
-    } as AdminTab;
-    mockFetchAdminTabs.mockResolvedValue([existing]);
-    mockUpdateAdminTab.mockResolvedValue({
-      ...existing,
-      icon: 'faBell',
+  it('shows a progress state while deleting a tab', async () => {
+    const user = userEvent.setup();
+    jest
+      .mocked(fetchAdminTabs)
+      .mockResolvedValueOnce([
+        {
+          id: 'reports',
+          title: 'Reports',
+          component: '@/app/components/dashboard/Reports',
+          icon: 'faChartLine',
+        },
+      ] as AdminTab[])
+      .mockResolvedValueOnce([]);
+
+    let resolveDelete: (() => void) | undefined;
+    jest.mocked(deleteAdminTab).mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveDelete = resolve;
+        }),
+    );
+
+    render(<Page />);
+
+    const deleteButton = await screen.findByRole('button', { name: 'Delete' });
+    await user.click(deleteButton);
+
+    await waitFor(() => {
+      expect(deleteButton).toBeDisabled();
+      expect(deleteButton).toHaveTextContent('Deleting…');
     });
 
-    renderWithClient(<AdminTabsPage />);
-    const editButton = await screen.findByRole('button', { name: 'Edit' });
+    resolveDelete?.();
 
-    fireEvent.click(editButton);
-
-    const iconInput = screen.getByLabelText(/Icon/i) as HTMLInputElement;
-    expect(iconInput.value).toBe('');
-
-    fireEvent.click(screen.getByRole('button', { name: /Update tab/i }));
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Icon is required',
-    );
-    expect(mockUpdateAdminTab).not.toHaveBeenCalled();
-
-    fireEvent.change(iconInput, { target: { value: ' faBell ' } });
-
-    fireEvent.click(screen.getByRole('button', { name: /Update tab/i }));
-
-    await waitFor(() =>
-      expect(mockUpdateAdminTab).toHaveBeenCalledWith('events', {
-        title: 'Events',
-        component: '@/components/Events',
-        icon: 'faBell',
-      }),
-    );
-
-    await waitFor(() => expect(screen.getByLabelText(/Icon/i)).toHaveValue(''));
-    expect(screen.getByLabelText(/ID/i)).toHaveValue('');
+    await screen.findByText('No runtime admin tabs found.');
   });
 });

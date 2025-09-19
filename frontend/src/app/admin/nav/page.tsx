@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback } from 'react';
 import {
   fetchNavItems,
   createNavItem,
@@ -10,6 +10,7 @@ import {
 } from '@/lib/api/nav';
 import type { NavItemRequest } from '@shared/types';
 import { useRequireAdmin } from '@/hooks/useRequireAdmin';
+import { useSimpleCrudPage } from '../useSimpleCrudPage';
 
 type FormState = {
   flag: string;
@@ -27,130 +28,112 @@ const EMPTY_FORM: FormState = {
   order: '1',
 };
 
+function normalizeError(error: unknown) {
+  return error instanceof Error ? error.message : 'Unknown error';
+}
+
+const formFromNavItem = (item: UiNavItem): FormState => ({
+  flag: item.flag,
+  href: item.href,
+  label: item.label,
+  icon: item.iconName ?? '',
+  order: String(item.order),
+});
+
+const computeNavDefaults = (items: UiNavItem[]): Partial<FormState> => {
+  if (!items.length) {
+    return { order: '1' };
+  }
+  const last = items[items.length - 1];
+  return { order: String(last.order + 1) };
+};
+
 export default function NavAdminPage() {
   useRequireAdmin();
-  const [items, setItems] = useState<UiNavItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [editingFlag, setEditingFlag] = useState<string | null>(null);
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const getItemId = useCallback((item: UiNavItem) => item.flag, []);
+  const prepareSubmit = useCallback(
+    (
+      formState: FormState,
+      { editingItem }: { editingItem: UiNavItem | null },
+    ) => {
+      const trimmedFlag = formState.flag.trim();
+      const trimmedHref = formState.href.trim();
+      const trimmedLabel = formState.label.trim();
+      const trimmedIcon = formState.icon.trim();
+      const parsedOrder = Number(formState.order);
 
-  const sortedItems = useCallback(
-    (navItems: UiNavItem[]) => [...navItems].sort((a, b) => a.order - b.order),
+      if (!Number.isInteger(parsedOrder)) {
+        return { error: 'Order must be an integer' } as const;
+      }
+
+      if (!trimmedFlag || !trimmedHref || !trimmedLabel) {
+        return { error: 'Flag, href, and label are required' } as const;
+      }
+
+      const payload: NavItemRequest = {
+        flag: trimmedFlag,
+        href: trimmedHref,
+        label: trimmedLabel,
+        order: parsedOrder,
+        ...(trimmedIcon ? { icon: trimmedIcon } : {}),
+      };
+
+      if (editingItem) {
+        return { type: 'update', payload } as const;
+      }
+
+      return { type: 'create', payload } as const;
+    },
     [],
   );
 
-  const refreshItems = useCallback(async () => {
-    try {
-      const data = await fetchNavItems();
-      setItems(sortedItems(data));
-      setError(null);
-      return true;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(`Failed to load navigation items: ${message}`);
-      return false;
-    }
-  }, [sortedItems]);
+  const formatListError = useCallback((error: unknown) => {
+    return `Failed to load navigation items: ${normalizeError(error)}`;
+  }, []);
 
-  useEffect(() => {
-    setLoading(true);
-    refreshItems()
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [refreshItems]);
+  const formatActionError = useCallback(
+    (action: 'create' | 'update' | 'delete', error: unknown) => {
+      const message = normalizeError(error);
+      const verb =
+        action === 'delete'
+          ? 'delete'
+          : action === 'update'
+            ? 'update'
+            : 'create';
+      return `Failed to ${verb} nav item: ${message}`;
+    },
+    [],
+  );
 
-  const nextOrder = useMemo(() => {
-    if (!items.length) return '1';
-    return String(items[items.length - 1].order + 1);
-  }, [items]);
+  const {
+    items,
+    loading,
+    listError,
+    actionError,
+    form,
+    isEditing,
+    submitting,
+    deletingId,
+    setFormValue,
+    handleSubmit,
+    handleDelete,
+    startEdit,
+    cancelEdit,
+  } = useSimpleCrudPage<UiNavItem, FormState, NavItemRequest>({
+    emptyForm: EMPTY_FORM,
+    fetchItems: fetchNavItems,
+    createItem: createNavItem,
+    updateItem: updateNavItem,
+    deleteItem: deleteNavItem,
+    getItemId,
+    formFromItem: formFromNavItem,
+    prepareSubmit,
+    computeInitialForm: computeNavDefaults,
+    formatListError,
+    formatActionError,
+  });
 
-  useEffect(() => {
-    if (editingFlag) {
-      const item = items.find((it) => it.flag === editingFlag);
-      if (item) {
-        setForm({
-          flag: item.flag,
-          href: item.href,
-          label: item.label,
-          icon: item.iconName ?? '',
-          order: String(item.order),
-        });
-      }
-    } else {
-      setForm({ ...EMPTY_FORM, order: nextOrder });
-    }
-  }, [editingFlag, items, nextOrder]);
-
-  const updateForm = (key: keyof FormState, value: string) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const trimmedFlag = form.flag.trim();
-    const trimmedHref = form.href.trim();
-    const trimmedLabel = form.label.trim();
-    const trimmedIcon = form.icon.trim();
-    const parsedOrder = Number(form.order);
-
-    if (!Number.isInteger(parsedOrder)) {
-      setError('Order must be an integer');
-      return;
-    }
-
-    if (!trimmedFlag || !trimmedHref || !trimmedLabel) {
-      setError('Flag, href, and label are required');
-      return;
-    }
-
-    const payload: NavItemRequest = {
-      flag: trimmedFlag,
-      href: trimmedHref,
-      label: trimmedLabel,
-      order: parsedOrder,
-      ...(trimmedIcon ? { icon: trimmedIcon } : {}),
-    };
-
-    setSubmitting(true);
-    try {
-      if (editingFlag) {
-        await updateNavItem(editingFlag, payload);
-      } else {
-        await createNavItem(payload);
-      }
-      setEditingFlag(null);
-      await refreshItems();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(
-        `Failed to ${editingFlag ? 'update' : 'create'} nav item: ${message}`,
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleDelete = async (flag: string) => {
-    setSubmitting(true);
-    try {
-      await deleteNavItem(flag);
-      if (editingFlag === flag) {
-        setEditingFlag(null);
-      }
-      await refreshItems();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(`Failed to delete nav item: ${message}`);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const cancelEdit = () => {
-    setEditingFlag(null);
-  };
+  const error = actionError ?? listError;
 
   return (
     <div className="p-4 space-y-6">
@@ -173,8 +156,8 @@ export default function NavAdminPage() {
             name="flag"
             className="w-full rounded border border-gray-300 px-3 py-2"
             value={form.flag}
-            onChange={(e) => updateForm('flag', e.target.value)}
-            readOnly={!!editingFlag}
+            onChange={(e) => setFormValue('flag', e.target.value)}
+            readOnly={isEditing}
           />
         </div>
         <div className="space-y-1">
@@ -186,7 +169,7 @@ export default function NavAdminPage() {
             name="href"
             className="w-full rounded border border-gray-300 px-3 py-2"
             value={form.href}
-            onChange={(e) => updateForm('href', e.target.value)}
+            onChange={(e) => setFormValue('href', e.target.value)}
           />
         </div>
         <div className="space-y-1">
@@ -198,7 +181,7 @@ export default function NavAdminPage() {
             name="label"
             className="w-full rounded border border-gray-300 px-3 py-2"
             value={form.label}
-            onChange={(e) => updateForm('label', e.target.value)}
+            onChange={(e) => setFormValue('label', e.target.value)}
           />
         </div>
         <div className="space-y-1">
@@ -210,7 +193,7 @@ export default function NavAdminPage() {
             name="icon"
             className="w-full rounded border border-gray-300 px-3 py-2"
             value={form.icon}
-            onChange={(e) => updateForm('icon', e.target.value)}
+            onChange={(e) => setFormValue('icon', e.target.value)}
             placeholder="Icon name"
           />
         </div>
@@ -224,7 +207,7 @@ export default function NavAdminPage() {
             type="number"
             className="w-full rounded border border-gray-300 px-3 py-2"
             value={form.order}
-            onChange={(e) => updateForm('order', e.target.value)}
+            onChange={(e) => setFormValue('order', e.target.value)}
           />
         </div>
         <div className="flex items-center gap-2">
@@ -233,9 +216,9 @@ export default function NavAdminPage() {
             className="btn btn-primary"
             disabled={submitting}
           >
-            {editingFlag ? 'Update item' : 'Create item'}
+            {isEditing ? 'Update item' : 'Create item'}
           </button>
-          {editingFlag && (
+          {isEditing && (
             <button
               type="button"
               className="btn btn-secondary"
@@ -278,7 +261,7 @@ export default function NavAdminPage() {
                   <button
                     type="button"
                     className="text-blue-600 underline"
-                    onClick={() => setEditingFlag(item.flag)}
+                    onClick={() => startEdit(item)}
                     disabled={submitting}
                   >
                     Edit
@@ -287,7 +270,7 @@ export default function NavAdminPage() {
                     type="button"
                     className="text-red-600 underline"
                     onClick={() => handleDelete(item.flag)}
-                    disabled={submitting}
+                    disabled={submitting || deletingId === item.flag}
                   >
                     Delete
                   </button>
