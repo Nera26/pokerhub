@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { NotFoundException } from '@nestjs/common';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AdminController } from '../src/routes/admin.controller';
@@ -26,6 +27,7 @@ describe('AdminController', () => {
     getAuditLogTypeClasses: jest.fn(),
     markAuditLogReviewed: jest.fn(),
     acknowledgeSecurityAlert: jest.fn(),
+    acknowledgeAdminEvent: jest.fn(),
   } as Partial<AnalyticsService>;
   const revenue = {
     getBreakdown: jest.fn(),
@@ -253,6 +255,25 @@ describe('AdminController', () => {
       .get('/admin/events')
       .expect(200)
       .expect([]);
+  });
+
+  it('acknowledges an admin event', async () => {
+    (analytics.acknowledgeAdminEvent as jest.Mock).mockResolvedValue(undefined);
+    await request(app.getHttpServer())
+      .post('/admin/events/event-1/ack')
+      .expect(200)
+      .expect({ message: 'acknowledged' });
+    expect(analytics.acknowledgeAdminEvent).toHaveBeenCalledWith('event-1');
+  });
+
+  it('returns 404 when admin event is missing', async () => {
+    (analytics.acknowledgeAdminEvent as jest.Mock).mockRejectedValue(
+      new NotFoundException('Admin event not found'),
+    );
+
+    await request(app.getHttpServer())
+      .post('/admin/events/missing/ack')
+      .expect(404);
   });
 
   it('returns sidebar items from service', async () => {

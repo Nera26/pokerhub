@@ -313,3 +313,57 @@ describe('AnalyticsService acknowledgeSecurityAlert', () => {
     expect(redis.multi).not.toHaveBeenCalled();
   });
 });
+
+describe('AnalyticsService acknowledgeAdminEvent', () => {
+  it('removes the event from redis', async () => {
+    const event = {
+      id: 'event-1',
+      title: 'Event',
+      description: 'Details',
+      date: '2024-01-01T00:00:00Z',
+    };
+    const multi = {
+      lrem: jest.fn().mockReturnThis(),
+      exec: jest.fn().mockResolvedValue([[null, 1]]),
+    };
+    const redis = {
+      watch: jest.fn().mockResolvedValue(undefined),
+      lrange: jest.fn().mockResolvedValue([JSON.stringify(event)]),
+      multi: jest.fn().mockReturnValue(multi),
+      unwatch: jest.fn().mockResolvedValue('OK'),
+    };
+    const service: any = { redis };
+
+    await (AnalyticsService.prototype as any).acknowledgeAdminEvent.call(
+      service,
+      'event-1',
+    );
+
+    expect(redis.watch).toHaveBeenCalledWith('admin-events');
+    expect(multi.lrem).toHaveBeenCalledWith(
+      'admin-events',
+      1,
+      JSON.stringify(event),
+    );
+    expect(multi.exec).toHaveBeenCalled();
+  });
+
+  it('throws when the event is missing', async () => {
+    const redis = {
+      watch: jest.fn().mockResolvedValue(undefined),
+      lrange: jest.fn().mockResolvedValue([]),
+      multi: jest.fn(),
+      unwatch: jest.fn().mockResolvedValue('OK'),
+    };
+    const service: any = { redis };
+
+    await expect(
+      (AnalyticsService.prototype as any).acknowledgeAdminEvent.call(
+        service,
+        'missing',
+      ),
+    ).rejects.toThrow('Admin event not found');
+    expect(redis.unwatch).toHaveBeenCalled();
+    expect(redis.multi).not.toHaveBeenCalled();
+  });
+});

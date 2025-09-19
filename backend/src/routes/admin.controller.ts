@@ -46,6 +46,10 @@ import {
   type UpdateAdminTabRequest,
   AdminTabSchema,
 } from '../schemas/admin';
+import {
+  MessageResponse,
+  MessageResponseSchema,
+} from '../schemas/auth';
 import { SidebarService } from '../services/sidebar.service';
 import { KycService } from '../wallet/kyc.service';
 import { AnalyticsService } from '../analytics/analytics.service';
@@ -138,6 +142,18 @@ export class AdminController {
   async events(): Promise<AdminEvent[]> {
     const ev = await this.analytics.getAdminEvents();
     return AdminEventsResponseSchema.parse(ev);
+  }
+
+  @Post('events/:id/ack')
+  @ApiOperation({ summary: 'Acknowledge admin event' })
+  @ApiResponse({ status: 200, description: 'Admin event acknowledged' })
+  @ApiResponse({ status: 404, description: 'Admin event not found' })
+  @HttpCode(200)
+  async acknowledgeAdminEvent(
+    @Param('id') id: string,
+  ): Promise<MessageResponse> {
+    await this.analytics.acknowledgeAdminEvent(id);
+    return MessageResponseSchema.parse({ message: 'acknowledged' });
   }
 
   @Get('sidebar')

@@ -68,7 +68,9 @@ describe('AdminEvents', () => {
       isLoading: false,
       error: null,
     });
-    (acknowledgeAdminEvent as jest.Mock).mockResolvedValue({});
+    (acknowledgeAdminEvent as jest.Mock).mockResolvedValue({
+      message: 'acknowledged',
+    });
 
     const { queryClient } = renderWithClient(<AdminEvents />);
     const spy = jest.spyOn(queryClient, 'invalidateQueries');

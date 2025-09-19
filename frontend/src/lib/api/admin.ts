@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { OptionSchema } from '@shared/option.schema';
 import {
   MessageResponseSchema,
+  type MessageResponse,
   AdminTournamentSchema,
   type AdminTournament,
   BonusOptionsResponseSchema,
@@ -76,8 +77,10 @@ export async function fetchAdminTabMeta(
   return apiClient(`/api/admin/tabs/${id}`, AdminTabMetaSchema, { signal });
 }
 
-export async function acknowledgeAdminEvent(id: string): Promise<void> {
-  await apiClient(`/api/admin/events/${id}/ack`, MessageResponseSchema, {
+export async function acknowledgeAdminEvent(
+  id: string,
+): Promise<MessageResponse> {
+  return apiClient(`/api/admin/events/${id}/ack`, MessageResponseSchema, {
     method: 'POST',
   });
 }

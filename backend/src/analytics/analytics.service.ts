@@ -20,7 +20,7 @@ import {
   detectSynchronizedBetting,
 } from '@shared/analytics/collusion';
 import { AlertItem, AlertItemSchema } from '@shared/schemas/analytics';
-import { AdminEvent } from '../schemas/admin';
+import { AdminEvent, AdminEventSchema } from '../schemas/admin';
 import type {
   Session as CollusionSession,
   Transfer as CollusionTransfer,
@@ -438,6 +438,33 @@ export class AnalyticsService {
   async getAdminEvents(): Promise<AdminEvent[]> {
     const entries = await this.redis.lrange('admin-events', 0, -1);
     return entries.map((e) => JSON.parse(e) as AdminEvent);
+  }
+
+  async acknowledgeAdminEvent(id: string): Promise<void> {
+    const key = 'admin-events';
+
+    for (;;) {
+      await this.redis.watch(key);
+      const entries = await this.redis.lrange(key, 0, -1);
+      const events = entries.map((entry) => ({
+        raw: entry,
+        event: AdminEventSchema.parse(JSON.parse(entry) as unknown),
+      }));
+      const match = events.find(({ event }) => event.id === id);
+      if (!match) {
+        await this.redis.unwatch();
+        throw new NotFoundException('Admin event not found');
+      }
+
+      const multi = this.redis.multi();
+      multi.lrem(key, 1, match.raw);
+      const result = await multi.exec();
+      if (result) {
+        return;
+      }
+
+      await this.redis.unwatch();
+    }
   }
 
   async addAuditLog(entry: {
