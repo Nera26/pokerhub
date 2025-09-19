@@ -1,12 +1,11 @@
 'use client';
 
-import { createGetHook } from './useApiQuery';
-import {
-  BlockedCountriesResponseSchema,
-  type BlockedCountriesResponse,
-} from '@shared/types';
+import { createQueryHook } from './createQueryHook';
+import { fetchBlockedCountries } from '@/lib/api/blockedCountries';
+import type { BlockedCountriesResponse } from '@shared/types';
 
-export const useBlockedCountries = createGetHook<BlockedCountriesResponse>(
-  '/api/admin/blocked-countries',
-  BlockedCountriesResponseSchema,
+export const useBlockedCountries = createQueryHook<BlockedCountriesResponse>(
+  'admin-blocked-countries',
+  (_client, _params, opts) => fetchBlockedCountries(opts),
+  'blocked countries',
 );
