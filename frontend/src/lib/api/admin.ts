@@ -6,8 +6,16 @@ import {
   type MessageResponse,
   AdminTournamentSchema,
   type AdminTournament,
+  BonusSchema,
+  type Bonus,
+  BonusesResponseSchema,
+  type BonusesResponse,
   BonusOptionsResponseSchema,
   type BonusOptionsResponse,
+  BonusCreateRequestSchema,
+  type BonusCreateRequest,
+  BonusUpdateRequestSchema,
+  type BonusUpdateRequest,
   AdminTabResponseSchema,
   type AdminTab,
   AdminTabSchema,
@@ -27,6 +35,7 @@ import type { CreateUserRequest } from '@shared/types';
 export { AdminTournamentSchema } from '@shared/types';
 export type { AdminTournament } from '@shared/types';
 export type Option = z.infer<typeof OptionSchema>;
+export type { Bonus };
 
 /** =======================
  *  Admin Tournaments
@@ -170,25 +179,11 @@ export async function fetchBonusOptions({
   });
 }
 
-export const BonusSchema = z.object({
-  id: z.number().int(),
-  name: z.string(),
-  type: z.enum(['deposit', 'rakeback', 'ticket', 'rebate', 'first-deposit']),
-  description: z.string(),
-  bonusPercent: z.number().optional(),
-  maxBonusUsd: z.number().optional(),
-  expiryDate: z.string().optional(),
-  eligibility: z.enum(['all', 'new', 'vip', 'active']),
-  status: z.enum(['active', 'paused']),
-  claimsTotal: z.number(),
-  claimsWeek: z.number().optional(),
-});
-
-export type Bonus = z.infer<typeof BonusSchema>;
-
-export async function fetchBonuses({ signal }: { signal?: AbortSignal } = {}) {
+export async function fetchBonuses({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<BonusesResponse> {
   try {
-    return await apiClient('/api/admin/bonuses', z.array(BonusSchema), {
+    return await apiClient('/api/admin/bonuses', BonusesResponseSchema, {
       signal,
     });
   } catch (err) {
@@ -198,19 +193,17 @@ export async function fetchBonuses({ signal }: { signal?: AbortSignal } = {}) {
   }
 }
 
-export async function createBonus(
-  bonus: Omit<Bonus, 'id' | 'claimsTotal' | 'claimsWeek'>,
-) {
+export async function createBonus(bonus: BonusCreateRequest) {
   return apiClient('/api/admin/bonuses', BonusSchema, {
     method: 'POST',
-    body: bonus,
+    body: BonusCreateRequestSchema.parse(bonus),
   });
 }
 
-export async function updateBonus(id: number, bonus: Partial<Bonus>) {
+export async function updateBonus(id: number, bonus: BonusUpdateRequest) {
   return apiClient(`/api/admin/bonuses/${id}`, BonusSchema, {
     method: 'PUT',
-    body: bonus,
+    body: BonusUpdateRequestSchema.parse(bonus),
   });
 }
 

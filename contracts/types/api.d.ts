@@ -2440,6 +2440,80 @@ export interface paths {
       };
     };
   };
+  "/admin/bonuses": {
+    /** List bonuses */
+    get: {
+      responses: {
+        /** @description Bonus list */
+        200: {
+          content: {
+            "application/json": components["schemas"]["BonusesResponse"];
+          };
+        };
+      };
+    };
+    /** Create bonus */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["BonusCreateRequest"];
+        };
+      };
+      responses: {
+        /** @description Created bonus */
+        201: {
+          content: {
+            "application/json": components["schemas"]["Bonus"];
+          };
+        };
+      };
+    };
+  };
+  "/admin/bonuses/{id}": {
+    /** Update bonus */
+    put: {
+      parameters: {
+        path: {
+          id: number;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["BonusUpdateRequest"];
+        };
+      };
+      responses: {
+        /** @description Updated bonus */
+        200: {
+          content: {
+            "application/json": components["schemas"]["Bonus"];
+          };
+        };
+        /** @description Bonus not found */
+        404: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+    /** Delete bonus */
+    delete: {
+      parameters: {
+        path: {
+          id: number;
+        };
+      };
+      responses: {
+        /** @description Bonus deleted */
+        200: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
   "/admin/transactions": {
     /** List transactions */
     get: {

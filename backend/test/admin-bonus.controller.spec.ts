@@ -9,6 +9,7 @@ import request from 'supertest';
 import { AdminBonusController } from '../src/routes/admin-bonus.controller';
 import { BonusService } from '../src/services/bonus.service';
 import { BonusOptionEntity } from '../src/database/entities/bonus-option.entity';
+import { BonusEntity } from '../src/database/entities/bonus.entity';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
 import { bonusEntities, expectedOptions, expectedDefaults } from './bonus/fixtures';
@@ -32,14 +33,14 @@ function createTestModule() {
           });
           dataSource = db.adapters.createTypeormDataSource({
             type: 'postgres',
-            entities: [BonusOptionEntity],
+            entities: [BonusOptionEntity, BonusEntity],
             synchronize: true,
           }) as DataSource;
           return dataSource.options;
         },
         dataSourceFactory: async () => dataSource.initialize(),
       }),
-      TypeOrmModule.forFeature([BonusOptionEntity]),
+      TypeOrmModule.forFeature([BonusOptionEntity, BonusEntity]),
     ],
     controllers: [AdminBonusController],
     providers: [BonusService],
