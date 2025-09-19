@@ -58,7 +58,9 @@ describe('events tab', () => {
       isLoading: false,
       error: null,
     });
-    mockAcknowledgeAdminEvent.mockResolvedValue({});
+    mockAcknowledgeAdminEvent.mockResolvedValue({
+      message: 'acknowledged',
+    });
     const { queryClient } = renderDashboard();
     const spy = jest.spyOn(queryClient, 'invalidateQueries');
     await screen.findByText('t');

@@ -1986,6 +1986,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminEventsResponse'
+  /admin/events/{id}/ack:
+    post:
+      summary: Acknowledge an admin event
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Admin event acknowledged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '404':
+          description: Admin event not found
   /admin/sidebar:
     get:
       summary: Get admin sidebar items

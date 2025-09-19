@@ -2079,6 +2079,28 @@ export interface paths {
       };
     };
   };
+  "/admin/events/{id}/ack": {
+    /** Acknowledge an admin event */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Admin event acknowledged */
+        200: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+        /** @description Admin event not found */
+        404: {
+          content: never;
+        };
+      };
+    };
+  };
   "/admin/sidebar": {
     /** Get admin sidebar items */
     get: {
