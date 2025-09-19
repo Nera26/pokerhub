@@ -2,7 +2,6 @@
 import { z } from 'zod';
 import { apiClient } from './client';
 import {
-  AmountSchema,
   WithdrawSchema,
   DepositSchema,
   BankTransferDepositRequestSchema,
@@ -28,71 +27,13 @@ import {
 } from '@shared/wallet.schema';
 import {
   WithdrawalDecisionRequestSchema,
+  MessageResponseSchema,
   type MessageResponse,
   AdminPlayerSchema,
   type AdminPlayer,
 } from '@shared/types';
 
 export type { IbanDetails };
-
-const MessageResponseSchema = z.object({ message: z.string() });
-
-/* istanbul ignore next */
-async function postAmount(
-  path: string,
-  amount: number,
-  currency: string,
-  signal?: AbortSignal,
-): Promise<MessageResponse> {
-  AmountSchema.parse({ amount, currency });
-  return apiClient(path, MessageResponseSchema, {
-    method: 'POST',
-    body: { amount, currency },
-    signal,
-  });
-}
-
-export function reserve(
-  playerId: string,
-  amount: number,
-  currency: string,
-  opts: { signal?: AbortSignal } = {},
-) {
-  return postAmount(
-    `/api/wallet/${playerId}/reserve`,
-    amount,
-    currency,
-    opts.signal,
-  );
-}
-
-export function commit(
-  playerId: string,
-  amount: number,
-  currency: string,
-  opts: { signal?: AbortSignal } = {},
-) {
-  return postAmount(
-    `/api/wallet/${playerId}/commit`,
-    amount,
-    currency,
-    opts.signal,
-  );
-}
-
-export function rollback(
-  playerId: string,
-  amount: number,
-  currency: string,
-  opts: { signal?: AbortSignal } = {},
-) {
-  return postAmount(
-    `/api/wallet/${playerId}/rollback`,
-    amount,
-    currency,
-    opts.signal,
-  );
-}
 
 export function withdraw(
   playerId: string,
