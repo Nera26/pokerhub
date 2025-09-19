@@ -30,6 +30,8 @@ import { TournamentsProducer } from '../messaging/tournaments/tournaments.produc
 import { BotProfileRepository } from './bot-profile.repository';
 import { BotProfilesResponseSchema } from '@shared/types';
 import { TournamentFilterOptionRepository } from './tournament-filter-option.repository';
+import { TournamentDetailRepository } from './tournament-detail.repository';
+import { TournamentDetailType } from './tournament-detail.entity';
 
 @Injectable()
 export class TournamentService implements OnModuleInit {
@@ -55,6 +57,8 @@ export class TournamentService implements OnModuleInit {
     private readonly producer: TournamentsProducer,
     private readonly botProfiles: BotProfileRepository,
     private readonly filterOptions: TournamentFilterOptionRepository,
+    @Optional()
+    private readonly detailsRepository?: TournamentDetailRepository,
     @Optional() @Inject('REDIS_CLIENT') private readonly redis?: Redis,
     @Optional() private readonly wallet?: WalletService,
   ) {}
@@ -149,6 +153,35 @@ export class TournamentService implements OnModuleInit {
         where: { table: { tournament: { id } }, user: { id: userId } } as any,
       });
     }
+    const detailRows =
+      (await this.detailsRepository?.find({
+        where: { tournamentId: id },
+        order: { sortOrder: 'ASC', id: 'ASC' },
+      })) ?? [];
+
+    const groupedDetails: Record<
+      TournamentDetailType,
+      { title: string; description: string }[]
+    > = {
+      [TournamentDetailType.OVERVIEW]: [],
+      [TournamentDetailType.STRUCTURE]: [],
+      [TournamentDetailType.PRIZES]: [],
+    };
+
+    const sortedRows = [...detailRows].sort((a, b) => {
+      if (a.sortOrder !== b.sortOrder) {
+        return a.sortOrder - b.sortOrder;
+      }
+      return a.id.localeCompare(b.id);
+    });
+
+    for (const row of sortedRows) {
+      const bucket = groupedDetails[row.type];
+      if (bucket) {
+        bucket.push({ title: row.title, description: row.description });
+      }
+    }
+
     return {
       id: t.id,
       title: t.title,
@@ -163,28 +196,9 @@ export class TournamentService implements OnModuleInit {
         open: t.registrationOpen ?? null,
         close: t.registrationClose ?? null,
       },
-      overview: [
-        {
-          title: 'Tournament Format',
-          description: "No-Limit Hold'em with 20k starting chips.",
-        },
-        {
-          title: 'Late Registration',
-          description: 'Allowed for first 2 hours, one re-entry.',
-        },
-      ],
-      structure: [
-        {
-          title: 'Blind Structure',
-          description: 'Level 1: 100/200, Level 2: 200/400, …',
-        },
-      ],
-      prizes: [
-        {
-          title: 'Prizes',
-          description: '1st: 50%, 2nd: 25%, 3rd: 15%, remainder split.',
-        },
-      ],
+      overview: groupedDetails[TournamentDetailType.OVERVIEW],
+      structure: groupedDetails[TournamentDetailType.STRUCTURE],
+      prizes: groupedDetails[TournamentDetailType.PRIZES],
     };
   }
 

@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { Table } from './table.entity';
+import { TournamentDetail } from '../../tournament/tournament-detail.entity';
 
 export enum TournamentState {
   REG_OPEN = 'REG_OPEN',
@@ -47,4 +48,7 @@ export class Tournament {
 
   @OneToMany(() => Table, (table) => table.tournament)
   tables: Table[];
+
+  @OneToMany(() => TournamentDetail, (detail) => detail.tournament)
+  details: TournamentDetail[];
 }

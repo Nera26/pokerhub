@@ -14,6 +14,8 @@ import { BotProfile } from './bot-profile.entity';
 import { BotProfileRepository } from './bot-profile.repository';
 import { TournamentFilterOptionEntity } from './tournament-filter-option.entity';
 import { TournamentFilterOptionRepository } from './tournament-filter-option.repository';
+import { TournamentDetail } from './tournament-detail.entity';
+import { TournamentDetailRepository } from './tournament-detail.repository';
 import { GameModule } from '../game/game.module';
 import { FeatureFlagsModule } from '../feature-flags/feature-flags.module';
 import { RateLimitGuard } from '../routes/rate-limit.guard';
@@ -27,6 +29,7 @@ import { MessagingModule } from '../messaging/messaging.module';
       Table,
       BotProfile,
       TournamentFilterOptionEntity,
+      TournamentDetail,
     ]),
     GameModule,
     FeatureFlagsModule,
@@ -42,6 +45,7 @@ import { MessagingModule } from '../messaging/messaging.module';
     RateLimitGuard,
     BotProfileRepository,
     TournamentFilterOptionRepository,
+    TournamentDetailRepository,
   ],
   exports: [
     TournamentService,
@@ -50,6 +54,7 @@ import { MessagingModule } from '../messaging/messaging.module';
     RebuyService,
     BotProfileRepository,
     TournamentFilterOptionRepository,
+    TournamentDetailRepository,
   ],
 })
 export class TournamentModule {}
