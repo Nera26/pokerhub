@@ -19,18 +19,11 @@ import {
   AntiCheatNextActionQuerySchema,
   AntiCheatNextActionResponseSchema,
   type AntiCheatFlag,
-  type AntiCheatReviewStatus,
 } from '@shared/types';
+import { nextCollusionAction } from '@shared/collusion';
 import { CollusionService } from '../analytics/collusion.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
-
-const REVIEW_ORDER: AntiCheatReviewStatus[] = [
-  'flagged',
-  'warn',
-  'restrict',
-  'ban',
-];
 
 @UseGuards(AuthGuard, AdminGuard)
 @ApiTags('anti-cheat')
@@ -81,7 +74,11 @@ export class AntiCheatController {
 
     const [history, sessions] = await Promise.all([
       this.collusion.getActionHistory(id),
-      this.collusion.listFlaggedSessions({ page: 1, pageSize: 100, status: action }),
+      this.collusion.listFlaggedSessions({
+        page: 1,
+        pageSize: 100,
+        status: action,
+      }),
     ]);
     const flag = sessions.find((session) => session.id === id);
     if (!flag) {
@@ -97,14 +94,13 @@ export class AntiCheatController {
 
   @Get('next-action')
   @ApiOperation({ summary: 'Determine the next anti-cheat action' })
-  @ApiResponse({ status: 200, description: 'Next actionable escalation, if any' })
-  async nextAction(@Query() query: unknown) {
+  @ApiResponse({
+    status: 200,
+    description: 'Next actionable escalation, if any',
+  })
+  nextAction(@Query() query: unknown) {
     const { current } = AntiCheatNextActionQuerySchema.parse(query);
-    const currentIndex = REVIEW_ORDER.indexOf(current);
-    const next =
-      currentIndex >= 0 && currentIndex < REVIEW_ORDER.length - 1
-        ? REVIEW_ORDER[currentIndex + 1]
-        : null;
+    const next = nextCollusionAction(current);
     return AntiCheatNextActionResponseSchema.parse({ next });
   }
 }
