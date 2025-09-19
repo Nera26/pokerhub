@@ -29,6 +29,7 @@ import { validationSchema } from './config/env.validation';
 import { AppController } from './app.controller';
 import { AdminMessagesController } from './routes/admin-messages.controller';
 import { AdminBonusController } from './routes/admin-bonus.controller'; // expose /admin/bonus/options
+import { AdminBonusesController } from './routes/admin-bonuses.controller';
 import { PromotionsController } from './routes/promotions.controller';
 import { LanguagesController } from './routes/languages.controller';
 import { TranslationsController } from './routes/translations.controller';
@@ -83,6 +84,7 @@ import { SettingsService } from './services/settings.service';
 import { DefaultAvatarService } from './services/default-avatar.service';
 import { PerformanceThresholdsService } from './services/performance-thresholds.service';
 import { BonusOptionEntity } from './database/entities/bonus-option.entity';
+import { BonusEntity } from './database/entities/bonus.entity';
 import { ChipDenominationEntity } from './database/entities/chip-denomination.entity';
 import { TableThemeEntity } from './database/entities/table-theme.entity';
 import { NavIconEntity } from './database/entities/nav-icon.entity';
@@ -143,6 +145,7 @@ import { ChartPaletteEntity } from './database/entities/chart-palette.entity';
       LanguageEntity,
       TranslationEntity,
       BonusOptionEntity,
+      BonusEntity,
       ChipDenominationEntity,
       TableThemeEntity,
       DefaultAvatarEntity,
@@ -179,6 +182,7 @@ import { ChartPaletteEntity } from './database/entities/chart-palette.entity';
       AppController,
       AdminMessagesController,
       AdminBonusController,
+      AdminBonusesController,
       PromotionsController,
       LanguagesController,
       TranslationsController,

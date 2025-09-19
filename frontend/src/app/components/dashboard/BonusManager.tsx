@@ -139,7 +139,11 @@ export default function BonusManager() {
     type: 'success',
   });
 
-  const createMutation = useInvalidateMutation({
+  const createMutation = useInvalidateMutation<
+    Bonus,
+    Parameters<typeof createBonus>[0],
+    Bonus[]
+  >({
     mutationFn: createBonus,
     queryKey: ['admin-bonuses'],
     update: (previous, newBonus) => {
@@ -158,10 +162,11 @@ export default function BonusManager() {
     },
   });
 
-  const updateMutation = useInvalidateMutation<{
-    id: number;
-    data: Partial<Bonus>;
-  }>({
+  const updateMutation = useInvalidateMutation<
+    Bonus,
+    { id: number; data: Parameters<typeof updateBonus>[1] },
+    Bonus[]
+  >({
     mutationFn: ({ id, data }) => updateBonus(id, data),
     queryKey: ['admin-bonuses'],
     update: (previous, { id, data }) =>
@@ -173,7 +178,11 @@ export default function BonusManager() {
     },
   });
 
-  const deleteMutation = useInvalidateMutation<number>({
+  const deleteMutation = useInvalidateMutation<
+    { message: string },
+    number,
+    Bonus[]
+  >({
     mutationFn: deleteBonus,
     queryKey: ['admin-bonuses'],
     update: (previous, id) => previous.filter((b) => b.id !== id),
@@ -184,11 +193,11 @@ export default function BonusManager() {
     },
   });
 
-  const toggleMutation = useInvalidateMutation<{
-    id: number;
-    status: BonusStatus;
-    name: string;
-  }>({
+  const toggleMutation = useInvalidateMutation<
+    Bonus,
+    { id: number; status: BonusStatus; name: string },
+    Bonus[]
+  >({
     mutationFn: ({ id, status }) => updateBonus(id, { status }),
     queryKey: ['admin-bonuses'],
     update: (previous, { id, status }) =>

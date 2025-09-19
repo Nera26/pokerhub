@@ -8,6 +8,7 @@ import { newDb } from 'pg-mem';
 import { BonusService } from '../src/services/bonus.service';
 import { BonusOptionEntity } from '../src/database/entities/bonus-option.entity';
 import { bonusEntities, expectedOptions, expectedDefaults } from './bonus/fixtures';
+import { BonusEntity } from '../src/database/entities/bonus.entity';
 
 function createTestModule() {
   let dataSource: DataSource;
@@ -28,14 +29,14 @@ function createTestModule() {
           });
           dataSource = db.adapters.createTypeormDataSource({
             type: 'postgres',
-            entities: [BonusOptionEntity],
+            entities: [BonusOptionEntity, BonusEntity],
             synchronize: true,
           }) as DataSource;
           return dataSource.options;
         },
         dataSourceFactory: async () => dataSource.initialize(),
       }),
-      TypeOrmModule.forFeature([BonusOptionEntity]),
+      TypeOrmModule.forFeature([BonusOptionEntity, BonusEntity]),
     ],
     providers: [BonusService],
     exports: [BonusService],

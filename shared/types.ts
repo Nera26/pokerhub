@@ -313,10 +313,18 @@ export type {
 export {
   BonusOptionsResponseSchema,
   BonusDefaultsResponseSchema,
+  BonusSchema,
+  BonusesResponseSchema,
+  BonusCreateRequestSchema,
+  BonusUpdateRequestSchema,
 } from '../backend/src/schemas/bonus';
 export type {
   BonusOptionsResponse,
   BonusDefaultsResponse,
+  Bonus,
+  BonusesResponse,
+  BonusCreateRequest,
+  BonusUpdateRequest,
 } from '../backend/src/schemas/bonus';
 
 /** ---- Promotions ---- */

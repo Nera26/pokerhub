@@ -2283,6 +2283,82 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BonusDefaultsResponse'
+  /admin/bonuses:
+    get:
+      summary: List bonuses
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Bonus list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BonusesResponse'
+    post:
+      summary: Create bonus
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BonusCreateRequest'
+      responses:
+        '201':
+          description: Created bonus
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bonus'
+  /admin/bonuses/{id}:
+    put:
+      summary: Update bonus
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BonusUpdateRequest'
+      responses:
+        '200':
+          description: Updated bonus
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bonus'
+        '404':
+          description: Bonus not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+    delete:
+      summary: Delete bonus
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Bonus deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /admin/transactions:
     get:
       summary: List transactions
@@ -5594,3 +5670,88 @@ components:
         - description
         - eligibility
         - status
+    Bonus:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/BonusOptionType'
+        description:
+          type: string
+        bonusPercent:
+          type: number
+        maxBonusUsd:
+          type: number
+        expiryDate:
+          type: string
+          format: date
+        eligibility:
+          $ref: '#/components/schemas/BonusEligibility'
+        status:
+          $ref: '#/components/schemas/BonusStatus'
+        claimsTotal:
+          type: integer
+        claimsWeek:
+          type: integer
+      required:
+        - id
+        - name
+        - type
+        - description
+        - eligibility
+        - status
+        - claimsTotal
+        - claimsWeek
+    BonusesResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/Bonus'
+    BonusCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/BonusOptionType'
+        description:
+          type: string
+        bonusPercent:
+          type: number
+        maxBonusUsd:
+          type: number
+        expiryDate:
+          type: string
+          format: date
+        eligibility:
+          $ref: '#/components/schemas/BonusEligibility'
+        status:
+          $ref: '#/components/schemas/BonusStatus'
+      required:
+        - name
+        - type
+        - description
+        - eligibility
+        - status
+    BonusUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/BonusOptionType'
+        description:
+          type: string
+        bonusPercent:
+          type: number
+        maxBonusUsd:
+          type: number
+        expiryDate:
+          type: string
+          format: date
+        eligibility:
+          $ref: '#/components/schemas/BonusEligibility'
+        status:
+          $ref: '#/components/schemas/BonusStatus'

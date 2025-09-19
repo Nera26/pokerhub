@@ -21,3 +21,27 @@ export const BonusDefaultsResponseSchema = z.object({
 });
 
 export type BonusDefaultsResponse = z.infer<typeof BonusDefaultsResponseSchema>;
+
+const BonusBaseSchema = BonusDefaultsResponseSchema.extend({
+  description: z.string(),
+});
+
+export const BonusSchema = BonusBaseSchema.extend({
+  id: z.number().int(),
+  claimsTotal: z.number().int(),
+  claimsWeek: z.number().int(),
+});
+
+export type Bonus = z.infer<typeof BonusSchema>;
+
+export const BonusesResponseSchema = z.array(BonusSchema);
+
+export type BonusesResponse = z.infer<typeof BonusesResponseSchema>;
+
+export const BonusCreateRequestSchema = BonusBaseSchema;
+
+export type BonusCreateRequest = z.infer<typeof BonusCreateRequestSchema>;
+
+export const BonusUpdateRequestSchema = BonusCreateRequestSchema.partial();
+
+export type BonusUpdateRequest = z.infer<typeof BonusUpdateRequestSchema>;
