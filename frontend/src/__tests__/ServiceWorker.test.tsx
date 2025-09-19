@@ -67,3 +67,107 @@ describe('ServiceWorker', () => {
     expect(screen.getByText('You are offline')).toBeInTheDocument();
   });
 });
+
+describe('service worker bootstrap script', () => {
+  const originalSelf = (globalThis as { self?: unknown }).self;
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    jest.resetModules();
+    jest.clearAllMocks();
+    if (originalSelf === undefined) {
+      delete (globalThis as { self?: unknown }).self;
+    } else {
+      (globalThis as { self?: unknown }).self = originalSelf;
+    }
+    if (originalFetch === undefined) {
+      delete (globalThis as { fetch?: typeof fetch }).fetch;
+    } else {
+      (globalThis as { fetch?: typeof fetch }).fetch = originalFetch;
+    }
+  });
+
+  it('fetches the precache manifest and registers it with workbox', async () => {
+    jest.resetModules();
+
+    const precacheAndRoute = jest.fn();
+    jest.doMock('workbox-precaching', () => ({ precacheAndRoute }));
+
+    const registerRoute = jest.fn();
+    jest.doMock('workbox-routing', () => ({ registerRoute }));
+
+    jest.doMock('workbox-strategies', () => ({
+      StaleWhileRevalidate: jest
+        .fn()
+        .mockImplementation(function StaleWhileRevalidate() {
+          return {};
+        }),
+      CacheFirst: jest.fn().mockImplementation(function CacheFirst() {
+        return {};
+      }),
+      NetworkFirst: jest.fn().mockImplementation(function NetworkFirst() {
+        return {};
+      }),
+      NetworkOnly: jest.fn().mockImplementation(function NetworkOnly() {
+        return {};
+      }),
+    }));
+
+    jest.doMock('workbox-expiration', () => ({
+      ExpirationPlugin: jest
+        .fn()
+        .mockImplementation(function ExpirationPlugin() {
+          return {};
+        }),
+    }));
+
+    const backgroundSyncMock = jest
+      .fn()
+      .mockImplementation(function BackgroundSyncPlugin() {
+        return {};
+      });
+    jest.doMock('workbox-background-sync', () => ({
+      BackgroundSyncPlugin: backgroundSyncMock,
+    }));
+
+    const clientsClaim = jest.fn();
+    jest.doMock('workbox-core', () => ({ clientsClaim }));
+
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: jest.fn().mockResolvedValue(['/app.js', '/styles.css']),
+    });
+    (globalThis as { fetch?: typeof fetch }).fetch =
+      fetchMock as unknown as typeof fetch;
+
+    const skipWaiting = jest.fn();
+    (globalThis as { self?: unknown }).self = {
+      skipWaiting,
+      location: { origin: 'https://example.com' },
+    } as ServiceWorkerGlobalScope;
+
+    const consoleError = jest
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+
+    try {
+      const swModule = await import('../../sw');
+      await swModule.serviceWorkerReady;
+    } finally {
+      consoleError.mockRestore();
+    }
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/precache-manifest', {
+      credentials: 'same-origin',
+    });
+    expect(precacheAndRoute).toHaveBeenCalledWith(['/app.js', '/styles.css']);
+    expect(skipWaiting).toHaveBeenCalled();
+    expect(clientsClaim).toHaveBeenCalled();
+    expect(registerRoute).toHaveBeenCalled();
+    expect(backgroundSyncMock).toHaveBeenCalledWith('api-mutations', {
+      maxRetentionTime: 24 * 60,
+    });
+  });
+});
