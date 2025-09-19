@@ -45,6 +45,37 @@ export type AuditLogTypesResponse = z.infer<typeof AuditLogTypesResponseSchema>;
 export const LogTypeClassesSchema = z.record(z.string());
 export type LogTypeClasses = z.infer<typeof LogTypeClassesSchema>;
 
+export const LogTypeClassSchema = z.object({
+  type: z.string().min(1),
+  className: z.string().min(1),
+});
+export type LogTypeClass = z.infer<typeof LogTypeClassSchema>;
+
+export const LogTypeClassOverrideSchema = LogTypeClassSchema;
+export type LogTypeClassOverride = z.infer<typeof LogTypeClassOverrideSchema>;
+
+export const LogTypeClassOverrideListSchema = z.array(LogTypeClassOverrideSchema);
+export type LogTypeClassOverrideList = z.infer<
+  typeof LogTypeClassOverrideListSchema
+>;
+
+export const CreateLogTypeClassOverrideSchema = LogTypeClassSchema;
+export type CreateLogTypeClassOverride = z.infer<
+  typeof CreateLogTypeClassOverrideSchema
+>;
+
+export const UpdateLogTypeClassOverrideSchema = z.object({
+  className: z.string().min(1),
+});
+export type UpdateLogTypeClassOverride = z.infer<
+  typeof UpdateLogTypeClassOverrideSchema
+>;
+
+export const LogTypeClassParamsSchema = z.object({
+  type: z.string().min(1),
+});
+export type LogTypeClassParams = z.infer<typeof LogTypeClassParamsSchema>;
+
 export const AuditSummarySchema = z.object({
   total: z.number().int(),
   errors: z.number().int(),

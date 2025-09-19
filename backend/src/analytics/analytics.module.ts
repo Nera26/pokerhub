@@ -13,6 +13,7 @@ import { AuthModule } from '../auth/auth.module';
 import { StorageModule } from '../storage/storage.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CollusionAudit } from './collusion-audit.entity';
+import { AuditLogTypeClass } from './audit-log-type-class.entity';
 
 @Module({
   imports: [
@@ -21,7 +22,7 @@ import { CollusionAudit } from './collusion-audit.entity';
     WalletModule,
     AuthModule,
     StorageModule,
-    TypeOrmModule.forFeature([CollusionAudit]),
+    TypeOrmModule.forFeature([CollusionAudit, AuditLogTypeClass]),
   ],
   providers: [
     AnalyticsService,

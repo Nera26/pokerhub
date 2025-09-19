@@ -5,6 +5,7 @@ import {
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { createClient, ClickHouseClient } from '@clickhouse/client';
 import { randomUUID } from 'crypto';
@@ -27,6 +28,8 @@ import type {
   BetEvent as CollusionBetEvent,
 } from '@shared/analytics/collusion';
 import { EtlService } from './etl.service';
+import { Repository } from 'typeorm';
+import { AuditLogTypeClass } from './audit-log-type-class.entity';
 
 interface AuditLog {
   id: string;
@@ -220,6 +223,8 @@ export class AnalyticsService {
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
     private readonly gcs: GcsService,
     @Inject(forwardRef(() => EtlService)) private readonly etl: EtlService,
+    @InjectRepository(AuditLogTypeClass)
+    private readonly logTypeClassRepo: Repository<AuditLogTypeClass>,
   ) {
     const url = config.get<string>('analytics.clickhouseUrl');
     this.client = url ? createClient({ url }) : null;
@@ -242,10 +247,54 @@ export class AnalyticsService {
   }
 
   async getAuditLogTypeClasses(): Promise<Record<string, string>> {
-    const types = await this.getAuditLogTypes();
-    return Object.fromEntries(
-      types.map((type) => [type, resolveLogTypeClass(type)]),
+    const [types, overrides] = await Promise.all([
+      this.getAuditLogTypes(),
+      this.logTypeClassRepo.find(),
+    ]);
+    const overrideMap = new Map(
+      overrides.map((override) => [override.type, override.className] as const),
     );
+    const result = new Map<string, string>();
+    const typeSet = new Set(types);
+    for (const type of types) {
+      result.set(
+        type,
+        overrideMap.get(type) ?? resolveLogTypeClass(type),
+      );
+    }
+    for (const [type, className] of overrideMap) {
+      if (!typeSet.has(type)) {
+        result.set(type, className);
+      }
+    }
+    return Object.fromEntries(result);
+  }
+
+  async listLogTypeClassOverrides(): Promise<Array<{ type: string; className: string }>> {
+    const overrides = await this.logTypeClassRepo.find();
+    return overrides.map(({ type, className }) => ({ type, className }));
+  }
+
+  async upsertLogTypeClass(
+    type: string,
+    className: string,
+  ): Promise<{ type: string; className: string }> {
+    const existing = await this.logTypeClassRepo.findOne({ where: { type } });
+    if (existing) {
+      existing.className = className;
+      const saved = await this.logTypeClassRepo.save(existing);
+      return { type: saved.type, className: saved.className };
+    }
+    const created = this.logTypeClassRepo.create({ type, className });
+    const saved = await this.logTypeClassRepo.save(created);
+    return { type: saved.type, className: saved.className };
+  }
+
+  async removeLogTypeClass(type: string): Promise<void> {
+    const result = await this.logTypeClassRepo.delete({ type });
+    if (!result.affected) {
+      throw new NotFoundException('Log type class override not found');
+    }
   }
 
   async getAuditLogs({

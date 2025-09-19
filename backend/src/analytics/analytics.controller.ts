@@ -1,4 +1,15 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AnalyticsService } from './analytics.service';
 import {
@@ -8,6 +19,11 @@ import {
   ActivityResponseSchema,
   ErrorCategoriesResponseSchema,
   LogTypeClassesSchema,
+  LogTypeClassOverrideSchema,
+  LogTypeClassOverrideListSchema,
+  LogTypeClassParamsSchema,
+  CreateLogTypeClassOverrideSchema,
+  UpdateLogTypeClassOverrideSchema,
 } from '@shared/schemas/analytics';
 import { AdminGuard } from '../auth/admin.guard';
 
@@ -30,6 +46,34 @@ export async function getAuditLogTypesResponse(
 export async function getAuditLogClassMap(analytics: AnalyticsService) {
   const classes = await analytics.getAuditLogTypeClasses();
   return LogTypeClassesSchema.parse(classes);
+}
+
+export async function listAuditLogClassOverrides(analytics: AnalyticsService) {
+  const overrides = await analytics.listLogTypeClassOverrides();
+  return LogTypeClassOverrideListSchema.parse(overrides);
+}
+
+export async function createAuditLogClassOverride(
+  analytics: AnalyticsService,
+  body: unknown,
+) {
+  const payload = CreateLogTypeClassOverrideSchema.parse(body);
+  const override = await analytics.upsertLogTypeClass(
+    payload.type,
+    payload.className,
+  );
+  return LogTypeClassOverrideSchema.parse(override);
+}
+
+export async function updateAuditLogClassOverride(
+  analytics: AnalyticsService,
+  params: unknown,
+  body: unknown,
+) {
+  const { type } = LogTypeClassParamsSchema.parse(params);
+  const payload = UpdateLogTypeClassOverrideSchema.parse(body);
+  const override = await analytics.upsertLogTypeClass(type, payload.className);
+  return LogTypeClassOverrideSchema.parse(override);
 }
 
 @UseGuards(AdminGuard)
@@ -57,6 +101,36 @@ export class AnalyticsController {
   @ApiResponse({ status: 200, description: 'Audit log type classes' })
   async logTypeClasses() {
     return getAuditLogClassMap(this.analytics);
+  }
+
+  @Get('log-types/classes/overrides')
+  @ApiOperation({ summary: 'List stored audit log type class overrides' })
+  @ApiResponse({ status: 200, description: 'Stored audit log type class overrides' })
+  async logTypeClassOverrides() {
+    return listAuditLogClassOverrides(this.analytics);
+  }
+
+  @Post('log-types/classes')
+  @ApiOperation({ summary: 'Create an audit log type class override' })
+  @ApiResponse({ status: 201, description: 'Created audit log type class override' })
+  async createLogTypeClass(@Body() body: unknown) {
+    return createAuditLogClassOverride(this.analytics, body);
+  }
+
+  @Put('log-types/classes/:type')
+  @ApiOperation({ summary: 'Update an audit log type class override' })
+  @ApiResponse({ status: 200, description: 'Updated audit log type class override' })
+  async updateLogTypeClass(@Param() params: unknown, @Body() body: unknown) {
+    return updateAuditLogClassOverride(this.analytics, params, body);
+  }
+
+  @Delete('log-types/classes/:type')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Delete an audit log type class override' })
+  @ApiResponse({ status: 204, description: 'Override removed' })
+  async deleteLogTypeClass(@Param() params: unknown) {
+    const { type } = LogTypeClassParamsSchema.parse(params);
+    await this.analytics.removeLogTypeClass(type);
   }
 
   @Get('summary')
