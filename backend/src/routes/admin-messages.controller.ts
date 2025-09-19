@@ -1,23 +1,24 @@
 import {
+  Body,
   Controller,
   Get,
-  Post,
-  Param,
-  Body,
+  HttpCode,
   NotFoundException,
+  Param,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import {
+  AdminMessageSchema,
   AdminMessagesResponseSchema,
   ReplyMessageRequest,
   ReplyMessageRequestSchema,
 } from '../schemas/messages';
 import { MessageResponse, MessageResponseSchema } from '../schemas/auth';
 import { AdminMessagesService } from '../notifications/admin-messages.service';
-import { HttpCode } from '@nestjs/common';
 
 @ApiTags('admin')
 @UseGuards(AuthGuard, AdminGuard)
@@ -48,5 +49,14 @@ export class AdminMessagesController {
     }
     await this.service.markRead(Number(id));
     return MessageResponseSchema.parse({ message: 'sent' });
+  }
+
+  @Post(':id/read')
+  @ApiOperation({ summary: 'Mark message as read' })
+  @ApiResponse({ status: 200, description: 'Updated message' })
+  @HttpCode(200)
+  async markRead(@Param('id') id: string) {
+    const message = await this.service.markRead(Number(id));
+    return AdminMessageSchema.parse(message);
   }
 }

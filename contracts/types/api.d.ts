@@ -2243,6 +2243,30 @@ export interface paths {
       };
     };
   };
+  "/admin/messages/{id}/read": {
+    /** Mark message as read */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Updated message */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AdminMessage"];
+          };
+        };
+        /** @description Message not found */
+        404: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
   "/admin/users": {
     /** List users */
     get: {

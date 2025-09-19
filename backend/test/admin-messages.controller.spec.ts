@@ -87,4 +87,24 @@ describe('AdminMessagesController', () => {
       .send({ reply: 'hello' })
       .expect(404);
   });
+
+  it('marks a message as read and returns dto', async () => {
+    service.markRead.mockResolvedValueOnce({
+      id: 1,
+      sender: 'Alice',
+      userId: 'user1',
+      avatar: '/avatar.png',
+      subject: 'Hello',
+      preview: 'Hello',
+      content: 'Hello there',
+      time: '2024-01-01T00:00:00Z',
+      read: true,
+    });
+
+    const res = await request(app.getHttpServer())
+      .post('/admin/messages/1/read')
+      .expect(200);
+
+    expect(res.body).toMatchObject({ id: 1, read: true });
+  });
 });

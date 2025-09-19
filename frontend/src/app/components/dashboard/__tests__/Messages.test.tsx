@@ -71,4 +71,46 @@ describe('Messages', () => {
 
     await waitFor(() => expect(markMessageRead).toHaveBeenCalledWith(1));
   });
+
+  it('reconciles optimistic update with server payload', async () => {
+    (fetchMessages as jest.Mock)
+      .mockResolvedValueOnce(buildMessages())
+      .mockResolvedValue({
+        messages: [
+          {
+            id: 1,
+            sender: 'Bob',
+            preview: 'Updated preview',
+            subject: 'Hi',
+            content: 'Hello there',
+            userId: '2',
+            avatar: '',
+            time: '',
+            read: true,
+          },
+        ],
+      });
+    (markMessageRead as jest.Mock).mockResolvedValue({
+      id: 1,
+      sender: 'Bob',
+      preview: 'Updated preview',
+      subject: 'Hi',
+      content: 'Hello there',
+      userId: '2',
+      avatar: '',
+      time: '',
+      read: true,
+    });
+
+    renderWithClient(<Messages />);
+
+    await screen.findByText('Hello');
+    const viewBtn = await screen.findByRole('button', { name: /view/i });
+    fireEvent.click(viewBtn);
+
+    await waitFor(() => expect(markMessageRead).toHaveBeenCalledWith(1));
+    await screen.findByText('0 Unread');
+    await waitFor(() => expect(fetchMessages).toHaveBeenCalledTimes(2));
+    await screen.findByText('Updated preview');
+  });
 });
