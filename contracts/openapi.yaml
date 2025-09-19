@@ -2028,6 +2028,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/AdminTab'
   /admin/tabs/{id}:
+    get:
+      summary: Get admin tab metadata
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Admin tab metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTabMeta'
     put:
       summary: Update admin dashboard tab
       security:
@@ -5451,6 +5468,26 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/AdminTab'
+    AdminTabMeta:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/SidebarTab'
+        title:
+          type: string
+        component:
+          type: string
+        enabled:
+          type: boolean
+        message:
+          type: string
+          description: Fallback message shown when the tab is disabled or unavailable
+      required:
+        - id
+        - title
+        - component
+        - enabled
+        - message
     CreateAdminTabRequest:
       type: object
       properties:

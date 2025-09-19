@@ -81,26 +81,11 @@ describe('AdminController', () => {
     },
   ];
   const sidebar = {
-    getItems: jest.fn().mockResolvedValue(sidebarItems),
+    getItems: jest.fn(),
   } as Partial<SidebarService>;
   const adminTabs = {
-    list: jest
-      .fn()
-      .mockResolvedValue(
-        sidebarItems
-          .filter(
-            (item) =>
-              !['events', 'feature-flags', 'analytics', 'transactions'].includes(
-                item.id,
-              ),
-          )
-          .map((item) => ({
-            id: item.id,
-            title: item.label,
-            component: item.component,
-            icon: item.icon,
-          })),
-      ),
+    list: jest.fn(),
+    find: jest.fn(),
   } as Partial<AdminTabsService>;
   const wallet = {} as Partial<WalletService>;
   let acknowledged: Map<string, WalletReconcileMismatchAcknowledgement>;
@@ -129,6 +114,23 @@ describe('AdminController', () => {
 
   beforeEach(() => {
     acknowledged = new Map();
+    (sidebar.getItems as jest.Mock).mockResolvedValue(sidebarItems);
+    (adminTabs.list as jest.Mock).mockResolvedValue(
+      sidebarItems
+        .filter(
+          (item) =>
+            !['events', 'feature-flags', 'analytics', 'transactions'].includes(
+              item.id,
+            ),
+        )
+        .map((item) => ({
+          id: item.id,
+          title: item.label,
+          component: item.component,
+          icon: item.icon,
+        })),
+    );
+    (adminTabs.find as jest.Mock).mockResolvedValue(null);
     wallet.reconcile = jest.fn();
     wallet.acknowledgeMismatch = jest
       .fn()
@@ -298,6 +300,55 @@ describe('AdminController', () => {
       component: '@/app/components/dashboard/transactions/TransactionHistory',
       icon: 'faMoneyBillWave',
       source: 'config',
+    });
+  });
+
+  it('returns metadata for config-defined tabs', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/admin/tabs/feature-flags')
+      .expect(200);
+
+    expect(response.body).toEqual({
+      id: 'feature-flags',
+      title: 'Feature Flags',
+      component: '@/app/components/dashboard/FeatureFlagsPanel',
+      enabled: true,
+      message: '',
+    });
+  });
+
+  it('returns metadata using database override when present', async () => {
+    (adminTabs.find as jest.Mock).mockResolvedValue({
+      id: 'dynamic',
+      title: 'Dynamic Override',
+      component: 'db-component',
+      icon: 'faBolt',
+    });
+
+    const response = await request(app.getHttpServer())
+      .get('/admin/tabs/dynamic')
+      .expect(200);
+
+    expect(response.body).toEqual({
+      id: 'dynamic',
+      title: 'Dynamic Override',
+      component: 'db-component',
+      enabled: true,
+      message: '',
+    });
+  });
+
+  it('returns disabled metadata with fallback message when tab is missing', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/admin/tabs/unknown-tab')
+      .expect(200);
+
+    expect(response.body).toEqual({
+      id: 'unknown-tab',
+      title: 'Unknown Tab',
+      component: '',
+      enabled: false,
+      message: 'This section is coming soon.',
     });
   });
 

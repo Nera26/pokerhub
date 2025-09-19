@@ -23,6 +23,7 @@ describe('admin tabs', () => {
   it('shows empty state when no tabs returned', async () => {
     mockFetchAdminTabs.mockResolvedValue([]);
     mockFetchAdminTabMeta.mockResolvedValue({
+      id: 'dashboard',
       enabled: false,
       title: 'Dashboard',
       message: 'No tabs available.',
@@ -45,13 +46,14 @@ describe('admin tabs', () => {
       { id: 'dashboard', title: 'Dashboard', component: './dummy' },
     ]);
     mockFetchAdminTabMeta.mockResolvedValue({
+      id: 'broadcast',
       enabled: false,
       title: 'Broadcast',
-      message: 'Coming soon',
+      message: 'This section is coming soon.',
       component: '',
     });
     renderDashboard();
-    await screen.findByText('Coming soon');
+    await screen.findByText('This section is coming soon.');
     expect(
       screen.getByRole('heading', { level: 1, name: 'Broadcast' }),
     ).toBeInTheDocument();

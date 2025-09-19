@@ -13,9 +13,11 @@ beforeEach(() => {
     { id: 'dashboard', title: 'Dashboard', component: './dummy' },
   ]);
   mockFetchAdminTabMeta.mockResolvedValue({
+    id: 'dashboard',
     enabled: true,
     title: 'Dashboard',
     component: './dummy',
+    message: '',
   });
 });
 it('uses default avatar from site metadata when profile avatar is missing', async () => {

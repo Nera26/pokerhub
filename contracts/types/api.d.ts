@@ -2122,6 +2122,22 @@ export interface paths {
     };
   };
   "/admin/tabs/{id}": {
+    /** Get admin tab metadata */
+    get: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Admin tab metadata */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AdminTabMeta"];
+          };
+        };
+      };
+    };
     /** Update admin dashboard tab */
     put: {
       parameters: {

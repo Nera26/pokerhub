@@ -94,6 +94,7 @@ export {
   AdminTabCreateRequestSchema,
   AdminTabUpdateRequestSchema,
   AdminTabConfigSchema,
+  AdminTabMetaSchema,
 } from '../backend/src/schemas/admin';
 export type {
   SidebarTab,
@@ -104,6 +105,7 @@ export type {
   CreateAdminTabRequest,
   UpdateAdminTabRequest,
   AdminTabConfig,
+  AdminTabMeta,
 } from '../backend/src/schemas/admin';
 
 // Site metadata
