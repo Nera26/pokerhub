@@ -11,8 +11,10 @@ import {
   type TournamentHistoryEntry,
   type TransactionEntry,
 } from '@/lib/api/history';
-import useTransactionColumns from '@/hooks/useTransactionColumns';
-import { useStatusInfo } from '../common/status';
+import TransactionHistorySection, {
+  type TransactionHistorySectionProps,
+} from '../common/TransactionHistorySection';
+import { formatAmount } from '../common/transactionCells';
 
 interface Props {
   type: 'game-history' | 'tournament-history' | 'transaction-history';
@@ -23,22 +25,24 @@ interface Props {
   };
   onWatchReplay?(id: string): void;
   onViewBracket?(title: string): void;
+  transactionTitle?: TransactionHistorySectionProps<TransactionEntry>['title'];
+  transactionEmptyMessage?: TransactionHistorySectionProps<TransactionEntry>['emptyMessage'];
+  transactionFilters?: TransactionHistorySectionProps<TransactionEntry>['filters'];
+  transactionActions?: TransactionHistorySectionProps<TransactionEntry>['actions'];
+  transactionOnExport?: TransactionHistorySectionProps<TransactionEntry>['onExport'];
 }
 
-function formatAmount(amount: number, currency: string): string {
-  const formatter = new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  const formatted = formatter.format(amount);
-  if (amount > 0) return `+${formatted}`;
-  if (amount < 0) return formatted;
-  return formatter.format(0);
-}
-
-function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
+function HistoryList({
+  type,
+  filters,
+  onWatchReplay,
+  onViewBracket,
+  transactionTitle,
+  transactionEmptyMessage,
+  transactionFilters,
+  transactionActions,
+  transactionOnExport,
+}: Props) {
   const isTransactionHistory = type === 'transaction-history';
 
   // GAME
@@ -73,14 +77,6 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
     queryFn: ({ signal }) => fetchTransactions({ signal }),
     enabled: isTransactionHistory,
   });
-
-  const {
-    data: columnMeta,
-    isLoading: columnsLoading,
-    error: columnsError,
-  } = useTransactionColumns({ enabled: isTransactionHistory });
-
-  const getStatusInfo = useStatusInfo({ enabled: isTransactionHistory });
 
   // --- GAME HISTORY ---
   if (type === 'game-history') {
@@ -228,132 +224,34 @@ function HistoryList({ type, filters, onWatchReplay, onViewBracket }: Props) {
 
   // --- TRANSACTION HISTORY ---
   if (type === 'transaction-history') {
-    if (transactionLoading || columnsLoading) {
+    if (transactionLoading) {
       return (
         <div role="status" className="p-8 text-center text-text-secondary">
           Loading...
         </div>
       );
     }
-    if (transactionError || columnsError) {
+    if (transactionError) {
       return (
         <div role="alert" className="p-8 text-center text-danger-red">
           Failed to load transactions.
         </div>
       );
     }
-    if (!Array.isArray(columnMeta) || columnMeta.length === 0) {
-      return (
-        <div role="alert" className="p-8 text-center text-danger-red">
-          Transaction history configuration is unavailable.
-        </div>
-      );
-    }
-
-    if (!transactionData || transactionData.length === 0) {
-      return (
-        <div className="bg-card-bg rounded-2xl p-8 text-center text-text-secondary">
-          No transactions found.
-        </div>
-      );
-    }
-
-    const columns = columnMeta;
+    const transactions = transactionData ?? [];
+    const transactionCurrency =
+      transactions.find((entry) => entry.currency)?.currency ?? 'USD';
 
     return (
-      <div className="bg-card-bg rounded-2xl p-8">
-        <h3 className="text-lg font-semibold mb-4">Wallet Activity</h3>
-        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-border-dark">
-          <table className="min-w-[640px] w-full text-left table-auto">
-            <thead>
-              <tr>
-                {columns.map((column) => (
-                  <th key={column.id} className="pb-2 pr-6 whitespace-nowrap">
-                    {column.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {transactionData.map((row, index) => (
-                <tr
-                  key={`${(row as any).id ?? row.date ?? index}-${index}`}
-                  className="border-b border-border-dark"
-                >
-                  {columns.map((column) => {
-                    // STATUS column: use status mapping for label/style if available
-                    if (column.id === 'status') {
-                      const info = getStatusInfo(row.status as any);
-                      const label = info?.label ?? String(row.status ?? '');
-                      const style = info?.style ?? '';
-                      return (
-                        <td
-                          key={`${column.id}-${index}`}
-                          className="py-2 pr-6 whitespace-nowrap"
-                        >
-                          <span
-                            className={`${style} px-2 py-1 rounded-md font-medium`}
-                          >
-                            {label}
-                          </span>
-                        </td>
-                      );
-                    }
-
-                    // AMOUNT column: support both numeric and preformatted strings
-                    if (column.id === 'amount') {
-                      const raw: any = (row as any).amount;
-                      let text = '';
-                      let positive = false;
-                      let negative = false;
-
-                      if (typeof raw === 'number') {
-                        text = formatAmount(
-                          raw,
-                          (row as any).currency ?? 'USD',
-                        );
-                        positive = raw > 0;
-                        negative = raw < 0;
-                      } else if (typeof raw === 'string') {
-                        text = raw;
-                        const trimmed = raw.trim();
-                        positive = trimmed.startsWith('+');
-                        negative = trimmed.startsWith('-');
-                      }
-
-                      return (
-                        <td
-                          key={`${column.id}-${index}`}
-                          className={`py-2 pr-6 whitespace-nowrap ${
-                            positive
-                              ? 'text-accent-green'
-                              : negative
-                                ? 'text-danger-red'
-                                : ''
-                          }`}
-                        >
-                          {text}
-                        </td>
-                      );
-                    }
-
-                    // Default: print by dynamic key
-                    const value = (row as Record<string, unknown>)[column.id];
-                    return (
-                      <td
-                        key={`${column.id}-${index}`}
-                        className="py-2 pr-6 whitespace-nowrap"
-                      >
-                        {value as any}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <TransactionHistorySection
+        data={transactions}
+        currency={transactionCurrency}
+        title={transactionTitle ?? 'Wallet Activity'}
+        emptyMessage={transactionEmptyMessage ?? 'No transactions found.'}
+        filters={transactionFilters}
+        actions={transactionActions}
+        onExport={transactionOnExport}
+      />
     );
   }
 
