@@ -14,11 +14,13 @@ import {
   type AdminCrudField,
   type AdminCrudItemsRenderProps,
 } from '../AdminCrudPage';
-import type { SubmitPreparation } from '../useSimpleCrudPage';
+import type { SubmitPreparation } from '@/hooks/admin/useAdminCrud';
 
 type FormState = {
   country: string;
 };
+
+type UpdateInput = { id: string; payload: BlockedCountry };
 
 const EMPTY_FORM: FormState = {
   country: '',
@@ -54,7 +56,7 @@ export default function BlockedCountriesPage() {
     (
       formState: FormState,
       { editingItem }: { editingItem: BlockedCountry | null },
-    ): SubmitPreparation<BlockedCountry, BlockedCountry, BlockedCountry> => {
+    ): SubmitPreparation<BlockedCountry, UpdateInput, BlockedCountry> => {
       const countryCode = formState.country.trim().toUpperCase();
 
       if (!countryCode) {
@@ -64,7 +66,13 @@ export default function BlockedCountriesPage() {
       const payload: BlockedCountry = { country: countryCode };
 
       if (editingItem) {
-        return { type: 'update', payload } as const;
+        return {
+          type: 'update',
+          payload: {
+            id: editingItem.country,
+            payload,
+          },
+        } as const;
       }
 
       return { type: 'create', payload } as const;
@@ -78,7 +86,11 @@ export default function BlockedCountriesPage() {
   }, []);
 
   const formatActionError = useCallback(
-    (action: 'create' | 'update' | 'delete', error: unknown) => {
+    (
+      action: 'create' | 'update' | 'delete',
+      error: unknown,
+      _context: unknown,
+    ) => {
       const message = error instanceof Error ? error.message : 'Unknown error';
       if (action === 'delete') {
         return `Failed to delete blocked country: ${message}`;
@@ -95,7 +107,7 @@ export default function BlockedCountriesPage() {
     submitting,
     startEdit,
     handleDelete,
-  }: AdminCrudItemsRenderProps<BlockedCountry>) => (
+  }: AdminCrudItemsRenderProps<BlockedCountry, string>) => (
     <div className="overflow-x-auto rounded-xl border border-border-dark">
       {loading ? (
         <div className="px-4 py-6 text-center text-sm text-text-secondary">
@@ -159,13 +171,19 @@ export default function BlockedCountriesPage() {
   );
 
   return (
-    <AdminCrudPage<BlockedCountry, FormState, BlockedCountry, BlockedCountry>
+    <AdminCrudPage<
+      BlockedCountry,
+      FormState,
+      BlockedCountry,
+      UpdateInput,
+      string
+    >
       title="Blocked Countries"
       emptyForm={EMPTY_FORM}
       fields={BLOCKED_COUNTRY_FIELDS}
       fetchItems={fetchBlockedCountries}
       createItem={createBlockedCountry}
-      updateItem={updateBlockedCountry}
+      updateItem={(input) => updateBlockedCountry(input.id, input.payload)}
       deleteItem={deleteBlockedCountry}
       getItemId={getItemId}
       formFromItem={formFromItem}

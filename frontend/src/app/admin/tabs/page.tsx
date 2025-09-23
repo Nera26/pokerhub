@@ -18,7 +18,7 @@ import {
   type AdminCrudField,
   type AdminCrudItemsRenderProps,
 } from '../AdminCrudPage';
-import type { SubmitPreparation } from '../useSimpleCrudPage';
+import type { SubmitPreparation } from '@/hooks/admin/useAdminCrud';
 
 interface FormState {
   id: string;
@@ -26,6 +26,8 @@ interface FormState {
   component: string;
   icon: string;
 }
+
+type UpdateInput = { id: string; payload: UpdateAdminTabRequest };
 
 const EMPTY_FORM: FormState = {
   id: '',
@@ -92,11 +94,7 @@ export default function AdminTabsPage() {
     (
       formState: FormState,
       { editingItem }: { editingItem: AdminTab | null },
-    ): SubmitPreparation<
-      CreateAdminTabRequest,
-      UpdateAdminTabRequest,
-      AdminTab
-    > => {
+    ): SubmitPreparation<CreateAdminTabRequest, UpdateInput, AdminTab> => {
       const trimmedId = formState.id.trim();
       const trimmedTitle = formState.title.trim();
       const trimmedComponent = formState.component.trim();
@@ -118,7 +116,13 @@ export default function AdminTabsPage() {
           component: trimmedComponent,
           icon: trimmedIcon,
         };
-        return { type: 'update', payload } as const;
+        return {
+          type: 'update',
+          payload: {
+            id: editingItem.id,
+            payload,
+          },
+        } as const;
       }
 
       const payload: CreateAdminTabRequest = {
@@ -138,7 +142,11 @@ export default function AdminTabsPage() {
   }, []);
 
   const formatActionError = useCallback(
-    (action: 'create' | 'update' | 'delete', error: unknown) => {
+    (
+      action: 'create' | 'update' | 'delete',
+      error: unknown,
+      _context: unknown,
+    ) => {
       const message = normalizeError(error);
       const verb =
         action === 'delete'
@@ -158,7 +166,7 @@ export default function AdminTabsPage() {
     submitting,
     startEdit,
     handleDelete,
-  }: AdminCrudItemsRenderProps<AdminTab>) => (
+  }: AdminCrudItemsRenderProps<AdminTab, string>) => (
     <section>
       <h2 className="text-lg font-semibold">Existing tabs</h2>
       {loading ? (
@@ -209,14 +217,15 @@ export default function AdminTabsPage() {
       AdminTab,
       FormState,
       CreateAdminTabRequest,
-      UpdateAdminTabRequest
+      UpdateInput,
+      string
     >
       title="Admin Tabs"
       emptyForm={EMPTY_FORM}
       fields={TAB_FIELDS}
       fetchItems={fetchAdminTabs}
       createItem={createAdminTab}
-      updateItem={updateAdminTab}
+      updateItem={(input) => updateAdminTab(input.id, input.payload)}
       deleteItem={deleteAdminTab}
       getItemId={getItemId}
       mapItems={mapTabs}

@@ -15,7 +15,7 @@ import {
   type AdminCrudField,
   type AdminCrudItemsRenderProps,
 } from '../AdminCrudPage';
-import type { SubmitPreparation } from '../useSimpleCrudPage';
+import type { SubmitPreparation } from '@/hooks/admin/useAdminCrud';
 
 type FormState = {
   flag: string;
@@ -24,6 +24,8 @@ type FormState = {
   icon: string;
   order: string;
 };
+
+type UpdateInput = { id: string; payload: NavItemRequest };
 
 const EMPTY_FORM: FormState = {
   flag: '',
@@ -101,7 +103,7 @@ export default function NavAdminPage() {
     (
       formState: FormState,
       { editingItem }: { editingItem: UiNavItem | null },
-    ): SubmitPreparation<NavItemRequest, NavItemRequest, UiNavItem> => {
+    ): SubmitPreparation<NavItemRequest, UpdateInput, UiNavItem> => {
       const trimmedFlag = formState.flag.trim();
       const trimmedHref = formState.href.trim();
       const trimmedLabel = formState.label.trim();
@@ -125,7 +127,13 @@ export default function NavAdminPage() {
       };
 
       if (editingItem) {
-        return { type: 'update', payload } as const;
+        return {
+          type: 'update',
+          payload: {
+            id: editingItem.flag,
+            payload,
+          },
+        } as const;
       }
 
       return { type: 'create', payload } as const;
@@ -138,7 +146,11 @@ export default function NavAdminPage() {
   }, []);
 
   const formatActionError = useCallback(
-    (action: 'create' | 'update' | 'delete', error: unknown) => {
+    (
+      action: 'create' | 'update' | 'delete',
+      error: unknown,
+      _context: unknown,
+    ) => {
       const message = normalizeError(error);
       const verb =
         action === 'delete'
@@ -158,7 +170,7 @@ export default function NavAdminPage() {
     submitting,
     startEdit,
     handleDelete,
-  }: AdminCrudItemsRenderProps<UiNavItem>) => (
+  }: AdminCrudItemsRenderProps<UiNavItem, string>) => (
     <section>
       <h2 className="text-lg font-semibold mb-2">Existing items</h2>
       {loading ? (
@@ -212,13 +224,13 @@ export default function NavAdminPage() {
   );
 
   return (
-    <AdminCrudPage<UiNavItem, FormState, NavItemRequest>
+    <AdminCrudPage<UiNavItem, FormState, NavItemRequest, UpdateInput, string>
       title="Navigation Items"
       emptyForm={EMPTY_FORM}
       fields={NAV_FIELDS}
       fetchItems={fetchNavItems}
       createItem={createNavItem}
-      updateItem={updateNavItem}
+      updateItem={(input) => updateNavItem(input.id, input.payload)}
       deleteItem={deleteNavItem}
       getItemId={getItemId}
       formFromItem={formFromNavItem}
