@@ -19,7 +19,7 @@ export async function fetchDefaultAvatar(
 export async function fetchPendingWithdrawals(
   opts: { signal?: AbortSignal } = {},
 ): Promise<PendingWithdrawalsResponse> {
-  return apiClient('/admin/withdrawals', PendingWithdrawalsResponseSchema, {
+  return apiClient('/api/admin/withdrawals', PendingWithdrawalsResponseSchema, {
     ...(opts.signal && { signal: opts.signal }),
   });
 }

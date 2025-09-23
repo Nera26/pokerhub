@@ -1,9 +1,10 @@
-import { screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ReviewWithdrawalModal from '../ReviewWithdrawalModal';
 import { renderWithClient } from '../../dashboard/__tests__/renderWithClient';
 import type { PendingWithdrawal } from '@shared/types';
 import { confirmWithdrawal, rejectWithdrawal } from '@/lib/api/wallet';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 jest.mock('@/lib/api/wallet', () => ({
   confirmWithdrawal: jest.fn(),
@@ -83,5 +84,76 @@ describe('ReviewWithdrawalModal', () => {
     );
     await user.click(screen.getByText('Approve'));
     expect(await screen.findByRole('alert')).toHaveTextContent('Backend error');
+  });
+
+  it('invalidates withdrawals query after approve success', async () => {
+    const user = userEvent.setup();
+    (confirmWithdrawal as jest.Mock).mockResolvedValue(undefined);
+    const onClose = jest.fn();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const invalidateSpy = jest
+      .spyOn(queryClient, 'invalidateQueries')
+      .mockResolvedValue(undefined);
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ReviewWithdrawalModal request={baseRequest} onClose={onClose} />
+      </QueryClientProvider>,
+    );
+
+    await user.type(
+      screen.getByPlaceholderText('Enter reason or notes...'),
+      'looks good',
+    );
+    await user.click(screen.getByText('Approve'));
+
+    await waitFor(() =>
+      expect(confirmWithdrawal).toHaveBeenCalledWith(baseRequest.id),
+    );
+    await waitFor(() =>
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: ['adminWithdrawals'],
+      }),
+    );
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('invalidates withdrawals query after reject success', async () => {
+    const user = userEvent.setup();
+    (rejectWithdrawal as jest.Mock).mockResolvedValue(undefined);
+    const onClose = jest.fn();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const invalidateSpy = jest
+      .spyOn(queryClient, 'invalidateQueries')
+      .mockResolvedValue(undefined);
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ReviewWithdrawalModal request={baseRequest} onClose={onClose} />
+      </QueryClientProvider>,
+    );
+
+    await user.type(
+      screen.getByPlaceholderText('Enter reason or notes...'),
+      'needs review',
+    );
+    await user.click(screen.getByText('Reject'));
+
+    await waitFor(() =>
+      expect(rejectWithdrawal).toHaveBeenCalledWith(
+        baseRequest.id,
+        'needs review',
+      ),
+    );
+    await waitFor(() =>
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: ['adminWithdrawals'],
+      }),
+    );
+    expect(onClose).toHaveBeenCalled();
   });
 });
