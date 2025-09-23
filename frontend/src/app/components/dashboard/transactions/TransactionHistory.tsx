@@ -1,9 +1,11 @@
-import { useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons/faSpinner';
 import TransactionHistorySection from '@/app/components/common/TransactionHistorySection';
-import useTransactionHistory from '@/app/components/common/useTransactionHistory';
+import {
+  useTransactionHistoryControls,
+  type TransactionHistoryFilterQuery,
+} from '@/app/components/common/TransactionHistoryControls';
 import { fetchAdminPlayers } from '@/lib/api/wallet';
 import {
   fetchTransactionTypes,
@@ -22,23 +24,59 @@ type TransactionLogEntry = Awaited<
 export default function DashboardTransactionHistory({ onExport }: Props) {
   const pageSize = 10;
 
-  const {
-    data: players = [],
-    isLoading: playersLoading,
-    error: playersError,
-  } = useQuery({ queryKey: ['adminPlayers'], queryFn: fetchAdminPlayers });
+  const filterQueries = useMemo(
+    () =>
+      [
+        {
+          key: 'players',
+          queryKey: ['adminPlayers'] as const,
+          queryFn: fetchAdminPlayers,
+          initialData: [] as Awaited<ReturnType<typeof fetchAdminPlayers>>,
+        },
+        {
+          key: 'types',
+          queryKey: ['transactionTypes'] as const,
+          queryFn: fetchTransactionTypes,
+          initialData: [] as Awaited<ReturnType<typeof fetchTransactionTypes>>,
+        },
+      ] as const satisfies readonly TransactionHistoryFilterQuery<
+        'players' | 'types',
+        any,
+        any
+      >[],
+    [],
+  );
 
-  const {
-    data: types = [],
-    isLoading: typesLoading,
-    error: typesError,
-  } = useQuery({
-    queryKey: ['transactionTypes'],
-    queryFn: fetchTransactionTypes,
+  const { history, queries, handleExport } = useTransactionHistoryControls<
+    TransactionLogEntry,
+    typeof filterQueries
+  >({
+    history: {
+      queryKey: ['transactionsLog', 'dashboard'],
+      fetchTransactions: ({ signal, page, pageSize, filters }) =>
+        fetchTransactionsLog({
+          signal,
+          playerId: filters.playerId || undefined,
+          type: filters.type || undefined,
+          startDate: filters.startDate || undefined,
+          endDate: filters.endDate || undefined,
+          page,
+          pageSize,
+        }),
+      initialFilters: {
+        startDate: '',
+        endDate: '',
+        playerId: '',
+        type: '',
+      },
+      pageSize,
+      extractCurrency: (entry) =>
+        (entry as (TransactionLogEntry & { currency?: string }) | undefined)
+          ?.currency,
+    },
+    queries: filterQueries,
+    onExport,
   });
-
-  useApiError(playersError);
-  useApiError(typesError);
 
   const {
     data: log = [],
@@ -50,42 +88,17 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
     page,
     setPage,
     hasMore,
-    exportToCsv,
-  } = useTransactionHistory<
-    Awaited<ReturnType<typeof fetchTransactionsLog>>[number]
-  >({
-    queryKey: ['transactionsLog', 'dashboard'],
-    fetchTransactions: ({ signal, page, pageSize, filters }) =>
-      fetchTransactionsLog({
-        signal,
-        playerId: filters.playerId || undefined,
-        type: filters.type || undefined,
-        startDate: filters.startDate || undefined,
-        endDate: filters.endDate || undefined,
-        page,
-        pageSize,
-      }),
-    initialFilters: {
-      startDate: '',
-      endDate: '',
-      playerId: '',
-      type: '',
-    },
-    pageSize,
-    extractCurrency: (entry) =>
-      (entry as (TransactionLogEntry & { currency?: string }) | undefined)
-        ?.currency,
-  });
+  } = history;
 
+  const playersQuery = queries.players;
+  const typesQuery = queries.types;
+
+  const players = playersQuery?.data ?? [];
+  const types = typesQuery?.data ?? [];
+
+  useApiError(playersQuery?.error);
+  useApiError(typesQuery?.error);
   useApiError(historyError);
-
-  const handleExport = useCallback(() => {
-    if (onExport) {
-      onExport();
-      return;
-    }
-    exportToCsv();
-  }, [exportToCsv, onExport]);
 
   const filterControls = (
     <div className="flex flex-wrap gap-2 items-center">
@@ -117,9 +130,9 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
         }}
       >
         <option value="">All Players</option>
-        {playersLoading ? (
+        {playersQuery?.isLoading ? (
           <option disabled>Loading…</option>
-        ) : playersError ? (
+        ) : playersQuery?.error ? (
           <option disabled>Failed to load</option>
         ) : (
           players.map((p) => (
@@ -139,9 +152,9 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
         }}
       >
         <option value="">All Types</option>
-        {typesLoading ? (
+        {typesQuery?.isLoading ? (
           <option disabled>Loading…</option>
-        ) : typesError ? (
+        ) : typesQuery?.error ? (
           <option disabled>Failed to load</option>
         ) : (
           types.map((t) => (

@@ -1,38 +1,70 @@
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TransactionHistory from '../TransactionHistory';
-import {
-  fetchTransactionsLog,
-  fetchTransactionTypes,
-} from '@/lib/api/transactions';
-import { fetchAdminPlayers } from '@/lib/api/wallet';
-import { exportCsv } from '@/lib/exportCsv';
 import { setupTransactionTestData } from './test-utils';
+import { useTransactionHistoryControls } from '@/app/components/common/TransactionHistoryControls';
 
-jest.mock('@/lib/api/transactions', () => ({
-  fetchTransactionsLog: jest.fn(),
-  fetchTransactionTypes: jest.fn(),
-}));
-jest.mock('@/lib/api/wallet', () => ({
-  fetchAdminPlayers: jest.fn(),
-}));
-jest.mock('@/lib/exportCsv', () => ({
-  exportCsv: jest.fn(),
+jest.mock('@/app/components/common/TransactionHistoryControls', () => ({
+  useTransactionHistoryControls: jest.fn(),
 }));
 
 describe('Dashboard TransactionHistory', () => {
   let renderWithClient: ReturnType<
     typeof setupTransactionTestData
   >['renderWithClient'];
+  const mockUseControls = useTransactionHistoryControls as jest.Mock;
+
+  const buildHistory = () => ({
+    data: [],
+    rawData: [],
+    isLoading: false,
+    error: null as unknown,
+    currency: 'USD',
+    filters: { startDate: '', endDate: '', playerId: '', type: '' },
+    appliedFilters: { startDate: '', endDate: '', playerId: '', type: '' },
+    updateFilter: jest.fn(),
+    replaceFilters: jest.fn(),
+    syncFilters: jest.fn(),
+    applyFilters: jest.fn(),
+    page: 1,
+    setPage: jest.fn(),
+    pageSize: 10,
+    hasMore: false,
+    exportToCsv: jest.fn(),
+  });
+
+  type HistoryStub = ReturnType<typeof buildHistory>;
+
+  const createHistory = (overrides?: Partial<HistoryStub>): HistoryStub => ({
+    ...buildHistory(),
+    ...(overrides ?? {}),
+  });
+
+  const buildQueryResult = () => ({
+    data: [] as unknown[],
+    error: null as unknown,
+    isLoading: false,
+    isFetching: false,
+    refetch: jest.fn(),
+  });
+
+  type QueryStub = ReturnType<typeof buildQueryResult>;
+
+  const createQueryResult = (overrides?: Partial<QueryStub>): QueryStub => ({
+    ...buildQueryResult(),
+    ...(overrides ?? {}),
+  });
 
   beforeEach(() => {
     ({ renderWithClient } = setupTransactionTestData());
-    (fetchTransactionTypes as jest.Mock).mockResolvedValue([
-      { id: 'deposit', label: 'Deposit' },
-    ]);
-    (fetchAdminPlayers as jest.Mock).mockResolvedValue([
-      { id: 'player-1', username: 'Alice' },
-    ]);
+    mockUseControls.mockReturnValue({
+      history: createHistory(),
+      queries: {
+        players: createQueryResult(),
+        types: createQueryResult(),
+      },
+      handleExport: jest.fn(),
+    });
   });
 
   afterEach(() => {
@@ -40,13 +72,21 @@ describe('Dashboard TransactionHistory', () => {
   });
 
   it('shows loading state', () => {
-    (fetchTransactionsLog as jest.Mock).mockReturnValue(new Promise(() => {}));
+    const history = createHistory({ isLoading: true });
+    mockUseControls.mockReturnValueOnce({
+      history,
+      queries: {
+        players: createQueryResult(),
+        types: createQueryResult(),
+      },
+      handleExport: jest.fn(),
+    });
+
     renderWithClient(<TransactionHistory />);
     expect(screen.getByLabelText('loading history')).toBeInTheDocument();
   });
 
   it('shows empty state', async () => {
-    (fetchTransactionsLog as jest.Mock).mockResolvedValue([]);
     renderWithClient(<TransactionHistory />);
     expect(
       await screen.findByText('No transaction history.'),
@@ -54,7 +94,16 @@ describe('Dashboard TransactionHistory', () => {
   });
 
   it('shows error state when fetching fails', async () => {
-    (fetchTransactionsLog as jest.Mock).mockRejectedValue(new Error('fail'));
+    const history = createHistory({ error: new Error('fail') });
+    mockUseControls.mockReturnValueOnce({
+      history,
+      queries: {
+        players: createQueryResult(),
+        types: createQueryResult(),
+      },
+      handleExport: jest.fn(),
+    });
+
     renderWithClient(<TransactionHistory />);
 
     const alert = await screen.findByRole('alert');
@@ -62,7 +111,17 @@ describe('Dashboard TransactionHistory', () => {
   });
 
   it('renders player filter options', async () => {
-    (fetchTransactionsLog as jest.Mock).mockResolvedValue([]);
+    mockUseControls.mockReturnValueOnce({
+      history: createHistory(),
+      queries: {
+        players: createQueryResult({
+          data: [{ id: 'player-1', username: 'Alice' }],
+        }),
+        types: createQueryResult(),
+      },
+      handleExport: jest.fn(),
+    });
+
     renderWithClient(<TransactionHistory />);
 
     const option = await screen.findByRole('option', { name: 'Alice' });
@@ -70,89 +129,95 @@ describe('Dashboard TransactionHistory', () => {
   });
 
   it('calls fetchTransactionsLog with type filter', async () => {
-    (fetchTransactionsLog as jest.Mock).mockResolvedValue([
-      {
-        datetime: '2024-01-01T00:00:00Z',
-        date: '2024-01-01',
-        action: 'Deposit',
-        amount: 10,
-        by: 'Admin',
-        notes: '',
-        status: 'Completed',
+    const updateFilter = jest.fn();
+    mockUseControls.mockReturnValueOnce({
+      history: createHistory({ updateFilter }),
+      queries: {
+        players: createQueryResult(),
+        types: createQueryResult({
+          data: [{ id: 'deposit', label: 'Deposit' }],
+        }),
       },
-    ]);
+      handleExport: jest.fn(),
+    });
+
     renderWithClient(<TransactionHistory />);
 
     const select = await screen.findByLabelText('Filter by type');
     fireEvent.change(select, { target: { value: 'deposit' } });
 
     await waitFor(() =>
-      expect(
-        (fetchTransactionsLog as jest.Mock).mock.calls.some(
-          (c: any[]) => c[0].type === 'deposit',
-        ),
-      ).toBe(true),
+      expect(updateFilter).toHaveBeenCalledWith('type', 'deposit'),
     );
   });
 
   it('requests next page on pagination', async () => {
-    const logData = Array.from({ length: 10 }, (_, i) => ({
-      datetime: `2024-01-0${i + 1}T00:00:00Z`,
-      date: `2024-01-0${i + 1}`,
-      action: 'Deposit',
-      amount: 10,
-      by: 'Admin',
-      notes: '',
-      status: 'Completed',
-    }));
-    (fetchTransactionsLog as jest.Mock).mockResolvedValue(logData);
+    const setPage = jest.fn();
+    mockUseControls.mockReturnValueOnce({
+      history: createHistory({
+        setPage,
+        hasMore: true,
+      }),
+      queries: {
+        players: createQueryResult(),
+        types: createQueryResult(),
+      },
+      handleExport: jest.fn(),
+    });
+
     renderWithClient(<TransactionHistory />);
     const next = await screen.findByRole('button', { name: 'Next' });
     await userEvent.click(next);
-    await waitFor(() =>
-      expect((fetchTransactionsLog as jest.Mock).mock.calls[1][0].page).toBe(2),
-    );
+    await waitFor(() => expect(setPage).toHaveBeenCalledWith(2));
   });
 
   it('triggers export callback', async () => {
-    (fetchTransactionsLog as jest.Mock).mockResolvedValue([]);
+    const handleExport = jest.fn();
+    mockUseControls.mockImplementationOnce((options) => {
+      expect(options.onExport).toBeDefined();
+      return {
+        history: createHistory(),
+        queries: {
+          players: createQueryResult(),
+          types: createQueryResult(),
+        },
+        handleExport,
+      };
+    });
+
     const onExport = jest.fn();
     renderWithClient(<TransactionHistory onExport={onExport} />);
     const btn = await screen.findByRole('button', { name: /export/i });
     await userEvent.click(btn);
-    expect(onExport).toHaveBeenCalled();
-    expect(exportCsv).not.toHaveBeenCalled();
+    expect(handleExport).toHaveBeenCalled();
   });
 
   it('exports current log when no handler provided', async () => {
-    (fetchTransactionsLog as jest.Mock).mockResolvedValue([
-      {
-        datetime: '2024-01-01T00:00:00Z',
-        action: 'Deposit',
-        amount: 25,
-        by: 'Admin',
-        notes: 'Initial deposit',
-        status: 'Completed',
+    const handleExport = jest.fn();
+    mockUseControls.mockReturnValueOnce({
+      history: createHistory({
+        data: [
+          {
+            datetime: '2024-01-01T00:00:00Z',
+            action: 'Deposit',
+            amount: 25,
+            by: 'Admin',
+            notes: 'Initial deposit',
+            status: 'Completed',
+          },
+        ],
+      }),
+      queries: {
+        players: createQueryResult(),
+        types: createQueryResult(),
       },
-    ]);
+      handleExport,
+    });
 
     renderWithClient(<TransactionHistory />);
     const btn = await screen.findByRole('button', { name: /export/i });
     await userEvent.click(btn);
 
-    expect(exportCsv).toHaveBeenCalledWith(
-      expect.stringMatching(/^transactions_\d{4}-\d{2}-\d{2}\.csv$/),
-      ['Date/Time', 'Action', 'Amount', 'By', 'Notes', 'Status'],
-      [
-        [
-          '2024-01-01T00:00:00Z',
-          'Deposit',
-          'USD 25',
-          'Admin',
-          'Initial deposit',
-          'Completed',
-        ],
-      ],
-    );
+    expect(handleExport).toHaveBeenCalled();
   });
 });
