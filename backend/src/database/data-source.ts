@@ -28,6 +28,7 @@ import { PromotionEntity } from './entities/promotion.entity';
 import { PromotionClaimEntity } from './entities/promotion-claim.entity';
 import { TournamentFilterOptionEntity } from '../tournament/tournament-filter-option.entity';
 import { TournamentDetail } from '../tournament/tournament-detail.entity';
+import { PerformanceThresholdEntity } from './entities/performance-threshold.entity';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -60,6 +61,7 @@ export const AppDataSource = new DataSource({
     PromotionClaimEntity,
     TournamentFilterOptionEntity,
     TournamentDetail,
+    PerformanceThresholdEntity,
   ],
   migrations: [path.join(__dirname, 'migrations', '*.{ts,js}')],
 });

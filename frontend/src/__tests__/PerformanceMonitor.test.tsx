@@ -1,18 +1,20 @@
 import { jest } from '@jest/globals';
-import { render, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 import type { Metric } from 'web-vitals';
 
-const fetchPerformanceThresholdsMock = jest.fn();
-const recordWebVitalMock = jest.fn();
-const webVitalMocks = {
-  onINP: jest.fn(),
-  onLCP: jest.fn(),
-  onCLS: jest.fn(),
-};
+process.env.NODE_ENV = 'test';
 
-jest.mock('@/lib/api/config', () => ({
-  fetchPerformanceThresholds: fetchPerformanceThresholdsMock,
-}));
+const recordWebVitalMock = jest.fn();
+const fetchMock = global.fetch as jest.MockedFunction<typeof global.fetch>;
+
+const handlers: Partial<
+  Record<'INP' | 'LCP' | 'CLS', (metric: Metric) => void>
+> = {};
+const registerCounts: Record<'INP' | 'LCP' | 'CLS', number> = {
+  INP: 0,
+  LCP: 0,
+  CLS: 0,
+};
 
 jest.mock('@/lib/api/monitoring', () => ({
   recordWebVital: recordWebVitalMock,
@@ -20,44 +22,72 @@ jest.mock('@/lib/api/monitoring', () => ({
 
 jest.mock('web-vitals', () => ({
   __esModule: true,
-  ...webVitalMocks,
+  onINP: (cb: (metric: Metric) => void) => {
+    registerCounts.INP += 1;
+    handlers.INP = cb;
+  },
+  onLCP: (cb: (metric: Metric) => void) => {
+    registerCounts.LCP += 1;
+    handlers.LCP = cb;
+  },
+  onCLS: (cb: (metric: Metric) => void) => {
+    registerCounts.CLS += 1;
+    handlers.CLS = cb;
+  },
 }));
 
-import PerformanceMonitor from '../app/PerformanceMonitor';
+import { env } from '@/lib/env';
 
-const onINPMock = webVitalMocks.onINP as jest.MockedFunction<
-  typeof webVitalMocks.onINP
->;
-const onLCPMock = webVitalMocks.onLCP as jest.MockedFunction<
-  typeof webVitalMocks.onLCP
->;
-const onCLSMock = webVitalMocks.onCLS as jest.MockedFunction<
-  typeof webVitalMocks.onCLS
->;
+let PerformanceMonitor: typeof import('../app/PerformanceMonitor').default;
 
 describe('PerformanceMonitor', () => {
   const originalSendBeacon = (navigator as any).sendBeacon;
+  const originalGetEntriesByType = (performance as any).getEntriesByType;
+
+  beforeAll(async () => {
+    await jest.unstable_mockModule('react', async () => {
+      const actual = await import('react');
+      return {
+        ...actual,
+        useEffect: (effect: Parameters<typeof actual.useEffect>[0]) => {
+          effect();
+        },
+      } satisfies typeof import('react');
+    });
+    ({ default: PerformanceMonitor } = await import(
+      '../app/PerformanceMonitor'
+    ));
+  });
 
   beforeEach(() => {
-    fetchPerformanceThresholdsMock.mockReset();
+    fetchMock.mockReset();
     recordWebVitalMock.mockReset();
-    onINPMock.mockReset();
-    onLCPMock.mockReset();
-    onCLSMock.mockReset();
-    process.env.NODE_ENV = 'production';
+    (performance as any).getEntriesByType = jest.fn().mockReturnValue([]);
+    registerCounts.INP = 0;
+    registerCounts.LCP = 0;
+    registerCounts.CLS = 0;
+    delete handlers.INP;
+    delete handlers.LCP;
+    delete handlers.CLS;
   });
 
   afterEach(() => {
     jest.clearAllMocks();
+    jest.restoreAllMocks();
     if (originalSendBeacon) {
       (navigator as any).sendBeacon = originalSendBeacon;
     } else {
       delete (navigator as any).sendBeacon;
     }
+    if (originalGetEntriesByType) {
+      (performance as any).getEntriesByType = originalGetEntriesByType;
+    } else {
+      delete (performance as any).getEntriesByType;
+    }
   });
 
   async function setup({
-    thresholds,
+    thresholds = { INP: 150, LCP: 2500, CLS: 0.05 },
     reject = false,
     sendBeacon,
   }: {
@@ -65,17 +95,17 @@ describe('PerformanceMonitor', () => {
     reject?: boolean;
     sendBeacon?: false | ((url: string, data?: BodyInit) => boolean);
   } = {}) {
-    let handler: (m: Metric) => void = () => {};
-    onINPMock.mockImplementation((cb: (metric: Metric) => void) => {
-      handler = cb;
-    });
-    onLCPMock.mockImplementation(() => undefined);
-    onCLSMock.mockImplementation(() => undefined);
-
+    const previousNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
     if (reject) {
-      fetchPerformanceThresholdsMock.mockRejectedValue(new Error('fail'));
+      fetchMock.mockRejectedValueOnce(new Error('fail'));
     } else {
-      fetchPerformanceThresholdsMock.mockResolvedValue(thresholds);
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify(thresholds), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      );
     }
     recordWebVitalMock.mockResolvedValue({ status: 'accepted' });
 
@@ -89,11 +119,21 @@ describe('PerformanceMonitor', () => {
 
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
-    render(<PerformanceMonitor />);
+    await act(async () => {
+      render(<PerformanceMonitor />);
+    });
 
-    await waitFor(() =>
-      expect(onINPMock).toHaveBeenCalledTimes(reject ? 1 : 2),
-    );
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+
+    await waitFor(() => expect(registerCounts.INP).toBeGreaterThan(0));
+
+    const handler = handlers.INP as (metric: Metric) => void;
+
+    process.env.NODE_ENV = previousNodeEnv;
 
     return { handler, warnSpy };
   }
@@ -108,13 +148,20 @@ describe('PerformanceMonitor', () => {
     );
   });
 
-  it('falls back to defaults on error', async () => {
+  it('does not warn when thresholds cannot be loaded', async () => {
     const { handler, warnSpy } = await setup({ reject: true });
 
     handler({ name: 'INP', value: 200 } as Metric);
-    expect(warnSpy).toHaveBeenCalledWith(
-      'Metric INP value 200 exceeded threshold 150',
-    );
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it('ignores metrics without a configured threshold', async () => {
+    const { handler, warnSpy } = await setup({
+      thresholds: { INP: 100, LCP: 2000 } as any,
+    });
+
+    handler({ name: 'CLS', value: 0.2 } as Metric);
+    expect(warnSpy).not.toHaveBeenCalled();
   });
 
   it('prefers navigator.sendBeacon when available', async () => {

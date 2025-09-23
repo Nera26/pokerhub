@@ -756,6 +756,19 @@ export interface paths {
       };
     };
   };
+  "/tables/sessions": {
+    /** Get tables for authenticated player */
+    get: {
+      responses: {
+        /** @description Tables list */
+        200: {
+          content: {
+            "application/json": components["schemas"]["Table"][];
+          };
+        };
+      };
+    };
+  };
   "/tables/{id}": {
     /** Get table data */
     get: {
@@ -2885,6 +2898,25 @@ export interface paths {
     get: {
       responses: {
         /** @description Performance thresholds */
+        200: {
+          content: {
+            "application/json": components["schemas"]["PerformanceThresholdsResponse"];
+          };
+        };
+      };
+    };
+    /**
+     * Update performance thresholds
+     * @description Admin only
+     */
+    put: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["PerformanceThresholdsResponse"];
+        };
+      };
+      responses: {
+        /** @description Updated performance thresholds */
         200: {
           content: {
             "application/json": components["schemas"]["PerformanceThresholdsResponse"];

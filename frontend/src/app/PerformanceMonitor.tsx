@@ -4,14 +4,11 @@ import { useEffect, useState } from 'react';
 import { onCLS, onINP, onLCP, Metric } from 'web-vitals';
 import { fetchPerformanceThresholds } from '@/lib/api/config';
 import { recordWebVital } from '@/lib/api/monitoring';
-import type { WebVitalMetric } from '@shared/types';
+import type {
+  PerformanceThresholdsResponse,
+  WebVitalMetric,
+} from '@shared/types';
 import { env } from '@/lib/env';
-
-const DEFAULT_THRESHOLDS = {
-  INP: 150,
-  LCP: 2500,
-  CLS: 0.05,
-} as const;
 
 function sendMetric(metric: Metric, overThreshold: boolean) {
   const payload: WebVitalMetric = {
@@ -31,19 +28,23 @@ function sendMetric(metric: Metric, overThreshold: boolean) {
 }
 
 export default function PerformanceMonitor() {
-  const [thresholds, setThresholds] = useState(DEFAULT_THRESHOLDS);
+  const [thresholds, setThresholds] =
+    useState<PerformanceThresholdsResponse | null>(null);
 
   useEffect(() => {
     fetchPerformanceThresholds()
       .then(setThresholds)
-      .catch(() => setThresholds(DEFAULT_THRESHOLDS));
+      .catch(() => setThresholds(null));
   }, []);
 
   useEffect(() => {
-    if (process.env.NODE_ENV !== 'production' || env.IS_E2E) return;
+    const isProd = process.env.NODE_ENV === 'production';
+    const isTest = process.env.NODE_ENV === 'test';
+    if (!(isProd || isTest) || env.IS_E2E) return;
 
     const handle = (metric: Metric) => {
-      const limit = thresholds[metric.name as keyof typeof thresholds];
+      const limit =
+        thresholds?.[metric.name as keyof PerformanceThresholdsResponse];
       const over = limit !== undefined && metric.value > limit;
       if (over) {
         console.warn(

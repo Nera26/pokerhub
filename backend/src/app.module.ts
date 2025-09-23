@@ -94,6 +94,7 @@ import { HistoryTabEntity } from './database/entities/history-tab.entity';
 import { DefaultAvatarEntity } from './database/entities/default-avatar.entity';
 import { NavModule } from './nav/nav.module';
 import { ChartPaletteEntity } from './database/entities/chart-palette.entity';
+import { PerformanceThresholdEntity } from './database/entities/performance-threshold.entity';
 
 @Module({
   imports: [
@@ -155,6 +156,7 @@ import { ChartPaletteEntity } from './database/entities/chart-palette.entity';
       HistoryTabEntity,
       ChartPaletteEntity,
       BlockedCountryEntity,
+      PerformanceThresholdEntity,
     ]),
 
     // Messaging / Infra
