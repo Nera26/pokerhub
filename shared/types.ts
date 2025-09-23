@@ -334,6 +334,7 @@ export type {
 export {
   BonusOptionsResponseSchema,
   BonusDefaultsResponseSchema,
+  BonusDefaultsRequestSchema,
   BonusSchema,
   BonusesResponseSchema,
   BonusCreateRequestSchema,
@@ -342,6 +343,7 @@ export {
 export type {
   BonusOptionsResponse,
   BonusDefaultsResponse,
+  BonusDefaultsRequest,
   Bonus,
   BonusesResponse,
   BonusCreateRequest,

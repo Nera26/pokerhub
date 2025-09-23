@@ -2342,6 +2342,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BonusDefaultsResponse'
+    post:
+      summary: Create bonus form defaults
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BonusDefaultsRequest'
+      responses:
+        '201':
+          description: Created defaults
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BonusDefaultsResponse'
+    put:
+      summary: Update bonus form defaults
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BonusDefaultsRequest'
+      responses:
+        '200':
+          description: Updated defaults
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BonusDefaultsResponse'
+    delete:
+      summary: Delete bonus form defaults
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Defaults deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /admin/bonuses:
     get:
       summary: List bonuses
@@ -5785,6 +5830,9 @@ components:
         - types
         - eligibilities
         - statuses
+    BonusDefaultsRequest:
+      allOf:
+        - $ref: '#/components/schemas/BonusDefaultsResponse'
     BonusDefaultsResponse:
       type: object
       properties:

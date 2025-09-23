@@ -2440,6 +2440,49 @@ export interface paths {
         };
       };
     };
+    /** Update bonus form defaults */
+    put: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["BonusDefaultsRequest"];
+        };
+      };
+      responses: {
+        /** @description Updated defaults */
+        200: {
+          content: {
+            "application/json": components["schemas"]["BonusDefaultsResponse"];
+          };
+        };
+      };
+    };
+    /** Create bonus form defaults */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["BonusDefaultsRequest"];
+        };
+      };
+      responses: {
+        /** @description Created defaults */
+        201: {
+          content: {
+            "application/json": components["schemas"]["BonusDefaultsResponse"];
+          };
+        };
+      };
+    };
+    /** Delete bonus form defaults */
+    delete: {
+      responses: {
+        /** @description Defaults deleted */
+        200: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
   };
   "/admin/bonuses": {
     /** List bonuses */

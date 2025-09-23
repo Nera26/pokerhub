@@ -1,4 +1,5 @@
 import { BonusOptionEntity } from '../../src/database/entities/bonus-option.entity';
+import { BonusDefaultsRequestSchema } from '../../src/schemas/bonus';
 
 export function bonusEntities(): Partial<BonusOptionEntity>[] {
   return [
@@ -39,14 +40,31 @@ export function expectedOptions() {
 }
 
 export function expectedDefaults() {
-  return {
+  return BonusDefaultsRequestSchema.parse({
     name: '',
     type: 'deposit',
     description: '',
     bonusPercent: undefined,
     maxBonusUsd: undefined,
-    expiryDate: '',
+    expiryDate: undefined,
     eligibility: 'all',
     status: 'active',
-  };
+  });
+}
+
+export function defaultsRequest() {
+  return expectedDefaults();
+}
+
+export function updatedDefaultsRequest() {
+  return BonusDefaultsRequestSchema.parse({
+    name: 'VIP Boost',
+    type: 'rakeback',
+    description: 'Weekly rakeback boost',
+    bonusPercent: 15,
+    maxBonusUsd: 250,
+    expiryDate: '2025-12-31',
+    eligibility: 'vip',
+    status: 'paused',
+  });
 }

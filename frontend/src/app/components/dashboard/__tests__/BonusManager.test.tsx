@@ -15,6 +15,9 @@ jest.mock('@/lib/api/admin', () => ({
 }));
 jest.mock('@/lib/api/bonus', () => ({
   fetchBonusDefaults: jest.fn(),
+  createBonusDefaults: jest.fn(),
+  updateBonusDefaults: jest.fn(),
+  deleteBonusDefaults: jest.fn(),
 }));
 jest.mock('next-intl', () => ({
   useLocale: () => 'en',

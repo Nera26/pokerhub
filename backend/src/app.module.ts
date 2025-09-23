@@ -85,6 +85,7 @@ import { DefaultAvatarService } from './services/default-avatar.service';
 import { PerformanceThresholdsService } from './services/performance-thresholds.service';
 import { BonusOptionEntity } from './database/entities/bonus-option.entity';
 import { BonusEntity } from './database/entities/bonus.entity';
+import { BonusDefaultEntity } from './database/entities/bonus-default.entity';
 import { ChipDenominationEntity } from './database/entities/chip-denomination.entity';
 import { TableThemeEntity } from './database/entities/table-theme.entity';
 import { NavIconEntity } from './database/entities/nav-icon.entity';
@@ -148,6 +149,7 @@ import { PerformanceThresholdEntity } from './database/entities/performance-thre
       TranslationEntity,
       BonusOptionEntity,
       BonusEntity,
+      BonusDefaultEntity,
       ChipDenominationEntity,
       TableThemeEntity,
       DefaultAvatarEntity,

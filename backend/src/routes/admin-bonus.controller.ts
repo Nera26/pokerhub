@@ -1,4 +1,4 @@
-import { Get } from '@nestjs/common';
+import { Body, Delete, Get, HttpCode, Post, Put } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AdminController } from './admin-base.controller';
 import { BonusService } from '../services/bonus.service';
@@ -7,7 +7,10 @@ import {
   BonusDefaultsResponseSchema,
   BonusOptionsResponse,
   BonusOptionsResponseSchema,
+  BonusDefaultsRequest,
+  BonusDefaultsRequestSchema,
 } from '../schemas/bonus';
+import { MessageResponseSchema } from '../schemas/auth';
 
 @AdminController('bonus')
 export class AdminBonusController {
@@ -29,5 +32,38 @@ export class AdminBonusController {
     return this.bonusService
       .getDefaults()
       .then((res) => BonusDefaultsResponseSchema.parse(res));
+  }
+
+  @Post('defaults')
+  @ApiOperation({ summary: 'Create bonus defaults' })
+  @ApiResponse({ status: 201, description: 'Created defaults' })
+  create(
+    @Body() body: BonusDefaultsRequest,
+  ): Promise<BonusDefaultsResponse> {
+    const parsed = BonusDefaultsRequestSchema.parse(body);
+    return this.bonusService
+      .createDefaults(parsed)
+      .then((res) => BonusDefaultsResponseSchema.parse(res));
+  }
+
+  @Put('defaults')
+  @ApiOperation({ summary: 'Update bonus defaults' })
+  @ApiResponse({ status: 200, description: 'Updated defaults' })
+  update(
+    @Body() body: BonusDefaultsRequest,
+  ): Promise<BonusDefaultsResponse> {
+    const parsed = BonusDefaultsRequestSchema.parse(body);
+    return this.bonusService
+      .updateDefaults(parsed)
+      .then((res) => BonusDefaultsResponseSchema.parse(res));
+  }
+
+  @Delete('defaults')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Delete bonus defaults' })
+  @ApiResponse({ status: 200, description: 'Defaults deleted' })
+  async remove() {
+    await this.bonusService.deleteDefaults();
+    return MessageResponseSchema.parse({ message: 'deleted' });
   }
 }

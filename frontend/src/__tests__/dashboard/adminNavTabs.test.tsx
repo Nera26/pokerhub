@@ -136,6 +136,9 @@ jest.mock('@/lib/api/bonus', () => ({
     eligibility: 'all',
     status: 'active',
   }),
+  createBonusDefaults: jest.fn(),
+  updateBonusDefaults: jest.fn(),
+  deleteBonusDefaults: jest.fn(),
 }));
 
 jest.mock('@/lib/api/nav', () => ({
