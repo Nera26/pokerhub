@@ -220,34 +220,36 @@ export default function ManageTournaments() {
           </div>
         </section>
       )}
-      renderModals={({ crud }) => {
-        const selected = crud.modals.selected;
+      renderModals={({ table }) => {
+        if (!table) {
+          return null;
+        }
+
+        const { modals, actions } = table;
+        const selected = modals.selected;
 
         return (
           <>
             <TournamentModal
-              isOpen={crud.modals.isCreateOpen}
-              onClose={crud.modals.close}
+              isOpen={modals.isCreateOpen}
+              onClose={modals.close}
               mode="create"
               defaultValues={defaultsQuery.data ?? undefined}
-              onSubmit={(values) => crud.actions.submitCreate(values)}
+              onSubmit={(values) => actions.submitCreate(values)}
             />
 
             <TournamentModal
-              isOpen={crud.modals.isEditOpen}
-              onClose={crud.modals.close}
+              isOpen={modals.isEditOpen}
+              onClose={modals.close}
               mode="edit"
               defaultValues={selected ?? undefined}
               onSubmit={(values) => {
                 if (!selected) return;
-                crud.actions.submitUpdate({ id: selected.id, body: values });
+                actions.submitUpdate({ id: selected.id, body: values });
               }}
             />
 
-            <Modal
-              isOpen={crud.modals.isDeleteOpen}
-              onClose={crud.modals.close}
-            >
+            <Modal isOpen={modals.isDeleteOpen} onClose={modals.close}>
               <div className="text-center">
                 <FontAwesomeIcon
                   icon={faExclamationTriangle}
@@ -261,14 +263,14 @@ export default function ManageTournaments() {
                 <div className="flex justify-center gap-3">
                   <Button
                     variant="ghost"
-                    onClick={crud.modals.close}
+                    onClick={modals.close}
                     className="border border-text-secondary"
                   >
                     Cancel
                   </Button>
                   <Button
                     variant="danger"
-                    onClick={() => crud.actions.submitDelete()}
+                    onClick={() => actions.submitDelete()}
                   >
                     Confirm Delete
                   </Button>

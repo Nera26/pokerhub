@@ -1,6 +1,10 @@
 'use client';
 
 import { useCallback } from 'react';
+import AdminCrudPage, {
+  type AdminCrudField,
+  type AdminCrudItemsRenderProps,
+} from '@/app/components/dashboard/common/AdminCrudPage';
 import {
   fetchAdminTabs,
   createAdminTab,
@@ -13,11 +17,6 @@ import type {
   UpdateAdminTabRequest,
 } from '@shared/types';
 import { useRequireAdmin } from '@/hooks/useRequireAdmin';
-import {
-  AdminCrudPage,
-  type AdminCrudField,
-  type AdminCrudItemsRenderProps,
-} from '../AdminCrudPage';
 import type { SubmitPreparation } from '@/hooks/admin/useAdminCrud';
 
 interface FormState {
@@ -215,34 +214,45 @@ export default function AdminTabsPage() {
   return (
     <AdminCrudPage<
       AdminTab,
-      FormState,
       CreateAdminTabRequest,
       UpdateInput,
-      string
+      string,
+      FormState
     >
-      title="Admin Tabs"
-      emptyForm={EMPTY_FORM}
-      fields={TAB_FIELDS}
-      fetchItems={fetchAdminTabs}
-      createItem={createAdminTab}
-      updateItem={(input) => updateAdminTab(input.id, input.payload)}
-      deleteItem={deleteAdminTab}
-      getItemId={getItemId}
-      mapItems={mapTabs}
-      formFromItem={formFromItem}
-      prepareSubmit={prepareSubmit}
-      formatListError={formatListError}
-      formatActionError={formatActionError}
-      createButtonLabel="Create tab"
-      updateButtonLabel="Update tab"
-      cancelButtonLabel="Cancel"
-      formClassName="space-y-4 max-w-xl"
-      fieldsWrapperClassName="grid gap-2 sm:grid-cols-2"
-      submitButtonClassName="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-      cancelButtonClassName="rounded border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-gray-100 disabled:opacity-50"
-      listErrorClassName="rounded-md border border-red-400 p-3 text-red-600"
-      actionErrorClassName="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700"
-      renderItems={renderTabs}
+      crudConfig={{
+        queryKey: ['admin', 'tabs'],
+        fetchItems: fetchAdminTabs,
+        create: { mutationFn: createAdminTab },
+        update: {
+          mutationFn: (input) => updateAdminTab(input.id, input.payload),
+        },
+        remove: { mutationFn: deleteAdminTab },
+        getItemId,
+        transformItems: mapTabs,
+        formatListError,
+        formatActionError,
+      }}
+      formConfig={{
+        title: 'Admin Tabs',
+        emptyForm: EMPTY_FORM,
+        fields: TAB_FIELDS,
+        formFromItem,
+        prepareSubmit,
+        getItemId,
+        createButtonLabel: 'Create tab',
+        updateButtonLabel: 'Update tab',
+        cancelButtonLabel: 'Cancel',
+        formClassName: 'space-y-4 max-w-xl',
+        fieldsWrapperClassName: 'grid gap-2 sm:grid-cols-2',
+        submitButtonClassName:
+          'rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50',
+        cancelButtonClassName:
+          'rounded border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-gray-100 disabled:opacity-50',
+        listErrorClassName: 'rounded-md border border-red-400 p-3 text-red-600',
+        actionErrorClassName:
+          'rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700',
+        renderItems: renderTabs,
+      }}
     />
   );
 }

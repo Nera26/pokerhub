@@ -1,6 +1,10 @@
 'use client';
 
 import { useCallback } from 'react';
+import AdminCrudPage, {
+  type AdminCrudField,
+  type AdminCrudItemsRenderProps,
+} from '@/app/components/dashboard/common/AdminCrudPage';
 import { useRequireAdmin } from '@/hooks/useRequireAdmin';
 import {
   fetchBlockedCountries,
@@ -9,11 +13,6 @@ import {
   deleteBlockedCountry,
 } from '@/lib/api/blockedCountries';
 import type { BlockedCountry } from '@shared/types';
-import {
-  AdminCrudPage,
-  type AdminCrudField,
-  type AdminCrudItemsRenderProps,
-} from '../AdminCrudPage';
 import type { SubmitPreparation } from '@/hooks/admin/useAdminCrud';
 
 type FormState = {
@@ -173,35 +172,47 @@ export default function BlockedCountriesPage() {
   return (
     <AdminCrudPage<
       BlockedCountry,
-      FormState,
       BlockedCountry,
       UpdateInput,
-      string
+      string,
+      FormState
     >
-      title="Blocked Countries"
-      emptyForm={EMPTY_FORM}
-      fields={BLOCKED_COUNTRY_FIELDS}
-      fetchItems={fetchBlockedCountries}
-      createItem={createBlockedCountry}
-      updateItem={(input) => updateBlockedCountry(input.id, input.payload)}
-      deleteItem={deleteBlockedCountry}
-      getItemId={getItemId}
-      formFromItem={formFromItem}
-      prepareSubmit={prepareSubmit}
-      formatListError={formatListError}
-      formatActionError={formatActionError}
-      createButtonLabel="Add Country"
-      updateButtonLabel="Update Country"
-      cancelButtonLabel="Cancel"
-      containerClassName="space-y-4 p-4"
-      formClassName="flex flex-wrap items-end gap-2"
-      fieldsWrapperClassName="contents"
-      actionsWrapperClassName="flex gap-2"
-      submitButtonClassName="rounded-lg bg-accent-yellow px-4 py-2 font-semibold text-black hover:brightness-110 disabled:opacity-50"
-      cancelButtonClassName="rounded-lg border border-border-dark px-4 py-2 font-semibold hover:bg-hover-bg disabled:opacity-50"
-      listErrorClassName="rounded-lg border border-border-dark px-3 py-2 text-danger-red"
-      actionErrorClassName="rounded-lg border border-border-dark px-3 py-2 text-danger-red"
-      renderItems={renderItems}
+      crudConfig={{
+        queryKey: ['admin', 'blocked-countries'],
+        fetchItems: fetchBlockedCountries,
+        create: { mutationFn: createBlockedCountry },
+        update: {
+          mutationFn: (input) => updateBlockedCountry(input.id, input.payload),
+        },
+        remove: { mutationFn: deleteBlockedCountry },
+        getItemId,
+        formatListError,
+        formatActionError,
+      }}
+      formConfig={{
+        title: 'Blocked Countries',
+        emptyForm: EMPTY_FORM,
+        fields: BLOCKED_COUNTRY_FIELDS,
+        formFromItem,
+        prepareSubmit,
+        getItemId,
+        createButtonLabel: 'Add Country',
+        updateButtonLabel: 'Update Country',
+        cancelButtonLabel: 'Cancel',
+        containerClassName: 'space-y-4 p-4',
+        formClassName: 'flex flex-wrap items-end gap-2',
+        fieldsWrapperClassName: 'contents',
+        actionsWrapperClassName: 'flex gap-2',
+        submitButtonClassName:
+          'rounded-lg bg-accent-yellow px-4 py-2 font-semibold text-black hover:brightness-110 disabled:opacity-50',
+        cancelButtonClassName:
+          'rounded-lg border border-border-dark px-4 py-2 font-semibold hover:bg-hover-bg disabled:opacity-50',
+        listErrorClassName:
+          'rounded-lg border border-border-dark px-3 py-2 text-danger-red',
+        actionErrorClassName:
+          'rounded-lg border border-border-dark px-3 py-2 text-danger-red',
+        renderItems,
+      }}
     />
   );
 }

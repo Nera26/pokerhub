@@ -1,6 +1,10 @@
 'use client';
 
 import { useCallback } from 'react';
+import AdminCrudPage, {
+  type AdminCrudField,
+  type AdminCrudItemsRenderProps,
+} from '@/app/components/dashboard/common/AdminCrudPage';
 import {
   fetchNavItems,
   createNavItem,
@@ -10,11 +14,6 @@ import {
 } from '@/lib/api/nav';
 import type { NavItemRequest } from '@shared/types';
 import { useRequireAdmin } from '@/hooks/useRequireAdmin';
-import {
-  AdminCrudPage,
-  type AdminCrudField,
-  type AdminCrudItemsRenderProps,
-} from '../AdminCrudPage';
 import type { SubmitPreparation } from '@/hooks/admin/useAdminCrud';
 
 type FormState = {
@@ -224,31 +223,40 @@ export default function NavAdminPage() {
   );
 
   return (
-    <AdminCrudPage<UiNavItem, FormState, NavItemRequest, UpdateInput, string>
-      title="Navigation Items"
-      emptyForm={EMPTY_FORM}
-      fields={NAV_FIELDS}
-      fetchItems={fetchNavItems}
-      createItem={createNavItem}
-      updateItem={(input) => updateNavItem(input.id, input.payload)}
-      deleteItem={deleteNavItem}
-      getItemId={getItemId}
-      formFromItem={formFromNavItem}
-      prepareSubmit={prepareSubmit}
-      computeInitialForm={computeNavDefaults}
-      formatListError={formatListError}
-      formatActionError={formatActionError}
-      createButtonLabel="Create item"
-      updateButtonLabel="Update item"
-      cancelButtonLabel="Cancel"
-      containerClassName="p-4 space-y-6"
-      formClassName="space-y-3 max-w-md"
-      fieldsWrapperClassName="space-y-3"
-      submitButtonClassName="btn btn-primary"
-      cancelButtonClassName="btn btn-secondary"
-      listErrorClassName="rounded-md border border-red-400 p-2 text-red-600"
-      actionErrorClassName="rounded-md border border-red-400 p-2 text-red-600"
-      renderItems={renderItems}
+    <AdminCrudPage<UiNavItem, NavItemRequest, UpdateInput, string, FormState>
+      crudConfig={{
+        queryKey: ['admin', 'nav'],
+        fetchItems: fetchNavItems,
+        create: { mutationFn: createNavItem },
+        update: {
+          mutationFn: (input) => updateNavItem(input.id, input.payload),
+        },
+        remove: { mutationFn: deleteNavItem },
+        getItemId,
+        formatListError,
+        formatActionError,
+      }}
+      formConfig={{
+        title: 'Navigation Items',
+        emptyForm: EMPTY_FORM,
+        fields: NAV_FIELDS,
+        formFromItem: formFromNavItem,
+        prepareSubmit,
+        computeInitialForm: computeNavDefaults,
+        getItemId,
+        createButtonLabel: 'Create item',
+        updateButtonLabel: 'Update item',
+        cancelButtonLabel: 'Cancel',
+        containerClassName: 'p-4 space-y-6',
+        formClassName: 'space-y-3 max-w-md',
+        fieldsWrapperClassName: 'space-y-3',
+        submitButtonClassName: 'btn btn-primary',
+        cancelButtonClassName: 'btn btn-secondary',
+        listErrorClassName: 'rounded-md border border-red-400 p-2 text-red-600',
+        actionErrorClassName:
+          'rounded-md border border-red-400 p-2 text-red-600',
+        renderItems,
+      }}
     />
   );
 }
