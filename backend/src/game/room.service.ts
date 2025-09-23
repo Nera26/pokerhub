@@ -91,6 +91,10 @@ class WorkerHost extends EventEmitter {
     return this.call('getState');
   }
 
+  getHandId(): Promise<string> {
+    return this.call<string>('getHandId');
+  }
+
   replay(): Promise<InternalGameState> {
     return this.call('replay');
   }
@@ -243,6 +247,10 @@ class RoomWorker extends EventEmitter {
 
   getPublicState(): Promise<InternalGameState> {
     return this.primary.getPublicState();
+  }
+
+  getHandId(): Promise<string> {
+    return this.primary.getHandId();
   }
 
   async replay(): Promise<InternalGameState> {

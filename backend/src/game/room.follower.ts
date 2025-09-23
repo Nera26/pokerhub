@@ -88,5 +88,9 @@ port.on('message', (msg: any) => {
       port.postMessage({ seq: msg.seq, ok: true });
       break;
     }
+    case 'getHandId': {
+      port.postMessage({ seq: msg.seq, state: (current as any)?.handId ?? '' });
+      break;
+    }
   }
 });

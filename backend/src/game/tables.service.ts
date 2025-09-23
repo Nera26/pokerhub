@@ -36,6 +36,15 @@ export class TablesService {
     return filtered.map((t) => this.toDto(t, now));
   }
 
+  async getTablesForUser(userId: string): Promise<TableDto[]> {
+    const now = Date.now();
+    const tables = await this.tables
+      .createQueryBuilder('table')
+      .innerJoin('table.players', 'player', 'player.id = :userId', { userId })
+      .getMany();
+    return tables.map((table) => this.toDto(table, now));
+  }
+
   async getTable(id: string): Promise<TableData> {
     const table = await this.tables.findOne({ where: { id } });
     if (!table) {
@@ -90,17 +99,25 @@ export class TablesService {
     let seats: TableState['seats'] = [];
     let street: TableState['street'] = 'pre';
     let handId = '';
-    const serverTime = Date.now();
+    let serverTime = Date.now();
 
     try {
       const room = this.rooms.get(id);
-      const state = await room.getPublicState();
+      const handIdPromise =
+        typeof room.getHandId === 'function'
+          ? room.getHandId().catch(() => '')
+          : Promise.resolve('');
+      const [state, currentHandId] = await Promise.all([
+        room.getPublicState(),
+        handIdPromise,
+      ]);
       pot = state.pot;
       sidePots = state.sidePots.map((s) => s.amount);
       street = this.mapStreet(state.street);
       const userIds = state.players.map((p) => p.id);
       const userEntities = await this.users.findBy({ id: In(userIds) });
       const userMap = new Map(userEntities.map((u) => [u.id, u]));
+      handId = currentHandId ?? '';
       seats = state.players.map((p, idx) => {
         const user = userMap.get(p.id);
         return {
@@ -111,6 +128,7 @@ export class TablesService {
           inHand: !p.folded,
         };
       });
+      serverTime = Date.now();
     } catch {
       // fallback to defaults if room/state unavailable
     }

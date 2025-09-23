@@ -36,6 +36,10 @@ import type { Request } from 'express';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 
+interface AuthenticatedRequest extends Request {
+  userId: string;
+}
+
 @ApiTags('tables')
 @Controller('tables')
 export class TablesController {
@@ -50,6 +54,15 @@ export class TablesController {
   async list(@Req() req: Request): Promise<TableList> {
     const { status } = TableListQuerySchema.parse(req.query);
     const res = await this.tables.getTables(status);
+    return TableListSchema.parse(res);
+  }
+
+  @Get('sessions')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'List tables for authenticated session' })
+  @ApiResponse({ status: 200, description: 'Tables with active player sessions' })
+  async listSessions(@Req() req: AuthenticatedRequest): Promise<TableList> {
+    const res = await this.tables.getTablesForUser(req.userId);
     return TableListSchema.parse(res);
   }
 
