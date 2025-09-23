@@ -104,7 +104,7 @@ interface CrudManagerTable<TItem> {
   View: () => JSX.Element;
 }
 
-interface CrudManagerReturn<TItem, TCreate, TUpdate, TIdentifier> {
+export interface CrudManagerReturn<TItem, TCreate, TUpdate, TIdentifier> {
   isLoading: boolean;
   error: unknown;
   items: TItem[];

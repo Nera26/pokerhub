@@ -12,115 +12,112 @@ import type {
   UpdateTableRequest,
 } from '@shared/types';
 import { CreateTableSchema, UpdateTableSchema } from '@shared/types';
-import { useCrudManager } from '@/hooks/admin/useCrudManager';
-import Button from '../ui/Button';
+import AdminCrudPage from './common/AdminCrudPage';
 import { TableCell, TableHead, TableRow } from '../ui/Table';
+import Button from '../ui/Button';
 import TableModal from '../modals/TableModal';
 
 export default function ManageTables() {
-  const crud = useCrudManager<
-    Table,
-    CreateTableRequest,
-    { id: string; body: UpdateTableRequest },
-    string
-  >({
-    queryKey: ['tables'],
-    fetchItems: () => fetchTables(),
-    getItemId: (table) => table.id,
-    create: {
-      mutationFn: createTable,
-      parse: (values) => CreateTableSchema.parse(values),
-    },
-    update: {
-      mutationFn: ({ id, body }) => updateTable(id, body),
-      parse: ({ id, body }) => ({ id, body: UpdateTableSchema.parse(body) }),
-    },
-    remove: {
-      mutationFn: deleteTable,
-    },
-    table: {
-      header: (
-        <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Stakes</TableHead>
-          <TableHead>Players</TableHead>
-          <TableHead />
-        </TableRow>
-      ),
-      renderRow: (table, { openEdit, deleteItem }) => (
-        <TableRow key={table.id}>
-          <TableCell>{table.tableName}</TableCell>
-          <TableCell>{`$${table.stakes.small}/${table.stakes.big}`}</TableCell>
-          <TableCell>
-            {table.players.current}/{table.players.max}
-          </TableCell>
-          <TableCell className="space-x-2">
-            <Button variant="secondary" onClick={() => openEdit(table)}>
-              Update
-            </Button>
-            <Button variant="danger" onClick={() => deleteItem(table)}>
-              Delete
-            </Button>
-          </TableCell>
-        </TableRow>
-      ),
-      searchFilter: (table, query) =>
-        table.tableName.toLowerCase().includes(query),
-    },
-    translationKeys: {
-      emptyMessage: 'noTablesFound',
-      searchPlaceholder: 'searchTables',
-    },
-    errorMessages: {
-      create: 'Failed to create table',
-      update: 'Failed to update table',
-    },
-  });
-
-  if (crud.isLoading) {
-    return <div>Loading tables...</div>;
-  }
-
-  if (crud.error) {
-    return <div>Error loading tables</div>;
-  }
-
-  const TableView = crud.table.View;
-  const selected = crud.modals.selected;
-  const isEditMode = crud.modals.mode === 'edit';
-
   return (
-    <div className="space-y-4">
-      <Button onClick={crud.modals.openCreate}>Create Table</Button>
+    <AdminCrudPage<
+      Table,
+      CreateTableRequest,
+      { id: string; body: UpdateTableRequest },
+      string
+    >
+      crudConfig={{
+        queryKey: ['tables'],
+        fetchItems: () => fetchTables(),
+        getItemId: (table) => table.id,
+        create: {
+          mutationFn: createTable,
+          parse: (values) => CreateTableSchema.parse(values),
+        },
+        update: {
+          mutationFn: ({ id, body }) => updateTable(id, body),
+          parse: ({ id, body }) => ({
+            id,
+            body: UpdateTableSchema.parse(body),
+          }),
+        },
+        remove: {
+          mutationFn: deleteTable,
+        },
+        table: {
+          header: (
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Stakes</TableHead>
+              <TableHead>Players</TableHead>
+              <TableHead />
+            </TableRow>
+          ),
+          renderRow: (table, { openEdit, deleteItem }) => (
+            <TableRow key={table.id}>
+              <TableCell>{table.tableName}</TableCell>
+              <TableCell>{`$${table.stakes.small}/${table.stakes.big}`}</TableCell>
+              <TableCell>
+                {table.players.current}/{table.players.max}
+              </TableCell>
+              <TableCell className="space-x-2">
+                <Button variant="secondary" onClick={() => openEdit(table)}>
+                  Update
+                </Button>
+                <Button variant="danger" onClick={() => deleteItem(table)}>
+                  Delete
+                </Button>
+              </TableCell>
+            </TableRow>
+          ),
+          searchFilter: (table, query) =>
+            table.tableName.toLowerCase().includes(query),
+        },
+        translationKeys: {
+          emptyMessage: 'noTablesFound',
+          searchPlaceholder: 'searchTables',
+        },
+        errorMessages: {
+          create: 'Failed to create table',
+          update: 'Failed to update table',
+        },
+      }}
+      className="space-y-4"
+      loadingState={<div>Loading tables...</div>}
+      errorState={<div>Error loading tables</div>}
+      primaryAction={{ label: 'Create Table' }}
+      renderModals={({ crud }) => {
+        const selected = crud.modals.selected;
+        const isEditMode = crud.modals.mode === 'edit';
 
-      <TableView />
-
-      <TableModal
-        isOpen={crud.modals.isCreateOpen || crud.modals.isEditOpen}
-        onClose={crud.modals.close}
-        onSubmit={(values) => {
-          if (isEditMode && selected) {
-            crud.actions.submitUpdate({ id: selected.id, body: values });
-          } else {
-            crud.actions.submitCreate(values);
-          }
-        }}
-        title={isEditMode ? 'Edit Table' : 'Create Table'}
-        submitLabel={isEditMode ? 'Update Table' : 'Create Table'}
-        defaultValues={
-          isEditMode && selected
-            ? {
-                tableName: selected.tableName,
-                gameType: selected.gameType,
-                stakes: selected.stakes,
-                startingStack: selected.startingStack,
-                players: { max: selected.players.max },
-                buyIn: selected.buyIn,
+        return (
+          <TableModal
+            isOpen={crud.modals.isCreateOpen || crud.modals.isEditOpen}
+            onClose={crud.modals.close}
+            onSubmit={(values) => {
+              if (isEditMode && selected) {
+                crud.actions.submitUpdate({ id: selected.id, body: values });
+              } else {
+                crud.actions.submitCreate(values);
               }
-            : undefined
-        }
-        error={crud.formError}
-      />
-    </div>
+            }}
+            title={isEditMode ? 'Edit Table' : 'Create Table'}
+            submitLabel={isEditMode ? 'Update Table' : 'Create Table'}
+            defaultValues={
+              isEditMode && selected
+                ? {
+                    tableName: selected.tableName,
+                    gameType: selected.gameType,
+                    stakes: selected.stakes,
+                    startingStack: selected.startingStack,
+                    players: { max: selected.players.max },
+                    buyIn: selected.buyIn,
+                  }
+                : undefined
+            }
+            error={crud.formError}
+          />
+        );
+      }}
+    />
   );
 }
