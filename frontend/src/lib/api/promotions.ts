@@ -1,9 +1,9 @@
 import { safeApiClient } from './utils';
 import {
   PromotionsResponseSchema,
-  MessageResponseSchema,
+  PromotionClaimResponseSchema,
   type Promotion,
-  type MessageResponse,
+  type PromotionClaimResponse,
 } from '@shared/types';
 
 export async function fetchPromotions({
@@ -16,9 +16,15 @@ export async function fetchPromotions({
   });
 }
 
-export async function claimPromotion(id: string): Promise<MessageResponse> {
-  return safeApiClient(`/api/promotions/${id}/claim`, MessageResponseSchema, {
-    method: 'POST',
-    errorMessage: 'Failed to claim promotion',
-  });
+export async function claimPromotion(
+  id: string,
+): Promise<PromotionClaimResponse> {
+  return safeApiClient(
+    `/api/promotions/${id}/claim`,
+    PromotionClaimResponseSchema,
+    {
+      method: 'POST',
+      errorMessage: 'Failed to claim promotion',
+    },
+  );
 }

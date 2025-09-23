@@ -3151,6 +3151,24 @@ export interface paths {
             "application/json": components["schemas"]["MessageResponse"];
           };
         };
+        /** @description Unauthorized */
+        401: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+        /** @description Promotion not found */
+        404: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+        /** @description Promotion already claimed */
+        409: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
       };
     };
   };

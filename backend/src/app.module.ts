@@ -70,6 +70,7 @@ import { AdminMessagesService } from './notifications/admin-messages.service';
 import { AdminMessageEntity } from './notifications/admin-message.entity';
 import { PromotionsService } from './promotions/promotions.service';
 import { PromotionEntity } from './database/entities/promotion.entity';
+import { PromotionClaimEntity } from './database/entities/promotion-claim.entity';
 import { LanguagesService } from './services/languages.service';
 import { TranslationsService } from './services/translations.service';
 import { LanguageEntity } from './database/entities/language.entity';
@@ -142,6 +143,7 @@ import { ChartPaletteEntity } from './database/entities/chart-palette.entity';
     TypeOrmModule.forFeature([
       AdminMessageEntity,
       PromotionEntity,
+      PromotionClaimEntity,
       LanguageEntity,
       TranslationEntity,
       BonusOptionEntity,
