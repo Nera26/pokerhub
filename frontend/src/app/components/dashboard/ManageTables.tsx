@@ -85,19 +85,24 @@ export default function ManageTables() {
       loadingState={<div>Loading tables...</div>}
       errorState={<div>Error loading tables</div>}
       primaryAction={{ label: 'Create Table' }}
-      renderModals={({ crud }) => {
-        const selected = crud.modals.selected;
-        const isEditMode = crud.modals.mode === 'edit';
+      renderModals={({ table }) => {
+        if (!table) {
+          return null;
+        }
+
+        const { modals, actions, formError } = table;
+        const selected = modals.selected;
+        const isEditMode = modals.mode === 'edit';
 
         return (
           <TableModal
-            isOpen={crud.modals.isCreateOpen || crud.modals.isEditOpen}
-            onClose={crud.modals.close}
+            isOpen={modals.isCreateOpen || modals.isEditOpen}
+            onClose={modals.close}
             onSubmit={(values) => {
               if (isEditMode && selected) {
-                crud.actions.submitUpdate({ id: selected.id, body: values });
+                actions.submitUpdate({ id: selected.id, body: values });
               } else {
-                crud.actions.submitCreate(values);
+                actions.submitCreate(values);
               }
             }}
             title={isEditMode ? 'Edit Table' : 'Create Table'}
@@ -114,7 +119,7 @@ export default function ManageTables() {
                   }
                 : undefined
             }
-            error={crud.formError}
+            error={formError}
           />
         );
       }}
