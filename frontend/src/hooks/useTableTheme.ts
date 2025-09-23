@@ -12,6 +12,9 @@ const useTableThemeQuery = createQueryHook<TableThemeResponse>(
 );
 
 export function useTableTheme() {
-  const { data, status } = useTableThemeQuery();
-  return { status, positions: data?.positions };
+  const query = useTableThemeQuery();
+  return {
+    ...query,
+    positions: query.data?.positions,
+  };
 }

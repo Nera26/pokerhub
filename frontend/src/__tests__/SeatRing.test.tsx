@@ -1,10 +1,14 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SeatRing from '@/app/components/tables/SeatRing';
 import type { Player } from '@/app/components/tables/types';
-import { server } from '@/test-utils/server';
-import { http, HttpResponse } from 'msw';
 import type { ImgHTMLAttributes } from 'react';
+
+const mockUseTableTheme = jest.fn();
+
+jest.mock('@/hooks/useTableTheme', () => ({
+  useTableTheme: () => mockUseTableTheme(),
+}));
 
 jest.mock('next/image', () => (props: ImgHTMLAttributes<HTMLImageElement>) => {
   // eslint-disable-next-line @next/next/no-img-element
@@ -48,9 +52,13 @@ describe('SeatRing', () => {
         BB: { color: 'green', glow: 'lightgreen', badge: '/bb.svg' },
       },
     };
-    server.use(
-      http.get('/api/config/table-theme', () => HttpResponse.json(mockTheme)),
-    );
+    mockUseTableTheme.mockReturnValue({
+      data: mockTheme,
+      positions: mockTheme.positions,
+      status: 'success',
+      isLoading: false,
+      isError: false,
+    });
     const queryClient = new QueryClient();
     render(
       <QueryClientProvider client={queryClient}>
@@ -71,5 +79,12 @@ describe('SeatRing', () => {
     expect(btn).toHaveAttribute('src', '/btn.svg');
     expect(screen.getByAltText('SB')).toHaveAttribute('src', '/sb.svg');
     expect(screen.getByAltText('BB')).toHaveAttribute('src', '/bb.svg');
+
+    const aliceSeat = await screen.findByLabelText('Seat for Alice');
+    const aliceRing = within(aliceSeat).getByTestId('player-avatar-ring');
+    expect(aliceRing).toHaveAttribute(
+      'style',
+      expect.stringContaining('--ring-color: red'),
+    );
   });
 });

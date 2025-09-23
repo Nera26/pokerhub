@@ -6,14 +6,6 @@ import { useTableTheme } from '@/hooks/useTableTheme';
 
 type TableThemePositions = TableThemeResponse['positions'];
 
-interface TableThemeGateRenderProps {
-  positions: TableThemePositions;
-}
-
-type TableThemeGateChild =
-  | ReactNode
-  | ((props: TableThemeGateRenderProps) => ReactNode);
-
 const TableThemeContext = createContext<TableThemePositions | null>(null);
 
 export function useTableThemePositions() {
@@ -27,7 +19,7 @@ export function useTableThemePositions() {
 }
 
 interface TableThemeGateProps {
-  children: TableThemeGateChild;
+  children: ReactNode;
   loadingFallback?: ReactNode;
   errorFallback?: ReactNode;
 }
@@ -47,16 +39,9 @@ export default function TableThemeGate({
     return <>{errorFallback ?? <div>Failed to load theme</div>}</>;
   }
 
-  const content =
-    typeof children === 'function'
-      ? (children as (props: TableThemeGateRenderProps) => ReactNode)({
-          positions,
-        })
-      : children;
-
   return (
     <TableThemeContext.Provider value={positions}>
-      {content}
+      {children}
     </TableThemeContext.Provider>
   );
 }

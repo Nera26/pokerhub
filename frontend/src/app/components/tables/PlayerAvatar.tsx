@@ -66,6 +66,7 @@ export default function PlayerAvatar({
         <svg
           className="pointer-events-none absolute -inset-0.5"
           viewBox="0 0 100 100"
+          data-testid="player-avatar-ring"
           // Provide --ring-color via custom property + preserve incoming styles
           style={{
             ...(avatarRingStyle || {}),
