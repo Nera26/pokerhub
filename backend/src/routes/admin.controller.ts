@@ -31,7 +31,9 @@ import {
   AlertItemSchema,
   RevenueBreakdown,
   RevenueBreakdownSchema,
+  RevenueTimeFilterSchema,
   LogTypeClasses,
+  type RevenueTimeFilter,
 } from '@shared/types';
 import {
   SidebarItem,
@@ -264,7 +266,7 @@ export class AdminController {
   @ApiOperation({ summary: 'Get revenue breakdown' })
   @ApiResponse({ status: 200, description: 'Revenue breakdown' })
   async revenueBreakdown(@Query('range') range: string): Promise<RevenueBreakdown> {
-    const r = z.enum(['today', 'week', 'month', 'all']).parse(range ?? 'all');
+    const r: RevenueTimeFilter = RevenueTimeFilterSchema.parse(range ?? 'all');
     const data = await this.revenue.getBreakdown(r);
     return RevenueBreakdownSchema.parse(data);
   }

@@ -261,6 +261,7 @@ export {
   ActivityResponseSchema,
   ErrorCategoriesResponseSchema,
 } from './schemas/analytics';
+export { RevenueTimeFilterSchema } from './schemas/revenue';
 export type {
   AuditLogType,
   AuditLogEntry,
@@ -277,6 +278,7 @@ export type {
   ActivityResponse,
   ErrorCategoriesResponse,
 } from './schemas/analytics';
+export type { RevenueTimeFilter } from './schemas/revenue';
 
 export {
   AntiCheatFlagSchema,

@@ -1,11 +1,15 @@
 'use client';
 
 import { createQueryHook } from './createQueryHook';
-import { RevenueBreakdownSchema, type RevenueBreakdown } from '@shared/types';
+import {
+  RevenueBreakdownSchema,
+  type RevenueBreakdown,
+  type RevenueTimeFilter,
+} from '@shared/types';
 
-export type TimeFilter = 'today' | 'week' | 'month' | 'all';
+export type { RevenueTimeFilter };
 
-export function useRevenueBreakdown(range: TimeFilter) {
+export function useRevenueBreakdown(range: RevenueTimeFilter) {
   return createQueryHook<RevenueBreakdown>(
     `revenue-breakdown-${range}`,
     (client, _params, opts) =>
