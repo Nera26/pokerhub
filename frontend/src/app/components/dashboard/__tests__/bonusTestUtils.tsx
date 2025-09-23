@@ -59,7 +59,7 @@ export function renderBonusManager() {
       description: '',
       bonusPercent: undefined,
       maxBonusUsd: undefined,
-      expiryDate: '',
+      expiryDate: undefined,
       eligibility: 'all',
       status: 'active',
     }),

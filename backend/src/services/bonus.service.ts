@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BonusOptionEntity } from '../database/entities/bonus-option.entity';
@@ -15,8 +19,11 @@ import {
   BonusCreateRequestSchema,
   BonusUpdateRequest,
   BonusUpdateRequestSchema,
+  BonusDefaultsRequest,
+  BonusDefaultsRequestSchema,
 } from '../schemas/bonus';
 import { BonusEntity } from '../database/entities/bonus.entity';
+import { BonusDefaultEntity } from '../database/entities/bonus-default.entity';
 
 const BONUS_DEFAULTS = BonusDefaultsResponseSchema.parse({
   name: '',
@@ -24,7 +31,7 @@ const BONUS_DEFAULTS = BonusDefaultsResponseSchema.parse({
   description: '',
   bonusPercent: undefined,
   maxBonusUsd: undefined,
-  expiryDate: '',
+  expiryDate: undefined,
   eligibility: 'all',
   status: 'active',
 });
@@ -36,6 +43,8 @@ export class BonusService {
     private readonly repo: Repository<BonusOptionEntity>,
     @InjectRepository(BonusEntity)
     private readonly bonuses: Repository<BonusEntity>,
+    @InjectRepository(BonusDefaultEntity)
+    private readonly defaults: Repository<BonusDefaultEntity>,
   ) {}
 
   private mapEntity(entity: BonusEntity): Bonus {
@@ -76,6 +85,38 @@ export class BonusService {
     return prepared;
   }
 
+  private mapDefaults(entity: BonusDefaultEntity | null): BonusDefaultsResponse {
+    if (!entity) {
+      return { ...BONUS_DEFAULTS };
+    }
+
+    return BonusDefaultsResponseSchema.parse({
+      name: entity.name,
+      type: entity.type,
+      description: entity.description,
+      bonusPercent: entity.bonusPercent ?? undefined,
+      maxBonusUsd: entity.maxBonusUsd ?? undefined,
+      expiryDate: entity.expiryDate ?? undefined,
+      eligibility: entity.eligibility,
+      status: entity.status,
+    });
+  }
+
+  private prepareDefaultsPayload(
+    payload: BonusDefaultsRequest,
+  ): Partial<BonusDefaultEntity> {
+    return {
+      name: payload.name,
+      type: payload.type,
+      description: payload.description,
+      bonusPercent: payload.bonusPercent ?? null,
+      maxBonusUsd: payload.maxBonusUsd ?? null,
+      expiryDate: payload.expiryDate ? payload.expiryDate : null,
+      eligibility: payload.eligibility,
+      status: payload.status,
+    };
+  }
+
   async listOptions(): Promise<BonusOptionsResponse> {
     const rows = await this.repo.find({ order: { id: 'ASC' } });
     return BonusOptionsResponseSchema.parse({
@@ -92,7 +133,46 @@ export class BonusService {
   }
 
   async getDefaults(): Promise<BonusDefaultsResponse> {
-    return { ...BONUS_DEFAULTS };
+    const defaults = await this.defaults.findOne({
+      where: {},
+      order: { id: 'ASC' },
+    });
+    return this.mapDefaults(defaults ?? null);
+  }
+
+  async createDefaults(
+    payload: BonusDefaultsRequest,
+  ): Promise<BonusDefaultsResponse> {
+    const parsed = BonusDefaultsRequestSchema.parse(payload);
+    const existing = await this.defaults.count();
+    if (existing > 0) {
+      throw new ConflictException('Bonus defaults already exist');
+    }
+    const entity = this.defaults.create(this.prepareDefaultsPayload(parsed));
+    const saved = await this.defaults.save(entity);
+    return this.mapDefaults(saved);
+  }
+
+  async updateDefaults(
+    payload: BonusDefaultsRequest,
+  ): Promise<BonusDefaultsResponse> {
+    const parsed = BonusDefaultsRequestSchema.parse(payload);
+    const existing = await this.defaults.findOne({
+      where: {},
+      order: { id: 'ASC' },
+    });
+    if (!existing) {
+      return this.createDefaults(parsed);
+    }
+    const updated = await this.defaults.save({
+      ...existing,
+      ...this.prepareDefaultsPayload(parsed),
+    });
+    return this.mapDefaults(updated);
+  }
+
+  async deleteDefaults(): Promise<void> {
+    await this.defaults.clear();
   }
 
   async list(): Promise<BonusesResponse> {

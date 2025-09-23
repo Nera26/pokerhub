@@ -22,6 +22,10 @@ export const BonusDefaultsResponseSchema = z.object({
 
 export type BonusDefaultsResponse = z.infer<typeof BonusDefaultsResponseSchema>;
 
+export const BonusDefaultsRequestSchema = BonusDefaultsResponseSchema;
+
+export type BonusDefaultsRequest = z.infer<typeof BonusDefaultsRequestSchema>;
+
 const BonusBaseSchema = BonusDefaultsResponseSchema.extend({
   description: z.string(),
 });
