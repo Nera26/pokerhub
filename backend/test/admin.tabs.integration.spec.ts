@@ -16,7 +16,83 @@ import { AdminGuard } from '../src/auth/admin.guard';
 import { AdminTabEntity } from '../src/database/entities/admin-tab.entity';
 import { AdminTabsService } from '../src/services/admin-tabs.service';
 import { WalletService } from '../src/wallet/wallet.service';
-import { ConfigService } from '@nestjs/config';
+
+type AdminTabSeed = Pick<AdminTabEntity, 'id' | 'label' | 'icon' | 'component'>;
+
+const SEED_TABS: AdminTabSeed[] = [
+  {
+    id: 'analytics',
+    label: 'Analytics',
+    icon: 'faChartLine',
+    component: '@/app/components/dashboard/analytics/Analytics',
+  },
+  {
+    id: 'broadcast',
+    label: 'Broadcasts',
+    icon: 'faBullhorn',
+    component: '@/app/components/dashboard/BroadcastPanel',
+  },
+  {
+    id: 'deposits-reconcile',
+    label: 'Bank Reconciliation',
+    icon: 'faFileInvoiceDollar',
+    component: '@/app/components/dashboard/AdminBankReconciliation',
+  },
+  {
+    id: 'events',
+    label: 'Events',
+    icon: 'faBell',
+    component: '@/app/components/dashboard/AdminEvents',
+  },
+  {
+    id: 'feature-flags',
+    label: 'Feature Flags',
+    icon: 'faToggleOn',
+    component: '@/app/components/dashboard/FeatureFlagsPanel',
+  },
+  {
+    id: 'tables',
+    label: 'Tables',
+    icon: 'faTable',
+    component: '@/app/components/dashboard/ManageTables',
+  },
+  {
+    id: 'transactions',
+    label: 'Transactions',
+    icon: 'faMoneyBillWave',
+    component: '@/app/components/dashboard/transactions/TransactionHistory',
+  },
+  {
+    id: 'tournaments',
+    label: 'Tournaments',
+    icon: 'faTrophy',
+    component: '@/app/components/dashboard/ManageTournaments',
+  },
+  {
+    id: 'users',
+    label: 'Users',
+    icon: 'faUsers',
+    component: '@/app/components/dashboard/ManageUsers',
+  },
+  {
+    id: 'wallet-iban',
+    label: 'IBAN Manager',
+    icon: 'faBuildingColumns',
+    component: '@/app/components/dashboard/IbanManager',
+  },
+  {
+    id: 'wallet-reconcile',
+    label: 'Wallet Reconcile',
+    icon: 'faCoins',
+    component: '@/app/components/dashboard/WalletReconcileMismatches',
+  },
+  {
+    id: 'wallet-withdrawals',
+    label: 'Withdrawals',
+    icon: 'faMoneyCheck',
+    component: '@/app/components/dashboard/Withdrawals',
+  },
+];
 
 describe('Admin tabs integration', () => {
   let app: INestApplication;
@@ -53,42 +129,6 @@ describe('Admin tabs integration', () => {
       providers: [
         SidebarService,
         AdminTabsService,
-        {
-          provide: ConfigService,
-          useValue: {
-            get: (key: string) =>
-              key === 'admin.sidebar'
-                ? [
-                    {
-                      id: 'events',
-                      label: 'Events',
-                      icon: 'faBell',
-                      component: '@/app/components/dashboard/AdminEvents',
-                    },
-                    {
-                      id: 'analytics',
-                      label: 'Analytics',
-                      icon: 'faChartLine',
-                      component: '@/app/components/dashboard/analytics/Analytics',
-                    },
-                    {
-                      id: 'deposits-reconcile',
-                      label: 'Bank Reconciliation',
-                      icon: 'faFileInvoiceDollar',
-                      component:
-                        '@/app/components/dashboard/AdminBankReconciliation',
-                    },
-                    {
-                      id: 'feature-flags',
-                      label: 'Feature Flags',
-                      icon: 'faToggleOn',
-                      component:
-                        '@/app/components/dashboard/FeatureFlagsPanel',
-                    },
-                  ]
-                : undefined,
-          },
-        },
         { provide: AnalyticsService, useValue: {} },
         { provide: KycService, useValue: {} },
         { provide: RevenueService, useValue: {} },
@@ -105,183 +145,32 @@ describe('Admin tabs integration', () => {
     await app.init();
 
     const repo = dataSource.getRepository(AdminTabEntity);
-    await repo.insert([
-      {
-        id: 'analytics',
-        label: 'Analytics',
-        icon: 'faChartLine',
-        component: '@/app/components/dashboard/analytics/Analytics',
-      },
-      {
-        id: 'broadcast',
-        label: 'Broadcasts',
-        icon: 'faBullhorn',
-        component: '@/app/components/dashboard/BroadcastPanel',
-      },
-      {
-        id: 'events',
-        label: 'Events',
-        icon: 'faBell',
-        component: '@/app/components/dashboard/AdminEvents',
-      },
-      {
-        id: 'feature-flags',
-        label: 'Feature Flags',
-        icon: 'faToggleOn',
-        component: '@/app/components/dashboard/FeatureFlagsPanel',
-      },
-      {
-        id: 'transactions',
-        label: 'Transactions',
-        icon: 'faMoneyBillWave',
-        component:
-          '@/app/components/dashboard/transactions/TransactionHistory',
-      },
-      {
-        id: 'wallet-iban',
-        label: 'IBAN Manager',
-        icon: 'faBuildingColumns',
-        component: '@/app/components/dashboard/IbanManager',
-      },
-      {
-        id: 'wallet-reconcile',
-        label: 'Wallet Reconcile',
-        icon: 'faCoins',
-        component:
-          '@/app/components/dashboard/WalletReconcileMismatches',
-      },
-      {
-        id: 'wallet-withdrawals',
-        label: 'Withdrawals',
-        icon: 'faMoneyCheck',
-        component: '@/app/components/dashboard/Withdrawals',
-      },
-      {
-        id: 'users',
-        label: 'Users',
-        icon: 'faUsers',
-        component: '@/app/components/dashboard/ManageUsers',
-      },
-      {
-        id: 'tables',
-        label: 'Tables',
-        icon: 'faTable',
-        component: '@/app/components/dashboard/ManageTables',
-      },
-      {
-        id: 'tournaments',
-        label: 'Tournaments',
-        icon: 'faTrophy',
-        component:
-          '@/app/components/dashboard/ManageTournaments',
-      },
-    ]);
+    await repo.insert(SEED_TABS);
   });
 
   afterAll(async () => {
     await app.close();
   });
 
-  it('returns pre-seeded tabs', async () => {
-    const tabs = [
-      {
-        id: 'analytics',
-        title: 'Analytics',
-        component: '@/app/components/dashboard/analytics/Analytics',
-        icon: 'faChartLine',
-        source: 'config',
-      },
-      {
-        id: 'deposits-reconcile',
-        title: 'Bank Reconciliation',
-        component: '@/app/components/dashboard/AdminBankReconciliation',
-        icon: 'faFileInvoiceDollar',
-        source: 'config',
-      },
-      {
-        id: 'feature-flags',
-        title: 'Feature Flags',
-        component: '@/app/components/dashboard/FeatureFlagsPanel',
-        icon: 'faToggleOn',
-        source: 'config',
-      },
-      {
-        id: 'broadcast',
-        title: 'Broadcasts',
-        component: '@/app/components/dashboard/BroadcastPanel',
-        icon: 'faBullhorn',
-        source: 'database',
-      },
-      {
-        id: 'events',
-        title: 'Events',
-        component: '@/app/components/dashboard/AdminEvents',
-        icon: 'faBell',
-        source: 'database',
-      },
-      {
-        id: 'feature-flags',
-        title: 'Feature Flags',
-        component: '@/app/components/dashboard/FeatureFlagsPanel',
-        icon: 'faToggleOn',
-        source: 'database',
-      },
-      {
-        id: 'tables',
-        title: 'Tables',
-        component: '@/app/components/dashboard/ManageTables',
-        icon: 'faTable',
-        source: 'database',
-      },
-      {
-        id: 'tournaments',
-        title: 'Tournaments',
-        component: '@/app/components/dashboard/ManageTournaments',
-        icon: 'faTrophy',
-        source: 'database',
-      },
-      {
-        id: 'transactions',
-        title: 'Transactions',
-        component:
-          '@/app/components/dashboard/transactions/TransactionHistory',
-        icon: 'faMoneyBillWave',
-        source: 'database',
-      },
-      {
-        id: 'users',
-        title: 'Users',
-        component: '@/app/components/dashboard/ManageUsers',
-        icon: 'faUsers',
-        source: 'database',
-      },
-      {
-        id: 'wallet-iban',
-        title: 'IBAN Manager',
-        component: '@/app/components/dashboard/IbanManager',
-        icon: 'faBuildingColumns',
-        source: 'database',
-      },
-      {
-        id: 'wallet-reconcile',
-        title: 'Wallet Reconcile',
-        component:
-          '@/app/components/dashboard/WalletReconcileMismatches',
-        icon: 'faCoins',
-        source: 'database',
-      },
-      {
-        id: 'wallet-withdrawals',
-        title: 'Withdrawals',
-        component: '@/app/components/dashboard/Withdrawals',
-        icon: 'faMoneyCheck',
-        source: 'database',
-      },
-    ];
-    await request(app.getHttpServer())
+  it('returns database-backed tabs only', async () => {
+    const response = await request(app.getHttpServer())
       .get('/admin/tabs')
-      .expect(200)
-      .expect(tabs);
+      .expect(200);
+
+    const expected = SEED_TABS.map((tab) => ({
+      id: tab.id,
+      title: tab.label,
+      component: tab.component,
+      icon: tab.icon,
+      source: 'database',
+    })).sort((a, b) => a.id.localeCompare(b.id));
+
+    expect(response.body).toEqual(expected);
+    expect(
+      response.body.every(
+        (tab: { source?: string }) => tab.source === 'database',
+      ),
+    ).toBe(true);
   });
 
   it('supports CRUD operations for admin tabs', async () => {
