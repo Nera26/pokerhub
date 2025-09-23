@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import Modal from '../ui/Modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner, faXmark } from '@fortawesome/free-solid-svg-icons';
-import { useQuery } from '@tanstack/react-query';
 import TransactionHistoryTable, {
   type Column,
 } from '@/app/components/common/TransactionHistoryTable';
@@ -20,7 +19,10 @@ import type { FilterOptions } from '@shared/transactions.schema';
 import { AdminTransactionEntriesSchema } from '@shared/transactions.schema';
 import { z } from 'zod';
 import useTransactionColumns from '@/hooks/useTransactionColumns';
-import useTransactionHistory from '@/app/components/common/useTransactionHistory';
+import {
+  useTransactionHistoryControls,
+  type TransactionHistoryFilterQuery,
+} from '@/app/components/common/TransactionHistoryControls';
 
 export type Transaction = {
   datetime: string;
@@ -55,21 +57,83 @@ export default function TransactionHistoryModal({
   userId,
   onFilter,
 }: Props) {
-  const {
-    data: filterOptions,
-    isLoading: filtersLoading,
-    error: filtersError,
-  } = useQuery<FilterOptions>({
-    queryKey: ['transactionFilters'],
-    queryFn: fetchTransactionFilters,
-    enabled: isOpen,
-  });
+  const defaultTypeRef = useRef('');
+  const defaultByRef = useRef('');
 
   const {
     data: colMeta = [],
     isLoading: colsLoading,
     error: colsError,
   } = useTransactionColumns();
+
+  const filterQueries = useMemo(
+    () =>
+      [
+        {
+          key: 'filters',
+          queryKey: ['transactionFilters'] as const,
+          queryFn: fetchTransactionFilters,
+          enabled: isOpen,
+          initialData: { types: [], performedBy: [] } as FilterOptions,
+        },
+      ] as const satisfies readonly TransactionHistoryFilterQuery<
+        'filters',
+        FilterOptions,
+        FilterOptions
+      >[],
+    [isOpen],
+  );
+
+  const { history, queries } = useTransactionHistoryControls<
+    AdminTransactionEntry,
+    typeof filterQueries
+  >({
+    history: {
+      queryKey: ['userTransactions', userId],
+      fetchTransactions: async () => fetchUserTransactions(userId),
+      initialFilters: { start: '', end: '', type: '', by: '' },
+      manualFilters: true,
+      paginated: false,
+      enabled: isOpen && !!userId,
+      clientFilter: (allEntries, currentFilters) => {
+        let data = [...allEntries];
+        const appliedType = currentFilters.type;
+        const appliedBy = currentFilters.by;
+        const sentinelType = defaultTypeRef.current;
+        const sentinelBy = defaultByRef.current;
+        if (appliedType && sentinelType && appliedType !== sentinelType) {
+          data = data.filter((entry) => entry.action === appliedType);
+        }
+        if (appliedBy && sentinelBy && appliedBy !== sentinelBy) {
+          data = data.filter((entry) => entry.performedBy === appliedBy);
+        }
+        if (currentFilters.start) {
+          data = data.filter(
+            (entry) => new Date(entry.date) >= new Date(currentFilters.start),
+          );
+        }
+        if (currentFilters.end) {
+          data = data.filter(
+            (entry) => new Date(entry.date) <= new Date(currentFilters.end),
+          );
+        }
+        return data;
+      },
+      onFiltersApplied: (filteredEntries) => {
+        onFilter?.(filteredEntries);
+      },
+      extractCurrency: (entry) =>
+        (entry as (AdminTransactionEntry & { currency?: string }) | undefined)
+          ?.currency,
+    },
+    queries: filterQueries,
+  });
+
+  const filtersQuery = queries.filters;
+  const filterOptions: FilterOptions = filtersQuery?.data ?? {
+    types: [],
+    performedBy: [],
+  };
 
   const typeOptions = useMemo(() => {
     const fromServer = filterOptions?.types ?? [];
@@ -89,6 +153,9 @@ export default function TransactionHistoryModal({
   const defaultType = typeOptions[0] ?? '';
   const defaultBy = performedByOptions[0]?.value ?? '';
 
+  defaultTypeRef.current = defaultType;
+  defaultByRef.current = defaultBy;
+
   const {
     data: entries = [],
     isLoading: historyLoading,
@@ -98,42 +165,7 @@ export default function TransactionHistoryModal({
     updateFilter,
     syncFilters,
     applyFilters,
-  } = useTransactionHistory<AdminTransactionEntry>({
-    queryKey: ['userTransactions', userId],
-    fetchTransactions: async () => fetchUserTransactions(userId),
-    initialFilters: { start: '', end: '', type: '', by: '' },
-    manualFilters: true,
-    paginated: false,
-    enabled: isOpen && !!userId,
-    clientFilter: (allEntries, currentFilters) => {
-      let data = [...allEntries];
-      const appliedType = currentFilters.type;
-      const appliedBy = currentFilters.by;
-      if (appliedType && defaultType && appliedType !== defaultType) {
-        data = data.filter((entry) => entry.action === appliedType);
-      }
-      if (appliedBy && defaultBy && appliedBy !== defaultBy) {
-        data = data.filter((entry) => entry.performedBy === appliedBy);
-      }
-      if (currentFilters.start) {
-        data = data.filter(
-          (entry) => new Date(entry.date) >= new Date(currentFilters.start),
-        );
-      }
-      if (currentFilters.end) {
-        data = data.filter(
-          (entry) => new Date(entry.date) <= new Date(currentFilters.end),
-        );
-      }
-      return data;
-    },
-    onFiltersApplied: (filteredEntries) => {
-      onFilter?.(filteredEntries);
-    },
-    extractCurrency: (entry) =>
-      (entry as (AdminTransactionEntry & { currency?: string }) | undefined)
-        ?.currency,
-  });
+  } = history;
 
   useEffect(() => {
     const nextType = filters.type || defaultType;
@@ -170,8 +202,8 @@ export default function TransactionHistoryModal({
     [colMeta, currency],
   );
 
-  const loading = filtersLoading || historyLoading || colsLoading;
-  const error = filtersError || historyError || colsError;
+  const loading = filtersQuery?.isLoading || historyLoading || colsLoading;
+  const error = filtersQuery?.error || historyError || colsError;
 
   const tableData: Transaction[] = useMemo(
     () =>

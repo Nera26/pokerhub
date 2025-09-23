@@ -19,19 +19,14 @@ import useTransactionColumns from '@/hooks/useTransactionColumns';
 import { z } from 'zod';
 import { AdminTransactionEntriesSchema } from '@shared/transactions.schema';
 import { formatCurrency } from '@/lib/formatCurrency';
+import { useTransactionHistoryControls } from '@/app/components/common/TransactionHistoryControls';
 
 type AdminTransactionEntry = z.infer<
   typeof AdminTransactionEntriesSchema
 >[number];
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import {
-  fetchTransactionFilters,
-  fetchUserTransactions,
-} from '@/lib/api/transactions';
 
-jest.mock('@/lib/api/transactions', () => ({
-  fetchTransactionFilters: jest.fn(),
-  fetchUserTransactions: jest.fn(),
+jest.mock('@/app/components/common/TransactionHistoryControls', () => ({
+  useTransactionHistoryControls: jest.fn(),
 }));
 
 describe('TransactionHistoryModal', () => {
@@ -43,6 +38,61 @@ describe('TransactionHistoryModal', () => {
     { id: 'notes', label: 'Notes' },
     { id: 'status', label: 'Status' },
   ];
+
+  const mockUseControls = useTransactionHistoryControls as jest.Mock;
+
+  const buildHistory = () => ({
+    data: [],
+    rawData: [],
+    isLoading: false,
+    error: null as unknown,
+    currency: 'USD',
+    filters: { start: '', end: '', type: '', by: '' },
+    appliedFilters: { start: '', end: '', type: '', by: '' },
+    updateFilter: jest.fn(),
+    replaceFilters: jest.fn(),
+    syncFilters: jest.fn(),
+    applyFilters: jest.fn(),
+    page: 1,
+    setPage: jest.fn(),
+    pageSize: 10,
+    hasMore: false,
+    exportToCsv: jest.fn(),
+  });
+
+  type HistoryStub = ReturnType<typeof buildHistory>;
+
+  const createHistory = (overrides?: Partial<HistoryStub>): HistoryStub => ({
+    ...buildHistory(),
+    ...(overrides ?? {}),
+  });
+
+  const buildFiltersQuery = () => ({
+    data: { types: [], performedBy: [] },
+    error: null as unknown,
+    isLoading: false,
+    isFetching: false,
+    refetch: jest.fn(),
+  });
+
+  type FiltersQueryStub = ReturnType<typeof buildFiltersQuery>;
+
+  const createFiltersQuery = (
+    overrides?: Partial<FiltersQueryStub>,
+  ): FiltersQueryStub => ({
+    ...buildFiltersQuery(),
+    ...(overrides ?? {}),
+  });
+
+  beforeEach(() => {
+    mockUseControls.mockReturnValue({
+      history: createHistory(),
+      queries: {
+        filters: createFiltersQuery(),
+      },
+      handleExport: jest.fn(),
+    });
+  });
 
   afterEach(() => {
     jest.clearAllMocks();
@@ -77,24 +127,32 @@ describe('TransactionHistoryModal', () => {
     });
     const onFilter = jest.fn();
     const user = userEvent.setup();
-    (fetchTransactionFilters as jest.Mock).mockResolvedValue({
-      types: ['Deposit', 'Withdrawal'],
-      performedBy: ['Admin', 'User'],
+    const applyFilters = jest.fn(() => onFilter([entries[0]]));
+    mockUseControls.mockReturnValueOnce({
+      history: createHistory({
+        data: entries,
+        currency: 'EUR',
+        applyFilters,
+      }),
+      queries: {
+        filters: createFiltersQuery({
+          data: {
+            types: ['Deposit', 'Withdrawal'],
+            performedBy: ['Admin', 'User'],
+          },
+        }),
+      },
+      handleExport: jest.fn(),
     });
-    (fetchUserTransactions as jest.Mock).mockResolvedValue(entries);
-    const client = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    });
+
     render(
-      <QueryClientProvider client={client}>
-        <TransactionHistoryModal
-          isOpen
-          onClose={() => {}}
-          userName="Test"
-          userId="1"
-          onFilter={onFilter}
-        />
-      </QueryClientProvider>,
+      <TransactionHistoryModal
+        isOpen
+        onClose={() => {}}
+        userName="Test"
+        userId="1"
+        onFilter={onFilter}
+      />,
     );
 
     expect(await screen.findByTestId('tx-table')).toBeInTheDocument();
@@ -137,23 +195,24 @@ describe('TransactionHistoryModal', () => {
         isLoading: false,
         error: null,
       });
-      (fetchTransactionFilters as jest.Mock).mockResolvedValue({
-        types: [],
-        performedBy: [],
+      mockUseControls.mockReturnValueOnce({
+        history: createHistory({
+          data: entries,
+          currency: currency ?? 'USD',
+        }),
+        queries: {
+          filters: createFiltersQuery(),
+        },
+        handleExport: jest.fn(),
       });
-      (fetchUserTransactions as jest.Mock).mockResolvedValue(entries);
-      const client = new QueryClient({
-        defaultOptions: { queries: { retry: false } },
-      });
+
       render(
-        <QueryClientProvider client={client}>
-          <TransactionHistoryModal
-            isOpen
-            onClose={() => {}}
-            userName="Test"
-            userId="1"
-          />
-        </QueryClientProvider>,
+        <TransactionHistoryModal
+          isOpen
+          onClose={() => {}}
+          userName="Test"
+          userId="1"
+        />,
       );
 
       await screen.findByTestId('tx-table');
@@ -172,20 +231,21 @@ describe('TransactionHistoryModal', () => {
       isLoading: false,
       error: new Error('fail'),
     });
-    (fetchTransactionFilters as jest.Mock).mockRejectedValue(new Error('fail'));
-    (fetchUserTransactions as jest.Mock).mockRejectedValue(new Error('fail'));
-    const client = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
+    mockUseControls.mockReturnValueOnce({
+      history: createHistory({ error: new Error('fail') }),
+      queries: {
+        filters: createFiltersQuery({ error: new Error('fail') }),
+      },
+      handleExport: jest.fn(),
     });
+
     render(
-      <QueryClientProvider client={client}>
-        <TransactionHistoryModal
-          isOpen
-          onClose={() => {}}
-          userName="Test"
-          userId="1"
-        />
-      </QueryClientProvider>,
+      <TransactionHistoryModal
+        isOpen
+        onClose={() => {}}
+        userName="Test"
+        userId="1"
+      />,
     );
 
     expect(
