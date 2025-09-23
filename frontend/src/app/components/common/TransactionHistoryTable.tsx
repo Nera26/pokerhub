@@ -49,7 +49,16 @@ function ActionCells<T>({ actions, row }: ActionCellsProps<T>) {
   );
 }
 
-export interface TransactionHistoryTableProps<T extends { date: string }> {
+export interface TimestampSource {
+  date?: string | null;
+  datetime?: string | null;
+}
+
+export function getTransactionTimestamp(row: TimestampSource): string {
+  return row.date ?? row.datetime ?? '';
+}
+
+export interface TransactionHistoryTableProps<T extends TimestampSource> {
   data: T[];
   columns: Column<T>[];
   actions?: Action<T>[];
@@ -61,7 +70,7 @@ export interface TransactionHistoryTableProps<T extends { date: string }> {
   noDataMessage?: ReactNode;
 }
 
-export default function TransactionHistoryTable<T extends { date: string }>({
+export default function TransactionHistoryTable<T extends TimestampSource>({
   data,
   columns,
   getRowKey,
@@ -73,7 +82,10 @@ export default function TransactionHistoryTable<T extends { date: string }>({
   noDataMessage,
 }: TransactionHistoryTableProps<T>) {
   const sortedItems = useMemo(
-    () => [...data].sort((a, b) => a.date.localeCompare(b.date)),
+    () =>
+      [...data].sort((a, b) =>
+        getTransactionTimestamp(a).localeCompare(getTransactionTimestamp(b)),
+      ),
     [data],
   );
 

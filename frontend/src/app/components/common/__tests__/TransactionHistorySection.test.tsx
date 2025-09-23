@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TransactionHistorySection from '../TransactionHistorySection';
 import { renderWithClient, mockMetadataFetch } from './helpers';
@@ -103,5 +103,41 @@ describe('TransactionHistorySection', () => {
     const exportBtn = await screen.findByRole('button', { name: /export/i });
     await userEvent.click(exportBtn);
     expect(onExport).toHaveBeenCalled();
+  });
+
+  it('renders datetime-only entries in chronological order', async () => {
+    const data: Array<Omit<Txn, 'date'> & { datetime: string }> = [
+      {
+        amount: 20,
+        status: 'Completed',
+        datetime: '2024-01-02T12:00:00Z',
+        type: 'Deposit',
+      },
+      {
+        amount: 10,
+        status: 'Completed',
+        datetime: '2024-01-01T09:00:00Z',
+        type: 'Withdrawal',
+      },
+    ];
+
+    mockMetadataFetch({
+      columns: [
+        { id: 'type', label: 'Type' },
+        { id: 'datetime', label: 'Date & Time' },
+      ],
+    });
+
+    renderWithClient(
+      <TransactionHistorySection data={data as any} currency="USD" />,
+    );
+
+    await screen.findByText('Deposit');
+
+    const rows = screen.getAllByRole('row').slice(1);
+    const orderedTypes = rows.map(
+      (row) => within(row).getByText(/Deposit|Withdrawal/).textContent,
+    );
+    expect(orderedTypes).toEqual(['Withdrawal', 'Deposit']);
   });
 });

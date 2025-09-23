@@ -9,7 +9,8 @@ describe('TransactionHistoryTable', () => {
   interface Row {
     id: string;
     name: string;
-    date: string;
+    date?: string;
+    datetime?: string;
   }
 
   const columns: Column<Row>[] = [
@@ -46,5 +47,19 @@ describe('TransactionHistoryTable', () => {
     expect(btn).toBeInTheDocument();
     await userEvent.click(btn);
     expect(onView).toHaveBeenCalledWith(data[0]);
+  });
+
+  it('sorts rows using the normalized timestamp', async () => {
+    const data: Row[] = [
+      { id: '1', name: 'Alice', datetime: '2024-01-02T10:00:00Z' },
+      { id: '2', name: 'Bob', datetime: '2024-01-01T09:00:00Z' },
+    ];
+
+    render(<TransactionHistoryTable data={data} columns={columns} />);
+
+    const rows = screen.getAllByRole('row').slice(1);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveTextContent('Bob');
+    expect(rows[1]).toHaveTextContent('Alice');
   });
 });

@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner, faXmark } from '@fortawesome/free-solid-svg-icons';
 import TransactionHistoryTable, {
   type Column,
+  type TimestampSource,
 } from '@/app/components/common/TransactionHistoryTable';
 import {
   AmountCell,
@@ -27,14 +28,14 @@ import TransactionHistoryFilters, {
   buildSelectOptions,
 } from '@/app/components/common/TransactionHistoryFilters';
 
-export type Transaction = {
+export interface Transaction extends TimestampSource {
   datetime: string;
   action: string;
   amount: number;
   by: string;
   notes: string;
   status: string;
-};
+}
 
 type AdminTransactionEntry = z.infer<
   typeof AdminTransactionEntriesSchema
@@ -223,11 +224,17 @@ export default function TransactionHistoryModal({
 
   const tableData: Transaction[] = useMemo(
     () =>
-      entries.map(({ date, performedBy, ...rest }) => ({
-        datetime: date,
-        by: performedBy,
-        ...rest,
-      })),
+      entries.map((entry) => {
+        const { date, performedBy, ...rest } = entry;
+        const datetimeValue = (entry as { datetime?: string | null }).datetime;
+        const normalizedTimestamp = date ?? datetimeValue ?? '';
+        return {
+          date: normalizedTimestamp,
+          datetime: datetimeValue ?? normalizedTimestamp,
+          by: performedBy,
+          ...rest,
+        };
+      }),
     [entries],
   );
 

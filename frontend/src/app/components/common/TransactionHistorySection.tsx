@@ -5,6 +5,7 @@ import { faReceipt } from '@fortawesome/free-solid-svg-icons/faReceipt';
 import { faDownload } from '@fortawesome/free-solid-svg-icons/faDownload';
 import { useMemo, type ReactNode } from 'react';
 import TransactionHistoryTable, {
+  getTransactionTimestamp,
   type Action,
   type Column,
 } from './TransactionHistoryTable';
@@ -59,7 +60,7 @@ export default function TransactionHistorySection<T extends TransactionLike>({
             return <AmountCell amount={row.amount} currency={currency} />;
           case 'date':
           case 'datetime':
-            return (row as any).date ?? (row as any).datetime ?? '';
+            return getTransactionTimestamp(row as any);
           case 'status':
             return <StatusCell status={row.status} />;
           case 'type':
