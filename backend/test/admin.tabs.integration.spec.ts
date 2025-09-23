@@ -7,7 +7,6 @@ import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
 import request from 'supertest';
 import { AdminController } from '../src/routes/admin.controller';
-import { SidebarService } from '../src/services/sidebar.service';
 import { AnalyticsService } from '../src/analytics/analytics.service';
 import { KycService } from '../src/wallet/kyc.service';
 import { RevenueService } from '../src/wallet/revenue.service';
@@ -127,7 +126,6 @@ describe('Admin tabs integration', () => {
       ],
       controllers: [AdminController],
       providers: [
-        SidebarService,
         AdminTabsService,
         { provide: AnalyticsService, useValue: {} },
         { provide: KycService, useValue: {} },

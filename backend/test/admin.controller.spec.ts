@@ -7,8 +7,7 @@ import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
 import { KycService } from '../src/wallet/kyc.service';
 import { AnalyticsService } from '../src/analytics/analytics.service';
-import { SidebarService } from '../src/services/sidebar.service';
-import type { SidebarItem } from '../src/schemas/admin';
+import type { AdminTabConfig } from '../src/schemas/admin';
 import { RevenueService } from '../src/wallet/revenue.service';
 import { AdminTabsService } from '../src/services/admin-tabs.service';
 import { WalletService } from '../src/wallet/wallet.service';
@@ -32,83 +31,80 @@ describe('AdminController', () => {
   const revenue = {
     getBreakdown: jest.fn(),
   } as Partial<RevenueService>;
-  const sidebarItems: SidebarItem[] = [
+  const adminTabConfigs: AdminTabConfig[] = [
     {
       id: 'analytics',
-      label: 'Analytics',
+      title: 'Analytics',
       icon: 'faChartLine',
       component: '@/app/components/dashboard/analytics/Analytics',
     },
     {
       id: 'broadcast',
-      label: 'Broadcasts',
+      title: 'Broadcasts',
       icon: 'faBullhorn',
       component: '@/app/components/dashboard/BroadcastPanel',
     },
     {
       id: 'events',
-      label: 'Events',
+      title: 'Events',
       icon: 'faBell',
       component: '@/app/components/dashboard/AdminEvents',
     },
     {
       id: 'feature-flags',
-      label: 'Feature Flags',
+      title: 'Feature Flags',
       icon: 'faToggleOn',
       component: '@/app/components/dashboard/FeatureFlagsPanel',
     },
     {
       id: 'transactions',
-      label: 'Transactions',
+      title: 'Transactions',
       icon: 'faMoneyBillWave',
       component: '@/app/components/dashboard/transactions/TransactionHistory',
     },
     {
       id: 'wallet-iban',
-      label: 'IBAN Manager',
+      title: 'IBAN Manager',
       icon: 'faBuildingColumns',
       component: '@/app/components/dashboard/IbanManager',
     },
     {
       id: 'wallet-reconcile',
-      label: 'Wallet Reconcile',
+      title: 'Wallet Reconcile',
       icon: 'faCoins',
       component: '@/app/components/dashboard/WalletReconcileMismatches',
     },
     {
       id: 'wallet-withdrawals',
-      label: 'Withdrawals',
+      title: 'Withdrawals',
       icon: 'faMoneyCheck',
       component: '@/app/components/dashboard/Withdrawals',
     },
     {
       id: 'users',
-      label: 'Users',
+      title: 'Users',
       icon: 'faUsers',
       component: '@/app/components/dashboard/ManageUsers',
     },
     {
       id: 'tables',
-      label: 'Tables',
+      title: 'Tables',
       icon: 'faTable',
       component: '@/app/components/dashboard/ManageTables',
     },
     {
       id: 'tournaments',
-      label: 'Tournaments',
+      title: 'Tournaments',
       icon: 'faTrophy',
       component: '@/app/components/dashboard/ManageTournaments',
     },
     {
       id: 'dynamic',
-      label: 'Dynamic',
+      title: 'Dynamic',
       icon: 'faChartLine',
       component: 'dynamic-component',
     },
   ];
-  const sidebar = {
-    getItems: jest.fn(),
-  } as Partial<SidebarService>;
   const adminTabs = {
     list: jest.fn(),
     find: jest.fn(),
@@ -122,7 +118,6 @@ describe('AdminController', () => {
       providers: [
         { provide: KycService, useValue: kyc },
         { provide: AnalyticsService, useValue: analytics },
-        { provide: SidebarService, useValue: sidebar },
         { provide: AdminTabsService, useValue: adminTabs },
         { provide: RevenueService, useValue: revenue },
         { provide: WalletService, useValue: wallet },
@@ -140,15 +135,7 @@ describe('AdminController', () => {
 
   beforeEach(() => {
     acknowledged = new Map();
-    (sidebar.getItems as jest.Mock).mockResolvedValue(sidebarItems);
-    (adminTabs.list as jest.Mock).mockResolvedValue(
-      sidebarItems.map((item) => ({
-        id: item.id,
-        title: item.label,
-        component: item.component,
-        icon: item.icon,
-      })),
-    );
+    (adminTabs.list as jest.Mock).mockResolvedValue(adminTabConfigs);
     (adminTabs.find as jest.Mock).mockResolvedValue(null);
     wallet.reconcile = jest.fn();
     wallet.acknowledgeMismatch = jest
@@ -295,19 +282,12 @@ describe('AdminController', () => {
       .expect(404);
   });
 
-  it('returns sidebar items from service', async () => {
-    await request(app.getHttpServer())
-      .get('/admin/sidebar')
-      .expect(200)
-      .expect(sidebarItems);
-  });
-
   it('returns tabs with components from service', async () => {
-    const tabs = sidebarItems.map((s) => ({
-      id: s.id,
-      title: s.label,
-      component: s.component,
-      icon: s.icon,
+    const tabs = adminTabConfigs.map((tab) => ({
+      id: tab.id,
+      title: tab.title,
+      component: tab.component,
+      icon: tab.icon,
       source: 'database',
     }));
     const response = await request(app.getHttpServer())
