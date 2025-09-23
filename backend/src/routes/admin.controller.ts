@@ -172,17 +172,13 @@ export class AdminController {
   @ApiOperation({ summary: 'Get admin dashboard tabs' })
   @ApiResponse({ status: 200, description: 'Dashboard tabs' })
   async getTabs(): Promise<AdminTab[]> {
-    const [items, dbTabs] = await Promise.all([
-      this.sidebar.getItems(),
-      this.tabs.list(),
-    ]);
-    const dbIds = new Set(dbTabs.map((t) => t.id));
-    const tabs = items.map((s) => ({
-      id: s.id,
-      title: s.label,
-      component: s.component,
-      icon: s.icon,
-      source: dbIds.has(s.id) ? 'database' : 'config',
+    const dbTabs = await this.tabs.list();
+    const tabs = dbTabs.map((tab) => ({
+      id: tab.id,
+      title: tab.title,
+      component: tab.component,
+      icon: tab.icon,
+      source: 'database' as const,
     }));
     return AdminTabResponseSchema.parse(tabs);
   }
