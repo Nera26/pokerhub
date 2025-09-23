@@ -1,162 +1,240 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import BlockedCountriesPage from '../page';
 import { renderWithClient } from '@/app/components/dashboard/__tests__/renderWithClient';
-import { useBlockedCountries } from '@/hooks/useBlockedCountries';
 import { useRequireAdmin } from '@/hooks/useRequireAdmin';
 import {
+  fetchBlockedCountries,
   createBlockedCountry,
   updateBlockedCountry,
   deleteBlockedCountry,
 } from '@/lib/api/blockedCountries';
+import type { CrudStateConfig } from '@/hooks/admin/useCrudState';
+
+jest.mock('@/hooks/admin/useCrudState', () => {
+  const React = require('react');
+  return {
+    useCrudState: jest.fn((config: CrudStateConfig<any, any, any, any>) => {
+      const { useEffect, useState } = React as typeof import('react');
+      const [items, setItems] = useState<any[]>([]);
+      const [isLoading, setIsLoading] = useState(true);
+      const [error, setError] = useState<unknown>(null);
+
+      useEffect(() => {
+        let cancelled = false;
+        (async () => {
+          try {
+            const result = await config.fetchItems();
+            if (cancelled) return;
+            const mapped = config.transformItems
+              ? config.transformItems(result)
+              : result;
+            setItems(mapped);
+            setIsLoading(false);
+          } catch (fetchError) {
+            if (cancelled) return;
+            setError(fetchError);
+            setIsLoading(false);
+          }
+        })();
+        return () => {
+          cancelled = true;
+        };
+      }, [config.fetchItems, config.transformItems]);
+
+      const runMutation = async (
+        mutation: { mutationFn: (value: any) => Promise<unknown> } | undefined,
+        value: any,
+        type: 'create' | 'update' | 'delete',
+      ) => {
+        if (!mutation) {
+          throw new Error('Mutation not configured');
+        }
+        try {
+          const result = await mutation.mutationFn(value);
+          config.onSuccess?.[type]?.(value);
+          const refreshed = await config.fetchItems();
+          const mapped = config.transformItems
+            ? config.transformItems(refreshed)
+            : refreshed;
+          setItems(mapped);
+          return result;
+        } catch (mutationError) {
+          config.onError?.[type]?.(mutationError);
+          throw mutationError;
+        }
+      };
+
+      return {
+        items,
+        isLoading,
+        error,
+        refetch: async () => {
+          const result = await config.fetchItems();
+          const mapped = config.transformItems
+            ? config.transformItems(result)
+            : result;
+          setItems(mapped);
+        },
+        createMutation: { isPending: false },
+        updateMutation: { isPending: false },
+        deleteMutation: { isPending: false },
+        executeCreate: (value: any) =>
+          runMutation(config.create, value, 'create'),
+        executeUpdate: (value: any) =>
+          runMutation(config.update, value, 'update'),
+        executeDelete: (value: any) =>
+          runMutation(config.remove, value, 'delete'),
+      };
+    }),
+  };
+});
 
 jest.mock('@/hooks/useRequireAdmin', () => ({
   useRequireAdmin: jest.fn(),
 }));
 
-jest.mock('@/hooks/useBlockedCountries', () => ({
-  useBlockedCountries: jest.fn(),
-}));
-
 jest.mock('@/lib/api/blockedCountries', () => ({
+  fetchBlockedCountries: jest.fn(),
   createBlockedCountry: jest.fn(),
   updateBlockedCountry: jest.fn(),
   deleteBlockedCountry: jest.fn(),
 }));
 
-const mockUseBlockedCountries = useBlockedCountries as jest.MockedFunction<
-  typeof useBlockedCountries
->;
 const mockUseRequireAdmin = useRequireAdmin as jest.MockedFunction<
   typeof useRequireAdmin
 >;
+const mockFetchBlockedCountries = jest.mocked(fetchBlockedCountries);
 
-type UseBlockedCountriesResult = ReturnType<typeof useBlockedCountries>;
-
-type Overrides = Partial<UseBlockedCountriesResult>;
-
-function setupUseBlockedCountries(overrides: Overrides = {}) {
-  const refetch =
-    (overrides.refetch as UseBlockedCountriesResult['refetch']) ??
-    jest.fn().mockResolvedValue({});
-
-  mockUseBlockedCountries.mockReturnValue({
-    data: [],
-    isLoading: false,
-    isError: false,
-    error: null,
-    refetch,
-    ...overrides,
-    refetch,
-  } as UseBlockedCountriesResult);
-
-  return { refetch };
+function renderPage() {
+  return renderWithClient(<BlockedCountriesPage />);
 }
 
 describe('BlockedCountriesPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    setupUseBlockedCountries();
+    mockFetchBlockedCountries.mockResolvedValue([]);
   });
 
-  it('requires admin access', () => {
-    renderWithClient(<BlockedCountriesPage />);
-    expect(mockUseRequireAdmin).toHaveBeenCalled();
+  it('requires admin access', async () => {
+    renderPage();
+    await waitFor(() => expect(mockUseRequireAdmin).toHaveBeenCalled());
   });
 
-  it('renders blocked countries in a table', () => {
-    setupUseBlockedCountries({
-      data: [{ country: 'CA' }, { country: 'DE' }],
-    } as Overrides);
+  it('renders blocked countries in a table', async () => {
+    mockFetchBlockedCountries.mockResolvedValueOnce([
+      { country: 'CA' },
+      { country: 'DE' },
+    ]);
 
-    renderWithClient(<BlockedCountriesPage />);
+    renderPage();
 
-    expect(screen.getByText('CA')).toBeInTheDocument();
+    expect(await screen.findByText('CA')).toBeInTheDocument();
     expect(screen.getByText('DE')).toBeInTheDocument();
   });
 
+  it('shows a validation error when the country is missing', async () => {
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Add Country' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Country code is required',
+    );
+  });
+
   it('creates a new blocked country', async () => {
-    const { refetch } = setupUseBlockedCountries();
-    (createBlockedCountry as jest.Mock).mockResolvedValue({ country: 'US' });
+    const user = userEvent.setup();
+    mockFetchBlockedCountries
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ country: 'US' }]);
+    jest.mocked(createBlockedCountry).mockResolvedValue({ country: 'US' });
 
-    renderWithClient(<BlockedCountriesPage />);
+    renderPage();
 
-    const input = screen.getByPlaceholderText('Country code');
-    fireEvent.change(input, { target: { value: 'us' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Add Country' }));
+    const input = await screen.findByPlaceholderText('Country code');
+    await user.type(input, 'us');
+
+    await user.click(screen.getByRole('button', { name: 'Add Country' }));
 
     await waitFor(() =>
       expect(createBlockedCountry).toHaveBeenCalledWith({ country: 'US' }),
     );
-    expect(refetch).toHaveBeenCalled();
+    await waitFor(() => expect(fetchBlockedCountries).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(input).toHaveValue(''));
   });
 
   it('updates an existing blocked country', async () => {
-    const { refetch } = setupUseBlockedCountries({
-      data: [{ country: 'CA' }],
-    } as Overrides);
-    (updateBlockedCountry as jest.Mock).mockResolvedValue({ country: 'MX' });
+    const user = userEvent.setup();
+    mockFetchBlockedCountries
+      .mockResolvedValueOnce([{ country: 'CA' }])
+      .mockResolvedValueOnce([{ country: 'MX' }]);
+    jest.mocked(updateBlockedCountry).mockResolvedValue({ country: 'MX' });
 
-    renderWithClient(<BlockedCountriesPage />);
+    renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    await user.click(await screen.findByRole('button', { name: 'Edit' }));
     const input = screen.getByPlaceholderText('Country code');
-    expect(input).toHaveValue('CA');
-    fireEvent.change(input, { target: { value: 'mx' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Update Country' }));
+    await waitFor(() => expect(input).toHaveValue('CA'));
+    await user.clear(input);
+    await user.type(input, 'mx');
+    await user.click(screen.getByRole('button', { name: 'Update Country' }));
 
     await waitFor(() =>
       expect(updateBlockedCountry).toHaveBeenCalledWith('CA', {
         country: 'MX',
       }),
     );
-    expect(refetch).toHaveBeenCalled();
+    await waitFor(() => expect(fetchBlockedCountries).toHaveBeenCalledTimes(2));
   });
 
   it('deletes a blocked country', async () => {
-    const { refetch } = setupUseBlockedCountries({
-      data: [{ country: 'CA' }],
-    } as Overrides);
-    (deleteBlockedCountry as jest.Mock).mockResolvedValue(undefined);
+    mockFetchBlockedCountries
+      .mockResolvedValueOnce([{ country: 'CA' }])
+      .mockResolvedValueOnce([]);
+    jest.mocked(deleteBlockedCountry).mockResolvedValue(undefined);
 
-    renderWithClient(<BlockedCountriesPage />);
+    renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete' }));
 
     await waitFor(() =>
       expect(deleteBlockedCountry).toHaveBeenCalledWith('CA'),
     );
-    expect(refetch).toHaveBeenCalled();
+    await waitFor(() => expect(fetchBlockedCountries).toHaveBeenCalledTimes(2));
   });
 
-  it('renders an error state when the query fails', () => {
-    setupUseBlockedCountries({
-      isError: true,
-      error: { message: 'Failed to load' } as Overrides['error'],
-    });
+  it('renders an error state when the query fails', async () => {
+    mockFetchBlockedCountries.mockRejectedValueOnce(
+      new Error('Failed to load'),
+    );
 
-    renderWithClient(<BlockedCountriesPage />);
+    renderPage();
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Failed to load');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Failed to load blocked countries: Failed to load',
+    );
   });
 
   it('shows a failure message when create fails', async () => {
-    setupUseBlockedCountries();
-    (createBlockedCountry as jest.Mock).mockRejectedValue(new Error('fail'));
+    const user = userEvent.setup();
+    mockFetchBlockedCountries.mockResolvedValueOnce([]);
+    jest
+      .mocked(createBlockedCountry)
+      .mockRejectedValue(new Error('save failed'));
 
-    renderWithClient(<BlockedCountriesPage />);
+    renderPage();
 
-    fireEvent.change(screen.getByPlaceholderText('Country code'), {
-      target: { value: 'fr' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Add Country' }));
+    const input = await screen.findByPlaceholderText('Country code');
+    await user.type(input, 'fr');
+    await user.click(screen.getByRole('button', { name: 'Add Country' }));
 
     await waitFor(() =>
       expect(createBlockedCountry).toHaveBeenCalledWith({ country: 'FR' }),
     );
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Failed to save blocked country',
+      'Failed to save blocked country: save failed',
     );
   });
 });

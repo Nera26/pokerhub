@@ -13,7 +13,12 @@ import type {
   UpdateAdminTabRequest,
 } from '@shared/types';
 import { useRequireAdmin } from '@/hooks/useRequireAdmin';
-import { useSimpleCrudPage } from '../useSimpleCrudPage';
+import {
+  AdminCrudPage,
+  type AdminCrudField,
+  type AdminCrudItemsRenderProps,
+} from '../AdminCrudPage';
+import type { SubmitPreparation } from '../useSimpleCrudPage';
 
 interface FormState {
   id: string;
@@ -32,6 +37,38 @@ const EMPTY_FORM: FormState = {
 function normalizeError(error: unknown) {
   return error instanceof Error ? error.message : 'Unknown error';
 }
+
+const TAB_FIELDS: AdminCrudField<FormState>[] = [
+  {
+    name: 'id',
+    label: 'ID',
+    placeholder: 'analytics',
+    readOnlyWhenEditing: true,
+    wrapperClassName: 'flex flex-col text-sm font-medium',
+    inputClassName: 'mt-1 rounded border border-gray-300 px-3 py-2',
+  },
+  {
+    name: 'title',
+    label: 'Title',
+    placeholder: 'Analytics',
+    wrapperClassName: 'flex flex-col text-sm font-medium',
+    inputClassName: 'mt-1 rounded border border-gray-300 px-3 py-2',
+  },
+  {
+    name: 'component',
+    label: 'Component',
+    placeholder: '@/app/components/dashboard/AdminAnalytics',
+    wrapperClassName: 'flex flex-col text-sm font-medium',
+    inputClassName: 'mt-1 rounded border border-gray-300 px-3 py-2',
+  },
+  {
+    name: 'icon',
+    label: 'Icon',
+    placeholder: 'faChartLine',
+    wrapperClassName: 'flex flex-col text-sm font-medium',
+    inputClassName: 'mt-1 rounded border border-gray-300 px-3 py-2',
+  },
+];
 
 export default function AdminTabsPage() {
   useRequireAdmin();
@@ -55,7 +92,11 @@ export default function AdminTabsPage() {
     (
       formState: FormState,
       { editingItem }: { editingItem: AdminTab | null },
-    ) => {
+    ): SubmitPreparation<
+      CreateAdminTabRequest,
+      UpdateAdminTabRequest,
+      AdminTab
+    > => {
       const trimmedId = formState.id.trim();
       const trimmedTitle = formState.title.trim();
       const trimmedComponent = formState.component.trim();
@@ -110,188 +151,89 @@ export default function AdminTabsPage() {
     [],
   );
 
-  const {
-    items: tabs,
+  const renderTabs = ({
+    items,
     loading,
-    listError: error,
-    actionError: formError,
-    form,
-    isEditing,
-    submitting,
     deletingId,
-    setFormValue,
-    handleSubmit,
-    handleDelete,
+    submitting,
     startEdit,
-    cancelEdit,
-  } = useSimpleCrudPage<
-    AdminTab,
-    FormState,
-    CreateAdminTabRequest,
-    UpdateAdminTabRequest
-  >({
-    emptyForm: EMPTY_FORM,
-    fetchItems: fetchAdminTabs,
-    createItem: createAdminTab,
-    updateItem: updateAdminTab,
-    deleteItem: deleteAdminTab,
-    getItemId,
-    mapItems: mapTabs,
-    formFromItem,
-    prepareSubmit,
-    formatListError,
-    formatActionError,
-  });
+    handleDelete,
+  }: AdminCrudItemsRenderProps<AdminTab>) => (
+    <section>
+      <h2 className="text-lg font-semibold">Existing tabs</h2>
+      {loading ? (
+        <p>Loading admin tabs…</p>
+      ) : items.length === 0 ? (
+        <p>No runtime admin tabs found.</p>
+      ) : (
+        <ul className="space-y-2">
+          {items.map((tab) => (
+            <li
+              key={tab.id}
+              className="flex items-center justify-between rounded border border-gray-200 px-3 py-2"
+            >
+              <div className="flex flex-col">
+                <span className="font-semibold">{tab.title}</span>
+                <span className="text-sm text-gray-600">{tab.id}</span>
+                <span className="text-xs text-gray-500">
+                  {tab.icon ? `Icon: ${tab.icon}` : 'Missing icon'}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  className="text-blue-600 underline"
+                  onClick={() => startEdit(tab)}
+                  disabled={submitting || deletingId === tab.id}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  className="text-red-600 underline"
+                  onClick={() => handleDelete(tab.id)}
+                  disabled={deletingId === tab.id}
+                >
+                  {deletingId === tab.id ? 'Deleting…' : 'Delete'}
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
 
   return (
-    <div className="space-y-6 p-4">
-      <h1 className="text-xl font-bold">Admin Tabs</h1>
-
-      {error && (
-        <div
-          role="alert"
-          className="rounded-md border border-red-400 p-3 text-red-600"
-        >
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4 max-w-xl">
-        <div className="grid gap-2 sm:grid-cols-2">
-          <label className="flex flex-col text-sm font-medium" htmlFor="tab-id">
-            ID
-            <input
-              id="tab-id"
-              name="id"
-              value={form.id}
-              onChange={(event) => setFormValue('id', event.target.value)}
-              className="mt-1 rounded border border-gray-300 px-3 py-2"
-              placeholder="analytics"
-              readOnly={isEditing}
-            />
-          </label>
-
-          <label
-            className="flex flex-col text-sm font-medium"
-            htmlFor="tab-title"
-          >
-            Title
-            <input
-              id="tab-title"
-              name="title"
-              value={form.title}
-              onChange={(event) => setFormValue('title', event.target.value)}
-              className="mt-1 rounded border border-gray-300 px-3 py-2"
-              placeholder="Analytics"
-            />
-          </label>
-
-          <label
-            className="flex flex-col text-sm font-medium"
-            htmlFor="tab-component"
-          >
-            Component
-            <input
-              id="tab-component"
-              name="component"
-              value={form.component}
-              onChange={(event) =>
-                setFormValue('component', event.target.value)
-              }
-              className="mt-1 rounded border border-gray-300 px-3 py-2"
-              placeholder="@/app/components/dashboard/AdminAnalytics"
-            />
-          </label>
-
-          <label
-            className="flex flex-col text-sm font-medium"
-            htmlFor="tab-icon"
-          >
-            Icon
-            <input
-              id="tab-icon"
-              name="icon"
-              value={form.icon}
-              onChange={(event) => setFormValue('icon', event.target.value)}
-              className="mt-1 rounded border border-gray-300 px-3 py-2"
-              placeholder="faChartLine"
-            />
-          </label>
-        </div>
-
-        {formError && (
-          <div
-            role="alert"
-            className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700"
-          >
-            {formError}
-          </div>
-        )}
-
-        <div className="flex items-center gap-3">
-          <button
-            type="submit"
-            className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-            disabled={submitting}
-          >
-            {isEditing ? 'Update tab' : 'Create tab'}
-          </button>
-          {isEditing && (
-            <button
-              type="button"
-              className="rounded border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-gray-100 disabled:opacity-50"
-              onClick={cancelEdit}
-              disabled={submitting}
-            >
-              Cancel
-            </button>
-          )}
-        </div>
-      </form>
-
-      <section>
-        <h2 className="text-lg font-semibold">Existing tabs</h2>
-        {loading ? (
-          <p>Loading admin tabs…</p>
-        ) : tabs.length === 0 ? (
-          <p>No runtime admin tabs found.</p>
-        ) : (
-          <ul className="space-y-2">
-            {tabs.map((tab) => (
-              <li
-                key={tab.id}
-                className="flex items-center justify-between rounded border border-gray-200 px-3 py-2"
-              >
-                <div className="flex flex-col">
-                  <span className="font-semibold">{tab.title}</span>
-                  <span className="text-sm text-gray-600">{tab.id}</span>
-                  <span className="text-xs text-gray-500">
-                    {tab.icon ? `Icon: ${tab.icon}` : 'Missing icon'}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    className="text-blue-600 underline"
-                    onClick={() => startEdit(tab)}
-                    disabled={submitting || deletingId === tab.id}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    className="text-red-600 underline"
-                    onClick={() => handleDelete(tab.id)}
-                    disabled={deletingId === tab.id}
-                  >
-                    {deletingId === tab.id ? 'Deleting…' : 'Delete'}
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
+    <AdminCrudPage<
+      AdminTab,
+      FormState,
+      CreateAdminTabRequest,
+      UpdateAdminTabRequest
+    >
+      title="Admin Tabs"
+      emptyForm={EMPTY_FORM}
+      fields={TAB_FIELDS}
+      fetchItems={fetchAdminTabs}
+      createItem={createAdminTab}
+      updateItem={updateAdminTab}
+      deleteItem={deleteAdminTab}
+      getItemId={getItemId}
+      mapItems={mapTabs}
+      formFromItem={formFromItem}
+      prepareSubmit={prepareSubmit}
+      formatListError={formatListError}
+      formatActionError={formatActionError}
+      createButtonLabel="Create tab"
+      updateButtonLabel="Update tab"
+      cancelButtonLabel="Cancel"
+      formClassName="space-y-4 max-w-xl"
+      fieldsWrapperClassName="grid gap-2 sm:grid-cols-2"
+      submitButtonClassName="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+      cancelButtonClassName="rounded border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-gray-100 disabled:opacity-50"
+      listErrorClassName="rounded-md border border-red-400 p-3 text-red-600"
+      actionErrorClassName="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700"
+      renderItems={renderTabs}
+    />
   );
 }

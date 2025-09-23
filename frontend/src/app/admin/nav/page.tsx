@@ -10,7 +10,12 @@ import {
 } from '@/lib/api/nav';
 import type { NavItemRequest } from '@shared/types';
 import { useRequireAdmin } from '@/hooks/useRequireAdmin';
-import { useSimpleCrudPage } from '../useSimpleCrudPage';
+import {
+  AdminCrudPage,
+  type AdminCrudField,
+  type AdminCrudItemsRenderProps,
+} from '../AdminCrudPage';
+import type { SubmitPreparation } from '../useSimpleCrudPage';
 
 type FormState = {
   flag: string;
@@ -48,6 +53,47 @@ const computeNavDefaults = (items: UiNavItem[]): Partial<FormState> => {
   return { order: String(last.order + 1) };
 };
 
+const NAV_FIELDS: AdminCrudField<FormState>[] = [
+  {
+    name: 'flag',
+    label: 'Flag',
+    readOnlyWhenEditing: true,
+    wrapperClassName: 'space-y-1',
+    labelClassName: 'block text-sm font-medium',
+    inputClassName: 'w-full rounded border border-gray-300 px-3 py-2',
+  },
+  {
+    name: 'href',
+    label: 'Href',
+    wrapperClassName: 'space-y-1',
+    labelClassName: 'block text-sm font-medium',
+    inputClassName: 'w-full rounded border border-gray-300 px-3 py-2',
+  },
+  {
+    name: 'label',
+    label: 'Label',
+    wrapperClassName: 'space-y-1',
+    labelClassName: 'block text-sm font-medium',
+    inputClassName: 'w-full rounded border border-gray-300 px-3 py-2',
+  },
+  {
+    name: 'icon',
+    label: 'Icon (optional)',
+    placeholder: 'Icon name',
+    wrapperClassName: 'space-y-1',
+    labelClassName: 'block text-sm font-medium',
+    inputClassName: 'w-full rounded border border-gray-300 px-3 py-2',
+  },
+  {
+    name: 'order',
+    label: 'Order',
+    inputType: 'number',
+    wrapperClassName: 'space-y-1',
+    labelClassName: 'block text-sm font-medium',
+    inputClassName: 'w-full rounded border border-gray-300 px-3 py-2',
+  },
+];
+
 export default function NavAdminPage() {
   useRequireAdmin();
   const getItemId = useCallback((item: UiNavItem) => item.flag, []);
@@ -55,7 +101,7 @@ export default function NavAdminPage() {
     (
       formState: FormState,
       { editingItem }: { editingItem: UiNavItem | null },
-    ) => {
+    ): SubmitPreparation<NavItemRequest, NavItemRequest, UiNavItem> => {
       const trimmedFlag = formState.flag.trim();
       const trimmedHref = formState.href.trim();
       const trimmedLabel = formState.label.trim();
@@ -105,181 +151,92 @@ export default function NavAdminPage() {
     [],
   );
 
-  const {
+  const renderItems = ({
     items,
     loading,
-    listError,
-    actionError,
-    form,
-    isEditing,
-    submitting,
     deletingId,
-    setFormValue,
-    handleSubmit,
-    handleDelete,
+    submitting,
     startEdit,
-    cancelEdit,
-  } = useSimpleCrudPage<UiNavItem, FormState, NavItemRequest>({
-    emptyForm: EMPTY_FORM,
-    fetchItems: fetchNavItems,
-    createItem: createNavItem,
-    updateItem: updateNavItem,
-    deleteItem: deleteNavItem,
-    getItemId,
-    formFromItem: formFromNavItem,
-    prepareSubmit,
-    computeInitialForm: computeNavDefaults,
-    formatListError,
-    formatActionError,
-  });
-
-  const error = actionError ?? listError;
+    handleDelete,
+  }: AdminCrudItemsRenderProps<UiNavItem>) => (
+    <section>
+      <h2 className="text-lg font-semibold mb-2">Existing items</h2>
+      {loading ? (
+        <p>Loading navigation items…</p>
+      ) : items.length === 0 ? (
+        <p>No navigation items found.</p>
+      ) : (
+        <ul className="space-y-2">
+          {items.map((item) => (
+            <li
+              key={item.flag}
+              className="flex items-center justify-between rounded border border-gray-300 px-3 py-2"
+            >
+              <div className="flex flex-col">
+                <span className="font-medium">
+                  {item.label}{' '}
+                  <span className="text-xs text-gray-500">({item.flag})</span>
+                </span>
+                <span className="text-sm text-gray-600">
+                  {item.href} · Order {item.order}
+                </span>
+                {item.iconName && (
+                  <span className="text-xs text-gray-500">
+                    Icon: {item.iconName}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  className="text-blue-600 underline"
+                  onClick={() => startEdit(item)}
+                  disabled={submitting}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  className="text-red-600 underline"
+                  onClick={() => handleDelete(item.flag)}
+                  disabled={submitting || deletingId === item.flag}
+                >
+                  Delete
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
 
   return (
-    <div className="p-4 space-y-6">
-      <h1 className="text-xl font-bold">Navigation Items</h1>
-      {error && (
-        <div
-          role="alert"
-          className="rounded-md border border-red-400 p-2 text-red-600"
-        >
-          {error}
-        </div>
-      )}
-      <form onSubmit={handleSubmit} className="space-y-3 max-w-md">
-        <div className="space-y-1">
-          <label className="block text-sm font-medium" htmlFor="flag">
-            Flag
-          </label>
-          <input
-            id="flag"
-            name="flag"
-            className="w-full rounded border border-gray-300 px-3 py-2"
-            value={form.flag}
-            onChange={(e) => setFormValue('flag', e.target.value)}
-            readOnly={isEditing}
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="block text-sm font-medium" htmlFor="href">
-            Href
-          </label>
-          <input
-            id="href"
-            name="href"
-            className="w-full rounded border border-gray-300 px-3 py-2"
-            value={form.href}
-            onChange={(e) => setFormValue('href', e.target.value)}
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="block text-sm font-medium" htmlFor="label">
-            Label
-          </label>
-          <input
-            id="label"
-            name="label"
-            className="w-full rounded border border-gray-300 px-3 py-2"
-            value={form.label}
-            onChange={(e) => setFormValue('label', e.target.value)}
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="block text-sm font-medium" htmlFor="icon">
-            Icon (optional)
-          </label>
-          <input
-            id="icon"
-            name="icon"
-            className="w-full rounded border border-gray-300 px-3 py-2"
-            value={form.icon}
-            onChange={(e) => setFormValue('icon', e.target.value)}
-            placeholder="Icon name"
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="block text-sm font-medium" htmlFor="order">
-            Order
-          </label>
-          <input
-            id="order"
-            name="order"
-            type="number"
-            className="w-full rounded border border-gray-300 px-3 py-2"
-            value={form.order}
-            onChange={(e) => setFormValue('order', e.target.value)}
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={submitting}
-          >
-            {isEditing ? 'Update item' : 'Create item'}
-          </button>
-          {isEditing && (
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={cancelEdit}
-              disabled={submitting}
-            >
-              Cancel
-            </button>
-          )}
-        </div>
-      </form>
-      <section>
-        <h2 className="text-lg font-semibold mb-2">Existing items</h2>
-        {loading ? (
-          <p>Loading navigation items…</p>
-        ) : items.length === 0 ? (
-          <p>No navigation items found.</p>
-        ) : (
-          <ul className="space-y-2">
-            {items.map((item) => (
-              <li
-                key={item.flag}
-                className="flex items-center justify-between rounded border border-gray-300 px-3 py-2"
-              >
-                <div className="flex flex-col">
-                  <span className="font-medium">
-                    {item.label}{' '}
-                    <span className="text-xs text-gray-500">({item.flag})</span>
-                  </span>
-                  <span className="text-sm text-gray-600">
-                    {item.href} · Order {item.order}
-                  </span>
-                  {item.iconName && (
-                    <span className="text-xs text-gray-500">
-                      Icon: {item.iconName}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    className="text-blue-600 underline"
-                    onClick={() => startEdit(item)}
-                    disabled={submitting}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    className="text-red-600 underline"
-                    onClick={() => handleDelete(item.flag)}
-                    disabled={submitting || deletingId === item.flag}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
+    <AdminCrudPage<UiNavItem, FormState, NavItemRequest>
+      title="Navigation Items"
+      emptyForm={EMPTY_FORM}
+      fields={NAV_FIELDS}
+      fetchItems={fetchNavItems}
+      createItem={createNavItem}
+      updateItem={updateNavItem}
+      deleteItem={deleteNavItem}
+      getItemId={getItemId}
+      formFromItem={formFromNavItem}
+      prepareSubmit={prepareSubmit}
+      computeInitialForm={computeNavDefaults}
+      formatListError={formatListError}
+      formatActionError={formatActionError}
+      createButtonLabel="Create item"
+      updateButtonLabel="Update item"
+      cancelButtonLabel="Cancel"
+      containerClassName="p-4 space-y-6"
+      formClassName="space-y-3 max-w-md"
+      fieldsWrapperClassName="space-y-3"
+      submitButtonClassName="btn btn-primary"
+      cancelButtonClassName="btn btn-secondary"
+      listErrorClassName="rounded-md border border-red-400 p-2 text-red-600"
+      actionErrorClassName="rounded-md border border-red-400 p-2 text-red-600"
+      renderItems={renderItems}
+    />
   );
 }

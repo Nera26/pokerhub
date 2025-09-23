@@ -20,18 +20,103 @@ import {
   deleteNavItem,
 } from '@/lib/api/nav';
 import type { NavItem as UiNavItem } from '@/lib/api/nav';
+import type { CrudStateConfig } from '@/hooks/admin/useCrudState';
+
+jest.mock('@/hooks/admin/useCrudState', () => {
+  const React = require('react');
+  return {
+    useCrudState: jest.fn((config: CrudStateConfig<any, any, any, any>) => {
+      const { useEffect, useState } = React as typeof import('react');
+      const [items, setItems] = useState<any[]>([]);
+      const [isLoading, setIsLoading] = useState(true);
+      const [error, setError] = useState<unknown>(null);
+
+      useEffect(() => {
+        let cancelled = false;
+        (async () => {
+          try {
+            const result = await config.fetchItems();
+            if (cancelled) return;
+            const mapped = config.transformItems
+              ? config.transformItems(result)
+              : result;
+            setItems(mapped);
+            setIsLoading(false);
+          } catch (fetchError) {
+            if (cancelled) return;
+            setError(fetchError);
+            setIsLoading(false);
+          }
+        })();
+        return () => {
+          cancelled = true;
+        };
+      }, [config.fetchItems, config.transformItems]);
+
+      const runMutation = async (
+        mutation: { mutationFn: (value: any) => Promise<unknown> } | undefined,
+        value: any,
+        type: 'create' | 'update' | 'delete',
+      ) => {
+        if (!mutation) {
+          throw new Error('Mutation not configured');
+        }
+        try {
+          const result = await mutation.mutationFn(value);
+          config.onSuccess?.[type]?.(value);
+          const refreshed = await config.fetchItems();
+          const mapped = config.transformItems
+            ? config.transformItems(refreshed)
+            : refreshed;
+          setItems(mapped);
+          return result;
+        } catch (mutationError) {
+          config.onError?.[type]?.(mutationError);
+          throw mutationError;
+        }
+      };
+
+      return {
+        items,
+        isLoading,
+        error,
+        refetch: async () => {
+          const result = await config.fetchItems();
+          const mapped = config.transformItems
+            ? config.transformItems(result)
+            : result;
+          setItems(mapped);
+        },
+        createMutation: { isPending: false },
+        updateMutation: { isPending: false },
+        deleteMutation: { isPending: false },
+        executeCreate: (value: any) =>
+          runMutation(config.create, value, 'create'),
+        executeUpdate: (value: any) =>
+          runMutation(config.update, value, 'update'),
+        executeDelete: (value: any) =>
+          runMutation(config.remove, value, 'delete'),
+      };
+    }),
+  };
+});
 
 describe('Nav admin page', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.mocked(fetchNavItems).mockResolvedValue([] as UiNavItem[]);
   });
+
+  function renderPage() {
+    return render(<Page />);
+  }
 
   it('shows a validation error when order is not an integer', async () => {
     const user = userEvent.setup();
     jest.mocked(fetchNavItems).mockResolvedValueOnce([]);
     jest.mocked(createNavItem).mockResolvedValue({} as UiNavItem);
 
-    render(<Page />);
+    renderPage();
 
     await screen.findByText('No navigation items found.');
 
@@ -68,7 +153,7 @@ describe('Nav admin page', () => {
     ] as UiNavItem[]);
     jest.mocked(updateNavItem).mockResolvedValue({} as UiNavItem);
 
-    render(<Page />);
+    renderPage();
 
     await screen.findByText('Home');
 
@@ -108,7 +193,7 @@ describe('Nav admin page', () => {
         }),
     );
 
-    render(<Page />);
+    renderPage();
 
     const deleteButton = await screen.findByRole('button', { name: 'Delete' });
     await user.click(deleteButton);
