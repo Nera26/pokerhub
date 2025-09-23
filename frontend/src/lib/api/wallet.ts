@@ -219,23 +219,6 @@ export function rejectWithdrawal(
   );
 }
 
-const BalanceSchema = z.object({
-  user: z.string(),
-  avatar: z.string(),
-  balance: z.number(),
-  status: z.string(),
-  lastActivity: z.string(),
-});
-export type Balance = z.infer<typeof BalanceSchema>;
-
-export function fetchBalances(
-  opts: { signal?: AbortSignal } = {},
-): Promise<Balance[]> {
-  return apiClient(`/api/admin/balances`, z.array(BalanceSchema), {
-    signal: opts.signal,
-  });
-}
-
 export function adminAdjustBalance(
   userId: string,
   body: AdminBalanceRequest,
