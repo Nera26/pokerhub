@@ -213,6 +213,10 @@ async function main() {
           port.postMessage({ seq: msg.seq, ok: true });
           break;
         }
+        case 'getHandId': {
+          port.postMessage({ seq: msg.seq, state: engine.getHandId() });
+          break;
+        }
       }
     },
   );

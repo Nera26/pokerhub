@@ -29,7 +29,10 @@ import { AdminGuard } from '../src/auth/admin.guard';
 
 describe('TablesController', () => {
   let app: INestApplication;
-  const tables = { getTableState: jest.fn() };
+  const tables = {
+    getTableState: jest.fn(),
+    getTablesForUser: jest.fn(),
+  };
 
   beforeAll(async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
@@ -40,7 +43,13 @@ describe('TablesController', () => {
       ],
     })
       .overrideGuard(AuthGuard)
-      .useValue({ canActivate: () => true })
+      .useValue({
+        canActivate: (context: any) => {
+          const req = context.switchToHttp().getRequest();
+          req.userId = 'user-1';
+          return true;
+        },
+      })
       .overrideGuard(AdminGuard)
       .useValue({ canActivate: () => true })
       .compile();
@@ -72,5 +81,40 @@ describe('TablesController', () => {
       street: 'pre',
       serverTime: 123,
     });
+  });
+
+  it('returns tables for the authenticated session', async () => {
+    tables.getTablesForUser.mockResolvedValue([
+      {
+        id: 't1',
+        tableName: 'Table 1',
+        gameType: 'texas',
+        stakes: { small: 1, big: 2 },
+        startingStack: 100,
+        players: { current: 1, max: 6 },
+        buyIn: { min: 50, max: 200 },
+        stats: { handsPerHour: 30, avgPot: 40, rake: 5 },
+        createdAgo: 'just now',
+      },
+    ]);
+
+    const res = await request(app.getHttpServer())
+      .get('/tables/sessions')
+      .expect(200);
+
+    expect(tables.getTablesForUser).toHaveBeenCalledWith('user-1');
+    expect(res.body).toEqual([
+      {
+        id: 't1',
+        tableName: 'Table 1',
+        gameType: 'texas',
+        stakes: { small: 1, big: 2 },
+        startingStack: 100,
+        players: { current: 1, max: 6 },
+        buyIn: { min: 50, max: 200 },
+        stats: { handsPerHour: 30, avgPot: 40, rake: 5 },
+        createdAgo: 'just now',
+      },
+    ]);
   });
 });

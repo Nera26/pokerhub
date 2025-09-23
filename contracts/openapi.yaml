@@ -658,6 +658,20 @@ paths:
                 $ref: '#/components/schemas/Table'
       security:
         - bearerAuth: []
+  /tables/sessions:
+    get:
+      summary: Get tables for authenticated player
+      responses:
+        '200':
+          description: Tables list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Table'
+      security:
+        - bearerAuth: []
   /tables/{id}:
     get:
       summary: Get table data
