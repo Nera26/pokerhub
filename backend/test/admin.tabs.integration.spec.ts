@@ -72,6 +72,12 @@ describe('Admin tabs integration', () => {
                       component: '@/app/components/dashboard/analytics/Analytics',
                     },
                     {
+                      id: 'deposits-reconcile',
+                      label: 'Bank Reconciliation',
+                      icon: 'faFileInvoiceDollar',
+                      component: '@/app/components/dashboard/AdminBankReconciliation',
+                    },
+                    {
                       id: 'feature-flags',
                       label: 'Feature Flags',
                       icon: 'faToggleOn',
@@ -143,6 +149,13 @@ describe('Admin tabs integration', () => {
         title: 'Analytics',
         component: '@/app/components/dashboard/analytics/Analytics',
         icon: 'faChartLine',
+        source: 'config',
+      },
+      {
+        id: 'deposits-reconcile',
+        title: 'Bank Reconciliation',
+        component: '@/app/components/dashboard/AdminBankReconciliation',
+        icon: 'faFileInvoiceDollar',
         source: 'config',
       },
       {

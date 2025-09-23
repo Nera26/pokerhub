@@ -15,6 +15,12 @@ export default registerAs('admin', () => ({
       component: '@/app/components/dashboard/transactions/TransactionHistory',
     },
     {
+      id: 'deposits-reconcile',
+      label: 'Bank Reconciliation',
+      icon: 'faFileInvoiceDollar',
+      component: '@/app/components/dashboard/AdminBankReconciliation',
+    },
+    {
       id: 'analytics',
       label: 'Analytics',
       icon: 'faChartLine',

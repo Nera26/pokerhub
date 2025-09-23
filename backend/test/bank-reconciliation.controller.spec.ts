@@ -38,7 +38,7 @@ describe('BankReconciliationController', () => {
   });
 
   it('reconciles using JSON entries', async () => {
-    await request(app.getHttpServer())
+    const response = await request(app.getHttpServer())
       .post('/admin/deposits/reconcile')
       .send({ entries: [{ reference: 'abc', amount: 100 }] })
       .expect(200);
@@ -46,14 +46,16 @@ describe('BankReconciliationController', () => {
       { reference: 'abc', amount: 100 },
     ]);
     expect(service.reconcileCsv).not.toHaveBeenCalled();
+    expect(response.body).toEqual({ message: 'reconciled' });
   });
 
   it('reconciles using CSV upload', async () => {
-    await request(app.getHttpServer())
+    const response = await request(app.getHttpServer())
       .post('/admin/deposits/reconcile')
       .attach('file', Buffer.from('reference,amount\nabc,100\n'), 'recon.csv')
       .expect(200);
     expect(service.reconcileCsv).toHaveBeenCalled();
     expect(service.reconcileApi).not.toHaveBeenCalled();
+    expect(response.body).toEqual({ message: 'reconciled' });
   });
 });

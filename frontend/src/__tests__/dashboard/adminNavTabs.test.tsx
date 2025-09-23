@@ -40,6 +40,12 @@ jest.mock('@/lib/api/admin', () => ({
       source: 'config',
     },
     {
+      id: 'deposits-reconcile',
+      title: 'Bank Reconciliation',
+      component: '@/app/components/dashboard/AdminBankReconciliation',
+      source: 'config',
+    },
+    {
       id: 'users',
       title: 'Users',
       component: '@/app/components/dashboard/ManageUsers',
@@ -95,6 +101,9 @@ jest.mock(
 jest.mock('@/app/components/dashboard/ManageTournaments', () => () => (
   <div>Tournaments Module</div>
 ));
+jest.mock('@/app/components/dashboard/AdminBankReconciliation', () => () => (
+  <div>Bank Reconciliation Module</div>
+));
 jest.mock('@/app/components/dashboard/BroadcastPanel', () => () => (
   <div>Broadcast Module</div>
 ));
@@ -125,6 +134,7 @@ describe('admin nav tabs', () => {
     ['analytics', 'Analytics Module'],
     ['feature-flags', 'Feature Flags Module'],
     ['transactions', 'Transactions Module'],
+    ['deposits-reconcile', 'Bank Reconciliation Module'],
     ['users', 'Users Module'],
     ['tables', 'Tables Module'],
     ['feature-flags', 'Feature Flags Module'],

@@ -6,6 +6,7 @@ import {
   rejectWithdrawal,
   fetchBalances,
   adminAdjustBalance,
+  reconcileDeposits,
 } from '@/lib/api/wallet';
 import { fetchTransactionsLog } from '@/lib/api/transactions';
 import { PendingDepositsResponseSchema } from '@shared/wallet.schema';
@@ -173,5 +174,34 @@ describe('wallet admin api client', () => {
         signal: undefined,
       },
     );
+  });
+
+  it('reconcileDeposits posts manual entries as JSON', async () => {
+    await reconcileDeposits({
+      entries: [{ reference: 'abc', amount: 1500 }],
+    });
+    expect(apiClientMock).toHaveBeenCalledWith(
+      '/api/admin/deposits/reconcile',
+      MessageResponseSchema,
+      {
+        method: 'POST',
+        body: { entries: [{ reference: 'abc', amount: 1500 }] },
+        signal: undefined,
+      },
+    );
+  });
+
+  it('reconcileDeposits uploads CSV via FormData', async () => {
+    const file = new File(['reference,amount\nabc,100\n'], 'recon.csv', {
+      type: 'text/csv',
+    });
+    await reconcileDeposits({ file });
+    const call = apiClientMock.mock.calls.at(-1);
+    expect(call?.[0]).toBe('/api/admin/deposits/reconcile');
+    expect(call?.[1]).toBe(MessageResponseSchema);
+    const options = call?.[2] as { body: FormData };
+    expect(options.method).toBe('POST');
+    expect(options.body).toBeInstanceOf(FormData);
+    expect(options.body.get('file')).toBe(file);
   });
 });

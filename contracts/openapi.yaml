@@ -1902,9 +1902,9 @@ paths:
         '200':
           description: Reconciliation completed
           content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/MessageResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /admin/audit-logs:
     get:
       summary: Get audit logs

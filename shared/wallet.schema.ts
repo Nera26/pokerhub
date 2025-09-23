@@ -159,6 +159,13 @@ export type DepositDecisionRequest = z.infer<
   typeof DepositDecisionRequestSchema
 >;
 
+export const WithdrawalDecisionRequestSchema = z.object({
+  comment: z.string(),
+});
+export type WithdrawalDecisionRequest = z.infer<
+  typeof WithdrawalDecisionRequestSchema
+>;
+
 export const BankReconciliationEntrySchema = z.object({
   reference: z.string(),
   amount: z.number().int().positive(),

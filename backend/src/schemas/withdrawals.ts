@@ -1,23 +1,18 @@
-import { z } from 'zod';
 import {
   PendingWithdrawalSchema,
   PendingWithdrawalsResponseSchema,
+  WithdrawalDecisionRequestSchema,
   type PendingWithdrawal,
   type PendingWithdrawalsResponse,
-} from '@shared/types';
-
-export const WithdrawalDecisionRequestSchema = z.object({
-  comment: z.string(),
-});
-
-export type WithdrawalDecisionRequest = z.infer<
-  typeof WithdrawalDecisionRequestSchema
->;
+  type WithdrawalDecisionRequest,
+} from '@shared/wallet.schema';
 
 export {
   PendingWithdrawalSchema,
   PendingWithdrawalsResponseSchema,
+  WithdrawalDecisionRequestSchema,
   type PendingWithdrawal,
   type PendingWithdrawalsResponse,
+  type WithdrawalDecisionRequest,
 };
 

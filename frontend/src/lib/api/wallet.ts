@@ -14,6 +14,9 @@ import {
   IbanDetailsSchema,
   WalletReconcileMismatchesResponseSchema,
   WalletReconcileMismatchAcknowledgementSchema,
+  BankReconciliationRequestSchema,
+  WithdrawalDecisionRequestSchema,
+  type BankReconciliationEntry,
   type WalletStatusResponse,
   type IbanResponse,
   type IbanHistoryResponse,
@@ -26,7 +29,6 @@ import {
   type AdminBalanceRequest,
 } from '@shared/wallet.schema';
 import {
-  WithdrawalDecisionRequestSchema,
   MessageResponseSchema,
   type MessageResponse,
   AdminPlayerSchema,
@@ -133,6 +135,34 @@ export function markWalletMismatchAcknowledged(
       signal: opts.signal,
     },
   );
+}
+
+type ReconcileDepositsPayload =
+  | { file: File; entries?: never }
+  | { entries: BankReconciliationEntry[]; file?: never };
+
+export function reconcileDeposits(
+  payload: ReconcileDepositsPayload,
+  opts: { signal?: AbortSignal } = {},
+): Promise<MessageResponse> {
+  if ('file' in payload && payload.file) {
+    const form = new FormData();
+    form.append('file', payload.file);
+    return apiClient('/api/admin/deposits/reconcile', MessageResponseSchema, {
+      method: 'POST',
+      body: form,
+      signal: opts.signal,
+    });
+  }
+
+  const body = BankReconciliationRequestSchema.parse({
+    entries: payload.entries,
+  });
+  return apiClient('/api/admin/deposits/reconcile', MessageResponseSchema, {
+    method: 'POST',
+    body,
+    signal: opts.signal,
+  });
 }
 
 export function confirmDeposit(
