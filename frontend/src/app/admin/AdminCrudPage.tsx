@@ -2,13 +2,20 @@
 
 import {
   useId,
+  useMemo,
   type HTMLInputTypeAttribute,
   type InputHTMLAttributes,
   type ReactNode,
 } from 'react';
 import type { QueryKey } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useSimpleCrudPage, type SubmitPreparation } from './useSimpleCrudPage';
+import {
+  useAdminCrud,
+  useAdminCrudForm,
+  type SubmitPreparation,
+  type CrudAction,
+  type ActionErrorContext,
+} from '@/hooks/admin/useAdminCrud';
 
 export type AdminCrudFieldRenderProps<
   FormState,
@@ -44,20 +51,21 @@ export type AdminCrudField<FormState> = {
   ) => FormState[keyof FormState];
 };
 
-export type AdminCrudItemsRenderProps<Item> = {
+export type AdminCrudItemsRenderProps<Item, Identifier> = {
   items: Item[];
   loading: boolean;
   submitting: boolean;
-  deletingId: string | null;
+  deletingId: Identifier | null;
   startEdit: (item: Item) => void;
-  handleDelete: (id: string) => Promise<void>;
+  handleDelete: (identifier: Identifier) => Promise<void>;
 };
 
 export interface AdminCrudPageProps<
   Item,
   FormState,
-  CreatePayload,
-  UpdatePayload = CreatePayload,
+  CreateInput,
+  UpdateInput = CreateInput,
+  Identifier = string,
 > {
   title: string;
   description?: ReactNode;
@@ -65,26 +73,29 @@ export interface AdminCrudPageProps<
   emptyForm: FormState;
   fields: AdminCrudField<FormState>[];
   fetchItems: () => Promise<Item[]>;
-  createItem: (payload: CreatePayload) => Promise<unknown>;
-  updateItem: (id: string, payload: UpdatePayload) => Promise<unknown>;
-  deleteItem: (id: string) => Promise<void>;
-  getItemId: (item: Item) => string;
+  createItem: (payload: CreateInput) => Promise<unknown>;
+  updateItem: (payload: UpdateInput) => Promise<unknown>;
+  deleteItem: (identifier: Identifier) => Promise<void>;
+  getItemId: (item: Item) => Identifier;
   formFromItem: (item: Item) => FormState;
   prepareSubmit: (
     form: FormState,
     context: { editingItem: Item | null },
-  ) => SubmitPreparation<CreatePayload, UpdatePayload, Item>;
+  ) => SubmitPreparation<CreateInput, UpdateInput, Item>;
   mapItems?: (items: Item[]) => Item[];
   computeInitialForm?: (items: Item[]) => Partial<FormState>;
   formatListError?: (error: unknown) => string;
   formatActionError?: (
-    action: 'create' | 'update' | 'delete',
+    action: CrudAction,
     error: unknown,
+    context: ActionErrorContext<Item, Identifier>,
   ) => string;
   createButtonLabel: string;
   updateButtonLabel: string;
   cancelButtonLabel?: string;
-  renderItems?: (props: AdminCrudItemsRenderProps<Item>) => ReactNode;
+  renderItems?: (
+    props: AdminCrudItemsRenderProps<Item, Identifier>,
+  ) => ReactNode;
   containerClassName?: string;
   formClassName?: string;
   fieldsWrapperClassName?: string;
@@ -98,9 +109,18 @@ export interface AdminCrudPageProps<
 export function AdminCrudPage<
   Item,
   FormState,
-  CreatePayload,
-  UpdatePayload = CreatePayload,
->(props: AdminCrudPageProps<Item, FormState, CreatePayload, UpdatePayload>) {
+  CreateInput,
+  UpdateInput = CreateInput,
+  Identifier = string,
+>(
+  props: AdminCrudPageProps<
+    Item,
+    FormState,
+    CreateInput,
+    UpdateInput,
+    Identifier
+  >,
+) {
   const {
     title,
     description,
@@ -134,6 +154,29 @@ export function AdminCrudPage<
 
   const formId = useId();
 
+  const resolvedQueryKey = useMemo(() => {
+    if (queryKey) {
+      return queryKey;
+    }
+    return [
+      'admin',
+      'crud',
+      fetchItems.name || title.toLowerCase().replaceAll(' ', '-'),
+    ] satisfies QueryKey;
+  }, [fetchItems, queryKey, title]);
+
+  const crud = useAdminCrud<Item, CreateInput, UpdateInput, Identifier>({
+    queryKey: resolvedQueryKey,
+    fetchItems,
+    transformItems: mapItems,
+    create: { mutationFn: createItem },
+    update: { mutationFn: updateItem },
+    remove: { mutationFn: deleteItem },
+    formatListError,
+    formatActionError,
+    getItemId,
+  });
+
   const {
     items,
     loading,
@@ -148,21 +191,16 @@ export function AdminCrudPage<
     handleDelete,
     startEdit,
     cancelEdit,
-  } = useSimpleCrudPage<Item, FormState, CreatePayload, UpdatePayload>({
-    queryKey,
-    emptyForm,
-    fetchItems,
-    createItem,
-    updateItem,
-    deleteItem,
-    getItemId,
-    formFromItem,
-    prepareSubmit,
-    mapItems,
-    computeInitialForm,
-    formatListError,
-    formatActionError,
-  });
+  } = useAdminCrudForm<Item, FormState, CreateInput, UpdateInput, Identifier>(
+    crud,
+    {
+      emptyForm,
+      formFromItem,
+      prepareSubmit,
+      getItemId,
+      computeInitialForm,
+    },
+  );
 
   return (
     <div className={containerClassName}>

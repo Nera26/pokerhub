@@ -4,17 +4,21 @@ import { type ComponentProps, type ReactNode } from 'react';
 import { cn } from '@/app/lib/utils';
 import Button from '../../ui/Button';
 import {
-  useCrudManager,
-  type CrudManagerConfig,
-  type CrudManagerReturn,
-} from '@/hooks/admin/useCrudManager';
+  useAdminCrud,
+  useAdminCrudTable,
+  type AdminCrudConfig,
+  type AdminCrudReturn,
+  type AdminCrudTableConfig,
+  type AdminCrudTableReturn,
+} from '@/hooks/admin/useAdminCrud';
 
-type CrudInstance<TItem, TCreate, TUpdate, TIdentifier> = CrudManagerReturn<
+type CrudInstance<TItem, TCreate, TUpdate, TIdentifier> = AdminCrudReturn<
   TItem,
   TCreate,
   TUpdate,
   TIdentifier
->;
+> &
+  AdminCrudTableReturn<TItem, TCreate, TUpdate, TIdentifier>;
 
 interface AdminCrudRenderProps<TItem, TCreate, TUpdate, TIdentifier> {
   crud: CrudInstance<TItem, TCreate, TUpdate, TIdentifier>;
@@ -43,8 +47,12 @@ interface PrimaryActionConfig<TItem, TCreate, TUpdate, TIdentifier> {
   ) => void;
 }
 
+type DashboardCrudConfig<TItem, TCreate, TUpdate, TIdentifier> =
+  AdminCrudConfig<TItem, TCreate, TUpdate, TIdentifier> &
+    AdminCrudTableConfig<TItem, TCreate, TUpdate, TIdentifier>;
+
 interface AdminCrudPageProps<TItem, TCreate, TUpdate, TIdentifier> {
-  crudConfig: CrudManagerConfig<TItem, TCreate, TUpdate, TIdentifier>;
+  crudConfig: DashboardCrudConfig<TItem, TCreate, TUpdate, TIdentifier>;
   className?: string;
   loadingState?: AdminCrudRenderable<TItem, TCreate, TUpdate, TIdentifier>;
   errorState?: AdminCrudErrorRenderable<TItem, TCreate, TUpdate, TIdentifier>;
@@ -98,7 +106,27 @@ export default function AdminCrudPage<TItem, TCreate, TUpdate, TIdentifier>({
   renderAfterTable,
   renderModals,
 }: AdminCrudPageProps<TItem, TCreate, TUpdate, TIdentifier>) {
-  const crud = useCrudManager<TItem, TCreate, TUpdate, TIdentifier>(crudConfig);
+  const { table, translationKeys, errorMessages, ...adminCrudConfig } =
+    crudConfig;
+
+  const crudState = useAdminCrud<TItem, TCreate, TUpdate, TIdentifier>(
+    adminCrudConfig,
+  );
+
+  const tableState = useAdminCrudTable<TItem, TCreate, TUpdate, TIdentifier>(
+    crudState,
+    {
+      table,
+      getItemId: crudConfig.getItemId,
+      translationKeys,
+      errorMessages,
+    },
+  );
+
+  const crud: CrudInstance<TItem, TCreate, TUpdate, TIdentifier> = {
+    ...crudState,
+    ...tableState,
+  };
   const context: AdminCrudRenderProps<TItem, TCreate, TUpdate, TIdentifier> = {
     crud,
   };
