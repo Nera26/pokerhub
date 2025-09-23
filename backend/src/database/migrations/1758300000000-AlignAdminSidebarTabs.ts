@@ -4,8 +4,8 @@ import {
   removeCanonicalAdminSidebarTabs,
 } from '../seeds/admin-sidebar-tabs';
 
-export class SeedAdminSidebarTabs1757600000001 implements MigrationInterface {
-  name = 'SeedAdminSidebarTabs1757600000001';
+export class AlignAdminSidebarTabs1758300000000 implements MigrationInterface {
+  name = 'AlignAdminSidebarTabs1758300000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await applyCanonicalAdminSidebarTabs(queryRunner);
