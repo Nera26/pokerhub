@@ -10,7 +10,7 @@ import {
 import { type QueryKey } from '@tanstack/react-query';
 import { useCrudState } from '@/hooks/admin/useCrudState';
 
-type SubmitPreparation<CreatePayload, UpdatePayload, Item> =
+export type SubmitPreparation<CreatePayload, UpdatePayload, Item> =
   | { error: string }
   | { type: 'create'; payload: CreatePayload }
   | { type: 'update'; payload: UpdatePayload };
