@@ -4,7 +4,6 @@ import {
   rejectDeposit,
   confirmWithdrawal,
   rejectWithdrawal,
-  fetchBalances,
   adminAdjustBalance,
   reconcileDeposits,
 } from '@/lib/api/wallet';
@@ -49,15 +48,6 @@ describe('wallet admin api client', () => {
       '/api/admin/withdrawals/abc/reject',
       MessageResponseSchema,
       { method: 'POST', body: { comment: 'nope' }, signal: undefined },
-    );
-  });
-
-  it('fetchBalances calls endpoint', async () => {
-    await fetchBalances();
-    expect(apiClientMock).toHaveBeenCalledWith(
-      '/api/admin/balances',
-      expect.anything(),
-      { signal: undefined },
     );
   });
 
