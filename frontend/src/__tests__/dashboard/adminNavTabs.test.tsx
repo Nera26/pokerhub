@@ -64,6 +64,11 @@ jest.mock('@/lib/api/admin', () => ({
       title: 'Broadcasts',
       component: '@/app/components/dashboard/BroadcastPanel',
     },
+    {
+      id: 'wallet-iban',
+      title: 'Wallet IBAN',
+      component: '@/app/components/dashboard/IbanManager',
+    },
   ]),
   fetchAdminTabMeta: jest.fn(),
 }));
@@ -98,6 +103,9 @@ jest.mock('@/app/components/dashboard/ManageTournaments', () => () => (
 jest.mock('@/app/components/dashboard/BroadcastPanel', () => () => (
   <div>Broadcast Module</div>
 ));
+jest.mock('@/app/components/dashboard/IbanManager', () => () => (
+  <div>IBAN Manager Module</div>
+));
 
 export function setSearchParams(qs: string) {
   searchParams = new URLSearchParams(qs);
@@ -129,6 +137,7 @@ describe('admin nav tabs', () => {
     ['tables', 'Tables Module'],
     ['feature-flags', 'Feature Flags Module'],
     ['broadcast', 'Broadcast Module'],
+    ['wallet-iban', 'IBAN Manager Module'],
   ])('renders %s module', async (tab, text) => {
     setSearchParams(`tab=${tab}`);
     renderPage();
