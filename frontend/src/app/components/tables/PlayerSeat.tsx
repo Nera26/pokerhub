@@ -12,13 +12,13 @@ import TimerRing from './TimerRing';
 import ActionBubble from './ActionBubble';
 import WinAnimation from './WinAnimation';
 import type { Player } from './types';
+import { useTableThemePositions } from './TableThemeGate';
 
 export interface PlayerSeatProps {
   player: Player;
   style?: CSSProperties;
   street?: 'pre' | 'flop' | 'turn' | 'river';
   density?: 'compact' | 'default' | 'large';
-  badge?: string;
 }
 
 export default function PlayerSeat({
@@ -26,7 +26,6 @@ export default function PlayerSeat({
   style,
   street: _street = 'pre',
   density = 'default',
-  badge,
 }: PlayerSeatProps) {
   const { pendingBySeat, setActiveSeat, activeSeatId } = useTableUi();
   const optimistic = pendingBySeat[player.id] || 0;
@@ -34,6 +33,8 @@ export default function PlayerSeat({
   const displayedBalance = player.chips - optimistic;
   const isHero = player.username === 'You';
   const spotlight = player.id === activeSeatId && player.isActive;
+  const positions = useTableThemePositions();
+  const badge = positions[player.pos ?? '']?.badge;
 
   const sizeStyles = {
     compact: {
