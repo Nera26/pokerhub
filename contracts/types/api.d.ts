@@ -200,70 +200,6 @@ export interface paths {
       };
     };
   };
-  "/anti-cheat/flags": {
-    /** List anti-cheat review flags */
-    get: {
-      responses: {
-        /** @description Active anti-cheat flags */
-        200: {
-          content: {
-            "application/json": components["schemas"]["AntiCheatFlagsResponse"];
-          };
-        };
-      };
-    };
-  };
-  "/anti-cheat/flags/{id}": {
-    /** Escalate anti-cheat action for a session */
-    put: {
-      parameters: {
-        path: {
-          id: string;
-        };
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["AntiCheatUpdateRequest"];
-        };
-      };
-      responses: {
-        /** @description Updated flag with history */
-        200: {
-          content: {
-            "application/json": components["schemas"]["AntiCheatFlag"];
-          };
-        };
-        /** @description Invalid escalation */
-        400: {
-          content: {
-            "application/json": components["schemas"]["MessageResponse"];
-          };
-        };
-        /** @description Flag not found */
-        404: {
-          content: never;
-        };
-      };
-    };
-  };
-  "/anti-cheat/next-action": {
-    /** Determine the next anti-cheat action */
-    get: {
-      parameters: {
-        query: {
-          current: components["schemas"]["AntiCheatReviewStatus"];
-        };
-      };
-      responses: {
-        /** @description Next escalation step when available */
-        200: {
-          content: {
-            "application/json": components["schemas"]["AntiCheatNextActionResponse"];
-          };
-        };
-      };
-    };
-  };
   "/nav-items": {
     /** List navigation items */
     get: {
@@ -751,6 +687,19 @@ export interface paths {
         200: {
           content: {
             "application/json": components["schemas"]["Table"];
+          };
+        };
+      };
+    };
+  };
+  "/tables/sessions": {
+    /** Get tables for authenticated player */
+    get: {
+      responses: {
+        /** @description Tables list */
+        200: {
+          content: {
+            "application/json": components["schemas"]["Table"][];
           };
         };
       };

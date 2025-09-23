@@ -162,24 +162,41 @@ describe('Admin tabs integration', () => {
     await app.close();
   });
 
-  it('returns database-backed tabs only', async () => {
+  it('returns built-in collusion tab alongside database tabs', async () => {
     const response = await request(app.getHttpServer())
       .get('/admin/tabs')
       .expect(200);
 
-    const expected = SEED_TABS.map((tab) => ({
-      id: tab.id,
-      title: tab.label,
-      component: tab.component,
-      icon: tab.icon,
-      source: 'database',
-    })).sort((a, b) => a.id.localeCompare(b.id));
+    const expected = [
+      {
+        id: 'collusion',
+        title: 'Collusion Review',
+        component: '@/features/collusion',
+        icon: 'faUserShield',
+        source: 'config',
+      },
+      ...SEED_TABS.map((tab) => ({
+        id: tab.id,
+        title: tab.label,
+        component: tab.component,
+        icon: tab.icon,
+        source: 'database',
+      })),
+    ].sort((a, b) => a.id.localeCompare(b.id));
 
-    expect(response.body).toEqual(expected);
+    const sortedResponse = [...response.body].sort((a, b) =>
+      a.id.localeCompare(b.id),
+    );
+
+    expect(sortedResponse).toEqual(expected);
+    const collusionTab = sortedResponse.find(
+      (tab: { id: string }) => tab.id === 'collusion',
+    );
+    expect(collusionTab).toMatchObject({ source: 'config' });
     expect(
-      response.body.every(
-        (tab: { source?: string }) => tab.source === 'database',
-      ),
+      sortedResponse
+        .filter((tab: { id: string }) => tab.id !== 'collusion')
+        .every((tab: { source?: string }) => tab.source === 'database'),
     ).toBe(true);
   });
 
