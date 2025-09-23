@@ -28,12 +28,6 @@ jest.mock('@/lib/api/admin', () => ({
       source: 'config',
     },
     {
-      id: 'feature-flags',
-      title: 'Feature Flags',
-      component: '@/app/components/dashboard/FeatureFlagsPanel',
-      source: 'config',
-    },
-    {
       id: 'transactions',
       title: 'Transactions',
       component: '@/app/components/dashboard/transactions/TransactionHistory',
@@ -43,6 +37,12 @@ jest.mock('@/lib/api/admin', () => ({
       id: 'deposits-reconcile',
       title: 'Bank Reconciliation',
       component: '@/app/components/dashboard/AdminBankReconciliation',
+      source: 'config',
+    },
+    {
+      id: 'settings',
+      title: 'Settings',
+      component: '@/app/components/dashboard/Settings',
       source: 'config',
     },
     {
@@ -83,9 +83,6 @@ jest.mock('@/lib/api/nav', () => ({
   fetchNavItems: jest.fn().mockResolvedValue([]),
 }));
 
-jest.mock('@/app/components/dashboard/FeatureFlagsPanel', () => () => (
-  <div>Feature Flags Module</div>
-));
 jest.mock('@/app/components/dashboard/analytics/Analytics', () => () => (
   <div>Analytics Module</div>
 ));
@@ -115,6 +112,9 @@ jest.mock('@/app/components/dashboard/BroadcastPanel', () => () => (
 jest.mock('@/app/components/dashboard/IbanManager', () => () => (
   <div>IBAN Manager Module</div>
 ));
+jest.mock('@/app/components/dashboard/Settings', () => () => (
+  <div>Settings Module</div>
+));
 
 export function setSearchParams(qs: string) {
   searchParams = new URLSearchParams(qs);
@@ -143,9 +143,10 @@ describe('admin nav tabs', () => {
     ['feature-flags', 'Feature Flags Module'],
     ['transactions', 'Transactions Module'],
     ['deposits-reconcile', 'Bank Reconciliation Module'],
+    ['settings', 'Settings Module'],
     ['users', 'Users Module'],
     ['tables', 'Tables Module'],
-    ['feature-flags', 'Feature Flags Module'],
+    ['tournaments', 'Tournaments Module'],
     ['broadcast', 'Broadcast Module'],
     ['wallet-iban', 'IBAN Manager Module'],
   ])('renders %s module', async (tab, text) => {

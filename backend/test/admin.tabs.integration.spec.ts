@@ -50,6 +50,12 @@ const SEED_TABS: AdminTabSeed[] = [
     component: '@/app/components/dashboard/FeatureFlagsPanel',
   },
   {
+    id: 'settings',
+    label: 'Settings',
+    icon: 'faCog',
+    component: '@/app/components/dashboard/Settings',
+  },
+  {
     id: 'tables',
     label: 'Tables',
     icon: 'faTable',

@@ -37,6 +37,12 @@ const STATIC_TABS = [
     icon: 'faBullhorn',
     component: '@/app/components/dashboard/BroadcastPanel',
   },
+  {
+    id: 'settings',
+    label: 'Settings',
+    icon: 'faCog',
+    component: '@/app/components/dashboard/Settings',
+  },
 ];
 
 export class SeedAdminConfigTabs1757600000002 implements MigrationInterface {
