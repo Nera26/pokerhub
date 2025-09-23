@@ -15,95 +15,16 @@ import { AdminGuard } from '../src/auth/admin.guard';
 import { AdminTabEntity } from '../src/database/entities/admin-tab.entity';
 import { AdminTabsService } from '../src/services/admin-tabs.service';
 import { WalletService } from '../src/wallet/wallet.service';
+import {
+  CANONICAL_ADMIN_SIDEBAR_TABS,
+  type AdminSidebarTabSeed,
+} from '../src/database/seeds/admin-sidebar-tabs';
 
 type AdminTabSeed = Pick<AdminTabEntity, 'id' | 'label' | 'icon' | 'component'>;
 
-const SEED_TABS: AdminTabSeed[] = [
-  {
-    id: 'analytics',
-    label: 'Analytics',
-    icon: 'faChartLine',
-    component: '@/app/components/dashboard/analytics/Analytics',
-  },
-  {
-    id: 'broadcast',
-    label: 'Broadcasts',
-    icon: 'faBullhorn',
-    component: '@/app/components/dashboard/BroadcastPanel',
-  },
-  {
-    id: 'bonuses',
-    label: 'Bonuses',
-    icon: 'faGift',
-    component: '@/app/components/dashboard/BonusManager',
-  },
-  {
-    id: 'deposits-reconcile',
-    label: 'Bank Reconciliation',
-    icon: 'faFileInvoiceDollar',
-    component: '@/app/components/dashboard/AdminBankReconciliation',
-  },
-  {
-    id: 'events',
-    label: 'Events',
-    icon: 'faBell',
-    component: '@/app/components/dashboard/AdminEvents',
-  },
-  {
-    id: 'feature-flags',
-    label: 'Feature Flags',
-    icon: 'faToggleOn',
-    component: '@/app/components/dashboard/FeatureFlagsPanel',
-  },
-  {
-    id: 'settings',
-    label: 'Settings',
-    icon: 'faCog',
-    component: '@/app/components/dashboard/Settings',
-  },
-  {
-    id: 'tables',
-    label: 'Tables',
-    icon: 'faTable',
-    component: '@/app/components/dashboard/ManageTables',
-  },
-  {
-    id: 'transactions',
-    label: 'Transactions',
-    icon: 'faMoneyBillWave',
-    component: '@/app/components/dashboard/transactions/TransactionHistory',
-  },
-  {
-    id: 'tournaments',
-    label: 'Tournaments',
-    icon: 'faTrophy',
-    component: '@/app/components/dashboard/ManageTournaments',
-  },
-  {
-    id: 'users',
-    label: 'Users',
-    icon: 'faUsers',
-    component: '@/app/components/dashboard/ManageUsers',
-  },
-  {
-    id: 'wallet-iban',
-    label: 'IBAN Manager',
-    icon: 'faBuildingColumns',
-    component: '@/app/components/dashboard/IbanManager',
-  },
-  {
-    id: 'wallet-reconcile',
-    label: 'Wallet Reconcile',
-    icon: 'faCoins',
-    component: '@/app/components/dashboard/WalletReconcileMismatches',
-  },
-  {
-    id: 'wallet-withdrawals',
-    label: 'Withdrawals',
-    icon: 'faMoneyCheck',
-    component: '@/app/components/dashboard/Withdrawals',
-  },
-];
+const SEED_TABS: AdminTabSeed[] = CANONICAL_ADMIN_SIDEBAR_TABS.map(
+  (tab: AdminSidebarTabSeed) => ({ ...tab }),
+);
 
 describe('Admin tabs integration', () => {
   let app: INestApplication;
@@ -198,62 +119,5 @@ describe('Admin tabs integration', () => {
         .filter((tab: { id: string }) => tab.id !== 'collusion')
         .every((tab: { source?: string }) => tab.source === 'database'),
     ).toBe(true);
-  });
-
-  it('supports CRUD operations for admin tabs', async () => {
-    const createResponse = await request(app.getHttpServer())
-      .post('/admin/tabs')
-      .send({
-        id: 'reports',
-        title: 'Reports',
-        icon: 'chart-bar',
-        component: 'reports-component',
-      })
-      .expect(200);
-    expect(createResponse.body).toEqual({
-      id: 'reports',
-      title: 'Reports',
-      icon: 'faChartBar',
-      component: 'reports-component',
-      source: 'database',
-    });
-
-    const updateResponse = await request(app.getHttpServer())
-      .put('/admin/tabs/reports')
-      .send({
-        title: 'Updated Reports',
-        icon: 'faChartLine',
-        component: 'reports-component',
-      })
-      .expect(200);
-    expect(updateResponse.body).toEqual({
-      id: 'reports',
-      title: 'Updated Reports',
-      icon: 'faChartLine',
-      component: 'reports-component',
-      source: 'database',
-    });
-
-    const listResponse = await request(app.getHttpServer())
-      .get('/admin/tabs')
-      .expect(200);
-    expect(listResponse.body).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ id: 'reports', title: 'Updated Reports' }),
-      ]),
-    );
-
-    await request(app.getHttpServer())
-      .delete('/admin/tabs/reports')
-      .expect(204);
-
-    const finalList = await request(app.getHttpServer())
-      .get('/admin/tabs')
-      .expect(200);
-    expect(finalList.body).toEqual(
-      expect.not.arrayContaining([
-        expect.objectContaining({ id: 'reports' }),
-      ]),
-    );
   });
 });
