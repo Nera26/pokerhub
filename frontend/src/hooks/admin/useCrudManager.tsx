@@ -1,26 +1,20 @@
 'use client';
 
 import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  type QueryKey,
-  type UseMutationResult,
-} from '@tanstack/react-query';
+import { type QueryKey, type UseMutationResult } from '@tanstack/react-query';
 import { useLocale } from 'next-intl';
 import { useTranslations } from '@/hooks/useTranslations';
 import AdminTableManager, {
   type AdminTableManagerProps,
 } from '@/app/components/dashboard/common/AdminTableManager';
 import { ZodError } from 'zod';
+import {
+  useCrudState,
+  type CrudMutationConfig,
+  type CrudRemoveConfig,
+} from './useCrudState';
 
 export type CrudModalMode = 'create' | 'edit' | 'delete';
-
-interface CrudMutationConfig<TInput> {
-  mutationFn: (input: TInput) => Promise<unknown>;
-  parse?: (input: TInput) => TInput;
-}
 
 interface CrudManagerTableConfig<TItem> {
   header: ReactNode;
@@ -72,7 +66,7 @@ export interface CrudManagerConfig<TItem, TCreate, TUpdate, TIdentifier>
   table: CrudManagerTableConfig<TItem>;
   create?: CrudMutationConfig<TCreate>;
   update?: CrudMutationConfig<TUpdate>;
-  remove?: { mutationFn: (id: TIdentifier) => Promise<unknown> };
+  remove?: CrudRemoveConfig<TIdentifier>;
   transformItems?: (items: TItem[]) => TItem[];
   translationKeys?: CrudManagerTranslationKeys;
   errorMessages?: CrudManagerErrors;
@@ -152,23 +146,8 @@ export function useCrudManager<TItem, TCreate, TUpdate, TIdentifier>(
     onError,
   } = config;
 
-  const queryClient = useQueryClient();
   const locale = useLocale();
   const { data: translations } = useTranslations(locale);
-
-  const {
-    data: fetchedItems = [],
-    isLoading,
-    error,
-    refetch,
-  } = useQuery<TItem[]>({
-    queryKey,
-    queryFn: fetchItems,
-  });
-
-  const items = useMemo(() => {
-    return transformItems ? transformItems(fetchedItems) : fetchedItems;
-  }, [fetchedItems, transformItems]);
 
   const [tableInstance, setTableInstance] = useState(0);
   const resetTableState = useCallback(() => {
@@ -179,6 +158,12 @@ export function useCrudManager<TItem, TCreate, TUpdate, TIdentifier>(
     useState<CrudManagerModalState<TItem> | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const lastSelectedRef = useRef<TItem | null>(null);
+
+  const close = useCallback(() => {
+    setModalState(null);
+    setFormError(null);
+    lastSelectedRef.current = null;
+  }, []);
 
   const openCreate = useCallback(() => {
     lastSelectedRef.current = null;
@@ -197,28 +182,107 @@ export function useCrudManager<TItem, TCreate, TUpdate, TIdentifier>(
     setModalState({ mode: 'delete', item });
   }, []);
 
-  const close = useCallback(() => {
-    setModalState(null);
-    setFormError(null);
-    lastSelectedRef.current = null;
-  }, []);
-
-  const deleteMutation = useMutation<unknown, unknown, TIdentifier>({
-    mutationFn: async (id: TIdentifier) => {
-      if (!remove) {
-        throw new Error('Delete mutation not configured');
-      }
-      return remove.mutationFn(id);
-    },
-    onSuccess: (_data, variables) => {
-      const selected = lastSelectedRef.current;
-      onSuccess?.delete?.(variables, selected);
-      queryClient.invalidateQueries({ queryKey });
+  const handleCreateSuccess = useCallback(
+    (variables: TCreate) => {
+      onSuccess?.create?.(variables);
       resetTableState();
       close();
     },
-    onError: (mutationError) => {
+    [close, onSuccess, resetTableState],
+  );
+
+  const handleUpdateSuccess = useCallback(
+    (variables: TUpdate) => {
+      const selected = lastSelectedRef.current;
+      onSuccess?.update?.(variables, selected);
+      resetTableState();
+      close();
+    },
+    [close, onSuccess, resetTableState],
+  );
+
+  const handleDeleteSuccess = useCallback(
+    (identifier: TIdentifier) => {
+      const selected = lastSelectedRef.current;
+      onSuccess?.delete?.(identifier, selected);
+      resetTableState();
+      close();
+    },
+    [close, onSuccess, resetTableState],
+  );
+
+  const handleCreateError = useCallback(
+    (mutationError: unknown) => {
+      let message: string;
+      if (mutationError instanceof ZodError) {
+        message =
+          mutationError.errors[0]?.message ??
+          errorMessages?.create ??
+          'Invalid input provided';
+      } else if (mutationError instanceof Error) {
+        message = errorMessages?.create ?? mutationError.message;
+      } else {
+        message = errorMessages?.create ?? 'Failed to create item';
+      }
+      setFormError(message);
+      onError?.create?.(mutationError);
+    },
+    [errorMessages?.create, onError],
+  );
+
+  const handleUpdateError = useCallback(
+    (mutationError: unknown) => {
+      let message: string;
+      if (mutationError instanceof ZodError) {
+        message =
+          mutationError.errors[0]?.message ??
+          errorMessages?.update ??
+          'Invalid input provided';
+      } else if (mutationError instanceof Error) {
+        message = errorMessages?.update ?? mutationError.message;
+      } else {
+        message = errorMessages?.update ?? 'Failed to update item';
+      }
+      setFormError(message);
+      onError?.update?.(mutationError);
+    },
+    [errorMessages?.update, onError],
+  );
+
+  const handleDeleteError = useCallback(
+    (mutationError: unknown) => {
       onError?.delete?.(mutationError);
+    },
+    [onError],
+  );
+
+  const {
+    items,
+    isLoading,
+    error,
+    refetch,
+    createMutation,
+    updateMutation,
+    deleteMutation,
+    executeCreate,
+    executeUpdate,
+    executeDelete,
+  } = useCrudState<TItem, TCreate, TUpdate, TIdentifier>({
+    queryKey,
+    fetchItems,
+    transformItems,
+    create,
+    update,
+    remove,
+    onSuccess: {
+      create: handleCreateSuccess,
+      update: handleUpdateSuccess,
+      delete: handleDeleteSuccess,
+    },
+    onError: {
+      create: handleCreateError,
+      update: handleUpdateError,
+      delete: handleDeleteError,
     },
   });
 
@@ -226,106 +290,27 @@ export function useCrudManager<TItem, TCreate, TUpdate, TIdentifier>(
     (item: TItem) => {
       if (!remove) return;
       lastSelectedRef.current = item;
-      deleteMutation.mutate(getItemId(item));
+      void executeDelete(getItemId(item)).catch(() => undefined);
     },
-    [deleteMutation, getItemId, remove],
+    [executeDelete, getItemId, remove],
   );
-
-  const createMutation = useMutation<unknown, unknown, TCreate>({
-    mutationFn: async (values: TCreate) => {
-      if (!create) {
-        throw new Error('Create mutation not configured');
-      }
-      return create.mutationFn(values);
-    },
-    onSuccess: (_data, variables) => {
-      onSuccess?.create?.(variables);
-      queryClient.invalidateQueries({ queryKey });
-      resetTableState();
-      close();
-    },
-    onError: (mutationError) => {
-      setFormError(
-        errorMessages?.create ??
-          (mutationError instanceof Error
-            ? mutationError.message
-            : 'Failed to create item'),
-      );
-      onError?.create?.(mutationError);
-    },
-  });
-
-  const updateMutation = useMutation<unknown, unknown, TUpdate>({
-    mutationFn: async (values: TUpdate) => {
-      if (!update) {
-        throw new Error('Update mutation not configured');
-      }
-      return update.mutationFn(values);
-    },
-    onSuccess: (_data, variables) => {
-      const selected = lastSelectedRef.current;
-      onSuccess?.update?.(variables, selected);
-      queryClient.invalidateQueries({ queryKey });
-      resetTableState();
-      close();
-    },
-    onError: (mutationError) => {
-      setFormError(
-        errorMessages?.update ??
-          (mutationError instanceof Error
-            ? mutationError.message
-            : 'Failed to update item'),
-      );
-      onError?.update?.(mutationError);
-    },
-  });
 
   const submitCreate = useCallback(
     (values: TCreate) => {
       if (!create) return;
-      try {
-        const parsed = create.parse ? create.parse(values) : values;
-        setFormError(null);
-        createMutation.mutate(parsed);
-      } catch (err) {
-        if (err instanceof ZodError) {
-          const message =
-            err.errors[0]?.message ??
-            errorMessages?.create ??
-            'Invalid input provided';
-          setFormError(message);
-        } else if (err instanceof Error) {
-          setFormError(err.message);
-        } else {
-          setFormError(errorMessages?.create ?? 'Invalid input provided');
-        }
-      }
+      setFormError(null);
+      void executeCreate(values).catch(() => undefined);
     },
-    [create, createMutation, errorMessages?.create],
+    [create, executeCreate],
   );
 
   const submitUpdate = useCallback(
     (values: TUpdate) => {
       if (!update) return;
-      try {
-        const parsed = update.parse ? update.parse(values) : values;
-        setFormError(null);
-        updateMutation.mutate(parsed);
-      } catch (err) {
-        if (err instanceof ZodError) {
-          const message =
-            err.errors[0]?.message ??
-            errorMessages?.update ??
-            'Invalid input provided';
-          setFormError(message);
-        } else if (err instanceof Error) {
-          setFormError(err.message);
-        } else {
-          setFormError(errorMessages?.update ?? 'Invalid input provided');
-        }
-      }
+      setFormError(null);
+      void executeUpdate(values).catch(() => undefined);
     },
-    [update, updateMutation, errorMessages?.update],
+    [executeUpdate, update],
   );
 
   const submitDelete = useCallback(
@@ -334,9 +319,9 @@ export function useCrudManager<TItem, TCreate, TUpdate, TIdentifier>(
       const targetId =
         id ?? (modalState?.item ? getItemId(modalState.item) : undefined);
       if (targetId === undefined) return;
-      deleteMutation.mutate(targetId);
+      void executeDelete(targetId).catch(() => undefined);
     },
-    [deleteMutation, getItemId, modalState, remove],
+    [executeDelete, getItemId, modalState, remove],
   );
 
   const header = table.header;

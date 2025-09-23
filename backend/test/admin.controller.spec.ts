@@ -34,16 +34,22 @@ describe('AdminController', () => {
   } as Partial<RevenueService>;
   const sidebarItems: SidebarItem[] = [
     {
-      id: 'events',
-      label: 'Events',
-      icon: 'faBell',
-      component: '@/app/components/dashboard/AdminEvents',
-    },
-    {
       id: 'analytics',
       label: 'Analytics',
       icon: 'faChartLine',
       component: '@/app/components/dashboard/analytics/Analytics',
+    },
+    {
+      id: 'broadcast',
+      label: 'Broadcasts',
+      icon: 'faBullhorn',
+      component: '@/app/components/dashboard/BroadcastPanel',
+    },
+    {
+      id: 'events',
+      label: 'Events',
+      icon: 'faBell',
+      component: '@/app/components/dashboard/AdminEvents',
     },
     {
       id: 'feature-flags',
@@ -56,6 +62,24 @@ describe('AdminController', () => {
       label: 'Transactions',
       icon: 'faMoneyBillWave',
       component: '@/app/components/dashboard/transactions/TransactionHistory',
+    },
+    {
+      id: 'wallet-iban',
+      label: 'IBAN Manager',
+      icon: 'faBuildingColumns',
+      component: '@/app/components/dashboard/IbanManager',
+    },
+    {
+      id: 'wallet-reconcile',
+      label: 'Wallet Reconcile',
+      icon: 'faCoins',
+      component: '@/app/components/dashboard/WalletReconcileMismatches',
+    },
+    {
+      id: 'wallet-withdrawals',
+      label: 'Withdrawals',
+      icon: 'faMoneyCheck',
+      component: '@/app/components/dashboard/Withdrawals',
     },
     {
       id: 'users',
@@ -118,19 +142,12 @@ describe('AdminController', () => {
     acknowledged = new Map();
     (sidebar.getItems as jest.Mock).mockResolvedValue(sidebarItems);
     (adminTabs.list as jest.Mock).mockResolvedValue(
-      sidebarItems
-        .filter(
-          (item) =>
-            !['events', 'feature-flags', 'analytics', 'transactions'].includes(
-              item.id,
-            ),
-        )
-        .map((item) => ({
-          id: item.id,
-          title: item.label,
-          component: item.component,
-          icon: item.icon,
-        })),
+      sidebarItems.map((item) => ({
+        id: item.id,
+        title: item.label,
+        component: item.component,
+        icon: item.icon,
+      })),
     );
     (adminTabs.find as jest.Mock).mockResolvedValue(null);
     wallet.reconcile = jest.fn();
@@ -291,36 +308,25 @@ describe('AdminController', () => {
       title: s.label,
       component: s.component,
       icon: s.icon,
-      source: ['events', 'feature-flags', 'analytics', 'transactions'].includes(
-        s.id,
-      )
-        ? 'config'
-        : 'database',
+      source: 'database',
     }));
     const response = await request(app.getHttpServer())
       .get('/admin/tabs')
       .expect(200);
     expect(response.body).toEqual(tabs);
     expect(response.body).toContainEqual({
-      id: 'feature-flags',
-      title: 'Feature Flags',
-      component: '@/app/components/dashboard/FeatureFlagsPanel',
-      icon: 'faToggleOn',
-      source: 'config',
+      id: 'wallet-reconcile',
+      title: 'Wallet Reconcile',
+      component: '@/app/components/dashboard/WalletReconcileMismatches',
+      icon: 'faCoins',
+      source: 'database',
     });
     expect(response.body).toContainEqual({
-      id: 'analytics',
-      title: 'Analytics',
-      component: '@/app/components/dashboard/analytics/Analytics',
-      icon: 'faChartLine',
-      source: 'config',
-    });
-    expect(response.body).toContainEqual({
-      id: 'transactions',
-      title: 'Transactions',
-      component: '@/app/components/dashboard/transactions/TransactionHistory',
-      icon: 'faMoneyBillWave',
-      source: 'config',
+      id: 'wallet-withdrawals',
+      title: 'Withdrawals',
+      component: '@/app/components/dashboard/Withdrawals',
+      icon: 'faMoneyCheck',
+      source: 'database',
     });
   });
 
