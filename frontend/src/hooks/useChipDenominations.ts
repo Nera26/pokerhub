@@ -5,7 +5,7 @@ import { createQueryHook } from './createQueryHook';
 import type { ChipDenominationsResponse } from '@shared/types';
 
 export const useChipDenominations = createQueryHook<ChipDenominationsResponse>(
-  'chip-denoms',
+  'chip-denominations',
   (_client, opts) => fetchChipDenominations(opts),
   'chip denominations',
 );
