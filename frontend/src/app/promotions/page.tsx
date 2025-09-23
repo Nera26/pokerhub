@@ -6,18 +6,22 @@ import PromotionCard, {
 } from '@/app/components/promotions/PromotionCard';
 import PromotionDetailModalContent from '@/app/components/promotions/PromotionDetailModalContent';
 import Modal from '@/app/components/ui/Modal';
+import ToastNotification from '@/app/components/ui/ToastNotification';
 import { usePromotions } from '@/hooks/usePromotions';
 import { claimPromotion } from '@/lib/api/promotions';
+import useToasts from '@/hooks/useToasts';
 
 export default function PromotionsPage() {
   const { data, isLoading, error, refetch } = usePromotions();
   const [claimError, setClaimError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Promotion | null>(null);
+  const { toasts, pushToast } = useToasts();
 
   const handleClaim = async (id: string) => {
     setClaimError(null);
     try {
-      await claimPromotion(id);
+      const { message } = await claimPromotion(id);
+      pushToast(message, { variant: 'success' });
       await refetch();
     } catch (err) {
       const message =
@@ -68,6 +72,16 @@ export default function PromotionsPage() {
           />
         )}
       </Modal>
+      {toasts.map((toast) => (
+        <ToastNotification
+          key={toast.id}
+          message={toast.message}
+          type={toast.variant === 'error' ? 'error' : 'success'}
+          isOpen
+          duration={toast.duration}
+          onClose={() => {}}
+        />
+      ))}
     </div>
   );
 }

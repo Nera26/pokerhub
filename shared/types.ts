@@ -1,4 +1,6 @@
 import { z, ZodError } from 'zod';
+import { MessageResponseSchema as AuthMessageResponseSchema } from '../backend/src/schemas/auth';
+import type { MessageResponse as AuthMessageResponse } from '../backend/src/schemas/auth';
 import { GameActionSchema } from './schemas/game';
 import { SidePotSchema } from './schemas/sidePot';
 import { GameTypeSchema } from '../backend/src/schemas/game-types';
@@ -197,6 +199,9 @@ export type {
   AuthProvider,
   AuthProvidersResponse,
 } from '../backend/src/schemas/auth';
+
+export const PromotionClaimResponseSchema = AuthMessageResponseSchema;
+export type PromotionClaimResponse = AuthMessageResponse;
 export {
   UserProfileSchema,
   MeResponseSchema,

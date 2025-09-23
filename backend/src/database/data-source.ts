@@ -24,6 +24,8 @@ import { BroadcastTypeEntity } from './entities/broadcast-type.entity';
 import { BroadcastTemplateEntity } from './entities/broadcast-template.entity';
 import { TranslationEntity } from './entities/translation.entity';
 import { NavIconEntity } from './entities/nav-icon.entity';
+import { PromotionEntity } from './entities/promotion.entity';
+import { PromotionClaimEntity } from './entities/promotion-claim.entity';
 import { TournamentFilterOptionEntity } from '../tournament/tournament-filter-option.entity';
 import { TournamentDetail } from '../tournament/tournament-detail.entity';
 
@@ -54,6 +56,8 @@ export const AppDataSource = new DataSource({
     BroadcastTemplateEntity,
     TranslationEntity,
     NavIconEntity,
+    PromotionEntity,
+    PromotionClaimEntity,
     TournamentFilterOptionEntity,
     TournamentDetail,
   ],
