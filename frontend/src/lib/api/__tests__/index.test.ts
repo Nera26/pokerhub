@@ -15,7 +15,7 @@ describe('api client', () => {
     const { fetchPendingWithdrawals } = await import('@/lib/api');
     await fetchPendingWithdrawals();
     expect(global.fetch).toHaveBeenCalledWith(
-      'http://example.com/admin/withdrawals',
+      'http://example.com/api/admin/withdrawals',
       expect.objectContaining({
         headers: expect.objectContaining({
           Authorization: 'Bearer secret',
