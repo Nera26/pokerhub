@@ -6,6 +6,9 @@ import {
   useTransactionHistoryControls,
   type TransactionHistoryFilterQuery,
 } from '@/app/components/common/TransactionHistoryControls';
+import TransactionHistoryFilters, {
+  buildSelectOptions,
+} from '@/app/components/common/TransactionHistoryFilters';
 import { fetchAdminPlayers } from '@/lib/api/wallet';
 import {
   fetchTransactionTypes,
@@ -96,75 +99,62 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
   const players = playersQuery?.data ?? [];
   const types = typesQuery?.data ?? [];
 
+  const playerOptions = useMemo(
+    () =>
+      buildSelectOptions({
+        data: players,
+        getValue: (player) => String(player.id ?? ''),
+        getLabel: (player) => String(player.username ?? ''),
+      }),
+    [players],
+  );
+
+  const typeOptions = useMemo(
+    () =>
+      buildSelectOptions({
+        data: types,
+        getValue: (type) => String(type.id ?? ''),
+        getLabel: (type) => String(type.label ?? ''),
+      }),
+    [types],
+  );
+
   useApiError(playersQuery?.error);
   useApiError(typesQuery?.error);
   useApiError(historyError);
 
   const filterControls = (
-    <div className="flex flex-wrap gap-2 items-center">
-      <input
-        type="date"
-        className="bg-primary-bg border border-dark rounded-2xl px-3 py-2 text-sm"
-        aria-label="Start date"
-        value={filters.startDate ?? ''}
-        onChange={(e) => {
-          updateFilter('startDate', e.target.value);
-        }}
-      />
-      <input
-        type="date"
-        className="bg-primary-bg border border-dark rounded-2xl px-3 py-2 text-sm"
-        aria-label="End date"
-        value={filters.endDate ?? ''}
-        onChange={(e) => {
-          updateFilter('endDate', e.target.value);
-        }}
-      />
-
-      <select
-        className="bg-primary-bg border border-dark rounded-2xl px-3 py-2 text-sm"
-        aria-label="Filter by player"
-        value={filters.playerId ?? ''}
-        onChange={(e) => {
-          updateFilter('playerId', e.target.value);
-        }}
-      >
-        <option value="">All Players</option>
-        {playersQuery?.isLoading ? (
-          <option disabled>Loading…</option>
-        ) : playersQuery?.error ? (
-          <option disabled>Failed to load</option>
-        ) : (
-          players.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.username}
-            </option>
-          ))
-        )}
-      </select>
-
-      <select
-        className="bg-primary-bg border border-dark rounded-2xl px-3 py-2 text-sm"
-        aria-label="Filter by type"
-        value={filters.type ?? ''}
-        onChange={(e) => {
-          updateFilter('type', e.target.value);
-        }}
-      >
-        <option value="">All Types</option>
-        {typesQuery?.isLoading ? (
-          <option disabled>Loading…</option>
-        ) : typesQuery?.error ? (
-          <option disabled>Failed to load</option>
-        ) : (
-          types.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.label}
-            </option>
-          ))
-        )}
-      </select>
-    </div>
+    <TransactionHistoryFilters
+      className="!gap-2"
+      filters={filters}
+      onChange={updateFilter}
+      dateRange={{
+        startKey: 'startDate',
+        endKey: 'endDate',
+        startLabel: 'Start date',
+        endLabel: 'End date',
+      }}
+      inputClassName="bg-primary-bg border border-dark rounded-2xl px-3 py-2 text-sm"
+      selectClassName="bg-primary-bg border border-dark rounded-2xl px-3 py-2 text-sm"
+      selects={[
+        {
+          key: 'playerId',
+          label: 'Filter by player',
+          placeholderOption: { value: '', label: 'All Players' },
+          options: playerOptions,
+          loading: playersQuery?.isLoading,
+          error: Boolean(playersQuery?.error),
+        },
+        {
+          key: 'type',
+          label: 'Filter by type',
+          placeholderOption: { value: '', label: 'All Types' },
+          options: typeOptions,
+          loading: typesQuery?.isLoading,
+          error: Boolean(typesQuery?.error),
+        },
+      ]}
+    />
   );
 
   if (historyLoading) {

@@ -23,6 +23,9 @@ import {
   useTransactionHistoryControls,
   type TransactionHistoryFilterQuery,
 } from '@/app/components/common/TransactionHistoryControls';
+import TransactionHistoryFilters, {
+  buildSelectOptions,
+} from '@/app/components/common/TransactionHistoryFilters';
 
 export type Transaction = {
   datetime: string;
@@ -135,23 +138,36 @@ export default function TransactionHistoryModal({
     performedBy: [],
   };
 
-  const typeOptions = useMemo(() => {
-    const fromServer = filterOptions?.types ?? [];
-    const withoutAll = fromServer.filter((type) => type !== 'All Types');
-    return ['All Types', ...withoutAll];
-  }, [filterOptions]);
+  const typeOptions = useMemo(
+    () =>
+      buildSelectOptions({
+        data: filterOptions?.types ?? [],
+        getValue: (value) => value,
+        getLabel: (value) => value,
+        prependOptions: [{ value: 'All Types', label: 'All Types' }],
+        filter: (value) => value !== 'All Types',
+      }),
+    [filterOptions],
+  );
 
-  const performedByOptions = useMemo(() => {
-    const fromServer = filterOptions?.performedBy ?? [];
-    const withoutAll = fromServer.filter((value) => value !== 'All');
-    return ['All', ...withoutAll].map((p) => ({
-      label: p === 'All' ? 'Performed By: All' : p,
-      value: p,
-    }));
-  }, [filterOptions]);
+  const performedByOptions = useMemo(
+    () =>
+      buildSelectOptions({
+        data: filterOptions?.performedBy ?? [],
+        getValue: (value) => value,
+        getLabel: (value) => (value === 'All' ? 'Performed By: All' : value),
+        prependOptions: [{ value: 'All', label: 'Performed By: All' }],
+        filter: (value) => value !== 'All',
+      }),
+    [filterOptions],
+  );
 
-  const defaultType = typeOptions[0] ?? '';
-  const defaultBy = performedByOptions[0]?.value ?? '';
+  const [typePlaceholder, ...typeSelectableOptions] = typeOptions;
+  const [performedByPlaceholder, ...performedBySelectableOptions] =
+    performedByOptions;
+
+  const defaultType = typePlaceholder?.value ?? '';
+  const defaultBy = performedByPlaceholder?.value ?? '';
 
   defaultTypeRef.current = defaultType;
   defaultByRef.current = defaultBy;
@@ -242,47 +258,41 @@ export default function TransactionHistoryModal({
         </div>
       ) : (
         <>
-          {/* Filters (with Apply) */}
-          <div className="flex flex-wrap gap-3 pb-4 mb-4 border-b border-dark">
-            <input
-              type="date"
-              value={filters.start ?? ''}
-              onChange={(e) => updateFilter('start', e.target.value)}
-              className="bg-primary-bg border border-dark rounded-xl px-3 py-2 text-sm"
-            />
-            <input
-              type="date"
-              value={filters.end ?? ''}
-              onChange={(e) => updateFilter('end', e.target.value)}
-              className="bg-primary-bg border border-dark rounded-xl px-3 py-2 text-sm"
-            />
-            <select
-              value={filters.type || defaultType || ''}
-              onChange={(e) => updateFilter('type', e.target.value)}
-              className="bg-primary-bg border border-dark rounded-xl px-3 py-2 text-sm"
-            >
-              {typeOptions.map((t) => (
-                <option key={t}>{t}</option>
-              ))}
-            </select>
-            <select
-              value={filters.by || defaultBy || ''}
-              onChange={(e) => updateFilter('by', e.target.value)}
-              className="bg-primary-bg border border-dark rounded-xl px-3 py-2 text-sm"
-            >
-              {performedByOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={() => applyFilters()}
-              className="bg-accent-blue hover:bg-blue-600 px-4 py-2 rounded-xl text-sm font-semibold transition"
-            >
-              Apply
-            </button>
-          </div>
+          <TransactionHistoryFilters
+            className="pb-4 mb-4 border-b border-dark"
+            filters={filters}
+            onChange={updateFilter}
+            dateRange={{
+              startKey: 'start',
+              endKey: 'end',
+              startLabel: 'Start date',
+              endLabel: 'End date',
+            }}
+            inputClassName="bg-primary-bg border border-dark rounded-xl px-3 py-2 text-sm"
+            selectClassName="bg-primary-bg border border-dark rounded-xl px-3 py-2 text-sm"
+            selects={[
+              {
+                key: 'type',
+                label: 'Filter by type',
+                placeholderOption: typePlaceholder,
+                options: typeSelectableOptions,
+                loading: filtersQuery?.isLoading,
+                error: Boolean(filtersQuery?.error),
+              },
+              {
+                key: 'by',
+                label: 'Filter by performer',
+                placeholderOption: performedByPlaceholder,
+                options: performedBySelectableOptions,
+                loading: filtersQuery?.isLoading,
+                error: Boolean(filtersQuery?.error),
+              },
+            ]}
+            onApply={() => applyFilters()}
+            applyButtonLabel="Apply"
+            applyButtonClassName="bg-accent-blue hover:bg-blue-600 px-4 py-2 rounded-xl text-sm font-semibold transition"
+            applyButtonDisabled={historyLoading}
+          />
 
           <TransactionHistoryTable
             data={tableData}
