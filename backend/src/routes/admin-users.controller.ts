@@ -22,6 +22,8 @@ import {
   type CreateUserRequest,
   UserMetaResponseSchema,
   type UserMetaResponse,
+  UserRoleSchema,
+  UserStatusSchema,
   ZodError,
   AdminPlayerSchema,
   type AdminPlayer,
@@ -38,15 +40,14 @@ export class AdminUsersController {
   @ApiResponse({ status: 200, description: 'User roles and statuses' })
   meta(): UserMetaResponse {
     const res = {
-      roles: [
-        { value: 'Player', label: 'Player' },
-        { value: 'Admin', label: 'Admin' },
-      ],
-      statuses: [
-        { value: 'Active', label: 'Active' },
-        { value: 'Frozen', label: 'Frozen' },
-        { value: 'Banned', label: 'Banned' },
-      ],
+      roles: UserRoleSchema.options.map((value) => ({
+        value,
+        label: value,
+      })),
+      statuses: UserStatusSchema.options.map((value) => ({
+        value,
+        label: value,
+      })),
     };
     return UserMetaResponseSchema.parse(res);
   }
