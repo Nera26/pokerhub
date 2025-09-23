@@ -1716,6 +1716,72 @@ export interface paths {
         };
       };
     };
+    /** Create an audit log type class override */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["CreateLogTypeClassOverride"];
+        };
+      };
+      responses: {
+        /** @description Created audit log type class override */
+        201: {
+          content: {
+            "application/json": components["schemas"]["LogTypeClassOverride"];
+          };
+        };
+      };
+    };
+  };
+  "/analytics/log-types/classes/overrides": {
+    /** List stored audit log type class overrides */
+    get: {
+      responses: {
+        /** @description Stored audit log type class overrides */
+        200: {
+          content: {
+            "application/json": components["schemas"]["LogTypeClassOverrideList"];
+          };
+        };
+      };
+    };
+  };
+  "/analytics/log-types/classes/{type}": {
+    /** Update an audit log type class override */
+    put: {
+      parameters: {
+        path: {
+          type: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["UpdateLogTypeClassOverride"];
+        };
+      };
+      responses: {
+        /** @description Updated audit log type class override */
+        200: {
+          content: {
+            "application/json": components["schemas"]["LogTypeClassOverride"];
+          };
+        };
+      };
+    };
+    /** Delete an audit log type class override */
+    delete: {
+      parameters: {
+        path: {
+          type: string;
+        };
+      };
+      responses: {
+        /** @description Override removed */
+        204: {
+          content: never;
+        };
+      };
+    };
   };
   "/analytics/summary": {
     /** Get audit log summary */
@@ -1955,10 +2021,9 @@ export interface paths {
       responses: {
         /** @description Reconciliation completed */
         200: {
-          content: never;
-        };
-        "application/json": {
-          content: never;
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
         };
       };
     };
@@ -3267,6 +3332,15 @@ export interface components {
     };
     LogTypeClasses: {
       [key: string]: string;
+    };
+    LogTypeClassOverride: {
+      type: string;
+      className: string;
+    };
+    LogTypeClassOverrideList: components["schemas"]["LogTypeClassOverride"][];
+    CreateLogTypeClassOverride: components["schemas"]["LogTypeClassOverride"];
+    UpdateLogTypeClassOverride: {
+      className: string;
     };
     AuditSummaryResponse: {
       total: number;

@@ -16,6 +16,7 @@ import { AdminGuard } from '../src/auth/admin.guard';
 import { AdminTabEntity } from '../src/database/entities/admin-tab.entity';
 import { AdminTabsService } from '../src/services/admin-tabs.service';
 import { WalletService } from '../src/wallet/wallet.service';
+import { ConfigService } from '@nestjs/config';
 
 describe('Admin tabs integration', () => {
   let app: INestApplication;
@@ -52,6 +53,42 @@ describe('Admin tabs integration', () => {
       providers: [
         SidebarService,
         AdminTabsService,
+        {
+          provide: ConfigService,
+          useValue: {
+            get: (key: string) =>
+              key === 'admin.sidebar'
+                ? [
+                    {
+                      id: 'events',
+                      label: 'Events',
+                      icon: 'faBell',
+                      component: '@/app/components/dashboard/AdminEvents',
+                    },
+                    {
+                      id: 'analytics',
+                      label: 'Analytics',
+                      icon: 'faChartLine',
+                      component: '@/app/components/dashboard/analytics/Analytics',
+                    },
+                    {
+                      id: 'deposits-reconcile',
+                      label: 'Bank Reconciliation',
+                      icon: 'faFileInvoiceDollar',
+                      component:
+                        '@/app/components/dashboard/AdminBankReconciliation',
+                    },
+                    {
+                      id: 'feature-flags',
+                      label: 'Feature Flags',
+                      icon: 'faToggleOn',
+                      component:
+                        '@/app/components/dashboard/FeatureFlagsPanel',
+                    },
+                  ]
+                : undefined,
+          },
+        },
         { provide: AnalyticsService, useValue: {} },
         { provide: KycService, useValue: {} },
         { provide: RevenueService, useValue: {} },
@@ -97,7 +134,8 @@ describe('Admin tabs integration', () => {
         id: 'transactions',
         label: 'Transactions',
         icon: 'faMoneyBillWave',
-        component: '@/app/components/dashboard/transactions/TransactionHistory',
+        component:
+          '@/app/components/dashboard/transactions/TransactionHistory',
       },
       {
         id: 'wallet-iban',
@@ -109,7 +147,8 @@ describe('Admin tabs integration', () => {
         id: 'wallet-reconcile',
         label: 'Wallet Reconcile',
         icon: 'faCoins',
-        component: '@/app/components/dashboard/WalletReconcileMismatches',
+        component:
+          '@/app/components/dashboard/WalletReconcileMismatches',
       },
       {
         id: 'wallet-withdrawals',
@@ -133,7 +172,8 @@ describe('Admin tabs integration', () => {
         id: 'tournaments',
         label: 'Tournaments',
         icon: 'faTrophy',
-        component: '@/app/components/dashboard/ManageTournaments',
+        component:
+          '@/app/components/dashboard/ManageTournaments',
       },
     ]);
   });
@@ -149,7 +189,21 @@ describe('Admin tabs integration', () => {
         title: 'Analytics',
         component: '@/app/components/dashboard/analytics/Analytics',
         icon: 'faChartLine',
-        source: 'database',
+        source: 'config',
+      },
+      {
+        id: 'deposits-reconcile',
+        title: 'Bank Reconciliation',
+        component: '@/app/components/dashboard/AdminBankReconciliation',
+        icon: 'faFileInvoiceDollar',
+        source: 'config',
+      },
+      {
+        id: 'feature-flags',
+        title: 'Feature Flags',
+        component: '@/app/components/dashboard/FeatureFlagsPanel',
+        icon: 'faToggleOn',
+        source: 'config',
       },
       {
         id: 'broadcast',
@@ -189,7 +243,8 @@ describe('Admin tabs integration', () => {
       {
         id: 'transactions',
         title: 'Transactions',
-        component: '@/app/components/dashboard/transactions/TransactionHistory',
+        component:
+          '@/app/components/dashboard/transactions/TransactionHistory',
         icon: 'faMoneyBillWave',
         source: 'database',
       },
@@ -210,7 +265,8 @@ describe('Admin tabs integration', () => {
       {
         id: 'wallet-reconcile',
         title: 'Wallet Reconcile',
-        component: '@/app/components/dashboard/WalletReconcileMismatches',
+        component:
+          '@/app/components/dashboard/WalletReconcileMismatches',
         icon: 'faCoins',
         source: 'database',
       },
@@ -279,7 +335,9 @@ describe('Admin tabs integration', () => {
       .get('/admin/tabs')
       .expect(200);
     expect(finalList.body).toEqual(
-      expect.not.arrayContaining([expect.objectContaining({ id: 'reports' })]),
+      expect.not.arrayContaining([
+        expect.objectContaining({ id: 'reports' }),
+      ]),
     );
   });
 });
