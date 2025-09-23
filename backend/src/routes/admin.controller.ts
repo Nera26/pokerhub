@@ -65,6 +65,16 @@ import {
   getAuditLogTypesResponse,
 } from '../analytics/analytics.controller';
 
+const BUILT_IN_ADMIN_TABS: AdminTab[] = [
+  {
+    id: 'collusion',
+    title: 'Collusion Review',
+    component: '@/features/collusion',
+    icon: 'faUserShield',
+    source: 'config',
+  },
+];
+
 @ApiTags('admin')
 @UseGuards(AuthGuard, AdminGuard)
 @Controller('admin')
@@ -168,17 +178,31 @@ export class AdminController {
       icon: tab.icon,
       source: 'database' as const,
     }));
-    return AdminTabResponseSchema.parse(tabs);
+    const configTabs = BUILT_IN_ADMIN_TABS.filter(
+      (tab) => !tabs.some((existing) => existing.id === tab.id),
+    );
+    return AdminTabResponseSchema.parse([...configTabs, ...tabs]);
   }
 
   @Get('tabs/:id')
   @ApiOperation({ summary: 'Get admin tab metadata' })
   @ApiResponse({ status: 200, description: 'Admin tab metadata' })
   async getTabMeta(@Param('id') id: string): Promise<AdminTabMeta> {
-    const [tabConfigs, dbTab] = await Promise.all([
+    const [dbTabs, dbTab] = await Promise.all([
       this.tabs.list(),
       this.tabs.find(id),
     ]);
+
+    const configTab = BUILT_IN_ADMIN_TABS.find((tab) => tab.id === id);
+    if (configTab) {
+      return AdminTabMetaSchema.parse({
+        id: configTab.id,
+        title: configTab.title,
+        component: configTab.component,
+        enabled: true,
+        message: '',
+      });
+    }
 
     if (dbTab) {
       return AdminTabMetaSchema.parse({
@@ -190,12 +214,12 @@ export class AdminController {
       });
     }
 
-    const configTab = tabConfigs.find((tab) => tab.id === id);
-    if (configTab) {
+    const configTabFromDb = dbTabs.find((tab) => tab.id === id);
+    if (configTabFromDb) {
       return AdminTabMetaSchema.parse({
-        id: configTab.id,
-        title: configTab.title,
-        component: configTab.component,
+        id: configTabFromDb.id,
+        title: configTabFromDb.title,
+        component: configTabFromDb.component,
         enabled: true,
         message: '',
       });

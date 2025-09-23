@@ -23,6 +23,12 @@ jest.mock('@/lib/api/profile', () => ({
 jest.mock('@/lib/api/admin', () => {
   const defaultTabs = [
     {
+      id: 'collusion',
+      title: 'Collusion Review',
+      component: '@/features/collusion',
+      source: 'config',
+    },
+    {
       id: 'analytics',
       title: 'Analytics',
       component: '@/app/components/dashboard/analytics/Analytics',
@@ -143,6 +149,7 @@ jest.mock('@/app/components/dashboard/Sidebar', () => () => <div>Sidebar</div>);
 jest.mock('@/app/components/dashboard/ManageUsers', () => () => (
   <div>Users Module</div>
 ));
+jest.mock('@/features/collusion', () => () => <div>Collusion Module</div>);
 jest.mock('@/app/components/dashboard/ManageTables', () => () => (
   <div>Tables Module</div>
 ));
