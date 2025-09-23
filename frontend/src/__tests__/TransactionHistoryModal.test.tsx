@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 jest.mock('@/app/components/common/TransactionHistoryTable', () => {
   return {
@@ -163,6 +164,7 @@ describe('TransactionHistoryModal', () => {
     );
 
     const expectedTableData = entries.map(({ date, performedBy, ...rest }) => ({
+      date,
       datetime: date,
       by: performedBy,
       ...rest,
@@ -224,6 +226,83 @@ describe('TransactionHistoryModal', () => {
       expect(getByText(expected)).toBeInTheDocument();
     },
   );
+
+  it('renders datetime-only history entries in chronological order', async () => {
+    const actualTableModule = jest.requireActual(
+      '@/app/components/common/TransactionHistoryTable',
+    );
+    const tableMock = TransactionHistoryTable as unknown as jest.Mock;
+    const originalImpl = tableMock.getMockImplementation();
+    tableMock.mockImplementation((props) =>
+      actualTableModule.default(props as any),
+    );
+
+    const entries = [
+      {
+        action: 'Withdrawal',
+        amount: -50,
+        performedBy: 'Admin',
+        notes: '',
+        status: 'Pending',
+        datetime: '2024-01-02T12:00:00Z',
+      },
+      {
+        action: 'Deposit',
+        amount: 100,
+        performedBy: 'User',
+        notes: '',
+        status: 'Completed',
+        datetime: '2024-01-01T09:00:00Z',
+      },
+    ];
+
+    (useTransactionColumns as jest.Mock).mockReturnValue({
+      data: columnsMeta,
+      isLoading: false,
+      error: null,
+    });
+    mockUseControls.mockReturnValue({
+      history: createHistory({ data: entries as any }),
+      queries: { filters: createFiltersQuery() },
+      handleExport: jest.fn(),
+    });
+
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: async () => ({}),
+        headers: { get: () => 'application/json' },
+      }),
+    ) as any;
+
+    try {
+      render(
+        <QueryClientProvider client={client}>
+          <TransactionHistoryModal
+            isOpen
+            onClose={() => {}}
+            userName="Test"
+            userId="1"
+          />
+        </QueryClientProvider>,
+      );
+
+      const rows = await screen.findAllByRole('row');
+      expect(rows).toHaveLength(3);
+      expect(rows[1]).toHaveTextContent('Deposit');
+      expect(rows[2]).toHaveTextContent('Withdrawal');
+    } finally {
+      client.clear();
+      global.fetch = originalFetch;
+      tableMock.mockImplementation(
+        originalImpl ?? (() => <div data-testid="tx-table" />),
+      );
+    }
+  });
 
   it('shows error when data fetching fails', async () => {
     (useTransactionColumns as jest.Mock).mockReturnValue({
