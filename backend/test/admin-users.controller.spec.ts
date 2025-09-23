@@ -11,6 +11,8 @@ import {
   DashboardUserSchema,
   UserMetaResponseSchema,
   AdminPlayerSchema,
+  UserRoleSchema,
+  UserStatusSchema,
 } from '@shared/types';
 
 describe('AdminUsersController', () => {
@@ -82,13 +84,21 @@ describe('AdminUsersController', () => {
     expect(list).toHaveBeenCalledWith(10);
   });
 
-  it('returns user meta', async () => {
+  it('returns user meta containing all role and status options', async () => {
     const res = await request(app.getHttpServer())
       .get('/admin/users/meta')
       .expect(200);
     const parsed = UserMetaResponseSchema.parse(res.body);
-    expect(parsed.roles[0].value).toBe('Player');
-    expect(parsed.statuses[0].value).toBe('Active');
+    const expectedRoles = UserRoleSchema.options.map((value) => ({
+      value,
+      label: value,
+    }));
+    const expectedStatuses = UserStatusSchema.options.map((value) => ({
+      value,
+      label: value,
+    }));
+    expect(parsed.roles).toEqual(expectedRoles);
+    expect(parsed.statuses).toEqual(expectedStatuses);
   });
 
   it('creates user', async () => {
