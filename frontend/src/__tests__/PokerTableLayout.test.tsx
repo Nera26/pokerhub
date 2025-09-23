@@ -11,6 +11,22 @@ jest.mock('@/hooks/useChipDenominations', () => ({
   }),
 }));
 
+jest.mock('@/hooks/useTableState', () => ({
+  useTableState: () => ({
+    data: {
+      handId: 'hand-1',
+      seats: [],
+      pot: { main: 0, sidePots: [] },
+      street: 'pre',
+      serverTime: Date.now(),
+    },
+  }),
+}));
+
+jest.mock('@/hooks/usePlayerTables', () => ({
+  usePlayerTables: () => ({ data: [] }),
+}));
+
 describe('PokerTableLayout', () => {
   it('shows a toast when folding', async () => {
     const players: Player[] = [
