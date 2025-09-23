@@ -2841,6 +2841,25 @@ export interface paths {
         };
       };
     };
+    /**
+     * Update performance thresholds
+     * @description Admin only
+     */
+    put: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["PerformanceThresholdsResponse"];
+        };
+      };
+      responses: {
+        /** @description Updated performance thresholds */
+        200: {
+          content: {
+            "application/json": components["schemas"]["PerformanceThresholdsResponse"];
+          };
+        };
+      };
+    };
   };
   "/users": {
     /** Create user */

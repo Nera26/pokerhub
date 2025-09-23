@@ -95,4 +95,17 @@ export class ConfigController {
       await this.thresholds.get(),
     );
   }
+
+  @Put('performance-thresholds')
+  @UseGuards(AuthGuard, AdminGuard)
+  @ApiOperation({ summary: 'Update performance thresholds' })
+  @ApiResponse({ status: 200, description: 'Updated performance thresholds' })
+  async updatePerformanceThresholds(
+    @Body() body: PerformanceThresholdsResponse,
+  ): Promise<PerformanceThresholdsResponse> {
+    const parsed = PerformanceThresholdsResponseSchema.parse(body);
+    return PerformanceThresholdsResponseSchema.parse(
+      await this.thresholds.update(parsed),
+    );
+  }
 }

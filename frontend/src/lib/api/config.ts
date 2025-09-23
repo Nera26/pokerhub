@@ -38,3 +38,18 @@ export async function fetchPerformanceThresholds({
     { signal },
   );
 }
+
+export async function updatePerformanceThresholds(
+  thresholds: PerformanceThresholdsResponse,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<PerformanceThresholdsResponse> {
+  return apiClient(
+    '/api/config/performance-thresholds',
+    PerformanceThresholdsResponseSchema,
+    {
+      method: 'PUT',
+      body: JSON.stringify(thresholds),
+      signal,
+    },
+  );
+}

@@ -2720,6 +2720,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PerformanceThresholdsResponse'
+    put:
+      summary: Update performance thresholds
+      description: Admin only
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PerformanceThresholdsResponse'
+      responses:
+        '200':
+          description: Updated performance thresholds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerformanceThresholdsResponse'
   /users:
     post:
       summary: Create user

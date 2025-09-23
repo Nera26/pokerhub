@@ -20,6 +20,7 @@ import { PerformanceThresholdsService } from '../src/services/performance-thresh
 import { ChipDenominationEntity } from '../src/database/entities/chip-denomination.entity';
 import { TableThemeEntity } from '../src/database/entities/table-theme.entity';
 import { DefaultAvatarEntity } from '../src/database/entities/default-avatar.entity';
+import { PerformanceThresholdEntity } from '../src/database/entities/performance-threshold.entity';
 
 import {
   TableThemeResponseSchema,
@@ -80,6 +81,7 @@ function createTestModule() {
               ChipDenominationEntity,
               TableThemeEntity,
               DefaultAvatarEntity,
+              PerformanceThresholdEntity,
             ],
             synchronize: true,
           }) as DataSource;
@@ -92,6 +94,7 @@ function createTestModule() {
         ChipDenominationEntity,
         TableThemeEntity,
         DefaultAvatarEntity,
+        PerformanceThresholdEntity,
       ]),
     ],
     controllers: [ConfigController],
@@ -210,5 +213,18 @@ describe('ConfigController', () => {
       .get('/config/performance-thresholds')
       .expect(200);
     expect(res.body).toEqual({ INP: 200, LCP: 3000, CLS: 0.1 });
+  });
+
+  it('updates performance thresholds', async () => {
+    await request(app.getHttpServer())
+      .put('/config/performance-thresholds')
+      .send({ INP: 180, LCP: 2600, CLS: 0.07 })
+      .expect(200, { INP: 180, LCP: 2600, CLS: 0.07 });
+
+    const res = await request(app.getHttpServer())
+      .get('/config/performance-thresholds')
+      .expect(200);
+
+    expect(res.body).toEqual({ INP: 180, LCP: 2600, CLS: 0.07 });
   });
 });
