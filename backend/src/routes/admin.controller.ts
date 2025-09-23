@@ -36,8 +36,6 @@ import {
   type RevenueTimeFilter,
 } from '@shared/types';
 import {
-  SidebarItem,
-  SidebarItemsResponseSchema,
   AdminTab,
   AdminTabResponseSchema,
   AdminEvent,
@@ -54,7 +52,6 @@ import {
   MessageResponse,
   MessageResponseSchema,
 } from '../schemas/auth';
-import { SidebarService } from '../services/sidebar.service';
 import { KycService } from '../wallet/kyc.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { RevenueService } from '../wallet/revenue.service';
@@ -75,7 +72,6 @@ export class AdminController {
   constructor(
     private readonly kyc: KycService,
     private readonly analytics: AnalyticsService,
-    private readonly sidebar: SidebarService,
     private readonly tabs: AdminTabsService,
     private readonly revenue: RevenueService,
     private readonly wallet: WalletService,
@@ -160,14 +156,6 @@ export class AdminController {
     return MessageResponseSchema.parse({ message: 'acknowledged' });
   }
 
-  @Get('sidebar')
-  @ApiOperation({ summary: 'Get admin sidebar items' })
-  @ApiResponse({ status: 200, description: 'Sidebar items' })
-  async getSidebar(): Promise<SidebarItem[]> {
-    const items = await this.sidebar.getItems();
-    return SidebarItemsResponseSchema.parse(items);
-  }
-
   @Get('tabs')
   @ApiOperation({ summary: 'Get admin dashboard tabs' })
   @ApiResponse({ status: 200, description: 'Dashboard tabs' })
@@ -187,8 +175,8 @@ export class AdminController {
   @ApiOperation({ summary: 'Get admin tab metadata' })
   @ApiResponse({ status: 200, description: 'Admin tab metadata' })
   async getTabMeta(@Param('id') id: string): Promise<AdminTabMeta> {
-    const [items, dbTab] = await Promise.all([
-      this.sidebar.getItems(),
+    const [tabConfigs, dbTab] = await Promise.all([
+      this.tabs.list(),
       this.tabs.find(id),
     ]);
 
@@ -202,11 +190,11 @@ export class AdminController {
       });
     }
 
-    const configTab = items.find((item) => item.id === id);
+    const configTab = tabConfigs.find((tab) => tab.id === id);
     if (configTab) {
       return AdminTabMetaSchema.parse({
         id: configTab.id,
-        title: configTab.label,
+        title: configTab.title,
         component: configTab.component,
         enabled: true,
         message: '',

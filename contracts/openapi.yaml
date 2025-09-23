@@ -2064,18 +2064,6 @@ paths:
                 $ref: '#/components/schemas/MessageResponse'
         '404':
           description: Admin event not found
-  /admin/sidebar:
-    get:
-      summary: Get admin sidebar items
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Sidebar items
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SidebarItemsResponse'
   /admin/tabs:
     get:
       summary: Get admin dashboard tabs

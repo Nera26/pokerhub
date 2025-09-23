@@ -27,7 +27,6 @@ import AdminWithdrawalsController from '../routes/admin-withdrawals.controller';
 import { BankReconciliationController } from '../routes/bank-reconciliation.controller';
 import { BankReconciliationService } from './bank-reconciliation.service';
 import { WalletIbanController } from '../routes/wallet-iban.controller';
-import { SidebarService } from '../services/sidebar.service';
 import { TransactionType } from './transaction-type.entity';
 import { Transaction } from './transaction.entity';
 import { TransactionStatus } from './transaction-status.entity';
@@ -96,7 +95,6 @@ class PendingDepositWorker implements OnModuleInit {
     ChargebackMonitor,
     GeoIpService,
     BankReconciliationService,
-    SidebarService,
     AdminTabsService,
     TransactionsService,
     TransactionColumnRepository,
