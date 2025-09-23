@@ -18,6 +18,14 @@ export const defaultWalletStatus = {
     kycVerified: true,
     currency: 'EUR',
   },
+  isLoading: false,
+  error: null,
+};
+
+export const defaultIbanDetails = {
+  data: undefined,
+  isLoading: false,
+  error: null,
 };
 
 export const defaultBankTransfer = {
@@ -38,7 +46,8 @@ export function resetWalletMocks() {
   mockUseBankTransfer.mockReset();
   mockUseWithdraw.mockReset();
 
-  mockUseWalletStatus.mockReturnValue(defaultWalletStatus);
-  mockUseBankTransfer.mockReturnValue(defaultBankTransfer);
-  mockUseWithdraw.mockReturnValue(defaultWithdraw);
+  mockUseWalletStatus.mockReturnValue({ ...defaultWalletStatus });
+  mockUseIbanDetails.mockReturnValue({ ...defaultIbanDetails });
+  mockUseBankTransfer.mockReturnValue({ ...defaultBankTransfer });
+  mockUseWithdraw.mockReturnValue({ ...defaultWithdraw });
 }

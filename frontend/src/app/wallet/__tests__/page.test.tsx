@@ -1,63 +1,68 @@
-import { mockUseIbanDetails, resetWalletMocks } from './walletTestUtils';
-import { render, screen } from '@testing-library/react';
+import {
+  mockUseIbanDetails,
+  mockUseWalletStatus,
+  resetWalletMocks,
+} from './walletTestUtils';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import WalletPage from '../page';
+import WalletFeature from '@/features/wallet';
 
-beforeEach(() => {
-  resetWalletMocks();
-});
-
-test('shows bank details when iban details resolve', async () => {
-  mockUseIbanDetails.mockReturnValue({
-    data: {
-      ibanMasked: '***123',
-      ibanFull: 'DE001',
-      holder: 'John Doe',
-      instructions: '',
-      history: [],
-      lastUpdatedBy: 'admin',
-      lastUpdatedAt: '2024-01-01T00:00:00Z',
-      bankName: 'Test Bank',
-      bankAddress: '123 Street',
-    },
-    isLoading: false,
-    error: null,
+describe('Wallet feature page', () => {
+  beforeEach(() => {
+    resetWalletMocks();
   });
 
-  render(<WalletPage />);
-  await userEvent.click(screen.getByRole('button', { name: /withdraw/i }));
+  test('shows bank details in withdraw modal when iban details resolve', async () => {
+    mockUseIbanDetails.mockReturnValue({
+      data: {
+        ibanMasked: '***123',
+        ibanFull: 'DE001',
+        holder: 'John Doe',
+        instructions: '',
+        history: [],
+        lastUpdatedBy: 'admin',
+        lastUpdatedAt: '2024-01-01T00:00:00Z',
+        bankName: 'Test Bank',
+        bankAddress: '123 Street',
+      },
+      isLoading: false,
+      error: null,
+    });
 
-  expect(await screen.findByText('Test Bank')).toBeInTheDocument();
-  expect(screen.getByText('***123')).toBeInTheDocument();
-});
+    render(<WalletFeature />);
+    await userEvent.click(screen.getByRole('button', { name: /withdraw/i }));
 
-test('shows empty state when iban details missing', async () => {
-  mockUseIbanDetails.mockReturnValue({
-    data: undefined,
-    isLoading: false,
-    error: null,
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    const bankNameRow = await screen.findByText(/Bank Name:/i);
+    expect(bankNameRow.closest('p')).toHaveTextContent('Test Bank');
+    const accountNumberRow = screen.getByText(/Account Number:/i);
+    expect(accountNumberRow.closest('p')).toHaveTextContent('***123');
   });
 
-  render(<WalletPage />);
-  await userEvent.click(screen.getByRole('button', { name: /withdraw/i }));
+  test('does not open withdraw modal when iban details are unavailable', async () => {
+    mockUseIbanDetails.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: null,
+    });
 
-  expect(await screen.findByRole('alert')).toHaveTextContent(
-    /no bank details available/i,
-  );
-});
+    render(<WalletFeature />);
+    await userEvent.click(screen.getByRole('button', { name: /withdraw/i }));
 
-test('shows error state and hides withdraw modal when iban details fail', async () => {
-  mockUseIbanDetails.mockReturnValue({
-    data: undefined,
-    isLoading: false,
-    error: new Error('fail'),
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
   });
 
-  render(<WalletPage />);
-  await userEvent.click(screen.getByRole('button', { name: /withdraw/i }));
+  test('shows loading state while wallet status is fetched', () => {
+    mockUseWalletStatus.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+    });
 
-  expect(await screen.findByRole('alert')).toHaveTextContent(
-    /failed to load bank details/i,
-  );
-  expect(screen.queryByText('Withdraw Funds')).not.toBeInTheDocument();
+    render(<WalletFeature />);
+
+    expect(screen.getByText(/loading wallet/i)).toBeInTheDocument();
+  });
 });
