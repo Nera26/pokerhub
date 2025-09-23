@@ -32,6 +32,12 @@ const SEED_TABS: AdminTabSeed[] = [
     component: '@/app/components/dashboard/BroadcastPanel',
   },
   {
+    id: 'bonuses',
+    label: 'Bonuses',
+    icon: 'faGift',
+    component: '@/app/components/dashboard/BonusManager',
+  },
+  {
     id: 'deposits-reconcile',
     label: 'Bank Reconciliation',
     icon: 'faFileInvoiceDollar',

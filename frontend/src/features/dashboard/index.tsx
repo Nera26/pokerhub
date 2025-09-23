@@ -59,6 +59,14 @@ function TabFallback({ tab, online }: { tab: SidebarTab; online?: number }) {
   );
 }
 
+function formatTabLabel(id: string): string {
+  return id
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
 function DashboardPage() {
   const router = useRouter();
   const pathname = usePathname();
@@ -147,7 +155,12 @@ function DashboardPage() {
     }
   }, [tab, router, pathname, search, tabs]);
 
-  const title = titles[tab] ?? tabMeta?.title ?? 'Admin Dashboard';
+  const computedTitle =
+    titles[tab] ?? tabMeta?.title ?? formatTabLabel(tab ?? '');
+  const title =
+    tab === 'dashboard'
+      ? 'Admin Dashboard'
+      : computedTitle || 'Admin Dashboard';
 
   useEffect(() => {
     if (avatarUrl === null) {

@@ -45,6 +45,12 @@ describe('AdminController', () => {
       component: '@/app/components/dashboard/BroadcastPanel',
     },
     {
+      id: 'bonuses',
+      title: 'Bonuses',
+      icon: 'faGift',
+      component: '@/app/components/dashboard/BonusManager',
+    },
+    {
       id: 'events',
       title: 'Events',
       icon: 'faBell',
