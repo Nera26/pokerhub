@@ -7,6 +7,8 @@ import {
   useState,
   type FormEvent,
 } from 'react';
+import { type QueryKey } from '@tanstack/react-query';
+import { useCrudState } from '@/hooks/admin/useCrudState';
 
 type SubmitPreparation<CreatePayload, UpdatePayload, Item> =
   | { error: string }
@@ -19,6 +21,7 @@ type UseSimpleCrudPageOptions<
   CreatePayload,
   UpdatePayload = CreatePayload,
 > = {
+  queryKey?: QueryKey;
   emptyForm: FormState;
   fetchItems: () => Promise<Item[]>;
   createItem: (payload: CreatePayload) => Promise<unknown>;
@@ -87,6 +90,7 @@ export function useSimpleCrudPage<
   >,
 ): UseSimpleCrudPageReturn<Item, FormState> {
   const {
+    queryKey,
     emptyForm,
     fetchItems,
     createItem,
@@ -101,54 +105,78 @@ export function useSimpleCrudPage<
     formatActionError = defaultActionErrorFormatter,
   } = options;
 
-  const [items, setItems] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [listError, setListError] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
-  const [submitting, setSubmitting] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const loadItems = useCallback(async () => {
-    const data = await fetchItems();
-    return mapItems ? mapItems(data) : data;
-  }, [fetchItems, mapItems]);
+  const handleCreateError = useCallback(
+    (error: unknown) => {
+      setActionError(formatActionError('create', error));
+    },
+    [formatActionError],
+  );
 
-  const refresh = useCallback(async () => {
-    try {
-      const nextItems = await loadItems();
-      setItems(nextItems);
-      setListError(null);
-    } catch (err) {
-      setListError(formatListError(err));
-    }
-  }, [loadItems, formatListError]);
+  const handleUpdateError = useCallback(
+    (error: unknown) => {
+      setActionError(formatActionError('update', error));
+    },
+    [formatActionError],
+  );
 
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
+  const handleDeleteError = useCallback(
+    (error: unknown) => {
+      setActionError(formatActionError('delete', error));
+    },
+    [formatActionError],
+  );
 
-    loadItems()
-      .then((nextItems) => {
-        if (!active) return;
-        setItems(nextItems);
-        setListError(null);
-      })
-      .catch((err) => {
-        if (!active) return;
-        setListError(formatListError(err));
-      })
-      .finally(() => {
-        if (active) {
-          setLoading(false);
-        }
-      });
+  const handleActionSuccess = useCallback(() => {
+    setActionError(null);
+  }, []);
 
-    return () => {
-      active = false;
-    };
-  }, [loadItems, formatListError]);
+  const {
+    items: fetchedItems,
+    isLoading: loading,
+    error: listErrorRaw,
+    refetch,
+    createMutation,
+    updateMutation,
+    executeCreate,
+    executeUpdate,
+    executeDelete,
+  } = useCrudState<
+    Item,
+    CreatePayload,
+    { id: string; payload: UpdatePayload },
+    string
+  >({
+    queryKey: queryKey ?? [
+      'admin',
+      'simple-crud',
+      fetchItems.name || 'resource',
+    ],
+    fetchItems,
+    transformItems: mapItems,
+    create: { mutationFn: createItem },
+    update: {
+      mutationFn: ({ id, payload }) => updateItem(id, payload),
+    },
+    remove: { mutationFn: deleteItem },
+    onSuccess: {
+      create: handleActionSuccess,
+      update: handleActionSuccess,
+      delete: handleActionSuccess,
+    },
+    onError: {
+      create: handleCreateError,
+      update: handleUpdateError,
+      delete: handleDeleteError,
+    },
+  });
+
+  const items = fetchedItems;
+  const listError = listErrorRaw ? formatListError(listErrorRaw) : null;
 
   const editingItem = useMemo(() => {
     if (!editingId) {
@@ -187,34 +215,38 @@ export function useSimpleCrudPage<
       }
 
       setActionError(null);
-      setSubmitting(true);
 
       try {
         if (preparation.type === 'create') {
-          await createItem(preparation.payload);
+          await executeCreate(preparation.payload);
         } else {
           const item = editingItem;
           if (!item) {
-            throw new Error('No item selected for update');
+            setActionError(
+              formatActionError(
+                'update',
+                new Error('No item selected for update'),
+              ),
+            );
+            return;
           }
-          await updateItem(getItemId(item), preparation.payload);
+          await executeUpdate({
+            id: getItemId(item),
+            payload: preparation.payload,
+          });
+          setEditingId(null);
         }
-        setEditingId(null);
-        await refresh();
-      } catch (err) {
-        setActionError(formatActionError(preparation.type, err));
-      } finally {
-        setSubmitting(false);
+      } catch {
+        // Errors are surfaced via the shared onError handlers
       }
     },
     [
-      prepareSubmit,
+      executeCreate,
+      executeUpdate,
       form,
       editingItem,
-      createItem,
-      updateItem,
+      prepareSubmit,
       getItemId,
-      refresh,
       formatActionError,
     ],
   );
@@ -224,18 +256,17 @@ export function useSimpleCrudPage<
       setDeletingId(id);
       setActionError(null);
       try {
-        await deleteItem(id);
+        await executeDelete(id);
         if (editingId === id) {
           setEditingId(null);
         }
-        await refresh();
-      } catch (err) {
-        setActionError(formatActionError('delete', err));
+      } catch {
+        // Error handling managed in handleDeleteError
       } finally {
         setDeletingId(null);
       }
     },
-    [deleteItem, editingId, refresh, formatActionError],
+    [editingId, executeDelete],
   );
 
   const startEdit = useCallback(
@@ -252,6 +283,11 @@ export function useSimpleCrudPage<
   }, []);
 
   const isEditing = !!editingItem;
+  const submitting = createMutation.isPending || updateMutation.isPending;
+
+  const refresh = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
 
   return {
     items,
