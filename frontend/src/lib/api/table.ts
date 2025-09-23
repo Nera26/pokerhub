@@ -48,6 +48,29 @@ const HandSummarySchema = z.object({
 export type HandSummary = z.infer<typeof HandSummarySchema>;
 export { HandSummarySchema };
 
+const PlayerTableSessionSchema = z
+  .object({
+    tableId: z.string(),
+    sessionId: z.string().optional(),
+    label: z.string().optional(),
+    name: z.string().optional(),
+    pingMs: z.number().int().nonnegative().optional(),
+    handId: z.string().optional(),
+    requiresAction: z.boolean().optional(),
+  })
+  .passthrough();
+
+const PlayerTablesArraySchema = z.array(PlayerTableSessionSchema);
+
+const PlayerTablesResponseSchema = z
+  .object({
+    tables: PlayerTablesArraySchema,
+  })
+  .or(PlayerTablesArraySchema);
+
+export type PlayerTableSession = z.infer<typeof PlayerTableSessionSchema>;
+export { PlayerTableSessionSchema, PlayerTablesResponseSchema };
+
 export async function fetchTables({
   signal,
   status,
@@ -77,6 +100,21 @@ export async function fetchTableState(
     signal,
     cache: 'no-store',
   });
+}
+
+export async function fetchPlayerTables({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<PlayerTableSession[]> {
+  const response = await apiClient(
+    '/api/tables/sessions',
+    PlayerTablesResponseSchema,
+    {
+      signal,
+      cache: 'no-store',
+    },
+  );
+
+  return Array.isArray(response) ? response : response.tables;
 }
 
 export async function fetchTableHands(

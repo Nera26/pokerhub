@@ -2,12 +2,14 @@
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import TopBar from './TopBar';
+import TopBar, { type TopBarTable } from './TopBar';
 import ActionControls from './ActionControls';
 import { getServerTime } from '@/lib/server-time';
 import TableMain, { type TableMainHandle } from './TableMain';
 import useBetting from '@/hooks/useBetting';
 import useToasts from '@/hooks/useToasts';
+import { useTableState } from '@/hooks/useTableState';
+import { usePlayerTables } from '@/hooks/usePlayerTables';
 import type { Player } from './types';
 import { calculateSidePots } from '@shared/poker/sidePots';
 
@@ -32,7 +34,7 @@ export interface PokerTableLayoutProps {
   handNumber?: string;
   pingMs?: number;
   onGoBack?: () => void;
-  onSwitchTable?: (index: number) => void;
+  onSwitchTable?: (tableId: string) => void;
   onAddNewTable?: () => void;
   onToggleSound?: () => void;
   onSitOut?: () => void;
@@ -49,22 +51,63 @@ export default function PokerTableLayout({
   heroId,
   heroUsername,
   chatMessages = [],
-  handNumber = '#45821',
-  pingMs = 32,
+  handNumber,
+  pingMs,
   onGoBack,
-  onSwitchTable = () => {},
+  onSwitchTable,
   onAddNewTable = () => {},
   onToggleSound = () => {},
   onSitOut = () => {},
   onLeave = () => {},
 }: PokerTableLayoutProps) {
   const router = useRouter();
+  const activeTableId = Array.isArray(tableId) ? tableId[0] : tableId;
+
+  const { data: tableState } = useTableState(activeTableId);
+  const { data: playerTables } = usePlayerTables();
+  const sessions = playerTables ?? [];
+  const currentSession = sessions.find(
+    (session) => session.tableId === activeTableId,
+  );
+
+  const topBarTables: TopBarTable[] = sessions.map((session, index) => ({
+    id: session.tableId,
+    label: session.label ?? session.name ?? `Table ${index + 1}`,
+    requiresAttention: session.requiresAction ?? false,
+  }));
+
+  if (
+    activeTableId &&
+    !topBarTables.some((table) => table.id === activeTableId)
+  ) {
+    topBarTables.unshift({
+      id: activeTableId,
+      label:
+        currentSession?.label ??
+        currentSession?.name ??
+        (activeTableId ? `Table ${activeTableId}` : 'Current Table'),
+      requiresAttention: currentSession?.requiresAction ?? false,
+    });
+  }
+
+  const derivedHandNumber =
+    tableState?.handId ?? handNumber ?? currentSession?.handId;
+  const derivedPingMs = pingMs ?? currentSession?.pingMs;
 
   const handleGoBack = () => {
     if (onGoBack) {
       onGoBack();
     } else {
       router.back();
+    }
+  };
+
+  const handleSwitchTable = (nextTableId: string) => {
+    if (!nextTableId) return;
+    if (onSwitchTable) {
+      onSwitchTable(nextTableId);
+    } else {
+      router.push(`/table/${nextTableId}`);
     }
   };
   const {
@@ -108,15 +151,16 @@ export default function PokerTableLayout({
   return (
     <div className="bg-primary-bg text-text-primary min-h-screen">
       <TopBar
-        tableId={tableId}
+        currentTableId={activeTableId ?? ''}
+        tables={topBarTables}
         smallBlind={smallBlind}
         bigBlind={bigBlind}
-        handNumber={handNumber}
-        pingMs={pingMs}
+        handNumber={derivedHandNumber}
+        pingMs={derivedPingMs}
         youChips={youChips}
         headerAvatar={headerAvatar}
         onGoBack={handleGoBack}
-        onSwitchTable={onSwitchTable}
+        onSwitchTable={handleSwitchTable}
         onAddNewTable={onAddNewTable}
         onLeave={onLeave}
         onToggleSidePanel={() => tableRef.current?.toggleSidePanel()}
