@@ -5,6 +5,7 @@ export interface AdminSidebarTabSeed {
   label: string;
   icon: string;
   component: string;
+  source?: 'config' | 'database';
 }
 
 export const CANONICAL_ADMIN_SIDEBAR_TABS: AdminSidebarTabSeed[] = [
@@ -13,84 +14,105 @@ export const CANONICAL_ADMIN_SIDEBAR_TABS: AdminSidebarTabSeed[] = [
     label: 'Analytics',
     icon: 'faChartLine',
     component: '@/app/components/dashboard/analytics/Analytics',
+    source: 'config',
   },
   {
     id: 'broadcast',
     label: 'Broadcasts',
     icon: 'faBullhorn',
     component: '@/app/components/dashboard/BroadcastPanel',
+    source: 'config',
   },
   {
     id: 'bonuses',
     label: 'Bonuses',
     icon: 'faGift',
     component: '@/app/components/dashboard/BonusManager',
+    source: 'config',
   },
   {
     id: 'deposits-reconcile',
     label: 'Bank Reconciliation',
     icon: 'faFileInvoiceDollar',
     component: '@/app/components/dashboard/AdminBankReconciliation',
+    source: 'config',
   },
   {
     id: 'events',
     label: 'Events',
     icon: 'faBell',
     component: '@/app/components/dashboard/AdminEvents',
+    source: 'config',
   },
   {
     id: 'feature-flags',
     label: 'Feature Flags',
     icon: 'faToggleOn',
     component: '@/app/components/dashboard/FeatureFlagsPanel',
+    source: 'config',
   },
   {
     id: 'settings',
     label: 'Settings',
     icon: 'faCog',
     component: '@/app/components/dashboard/Settings',
+    source: 'config',
   },
   {
     id: 'tables',
     label: 'Tables',
     icon: 'faTable',
     component: '@/app/components/dashboard/ManageTables',
+    source: 'config',
   },
   {
     id: 'transactions',
     label: 'Transactions',
     icon: 'faMoneyBillWave',
     component: '@/app/components/dashboard/transactions/TransactionHistory',
+    source: 'config',
   },
   {
     id: 'tournaments',
     label: 'Tournaments',
     icon: 'faTrophy',
     component: '@/app/components/dashboard/ManageTournaments',
+    source: 'config',
   },
   {
     id: 'users',
     label: 'Users',
     icon: 'faUsers',
     component: '@/app/components/dashboard/ManageUsers',
+    source: 'config',
   },
   {
     id: 'wallet-iban',
     label: 'IBAN Manager',
     icon: 'faBuildingColumns',
     component: '@/app/components/dashboard/IbanManager',
+    source: 'config',
   },
   {
     id: 'wallet-reconcile',
     label: 'Wallet Reconcile',
     icon: 'faCoins',
     component: '@/app/components/dashboard/WalletReconcileMismatches',
+    source: 'config',
   },
   {
     id: 'wallet-withdrawals',
     label: 'Withdrawals',
     icon: 'faMoneyCheck',
     component: '@/app/components/dashboard/Withdrawals',
+    source: 'config',
+  },
+  {
+    id: 'collusion',
+    label: 'Collusion Review',
+    icon: 'faUserShield',
+    component: '@/features/collusion',
+    source: 'config',
   },
 ];
 
@@ -116,13 +138,14 @@ export async function applyCanonicalAdminSidebarTabs(
 
   for (const tab of CANONICAL_ADMIN_SIDEBAR_TABS) {
     await queryRunner.query(
-      `INSERT INTO "admin_tab" ("id", "label", "icon", "component")
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO "admin_tab" ("id", "label", "icon", "component", "source")
+       VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT ("id") DO UPDATE
        SET "label" = EXCLUDED."label",
            "icon" = EXCLUDED."icon",
-           "component" = EXCLUDED."component"`,
-      [tab.id, tab.label, tab.icon, tab.component],
+           "component" = EXCLUDED."component",
+           "source" = EXCLUDED."source"`,
+      [tab.id, tab.label, tab.icon, tab.component, tab.source ?? 'config'],
     );
   }
 }

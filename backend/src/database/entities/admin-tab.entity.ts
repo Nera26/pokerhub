@@ -13,4 +13,7 @@ export class AdminTabEntity {
 
   @Column()
   component: string;
+
+  @Column({ default: 'database' })
+  source: 'config' | 'database';
 }
