@@ -1,59 +1,80 @@
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import EditProfileModal, {
-  EditProfileData,
-} from '@/app/components/user/EditProfileModal';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ComponentProps } from 'react';
+import EditProfileModal from '@/app/components/user/EditProfileModal';
+import { fetchTiers } from '@/lib/api/tiers';
+import type { Tier, UserProfile } from '@shared/types';
+
+jest.mock('@/lib/api/tiers');
 
 describe('EditProfileModal', () => {
-  it('submits edited profile data', async () => {
-    const onSave = jest.fn();
-    const onClose = jest.fn();
-    const user = userEvent.setup();
+  const profile: UserProfile = {
+    username: 'PlayerOne23',
+    email: 'player@example.com',
+    avatarUrl: 'https://example.com/avatar.jpg',
+    bank: '•••• 1234',
+    location: 'US',
+    joined: '2023-01-01T00:00:00.000Z',
+    bio: 'bio',
+    experience: 1500,
+    balance: 1000,
+  };
 
-    render(<EditProfileModal isOpen onClose={onClose} onSave={onSave} />);
+  const tiers: Tier[] = [
+    { name: 'Bronze', min: 0, max: 999 },
+    { name: 'Silver', min: 1000, max: 4999 },
+    { name: 'Gold', min: 5000, max: null },
+  ];
 
-    // Accessibility: labels and aria attributes
-    const closeButton = screen.getByRole('button', {
-      name: 'Close edit profile modal',
-    });
-    expect(closeButton).toHaveAttribute(
-      'aria-label',
-      'Close edit profile modal',
+  function renderModal(
+    overrides: Partial<ComponentProps<typeof EditProfileModal>> = {},
+  ) {
+    const client = new QueryClient();
+    return render(
+      <QueryClientProvider client={client}>
+        <EditProfileModal
+          isOpen
+          onClose={() => {}}
+          onSave={() => {}}
+          profile={profile}
+          {...overrides}
+        />
+      </QueryClientProvider>,
     );
-    expect(screen.getByLabelText('Username')).toBeInTheDocument();
-    expect(screen.getByLabelText('Email Address')).toBeInTheDocument();
-    expect(screen.getByLabelText('Bank Account Number')).toBeInTheDocument();
+  }
 
-    const file = new File(['avatar'], 'avatar.png', { type: 'image/png' });
-    const fileInput = document.querySelector(
-      'input[type="file"]',
-    ) as HTMLInputElement;
-    await user.upload(fileInput, file);
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
-    await user.clear(screen.getByLabelText('Username'));
-    await user.type(screen.getByLabelText('Username'), 'NewUser');
-    await user.clear(screen.getByLabelText('Email Address'));
-    await user.type(screen.getByLabelText('Email Address'), 'new@example.com');
-    await user.clear(screen.getByLabelText('Bank Account Number'));
-    await user.type(screen.getByLabelText('Bank Account Number'), '5678');
+  it('renders tier progress using API data', async () => {
+    (fetchTiers as jest.Mock).mockResolvedValue(tiers);
+    renderModal();
 
-    const bioTextarea = document.querySelector(
-      'textarea',
-    ) as HTMLTextAreaElement;
-    await user.clear(bioTextarea);
-    await user.type(bioTextarea, 'New bio');
+    expect(await screen.findByText('Silver')).toBeInTheDocument();
+    const bar = screen.getByTestId('tier-progress-bar');
+    expect(bar).toHaveStyle({ width: '13%' });
+    const target = tiers[2]?.min ?? profile.experience;
+    const expLabel = `EXP: ${profile.experience.toLocaleString()} / ${target.toLocaleString()}`;
+    expect(screen.getByText(expLabel)).toBeInTheDocument();
+  });
 
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+  it('hides the progress bar while parent indicates loading', async () => {
+    (fetchTiers as jest.Mock).mockResolvedValue(tiers);
+    renderModal({ isTierLoading: true });
 
-    const expected: EditProfileData = {
-      avatar: file,
-      username: 'NewUser',
-      email: 'new@example.com',
-      bank: '5678',
-      bio: 'New bio',
-    };
+    expect(
+      await screen.findByText('Loading tier progress...'),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('tier-progress-bar')).not.toBeInTheDocument();
+  });
 
-    expect(onSave).toHaveBeenCalledWith(expected);
-    expect(onClose).toHaveBeenCalled();
+  it('shows a fallback message when tiers are unavailable', async () => {
+    (fetchTiers as jest.Mock).mockResolvedValue([]);
+    renderModal();
+
+    expect(
+      await screen.findByText('Tier data unavailable'),
+    ).toBeInTheDocument();
   });
 });

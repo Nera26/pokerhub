@@ -31,11 +31,29 @@ describe('ProfileSection', () => {
       experience: 1500,
       balance: 100,
     };
-    const { container } = renderWithClient(
-      <ProfileSection profile={profile} onEdit={() => {}} />,
-    );
+    renderWithClient(<ProfileSection profile={profile} onEdit={() => {}} />);
+    expect(screen.getByText('Loading tiers...')).toBeInTheDocument();
     expect(await screen.findByText('Silver')).toBeInTheDocument();
-    const bar = container.querySelector('.bg-accent-green') as HTMLElement;
-    expect(bar.style.width).toBe('13%');
+    const bar = screen.getByTestId('tier-progress-bar');
+    expect(bar).toHaveStyle({ width: '13%' });
+  });
+
+  it('shows a fallback message when tier data is unavailable', async () => {
+    (fetchTiers as jest.Mock).mockResolvedValue([]);
+    const profile: UserProfile = {
+      username: 'FallbackUser',
+      email: 'fallback@example.com',
+      avatarUrl: 'https://example.com/avatar.jpg',
+      bank: '•••• 1234',
+      location: 'US',
+      joined: '2023-01-01T00:00:00.000Z',
+      bio: 'bio',
+      experience: 1500,
+      balance: 100,
+    };
+    renderWithClient(<ProfileSection profile={profile} onEdit={() => {}} />);
+    expect(
+      await screen.findByText('Tier data unavailable'),
+    ).toBeInTheDocument();
   });
 });
