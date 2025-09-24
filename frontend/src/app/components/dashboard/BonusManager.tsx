@@ -14,10 +14,10 @@ import {
   deleteBonus,
   type Bonus,
 } from '@/lib/api/admin';
-import { fetchBonusDefaults } from '@/lib/api/bonus';
+import { fetchBonusDefaults, fetchBonusStats } from '@/lib/api/bonus';
 import { useInvalidateMutation } from '@/hooks/useInvalidateMutation';
 import type { ApiError } from '@/lib/api/client';
-import type { BonusDefaultsResponse } from '@shared/types';
+import type { BonusDefaultsResponse, BonusStatsResponse } from '@shared/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faChartLine,
@@ -96,6 +96,14 @@ export default function BonusManager() {
   } = useQuery<BonusDefaultsResponse, ApiError>({
     queryKey: ['admin-bonus-defaults'],
     queryFn: ({ signal }) => fetchBonusDefaults({ signal }),
+  });
+  const {
+    data: bonusStats,
+    isLoading: statsLoading,
+    error: statsError,
+  } = useQuery<BonusStatsResponse, ApiError>({
+    queryKey: ['admin-bonus-stats'],
+    queryFn: ({ signal }) => fetchBonusStats({ signal }),
   });
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [editOpen, setEditOpen] = useState(false);
@@ -221,16 +229,43 @@ export default function BonusManager() {
     });
   }, [bonuses, statusFilter]);
 
-  const totalActive = useMemo(
+  const fallbackActiveBonuses = useMemo(
     () =>
       bonuses.filter((b) => b.status === 'active' && !isExpired(b.expiryDate))
         .length,
     [bonuses],
   );
-  const claimsWeek = useMemo(
+  const fallbackWeeklyClaims = useMemo(
     () => bonuses.reduce((s, b) => s + (b.claimsWeek ?? 0), 0),
     [bonuses],
   );
+
+  const activeBonuses = bonusStats?.activeBonuses ?? fallbackActiveBonuses;
+  const weeklyClaims = bonusStats?.weeklyClaims ?? fallbackWeeklyClaims;
+
+  const formattedPayout = useMemo(() => {
+    if (statsLoading) return 'Loading…';
+    if (statsError) return statsError.message ?? 'Failed to load stats';
+    if (bonusStats) {
+      try {
+        const formatter = new Intl.NumberFormat(undefined, {
+          style: 'currency',
+          currency: bonusStats.currency,
+        });
+        return formatter.format(bonusStats.completedPayouts);
+      } catch (err) {
+        return `${bonusStats.completedPayouts.toLocaleString()} ${bonusStats.currency}`;
+      }
+    }
+    return '—';
+  }, [bonusStats, statsError, statsLoading]);
+
+  const formattedConversion = useMemo(() => {
+    if (statsLoading) return 'Loading…';
+    if (statsError) return '—';
+    if (bonusStats) return `${bonusStats.conversionRate.toFixed(1)}%`;
+    return '0%';
+  }, [bonusStats, statsError, statsLoading]);
 
   const openEdit = (b: Bonus) => {
     setSelected(b);
@@ -401,7 +436,7 @@ export default function BonusManager() {
                 <option value="expired">Expired</option>
               </select>
               <span className="bg-accent-green px-3 py-1 rounded-lg text-sm font-semibold">
-                {totalActive} Active
+                {activeBonuses} Active
               </span>
             </div>
           </div>
@@ -484,22 +519,24 @@ export default function BonusManager() {
                 <div className="flex justify-between items-center">
                   <span className="text-text-secondary">Total Active</span>
                   <span className="text-accent-green font-bold">
-                    {totalActive}
+                    {activeBonuses}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-text-secondary">Claims This Week</span>
                   <span className="text-accent-yellow font-bold">
-                    {claimsWeek.toLocaleString()}
+                    {weeklyClaims.toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-text-secondary">Total Payout</span>
-                  <span className="font-bold">$12,847</span>
+                  <span className="font-bold">{formattedPayout}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-text-secondary">Conversion Rate</span>
-                  <span className="text-accent-blue font-bold">23.4%</span>
+                  <span className="text-accent-blue font-bold">
+                    {formattedConversion}
+                  </span>
                 </div>
               </div>
             </CardContent>

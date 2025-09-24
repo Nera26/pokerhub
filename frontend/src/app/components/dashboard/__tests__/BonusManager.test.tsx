@@ -5,6 +5,7 @@ import {
   renderBonusManager,
 } from './bonusTestUtils';
 import { fetchBonuses, createBonus } from '@/lib/api/admin';
+import { fetchBonusStats } from '@/lib/api/bonus';
 
 jest.mock('@/lib/api/admin', () => ({
   fetchBonuses: jest.fn(),
@@ -15,6 +16,7 @@ jest.mock('@/lib/api/admin', () => ({
 }));
 jest.mock('@/lib/api/bonus', () => ({
   fetchBonusDefaults: jest.fn(),
+  fetchBonusStats: jest.fn(),
   createBonusDefaults: jest.fn(),
   updateBonusDefaults: jest.fn(),
   deleteBonusDefaults: jest.fn(),
@@ -108,6 +110,37 @@ describe('BonusManager table manager', () => {
       expect(screen.getByText('Promo 3')).toBeInTheDocument(),
     );
     expect(screen.queryByText('Promo 6')).not.toBeInTheDocument();
+  });
+});
+
+describe('BonusManager statistics', () => {
+  it('renders stats returned by the API', async () => {
+    mockFetchBonuses([{ ...bonusFixture }]);
+    (fetchBonusStats as jest.Mock).mockResolvedValue({
+      activeBonuses: 3,
+      weeklyClaims: 12,
+      completedPayouts: 123.45,
+      currency: 'USD',
+      conversionRate: 50,
+    });
+
+    renderBonusManager();
+
+    await screen.findByRole('button', { name: /create promotion/i });
+    expect(screen.getByText('3 Active')).toBeInTheDocument();
+    expect(screen.getByText('$123.45')).toBeInTheDocument();
+    expect(screen.getByText('50.0%')).toBeInTheDocument();
+  });
+
+  it('shows fallbacks when stats fail to load', async () => {
+    mockFetchBonuses([{ ...bonusFixture }]);
+    (fetchBonusStats as jest.Mock).mockRejectedValue(new Error('stats failed'));
+
+    renderBonusManager();
+
+    await screen.findByRole('button', { name: /create promotion/i });
+    expect(await screen.findByText('stats failed')).toBeInTheDocument();
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0);
   });
 });
 

@@ -42,6 +42,16 @@ export const BonusesResponseSchema = z.array(BonusSchema);
 
 export type BonusesResponse = z.infer<typeof BonusesResponseSchema>;
 
+export const BonusStatsResponseSchema = z.object({
+  activeBonuses: z.number().int().nonnegative(),
+  weeklyClaims: z.number().int().nonnegative(),
+  completedPayouts: z.number().nonnegative(),
+  currency: z.string().length(3),
+  conversionRate: z.number().nonnegative(),
+});
+
+export type BonusStatsResponse = z.infer<typeof BonusStatsResponseSchema>;
+
 export const BonusCreateRequestSchema = BonusBaseSchema;
 
 export type BonusCreateRequest = z.infer<typeof BonusCreateRequestSchema>;

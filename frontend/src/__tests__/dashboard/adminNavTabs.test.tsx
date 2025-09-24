@@ -136,6 +136,13 @@ jest.mock('@/lib/api/bonus', () => ({
     eligibility: 'all',
     status: 'active',
   }),
+  fetchBonusStats: jest.fn().mockResolvedValue({
+    activeBonuses: 0,
+    weeklyClaims: 0,
+    completedPayouts: 0,
+    currency: 'USD',
+    conversionRate: 0,
+  }),
   createBonusDefaults: jest.fn(),
   updateBonusDefaults: jest.fn(),
   deleteBonusDefaults: jest.fn(),

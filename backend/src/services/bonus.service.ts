@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BonusOptionEntity } from '../database/entities/bonus-option.entity';
@@ -15,6 +16,8 @@ import {
   BonusOptionsResponseSchema,
   BonusesResponse,
   BonusesResponseSchema,
+  BonusStatsResponse,
+  BonusStatsResponseSchema,
   BonusCreateRequest,
   BonusCreateRequestSchema,
   BonusUpdateRequest,
@@ -24,6 +27,7 @@ import {
 } from '../schemas/bonus';
 import { BonusEntity } from '../database/entities/bonus.entity';
 import { BonusDefaultEntity } from '../database/entities/bonus-default.entity';
+import { Transaction } from '../wallet/transaction.entity';
 
 const BONUS_DEFAULTS = BonusDefaultsResponseSchema.parse({
   name: '',
@@ -45,7 +49,19 @@ export class BonusService {
     private readonly bonuses: Repository<BonusEntity>,
     @InjectRepository(BonusDefaultEntity)
     private readonly defaults: Repository<BonusDefaultEntity>,
+    @InjectRepository(Transaction)
+    private readonly transactions: Repository<Transaction>,
+    private readonly config: ConfigService,
   ) {}
+
+  private isExpired(expiryDate: string | null): boolean {
+    if (!expiryDate) {
+      return false;
+    }
+    const endOfDay = new Date(expiryDate);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+    return endOfDay.getTime() < Date.now();
+  }
 
   private mapEntity(entity: BonusEntity): Bonus {
     return {
@@ -179,6 +195,55 @@ export class BonusService {
     const rows = await this.bonuses.find({ order: { id: 'DESC' } });
     const mapped = rows.map((row) => this.mapEntity(row));
     return BonusesResponseSchema.parse(mapped);
+  }
+
+  async getStats(): Promise<BonusStatsResponse> {
+    const [bonuses, bonusTransactions] = await Promise.all([
+      this.bonuses.find(),
+      this.transactions.find({ where: { typeId: 'bonus' } }),
+    ]);
+
+    const activeBonuses = bonuses.filter(
+      (bonus) => bonus.status === 'active' && !this.isExpired(bonus.expiryDate),
+    ).length;
+
+    const weeklyClaims = bonuses.reduce(
+      (sum, bonus) => sum + (bonus.claimsWeek ?? 0),
+      0,
+    );
+
+    const completedTransactions = bonusTransactions.filter((tx) => {
+      const status = tx.status.toLowerCase();
+      return status === 'completed' || status === 'confirmed';
+    });
+
+    const totalCompletedAmountMinor = completedTransactions.reduce(
+      (sum, tx) => sum + tx.amount,
+      0,
+    );
+    const completedCount = completedTransactions.length;
+
+    const currency = (
+      this.config.get<string>('DEFAULT_CURRENCY') ?? 'usd'
+    ).toUpperCase();
+    const minorPerMajorRaw = this.config.get<string | number>(
+      'WALLET_MINOR_PER_MAJOR',
+    );
+    const minorPerMajor = Number(minorPerMajorRaw) || 100;
+    const completedPayouts = Number(
+      (totalCompletedAmountMinor / minorPerMajor).toFixed(2),
+    );
+
+    const conversionRate =
+      weeklyClaims > 0 ? (completedCount / weeklyClaims) * 100 : 0;
+
+    return BonusStatsResponseSchema.parse({
+      activeBonuses,
+      weeklyClaims,
+      completedPayouts,
+      currency,
+      conversionRate,
+    });
   }
 
   async create(payload: BonusCreateRequest): Promise<Bonus> {

@@ -1,7 +1,7 @@
 import BonusManager from '../BonusManager';
 import { renderWithClient } from './renderWithClient';
 import { fetchBonuses, updateBonus, fetchBonusOptions } from '@/lib/api/admin';
-import { fetchBonusDefaults } from '@/lib/api/bonus';
+import { fetchBonusDefaults, fetchBonusStats } from '@/lib/api/bonus';
 import type { Bonus } from '@/lib/api/admin';
 import {
   BonusSchema,
@@ -9,6 +9,7 @@ import {
   BonusDefaultsResponseSchema,
   BonusOptionsResponseSchema,
   BonusUpdateRequestSchema,
+  BonusStatsResponseSchema,
 } from '@shared/types';
 
 export const bonusFixture: Bonus = BonusSchema.parse({
@@ -30,6 +31,22 @@ export function mockFetchBonuses(bonuses: Bonus[]) {
   (fetchBonuses as jest.Mock).mockImplementation(() =>
     Promise.resolve(current),
   );
+  (fetchBonusStats as jest.Mock).mockImplementation(() => {
+    const activeBonuses = current.filter((b) => b.status === 'active').length;
+    const weeklyClaims = current.reduce(
+      (total, bonus) => total + (bonus.claimsWeek ?? 0),
+      0,
+    );
+    return Promise.resolve(
+      BonusStatsResponseSchema.parse({
+        activeBonuses,
+        weeklyClaims,
+        completedPayouts: 0,
+        currency: 'USD',
+        conversionRate: 0,
+      }),
+    );
+  });
   (updateBonus as jest.Mock).mockImplementation((id: number, data) => {
     const parsed = BonusUpdateRequestSchema.parse(data);
     const next = current.map((b) => {
@@ -64,5 +81,16 @@ export function renderBonusManager() {
       status: 'active',
     }),
   );
+  if (!(fetchBonusStats as jest.Mock).getMockImplementation()) {
+    (fetchBonusStats as jest.Mock).mockResolvedValue(
+      BonusStatsResponseSchema.parse({
+        activeBonuses: 0,
+        weeklyClaims: 0,
+        completedPayouts: 0,
+        currency: 'USD',
+        conversionRate: 0,
+      }),
+    );
+  }
   return renderWithClient(<BonusManager />);
 }

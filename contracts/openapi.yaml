@@ -2387,6 +2387,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+  /admin/bonus/stats:
+    get:
+      summary: Get bonus statistics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Bonus statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BonusStatsResponse'
   /admin/bonuses:
     get:
       summary: List bonuses
@@ -5943,3 +5955,28 @@ components:
           $ref: '#/components/schemas/BonusEligibility'
         status:
           $ref: '#/components/schemas/BonusStatus'
+    BonusStatsResponse:
+      type: object
+      properties:
+        activeBonuses:
+          type: integer
+          minimum: 0
+        weeklyClaims:
+          type: integer
+          minimum: 0
+        completedPayouts:
+          type: number
+          minimum: 0
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        conversionRate:
+          type: number
+          minimum: 0
+      required:
+        - activeBonuses
+        - weeklyClaims
+        - completedPayouts
+        - currency
+        - conversionRate

@@ -337,6 +337,7 @@ export {
   BonusDefaultsRequestSchema,
   BonusSchema,
   BonusesResponseSchema,
+  BonusStatsResponseSchema,
   BonusCreateRequestSchema,
   BonusUpdateRequestSchema,
 } from '../backend/src/schemas/bonus';
@@ -346,6 +347,7 @@ export type {
   BonusDefaultsRequest,
   Bonus,
   BonusesResponse,
+  BonusStatsResponse,
   BonusCreateRequest,
   BonusUpdateRequest,
 } from '../backend/src/schemas/bonus';

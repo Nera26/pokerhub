@@ -6,12 +6,22 @@ import {
   type BonusDefaultsRequest,
   MessageResponseSchema,
   type MessageResponse,
+  BonusStatsResponseSchema,
+  type BonusStatsResponse,
 } from '@shared/types';
 
 export async function fetchBonusDefaults({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<BonusDefaultsResponse> {
   return apiClient('/api/admin/bonus/defaults', BonusDefaultsResponseSchema, {
+    signal,
+  });
+}
+
+export async function fetchBonusStats({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<BonusStatsResponse> {
+  return apiClient('/api/admin/bonus/stats', BonusStatsResponseSchema, {
     signal,
   });
 }
