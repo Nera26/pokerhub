@@ -29,19 +29,40 @@ describe('EventPublisher', () => {
       .mockResolvedValueOnce(undefined);
     const producer: any = { send, connect: jest.fn(), disconnect: jest.fn() };
     const config: any = { get: () => '' };
-    const publisher = new EventPublisher(config, producer);
+    const redis = {
+      rpush: jest.fn().mockResolvedValue(1),
+      lrange: jest.fn().mockResolvedValue([]),
+      lrem: jest.fn().mockResolvedValue(0),
+    };
+    const publisher = new EventPublisher(config, producer, redis as any);
 
     await publisher.emit('hand.start', payload);
 
     expect(send).toHaveBeenCalledTimes(2);
-    expect(publisher.getFailedEvents()).toHaveLength(0);
+    await expect(publisher.getFailedEvents()).resolves.toHaveLength(0);
+    expect(redis.rpush).not.toHaveBeenCalled();
   });
 
   it('opens circuit breaker after repeated failures', async () => {
     const send = jest.fn().mockRejectedValue(new Error('fail'));
     const producer: any = { send, connect: jest.fn(), disconnect: jest.fn() };
     const config: any = { get: () => '' };
-    const publisher = new EventPublisher(config, producer);
+    const store: string[] = [];
+    const redis = {
+      rpush: jest.fn(async (_key: string, value: string) => {
+        store.push(value);
+      }),
+      lrange: jest.fn(async () => [...store]),
+      lrem: jest.fn(async (_key: string, _count: number, value: string) => {
+        const index = store.indexOf(value);
+        if (index >= 0) {
+          store.splice(index, 1);
+          return 1;
+        }
+        return 0;
+      }),
+    };
+    const publisher = new EventPublisher(config, producer, redis as any);
 
     for (let i = 0; i < 5; i++) {
       await expect(publisher.emit('hand.start', payload)).rejects.toThrow(
@@ -53,7 +74,42 @@ describe('EventPublisher', () => {
       'Event publisher circuit breaker open',
     );
     expect(send).toHaveBeenCalledTimes(5 * 3);
-    expect(publisher.getFailedEvents()).toHaveLength(5);
+    await expect(publisher.getFailedEvents()).resolves.toHaveLength(5);
     expect(addMock).toHaveBeenCalledTimes(5);
+    expect(redis.rpush).toHaveBeenCalledTimes(5);
+  });
+
+  it('replays failed events from redis storage', async () => {
+    const store: string[] = [];
+    const redis = {
+      rpush: jest.fn(async (_key: string, value: string) => {
+        store.push(value);
+      }),
+      lrange: jest.fn(async () => [...store]),
+      lrem: jest.fn(async (_key: string, _count: number, value: string) => {
+        const index = store.indexOf(value);
+        if (index >= 0) {
+          store.splice(index, 1);
+          return 1;
+        }
+        return 0;
+      }),
+    };
+    const send = jest.fn().mockRejectedValue(new Error('fail'));
+    const producer: any = { send, connect: jest.fn(), disconnect: jest.fn() };
+    const config: any = { get: () => '' };
+    const publisher = new EventPublisher(config, producer, redis as any);
+
+    await expect(publisher.emit('hand.start', payload)).rejects.toThrow(
+      'Failed to publish event hand.start after 3 attempts: fail',
+    );
+    await expect(publisher.getFailedEvents()).resolves.toHaveLength(1);
+
+    send.mockImplementation(() => Promise.resolve(undefined));
+    await publisher.replayFailed();
+
+    expect(send).toHaveBeenCalledTimes(4); // 3 failed attempts + 1 replay
+    await expect(publisher.getFailedEvents()).resolves.toHaveLength(0);
+    expect(redis.lrem).toHaveBeenCalled();
   });
 });

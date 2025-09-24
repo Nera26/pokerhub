@@ -20,11 +20,27 @@ import {
   type AdminSidebarTabSeed,
 } from '../src/database/seeds/admin-sidebar-tabs';
 
-type AdminTabSeed = Pick<AdminTabEntity, 'id' | 'label' | 'icon' | 'component'>;
+type AdminTabSeed = Pick<
+  AdminTabEntity,
+  'id' | 'label' | 'icon' | 'component' | 'source'
+>;
 
-const SEED_TABS: AdminTabSeed[] = CANONICAL_ADMIN_SIDEBAR_TABS.map(
-  (tab: AdminSidebarTabSeed) => ({ ...tab }),
-);
+const SEED_TABS: AdminTabSeed[] = [
+  ...CANONICAL_ADMIN_SIDEBAR_TABS.map((tab: AdminSidebarTabSeed) => ({
+    id: tab.id,
+    label: tab.label,
+    icon: tab.icon,
+    component: tab.component,
+    source: tab.source ?? 'config',
+  })),
+  {
+    id: 'runtime',
+    label: 'Runtime Tools',
+    icon: 'faBolt',
+    component: '@/app/components/dashboard/RuntimeTools',
+    source: 'database',
+  },
+];
 
 describe('Admin tabs integration', () => {
   let app: INestApplication;
@@ -83,41 +99,31 @@ describe('Admin tabs integration', () => {
     await app.close();
   });
 
-  it('returns built-in collusion tab alongside database tabs', async () => {
+  it('returns tabs persisted in the database with their sources', async () => {
     const response = await request(app.getHttpServer())
       .get('/admin/tabs')
       .expect(200);
 
-    const expected = [
-      {
-        id: 'collusion',
-        title: 'Collusion Review',
-        component: '@/features/collusion',
-        icon: 'faUserShield',
-        source: 'config',
-      },
-      ...SEED_TABS.map((tab) => ({
-        id: tab.id,
-        title: tab.label,
-        component: tab.component,
-        icon: tab.icon,
-        source: 'database',
-      })),
-    ].sort((a, b) => a.id.localeCompare(b.id));
+    const expected = SEED_TABS.map((tab) => ({
+      id: tab.id,
+      title: tab.label,
+      component: tab.component,
+      icon: tab.icon,
+      source: tab.source,
+    })).sort((a, b) => a.id.localeCompare(b.id));
 
     const sortedResponse = [...response.body].sort((a, b) =>
       a.id.localeCompare(b.id),
     );
 
     expect(sortedResponse).toEqual(expected);
-    const collusionTab = sortedResponse.find(
-      (tab: { id: string }) => tab.id === 'collusion',
+    const runtimeTab = sortedResponse.find(
+      (tab: { id: string }) => tab.id === 'runtime',
     );
-    expect(collusionTab).toMatchObject({ source: 'config' });
-    expect(
-      sortedResponse
-        .filter((tab: { id: string }) => tab.id !== 'collusion')
-        .every((tab: { source?: string }) => tab.source === 'database'),
-    ).toBe(true);
+    expect(runtimeTab).toMatchObject({ source: 'database' });
+    const configTabs = sortedResponse.filter(
+      (tab: { source?: string }) => tab.source === 'config',
+    );
+    expect(configTabs.length).toBeGreaterThan(0);
   });
 });

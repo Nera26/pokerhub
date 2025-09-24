@@ -99,6 +99,27 @@ export default function AdminBankReconciliation() {
     setEntryErrors({});
   };
 
+  const submitReconcileRequest = async (
+    payload: Parameters<typeof reconcileDeposits>[0],
+  ): Promise<void> => {
+    try {
+      setSubmitting(true);
+      const response = await reconcileDeposits(payload);
+      pushToast(response.message ?? 'Reconciliation submitted', {
+        variant: 'success',
+      });
+      resetForm();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Unexpected error occurred';
+      const friendly = `Failed to reconcile deposits: ${message}`;
+      setFormError(friendly);
+      pushToast(friendly, { variant: 'error' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const submitManualEntries = async () => {
     const trimmed = entries.map((entry) => ({
       ...entry,
@@ -154,22 +175,7 @@ export default function AdminBankReconciliation() {
       return;
     }
 
-    try {
-      setSubmitting(true);
-      const response = await reconcileDeposits({ entries: normalized });
-      pushToast(response.message ?? 'Reconciliation submitted', {
-        variant: 'success',
-      });
-      resetForm();
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Unexpected error occurred';
-      const friendly = `Failed to reconcile deposits: ${message}`;
-      setFormError(friendly);
-      pushToast(friendly, { variant: 'error' });
-    } finally {
-      setSubmitting(false);
-    }
+    await submitReconcileRequest({ entries: normalized });
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -178,22 +184,7 @@ export default function AdminBankReconciliation() {
     setEntryErrors({});
 
     if (file) {
-      try {
-        setSubmitting(true);
-        const response = await reconcileDeposits({ file });
-        pushToast(response.message ?? 'Reconciliation submitted', {
-          variant: 'success',
-        });
-        resetForm();
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : 'Unexpected error occurred';
-        const friendly = `Failed to reconcile deposits: ${message}`;
-        setFormError(friendly);
-        pushToast(friendly, { variant: 'error' });
-      } finally {
-        setSubmitting(false);
-      }
+      await submitReconcileRequest({ file });
       return;
     }
 

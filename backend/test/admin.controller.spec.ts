@@ -31,84 +31,99 @@ describe('AdminController', () => {
   const revenue = {
     getBreakdown: jest.fn(),
   } as Partial<RevenueService>;
-  const adminTabConfigs: AdminTabConfig[] = [
+  const adminTabConfigs: Array<
+    AdminTabConfig & { source: 'config' | 'database' }
+  > = [
     {
       id: 'analytics',
       title: 'Analytics',
       icon: 'faChartLine',
       component: '@/app/components/dashboard/analytics/Analytics',
+      source: 'config',
     },
     {
       id: 'broadcast',
       title: 'Broadcasts',
       icon: 'faBullhorn',
       component: '@/app/components/dashboard/BroadcastPanel',
+      source: 'config',
     },
     {
       id: 'bonuses',
       title: 'Bonuses',
       icon: 'faGift',
       component: '@/app/components/dashboard/BonusManager',
+      source: 'config',
     },
     {
       id: 'events',
       title: 'Events',
       icon: 'faBell',
       component: '@/app/components/dashboard/AdminEvents',
+      source: 'config',
     },
     {
       id: 'feature-flags',
       title: 'Feature Flags',
       icon: 'faToggleOn',
       component: '@/app/components/dashboard/FeatureFlagsPanel',
+      source: 'config',
     },
     {
       id: 'transactions',
       title: 'Transactions',
       icon: 'faMoneyBillWave',
       component: '@/app/components/dashboard/transactions/TransactionHistory',
+      source: 'config',
     },
     {
       id: 'wallet-iban',
       title: 'IBAN Manager',
       icon: 'faBuildingColumns',
       component: '@/app/components/dashboard/IbanManager',
+      source: 'config',
     },
     {
       id: 'wallet-reconcile',
       title: 'Wallet Reconcile',
       icon: 'faCoins',
       component: '@/app/components/dashboard/WalletReconcileMismatches',
+      source: 'config',
     },
     {
       id: 'wallet-withdrawals',
       title: 'Withdrawals',
       icon: 'faMoneyCheck',
       component: '@/app/components/dashboard/Withdrawals',
+      source: 'config',
     },
     {
       id: 'users',
       title: 'Users',
       icon: 'faUsers',
       component: '@/app/components/dashboard/ManageUsers',
+      source: 'config',
     },
     {
       id: 'tables',
       title: 'Tables',
       icon: 'faTable',
       component: '@/app/components/dashboard/ManageTables',
+      source: 'config',
     },
     {
       id: 'tournaments',
       title: 'Tournaments',
       icon: 'faTrophy',
       component: '@/app/components/dashboard/ManageTournaments',
+      source: 'config',
     },
     {
       id: 'dynamic',
       title: 'Dynamic',
       icon: 'faChartLine',
       component: 'dynamic-component',
+      source: 'database',
     },
   ];
   const adminTabs = {
@@ -142,7 +157,9 @@ describe('AdminController', () => {
   beforeEach(() => {
     acknowledged = new Map();
     (adminTabs.list as jest.Mock).mockResolvedValue(adminTabConfigs);
-    (adminTabs.find as jest.Mock).mockResolvedValue(null);
+    (adminTabs.find as jest.Mock).mockImplementation(async (id: string) => {
+      return adminTabConfigs.find((tab) => tab.id === id) ?? null;
+    });
     wallet.reconcile = jest.fn();
     wallet.acknowledgeMismatch = jest
       .fn()
@@ -294,7 +311,7 @@ describe('AdminController', () => {
       title: tab.title,
       component: tab.component,
       icon: tab.icon,
-      source: 'database',
+      source: tab.source,
     }));
     const response = await request(app.getHttpServer())
       .get('/admin/tabs')
@@ -305,18 +322,21 @@ describe('AdminController', () => {
       title: 'Wallet Reconcile',
       component: '@/app/components/dashboard/WalletReconcileMismatches',
       icon: 'faCoins',
-      source: 'database',
+      source: 'config',
     });
     expect(response.body).toContainEqual({
       id: 'wallet-withdrawals',
       title: 'Withdrawals',
       component: '@/app/components/dashboard/Withdrawals',
       icon: 'faMoneyCheck',
-      source: 'database',
+      source: 'config',
     });
   });
 
   it('returns metadata for config-defined tabs', async () => {
+    (adminTabs.find as jest.Mock).mockResolvedValue(
+      adminTabConfigs.find((tab) => tab.id === 'feature-flags'),
+    );
     const response = await request(app.getHttpServer())
       .get('/admin/tabs/feature-flags')
       .expect(200);
@@ -336,6 +356,7 @@ describe('AdminController', () => {
       title: 'Dynamic Override',
       component: 'db-component',
       icon: 'faBolt',
+      source: 'database',
     });
 
     const response = await request(app.getHttpServer())

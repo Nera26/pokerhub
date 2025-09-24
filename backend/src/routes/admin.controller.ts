@@ -65,16 +65,6 @@ import {
   getAuditLogTypesResponse,
 } from '../analytics/analytics.controller';
 
-const BUILT_IN_ADMIN_TABS: AdminTab[] = [
-  {
-    id: 'collusion',
-    title: 'Collusion Review',
-    component: '@/features/collusion',
-    icon: 'faUserShield',
-    source: 'config',
-  },
-];
-
 @ApiTags('admin')
 @UseGuards(AuthGuard, AdminGuard)
 @Controller('admin')
@@ -170,56 +160,27 @@ export class AdminController {
   @ApiOperation({ summary: 'Get admin dashboard tabs' })
   @ApiResponse({ status: 200, description: 'Dashboard tabs' })
   async getTabs(): Promise<AdminTab[]> {
-    const dbTabs = await this.tabs.list();
-    const tabs = dbTabs.map((tab) => ({
+    const tabs = await this.tabs.list();
+    const response = tabs.map((tab) => ({
       id: tab.id,
       title: tab.title,
       component: tab.component,
       icon: tab.icon,
-      source: 'database' as const,
+      source: tab.source,
     }));
-    const configTabs = BUILT_IN_ADMIN_TABS.filter(
-      (tab) => !tabs.some((existing) => existing.id === tab.id),
-    );
-    return AdminTabResponseSchema.parse([...configTabs, ...tabs]);
+    return AdminTabResponseSchema.parse(response);
   }
 
   @Get('tabs/:id')
   @ApiOperation({ summary: 'Get admin tab metadata' })
   @ApiResponse({ status: 200, description: 'Admin tab metadata' })
   async getTabMeta(@Param('id') id: string): Promise<AdminTabMeta> {
-    const [dbTabs, dbTab] = await Promise.all([
-      this.tabs.list(),
-      this.tabs.find(id),
-    ]);
-
-    const configTab = BUILT_IN_ADMIN_TABS.find((tab) => tab.id === id);
-    if (configTab) {
-      return AdminTabMetaSchema.parse({
-        id: configTab.id,
-        title: configTab.title,
-        component: configTab.component,
-        enabled: true,
-        message: '',
-      });
-    }
-
+    const dbTab = await this.tabs.find(id);
     if (dbTab) {
       return AdminTabMetaSchema.parse({
         id: dbTab.id,
         title: dbTab.title,
         component: dbTab.component,
-        enabled: true,
-        message: '',
-      });
-    }
-
-    const configTabFromDb = dbTabs.find((tab) => tab.id === id);
-    if (configTabFromDb) {
-      return AdminTabMetaSchema.parse({
-        id: configTabFromDb.id,
-        title: configTabFromDb.title,
-        component: configTabFromDb.component,
         enabled: true,
         message: '',
       });
@@ -247,7 +208,7 @@ export class AdminController {
   async createTab(@Body() body: CreateAdminTabRequest): Promise<AdminTab> {
     const parsed = AdminTabCreateRequestSchema.parse(body);
     const created = await this.tabs.create(parsed);
-    return AdminTabSchema.parse({ ...created, source: 'database' });
+    return AdminTabSchema.parse(created);
   }
 
   @Put('tabs/:id')
@@ -259,7 +220,7 @@ export class AdminController {
   ): Promise<AdminTab> {
     const parsed = AdminTabUpdateRequestSchema.parse(body);
     const updated = await this.tabs.update(id, parsed);
-    return AdminTabSchema.parse({ ...updated, source: 'database' });
+    return AdminTabSchema.parse(updated);
   }
 
   @Delete('tabs/:id')

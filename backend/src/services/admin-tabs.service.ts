@@ -9,6 +9,8 @@ import {
 import { AdminTabEntity } from '../database/entities/admin-tab.entity';
 import { normalizeSidebarIcon } from './sidebar-icon.util';
 
+type AdminTabRecord = AdminTabConfig & { source: 'config' | 'database' };
+
 @Injectable()
 export class AdminTabsService {
   constructor(
@@ -16,17 +18,18 @@ export class AdminTabsService {
     private readonly repo: Repository<AdminTabEntity>,
   ) {}
 
-  async list(): Promise<AdminTabConfig[]> {
+  async list(): Promise<AdminTabRecord[]> {
     const tabs = await this.repo.find({ order: { id: 'ASC' } });
     return tabs.map((tab) => this.toConfig(tab));
   }
 
-  async create(payload: CreateAdminTabRequest): Promise<AdminTabConfig> {
+  async create(payload: CreateAdminTabRequest): Promise<AdminTabRecord> {
     const entity = this.repo.create({
       id: payload.id,
       label: payload.title,
       icon: normalizeSidebarIcon(payload.icon),
       component: payload.component,
+      source: 'database',
     });
     const saved = await this.repo.save(entity);
     return this.toConfig(saved);
@@ -35,7 +38,7 @@ export class AdminTabsService {
   async update(
     id: string,
     payload: UpdateAdminTabRequest,
-  ): Promise<AdminTabConfig> {
+  ): Promise<AdminTabRecord> {
     const existing = await this.repo.findOne({ where: { id } });
     if (!existing) {
       throw new NotFoundException('Admin tab not found');
@@ -51,17 +54,18 @@ export class AdminTabsService {
     await this.repo.delete({ id });
   }
 
-  async find(id: string): Promise<AdminTabConfig | null> {
+  async find(id: string): Promise<AdminTabRecord | null> {
     const entity = await this.repo.findOne({ where: { id } });
     return entity ? this.toConfig(entity) : null;
   }
 
-  private toConfig(entity: AdminTabEntity): AdminTabConfig {
+  private toConfig(entity: AdminTabEntity): AdminTabRecord {
     return {
       id: entity.id,
       title: entity.label,
       icon: normalizeSidebarIcon(entity.icon),
       component: entity.component,
+      source: entity.source ?? 'database',
     };
   }
 }
