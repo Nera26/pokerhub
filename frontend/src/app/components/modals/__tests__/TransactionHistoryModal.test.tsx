@@ -1,14 +1,14 @@
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TransactionHistoryModal from '../TransactionHistoryModal';
-import { useTransactionHistoryControls } from '@/app/components/common/TransactionHistoryControls';
+import { useTransactionHistoryExperience } from '@/app/components/common/useTransactionHistoryExperience';
 import useTransactionColumns from '@/hooks/useTransactionColumns';
 import { renderWithClient } from '../../dashboard/__tests__/renderWithClient';
 import { useTranslations } from '@/hooks/useTranslations';
 import { useLocale } from 'next-intl';
 
-jest.mock('@/app/components/common/TransactionHistoryControls', () => ({
-  useTransactionHistoryControls: jest.fn(),
+jest.mock('@/app/components/common/useTransactionHistoryExperience', () => ({
+  useTransactionHistoryExperience: jest.fn(),
 }));
 
 jest.mock('@/hooks/useTransactionColumns', () => ({
@@ -27,7 +27,7 @@ jest.mock('next-intl', () => ({
 describe('TransactionHistoryModal', () => {
   const TYPE_PLACEHOLDER = 'Todos los tipos';
   const PERFORMED_BY_PLACEHOLDER = 'Todos los responsables';
-  const mockUseControls = useTransactionHistoryControls as jest.Mock;
+  const mockUseExperience = useTransactionHistoryExperience as jest.Mock;
   const mockUseColumns = useTransactionColumns as jest.Mock;
   const mockUseTranslations = useTranslations as jest.Mock;
   const mockUseLocale = useLocale as jest.Mock;
@@ -84,6 +84,39 @@ describe('TransactionHistoryModal', () => {
     refetch: jest.fn(),
   });
 
+  function buildMetadata() {
+    return {
+      filterOptions: {
+        types: ['Deposit'],
+        performedBy: ['System'],
+      },
+      typeSelect: {
+        placeholderOption: {
+          value: TYPE_PLACEHOLDER,
+          label: TYPE_PLACEHOLDER,
+        },
+        options: [{ value: 'Deposit', label: 'Deposit' }],
+      },
+      performedBySelect: {
+        placeholderOption: {
+          value: PERFORMED_BY_PLACEHOLDER,
+          label: PERFORMED_BY_PLACEHOLDER,
+        },
+        options: [{ value: 'System', label: 'System' }],
+      },
+      playerSelect: undefined,
+      players: undefined,
+      types: undefined,
+    };
+  }
+
+  const createFilterMetadata = (
+    overrides?: Partial<ReturnType<typeof buildMetadata>>,
+  ) => ({
+    ...buildMetadata(),
+    ...(overrides ?? {}),
+  });
+
   beforeEach(() => {
     mockUseLocale.mockReturnValue('en');
     mockUseTranslations.mockReturnValue({
@@ -104,11 +137,12 @@ describe('TransactionHistoryModal', () => {
       error: null,
     });
 
-    mockUseControls.mockReturnValue({
+    mockUseExperience.mockReturnValue({
       history: buildHistory(),
       queries: {
         filters: buildFiltersQuery(),
       },
+      filterMetadata: createFilterMetadata(),
     });
   });
 
@@ -138,7 +172,7 @@ describe('TransactionHistoryModal', () => {
     const typeSelect = screen.getByLabelText('Filter by type');
     fireEvent.change(typeSelect, { target: { value: 'Deposit' } });
 
-    const history = mockUseControls.mock.results[0].value.history;
+    const history = mockUseExperience.mock.results[0].value.history;
     expect(history.updateFilter).toHaveBeenCalledWith('type', 'Deposit');
 
     expect(screen.getByRole('cell', { name: 'Deposit' })).toBeInTheDocument();
@@ -157,7 +191,7 @@ describe('TransactionHistoryModal', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
 
-    const history = mockUseControls.mock.results[0].value.history;
+    const history = mockUseExperience.mock.results[0].value.history;
     expect(history.applyFilters).toHaveBeenCalled();
   });
 
@@ -166,11 +200,12 @@ describe('TransactionHistoryModal', () => {
     history.filters = { start: '', end: '', type: '', by: '' };
     history.appliedFilters = { start: '', end: '', type: '', by: '' };
 
-    mockUseControls.mockReturnValueOnce({
+    mockUseExperience.mockReturnValueOnce({
       history,
       queries: {
         filters: buildFiltersQuery(),
       },
+      filterMetadata: createFilterMetadata(),
     });
 
     renderWithClient(
@@ -196,11 +231,12 @@ describe('TransactionHistoryModal', () => {
     const history = buildHistory();
     history.isLoading = true;
 
-    mockUseControls.mockReturnValueOnce({
+    mockUseExperience.mockReturnValueOnce({
       history,
       queries: {
         filters: buildFiltersQuery(),
       },
+      filterMetadata: createFilterMetadata(),
     });
 
     renderWithClient(

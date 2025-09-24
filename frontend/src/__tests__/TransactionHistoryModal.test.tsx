@@ -33,14 +33,14 @@ import useTransactionColumns from '@/hooks/useTransactionColumns';
 import { z } from 'zod';
 import { AdminTransactionEntriesSchema } from '@shared/transactions.schema';
 import { formatCurrency } from '@/lib/formatCurrency';
-import { useTransactionHistoryControls } from '@/app/components/common/TransactionHistoryControls';
+import { useTransactionHistoryExperience } from '@/app/components/common/useTransactionHistoryExperience';
 
 type AdminTransactionEntry = z.infer<
   typeof AdminTransactionEntriesSchema
 >[number];
 
-jest.mock('@/app/components/common/TransactionHistoryControls', () => ({
-  useTransactionHistoryControls: jest.fn(),
+jest.mock('@/app/components/common/useTransactionHistoryExperience', () => ({
+  useTransactionHistoryExperience: jest.fn(),
 }));
 
 describe('TransactionHistoryModal', () => {
@@ -53,7 +53,7 @@ describe('TransactionHistoryModal', () => {
     { id: 'status', label: 'Status' },
   ];
 
-  const mockUseControls = useTransactionHistoryControls as jest.Mock;
+  const mockUseExperience = useTransactionHistoryExperience as jest.Mock;
 
   const buildHistory = () => ({
     data: [],
@@ -107,13 +107,44 @@ describe('TransactionHistoryModal', () => {
     };
   };
 
+  function buildMetadata() {
+    return {
+      filterOptions: {
+        types: [],
+        performedBy: [],
+      },
+      typeSelect: {
+        placeholderOption: { value: 'All Types', label: 'All Types' },
+        options: [],
+      },
+      performedBySelect: {
+        placeholderOption: {
+          value: 'Performed By: All',
+          label: 'Performed By: All',
+        },
+        options: [],
+      },
+      playerSelect: undefined,
+      players: undefined,
+      types: undefined,
+    };
+  }
+
+  const createFilterMetadata = (
+    overrides?: Partial<ReturnType<typeof buildMetadata>>,
+  ) => ({
+    ...buildMetadata(),
+    ...(overrides ?? {}),
+  });
+
   beforeEach(() => {
-    mockUseControls.mockReturnValue({
+    mockUseExperience.mockReturnValue({
       history: createHistory(),
       queries: {
         filters: createFiltersQuery(),
       },
       handleExport: jest.fn(),
+      filterMetadata: createFilterMetadata(),
     });
   });
 
@@ -151,7 +182,7 @@ describe('TransactionHistoryModal', () => {
     const onFilter = jest.fn();
     const user = userEvent.setup();
     const applyFilters = jest.fn(() => onFilter([entries[0]]));
-    mockUseControls.mockReturnValueOnce({
+    mockUseExperience.mockReturnValueOnce({
       history: createHistory({
         data: entries,
         currency: 'EUR',
@@ -166,6 +197,25 @@ describe('TransactionHistoryModal', () => {
         }),
       },
       handleExport: jest.fn(),
+      filterMetadata: createFilterMetadata({
+        typeSelect: {
+          placeholderOption: { value: 'All Types', label: 'All Types' },
+          options: [
+            { value: 'Deposit', label: 'Deposit' },
+            { value: 'Withdrawal', label: 'Withdrawal' },
+          ],
+        },
+        performedBySelect: {
+          placeholderOption: {
+            value: 'Performed By: All',
+            label: 'Performed By: All',
+          },
+          options: [
+            { value: 'Admin', label: 'Admin' },
+            { value: 'User', label: 'User' },
+          ],
+        },
+      }),
     });
 
     render(
@@ -219,7 +269,7 @@ describe('TransactionHistoryModal', () => {
         isLoading: false,
         error: null,
       });
-      mockUseControls.mockReturnValueOnce({
+      mockUseExperience.mockReturnValueOnce({
         history: createHistory({
           data: entries,
           currency: currency ?? 'USD',
@@ -228,6 +278,7 @@ describe('TransactionHistoryModal', () => {
           filters: createFiltersQuery(),
         },
         handleExport: jest.fn(),
+        filterMetadata: createFilterMetadata(),
       });
 
       render(
@@ -283,10 +334,11 @@ describe('TransactionHistoryModal', () => {
       isLoading: false,
       error: null,
     });
-    mockUseControls.mockReturnValue({
+    mockUseExperience.mockReturnValue({
       history: createHistory({ data: entries as any }),
       queries: { filters: createFiltersQuery() },
       handleExport: jest.fn(),
+      filterMetadata: createFilterMetadata(),
     });
 
     const client = new QueryClient({
@@ -332,12 +384,13 @@ describe('TransactionHistoryModal', () => {
       isLoading: false,
       error: new Error('fail'),
     });
-    mockUseControls.mockReturnValueOnce({
+    mockUseExperience.mockReturnValueOnce({
       history: createHistory({ error: new Error('fail') }),
       queries: {
         filters: createFiltersQuery({ error: new Error('fail') }),
       },
       handleExport: jest.fn(),
+      filterMetadata: createFilterMetadata(),
     });
 
     render(

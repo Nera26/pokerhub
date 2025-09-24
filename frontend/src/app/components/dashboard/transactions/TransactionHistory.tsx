@@ -1,12 +1,11 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons/faSpinner';
 import TransactionHistorySection from '@/app/components/common/TransactionHistorySection';
-import { useTransactionHistoryControls } from '@/app/components/common/TransactionHistoryControls';
 import TransactionHistoryFilters from '@/app/components/common/TransactionHistoryFilters';
+import { useTransactionHistoryExperience } from '@/app/components/common/useTransactionHistoryExperience';
 import { fetchTransactionsLog } from '@/lib/api/transactions';
 import { useApiError } from '@/hooks/useApiError';
 import { useLocale } from 'next-intl';
-import { useTransactionFilterQueries } from '@/hooks/useTransactionFilterQueries';
 
 interface Props {
   onExport?: () => void;
@@ -20,43 +19,36 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
   const pageSize = 10;
   const locale = useLocale();
 
-  const { queries: filterQueries, resolveMetadata } =
-    useTransactionFilterQueries({
+  const { history, queries, handleExport, filterMetadata } =
+    useTransactionHistoryExperience<TransactionLogEntry, true, true>({
       locale,
       includePlayers: true,
       includeTypes: true,
-    });
-
-  const { history, queries, handleExport } = useTransactionHistoryControls<
-    TransactionLogEntry,
-    typeof filterQueries
-  >({
-    history: {
-      queryKey: ['transactionsLog', 'dashboard'],
-      fetchTransactions: ({ signal, page, pageSize, filters }) =>
-        fetchTransactionsLog({
-          signal,
-          playerId: filters.playerId || undefined,
-          type: filters.type || undefined,
-          startDate: filters.startDate || undefined,
-          endDate: filters.endDate || undefined,
-          page,
-          pageSize,
-        }),
-      initialFilters: {
-        startDate: '',
-        endDate: '',
-        playerId: '',
-        type: '',
+      history: {
+        queryKey: ['transactionsLog', 'dashboard'],
+        fetchTransactions: ({ signal, page, pageSize, filters }) =>
+          fetchTransactionsLog({
+            signal,
+            playerId: filters.playerId || undefined,
+            type: filters.type || undefined,
+            startDate: filters.startDate || undefined,
+            endDate: filters.endDate || undefined,
+            page,
+            pageSize,
+          }),
+        initialFilters: {
+          startDate: '',
+          endDate: '',
+          playerId: '',
+          type: '',
+        },
+        pageSize,
+        extractCurrency: (entry) =>
+          (entry as (TransactionLogEntry & { currency?: string }) | undefined)
+            ?.currency,
       },
-      pageSize,
-      extractCurrency: (entry) =>
-        (entry as (TransactionLogEntry & { currency?: string }) | undefined)
-          ?.currency,
-    },
-    queries: filterQueries,
-    onExport,
-  });
+      onExport,
+    });
 
   const {
     data: log = [],
@@ -74,7 +66,7 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
   const typesQuery = queries.types;
   const filtersQuery = queries.filters;
 
-  const { playerSelect, typeSelect } = resolveMetadata(queries);
+  const { playerSelect, typeSelect } = filterMetadata;
 
   useApiError(playersQuery?.error);
   useApiError(typesQuery?.error);

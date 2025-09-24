@@ -2,12 +2,12 @@ import { screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TransactionHistory from '../TransactionHistory';
 import { setupTransactionTestData } from './test-utils';
-import { useTransactionHistoryControls } from '@/app/components/common/TransactionHistoryControls';
+import { useTransactionHistoryExperience } from '@/app/components/common/useTransactionHistoryExperience';
 import { useTranslations } from '@/hooks/useTranslations';
 import { useLocale } from 'next-intl';
 
-jest.mock('@/app/components/common/TransactionHistoryControls', () => ({
-  useTransactionHistoryControls: jest.fn(),
+jest.mock('@/app/components/common/useTransactionHistoryExperience', () => ({
+  useTransactionHistoryExperience: jest.fn(),
 }));
 
 jest.mock('@/hooks/useTranslations', () => ({
@@ -22,11 +22,12 @@ describe('Dashboard TransactionHistory', () => {
   let renderWithClient: ReturnType<
     typeof setupTransactionTestData
   >['renderWithClient'];
-  const mockUseControls = useTransactionHistoryControls as jest.Mock;
+  const mockUseExperience = useTransactionHistoryExperience as jest.Mock;
   const mockUseTranslations = useTranslations as jest.Mock;
   const mockUseLocale = useLocale as jest.Mock;
   const TYPE_PLACEHOLDER = 'Todos los tipos';
   const PLAYER_PLACEHOLDER = 'Todos los jugadores';
+  const PERFORMED_BY_PLACEHOLDER = 'Todos los responsables';
 
   const buildHistory = () => ({
     data: [],
@@ -79,6 +80,44 @@ describe('Dashboard TransactionHistory', () => {
       },
     });
 
+  function buildMetadata() {
+    return {
+      filterOptions: {
+        types: [],
+        performedBy: [],
+      },
+      typeSelect: {
+        placeholderOption: { value: '', label: TYPE_PLACEHOLDER },
+        options: [],
+      },
+      performedBySelect: {
+        placeholderOption: {
+          value: PERFORMED_BY_PLACEHOLDER,
+          label: PERFORMED_BY_PLACEHOLDER,
+        },
+        options: [
+          {
+            value: PERFORMED_BY_PLACEHOLDER,
+            label: PERFORMED_BY_PLACEHOLDER,
+          },
+        ],
+      },
+      playerSelect: {
+        placeholderOption: { value: '', label: PLAYER_PLACEHOLDER },
+        options: [],
+      },
+      players: [],
+      types: [],
+    };
+  }
+
+  const createFilterMetadata = (
+    overrides?: Partial<ReturnType<typeof buildMetadata>>,
+  ) => ({
+    ...buildMetadata(),
+    ...(overrides ?? {}),
+  });
+
   beforeEach(() => {
     ({ renderWithClient } = setupTransactionTestData());
     mockUseLocale.mockReturnValue('en');
@@ -86,11 +125,11 @@ describe('Dashboard TransactionHistory', () => {
       data: {
         'transactions.filters.allTypes': TYPE_PLACEHOLDER,
         'transactions.filters.allPlayers': PLAYER_PLACEHOLDER,
-        'transactions.filters.performedByAll': 'Todos los responsables',
+        'transactions.filters.performedByAll': PERFORMED_BY_PLACEHOLDER,
       },
     });
     const filtersQuery = createFiltersQuery();
-    mockUseControls.mockReturnValue({
+    mockUseExperience.mockReturnValue({
       history: createHistory(),
       queries: {
         players: createQueryResult(),
@@ -98,6 +137,7 @@ describe('Dashboard TransactionHistory', () => {
         filters: filtersQuery,
       },
       handleExport: jest.fn(),
+      filterMetadata: createFilterMetadata(),
     });
   });
 
@@ -107,7 +147,7 @@ describe('Dashboard TransactionHistory', () => {
 
   it('shows loading state', () => {
     const history = createHistory({ isLoading: true });
-    mockUseControls.mockReturnValueOnce({
+    mockUseExperience.mockReturnValueOnce({
       history,
       queries: {
         players: createQueryResult(),
@@ -115,6 +155,7 @@ describe('Dashboard TransactionHistory', () => {
         filters: createFiltersQuery(),
       },
       handleExport: jest.fn(),
+      filterMetadata: createFilterMetadata(),
     });
 
     renderWithClient(<TransactionHistory />);
@@ -130,7 +171,7 @@ describe('Dashboard TransactionHistory', () => {
 
   it('shows error state when fetching fails', async () => {
     const history = createHistory({ error: new Error('fail') });
-    mockUseControls.mockReturnValueOnce({
+    mockUseExperience.mockReturnValueOnce({
       history,
       queries: {
         players: createQueryResult(),
@@ -138,6 +179,7 @@ describe('Dashboard TransactionHistory', () => {
         filters: createFiltersQuery(),
       },
       handleExport: jest.fn(),
+      filterMetadata: createFilterMetadata(),
     });
 
     renderWithClient(<TransactionHistory />);
@@ -147,7 +189,7 @@ describe('Dashboard TransactionHistory', () => {
   });
 
   it('renders player filter options', async () => {
-    mockUseControls.mockReturnValueOnce({
+    mockUseExperience.mockReturnValueOnce({
       history: createHistory(),
       queries: {
         players: createQueryResult({
@@ -157,6 +199,12 @@ describe('Dashboard TransactionHistory', () => {
         filters: createFiltersQuery(),
       },
       handleExport: jest.fn(),
+      filterMetadata: createFilterMetadata({
+        playerSelect: {
+          placeholderOption: { value: '', label: PLAYER_PLACEHOLDER },
+          options: [{ value: 'player-1', label: 'Alice' }],
+        },
+      }),
     });
 
     renderWithClient(<TransactionHistory />);
@@ -173,7 +221,7 @@ describe('Dashboard TransactionHistory', () => {
 
   it('calls fetchTransactionsLog with type filter', async () => {
     const updateFilter = jest.fn();
-    mockUseControls.mockReturnValueOnce({
+    mockUseExperience.mockReturnValueOnce({
       history: createHistory({ updateFilter }),
       queries: {
         players: createQueryResult(),
@@ -183,6 +231,12 @@ describe('Dashboard TransactionHistory', () => {
         filters: createFiltersQuery(),
       },
       handleExport: jest.fn(),
+      filterMetadata: createFilterMetadata({
+        typeSelect: {
+          placeholderOption: { value: '', label: TYPE_PLACEHOLDER },
+          options: [{ value: 'deposit', label: 'Deposit' }],
+        },
+      }),
     });
 
     renderWithClient(<TransactionHistory />);
@@ -197,7 +251,7 @@ describe('Dashboard TransactionHistory', () => {
 
   it('requests next page on pagination', async () => {
     const setPage = jest.fn();
-    mockUseControls.mockReturnValueOnce({
+    mockUseExperience.mockReturnValueOnce({
       history: createHistory({
         setPage,
         hasMore: true,
@@ -208,6 +262,7 @@ describe('Dashboard TransactionHistory', () => {
         filters: createFiltersQuery(),
       },
       handleExport: jest.fn(),
+      filterMetadata: createFilterMetadata(),
     });
 
     renderWithClient(<TransactionHistory />);
@@ -218,7 +273,7 @@ describe('Dashboard TransactionHistory', () => {
 
   it('triggers export callback', async () => {
     const handleExport = jest.fn();
-    mockUseControls.mockImplementationOnce((options) => {
+    mockUseExperience.mockImplementationOnce((options) => {
       expect(options.onExport).toBeDefined();
       return {
         history: createHistory(),
@@ -228,6 +283,7 @@ describe('Dashboard TransactionHistory', () => {
           filters: createFiltersQuery(),
         },
         handleExport,
+        filterMetadata: createFilterMetadata(),
       };
     });
 
@@ -240,7 +296,7 @@ describe('Dashboard TransactionHistory', () => {
 
   it('exports current log when no handler provided', async () => {
     const handleExport = jest.fn();
-    mockUseControls.mockReturnValueOnce({
+    mockUseExperience.mockReturnValueOnce({
       history: createHistory({
         data: [
           {
@@ -259,6 +315,7 @@ describe('Dashboard TransactionHistory', () => {
         filters: createFiltersQuery(),
       },
       handleExport,
+      filterMetadata: createFilterMetadata(),
     });
 
     renderWithClient(<TransactionHistory />);

@@ -8,6 +8,41 @@ import {
 import { BonusEntity } from '../database/entities/bonus.entity';
 import { BonusDefaultEntity } from '../database/entities/bonus-default.entity';
 
+type BonusFieldSource = Pick<
+  BonusEntity | BonusDefaultEntity,
+  | 'name'
+  | 'type'
+  | 'description'
+  | 'bonusPercent'
+  | 'maxBonusUsd'
+  | 'expiryDate'
+  | 'eligibility'
+  | 'status'
+>;
+
+function mapBonusBaseFields(source: BonusFieldSource) {
+  return {
+    name: source.name,
+    type: source.type,
+    description: source.description,
+    bonusPercent: source.bonusPercent ?? undefined,
+    maxBonusUsd: source.maxBonusUsd ?? undefined,
+    expiryDate: source.expiryDate ?? undefined,
+    eligibility: source.eligibility,
+    status: source.status,
+  } satisfies Pick<
+    BonusDefaultsResponse,
+    | 'name'
+    | 'type'
+    | 'description'
+    | 'bonusPercent'
+    | 'maxBonusUsd'
+    | 'expiryDate'
+    | 'eligibility'
+    | 'status'
+  >;
+}
+
 function nullableNumber(value: number | null | undefined): number | null {
   if (typeof value === 'number') {
     return Number.isFinite(value) ? value : null;
@@ -18,14 +53,7 @@ function nullableNumber(value: number | null | undefined): number | null {
 export function mapBonusEntity(entity: BonusEntity): Bonus {
   return {
     id: entity.id,
-    name: entity.name,
-    type: entity.type,
-    description: entity.description,
-    bonusPercent: entity.bonusPercent ?? undefined,
-    maxBonusUsd: entity.maxBonusUsd ?? undefined,
-    expiryDate: entity.expiryDate ?? undefined,
-    eligibility: entity.eligibility,
-    status: entity.status,
+    ...mapBonusBaseFields(entity),
     claimsTotal: Number(entity.claimsTotal),
     claimsWeek: Number(entity.claimsWeek),
   };
@@ -69,14 +97,7 @@ export function mapBonusDefaults(
   }
 
   return BonusDefaultsResponseSchema.parse({
-    name: entity.name,
-    type: entity.type,
-    description: entity.description,
-    bonusPercent: entity.bonusPercent ?? undefined,
-    maxBonusUsd: entity.maxBonusUsd ?? undefined,
-    expiryDate: entity.expiryDate ?? undefined,
-    eligibility: entity.eligibility,
-    status: entity.status,
+    ...mapBonusBaseFields(entity),
   });
 }
 
