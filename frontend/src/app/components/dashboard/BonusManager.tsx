@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale } from 'next-intl';
 import { useTranslations } from '@/hooks/useTranslations';
 import {
@@ -14,10 +14,20 @@ import {
   deleteBonus,
   type Bonus,
 } from '@/lib/api/admin';
-import { fetchBonusDefaults, fetchBonusStats } from '@/lib/api/bonus';
+import {
+  createBonusDefaults,
+  deleteBonusDefaults,
+  fetchBonusDefaults,
+  fetchBonusStats,
+  updateBonusDefaults,
+} from '@/lib/api/bonus';
 import { useInvalidateMutation } from '@/hooks/useInvalidateMutation';
 import type { ApiError } from '@/lib/api/client';
-import type { BonusDefaultsResponse, BonusStatsResponse } from '@shared/types';
+import type {
+  BonusDefaultsRequest,
+  BonusDefaultsResponse,
+  BonusStatsResponse,
+} from '@shared/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faChartLine,
@@ -42,7 +52,8 @@ import { TableHead, TableRow, TableCell } from '../ui/Table';
 
 type BonusStatus = 'active' | 'paused';
 type StatusFilter = BonusStatus | 'all' | 'expired';
-type PromoType = string;
+
+const bonusDefaultsQueryKey = ['admin-bonus-defaults'] as const;
 
 export const bonusStyles: Record<BonusStatus | 'expired', string> = {
   active: 'bg-accent-green text-white',
@@ -50,12 +61,22 @@ export const bonusStyles: Record<BonusStatus | 'expired', string> = {
   expired: 'bg-text-secondary text-black',
 };
 
+const coerceOptionalNumber = z.preprocess((value) => {
+  if (typeof value === 'number' && Number.isNaN(value)) {
+    return undefined;
+  }
+  if (value === '') {
+    return undefined;
+  }
+  return value;
+}, z.coerce.number().optional());
+
 const bonusFormSchema = z.object({
   name: z.string().min(1, 'Promotion name is required'),
   type: z.string(),
   description: z.string().min(1, 'Description is required'),
-  bonusPercent: z.coerce.number().optional(),
-  maxBonusUsd: z.coerce.number().optional(),
+  bonusPercent: coerceOptionalNumber,
+  maxBonusUsd: coerceOptionalNumber,
   expiryDate: z.string().optional(),
   eligibility: z.string(),
   status: z.string(),
@@ -81,6 +102,8 @@ function isExpired(iso?: string) {
 export default function BonusManager() {
   const locale = useLocale();
   const { data: t } = useTranslations(locale);
+  const queryClient = useQueryClient();
+
   const {
     data: bonuses = [],
     isLoading,
@@ -89,14 +112,16 @@ export default function BonusManager() {
     queryKey: ['admin-bonuses'],
     queryFn: ({ signal }) => fetchBonuses({ signal }),
   });
+
   const {
     data: bonusDefaults,
     isLoading: defaultsLoading,
     error: defaultsError,
   } = useQuery<BonusDefaultsResponse, ApiError>({
-    queryKey: ['admin-bonus-defaults'],
+    queryKey: bonusDefaultsQueryKey,
     queryFn: ({ signal }) => fetchBonusDefaults({ signal }),
   });
+
   const {
     data: bonusStats,
     isLoading: statsLoading,
@@ -105,6 +130,7 @@ export default function BonusManager() {
     queryKey: ['admin-bonus-stats'],
     queryFn: ({ signal }) => fetchBonusStats({ signal }),
   });
+
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [editOpen, setEditOpen] = useState(false);
   const [pauseOpen, setPauseOpen] = useState(false);
@@ -145,6 +171,76 @@ export default function BonusManager() {
     open: false,
     msg: '',
     type: 'success',
+  });
+
+  const normalizeOptionalNumber = (value: number | undefined) =>
+    typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+
+  const toDefaultsRequest = (data: BonusFormValues): BonusDefaultsRequest => ({
+    name: data.name,
+    type: data.type,
+    description: data.description,
+    bonusPercent: normalizeOptionalNumber(data.bonusPercent),
+    maxBonusUsd: normalizeOptionalNumber(data.maxBonusUsd),
+    expiryDate: data.expiryDate ? data.expiryDate : undefined,
+    eligibility: data.eligibility,
+    status: data.status,
+  });
+
+  const saveDefaultsMutation = useMutation<
+    BonusDefaultsResponse,
+    ApiError,
+    BonusDefaultsRequest
+  >({
+    mutationFn: async (defaults) => {
+      try {
+        return await createBonusDefaults(defaults);
+      } catch (err) {
+        const apiErr = err as ApiError;
+        if (apiErr?.status === 409) {
+          return updateBonusDefaults(defaults);
+        }
+        throw err;
+      }
+    },
+    onSuccess: (defaults) => {
+      queryClient.setQueryData(bonusDefaultsQueryKey, defaults);
+      void queryClient.invalidateQueries({ queryKey: bonusDefaultsQueryKey });
+      resetCreate(defaults);
+      setToast({ open: true, msg: 'Defaults saved', type: 'success' });
+    },
+    onError: () => {
+      setToast({
+        open: true,
+        msg: 'Failed to save defaults',
+        type: 'error',
+      });
+    },
+  });
+
+  const resetDefaultsMutation = useMutation<
+    BonusDefaultsResponse,
+    ApiError,
+    void
+  >({
+    mutationFn: async () => {
+      await deleteBonusDefaults();
+      return queryClient.fetchQuery({
+        queryKey: bonusDefaultsQueryKey,
+        queryFn: () => fetchBonusDefaults(),
+      });
+    },
+    onSuccess: (defaults) => {
+      resetCreate(defaults);
+      setToast({ open: true, msg: 'Defaults reset', type: 'success' });
+    },
+    onError: () => {
+      setToast({
+        open: true,
+        msg: 'Failed to reset defaults',
+        type: 'error',
+      });
+    },
   });
 
   const createMutation = useInvalidateMutation<
@@ -253,7 +349,7 @@ export default function BonusManager() {
           currency: bonusStats.currency,
         });
         return formatter.format(bonusStats.completedPayouts);
-      } catch (err) {
+      } catch {
         return `${bonusStats.completedPayouts.toLocaleString()} ${bonusStats.currency}`;
       }
     }
@@ -324,6 +420,16 @@ export default function BonusManager() {
     });
     resetCreate();
   });
+
+  const saveDefaults = handleCreateSubmit((data) => {
+    saveDefaultsMutation.mutate(toDefaultsRequest(data));
+  });
+
+  const resetDefaults = () => {
+    if (!resetDefaultsMutation.isPending) {
+      resetDefaultsMutation.mutate();
+    }
+  };
 
   const BonusStatusPill = ({ b }: { b: Bonus }) => {
     const expired = isExpired(b.expiryDate);
@@ -419,6 +525,7 @@ export default function BonusManager() {
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Left: List */}
         <section className="space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold">Bonuses</h3>
@@ -462,25 +569,19 @@ export default function BonusManager() {
               }
               renderRow={(b) => <BonusRow b={b} />}
               searchFilter={(b, q) => {
-                const t = (
-                  b.name +
-                  ' ' +
-                  b.description +
-                  ' ' +
-                  b.type
-                ).toLowerCase();
-                return !q || t.includes(q);
+                const tt = (b.name + ' ' + b.description + ' ' + b.type).toLowerCase();
+                return !q || tt.includes(q);
               }}
               searchPlaceholder={t?.searchPromotions ?? 'Search promotions...'}
               emptyMessage={
-                t?.noPromotionsMatchFilters ??
-                'No promotions match your filters.'
+                t?.noPromotionsMatchFilters ?? 'No promotions match your filters.'
               }
               caption="Admin view of bonuses"
             />
           )}
         </section>
 
+        {/* Right: Create + Stats */}
         <section className="space-y-6">
           <h3 className="text-xl font-bold">Create New Promotion</h3>
 
@@ -503,10 +604,32 @@ export default function BonusManager() {
                     statusLabel="Initial Status"
                   />
 
-                  <Button type="submit" className="w-full">
-                    <FontAwesomeIcon icon={faPlus} />
-                    CREATE PROMOTION
-                  </Button>
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <Button type="submit" className="w-full sm:flex-1">
+                      <FontAwesomeIcon icon={faPlus} />
+                      CREATE PROMOTION
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="w-full sm:w-auto"
+                      onClick={saveDefaults}
+                      disabled={saveDefaultsMutation.isPending}
+                      loading={saveDefaultsMutation.isPending}
+                    >
+                      Save as Default
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full sm:w-auto"
+                      onClick={resetDefaults}
+                      disabled={resetDefaultsMutation.isPending}
+                      loading={resetDefaultsMutation.isPending}
+                    >
+                      Reset Defaults
+                    </Button>
+                  </div>
                 </form>
               )}
             </CardContent>
@@ -558,7 +681,15 @@ export default function BonusManager() {
         </div>
 
         {selected && (
-          <form className="space-y-6" onSubmit={saveEdit}>
+          <form className="space-y-6" onSubmit={handleEditSubmit((data) => {
+            if (!selected) return;
+            updateMutation.mutate({
+              id: selected.id,
+              data: { ...data, expiryDate: data.expiryDate || undefined },
+            });
+            setEditOpen(false);
+          })}
+          >
             <BonusForm
               register={registerEdit}
               errors={editErrors}
@@ -586,7 +717,15 @@ export default function BonusManager() {
       <ConfirmModal
         isOpen={pauseOpen}
         onClose={() => setPauseOpen(false)}
-        onConfirm={confirmPause}
+        onConfirm={() => {
+          if (!selected) return;
+          toggleMutation.mutate({
+            id: selected.id,
+            status: 'paused',
+            name: selected.name,
+          });
+          setPauseOpen(false);
+        }}
         title="Pause Bonus"
         message={
           <>
@@ -607,7 +746,15 @@ export default function BonusManager() {
       <ConfirmModal
         isOpen={resumeOpen}
         onClose={() => setResumeOpen(false)}
-        onConfirm={confirmResume}
+        onConfirm={() => {
+          if (!selected) return;
+          toggleMutation.mutate({
+            id: selected.id,
+            status: 'active',
+            name: selected.name,
+          });
+          setResumeOpen(false);
+        }}
         title="Resume Bonus"
         message={
           <>

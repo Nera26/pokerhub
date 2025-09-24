@@ -1,11 +1,19 @@
 import { screen, fireEvent, waitFor, within } from '@testing-library/react';
 import {
+  bonusDefaultsFixture,
   bonusFixture,
   mockFetchBonuses,
   renderBonusManager,
 } from './bonusTestUtils';
 import { fetchBonuses, createBonus } from '@/lib/api/admin';
-import { fetchBonusStats } from '@/lib/api/bonus';
+import {
+  createBonusDefaults,
+  deleteBonusDefaults,
+  updateBonusDefaults,
+  fetchBonusStats,
+} from '@/lib/api/bonus';
+import { BonusDefaultsResponseSchema } from '@shared/types';
+import type { ApiError } from '@/lib/api/client';
 
 jest.mock('@/lib/api/admin', () => ({
   fetchBonuses: jest.fn(),
@@ -151,5 +159,145 @@ describe('BonusManager creation and errors', () => {
     renderBonusManager();
 
     expect(await screen.findByRole('alert')).toHaveTextContent('fail');
+  });
+});
+
+describe('BonusManager bonus defaults', () => {
+  it('saves defaults and refreshes the form', async () => {
+    mockFetchBonuses([{ ...bonusFixture }]);
+    const serverDefaults = BonusDefaultsResponseSchema.parse({
+      ...bonusDefaultsFixture,
+      name: 'Server Default',
+      description: 'Server provided description',
+      bonusPercent: 35,
+      maxBonusUsd: 750,
+      expiryDate: '2026-01-01',
+    });
+    (createBonusDefaults as jest.Mock).mockResolvedValue(serverDefaults);
+
+    renderBonusManager({
+      defaultsSequence: [bonusDefaultsFixture, serverDefaults],
+    });
+
+    const saveButton = await screen.findByRole('button', {
+      name: /save as default/i,
+    });
+    fireEvent.change(screen.getByLabelText('Promotion Name'), {
+      target: { value: 'Local Default' },
+    });
+    fireEvent.change(screen.getByLabelText('Description'), {
+      target: { value: 'Local description' },
+    });
+    fireEvent.change(screen.getByLabelText('Bonus Amount (%)'), {
+      target: { value: '25' },
+    });
+    fireEvent.change(screen.getByLabelText('Max $'), {
+      target: { value: '500' },
+    });
+    fireEvent.change(screen.getByLabelText('Expiry Date'), {
+      target: { value: '2025-12-31' },
+    });
+
+    fireEvent.click(saveButton);
+
+    await waitFor(() =>
+      expect(document.body.innerHTML).toContain('Defaults saved'),
+    );
+
+    expect(createBonusDefaults).toHaveBeenCalledWith({
+      name: 'Local Default',
+      type: 'deposit',
+      description: 'Local description',
+      bonusPercent: 25,
+      maxBonusUsd: 500,
+      expiryDate: '2025-12-31',
+      eligibility: 'all',
+      status: 'active',
+    });
+
+    await waitFor(() =>
+      expect(screen.getByLabelText('Promotion Name')).toHaveValue(
+        serverDefaults.name,
+      ),
+    );
+    await waitFor(() =>
+      expect(screen.getByLabelText('Bonus Amount (%)')).toHaveValue(35),
+    );
+  });
+
+  it('falls back to updating defaults when create returns conflict', async () => {
+    mockFetchBonuses([{ ...bonusFixture }]);
+    const serverDefaults = BonusDefaultsResponseSchema.parse({
+      ...bonusDefaultsFixture,
+      name: 'Conflict Default',
+      description: 'Conflict description',
+    });
+    (createBonusDefaults as jest.Mock).mockImplementationOnce(() =>
+      Promise.reject({ status: 409 } as ApiError),
+    );
+    (updateBonusDefaults as jest.Mock).mockResolvedValue(serverDefaults);
+
+    renderBonusManager({
+      defaultsSequence: [bonusDefaultsFixture, serverDefaults],
+    });
+
+    const saveDefaultsButton = await screen.findByRole('button', {
+      name: /save as default/i,
+    });
+    expect(saveDefaultsButton).not.toBeDisabled();
+    fireEvent.change(await screen.findByLabelText('Promotion Name'), {
+      target: { value: 'Conflict attempt' },
+    });
+    fireEvent.change(screen.getByLabelText('Description'), {
+      target: { value: 'Conflict description' },
+    });
+
+    fireEvent.click(saveDefaultsButton);
+
+    await waitFor(() =>
+      expect(updateBonusDefaults).toHaveBeenCalledWith({
+        name: 'Conflict attempt',
+        type: 'deposit',
+        description: 'Conflict description',
+        bonusPercent: undefined,
+        maxBonusUsd: undefined,
+        expiryDate: undefined,
+        eligibility: 'all',
+        status: 'active',
+      }),
+    );
+
+    await waitFor(() =>
+      expect(screen.getByLabelText('Promotion Name')).toHaveValue(
+        serverDefaults.name,
+      ),
+    );
+  });
+
+  it('resets defaults and reloads latest values', async () => {
+    mockFetchBonuses([{ ...bonusFixture }]);
+    const updatedDefaults = BonusDefaultsResponseSchema.parse({
+      ...bonusDefaultsFixture,
+      name: 'Reset Default',
+      description: 'After reset',
+    });
+    (deleteBonusDefaults as jest.Mock).mockResolvedValue({ message: 'ok' });
+
+    renderBonusManager({
+      defaultsSequence: [bonusDefaultsFixture, updatedDefaults],
+    });
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: /reset defaults/i }),
+    );
+
+    await screen.findByText('Defaults reset');
+
+    await waitFor(() =>
+      expect(screen.getByLabelText('Promotion Name')).toHaveValue(
+        updatedDefaults.name,
+      ),
+    );
+    expect(deleteBonusDefaults).toHaveBeenCalledTimes(1);
   });
 });
