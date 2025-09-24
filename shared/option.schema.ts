@@ -5,4 +5,3 @@ export const OptionSchema = z.object({
   label: z.string(),
 });
 
-export type Option = z.infer<typeof OptionSchema>;
