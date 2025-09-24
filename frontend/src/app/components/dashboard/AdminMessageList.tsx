@@ -10,8 +10,12 @@ interface Props {
   isLoading: boolean;
   isError: boolean;
   error?: ApiError | null;
-  renderMessage: (m: AdminMessage) => React.ReactNode;
+  renderMessage: (
+    m: AdminMessage,
+    onMarkRead?: (id: number) => void,
+  ) => React.ReactNode;
   pageSize?: number;
+  onMarkRead?: (id: number) => void;
 }
 
 export default function AdminMessageList({
@@ -21,6 +25,7 @@ export default function AdminMessageList({
   error,
   renderMessage,
   pageSize = 6,
+  onMarkRead,
 }: Props) {
   const [page, setPage] = useState(1);
 
@@ -61,7 +66,7 @@ export default function AdminMessageList({
     <div>
       <div className="divide-y divide-dark">
         {pageItems.map((m) => (
-          <div key={m.id}>{renderMessage(m)}</div>
+          <div key={m.id}>{renderMessage(m, onMarkRead)}</div>
         ))}
       </div>
       <div className="bg-primary-bg px-6 py-4 flex items-center justify-between">
