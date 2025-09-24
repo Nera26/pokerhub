@@ -57,6 +57,10 @@ describe('BonusManager status toggle', () => {
     const pauseBtn = await screen.findByRole('button', { name: /pause/i });
     fireEvent.click(pauseBtn);
     const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Pause Bonus')).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(/are you sure you want to pause/i),
+    ).toBeInTheDocument();
     const confirm = within(dialog).getByRole('button', {
       name: /confirm pause/i,
     });
@@ -78,6 +82,10 @@ describe('BonusManager status toggle', () => {
     const resumeBtn = await screen.findByRole('button', { name: /resume/i });
     fireEvent.click(resumeBtn);
     const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Resume Bonus')).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(/are you sure you want to resume/i),
+    ).toBeInTheDocument();
     const confirm = within(dialog).getByRole('button', {
       name: /confirm resume/i,
     });
