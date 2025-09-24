@@ -95,6 +95,7 @@ import { DefaultAvatarEntity } from './database/entities/default-avatar.entity';
 import { NavModule } from './nav/nav.module';
 import { ChartPaletteEntity } from './database/entities/chart-palette.entity';
 import { PerformanceThresholdEntity } from './database/entities/performance-threshold.entity';
+import { Transaction } from './wallet/transaction.entity';
 
 @Module({
   imports: [
@@ -158,6 +159,7 @@ import { PerformanceThresholdEntity } from './database/entities/performance-thre
       ChartPaletteEntity,
       BlockedCountryEntity,
       PerformanceThresholdEntity,
+      Transaction,
     ]),
 
     // Messaging / Infra
