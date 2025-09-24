@@ -24,7 +24,7 @@ interface Props {
     date: string;
   };
   onWatchReplay?(id: string): void;
-  onViewBracket?(title: string): void;
+  onViewBracket?(tournament: { id: string; title: string }): void;
   transactionTitle?: TransactionHistorySectionProps<TransactionEntry>['title'];
   transactionEmptyMessage?: TransactionHistorySectionProps<TransactionEntry>['emptyMessage'];
   transactionFilters?: TransactionHistorySectionProps<TransactionEntry>['filters'];
@@ -96,7 +96,8 @@ function HistoryList({
     }
     const entries = (gameData ?? []).filter((e) => {
       if (!filters) return true;
-      if (filters.gameType !== 'any' && e.type !== filters.gameType) return false;
+      if (filters.gameType !== 'any' && e.type !== filters.gameType)
+        return false;
       if (filters.profitLoss === 'win' && !e.profit) return false;
       if (filters.profitLoss === 'loss' && e.profit) return false;
       if (filters.date && e.date !== filters.date) return false;
@@ -182,26 +183,35 @@ function HistoryList({
           <table className="min-w-[640px] w-full text-left table-auto">
             <thead>
               <tr>
-                {['Name', 'Place', 'Buy-in', 'Prize', 'Duration', 'Details'].map(
-                  (h) => (
-                    <th key={h} className="pb-2 pr-6 whitespace-nowrap">
-                      {h}
-                    </th>
-                  ),
-                )}
+                {[
+                  'Name',
+                  'Place',
+                  'Buy-in',
+                  'Prize',
+                  'Duration',
+                  'Details',
+                ].map((h) => (
+                  <th key={h} className="pb-2 pr-6 whitespace-nowrap">
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {tournamentData.map((row) => (
-                <tr key={row.name} className="border-b border-border-dark">
+                <tr key={row.id} className="border-b border-border-dark">
                   <td className="py-2 pr-6 whitespace-nowrap">{row.name}</td>
                   <td className="py-2 pr-6 whitespace-nowrap">{row.place}</td>
                   <td className="py-2 pr-6 whitespace-nowrap">{row.buyin}</td>
                   <td className="py-2 pr-6 whitespace-nowrap">{row.prize}</td>
-                  <td className="py-2 pr-6 whitespace-nowrap">{row.duration}</td>
+                  <td className="py-2 pr-6 whitespace-nowrap">
+                    {row.duration}
+                  </td>
                   <td className="py-2 pr-6 whitespace-nowrap">
                     <button
-                      onClick={() => onViewBracket?.(row.name)}
+                      onClick={() =>
+                        onViewBracket?.({ id: row.id, title: row.name })
+                      }
                       className="text-accent-yellow hover:text-accent-blue text-sm cursor-pointer"
                     >
                       View Bracket

@@ -8,6 +8,9 @@ import {
   GameHistoryEntrySchema,
   TournamentHistoryEntrySchema,
   TransactionEntrySchema,
+  TournamentBracketMatchSchema,
+  TournamentBracketRoundSchema,
+  TournamentBracketResponseSchema,
 } from './schemas/history';
 import { CurrencySchema } from './wallet.schema';
 
@@ -606,6 +609,9 @@ export {
   TransactionEntrySchema,
   HistoryTabItemSchema,
   HistoryTabsResponseSchema,
+  TournamentBracketMatchSchema,
+  TournamentBracketRoundSchema,
+  TournamentBracketResponseSchema,
 } from './schemas/history';
 export type {
   GameHistoryEntry,
@@ -613,4 +619,7 @@ export type {
   TransactionEntry,
   HistoryTabItem,
   HistoryTabsResponse,
+  TournamentBracketMatch,
+  TournamentBracketRound,
+  TournamentBracketResponse,
 } from './schemas/history';

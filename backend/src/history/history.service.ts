@@ -1,16 +1,24 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type {
   GameHistoryEntry,
   TournamentHistoryEntry,
   TransactionEntry,
+  TournamentBracketResponse,
 } from '@shared/types';
+import { TournamentBracketResponseSchema } from '@shared/types';
 import {
   HistoryRepository,
   GAME_HISTORY_REPOSITORY,
+  TOURNAMENT_BRACKET_REPOSITORY,
   TOURNAMENT_HISTORY_REPOSITORY,
   WALLET_HISTORY_REPOSITORY,
 } from './history.repository';
-import { GameHistory, TournamentHistory, WalletHistory } from './history.entity';
+import {
+  GameHistory,
+  TournamentBracket,
+  TournamentHistory,
+  WalletHistory,
+} from './history.entity';
 
 @Injectable()
 export class HistoryService {
@@ -23,6 +31,8 @@ export class HistoryService {
     private readonly tournaments: HistoryRepository<TournamentHistory>,
     @Inject(WALLET_HISTORY_REPOSITORY)
     private readonly transactionsRepo: HistoryRepository<WalletHistory>,
+    @Inject(TOURNAMENT_BRACKET_REPOSITORY)
+    private readonly brackets: HistoryRepository<TournamentBracket>,
   ) {}
 
   async getGames(): Promise<GameHistoryEntry[]> {
@@ -41,12 +51,30 @@ export class HistoryService {
   async getTournaments(): Promise<TournamentHistoryEntry[]> {
     const rows = await this.tournaments.find();
     return rows.map((r) => ({
+      id: r.id,
       name: r.name,
       place: r.place,
       buyin: r.buyin,
       prize: r.prize,
       duration: r.duration,
     }));
+  }
+
+  async getTournamentBracket(
+    tournamentId: string,
+    userId: string,
+  ): Promise<TournamentBracketResponse> {
+    const bracket = await this.brackets.findOne({ where: { tournamentId } });
+    if (!bracket) {
+      throw new NotFoundException('Tournament bracket not found');
+    }
+    if (bracket.userId !== userId && userId !== 'admin') {
+      throw new ForbiddenException();
+    }
+    return TournamentBracketResponseSchema.parse({
+      tournamentId: bracket.tournamentId,
+      rounds: Array.isArray(bracket.rounds) ? bracket.rounds : [],
+    });
   }
 
   async getTransactions(): Promise<TransactionEntry[]> {

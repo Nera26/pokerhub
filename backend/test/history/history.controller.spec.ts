@@ -6,12 +6,14 @@ import { newDb } from 'pg-mem';
 import { AuthGuard } from '../../src/auth/auth.guard';
 import {
   GameHistory,
+  TournamentBracket,
   TournamentHistory,
   WalletHistory,
 } from '../../src/history/history.entity';
 import {
   HistoryRepository,
   GAME_HISTORY_REPOSITORY,
+  TOURNAMENT_BRACKET_REPOSITORY,
   TOURNAMENT_HISTORY_REPOSITORY,
   WALLET_HISTORY_REPOSITORY,
 } from '../../src/history/history.repository';
@@ -22,6 +24,9 @@ describe('HistoryController', () => {
   let gameRepo: HistoryRepository<GameHistory>;
   let tournamentRepo: HistoryRepository<TournamentHistory>;
   let walletRepo: HistoryRepository<WalletHistory>;
+  let bracketRepo: HistoryRepository<TournamentBracket>;
+  let tournamentId: string;
+  const ownerId = '00000000-0000-0000-0000-000000000001';
 
   beforeAll(async () => {
     let dataSource: any;
@@ -52,7 +57,12 @@ describe('HistoryController', () => {
             });
             dataSource = db.adapters.createTypeormDataSource({
               type: 'postgres',
-              entities: [GameHistory, TournamentHistory, WalletHistory],
+              entities: [
+                GameHistory,
+                TournamentHistory,
+                WalletHistory,
+                TournamentBracket,
+              ],
               synchronize: true,
             });
             return dataSource.options;
@@ -63,12 +73,26 @@ describe('HistoryController', () => {
       ],
     })
       .overrideGuard(AuthGuard)
-      .useValue({ canActivate: () => true })
+      .useValue({
+        canActivate: (context: any) => {
+          const req = context.switchToHttp().getRequest();
+          const header = req.headers['x-user-id'];
+          if (Array.isArray(header)) {
+            req.userId = header[0] ?? ownerId;
+          } else if (typeof header === 'string') {
+            req.userId = header;
+          } else {
+            req.userId = ownerId;
+          }
+          return true;
+        },
+      })
       .compile();
 
     gameRepo = moduleRef.get<HistoryRepository<GameHistory>>(GAME_HISTORY_REPOSITORY);
     tournamentRepo = moduleRef.get<HistoryRepository<TournamentHistory>>(TOURNAMENT_HISTORY_REPOSITORY);
     walletRepo = moduleRef.get<HistoryRepository<WalletHistory>>(WALLET_HISTORY_REPOSITORY);
+    bracketRepo = moduleRef.get<HistoryRepository<TournamentBracket>>(TOURNAMENT_BRACKET_REPOSITORY);
 
     await gameRepo.save({
       type: 'cash',
@@ -79,12 +103,30 @@ describe('HistoryController', () => {
       amount: '$50',
     });
 
-    await tournamentRepo.save({
+    const tournament = await tournamentRepo.save({
       name: 'Sunday Major',
       place: '1',
       buyin: '$50',
       prize: '$500',
       duration: '2h',
+    });
+    tournamentId = tournament.id;
+
+    await bracketRepo.save({
+      tournamentId,
+      userId: ownerId,
+      rounds: [
+        {
+          name: 'Finals',
+          matches: [
+            {
+              id: 'match-1',
+              players: ['Player A', 'Player B'],
+              winner: 'Player A',
+            },
+          ],
+        },
+      ],
     });
 
     await walletRepo.save({
@@ -99,7 +141,9 @@ describe('HistoryController', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    if (app) {
+      await app.close();
+    }
   });
 
   it('returns game history', async () => {
@@ -145,6 +189,46 @@ describe('HistoryController', () => {
       currency: 'USD',
     });
     expect(res.body[0].amount).toBe(100);
+  });
+
+  it('returns tournament bracket for owner', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/history/tournaments/${tournamentId}/bracket`)
+      .set('Authorization', 'Bearer test')
+      .set('x-user-id', ownerId)
+      .expect(200);
+
+    expect(res.body).toEqual({
+      tournamentId,
+      rounds: [
+        {
+          name: 'Finals',
+          matches: [
+            {
+              id: 'match-1',
+              players: ['Player A', 'Player B'],
+              winner: 'Player A',
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  it('allows admin access to tournament bracket', async () => {
+    await request(app.getHttpServer())
+      .get(`/history/tournaments/${tournamentId}/bracket`)
+      .set('Authorization', 'Bearer test')
+      .set('x-user-id', 'admin')
+      .expect(200);
+  });
+
+  it('forbids access for other users', async () => {
+    await request(app.getHttpServer())
+      .get(`/history/tournaments/${tournamentId}/bracket`)
+      .set('Authorization', 'Bearer test')
+      .set('x-user-id', '00000000-0000-0000-0000-000000000002')
+      .expect(403);
   });
 });
 
