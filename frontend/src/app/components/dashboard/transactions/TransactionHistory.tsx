@@ -1,21 +1,12 @@
-import { useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons/faSpinner';
 import TransactionHistorySection from '@/app/components/common/TransactionHistorySection';
 import { useTransactionHistoryControls } from '@/app/components/common/TransactionHistoryControls';
-import TransactionHistoryFilters, {
-  buildSelectOptions,
-} from '@/app/components/common/TransactionHistoryFilters';
+import TransactionHistoryFilters from '@/app/components/common/TransactionHistoryFilters';
 import { fetchTransactionsLog } from '@/lib/api/transactions';
 import { useApiError } from '@/hooks/useApiError';
 import { useLocale } from 'next-intl';
-import { useTranslations } from '@/hooks/useTranslations';
-import type { FilterOptions } from '@shared/transactions.schema';
-import {
-  createPlaceholderOption,
-  resolveTransactionFilterLabel,
-  useTransactionFilterQueries,
-} from '@/hooks/useTransactionFilterQueries';
+import { useTransactionFilterQueries } from '@/hooks/useTransactionFilterQueries';
 
 interface Props {
   onExport?: () => void;
@@ -28,13 +19,13 @@ type TransactionLogEntry = Awaited<
 export default function DashboardTransactionHistory({ onExport }: Props) {
   const pageSize = 10;
   const locale = useLocale();
-  const { data: translationMessages } = useTranslations(locale);
 
-  const filterQueries = useTransactionFilterQueries({
-    locale,
-    includePlayers: true,
-    includeTypes: true,
-  });
+  const { queries: filterQueries, resolveMetadata } =
+    useTransactionFilterQueries({
+      locale,
+      includePlayers: true,
+      includeTypes: true,
+    });
 
   const { history, queries, handleExport } = useTransactionHistoryControls<
     TransactionLogEntry,
@@ -83,45 +74,7 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
   const typesQuery = queries.types;
   const filtersQuery = queries.filters;
 
-  const players = playersQuery?.data ?? [];
-  const types = typesQuery?.data ?? [];
-  const filterOptions: FilterOptions = filtersQuery?.data ?? {
-    types: [],
-    performedBy: [],
-  };
-  const translations = translationMessages ?? {};
-  const playerPlaceholderLabel = resolveTransactionFilterLabel({
-    translations,
-    translationKey: 'transactions.filters.allPlayers',
-    fallback: 'All Players',
-  });
-  const typePlaceholderLabel = resolveTransactionFilterLabel({
-    filterOptions,
-    placeholderKey: 'typePlaceholder',
-    translations,
-    translationKey: 'transactions.filters.allTypes',
-    fallback: 'All Types',
-  });
-
-  const playerOptions = useMemo(
-    () =>
-      buildSelectOptions({
-        data: players,
-        getValue: (player) => String(player.id ?? ''),
-        getLabel: (player) => String(player.username ?? ''),
-      }),
-    [players],
-  );
-
-  const typeOptions = useMemo(
-    () =>
-      buildSelectOptions({
-        data: types,
-        getValue: (type) => String(type.id ?? ''),
-        getLabel: (type) => String(type.label ?? ''),
-      }),
-    [types],
-  );
+  const { playerSelect, typeSelect } = resolveMetadata(queries);
 
   useApiError(playersQuery?.error);
   useApiError(typesQuery?.error);
@@ -145,16 +98,16 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
         {
           key: 'playerId',
           label: 'Filter by player',
-          placeholderOption: createPlaceholderOption(playerPlaceholderLabel),
-          options: playerOptions,
+          placeholderOption: playerSelect.placeholderOption,
+          options: playerSelect.options,
           loading: playersQuery?.isLoading,
           error: Boolean(playersQuery?.error),
         },
         {
           key: 'type',
           label: 'Filter by type',
-          placeholderOption: createPlaceholderOption(typePlaceholderLabel),
-          options: typeOptions,
+          placeholderOption: typeSelect.placeholderOption,
+          options: typeSelect.options,
           loading: typesQuery?.isLoading,
           error: Boolean(typesQuery?.error),
         },
@@ -173,6 +126,7 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
   if (historyError) {
     return <p role="alert">Failed to load transaction history.</p>;
   }
+
   return (
     <>
       <TransactionHistorySection

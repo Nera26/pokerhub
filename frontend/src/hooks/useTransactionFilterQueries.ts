@@ -1,165 +1,231 @@
-import { useMemo } from 'react';
-import type { TransactionHistoryFilterQuery } from '@/app/components/common/TransactionHistoryControls';
-import type { SelectOption } from '@/app/components/common/TransactionHistoryFilters';
+import { useCallback, useMemo } from 'react';
 import { fetchAdminPlayers } from '@/lib/api/wallet';
 import {
   fetchTransactionFilters,
   fetchTransactionTypes,
 } from '@/lib/api/transactions';
 import type { FilterOptions } from '@shared/transactions.schema';
+import { useTranslations } from '@/hooks/useTranslations';
+import {
+  type TransactionHistoryFilterQuery,
+  type TransactionHistoryQueryResultMap,
+} from '@/app/components/common/TransactionHistoryControls';
+import {
+  buildSelectOptions,
+  type SelectOption,
+} from '@/app/components/common/TransactionHistoryFilters';
 
 type PlayersQuery = TransactionHistoryFilterQuery<
   'players',
-  Awaited<ReturnType<typeof fetchAdminPlayers>>,
-  Awaited<ReturnType<typeof fetchAdminPlayers>>,
-  readonly ['adminPlayers']
+  Awaited<ReturnType<typeof fetchAdminPlayers>>
 >;
 
 type TypesQuery = TransactionHistoryFilterQuery<
   'types',
-  Awaited<ReturnType<typeof fetchTransactionTypes>>,
-  Awaited<ReturnType<typeof fetchTransactionTypes>>,
-  readonly ['transactionTypes']
+  Awaited<ReturnType<typeof fetchTransactionTypes>>
 >;
 
-type FiltersQuery = TransactionHistoryFilterQuery<
-  'filters',
-  FilterOptions,
-  FilterOptions,
-  readonly ['transactionFilters', string]
->;
+type FiltersQuery = TransactionHistoryFilterQuery<'filters', FilterOptions>;
 
 type TransactionFilterQueries<
-  IncludePlayers extends boolean,
-  IncludeTypes extends boolean,
-> = IncludePlayers extends true
-  ? IncludeTypes extends true
-    ? readonly [PlayersQuery, TypesQuery, FiltersQuery]
-    : readonly [PlayersQuery, FiltersQuery]
-  : IncludeTypes extends true
-    ? readonly [TypesQuery, FiltersQuery]
-    : readonly [FiltersQuery];
+  TIncludePlayers extends boolean,
+  TIncludeTypes extends boolean,
+> = [
+  ...(TIncludePlayers extends true ? [PlayersQuery] : []),
+  ...(TIncludeTypes extends true ? [TypesQuery] : []),
+  FiltersQuery,
+];
 
-interface UseTransactionFilterQueriesOptions<
-  IncludePlayers extends boolean,
-  IncludeTypes extends boolean,
+export interface TransactionFilterSelectConfig {
+  placeholderOption: SelectOption;
+  options: SelectOption[];
+}
+
+export interface TransactionFilterMetadata<
+  TIncludePlayers extends boolean,
+  TIncludeTypes extends boolean,
+> {
+  filterOptions: FilterOptions;
+  typeSelect: TransactionFilterSelectConfig;
+  performedBySelect: TransactionFilterSelectConfig;
+  playerSelect: TIncludePlayers extends true
+    ? TransactionFilterSelectConfig
+    : undefined;
+  players: TIncludePlayers extends true
+    ? Awaited<ReturnType<typeof fetchAdminPlayers>>
+    : undefined;
+  types: TIncludeTypes extends true
+    ? Awaited<ReturnType<typeof fetchTransactionTypes>>
+    : undefined;
+}
+
+export interface UseTransactionFilterQueriesOptions<
+  TIncludePlayers extends boolean,
+  TIncludeTypes extends boolean,
 > {
   locale: string;
-  includePlayers?: IncludePlayers;
-  includeTypes?: IncludeTypes;
+  includePlayers: TIncludePlayers;
+  includeTypes: TIncludeTypes;
   filtersEnabled?: boolean;
 }
 
+export interface UseTransactionFilterQueriesResult<
+  TIncludePlayers extends boolean,
+  TIncludeTypes extends boolean,
+> {
+  queries: TransactionFilterQueries<TIncludePlayers, TIncludeTypes>;
+  resolveMetadata: (
+    results: TransactionHistoryQueryResultMap<
+      TransactionFilterQueries<TIncludePlayers, TIncludeTypes>
+    >,
+  ) => TransactionFilterMetadata<TIncludePlayers, TIncludeTypes>;
+}
+
+const emptyFilterOptions: FilterOptions = {
+  types: [],
+  performedBy: [],
+};
+
 export function useTransactionFilterQueries<
-  IncludePlayers extends boolean = false,
-  IncludeTypes extends boolean = false,
+  TIncludePlayers extends boolean,
+  TIncludeTypes extends boolean,
 >({
   locale,
   includePlayers,
   includeTypes,
   filtersEnabled = true,
 }: UseTransactionFilterQueriesOptions<
-  IncludePlayers,
-  IncludeTypes
->): TransactionFilterQueries<IncludePlayers, IncludeTypes> {
-  return useMemo(() => {
-    const playersQuery: PlayersQuery = {
-      key: 'players',
-      queryKey: ['adminPlayers'] as const,
-      queryFn: fetchAdminPlayers,
-      initialData: [] as Awaited<ReturnType<typeof fetchAdminPlayers>>,
-    };
+  TIncludePlayers,
+  TIncludeTypes
+>): UseTransactionFilterQueriesResult<TIncludePlayers, TIncludeTypes> {
+  const { data: translationMessages } = useTranslations(locale);
+  const translations = translationMessages ?? {};
 
-    const typesQuery: TypesQuery = {
-      key: 'types',
-      queryKey: ['transactionTypes'] as const,
-      queryFn: fetchTransactionTypes,
-      initialData: [] as Awaited<ReturnType<typeof fetchTransactionTypes>>,
-    };
+  const queries = useMemo(() => {
+    const configs: TransactionHistoryFilterQuery<string, unknown, unknown>[] =
+      [];
 
-    const filtersQuery: FiltersQuery = {
+    if (includePlayers) {
+      configs.push({
+        key: 'players',
+        queryKey: ['adminPlayers'] as const,
+        queryFn: fetchAdminPlayers,
+        initialData: [] as Awaited<ReturnType<typeof fetchAdminPlayers>>,
+      } satisfies PlayersQuery);
+    }
+
+    if (includeTypes) {
+      configs.push({
+        key: 'types',
+        queryKey: ['transactionTypes'] as const,
+        queryFn: fetchTransactionTypes,
+        initialData: [] as Awaited<ReturnType<typeof fetchTransactionTypes>>,
+      } satisfies TypesQuery);
+    }
+
+    configs.push({
       key: 'filters',
       queryKey: ['transactionFilters', locale] as const,
       queryFn: () => fetchTransactionFilters(locale),
       enabled: filtersEnabled,
-      initialData: {
-        types: [],
-        performedBy: [],
-      } as FilterOptions,
-    };
+      initialData: emptyFilterOptions,
+    } satisfies FiltersQuery);
 
-    if (includePlayers && includeTypes) {
-      return [
-        playersQuery,
-        typesQuery,
-        filtersQuery,
-      ] as unknown as TransactionFilterQueries<IncludePlayers, IncludeTypes>;
-    }
-
-    if (includePlayers) {
-      return [
-        playersQuery,
-        filtersQuery,
-      ] as unknown as TransactionFilterQueries<IncludePlayers, IncludeTypes>;
-    }
-
-    if (includeTypes) {
-      return [typesQuery, filtersQuery] as unknown as TransactionFilterQueries<
-        IncludePlayers,
-        IncludeTypes
-      >;
-    }
-
-    return [filtersQuery] as unknown as TransactionFilterQueries<
-      IncludePlayers,
-      IncludeTypes
-    >;
+    return configs as TransactionFilterQueries<TIncludePlayers, TIncludeTypes>;
   }, [filtersEnabled, includePlayers, includeTypes, locale]);
-}
 
-type FilterPlaceholderKey = Extract<
-  keyof FilterOptions,
-  'typePlaceholder' | 'performedByPlaceholder'
->;
+  const resolveMetadata = useCallback(
+    (
+      results: TransactionHistoryQueryResultMap<
+        TransactionFilterQueries<TIncludePlayers, TIncludeTypes>
+      >,
+    ) => {
+      const players = (
+        includePlayers ? (results.players?.data ?? []) : undefined
+      ) as TransactionFilterMetadata<TIncludePlayers, TIncludeTypes>['players'];
+      const types = (
+        includeTypes ? (results.types?.data ?? []) : undefined
+      ) as TransactionFilterMetadata<TIncludePlayers, TIncludeTypes>['types'];
 
-interface ResolvePlaceholderLabelOptions {
-  filterOptions?: FilterOptions | null;
-  placeholderKey?: FilterPlaceholderKey;
-  translations?: Partial<Record<string, string>> | null;
-  translationKey?: string;
-  fallback: string;
-}
+      const filterOptions = (results.filters?.data ??
+        emptyFilterOptions) as FilterOptions;
 
-export function resolveTransactionFilterLabel({
-  filterOptions,
-  placeholderKey,
-  translations,
-  translationKey,
-  fallback,
-}: ResolvePlaceholderLabelOptions): string {
-  if (placeholderKey && filterOptions?.[placeholderKey]) {
-    return filterOptions[placeholderKey] as string;
-  }
+      const playerPlaceholderLabel =
+        translations['transactions.filters.allPlayers'] ?? 'All Players';
+      const typePlaceholderLabel =
+        filterOptions.typePlaceholder ??
+        translations['transactions.filters.allTypes'] ??
+        'All Types';
+      const performedByPlaceholderLabel =
+        filterOptions.performedByPlaceholder ??
+        translations['transactions.filters.performedByAll'] ??
+        'Performed By: All';
 
-  if (translationKey && translations?.[translationKey]) {
-    return translations[translationKey] as string;
-  }
+      const playerSelect = includePlayers
+        ? {
+            placeholderOption: { value: '', label: playerPlaceholderLabel },
+            options: buildSelectOptions({
+              data: players,
+              getValue: (player) => String(player?.id ?? ''),
+              getLabel: (player) => String(player?.username ?? ''),
+            }),
+          }
+        : undefined;
 
-  return fallback;
-}
+      const typeSelect = includeTypes
+        ? {
+            placeholderOption: { value: '', label: typePlaceholderLabel },
+            options: buildSelectOptions({
+              data: types,
+              getValue: (type) => String(type?.id ?? ''),
+              getLabel: (type) => String(type?.label ?? ''),
+            }),
+          }
+        : {
+            placeholderOption: {
+              value: typePlaceholderLabel,
+              label: typePlaceholderLabel,
+            },
+            options: buildSelectOptions({
+              data: filterOptions?.types ?? [],
+              getValue: (value) => value,
+              getLabel: (value) => value,
+              filter: (value) => value !== typePlaceholderLabel,
+            }),
+          };
 
-interface CreatePlaceholderOptionOptions {
-  value?: string;
-  disabled?: boolean;
-}
+      const performedBySelect: TransactionFilterSelectConfig = {
+        placeholderOption: {
+          value: performedByPlaceholderLabel,
+          label: performedByPlaceholderLabel,
+        },
+        options: buildSelectOptions({
+          data: filterOptions?.performedBy ?? [],
+          getValue: (value) => value,
+          getLabel: (value) => value,
+          filter: (value) => value !== performedByPlaceholderLabel,
+        }),
+      };
 
-export function createPlaceholderOption(
-  label: string,
-  { value = '', disabled }: CreatePlaceholderOptionOptions = {},
-): SelectOption {
+      return {
+        filterOptions,
+        typeSelect,
+        performedBySelect,
+        playerSelect: playerSelect as TransactionFilterMetadata<
+          TIncludePlayers,
+          TIncludeTypes
+        >['playerSelect'],
+        players,
+        types,
+      } satisfies TransactionFilterMetadata<TIncludePlayers, TIncludeTypes>;
+    },
+    [includePlayers, includeTypes, translations],
+  );
+
   return {
-    value,
-    label,
-    disabled,
+    queries,
+    resolveMetadata,
   };
 }
+
+export default useTransactionFilterQueries;

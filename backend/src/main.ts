@@ -8,6 +8,7 @@ import { bootstrap } from './bootstrap';
 
 async function main() {
   const app = await bootstrap();
+  app.setGlobalPrefix('api', { exclude: ['status', 'docs'] });
 
   const config = new DocumentBuilder()
     .setTitle('PokerHub API')
