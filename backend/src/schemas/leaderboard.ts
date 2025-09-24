@@ -10,7 +10,7 @@ export { LeaderboardEntrySchema, LeaderboardResponseSchema };
 export type { LeaderboardEntry, LeaderboardResponse };
 
 export const LeaderboardRebuildQuerySchema = z.object({
-  days: z.number().int().positive().max(30).optional(),
+  days: z.coerce.number().int().positive().max(30).optional(),
 });
 
 export const TimeFilterSchema = z.string();
