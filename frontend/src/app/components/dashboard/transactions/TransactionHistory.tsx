@@ -1,24 +1,12 @@
-import { useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons/faSpinner';
 import TransactionHistorySection from '@/app/components/common/TransactionHistorySection';
-import {
-  useTransactionHistoryControls,
-  type TransactionHistoryFilterQuery,
-} from '@/app/components/common/TransactionHistoryControls';
-import TransactionHistoryFilters, {
-  buildSelectOptions,
-} from '@/app/components/common/TransactionHistoryFilters';
-import { fetchAdminPlayers } from '@/lib/api/wallet';
-import {
-  fetchTransactionTypes,
-  fetchTransactionsLog,
-  fetchTransactionFilters,
-} from '@/lib/api/transactions';
+import { useTransactionHistoryControls } from '@/app/components/common/TransactionHistoryControls';
+import TransactionHistoryFilters from '@/app/components/common/TransactionHistoryFilters';
+import { fetchTransactionsLog } from '@/lib/api/transactions';
 import { useApiError } from '@/hooks/useApiError';
 import { useLocale } from 'next-intl';
-import { useTranslations } from '@/hooks/useTranslations';
-import type { FilterOptions } from '@shared/transactions.schema';
+import { useTransactionFilterQueries } from '@/hooks/useTransactionFilterQueries';
 
 interface Props {
   onExport?: () => void;
@@ -31,39 +19,12 @@ type TransactionLogEntry = Awaited<
 export default function DashboardTransactionHistory({ onExport }: Props) {
   const pageSize = 10;
   const locale = useLocale();
-  const { data: translationMessages } = useTranslations(locale);
-
-  const filterQueries = useMemo(
-    () =>
-      [
-        {
-          key: 'players',
-          queryKey: ['adminPlayers'] as const,
-          queryFn: fetchAdminPlayers,
-          initialData: [] as Awaited<ReturnType<typeof fetchAdminPlayers>>,
-        },
-        {
-          key: 'types',
-          queryKey: ['transactionTypes'] as const,
-          queryFn: fetchTransactionTypes,
-          initialData: [] as Awaited<ReturnType<typeof fetchTransactionTypes>>,
-        },
-        {
-          key: 'filters',
-          queryKey: ['transactionFilters', locale] as const,
-          queryFn: () => fetchTransactionFilters(locale),
-          initialData: {
-            types: [],
-            performedBy: [],
-          } as FilterOptions,
-        },
-      ] as const satisfies readonly TransactionHistoryFilterQuery<
-        'players' | 'types' | 'filters',
-        any,
-        any
-      >[],
-    [locale],
-  );
+  const { queries: filterQueries, resolveMetadata } =
+    useTransactionFilterQueries({
+      locale,
+      includePlayers: true,
+      includeTypes: true,
+    });
 
   const { history, queries, handleExport } = useTransactionHistoryControls<
     TransactionLogEntry,
@@ -112,39 +73,11 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
   const typesQuery = queries.types;
   const filtersQuery = queries.filters;
 
-  const players = playersQuery?.data ?? [];
-  const types = typesQuery?.data ?? [];
-  const filterOptions: FilterOptions = filtersQuery?.data ?? {
-    types: [],
-    performedBy: [],
-  };
-  const translations = translationMessages ?? {};
-  const playerPlaceholderLabel =
-    translations['transactions.filters.allPlayers'] ?? 'All Players';
-  const typePlaceholderLabel =
-    filterOptions.typePlaceholder ??
-    translations['transactions.filters.allTypes'] ??
-    'All Types';
-
-  const playerOptions = useMemo(
-    () =>
-      buildSelectOptions({
-        data: players,
-        getValue: (player) => String(player.id ?? ''),
-        getLabel: (player) => String(player.username ?? ''),
-      }),
-    [players],
-  );
-
-  const typeOptions = useMemo(
-    () =>
-      buildSelectOptions({
-        data: types,
-        getValue: (type) => String(type.id ?? ''),
-        getLabel: (type) => String(type.label ?? ''),
-      }),
-    [types],
-  );
+  const { playerSelect, typeSelect } = resolveMetadata(queries);
+  const playerPlaceholderLabel = playerSelect.placeholderOption.label;
+  const playerOptions = playerSelect.options;
+  const typePlaceholderLabel = typeSelect.placeholderOption.label;
+  const typeOptions = typeSelect.options;
 
   useApiError(playersQuery?.error);
   useApiError(typesQuery?.error);
