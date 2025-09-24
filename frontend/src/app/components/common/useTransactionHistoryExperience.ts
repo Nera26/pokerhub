@@ -2,101 +2,79 @@
 
 import { useMemo } from 'react';
 import {
-  useTransactionHistoryControls,
-  type UseTransactionHistoryControlsOptions,
-  type UseTransactionHistoryControlsResult,
-} from './TransactionHistoryControls';
-import {
   useTransactionFilterQueries,
-  type TransactionFilterQueries,
+  type UseTransactionFilterQueriesOptions,
   type TransactionFilterMetadata,
+  type TransactionFilterQueries,
 } from '@/hooks/useTransactionFilterQueries';
+import useTransactionHistoryControls, {
+  type TransactionHistoryQueryResultMap,
+} from './TransactionHistoryControls';
+import type {
+  UseTransactionHistoryOptions,
+  UseTransactionHistoryReturn,
+} from './useTransactionHistory';
 
 export interface UseTransactionHistoryExperienceOptions<
   TEntry,
   TIncludePlayers extends boolean,
   TIncludeTypes extends boolean,
 > {
-  locale: string;
-  includePlayers: TIncludePlayers;
-  includeTypes: TIncludeTypes;
-  filtersEnabled?: boolean;
-  history: UseTransactionHistoryControlsOptions<
-    TEntry,
-    TransactionFilterQueries<TIncludePlayers, TIncludeTypes>
-  >['history'];
-  onExport?: UseTransactionHistoryControlsOptions<
-    TEntry,
-    TransactionFilterQueries<TIncludePlayers, TIncludeTypes>
-  >['onExport'];
+  history: UseTransactionHistoryOptions<TEntry>;
+  filterQueries: UseTransactionFilterQueriesOptions<
+    TIncludePlayers,
+    TIncludeTypes
+  >;
+  onExport?: () => void;
 }
 
-export interface UseTransactionHistoryExperienceResult<
+export interface TransactionHistoryExperienceResult<
   TEntry,
   TIncludePlayers extends boolean,
   TIncludeTypes extends boolean,
 > {
-  history: UseTransactionHistoryControlsResult<
-    TEntry,
+  history: UseTransactionHistoryReturn<TEntry>;
+  queries: TransactionHistoryQueryResultMap<
     TransactionFilterQueries<TIncludePlayers, TIncludeTypes>
-  >['history'];
-  queries: UseTransactionHistoryControlsResult<
-    TEntry,
-    TransactionFilterQueries<TIncludePlayers, TIncludeTypes>
-  >['queries'];
+  >;
   metadata: TransactionFilterMetadata<TIncludePlayers, TIncludeTypes>;
-  handleExport: UseTransactionHistoryControlsResult<
-    TEntry,
-    TransactionFilterQueries<TIncludePlayers, TIncludeTypes>
-  >['handleExport'];
+  handleExport: () => void;
 }
 
-export default function useTransactionHistoryExperience<
+export function useTransactionHistoryExperience<
   TEntry,
   TIncludePlayers extends boolean,
   TIncludeTypes extends boolean,
 >({
-  locale,
-  includePlayers,
-  includeTypes,
-  filtersEnabled,
-  history: historyOptions,
+  history,
+  filterQueries,
   onExport,
 }: UseTransactionHistoryExperienceOptions<
   TEntry,
   TIncludePlayers,
   TIncludeTypes
->): UseTransactionHistoryExperienceResult<
-  TEntry,
-  TIncludePlayers,
-  TIncludeTypes
-> {
-  const { queries: filterQueries, resolveMetadata } =
-    useTransactionFilterQueries({
-      locale,
-      includePlayers,
-      includeTypes,
-      filtersEnabled,
-    });
-
-  const { history, queries, handleExport } = useTransactionHistoryControls<
+>): TransactionHistoryExperienceResult<TEntry, TIncludePlayers, TIncludeTypes> {
+  const filterQueryResult = useTransactionFilterQueries(filterQueries);
+  const controls = useTransactionHistoryControls<
     TEntry,
     TransactionFilterQueries<TIncludePlayers, TIncludeTypes>
   >({
-    history: historyOptions,
-    queries: filterQueries,
+    history,
+    queries: filterQueryResult.queries,
     onExport,
   });
 
   const metadata = useMemo(
-    () => resolveMetadata(queries),
-    [queries, resolveMetadata],
+    () => filterQueryResult.resolveMetadata(controls.queries),
+    [filterQueryResult, controls.queries],
   );
 
   return {
-    history,
-    queries,
+    history: controls.history,
+    queries: controls.queries,
     metadata,
-    handleExport,
+    handleExport: controls.handleExport,
   };
 }
+
+export default useTransactionHistoryExperience;

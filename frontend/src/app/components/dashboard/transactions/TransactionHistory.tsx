@@ -21,9 +21,6 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
 
   const { history, queries, metadata, handleExport } =
     useTransactionHistoryExperience<TransactionLogEntry, true, true>({
-      locale,
-      includePlayers: true,
-      includeTypes: true,
       history: {
         queryKey: ['transactionsLog', 'dashboard'],
         fetchTransactions: ({ signal, page, pageSize, filters }) =>
@@ -46,6 +43,11 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
         extractCurrency: (entry) =>
           (entry as (TransactionLogEntry & { currency?: string }) | undefined)
             ?.currency,
+      },
+      filterQueries: {
+        locale,
+        includePlayers: true,
+        includeTypes: true,
       },
       onExport,
     });

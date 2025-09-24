@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type PropsWithChildren,
-} from 'react';
+import { useEffect, useMemo, useState, type PropsWithChildren } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   fetchAdminTournaments,
@@ -38,15 +32,10 @@ import { useAdminTournamentFilters } from '@/hooks/admin/useTournamentFilters';
 type Tournament = AdminTournament;
 
 export default function ManageTournaments() {
-  const [statusFilter, setStatusFilter] =
-    useState<AdminTournamentFilterOption['id']>('all');
-  const { data: filters, isLoading: filtersLoading } =
+  const { data: filters = [], isLoading: filtersLoading } =
     useAdminTournamentFilters();
-
   const filterOptions = useMemo(() => {
-    if (!filters || filters.length === 0) {
-      return [];
-    }
+    if (!filters.length) return [];
 
     const seen = new Set<AdminTournamentFilterOption['id']>();
     return filters.filter((filter) => {
@@ -55,54 +44,29 @@ export default function ManageTournaments() {
       return true;
     });
   }, [filters]);
-
-  const preferredDefaultFilterId = useMemo<
-    AdminTournamentFilterOption['id']
-  >(() => {
-    if (!filterOptions.length) {
-      return 'all';
-    }
-
-    const allOption = filterOptions.find((filter) => filter.id === 'all');
-    return (allOption ?? filterOptions[0]).id;
+  const preferredFilterId = useMemo(() => {
+    const allOption = filterOptions.find((option) => option.id === 'all');
+    return allOption?.id ?? filterOptions[0]?.id ?? 'all';
   }, [filterOptions]);
 
-  const previousPreferredDefaultRef = useRef<
-    AdminTournamentFilterOption['id'] | undefined
-  >(undefined);
+  const [statusFilter, setStatusFilter] =
+    useState<AdminTournamentFilterOption['id']>(preferredFilterId);
 
   useEffect(() => {
-    const previousPreferredDefault = previousPreferredDefaultRef.current;
-    const nextPreferredDefault = preferredDefaultFilterId;
-
-    previousPreferredDefaultRef.current = nextPreferredDefault;
-
-    if (!filterOptions.length) {
-      if (statusFilter !== 'all') {
-        setStatusFilter('all');
-      }
-      return;
-    }
-
-    const hasValidSelection = filterOptions.some(
-      (filter) => filter.id === statusFilter,
-    );
-
-    if (!hasValidSelection) {
-      setStatusFilter(nextPreferredDefault);
+    if (!filterOptions.length && statusFilter !== preferredFilterId) {
+      setStatusFilter(preferredFilterId);
       return;
     }
 
     if (
-      previousPreferredDefault &&
-      statusFilter === previousPreferredDefault &&
-      nextPreferredDefault !== previousPreferredDefault
+      filterOptions.length &&
+      !filterOptions.some((filter) => filter.id === statusFilter)
     ) {
-      setStatusFilter(nextPreferredDefault);
+      setStatusFilter(preferredFilterId);
     }
-  }, [filterOptions, preferredDefaultFilterId, statusFilter]);
+  }, [filterOptions, preferredFilterId, statusFilter]);
 
-  const showFiltersSkeleton = filtersLoading;
+  const showFiltersSkeleton = filtersLoading && !filterOptions.length;
 
   const [toast, setToast] = useState<{
     open: boolean;
