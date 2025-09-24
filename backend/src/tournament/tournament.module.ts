@@ -20,6 +20,8 @@ import { GameModule } from '../game/game.module';
 import { FeatureFlagsModule } from '../feature-flags/feature-flags.module';
 import { RateLimitGuard } from '../routes/rate-limit.guard';
 import { MessagingModule } from '../messaging/messaging.module';
+import { TournamentFormatEntity } from './tournament-format.entity';
+import { TournamentFormatRepository } from './tournament-format.repository';
 
 @Module({
   imports: [
@@ -29,6 +31,7 @@ import { MessagingModule } from '../messaging/messaging.module';
       Table,
       BotProfile,
       TournamentFilterOptionEntity,
+      TournamentFormatEntity,
       TournamentDetail,
     ]),
     GameModule,
@@ -45,6 +48,7 @@ import { MessagingModule } from '../messaging/messaging.module';
     RateLimitGuard,
     BotProfileRepository,
     TournamentFilterOptionRepository,
+    TournamentFormatRepository,
     TournamentDetailRepository,
   ],
   exports: [
@@ -54,6 +58,7 @@ import { MessagingModule } from '../messaging/messaging.module';
     RebuyService,
     BotProfileRepository,
     TournamentFilterOptionRepository,
+    TournamentFormatRepository,
     TournamentDetailRepository,
   ],
 })

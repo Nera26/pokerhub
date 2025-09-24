@@ -25,6 +25,7 @@ import {
   TournamentFiltersResponseSchema,
   type TournamentFilterOption,
   type AdminTournament,
+  type TournamentFormatOption,
 } from '@shared/types';
 import { TournamentsProducer } from '../messaging/tournaments/tournaments.producer';
 import { BotProfileRepository } from './bot-profile.repository';
@@ -32,6 +33,7 @@ import { BotProfilesResponseSchema } from '@shared/types';
 import { TournamentFilterOptionRepository } from './tournament-filter-option.repository';
 import { TournamentDetailRepository } from './tournament-detail.repository';
 import { TournamentDetailType } from './tournament-detail.entity';
+import { TournamentFormatRepository } from './tournament-format.repository';
 
 @Injectable()
 export class TournamentService implements OnModuleInit {
@@ -57,6 +59,7 @@ export class TournamentService implements OnModuleInit {
     private readonly producer: TournamentsProducer,
     private readonly botProfiles: BotProfileRepository,
     private readonly filterOptions: TournamentFilterOptionRepository,
+    private readonly formatRepository: TournamentFormatRepository,
     @Optional()
     private readonly detailsRepository?: TournamentDetailRepository,
     @Optional() @Inject('REDIS_CLIENT') private readonly redis?: Redis,
@@ -111,6 +114,13 @@ export class TournamentService implements OnModuleInit {
     return TournamentFiltersResponseSchema.parse(
       options.map(({ label, value }) => ({ label, value })),
     );
+  }
+
+  async listFormats(): Promise<TournamentFormatOption[]> {
+    const rows = await this.formatRepository.find({
+      order: { sortOrder: 'ASC' },
+    });
+    return rows.map(({ id, label }) => ({ id, label }));
   }
 
   async getBotProfiles() {

@@ -25,6 +25,10 @@ describe('AdminTournamentsController', () => {
     status: 'scheduled' as const,
   };
   const svc: Partial<TournamentService> = {
+    listFormats: jest.fn().mockResolvedValue([
+      { id: 'Regular', label: 'Regular' },
+      { id: 'Turbo', label: 'Turbo' },
+    ]),
     getDefaultTournament: jest.fn().mockResolvedValue(defaults),
   };
 
@@ -51,7 +55,11 @@ describe('AdminTournamentsController', () => {
     await request(app.getHttpServer())
       .get('/admin/tournaments/formats')
       .expect(200)
-      .expect(['Regular', 'Turbo', 'Deepstack', 'Bounty', 'Freeroll']);
+      .expect([
+        { id: 'Regular', label: 'Regular' },
+        { id: 'Turbo', label: 'Turbo' },
+      ]);
+    expect(svc.listFormats).toHaveBeenCalled();
   });
 
   it('returns defaults', async () => {
