@@ -172,7 +172,10 @@ export default function TournamentModal({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-text-secondary text-sm font-semibold mb-2">
+            <label
+              className="block text-text-secondary text-sm font-semibold mb-2"
+              htmlFor="tournament-format"
+            >
               Format
             </label>
             {formatsLoading ? (
@@ -182,11 +185,12 @@ export default function TournamentModal({
             ) : formats && formats.length > 0 ? (
               <select
                 className="w-full bg-primary-bg border border-dark rounded-xl px-4 py-3 focus:border-accent-yellow focus:outline-none"
+                id="tournament-format"
                 {...register('format')}
               >
                 {formats.map((f) => (
-                  <option key={f} value={f}>
-                    {f}
+                  <option key={f.id} value={f.id}>
+                    {f.label}
                   </option>
                 ))}
               </select>

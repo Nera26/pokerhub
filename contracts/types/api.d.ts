@@ -2378,7 +2378,7 @@ export interface paths {
         /** @description Available tournament formats */
         200: {
           content: {
-            "application/json": components["schemas"]["TournamentFormat"][];
+            "application/json": components["schemas"]["TournamentFormatOption"][];
           };
         };
       };
@@ -3311,8 +3311,11 @@ export interface components {
       eta?: string;
     };
     PromotionsResponse: components["schemas"]["Promotion"][];
-    /** @enum {string} */
-    TournamentFormat: "Regular" | "Turbo" | "Deepstack" | "Bounty" | "Freeroll";
+    TournamentFormat: string;
+    TournamentFormatOption: {
+      id: string;
+      label: string;
+    };
     ReplyMessageRequest: {
       reply: string;
     };

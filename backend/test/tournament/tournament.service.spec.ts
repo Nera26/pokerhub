@@ -22,6 +22,9 @@ describe('TournamentService algorithms', () => {
   let events: any;
   let wallet: any;
   let producer: any;
+  let botProfilesRepo: any;
+  let filterOptionsRepo: any;
+  let formatRepo: any;
   let balance: number;
 
   function createRepo<T extends { id: string }>(initial: T[] = []) {
@@ -64,6 +67,9 @@ describe('TournamentService algorithms', () => {
     flags = { get: jest.fn(), getTourney: jest.fn() };
     events = { emit: jest.fn() };
     producer = { scheduleTournament: jest.fn() };
+    botProfilesRepo = {};
+    filterOptionsRepo = { find: jest.fn().mockResolvedValue([]) };
+    formatRepo = { find: jest.fn().mockResolvedValue([]) };
     balance = 1000;
     wallet = {
       reserve: jest.fn(async (_id: string, amount: number) => {
@@ -84,6 +90,9 @@ describe('TournamentService algorithms', () => {
       flags,
       events,
       producer,
+      botProfilesRepo,
+      filterOptionsRepo,
+      formatRepo,
       undefined,
       undefined,
       wallet,
@@ -134,6 +143,24 @@ describe('TournamentService algorithms', () => {
       const movedAfterFirst = moved.size;
       service.balanceTables(balanced1, moved, 12, 5);
       expect(moved.size).toBe(movedAfterFirst);
+    });
+  });
+
+  describe('listFormats', () => {
+    it('returns ordered tournament formats from the repository', async () => {
+      formatRepo.find.mockResolvedValueOnce([
+        { id: 'Regular', label: 'Regular', sortOrder: 1 },
+        { id: 'Turbo', label: 'Turbo', sortOrder: 2 },
+      ]);
+
+      await expect(service.listFormats()).resolves.toEqual([
+        { id: 'Regular', label: 'Regular' },
+        { id: 'Turbo', label: 'Turbo' },
+      ]);
+
+      expect(formatRepo.find).toHaveBeenCalledWith({
+        order: { sortOrder: 'ASC' },
+      });
     });
   });
 
@@ -250,6 +277,17 @@ describe('TournamentService algorithms', () => {
         tablesRepo as Repository<Table>,
         scheduler,
         rooms,
+        new RebuyService(),
+        new PkoService(),
+        flags,
+        events,
+        producer,
+        botProfilesRepo,
+        filterOptionsRepo,
+        formatRepo,
+        undefined,
+        undefined,
+        wallet,
       );
 
       await service.autoFoldOnTimeout('s1');
