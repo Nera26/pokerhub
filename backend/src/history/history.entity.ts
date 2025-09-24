@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Column, Entity, Index, PrimaryGeneratedColumn, Unique } from 'typeorm';
 
 @Entity({ name: 'game_history' })
 export class GameHistory {
@@ -61,5 +61,22 @@ export class WalletHistory {
 
   @Column()
   status: string;
+}
+
+@Entity({ name: 'tournament_bracket' })
+@Unique('UQ_tournament_bracket_tournament_id', ['tournamentId'])
+export class TournamentBracket {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'uuid' })
+  tournamentId: string;
+
+  @Index('IDX_tournament_bracket_user_id')
+  @Column({ type: 'uuid' })
+  userId: string;
+
+  @Column({ type: 'jsonb', default: () => "'[]'::jsonb" })
+  rounds: unknown;
 }
 

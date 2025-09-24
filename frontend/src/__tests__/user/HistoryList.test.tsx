@@ -62,6 +62,7 @@ const gameHistoryEntries: GameHistoryEntry[] = [
 
 const tournamentHistoryEntries: TournamentHistoryEntry[] = [
   {
+    id: 't1',
     name: 'Sunday Million',
     place: '1st',
     buyin: '$100',
@@ -182,6 +183,27 @@ describe('HistoryList game history replay', () => {
 
     expect(fetchHandReplayMock).toHaveBeenCalledWith('1');
     expect(await screen.findByText('Game Replay')).toBeInTheDocument();
+  });
+});
+
+describe('HistoryList tournament bracket', () => {
+  it('passes tournament id and title when viewing bracket', async () => {
+    fetchTournamentHistoryMock.mockResolvedValueOnce(tournamentHistoryEntries);
+
+    const onViewBracket = jest.fn();
+    renderWithClient(
+      <HistoryList type="tournament-history" onViewBracket={onViewBracket} />,
+    );
+
+    const user = userEvent.setup();
+    await user.click(
+      await screen.findByRole('button', { name: /view bracket/i }),
+    );
+
+    expect(onViewBracket).toHaveBeenCalledWith({
+      id: 't1',
+      title: 'Sunday Million',
+    });
   });
 });
 

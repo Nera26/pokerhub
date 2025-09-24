@@ -305,6 +305,36 @@ export interface paths {
       };
     };
   };
+  "/history/tournaments/{id}/bracket": {
+    /** Get tournament bracket */
+    get: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Tournament bracket */
+        200: {
+          content: {
+            "application/json": components["schemas"]["TournamentBracketResponse"];
+          };
+        };
+        /** @description Forbidden */
+        403: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+        /** @description Tournament bracket not found */
+        404: {
+          content: {
+            "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
   "/settings/chart-palette": {
     /** Get chart palette colors */
     get: {
@@ -3941,6 +3971,19 @@ export interface components {
     };
     HistoryTabsResponse: {
       tabs: components["schemas"]["HistoryTabItem"][];
+    };
+    TournamentBracketMatch: {
+      id: string;
+      players: string[];
+      winner: string | null;
+    };
+    TournamentBracketRound: {
+      name: string;
+      matches: components["schemas"]["TournamentBracketMatch"][];
+    };
+    TournamentBracketResponse: {
+      tournamentId: string;
+      rounds: components["schemas"]["TournamentBracketRound"][];
     };
     /** @enum {string} */
     TabKey: "history" | "chat" | "notes";

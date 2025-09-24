@@ -20,7 +20,11 @@ jest.mock('../../components/user/EditProfileModal', () => () => null);
 jest.mock('../../components/user/LogoutModal', () => () => null);
 
 jest.mock('../../components/user/HistoryList', () => (props: any) => (
-  <button onClick={() => props.onViewBracket?.('Summer Series')}>
+  <button
+    onClick={() =>
+      props.onViewBracket?.({ id: 'tournament-1', title: 'Summer Series' })
+    }
+  >
     View Bracket
   </button>
 ));
@@ -30,10 +34,10 @@ jest.mock('../../components/user/FilterDropdown', () => () => null);
 jest.mock(
   '../../components/user/BracketModal',
   () =>
-    ({ isOpen, title, onClose }: any) =>
+    ({ isOpen, tournament, onClose }: any) =>
       isOpen ? (
         <div role="dialog">
-          <h3>{title} Bracket</h3>
+          <h3>{tournament?.title} Bracket</h3>
           <button onClick={onClose}>Close</button>
         </div>
       ) : null,

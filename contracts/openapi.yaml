@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.32.0
+  version: 2.33.0
 paths:
   /status:
     get:
@@ -259,6 +259,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HistoryTabsResponse'
+  /history/tournaments/{id}/bracket:
+    get:
+      summary: Get tournament bracket
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tournament bracket
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TournamentBracketResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '404':
+          description: Tournament bracket not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /settings/chart-palette:
     get:
       summary: Get chart palette colors
@@ -4830,6 +4858,39 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/HistoryTabItem'
+    TournamentBracketMatch:
+      type: object
+      required: [id, players, winner]
+      properties:
+        id:
+          type: string
+        players:
+          type: array
+          items:
+            type: string
+        winner:
+          type: string
+          nullable: true
+    TournamentBracketRound:
+      type: object
+      required: [name, matches]
+      properties:
+        name:
+          type: string
+        matches:
+          type: array
+          items:
+            $ref: '#/components/schemas/TournamentBracketMatch'
+    TournamentBracketResponse:
+      type: object
+      required: [tournamentId, rounds]
+      properties:
+        tournamentId:
+          type: string
+        rounds:
+          type: array
+          items:
+            $ref: '#/components/schemas/TournamentBracketRound'
     TabKey:
       type: string
       enum: [history, chat, notes]

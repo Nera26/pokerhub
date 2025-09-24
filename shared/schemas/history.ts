@@ -14,6 +14,7 @@ export const GameHistoryEntrySchema = z.object({
 export type GameHistoryEntry = z.infer<typeof GameHistoryEntrySchema>;
 
 export const TournamentHistoryEntrySchema = z.object({
+  id: z.string(),
   name: z.string(),
   place: z.string(),
   buyin: z.string(),
@@ -22,6 +23,25 @@ export const TournamentHistoryEntrySchema = z.object({
 });
 export type TournamentHistoryEntry = z.infer<
   typeof TournamentHistoryEntrySchema
+>;
+
+export const TournamentBracketMatchSchema = z.object({
+  id: z.string(),
+  players: z.array(z.string()),
+  winner: z.string().nullable(),
+});
+
+export const TournamentBracketRoundSchema = z.object({
+  name: z.string(),
+  matches: z.array(TournamentBracketMatchSchema),
+});
+
+export const TournamentBracketResponseSchema = z.object({
+  tournamentId: z.string(),
+  rounds: z.array(TournamentBracketRoundSchema),
+});
+export type TournamentBracketResponse = z.infer<
+  typeof TournamentBracketResponseSchema
 >;
 
 export const TransactionEntrySchema = z.object({

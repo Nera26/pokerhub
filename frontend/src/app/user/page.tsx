@@ -35,7 +35,10 @@ export default function UserPage() {
   const [isLogoutOpen, setLogoutOpen] = useState(false);
 
   // Modals for extra actions
-  const [bracketTitle, setBracketTitle] = useState<string | null>(null);
+  const [bracketTournament, setBracketTournament] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
   const [replayHandId, setReplayHandId] = useState<string | null>(null);
 
   const { data: profile } = useQuery<UserProfile>({
@@ -74,7 +77,7 @@ export default function UserPage() {
       <HistoryList
         type={activeTab}
         filters={filters}
-        onViewBracket={(title) => setBracketTitle(title)}
+        onViewBracket={(tournament) => setBracketTournament(tournament)}
         onWatchReplay={(id) => setReplayHandId(id)}
       />
 
@@ -98,9 +101,9 @@ export default function UserPage() {
       />
 
       <BracketModal
-        isOpen={bracketTitle !== null}
-        title={bracketTitle ?? ''}
-        onClose={() => setBracketTitle(null)}
+        isOpen={bracketTournament !== null}
+        tournament={bracketTournament}
+        onClose={() => setBracketTournament(null)}
       />
 
       <LogoutModal isOpen={isLogoutOpen} onClose={() => setLogoutOpen(false)} />
