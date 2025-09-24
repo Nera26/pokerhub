@@ -55,6 +55,34 @@ type StatusFilter = BonusStatus | 'all' | 'expired';
 
 const bonusDefaultsQueryKey = ['admin-bonus-defaults'] as const;
 
+const statusConfirmConfig = {
+  pause: {
+    title: 'Pause Bonus',
+    actionVerb: 'pause',
+    icon: faPause,
+    iconClassName: 'text-4xl text-danger-red',
+    confirmText: 'Confirm Pause',
+    confirmButtonClassName:
+      'bg-danger-red hover:brightness-110 text-text-primary',
+    status: 'paused' as const,
+  },
+  resume: {
+    title: 'Resume Bonus',
+    actionVerb: 'resume',
+    icon: faPlay,
+    iconClassName: 'text-4xl text-accent-green',
+    confirmText: 'Confirm Resume',
+    confirmButtonClassName:
+      'bg-accent-green hover-glow-green text-text-primary',
+    status: 'active' as const,
+  },
+} as const;
+
+type StatusMode = keyof typeof statusConfirmConfig;
+
+const cancelButtonClassName =
+  'border border-dark text-text-secondary hover:bg-hover-bg';
+
 export const bonusStyles: Record<BonusStatus | 'expired', string> = {
   active: 'bg-accent-green text-white',
   paused: 'bg-text-secondary text-black',
@@ -569,12 +597,19 @@ export default function BonusManager() {
               }
               renderRow={(b) => <BonusRow b={b} />}
               searchFilter={(b, q) => {
-                const tt = (b.name + ' ' + b.description + ' ' + b.type).toLowerCase();
+                const tt = (
+                  b.name +
+                  ' ' +
+                  b.description +
+                  ' ' +
+                  b.type
+                ).toLowerCase();
                 return !q || tt.includes(q);
               }}
               searchPlaceholder={t?.searchPromotions ?? 'Search promotions...'}
               emptyMessage={
-                t?.noPromotionsMatchFilters ?? 'No promotions match your filters.'
+                t?.noPromotionsMatchFilters ??
+                'No promotions match your filters.'
               }
               caption="Admin view of bonuses"
             />
@@ -681,14 +716,16 @@ export default function BonusManager() {
         </div>
 
         {selected && (
-          <form className="space-y-6" onSubmit={handleEditSubmit((data) => {
-            if (!selected) return;
-            updateMutation.mutate({
-              id: selected.id,
-              data: { ...data, expiryDate: data.expiryDate || undefined },
-            });
-            setEditOpen(false);
-          })}
+          <form
+            className="space-y-6"
+            onSubmit={handleEditSubmit((data) => {
+              if (!selected) return;
+              updateMutation.mutate({
+                id: selected.id,
+                data: { ...data, expiryDate: data.expiryDate || undefined },
+              });
+              setEditOpen(false);
+            })}
           >
             <BonusForm
               register={registerEdit}
@@ -714,64 +751,52 @@ export default function BonusManager() {
       </Modal>
 
       {/* PAUSE/RESUME STATUS MODALS */}
-      <ConfirmModal
-        isOpen={pauseOpen}
-        onClose={() => setPauseOpen(false)}
-        onConfirm={() => {
-          if (!selected) return;
-          toggleMutation.mutate({
-            id: selected.id,
-            status: 'paused',
-            name: selected.name,
-          });
-          setPauseOpen(false);
-        }}
-        title="Pause Bonus"
-        message={
-          <>
-            Are you sure you want to pause{' '}
-            <span className="text-accent-yellow font-semibold">
-              {selected?.name ?? ''}
-            </span>
-            ?
-          </>
-        }
-        icon={<FontAwesomeIcon icon={faPause} />}
-        iconClassName="text-4xl text-danger-red"
-        confirmText="Confirm Pause"
-        cancelText="Cancel"
-        confirmButtonClassName="bg-danger-red hover:brightness-110 text-text-primary"
-        cancelButtonClassName="border border-dark text-text-secondary hover:bg-hover-bg"
-      />
-      <ConfirmModal
-        isOpen={resumeOpen}
-        onClose={() => setResumeOpen(false)}
-        onConfirm={() => {
-          if (!selected) return;
-          toggleMutation.mutate({
-            id: selected.id,
-            status: 'active',
-            name: selected.name,
-          });
-          setResumeOpen(false);
-        }}
-        title="Resume Bonus"
-        message={
-          <>
-            Are you sure you want to resume{' '}
-            <span className="text-accent-yellow font-semibold">
-              {selected?.name ?? ''}
-            </span>
-            ?
-          </>
-        }
-        icon={<FontAwesomeIcon icon={faPlay} />}
-        iconClassName="text-4xl text-accent-green"
-        confirmText="Confirm Resume"
-        cancelText="Cancel"
-        confirmButtonClassName="bg-accent-green hover-glow-green text-text-primary"
-        cancelButtonClassName="border border-dark text-text-secondary hover:bg-hover-bg"
-      />
+      {(['pause', 'resume'] as StatusMode[]).map((mode) => {
+        const {
+          title,
+          actionVerb,
+          icon,
+          iconClassName,
+          confirmText,
+          confirmButtonClassName,
+          status,
+        } = statusConfirmConfig[mode];
+        const isOpen = mode === 'pause' ? pauseOpen : resumeOpen;
+        const setOpen = mode === 'pause' ? setPauseOpen : setResumeOpen;
+
+        return (
+          <ConfirmModal
+            key={mode}
+            isOpen={isOpen}
+            onClose={() => setOpen(false)}
+            onConfirm={() => {
+              if (!selected) return;
+              toggleMutation.mutate({
+                id: selected.id,
+                status,
+                name: selected.name,
+              });
+              setOpen(false);
+            }}
+            title={title}
+            message={
+              <>
+                Are you sure you want to {actionVerb}{' '}
+                <span className="text-accent-yellow font-semibold">
+                  {selected?.name ?? ''}
+                </span>
+                ?
+              </>
+            }
+            icon={<FontAwesomeIcon icon={icon} />}
+            iconClassName={iconClassName}
+            confirmText={confirmText}
+            cancelText="Cancel"
+            confirmButtonClassName={confirmButtonClassName}
+            cancelButtonClassName={cancelButtonClassName}
+          />
+        );
+      })}
 
       <ToastNotification
         message={toast.msg}
