@@ -21,6 +21,23 @@ interface SkeletonSectionProps {
   horizontalList?: HorizontalListOptions;
 }
 
+type LoadingPageSkeletonProps = PropsWithChildren<
+  Pick<SkeletonSectionProps, 'rows' | 'cardHeight'>
+>;
+
+export function LoadingPageSkeleton({
+  rows,
+  cardHeight,
+  children,
+}: LoadingPageSkeletonProps) {
+  return (
+    <SkeletonSection rows={rows} cardHeight={cardHeight}>
+      <div className="h-8 w-48 bg-card-bg rounded" />
+      {children}
+    </SkeletonSection>
+  );
+}
+
 export default function SkeletonSection({
   children,
   className,
