@@ -68,10 +68,6 @@ export default function TransactionHistoryModal({
     false,
     false
   >({
-    locale,
-    includePlayers: false,
-    includeTypes: false,
-    filtersEnabled: isOpen,
     history: {
       queryKey: ['userTransactions', userId],
       fetchTransactions: async () => fetchUserTransactions(userId),
@@ -109,6 +105,12 @@ export default function TransactionHistoryModal({
       extractCurrency: (entry) =>
         (entry as (AdminTransactionEntry & { currency?: string }) | undefined)
           ?.currency,
+    },
+    filterQueries: {
+      locale,
+      includePlayers: false,
+      includeTypes: false,
+      filtersEnabled: isOpen,
     },
   });
 

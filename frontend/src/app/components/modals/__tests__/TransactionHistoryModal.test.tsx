@@ -1,14 +1,18 @@
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TransactionHistoryModal from '../TransactionHistoryModal';
-import useTransactionHistoryExperience from '@/app/components/common/useTransactionHistoryExperience';
+import useTransactionHistoryExperience, {
+  type TransactionHistoryExperienceResult,
+} from '@/app/components/common/useTransactionHistoryExperience';
 import useTransactionColumns from '@/hooks/useTransactionColumns';
 import { renderWithClient } from '../../dashboard/__tests__/renderWithClient';
 import { useTranslations } from '@/hooks/useTranslations';
 import { useLocale } from 'next-intl';
 
-type TransactionHistoryExperienceReturn = ReturnType<
-  typeof useTransactionHistoryExperience
+type TransactionHistoryExperienceReturn = TransactionHistoryExperienceResult<
+  unknown,
+  false,
+  false
 >;
 
 jest.mock('@/app/components/common/useTransactionHistoryExperience', () => ({

@@ -45,6 +45,11 @@ describe('useTransactionHistoryExperience', () => {
       types: [],
     };
     const filterQueries = ['filters'] as any;
+    const filterQueryOptions = {
+      locale: 'en',
+      includePlayers: true,
+      includeTypes: true,
+    } as const;
     const resolveMetadata = jest.fn().mockReturnValue(metadata);
     mockUseFilterQueries.mockReturnValue({
       queries: filterQueries,
@@ -85,20 +90,13 @@ describe('useTransactionHistoryExperience', () => {
     const onExport = jest.fn();
     const { result } = renderHook(() =>
       useTransactionHistoryExperience({
-        locale: 'en',
-        includePlayers: true,
-        includeTypes: true,
         history: historyOptions,
+        filterQueries: filterQueryOptions,
         onExport,
       }),
     );
 
-    expect(mockUseFilterQueries).toHaveBeenCalledWith({
-      locale: 'en',
-      includePlayers: true,
-      includeTypes: true,
-      filtersEnabled: undefined,
-    });
+    expect(mockUseFilterQueries).toHaveBeenCalledWith(filterQueryOptions);
     expect(mockUseControls).toHaveBeenCalledWith({
       history: historyOptions,
       queries: filterQueries,
@@ -127,6 +125,12 @@ describe('useTransactionHistoryExperience', () => {
       types: undefined,
     };
     const resolveMetadata = jest.fn().mockReturnValue(metadata);
+    const filterQueryOptions = {
+      locale: 'en',
+      includePlayers: false,
+      includeTypes: false,
+      filtersEnabled: true,
+    } as const;
     mockUseFilterQueries.mockReturnValue({
       queries: [] as any,
       resolveMetadata,
@@ -151,20 +155,12 @@ describe('useTransactionHistoryExperience', () => {
 
     const { result } = renderHook(() =>
       useTransactionHistoryExperience({
-        locale: 'en',
-        includePlayers: false,
-        includeTypes: false,
-        filtersEnabled: true,
         history: historyOptions,
+        filterQueries: filterQueryOptions,
       }),
     );
 
-    expect(mockUseFilterQueries).toHaveBeenCalledWith({
-      locale: 'en',
-      includePlayers: false,
-      includeTypes: false,
-      filtersEnabled: true,
-    });
+    expect(mockUseFilterQueries).toHaveBeenCalledWith(filterQueryOptions);
     expect(result.current.queries.filters.error).toBe(error);
     expect(result.current.metadata).toBe(metadata);
   });
@@ -184,6 +180,11 @@ describe('useTransactionHistoryExperience', () => {
       players: undefined,
       types: undefined,
     });
+    const filterQueryOptions = {
+      locale: 'en',
+      includePlayers: false,
+      includeTypes: false,
+    } as const;
     mockUseFilterQueries.mockReturnValue({
       queries: [] as any,
       resolveMetadata,
@@ -192,19 +193,18 @@ describe('useTransactionHistoryExperience', () => {
     const handleExport = jest.fn();
     mockUseControls.mockReturnValue({
       history: { data: [], isLoading: false },
-      queries: {} as any,
+      queries: [] as any,
       handleExport,
     });
 
     renderHook(() =>
       useTransactionHistoryExperience({
-        locale: 'en',
-        includePlayers: false,
-        includeTypes: false,
         history: historyOptions,
+        filterQueries: filterQueryOptions,
       }),
     );
 
+    expect(mockUseFilterQueries).toHaveBeenCalledWith(filterQueryOptions);
     expect(mockUseControls).toHaveBeenCalledWith({
       history: historyOptions,
       queries: [] as any,
