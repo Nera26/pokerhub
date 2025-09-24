@@ -1,5 +1,5 @@
-import { Controller, Get, Param, UseGuards, Req } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Put, UseGuards, Req } from '@nestjs/common';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import {
@@ -10,6 +10,7 @@ import {
   TransactionLogQuerySchema,
   TransactionStatusesResponseSchema,
   TransactionColumnsResponseSchema,
+  TransactionColumnsUpdateSchema,
 } from '../schemas/transactions';
 import { TransactionTabsResponseSchema } from '@shared/wallet.schema';
 import { TransactionsService } from '../wallet/transactions.service';
@@ -64,6 +65,17 @@ export class TransactionsController {
   @ApiResponse({ status: 200, description: 'Transaction columns' })
   async columns() {
     const res = await this.txService.getTransactionColumns();
+    return TransactionColumnsResponseSchema.parse(res);
+  }
+
+  @UseGuards(AdminGuard)
+  @Put('admin/transactions/columns')
+  @ApiOperation({ summary: 'Update transaction columns' })
+  @ApiBody({ schema: { $ref: '#/components/schemas/TransactionColumnsUpdate' } })
+  @ApiResponse({ status: 200, description: 'Updated transaction columns' })
+  async updateColumns(@Body() body: unknown) {
+    const { columns } = TransactionColumnsUpdateSchema.parse(body);
+    const res = await this.txService.updateTransactionColumns(columns);
     return TransactionColumnsResponseSchema.parse(res);
   }
 

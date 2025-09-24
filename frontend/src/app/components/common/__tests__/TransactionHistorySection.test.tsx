@@ -1,7 +1,11 @@
-import { screen, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TransactionHistorySection from '../TransactionHistorySection';
-import { renderWithClient, mockMetadataFetch } from './helpers';
+import {
+  renderWithClient,
+  mockMetadataFetch,
+  createTestClient,
+} from './helpers';
 import { formatCurrency } from '@/lib/formatCurrency';
 
 type Txn = {
@@ -139,5 +143,32 @@ describe('TransactionHistorySection', () => {
       (row) => within(row).getByText(/Deposit|Withdrawal/).textContent,
     );
     expect(orderedTypes).toEqual(['Withdrawal', 'Deposit']);
+  });
+
+  it('re-renders when transaction columns change', async () => {
+    const client = createTestClient();
+    const data: Txn[] = [
+      { amount: 5, status: 'Completed', date: '2024-01-01', type: 'Bonus' },
+    ];
+
+    mockMetadataFetch({ columns: defaultColumns });
+    renderWithClient(
+      <TransactionHistorySection data={data} currency="USD" />,
+      client,
+    );
+
+    await screen.findByText('Amount');
+
+    await act(async () => {
+      client.setQueryData(
+        ['transaction-columns'],
+        [
+          { id: 'type', label: 'Type' },
+          { id: 'amount', label: 'Total Amount' },
+        ],
+      );
+    });
+
+    expect(await screen.findByText('Total Amount')).toBeInTheDocument();
   });
 });

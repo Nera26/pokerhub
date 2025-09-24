@@ -527,6 +527,24 @@ export interface paths {
       };
     };
   };
+  "/admin/transactions/columns": {
+    /** Update transaction columns */
+    put: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["TransactionColumnsUpdate"];
+        };
+      };
+      responses: {
+        /** @description Updated transaction columns */
+        200: {
+          content: {
+            "application/json": components["schemas"]["TransactionColumnsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/dashboard/metrics": {
     /** Get dashboard metrics */
     get: {

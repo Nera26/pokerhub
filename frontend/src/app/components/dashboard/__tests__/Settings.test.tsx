@@ -1,8 +1,16 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Settings from '../Settings';
 import { useChipDenominations } from '@/hooks/useChipDenominations';
 import { usePerformanceThresholds } from '@/hooks/usePerformanceThresholds';
+import useTransactionColumns from '@/hooks/useTransactionColumns';
+import useUpdateTransactionColumns from '@/hooks/useUpdateTransactionColumns';
 import {
   updateChipDenominations,
   updatePerformanceThresholds,
@@ -10,6 +18,8 @@ import {
 
 jest.mock('@/hooks/useChipDenominations');
 jest.mock('@/hooks/usePerformanceThresholds');
+jest.mock('@/hooks/useTransactionColumns');
+jest.mock('@/hooks/useUpdateTransactionColumns');
 jest.mock('@/lib/api/config');
 jest.mock('@/hooks/useApiError', () => ({ useApiError: jest.fn() }));
 
@@ -28,6 +38,9 @@ function renderWithClient(ui: React.ReactElement) {
 
 const useChipDenominationsMock = useChipDenominations as jest.Mock;
 const usePerformanceThresholdsMock = usePerformanceThresholds as jest.Mock;
+const useTransactionColumnsMock = useTransactionColumns as jest.Mock;
+const useUpdateTransactionColumnsMock =
+  useUpdateTransactionColumns as jest.Mock;
 const updateChipDenominationsMock = updateChipDenominations as jest.Mock;
 const updatePerformanceThresholdsMock =
   updatePerformanceThresholds as jest.Mock;
@@ -38,6 +51,20 @@ describe('Settings', () => {
     usePerformanceThresholdsMock.mockReturnValue({
       data: { INP: 150, LCP: 2500, CLS: 0.05 },
       isLoading: false,
+      error: null,
+    });
+    useTransactionColumnsMock.mockReturnValue({
+      data: [
+        { id: 'date', label: 'Date' },
+        { id: 'amount', label: 'Amount' },
+      ],
+      isLoading: false,
+      error: null,
+    });
+    useUpdateTransactionColumnsMock.mockReturnValue({
+      mutateAsync: jest.fn().mockResolvedValue(undefined),
+      isPending: false,
+      isSuccess: false,
       error: null,
     });
     updatePerformanceThresholdsMock.mockResolvedValue({
@@ -246,5 +273,86 @@ describe('Settings', () => {
     expect(
       screen.getByText(/performance thresholds saved/i),
     ).toBeInTheDocument();
+  });
+  it('shows loading state for transaction columns', () => {
+    useTransactionColumnsMock.mockReturnValue({
+      data: [],
+      isLoading: true,
+      error: null,
+    });
+
+    renderWithClient(<Settings />);
+
+    expect(
+      screen.getByText(/loading transaction columns/i),
+    ).toBeInTheDocument();
+  });
+
+  it('shows error state when fetching transaction columns fails', () => {
+    useTransactionColumnsMock.mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: new Error('no columns'),
+    });
+
+    renderWithClient(<Settings />);
+
+    expect(
+      screen.getByText(/failed to load transaction columns/i),
+    ).toBeInTheDocument();
+  });
+
+  it('submits updated transaction columns', async () => {
+    const mutateAsync = jest.fn().mockResolvedValue(undefined);
+    useUpdateTransactionColumnsMock.mockReturnValue({
+      mutateAsync,
+      isPending: false,
+      isSuccess: false,
+      error: null,
+    });
+
+    renderWithClient(<Settings />);
+
+    const section = screen.getByTestId('transaction-columns-settings');
+    const labelInputs = within(section).getAllByLabelText('Label');
+    fireEvent.change(labelInputs[1], { target: { value: 'Amount (USD)' } });
+
+    const saveButton = within(section).getByRole('button', {
+      name: /save transaction columns/i,
+    });
+    fireEvent.click(saveButton);
+
+    await waitFor(() => {
+      expect(mutateAsync).toHaveBeenCalledWith([
+        { id: 'date', label: 'Date' },
+        { id: 'amount', label: 'Amount (USD)' },
+      ]);
+    });
+  });
+
+  it('validates transaction columns before saving', async () => {
+    const mutateAsync = jest.fn();
+    useUpdateTransactionColumnsMock.mockReturnValue({
+      mutateAsync,
+      isPending: false,
+      isSuccess: false,
+      error: null,
+    });
+
+    renderWithClient(<Settings />);
+
+    const section = screen.getByTestId('transaction-columns-settings');
+    const labelInputs = within(section).getAllByLabelText('Label');
+    fireEvent.change(labelInputs[0], { target: { value: ' ' } });
+
+    const saveButton = within(section).getByRole('button', {
+      name: /save transaction columns/i,
+    });
+    fireEvent.click(saveButton);
+
+    expect(
+      await screen.findByText(/column id and label are required/i),
+    ).toBeInTheDocument();
+    expect(mutateAsync).not.toHaveBeenCalled();
   });
 });

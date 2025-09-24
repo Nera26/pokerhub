@@ -451,6 +451,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TransactionColumnsResponse'
+  /admin/transactions/columns:
+    put:
+      summary: Update transaction columns
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionColumnsUpdate'
+      responses:
+        '200':
+          description: Updated transaction columns
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionColumnsResponse'
   /dashboard/metrics:
     get:
       summary: Get dashboard metrics
@@ -5623,6 +5641,15 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/TransactionColumn'
+    TransactionColumnsUpdate:
+      type: object
+      properties:
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionColumn'
+      required:
+        - columns
     TransactionTab:
       type: object
       properties:

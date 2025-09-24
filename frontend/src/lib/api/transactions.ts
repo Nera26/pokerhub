@@ -7,8 +7,12 @@ import {
   TransactionStatusesResponseSchema,
   TransactionTypesResponseSchema,
   TransactionLogResponseSchema,
+  TransactionColumnsResponseSchema,
+  TransactionColumnsUpdateSchema,
   type FilterOptions,
   type TransactionTypesResponse,
+  type TransactionColumnsResponse,
+  type TransactionColumnsUpdate,
 } from '@shared/transactions.schema';
 
 /**
@@ -92,4 +96,18 @@ export async function fetchTransactionsLog(
     console.error('fetchTransactionsLog failed', err);
     throw err;
   }
+}
+
+export async function updateTransactionColumns(
+  columns: TransactionColumnsUpdate['columns'],
+): Promise<TransactionColumnsResponse> {
+  TransactionColumnsUpdateSchema.parse({ columns });
+  return apiClient(
+    '/api/admin/transactions/columns',
+    TransactionColumnsResponseSchema,
+    {
+      method: 'PUT',
+      body: { columns },
+    },
+  );
 }

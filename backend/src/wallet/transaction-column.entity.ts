@@ -7,4 +7,7 @@ export class TransactionColumnEntity {
 
   @Column()
   label: string;
+
+  @Column({ type: 'int' })
+  position: number;
 }

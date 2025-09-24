@@ -5,6 +5,8 @@ import {
   type TransactionColumnsResponse,
 } from '@shared/transactions.schema';
 
+export const TRANSACTION_COLUMNS_QUERY_KEY = 'transaction-columns';
+
 const fetchTransactionColumns = (
   client: typeof apiClient,
   opts: { signal?: AbortSignal },
@@ -12,7 +14,7 @@ const fetchTransactionColumns = (
   client('/api/transactions/columns', TransactionColumnsResponseSchema, opts);
 
 const useTransactionColumnsQuery = createQueryHook<TransactionColumnsResponse>(
-  'transaction-columns',
+  TRANSACTION_COLUMNS_QUERY_KEY,
   fetchTransactionColumns,
   'transaction columns',
 );
