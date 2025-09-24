@@ -21,10 +21,11 @@ import {
 import type { AdminTab } from '@shared/types';
 
 jest.mock('@/hooks/admin/useCrudState', () => {
-  const { buildCrudStateMock } =
-    require('../../shared/__tests__/mockCrudState') as typeof import('../../shared/__tests__/mockCrudState');
+  const { buildCrudStateMock } = jest.requireActual<
+    typeof import('@/app/admin/shared/__tests__/mockCrudState')
+  >('@/app/admin/shared/__tests__/mockCrudState');
   return {
-    useCrudState: jest.fn(buildCrudStateMock()),
+    useCrudState: buildCrudStateMock(),
   };
 });
 
