@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, type ReactNode } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   useQueries,
   type QueryKey,
@@ -151,33 +151,6 @@ export function useTransactionHistoryControls<
     queries,
     handleExport,
   };
-}
-
-export interface TransactionHistoryControlsProps<
-  TEntry,
-  TQueries extends readonly TransactionHistoryFilterQuery<
-    any,
-    any,
-    any,
-    any
-  >[] = [],
-> extends UseTransactionHistoryControlsOptions<TEntry, TQueries> {
-  children: (
-    value: UseTransactionHistoryControlsResult<TEntry, TQueries>,
-  ) => ReactNode;
-}
-
-export function TransactionHistoryControls<
-  TEntry,
-  TQueries extends readonly TransactionHistoryFilterQuery<
-    any,
-    any,
-    any,
-    any
-  >[] = [],
->({ children, ...options }: TransactionHistoryControlsProps<TEntry, TQueries>) {
-  const value = useTransactionHistoryControls<TEntry, TQueries>(options);
-  return <>{children(value)}</>;
 }
 
 export default useTransactionHistoryControls;
