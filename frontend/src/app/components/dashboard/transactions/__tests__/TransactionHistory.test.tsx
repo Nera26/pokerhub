@@ -2,12 +2,13 @@ import { screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TransactionHistory from '../TransactionHistory';
 import { setupTransactionTestData } from './test-utils';
-import { useTransactionHistoryControls } from '@/app/components/common/TransactionHistoryControls';
+import useTransactionHistoryExperience from '@/app/components/common/useTransactionHistoryExperience';
 import { useTranslations } from '@/hooks/useTranslations';
 import { useLocale } from 'next-intl';
 
-jest.mock('@/app/components/common/TransactionHistoryControls', () => ({
-  useTransactionHistoryControls: jest.fn(),
+jest.mock('@/app/components/common/useTransactionHistoryExperience', () => ({
+  __esModule: true,
+  default: jest.fn(),
 }));
 
 jest.mock('@/hooks/useTranslations', () => ({
@@ -22,11 +23,12 @@ describe('Dashboard TransactionHistory', () => {
   let renderWithClient: ReturnType<
     typeof setupTransactionTestData
   >['renderWithClient'];
-  const mockUseControls = useTransactionHistoryControls as jest.Mock;
+  const mockUseExperience = useTransactionHistoryExperience as jest.Mock;
   const mockUseTranslations = useTranslations as jest.Mock;
   const mockUseLocale = useLocale as jest.Mock;
   const TYPE_PLACEHOLDER = 'Todos los tipos';
   const PLAYER_PLACEHOLDER = 'Todos los jugadores';
+  const PERFORMED_BY_PLACEHOLDER = 'Todos los responsables';
 
   const buildHistory = () => ({
     data: [],
@@ -79,6 +81,27 @@ describe('Dashboard TransactionHistory', () => {
       },
     });
 
+  const buildMetadata = () => ({
+    filterOptions: { types: [], performedBy: [] },
+    typeSelect: {
+      placeholderOption: { value: '', label: TYPE_PLACEHOLDER },
+      options: [],
+    },
+    performedBySelect: {
+      placeholderOption: {
+        value: PERFORMED_BY_PLACEHOLDER,
+        label: PERFORMED_BY_PLACEHOLDER,
+      },
+      options: [],
+    },
+    playerSelect: {
+      placeholderOption: { value: '', label: PLAYER_PLACEHOLDER },
+      options: [],
+    },
+    players: [],
+    types: [],
+  });
+
   beforeEach(() => {
     ({ renderWithClient } = setupTransactionTestData());
     mockUseLocale.mockReturnValue('en');
@@ -86,17 +109,18 @@ describe('Dashboard TransactionHistory', () => {
       data: {
         'transactions.filters.allTypes': TYPE_PLACEHOLDER,
         'transactions.filters.allPlayers': PLAYER_PLACEHOLDER,
-        'transactions.filters.performedByAll': 'Todos los responsables',
+        'transactions.filters.performedByAll': PERFORMED_BY_PLACEHOLDER,
       },
     });
-    const filtersQuery = createFiltersQuery();
-    mockUseControls.mockReturnValue({
+
+    mockUseExperience.mockReturnValue({
       history: createHistory(),
       queries: {
         players: createQueryResult(),
         types: createQueryResult(),
-        filters: filtersQuery,
+        filters: createFiltersQuery(),
       },
+      metadata: buildMetadata(),
       handleExport: jest.fn(),
     });
   });
@@ -107,13 +131,14 @@ describe('Dashboard TransactionHistory', () => {
 
   it('shows loading state', () => {
     const history = createHistory({ isLoading: true });
-    mockUseControls.mockReturnValueOnce({
+    mockUseExperience.mockReturnValueOnce({
       history,
       queries: {
         players: createQueryResult(),
         types: createQueryResult(),
         filters: createFiltersQuery(),
       },
+      metadata: buildMetadata(),
       handleExport: jest.fn(),
     });
 
@@ -130,13 +155,14 @@ describe('Dashboard TransactionHistory', () => {
 
   it('shows error state when fetching fails', async () => {
     const history = createHistory({ error: new Error('fail') });
-    mockUseControls.mockReturnValueOnce({
+    mockUseExperience.mockReturnValueOnce({
       history,
       queries: {
         players: createQueryResult(),
         types: createQueryResult(),
         filters: createFiltersQuery(),
       },
+      metadata: buildMetadata(),
       handleExport: jest.fn(),
     });
 
@@ -147,14 +173,29 @@ describe('Dashboard TransactionHistory', () => {
   });
 
   it('renders player filter options', async () => {
-    mockUseControls.mockReturnValueOnce({
+    mockUseExperience.mockReturnValueOnce({
       history: createHistory(),
       queries: {
         players: createQueryResult({
           data: [{ id: 'player-1', username: 'Alice' }],
         }),
-        types: createQueryResult(),
+        types: createQueryResult({
+          data: [{ id: 'deposit', label: 'Deposit' }],
+        }),
         filters: createFiltersQuery(),
+      },
+      metadata: {
+        ...buildMetadata(),
+        playerSelect: {
+          placeholderOption: { value: '', label: PLAYER_PLACEHOLDER },
+          options: [{ value: 'player-1', label: 'Alice' }],
+        },
+        typeSelect: {
+          placeholderOption: { value: '', label: TYPE_PLACEHOLDER },
+          options: [{ value: 'deposit', label: 'Deposit' }],
+        },
+        players: [{ id: 'player-1', username: 'Alice' }],
+        types: [{ id: 'deposit', label: 'Deposit' }],
       },
       handleExport: jest.fn(),
     });
@@ -173,7 +214,7 @@ describe('Dashboard TransactionHistory', () => {
 
   it('calls fetchTransactionsLog with type filter', async () => {
     const updateFilter = jest.fn();
-    mockUseControls.mockReturnValueOnce({
+    mockUseExperience.mockReturnValueOnce({
       history: createHistory({ updateFilter }),
       queries: {
         players: createQueryResult(),
@@ -181,6 +222,14 @@ describe('Dashboard TransactionHistory', () => {
           data: [{ id: 'deposit', label: 'Deposit' }],
         }),
         filters: createFiltersQuery(),
+      },
+      metadata: {
+        ...buildMetadata(),
+        typeSelect: {
+          placeholderOption: { value: '', label: TYPE_PLACEHOLDER },
+          options: [{ value: 'deposit', label: 'Deposit' }],
+        },
+        types: [{ id: 'deposit', label: 'Deposit' }],
       },
       handleExport: jest.fn(),
     });
@@ -197,7 +246,7 @@ describe('Dashboard TransactionHistory', () => {
 
   it('requests next page on pagination', async () => {
     const setPage = jest.fn();
-    mockUseControls.mockReturnValueOnce({
+    mockUseExperience.mockReturnValueOnce({
       history: createHistory({
         setPage,
         hasMore: true,
@@ -207,6 +256,7 @@ describe('Dashboard TransactionHistory', () => {
         types: createQueryResult(),
         filters: createFiltersQuery(),
       },
+      metadata: buildMetadata(),
       handleExport: jest.fn(),
     });
 
@@ -218,7 +268,7 @@ describe('Dashboard TransactionHistory', () => {
 
   it('triggers export callback', async () => {
     const handleExport = jest.fn();
-    mockUseControls.mockImplementationOnce((options) => {
+    mockUseExperience.mockImplementationOnce((options) => {
       expect(options.onExport).toBeDefined();
       return {
         history: createHistory(),
@@ -227,8 +277,9 @@ describe('Dashboard TransactionHistory', () => {
           types: createQueryResult(),
           filters: createFiltersQuery(),
         },
+        metadata: buildMetadata(),
         handleExport,
-      };
+      } as any;
     });
 
     const onExport = jest.fn();
@@ -240,7 +291,7 @@ describe('Dashboard TransactionHistory', () => {
 
   it('exports current log when no handler provided', async () => {
     const handleExport = jest.fn();
-    mockUseControls.mockReturnValueOnce({
+    mockUseExperience.mockReturnValueOnce({
       history: createHistory({
         data: [
           {
@@ -258,6 +309,7 @@ describe('Dashboard TransactionHistory', () => {
         types: createQueryResult(),
         filters: createFiltersQuery(),
       },
+      metadata: buildMetadata(),
       handleExport,
     });
 
@@ -266,5 +318,17 @@ describe('Dashboard TransactionHistory', () => {
     await userEvent.click(btn);
 
     expect(handleExport).toHaveBeenCalled();
+  });
+
+  it('passes shared experience configuration', () => {
+    renderWithClient(<TransactionHistory />);
+
+    expect(mockUseExperience).toHaveBeenCalledWith(
+      expect.objectContaining({
+        locale: 'en',
+        includePlayers: true,
+        includeTypes: true,
+      }),
+    );
   });
 });

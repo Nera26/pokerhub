@@ -1,14 +1,19 @@
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TransactionHistoryModal from '../TransactionHistoryModal';
-import { useTransactionHistoryControls } from '@/app/components/common/TransactionHistoryControls';
+import useTransactionHistoryExperience from '@/app/components/common/useTransactionHistoryExperience';
 import useTransactionColumns from '@/hooks/useTransactionColumns';
 import { renderWithClient } from '../../dashboard/__tests__/renderWithClient';
 import { useTranslations } from '@/hooks/useTranslations';
 import { useLocale } from 'next-intl';
 
-jest.mock('@/app/components/common/TransactionHistoryControls', () => ({
-  useTransactionHistoryControls: jest.fn(),
+type TransactionHistoryExperienceReturn = ReturnType<
+  typeof useTransactionHistoryExperience
+>;
+
+jest.mock('@/app/components/common/useTransactionHistoryExperience', () => ({
+  __esModule: true,
+  default: jest.fn(),
 }));
 
 jest.mock('@/hooks/useTransactionColumns', () => ({
@@ -27,7 +32,8 @@ jest.mock('next-intl', () => ({
 describe('TransactionHistoryModal', () => {
   const TYPE_PLACEHOLDER = 'Todos los tipos';
   const PERFORMED_BY_PLACEHOLDER = 'Todos los responsables';
-  const mockUseControls = useTransactionHistoryControls as jest.Mock;
+  const mockUseExperience =
+    useTransactionHistoryExperience as jest.Mock<TransactionHistoryExperienceReturn>;
   const mockUseColumns = useTransactionColumns as jest.Mock;
   const mockUseTranslations = useTranslations as jest.Mock;
   const mockUseLocale = useLocale as jest.Mock;
@@ -84,6 +90,27 @@ describe('TransactionHistoryModal', () => {
     refetch: jest.fn(),
   });
 
+  const buildMetadata = () => ({
+    filterOptions: {
+      types: ['Deposit'],
+      performedBy: ['System'],
+    },
+    typeSelect: {
+      placeholderOption: { value: '', label: TYPE_PLACEHOLDER },
+      options: [{ value: 'Deposit', label: 'Deposit' }],
+    },
+    performedBySelect: {
+      placeholderOption: {
+        value: PERFORMED_BY_PLACEHOLDER,
+        label: PERFORMED_BY_PLACEHOLDER,
+      },
+      options: [{ value: 'System', label: 'System' }],
+    },
+    playerSelect: undefined,
+    players: undefined,
+    types: undefined,
+  });
+
   beforeEach(() => {
     mockUseLocale.mockReturnValue('en');
     mockUseTranslations.mockReturnValue({
@@ -104,12 +131,14 @@ describe('TransactionHistoryModal', () => {
       error: null,
     });
 
-    mockUseControls.mockReturnValue({
+    mockUseExperience.mockReturnValue({
       history: buildHistory(),
       queries: {
         filters: buildFiltersQuery(),
       },
-    });
+      metadata: buildMetadata(),
+      handleExport: jest.fn(),
+    } as TransactionHistoryExperienceReturn);
   });
 
   afterEach(() => {
@@ -138,7 +167,7 @@ describe('TransactionHistoryModal', () => {
     const typeSelect = screen.getByLabelText('Filter by type');
     fireEvent.change(typeSelect, { target: { value: 'Deposit' } });
 
-    const history = mockUseControls.mock.results[0].value.history;
+    const history = mockUseExperience.mock.results[0].value.history;
     expect(history.updateFilter).toHaveBeenCalledWith('type', 'Deposit');
 
     expect(screen.getByRole('cell', { name: 'Deposit' })).toBeInTheDocument();
@@ -157,7 +186,7 @@ describe('TransactionHistoryModal', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
 
-    const history = mockUseControls.mock.results[0].value.history;
+    const history = mockUseExperience.mock.results[0].value.history;
     expect(history.applyFilters).toHaveBeenCalled();
   });
 
@@ -166,12 +195,16 @@ describe('TransactionHistoryModal', () => {
     history.filters = { start: '', end: '', type: '', by: '' };
     history.appliedFilters = { start: '', end: '', type: '', by: '' };
 
-    mockUseControls.mockReturnValueOnce({
+    const metadata = buildMetadata();
+
+    mockUseExperience.mockReturnValueOnce({
       history,
       queries: {
         filters: buildFiltersQuery(),
       },
-    });
+      metadata,
+      handleExport: jest.fn(),
+    } as TransactionHistoryExperienceReturn);
 
     renderWithClient(
       <TransactionHistoryModal
@@ -186,8 +219,8 @@ describe('TransactionHistoryModal', () => {
       expect(history.syncFilters).toHaveBeenCalledWith({
         start: '',
         end: '',
-        type: TYPE_PLACEHOLDER,
-        by: PERFORMED_BY_PLACEHOLDER,
+        type: metadata.typeSelect.placeholderOption.value,
+        by: metadata.performedBySelect.placeholderOption.value,
       }),
     );
   });
@@ -196,12 +229,14 @@ describe('TransactionHistoryModal', () => {
     const history = buildHistory();
     history.isLoading = true;
 
-    mockUseControls.mockReturnValueOnce({
+    mockUseExperience.mockReturnValueOnce({
       history,
       queries: {
         filters: buildFiltersQuery(),
       },
-    });
+      metadata: buildMetadata(),
+      handleExport: jest.fn(),
+    } as TransactionHistoryExperienceReturn);
 
     renderWithClient(
       <TransactionHistoryModal
@@ -213,5 +248,24 @@ describe('TransactionHistoryModal', () => {
     );
 
     expect(document.body.querySelector('.animate-spin')).toBeInTheDocument();
+  });
+
+  it('passes configuration to shared experience', () => {
+    renderWithClient(
+      <TransactionHistoryModal
+        isOpen
+        onClose={jest.fn()}
+        userName="Alice"
+        userId="player-1"
+      />,
+    );
+
+    expect(mockUseExperience).toHaveBeenCalledWith(
+      expect.objectContaining({
+        includePlayers: false,
+        includeTypes: false,
+        filtersEnabled: true,
+      }),
+    );
   });
 });
