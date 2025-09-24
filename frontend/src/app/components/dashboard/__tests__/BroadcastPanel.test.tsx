@@ -1,7 +1,7 @@
-import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { renderWithClient } from './renderWithClient';
 import BroadcastPanel from '../BroadcastPanel';
-import { fetchMessages } from '@/lib/api/messages';
+import { fetchMessages, markMessageRead } from '@/lib/api/messages';
 import {
   fetchBroadcasts,
   fetchBroadcastTemplates,
@@ -12,6 +12,7 @@ import { useBroadcastTypes } from '@/hooks/lookups';
 jest.mock('@/hooks/useApiError', () => ({ useApiError: () => {} }));
 jest.mock('@/lib/api/messages', () => ({
   fetchMessages: jest.fn(),
+  markMessageRead: jest.fn(),
 }));
 jest.mock('@/lib/api/broadcasts', () => ({
   fetchBroadcasts: jest.fn(),
@@ -44,6 +45,7 @@ beforeEach(() => {
     isLoading: false,
     error: null,
   });
+  (markMessageRead as jest.Mock).mockReset();
 });
 
 describe('BroadcastPanel', () => {
@@ -131,6 +133,90 @@ describe('BroadcastPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: /send broadcast/i }));
     expect(
       await screen.findByText(/failed to send broadcast/i),
+    ).toBeInTheDocument();
+  });
+
+  it('marks a message as read when replying', async () => {
+    (fetchMessages as jest.Mock)
+      .mockResolvedValueOnce({
+        messages: [
+          {
+            id: 1,
+            sender: 'Alice',
+            preview: 'Hi',
+            userId: '1',
+            avatar: '',
+            subject: '',
+            content: '',
+            time: '',
+            read: false,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        messages: [
+          {
+            id: 1,
+            sender: 'Alice',
+            preview: 'Hi',
+            userId: '1',
+            avatar: '',
+            subject: '',
+            content: '',
+            time: '',
+            read: true,
+          },
+        ],
+      })
+      .mockResolvedValue({
+        messages: [
+          {
+            id: 1,
+            sender: 'Alice',
+            preview: 'Hi',
+            userId: '1',
+            avatar: '',
+            subject: '',
+            content: '',
+            time: '',
+            read: true,
+          },
+        ],
+      });
+    (markMessageRead as jest.Mock).mockResolvedValue({
+      id: 1,
+      sender: 'Alice',
+      preview: 'Hi',
+      userId: '1',
+      avatar: '',
+      subject: '',
+      content: '',
+      time: '',
+      read: true,
+    });
+
+    renderWithClient(<BroadcastPanel />);
+
+    const messageCard = await screen.findByTestId('admin-message-1');
+    expect(
+      within(messageCard).getByLabelText(/message unread/i),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      within(messageCard).getByRole('button', { name: /reply/i }),
+    );
+
+    await waitFor(() => expect(markMessageRead).toHaveBeenCalledWith(1));
+
+    await waitFor(() =>
+      expect(
+        within(screen.getByTestId('admin-message-1')).getByLabelText(
+          /message read/i,
+        ),
+      ).toBeInTheDocument(),
+    );
+    expect(
+      within(screen.getByTestId('admin-message-1')).getByText(/read/i),
     ).toBeInTheDocument();
   });
 });

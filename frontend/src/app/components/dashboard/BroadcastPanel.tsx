@@ -8,7 +8,10 @@ import {
 } from '@/lib/api/broadcasts';
 import { useApiError } from '@/hooks/useApiError';
 import { useBroadcastTypes } from '@/hooks/lookups';
-import { useAdminMessages } from '@/hooks/useAdminMessageActions';
+import {
+  useAdminMessages,
+  useMarkMessageRead,
+} from '@/hooks/useAdminMessageActions';
 import AdminMessageList from './AdminMessageList';
 import type {
   BroadcastTemplatesResponse,
@@ -20,6 +23,7 @@ import Link from 'next/link';
 
 export default function BroadcastPanel() {
   const { data, isLoading, isError, error } = useAdminMessages();
+  const { mutate: markMessageRead } = useMarkMessageRead();
 
   const { data: typesData } = useBroadcastTypes();
   const types = typesData?.types ?? {};
@@ -102,14 +106,37 @@ export default function BroadcastPanel() {
         isLoading={isLoading}
         isError={isError}
         error={error}
-        renderMessage={(m) => (
-          <div className="p-3 bg-primary-bg rounded-xl">
+        onMarkRead={(id) => markMessageRead(id)}
+        renderMessage={(m, onMarkRead) => (
+          <div
+            className="p-3 bg-primary-bg rounded-xl"
+            data-testid={`admin-message-${m.id}`}
+          >
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-2 h-2 bg-accent-green rounded-full" />
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  m.read ? 'bg-dark/40' : 'bg-accent-green'
+                }`}
+                aria-label={m.read ? 'Message read' : 'Message unread'}
+              />
               <span className="text-sm font-semibold">{m.sender}</span>
+              <span
+                className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                  m.read
+                    ? 'bg-dark/20 text-text-secondary'
+                    : 'bg-accent-yellow/20 text-accent-yellow'
+                }`}
+              >
+                {m.read ? 'Read' : 'Unread'}
+              </span>
             </div>
             <p className="text-xs text-text-secondary">{m.preview}</p>
-            <button className="text-accent-blue text-xs mt-1">Reply</button>
+            <button
+              className="text-accent-blue text-xs mt-1"
+              onClick={() => onMarkRead?.(m.id)}
+            >
+              Reply
+            </button>
           </div>
         )}
       />
