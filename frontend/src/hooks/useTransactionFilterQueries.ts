@@ -27,7 +27,7 @@ type TypesQuery = TransactionHistoryFilterQuery<
 
 type FiltersQuery = TransactionHistoryFilterQuery<'filters', FilterOptions>;
 
-type TransactionFilterQueries<
+export type TransactionFilterQueries<
   TIncludePlayers extends boolean,
   TIncludeTypes extends boolean,
 > = [

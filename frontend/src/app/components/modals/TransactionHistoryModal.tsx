@@ -16,10 +16,9 @@ import { fetchUserTransactions } from '@/lib/api/transactions';
 import { AdminTransactionEntriesSchema } from '@shared/transactions.schema';
 import { z } from 'zod';
 import useTransactionColumns from '@/hooks/useTransactionColumns';
-import { useTransactionHistoryControls } from '@/app/components/common/TransactionHistoryControls';
 import TransactionHistoryFilters from '@/app/components/common/TransactionHistoryFilters';
+import useTransactionHistoryExperience from '@/app/components/common/useTransactionHistoryExperience';
 import { useLocale } from 'next-intl';
-import { useTransactionFilterQueries } from '@/hooks/useTransactionFilterQueries';
 
 export interface Transaction extends TimestampSource {
   datetime: string;
@@ -64,18 +63,15 @@ export default function TransactionHistoryModal({
     error: colsError,
   } = useTransactionColumns();
 
-  const { queries: filterQueries, resolveMetadata } =
-    useTransactionFilterQueries({
-      locale,
-      includePlayers: false,
-      includeTypes: false,
-      filtersEnabled: isOpen,
-    });
-
-  const { history, queries } = useTransactionHistoryControls<
+  const { history, queries, metadata } = useTransactionHistoryExperience<
     AdminTransactionEntry,
-    typeof filterQueries
+    false,
+    false
   >({
+    locale,
+    includePlayers: false,
+    includeTypes: false,
+    filtersEnabled: isOpen,
     history: {
       queryKey: ['userTransactions', userId],
       fetchTransactions: async () => fetchUserTransactions(userId),
@@ -114,12 +110,10 @@ export default function TransactionHistoryModal({
         (entry as (AdminTransactionEntry & { currency?: string }) | undefined)
           ?.currency,
     },
-    queries: filterQueries,
   });
 
   const filtersQuery = queries.filters;
-
-  const { typeSelect, performedBySelect } = resolveMetadata(queries);
+  const { typeSelect, performedBySelect } = metadata;
   const {
     placeholderOption: typePlaceholderOption,
     options: typeSelectableOptions,
