@@ -1,5 +1,4 @@
 import { ConfigService } from '@nestjs/config';
-import fc from 'fast-check';
 import { randomUUID } from 'crypto';
 import type Redis from 'ioredis';
 import { newDb } from 'pg-mem';
@@ -15,48 +14,19 @@ import type { SettlementService } from '../../src/wallet/settlement.service';
 import { SettlementJournal } from '../../src/wallet/settlement-journal.entity';
 import { WalletService } from '../../src/wallet/wallet.service';
 import { createInMemoryRedis } from '../utils/mock-redis';
+import {
+  reserveOperationArb,
+  rollbackOperationArb,
+  commitOperationArb,
+  walletOperationArb,
+  walletTransactionArb,
+} from './arbitraries';
 
 export const TEST_USER_ID = '11111111-1111-1111-1111-111111111111';
 export const RESERVE_ACCOUNT_ID = '00000000-0000-0000-0000-000000000001';
 export const HOUSE_ACCOUNT_ID = '00000000-0000-0000-0000-000000000002';
 export const RAKE_ACCOUNT_ID = '00000000-0000-0000-0000-000000000003';
 export const PRIZE_ACCOUNT_ID = '00000000-0000-0000-0000-000000000004';
-
-export const reserveOperationArb = fc.record({
-  type: fc.constant<'reserve'>('reserve'),
-  amount: fc.integer({ min: 1, max: 100 }),
-  ref: fc.hexaString({ minLength: 1, maxLength: 10 }),
-});
-
-export const rollbackOperationArb = fc.record({
-  type: fc.constant<'rollback'>('rollback'),
-  amount: fc.integer({ min: 1, max: 100 }),
-  ref: fc.hexaString({ minLength: 1, maxLength: 10 }),
-});
-
-export const commitOperationArb = fc.integer({ min: 1, max: 100 }).chain((amount) =>
-  fc.record({
-    type: fc.constant<'commit'>('commit'),
-    amount: fc.constant(amount),
-    rake: fc.integer({ min: 0, max: amount }),
-    ref: fc.hexaString({ minLength: 1, maxLength: 10 }),
-  }),
-);
-
-export const walletOperationArb = fc.oneof(
-  reserveOperationArb,
-  commitOperationArb,
-  rollbackOperationArb,
-);
-
-export const walletTransactionArb = fc
-  .integer({ min: 1, max: 100 })
-  .chain((amount) =>
-    fc.record({
-      amount: fc.constant(amount),
-      rake: fc.integer({ min: 0, max: amount }),
-    }),
-  );
 
 export interface WalletTestContext {
   dataSource: DataSource;
