@@ -2,6 +2,7 @@
 
 import {
   fetchLeaderboard,
+  rebuildLeaderboard,
   createLeaderboardMetaQuery,
   useLeaderboardRanges,
   useLeaderboardModes,
@@ -12,6 +13,7 @@ import {
   LeaderboardRangesResponseSchema,
   LeaderboardModesResponseSchema,
   LeaderboardResponseSchema,
+  StatusResponseSchema,
 } from '@shared/types';
 import type { LeaderboardEntry } from '@shared/types';
 
@@ -90,6 +92,17 @@ describe('leaderboard api', () => {
       '/api/leaderboard',
       LeaderboardResponseSchema,
       { signal: undefined },
+    );
+  });
+
+  it('rebuilds leaderboard using the non-prefixed endpoint', async () => {
+    apiClientMock.mockResolvedValueOnce({ status: 'ok' });
+
+    await expect(rebuildLeaderboard()).resolves.toEqual({ status: 'ok' });
+    expect(apiClientMock).toHaveBeenCalledWith(
+      '/leaderboard/rebuild?days=30',
+      StatusResponseSchema,
+      { method: 'POST' },
     );
   });
 });
