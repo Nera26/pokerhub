@@ -12,23 +12,14 @@ import {
   AmountCell,
   StatusCell,
 } from '@/app/components/common/transactionCells';
-import {
-  fetchTransactionFilters,
-  fetchUserTransactions,
-} from '@/lib/api/transactions';
-import type { FilterOptions } from '@shared/transactions.schema';
+import { fetchUserTransactions } from '@/lib/api/transactions';
 import { AdminTransactionEntriesSchema } from '@shared/transactions.schema';
 import { z } from 'zod';
 import useTransactionColumns from '@/hooks/useTransactionColumns';
-import {
-  useTransactionHistoryControls,
-  type TransactionHistoryFilterQuery,
-} from '@/app/components/common/TransactionHistoryControls';
-import TransactionHistoryFilters, {
-  buildSelectOptions,
-} from '@/app/components/common/TransactionHistoryFilters';
+import { useTransactionHistoryControls } from '@/app/components/common/TransactionHistoryControls';
+import TransactionHistoryFilters from '@/app/components/common/TransactionHistoryFilters';
 import { useLocale } from 'next-intl';
-import { useTranslations } from '@/hooks/useTranslations';
+import { useTransactionFilterQueries } from '@/hooks/useTransactionFilterQueries';
 
 export interface Transaction extends TimestampSource {
   datetime: string;
@@ -64,7 +55,6 @@ export default function TransactionHistoryModal({
   onFilter,
 }: Props) {
   const locale = useLocale();
-  const { data: translationMessages } = useTranslations(locale);
   const defaultTypeRef = useRef('');
   const defaultByRef = useRef('');
 
@@ -74,26 +64,13 @@ export default function TransactionHistoryModal({
     error: colsError,
   } = useTransactionColumns();
 
-  const filterQueries = useMemo(
-    () =>
-      [
-        {
-          key: 'filters',
-          queryKey: ['transactionFilters', locale] as const,
-          queryFn: () => fetchTransactionFilters(locale),
-          enabled: isOpen,
-          initialData: {
-            types: [],
-            performedBy: [],
-          } as FilterOptions,
-        },
-      ] as const satisfies readonly TransactionHistoryFilterQuery<
-        'filters',
-        FilterOptions,
-        FilterOptions
-      >[],
-    [isOpen, locale],
-  );
+  const { queries: filterQueries, resolveMetadata } =
+    useTransactionFilterQueries({
+      locale,
+      includePlayers: false,
+      includeTypes: false,
+      filtersEnabled: isOpen,
+    });
 
   const { history, queries } = useTransactionHistoryControls<
     AdminTransactionEntry,
@@ -141,54 +118,15 @@ export default function TransactionHistoryModal({
   });
 
   const filtersQuery = queries.filters;
-  const filterOptions: FilterOptions = filtersQuery?.data ?? {
-    types: [],
-    performedBy: [],
-  };
-  const translations = translationMessages ?? {};
-  const typePlaceholderLabel =
-    filterOptions.typePlaceholder ??
-    translations['transactions.filters.allTypes'] ??
-    'All Types';
-  const performedByPlaceholderLabel =
-    filterOptions.performedByPlaceholder ??
-    translations['transactions.filters.performedByAll'] ??
-    'Performed By: All';
-
-  const typeOptions = useMemo(
-    () =>
-      buildSelectOptions({
-        data: filterOptions?.types ?? [],
-        getValue: (value) => value,
-        getLabel: (value) => value,
-        prependOptions: [
-          { value: typePlaceholderLabel, label: typePlaceholderLabel },
-        ],
-        filter: (value) => value !== typePlaceholderLabel,
-      }),
-    [filterOptions, typePlaceholderLabel],
-  );
-
-  const performedByOptions = useMemo(
-    () =>
-      buildSelectOptions({
-        data: filterOptions?.performedBy ?? [],
-        getValue: (value) => value,
-        getLabel: (value) => value,
-        prependOptions: [
-          {
-            value: performedByPlaceholderLabel,
-            label: performedByPlaceholderLabel,
-          },
-        ],
-        filter: (value) => value !== performedByPlaceholderLabel,
-      }),
-    [filterOptions, performedByPlaceholderLabel],
-  );
-
-  const [typePlaceholderOption, ...typeSelectableOptions] = typeOptions;
-  const [performedByPlaceholderOption, ...performedBySelectableOptions] =
-    performedByOptions;
+  const { typeSelect, performedBySelect } = resolveMetadata(queries);
+  const {
+    placeholderOption: typePlaceholderOption,
+    options: typeSelectableOptions,
+  } = typeSelect;
+  const {
+    placeholderOption: performedByPlaceholderOption,
+    options: performedBySelectableOptions,
+  } = performedBySelect;
 
   const defaultType = typePlaceholderOption?.value ?? '';
   const defaultBy = performedByPlaceholderOption?.value ?? '';
