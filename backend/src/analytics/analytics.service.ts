@@ -3,6 +3,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  OnModuleInit,
   forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -30,6 +31,7 @@ import type {
 import { EtlService } from './etl.service';
 import { Repository } from 'typeorm';
 import { AuditLogTypeClass } from './audit-log-type-class.entity';
+import { AuditLogTypeClassDefault } from './audit-log-type-class-default.entity';
 
 interface AuditLog {
   id: string;
@@ -163,12 +165,12 @@ const ParquetSchemas: Record<string, ParquetSchema> = {
   'wallet.chargeback_flag': WalletChargebackFlagSchema,
 };
 
-const LOG_TYPE_CLASS_OVERRIDES: Record<string, string> = {
-  Login: 'bg-accent-green/20 text-accent-green',
-  Error: 'bg-danger-red/20 text-danger-red',
-  Broadcast: 'bg-accent-yellow/20 text-accent-yellow',
-  'Security Alert': 'bg-danger-red/20 text-danger-red',
-};
+const LOG_TYPE_CLASS_DEFAULT_SEED: Array<{ type: string; className: string }> = [
+  { type: 'Login', className: 'bg-accent-green/20 text-accent-green' },
+  { type: 'Error', className: 'bg-danger-red/20 text-danger-red' },
+  { type: 'Broadcast', className: 'bg-accent-yellow/20 text-accent-yellow' },
+  { type: 'Security Alert', className: 'bg-danger-red/20 text-danger-red' },
+];
 
 const LOG_TYPE_CLASS_MATCHERS: Array<{ pattern: RegExp; className: string }> = [
   { pattern: /(error|fail|denied|reject|blocked|fraud|chargeback|alert|flag)/i, className: 'bg-danger-red/20 text-danger-red' },
@@ -185,10 +187,13 @@ const LOG_TYPE_CLASS_MATCHERS: Array<{ pattern: RegExp; className: string }> = [
 
 const DEFAULT_LOG_TYPE_CLASS = 'bg-card-bg text-text-secondary';
 
-function resolveLogTypeClass(type: string): string {
+function resolveLogTypeClass(
+  type: string,
+  defaultMap: Map<string, string>,
+): string {
   if (!type) return DEFAULT_LOG_TYPE_CLASS;
-  const override = LOG_TYPE_CLASS_OVERRIDES[type];
-  if (override) return override;
+  const configured = defaultMap.get(type);
+  if (configured) return configured;
   for (const { pattern, className } of LOG_TYPE_CLASS_MATCHERS) {
     if (pattern.test(type)) return className;
   }
@@ -210,13 +215,14 @@ function scheduleDaily(task: () => void): void {
 }
 
 @Injectable()
-export class AnalyticsService {
+export class AnalyticsService implements OnModuleInit {
   private readonly client: ClickHouseClient | null;
   private readonly logger = new Logger(AnalyticsService.name);
   private readonly collusionSessionsKey = 'collusion:sessions';
   private readonly collusionTransfersKey = 'collusion:transfers';
   private readonly collusionEventsKey = 'collusion:events';
   private auditLogSchemaReady: Promise<void> | null = null;
+  private defaultLogTypeClassCache: Map<string, string> | null = null;
 
   constructor(
     config: ConfigService,
@@ -225,12 +231,44 @@ export class AnalyticsService {
     @Inject(forwardRef(() => EtlService)) private readonly etl: EtlService,
     @InjectRepository(AuditLogTypeClass)
     private readonly logTypeClassRepo: Repository<AuditLogTypeClass>,
+    @InjectRepository(AuditLogTypeClassDefault)
+    private readonly logTypeClassDefaultRepo: Repository<AuditLogTypeClassDefault>,
   ) {
     const url = config.get<string>('analytics.clickhouseUrl');
     this.client = url ? createClient({ url }) : null;
 
     this.scheduleStakeAggregates();
     this.scheduleEngagementMetrics();
+  }
+
+  async onModuleInit(): Promise<void> {
+    await this.ensureDefaultLogTypeClassesSeeded();
+    await this.refreshDefaultLogTypeClasses();
+  }
+
+  private async ensureDefaultLogTypeClassesSeeded(): Promise<void> {
+    if (!this.logTypeClassDefaultRepo) return;
+    await this.logTypeClassDefaultRepo
+      .createQueryBuilder()
+      .insert()
+      .values(LOG_TYPE_CLASS_DEFAULT_SEED)
+      .orIgnore()
+      .execute();
+  }
+
+  private async refreshDefaultLogTypeClasses(): Promise<Map<string, string>> {
+    const defaults = await this.logTypeClassDefaultRepo.find();
+    this.defaultLogTypeClassCache = new Map(
+      defaults.map(({ type, className }) => [type, className] as const),
+    );
+    return this.defaultLogTypeClassCache;
+  }
+
+  private async getDefaultLogTypeClassesMap(): Promise<Map<string, string>> {
+    if (!this.defaultLogTypeClassCache) {
+      await this.refreshDefaultLogTypeClasses();
+    }
+    return this.defaultLogTypeClassCache ?? new Map();
   }
 
   async getAuditLogTypes(): Promise<string[]> {
@@ -246,26 +284,60 @@ export class AnalyticsService {
     return rows.map((r) => r.name);
   }
 
+  async getDefaultLogTypeClasses(): Promise<Record<string, string>> {
+    const map = await this.getDefaultLogTypeClassesMap();
+    return Object.fromEntries(map);
+  }
+
+  async listLogTypeClassDefaults(): Promise<
+    Array<{ type: string; className: string }>
+  > {
+    const defaults = await this.logTypeClassDefaultRepo.find({
+      order: { type: 'ASC' },
+    });
+    return defaults.map(({ type, className }) => ({ type, className }));
+  }
+
+  async upsertLogTypeClassDefault(
+    type: string,
+    className: string,
+  ): Promise<{ type: string; className: string }> {
+    const existing = await this.logTypeClassDefaultRepo.findOne({
+      where: { type },
+    });
+    if (existing) {
+      existing.className = className;
+      const saved = await this.logTypeClassDefaultRepo.save(existing);
+      await this.refreshDefaultLogTypeClasses();
+      return { type: saved.type, className: saved.className };
+    }
+    const created = this.logTypeClassDefaultRepo.create({ type, className });
+    const saved = await this.logTypeClassDefaultRepo.save(created);
+    await this.refreshDefaultLogTypeClasses();
+    return { type: saved.type, className: saved.className };
+  }
+
   async getAuditLogTypeClasses(): Promise<Record<string, string>> {
-    const [types, overrides] = await Promise.all([
+    const [types, overrides, defaultMap] = await Promise.all([
       this.getAuditLogTypes(),
       this.logTypeClassRepo.find(),
+      this.getDefaultLogTypeClassesMap(),
     ]);
     const overrideMap = new Map(
       overrides.map((override) => [override.type, override.className] as const),
     );
-    const result = new Map<string, string>();
-    const typeSet = new Set(types);
+    const result = new Map(defaultMap);
     for (const type of types) {
-      result.set(
-        type,
-        overrideMap.get(type) ?? resolveLogTypeClass(type),
-      );
+      if (overrideMap.has(type)) {
+        result.set(type, overrideMap.get(type)!);
+        continue;
+      }
+      if (!result.has(type)) {
+        result.set(type, resolveLogTypeClass(type, defaultMap));
+      }
     }
     for (const [type, className] of overrideMap) {
-      if (!typeSet.has(type)) {
-        result.set(type, className);
-      }
+      result.set(type, className);
     }
     return Object.fromEntries(result);
   }

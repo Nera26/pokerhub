@@ -59,10 +59,23 @@ describe('AnalyticsController', () => {
       listLogTypeClassOverrides: jest
         .fn()
         .mockResolvedValue([{ type: 'Login', className: 'stored' }]),
+      listLogTypeClassDefaults: jest.fn(),
     } as unknown as AnalyticsService;
     const controller = new AnalyticsController(service);
     await expect(controller.logTypeClassOverrides()).resolves.toEqual([
       { type: 'Login', className: 'stored' },
+    ]);
+  });
+
+  it('lists default log type classes', async () => {
+    const service = {
+      listLogTypeClassDefaults: jest
+        .fn()
+        .mockResolvedValue([{ type: 'Login', className: 'default' }]),
+    } as unknown as AnalyticsService;
+    const controller = new AnalyticsController(service);
+    await expect(controller.logTypeClassDefaults()).resolves.toEqual([
+      { type: 'Login', className: 'default' },
     ]);
   });
 
@@ -90,6 +103,7 @@ describe('AnalyticsController', () => {
       upsertLogTypeClass: jest
         .fn()
         .mockResolvedValue({ type: 'Login', className: 'updated' }),
+      upsertLogTypeClassDefault: jest.fn(),
     } as unknown as AnalyticsService;
     const controller = new AnalyticsController(service);
     await expect(
@@ -110,6 +124,22 @@ describe('AnalyticsController', () => {
       controller.deleteLogTypeClass({ type: 'Login' }),
     ).resolves.toBeUndefined();
     expect(service.removeLogTypeClass).toHaveBeenCalledWith('Login');
+  });
+
+  it('updates a default log type class', async () => {
+    const service = {
+      upsertLogTypeClassDefault: jest
+        .fn()
+        .mockResolvedValue({ type: 'Login', className: 'default' }),
+    } as unknown as AnalyticsService;
+    const controller = new AnalyticsController(service);
+    await expect(
+      controller.updateLogTypeClassDefault({ type: 'Login', className: 'default' }),
+    ).resolves.toEqual({ type: 'Login', className: 'default' });
+    expect(service.upsertLogTypeClassDefault).toHaveBeenCalledWith(
+      'Login',
+      'default',
+    );
   });
 });
 

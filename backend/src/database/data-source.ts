@@ -18,6 +18,7 @@ import { ChatMessage } from './entities/chatMessage.entity';
 import { GameState } from './entities/game-state.entity';
 import { CollusionAudit } from '../analytics/collusion-audit.entity';
 import { AuditLogTypeClass } from '../analytics/audit-log-type-class.entity';
+import { AuditLogTypeClassDefault } from '../analytics/audit-log-type-class-default.entity';
 import { Tier } from './entities/tier.entity';
 import { BroadcastEntity } from './entities/broadcast.entity';
 import { BroadcastTypeEntity } from './entities/broadcast-type.entity';
@@ -52,6 +53,7 @@ export const AppDataSource = new DataSource({
     GameState,
     CollusionAudit,
     AuditLogTypeClass,
+    AuditLogTypeClassDefault,
     Tier,
     BroadcastEntity,
     BroadcastTypeEntity,

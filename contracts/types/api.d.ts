@@ -1713,6 +1713,35 @@ export interface paths {
       };
     };
   };
+  "/analytics/log-types/classes/defaults": {
+    /** List default audit log type classes */
+    get: {
+      responses: {
+        /** @description Default audit log type classes */
+        200: {
+          content: {
+            "application/json": components["schemas"]["LogTypeClassDefaultList"];
+          };
+        };
+      };
+    };
+    /** Update a default audit log type class */
+    put: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["LogTypeClassDefault"];
+        };
+      };
+      responses: {
+        /** @description Updated default audit log type class */
+        200: {
+          content: {
+            "application/json": components["schemas"]["LogTypeClassDefault"];
+          };
+        };
+      };
+    };
+  };
   "/analytics/log-types/classes/{type}": {
     /** Update an audit log type class override */
     put: {
@@ -3410,6 +3439,8 @@ export interface components {
     UpdateLogTypeClassOverride: {
       className: string;
     };
+    LogTypeClassDefault: components["schemas"]["LogTypeClassOverride"];
+    LogTypeClassDefaultList: components["schemas"]["LogTypeClassDefault"][];
     AuditSummaryResponse: {
       total: number;
       errors: number;

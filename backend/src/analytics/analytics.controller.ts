@@ -19,9 +19,12 @@ import {
   ActivityResponseSchema,
   ErrorCategoriesResponseSchema,
   LogTypeClassesSchema,
+  LogTypeClassSchema,
   LogTypeClassOverrideSchema,
   LogTypeClassOverrideListSchema,
   LogTypeClassParamsSchema,
+  LogTypeClassDefaultSchema,
+  LogTypeClassDefaultListSchema,
   CreateLogTypeClassOverrideSchema,
   UpdateLogTypeClassOverrideSchema,
 } from '@shared/schemas/analytics';
@@ -53,6 +56,11 @@ export async function listAuditLogClassOverrides(analytics: AnalyticsService) {
   return LogTypeClassOverrideListSchema.parse(overrides);
 }
 
+export async function listAuditLogClassDefaults(analytics: AnalyticsService) {
+  const defaults = await analytics.listLogTypeClassDefaults();
+  return LogTypeClassDefaultListSchema.parse(defaults);
+}
+
 export async function createAuditLogClassOverride(
   analytics: AnalyticsService,
   body: unknown,
@@ -74,6 +82,18 @@ export async function updateAuditLogClassOverride(
   const payload = UpdateLogTypeClassOverrideSchema.parse(body);
   const override = await analytics.upsertLogTypeClass(type, payload.className);
   return LogTypeClassOverrideSchema.parse(override);
+}
+
+export async function updateAuditLogClassDefault(
+  analytics: AnalyticsService,
+  body: unknown,
+) {
+  const payload = LogTypeClassSchema.parse(body);
+  const updated = await analytics.upsertLogTypeClassDefault(
+    payload.type,
+    payload.className,
+  );
+  return LogTypeClassDefaultSchema.parse(updated);
 }
 
 @UseGuards(AdminGuard)
@@ -110,11 +130,25 @@ export class AnalyticsController {
     return listAuditLogClassOverrides(this.analytics);
   }
 
+  @Get('log-types/classes/defaults')
+  @ApiOperation({ summary: 'List default audit log type classes' })
+  @ApiResponse({ status: 200, description: 'Default audit log type classes' })
+  async logTypeClassDefaults() {
+    return listAuditLogClassDefaults(this.analytics);
+  }
+
   @Post('log-types/classes')
   @ApiOperation({ summary: 'Create an audit log type class override' })
   @ApiResponse({ status: 201, description: 'Created audit log type class override' })
   async createLogTypeClass(@Body() body: unknown) {
     return createAuditLogClassOverride(this.analytics, body);
+  }
+
+  @Put('log-types/classes/defaults')
+  @ApiOperation({ summary: 'Update a default audit log type class' })
+  @ApiResponse({ status: 200, description: 'Updated default audit log type class' })
+  async updateLogTypeClassDefault(@Body() body: unknown) {
+    return updateAuditLogClassDefault(this.analytics, body);
   }
 
   @Put('log-types/classes/:type')
