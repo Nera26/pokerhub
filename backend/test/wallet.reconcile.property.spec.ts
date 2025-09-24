@@ -1,129 +1,24 @@
-import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
 import fc from 'fast-check';
 import { randomUUID } from 'crypto';
-import { Account } from '../src/wallet/account.entity';
-import { JournalEntry } from '../src/wallet/journal-entry.entity';
-import { Disbursement } from '../src/wallet/disbursement.entity';
-import { WalletService } from '../src/wallet/wallet.service';
-import { EventPublisher } from '../src/events/events.service';
-import { PaymentProviderService } from '../src/wallet/payment-provider.service';
-import { KycService } from '../src/wallet/kyc.service';
-import { SettlementJournal } from '../src/wallet/settlement-journal.entity';
-import { createInMemoryRedis } from './utils/mock-redis';
+import {
+  createWalletTestContext,
+  walletOperationArb,
+  TEST_USER_ID,
+  RESERVE_ACCOUNT_ID,
+  HOUSE_ACCOUNT_ID,
+  RAKE_ACCOUNT_ID,
+  PRIZE_ACCOUNT_ID,
+} from './wallet/test-fixtures';
 
 jest.setTimeout(20000);
 
 describe('WalletService.reconcile property', () => {
-  const userId = '11111111-1111-1111-1111-111111111111';
-  const events: EventPublisher = { emit: jest.fn() } as any;
-
-  async function setup() {
-    const db = newDb();
-    db.public.registerFunction({
-      name: 'version',
-      returns: 'text',
-      implementation: () => 'pg-mem',
-    });
-    db.public.registerFunction({
-      name: 'current_database',
-      returns: 'text',
-      implementation: () => 'test',
-    });
-    let seq = 1;
-    db.public.registerFunction({
-      name: 'uuid_generate_v4',
-      returns: 'text',
-      implementation: () => {
-        const id = seq.toString(16).padStart(32, '0');
-        seq++;
-        return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(16, 20)}-${id.slice(20)}`;
-      },
-    });
-    const dataSource = db.adapters.createTypeormDataSource({
-      type: 'postgres',
-      entities: [Account, JournalEntry, Disbursement, SettlementJournal],
-      synchronize: true,
-    }) as DataSource;
-    await dataSource.initialize();
-    const accountRepo = dataSource.getRepository(Account);
-    const journalRepo = dataSource.getRepository(JournalEntry);
-    const disbRepo = dataSource.getRepository(Disbursement);
-    const settleRepo = dataSource.getRepository(SettlementJournal);
-    const { redis } = createInMemoryRedis();
-    const provider = { initiate3DS: jest.fn(), getStatus: jest.fn() } as unknown as PaymentProviderService;
-    const kyc = {
-      validate: jest.fn().mockResolvedValue(undefined),
-      isVerified: jest.fn().mockResolvedValue(true),
-    } as unknown as KycService;
-    const service = new WalletService(
-      accountRepo,
-      journalRepo,
-      disbRepo,
-      settleRepo,
-      events,
-      redis,
-      provider,
-      kyc,
-    );
-    (service as any).enqueueDisbursement = jest.fn();
-    await accountRepo.save([
-      { id: userId, name: 'user', balance: 0, currency: 'USD' },
-      {
-        id: '00000000-0000-0000-0000-000000000001',
-        name: 'reserve',
-        balance: 0,
-        currency: 'USD',
-      },
-      {
-        id: '00000000-0000-0000-0000-000000000002',
-        name: 'house',
-        balance: 0,
-        currency: 'USD',
-      },
-      {
-        id: '00000000-0000-0000-0000-000000000003',
-        name: 'rake',
-        balance: 0,
-        currency: 'USD',
-      },
-      {
-        id: '00000000-0000-0000-0000-000000000004',
-        name: 'prize',
-        balance: 0,
-        currency: 'USD',
-      },
-    ]);
-    return { dataSource, service };
-  }
-
-  const reserveArb = fc.record({
-    type: fc.constant<'reserve'>('reserve'),
-    amount: fc.integer({ min: 1, max: 100 }),
-    ref: fc.hexaString({ minLength: 1, maxLength: 10 }),
-  });
-
-  const rollbackArb = fc.record({
-    type: fc.constant<'rollback'>('rollback'),
-    amount: fc.integer({ min: 1, max: 100 }),
-    ref: fc.hexaString({ minLength: 1, maxLength: 10 }),
-  });
-
-  const commitArb = fc.integer({ min: 1, max: 100 }).chain((amount) =>
-    fc.record({
-      type: fc.constant<'commit'>('commit'),
-      amount: fc.constant(amount),
-      rake: fc.integer({ min: 0, max: amount }),
-      ref: fc.hexaString({ minLength: 1, maxLength: 10 }),
-    }),
-  );
-
-  const opArb = fc.oneof(reserveArb, commitArb, rollbackArb);
+  const userId = TEST_USER_ID;
 
   it('always reconciles to an empty report', async () => {
     await fc.assert(
-      fc.asyncProperty(fc.array(opArb, { maxLength: 10 }), async (ops) => {
-        const { dataSource, service } = await setup();
+      fc.asyncProperty(fc.array(walletOperationArb, { maxLength: 10 }), async (ops) => {
+        const { dataSource, service } = await createWalletTestContext();
         try {
           for (const op of ops) {
             switch (op.type) {
@@ -170,17 +65,16 @@ describe('WalletService.reconcile property', () => {
           )
           .map(([a, b, c, d]) => [a, b, c, d, -(a + b + c + d)]),
         async (transfers, drifts) => {
-          const { dataSource, service } = await setup();
+          const { dataSource, service, journalRepo, accountRepo } =
+            await createWalletTestContext();
           try {
             const accountIds = [
               userId,
-              '00000000-0000-0000-0000-000000000001',
-              '00000000-0000-0000-0000-000000000002',
-              '00000000-0000-0000-0000-000000000003',
-              '00000000-0000-0000-0000-000000000004',
+              RESERVE_ACCOUNT_ID,
+              HOUSE_ACCOUNT_ID,
+              RAKE_ACCOUNT_ID,
+              PRIZE_ACCOUNT_ID,
             ];
-            const journalRepo = dataSource.getRepository(JournalEntry);
-            const accountRepo = dataSource.getRepository(Account);
             for (const t of transfers) {
               const ref = randomUUID();
               await journalRepo.insert({
