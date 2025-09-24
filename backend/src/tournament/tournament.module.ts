@@ -22,6 +22,8 @@ import { RateLimitGuard } from '../routes/rate-limit.guard';
 import { MessagingModule } from '../messaging/messaging.module';
 import { TournamentFormatEntity } from './tournament-format.entity';
 import { TournamentFormatRepository } from './tournament-format.repository';
+import { AdminTournamentFilterEntity } from './admin-tournament-filter.entity';
+import { AdminTournamentFilterRepository } from './admin-tournament-filter.repository';
 
 @Module({
   imports: [
@@ -33,6 +35,7 @@ import { TournamentFormatRepository } from './tournament-format.repository';
       TournamentFilterOptionEntity,
       TournamentFormatEntity,
       TournamentDetail,
+      AdminTournamentFilterEntity,
     ]),
     GameModule,
     FeatureFlagsModule,
@@ -50,6 +53,7 @@ import { TournamentFormatRepository } from './tournament-format.repository';
     TournamentFilterOptionRepository,
     TournamentFormatRepository,
     TournamentDetailRepository,
+    AdminTournamentFilterRepository,
   ],
   exports: [
     TournamentService,
@@ -60,6 +64,7 @@ import { TournamentFormatRepository } from './tournament-format.repository';
     TournamentFilterOptionRepository,
     TournamentFormatRepository,
     TournamentDetailRepository,
+    AdminTournamentFilterRepository,
   ],
 })
 export class TournamentModule {}

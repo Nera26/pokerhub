@@ -35,35 +35,8 @@ import { TournamentFilterOptionRepository } from './tournament-filter-option.rep
 import { TournamentDetailRepository } from './tournament-detail.repository';
 import { TournamentDetailType } from './tournament-detail.entity';
 import { TournamentFormatRepository } from './tournament-format.repository';
-
-const ADMIN_TOURNAMENT_FILTERS: AdminTournamentFilterOption[] = [
-  { id: 'all', label: 'All' },
-  {
-    id: 'scheduled',
-    label: 'Scheduled',
-    colorClass: 'border-accent-blue text-accent-blue',
-  },
-  {
-    id: 'auto-start',
-    label: 'Auto-start',
-    colorClass: 'border-accent-blue text-accent-blue',
-  },
-  {
-    id: 'running',
-    label: 'Running',
-    colorClass: 'border-accent-green text-accent-green',
-  },
-  {
-    id: 'finished',
-    label: 'Finished',
-    colorClass: 'border-text-secondary text-text-secondary',
-  },
-  {
-    id: 'cancelled',
-    label: 'Cancelled',
-    colorClass: 'border-red-500 text-red-500',
-  },
-];
+import { AdminTournamentFilterRepository } from './admin-tournament-filter.repository';
+import { DEFAULT_ADMIN_TOURNAMENT_FILTERS } from './admin-tournament-filter.defaults';
 
 @Injectable()
 export class TournamentService implements OnModuleInit {
@@ -94,6 +67,8 @@ export class TournamentService implements OnModuleInit {
     private readonly detailsRepository?: TournamentDetailRepository,
     @Optional() @Inject('REDIS_CLIENT') private readonly redis?: Redis,
     @Optional() private readonly wallet?: WalletService,
+    @Optional()
+    private readonly adminFilterRepository?: AdminTournamentFilterRepository,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -146,8 +121,20 @@ export class TournamentService implements OnModuleInit {
     );
   }
 
-  getAdminFilterOptions(): AdminTournamentFilterOption[] {
-    return ADMIN_TOURNAMENT_FILTERS.map((filter) => ({ ...filter }));
+  async getAdminFilterOptions(): Promise<AdminTournamentFilterOption[]> {
+    const dbFilters = await this.adminFilterRepository?.find({
+      order: { sortOrder: 'ASC' },
+    });
+
+    if (dbFilters && dbFilters.length > 0) {
+      return dbFilters.map(({ id, label, colorClass }) => ({
+        id,
+        label,
+        ...(colorClass ? { colorClass } : {}),
+      }));
+    }
+
+    return DEFAULT_ADMIN_TOURNAMENT_FILTERS.map((filter) => ({ ...filter }));
   }
 
   async listFormats(): Promise<TournamentFormatOption[]> {

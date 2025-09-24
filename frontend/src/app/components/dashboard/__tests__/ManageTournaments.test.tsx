@@ -107,6 +107,38 @@ describe('ManageTournaments', () => {
     } as any);
   });
 
+  it('renders filters provided by the API', async () => {
+    const customFilters = [
+      { id: 'primary', label: 'Primary' },
+      {
+        id: 'custom',
+        label: 'Custom',
+        colorClass: 'border-custom text-custom',
+      },
+    ];
+    mockedUseAdminTournamentFilters.mockReturnValue({
+      data: customFilters,
+      isLoading: false,
+    } as any);
+    (fetchAdminTournaments as jest.Mock).mockResolvedValue([]);
+
+    renderWithClient(<ManageTournaments />);
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', {
+          name: 'Primary',
+        }),
+      ).toBeInTheDocument(),
+    );
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Custom',
+      }),
+    ).toHaveClass('border-custom');
+  });
+
   it('shows filter skeleton while loading filters', async () => {
     mockedUseAdminTournamentFilters.mockReturnValue({
       data: undefined,

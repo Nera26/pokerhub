@@ -1,6 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState, type PropsWithChildren } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PropsWithChildren,
+} from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   fetchAdminTournaments,
@@ -44,6 +50,9 @@ export default function ManageTournaments() {
       return true;
     });
   }, [filters]);
+  const hadAllFilterRef = useRef(
+    filterOptions.some((filter) => filter.id === 'all'),
+  );
   const preferredFilterId = useMemo(() => {
     const allOption = filterOptions.find((option) => option.id === 'all');
     return allOption?.id ?? filterOptions[0]?.id ?? 'all';
@@ -53,7 +62,16 @@ export default function ManageTournaments() {
     useState<AdminTournamentFilterOption['id']>(preferredFilterId);
 
   useEffect(() => {
+    const hasAllFilter = filterOptions.some((filter) => filter.id === 'all');
+
+    if (hasAllFilter && !hadAllFilterRef.current && statusFilter !== 'all') {
+      hadAllFilterRef.current = hasAllFilter;
+      setStatusFilter('all');
+      return;
+    }
+
     if (!filterOptions.length && statusFilter !== preferredFilterId) {
+      hadAllFilterRef.current = hasAllFilter;
       setStatusFilter(preferredFilterId);
       return;
     }
@@ -62,8 +80,12 @@ export default function ManageTournaments() {
       filterOptions.length &&
       !filterOptions.some((filter) => filter.id === statusFilter)
     ) {
+      hadAllFilterRef.current = hasAllFilter;
       setStatusFilter(preferredFilterId);
+      return;
     }
+
+    hadAllFilterRef.current = hasAllFilter;
   }, [filterOptions, preferredFilterId, statusFilter]);
 
   const showFiltersSkeleton = filtersLoading && !filterOptions.length;
