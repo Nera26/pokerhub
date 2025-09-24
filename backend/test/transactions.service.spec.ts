@@ -166,6 +166,15 @@ describe('TransactionsService', () => {
     expect(filters.performedByPlaceholder).toBe('Performed By: All');
   });
 
+  it('omits placeholders when translations are unavailable', async () => {
+    translationsMock.get.mockResolvedValueOnce({});
+
+    const filters = await service.getFilterOptions();
+
+    expect(filters.typePlaceholder).toBeUndefined();
+    expect(filters.performedByPlaceholder).toBeUndefined();
+  });
+
   it('returns user transactions', async () => {
     const entries = await service.getUserTransactions('user1');
     expect(entries).toHaveLength(2);

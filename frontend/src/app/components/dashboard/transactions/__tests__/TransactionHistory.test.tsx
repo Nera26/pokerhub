@@ -25,6 +25,8 @@ describe('Dashboard TransactionHistory', () => {
   const mockUseControls = useTransactionHistoryControls as jest.Mock;
   const mockUseTranslations = useTranslations as jest.Mock;
   const mockUseLocale = useLocale as jest.Mock;
+  const TYPE_PLACEHOLDER = 'Todos los tipos';
+  const PLAYER_PLACEHOLDER = 'Todos los jugadores';
 
   const buildHistory = () => ({
     data: [],
@@ -72,8 +74,8 @@ describe('Dashboard TransactionHistory', () => {
       data: {
         types: [],
         performedBy: [],
-        typePlaceholder: 'All Types',
-        performedByPlaceholder: 'Performed By: All',
+        typePlaceholder: undefined as string | undefined,
+        performedByPlaceholder: undefined as string | undefined,
       },
     });
 
@@ -82,9 +84,9 @@ describe('Dashboard TransactionHistory', () => {
     mockUseLocale.mockReturnValue('en');
     mockUseTranslations.mockReturnValue({
       data: {
-        'transactions.filters.allTypes': 'All Types',
-        'transactions.filters.allPlayers': 'All Players',
-        'transactions.filters.performedByAll': 'Performed By: All',
+        'transactions.filters.allTypes': TYPE_PLACEHOLDER,
+        'transactions.filters.allPlayers': PLAYER_PLACEHOLDER,
+        'transactions.filters.performedByAll': 'Todos los responsables',
       },
     });
     const filtersQuery = createFiltersQuery();
@@ -159,6 +161,12 @@ describe('Dashboard TransactionHistory', () => {
 
     renderWithClient(<TransactionHistory />);
 
+    expect(
+      await screen.findByRole('option', { name: PLAYER_PLACEHOLDER }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('option', { name: TYPE_PLACEHOLDER }),
+    ).toBeInTheDocument();
     const option = await screen.findByRole('option', { name: 'Alice' });
     expect(option).toBeInTheDocument();
   });

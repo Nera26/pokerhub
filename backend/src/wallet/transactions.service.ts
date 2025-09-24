@@ -49,16 +49,14 @@ export class TransactionsService {
       .createQueryBuilder('t')
       .select('DISTINCT t.performedBy', 'performedBy')
       .getRawMany();
-    const messages = await this.translations.get(locale);
-    const typePlaceholder =
-      messages['transactions.filters.allTypes'] ?? 'All Types';
-    const performedByPlaceholder =
-      messages['transactions.filters.performedByAll'] ?? 'Performed By: All';
+    const translations = await this.translations.get(locale);
     return FilterOptionsSchema.parse({
       types: types.map((t) => t.label),
       performedBy: performedByRaw.map((r) => r.performedBy),
-      typePlaceholder,
-      performedByPlaceholder,
+      typePlaceholder:
+        translations['transactions.filters.allTypes'] ?? undefined,
+      performedByPlaceholder:
+        translations['transactions.filters.performedByAll'] ?? undefined,
     });
   }
 
