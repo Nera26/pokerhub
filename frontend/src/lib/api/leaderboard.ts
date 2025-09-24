@@ -32,7 +32,7 @@ export async function fetchLeaderboard({
 
 export async function rebuildLeaderboard(days = 30): Promise<StatusResponse> {
   return await apiClient(
-    `/api/leaderboard/rebuild?days=${days}`,
+    `/leaderboard/rebuild?days=${days}`,
     StatusResponseSchema,
     { method: 'POST' },
   );

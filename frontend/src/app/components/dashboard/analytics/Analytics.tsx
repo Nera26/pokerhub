@@ -224,7 +224,8 @@ export default function Analytics() {
           </button>
           <button
             onClick={() => rebuild.mutate()}
-            className="bg-accent-green hover:bg-green-600 px-4 py-2 rounded-xl font-semibold text-white flex items-center gap-2"
+            disabled={rebuild.isPending}
+            className="bg-accent-green hover:bg-green-600 disabled:hover:bg-accent-green disabled:opacity-60 disabled:cursor-not-allowed px-4 py-2 rounded-xl font-semibold text-white flex items-center gap-2"
           >
             <FontAwesomeIcon icon={faTrophy} />
             Rebuild Leaderboard
