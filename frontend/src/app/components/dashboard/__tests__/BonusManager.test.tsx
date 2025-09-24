@@ -5,7 +5,7 @@ import {
   mockFetchBonuses,
   renderBonusManager,
 } from './bonusTestUtils';
-import { fetchBonuses, createBonus } from '@/lib/api/admin';
+import { fetchBonuses, createBonus, updateBonus } from '@/lib/api/admin';
 import {
   createBonusDefaults,
   deleteBonusDefaults,
@@ -42,6 +42,14 @@ jest.mock('../../ui/Modal', () => ({
       ? require('react').createElement('div', { role: 'dialog' }, children)
       : null,
 }));
+jest.mock('../bonusUpdatePayload', () => ({
+  buildBonusUpdatePayload: jest.fn((data) => ({
+    ...data,
+    expiryDate: data.expiryDate || undefined,
+  })),
+}));
+
+const { buildBonusUpdatePayload } = jest.requireMock('../bonusUpdatePayload');
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -96,6 +104,75 @@ describe('BonusManager status toggle', () => {
 
     await screen.findByText('Resumed "Test Bonus"');
     await screen.findByRole('button', { name: /pause/i });
+  });
+});
+
+describe('BonusManager edit payload helper', () => {
+  it('uses buildBonusUpdatePayload for both edit submission paths', async () => {
+    mockFetchBonuses([{ ...bonusFixture }]);
+
+    renderBonusManager();
+
+    await screen.findByRole('button', { name: /create promotion/i });
+    const editButtons = await screen.findAllByRole('button', { name: /edit/i });
+    fireEvent.click(editButtons[0]);
+
+    const dialog = await screen.findByRole('dialog');
+
+    fireEvent.change(dialog.querySelector('#bonus-name') as HTMLInputElement, {
+      target: { value: 'Helper Bonus' },
+    });
+    fireEvent.change(
+      dialog.querySelector('#bonus-description') as HTMLTextAreaElement,
+      {
+        target: { value: 'Helper description' },
+      },
+    );
+    fireEvent.change(
+      dialog.querySelector('#bonus-percent') as HTMLInputElement,
+      {
+        target: { value: '15' },
+      },
+    );
+    fireEvent.change(
+      dialog.querySelector('#max-bonus-usd') as HTMLInputElement,
+      {
+        target: { value: '250' },
+      },
+    );
+    fireEvent.change(dialog.querySelector('#expiry-date') as HTMLInputElement, {
+      target: { value: '' },
+    });
+
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: /save changes/i }),
+    );
+
+    await waitFor(() =>
+      expect(buildBonusUpdatePayload).toHaveBeenCalledTimes(1),
+    );
+
+    const firstCall = (updateBonus as jest.Mock).mock.calls[0];
+    expect(firstCall[1]).toEqual(
+      (buildBonusUpdatePayload as jest.Mock).mock.results[0]!.value,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: /edit/i }));
+
+    const reopenDialog = await screen.findByRole('dialog');
+    const form = reopenDialog.querySelector('form');
+    expect(form).toBeTruthy();
+    fireEvent.submit(form!);
+
+    await waitFor(() =>
+      expect(buildBonusUpdatePayload).toHaveBeenCalledTimes(2),
+    );
+
+    const secondCall = (updateBonus as jest.Mock).mock.calls[1];
+    expect(secondCall[1]).toEqual(
+      (buildBonusUpdatePayload as jest.Mock).mock.results[1]!.value,
+    );
+    expect(secondCall[1]).toEqual(firstCall[1]);
   });
 });
 

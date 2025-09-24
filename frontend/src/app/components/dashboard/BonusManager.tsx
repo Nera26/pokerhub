@@ -49,6 +49,7 @@ import BonusForm from './forms/BonusForm';
 import StatusPill from './common/StatusPill';
 import AdminTableManager from './common/AdminTableManager';
 import { TableHead, TableRow, TableCell } from '../ui/Table';
+import { buildBonusUpdatePayload } from './bonusUpdatePayload';
 
 type BonusStatus = 'active' | 'paused';
 type StatusFilter = BonusStatus | 'all' | 'expired';
@@ -412,7 +413,7 @@ export default function BonusManager() {
     if (!selected) return;
     updateMutation.mutate({
       id: selected.id,
-      data: { ...data, expiryDate: data.expiryDate || undefined },
+      data: buildBonusUpdatePayload(data),
     });
     setEditOpen(false);
   });
@@ -722,7 +723,7 @@ export default function BonusManager() {
               if (!selected) return;
               updateMutation.mutate({
                 id: selected.id,
-                data: { ...data, expiryDate: data.expiryDate || undefined },
+                data: buildBonusUpdatePayload(data),
               });
               setEditOpen(false);
             })}
@@ -742,7 +743,13 @@ export default function BonusManager() {
               }}
             />
 
-            <Button type="submit" className="w-full">
+            <Button
+              type="button"
+              className="w-full"
+              onClick={() => {
+                void saveEdit();
+              }}
+            >
               <FontAwesomeIcon icon={faSave} />
               SAVE CHANGES
             </Button>
