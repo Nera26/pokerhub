@@ -9,7 +9,6 @@ import {
   deleteAdminTournament,
   fetchAdminTournamentDefaults,
 } from '@/lib/api/admin';
-import { z } from 'zod';
 import {
   type AdminTournament,
   type AdminTournamentFilterOption,
@@ -30,52 +29,46 @@ import Button from '../ui/Button';
 import AdminCrudPage from './common/AdminCrudPage';
 import { useAdminTournamentFilters } from '@/hooks/admin/useTournamentFilters';
 
-const statusEnum = z.enum([
-  'scheduled',
-  'running',
-  'finished',
-  'cancelled',
-  'auto-start',
-]);
-type Status = z.infer<typeof statusEnum>;
 type Tournament = AdminTournament;
 
-const FALLBACK_FILTERS: AdminTournamentFilterOption[] = [
-  { id: 'all', label: 'All' },
-];
-
 export default function ManageTournaments() {
-  const [statusFilter, setStatusFilter] = useState<'all' | Status>('all');
-  const { data: filters, isLoading: filtersLoading } =
+  const { data: filters = [], isLoading: filtersLoading } =
     useAdminTournamentFilters();
 
   const filterOptions = useMemo(() => {
-    if (!filters || filters.length === 0) {
-      return FALLBACK_FILTERS;
-    }
+    if (!filters.length) return [];
 
-    const seen = new Set<string>();
-    const normalized = filters.filter((filter) => {
+    const seen = new Set<AdminTournamentFilterOption['id']>();
+    return filters.filter((filter) => {
       if (seen.has(filter.id)) return false;
       seen.add(filter.id);
       return true;
     });
-
-    if (!normalized.some((filter) => filter.id === 'all')) {
-      normalized.unshift({ id: 'all', label: 'All' });
-    }
-
-    return normalized;
   }, [filters]);
 
-  useEffect(() => {
-    if (!filterOptions.some((filter) => filter.id === statusFilter)) {
-      setStatusFilter('all');
-    }
-  }, [filterOptions, statusFilter]);
+  const preferredFilterId = useMemo(() => {
+    const allOption = filterOptions.find((option) => option.id === 'all');
+    return allOption?.id ?? filterOptions[0]?.id ?? 'all';
+  }, [filterOptions]);
 
-  const showFiltersSkeleton =
-    filtersLoading && (!filters || filters.length === 0);
+  const [statusFilter, setStatusFilter] =
+    useState<AdminTournamentFilterOption['id']>(preferredFilterId);
+
+  useEffect(() => {
+    if (!filterOptions.length && statusFilter !== preferredFilterId) {
+      setStatusFilter(preferredFilterId);
+      return;
+    }
+
+    if (
+      filterOptions.length &&
+      !filterOptions.some((filter) => filter.id === statusFilter)
+    ) {
+      setStatusFilter(preferredFilterId);
+    }
+  }, [filterOptions, preferredFilterId, statusFilter]);
+
+  const showFiltersSkeleton = filtersLoading && !filterOptions.length;
 
   const [toast, setToast] = useState<{
     open: boolean;
@@ -239,9 +232,7 @@ export default function ManageTournaments() {
                   <FilterBtn
                     key={filter.id}
                     active={statusFilter === filter.id}
-                    onClick={() =>
-                      setStatusFilter(filter.id as typeof statusFilter)
-                    }
+                    onClick={() => setStatusFilter(filter.id)}
                     className={filter.colorClass}
                   >
                     {filter.label}

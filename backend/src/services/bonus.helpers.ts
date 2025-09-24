@@ -15,9 +15,20 @@ function nullableNumber(value: number | null | undefined): number | null {
   return null;
 }
 
-export function mapBonusEntity(entity: BonusEntity): Bonus {
+type BonusLikeEntity = Pick<
+  BonusDefaultEntity,
+  | 'name'
+  | 'type'
+  | 'description'
+  | 'bonusPercent'
+  | 'maxBonusUsd'
+  | 'expiryDate'
+  | 'eligibility'
+  | 'status'
+>;
+
+function mapBonusBaseFields(entity: BonusLikeEntity) {
   return {
-    id: entity.id,
     name: entity.name,
     type: entity.type,
     description: entity.description,
@@ -26,6 +37,13 @@ export function mapBonusEntity(entity: BonusEntity): Bonus {
     expiryDate: entity.expiryDate ?? undefined,
     eligibility: entity.eligibility,
     status: entity.status,
+  };
+}
+
+export function mapBonusEntity(entity: BonusEntity): Bonus {
+  return {
+    id: entity.id,
+    ...mapBonusBaseFields(entity),
     claimsTotal: Number(entity.claimsTotal),
     claimsWeek: Number(entity.claimsWeek),
   };
@@ -68,16 +86,7 @@ export function mapBonusDefaults(
     return { ...fallback };
   }
 
-  return BonusDefaultsResponseSchema.parse({
-    name: entity.name,
-    type: entity.type,
-    description: entity.description,
-    bonusPercent: entity.bonusPercent ?? undefined,
-    maxBonusUsd: entity.maxBonusUsd ?? undefined,
-    expiryDate: entity.expiryDate ?? undefined,
-    eligibility: entity.eligibility,
-    status: entity.status,
-  });
+  return BonusDefaultsResponseSchema.parse(mapBonusBaseFields(entity));
 }
 
 export function toBonusDefaultsInput(
