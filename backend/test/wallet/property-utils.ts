@@ -1,5 +1,10 @@
-import fc from 'fast-check';
 import { createWalletTestContext, seedWalletAccounts } from './test-utils';
+export {
+  reserveOperationArb as reserveArb,
+  rollbackOperationArb as rollbackArb,
+  commitOperationArb as commitArb,
+  walletOperationArb as opArb,
+} from './arbitraries';
 
 export const USER_ID = '11111111-1111-1111-1111-111111111111';
 
@@ -16,26 +21,3 @@ export async function setupPropertyTest() {
     pendingRepo: repos.pending,
   };
 }
-
-export const reserveArb = fc.record({
-  type: fc.constant<'reserve'>('reserve'),
-  amount: fc.integer({ min: 1, max: 100 }),
-  ref: fc.hexaString({ minLength: 1, maxLength: 10 }),
-});
-
-export const rollbackArb = fc.record({
-  type: fc.constant<'rollback'>('rollback'),
-  amount: fc.integer({ min: 1, max: 100 }),
-  ref: fc.hexaString({ minLength: 1, maxLength: 10 }),
-});
-
-export const commitArb = fc.integer({ min: 1, max: 100 }).chain((amount) =>
-  fc.record({
-    type: fc.constant<'commit'>('commit'),
-    amount: fc.constant(amount),
-    rake: fc.integer({ min: 0, max: amount }),
-    ref: fc.hexaString({ minLength: 1, maxLength: 10 }),
-  }),
-);
-
-export const opArb = fc.oneof(reserveArb, rollbackArb, commitArb);
