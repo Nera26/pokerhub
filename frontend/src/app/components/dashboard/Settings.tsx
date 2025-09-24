@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useChipDenominations } from '@/hooks/useChipDenominations';
@@ -12,7 +13,11 @@ import {
 import { useApiError } from '@/hooks/useApiError';
 import Button from '../ui/Button';
 import { TextField } from '../ui/FormField';
+import Input from '../ui/Input';
+import useTransactionColumns from '@/hooks/useTransactionColumns';
+import useUpdateTransactionColumns from '@/hooks/useUpdateTransactionColumns';
 import type { PerformanceThresholdsResponse } from '@shared/types';
+import type { TransactionColumn } from '@shared/transactions.schema';
 
 type DenominationFormFields = {
   denoms: string;
@@ -108,6 +113,150 @@ export default function Settings() {
   } = usePerformanceThresholds();
 
   const {
+    data: transactionColumns,
+    isLoading: isLoadingColumns,
+    error: columnsQueryError,
+  } = useTransactionColumns();
+
+  const [columnsDraft, setColumnsDraft] = useState<TransactionColumn[]>([]);
+  const [columnsValidationError, setColumnsValidationError] = useState<
+    string | null
+  >(null);
+
+  useEffect(() => {
+    if (!isLoadingColumns && !columnsQueryError) {
+      setColumnsDraft(transactionColumns);
+    }
+  }, [transactionColumns, isLoadingColumns, columnsQueryError]);
+
+  const {
+    mutateAsync: saveColumns,
+    isPending: isSavingColumns,
+    isSuccess: columnsSaved,
+    error: columnsMutationError,
+  } = useUpdateTransactionColumns();
+
+  const normalizedDraft = useMemo(
+    () =>
+      columnsDraft.map((column) => ({
+        id: column.id,
+        label: column.label,
+      })),
+    [columnsDraft],
+  );
+
+  const normalizedBaseline = useMemo(
+    () =>
+      transactionColumns.map((column) => ({
+        id: column.id,
+        label: column.label,
+      })),
+    [transactionColumns],
+  );
+
+  const columnsDirty = useMemo(() => {
+    return (
+      JSON.stringify(normalizedDraft) !== JSON.stringify(normalizedBaseline)
+    );
+  }, [normalizedDraft, normalizedBaseline]);
+
+  const handleColumnIdChange = (index: number, id: string) => {
+    setColumnsDraft((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], id };
+      return next;
+    });
+    setColumnsValidationError(null);
+  };
+
+  const handleColumnLabelChange = (index: number, label: string) => {
+    setColumnsDraft((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], label };
+      return next;
+    });
+    setColumnsValidationError(null);
+  };
+
+  const moveColumn = (index: number, direction: number) => {
+    setColumnsDraft((prev) => {
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= prev.length) {
+        return prev;
+      }
+      const next = [...prev];
+      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+      return next;
+    });
+    setColumnsValidationError(null);
+  };
+
+  const removeColumn = (index: number) => {
+    setColumnsDraft((prev) => prev.filter((_, i) => i !== index));
+    setColumnsValidationError(null);
+  };
+
+  const addColumn = () => {
+    setColumnsDraft((prev) => {
+      const existingIds = new Set(prev.map((column) => column.id));
+      let counter = prev.length + 1;
+      let candidate = `column_${counter}`;
+      while (existingIds.has(candidate)) {
+        counter += 1;
+        candidate = `column_${counter}`;
+      }
+      return [...prev, { id: candidate, label: '' }];
+    });
+    setColumnsValidationError(null);
+  };
+
+  const resetColumns = () => {
+    setColumnsDraft(transactionColumns);
+    setColumnsValidationError(null);
+  };
+
+  const handleColumnsSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const normalized = columnsDraft.map((column) => ({
+      id: column.id.trim(),
+      label: column.label.trim(),
+    }));
+
+    if (normalized.length === 0) {
+      setColumnsValidationError('Add at least one column before saving.');
+      return;
+    }
+
+    const hasEmptyField = normalized.some(
+      (column) => column.id.length === 0 || column.label.length === 0,
+    );
+    if (hasEmptyField) {
+      setColumnsValidationError(
+        'Column ID and label are required for every column.',
+      );
+      return;
+    }
+
+    const uniqueIds = new Set(normalized.map((column) => column.id));
+    if (uniqueIds.size !== normalized.length) {
+      setColumnsValidationError('Column IDs must be unique.');
+      return;
+    }
+
+    setColumnsValidationError(null);
+    setColumnsDraft(normalized);
+
+    try {
+      await saveColumns(normalized);
+    } catch (err) {
+      // handled by useApiError
+    }
+  };
+
+  const canSaveColumns = columnsDraft.length > 0 && columnsDirty;
+  const canResetColumns = columnsDirty;
+
+  const {
     register: registerDenoms,
     handleSubmit: handleDenomSubmit,
     setError: setDenomError,
@@ -183,7 +332,9 @@ export default function Settings() {
     queryError ||
       mutationError ||
       thresholdQueryError ||
-      thresholdMutationError,
+      thresholdMutationError ||
+      columnsQueryError ||
+      columnsMutationError,
   );
 
   const onSubmit = handleDenomSubmit(async ({ denoms }) => {
@@ -367,6 +518,133 @@ export default function Settings() {
     );
   }
 
+  let columnsContent: JSX.Element;
+
+  if (isLoadingColumns) {
+    columnsContent = <p>Loading transaction columns...</p>;
+  } else if (columnsQueryError) {
+    columnsContent = (
+      <p role="alert" className="text-danger-red">
+        Failed to load transaction columns.
+      </p>
+    );
+  } else {
+    columnsContent = (
+      <form onSubmit={handleColumnsSubmit} className="space-y-4" noValidate>
+        <div className="space-y-3">
+          {columnsDraft.map((column, index) => (
+            <div
+              key={`${column.id}-${index}`}
+              className="space-y-3 rounded-2xl border border-border-dark p-4"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase text-text-secondary">
+                  Column {index + 1}
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="text-xs font-semibold text-accent-blue disabled:text-text-secondary"
+                    onClick={() => moveColumn(index, -1)}
+                    disabled={index === 0 || isSavingColumns}
+                  >
+                    Move up
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs font-semibold text-accent-blue disabled:text-text-secondary"
+                    onClick={() => moveColumn(index, 1)}
+                    disabled={
+                      index === columnsDraft.length - 1 || isSavingColumns
+                    }
+                  >
+                    Move down
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs font-semibold text-danger-red disabled:text-text-secondary"
+                    onClick={() => removeColumn(index)}
+                    disabled={isSavingColumns}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <Input
+                  id={`transaction-column-${index}-id`}
+                  label="Column ID"
+                  value={column.id}
+                  onChange={(event) =>
+                    handleColumnIdChange(index, event.target.value)
+                  }
+                  placeholder="Unique key (e.g., date)"
+                  autoComplete="off"
+                />
+                <Input
+                  id={`transaction-column-${index}-label`}
+                  label="Label"
+                  value={column.label}
+                  onChange={(event) =>
+                    handleColumnLabelChange(index, event.target.value)
+                  }
+                  placeholder="Displayed label"
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        {columnsDraft.length === 0 ? (
+          <p className="text-sm text-text-secondary">
+            No columns configured yet. Add columns to control the transaction
+            history table.
+          </p>
+        ) : null}
+        {columnsValidationError ? (
+          <p role="alert" className="text-xs text-danger-red">
+            {columnsValidationError}
+          </p>
+        ) : null}
+        <p className="text-xs text-text-secondary">
+          Column IDs must match the fields returned by the transactions API.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={addColumn}
+            disabled={isSavingColumns}
+          >
+            Add Column
+          </Button>
+          <Button
+            type="submit"
+            loading={isSavingColumns}
+            disabled={!canSaveColumns || isSavingColumns}
+          >
+            Save Transaction Columns
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={resetColumns}
+            disabled={!canResetColumns || isSavingColumns}
+          >
+            Reset Changes
+          </Button>
+        </div>
+        {columnsSaved && (
+          <p role="status" className="text-xs text-accent-green">
+            Transaction columns saved.
+          </p>
+        )}
+      </form>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <section
@@ -393,6 +671,19 @@ export default function Settings() {
           </p>
         </header>
         {thresholdContent}
+      </section>
+
+      <section
+        className="bg-card-bg rounded-2xl p-6 space-y-4"
+        data-testid="transaction-columns-settings"
+      >
+        <header className="space-y-1">
+          <h2 className="text-xl font-semibold">Transaction Columns</h2>
+          <p className="text-sm text-text-secondary">
+            Adjust the order and labels used for the transaction history table.
+          </p>
+        </header>
+        {columnsContent}
       </section>
     </div>
   );

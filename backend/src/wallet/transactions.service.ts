@@ -16,17 +16,13 @@ import {
   TransactionTypesResponseSchema,
   TransactionStatusesResponseSchema,
   TransactionColumnsResponseSchema,
+  TransactionColumnsUpdateSchema,
   type TransactionLogQuery,
   type FilterOptions,
+  type TransactionColumn,
 } from '@shared/transactions.schema';
 import type { TransactionTab } from '@shared/wallet.schema';
-
-const DEFAULT_TRANSACTION_COLUMNS = [
-  { id: 'date', label: 'Date' },
-  { id: 'type', label: 'Type' },
-  { id: 'amount', label: 'Amount' },
-  { id: 'status', label: 'Status' },
-] as const;
+import { TransactionColumnEntity } from './transaction-column.entity';
 
 @Injectable()
 export class TransactionsService {
@@ -79,24 +75,38 @@ export class TransactionsService {
   }
 
   async getTransactionColumns() {
-    const columns = await this.columnRepo.find();
-    const normalized =
-      columns.length > 0 ? columns : await this.ensureDefaultColumns();
+    const columns = await this.columnRepo.find({
+      order: { position: 'ASC' },
+    });
 
     return TransactionColumnsResponseSchema.parse(
-      normalized.map((column) => ({
+      columns.map((column) => ({
         id: column.id,
         label: column.label,
       })),
     );
   }
 
-  private async ensureDefaultColumns() {
-    const created = DEFAULT_TRANSACTION_COLUMNS.map((column) =>
-      this.columnRepo.create(column),
-    );
-    await this.columnRepo.save(created);
-    return created;
+  async updateTransactionColumns(columns: TransactionColumn[]) {
+    const { columns: parsed } = TransactionColumnsUpdateSchema.parse({ columns });
+
+    await this.columnRepo.manager.transaction(async (manager) => {
+      await manager.createQueryBuilder().delete().from(TransactionColumnEntity).execute();
+
+      if (parsed.length === 0) return;
+
+      const repo = manager.getRepository(TransactionColumnEntity);
+      const entities = parsed.map((column, index) =>
+        repo.create({
+          id: column.id,
+          label: column.label,
+          position: index,
+        }),
+      );
+      await repo.save(entities);
+    });
+
+    return this.getTransactionColumns();
   }
 
   async getUserTransactions(

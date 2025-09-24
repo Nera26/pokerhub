@@ -16,12 +16,6 @@ const translationsMock = {
 };
 
 describe('TransactionsService', () => {
-  const DEFAULT_COLUMNS = [
-    { id: 'date', label: 'Date' },
-    { id: 'type', label: 'Type' },
-    { id: 'amount', label: 'Amount' },
-    { id: 'status', label: 'Status' },
-  ] as const;
   let service: TransactionsService;
   let typeRepo: Repository<TransactionType>;
   let txnRepo: Repository<Transaction>;
@@ -182,29 +176,21 @@ describe('TransactionsService', () => {
   });
 
   describe('getTransactionColumns', () => {
-    it('seeds default columns when no configuration exists', async () => {
+    it('returns empty array when configuration is missing', async () => {
       const columns = await service.getTransactionColumns();
-      expect(columns).toEqual(DEFAULT_COLUMNS);
-
-      const stored = await columnRepo.find();
-      expect(stored).toHaveLength(DEFAULT_COLUMNS.length);
-      for (const column of DEFAULT_COLUMNS) {
-        expect(stored).toEqual(
-          expect.arrayContaining([expect.objectContaining(column)]),
-        );
-      }
+      expect(columns).toEqual([]);
     });
 
-    it('maps stored columns to the response schema', async () => {
+    it('returns stored columns ordered by position', async () => {
       await columnRepo.save([
-        { id: 'type', label: 'Type' },
-        { id: 'amount', label: 'Amount' },
+        { id: 'type', label: 'Type', position: 1 },
+        { id: 'date', label: 'Date', position: 0 },
       ]);
 
       const columns = await service.getTransactionColumns();
       expect(columns).toEqual([
+        { id: 'date', label: 'Date' },
         { id: 'type', label: 'Type' },
-        { id: 'amount', label: 'Amount' },
       ]);
     });
 
@@ -216,6 +202,42 @@ describe('TransactionsService', () => {
       await expect(service.getTransactionColumns()).rejects.toThrow(
         'database unavailable',
       );
+    });
+  });
+
+  describe('updateTransactionColumns', () => {
+    it('overwrites stored configuration with the provided order', async () => {
+      await columnRepo.save([
+        { id: 'date', label: 'Date', position: 0 },
+        { id: 'type', label: 'Type', position: 1 },
+      ]);
+
+      const result = await service.updateTransactionColumns([
+        { id: 'amount', label: 'Amount' },
+        { id: 'status', label: 'Status' },
+      ]);
+
+      expect(result).toEqual([
+        { id: 'amount', label: 'Amount' },
+        { id: 'status', label: 'Status' },
+      ]);
+
+      const stored = await columnRepo.find({ order: { position: 'ASC' } });
+      expect(stored).toEqual([
+        expect.objectContaining({ id: 'amount', label: 'Amount', position: 0 }),
+        expect.objectContaining({ id: 'status', label: 'Status', position: 1 }),
+      ]);
+    });
+
+    it('clears existing columns when provided with an empty list', async () => {
+      await columnRepo.save([
+        { id: 'date', label: 'Date', position: 0 },
+        { id: 'status', label: 'Status', position: 1 },
+      ]);
+
+      await service.updateTransactionColumns([]);
+
+      expect(await columnRepo.count()).toBe(0);
     });
   });
 });

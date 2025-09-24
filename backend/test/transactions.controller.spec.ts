@@ -20,13 +20,6 @@ const translationsMock = {
   get: jest.fn<Promise<Record<string, string>>, [string]>(),
 };
 
-const DEFAULT_COLUMNS = [
-  { id: 'date', label: 'Date' },
-  { id: 'type', label: 'Type' },
-  { id: 'amount', label: 'Amount' },
-  { id: 'status', label: 'Status' },
-] as const;
-
 describe('TransactionsController', () => {
   let app: INestApplication;
   let typeRepo: Repository<TransactionType>;
@@ -124,9 +117,12 @@ describe('TransactionsController', () => {
       },
     ]);
     await tabRepo.save([{ id: 'all', label: 'All' }]);
-    await columnRepo.save(
-      DEFAULT_COLUMNS.map((column) => ({ ...column })),
-    );
+    await columnRepo.save([
+      { id: 'date', label: 'Date', position: 0 },
+      { id: 'type', label: 'Type', position: 1 },
+      { id: 'amount', label: 'Amount', position: 2 },
+      { id: 'status', label: 'Status', position: 3 },
+    ]);
     await txnRepo.save({
       userId: 'user1',
       typeId: 'deposit',
@@ -183,7 +179,12 @@ describe('TransactionsController', () => {
       .get('/transactions/columns')
       .set('Authorization', 'Bearer test')
       .expect(200);
-    expect(res.body).toEqual(expect.arrayContaining(DEFAULT_COLUMNS));
+    expect(res.body).toEqual([
+      { id: 'date', label: 'Date' },
+      { id: 'type', label: 'Type' },
+      { id: 'amount', label: 'Amount' },
+      { id: 'status', label: 'Status' },
+    ]);
     expect(adminGuard.canActivate.mock.calls.length).toBe(callsBefore);
   });
 
@@ -203,22 +204,28 @@ describe('TransactionsController', () => {
     expect(res.body.performedByPlaceholder).toBe('Todos los responsables');
   });
 
-  it('seeds default columns when configuration is missing', async () => {
-    await columnRepo.clear();
+  it('updates transaction columns when requested by an admin', async () => {
+    const payload = {
+      columns: [
+        { id: 'amount', label: 'Amount (USD)' },
+        { id: 'status', label: 'Status' },
+      ],
+    };
 
     const res = await request(app.getHttpServer())
-      .get('/transactions/columns')
+      .put('/admin/transactions/columns')
       .set('Authorization', 'Bearer test')
+      .set('x-admin', '1')
+      .send(payload)
       .expect(200);
 
-    expect(res.body).toEqual(DEFAULT_COLUMNS);
-    const stored = await columnRepo.find();
-    expect(stored).toHaveLength(DEFAULT_COLUMNS.length);
-    for (const column of DEFAULT_COLUMNS) {
-      expect(stored).toEqual(
-        expect.arrayContaining([expect.objectContaining(column)]),
-      );
-    }
+    expect(res.body).toEqual(payload.columns);
+
+    const stored = await columnRepo.find({ order: { position: 'ASC' } });
+    expect(stored).toEqual([
+      expect.objectContaining({ id: 'amount', label: 'Amount (USD)', position: 0 }),
+      expect.objectContaining({ id: 'status', label: 'Status', position: 1 }),
+    ]);
   });
 
   it('returns user transactions', async () => {
@@ -257,6 +264,12 @@ describe('TransactionsController', () => {
     await request(app.getHttpServer())
       .get('/transactions/types')
       .set('Authorization', 'Bearer test')
+      .expect(403);
+
+    await request(app.getHttpServer())
+      .put('/admin/transactions/columns')
+      .set('Authorization', 'Bearer test')
+      .send({ columns: [] })
       .expect(403);
   });
 });

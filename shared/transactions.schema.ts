@@ -74,3 +74,11 @@ export type TransactionColumnsResponse = z.infer<
   typeof TransactionColumnsResponseSchema
 >;
 
+export const TransactionColumnsUpdateSchema = z.object({
+  columns: z.array(TransactionColumnSchema),
+});
+
+export type TransactionColumnsUpdate = z.infer<
+  typeof TransactionColumnsUpdateSchema
+>;
+
