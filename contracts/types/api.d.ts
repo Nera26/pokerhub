@@ -2389,6 +2389,19 @@ export interface paths {
       };
     };
   };
+  "/admin/tournaments/filters": {
+    /** List admin tournament filters */
+    get: {
+      responses: {
+        /** @description Available admin filters */
+        200: {
+          content: {
+            "application/json": components["schemas"]["AdminTournamentFilterOption"][];
+          };
+        };
+      };
+    };
+  };
   "/admin/tournaments/formats": {
     /** List tournament formats */
     get: {
@@ -3333,6 +3346,11 @@ export interface components {
     TournamentFormatOption: {
       id: string;
       label: string;
+    };
+    AdminTournamentFilterOption: {
+      id: string;
+      label: string;
+      colorClass?: string;
     };
     ReplyMessageRequest: {
       reply: string;

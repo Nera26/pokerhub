@@ -26,6 +26,7 @@ import {
   type TournamentFilterOption,
   type AdminTournament,
   type TournamentFormatOption,
+  type AdminTournamentFilterOption,
 } from '@shared/types';
 import { TournamentsProducer } from '../messaging/tournaments/tournaments.producer';
 import { BotProfileRepository } from './bot-profile.repository';
@@ -34,6 +35,35 @@ import { TournamentFilterOptionRepository } from './tournament-filter-option.rep
 import { TournamentDetailRepository } from './tournament-detail.repository';
 import { TournamentDetailType } from './tournament-detail.entity';
 import { TournamentFormatRepository } from './tournament-format.repository';
+
+const ADMIN_TOURNAMENT_FILTERS: AdminTournamentFilterOption[] = [
+  { id: 'all', label: 'All' },
+  {
+    id: 'scheduled',
+    label: 'Scheduled',
+    colorClass: 'border-accent-blue text-accent-blue',
+  },
+  {
+    id: 'auto-start',
+    label: 'Auto-start',
+    colorClass: 'border-accent-blue text-accent-blue',
+  },
+  {
+    id: 'running',
+    label: 'Running',
+    colorClass: 'border-accent-green text-accent-green',
+  },
+  {
+    id: 'finished',
+    label: 'Finished',
+    colorClass: 'border-text-secondary text-text-secondary',
+  },
+  {
+    id: 'cancelled',
+    label: 'Cancelled',
+    colorClass: 'border-red-500 text-red-500',
+  },
+];
 
 @Injectable()
 export class TournamentService implements OnModuleInit {
@@ -114,6 +144,10 @@ export class TournamentService implements OnModuleInit {
     return TournamentFiltersResponseSchema.parse(
       options.map(({ label, value }) => ({ label, value })),
     );
+  }
+
+  getAdminFilterOptions(): AdminTournamentFilterOption[] {
+    return ADMIN_TOURNAMENT_FILTERS.map((filter) => ({ ...filter }));
   }
 
   async listFormats(): Promise<TournamentFormatOption[]> {

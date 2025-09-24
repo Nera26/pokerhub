@@ -27,6 +27,8 @@ import {
   type AdminTabMeta,
   TournamentFormatsResponseSchema,
   type TournamentFormatsResponse,
+  AdminTournamentFiltersResponseSchema,
+  type AdminTournamentFiltersResponse,
   UserMetaResponseSchema,
   type UserMetaResponse,
   BanUserSchema,
@@ -178,6 +180,16 @@ export async function fetchTournamentFormats({
   return apiClient(
     '/api/admin/tournaments/formats',
     TournamentFormatsResponseSchema,
+    { signal },
+  );
+}
+
+export async function fetchAdminTournamentFilters({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<AdminTournamentFiltersResponse> {
+  return apiClient(
+    '/api/admin/tournaments/filters',
+    AdminTournamentFiltersResponseSchema,
     { signal },
   );
 }

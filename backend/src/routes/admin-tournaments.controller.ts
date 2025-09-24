@@ -15,6 +15,7 @@ import {
   TournamentSimulateRequestSchema,
   TournamentSimulateResponse,
   TournamentFormatsResponseSchema,
+  AdminTournamentFiltersResponseSchema,
 } from '../schemas/tournaments';
 import { ZodError } from 'zod';
 import { simulate, type BlindLevel } from '@shared/utils/tournamentSimulator';
@@ -26,6 +27,15 @@ import { TournamentService } from '../tournament/tournament.service';
 @Controller('admin/tournaments')
 export class AdminTournamentsController {
   constructor(private readonly service: TournamentService) {}
+
+  @Get('filters')
+  @ApiOperation({ summary: 'List admin tournament filters' })
+  @ApiResponse({ status: 200, description: 'Available admin filters' })
+  filters() {
+    const filters = this.service.getAdminFilterOptions();
+    return AdminTournamentFiltersResponseSchema.parse(filters);
+  }
+
   @Get('formats')
   @ApiOperation({ summary: 'List tournament formats' })
   @ApiResponse({
