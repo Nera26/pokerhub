@@ -107,6 +107,20 @@ describe('ManageTournaments', () => {
     } as any);
   });
 
+  it('shows filter skeleton while loading filters', async () => {
+    mockedUseAdminTournamentFilters.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    } as any);
+    (fetchAdminTournaments as jest.Mock).mockResolvedValue([]);
+
+    const { container } = renderWithClient(<ManageTournaments />);
+
+    await waitFor(() =>
+      expect(container.querySelectorAll('.animate-pulse')).toHaveLength(4),
+    );
+  });
+
   it('shows loading state', () => {
     (fetchAdminTournaments as jest.Mock).mockImplementation(
       () => new Promise(() => {}),
@@ -232,6 +246,88 @@ describe('ManageTournaments', () => {
       screen.getByRole('button', { name: 'Scheduled' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Running' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'All' })).toHaveClass(
+      'bg-accent-yellow',
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Running' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Tournament 2')).toBeInTheDocument();
+      expect(screen.queryByText('Tournament 1')).not.toBeInTheDocument();
+    });
+  });
+
+  it('resets to "all" when filters later include it', async () => {
+    const tournaments = makeTournaments(2);
+    (fetchAdminTournaments as jest.Mock).mockResolvedValue(tournaments);
+
+    const filtersWithoutAll = defaultFilters.filter(
+      (filter) => filter.id !== 'all',
+    );
+
+    let currentFilters: typeof defaultFilters | typeof filtersWithoutAll =
+      filtersWithoutAll;
+    mockedUseAdminTournamentFilters.mockImplementation(
+      () =>
+        ({
+          data: currentFilters,
+          isLoading: false,
+        }) as any,
+    );
+
+    const { rerenderWithClient } = renderWithClient(<ManageTournaments />);
+
+    await screen.findByText('Tournament 1');
+
+    expect(
+      screen.queryByRole('button', { name: 'All' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Scheduled' })).toHaveClass(
+      'bg-accent-yellow',
+    );
+
+    currentFilters = defaultFilters;
+    rerenderWithClient(<ManageTournaments />);
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'All' })).toBeInTheDocument(),
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'All' })).toHaveClass(
+        'bg-accent-yellow',
+      ),
+    );
+
+    expect(screen.getByRole('button', { name: 'Scheduled' })).not.toHaveClass(
+      'bg-accent-yellow',
+    );
+  });
+
+  it('falls back to the first option when the API omits "all"', async () => {
+    const tournaments = makeTournaments(2);
+    (fetchAdminTournaments as jest.Mock).mockResolvedValue(tournaments);
+
+    const filtersWithoutAll = defaultFilters.filter(
+      (filter) => filter.id !== 'all',
+    );
+
+    mockedUseAdminTournamentFilters.mockReturnValue({
+      data: filtersWithoutAll,
+      isLoading: false,
+    } as any);
+
+    renderWithClient(<ManageTournaments />);
+
+    await screen.findByText('Tournament 1');
+
+    expect(
+      screen.queryByRole('button', { name: 'All' }),
+    ).not.toBeInTheDocument();
+
+    const scheduledButton = screen.getByRole('button', { name: 'Scheduled' });
+    expect(scheduledButton).toHaveClass('bg-accent-yellow');
 
     fireEvent.click(screen.getByRole('button', { name: 'Running' }));
 
