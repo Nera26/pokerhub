@@ -10,6 +10,7 @@ import {
   BonusOptionsResponseSchema,
   BonusUpdateRequestSchema,
 } from '@shared/types';
+import type { BonusDefaultsResponse } from '@shared/types';
 
 export const bonusFixture: Bonus = BonusSchema.parse({
   id: 1,
@@ -24,6 +25,18 @@ export const bonusFixture: Bonus = BonusSchema.parse({
   claimsTotal: 0,
   claimsWeek: 0,
 });
+
+export const bonusDefaultsFixture: BonusDefaultsResponse =
+  BonusDefaultsResponseSchema.parse({
+    name: '',
+    type: 'deposit',
+    description: '',
+    bonusPercent: undefined,
+    maxBonusUsd: undefined,
+    expiryDate: undefined,
+    eligibility: 'all',
+    status: 'active',
+  });
 
 export function mockFetchBonuses(bonuses: Bonus[]) {
   let current = BonusesResponseSchema.parse(bonuses);
@@ -41,7 +54,13 @@ export function mockFetchBonuses(bonuses: Bonus[]) {
   });
 }
 
-export function renderBonusManager() {
+export function renderBonusManager({
+  defaults = bonusDefaultsFixture,
+  defaultsSequence,
+}: {
+  defaults?: BonusDefaultsResponse;
+  defaultsSequence?: BonusDefaultsResponse[];
+} = {}) {
   (fetchBonusOptions as jest.Mock).mockResolvedValue(
     BonusOptionsResponseSchema.parse({
       types: [{ value: 'deposit', label: 'Deposit Match' }],
@@ -52,17 +71,20 @@ export function renderBonusManager() {
       ],
     }),
   );
-  (fetchBonusDefaults as jest.Mock).mockResolvedValue(
-    BonusDefaultsResponseSchema.parse({
-      name: '',
-      type: 'deposit',
-      description: '',
-      bonusPercent: undefined,
-      maxBonusUsd: undefined,
-      expiryDate: undefined,
-      eligibility: 'all',
-      status: 'active',
-    }),
-  );
+  if (defaultsSequence?.length) {
+    const parsedSequence = defaultsSequence.map((entry) =>
+      BonusDefaultsResponseSchema.parse(entry),
+    );
+    let index = 0;
+    (fetchBonusDefaults as jest.Mock).mockImplementation(() => {
+      const value = parsedSequence[Math.min(index, parsedSequence.length - 1)];
+      index += 1;
+      return Promise.resolve(value);
+    });
+  } else {
+    (fetchBonusDefaults as jest.Mock).mockResolvedValue(
+      BonusDefaultsResponseSchema.parse(defaults),
+    );
+  }
   return renderWithClient(<BonusManager />);
 }

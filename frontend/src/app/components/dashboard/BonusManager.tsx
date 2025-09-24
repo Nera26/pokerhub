@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale } from 'next-intl';
 import { useTranslations } from '@/hooks/useTranslations';
 import {
@@ -14,10 +14,18 @@ import {
   deleteBonus,
   type Bonus,
 } from '@/lib/api/admin';
-import { fetchBonusDefaults } from '@/lib/api/bonus';
+import {
+  createBonusDefaults,
+  deleteBonusDefaults,
+  fetchBonusDefaults,
+  updateBonusDefaults,
+} from '@/lib/api/bonus';
 import { useInvalidateMutation } from '@/hooks/useInvalidateMutation';
 import type { ApiError } from '@/lib/api/client';
-import type { BonusDefaultsResponse } from '@shared/types';
+import type {
+  BonusDefaultsRequest,
+  BonusDefaultsResponse,
+} from '@shared/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faChartLine,
@@ -44,18 +52,30 @@ type BonusStatus = 'active' | 'paused';
 type StatusFilter = BonusStatus | 'all' | 'expired';
 type PromoType = string;
 
+const bonusDefaultsQueryKey = ['admin-bonus-defaults'] as const;
+
 export const bonusStyles: Record<BonusStatus | 'expired', string> = {
   active: 'bg-accent-green text-white',
   paused: 'bg-text-secondary text-black',
   expired: 'bg-text-secondary text-black',
 };
 
+const coerceOptionalNumber = z.preprocess((value) => {
+  if (typeof value === 'number' && Number.isNaN(value)) {
+    return undefined;
+  }
+  if (value === '') {
+    return undefined;
+  }
+  return value;
+}, z.coerce.number().optional());
+
 const bonusFormSchema = z.object({
   name: z.string().min(1, 'Promotion name is required'),
   type: z.string(),
   description: z.string().min(1, 'Description is required'),
-  bonusPercent: z.coerce.number().optional(),
-  maxBonusUsd: z.coerce.number().optional(),
+  bonusPercent: coerceOptionalNumber,
+  maxBonusUsd: coerceOptionalNumber,
   expiryDate: z.string().optional(),
   eligibility: z.string(),
   status: z.string(),
@@ -81,6 +101,7 @@ function isExpired(iso?: string) {
 export default function BonusManager() {
   const locale = useLocale();
   const { data: t } = useTranslations(locale);
+  const queryClient = useQueryClient();
   const {
     data: bonuses = [],
     isLoading,
@@ -94,7 +115,7 @@ export default function BonusManager() {
     isLoading: defaultsLoading,
     error: defaultsError,
   } = useQuery<BonusDefaultsResponse, ApiError>({
-    queryKey: ['admin-bonus-defaults'],
+    queryKey: bonusDefaultsQueryKey,
     queryFn: ({ signal }) => fetchBonusDefaults({ signal }),
   });
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -137,6 +158,76 @@ export default function BonusManager() {
     open: false,
     msg: '',
     type: 'success',
+  });
+
+  const normalizeOptionalNumber = (value: number | undefined) =>
+    typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+
+  const toDefaultsRequest = (data: BonusFormValues): BonusDefaultsRequest => ({
+    name: data.name,
+    type: data.type,
+    description: data.description,
+    bonusPercent: normalizeOptionalNumber(data.bonusPercent),
+    maxBonusUsd: normalizeOptionalNumber(data.maxBonusUsd),
+    expiryDate: data.expiryDate ? data.expiryDate : undefined,
+    eligibility: data.eligibility,
+    status: data.status,
+  });
+
+  const saveDefaultsMutation = useMutation<
+    BonusDefaultsResponse,
+    ApiError,
+    BonusDefaultsRequest
+  >({
+    mutationFn: async (defaults) => {
+      try {
+        return await createBonusDefaults(defaults);
+      } catch (err) {
+        const apiErr = err as ApiError;
+        if (apiErr?.status === 409) {
+          return updateBonusDefaults(defaults);
+        }
+        throw err;
+      }
+    },
+    onSuccess: (defaults) => {
+      queryClient.setQueryData(bonusDefaultsQueryKey, defaults);
+      void queryClient.invalidateQueries({ queryKey: bonusDefaultsQueryKey });
+      resetCreate(defaults);
+      setToast({ open: true, msg: 'Defaults saved', type: 'success' });
+    },
+    onError: () => {
+      setToast({
+        open: true,
+        msg: 'Failed to save defaults',
+        type: 'error',
+      });
+    },
+  });
+
+  const resetDefaultsMutation = useMutation<
+    BonusDefaultsResponse,
+    ApiError,
+    void
+  >({
+    mutationFn: async () => {
+      await deleteBonusDefaults();
+      return queryClient.fetchQuery({
+        queryKey: bonusDefaultsQueryKey,
+        queryFn: () => fetchBonusDefaults(),
+      });
+    },
+    onSuccess: (defaults) => {
+      resetCreate(defaults);
+      setToast({ open: true, msg: 'Defaults reset', type: 'success' });
+    },
+    onError: () => {
+      setToast({
+        open: true,
+        msg: 'Failed to reset defaults',
+        type: 'error',
+      });
+    },
   });
 
   const createMutation = useInvalidateMutation<
@@ -289,6 +380,16 @@ export default function BonusManager() {
     });
     resetCreate();
   });
+
+  const saveDefaults = handleCreateSubmit((data) => {
+    saveDefaultsMutation.mutate(toDefaultsRequest(data));
+  });
+
+  const resetDefaults = () => {
+    if (!resetDefaultsMutation.isPending) {
+      resetDefaultsMutation.mutate();
+    }
+  };
 
   const BonusStatusPill = ({ b }: { b: Bonus }) => {
     const expired = isExpired(b.expiryDate);
@@ -468,10 +569,32 @@ export default function BonusManager() {
                     statusLabel="Initial Status"
                   />
 
-                  <Button type="submit" className="w-full">
-                    <FontAwesomeIcon icon={faPlus} />
-                    CREATE PROMOTION
-                  </Button>
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <Button type="submit" className="w-full sm:flex-1">
+                      <FontAwesomeIcon icon={faPlus} />
+                      CREATE PROMOTION
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="w-full sm:w-auto"
+                      onClick={saveDefaults}
+                      disabled={saveDefaultsMutation.isPending}
+                      loading={saveDefaultsMutation.isPending}
+                    >
+                      Save as Default
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full sm:w-auto"
+                      onClick={resetDefaults}
+                      disabled={resetDefaultsMutation.isPending}
+                      loading={resetDefaultsMutation.isPending}
+                    >
+                      Reset Defaults
+                    </Button>
+                  </div>
                 </form>
               )}
             </CardContent>
