@@ -7,5 +7,4 @@ export function fetchHistoryTabs({
   return fetchList('/api/history-tabs', HistoryTabItemSchema, { signal });
 }
 
-export type { ApiError } from './client';
 export type { HistoryTabItem };
