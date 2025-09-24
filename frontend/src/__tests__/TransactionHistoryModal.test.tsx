@@ -14,6 +14,19 @@ jest.mock('@/hooks/useTransactionColumns', () => ({
   default: jest.fn(),
 }));
 
+jest.mock('next-intl', () => ({
+  useLocale: jest.fn(() => 'en'),
+}));
+
+jest.mock('@/hooks/useTranslations', () => ({
+  useTranslations: jest.fn(() => ({
+    data: {
+      'transactions.filters.allTypes': 'All Types',
+      'transactions.filters.performedByAll': 'Performed By: All',
+    },
+  })),
+}));
+
 import TransactionHistoryModal from '@/app/components/modals/TransactionHistoryModal';
 import TransactionHistoryTable from '@/app/components/common/TransactionHistoryTable';
 import useTransactionColumns from '@/hooks/useTransactionColumns';
@@ -80,10 +93,19 @@ describe('TransactionHistoryModal', () => {
 
   const createFiltersQuery = (
     overrides?: Partial<FiltersQueryStub>,
-  ): FiltersQueryStub => ({
-    ...buildFiltersQuery(),
-    ...(overrides ?? {}),
-  });
+  ): FiltersQueryStub => {
+    const base = buildFiltersQuery();
+    return {
+      ...base,
+      ...(overrides ?? {}),
+      data: {
+        typePlaceholder: 'All Types',
+        performedByPlaceholder: 'Performed By: All',
+        ...base.data,
+        ...(overrides?.data ?? {}),
+      },
+    };
+  };
 
   beforeEach(() => {
     mockUseControls.mockReturnValue({

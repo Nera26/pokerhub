@@ -187,6 +187,22 @@ describe('TransactionsController', () => {
     expect(adminGuard.canActivate.mock.calls.length).toBe(callsBefore);
   });
 
+  it('returns transaction filters with translated placeholders', async () => {
+    translationsMock.get.mockResolvedValueOnce({
+      'transactions.filters.allTypes': 'Todos los tipos',
+      'transactions.filters.performedByAll': 'Todos los responsables',
+    });
+
+    const res = await request(app.getHttpServer())
+      .get('/transactions/filters')
+      .set('Authorization', 'Bearer test')
+      .set('x-admin', '1')
+      .expect(200);
+
+    expect(res.body.typePlaceholder).toBe('Todos los tipos');
+    expect(res.body.performedByPlaceholder).toBe('Todos los responsables');
+  });
+
   it('seeds default columns when configuration is missing', async () => {
     await columnRepo.clear();
 

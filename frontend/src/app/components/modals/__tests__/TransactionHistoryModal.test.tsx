@@ -25,6 +25,8 @@ jest.mock('next-intl', () => ({
 }));
 
 describe('TransactionHistoryModal', () => {
+  const TYPE_PLACEHOLDER = 'Todos los tipos';
+  const PERFORMED_BY_PLACEHOLDER = 'Todos los responsables';
   const mockUseControls = useTransactionHistoryControls as jest.Mock;
   const mockUseColumns = useTransactionColumns as jest.Mock;
   const mockUseTranslations = useTranslations as jest.Mock;
@@ -49,14 +51,14 @@ describe('TransactionHistoryModal', () => {
     filters: {
       start: '',
       end: '',
-      type: 'All Types',
-      by: 'Performed By: All',
+      type: TYPE_PLACEHOLDER,
+      by: PERFORMED_BY_PLACEHOLDER,
     },
     appliedFilters: {
       start: '',
       end: '',
-      type: 'All Types',
-      by: 'Performed By: All',
+      type: TYPE_PLACEHOLDER,
+      by: PERFORMED_BY_PLACEHOLDER,
     },
     updateFilter: jest.fn(),
     replaceFilters: jest.fn(),
@@ -73,8 +75,8 @@ describe('TransactionHistoryModal', () => {
     data: {
       types: ['Deposit'],
       performedBy: ['System'],
-      typePlaceholder: 'All Types',
-      performedByPlaceholder: 'Performed By: All',
+      typePlaceholder: undefined as string | undefined,
+      performedByPlaceholder: undefined as string | undefined,
     },
     error: null,
     isLoading: false,
@@ -86,9 +88,9 @@ describe('TransactionHistoryModal', () => {
     mockUseLocale.mockReturnValue('en');
     mockUseTranslations.mockReturnValue({
       data: {
-        'transactions.filters.allTypes': 'All Types',
-        'transactions.filters.allPlayers': 'All Players',
-        'transactions.filters.performedByAll': 'Performed By: All',
+        'transactions.filters.allTypes': TYPE_PLACEHOLDER,
+        'transactions.filters.allPlayers': 'Todos los jugadores',
+        'transactions.filters.performedByAll': PERFORMED_BY_PLACEHOLDER,
       },
     });
     mockUseColumns.mockReturnValue({
@@ -126,6 +128,11 @@ describe('TransactionHistoryModal', () => {
 
     expect(
       await screen.findByRole('heading', { name: /Transaction History/i }),
+    ).toBeInTheDocument();
+
+    expect(screen.getByDisplayValue(TYPE_PLACEHOLDER)).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue(PERFORMED_BY_PLACEHOLDER),
     ).toBeInTheDocument();
 
     const typeSelect = screen.getByLabelText('Filter by type');
@@ -179,8 +186,8 @@ describe('TransactionHistoryModal', () => {
       expect(history.syncFilters).toHaveBeenCalledWith({
         start: '',
         end: '',
-        type: 'All Types',
-        by: 'Performed By: All',
+        type: TYPE_PLACEHOLDER,
+        by: PERFORMED_BY_PLACEHOLDER,
       }),
     );
   });
