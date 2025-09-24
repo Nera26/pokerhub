@@ -7,6 +7,7 @@ import { Button } from '../ui/Button';
 import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
 import { fetchTiers } from '@/lib/api/tiers';
+import { computeTierProgress } from '@/lib/tierProgress';
 import type { Tier, UserProfile } from '@shared/types';
 
 interface Props {
@@ -22,28 +23,13 @@ function useTiers() {
 }
 
 export default function ProfileSection({ profile, onEdit }: Props) {
-  const { data: tiers, isLoading, isError } = useTiers();
-
-  if (isLoading) {
-    return <p>Loading tiers...</p>;
-  }
-
-  if (isError || !tiers) {
-    return <p>Error loading tiers</p>;
-  }
-
-  const userExp = profile.experience;
-  const current = tiers.find((t) => {
-    const max = t.max ?? Infinity;
-    return userExp >= t.min && userExp <= max;
-  })!;
-  const nextTier = tiers[tiers.indexOf(current) + 1] || current;
-  const pct =
-    current.max === null
-      ? 100
-      : Math.round(
-          ((userExp - current.min) / (nextTier.min - current.min)) * 100,
-        );
+  const { data: tiers = [], isLoading, isError } = useTiers();
+  const progress =
+    !isError && tiers.length
+      ? computeTierProgress(tiers, profile.experience)
+      : null;
+  const showProgress = Boolean(progress) && !isLoading;
+  const nextExp = progress ? progress.next : profile.experience;
 
   return (
     <section className="bg-card-bg rounded-2xl p-8 mb-8 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-transform duration-200">
@@ -76,7 +62,9 @@ export default function ProfileSection({ profile, onEdit }: Props) {
             {profile.username}
           </button>
           <p className="text-text-secondary text-sm mt-1">{profile.email}</p>
-          <p className="text-text-secondary text-sm mt-1">Bank: {profile.bank}</p>
+          <p className="text-text-secondary text-sm mt-1">
+            Bank: {profile.bank}
+          </p>
           <p className="text-text-secondary flex items-center mt-1 text-sm">
             <FontAwesomeIcon
               icon={faGlobe}
@@ -99,22 +87,35 @@ export default function ProfileSection({ profile, onEdit }: Props) {
           {/* Tier & EXP bar */}
           <p className="mt-1 flex items-center">
             Tier:
-            <span className="inline-block bg-accent-yellow text-primary-bg font-semibold py-1 px-3 rounded-full text-sm ml-2">
-              {current.name}
-            </span>
+            {showProgress ? (
+              <span className="inline-block bg-accent-yellow text-primary-bg font-semibold py-1 px-3 rounded-full text-sm ml-2">
+                {progress.name}
+              </span>
+            ) : isLoading ? (
+              <span className="ml-2 text-text-secondary text-sm">
+                Loading tiers...
+              </span>
+            ) : (
+              <span className="ml-2 text-text-secondary text-sm">
+                Tier data unavailable
+              </span>
+            )}
           </p>
-          <div className="w-full bg-border-dark rounded-full h-3 mt-2 overflow-hidden">
-            <div
-              className="h-full bg-accent-green"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-          <p className="text-text-secondary text-xs mt-1">
-            EXP: {userExp.toLocaleString()} /{' '}
-            {current.max === null
-              ? userExp.toLocaleString()
-              : nextTier.min.toLocaleString()}
-          </p>
+          {showProgress ? (
+            <>
+              <div className="w-full bg-border-dark rounded-full h-3 mt-2 overflow-hidden">
+                <div
+                  className="h-full bg-accent-green"
+                  data-testid="tier-progress-bar"
+                  style={{ width: `${progress.percent}%` }}
+                />
+              </div>
+              <p className="text-text-secondary text-xs mt-1">
+                EXP: {progress.current.toLocaleString()} /{' '}
+                {nextExp.toLocaleString()}
+              </p>
+            </>
+          ) : null}
         </div>
 
         {/* Balance & action buttons */}

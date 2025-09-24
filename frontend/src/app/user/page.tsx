@@ -1,7 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  useIsFetching,
+} from '@tanstack/react-query';
 import ProfileSection from '../components/user/ProfileSection';
 import GameStatistics from '../components/user/GameStatistics';
 import HistoryTabs from '../components/user/HistoryTabs';
@@ -48,6 +53,9 @@ export default function UserPage() {
     queryFn: ({ signal }) => fetchStats({ signal }),
   });
 
+  const tiersFetching = useIsFetching({ queryKey: ['tiers'] });
+  const isTierLoading = tiersFetching > 0;
+
   const updateMutation = useMutation({
     mutationFn: updateProfile,
     onSuccess: () => {
@@ -89,6 +97,7 @@ export default function UserPage() {
         onClose={() => setEditOpen(false)}
         profile={profile}
         onSave={(data) => updateMutation.mutate(data)}
+        isTierLoading={isTierLoading}
       />
 
       <ReplayModal
