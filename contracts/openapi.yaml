@@ -2287,7 +2287,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/TournamentFormat'
+                  $ref: '#/components/schemas/TournamentFormatOption'
   /admin/tournaments/defaults:
     get:
       summary: Get default tournament values
@@ -3385,7 +3385,16 @@ components:
         $ref: '#/components/schemas/Promotion'
     TournamentFormat:
       type: string
-      enum: [Regular, Turbo, Deepstack, Bounty, Freeroll]
+    TournamentFormatOption:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+      required:
+        - id
+        - label
     ReplyMessageRequest:
       type: object
       properties:

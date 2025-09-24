@@ -29,6 +29,7 @@ import { PromotionClaimEntity } from './entities/promotion-claim.entity';
 import { TournamentFilterOptionEntity } from '../tournament/tournament-filter-option.entity';
 import { TournamentDetail } from '../tournament/tournament-detail.entity';
 import { PerformanceThresholdEntity } from './entities/performance-threshold.entity';
+import { TournamentFormatEntity } from '../tournament/tournament-format.entity';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -60,6 +61,7 @@ export const AppDataSource = new DataSource({
     PromotionEntity,
     PromotionClaimEntity,
     TournamentFilterOptionEntity,
+    TournamentFormatEntity,
     TournamentDetail,
     PerformanceThresholdEntity,
   ],

@@ -119,3 +119,16 @@ export default function SkeletonSection({
     </>
   );
 }
+
+export function LoadingPageSkeleton({
+  children,
+  rows,
+  cardHeight,
+  ...rest
+}: PropsWithChildren<SkeletonSectionProps>) {
+  return (
+    <SkeletonSection rows={rows} cardHeight={cardHeight} {...rest}>
+      {children ?? <div className="h-8 w-48 bg-card-bg rounded" />}
+    </SkeletonSection>
+  );
+}

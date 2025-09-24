@@ -50,7 +50,10 @@ describe('TournamentModal', () => {
   const mockFetchFormats = fetchTournamentFormats as jest.Mock;
 
   beforeEach(() => {
-    mockFetchFormats.mockResolvedValue(['Regular', 'Turbo']);
+    mockFetchFormats.mockResolvedValue([
+      { id: 'Regular', label: 'Regular' },
+      { id: 'Turbo', label: 'Turbo' },
+    ]);
   });
 
   afterEach(() => {

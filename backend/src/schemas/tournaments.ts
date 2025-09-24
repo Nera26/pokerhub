@@ -1,13 +1,16 @@
 import { z } from 'zod';
 import { GameTypeSchema } from './game-types';
 
-export const TournamentFormatSchema = z.enum([
-  'Regular',
-  'Turbo',
-  'Deepstack',
-  'Bounty',
-  'Freeroll',
-]);
+export const TournamentFormatSchema = z.string().min(1);
+export type TournamentFormat = z.infer<typeof TournamentFormatSchema>;
+
+export const TournamentFormatOptionSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+});
+export type TournamentFormatOption = z.infer<
+  typeof TournamentFormatOptionSchema
+>;
 
 export const AdminTournamentSchema = z.object({
   id: z.number(),
@@ -28,7 +31,9 @@ export const AdminTournamentSchema = z.object({
 
 export type AdminTournament = z.infer<typeof AdminTournamentSchema>;
 
-export const TournamentFormatsResponseSchema = z.array(TournamentFormatSchema);
+export const TournamentFormatsResponseSchema = z.array(
+  TournamentFormatOptionSchema,
+);
 export type TournamentFormatsResponse = z.infer<
   typeof TournamentFormatsResponseSchema
 >;

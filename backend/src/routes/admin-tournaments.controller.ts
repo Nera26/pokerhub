@@ -15,7 +15,6 @@ import {
   TournamentSimulateRequestSchema,
   TournamentSimulateResponse,
   TournamentFormatsResponseSchema,
-  TournamentFormatSchema,
 } from '../schemas/tournaments';
 import { ZodError } from 'zod';
 import { simulate, type BlindLevel } from '@shared/utils/tournamentSimulator';
@@ -33,10 +32,9 @@ export class AdminTournamentsController {
     status: 200,
     description: 'Available tournament formats',
   })
-  formats() {
-    return TournamentFormatsResponseSchema.parse(
-      TournamentFormatSchema.options,
-    );
+  async formats() {
+    const formats = await this.service.listFormats();
+    return TournamentFormatsResponseSchema.parse(formats);
   }
 
   @Get('defaults')
