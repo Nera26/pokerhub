@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
+import { useLocale } from 'next-intl';
 import Modal from '../ui/Modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner, faXmark } from '@fortawesome/free-solid-svg-icons';
@@ -27,6 +28,7 @@ import {
 import TransactionHistoryFilters, {
   buildSelectOptions,
 } from '@/app/components/common/TransactionHistoryFilters';
+import { useTranslations } from '@/hooks/useTranslations';
 
 export interface Transaction extends TimestampSource {
   datetime: string;
@@ -63,6 +65,8 @@ export default function TransactionHistoryModal({
 }: Props) {
   const defaultTypeRef = useRef('');
   const defaultByRef = useRef('');
+  const locale = useLocale();
+  const { data: translations } = useTranslations(locale);
 
   const {
     data: colMeta = [],
@@ -105,10 +109,10 @@ export default function TransactionHistoryModal({
         const appliedBy = currentFilters.by;
         const sentinelType = defaultTypeRef.current;
         const sentinelBy = defaultByRef.current;
-        if (appliedType && sentinelType && appliedType !== sentinelType) {
+        if (appliedType && appliedType !== sentinelType) {
           data = data.filter((entry) => entry.action === appliedType);
         }
-        if (appliedBy && sentinelBy && appliedBy !== sentinelBy) {
+        if (appliedBy && appliedBy !== sentinelBy) {
           data = data.filter((entry) => entry.performedBy === appliedBy);
         }
         if (currentFilters.start) {
@@ -138,6 +142,14 @@ export default function TransactionHistoryModal({
     types: [],
     performedBy: [],
   };
+  const typePlaceholderLabel =
+    filterOptions.typePlaceholder ??
+    translations?.['transactions.filters.allTypes'] ??
+    'All Types';
+  const performedByPlaceholderLabel =
+    filterOptions.performedByPlaceholder ??
+    translations?.['transactions.filters.performedByAll'] ??
+    'Performed By: All';
 
   const typeOptions = useMemo(
     () =>
@@ -145,10 +157,9 @@ export default function TransactionHistoryModal({
         data: filterOptions?.types ?? [],
         getValue: (value) => value,
         getLabel: (value) => value,
-        prependOptions: [{ value: 'All Types', label: 'All Types' }],
-        filter: (value) => value !== 'All Types',
+        prependOptions: [{ value: '', label: typePlaceholderLabel }],
       }),
-    [filterOptions],
+    [filterOptions?.types, typePlaceholderLabel],
   );
 
   const performedByOptions = useMemo(
@@ -156,11 +167,10 @@ export default function TransactionHistoryModal({
       buildSelectOptions({
         data: filterOptions?.performedBy ?? [],
         getValue: (value) => value,
-        getLabel: (value) => (value === 'All' ? 'Performed By: All' : value),
-        prependOptions: [{ value: 'All', label: 'Performed By: All' }],
-        filter: (value) => value !== 'All',
+        getLabel: (value) => value,
+        prependOptions: [{ value: '', label: performedByPlaceholderLabel }],
       }),
-    [filterOptions],
+    [filterOptions?.performedBy, performedByPlaceholderLabel],
   );
 
   const [typePlaceholder, ...typeSelectableOptions] = typeOptions;

@@ -14,6 +14,7 @@ import { TransactionColumnEntity } from '../src/wallet/transaction-column.entity
 import { TransactionColumnRepository } from '../src/wallet/transaction-column.repository';
 import { DataSource, Repository } from 'typeorm';
 import { newDb } from 'pg-mem';
+import { TranslationsService } from '../src/services/translations.service';
 
 const DEFAULT_COLUMNS = [
   { id: 'date', label: 'Date' },
@@ -29,6 +30,12 @@ describe('TransactionsController', () => {
   let statusRepo: Repository<TransactionStatus>;
   let tabRepo: Repository<TransactionTabEntity>;
   let columnRepo: TransactionColumnRepository;
+  const translationsStub = {
+    get: jest.fn().mockResolvedValue({
+      'transactions.filters.allTypes': 'All Types (translated)',
+      'transactions.filters.performedByAll': 'All Performers (translated)',
+    }),
+  };
   const adminGuard = {
     canActivate: jest.fn((context: any) => {
       const req = context.switchToHttp().getRequest<{ headers: Record<string, string> }>();
@@ -90,7 +97,11 @@ describe('TransactionsController', () => {
         ]),
       ],
       controllers: [TransactionsController],
-      providers: [TransactionsService, TransactionColumnRepository],
+      providers: [
+        TransactionsService,
+        TransactionColumnRepository,
+        { provide: TranslationsService, useValue: translationsStub },
+      ],
     })
       .overrideGuard(AuthGuard)
       .useValue({ canActivate: () => true })
@@ -137,6 +148,7 @@ describe('TransactionsController', () => {
 
   afterEach(() => {
     adminGuard.canActivate.mockClear();
+    translationsStub.get.mockClear();
   });
 
   it('returns transaction types', async () => {
@@ -149,6 +161,20 @@ describe('TransactionsController', () => {
     expect(res.body).toEqual(
       expect.arrayContaining([{ id: 'deposit', label: 'Deposit' }]),
     );
+  });
+
+  it('returns filter placeholders', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/transactions/filters')
+      .set('Authorization', 'Bearer test')
+      .set('x-admin', '1')
+      .expect(200);
+
+    expect(res.body.typePlaceholder).toBe('All Types (translated)');
+    expect(res.body.performedByPlaceholder).toBe(
+      'All Performers (translated)',
+    );
+    expect(translationsStub.get).toHaveBeenCalledWith('en');
   });
 
   it('returns transaction statuses', async () => {

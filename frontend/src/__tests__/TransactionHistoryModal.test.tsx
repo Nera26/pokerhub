@@ -14,6 +14,19 @@ jest.mock('@/hooks/useTransactionColumns', () => ({
   default: jest.fn(),
 }));
 
+jest.mock('next-intl', () => ({
+  useLocale: () => 'en',
+}));
+
+const translationMap = {
+  'transactions.filters.allTypes': 'Translated All Types',
+  'transactions.filters.performedByAll': 'Translated All Performers',
+};
+
+jest.mock('@/hooks/useTranslations', () => ({
+  useTranslations: jest.fn(() => ({ data: translationMap })),
+}));
+
 import TransactionHistoryModal from '@/app/components/modals/TransactionHistoryModal';
 import TransactionHistoryTable from '@/app/components/common/TransactionHistoryTable';
 import useTransactionColumns from '@/hooks/useTransactionColumns';
@@ -69,7 +82,12 @@ describe('TransactionHistoryModal', () => {
   });
 
   const buildFiltersQuery = () => ({
-    data: { types: [], performedBy: [] },
+    data: {
+      types: [],
+      performedBy: [],
+      typePlaceholder: undefined,
+      performedByPlaceholder: undefined,
+    },
     error: null as unknown,
     isLoading: false,
     isFetching: false,
@@ -140,6 +158,8 @@ describe('TransactionHistoryModal', () => {
           data: {
             types: ['Deposit', 'Withdrawal'],
             performedBy: ['Admin', 'User'],
+            typePlaceholder: undefined,
+            performedByPlaceholder: undefined,
           },
         }),
       },
@@ -171,7 +191,10 @@ describe('TransactionHistoryModal', () => {
     }));
     expect(call.data).toEqual(expectedTableData);
 
-    await user.selectOptions(screen.getByDisplayValue('All Types'), 'Deposit');
+    await user.selectOptions(
+      screen.getByDisplayValue(translationMap['transactions.filters.allTypes']),
+      'Deposit',
+    );
     await user.click(screen.getByRole('button', { name: /apply/i }));
 
     expect(onFilter).toHaveBeenCalledWith([entries[0]]);

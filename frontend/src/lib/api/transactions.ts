@@ -8,20 +8,14 @@ import {
   TransactionTypesResponseSchema,
   TransactionLogResponseSchema,
   type TransactionTypesResponse,
+  type FilterOptions,
 } from '@shared/transactions.schema';
 
 /**
- * Fetch transaction filter options and prepend UI-friendly "All" choices.
+ * Fetch transaction filter options as provided by the API contract.
  */
-export async function fetchTransactionFilters(): Promise<{
-  types: string[];
-  performedBy: string[];
-}> {
-  const res = await apiClient('/api/transactions/filters', FilterOptionsSchema);
-  return {
-    types: ['All Types', ...res.types],
-    performedBy: ['All', ...res.performedBy],
-  };
+export async function fetchTransactionFilters(): Promise<FilterOptions> {
+  return apiClient('/api/transactions/filters', FilterOptionsSchema);
 }
 
 export async function fetchUserTransactions(userId: string) {

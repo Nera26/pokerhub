@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { z } from 'zod';
@@ -19,6 +19,7 @@ import {
   type FilterOptions,
 } from '@shared/transactions.schema';
 import type { TransactionTab } from '@shared/wallet.schema';
+import { TranslationsService } from '../services/translations.service';
 
 const DEFAULT_TRANSACTION_COLUMNS = [
   { id: 'date', label: 'Date' },
@@ -39,6 +40,7 @@ export class TransactionsService {
     @InjectRepository(TransactionTabEntity)
     private readonly tabRepo: Repository<TransactionTabEntity>,
     private readonly columnRepo: TransactionColumnRepository,
+    @Optional() private readonly translations?: TranslationsService,
   ) {}
 
   async getFilterOptions(): Promise<FilterOptions> {
@@ -47,9 +49,16 @@ export class TransactionsService {
       .createQueryBuilder('t')
       .select('DISTINCT t.performedBy', 'performedBy')
       .getRawMany();
+    const translations = this.translations
+      ? await this.translations.get('en')
+      : undefined;
     return FilterOptionsSchema.parse({
       types: types.map((t) => t.label),
       performedBy: performedByRaw.map((r) => r.performedBy),
+      typePlaceholder:
+        translations?.['transactions.filters.allTypes'] ?? undefined,
+      performedByPlaceholder:
+        translations?.['transactions.filters.performedByAll'] ?? undefined,
     });
   }
 

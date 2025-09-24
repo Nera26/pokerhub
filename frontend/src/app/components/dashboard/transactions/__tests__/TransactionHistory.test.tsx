@@ -3,10 +3,26 @@ import userEvent from '@testing-library/user-event';
 import TransactionHistory from '../TransactionHistory';
 import { setupTransactionTestData } from './test-utils';
 import { useTransactionHistoryControls } from '@/app/components/common/TransactionHistoryControls';
+import { useTranslations as useTranslationsHook } from '@/hooks/useTranslations';
 
 jest.mock('@/app/components/common/TransactionHistoryControls', () => ({
   useTransactionHistoryControls: jest.fn(),
 }));
+
+jest.mock('next-intl', () => ({
+  useLocale: () => 'en',
+}));
+
+const translationMap = {
+  'transactions.filters.allTypes': 'Translated All Types',
+  'transactions.filters.performedByAll': 'Translated All Performers',
+};
+
+jest.mock('@/hooks/useTranslations', () => ({
+  __esModule: true,
+  useTranslations: jest.fn(),
+}));
+const mockedUseTranslations = jest.mocked(useTranslationsHook);
 
 describe('Dashboard TransactionHistory', () => {
   let renderWithClient: ReturnType<
@@ -55,13 +71,37 @@ describe('Dashboard TransactionHistory', () => {
     ...(overrides ?? {}),
   });
 
+  const buildFiltersResult = () => ({
+    data: {
+      types: [],
+      performedBy: [],
+      typePlaceholder: undefined,
+      performedByPlaceholder: undefined,
+    },
+    error: null as unknown,
+    isLoading: false,
+    isFetching: false,
+    refetch: jest.fn(),
+  });
+
+  type FiltersResult = ReturnType<typeof buildFiltersResult>;
+
+  const createFiltersResult = (
+    overrides?: Partial<FiltersResult>,
+  ): FiltersResult => ({
+    ...buildFiltersResult(),
+    ...(overrides ?? {}),
+  });
+
   beforeEach(() => {
     ({ renderWithClient } = setupTransactionTestData());
+    mockedUseTranslations.mockReturnValue({ data: translationMap } as any);
     mockUseControls.mockReturnValue({
       history: createHistory(),
       queries: {
         players: createQueryResult(),
         types: createQueryResult(),
+        filters: createFiltersResult(),
       },
       handleExport: jest.fn(),
     });
@@ -78,6 +118,7 @@ describe('Dashboard TransactionHistory', () => {
       queries: {
         players: createQueryResult(),
         types: createQueryResult(),
+        filters: createFiltersResult(),
       },
       handleExport: jest.fn(),
     });
@@ -91,6 +132,9 @@ describe('Dashboard TransactionHistory', () => {
     expect(
       await screen.findByText('No transaction history.'),
     ).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue(translationMap['transactions.filters.allTypes']),
+    ).toBeInTheDocument();
   });
 
   it('shows error state when fetching fails', async () => {
@@ -100,6 +144,7 @@ describe('Dashboard TransactionHistory', () => {
       queries: {
         players: createQueryResult(),
         types: createQueryResult(),
+        filters: createFiltersResult(),
       },
       handleExport: jest.fn(),
     });
@@ -118,6 +163,7 @@ describe('Dashboard TransactionHistory', () => {
           data: [{ id: 'player-1', username: 'Alice' }],
         }),
         types: createQueryResult(),
+        filters: createFiltersResult(),
       },
       handleExport: jest.fn(),
     });
@@ -137,6 +183,7 @@ describe('Dashboard TransactionHistory', () => {
         types: createQueryResult({
           data: [{ id: 'deposit', label: 'Deposit' }],
         }),
+        filters: createFiltersResult(),
       },
       handleExport: jest.fn(),
     });
@@ -161,6 +208,7 @@ describe('Dashboard TransactionHistory', () => {
       queries: {
         players: createQueryResult(),
         types: createQueryResult(),
+        filters: createFiltersResult(),
       },
       handleExport: jest.fn(),
     });
@@ -180,6 +228,7 @@ describe('Dashboard TransactionHistory', () => {
         queries: {
           players: createQueryResult(),
           types: createQueryResult(),
+          filters: createFiltersResult(),
         },
         handleExport,
       };
@@ -210,6 +259,7 @@ describe('Dashboard TransactionHistory', () => {
       queries: {
         players: createQueryResult(),
         types: createQueryResult(),
+        filters: createFiltersResult(),
       },
       handleExport,
     });

@@ -4,6 +4,7 @@ import TransactionHistoryModal from '../TransactionHistoryModal';
 import { useTransactionHistoryControls } from '@/app/components/common/TransactionHistoryControls';
 import useTransactionColumns from '@/hooks/useTransactionColumns';
 import { renderWithClient } from '../../dashboard/__tests__/renderWithClient';
+import { useTranslations as useTranslationsHook } from '@/hooks/useTranslations';
 
 jest.mock('@/app/components/common/TransactionHistoryControls', () => ({
   useTransactionHistoryControls: jest.fn(),
@@ -13,6 +14,21 @@ jest.mock('@/hooks/useTransactionColumns', () => ({
   __esModule: true,
   default: jest.fn(),
 }));
+
+jest.mock('next-intl', () => ({
+  useLocale: () => 'en',
+}));
+
+const translationMap = {
+  'transactions.filters.allTypes': 'Translated All Types',
+  'transactions.filters.performedByAll': 'Translated All Performers',
+};
+
+jest.mock('@/hooks/useTranslations', () => ({
+  __esModule: true,
+  useTranslations: jest.fn(),
+}));
+const mockedUseTranslations = jest.mocked(useTranslationsHook);
 
 describe('TransactionHistoryModal', () => {
   const mockUseControls = useTransactionHistoryControls as jest.Mock;
@@ -34,8 +50,8 @@ describe('TransactionHistoryModal', () => {
     isLoading: false,
     error: null,
     currency: 'USD',
-    filters: { start: '', end: '', type: 'All Types', by: 'All' },
-    appliedFilters: { start: '', end: '', type: 'All Types', by: 'All' },
+    filters: { start: '', end: '', type: '', by: '' },
+    appliedFilters: { start: '', end: '', type: '', by: '' },
     updateFilter: jest.fn(),
     replaceFilters: jest.fn(),
     syncFilters: jest.fn(),
@@ -48,7 +64,12 @@ describe('TransactionHistoryModal', () => {
   });
 
   const buildFiltersQuery = () => ({
-    data: { types: ['All Types', 'Deposit'], performedBy: ['All', 'System'] },
+    data: {
+      types: ['Deposit'],
+      performedBy: ['System'],
+      typePlaceholder: undefined,
+      performedByPlaceholder: undefined,
+    },
     error: null,
     isLoading: false,
     isFetching: false,
@@ -56,6 +77,7 @@ describe('TransactionHistoryModal', () => {
   });
 
   beforeEach(() => {
+    mockedUseTranslations.mockReturnValue({ data: translationMap } as any);
     mockUseColumns.mockReturnValue({
       data: [
         { id: 'datetime', label: 'Date' },
@@ -93,6 +115,15 @@ describe('TransactionHistoryModal', () => {
       await screen.findByRole('heading', { name: /Transaction History/i }),
     ).toBeInTheDocument();
 
+    expect(
+      screen.getByDisplayValue(translationMap['transactions.filters.allTypes']),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue(
+        translationMap['transactions.filters.performedByAll'],
+      ),
+    ).toBeInTheDocument();
+
     const typeSelect = screen.getByLabelText('Filter by type');
     fireEvent.change(typeSelect, { target: { value: 'Deposit' } });
 
@@ -119,7 +150,7 @@ describe('TransactionHistoryModal', () => {
     expect(history.applyFilters).toHaveBeenCalled();
   });
 
-  it('syncs defaults when filters missing', async () => {
+  it('keeps filters empty when defaults missing', async () => {
     const history = buildHistory();
     history.filters = { start: '', end: '', type: '', by: '' };
     history.appliedFilters = { start: '', end: '', type: '', by: '' };
@@ -141,13 +172,13 @@ describe('TransactionHistoryModal', () => {
     );
 
     await waitFor(() =>
-      expect(history.syncFilters).toHaveBeenCalledWith({
-        start: '',
-        end: '',
-        type: 'All Types',
-        by: 'All',
-      }),
+      expect(
+        screen.getByDisplayValue(
+          translationMap['transactions.filters.allTypes'],
+        ),
+      ).toBeInTheDocument(),
     );
+    expect(history.syncFilters).not.toHaveBeenCalled();
   });
 
   it('shows loading state while data pending', () => {
