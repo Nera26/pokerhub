@@ -31,11 +31,11 @@ import {
 
 import Card, { CardContent, CardTitle } from '../ui/Card';
 import Button from '../ui/Button';
+import ConfirmModal from '../ui/ConfirmModal';
 import Modal from '../ui/Modal';
 import ToastNotification from '../ui/ToastNotification';
 import Tooltip from '../ui/Tooltip';
 import BonusForm from './forms/BonusForm';
-import StatusModal from './StatusModal';
 import StatusPill from './common/StatusPill';
 import AdminTableManager from './common/AdminTableManager';
 import { TableHead, TableRow, TableCell } from '../ui/Table';
@@ -546,19 +546,47 @@ export default function BonusManager() {
       </Modal>
 
       {/* PAUSE/RESUME STATUS MODALS */}
-      <StatusModal
-        action="pause"
+      <ConfirmModal
         isOpen={pauseOpen}
         onClose={() => setPauseOpen(false)}
         onConfirm={confirmPause}
-        bonusName={selected?.name ?? ''}
+        title="Pause Bonus"
+        message={
+          <>
+            Are you sure you want to pause{' '}
+            <span className="text-accent-yellow font-semibold">
+              {selected?.name ?? ''}
+            </span>
+            ?
+          </>
+        }
+        icon={<FontAwesomeIcon icon={faPause} />}
+        iconClassName="text-4xl text-danger-red"
+        confirmText="Confirm Pause"
+        cancelText="Cancel"
+        confirmButtonClassName="bg-danger-red hover:brightness-110 text-text-primary"
+        cancelButtonClassName="border border-dark text-text-secondary hover:bg-hover-bg"
       />
-      <StatusModal
-        action="resume"
+      <ConfirmModal
         isOpen={resumeOpen}
         onClose={() => setResumeOpen(false)}
         onConfirm={confirmResume}
-        bonusName={selected?.name ?? ''}
+        title="Resume Bonus"
+        message={
+          <>
+            Are you sure you want to resume{' '}
+            <span className="text-accent-yellow font-semibold">
+              {selected?.name ?? ''}
+            </span>
+            ?
+          </>
+        }
+        icon={<FontAwesomeIcon icon={faPlay} />}
+        iconClassName="text-4xl text-accent-green"
+        confirmText="Confirm Resume"
+        cancelText="Cancel"
+        confirmButtonClassName="bg-accent-green hover-glow-green text-text-primary"
+        cancelButtonClassName="border border-dark text-text-secondary hover:bg-hover-bg"
       />
 
       <ToastNotification
