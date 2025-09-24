@@ -27,6 +27,8 @@ import {
 import TransactionHistoryFilters, {
   buildSelectOptions,
 } from '@/app/components/common/TransactionHistoryFilters';
+import { useLocale } from 'next-intl';
+import { useTranslations } from '@/hooks/useTranslations';
 
 export interface Transaction extends TimestampSource {
   datetime: string;
@@ -61,6 +63,8 @@ export default function TransactionHistoryModal({
   userId,
   onFilter,
 }: Props) {
+  const locale = useLocale();
+  const { data: translationMessages } = useTranslations(locale);
   const defaultTypeRef = useRef('');
   const defaultByRef = useRef('');
 
@@ -75,17 +79,20 @@ export default function TransactionHistoryModal({
       [
         {
           key: 'filters',
-          queryKey: ['transactionFilters'] as const,
-          queryFn: fetchTransactionFilters,
+          queryKey: ['transactionFilters', locale] as const,
+          queryFn: () => fetchTransactionFilters(locale),
           enabled: isOpen,
-          initialData: { types: [], performedBy: [] } as FilterOptions,
+          initialData: {
+            types: [],
+            performedBy: [],
+          } as FilterOptions,
         },
       ] as const satisfies readonly TransactionHistoryFilterQuery<
         'filters',
         FilterOptions,
         FilterOptions
       >[],
-    [isOpen],
+    [isOpen, locale],
   );
 
   const { history, queries } = useTransactionHistoryControls<
@@ -138,6 +145,15 @@ export default function TransactionHistoryModal({
     types: [],
     performedBy: [],
   };
+  const translations = translationMessages ?? {};
+  const typePlaceholderLabel =
+    filterOptions.typePlaceholder ??
+    translations['transactions.filters.allTypes'] ??
+    'All Types';
+  const performedByPlaceholderLabel =
+    filterOptions.performedByPlaceholder ??
+    translations['transactions.filters.performedByAll'] ??
+    'Performed By: All';
 
   const typeOptions = useMemo(
     () =>
@@ -145,10 +161,12 @@ export default function TransactionHistoryModal({
         data: filterOptions?.types ?? [],
         getValue: (value) => value,
         getLabel: (value) => value,
-        prependOptions: [{ value: 'All Types', label: 'All Types' }],
-        filter: (value) => value !== 'All Types',
+        prependOptions: [
+          { value: typePlaceholderLabel, label: typePlaceholderLabel },
+        ],
+        filter: (value) => value !== typePlaceholderLabel,
       }),
-    [filterOptions],
+    [filterOptions, typePlaceholderLabel],
   );
 
   const performedByOptions = useMemo(
@@ -156,19 +174,24 @@ export default function TransactionHistoryModal({
       buildSelectOptions({
         data: filterOptions?.performedBy ?? [],
         getValue: (value) => value,
-        getLabel: (value) => (value === 'All' ? 'Performed By: All' : value),
-        prependOptions: [{ value: 'All', label: 'Performed By: All' }],
-        filter: (value) => value !== 'All',
+        getLabel: (value) => value,
+        prependOptions: [
+          {
+            value: performedByPlaceholderLabel,
+            label: performedByPlaceholderLabel,
+          },
+        ],
+        filter: (value) => value !== performedByPlaceholderLabel,
       }),
-    [filterOptions],
+    [filterOptions, performedByPlaceholderLabel],
   );
 
-  const [typePlaceholder, ...typeSelectableOptions] = typeOptions;
-  const [performedByPlaceholder, ...performedBySelectableOptions] =
+  const [typePlaceholderOption, ...typeSelectableOptions] = typeOptions;
+  const [performedByPlaceholderOption, ...performedBySelectableOptions] =
     performedByOptions;
 
-  const defaultType = typePlaceholder?.value ?? '';
-  const defaultBy = performedByPlaceholder?.value ?? '';
+  const defaultType = typePlaceholderOption?.value ?? '';
+  const defaultBy = performedByPlaceholderOption?.value ?? '';
 
   defaultTypeRef.current = defaultType;
   defaultByRef.current = defaultBy;
@@ -281,7 +304,7 @@ export default function TransactionHistoryModal({
               {
                 key: 'type',
                 label: 'Filter by type',
-                placeholderOption: typePlaceholder,
+                placeholderOption: typePlaceholderOption,
                 options: typeSelectableOptions,
                 loading: filtersQuery?.isLoading,
                 error: Boolean(filtersQuery?.error),
@@ -289,7 +312,7 @@ export default function TransactionHistoryModal({
               {
                 key: 'by',
                 label: 'Filter by performer',
-                placeholderOption: performedByPlaceholder,
+                placeholderOption: performedByPlaceholderOption,
                 options: performedBySelectableOptions,
                 loading: filtersQuery?.isLoading,
                 error: Boolean(filtersQuery?.error),

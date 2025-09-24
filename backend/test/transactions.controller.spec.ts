@@ -14,6 +14,11 @@ import { TransactionColumnEntity } from '../src/wallet/transaction-column.entity
 import { TransactionColumnRepository } from '../src/wallet/transaction-column.repository';
 import { DataSource, Repository } from 'typeorm';
 import { newDb } from 'pg-mem';
+import { TranslationsService } from '../src/services/translations.service';
+
+const translationsMock = {
+  get: jest.fn<Promise<Record<string, string>>, [string]>(),
+};
 
 const DEFAULT_COLUMNS = [
   { id: 'date', label: 'Date' },
@@ -90,7 +95,11 @@ describe('TransactionsController', () => {
         ]),
       ],
       controllers: [TransactionsController],
-      providers: [TransactionsService, TransactionColumnRepository],
+      providers: [
+        TransactionsService,
+        TransactionColumnRepository,
+        { provide: TranslationsService, useValue: translationsMock },
+      ],
     })
       .overrideGuard(AuthGuard)
       .useValue({ canActivate: () => true })
@@ -126,6 +135,10 @@ describe('TransactionsController', () => {
       notes: '',
       status: 'Completed',
       createdAt: new Date('2024-01-10'),
+    });
+    translationsMock.get.mockResolvedValue({
+      'transactions.filters.allTypes': 'All Types',
+      'transactions.filters.performedByAll': 'Performed By: All',
     });
     app = moduleRef.createNestApplication();
     await app.init();

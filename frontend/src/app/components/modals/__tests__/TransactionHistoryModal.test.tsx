@@ -4,6 +4,8 @@ import TransactionHistoryModal from '../TransactionHistoryModal';
 import { useTransactionHistoryControls } from '@/app/components/common/TransactionHistoryControls';
 import useTransactionColumns from '@/hooks/useTransactionColumns';
 import { renderWithClient } from '../../dashboard/__tests__/renderWithClient';
+import { useTranslations } from '@/hooks/useTranslations';
+import { useLocale } from 'next-intl';
 
 jest.mock('@/app/components/common/TransactionHistoryControls', () => ({
   useTransactionHistoryControls: jest.fn(),
@@ -14,9 +16,19 @@ jest.mock('@/hooks/useTransactionColumns', () => ({
   default: jest.fn(),
 }));
 
+jest.mock('@/hooks/useTranslations', () => ({
+  useTranslations: jest.fn(),
+}));
+
+jest.mock('next-intl', () => ({
+  useLocale: jest.fn(),
+}));
+
 describe('TransactionHistoryModal', () => {
   const mockUseControls = useTransactionHistoryControls as jest.Mock;
   const mockUseColumns = useTransactionColumns as jest.Mock;
+  const mockUseTranslations = useTranslations as jest.Mock;
+  const mockUseLocale = useLocale as jest.Mock;
 
   const buildHistory = () => ({
     data: [
@@ -34,8 +46,18 @@ describe('TransactionHistoryModal', () => {
     isLoading: false,
     error: null,
     currency: 'USD',
-    filters: { start: '', end: '', type: 'All Types', by: 'All' },
-    appliedFilters: { start: '', end: '', type: 'All Types', by: 'All' },
+    filters: {
+      start: '',
+      end: '',
+      type: 'All Types',
+      by: 'Performed By: All',
+    },
+    appliedFilters: {
+      start: '',
+      end: '',
+      type: 'All Types',
+      by: 'Performed By: All',
+    },
     updateFilter: jest.fn(),
     replaceFilters: jest.fn(),
     syncFilters: jest.fn(),
@@ -48,7 +70,12 @@ describe('TransactionHistoryModal', () => {
   });
 
   const buildFiltersQuery = () => ({
-    data: { types: ['All Types', 'Deposit'], performedBy: ['All', 'System'] },
+    data: {
+      types: ['Deposit'],
+      performedBy: ['System'],
+      typePlaceholder: 'All Types',
+      performedByPlaceholder: 'Performed By: All',
+    },
     error: null,
     isLoading: false,
     isFetching: false,
@@ -56,6 +83,14 @@ describe('TransactionHistoryModal', () => {
   });
 
   beforeEach(() => {
+    mockUseLocale.mockReturnValue('en');
+    mockUseTranslations.mockReturnValue({
+      data: {
+        'transactions.filters.allTypes': 'All Types',
+        'transactions.filters.allPlayers': 'All Players',
+        'transactions.filters.performedByAll': 'Performed By: All',
+      },
+    });
     mockUseColumns.mockReturnValue({
       data: [
         { id: 'datetime', label: 'Date' },
@@ -145,7 +180,7 @@ describe('TransactionHistoryModal', () => {
         start: '',
         end: '',
         type: 'All Types',
-        by: 'All',
+        by: 'Performed By: All',
       }),
     );
   });

@@ -7,21 +7,19 @@ import {
   TransactionStatusesResponseSchema,
   TransactionTypesResponseSchema,
   TransactionLogResponseSchema,
+  type FilterOptions,
   type TransactionTypesResponse,
 } from '@shared/transactions.schema';
 
 /**
- * Fetch transaction filter options and prepend UI-friendly "All" choices.
+ * Fetch transaction filter options, including optional locale-aware placeholders.
  */
-export async function fetchTransactionFilters(): Promise<{
-  types: string[];
-  performedBy: string[];
-}> {
-  const res = await apiClient('/api/transactions/filters', FilterOptionsSchema);
-  return {
-    types: ['All Types', ...res.types],
-    performedBy: ['All', ...res.performedBy],
-  };
+export async function fetchTransactionFilters(
+  locale?: string,
+): Promise<FilterOptions> {
+  return apiClient('/api/transactions/filters', FilterOptionsSchema, {
+    headers: locale ? { 'accept-language': locale } : undefined,
+  });
 }
 
 export async function fetchUserTransactions(userId: string) {

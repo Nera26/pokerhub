@@ -7,6 +7,7 @@ import { Transaction } from './transaction.entity';
 import { TransactionStatus } from './transaction-status.entity';
 import { TransactionTabEntity } from './transaction-tab.entity';
 import { TransactionColumnRepository } from './transaction-column.repository';
+import { TranslationsService } from '../services/translations.service';
 import {
   FilterOptionsSchema,
   AdminTransactionEntriesSchema,
@@ -39,17 +40,25 @@ export class TransactionsService {
     @InjectRepository(TransactionTabEntity)
     private readonly tabRepo: Repository<TransactionTabEntity>,
     private readonly columnRepo: TransactionColumnRepository,
+    private readonly translations: TranslationsService,
   ) {}
 
-  async getFilterOptions(): Promise<FilterOptions> {
+  async getFilterOptions(locale = 'en'): Promise<FilterOptions> {
     const types = await this.types.find();
     const performedByRaw = await this.txRepo
       .createQueryBuilder('t')
       .select('DISTINCT t.performedBy', 'performedBy')
       .getRawMany();
+    const messages = await this.translations.get(locale);
+    const typePlaceholder =
+      messages['transactions.filters.allTypes'] ?? 'All Types';
+    const performedByPlaceholder =
+      messages['transactions.filters.performedByAll'] ?? 'Performed By: All';
     return FilterOptionsSchema.parse({
       types: types.map((t) => t.label),
       performedBy: performedByRaw.map((r) => r.performedBy),
+      typePlaceholder,
+      performedByPlaceholder,
     });
   }
 

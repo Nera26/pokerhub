@@ -32,8 +32,13 @@ export class TransactionsController {
   @Get('transactions/filters')
   @ApiOperation({ summary: 'Get transaction filter options' })
   @ApiResponse({ status: 200, description: 'Filter options' })
-  async filters() {
-    const res = await this.txService.getFilterOptions();
+  async filters(@Req() req: Request) {
+    const acceptLanguage = req.headers['accept-language'];
+    const preferred = Array.isArray(acceptLanguage)
+      ? acceptLanguage[0]
+      : acceptLanguage;
+    const locale = preferred?.split(',')[0]?.trim() ?? 'en';
+    const res = await this.txService.getFilterOptions(locale);
     return FilterOptionsSchema.parse(res);
   }
 
