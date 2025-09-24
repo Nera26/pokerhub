@@ -19,7 +19,16 @@ export function renderWithClient(ui: ReactElement) {
     },
   });
   activeClients.add(client);
-  return render(
+  const renderResult = render(
     <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
   );
+
+  return {
+    ...renderResult,
+    rerenderWithClient: (nextUi: ReactElement) =>
+      renderResult.rerender(
+        <QueryClientProvider client={client}>{nextUi}</QueryClientProvider>,
+      ),
+    client,
+  };
 }
