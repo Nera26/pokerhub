@@ -13,8 +13,12 @@ import { fetchAdminPlayers } from '@/lib/api/wallet';
 import {
   fetchTransactionTypes,
   fetchTransactionsLog,
+  fetchTransactionFilters,
 } from '@/lib/api/transactions';
 import { useApiError } from '@/hooks/useApiError';
+import { useLocale } from 'next-intl';
+import { useTranslations } from '@/hooks/useTranslations';
+import type { FilterOptions } from '@shared/transactions.schema';
 
 interface Props {
   onExport?: () => void;
@@ -26,6 +30,8 @@ type TransactionLogEntry = Awaited<
 
 export default function DashboardTransactionHistory({ onExport }: Props) {
   const pageSize = 10;
+  const locale = useLocale();
+  const { data: translationMessages } = useTranslations(locale);
 
   const filterQueries = useMemo(
     () =>
@@ -42,12 +48,21 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
           queryFn: fetchTransactionTypes,
           initialData: [] as Awaited<ReturnType<typeof fetchTransactionTypes>>,
         },
+        {
+          key: 'filters',
+          queryKey: ['transactionFilters', locale] as const,
+          queryFn: () => fetchTransactionFilters(locale),
+          initialData: {
+            types: [],
+            performedBy: [],
+          } as FilterOptions,
+        },
       ] as const satisfies readonly TransactionHistoryFilterQuery<
-        'players' | 'types',
+        'players' | 'types' | 'filters',
         any,
         any
       >[],
-    [],
+    [locale],
   );
 
   const { history, queries, handleExport } = useTransactionHistoryControls<
@@ -95,9 +110,21 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
 
   const playersQuery = queries.players;
   const typesQuery = queries.types;
+  const filtersQuery = queries.filters;
 
   const players = playersQuery?.data ?? [];
   const types = typesQuery?.data ?? [];
+  const filterOptions: FilterOptions = filtersQuery?.data ?? {
+    types: [],
+    performedBy: [],
+  };
+  const translations = translationMessages ?? {};
+  const playerPlaceholderLabel =
+    translations['transactions.filters.allPlayers'] ?? 'All Players';
+  const typePlaceholderLabel =
+    filterOptions.typePlaceholder ??
+    translations['transactions.filters.allTypes'] ??
+    'All Types';
 
   const playerOptions = useMemo(
     () =>
@@ -122,6 +149,7 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
   useApiError(playersQuery?.error);
   useApiError(typesQuery?.error);
   useApiError(historyError);
+  useApiError(filtersQuery?.error);
 
   const filterControls = (
     <TransactionHistoryFilters
@@ -140,7 +168,7 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
         {
           key: 'playerId',
           label: 'Filter by player',
-          placeholderOption: { value: '', label: 'All Players' },
+          placeholderOption: { value: '', label: playerPlaceholderLabel },
           options: playerOptions,
           loading: playersQuery?.isLoading,
           error: Boolean(playersQuery?.error),
@@ -148,7 +176,7 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
         {
           key: 'type',
           label: 'Filter by type',
-          placeholderOption: { value: '', label: 'All Types' },
+          placeholderOption: { value: '', label: typePlaceholderLabel },
           options: typeOptions,
           loading: typesQuery?.isLoading,
           error: Boolean(typesQuery?.error),

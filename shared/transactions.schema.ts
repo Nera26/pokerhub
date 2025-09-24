@@ -45,6 +45,8 @@ export const AdminTransactionEntriesSchema = z.array(
 export const FilterOptionsSchema = z.object({
   types: z.array(z.string()),
   performedBy: z.array(z.string()),
+  typePlaceholder: z.string().optional(),
+  performedByPlaceholder: z.string().optional(),
 });
 export type FilterOptions = z.infer<typeof FilterOptionsSchema>;
 

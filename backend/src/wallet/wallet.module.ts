@@ -40,6 +40,8 @@ import { AdminTabEntity } from '../database/entities/admin-tab.entity';
 import { TransactionColumnEntity } from './transaction-column.entity';
 import { TransactionColumnRepository } from './transaction-column.repository';
 import { AdminTabsService } from '../services/admin-tabs.service';
+import { TranslationEntity } from '../database/entities/translation.entity';
+import { TranslationsService } from '../services/translations.service';
 
 @Injectable()
 class PayoutWorker implements OnModuleInit {
@@ -74,6 +76,7 @@ class PendingDepositWorker implements OnModuleInit {
       TransactionStatus,
       TransactionTabEntity,
       TransactionColumnEntity,
+      TranslationEntity,
       DepositIban,
       DepositIbanHistory,
       AdminTabEntity,
@@ -99,6 +102,7 @@ class PendingDepositWorker implements OnModuleInit {
     TransactionsService,
     TransactionColumnRepository,
     RevenueService,
+    TranslationsService,
   ],
   controllers: [
     WalletController,

@@ -3,9 +3,19 @@ import userEvent from '@testing-library/user-event';
 import TransactionHistory from '../TransactionHistory';
 import { setupTransactionTestData } from './test-utils';
 import { useTransactionHistoryControls } from '@/app/components/common/TransactionHistoryControls';
+import { useTranslations } from '@/hooks/useTranslations';
+import { useLocale } from 'next-intl';
 
 jest.mock('@/app/components/common/TransactionHistoryControls', () => ({
   useTransactionHistoryControls: jest.fn(),
+}));
+
+jest.mock('@/hooks/useTranslations', () => ({
+  useTranslations: jest.fn(),
+}));
+
+jest.mock('next-intl', () => ({
+  useLocale: jest.fn(),
 }));
 
 describe('Dashboard TransactionHistory', () => {
@@ -13,6 +23,8 @@ describe('Dashboard TransactionHistory', () => {
     typeof setupTransactionTestData
   >['renderWithClient'];
   const mockUseControls = useTransactionHistoryControls as jest.Mock;
+  const mockUseTranslations = useTranslations as jest.Mock;
+  const mockUseLocale = useLocale as jest.Mock;
 
   const buildHistory = () => ({
     data: [],
@@ -55,13 +67,33 @@ describe('Dashboard TransactionHistory', () => {
     ...(overrides ?? {}),
   });
 
+  const createFiltersQuery = () =>
+    createQueryResult({
+      data: {
+        types: [],
+        performedBy: [],
+        typePlaceholder: 'All Types',
+        performedByPlaceholder: 'Performed By: All',
+      },
+    });
+
   beforeEach(() => {
     ({ renderWithClient } = setupTransactionTestData());
+    mockUseLocale.mockReturnValue('en');
+    mockUseTranslations.mockReturnValue({
+      data: {
+        'transactions.filters.allTypes': 'All Types',
+        'transactions.filters.allPlayers': 'All Players',
+        'transactions.filters.performedByAll': 'Performed By: All',
+      },
+    });
+    const filtersQuery = createFiltersQuery();
     mockUseControls.mockReturnValue({
       history: createHistory(),
       queries: {
         players: createQueryResult(),
         types: createQueryResult(),
+        filters: filtersQuery,
       },
       handleExport: jest.fn(),
     });
@@ -78,6 +110,7 @@ describe('Dashboard TransactionHistory', () => {
       queries: {
         players: createQueryResult(),
         types: createQueryResult(),
+        filters: createFiltersQuery(),
       },
       handleExport: jest.fn(),
     });
@@ -100,6 +133,7 @@ describe('Dashboard TransactionHistory', () => {
       queries: {
         players: createQueryResult(),
         types: createQueryResult(),
+        filters: createFiltersQuery(),
       },
       handleExport: jest.fn(),
     });
@@ -118,6 +152,7 @@ describe('Dashboard TransactionHistory', () => {
           data: [{ id: 'player-1', username: 'Alice' }],
         }),
         types: createQueryResult(),
+        filters: createFiltersQuery(),
       },
       handleExport: jest.fn(),
     });
@@ -137,6 +172,7 @@ describe('Dashboard TransactionHistory', () => {
         types: createQueryResult({
           data: [{ id: 'deposit', label: 'Deposit' }],
         }),
+        filters: createFiltersQuery(),
       },
       handleExport: jest.fn(),
     });
@@ -161,6 +197,7 @@ describe('Dashboard TransactionHistory', () => {
       queries: {
         players: createQueryResult(),
         types: createQueryResult(),
+        filters: createFiltersQuery(),
       },
       handleExport: jest.fn(),
     });
@@ -180,6 +217,7 @@ describe('Dashboard TransactionHistory', () => {
         queries: {
           players: createQueryResult(),
           types: createQueryResult(),
+          filters: createFiltersQuery(),
         },
         handleExport,
       };
@@ -210,6 +248,7 @@ describe('Dashboard TransactionHistory', () => {
       queries: {
         players: createQueryResult(),
         types: createQueryResult(),
+        filters: createFiltersQuery(),
       },
       handleExport,
     });

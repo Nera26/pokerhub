@@ -9,6 +9,11 @@ import { TransactionStatus } from '../src/wallet/transaction-status.entity';
 import { TransactionTabEntity } from '../src/wallet/transaction-tab.entity';
 import { TransactionColumnEntity } from '../src/wallet/transaction-column.entity';
 import { TransactionColumnRepository } from '../src/wallet/transaction-column.repository';
+import { TranslationsService } from '../src/services/translations.service';
+
+const translationsMock = {
+  get: jest.fn<Promise<Record<string, string>>, [string]>(),
+};
 
 describe('TransactionsService', () => {
   const DEFAULT_COLUMNS = [
@@ -25,6 +30,10 @@ describe('TransactionsService', () => {
   let columnRepo: TransactionColumnRepository;
 
   beforeEach(async () => {
+    translationsMock.get.mockResolvedValue({
+      'transactions.filters.allTypes': 'All Types',
+      'transactions.filters.performedByAll': 'Performed By: All',
+    });
     let dataSource: DataSource;
     const moduleRef = await Test.createTestingModule({
       imports: [
@@ -75,7 +84,11 @@ describe('TransactionsService', () => {
           TransactionColumnEntity,
         ]),
       ],
-      providers: [TransactionsService, TransactionColumnRepository],
+      providers: [
+        TransactionsService,
+        TransactionColumnRepository,
+        { provide: TranslationsService, useValue: translationsMock },
+      ],
     }).compile();
 
     service = moduleRef.get(TransactionsService);
@@ -149,6 +162,8 @@ describe('TransactionsService', () => {
     const filters = await service.getFilterOptions();
     expect(filters.types).toContain('Deposit');
     expect(filters.performedBy).toEqual(expect.arrayContaining(['Admin', 'User']));
+    expect(filters.typePlaceholder).toBe('All Types');
+    expect(filters.performedByPlaceholder).toBe('Performed By: All');
   });
 
   it('returns user transactions', async () => {
