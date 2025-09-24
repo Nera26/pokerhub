@@ -2,6 +2,7 @@ import { mapBonusDefaults, mapBonusEntity, toBonusDefaultsInput, toBonusEntityIn
 import { BonusEntity } from '../../src/database/entities/bonus.entity';
 import { BonusDefaultEntity } from '../../src/database/entities/bonus-default.entity';
 import { expectedDefaults, updatedDefaultsRequest } from './fixtures';
+import type { BonusUpdateRequest } from '../../src/schemas/bonus';
 
 function createBonusEntity(): BonusEntity {
   return Object.assign(new BonusEntity(), {
@@ -37,6 +38,23 @@ describe('bonus helpers', () => {
       claimsTotal: 3,
       claimsWeek: 2,
     });
+  });
+
+  it('maps nullable bonus fields on entities to undefined', () => {
+    const entity = createBonusEntity();
+    entity.bonusPercent = null;
+    entity.maxBonusUsd = null;
+    entity.expiryDate = null;
+
+    const mapped = mapBonusEntity(entity);
+
+    expect(mapped).toEqual(
+      expect.objectContaining({
+        bonusPercent: undefined,
+        maxBonusUsd: undefined,
+        expiryDate: undefined,
+      }),
+    );
   });
 
   it('normalizes bonus payloads for persistence', () => {
@@ -85,6 +103,28 @@ describe('bonus helpers', () => {
     expect(mapBonusDefaults(entity, expectedDefaults())).toEqual(defaults);
   });
 
+  it('maps nullable defaults fields to undefined', () => {
+    const entity = Object.assign(new BonusDefaultEntity(), {
+      id: 1,
+      name: 'Seasonal Bonus',
+      type: 'deposit',
+      description: 'Limited time offer',
+      bonusPercent: null,
+      maxBonusUsd: null,
+      expiryDate: null,
+      eligibility: 'all',
+      status: 'active',
+    });
+
+    expect(mapBonusDefaults(entity, expectedDefaults())).toEqual(
+      expect.objectContaining({
+        bonusPercent: undefined,
+        maxBonusUsd: undefined,
+        expiryDate: undefined,
+      }),
+    );
+  });
+
   it('prepares defaults payloads for persistence', () => {
     const request = updatedDefaultsRequest();
     const payload = toBonusDefaultsInput(request);
@@ -98,6 +138,18 @@ describe('bonus helpers', () => {
       expiryDate: '2025-12-31',
       eligibility: 'vip',
       status: 'paused',
+    });
+  });
+
+  it('converts NaN claim counts to null for persistence', () => {
+    const payload = toBonusEntityInput({
+      claimsTotal: Number.NaN,
+      claimsWeek: Number.NaN,
+    } as BonusUpdateRequest);
+
+    expect(payload).toEqual({
+      claimsTotal: null,
+      claimsWeek: null,
     });
   });
 });
