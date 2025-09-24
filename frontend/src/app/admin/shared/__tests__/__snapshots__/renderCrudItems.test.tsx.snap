@@ -1,0 +1,200 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`CrudItemList renders admin tabs list with delete state 1`] = `
+<section>
+  <h2
+    class="text-lg font-semibold"
+  >
+    Existing tabs
+  </h2>
+  <ul
+    class="space-y-2"
+  >
+    <li
+      class="flex items-center justify-between rounded border border-gray-200 px-3 py-2"
+    >
+      <div
+        class="flex flex-col"
+      >
+        <span
+          class="font-semibold"
+        >
+          Reports
+        </span>
+        <span
+          class="text-sm text-gray-600"
+        >
+          reports
+        </span>
+        <span
+          class="text-xs text-gray-500"
+        >
+          Icon: faChart
+        </span>
+      </div>
+      <div
+        class="flex items-center gap-3"
+      >
+        <button
+          class="text-blue-600 underline"
+          disabled=""
+          type="button"
+        >
+          Edit
+        </button>
+        <button
+          class="text-red-600 underline"
+          type="button"
+        >
+          Delete
+        </button>
+      </div>
+    </li>
+    <li
+      class="flex items-center justify-between rounded border border-gray-200 px-3 py-2"
+    >
+      <div
+        class="flex flex-col"
+      >
+        <span
+          class="font-semibold"
+        >
+          Audit
+        </span>
+        <span
+          class="text-sm text-gray-600"
+        >
+          audit
+        </span>
+        <span
+          class="text-xs text-gray-500"
+        >
+          Missing icon
+        </span>
+      </div>
+      <div
+        class="flex items-center gap-3"
+      >
+        <button
+          class="text-blue-600 underline"
+          disabled=""
+          type="button"
+        >
+          Edit
+        </button>
+        <button
+          class="text-red-600 underline"
+          disabled=""
+          type="button"
+        >
+          Deleting…
+        </button>
+      </div>
+    </li>
+  </ul>
+</section>
+`;
+
+exports[`CrudItemList renders navigation items list 1`] = `
+<section>
+  <h2
+    class="text-lg font-semibold mb-2"
+  >
+    Existing items
+  </h2>
+  <ul
+    class="space-y-2"
+  >
+    <li
+      class="flex items-center justify-between rounded border border-gray-300 px-3 py-2"
+    >
+      <div
+        class="flex flex-col"
+      >
+        <span
+          class="font-medium"
+        >
+          Home
+           
+          <span
+            class="text-xs text-gray-500"
+          >
+            (
+            home
+            )
+          </span>
+        </span>
+        <span
+          class="text-sm text-gray-600"
+        >
+          / · Order 1
+        </span>
+        <span
+          class="text-xs text-gray-500"
+        >
+          Icon: 
+          homeIcon
+        </span>
+      </div>
+      <div
+        class="flex items-center gap-3"
+      >
+        <button
+          class="text-blue-600 underline"
+          type="button"
+        >
+          Edit
+        </button>
+        <button
+          class="text-red-600 underline"
+          type="button"
+        >
+          Delete
+        </button>
+      </div>
+    </li>
+    <li
+      class="flex items-center justify-between rounded border border-gray-300 px-3 py-2"
+    >
+      <div
+        class="flex flex-col"
+      >
+        <span
+          class="font-medium"
+        >
+          Support
+           
+          <span
+            class="text-xs text-gray-500"
+          >
+            (
+            support
+            )
+          </span>
+        </span>
+        <span
+          class="text-sm text-gray-600"
+        >
+          /support · Order 2
+        </span>
+      </div>
+      <div
+        class="flex items-center gap-3"
+      >
+        <button
+          class="text-blue-600 underline"
+          type="button"
+        >
+          Edit
+        </button>
+        <button
+          class="text-red-600 underline"
+          type="button"
+        >
+          Delete
+        </button>
+      </div>
+    </li>
+  </ul>
+</section>
+`;

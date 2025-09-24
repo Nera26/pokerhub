@@ -2,6 +2,7 @@ import {
   type AdminCrudField,
   type AdminCrudFormViewConfig,
 } from '@/app/components/dashboard/common/AdminCrudPage';
+import { CrudItemList } from './renderCrudItems';
 import {
   fetchNavItems,
   createNavItem,
@@ -355,66 +356,24 @@ export function createNavCrudConfig(): NavCrudConfigs {
       cancelButtonClassName: 'btn btn-secondary',
       listErrorClassName: 'rounded-md border border-red-400 p-2 text-red-600',
       actionErrorClassName: 'rounded-md border border-red-400 p-2 text-red-600',
-      renderItems: ({
-        items,
-        loading,
-        deletingId,
-        submitting,
-        startEdit,
-        handleDelete,
-      }) => (
-        <section>
-          <h2 className="text-lg font-semibold mb-2">Existing items</h2>
-          {loading ? (
-            <p>Loading navigation items…</p>
-          ) : items.length === 0 ? (
-            <p>No navigation items found.</p>
-          ) : (
-            <ul className="space-y-2">
-              {items.map((item) => (
-                <li
-                  key={item.flag}
-                  className="flex items-center justify-between rounded border border-gray-300 px-3 py-2"
-                >
-                  <div className="flex flex-col">
-                    <span className="font-medium">
-                      {item.label}{' '}
-                      <span className="text-xs text-gray-500">
-                        ({item.flag})
-                      </span>
-                    </span>
-                    <span className="text-sm text-gray-600">
-                      {item.href} · Order {item.order}
-                    </span>
-                    {item.iconName && (
-                      <span className="text-xs text-gray-500">
-                        Icon: {item.iconName}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      className="text-blue-600 underline"
-                      onClick={() => startEdit(item)}
-                      disabled={submitting}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      className="text-red-600 underline"
-                      onClick={() => handleDelete(item.flag)}
-                      disabled={submitting || deletingId === item.flag}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+      renderItems: (props) => (
+        <CrudItemList
+          title="Existing items"
+          titleClassName="text-lg font-semibold mb-2"
+          loadingCopy="Loading navigation items…"
+          emptyCopy="No navigation items found."
+          {...props}
+          getKey={(item) => item.flag}
+          renderPrimary={(item) => (
+            <>
+              {item.label}{' '}
+              <span className="text-xs text-gray-500">({item.flag})</span>
+            </>
           )}
-        </section>
+          description={(item) => `${item.href} · Order ${item.order}`}
+          meta={(item) => (item.iconName ? <>Icon: {item.iconName}</> : null)}
+          renderDeleteLabel={() => 'Delete'}
+        />
       ),
     },
   };
@@ -466,57 +425,23 @@ export function createAdminTabCrudConfig(): AdminTabCrudConfigs {
       listErrorClassName: 'rounded-md border border-red-400 p-3 text-red-600',
       actionErrorClassName:
         'rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700',
-      renderItems: ({
-        items,
-        loading,
-        deletingId,
-        submitting,
-        startEdit,
-        handleDelete,
-      }) => (
-        <section>
-          <h2 className="text-lg font-semibold">Existing tabs</h2>
-          {loading ? (
-            <p>Loading admin tabs…</p>
-          ) : items.length === 0 ? (
-            <p>No runtime admin tabs found.</p>
-          ) : (
-            <ul className="space-y-2">
-              {items.map((tab) => (
-                <li
-                  key={tab.id}
-                  className="flex items-center justify-between rounded border border-gray-200 px-3 py-2"
-                >
-                  <div className="flex flex-col">
-                    <span className="font-semibold">{tab.title}</span>
-                    <span className="text-sm text-gray-600">{tab.id}</span>
-                    <span className="text-xs text-gray-500">
-                      {tab.icon ? `Icon: ${tab.icon}` : 'Missing icon'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      className="text-blue-600 underline"
-                      onClick={() => startEdit(tab)}
-                      disabled={submitting || deletingId === tab.id}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      className="text-red-600 underline"
-                      onClick={() => handleDelete(tab.id)}
-                      disabled={deletingId === tab.id}
-                    >
-                      {deletingId === tab.id ? 'Deleting…' : 'Delete'}
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+      renderItems: (props) => (
+        <CrudItemList
+          title="Existing tabs"
+          loadingCopy="Loading admin tabs…"
+          emptyCopy="No runtime admin tabs found."
+          {...props}
+          getKey={(tab) => tab.id}
+          renderPrimary={(tab) => tab.title}
+          primaryClassName="font-semibold"
+          description={(tab) => tab.id}
+          meta={(tab) => (tab.icon ? `Icon: ${tab.icon}` : 'Missing icon')}
+          itemClassName="flex items-center justify-between rounded border border-gray-200 px-3 py-2"
+          disableEdit={(_, { submitting, isDeleting }) =>
+            submitting || isDeleting
+          }
+          disableDelete={(_, { isDeleting }) => isDeleting}
+        />
       ),
     },
   };
