@@ -1,119 +1,48 @@
 import fc from 'fast-check';
-import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
-import { Account } from '../src/wallet/account.entity';
-import { JournalEntry } from '../src/wallet/journal-entry.entity';
-import { Disbursement } from '../src/wallet/disbursement.entity';
-import { WalletService } from '../src/wallet/wallet.service';
-import { EventPublisher } from '../src/events/events.service';
-import { PaymentProviderService } from '../src/wallet/payment-provider.service';
-import { KycService } from '../src/wallet/kyc.service';
-import { SettlementJournal } from '../src/wallet/settlement-journal.entity';
-import { createInMemoryRedis } from './utils/mock-redis';
+import { randomUUID } from 'crypto';
+import {
+  createWalletTestContext,
+  walletTransactionArb,
+  TEST_USER_ID,
+  RESERVE_ACCOUNT_ID,
+} from './wallet/test-fixtures';
 
 jest.setTimeout(20000);
 
 describe('WalletService zero-sum property', () => {
-  const events = { emit: jest.fn() } as unknown as EventPublisher;
-  const userId = '11111111-1111-1111-1111-111111111111';
+  const userId = TEST_USER_ID;
 
   async function setup() {
-    const db = newDb();
-    db.public.registerFunction({
-      name: 'version',
-      returns: 'text',
-      implementation: () => 'pg-mem',
-    });
-    db.public.registerFunction({
-      name: 'current_database',
-      returns: 'text',
-      implementation: () => 'test',
-    });
-    let seq = 1;
-    db.public.registerFunction({
-      name: 'uuid_generate_v4',
-      returns: 'text',
-      implementation: () => {
-        const id = seq.toString(16).padStart(32, '0');
-        seq++;
-        return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(16, 20)}-${id.slice(20)}`;
-      },
-    });
-    const dataSource = db.adapters.createTypeormDataSource({
-      type: 'postgres',
-      entities: [Account, JournalEntry, Disbursement, SettlementJournal],
-      synchronize: true,
-    }) as DataSource;
-    await dataSource.initialize();
-    const accountRepo = dataSource.getRepository(Account);
-    const journalRepo = dataSource.getRepository(JournalEntry);
-    const disbRepo = dataSource.getRepository(Disbursement);
-    const settleRepo = dataSource.getRepository(SettlementJournal);
-    const { redis } = createInMemoryRedis();
-    const provider = {
-      initiate3DS: jest.fn().mockResolvedValue({ id: 'tx' }),
-      getStatus: jest.fn().mockResolvedValue('approved'),
-    } as unknown as PaymentProviderService;
-    const kyc = {
-      validate: jest.fn().mockResolvedValue(undefined),
-      isVerified: jest.fn().mockResolvedValue(true),
-    } as unknown as KycService;
-    const service = new WalletService(
-      accountRepo,
-      journalRepo,
-      disbRepo,
-      settleRepo,
-      events,
-      redis,
-      provider,
-      kyc,
-    );
-    Object.assign(service, { enqueueDisbursement: jest.fn() });
-    await accountRepo.save([
-      { id: userId, name: 'user', balance: 0, kycVerified: true, currency: 'USD' },
+    const context = await createWalletTestContext();
+    const depositRef = randomUUID();
+    await context.journalRepo.insert([
       {
-        id: '00000000-0000-0000-0000-000000000001',
-        name: 'reserve',
-        balance: 0,
-        kycVerified: true,
+        id: randomUUID(),
+        accountId: userId,
+        amount: 1000,
         currency: 'USD',
+        refType: 'deposit',
+        refId: depositRef,
+        hash: randomUUID(),
       },
       {
-        id: '00000000-0000-0000-0000-000000000002',
-        name: 'house',
-        balance: 0,
-        kycVerified: true,
+        id: randomUUID(),
+        accountId: RESERVE_ACCOUNT_ID,
+        amount: -1000,
         currency: 'USD',
-      },
-      {
-        id: '00000000-0000-0000-0000-000000000003',
-        name: 'rake',
-        balance: 0,
-        kycVerified: true,
-        currency: 'USD',
-      },
-      {
-        id: '00000000-0000-0000-0000-000000000004',
-        name: 'prize',
-        balance: 0,
-        kycVerified: true,
-        currency: 'USD',
+        refType: 'deposit',
+        refId: depositRef,
+        hash: randomUUID(),
       },
     ]);
-    await service.deposit(userId, 1000, 'dev', '127.0.0.1', 'USD');
-    return { dataSource, service, journalRepo };
+    await context.accountRepo.increment({ id: userId }, 'balance', 1000);
+    await context.accountRepo.increment({ id: RESERVE_ACCOUNT_ID }, 'balance', -1000);
+    return context;
   }
-
-  const txArb = fc.integer({ min: 1, max: 100 }).chain((amount) =>
-    fc.record({
-      amount: fc.constant(amount),
-      rake: fc.integer({ min: 0, max: amount }),
-    }),
-  );
 
   it('maintains zero-sum balance and consistent journals', async () => {
     await fc.assert(
-      fc.asyncProperty(fc.array(txArb, { maxLength: 5 }), async (txs) => {
+      fc.asyncProperty(fc.array(walletTransactionArb, { maxLength: 5 }), async (txs) => {
         const { dataSource, service, journalRepo } = await setup();
         let expectedEntries = 2; // initial deposit
         try {
