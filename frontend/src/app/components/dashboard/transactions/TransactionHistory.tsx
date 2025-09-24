@@ -19,6 +19,7 @@ type TransactionLogEntry = Awaited<
 export default function DashboardTransactionHistory({ onExport }: Props) {
   const pageSize = 10;
   const locale = useLocale();
+
   const { queries: filterQueries, resolveMetadata } =
     useTransactionFilterQueries({
       locale,
@@ -74,10 +75,6 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
   const filtersQuery = queries.filters;
 
   const { playerSelect, typeSelect } = resolveMetadata(queries);
-  const playerPlaceholderLabel = playerSelect.placeholderOption.label;
-  const playerOptions = playerSelect.options;
-  const typePlaceholderLabel = typeSelect.placeholderOption.label;
-  const typeOptions = typeSelect.options;
 
   useApiError(playersQuery?.error);
   useApiError(typesQuery?.error);
@@ -101,16 +98,16 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
         {
           key: 'playerId',
           label: 'Filter by player',
-          placeholderOption: { value: '', label: playerPlaceholderLabel },
-          options: playerOptions,
+          placeholderOption: playerSelect.placeholderOption,
+          options: playerSelect.options,
           loading: playersQuery?.isLoading,
           error: Boolean(playersQuery?.error),
         },
         {
           key: 'type',
           label: 'Filter by type',
-          placeholderOption: { value: '', label: typePlaceholderLabel },
-          options: typeOptions,
+          placeholderOption: typeSelect.placeholderOption,
+          options: typeSelect.options,
           loading: typesQuery?.isLoading,
           error: Boolean(typesQuery?.error),
         },
@@ -129,6 +126,7 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
   if (historyError) {
     return <p role="alert">Failed to load transaction history.</p>;
   }
+
   return (
     <>
       <TransactionHistorySection

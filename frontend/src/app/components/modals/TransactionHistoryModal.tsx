@@ -118,6 +118,7 @@ export default function TransactionHistoryModal({
   });
 
   const filtersQuery = queries.filters;
+
   const { typeSelect, performedBySelect } = resolveMetadata(queries);
   const {
     placeholderOption: typePlaceholderOption,
