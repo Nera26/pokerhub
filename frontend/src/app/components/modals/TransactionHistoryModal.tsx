@@ -12,23 +12,22 @@ import {
   AmountCell,
   StatusCell,
 } from '@/app/components/common/transactionCells';
-import {
-  fetchTransactionFilters,
-  fetchUserTransactions,
-} from '@/lib/api/transactions';
+import { fetchUserTransactions } from '@/lib/api/transactions';
 import type { FilterOptions } from '@shared/transactions.schema';
 import { AdminTransactionEntriesSchema } from '@shared/transactions.schema';
 import { z } from 'zod';
 import useTransactionColumns from '@/hooks/useTransactionColumns';
-import {
-  useTransactionHistoryControls,
-  type TransactionHistoryFilterQuery,
-} from '@/app/components/common/TransactionHistoryControls';
+import { useTransactionHistoryControls } from '@/app/components/common/TransactionHistoryControls';
 import TransactionHistoryFilters, {
   buildSelectOptions,
 } from '@/app/components/common/TransactionHistoryFilters';
 import { useLocale } from 'next-intl';
 import { useTranslations } from '@/hooks/useTranslations';
+import {
+  createPlaceholderOption,
+  resolveTransactionFilterLabel,
+  useTransactionFilterQueries,
+} from '@/hooks/useTransactionFilterQueries';
 
 export interface Transaction extends TimestampSource {
   datetime: string;
@@ -74,26 +73,10 @@ export default function TransactionHistoryModal({
     error: colsError,
   } = useTransactionColumns();
 
-  const filterQueries = useMemo(
-    () =>
-      [
-        {
-          key: 'filters',
-          queryKey: ['transactionFilters', locale] as const,
-          queryFn: () => fetchTransactionFilters(locale),
-          enabled: isOpen,
-          initialData: {
-            types: [],
-            performedBy: [],
-          } as FilterOptions,
-        },
-      ] as const satisfies readonly TransactionHistoryFilterQuery<
-        'filters',
-        FilterOptions,
-        FilterOptions
-      >[],
-    [isOpen, locale],
-  );
+  const filterQueries = useTransactionFilterQueries({
+    locale,
+    filtersEnabled: isOpen,
+  });
 
   const { history, queries } = useTransactionHistoryControls<
     AdminTransactionEntry,
@@ -146,14 +129,20 @@ export default function TransactionHistoryModal({
     performedBy: [],
   };
   const translations = translationMessages ?? {};
-  const typePlaceholderLabel =
-    filterOptions.typePlaceholder ??
-    translations['transactions.filters.allTypes'] ??
-    'All Types';
-  const performedByPlaceholderLabel =
-    filterOptions.performedByPlaceholder ??
-    translations['transactions.filters.performedByAll'] ??
-    'Performed By: All';
+  const typePlaceholderLabel = resolveTransactionFilterLabel({
+    filterOptions,
+    placeholderKey: 'typePlaceholder',
+    translations,
+    translationKey: 'transactions.filters.allTypes',
+    fallback: 'All Types',
+  });
+  const performedByPlaceholderLabel = resolveTransactionFilterLabel({
+    filterOptions,
+    placeholderKey: 'performedByPlaceholder',
+    translations,
+    translationKey: 'transactions.filters.performedByAll',
+    fallback: 'Performed By: All',
+  });
 
   const typeOptions = useMemo(
     () =>
@@ -162,7 +151,9 @@ export default function TransactionHistoryModal({
         getValue: (value) => value,
         getLabel: (value) => value,
         prependOptions: [
-          { value: typePlaceholderLabel, label: typePlaceholderLabel },
+          createPlaceholderOption(typePlaceholderLabel, {
+            value: typePlaceholderLabel,
+          }),
         ],
         filter: (value) => value !== typePlaceholderLabel,
       }),
@@ -176,10 +167,9 @@ export default function TransactionHistoryModal({
         getValue: (value) => value,
         getLabel: (value) => value,
         prependOptions: [
-          {
+          createPlaceholderOption(performedByPlaceholderLabel, {
             value: performedByPlaceholderLabel,
-            label: performedByPlaceholderLabel,
-          },
+          }),
         ],
         filter: (value) => value !== performedByPlaceholderLabel,
       }),

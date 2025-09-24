@@ -2,23 +2,20 @@ import { useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons/faSpinner';
 import TransactionHistorySection from '@/app/components/common/TransactionHistorySection';
-import {
-  useTransactionHistoryControls,
-  type TransactionHistoryFilterQuery,
-} from '@/app/components/common/TransactionHistoryControls';
+import { useTransactionHistoryControls } from '@/app/components/common/TransactionHistoryControls';
 import TransactionHistoryFilters, {
   buildSelectOptions,
 } from '@/app/components/common/TransactionHistoryFilters';
-import { fetchAdminPlayers } from '@/lib/api/wallet';
-import {
-  fetchTransactionTypes,
-  fetchTransactionsLog,
-  fetchTransactionFilters,
-} from '@/lib/api/transactions';
+import { fetchTransactionsLog } from '@/lib/api/transactions';
 import { useApiError } from '@/hooks/useApiError';
 import { useLocale } from 'next-intl';
 import { useTranslations } from '@/hooks/useTranslations';
 import type { FilterOptions } from '@shared/transactions.schema';
+import {
+  createPlaceholderOption,
+  resolveTransactionFilterLabel,
+  useTransactionFilterQueries,
+} from '@/hooks/useTransactionFilterQueries';
 
 interface Props {
   onExport?: () => void;
@@ -33,37 +30,11 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
   const locale = useLocale();
   const { data: translationMessages } = useTranslations(locale);
 
-  const filterQueries = useMemo(
-    () =>
-      [
-        {
-          key: 'players',
-          queryKey: ['adminPlayers'] as const,
-          queryFn: fetchAdminPlayers,
-          initialData: [] as Awaited<ReturnType<typeof fetchAdminPlayers>>,
-        },
-        {
-          key: 'types',
-          queryKey: ['transactionTypes'] as const,
-          queryFn: fetchTransactionTypes,
-          initialData: [] as Awaited<ReturnType<typeof fetchTransactionTypes>>,
-        },
-        {
-          key: 'filters',
-          queryKey: ['transactionFilters', locale] as const,
-          queryFn: () => fetchTransactionFilters(locale),
-          initialData: {
-            types: [],
-            performedBy: [],
-          } as FilterOptions,
-        },
-      ] as const satisfies readonly TransactionHistoryFilterQuery<
-        'players' | 'types' | 'filters',
-        any,
-        any
-      >[],
-    [locale],
-  );
+  const filterQueries = useTransactionFilterQueries({
+    locale,
+    includePlayers: true,
+    includeTypes: true,
+  });
 
   const { history, queries, handleExport } = useTransactionHistoryControls<
     TransactionLogEntry,
@@ -119,12 +90,18 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
     performedBy: [],
   };
   const translations = translationMessages ?? {};
-  const playerPlaceholderLabel =
-    translations['transactions.filters.allPlayers'] ?? 'All Players';
-  const typePlaceholderLabel =
-    filterOptions.typePlaceholder ??
-    translations['transactions.filters.allTypes'] ??
-    'All Types';
+  const playerPlaceholderLabel = resolveTransactionFilterLabel({
+    translations,
+    translationKey: 'transactions.filters.allPlayers',
+    fallback: 'All Players',
+  });
+  const typePlaceholderLabel = resolveTransactionFilterLabel({
+    filterOptions,
+    placeholderKey: 'typePlaceholder',
+    translations,
+    translationKey: 'transactions.filters.allTypes',
+    fallback: 'All Types',
+  });
 
   const playerOptions = useMemo(
     () =>
@@ -168,7 +145,7 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
         {
           key: 'playerId',
           label: 'Filter by player',
-          placeholderOption: { value: '', label: playerPlaceholderLabel },
+          placeholderOption: createPlaceholderOption(playerPlaceholderLabel),
           options: playerOptions,
           loading: playersQuery?.isLoading,
           error: Boolean(playersQuery?.error),
@@ -176,7 +153,7 @@ export default function DashboardTransactionHistory({ onExport }: Props) {
         {
           key: 'type',
           label: 'Filter by type',
-          placeholderOption: { value: '', label: typePlaceholderLabel },
+          placeholderOption: createPlaceholderOption(typePlaceholderLabel),
           options: typeOptions,
           loading: typesQuery?.isLoading,
           error: Boolean(typesQuery?.error),
