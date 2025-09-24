@@ -1,4 +1,4 @@
-import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor, within } from '@testing-library/react';
 import {
   bonusFixture,
   mockFetchBonuses,
@@ -46,9 +46,13 @@ describe('BonusManager status toggle', () => {
     await screen.findByRole('button', { name: /create promotion/i });
     const pauseBtn = await screen.findByRole('button', { name: /pause/i });
     fireEvent.click(pauseBtn);
-    const confirm = await screen.findByRole('button', {
+    const dialog = await screen.findByRole('dialog');
+    const confirm = within(dialog).getByRole('button', {
       name: /confirm pause/i,
     });
+    const cancel = within(dialog).getByRole('button', { name: /cancel/i });
+    expect(confirm).toHaveClass('bg-danger-red');
+    expect(cancel).toHaveClass('border');
     fireEvent.click(confirm);
 
     await screen.findByText('Paused "Test Bonus"');
@@ -63,9 +67,13 @@ describe('BonusManager status toggle', () => {
     await screen.findByRole('button', { name: /create promotion/i });
     const resumeBtn = await screen.findByRole('button', { name: /resume/i });
     fireEvent.click(resumeBtn);
-    const confirm = await screen.findByRole('button', {
+    const dialog = await screen.findByRole('dialog');
+    const confirm = within(dialog).getByRole('button', {
       name: /confirm resume/i,
     });
+    const cancel = within(dialog).getByRole('button', { name: /cancel/i });
+    expect(confirm).toHaveClass('bg-accent-green');
+    expect(cancel).toHaveClass('border');
     fireEvent.click(confirm);
 
     await screen.findByText('Resumed "Test Bonus"');
