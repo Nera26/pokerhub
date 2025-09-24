@@ -2484,6 +2484,19 @@ export interface paths {
       };
     };
   };
+  "/admin/bonus/stats": {
+    /** Get bonus statistics */
+    get: {
+      responses: {
+        /** @description Bonus statistics */
+        200: {
+          content: {
+            "application/json": components["schemas"]["BonusStatsResponse"];
+          };
+        };
+      };
+    };
+  };
   "/admin/bonuses": {
     /** List bonuses */
     get: {

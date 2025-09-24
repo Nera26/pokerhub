@@ -1,4 +1,4 @@
-import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor, within } from '@testing-library/react';
 import {
   bonusDefaultsFixture,
   bonusFixture,
@@ -10,6 +10,7 @@ import {
   createBonusDefaults,
   deleteBonusDefaults,
   updateBonusDefaults,
+  fetchBonusStats,
 } from '@/lib/api/bonus';
 import { BonusDefaultsResponseSchema } from '@shared/types';
 import type { ApiError } from '@/lib/api/client';
@@ -23,6 +24,7 @@ jest.mock('@/lib/api/admin', () => ({
 }));
 jest.mock('@/lib/api/bonus', () => ({
   fetchBonusDefaults: jest.fn(),
+  fetchBonusStats: jest.fn(),
   createBonusDefaults: jest.fn(),
   updateBonusDefaults: jest.fn(),
   deleteBonusDefaults: jest.fn(),
@@ -54,9 +56,13 @@ describe('BonusManager status toggle', () => {
     await screen.findByRole('button', { name: /create promotion/i });
     const pauseBtn = await screen.findByRole('button', { name: /pause/i });
     fireEvent.click(pauseBtn);
-    const confirm = await screen.findByRole('button', {
+    const dialog = await screen.findByRole('dialog');
+    const confirm = within(dialog).getByRole('button', {
       name: /confirm pause/i,
     });
+    const cancel = within(dialog).getByRole('button', { name: /cancel/i });
+    expect(confirm).toHaveClass('bg-danger-red');
+    expect(cancel).toHaveClass('border');
     fireEvent.click(confirm);
 
     await screen.findByText('Paused "Test Bonus"');
@@ -71,9 +77,13 @@ describe('BonusManager status toggle', () => {
     await screen.findByRole('button', { name: /create promotion/i });
     const resumeBtn = await screen.findByRole('button', { name: /resume/i });
     fireEvent.click(resumeBtn);
-    const confirm = await screen.findByRole('button', {
+    const dialog = await screen.findByRole('dialog');
+    const confirm = within(dialog).getByRole('button', {
       name: /confirm resume/i,
     });
+    const cancel = within(dialog).getByRole('button', { name: /cancel/i });
+    expect(confirm).toHaveClass('bg-accent-green');
+    expect(cancel).toHaveClass('border');
     fireEvent.click(confirm);
 
     await screen.findByText('Resumed "Test Bonus"');
@@ -108,6 +118,37 @@ describe('BonusManager table manager', () => {
       expect(screen.getByText('Promo 3')).toBeInTheDocument(),
     );
     expect(screen.queryByText('Promo 6')).not.toBeInTheDocument();
+  });
+});
+
+describe('BonusManager statistics', () => {
+  it('renders stats returned by the API', async () => {
+    mockFetchBonuses([{ ...bonusFixture }]);
+    (fetchBonusStats as jest.Mock).mockResolvedValue({
+      activeBonuses: 3,
+      weeklyClaims: 12,
+      completedPayouts: 123.45,
+      currency: 'USD',
+      conversionRate: 50,
+    });
+
+    renderBonusManager();
+
+    await screen.findByRole('button', { name: /create promotion/i });
+    expect(screen.getByText('3 Active')).toBeInTheDocument();
+    expect(screen.getByText('$123.45')).toBeInTheDocument();
+    expect(screen.getByText('50.0%')).toBeInTheDocument();
+  });
+
+  it('shows fallbacks when stats fail to load', async () => {
+    mockFetchBonuses([{ ...bonusFixture }]);
+    (fetchBonusStats as jest.Mock).mockRejectedValue(new Error('stats failed'));
+
+    renderBonusManager();
+
+    await screen.findByRole('button', { name: /create promotion/i });
+    expect(await screen.findByText('stats failed')).toBeInTheDocument();
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0);
   });
 });
 

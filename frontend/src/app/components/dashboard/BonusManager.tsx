@@ -18,6 +18,7 @@ import {
   createBonusDefaults,
   deleteBonusDefaults,
   fetchBonusDefaults,
+  fetchBonusStats,
   updateBonusDefaults,
 } from '@/lib/api/bonus';
 import { useInvalidateMutation } from '@/hooks/useInvalidateMutation';
@@ -25,6 +26,7 @@ import type { ApiError } from '@/lib/api/client';
 import type {
   BonusDefaultsRequest,
   BonusDefaultsResponse,
+  BonusStatsResponse,
 } from '@shared/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -39,18 +41,17 @@ import {
 
 import Card, { CardContent, CardTitle } from '../ui/Card';
 import Button from '../ui/Button';
+import ConfirmModal from '../ui/ConfirmModal';
 import Modal from '../ui/Modal';
 import ToastNotification from '../ui/ToastNotification';
 import Tooltip from '../ui/Tooltip';
 import BonusForm from './forms/BonusForm';
-import StatusModal from './StatusModal';
 import StatusPill from './common/StatusPill';
 import AdminTableManager from './common/AdminTableManager';
 import { TableHead, TableRow, TableCell } from '../ui/Table';
 
 type BonusStatus = 'active' | 'paused';
 type StatusFilter = BonusStatus | 'all' | 'expired';
-type PromoType = string;
 
 const bonusDefaultsQueryKey = ['admin-bonus-defaults'] as const;
 
@@ -102,6 +103,7 @@ export default function BonusManager() {
   const locale = useLocale();
   const { data: t } = useTranslations(locale);
   const queryClient = useQueryClient();
+
   const {
     data: bonuses = [],
     isLoading,
@@ -110,6 +112,7 @@ export default function BonusManager() {
     queryKey: ['admin-bonuses'],
     queryFn: ({ signal }) => fetchBonuses({ signal }),
   });
+
   const {
     data: bonusDefaults,
     isLoading: defaultsLoading,
@@ -118,6 +121,16 @@ export default function BonusManager() {
     queryKey: bonusDefaultsQueryKey,
     queryFn: ({ signal }) => fetchBonusDefaults({ signal }),
   });
+
+  const {
+    data: bonusStats,
+    isLoading: statsLoading,
+    error: statsError,
+  } = useQuery<BonusStatsResponse, ApiError>({
+    queryKey: ['admin-bonus-stats'],
+    queryFn: ({ signal }) => fetchBonusStats({ signal }),
+  });
+
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [editOpen, setEditOpen] = useState(false);
   const [pauseOpen, setPauseOpen] = useState(false);
@@ -312,16 +325,43 @@ export default function BonusManager() {
     });
   }, [bonuses, statusFilter]);
 
-  const totalActive = useMemo(
+  const fallbackActiveBonuses = useMemo(
     () =>
       bonuses.filter((b) => b.status === 'active' && !isExpired(b.expiryDate))
         .length,
     [bonuses],
   );
-  const claimsWeek = useMemo(
+  const fallbackWeeklyClaims = useMemo(
     () => bonuses.reduce((s, b) => s + (b.claimsWeek ?? 0), 0),
     [bonuses],
   );
+
+  const activeBonuses = bonusStats?.activeBonuses ?? fallbackActiveBonuses;
+  const weeklyClaims = bonusStats?.weeklyClaims ?? fallbackWeeklyClaims;
+
+  const formattedPayout = useMemo(() => {
+    if (statsLoading) return 'Loading…';
+    if (statsError) return statsError.message ?? 'Failed to load stats';
+    if (bonusStats) {
+      try {
+        const formatter = new Intl.NumberFormat(undefined, {
+          style: 'currency',
+          currency: bonusStats.currency,
+        });
+        return formatter.format(bonusStats.completedPayouts);
+      } catch {
+        return `${bonusStats.completedPayouts.toLocaleString()} ${bonusStats.currency}`;
+      }
+    }
+    return '—';
+  }, [bonusStats, statsError, statsLoading]);
+
+  const formattedConversion = useMemo(() => {
+    if (statsLoading) return 'Loading…';
+    if (statsError) return '—';
+    if (bonusStats) return `${bonusStats.conversionRate.toFixed(1)}%`;
+    return '0%';
+  }, [bonusStats, statsError, statsLoading]);
 
   const openEdit = (b: Bonus) => {
     setSelected(b);
@@ -485,6 +525,7 @@ export default function BonusManager() {
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Left: List */}
         <section className="space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold">Bonuses</h3>
@@ -502,7 +543,7 @@ export default function BonusManager() {
                 <option value="expired">Expired</option>
               </select>
               <span className="bg-accent-green px-3 py-1 rounded-lg text-sm font-semibold">
-                {totalActive} Active
+                {activeBonuses} Active
               </span>
             </div>
           </div>
@@ -528,25 +569,19 @@ export default function BonusManager() {
               }
               renderRow={(b) => <BonusRow b={b} />}
               searchFilter={(b, q) => {
-                const t = (
-                  b.name +
-                  ' ' +
-                  b.description +
-                  ' ' +
-                  b.type
-                ).toLowerCase();
-                return !q || t.includes(q);
+                const tt = (b.name + ' ' + b.description + ' ' + b.type).toLowerCase();
+                return !q || tt.includes(q);
               }}
               searchPlaceholder={t?.searchPromotions ?? 'Search promotions...'}
               emptyMessage={
-                t?.noPromotionsMatchFilters ??
-                'No promotions match your filters.'
+                t?.noPromotionsMatchFilters ?? 'No promotions match your filters.'
               }
               caption="Admin view of bonuses"
             />
           )}
         </section>
 
+        {/* Right: Create + Stats */}
         <section className="space-y-6">
           <h3 className="text-xl font-bold">Create New Promotion</h3>
 
@@ -607,22 +642,24 @@ export default function BonusManager() {
                 <div className="flex justify-between items-center">
                   <span className="text-text-secondary">Total Active</span>
                   <span className="text-accent-green font-bold">
-                    {totalActive}
+                    {activeBonuses}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-text-secondary">Claims This Week</span>
                   <span className="text-accent-yellow font-bold">
-                    {claimsWeek.toLocaleString()}
+                    {weeklyClaims.toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-text-secondary">Total Payout</span>
-                  <span className="font-bold">$12,847</span>
+                  <span className="font-bold">{formattedPayout}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-text-secondary">Conversion Rate</span>
-                  <span className="text-accent-blue font-bold">23.4%</span>
+                  <span className="text-accent-blue font-bold">
+                    {formattedConversion}
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -644,7 +681,15 @@ export default function BonusManager() {
         </div>
 
         {selected && (
-          <form className="space-y-6" onSubmit={saveEdit}>
+          <form className="space-y-6" onSubmit={handleEditSubmit((data) => {
+            if (!selected) return;
+            updateMutation.mutate({
+              id: selected.id,
+              data: { ...data, expiryDate: data.expiryDate || undefined },
+            });
+            setEditOpen(false);
+          })}
+          >
             <BonusForm
               register={registerEdit}
               errors={editErrors}
@@ -669,19 +714,63 @@ export default function BonusManager() {
       </Modal>
 
       {/* PAUSE/RESUME STATUS MODALS */}
-      <StatusModal
-        action="pause"
+      <ConfirmModal
         isOpen={pauseOpen}
         onClose={() => setPauseOpen(false)}
-        onConfirm={confirmPause}
-        bonusName={selected?.name ?? ''}
+        onConfirm={() => {
+          if (!selected) return;
+          toggleMutation.mutate({
+            id: selected.id,
+            status: 'paused',
+            name: selected.name,
+          });
+          setPauseOpen(false);
+        }}
+        title="Pause Bonus"
+        message={
+          <>
+            Are you sure you want to pause{' '}
+            <span className="text-accent-yellow font-semibold">
+              {selected?.name ?? ''}
+            </span>
+            ?
+          </>
+        }
+        icon={<FontAwesomeIcon icon={faPause} />}
+        iconClassName="text-4xl text-danger-red"
+        confirmText="Confirm Pause"
+        cancelText="Cancel"
+        confirmButtonClassName="bg-danger-red hover:brightness-110 text-text-primary"
+        cancelButtonClassName="border border-dark text-text-secondary hover:bg-hover-bg"
       />
-      <StatusModal
-        action="resume"
+      <ConfirmModal
         isOpen={resumeOpen}
         onClose={() => setResumeOpen(false)}
-        onConfirm={confirmResume}
-        bonusName={selected?.name ?? ''}
+        onConfirm={() => {
+          if (!selected) return;
+          toggleMutation.mutate({
+            id: selected.id,
+            status: 'active',
+            name: selected.name,
+          });
+          setResumeOpen(false);
+        }}
+        title="Resume Bonus"
+        message={
+          <>
+            Are you sure you want to resume{' '}
+            <span className="text-accent-yellow font-semibold">
+              {selected?.name ?? ''}
+            </span>
+            ?
+          </>
+        }
+        icon={<FontAwesomeIcon icon={faPlay} />}
+        iconClassName="text-4xl text-accent-green"
+        confirmText="Confirm Resume"
+        cancelText="Cancel"
+        confirmButtonClassName="bg-accent-green hover-glow-green text-text-primary"
+        cancelButtonClassName="border border-dark text-text-secondary hover:bg-hover-bg"
       />
 
       <ToastNotification

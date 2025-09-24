@@ -9,6 +9,8 @@ import {
   BonusOptionsResponseSchema,
   BonusDefaultsRequest,
   BonusDefaultsRequestSchema,
+  BonusStatsResponse,
+  BonusStatsResponseSchema,
 } from '../schemas/bonus';
 import { MessageResponseSchema } from '../schemas/auth';
 
@@ -32,6 +34,15 @@ export class AdminBonusController {
     return this.bonusService
       .getDefaults()
       .then((res) => BonusDefaultsResponseSchema.parse(res));
+  }
+
+  @Get('stats')
+  @ApiOperation({ summary: 'Get bonus statistics' })
+  @ApiResponse({ status: 200, description: 'Bonus statistics' })
+  stats(): Promise<BonusStatsResponse> {
+    return this.bonusService
+      .getStats()
+      .then((res) => BonusStatsResponseSchema.parse(res));
   }
 
   @Post('defaults')
