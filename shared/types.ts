@@ -12,8 +12,6 @@ import {
 import { CurrencySchema } from './wallet.schema';
 
 export type { GameAction } from './schemas/game';
-export type { HandLogEntry } from '../backend/src/game/hand-log';
-export type HandLog = HandLogEntry[];
 export { GameActionSchema };
 
 export { ZodError };
@@ -453,7 +451,6 @@ export type FeatureFlagsResponse = z.infer<typeof FeatureFlagsResponseSchema>;
 // Game actions
 export { GameActionSchema } from './schemas/game';
 export type { GameAction } from './schemas/game';
-export type GameActionPayload = z.infer<typeof GameActionSchema>;
 export { SidePotSchema } from './schemas/sidePot';
 export type { SidePot } from './schemas/sidePot';
 
