@@ -30,6 +30,10 @@ describe('AdminTournamentsController', () => {
       { id: 'Turbo', label: 'Turbo' },
     ]),
     getDefaultTournament: jest.fn().mockResolvedValue(defaults),
+    getAdminFilterOptions: jest.fn().mockReturnValue([
+      { id: 'all', label: 'All' },
+      { id: 'scheduled', label: 'Scheduled', colorClass: 'border-blue' },
+    ]),
   };
 
   beforeAll(async () => {
@@ -68,5 +72,16 @@ describe('AdminTournamentsController', () => {
       .expect(200)
       .expect(defaults);
     expect(svc.getDefaultTournament).toHaveBeenCalled();
+  });
+
+  it('returns filters', async () => {
+    await request(app.getHttpServer())
+      .get('/admin/tournaments/filters')
+      .expect(200)
+      .expect([
+        { id: 'all', label: 'All' },
+        { id: 'scheduled', label: 'Scheduled', colorClass: 'border-blue' },
+      ]);
+    expect(svc.getAdminFilterOptions).toHaveBeenCalled();
   });
 });

@@ -2,6 +2,7 @@ import { renderWithClient } from './renderWithClient';
 import ManageTables from '../ManageTables';
 import ManageTournaments from '../ManageTournaments';
 import { useAdminCrud, useAdminCrudTable } from '@/hooks/admin/useAdminCrud';
+import { useAdminTournamentFilters } from '@/hooks/admin/useTournamentFilters';
 
 jest.mock('next-intl', () => ({
   useLocale: () => 'en',
@@ -86,6 +87,13 @@ jest.mock('@/hooks/admin/useAdminCrud', () => ({
   useAdminCrudTable: jest.fn(() => createCrudTableStub()),
 }));
 
+jest.mock('@/hooks/admin/useTournamentFilters', () => ({
+  useAdminTournamentFilters: jest.fn(() => ({
+    data: [{ id: 'all', label: 'All' }],
+    isLoading: false,
+  })),
+}));
+
 describe('admin dashboard screens', () => {
   const mockedUseAdminCrud = useAdminCrud as jest.MockedFunction<
     typeof useAdminCrud
@@ -93,6 +101,10 @@ describe('admin dashboard screens', () => {
   const mockedUseAdminCrudTable = useAdminCrudTable as jest.MockedFunction<
     typeof useAdminCrudTable
   >;
+  const mockedUseAdminTournamentFilters =
+    useAdminTournamentFilters as jest.MockedFunction<
+      typeof useAdminTournamentFilters
+    >;
 
   beforeEach(() => {
     mockedUseAdminCrud.mockImplementation(
@@ -101,6 +113,10 @@ describe('admin dashboard screens', () => {
     mockedUseAdminCrudTable.mockImplementation(
       () => createCrudTableStub() as CrudTableReturn,
     );
+    mockedUseAdminTournamentFilters.mockReturnValue({
+      data: [{ id: 'all', label: 'All' }],
+      isLoading: false,
+    } as any);
   });
 
   afterEach(() => {

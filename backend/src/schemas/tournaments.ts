@@ -31,6 +31,35 @@ export const AdminTournamentSchema = z.object({
 
 export type AdminTournament = z.infer<typeof AdminTournamentSchema>;
 
+const AdminTournamentStatusSchema = AdminTournamentSchema.shape.status;
+
+export const AdminTournamentFilterIdSchema = z.union([
+  z.literal('all'),
+  AdminTournamentStatusSchema,
+]);
+
+export type AdminTournamentFilterId = z.infer<
+  typeof AdminTournamentFilterIdSchema
+>;
+
+export const AdminTournamentFilterOptionSchema = z.object({
+  id: AdminTournamentFilterIdSchema,
+  label: z.string().min(1),
+  colorClass: z.string().min(1).optional(),
+});
+
+export type AdminTournamentFilterOption = z.infer<
+  typeof AdminTournamentFilterOptionSchema
+>;
+
+export const AdminTournamentFiltersResponseSchema = z.array(
+  AdminTournamentFilterOptionSchema,
+);
+
+export type AdminTournamentFiltersResponse = z.infer<
+  typeof AdminTournamentFiltersResponseSchema
+>;
+
 export const TournamentFormatsResponseSchema = z.array(
   TournamentFormatOptionSchema,
 );

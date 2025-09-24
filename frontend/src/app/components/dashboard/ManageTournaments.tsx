@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type PropsWithChildren } from 'react';
+import { useEffect, useMemo, useState, type PropsWithChildren } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   fetchAdminTournaments,
@@ -10,7 +10,10 @@ import {
   fetchAdminTournamentDefaults,
 } from '@/lib/api/admin';
 import { z } from 'zod';
-import { type AdminTournament } from '@shared/types';
+import {
+  type AdminTournament,
+  type AdminTournamentFilterOption,
+} from '@shared/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faPlus,
@@ -25,13 +28,54 @@ import TournamentRow from './TournamentRow';
 import TournamentModal from '../modals/TournamentModal';
 import Button from '../ui/Button';
 import AdminCrudPage from './common/AdminCrudPage';
+import { useAdminTournamentFilters } from '@/hooks/admin/useTournamentFilters';
 
-const statusEnum = z.enum(['scheduled', 'running', 'finished', 'cancelled']);
+const statusEnum = z.enum([
+  'scheduled',
+  'running',
+  'finished',
+  'cancelled',
+  'auto-start',
+]);
 type Status = z.infer<typeof statusEnum>;
 type Tournament = AdminTournament;
 
+const FALLBACK_FILTERS: AdminTournamentFilterOption[] = [
+  { id: 'all', label: 'All' },
+];
+
 export default function ManageTournaments() {
   const [statusFilter, setStatusFilter] = useState<'all' | Status>('all');
+  const { data: filters, isLoading: filtersLoading } =
+    useAdminTournamentFilters();
+
+  const filterOptions = useMemo(() => {
+    if (!filters || filters.length === 0) {
+      return FALLBACK_FILTERS;
+    }
+
+    const seen = new Set<string>();
+    const normalized = filters.filter((filter) => {
+      if (seen.has(filter.id)) return false;
+      seen.add(filter.id);
+      return true;
+    });
+
+    if (!normalized.some((filter) => filter.id === 'all')) {
+      normalized.unshift({ id: 'all', label: 'All' });
+    }
+
+    return normalized;
+  }, [filters]);
+
+  useEffect(() => {
+    if (!filterOptions.some((filter) => filter.id === statusFilter)) {
+      setStatusFilter('all');
+    }
+  }, [filterOptions, statusFilter]);
+
+  const showFiltersSkeleton =
+    filtersLoading && (!filters || filters.length === 0);
 
   const [toast, setToast] = useState<{
     open: boolean;
@@ -183,40 +227,26 @@ export default function ManageTournaments() {
       renderFilters={() => (
         <section className="mb-2 flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-2">
-            <FilterBtn
-              active={statusFilter === 'all'}
-              onClick={() => setStatusFilter('all')}
-            >
-              All
-            </FilterBtn>
-            <FilterBtn
-              active={statusFilter === 'scheduled'}
-              onClick={() => setStatusFilter('scheduled')}
-              className="border-accent-blue text-accent-blue"
-            >
-              Scheduled
-            </FilterBtn>
-            <FilterBtn
-              active={statusFilter === 'running'}
-              onClick={() => setStatusFilter('running')}
-              className="border-accent-green text-accent-green"
-            >
-              Running
-            </FilterBtn>
-            <FilterBtn
-              active={statusFilter === 'finished'}
-              onClick={() => setStatusFilter('finished')}
-              className="border-text-secondary text-text-secondary"
-            >
-              Finished
-            </FilterBtn>
-            <FilterBtn
-              active={statusFilter === 'cancelled'}
-              onClick={() => setStatusFilter('cancelled')}
-              className="border-red-500 text-red-500"
-            >
-              Cancelled
-            </FilterBtn>
+            {showFiltersSkeleton
+              ? Array.from({ length: 4 }).map((_, idx) => (
+                  <div
+                    key={`filter-skeleton-${idx}`}
+                    aria-hidden="true"
+                    className="h-9 w-20 rounded-xl bg-hover-bg animate-pulse"
+                  />
+                ))
+              : filterOptions.map((filter) => (
+                  <FilterBtn
+                    key={filter.id}
+                    active={statusFilter === filter.id}
+                    onClick={() =>
+                      setStatusFilter(filter.id as typeof statusFilter)
+                    }
+                    className={filter.colorClass}
+                  >
+                    {filter.label}
+                  </FilterBtn>
+                ))}
           </div>
         </section>
       )}

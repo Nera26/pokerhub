@@ -8,6 +8,7 @@ import {
   deleteAdminTournament,
   fetchAdminTournamentDefaults,
 } from '@/lib/api/admin';
+import { useAdminTournamentFilters } from '@/hooks/admin/useTournamentFilters';
 import { makeTournaments, defaultTournament } from './testUtils';
 
 jest.mock('next-intl', () => ({
@@ -24,6 +25,10 @@ jest.mock('@/lib/api/admin', () => ({
   updateAdminTournament: jest.fn(),
   deleteAdminTournament: jest.fn(),
   fetchAdminTournamentDefaults: jest.fn(),
+}));
+
+jest.mock('@/hooks/admin/useTournamentFilters', () => ({
+  useAdminTournamentFilters: jest.fn(),
 }));
 
 jest.mock('@/app/components/modals/TournamentModal', () => ({
@@ -60,8 +65,46 @@ jest.mock('@/app/components/ui/ToastNotification', () => ({
 }));
 
 describe('ManageTournaments', () => {
+  const mockedUseAdminTournamentFilters =
+    useAdminTournamentFilters as jest.MockedFunction<
+      typeof useAdminTournamentFilters
+    >;
+
+  const defaultFilters = [
+    { id: 'all', label: 'All' },
+    {
+      id: 'scheduled',
+      label: 'Scheduled',
+      colorClass: 'border-accent-blue text-accent-blue',
+    },
+    {
+      id: 'auto-start',
+      label: 'Auto-start',
+      colorClass: 'border-accent-blue text-accent-blue',
+    },
+    {
+      id: 'running',
+      label: 'Running',
+      colorClass: 'border-accent-green text-accent-green',
+    },
+    {
+      id: 'finished',
+      label: 'Finished',
+      colorClass: 'border-text-secondary text-text-secondary',
+    },
+    {
+      id: 'cancelled',
+      label: 'Cancelled',
+      colorClass: 'border-red-500 text-red-500',
+    },
+  ];
+
   beforeEach(() => {
     jest.clearAllMocks();
+    mockedUseAdminTournamentFilters.mockReturnValue({
+      data: defaultFilters,
+      isLoading: false,
+    } as any);
   });
 
   it('shows loading state', () => {
@@ -175,5 +218,26 @@ describe('ManageTournaments', () => {
     fireEvent.click(confirm);
 
     await waitFor(() => expect(deleteAdminTournament).toHaveBeenCalledWith(1));
+  });
+
+  it('uses dynamic filters to filter tournaments', async () => {
+    const tournaments = makeTournaments(2);
+    (fetchAdminTournaments as jest.Mock).mockResolvedValue(tournaments);
+
+    renderWithClient(<ManageTournaments />);
+
+    await screen.findByText('Tournament 1');
+
+    expect(
+      screen.getByRole('button', { name: 'Scheduled' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Running' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Running' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Tournament 2')).toBeInTheDocument();
+      expect(screen.queryByText('Tournament 1')).not.toBeInTheDocument();
+    });
   });
 });
