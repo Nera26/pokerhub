@@ -1606,6 +1606,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LogTypeClassOverrideList'
+  /analytics/log-types/classes/defaults:
+    get:
+      summary: List default audit log type classes
+      responses:
+        '200':
+          description: Default audit log type classes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogTypeClassDefaultList'
+    put:
+      summary: Update a default audit log type class
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogTypeClassDefault'
+      responses:
+        '200':
+          description: Updated default audit log type class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogTypeClassDefault'
   /analytics/log-types/classes/{type}:
     put:
       summary: Update an audit log type class override
@@ -3598,6 +3623,12 @@ components:
           type: string
       required:
         - className
+    LogTypeClassDefault:
+      $ref: '#/components/schemas/LogTypeClassOverride'
+    LogTypeClassDefaultList:
+      type: array
+      items:
+        $ref: '#/components/schemas/LogTypeClassDefault'
     AuditSummaryResponse:
       type: object
       properties:

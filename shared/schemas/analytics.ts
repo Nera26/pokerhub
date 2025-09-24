@@ -59,6 +59,14 @@ export type LogTypeClassOverrideList = z.infer<
   typeof LogTypeClassOverrideListSchema
 >;
 
+export const LogTypeClassDefaultSchema = LogTypeClassSchema;
+export type LogTypeClassDefault = z.infer<typeof LogTypeClassDefaultSchema>;
+
+export const LogTypeClassDefaultListSchema = z.array(LogTypeClassDefaultSchema);
+export type LogTypeClassDefaultList = z.infer<
+  typeof LogTypeClassDefaultListSchema
+>;
+
 export const CreateLogTypeClassOverrideSchema = LogTypeClassSchema;
 export type CreateLogTypeClassOverride = z.infer<
   typeof CreateLogTypeClassOverrideSchema

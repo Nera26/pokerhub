@@ -6,6 +6,8 @@ import {
   type BroadcastTypesResponse,
   AuditLogTypesResponseSchema,
   type AuditLogTypesResponse,
+  LogTypeClassesSchema,
+  type LogTypeClasses,
 } from '@shared/types';
 
 export const useBroadcastTypes = createGetHook<BroadcastTypesResponse>(
@@ -16,4 +18,9 @@ export const useBroadcastTypes = createGetHook<BroadcastTypesResponse>(
 export const useAuditLogTypes = createGetHook<AuditLogTypesResponse>(
   '/api/analytics/log-types',
   AuditLogTypesResponseSchema,
+);
+
+export const useAuditLogTypeClasses = createGetHook<LogTypeClasses>(
+  '/api/analytics/log-types/classes',
+  LogTypeClassesSchema,
 );

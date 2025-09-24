@@ -22,6 +22,7 @@ import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { useActivity } from '@/hooks/useActivity';
 import { useAuditSummary } from '@/hooks/useAuditSummary';
 import { useRevenueBreakdown } from '@/hooks/useRevenueBreakdown';
+import { useAuditLogTypeClasses } from '@/hooks/lookups';
 import SecurityAlerts from './SecurityAlerts';
 import CenteredMessage from '@/components/CenteredMessage';
 import ToastNotification from '../../ui/ToastNotification';
@@ -35,7 +36,6 @@ import type {
 } from '@shared/types';
 import { AuditLogEntrySchema } from '@shared/schemas/analytics';
 import {
-  fetchLogTypeClasses,
   fetchErrorCategories,
   markAuditLogReviewed,
   type ErrorCategoriesResponse,
@@ -62,10 +62,8 @@ export default function Analytics() {
     data: badgeClasses,
     isLoading: badgeLoading,
     isError: badgeError,
-  } = useQuery<LogTypeClasses>({
-    queryKey: ['log-type-classes'],
-    queryFn: fetchLogTypeClasses,
-  });
+    error: badgeErrorDetails,
+  } = useAuditLogTypeClasses();
 
   const {
     data: logData,
@@ -162,7 +160,11 @@ export default function Analytics() {
   if (badgeLoading)
     return <CenteredMessage>Loading log types...</CenteredMessage>;
   if (badgeError)
-    return <CenteredMessage>Failed to load log types</CenteredMessage>;
+    return (
+      <CenteredMessage>
+        {badgeErrorDetails?.message ?? 'Failed to load log types'}
+      </CenteredMessage>
+    );
   if (!badgeClasses || Object.keys(badgeClasses).length === 0)
     return <CenteredMessage>No log types found</CenteredMessage>;
 

@@ -65,7 +65,9 @@ export default function AuditTable({
                 <td className="p-4 text-sm">{r.timestamp}</td>
                 <td className="p-4">
                   <span
-                    className={`px-2 py-1 rounded-lg text-xs font-semibold ${badgeClasses[r.type]}`}
+                    className={`px-2 py-1 rounded-lg text-xs font-semibold ${
+                      badgeClasses[r.type] ?? 'bg-card-bg text-text-secondary'
+                    }`}
                   >
                     {r.type}
                   </span>

@@ -18,12 +18,20 @@ describe('AnalyticsService', () => {
       create: jest.fn(),
       delete: jest.fn(),
     };
+    const defaultRepo: any = {
+      find: jest.fn(),
+      findOne: jest.fn(),
+      save: jest.fn(),
+      create: jest.fn(),
+      delete: jest.fn(),
+    };
     const service = new AnalyticsService(
       config,
       { xrange: jest.fn() } as any,
       {} as any,
       {} as any,
       repo,
+      defaultRepo,
     );
     expect(service).toBeDefined();
     stakeSpy.mockRestore();
@@ -165,6 +173,14 @@ describe('AnalyticsService getAuditLogTypeClasses', () => {
           { type: 'Custom', className: 'stored-custom' },
         ]),
       },
+      getDefaultLogTypeClassesMap: jest
+        .fn()
+        .mockResolvedValue(
+          new Map([
+            ['Broadcast', 'bg-accent-yellow/20 text-accent-yellow'],
+            ['Error', 'bg-danger-red/20 text-danger-red'],
+          ]),
+        ),
     };
     const classes = await (AnalyticsService.prototype as any).getAuditLogTypeClasses.call(
       service,
@@ -185,6 +201,11 @@ describe('AnalyticsService getAuditLogTypeClasses', () => {
       logTypeClassRepo: {
         find: jest.fn().mockResolvedValue([]),
       },
+      getDefaultLogTypeClassesMap: jest
+        .fn()
+        .mockResolvedValue(
+          new Map([['Login', 'bg-accent-green/20 text-accent-green']]),
+        ),
     };
     const classes = await (AnalyticsService.prototype as any).getAuditLogTypeClasses.call(
       service,

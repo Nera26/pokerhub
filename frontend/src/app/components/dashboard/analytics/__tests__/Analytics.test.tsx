@@ -5,11 +5,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import Analytics from '../Analytics';
 import { rebuildLeaderboard } from '@/lib/api/leaderboard';
-import { fetchLogTypeClasses, fetchErrorCategories } from '@/lib/api/analytics';
+import { fetchErrorCategories } from '@/lib/api/analytics';
 
 const useActivity = mockUseActivity();
 const useAuditSummaryMock = jest.fn();
 const useRevenueBreakdownMock = jest.fn();
+const useAuditLogTypeClassesMock = jest.fn();
 
 jest.mock('@/hooks/useAuditSummary', () => ({
   useAuditSummary: (...args: any[]) => useAuditSummaryMock(...args),
@@ -74,21 +75,31 @@ jest.mock('@/hooks/useAuditLogs', () => ({
   useAuditLogs: (...args: any[]) => useAuditLogsMock(...args),
 }));
 
+jest.mock('@/hooks/lookups', () => ({
+  useAuditLogTypeClasses: (...args: any[]) =>
+    useAuditLogTypeClassesMock(...args),
+}));
+
 jest.mock('@/lib/api/leaderboard', () => ({
   rebuildLeaderboard: jest.fn(),
 }));
 jest.mock('@/lib/api/analytics', () => ({
-  fetchLogTypeClasses: jest.fn(),
   fetchErrorCategories: jest.fn(),
+  markAuditLogReviewed: jest.fn(),
 }));
 
 describe('Analytics', () => {
   beforeEach(() => {
-    (fetchLogTypeClasses as jest.Mock).mockResolvedValue({
-      Login: '',
-      'Table Event': '',
-      Broadcast: '',
-      Error: '',
+    useAuditLogTypeClassesMock.mockReturnValue({
+      data: {
+        Login: '',
+        'Table Event': '',
+        Broadcast: '',
+        Error: '',
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
     });
     (fetchErrorCategories as jest.Mock).mockResolvedValue({
       labels: ['Payment'],
@@ -175,11 +186,30 @@ describe('Analytics', () => {
     expect(await screen.findByText(/QuickStats 1 0 0/)).toBeInTheDocument();
   });
 
+  it('renders badge error message when class fetch fails', async () => {
+    useAuditLogTypeClassesMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: { message: 'Badge classes failed' },
+    });
+    renderWithClient(<Analytics />);
+    expect(
+      await screen.findByText(/Badge classes failed/i),
+    ).toBeInTheDocument();
+  });
+
   it('shows error when summary fetch fails', async () => {
     useAuditSummaryMock.mockReturnValue({
       data: undefined,
       isLoading: false,
       isError: true,
+    });
+    useAuditLogTypeClassesMock.mockReturnValue({
+      data: { Login: '' },
+      isLoading: false,
+      isError: false,
+      error: null,
     });
     renderWithClient(<Analytics />);
     expect(

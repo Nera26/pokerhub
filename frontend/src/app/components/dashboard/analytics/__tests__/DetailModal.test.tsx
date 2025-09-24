@@ -87,4 +87,20 @@ describe('DetailModal', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('There was an error')).toBeInTheDocument();
   });
+
+  it('falls back to default class when badge missing', () => {
+    render(
+      <DetailModal
+        row={{ ...row, type: 'unknown' } as any}
+        onClose={jest.fn()}
+        badgeClasses={{} as any}
+        onMarkReviewed={jest.fn()}
+        reviewLoading={false}
+        reviewError={null}
+      />,
+    );
+    const badge = screen.getByText('unknown');
+    expect(badge.className).toContain('bg-card-bg');
+    expect(badge.className).toContain('text-text-secondary');
+  });
 });

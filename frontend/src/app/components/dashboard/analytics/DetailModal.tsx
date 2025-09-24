@@ -53,7 +53,9 @@ export default function DetailModal({
                 </label>
                 <div className="bg-primary-bg p-3 rounded-xl text-sm">
                   <span
-                    className={`px-2 py-1 rounded-lg text-xs font-semibold ${badgeClasses[row.type]}`}
+                    className={`px-2 py-1 rounded-lg text-xs font-semibold ${
+                      badgeClasses[row.type] ?? 'bg-card-bg text-text-secondary'
+                    }`}
                   >
                     {row.type}
                   </span>
