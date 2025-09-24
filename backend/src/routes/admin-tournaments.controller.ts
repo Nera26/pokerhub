@@ -31,8 +31,8 @@ export class AdminTournamentsController {
   @Get('filters')
   @ApiOperation({ summary: 'List admin tournament filters' })
   @ApiResponse({ status: 200, description: 'Available admin filters' })
-  filters() {
-    const filters = this.service.getAdminFilterOptions();
+  async filters() {
+    const filters = await this.service.getAdminFilterOptions();
     return AdminTournamentFiltersResponseSchema.parse(filters);
   }
 
