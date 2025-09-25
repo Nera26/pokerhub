@@ -1215,7 +1215,9 @@ jobs:
           content-filepath: metrics/baseline.json
       - name: Prepare soak regression Slack payload
         if: failure() && steps.threshold.outcome == 'failure'
-        run: jq -Rs '{channel: env.SLACK_CHANNEL_ID, text: .}' metrics/baseline.json > slack-payload.json
+        run: |
+          jq -Rs '{channel: env.SLACK_CHANNEL_ID, text: .}' \
+            metrics/baseline.json > slack-payload.json
         env:
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
       - name: Slack soak regression alert
@@ -1244,7 +1246,7 @@ jobs:
             metrics/cpu-histogram.json
             metrics/baseline.json
 
-  soak-metrics:
+  soak-metrics-run:
     needs: [integration-run, spectator-privacy]
     if: ${{ always() }}
     uses: ./.github/workflows/soak-metrics.yml
@@ -1374,22 +1376,8 @@ jobs:
       - spectator-privacy-metric-check
       - check-proof-archive
       - proof-archive-audit
-      - soak-metrics
+      - soak-metrics-run
       - soak-perf-metrics
     if: ${{ always() }}
     uses: ./.github/workflows/ops-artifacts-verify.yml
     secrets: inherit
-
-
-      PROOF_ARCHIVE_BUCKET: ${{ secrets.PROOF_ARCHIVE_BUCKET }}
-      PROOF_MANIFEST_BUCKET: ${{ secrets.PROOF_MANIFEST_BUCKET }}
-      SPECTATOR_LOGS_BUCKET: ${{ secrets.SPECTATOR_LOGS_BUCKET }}
-      SOAK_TRENDS_BUCKET: ${{ secrets.SOAK_TRENDS_BUCKET }}
-      DR_METRICS_BUCKET: ${{ secrets.DR_METRICS_BUCKET }}
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      PAGERDUTY_ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
-      SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-      GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}

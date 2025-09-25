@@ -23,6 +23,7 @@ import { User } from '../src/database/entities/user.entity';
 import { Table } from '../src/database/entities/table.entity';
 import { Seat } from '../src/database/entities/seat.entity';
 import { Tournament } from '../src/database/entities/tournament.entity';
+import { TournamentDetail } from '../src/tournament/tournament-detail.entity';
 
 function createTestModule() {
   let dataSource: DataSource;
@@ -48,7 +49,7 @@ function createTestModule() {
           });
           dataSource = db.adapters.createTypeormDataSource({
             type: 'postgres',
-            entities: [User, Table, Seat, Tournament],
+            entities: [User, Table, Seat, Tournament, TournamentDetail],
             synchronize: true,
           }) as DataSource;
           return dataSource.options;

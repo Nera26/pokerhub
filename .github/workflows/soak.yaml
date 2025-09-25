@@ -15,6 +15,7 @@ jobs:
     secrets: inherit
 
   ops-preflight:
+    if: ${{ always() }}
     needs: check-proof-archive
     runs-on: ubuntu-latest
     env:

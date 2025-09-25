@@ -6,6 +6,7 @@ on:
 
 jobs:
   preflight:
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     env:
       DR_DRILL_SLA_DAYS: 7

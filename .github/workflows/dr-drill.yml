@@ -22,6 +22,7 @@ jobs:
     with:
       dr-drill-sla-days: 30
   preflight:
+    if: ${{ always() }}
     needs: [dr-sla, check-proof-archive]
     runs-on: ubuntu-latest
     env:
