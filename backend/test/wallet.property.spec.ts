@@ -10,6 +10,8 @@ import { EventPublisher } from '../src/events/events.service';
 import { PaymentProviderService } from '../src/wallet/payment-provider.service';
 import { KycService } from '../src/wallet/kyc.service';
 import { SettlementJournal } from '../src/wallet/settlement-journal.entity';
+import { PendingDeposit } from '../src/wallet/pending-deposit.entity';
+import { SettlementService } from '../src/wallet/settlement.service';
 import { createInMemoryRedis } from './utils/mock-redis';
 
 jest.setTimeout(20000);
@@ -71,7 +73,9 @@ describe('writeHandLedger property', () => {
 
 describe('WalletService journal invariants', () => {
   const userId = '11111111-1111-1111-1111-111111111111';
-  const events: EventPublisher = { emit: jest.fn() } as any;
+  const events: EventPublisher = {
+    emit: jest.fn().mockResolvedValue(undefined),
+  } as any;
 
   async function setup() {
     const db = newDb();
@@ -97,7 +101,13 @@ describe('WalletService journal invariants', () => {
     });
     const dataSource = db.adapters.createTypeormDataSource({
       type: 'postgres',
-      entities: [Account, JournalEntry, Disbursement, SettlementJournal],
+      entities: [
+        Account,
+        JournalEntry,
+        Disbursement,
+        SettlementJournal,
+        PendingDeposit,
+      ],
       synchronize: true,
     }) as DataSource;
     await dataSource.initialize();
@@ -105,21 +115,27 @@ describe('WalletService journal invariants', () => {
     const journalRepo = dataSource.getRepository(JournalEntry);
     const disbRepo = dataSource.getRepository(Disbursement);
     const settleRepo = dataSource.getRepository(SettlementJournal);
+    const pendingRepo = dataSource.getRepository(PendingDeposit);
     const { redis } = createInMemoryRedis();
     const provider = { initiate3DS: jest.fn(), getStatus: jest.fn() } as unknown as PaymentProviderService;
     const kyc = {
       validate: jest.fn().mockResolvedValue(undefined),
       isVerified: jest.fn().mockResolvedValue(true),
     } as unknown as KycService;
+    const settlementSvc = {
+      cancel: jest.fn().mockResolvedValue(undefined),
+    } as unknown as SettlementService;
     const service = new WalletService(
       accountRepo,
       journalRepo,
       disbRepo,
       settleRepo,
+      pendingRepo,
       events,
       redis,
       provider,
       kyc,
+      settlementSvc,
     );
     (service as any).enqueueDisbursement = jest.fn();
     await accountRepo.save([

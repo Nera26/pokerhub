@@ -101,6 +101,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   preflight:
+    if: ${{ always() }}
     needs: [check-proof-archive, dr-drill-sla, check-soak-metrics, ensure-soak-metrics]
     runs-on: ubuntu-latest
     env:

@@ -1,12 +1,4 @@
-import {
-  Column,
-  Entity,
-  Index,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-  RelationId,
-} from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Tournament } from '../database/entities/tournament.entity';
 
 export enum TournamentDetailType {
@@ -28,7 +20,7 @@ export class TournamentDetail {
   @JoinColumn({ name: 'tournament_id' })
   tournament: Tournament;
 
-  @RelationId((detail: TournamentDetail) => detail.tournament)
+  @Column({ type: 'uuid', name: 'tournament_id' })
   tournamentId: string;
 
   @Column({

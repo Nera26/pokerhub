@@ -1,16 +1,20 @@
 import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
 import fc from 'fast-check';
+import { randomUUID } from 'crypto';
 import { Account } from '../src/wallet/account.entity';
 import { JournalEntry } from '../src/wallet/journal-entry.entity';
 import { Disbursement } from '../src/wallet/disbursement.entity';
 import { SettlementJournal } from '../src/wallet/settlement-journal.entity';
+import { PendingDeposit } from '../src/wallet/pending-deposit.entity';
 import { WalletService } from '../src/wallet/wallet.service';
 import { EventPublisher } from '../src/events/events.service';
 import { PaymentProviderService } from '../src/wallet/payment-provider.service';
 import { KycService } from '../src/wallet/kyc.service';
 import { ChargebackMonitor } from '../src/wallet/chargeback.service';
 import { AnalyticsService } from '../src/analytics/analytics.service';
+import { SettlementService } from '../src/wallet/settlement.service';
+import { ConfigService } from '@nestjs/config';
 import { createInMemoryRedis } from './utils/mock-redis';
 
 jest.setTimeout(20000);
@@ -44,7 +48,13 @@ describe('ChargebackMonitor flags accounts', () => {
     });
     const dataSource = db.adapters.createTypeormDataSource({
       type: 'postgres',
-      entities: [Account, JournalEntry, Disbursement, SettlementJournal],
+      entities: [
+        Account,
+        JournalEntry,
+        Disbursement,
+        SettlementJournal,
+        PendingDeposit,
+      ],
       synchronize: true,
     }) as DataSource;
     await dataSource.initialize();
@@ -52,24 +62,31 @@ describe('ChargebackMonitor flags accounts', () => {
     const journalRepo = dataSource.getRepository(JournalEntry);
     const disbRepo = dataSource.getRepository(Disbursement);
     const settleRepo = dataSource.getRepository(SettlementJournal);
+    const pendingRepo = dataSource.getRepository(PendingDeposit);
     const { redis } = createInMemoryRedis();
+    let tx = 0;
     const provider = {
-      initiate3DS: jest.fn().mockResolvedValue({ id: 'tx' }),
+      initiate3DS: jest
+        .fn()
+        .mockImplementation(async () => ({ id: `tx-${++tx}` })),
       getStatus: jest.fn(),
     } as unknown as PaymentProviderService;
     const kyc = { isVerified: jest.fn().mockResolvedValue(true) } as unknown as KycService;
     const analytics = { emit: jest.fn() } as unknown as AnalyticsService;
     const chargebacks = new ChargebackMonitor(redis as any);
+    const settlementSvc = { cancel: jest.fn() } as unknown as SettlementService;
     const service = new WalletService(
       accountRepo,
       journalRepo,
       disbRepo,
       settleRepo,
+      pendingRepo,
       events,
       redis as any,
       provider,
       kyc,
-      undefined as any,
+      settlementSvc,
+      new ConfigService(),
       analytics,
       chargebacks,
     );
@@ -86,10 +103,32 @@ describe('ChargebackMonitor flags accounts', () => {
       fc.asyncProperty(fc.integer({ min: 1, max: 1000 }), async (amt) => {
         const { dataSource, service, provider, analytics } = await setup();
         try {
-          (provider.getStatus as jest.Mock).mockResolvedValueOnce('chargeback');
-          await service.deposit(userId, amt, deviceId, '1.1.1.1', 'USD');
-          (provider.getStatus as jest.Mock).mockResolvedValueOnce('chargeback');
-          await service.deposit(userId, amt, deviceId, '1.1.1.1', 'USD');
+          const first = await service.deposit(
+            userId,
+            amt,
+            deviceId,
+            '1.1.1.1',
+            'USD',
+          );
+          await service.confirm3DS({
+            eventId: randomUUID(),
+            idempotencyKey: randomUUID(),
+            providerTxnId: first.id,
+            status: 'chargeback',
+          });
+          const second = await service.deposit(
+            userId,
+            amt,
+            deviceId,
+            '1.1.1.1',
+            'USD',
+          );
+          await service.confirm3DS({
+            eventId: randomUUID(),
+            idempotencyKey: randomUUID(),
+            providerTxnId: second.id,
+            status: 'chargeback',
+          });
           await expect(
             service.deposit(userId, amt, deviceId, '1.1.1.1', 'USD'),
           ).rejects.toThrow('Chargeback threshold exceeded');

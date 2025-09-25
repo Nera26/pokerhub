@@ -386,11 +386,12 @@ export class WalletService {
     const stored = await this.redis.get(this.challengeKey(event.providerTxnId));
     if (!stored) return;
     await this.redis.del(this.challengeKey(event.providerTxnId));
-    const { op, accountId, amount, currency } = JSON.parse(stored) as {
+    const { op, accountId, amount, currency, deviceId } = JSON.parse(stored) as {
       op: 'deposit' | 'withdraw';
       accountId: string;
       amount: number;
       currency: string;
+      deviceId?: string;
     };
     const user = await this.accounts.findOneByOrFail({ id: accountId, currency });
     const house = await this.accounts.findOneByOrFail({
@@ -409,6 +410,8 @@ export class WalletService {
           ],
           { providerTxnId: event.providerTxnId, providerStatus: event.status },
         );
+      } else if (event.status === 'chargeback' && deviceId) {
+        await this.chargebacks?.record(accountId, deviceId);
       }
     } else if (op === 'withdraw') {
       if (event.status === 'approved') {
@@ -830,7 +833,13 @@ export class WalletService {
         const challenge = await this.provider.initiate3DS(accountId, amount);
         await this.redis.set(
           this.challengeKey(challenge.id),
-          JSON.stringify({ op: 'deposit', accountId, amount, currency }),
+          JSON.stringify({
+            op: 'deposit',
+            accountId,
+            amount,
+            currency,
+            deviceId,
+          }),
           'EX',
           600,
         );
