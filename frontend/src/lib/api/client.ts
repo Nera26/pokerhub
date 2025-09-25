@@ -8,6 +8,104 @@ import { dispatchContractMismatch } from '@/components/ContractMismatchNotice';
 
 export type { ApiError };
 
+export type ResponseLike = {
+  status: number;
+  statusText: string;
+  ok: boolean;
+  headers?: { get(name: string): string | null };
+  json?: () => Promise<unknown>;
+  text?: () => Promise<string>;
+};
+
+export async function handleResponse<T>(
+  responseOrPromise: ResponseLike | Promise<ResponseLike>,
+  schema: ZodSchema<T>,
+): Promise<T> {
+  let res: ResponseLike;
+  try {
+    res = await responseOrPromise;
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : String(error ?? 'Unknown error');
+    throw { message } satisfies ApiError;
+  }
+
+  const invalidResponseError = {
+    message: 'Invalid server response',
+  } satisfies ApiError;
+
+  const contentType = res.headers?.get?.('content-type') ?? '';
+  let data: unknown;
+
+  if (res.status !== 204) {
+    if (contentType.includes('application/json')) {
+      if (!res.json) {
+        throw invalidResponseError;
+      }
+      try {
+        data = await res.json();
+      } catch {
+        throw invalidResponseError;
+      }
+    } else {
+      if (!res.text) {
+        throw invalidResponseError;
+      }
+      const text = await res.text();
+      if (res.ok) {
+        if (text.length > 0) {
+          throw invalidResponseError;
+        }
+      } else {
+        data = text;
+      }
+    }
+  }
+
+  if (!res.ok) {
+    const details =
+      data == null
+        ? undefined
+        : typeof data === 'string'
+          ? data
+          : JSON.stringify(data);
+
+    let message = res.statusText || 'Request failed';
+    let errors: Record<string, unknown> | undefined;
+
+    if (data != null) {
+      try {
+        const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+        if (typeof parsed === 'object' && parsed !== null) {
+          const record = parsed as Record<string, unknown>;
+          if (typeof record.message === 'string') {
+            message = record.message;
+          }
+          if (record.errors && typeof record.errors === 'object') {
+            errors = record.errors as Record<string, unknown>;
+          }
+        }
+      } catch {
+        // ignore parse errors
+      }
+    }
+
+    throw {
+      status: res.status,
+      message,
+      ...(errors !== undefined && { errors }),
+      details,
+    } satisfies ApiError;
+  }
+
+  const parsed = schema.safeParse(data);
+  if (!parsed.success) {
+    throw invalidResponseError;
+  }
+
+  return parsed.data;
+}
+
 export async function checkApiContractVersion(): Promise<void> {
   const baseUrl = getBaseUrl();
   try {
