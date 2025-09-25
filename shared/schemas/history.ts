@@ -16,11 +16,13 @@ export const PaginatedResponseSchema = <T extends ZodTypeAny>(schema: T) =>
   z.object({
     items: z.array(schema),
     nextCursor: z.string().nullable(),
+    total: z.number().int().nonnegative().optional(),
   });
 
 export interface Paginated<T> {
   items: T[];
   nextCursor: string | null;
+  total?: number;
 }
 
 export const GameHistoryEntrySchema = z.object({

@@ -5035,6 +5035,9 @@ components:
         nextCursor:
           type: string
           nullable: true
+        total:
+          type: integer
+          minimum: 0
     TournamentHistoryEntry:
       type: object
       required: [id, name, place, buyin, prize, duration]
@@ -5062,6 +5065,9 @@ components:
         nextCursor:
           type: string
           nullable: true
+        total:
+          type: integer
+          minimum: 0
     TransactionEntry:
       type: object
       required: [date, type, amount, currency, status]
@@ -5088,6 +5094,9 @@ components:
         nextCursor:
           type: string
           nullable: true
+        total:
+          type: integer
+          minimum: 0
     TournamentBracketMatch:
       type: object
       required: [id, players, winner]

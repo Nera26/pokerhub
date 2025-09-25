@@ -4063,6 +4063,7 @@ export interface components {
     PaginatedGameHistoryEntryResponse: {
       items: components["schemas"]["GameHistoryEntry"][];
       nextCursor: string | null;
+      total?: number;
     };
     TournamentHistoryEntry: {
       id: string;
@@ -4075,6 +4076,7 @@ export interface components {
     PaginatedTournamentHistoryEntryResponse: {
       items: components["schemas"]["TournamentHistoryEntry"][];
       nextCursor: string | null;
+      total?: number;
     };
     TransactionEntry: {
       /** Format: date-time */
@@ -4087,6 +4089,7 @@ export interface components {
     PaginatedTransactionEntryResponse: {
       items: components["schemas"]["TransactionEntry"][];
       nextCursor: string | null;
+      total?: number;
     };
     TournamentBracketMatch: {
       id: string;
