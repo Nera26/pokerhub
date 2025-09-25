@@ -53,6 +53,18 @@ export const ServiceStatusResponseSchema = z.object({
 export type ServiceStatusResponse = z.infer<
   typeof ServiceStatusResponseSchema
 >;
+export const StatusResponseSchema = ServiceStatusResponseSchema;
+export type StatusResponse = ServiceStatusResponse;
+
+export {
+  CTAVariantSchema,
+  CTASchema,
+  CTAsResponseSchema,
+} from '../backend/src/schemas/ctas';
+export type {
+  CTA,
+  CTAsResponse,
+} from '../backend/src/schemas/ctas';
 
 // Language selector
 export const LanguageSchema = z.object({
@@ -126,6 +138,9 @@ export type {
   AdminTabConfig,
   AdminTabMeta,
 } from '../backend/src/schemas/admin';
+
+export { TierSchema, TiersSchema } from '../backend/src/schemas/tiers';
+export type { Tier, Tiers } from '../backend/src/schemas/tiers';
 
 // Site metadata
 export {
