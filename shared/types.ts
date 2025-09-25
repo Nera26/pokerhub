@@ -353,6 +353,8 @@ export type {
   BonusUpdateRequest,
 } from '../backend/src/schemas/bonus';
 
+export type BonusUpdatePayload = BonusCreateRequest;
+
 /** ---- Promotions ---- */
 const PromotionProgressSchema = z.object({
   current: z.number(),
