@@ -1,13 +1,21 @@
 import { z } from 'zod';
-import {
-  LeaderboardEntrySchema,
-  LeaderboardResponseSchema,
-  type LeaderboardEntry,
-  type LeaderboardResponse,
-} from '@shared/types';
 
-export { LeaderboardEntrySchema, LeaderboardResponseSchema };
-export type { LeaderboardEntry, LeaderboardResponse };
+export const LeaderboardEntrySchema = z.object({
+  playerId: z.string(),
+  rank: z.number().int(),
+  points: z.number(),
+  rd: z.number(),
+  volatility: z.number(),
+  net: z.number(),
+  bb100: z.number(),
+  hours: z.number(),
+  roi: z.number(),
+  finishes: z.record(z.number().int()),
+});
+export type LeaderboardEntry = z.infer<typeof LeaderboardEntrySchema>;
+
+export const LeaderboardResponseSchema = z.array(LeaderboardEntrySchema);
+export type LeaderboardResponse = z.infer<typeof LeaderboardResponseSchema>;
 
 export const LeaderboardRebuildQuerySchema = z.object({
   days: z.coerce.number().int().positive().max(30).optional(),
