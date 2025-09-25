@@ -325,9 +325,11 @@ describe('Dashboard TransactionHistory', () => {
 
     expect(mockUseExperience).toHaveBeenCalledWith(
       expect.objectContaining({
-        locale: 'en',
-        includePlayers: true,
-        includeTypes: true,
+        filterQueries: expect.objectContaining({
+          locale: 'en',
+          includePlayers: true,
+          includeTypes: true,
+        }),
       }),
     );
   });

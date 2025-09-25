@@ -8,6 +8,7 @@ import useTransactionColumns from '@/hooks/useTransactionColumns';
 import { renderWithClient } from '../../dashboard/__tests__/renderWithClient';
 import { useTranslations } from '@/hooks/useTranslations';
 import { useLocale } from 'next-intl';
+import useTransactionHistoryColumns from '@/app/components/common/useTransactionHistoryColumns';
 
 type TransactionHistoryExperienceReturn = TransactionHistoryExperienceResult<
   unknown,
@@ -33,6 +34,16 @@ jest.mock('next-intl', () => ({
   useLocale: jest.fn(),
 }));
 
+jest.mock('@/app/components/common/useTransactionHistoryColumns', () => {
+  const actual = jest.requireActual(
+    '@/app/components/common/useTransactionHistoryColumns',
+  );
+  return {
+    __esModule: true,
+    default: jest.fn(actual.default),
+  };
+});
+
 describe('TransactionHistoryModal', () => {
   const TYPE_PLACEHOLDER = 'Todos los tipos';
   const PERFORMED_BY_PLACEHOLDER = 'Todos los responsables';
@@ -41,6 +52,10 @@ describe('TransactionHistoryModal', () => {
   const mockUseColumns = useTransactionColumns as jest.Mock;
   const mockUseTranslations = useTranslations as jest.Mock;
   const mockUseLocale = useLocale as jest.Mock;
+  const mockUseTransactionHistoryColumns =
+    useTransactionHistoryColumns as jest.MockedFunction<
+      typeof useTransactionHistoryColumns
+    >;
 
   const buildHistory = () => ({
     data: [
@@ -129,6 +144,7 @@ describe('TransactionHistoryModal', () => {
         { id: 'datetime', label: 'Date' },
         { id: 'action', label: 'Action' },
         { id: 'amount', label: 'Amount' },
+        { id: 'notes', label: 'Notes' },
         { id: 'status', label: 'Status' },
       ],
       isLoading: false,
@@ -146,7 +162,7 @@ describe('TransactionHistoryModal', () => {
   });
 
   afterEach(() => {
-    jest.resetAllMocks();
+    jest.clearAllMocks();
   });
 
   it('renders filters and table rows when open', async () => {
@@ -176,6 +192,51 @@ describe('TransactionHistoryModal', () => {
 
     expect(screen.getByRole('cell', { name: 'Deposit' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Completed' })).toBeInTheDocument();
+  });
+
+  it('applies the notes cell styling override', async () => {
+    renderWithClient(
+      <TransactionHistoryModal
+        isOpen
+        onClose={jest.fn()}
+        userName="Alice"
+        userId="player-1"
+      />,
+    );
+
+    const notesCell = await screen.findByRole('cell', { name: 'Initial' });
+    expect(notesCell).toHaveClass('py-3', 'px-2', 'text-text-secondary');
+  });
+
+  it('configures the shared column hook with overrides and currency', async () => {
+    renderWithClient(
+      <TransactionHistoryModal
+        isOpen
+        onClose={jest.fn()}
+        userName="Alice"
+        userId="player-1"
+      />,
+    );
+
+    await screen.findByRole('cell', { name: 'Deposit' });
+
+    expect(mockUseTransactionHistoryColumns).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        { id: 'datetime', label: 'Date' },
+        { id: 'action', label: 'Action' },
+        { id: 'amount', label: 'Amount' },
+        { id: 'notes', label: 'Notes' },
+        { id: 'status', label: 'Status' },
+      ]),
+      expect.objectContaining({
+        currency: 'USD',
+        overrides: expect.objectContaining({
+          notes: expect.objectContaining({
+            cellClassName: 'py-3 px-2 text-text-secondary',
+          }),
+        }),
+      }),
+    );
   });
 
   it('applies filters when apply button pressed', async () => {
@@ -266,9 +327,11 @@ describe('TransactionHistoryModal', () => {
 
     expect(mockUseExperience).toHaveBeenCalledWith(
       expect.objectContaining({
-        includePlayers: false,
-        includeTypes: false,
-        filtersEnabled: true,
+        filterQueries: expect.objectContaining({
+          includePlayers: false,
+          includeTypes: false,
+          filtersEnabled: true,
+        }),
       }),
     );
   });

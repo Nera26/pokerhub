@@ -5,13 +5,8 @@ import Modal from '../ui/Modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner, faXmark } from '@fortawesome/free-solid-svg-icons';
 import TransactionHistoryTable, {
-  type Column,
   type TimestampSource,
 } from '@/app/components/common/TransactionHistoryTable';
-import {
-  AmountCell,
-  StatusCell,
-} from '@/app/components/common/transactionCells';
 import { fetchUserTransactions } from '@/lib/api/transactions';
 import { AdminTransactionEntriesSchema } from '@shared/transactions.schema';
 import { z } from 'zod';
@@ -19,6 +14,7 @@ import useTransactionColumns from '@/hooks/useTransactionColumns';
 import TransactionHistoryFilters from '@/app/components/common/TransactionHistoryFilters';
 import useTransactionHistoryExperience from '@/app/components/common/useTransactionHistoryExperience';
 import { useLocale } from 'next-intl';
+import useTransactionHistoryColumns from '@/app/components/common/useTransactionHistoryColumns';
 
 export interface Transaction extends TimestampSource {
   datetime: string;
@@ -40,11 +36,6 @@ interface Props {
   userId: string;
   onFilter?: (filtered: AdminTransactionEntry[]) => void;
 }
-
-const commonOpts = {
-  headerClassName: 'text-left py-3 px-2 text-text-secondary',
-  cellClassName: 'py-3 px-2',
-};
 
 export default function TransactionHistoryModal({
   isOpen,
@@ -154,28 +145,14 @@ export default function TransactionHistoryModal({
     });
   }, [defaultBy, defaultType, filters, syncFilters]);
 
-  const columns = useMemo<Column<Transaction>[]>(
-    () =>
-      colMeta.map((c) => ({
-        header: c.label,
-        headerClassName: commonOpts.headerClassName,
-        cellClassName:
-          c.id === 'notes'
-            ? 'py-3 px-2 text-text-secondary'
-            : commonOpts.cellClassName,
-        cell: (t: Transaction) => {
-          switch (c.id) {
-            case 'amount':
-              return <AmountCell amount={t.amount} currency={currency} />;
-            case 'status':
-              return <StatusCell status={t.status} />;
-            default:
-              return (t as any)[c.id as keyof Transaction] ?? '';
-          }
-        },
-      })),
-    [colMeta, currency],
-  );
+  const columns = useTransactionHistoryColumns<Transaction>(colMeta, {
+    currency,
+    headerClassName: 'text-left py-3 px-2 text-text-secondary',
+    cellClassName: 'py-3 px-2',
+    overrides: {
+      notes: { cellClassName: 'py-3 px-2 text-text-secondary' },
+    },
+  });
 
   const loading = filtersQuery?.isLoading || historyLoading || colsLoading;
   const error = filtersQuery?.error || historyError || colsError;
