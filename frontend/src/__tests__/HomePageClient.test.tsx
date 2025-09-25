@@ -12,7 +12,7 @@ jest.mock('@/hooks/useApiError', () => ({
   useApiError: () => 'failed to register',
 }));
 
-var ChatWidgetMock: jest.Mock;
+let ChatWidgetMock: jest.Mock;
 jest.mock('@/app/components/common/chat/ChatWidget', () => {
   ChatWidgetMock = jest.fn(() => <div data-testid="chat-widget" />);
   return { __esModule: true, default: ChatWidgetMock };
