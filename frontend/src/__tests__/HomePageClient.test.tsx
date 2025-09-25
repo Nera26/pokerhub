@@ -1,25 +1,26 @@
 import { screen, fireEvent } from '@testing-library/react';
-import { renderHomePageClient } from './utils/homeClient';
+import {
+  renderHomePageClient,
+  type TournamentWithBreak,
+} from './utils/homeClient';
+import type { FC } from 'react';
 import { registerTournament } from '@/lib/api/lobby';
+import type { TournamentListProps } from '@/components/TournamentList';
 
 jest.mock('@/lib/api/lobby');
 jest.mock('@/hooks/useApiError', () => ({
   useApiError: () => 'failed to register',
 }));
 
-var ChatWidgetMock: jest.Mock;
+let ChatWidgetMock: jest.Mock;
 jest.mock('@/app/components/common/chat/ChatWidget', () => {
   ChatWidgetMock = jest.fn(() => <div data-testid="chat-widget" />);
   return { __esModule: true, default: ChatWidgetMock };
 });
 
-function MockTournamentList({
+const MockTournamentList: FC<TournamentListProps<TournamentWithBreak>> = ({
   onRegister,
-}: {
-  onRegister?: (id: string) => void;
-}) {
-  return <button onClick={() => onRegister?.('1')}>Register</button>;
-}
+}) => <button onClick={() => onRegister?.('1')}>Register</button>;
 
 function MockCashGameList() {
   return <div data-testid="tables-list" />;
@@ -66,7 +67,9 @@ const scenarios: Scenario[] = [
     setup: () => {
       renderHomePageClient({
         cashGameList: () => <div />,
-        tournamentList: () => <div />,
+        tournamentList: (_: TournamentListProps<TournamentWithBreak>) => (
+          <div />
+        ),
       });
     },
     verify: () => {

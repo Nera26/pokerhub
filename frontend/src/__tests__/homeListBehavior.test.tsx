@@ -8,7 +8,8 @@ import TournamentList, {
   type TournamentListProps,
 } from '@/components/TournamentList';
 import { useTables, useTournaments, useCTAs } from '@/hooks/useLobbyData';
-import type { Table, Tournament } from '@/hooks/useLobbyData';
+import type { Table } from '@/hooks/useLobbyData';
+import type { TournamentWithBreak } from './utils/homeClient';
 
 setupHomeTests();
 
@@ -57,9 +58,9 @@ function renderHomeLists({
   tournamentList,
 }: {
   tables: Table[];
-  tournaments: Tournament[];
+  tournaments: TournamentWithBreak[];
   cashGameList: React.ComponentType<CashGameListProps>;
-  tournamentList: React.ComponentType<TournamentListProps<any>>;
+  tournamentList: React.ComponentType<TournamentListProps<TournamentWithBreak>>;
 }) {
   (useTables as jest.Mock).mockReturnValue({
     data: tables,
@@ -114,7 +115,7 @@ describe('home list behavior', () => {
             createdAgo: 'just now',
           },
         ];
-        const tournaments: Tournament[] = [
+        const tournaments: TournamentWithBreak[] = [
           {
             id: '1',
             title: 'Tournament 1',
@@ -144,7 +145,9 @@ describe('home list behavior', () => {
             <CashGameList {...props} hidden={false} />
           </div>
         );
-        const TournamentListWrapper = (props: TournamentListProps<any>) => (
+        const TournamentListWrapper = (
+          props: TournamentListProps<TournamentWithBreak>,
+        ) => (
           <div data-testid="tournaments-wrapper">
             <TournamentList {...props} hidden={false} />
           </div>
@@ -193,17 +196,20 @@ describe('home list behavior', () => {
           stats: { handsPerHour: 100, avgPot: 25, rake: 5 },
           createdAgo: 'just now',
         }));
-        const tournaments = Array.from({ length: 20 }, (_, i) => ({
-          id: String(i + 1),
-          title: `Tournament ${i + 1}`,
-          buyIn: 10,
-          fee: 0,
-          prizePool: 1000,
-          state: 'REG_OPEN',
-          gameType: 'texas',
-          players: { current: 0, max: 100 },
-          registered: false,
-        }));
+        const tournaments: TournamentWithBreak[] = Array.from(
+          { length: 20 },
+          (_, i) => ({
+            id: String(i + 1),
+            title: `Tournament ${i + 1}`,
+            buyIn: 10,
+            fee: 0,
+            prizePool: 1000,
+            state: 'REG_OPEN',
+            gameType: 'texas',
+            players: { current: 0, max: 100 },
+            registered: false,
+          }),
+        );
 
         const CashGameListStub = ({ tables }: CashGameListProps) => (
           <div data-testid="tables-list">
@@ -214,7 +220,7 @@ describe('home list behavior', () => {
         );
         const TournamentListStub = ({
           tournaments,
-        }: TournamentListProps<any>) => (
+        }: TournamentListProps<TournamentWithBreak>) => (
           <div data-testid="tournaments-list">
             <div
               style={{

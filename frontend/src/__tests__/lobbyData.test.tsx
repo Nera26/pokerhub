@@ -14,6 +14,7 @@ import {
 } from '@/test-utils/index';
 import { runLobbyCacheTest } from './utils/lobbyCacheTest';
 import { runLobbyErrorTest } from './utils/lobbyErrorTest';
+import type { TournamentWithBreak } from './utils/homeClient';
 
 jest.mock('@/hooks/useGameTypes', () => ({
   useGameTypes: () => ({
@@ -104,7 +105,7 @@ describe('home page lobby fallback messages', () => {
           cashGameList={(_: CashGameListProps) => (
             <div data-testid="tables-list" />
           )}
-          tournamentList={(_: TournamentListProps<any>) => (
+          tournamentList={(_: TournamentListProps<TournamentWithBreak>) => (
             <div data-testid="tournaments-list" />
           )}
         />
@@ -132,7 +133,7 @@ describe('home page lobby fallback messages', () => {
           cashGameList={(_: CashGameListProps) => (
             <div data-testid="tables-list" />
           )}
-          tournamentList={(_: TournamentListProps<any>) => (
+          tournamentList={(_: TournamentListProps<TournamentWithBreak>) => (
             <div data-testid="tournaments-list" />
           )}
         />

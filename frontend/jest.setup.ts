@@ -1,17 +1,11 @@
 import '@testing-library/jest-dom';
 import { TextDecoder, TextEncoder } from 'util';
-import type {
-  Headers as UndiciHeaders,
-  Request as UndiciRequest,
-  Response as UndiciResponse,
-} from 'undici';
-
 let undici: typeof import('undici') | undefined;
 
-function ensureUndici() {
+function ensureUndici(): typeof import('undici') {
   if (!undici) {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    undici = require('undici');
+    undici = require('undici') as typeof import('undici');
   }
   return undici;
 }
@@ -27,17 +21,17 @@ if (typeof globalThis.TextDecoder === 'undefined') {
 }
 
 if (typeof globalThis.Response === 'undefined') {
-  const { Response } = ensureUndici() as { Response: UndiciResponse };
+  const { Response } = ensureUndici();
   globalThis.Response = Response as unknown as typeof globalThis.Response;
 }
 
 if (typeof globalThis.Request === 'undefined') {
-  const { Request } = ensureUndici() as { Request: UndiciRequest };
+  const { Request } = ensureUndici();
   globalThis.Request = Request as unknown as typeof globalThis.Request;
 }
 
 if (typeof globalThis.Headers === 'undefined') {
-  const { Headers } = ensureUndici() as { Headers: UndiciHeaders };
+  const { Headers } = ensureUndici();
   globalThis.Headers = Headers as unknown as typeof globalThis.Headers;
 }
 
@@ -74,9 +68,13 @@ process.env.NEXT_PUBLIC_BASE_URL ??= 'http://localhost:3000';
 process.env.NEXT_PUBLIC_SOCKET_URL ??= 'http://localhost:4000';
 
 const realFetch = global.fetch;
-global.fetch = jest.fn((...args) =>
+const fetchMock: jest.MockedFunction<typeof fetch> = jest.fn((...args) =>
   realFetch(...args),
-) as unknown as typeof fetch;
+);
+
+global.fetch = fetchMock;
+
+export { fetchMock as mockFetch };
 
 // Default mock for next/navigation.
 // Individual tests can re-mock this as needed without conflicts.
