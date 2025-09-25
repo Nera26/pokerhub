@@ -3,15 +3,13 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faReceipt } from '@fortawesome/free-solid-svg-icons/faReceipt';
 import { faDownload } from '@fortawesome/free-solid-svg-icons/faDownload';
-import { useMemo, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import TransactionHistoryTable, {
-  getTransactionTimestamp,
   type Action,
-  type Column,
 } from './TransactionHistoryTable';
 import useTransactionColumns from '@/hooks/useTransactionColumns';
-import { AmountCell, StatusCell } from './transactionCells';
 import CenteredMessage from '@/components/CenteredMessage';
+import useTransactionHistoryColumns from './useTransactionHistoryColumns';
 
 interface TransactionLike {
   amount: number;
@@ -48,29 +46,7 @@ export default function TransactionHistorySection<T extends TransactionLike>({
     error: colsError,
   } = useTransactionColumns();
 
-  const columns = useMemo<Column<T>[]>(() => {
-    return colMeta.map((c) => ({
-      header: c.label,
-      headerClassName:
-        'text-left p-4 font-semibold text-text-secondary text-sm uppercase',
-      cellClassName: 'p-4 text-sm',
-      cell: (row: T) => {
-        switch (c.id) {
-          case 'amount':
-            return <AmountCell amount={row.amount} currency={currency} />;
-          case 'date':
-          case 'datetime':
-            return getTransactionTimestamp(row as any);
-          case 'status':
-            return <StatusCell status={row.status} />;
-          case 'type':
-            return (row as any).type ?? (row as any).action ?? '';
-          default:
-            return (row as any)[c.id as keyof T] ?? '';
-        }
-      },
-    }));
-  }, [colMeta, currency]);
+  const columns = useTransactionHistoryColumns<T>(colMeta, { currency });
 
   if (colsLoading)
     return <CenteredMessage>Loading transaction history...</CenteredMessage>;

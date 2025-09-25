@@ -21,10 +21,6 @@ test('admin tournament modal loads seeded formats', async ({ page }) => {
 
   const formatSelect = page.getByLabel('Format');
   await expect(formatSelect).toBeVisible();
-  await expect(
-    formatSelect.locator('option', { hasText: 'Regular' }),
-  ).toBeVisible();
-  await expect(
-    formatSelect.locator('option', { hasText: 'Turbo' }),
-  ).toBeVisible();
+  await expect(formatSelect.locator('option', { hasText: 'Regular' })).toBeVisible();
+  await expect(formatSelect.locator('option', { hasText: 'Turbo' })).toBeVisible();
 });
