@@ -17,5 +17,3 @@ export type GameTypeWithLabel = z.infer<typeof GameTypeWithLabelSchema>;
 export const GameTypeListSchema = z.array(GameTypeWithLabelSchema);
 export type GameTypeList = z.infer<typeof GameTypeListSchema>;
 
-export { GameTypeSchema, GameTypeWithLabelSchema, GameTypeListSchema };
-export type { GameTypeWithLabel, GameTypeList, GameType };
