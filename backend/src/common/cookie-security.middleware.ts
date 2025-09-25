@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 
+const enforceSecureCookies =
+  (process.env.COOKIE_SECURE ?? 'true').toLowerCase() !== 'false';
+
 export function cookieSecurity(
   _req: Request,
   res: Response,
@@ -14,7 +17,9 @@ export function cookieSecurity(
         let cookie = c;
         if (!lower.includes('samesite')) cookie += '; SameSite=Strict';
         if (!lower.includes('httponly')) cookie += '; HttpOnly';
-        if (!lower.includes('secure')) cookie += '; Secure';
+        if (enforceSecureCookies && !lower.includes('secure')) {
+          cookie += '; Secure';
+        }
         return cookie;
       });
     }

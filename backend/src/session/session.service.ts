@@ -28,21 +28,52 @@ export class SessionService {
     private readonly config: ConfigService,
   ) {}
 
-  async issueTokens(userId: string) {
+  private parseRefreshValue(value: string | null): {
+    userId: string | null;
+    role?: 'admin';
+  } {
+    if (!value) {
+      return { userId: null };
+    }
+    try {
+      const parsed = JSON.parse(value) as {
+        userId?: string;
+        role?: string;
+      };
+      if (parsed && typeof parsed.userId === 'string') {
+        return {
+          userId: parsed.userId,
+          role: parsed.role === 'admin' ? 'admin' : undefined,
+        };
+      }
+    } catch {
+      // ignore parsing errors and fallback to legacy string format
+    }
+    return { userId: value };
+  }
+
+  async issueTokens(userId: string, opts: { role?: 'admin' } = {}) {
     return withSpan('session.issueTokens', async (span) => {
       span.setAttribute('user.id', userId);
       const secrets = this.config.get<string[]>('auth.jwtSecrets');
       const secret = secrets[0];
       const accessTtl = this.config.get<number>('auth.accessTtl', 900);
       const refreshTtl = this.config.get<number>('auth.refreshTtl', 604800);
-      const accessToken = jwt.sign({ sub: userId }, secret, {
+      const payload: Record<string, unknown> = { sub: userId };
+      if (opts.role) {
+        payload.role = opts.role;
+      }
+      const accessToken = jwt.sign(payload, secret, {
         expiresIn: accessTtl,
         header: { kid: '0' },
       });
       const refreshToken = randomUUID();
+      const refreshValue = opts.role
+        ? JSON.stringify({ userId, role: opts.role })
+        : userId;
       await this.redis.set(
         `${this.refreshPrefix}${refreshToken}`,
-        userId,
+        refreshValue,
         'EX',
         refreshTtl,
       );
@@ -67,13 +98,14 @@ export class SessionService {
   async rotate(refreshToken: string) {
     return withSpan('session.rotate', async (span) => {
       const key = `${this.refreshPrefix}${refreshToken}`;
-      const userId = await this.redis.get(key);
+      const stored = await this.redis.get(key);
+      const { userId, role } = this.parseRefreshValue(stored);
       if (!userId) {
         return null;
       }
       await this.redis.del(key);
       SessionService.tokensRotated.add(1);
-      return this.issueTokens(userId);
+      return this.issueTokens(userId, { role });
     });
   }
 
@@ -90,8 +122,10 @@ export class SessionService {
       const keys = await this.redis.keys(`${this.refreshPrefix}*`);
       let revoked = 0;
       for (const key of keys) {
-        const value = await this.redis.get(key);
-        if (value === userId) {
+        const { userId: storedUser } = this.parseRefreshValue(
+          await this.redis.get(key),
+        );
+        if (storedUser === userId) {
           await this.redis.del(key);
           revoked++;
         }

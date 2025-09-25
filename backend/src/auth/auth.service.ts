@@ -9,6 +9,7 @@ import { MetricsWriterService } from '../metrics/metrics-writer.service';
 import { UserRepository } from '../users/user.repository';
 import { EmailService } from './email.service';
 import type { AuthProvider } from '../schemas/auth';
+import type { User } from '../database/entities/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -36,6 +37,7 @@ export class AuthService {
       email,
       password: hash,
       username: email,
+      role: 'Player',
     });
     const saved = await this.users.save(user);
     return saved.id;
@@ -44,20 +46,21 @@ export class AuthService {
   private async validateUser(
     email: string,
     password: string,
-  ): Promise<string | null> {
+  ): Promise<User | null> {
     const user = await this.users.findOne({ where: { email } });
     if (!user || !user.password) return null;
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return null;
-    return user.id;
+    return user;
   }
 
   async login(email: string, password: string) {
-    const userId = await this.validateUser(email, password);
-    if (!userId) return null;
-    await this.analytics.emit('auth.login', { userId, ts: Date.now() });
-    await this.metrics.recordLogin(userId);
-    return this.sessions.issueTokens(userId);
+    const user = await this.validateUser(email, password);
+    if (!user) return null;
+    await this.analytics.emit('auth.login', { userId: user.id, ts: Date.now() });
+    await this.metrics.recordLogin(user.id);
+    const role = user.role === 'Admin' ? 'admin' : undefined;
+    return this.sessions.issueTokens(user.id, { role });
   }
 
   async refresh(refreshToken: string) {

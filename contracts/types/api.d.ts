@@ -3700,6 +3700,9 @@ export interface components {
     CreateUserRequest: {
       username: string;
       avatarKey?: string;
+      email?: string;
+      password?: string;
+      role?: 'Player' | 'Admin';
     };
     UpdateUserRequest: {
       username?: string;

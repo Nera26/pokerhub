@@ -565,6 +565,9 @@ export type User = z.infer<typeof UserSchema>;
 export const CreateUserSchema = z.object({
   username: z.string(),
   avatarKey: z.string().optional(),
+  email: z.string().email().optional(),
+  password: z.string().min(6).optional(),
+  role: UserRoleSchema.optional(),
 });
 export type CreateUserRequest = z.infer<typeof CreateUserSchema>;
 
