@@ -218,6 +218,7 @@ jobs:
       - ensure-dr-workflows
       - ensure-dr-drill
       - dr-drill-sla
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -563,44 +564,44 @@ jobs:
           unit: days
           slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
-        - name: Check proof-archive SLA
-          id: proof-archive
-          uses: ./.github/workflows/check-workflow-sla
-          with:
-            workflow: proof-archive.yml
-            sla: 24
-            unit: hours
-            slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+      - name: Check proof-archive SLA
+        id: proof-archive
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: proof-archive.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
-        - name: Check check-proof-archive SLA
-          id: check-proof-archive
-          uses: ./.github/workflows/check-workflow-sla
-          with:
-            workflow: check-proof-archive.yml
-            sla: 24
-            unit: hours
-            slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+      - name: Check check-proof-archive SLA
+        id: check-proof-archive
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: check-proof-archive.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
-        - name: Check proof-archive-audit SLA
-          id: proof-archive-audit
-          uses: ./.github/workflows/check-workflow-sla
-          with:
-            workflow: proof-archive-audit.yml
-            sla: 24
-            unit: hours
-            slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+      - name: Check proof-archive-audit SLA
+        id: proof-archive-audit
+        uses: ./.github/workflows/check-workflow-sla
+        with:
+          workflow: proof-archive-audit.yml
+          sla: 24
+          unit: hours
+          slack-channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 
-        - name: PagerDuty alert (check-proof-archive SLA)
-          if: failure() && steps.check-proof-archive.outcome == 'failure'
-          env:
-            PAGERDUTY_ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
-          run: |
-            jq -n --arg rk "$PAGERDUTY_ROUTING_KEY" --arg msg "check-proof-archive SLA check failed" '{routing_key:$rk,event_action:"trigger",payload:{summary:$msg,source:"ci",severity:"error"}}' > pd.json
-            curl -X POST -H 'Content-Type: application/json' -d @pd.json https://events.pagerduty.com/v2/enqueue
+      - name: PagerDuty alert (check-proof-archive SLA)
+        if: failure() && steps.check-proof-archive.outcome == 'failure'
+        env:
+          PAGERDUTY_ROUTING_KEY: ${{ secrets.PAGERDUTY_ROUTING_KEY }}
+        run: |
+          jq -n --arg rk "$PAGERDUTY_ROUTING_KEY" --arg msg "check-proof-archive SLA check failed" '{routing_key:$rk,event_action:"trigger",payload:{summary:$msg,source:"ci",severity:"error"}}' > pd.json
+          curl -X POST -H 'Content-Type: application/json' -d @pd.json https://events.pagerduty.com/v2/enqueue
 
-        - uses: actions/setup-node@v4
-          with:
-            node-version: 20
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
       # Mirror proof-archive SLA check
       - name: Check ops-artifacts-verify SLA
@@ -1375,6 +1376,7 @@ jobs:
       - proof-archive-audit
       - soak-metrics
       - soak-perf-metrics
+    if: ${{ always() }}
     uses: ./.github/workflows/ops-artifacts-verify.yml
     secrets: inherit
 
