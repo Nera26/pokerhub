@@ -7,6 +7,15 @@ import {
   createTestClient,
 } from './helpers';
 import { formatCurrency } from '@/lib/formatCurrency';
+import useTransactionHistoryColumns from '../useTransactionHistoryColumns';
+
+jest.mock('../useTransactionHistoryColumns', () => {
+  const actual = jest.requireActual('../useTransactionHistoryColumns');
+  return {
+    __esModule: true,
+    default: jest.fn(actual.default),
+  };
+});
 
 type Txn = {
   amount: number;
@@ -29,9 +38,14 @@ const germanColumns = [
   { id: 'status', label: 'Status' },
 ];
 
+const mockedUseTransactionHistoryColumns =
+  useTransactionHistoryColumns as jest.MockedFunction<
+    typeof useTransactionHistoryColumns
+  >;
+
 describe('TransactionHistorySection', () => {
   afterEach(() => {
-    jest.resetAllMocks();
+    jest.clearAllMocks();
   });
 
   it('formats amounts using provided currency', async () => {
@@ -67,6 +81,28 @@ describe('TransactionHistorySection', () => {
     const statusEl = await screen.findByText('Pending');
     expect(statusEl).toHaveClass('bg-accent-yellow/20');
     expect(statusEl).toHaveClass('text-accent-yellow');
+  });
+
+  it('falls back to the action field when type is missing', async () => {
+    const data = [
+      {
+        amount: 10,
+        status: 'Completed',
+        date: '2024-01-01',
+        action: 'Deposit',
+      },
+    ] as unknown as Txn[];
+
+    mockMetadataFetch({
+      columns: [
+        { id: 'type', label: 'Type' },
+        { id: 'amount', label: 'Amount' },
+      ],
+    });
+
+    renderWithClient(<TransactionHistorySection data={data} currency="USD" />);
+
+    expect(await screen.findByText('Deposit')).toBeInTheDocument();
   });
 
   it('renders labels from transaction metadata', async () => {
@@ -145,6 +181,40 @@ describe('TransactionHistorySection', () => {
     expect(orderedTypes).toEqual(['Withdrawal', 'Deposit']);
   });
 
+  it('normalizes date and datetime column values', async () => {
+    const data = [
+      {
+        amount: 15,
+        status: 'Completed',
+        date: '2024-01-01',
+        type: 'Deposit',
+      },
+      {
+        amount: 5,
+        status: 'Completed',
+        datetime: '2024-01-02T03:00:00Z',
+        type: 'Withdrawal',
+      },
+    ];
+
+    mockMetadataFetch({
+      columns: [
+        { id: 'type', label: 'Type' },
+        { id: 'date', label: 'Date' },
+      ],
+    });
+
+    renderWithClient(
+      <TransactionHistorySection data={data as Txn[]} currency="USD" />,
+    );
+
+    const rows = (await screen.findAllByRole('row')).slice(1);
+    const timestamps = rows.map((row) => within(row).getByText(/2024-01/));
+
+    expect(timestamps[0]).toHaveTextContent('2024-01-01');
+    expect(timestamps[1]).toHaveTextContent('2024-01-02T03:00:00Z');
+  });
+
   it('re-renders when transaction columns change', async () => {
     const client = createTestClient();
     const data: Txn[] = [
@@ -170,5 +240,22 @@ describe('TransactionHistorySection', () => {
     });
 
     expect(await screen.findByText('Total Amount')).toBeInTheDocument();
+  });
+
+  it('configures the shared column hook with provided metadata', async () => {
+    const data: Txn[] = [
+      { amount: 5, status: 'Completed', date: '2024-01-01', type: 'Bonus' },
+    ];
+
+    mockMetadataFetch({ columns: defaultColumns });
+
+    renderWithClient(<TransactionHistorySection data={data} currency="USD" />);
+
+    await screen.findByText('Amount');
+
+    expect(mockedUseTransactionHistoryColumns).toHaveBeenCalledWith(
+      expect.arrayContaining(defaultColumns),
+      expect.objectContaining({ currency: 'USD' }),
+    );
   });
 });
