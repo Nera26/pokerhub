@@ -1,5 +1,4 @@
 import { type ZodType } from 'zod';
-import { fetchList } from './fetchList';
 import { apiClient } from './client';
 import {
   GameHistoryEntrySchema,
@@ -10,6 +9,8 @@ import {
   type TournamentHistoryEntry,
   type TransactionEntry,
   type TournamentBracketResponse,
+  PaginatedResponseSchema,
+  type Paginated,
 } from '@shared/types';
 
 export type {
@@ -19,25 +20,73 @@ export type {
   TournamentBracketResponse,
 };
 
-function createHistoryFetcher<T>(path: string, schema: ZodType<T>) {
-  return (opts: { signal?: AbortSignal } = {}): Promise<T[]> =>
-    fetchList(path, schema, opts);
+export interface HistoryQuery {
+  gameType?: string;
+  profitLoss?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  limit?: number;
+  cursor?: string;
+  sort?: 'asc' | 'desc';
 }
 
-export const fetchGameHistory = createHistoryFetcher(
-  '/api/history/games',
-  GameHistoryEntrySchema,
-);
+async function fetchHistory<T>(
+  path: string,
+  schema: ZodType<T>,
+  query?: HistoryQuery,
+  opts: { signal?: AbortSignal } = {},
+): Promise<Paginated<T>> {
+  const qs = new URLSearchParams();
+  if (query) {
+    Object.entries(query).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        qs.append(key, String(value));
+      }
+    });
+  }
 
-export const fetchTournamentHistory = createHistoryFetcher(
-  '/api/history/tournaments',
-  TournamentHistoryEntrySchema,
-);
+  const queryString = qs.toString();
+  const url = queryString ? `${path}?${queryString}` : path;
+  return apiClient(url, PaginatedResponseSchema(schema), {
+    signal: opts.signal,
+  });
+}
 
-export const fetchTransactions = createHistoryFetcher(
-  '/api/history/transactions',
-  TransactionEntrySchema,
-);
+export function fetchGameHistory(
+  query?: HistoryQuery,
+  opts: { signal?: AbortSignal } = {},
+): Promise<Paginated<GameHistoryEntry>> {
+  return fetchHistory(
+    '/api/history/games',
+    GameHistoryEntrySchema,
+    query,
+    opts,
+  );
+}
+
+export function fetchTournamentHistory(
+  query?: HistoryQuery,
+  opts: { signal?: AbortSignal } = {},
+): Promise<Paginated<TournamentHistoryEntry>> {
+  return fetchHistory(
+    '/api/history/tournaments',
+    TournamentHistoryEntrySchema,
+    query,
+    opts,
+  );
+}
+
+export function fetchTransactions(
+  query?: HistoryQuery,
+  opts: { signal?: AbortSignal } = {},
+): Promise<Paginated<TransactionEntry>> {
+  return fetchHistory(
+    '/api/history/transactions',
+    TransactionEntrySchema,
+    query,
+    opts,
+  );
+}
 
 export function fetchTournamentBracket(
   id: string,

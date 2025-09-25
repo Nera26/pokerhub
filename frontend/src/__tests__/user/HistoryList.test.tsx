@@ -114,7 +114,7 @@ const historyCases: HistoryCase[] = [
     successData: gameHistoryEntries,
     successText: /Table #1/,
     emptyText: 'No game history found.',
-    errorText: 'Failed to load game history.',
+    errorText: 'fail',
   },
   {
     name: 'tournament history',
@@ -123,7 +123,7 @@ const historyCases: HistoryCase[] = [
     successData: tournamentHistoryEntries,
     successText: 'Sunday Million',
     emptyText: 'No tournament history found.',
-    errorText: 'Failed to load tournament history.',
+    errorText: 'fail',
   },
 ];
 
@@ -138,12 +138,12 @@ describe.each(historyCases)(
   'HistoryList $name',
   ({ type, fetchMock, successData, successText, emptyText, errorText }) => {
     it('renders entries on success', async () => {
-      fetchMock.mockResolvedValueOnce(successData);
+      fetchMock.mockResolvedValueOnce({ items: successData, nextCursor: null });
       await renderHistoryList(type, successText);
     });
 
     it('renders empty state', async () => {
-      fetchMock.mockResolvedValueOnce([]);
+      fetchMock.mockResolvedValueOnce({ items: [], nextCursor: null });
       await renderHistoryList(type, emptyText);
     });
 
@@ -156,7 +156,10 @@ describe.each(historyCases)(
 
 describe('HistoryList game history replay', () => {
   it('opens replay modal and fetches data', async () => {
-    fetchGameHistoryMock.mockResolvedValueOnce(gameHistoryEntries);
+    fetchGameHistoryMock.mockResolvedValueOnce({
+      items: gameHistoryEntries,
+      nextCursor: null,
+    });
     fetchHandReplayMock.mockResolvedValueOnce([]);
 
     function Wrapper() {
@@ -188,7 +191,10 @@ describe('HistoryList game history replay', () => {
 
 describe('HistoryList tournament bracket', () => {
   it('passes tournament id and title when viewing bracket', async () => {
-    fetchTournamentHistoryMock.mockResolvedValueOnce(tournamentHistoryEntries);
+    fetchTournamentHistoryMock.mockResolvedValueOnce({
+      items: tournamentHistoryEntries,
+      nextCursor: null,
+    });
 
     const onViewBracket = jest.fn();
     renderWithClient(
@@ -210,7 +216,10 @@ describe('HistoryList tournament bracket', () => {
 describe('HistoryList transaction history', () => {
   it('renders the shared transaction history section', async () => {
     mockMetadataFetch(defaultMetadata);
-    fetchTransactionsMock.mockResolvedValueOnce(transactionEntries);
+    fetchTransactionsMock.mockResolvedValueOnce({
+      items: transactionEntries,
+      nextCursor: null,
+    });
 
     renderWithClient(<HistoryList type="transaction-history" />);
 
@@ -232,7 +241,10 @@ describe('HistoryList transaction history', () => {
     const onAction = jest.fn();
 
     mockMetadataFetch(defaultMetadata);
-    fetchTransactionsMock.mockResolvedValueOnce(transactionEntries);
+    fetchTransactionsMock.mockResolvedValueOnce({
+      items: transactionEntries,
+      nextCursor: null,
+    });
 
     renderWithClient(
       <HistoryList
@@ -267,14 +279,16 @@ describe('HistoryList transaction history', () => {
     mockMetadataFetch(defaultMetadata);
     let resolveFetch: ((value: TransactionEntry[]) => void) | undefined;
     fetchTransactionsMock.mockReturnValueOnce(
-      new Promise<TransactionEntry[]>((resolve) => {
-        resolveFetch = resolve;
-      }),
+      new Promise<{ items: TransactionEntry[]; nextCursor: string | null }>(
+        (resolve) => {
+          resolveFetch = (items) => resolve({ items, nextCursor: null });
+        },
+      ),
     );
 
     renderWithClient(<HistoryList type="transaction-history" />);
 
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(screen.getByText('Loading transactions...')).toBeInTheDocument();
 
     await act(async () => {
       resolveFetch?.([]);
@@ -290,14 +304,15 @@ describe('HistoryList transaction history', () => {
 
     renderWithClient(<HistoryList type="transaction-history" />);
 
-    expect(
-      await screen.findByText('Failed to load transactions.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('fail')).toBeInTheDocument();
   });
 
   it('renders the empty state copy from props', async () => {
     mockMetadataFetch(defaultMetadata);
-    fetchTransactionsMock.mockResolvedValueOnce([]);
+    fetchTransactionsMock.mockResolvedValueOnce({
+      items: [],
+      nextCursor: null,
+    });
 
     renderWithClient(
       <HistoryList
@@ -319,7 +334,10 @@ describe('HistoryList transaction history', () => {
         },
       },
     });
-    fetchTransactionsMock.mockResolvedValueOnce(transactionEntries);
+    fetchTransactionsMock.mockResolvedValueOnce({
+      items: transactionEntries,
+      nextCursor: null,
+    });
 
     renderWithClient(<HistoryList type="transaction-history" />);
 
@@ -330,12 +348,42 @@ describe('HistoryList transaction history', () => {
 
   it('renders an error state when column metadata is missing', async () => {
     mockMetadataFetch({ columns: [] });
-    fetchTransactionsMock.mockResolvedValueOnce(transactionEntries);
+    fetchTransactionsMock.mockResolvedValueOnce({
+      items: transactionEntries,
+      nextCursor: null,
+    });
 
     renderWithClient(<HistoryList type="transaction-history" />);
 
     expect(
       await screen.findByText('No transaction columns found'),
     ).toBeInTheDocument();
+  });
+
+  it('paginates transaction history when next cursor is provided', async () => {
+    mockMetadataFetch(defaultMetadata);
+    fetchTransactionsMock
+      .mockResolvedValueOnce({ items: transactionEntries, nextCursor: '1' })
+      .mockResolvedValueOnce({
+        items: [
+          {
+            date: 'May 2',
+            type: 'Withdrawal',
+            amount: -50,
+            currency: 'USD',
+            status: 'Completed',
+          },
+        ],
+        nextCursor: null,
+      });
+
+    renderWithClient(<HistoryList type="transaction-history" />);
+
+    const loadMore = await screen.findByRole('button', { name: 'Load more' });
+    expect(loadMore).not.toBeDisabled();
+
+    await userEvent.click(loadMore);
+
+    expect(await screen.findByText('Withdrawal')).toBeInTheDocument();
   });
 });
