@@ -126,4 +126,32 @@ describe('Admin tabs integration', () => {
     );
     expect(configTabs.length).toBeGreaterThan(0);
   });
+
+  it('updates config-sourced tabs via PATCH and marks them as database overrides', async () => {
+    await request(app.getHttpServer())
+      .patch('/admin/tabs/analytics')
+      .send({
+        title: 'Analytics (Custom)',
+        component: '@/custom/Analytics',
+        icon: 'faChartSimple',
+      })
+      .expect(200)
+      .expect({
+        id: 'analytics',
+        title: 'Analytics (Custom)',
+        component: '@/custom/Analytics',
+        icon: 'faChartSimple',
+        source: 'database',
+      });
+
+    const repo = dataSource.getRepository(AdminTabEntity);
+    const updated = await repo.findOne({ where: { id: 'analytics' } });
+
+    expect(updated).toMatchObject({
+      label: 'Analytics (Custom)',
+      component: '@/custom/Analytics',
+      icon: 'faChartSimple',
+      source: 'database',
+    });
+  });
 });

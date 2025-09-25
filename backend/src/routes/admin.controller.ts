@@ -5,8 +5,8 @@ import {
   Get,
   HttpCode,
   Param,
+  Patch,
   Post,
-  Put,
   Query,
   Req,
   UseGuards,
@@ -211,7 +211,7 @@ export class AdminController {
     return AdminTabSchema.parse(created);
   }
 
-  @Put('tabs/:id')
+  @Patch('tabs/:id')
   @ApiOperation({ summary: 'Update admin dashboard tab' })
   @ApiResponse({ status: 200, description: 'Updated admin tab' })
   async updateTab(

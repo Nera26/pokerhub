@@ -46,7 +46,7 @@ describe('Admin tabs page', () => {
 
     renderPage();
 
-    await screen.findByText('No runtime admin tabs found.');
+    await screen.findByText('No admin tabs found.');
 
     await user.type(screen.getByLabelText('ID'), 'audit');
     await user.type(screen.getByLabelText('Title'), 'Audit');
@@ -96,6 +96,6 @@ describe('Admin tabs page', () => {
 
     resolveDelete?.();
 
-    await screen.findByText('No runtime admin tabs found.');
+    await screen.findByText('No admin tabs found.');
   });
 });

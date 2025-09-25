@@ -2310,8 +2310,22 @@ export interface paths {
         };
       };
     };
+    /** Delete admin dashboard tab */
+    delete: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Admin tab deleted */
+        204: {
+          content: never;
+        };
+      };
+    };
     /** Update admin dashboard tab */
-    put: {
+    patch: {
       parameters: {
         path: {
           id: string;
@@ -2328,20 +2342,6 @@ export interface paths {
           content: {
             "application/json": components["schemas"]["AdminTab"];
           };
-        };
-      };
-    };
-    /** Delete admin dashboard tab */
-    delete: {
-      parameters: {
-        path: {
-          id: string;
-        };
-      };
-      responses: {
-        /** @description Admin tab deleted */
-        204: {
-          content: never;
         };
       };
     };

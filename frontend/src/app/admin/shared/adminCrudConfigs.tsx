@@ -396,7 +396,6 @@ export function createAdminTabCrudConfig(): AdminTabCrudConfigs {
       },
       remove: { mutationFn: deleteAdminTab },
       getItemId,
-      transformItems: (tabs) => tabs.filter((tab) => tab.source !== 'config'),
       formatListError,
       formatActionError,
     },
@@ -429,10 +428,10 @@ export function createAdminTabCrudConfig(): AdminTabCrudConfigs {
         <CrudItemList
           title="Existing tabs"
           loadingCopy="Loading admin tabs…"
-          emptyCopy="No runtime admin tabs found."
+          emptyCopy="No admin tabs found."
           {...props}
           getKey={(tab) => tab.id}
-          renderPrimary={(tab) => tab.title}
+          renderPrimary={(tab) => tab.title || tab.id}
           primaryClassName="font-semibold"
           description={(tab) => tab.id}
           meta={(tab) => (tab.icon ? `Icon: ${tab.icon}` : 'Missing icon')}
