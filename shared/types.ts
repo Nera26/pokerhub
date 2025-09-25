@@ -615,6 +615,8 @@ export {
   TournamentBracketMatchSchema,
   TournamentBracketRoundSchema,
   TournamentBracketResponseSchema,
+  HistoryQuerySchema,
+  PaginatedResponseSchema,
 } from './schemas/history';
 export type {
   GameHistoryEntry,
@@ -625,4 +627,6 @@ export type {
   TournamentBracketMatch,
   TournamentBracketRound,
   TournamentBracketResponse,
+  HistoryQuery,
+  Paginated,
 } from './schemas/history';

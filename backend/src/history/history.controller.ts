@@ -1,12 +1,14 @@
-import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { z } from 'zod';
 import {
   GameHistoryEntrySchema,
   TournamentHistoryEntrySchema,
   TransactionEntrySchema,
   TournamentBracketResponseSchema,
   type GameHistoryEntry,
+  HistoryQuerySchema,
+  PaginatedResponseSchema,
+  type Paginated,
   type TournamentHistoryEntry,
   type TransactionEntry,
   type TournamentBracketResponse,
@@ -24,9 +26,10 @@ export class HistoryController {
   @Get('games')
   @ApiOperation({ summary: 'List game history' })
   @ApiResponse({ status: 200, description: 'Game history entries' })
-  async games(): Promise<GameHistoryEntry[]> {
-    const res = await this.history.getGames();
-    return z.array(GameHistoryEntrySchema).parse(res);
+  async games(@Query() query: unknown): Promise<Paginated<GameHistoryEntry>> {
+    const parsed = HistoryQuerySchema.parse(query ?? {});
+    const res = await this.history.getGames(parsed);
+    return PaginatedResponseSchema(GameHistoryEntrySchema).parse(res);
   }
 
   @Get('tournaments')
@@ -35,9 +38,12 @@ export class HistoryController {
     status: 200,
     description: 'Tournament history entries',
   })
-  async tournaments(): Promise<TournamentHistoryEntry[]> {
-    const res = await this.history.getTournaments();
-    return z.array(TournamentHistoryEntrySchema).parse(res);
+  async tournaments(
+    @Query() query: unknown,
+  ): Promise<Paginated<TournamentHistoryEntry>> {
+    const parsed = HistoryQuerySchema.parse(query ?? {});
+    const res = await this.history.getTournaments(parsed);
+    return PaginatedResponseSchema(TournamentHistoryEntrySchema).parse(res);
   }
 
   @Get('tournaments/:id/bracket')
@@ -57,9 +63,12 @@ export class HistoryController {
     status: 200,
     description: 'Transaction history entries',
   })
-  async transactions(): Promise<TransactionEntry[]> {
-    const res = await this.history.getTransactions();
-    return z.array(TransactionEntrySchema).parse(res);
+  async transactions(
+    @Query() query: unknown,
+  ): Promise<Paginated<TransactionEntry>> {
+    const parsed = HistoryQuerySchema.parse(query ?? {});
+    const res = await this.history.getTransactions(parsed);
+    return PaginatedResponseSchema(TransactionEntrySchema).parse(res);
   }
 }
 

@@ -1,12 +1,8 @@
 // components/user/HistoryList.tsx
 'use client';
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
 import {
-  fetchGameHistory,
-  fetchTournamentHistory,
-  fetchTransactions,
   type GameHistoryEntry,
   type TournamentHistoryEntry,
   type TransactionEntry,
@@ -15,6 +11,11 @@ import TransactionHistorySection, {
   type TransactionHistorySectionProps,
 } from '../common/TransactionHistorySection';
 import { formatAmount } from '../common/transactionCells';
+import {
+  useGameHistory,
+  useTournamentHistory,
+  useTransactionHistory,
+} from '@/hooks/useHistory';
 
 interface Props {
   type: 'game-history' | 'tournament-history' | 'transaction-history';
@@ -32,6 +33,13 @@ interface Props {
   transactionOnExport?: TransactionHistorySectionProps<TransactionEntry>['onExport'];
 }
 
+function flattenItems<T>(pages: Array<{ items: T[] }> | undefined): T[] {
+  if (!pages) {
+    return [];
+  }
+  return pages.flatMap((page) => page.items);
+}
+
 function HistoryList({
   type,
   filters,
@@ -45,65 +53,59 @@ function HistoryList({
 }: Props) {
   const isTransactionHistory = type === 'transaction-history';
 
-  // GAME
-  const {
-    data: gameData,
-    isLoading: gameLoading,
-    error: gameError,
-  } = useQuery<GameHistoryEntry[]>({
-    queryKey: ['game-history'],
-    queryFn: ({ signal }) => fetchGameHistory({ signal }),
+  const gameQuery = useGameHistory(filters, {
     enabled: type === 'game-history',
   });
-
-  // TOURNAMENTS
-  const {
-    data: tournamentData,
-    isLoading: tournamentLoading,
-    error: tournamentError,
-  } = useQuery<TournamentHistoryEntry[]>({
-    queryKey: ['tournament-history'],
-    queryFn: ({ signal }) => fetchTournamentHistory({ signal }),
+  const tournamentQuery = useTournamentHistory(filters, {
     enabled: type === 'tournament-history',
   });
-
-  // TRANSACTIONS
-  const {
-    data: transactionData,
-    isLoading: transactionLoading,
-    error: transactionError,
-  } = useQuery<TransactionEntry[]>({
-    queryKey: ['transaction-history'],
-    queryFn: ({ signal }) => fetchTransactions({ signal }),
+  const transactionQuery = useTransactionHistory(filters, {
     enabled: isTransactionHistory,
   });
 
+  const gameEntries = useMemo(
+    () => flattenItems<GameHistoryEntry>(gameQuery.data?.pages),
+    [gameQuery.data?.pages],
+  );
+  const tournamentEntries = useMemo(
+    () => flattenItems<TournamentHistoryEntry>(tournamentQuery.data?.pages),
+    [tournamentQuery.data?.pages],
+  );
+  const transactionEntries = useMemo(
+    () => flattenItems<TransactionEntry>(transactionQuery.data?.pages),
+    [transactionQuery.data?.pages],
+  );
+
+  const gameErrorMessage =
+    gameQuery.error instanceof Error
+      ? gameQuery.error.message
+      : 'Failed to load game history.';
+  const tournamentErrorMessage =
+    tournamentQuery.error instanceof Error
+      ? tournamentQuery.error.message
+      : 'Failed to load tournament history.';
+  const transactionErrorMessage =
+    transactionQuery.error instanceof Error
+      ? transactionQuery.error.message
+      : 'Failed to load transactions.';
+
   // --- GAME HISTORY ---
   if (type === 'game-history') {
-    if (gameLoading) {
+    if (gameQuery.isLoading) {
       return (
         <div role="status" className="p-8 text-center text-text-secondary">
-          Loading...
+          Loading game history...
         </div>
       );
     }
-    if (gameError) {
+    if (gameQuery.isError) {
       return (
         <div role="alert" className="p-8 text-center text-danger-red">
-          Failed to load game history.
+          {gameErrorMessage}
         </div>
       );
     }
-    const entries = (gameData ?? []).filter((e) => {
-      if (!filters) return true;
-      if (filters.gameType !== 'any' && e.type !== filters.gameType)
-        return false;
-      if (filters.profitLoss === 'win' && !e.profit) return false;
-      if (filters.profitLoss === 'loss' && e.profit) return false;
-      if (filters.date && e.date !== filters.date) return false;
-      return true;
-    });
-    if (entries.length === 0) {
+    if (gameEntries.length === 0) {
       return (
         <div className="bg-card-bg rounded-2xl p-8 text-center text-text-secondary">
           No game history found.
@@ -112,7 +114,7 @@ function HistoryList({
     }
     return (
       <div className="bg-card-bg rounded-2xl p-8 space-y-4">
-        {entries.map((e) => (
+        {gameEntries.map((e) => (
           <div
             key={e.id}
             className="border-b border-border-dark pb-4 flex justify-between"
@@ -149,27 +151,34 @@ function HistoryList({
             </div>
           </div>
         ))}
+        <button
+          onClick={() => gameQuery.fetchNextPage()}
+          disabled={!gameQuery.hasNextPage || gameQuery.isFetchingNextPage}
+          className="w-full rounded-xl border border-border-dark py-2 text-sm font-semibold text-accent-yellow hover:text-accent-blue disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {gameQuery.isFetchingNextPage ? 'Loading more...' : 'Load more'}
+        </button>
       </div>
     );
   }
 
   // --- TOURNAMENT HISTORY ---
   if (type === 'tournament-history') {
-    if (tournamentLoading) {
+    if (tournamentQuery.isLoading) {
       return (
         <div role="status" className="p-8 text-center text-text-secondary">
-          Loading...
+          Loading tournament history...
         </div>
       );
     }
-    if (tournamentError) {
+    if (tournamentQuery.isError) {
       return (
         <div role="alert" className="p-8 text-center text-danger-red">
-          Failed to load tournament history.
+          {tournamentErrorMessage}
         </div>
       );
     }
-    if (!tournamentData || tournamentData.length === 0) {
+    if (tournamentEntries.length === 0) {
       return (
         <div className="bg-card-bg rounded-2xl p-8 text-center text-text-secondary">
           No tournament history found.
@@ -198,7 +207,7 @@ function HistoryList({
               </tr>
             </thead>
             <tbody>
-              {tournamentData.map((row) => (
+              {tournamentEntries.map((row) => (
                 <tr key={row.id} className="border-b border-border-dark">
                   <td className="py-2 pr-6 whitespace-nowrap">{row.name}</td>
                   <td className="py-2 pr-6 whitespace-nowrap">{row.place}</td>
@@ -222,41 +231,62 @@ function HistoryList({
             </tbody>
           </table>
         </div>
+        <button
+          onClick={() => tournamentQuery.fetchNextPage()}
+          disabled={
+            !tournamentQuery.hasNextPage || tournamentQuery.isFetchingNextPage
+          }
+          className="mt-4 w-full rounded-xl border border-border-dark py-2 text-sm font-semibold text-accent-yellow hover:text-accent-blue disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {tournamentQuery.isFetchingNextPage ? 'Loading more...' : 'Load more'}
+        </button>
       </div>
     );
   }
 
   // --- TRANSACTION HISTORY ---
   if (type === 'transaction-history') {
-    if (transactionLoading) {
+    if (transactionQuery.isLoading) {
       return (
         <div role="status" className="p-8 text-center text-text-secondary">
-          Loading...
+          Loading transactions...
         </div>
       );
     }
-    if (transactionError) {
+    if (transactionQuery.isError) {
       return (
         <div role="alert" className="p-8 text-center text-danger-red">
-          Failed to load transactions.
+          {transactionErrorMessage}
         </div>
       );
     }
 
-    const transactions = transactionData ?? [];
     const transactionCurrency =
-      transactions.find((entry) => entry.currency)?.currency ?? 'USD';
+      transactionEntries.find((entry) => entry.currency)?.currency ?? 'USD';
 
     return (
-      <TransactionHistorySection<TransactionEntry>
-        data={transactions}
-        currency={transactionCurrency}
-        title={transactionTitle ?? 'Wallet Activity'}
-        emptyMessage={transactionEmptyMessage ?? 'No transactions found.'}
-        filters={transactionFilters}
-        actions={transactionActions}
-        onExport={transactionOnExport}
-      />
+      <div className="space-y-4">
+        <TransactionHistorySection<TransactionEntry>
+          data={transactionEntries}
+          currency={transactionCurrency}
+          title={transactionTitle ?? 'Wallet Activity'}
+          emptyMessage={transactionEmptyMessage ?? 'No transactions found.'}
+          filters={transactionFilters}
+          actions={transactionActions}
+          onExport={transactionOnExport}
+        />
+        <button
+          onClick={() => transactionQuery.fetchNextPage()}
+          disabled={
+            !transactionQuery.hasNextPage || transactionQuery.isFetchingNextPage
+          }
+          className="w-full rounded-xl border border-border-dark py-2 text-sm font-semibold text-accent-yellow hover:text-accent-blue disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {transactionQuery.isFetchingNextPage
+            ? 'Loading more...'
+            : 'Load more'}
+        </button>
+      </div>
     );
   }
 

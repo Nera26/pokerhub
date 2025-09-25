@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PokerHub API
-  version: 2.33.0
+  version: 3.0.0
 paths:
   /status:
     get:
@@ -259,6 +259,96 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HistoryTabsResponse'
+  /history/games:
+    get:
+      summary: List game history
+      parameters:
+        - in: query
+          name: gameType
+          schema:
+            type: string
+        - in: query
+          name: profitLoss
+          schema:
+            type: string
+            enum: [win, loss]
+        - in: query
+          name: dateFrom
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: dateTo
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - in: query
+          name: cursor
+          schema:
+            type: string
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [asc, desc]
+      responses:
+        '200':
+          description: Game history entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGameHistoryEntryResponse'
+  /history/tournaments:
+    get:
+      summary: List tournament history
+      parameters:
+        - in: query
+          name: gameType
+          schema:
+            type: string
+        - in: query
+          name: profitLoss
+          schema:
+            type: string
+            enum: [win, loss]
+        - in: query
+          name: dateFrom
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: dateTo
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - in: query
+          name: cursor
+          schema:
+            type: string
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [asc, desc]
+      responses:
+        '200':
+          description: Tournament history entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTournamentHistoryEntryResponse'
   /history/tournaments/{id}/bracket:
     get:
       summary: Get tournament bracket
@@ -287,6 +377,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
+  /history/transactions:
+    get:
+      summary: List wallet transactions
+      parameters:
+        - in: query
+          name: gameType
+          schema:
+            type: string
+        - in: query
+          name: profitLoss
+          schema:
+            type: string
+            enum: [win, loss]
+        - in: query
+          name: dateFrom
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: dateTo
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - in: query
+          name: cursor
+          schema:
+            type: string
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [asc, desc]
+      responses:
+        '200':
+          description: Wallet transactions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTransactionEntryResponse'
   /settings/chart-palette:
     get:
       summary: Get chart palette colors
@@ -4868,6 +5003,91 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/HistoryTabItem'
+    GameHistoryEntry:
+      type: object
+      required: [id, type, stakes, buyin, date, profit, amount, currency]
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        stakes:
+          type: string
+        buyin:
+          type: string
+        date:
+          type: string
+          format: date-time
+        profit:
+          type: boolean
+        amount:
+          type: number
+        currency:
+          type: string
+    PaginatedGameHistoryEntryResponse:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameHistoryEntry'
+        nextCursor:
+          type: string
+          nullable: true
+    TournamentHistoryEntry:
+      type: object
+      required: [id, name, place, buyin, prize, duration]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        place:
+          type: string
+        buyin:
+          type: string
+        prize:
+          type: string
+        duration:
+          type: string
+    PaginatedTournamentHistoryEntryResponse:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TournamentHistoryEntry'
+        nextCursor:
+          type: string
+          nullable: true
+    TransactionEntry:
+      type: object
+      required: [date, type, amount, currency, status]
+      properties:
+        date:
+          type: string
+          format: date-time
+        type:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        status:
+          type: string
+    PaginatedTransactionEntryResponse:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionEntry'
+        nextCursor:
+          type: string
+          nullable: true
     TournamentBracketMatch:
       type: object
       required: [id, players, winner]

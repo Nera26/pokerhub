@@ -305,6 +305,54 @@ export interface paths {
       };
     };
   };
+  "/history/games": {
+    /** List game history */
+    get: {
+      parameters: {
+        query?: {
+          gameType?: string;
+          profitLoss?: "win" | "loss";
+          dateFrom?: string;
+          dateTo?: string;
+          limit?: number;
+          cursor?: string;
+          sort?: "asc" | "desc";
+        };
+      };
+      responses: {
+        /** @description Game history entries */
+        200: {
+          content: {
+            "application/json": components["schemas"]["PaginatedGameHistoryEntryResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/history/tournaments": {
+    /** List tournament history */
+    get: {
+      parameters: {
+        query?: {
+          gameType?: string;
+          profitLoss?: "win" | "loss";
+          dateFrom?: string;
+          dateTo?: string;
+          limit?: number;
+          cursor?: string;
+          sort?: "asc" | "desc";
+        };
+      };
+      responses: {
+        /** @description Tournament history entries */
+        200: {
+          content: {
+            "application/json": components["schemas"]["PaginatedTournamentHistoryEntryResponse"];
+          };
+        };
+      };
+    };
+  };
   "/history/tournaments/{id}/bracket": {
     /** Get tournament bracket */
     get: {
@@ -330,6 +378,30 @@ export interface paths {
         404: {
           content: {
             "application/json": components["schemas"]["MessageResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/history/transactions": {
+    /** List wallet transactions */
+    get: {
+      parameters: {
+        query?: {
+          gameType?: string;
+          profitLoss?: "win" | "loss";
+          dateFrom?: string;
+          dateTo?: string;
+          limit?: number;
+          cursor?: string;
+          sort?: "asc" | "desc";
+        };
+      };
+      responses: {
+        /** @description Wallet transactions */
+        200: {
+          content: {
+            "application/json": components["schemas"]["PaginatedTransactionEntryResponse"];
           };
         };
       };
@@ -3700,9 +3772,11 @@ export interface components {
     CreateUserRequest: {
       username: string;
       avatarKey?: string;
+      /** Format: email */
       email?: string;
       password?: string;
-      role?: 'Player' | 'Admin';
+      /** @enum {string} */
+      role?: "Player" | "Admin";
     };
     UpdateUserRequest: {
       username?: string;
@@ -3974,6 +4048,45 @@ export interface components {
     };
     HistoryTabsResponse: {
       tabs: components["schemas"]["HistoryTabItem"][];
+    };
+    GameHistoryEntry: {
+      id: string;
+      type: string;
+      stakes: string;
+      buyin: string;
+      /** Format: date-time */
+      date: string;
+      profit: boolean;
+      amount: number;
+      currency: string;
+    };
+    PaginatedGameHistoryEntryResponse: {
+      items: components["schemas"]["GameHistoryEntry"][];
+      nextCursor: string | null;
+    };
+    TournamentHistoryEntry: {
+      id: string;
+      name: string;
+      place: string;
+      buyin: string;
+      prize: string;
+      duration: string;
+    };
+    PaginatedTournamentHistoryEntryResponse: {
+      items: components["schemas"]["TournamentHistoryEntry"][];
+      nextCursor: string | null;
+    };
+    TransactionEntry: {
+      /** Format: date-time */
+      date: string;
+      type: string;
+      amount: number;
+      currency: string;
+      status: string;
+    };
+    PaginatedTransactionEntryResponse: {
+      items: components["schemas"]["TransactionEntry"][];
+      nextCursor: string | null;
     };
     TournamentBracketMatch: {
       id: string;

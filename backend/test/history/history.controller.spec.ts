@@ -95,12 +95,23 @@ describe('HistoryController', () => {
     bracketRepo = moduleRef.get<HistoryRepository<TournamentBracket>>(TOURNAMENT_BRACKET_REPOSITORY);
 
     await gameRepo.save({
+      id: '00000000-0000-0000-0000-000000000101',
       type: 'cash',
       stakes: '$1/$2',
       buyin: '$100',
       date: new Date('2024-01-01T00:00:00Z'),
       profit: true,
       amount: '$50',
+    });
+
+    await gameRepo.save({
+      id: '00000000-0000-0000-0000-000000000102',
+      type: 'cash',
+      stakes: '$2/$5',
+      buyin: '$200',
+      date: new Date('2024-01-02T00:00:00Z'),
+      profit: false,
+      amount: '-$25',
     });
 
     const tournament = await tournamentRepo.save({
@@ -130,9 +141,18 @@ describe('HistoryController', () => {
     });
 
     await walletRepo.save({
+      id: '00000000-0000-0000-0000-000000000201',
       date: new Date('2024-02-01T00:00:00Z'),
       type: 'deposit',
       amount: '$100',
+      status: 'completed',
+    });
+
+    await walletRepo.save({
+      id: '00000000-0000-0000-0000-000000000202',
+      date: new Date('2024-02-02T00:00:00Z'),
+      type: 'withdrawal',
+      amount: '-$50',
       status: 'completed',
     });
 
@@ -151,15 +171,62 @@ describe('HistoryController', () => {
       .get('/history/games')
       .set('Authorization', 'Bearer test')
       .expect(200);
-    expect(res.body).toHaveLength(1);
-    expect(res.body[0]).toMatchObject({
-      type: 'cash',
-      stakes: '$1/$2',
-      buyin: '$100',
-      profit: true,
-      currency: 'USD',
+    expect(res.body).toEqual({
+      nextCursor: null,
+      items: [
+        {
+          id: expect.any(String),
+          type: 'cash',
+          stakes: '$2/$5',
+          buyin: '$200',
+          date: '2024-01-02T00:00:00.000Z',
+          profit: false,
+          amount: -25,
+          currency: 'USD',
+        },
+        {
+          id: expect.any(String),
+          type: 'cash',
+          stakes: '$1/$2',
+          buyin: '$100',
+          date: '2024-01-01T00:00:00.000Z',
+          profit: true,
+          amount: 50,
+          currency: 'USD',
+        },
+      ],
     });
-    expect(res.body[0].amount).toBe(50);
+  });
+
+  it('supports filtering and pagination for game history', async () => {
+    const firstPage = await request(app.getHttpServer())
+      .get('/history/games')
+      .query({ limit: 1 })
+      .set('Authorization', 'Bearer test')
+      .expect(200);
+
+    expect(firstPage.body.items).toHaveLength(1);
+    expect(firstPage.body.nextCursor).toBe('1');
+    expect(firstPage.body.items[0]).toMatchObject({ profit: false });
+
+    const secondPage = await request(app.getHttpServer())
+      .get('/history/games')
+      .query({ cursor: firstPage.body.nextCursor })
+      .set('Authorization', 'Bearer test')
+      .expect(200);
+
+    expect(secondPage.body.items).toHaveLength(1);
+    expect(secondPage.body.nextCursor).toBeNull();
+    expect(secondPage.body.items[0]).toMatchObject({ profit: true });
+
+    const filtered = await request(app.getHttpServer())
+      .get('/history/games')
+      .query({ profitLoss: 'win' })
+      .set('Authorization', 'Bearer test')
+      .expect(200);
+
+    expect(filtered.body.items).toHaveLength(1);
+    expect(filtered.body.items[0]).toMatchObject({ profit: true });
   });
 
   it('returns tournament history', async () => {
@@ -167,13 +234,18 @@ describe('HistoryController', () => {
       .get('/history/tournaments')
       .set('Authorization', 'Bearer test')
       .expect(200);
-    expect(res.body).toHaveLength(1);
-    expect(res.body[0]).toMatchObject({
-      name: 'Sunday Major',
-      place: '1',
-      buyin: '$50',
-      prize: '$500',
-      duration: '2h',
+    expect(res.body).toEqual({
+      nextCursor: null,
+      items: [
+        {
+          id: expect.any(String),
+          name: 'Sunday Major',
+          place: '1',
+          buyin: '$50',
+          prize: '$500',
+          duration: '2h',
+        },
+      ],
     });
   });
 
@@ -182,13 +254,40 @@ describe('HistoryController', () => {
       .get('/history/transactions')
       .set('Authorization', 'Bearer test')
       .expect(200);
-    expect(res.body).toHaveLength(1);
-    expect(res.body[0]).toMatchObject({
-      type: 'deposit',
-      status: 'completed',
-      currency: 'USD',
+    expect(res.body).toEqual({
+      nextCursor: null,
+      items: [
+        {
+          date: '2024-02-02T00:00:00.000Z',
+          type: 'withdrawal',
+          amount: -50,
+          currency: 'USD',
+          status: 'completed',
+        },
+        {
+          date: '2024-02-01T00:00:00.000Z',
+          type: 'deposit',
+          amount: 100,
+          currency: 'USD',
+          status: 'completed',
+        },
+      ],
     });
-    expect(res.body[0].amount).toBe(100);
+  });
+
+  it('supports filtering wallet transactions by profit/loss', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/history/transactions')
+      .query({ profitLoss: 'win', limit: 1 })
+      .set('Authorization', 'Bearer test')
+      .expect(200);
+
+    expect(res.body.items).toHaveLength(1);
+    expect(res.body.items[0]).toMatchObject({
+      type: 'deposit',
+      amount: 100,
+    });
+    expect(res.body.nextCursor).toBeNull();
   });
 
   it('returns tournament bracket for owner', async () => {

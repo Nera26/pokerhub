@@ -1,5 +1,27 @@
-import { z } from 'zod';
+import { z, type ZodTypeAny } from 'zod';
 import { CurrencySchema } from '../wallet.schema';
+
+export const HistoryQuerySchema = z.object({
+  gameType: z.string().optional(),
+  profitLoss: z.enum(['win', 'loss']).optional(),
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
+  limit: z.coerce.number().int().positive().max(100).optional(),
+  cursor: z.coerce.number().int().min(0).optional(),
+  sort: z.enum(['asc', 'desc']).optional(),
+});
+export type HistoryQuery = z.infer<typeof HistoryQuerySchema>;
+
+export const PaginatedResponseSchema = <T extends ZodTypeAny>(schema: T) =>
+  z.object({
+    items: z.array(schema),
+    nextCursor: z.string().nullable(),
+  });
+
+export interface Paginated<T> {
+  items: T[];
+  nextCursor: string | null;
+}
 
 export const GameHistoryEntrySchema = z.object({
   id: z.string(),
