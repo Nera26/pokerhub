@@ -68,6 +68,7 @@ export class HistoryService {
       );
 
     const { slice, nextCursor } = this.sliceRows(filtered, config.offset, config.limit);
+    const total = filtered.length;
     const items = slice.map((r) => ({
       id: r.id,
       type: r.type,
@@ -78,7 +79,7 @@ export class HistoryService {
       ...this.parseAmount(r.amount),
     }));
 
-    return { items, nextCursor };
+    return { items, nextCursor, total };
   }
 
   async getTournaments(
@@ -94,6 +95,7 @@ export class HistoryService {
           : b.name.localeCompare(a.name),
       );
     const { slice, nextCursor } = this.sliceRows(sorted, config.offset, config.limit);
+    const total = sorted.length;
     const items = slice.map((r) => ({
       id: r.id,
       name: r.name,
@@ -103,7 +105,7 @@ export class HistoryService {
       duration: r.duration,
     }));
 
-    return { items, nextCursor };
+    return { items, nextCursor, total };
   }
 
   async getTournamentBracket(
@@ -162,6 +164,7 @@ export class HistoryService {
       config.offset,
       config.limit,
     );
+    const total = filtered.length;
     const items = slice.map(({ row, amount }) => ({
       date: row.date.toISOString(),
       type: row.type,
@@ -170,7 +173,7 @@ export class HistoryService {
       status: row.status,
     }));
 
-    return { items, nextCursor };
+    return { items, nextCursor, total };
   }
 
   private parseAmount(amount: string | null | undefined): {

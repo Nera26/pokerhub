@@ -173,6 +173,7 @@ describe('HistoryController', () => {
       .expect(200);
     expect(res.body).toEqual({
       nextCursor: null,
+      total: 2,
       items: [
         {
           id: expect.any(String),
@@ -208,6 +209,7 @@ describe('HistoryController', () => {
     expect(firstPage.body.items).toHaveLength(1);
     expect(firstPage.body.nextCursor).toBe('1');
     expect(firstPage.body.items[0]).toMatchObject({ profit: false });
+    expect(firstPage.body.total).toBe(2);
 
     const secondPage = await request(app.getHttpServer())
       .get('/history/games')
@@ -218,6 +220,7 @@ describe('HistoryController', () => {
     expect(secondPage.body.items).toHaveLength(1);
     expect(secondPage.body.nextCursor).toBeNull();
     expect(secondPage.body.items[0]).toMatchObject({ profit: true });
+    expect(secondPage.body.total).toBe(2);
 
     const filtered = await request(app.getHttpServer())
       .get('/history/games')
@@ -227,6 +230,7 @@ describe('HistoryController', () => {
 
     expect(filtered.body.items).toHaveLength(1);
     expect(filtered.body.items[0]).toMatchObject({ profit: true });
+    expect(filtered.body.total).toBe(1);
   });
 
   it('returns tournament history', async () => {
@@ -236,6 +240,7 @@ describe('HistoryController', () => {
       .expect(200);
     expect(res.body).toEqual({
       nextCursor: null,
+      total: 1,
       items: [
         {
           id: expect.any(String),
@@ -256,6 +261,7 @@ describe('HistoryController', () => {
       .expect(200);
     expect(res.body).toEqual({
       nextCursor: null,
+      total: 2,
       items: [
         {
           date: '2024-02-02T00:00:00.000Z',
@@ -288,6 +294,7 @@ describe('HistoryController', () => {
       amount: 100,
     });
     expect(res.body.nextCursor).toBeNull();
+    expect(res.body.total).toBe(1);
   });
 
   it('returns tournament bracket for owner', async () => {
