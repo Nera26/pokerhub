@@ -5,7 +5,7 @@ import { INestApplication, ExecutionContext, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import request from 'supertest';
-import { createDataSource } from './utils/pgMem';
+import { createDataSource, destroyDataSource } from './utils/pgMem';
 import { MeController } from '../src/routes/me.controller';
 import { UsersService } from '../src/users/users.service';
 import { UserRepository } from '../src/users/user.repository';
@@ -39,10 +39,12 @@ describe('MeController', () => {
   let app: INestApplication;
   let repo: UserRepository;
   let userId: string;
+  let moduleRef: TestingModule;
+  let dataSource: DataSource;
 
   beforeAll(async () => {
     const MeTestModule = createTestModule();
-    const moduleRef: TestingModule = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [MeTestModule],
     })
       .overrideGuard(AuthGuard)
@@ -58,6 +60,7 @@ describe('MeController', () => {
     app = moduleRef.createNestApplication();
     await app.init();
 
+    dataSource = moduleRef.get(DataSource);
     repo = moduleRef.get(UserRepository);
     const user = repo.create({
       username: 'Player',
@@ -70,6 +73,7 @@ describe('MeController', () => {
 
   afterAll(async () => {
     await app.close();
+    await destroyDataSource(dataSource);
   });
 
   it('returns avatar url', async () => {

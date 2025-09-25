@@ -1,7 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import type Redis from 'ioredis';
-import { newDb } from 'pg-mem';
 import { DataSource, Repository } from 'typeorm';
 import { EventPublisher } from '../../src/events/events.service';
 import { Disbursement } from '../../src/wallet/disbursement.entity';
@@ -14,6 +13,7 @@ import type { SettlementService } from '../../src/wallet/settlement.service';
 import { SettlementJournal } from '../../src/wallet/settlement-journal.entity';
 import { WalletService } from '../../src/wallet/wallet.service';
 import { createInMemoryRedis } from '../utils/mock-redis';
+import { createPgMemDataSource } from '../utils/pgMemFactory';
 import {
   reserveOperationArb,
   rollbackOperationArb,
@@ -42,35 +42,8 @@ export interface WalletTestContext {
   kyc: KycService;
 }
 
-function registerPgMemExtensions(db: ReturnType<typeof newDb>) {
-  db.public.registerFunction({
-    name: 'version',
-    returns: 'text',
-    implementation: () => 'pg-mem',
-  });
-  db.public.registerFunction({
-    name: 'current_database',
-    returns: 'text',
-    implementation: () => 'test',
-  });
-  let seq = 1;
-  db.public.registerFunction({
-    name: 'uuid_generate_v4',
-    returns: 'text',
-    implementation: () => {
-      const id = seq.toString(16).padStart(32, '0');
-      seq++;
-      return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(16, 20)}-${id.slice(20)}`;
-    },
-  });
-}
-
 export async function createWalletTestContext(): Promise<WalletTestContext> {
-  const db = newDb();
-  registerPgMemExtensions(db);
-
-  const dataSource = db.adapters.createTypeormDataSource({
-    type: 'postgres',
+  const dataSource = await createPgMemDataSource({
     entities: [
       Account,
       JournalEntry,
@@ -78,9 +51,7 @@ export async function createWalletTestContext(): Promise<WalletTestContext> {
       SettlementJournal,
       PendingDeposit,
     ],
-    synchronize: true,
-  }) as DataSource;
-  await dataSource.initialize();
+  });
 
   const accountRepo = dataSource.getRepository(Account);
   const journalRepo = dataSource.getRepository(JournalEntry);

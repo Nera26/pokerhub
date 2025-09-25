@@ -6,7 +6,7 @@ import type { CountryProvider } from '../../src/auth/providers/country-provider'
 import type { ConfigService } from '@nestjs/config';
 import type { Pep } from '../../src/database/entities/pep.entity';
 import { DataSource } from 'typeorm';
-import { createInMemoryDataSource } from '../utils/pgMem';
+import { createInMemoryDataSource, destroyDataSource } from '../utils/pgMem';
 import { Logger } from '@nestjs/common';
 
 import { Account as WalletAccount } from '../../src/wallet/account.entity';
@@ -239,7 +239,7 @@ describe('KycService common', () => {
     });
 
     afterAll(async () => {
-      await dataSource.destroy();
+      await destroyDataSource(dataSource);
     });
 
     beforeEach(async () => {
