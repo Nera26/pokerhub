@@ -70,6 +70,7 @@ jest.mock('../src/history/history.module', () => ({
 }));
 import { AppModule } from './../src/app.module';
 import testDataSource from './utils/test-datasource';
+import { destroyDataSource } from './utils/pgMem';
 import { UserRepository } from './../src/users/user.repository';
 import { API_CONTRACT_VERSION } from '@shared/constants';
 
@@ -86,9 +87,7 @@ describe('AppController (e2e)', () => {
     if (app) {
       await app.close();
     }
-    if (testDataSource.isInitialized) {
-      await testDataSource.destroy();
-    }
+    await destroyDataSource(testDataSource);
   });
 
   beforeEach(async () => {

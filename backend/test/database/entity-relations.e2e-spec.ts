@@ -3,6 +3,7 @@ import { Table } from '../../src/database/entities/table.entity';
 import { Tournament } from '../../src/database/entities/tournament.entity';
 import { Seat } from '../../src/database/entities/seat.entity';
 import testDataSource from '../utils/test-datasource';
+import { destroyDataSource } from '../utils/pgMem';
 
 describe('Entity relations', () => {
   beforeAll(async () => {
@@ -16,9 +17,7 @@ describe('Entity relations', () => {
   });
 
   afterAll(async () => {
-    if (testDataSource.isInitialized) {
-      await testDataSource.destroy();
-    }
+    await destroyDataSource(testDataSource);
   });
 
   it('relates tables, tournaments and users', async () => {

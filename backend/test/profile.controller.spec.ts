@@ -14,7 +14,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ExecutionContext, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { createDataSource } from './utils/pgMem';
+import { createDataSource, destroyDataSource } from './utils/pgMem';
 import request from 'supertest';
 import { ProfileController } from '../src/routes/profile.controller';
 import { AuthGuard } from '../src/auth/auth.guard';
@@ -57,10 +57,12 @@ describe('ProfileController (integration)', () => {
   let repo: UserRepository;
   let lbRepo;
   let userId: string;
+  let moduleRef: TestingModule;
+  let dataSource: DataSource;
 
   beforeAll(async () => {
     const ProfileTestModule = createTestModule();
-    const moduleRef: TestingModule = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [ProfileTestModule],
     })
       .overrideGuard(AuthGuard)
@@ -76,6 +78,7 @@ describe('ProfileController (integration)', () => {
     app = moduleRef.createNestApplication();
     await app.init();
 
+    dataSource = moduleRef.get(DataSource);
     repo = moduleRef.get(UserRepository);
     const user = repo.create({
       username: 'PlayerOne23',
@@ -111,6 +114,7 @@ describe('ProfileController (integration)', () => {
 
   afterAll(async () => {
     await app.close();
+    await destroyDataSource(dataSource);
   });
 
   it('returns user profile from database', async () => {
