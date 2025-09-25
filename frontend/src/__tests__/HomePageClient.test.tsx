@@ -16,9 +16,9 @@ jest.mock('@/app/components/common/chat/ChatWidget', () => {
 function MockTournamentList({
   onRegister,
 }: {
-  onRegister: (id: string) => void;
+  onRegister?: (id: string) => void;
 }) {
-  return <button onClick={() => onRegister('1')}>Register</button>;
+  return <button onClick={() => onRegister?.('1')}>Register</button>;
 }
 
 function MockCashGameList() {

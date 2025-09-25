@@ -18,7 +18,7 @@ jest.mock('next/image', () => (props: ImgHTMLAttributes<HTMLImageElement>) => {
 describe('SeatRing', () => {
   const players: Player[] = [
     {
-      id: '1',
+      id: 1,
       username: 'Alice',
       chips: 100,
       avatar: '',
@@ -26,7 +26,7 @@ describe('SeatRing', () => {
       pos: 'BTN',
     },
     {
-      id: '2',
+      id: 2,
       username: 'Bob',
       chips: 100,
       avatar: '',
@@ -34,7 +34,7 @@ describe('SeatRing', () => {
       pos: 'SB',
     },
     {
-      id: '3',
+      id: 3,
       username: 'Carol',
       chips: 100,
       avatar: '',
