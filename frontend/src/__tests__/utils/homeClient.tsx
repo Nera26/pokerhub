@@ -1,7 +1,12 @@
 import { render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HomePageClient } from '@/app/(site)/HomePageClient';
-import { useTables, useTournaments, useCTAs } from '@/hooks/useLobbyData';
+import {
+  useTables,
+  useTournaments,
+  useCTAs,
+  type Tournament,
+} from '@/hooks/useLobbyData';
 import { useGameTypes } from '@/hooks/useGameTypes';
 import type { CashGameListProps } from '@/app/components/home/CashGameList';
 import type { TournamentListProps } from '@/components/TournamentList';
@@ -18,6 +23,11 @@ jest.mock('@/hooks/useGameTypes', () => ({
   }),
 }));
 
+export type TournamentWithBreak = Tournament & {
+  nextBreak?: string;
+  breakDurationMs?: number;
+};
+
 interface HookMock<T> {
   data: T;
   error: unknown;
@@ -26,10 +36,12 @@ interface HookMock<T> {
 
 interface RenderOptions {
   tables?: HookMock<unknown>;
-  tournaments?: HookMock<unknown>;
+  tournaments?: HookMock<TournamentWithBreak[] | undefined>;
   ctas?: HookMock<unknown>;
   cashGameList?: React.ComponentType<CashGameListProps>;
-  tournamentList?: React.ComponentType<TournamentListProps<unknown>>;
+  tournamentList?: React.ComponentType<
+    TournamentListProps<TournamentWithBreak>
+  >;
   client?: QueryClient;
 }
 
@@ -48,7 +60,10 @@ export function renderHomePageClient({
   const CashGameList =
     cashGameList ?? (() => <div data-testid="tables-list" />);
   const TournamentList =
-    tournamentList ?? (() => <div data-testid="tournaments-list" />);
+    tournamentList ??
+    ((_: TournamentListProps<TournamentWithBreak>) => (
+      <div data-testid="tournaments-list" />
+    ));
 
   return render(
     <QueryClientProvider client={client}>
