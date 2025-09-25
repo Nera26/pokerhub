@@ -66,7 +66,7 @@ export async function updateAdminTab(
   body: UpdateAdminTabRequest,
 ): Promise<AdminTab> {
   return apiClient(`/api/admin/tabs/${id}`, AdminTabSchema, {
-    method: 'PUT',
+    method: 'PATCH',
     body: AdminTabUpdateRequestSchema.parse(body),
   });
 }

@@ -32,9 +32,19 @@ describe('admin CRUD config factories', () => {
       icon: '',
       order: '1',
     });
+
+    expect(crudConfig.formatListError?.(new Error('oops'))).toBe(
+      'Failed to load navigation items: oops',
+    );
+
+    expect(
+      crudConfig.formatActionError?.('delete', new Error('boom'), {
+        identifier: 'home',
+      }),
+    ).toBe('Failed to delete nav item: boom');
   });
 
-  it('filters config-sourced admin tabs from editable list', () => {
+  it('returns admin tab config without filtering and formats errors', () => {
     const { crudConfig, formConfig } = createAdminTabCrudConfig();
 
     expect(crudConfig.queryKey).toEqual(['admin', 'tabs']);
@@ -45,31 +55,16 @@ describe('admin CRUD config factories', () => {
       'icon',
     ]);
 
-    const filtered = crudConfig.transformItems?.([
-      {
-        id: 'analytics',
-        title: 'Analytics',
-        component: '@/analytics',
-        icon: 'faChart',
-        source: 'config',
-      },
-      {
-        id: 'runtime',
-        title: 'Runtime',
-        component: '@/runtime',
-        icon: 'faBolt',
-        source: 'database',
-      },
-    ] as any);
+    expect(crudConfig.transformItems).toBeUndefined();
 
-    expect(filtered).toEqual([
-      {
-        id: 'runtime',
-        title: 'Runtime',
-        component: '@/runtime',
-        icon: 'faBolt',
-        source: 'database',
-      },
-    ]);
+    const listError = crudConfig.formatListError?.(new Error('boom'));
+    expect(listError).toBe('Failed to load admin tabs: boom');
+
+    const actionError = crudConfig.formatActionError?.(
+      'update',
+      new Error('boom'),
+      { identifier: 'analytics' },
+    );
+    expect(actionError).toBe('Failed to update admin tab: boom');
   });
 });

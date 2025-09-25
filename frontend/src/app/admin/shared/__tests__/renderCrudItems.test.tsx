@@ -55,7 +55,7 @@ describe('CrudItemList', () => {
       <CrudItemList
         title="Existing tabs"
         loadingCopy="Loading admin tabs…"
-        emptyCopy="No runtime admin tabs found."
+        emptyCopy="No admin tabs found."
         items={[
           {
             id: 'reports',

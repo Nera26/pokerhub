@@ -123,28 +123,11 @@ function makePlaceholders(count: number, startIndex = 1): string {
 export async function applyCanonicalAdminSidebarTabs(
   queryRunner: QueryRunner,
 ): Promise<void> {
-  if (CANONICAL_ADMIN_SIDEBAR_TABS.length === 0) {
-    await queryRunner.query('DELETE FROM "admin_tab"');
-    return;
-  }
-
-  const ids = CANONICAL_ADMIN_SIDEBAR_TABS.map((tab) => tab.id);
-  const idPlaceholders = makePlaceholders(ids.length);
-
-  await queryRunner.query(
-    `DELETE FROM "admin_tab" WHERE "id" NOT IN (${idPlaceholders})`,
-    ids,
-  );
-
   for (const tab of CANONICAL_ADMIN_SIDEBAR_TABS) {
     await queryRunner.query(
       `INSERT INTO "admin_tab" ("id", "label", "icon", "component", "source")
        VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT ("id") DO UPDATE
-       SET "label" = EXCLUDED."label",
-           "icon" = EXCLUDED."icon",
-           "component" = EXCLUDED."component",
-           "source" = EXCLUDED."source"`,
+       ON CONFLICT ("id") DO NOTHING`,
       [tab.id, tab.label, tab.icon, tab.component, tab.source ?? 'config'],
     );
   }
@@ -161,7 +144,7 @@ export async function removeCanonicalAdminSidebarTabs(
   const idPlaceholders = makePlaceholders(ids.length);
 
   await queryRunner.query(
-    `DELETE FROM "admin_tab" WHERE "id" IN (${idPlaceholders})`,
+    `DELETE FROM "admin_tab" WHERE "id" IN (${idPlaceholders}) AND "source" = 'config'`,
     ids,
   );
 }

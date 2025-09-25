@@ -2269,7 +2269,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminTabMeta'
-    put:
+    patch:
       summary: Update admin dashboard tab
       security:
         - bearerAuth: []

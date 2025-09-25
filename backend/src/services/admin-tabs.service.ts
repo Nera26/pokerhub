@@ -46,6 +46,7 @@ export class AdminTabsService {
     existing.label = payload.title;
     existing.icon = normalizeSidebarIcon(payload.icon);
     existing.component = payload.component;
+    existing.source = 'database';
     const saved = await this.repo.save(existing);
     return this.toConfig(saved);
   }
