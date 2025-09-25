@@ -1,14 +1,14 @@
 import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { z } from 'zod';
 import {
-  GameHistoryEntrySchema,
-  TournamentHistoryEntrySchema,
-  TransactionEntrySchema,
+  GameHistoryPageSchema,
+  HistoryQuerySchema,
+  TournamentHistoryPageSchema,
+  TransactionHistoryPageSchema,
   TournamentBracketResponseSchema,
-  type GameHistoryEntry,
-  type TournamentHistoryEntry,
-  type TransactionEntry,
+  type GameHistoryPage,
+  type TournamentHistoryPage,
+  type TransactionHistoryPage,
   type TournamentBracketResponse,
 } from '@shared/types';
 import { AuthGuard } from '../auth/auth.guard';
@@ -24,9 +24,10 @@ export class HistoryController {
   @Get('games')
   @ApiOperation({ summary: 'List game history' })
   @ApiResponse({ status: 200, description: 'Game history entries' })
-  async games(): Promise<GameHistoryEntry[]> {
-    const res = await this.history.getGames();
-    return z.array(GameHistoryEntrySchema).parse(res);
+  async games(@Req() req: Request): Promise<GameHistoryPage> {
+    const filters = HistoryQuerySchema.parse(req.query);
+    const res = await this.history.getGames(filters);
+    return GameHistoryPageSchema.parse(res);
   }
 
   @Get('tournaments')
@@ -35,9 +36,10 @@ export class HistoryController {
     status: 200,
     description: 'Tournament history entries',
   })
-  async tournaments(): Promise<TournamentHistoryEntry[]> {
-    const res = await this.history.getTournaments();
-    return z.array(TournamentHistoryEntrySchema).parse(res);
+  async tournaments(@Req() req: Request): Promise<TournamentHistoryPage> {
+    const filters = HistoryQuerySchema.parse(req.query);
+    const res = await this.history.getTournaments(filters);
+    return TournamentHistoryPageSchema.parse(res);
   }
 
   @Get('tournaments/:id/bracket')
@@ -57,9 +59,10 @@ export class HistoryController {
     status: 200,
     description: 'Transaction history entries',
   })
-  async transactions(): Promise<TransactionEntry[]> {
-    const res = await this.history.getTransactions();
-    return z.array(TransactionEntrySchema).parse(res);
+  async transactions(@Req() req: Request): Promise<TransactionHistoryPage> {
+    const filters = HistoryQuerySchema.parse(req.query);
+    const res = await this.history.getTransactions(filters);
+    return TransactionHistoryPageSchema.parse(res);
   }
 }
 

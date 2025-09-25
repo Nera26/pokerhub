@@ -67,9 +67,9 @@ describe('UserPage', () => {
     (fetchStats as jest.Mock).mockResolvedValue(stats);
     (fetchTiers as jest.Mock).mockResolvedValue(tiers);
     (fetchHistoryTabs as jest.Mock).mockResolvedValue(tabs);
-    (fetchGameHistory as jest.Mock).mockResolvedValue([]);
-    (fetchTournamentHistory as jest.Mock).mockResolvedValue([]);
-    (fetchTransactions as jest.Mock).mockResolvedValue([]);
+    (fetchGameHistory as jest.Mock).mockResolvedValue({ items: [] });
+    (fetchTournamentHistory as jest.Mock).mockResolvedValue({ items: [] });
+    (fetchTransactions as jest.Mock).mockResolvedValue({ items: [] });
     (updateProfile as jest.Mock).mockResolvedValue(profile);
     (useLogout as jest.Mock).mockReturnValue({
       mutate: jest.fn((_v, opts) => opts?.onSuccess?.()),
@@ -127,7 +127,8 @@ describe('UserPage', () => {
         buyin: '$100',
         date: '2023-01-01',
         profit: true,
-        amount: '+$50',
+        amount: 50,
+        currency: 'USD',
       },
       {
         id: '2',
@@ -136,16 +137,25 @@ describe('UserPage', () => {
         buyin: '$100',
         date: '2023-01-02',
         profit: false,
-        amount: '-$20',
+        amount: -20,
+        currency: 'USD',
       },
     ];
-    (fetchGameHistory as jest.Mock).mockResolvedValue(data);
+    (fetchGameHistory as jest.Mock)
+      .mockResolvedValueOnce({ items: data })
+      .mockResolvedValueOnce({ items: [data[0]!] });
     renderPage();
     expect(await screen.findByText(/Table #1/)).toBeInTheDocument();
     expect(screen.getByText(/Table #2/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Filters' }));
     await user.selectOptions(screen.getAllByRole('combobox')[1], 'win');
     await user.click(screen.getByRole('button', { name: 'Apply' }));
+    await waitFor(() =>
+      expect(fetchGameHistory).toHaveBeenLastCalledWith(
+        expect.objectContaining({ profitLoss: 'win' }),
+        expect.any(Object),
+      ),
+    );
     await waitFor(() =>
       expect(screen.queryByText(/Table #2/)).not.toBeInTheDocument(),
     );

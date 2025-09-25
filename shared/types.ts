@@ -5,9 +5,13 @@ import { GameActionSchema } from './schemas/game';
 import { SidePotSchema } from './schemas/sidePot';
 import { GameTypeSchema } from '../backend/src/schemas/game-types';
 import {
+  HistoryQuerySchema,
   GameHistoryEntrySchema,
+  GameHistoryPageSchema,
   TournamentHistoryEntrySchema,
+  TournamentHistoryPageSchema,
   TransactionEntrySchema,
+  TransactionHistoryPageSchema,
   TournamentBracketMatchSchema,
   TournamentBracketRoundSchema,
   TournamentBracketResponseSchema,
@@ -607,9 +611,13 @@ export const AdminUsersQuerySchema = z.object({
 export type AdminUsersQuery = z.infer<typeof AdminUsersQuerySchema>;
 
 export {
+  HistoryQuerySchema,
   GameHistoryEntrySchema,
+  GameHistoryPageSchema,
   TournamentHistoryEntrySchema,
+  TournamentHistoryPageSchema,
   TransactionEntrySchema,
+  TransactionHistoryPageSchema,
   HistoryTabItemSchema,
   HistoryTabsResponseSchema,
   TournamentBracketMatchSchema,
@@ -617,9 +625,14 @@ export {
   TournamentBracketResponseSchema,
 } from './schemas/history';
 export type {
+  HistoryQuery,
+  HistoryPage,
   GameHistoryEntry,
+  GameHistoryPage,
   TournamentHistoryEntry,
+  TournamentHistoryPage,
   TransactionEntry,
+  TransactionHistoryPage,
   HistoryTabItem,
   HistoryTabsResponse,
   TournamentBracketMatch,

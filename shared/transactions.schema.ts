@@ -1,4 +1,8 @@
 import { z } from 'zod';
+import {
+  createHistoryPageSchema,
+  TransactionEntrySchema,
+} from './schemas/history';
 
 const TransactionTypeSchema = z.object({
   id: z.string(),
@@ -80,5 +84,11 @@ export const TransactionColumnsUpdateSchema = z.object({
 
 export type TransactionColumnsUpdate = z.infer<
   typeof TransactionColumnsUpdateSchema
+>;
+
+export const TransactionHistoryPaginatedResponseSchema =
+  createHistoryPageSchema(TransactionEntrySchema);
+export type TransactionHistoryPaginatedResponse = z.infer<
+  typeof TransactionHistoryPaginatedResponseSchema
 >;
 

@@ -1,15 +1,17 @@
 // components/user/HistoryList.tsx
 'use client';
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import {
   fetchGameHistory,
   fetchTournamentHistory,
   fetchTransactions,
-  type GameHistoryEntry,
-  type TournamentHistoryEntry,
+  type GameHistoryPage,
+  type HistoryQuery,
+  type TournamentHistoryPage,
   type TransactionEntry,
+  type TransactionHistoryPage,
 } from '@/lib/api/history';
 import TransactionHistorySection, {
   type TransactionHistorySectionProps,
@@ -32,6 +34,8 @@ interface Props {
   transactionOnExport?: TransactionHistorySectionProps<TransactionEntry>['onExport'];
 }
 
+const PAGE_SIZE = 20;
+
 function HistoryList({
   type,
   filters,
@@ -45,65 +49,104 @@ function HistoryList({
 }: Props) {
   const isTransactionHistory = type === 'transaction-history';
 
-  // GAME
-  const {
-    data: gameData,
-    isLoading: gameLoading,
-    error: gameError,
-  } = useQuery<GameHistoryEntry[]>({
-    queryKey: ['game-history'],
-    queryFn: ({ signal }) => fetchGameHistory({ signal }),
+  const gameFilters = useMemo<HistoryQuery>(() => {
+    const base: HistoryQuery = { limit: PAGE_SIZE };
+    if (!filters) {
+      return base;
+    }
+    if (filters.gameType && filters.gameType !== 'any') {
+      base.gameType = filters.gameType;
+    }
+    if (filters.profitLoss && filters.profitLoss !== 'any') {
+      base.profitLoss = filters.profitLoss as 'win' | 'loss';
+    }
+    if (filters.date) {
+      Object.assign(base, toDateRange(filters.date));
+    }
+    return base;
+  }, [filters?.gameType, filters?.profitLoss, filters?.date]);
+
+  const tournamentFilters = useMemo<HistoryQuery>(
+    () => ({ limit: PAGE_SIZE }),
+    [],
+  );
+
+  const transactionQueryFilters = useMemo<HistoryQuery>(() => {
+    const base: HistoryQuery = { limit: PAGE_SIZE };
+    if (!filters) {
+      return base;
+    }
+    if (filters.profitLoss && filters.profitLoss !== 'any') {
+      base.profitLoss = filters.profitLoss as 'win' | 'loss';
+    }
+    if (filters.date) {
+      Object.assign(base, toDateRange(filters.date));
+    }
+    return base;
+  }, [filters?.profitLoss, filters?.date]);
+
+  const gameQuery = useInfiniteQuery<GameHistoryPage, Error>({
+    queryKey: ['game-history', gameFilters],
+    queryFn: ({ signal, pageParam }) =>
+      fetchGameHistory(
+        pageParam ? { ...gameFilters, cursor: pageParam } : gameFilters,
+        { signal },
+      ),
     enabled: type === 'game-history',
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   });
 
-  // TOURNAMENTS
-  const {
-    data: tournamentData,
-    isLoading: tournamentLoading,
-    error: tournamentError,
-  } = useQuery<TournamentHistoryEntry[]>({
-    queryKey: ['tournament-history'],
-    queryFn: ({ signal }) => fetchTournamentHistory({ signal }),
+  const tournamentQuery = useInfiniteQuery<TournamentHistoryPage, Error>({
+    queryKey: ['tournament-history', tournamentFilters],
+    queryFn: ({ signal, pageParam }) =>
+      fetchTournamentHistory(
+        pageParam
+          ? { ...tournamentFilters, cursor: pageParam }
+          : tournamentFilters,
+        { signal },
+      ),
     enabled: type === 'tournament-history',
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   });
 
-  // TRANSACTIONS
-  const {
-    data: transactionData,
-    isLoading: transactionLoading,
-    error: transactionError,
-  } = useQuery<TransactionEntry[]>({
-    queryKey: ['transaction-history'],
-    queryFn: ({ signal }) => fetchTransactions({ signal }),
+  const transactionQuery = useInfiniteQuery<TransactionHistoryPage, Error>({
+    queryKey: ['transaction-history', transactionQueryFilters],
+    queryFn: ({ signal, pageParam }) =>
+      fetchTransactions(
+        pageParam
+          ? { ...transactionQueryFilters, cursor: pageParam }
+          : transactionQueryFilters,
+        { signal },
+      ),
     enabled: isTransactionHistory,
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   });
 
-  // --- GAME HISTORY ---
+  const gameItems = gameQuery.data?.pages.flatMap((page) => page.items) ?? [];
+  const tournamentItems =
+    tournamentQuery.data?.pages.flatMap((page) => page.items) ?? [];
+  const transactionItems =
+    transactionQuery.data?.pages.flatMap((page) => page.items) ?? [];
+
   if (type === 'game-history') {
-    if (gameLoading) {
+    if (gameQuery.isPending) {
       return (
         <div role="status" className="p-8 text-center text-text-secondary">
           Loading...
         </div>
       );
     }
-    if (gameError) {
+    if (gameQuery.isError) {
       return (
         <div role="alert" className="p-8 text-center text-danger-red">
           Failed to load game history.
         </div>
       );
     }
-    const entries = (gameData ?? []).filter((e) => {
-      if (!filters) return true;
-      if (filters.gameType !== 'any' && e.type !== filters.gameType)
-        return false;
-      if (filters.profitLoss === 'win' && !e.profit) return false;
-      if (filters.profitLoss === 'loss' && e.profit) return false;
-      if (filters.date && e.date !== filters.date) return false;
-      return true;
-    });
-    if (entries.length === 0) {
+    if (gameItems.length === 0) {
       return (
         <div className="bg-card-bg rounded-2xl p-8 text-center text-text-secondary">
           No game history found.
@@ -112,7 +155,7 @@ function HistoryList({
     }
     return (
       <div className="bg-card-bg rounded-2xl p-8 space-y-4">
-        {entries.map((e) => (
+        {gameItems.map((e) => (
           <div
             key={e.id}
             className="border-b border-border-dark pb-4 flex justify-between"
@@ -124,7 +167,9 @@ function HistoryList({
               <p className="text-text-secondary text-sm">
                 Stakes: {e.stakes} – Buy-in: {e.buyin}
               </p>
-              <p className="text-text-secondary text-xs mt-1">{e.date}</p>
+              <p className="text-text-secondary text-xs mt-1">
+                {new Date(e.date).toLocaleString()}
+              </p>
             </div>
             <div className="text-right">
               <p
@@ -149,27 +194,38 @@ function HistoryList({
             </div>
           </div>
         ))}
+        {gameQuery.hasNextPage && (
+          <div className="pt-2 text-center">
+            <button
+              type="button"
+              onClick={() => gameQuery.fetchNextPage()}
+              disabled={gameQuery.isFetchingNextPage}
+              className="inline-flex items-center justify-center rounded-xl bg-accent-blue px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600 disabled:opacity-60"
+            >
+              {gameQuery.isFetchingNextPage ? 'Loading more...' : 'Load more'}
+            </button>
+          </div>
+        )}
       </div>
     );
   }
 
-  // --- TOURNAMENT HISTORY ---
   if (type === 'tournament-history') {
-    if (tournamentLoading) {
+    if (tournamentQuery.isPending) {
       return (
         <div role="status" className="p-8 text-center text-text-secondary">
           Loading...
         </div>
       );
     }
-    if (tournamentError) {
+    if (tournamentQuery.isError) {
       return (
         <div role="alert" className="p-8 text-center text-danger-red">
           Failed to load tournament history.
         </div>
       );
     }
-    if (!tournamentData || tournamentData.length === 0) {
+    if (tournamentItems.length === 0) {
       return (
         <div className="bg-card-bg rounded-2xl p-8 text-center text-text-secondary">
           No tournament history found.
@@ -198,7 +254,7 @@ function HistoryList({
               </tr>
             </thead>
             <tbody>
-              {tournamentData.map((row) => (
+              {tournamentItems.map((row) => (
                 <tr key={row.id} className="border-b border-border-dark">
                   <td className="py-2 pr-6 whitespace-nowrap">{row.name}</td>
                   <td className="py-2 pr-6 whitespace-nowrap">{row.place}</td>
@@ -222,20 +278,33 @@ function HistoryList({
             </tbody>
           </table>
         </div>
+        {tournamentQuery.hasNextPage && (
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={() => tournamentQuery.fetchNextPage()}
+              disabled={tournamentQuery.isFetchingNextPage}
+              className="inline-flex items-center justify-center rounded-xl bg-accent-blue px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600 disabled:opacity-60"
+            >
+              {tournamentQuery.isFetchingNextPage
+                ? 'Loading more...'
+                : 'Load more'}
+            </button>
+          </div>
+        )}
       </div>
     );
   }
 
-  // --- TRANSACTION HISTORY ---
   if (type === 'transaction-history') {
-    if (transactionLoading) {
+    if (transactionQuery.isPending) {
       return (
         <div role="status" className="p-8 text-center text-text-secondary">
           Loading...
         </div>
       );
     }
-    if (transactionError) {
+    if (transactionQuery.isError) {
       return (
         <div role="alert" className="p-8 text-center text-danger-red">
           Failed to load transactions.
@@ -243,20 +312,36 @@ function HistoryList({
       );
     }
 
-    const transactions = transactionData ?? [];
+    const transactions = transactionItems;
     const transactionCurrency =
       transactions.find((entry) => entry.currency)?.currency ?? 'USD';
 
     return (
-      <TransactionHistorySection<TransactionEntry>
-        data={transactions}
-        currency={transactionCurrency}
-        title={transactionTitle ?? 'Wallet Activity'}
-        emptyMessage={transactionEmptyMessage ?? 'No transactions found.'}
-        filters={transactionFilters}
-        actions={transactionActions}
-        onExport={transactionOnExport}
-      />
+      <div className="space-y-4">
+        <TransactionHistorySection<TransactionEntry>
+          data={transactions}
+          currency={transactionCurrency}
+          title={transactionTitle ?? 'Wallet Activity'}
+          emptyMessage={transactionEmptyMessage ?? 'No transactions found.'}
+          filters={transactionFilters}
+          actions={transactionActions}
+          onExport={transactionOnExport}
+        />
+        {transactionQuery.hasNextPage && (
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => transactionQuery.fetchNextPage()}
+              disabled={transactionQuery.isFetchingNextPage}
+              className="inline-flex items-center justify-center rounded-xl bg-accent-blue px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600 disabled:opacity-60"
+            >
+              {transactionQuery.isFetchingNextPage
+                ? 'Loading more...'
+                : 'Load more'}
+            </button>
+          </div>
+        )}
+      </div>
     );
   }
 
@@ -264,3 +349,23 @@ function HistoryList({
 }
 
 export default memo(HistoryList);
+
+function toDateRange(date: string): Pick<HistoryQuery, 'dateFrom' | 'dateTo'> {
+  const [year, month, day] = date
+    .split('-')
+    .map((value) => Number.parseInt(value, 10));
+  if (
+    Number.isNaN(year) ||
+    Number.isNaN(month) ||
+    Number.isNaN(day) ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31
+  ) {
+    return {};
+  }
+  const from = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+  const to = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+  return { dateFrom: from.toISOString(), dateTo: to.toISOString() };
+}

@@ -1,6 +1,28 @@
 import { z } from 'zod';
 import { CurrencySchema } from '../wallet.schema';
 
+export const HistoryQuerySchema = z.object({
+  gameType: z.string().min(1).optional(),
+  profitLoss: z.enum(['win', 'loss']).optional(),
+  dateFrom: z.string().datetime().optional(),
+  dateTo: z.string().datetime().optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+  cursor: z.string().optional(),
+});
+export type HistoryQuery = z.infer<typeof HistoryQuerySchema>;
+
+export const createHistoryPageSchema = <T extends z.ZodTypeAny>(schema: T) =>
+  z.object({
+    items: z.array(schema),
+    nextCursor: z.string().optional(),
+    total: z.number().int().nonnegative().optional(),
+  });
+export type HistoryPage<T> = {
+  items: T[];
+  nextCursor?: string;
+  total?: number;
+};
+
 export const GameHistoryEntrySchema = z.object({
   id: z.string(),
   type: z.string(),
@@ -12,6 +34,10 @@ export const GameHistoryEntrySchema = z.object({
   currency: CurrencySchema,
 });
 export type GameHistoryEntry = z.infer<typeof GameHistoryEntrySchema>;
+export const GameHistoryPageSchema = createHistoryPageSchema(
+  GameHistoryEntrySchema,
+);
+export type GameHistoryPage = z.infer<typeof GameHistoryPageSchema>;
 
 export const TournamentHistoryEntrySchema = z.object({
   id: z.string(),
@@ -23,6 +49,12 @@ export const TournamentHistoryEntrySchema = z.object({
 });
 export type TournamentHistoryEntry = z.infer<
   typeof TournamentHistoryEntrySchema
+>;
+export const TournamentHistoryPageSchema = createHistoryPageSchema(
+  TournamentHistoryEntrySchema,
+);
+export type TournamentHistoryPage = z.infer<
+  typeof TournamentHistoryPageSchema
 >;
 
 export const TournamentBracketMatchSchema = z.object({
@@ -52,6 +84,12 @@ export const TransactionEntrySchema = z.object({
   status: z.string(),
 });
 export type TransactionEntry = z.infer<typeof TransactionEntrySchema>;
+export const TransactionHistoryPageSchema = createHistoryPageSchema(
+  TransactionEntrySchema,
+);
+export type TransactionHistoryPage = z.infer<
+  typeof TransactionHistoryPageSchema
+>;
 
 export const HistoryTabItemSchema = z.object({
   key: z.string(),

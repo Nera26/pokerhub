@@ -60,6 +60,22 @@ const gameHistoryEntries: GameHistoryEntry[] = [
   },
 ];
 
+const gameHistoryPage = { items: gameHistoryEntries };
+const gameHistoryNextPage = {
+  items: [
+    {
+      id: '2',
+      type: 'Omaha',
+      stakes: '$2/$4',
+      buyin: '$200',
+      date: '2023-01-02',
+      profit: false,
+      amount: -25,
+      currency: 'USD',
+    },
+  ],
+};
+
 const tournamentHistoryEntries: TournamentHistoryEntry[] = [
   {
     id: 't1',
@@ -71,6 +87,8 @@ const tournamentHistoryEntries: TournamentHistoryEntry[] = [
   },
 ];
 
+const tournamentHistoryPage = { items: tournamentHistoryEntries };
+
 const transactionEntries: TransactionEntry[] = [
   {
     date: 'May 1',
@@ -80,6 +98,8 @@ const transactionEntries: TransactionEntry[] = [
     status: 'Completed',
   },
 ];
+
+const transactionHistoryPage = { items: transactionEntries };
 
 const defaultMetadata = {
   columns: [
@@ -100,7 +120,7 @@ type HistoryCase = {
   name: string;
   type: ComponentProps<typeof HistoryList>['type'];
   fetchMock: jest.Mock;
-  successData: unknown[];
+  successData: { items: unknown[] };
   successText: RegExp | string;
   emptyText: string;
   errorText: string;
@@ -111,7 +131,7 @@ const historyCases: HistoryCase[] = [
     name: 'game history',
     type: 'game-history',
     fetchMock: fetchGameHistoryMock,
-    successData: gameHistoryEntries,
+    successData: gameHistoryPage,
     successText: /Table #1/,
     emptyText: 'No game history found.',
     errorText: 'Failed to load game history.',
@@ -120,7 +140,7 @@ const historyCases: HistoryCase[] = [
     name: 'tournament history',
     type: 'tournament-history',
     fetchMock: fetchTournamentHistoryMock,
-    successData: tournamentHistoryEntries,
+    successData: tournamentHistoryPage,
     successText: 'Sunday Million',
     emptyText: 'No tournament history found.',
     errorText: 'Failed to load tournament history.',
@@ -143,7 +163,7 @@ describe.each(historyCases)(
     });
 
     it('renders empty state', async () => {
-      fetchMock.mockResolvedValueOnce([]);
+      fetchMock.mockResolvedValueOnce({ items: [] });
       await renderHistoryList(type, emptyText);
     });
 
@@ -156,7 +176,7 @@ describe.each(historyCases)(
 
 describe('HistoryList game history replay', () => {
   it('opens replay modal and fetches data', async () => {
-    fetchGameHistoryMock.mockResolvedValueOnce(gameHistoryEntries);
+    fetchGameHistoryMock.mockResolvedValueOnce(gameHistoryPage);
     fetchHandReplayMock.mockResolvedValueOnce([]);
 
     function Wrapper() {
@@ -186,9 +206,34 @@ describe('HistoryList game history replay', () => {
   });
 });
 
+describe('HistoryList pagination', () => {
+  it('requests the next page when load more is clicked', async () => {
+    fetchGameHistoryMock
+      .mockResolvedValueOnce({ ...gameHistoryPage, nextCursor: 'cursor-1' })
+      .mockResolvedValueOnce(gameHistoryNextPage);
+
+    renderWithClient(<HistoryList type="game-history" />);
+
+    expect(await screen.findByText(/Table #1/)).toBeInTheDocument();
+
+    const loadMore = await screen.findByRole('button', { name: /load more/i });
+    await userEvent.click(loadMore);
+
+    expect(fetchGameHistoryMock).toHaveBeenCalledTimes(2);
+    expect(fetchGameHistoryMock.mock.calls[0]?.[0]).toMatchObject({
+      limit: 20,
+    });
+    expect(fetchGameHistoryMock.mock.calls[1]?.[0]).toMatchObject({
+      limit: 20,
+      cursor: 'cursor-1',
+    });
+    expect(await screen.findByText(/Table #2/)).toBeInTheDocument();
+  });
+});
+
 describe('HistoryList tournament bracket', () => {
   it('passes tournament id and title when viewing bracket', async () => {
-    fetchTournamentHistoryMock.mockResolvedValueOnce(tournamentHistoryEntries);
+    fetchTournamentHistoryMock.mockResolvedValueOnce(tournamentHistoryPage);
 
     const onViewBracket = jest.fn();
     renderWithClient(
@@ -210,7 +255,7 @@ describe('HistoryList tournament bracket', () => {
 describe('HistoryList transaction history', () => {
   it('renders the shared transaction history section', async () => {
     mockMetadataFetch(defaultMetadata);
-    fetchTransactionsMock.mockResolvedValueOnce(transactionEntries);
+    fetchTransactionsMock.mockResolvedValueOnce(transactionHistoryPage);
 
     renderWithClient(<HistoryList type="transaction-history" />);
 
@@ -232,7 +277,7 @@ describe('HistoryList transaction history', () => {
     const onAction = jest.fn();
 
     mockMetadataFetch(defaultMetadata);
-    fetchTransactionsMock.mockResolvedValueOnce(transactionEntries);
+    fetchTransactionsMock.mockResolvedValueOnce(transactionHistoryPage);
 
     renderWithClient(
       <HistoryList
@@ -265,9 +310,11 @@ describe('HistoryList transaction history', () => {
 
   it('shows a loading state while transactions are fetched', async () => {
     mockMetadataFetch(defaultMetadata);
-    let resolveFetch: ((value: TransactionEntry[]) => void) | undefined;
+    let resolveFetch:
+      | ((value: { items: TransactionEntry[] }) => void)
+      | undefined;
     fetchTransactionsMock.mockReturnValueOnce(
-      new Promise<TransactionEntry[]>((resolve) => {
+      new Promise<{ items: TransactionEntry[] }>((resolve) => {
         resolveFetch = resolve;
       }),
     );
@@ -277,7 +324,7 @@ describe('HistoryList transaction history', () => {
     expect(screen.getByText('Loading...')).toBeInTheDocument();
 
     await act(async () => {
-      resolveFetch?.([]);
+      resolveFetch?.({ items: [] });
     });
 
     expect(
@@ -297,7 +344,7 @@ describe('HistoryList transaction history', () => {
 
   it('renders the empty state copy from props', async () => {
     mockMetadataFetch(defaultMetadata);
-    fetchTransactionsMock.mockResolvedValueOnce([]);
+    fetchTransactionsMock.mockResolvedValueOnce({ items: [] });
 
     renderWithClient(
       <HistoryList
@@ -319,7 +366,7 @@ describe('HistoryList transaction history', () => {
         },
       },
     });
-    fetchTransactionsMock.mockResolvedValueOnce(transactionEntries);
+    fetchTransactionsMock.mockResolvedValueOnce(transactionHistoryPage);
 
     renderWithClient(<HistoryList type="transaction-history" />);
 
@@ -330,7 +377,7 @@ describe('HistoryList transaction history', () => {
 
   it('renders an error state when column metadata is missing', async () => {
     mockMetadataFetch({ columns: [] });
-    fetchTransactionsMock.mockResolvedValueOnce(transactionEntries);
+    fetchTransactionsMock.mockResolvedValueOnce(transactionHistoryPage);
 
     renderWithClient(<HistoryList type="transaction-history" />);
 
