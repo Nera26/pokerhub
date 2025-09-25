@@ -66,15 +66,19 @@ export class LeaderboardService implements OnModuleInit {
     private readonly _leaderboardRepo: Repository<Leaderboard>,
     private readonly analytics: AnalyticsService,
     private readonly configService: LeaderboardConfigService,
-    config: ConfigService,
+    config?: ConfigService,
   ) {
-    this.rebuildMaxMs = config.get<number>('LEADERBOARD_REBUILD_MAX_MS', 30 * 60 * 1000);
-    setInterval(
-      () => {
-        void this.rebuild();
-      },
-      24 * 60 * 60 * 1000,
-    );
+    const defaultMaxMs = 30 * 60 * 1000;
+    this.rebuildMaxMs =
+      config?.get<number>('LEADERBOARD_REBUILD_MAX_MS', defaultMaxMs) ?? defaultMaxMs;
+    if (config && process.env.NODE_ENV !== 'test') {
+      setInterval(
+        () => {
+          void this.rebuild();
+        },
+        24 * 60 * 60 * 1000,
+      );
+    }
   }
 
   getRanges(): LeaderboardRangesResponse {

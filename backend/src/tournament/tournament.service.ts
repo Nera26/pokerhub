@@ -38,6 +38,15 @@ import { TournamentFormatRepository } from './tournament-format.repository';
 import { AdminTournamentFilterRepository } from './admin-tournament-filter.repository';
 import { DEFAULT_ADMIN_TOURNAMENT_FILTERS } from './admin-tournament-filter.defaults';
 
+function isWalletService(value: unknown): value is WalletService {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as WalletService).reserve === 'function' &&
+    typeof (value as WalletService).rollback === 'function'
+  );
+}
+
 @Injectable()
 export class TournamentService implements OnModuleInit {
   private currentLevels = new Map<string, number>();
@@ -46,6 +55,11 @@ export class TournamentService implements OnModuleInit {
     Map<number, { smallBlind: number; bigBlind: number }>
   >();
   private bubbleAnnounced = new Set<string>();
+  private readonly detailsRepository?: TournamentDetailRepository;
+  private readonly redis?: Redis;
+  private readonly wallet?: WalletService;
+  private readonly adminFilterRepository?: AdminTournamentFilterRepository;
+
   constructor(
     @InjectRepository(Tournament)
     private readonly tournaments: Repository<Tournament>,
@@ -64,12 +78,18 @@ export class TournamentService implements OnModuleInit {
     private readonly filterOptions: TournamentFilterOptionRepository,
     private readonly formatRepository: TournamentFormatRepository,
     @Optional()
-    private readonly detailsRepository?: TournamentDetailRepository,
-    @Optional() @Inject('REDIS_CLIENT') private readonly redis?: Redis,
-    @Optional() private readonly wallet?: WalletService,
-    @Optional()
-    private readonly adminFilterRepository?: AdminTournamentFilterRepository,
-  ) {}
+    detailsOrWallet?: TournamentDetailRepository | WalletService,
+    @Optional() @Inject('REDIS_CLIENT') redis?: Redis,
+    @Optional() wallet?: WalletService,
+    @Optional() adminFilterRepository?: AdminTournamentFilterRepository,
+  ) {
+    this.detailsRepository = isWalletService(detailsOrWallet)
+      ? undefined
+      : detailsOrWallet;
+    this.redis = redis;
+    this.wallet = wallet ?? (isWalletService(detailsOrWallet) ? detailsOrWallet : undefined);
+    this.adminFilterRepository = adminFilterRepository;
+  }
 
   async onModuleInit(): Promise<void> {
     if (!this.redis) return;
