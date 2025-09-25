@@ -501,6 +501,8 @@ export type GameState = z.infer<typeof GameStateSchema>;
 
 /** ---- Leaderboard / Hands (backend shared) ---- */
 export {
+  LeaderboardEntrySchema,
+  LeaderboardResponseSchema,
   LeaderboardRangesResponseSchema,
   LeaderboardModesResponseSchema,
   LeaderboardConfigSchema,
@@ -508,6 +510,8 @@ export {
   LeaderboardConfigUpdateSchema,
 } from '../backend/src/schemas/leaderboard';
 export type {
+  LeaderboardEntry,
+  LeaderboardResponse,
   TimeFilter,
   ModeFilter,
   LeaderboardRangesResponse,
