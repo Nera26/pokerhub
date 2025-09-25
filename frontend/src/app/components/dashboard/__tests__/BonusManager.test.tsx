@@ -176,6 +176,39 @@ describe('BonusManager edit payload helper', () => {
   });
 });
 
+describe('BonusManager create payload helper', () => {
+  it('uses buildBonusUpdatePayload when creating a promotion', async () => {
+    mockFetchBonuses([]);
+    (createBonus as jest.Mock).mockResolvedValue(bonusFixture);
+
+    renderBonusManager();
+
+    const nameInput = await screen.findByLabelText(/promotion name/i);
+    const descriptionInput = screen.getByLabelText(/description/i);
+    const bonusPercentInput = screen.getByLabelText(/bonus amount/i);
+    const maxBonusInput = screen.getByLabelText(/max \$/i);
+    const expiryInput = screen.getByLabelText(/expiry date/i);
+
+    fireEvent.change(nameInput, { target: { value: 'New Promo' } });
+    fireEvent.change(descriptionInput, {
+      target: { value: 'New description' },
+    });
+    fireEvent.change(bonusPercentInput, { target: { value: '20' } });
+    fireEvent.change(maxBonusInput, { target: { value: '300' } });
+    fireEvent.change(expiryInput, { target: { value: '' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /create promotion/i }));
+
+    await waitFor(() => expect(createBonus).toHaveBeenCalledTimes(1));
+    expect(buildBonusUpdatePayload).toHaveBeenCalledTimes(1);
+
+    const payload = (buildBonusUpdatePayload as jest.Mock).mock.results[0]!
+      .value;
+    expect(createBonus).toHaveBeenCalledWith(payload);
+    expect(payload.expiryDate).toBeUndefined();
+  });
+});
+
 describe('BonusManager table manager', () => {
   it('filters and paginates bonuses', async () => {
     const bonuses = Array.from({ length: 6 }, (_, i) => ({

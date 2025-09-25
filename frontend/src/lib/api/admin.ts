@@ -12,9 +12,8 @@ import {
   BonusOptionsResponseSchema,
   type BonusOptionsResponse,
   BonusCreateRequestSchema,
-  type BonusCreateRequest,
   BonusUpdateRequestSchema,
-  type BonusUpdateRequest,
+  type BonusUpdatePayload,
   AdminTabResponseSchema,
   type AdminTab,
   AdminTabSchema,
@@ -40,6 +39,7 @@ import type { CreateUserRequest } from '@shared/types';
 export { AdminTournamentSchema } from '@shared/types';
 export type { AdminTournament } from '@shared/types';
 export type { Bonus };
+export type { BonusUpdatePayload };
 
 /** =======================
  *  Admin Tournaments
@@ -217,14 +217,14 @@ export async function fetchBonuses({
   }
 }
 
-export async function createBonus(bonus: BonusCreateRequest) {
+export async function createBonus(bonus: BonusUpdatePayload) {
   return apiClient('/api/admin/bonuses', BonusSchema, {
     method: 'POST',
     body: BonusCreateRequestSchema.parse(bonus),
   });
 }
 
-export async function updateBonus(id: number, bonus: BonusUpdateRequest) {
+export async function updateBonus(id: number, bonus: BonusUpdatePayload) {
   return apiClient(`/api/admin/bonuses/${id}`, BonusSchema, {
     method: 'PUT',
     body: BonusUpdateRequestSchema.parse(bonus),
