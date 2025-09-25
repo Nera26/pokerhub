@@ -42,6 +42,8 @@ export default defineConfig({
       timeout: 120_000,
       env: {
         PORT: '4000',
+        ENABLE_TEST_ENDPOINTS: '1',
+        COOKIE_SECURE: 'false',
       },
     },
     {

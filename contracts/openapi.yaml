@@ -4226,6 +4226,16 @@ components:
           type: string
         avatarKey:
           type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        role:
+          type: string
+          enum:
+            - Player
+            - Admin
       required:
         - username
     UpdateUserRequest:

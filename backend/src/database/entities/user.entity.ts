@@ -23,6 +23,9 @@ export class User {
   @Column({ nullable: true })
   password?: string;
 
+  @Column({ default: 'Player' })
+  role: 'Player' | 'Admin';
+
   @Column({ nullable: true })
   avatarKey?: string;
 

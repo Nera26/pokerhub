@@ -1,47 +1,34 @@
 import { test, expect } from './fixtures';
+import { ensureUser } from './fixtures/api';
 
 test('user can log in and refresh token rotates', async ({ page }) => {
-  let refresh = 'r1';
-  await page.route('**/api/auth/login', (route) => {
-    route.fulfill({
-      status: 200,
-      headers: {
-        'set-cookie': `refreshToken=${refresh}; Path=/; HttpOnly; SameSite=Strict`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({ token: 'a1' }),
-    });
-  });
-  await page.route('**/api/auth/refresh', (route) => {
-    const cookie = route.request().headers()['cookie'] || '';
-    const used = /refreshToken=([^;]+)/.exec(cookie)?.[1];
-    if (used === refresh) {
-      refresh = 'r2';
-      route.fulfill({
-        status: 200,
-        headers: {
-          'set-cookie': `refreshToken=${refresh}; Path=/; HttpOnly; SameSite=Strict`,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({ token: 'a2' }),
-      });
-    } else {
-      route.fulfill({ status: 401 });
-    }
-  });
+  const credentials = { email: 'user@example.com', password: 'password123' };
+  await ensureUser(page.request, credentials);
 
   await page.goto('/login');
   await expect(page.getByAltText('PokerHub logo')).toBeVisible();
-  await page.fill('#login-email', 'user@example.com');
-  await page.fill('#login-password', 'password123');
+  await page.fill('#login-email', credentials.email);
+  await page.fill('#login-password', credentials.password);
   await page.getByRole('button', { name: /login/i }).click();
   await expect(page).toHaveURL('/');
 
-  await page.evaluate(() =>
-    fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' }),
+  const cookiesAfterLogin = await page.context().cookies();
+  const refreshCookie = cookiesAfterLogin.find(
+    (c) => c.name === 'refreshToken',
   );
+  expect(refreshCookie?.value).toBeTruthy();
 
-  const cookies = await page.context().cookies();
-  const refreshCookie = cookies.find((c) => c.name === 'refreshToken');
-  expect(refreshCookie?.value).toBe('r2');
+  await page.evaluate(async (token) => {
+    await fetch('/api/auth/refresh', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ refreshToken: token }),
+    });
+  }, refreshCookie?.value);
+
+  const cookiesAfterRefresh = await page.context().cookies();
+  const rotated = cookiesAfterRefresh.find((c) => c.name === 'refreshToken');
+  expect(rotated?.value).toBeTruthy();
+  expect(rotated?.value).not.toBe(refreshCookie?.value);
 });

@@ -96,6 +96,12 @@ import { NavModule } from './nav/nav.module';
 import { ChartPaletteEntity } from './database/entities/chart-palette.entity';
 import { PerformanceThresholdEntity } from './database/entities/performance-threshold.entity';
 import { Transaction } from './wallet/transaction.entity';
+import { TestSupportModule } from './test-support/test-support.module';
+
+const testModules =
+  (process.env.ENABLE_TEST_ENDPOINTS ?? '').toLowerCase() === '1'
+    ? [TestSupportModule]
+    : [];
 
 @Module({
   imports: [
@@ -184,6 +190,7 @@ import { Transaction } from './wallet/transaction.entity';
     CtasModule,
     HistoryModule,
     NavModule,
+    ...testModules,
   ],
     controllers: [
       AppController,

@@ -12,6 +12,7 @@ import { UserRepository } from './user.repository';
 import { QueryFailedError, In } from 'typeorm';
 import { Account } from '../wallet/account.entity';
 import { Leaderboard } from '../database/entities/leaderboard.entity';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -34,10 +35,16 @@ export class UsersService {
   async create(data: CreateUserRequest): Promise<User> {
     return withSpan('users.create', async (span) => {
       try {
+        const passwordHash = data.password
+          ? await bcrypt.hash(data.password, 10)
+          : undefined;
         const user = this.users.create({
           username: data.username,
           avatarKey: data.avatarKey,
           banned: false,
+          email: data.email,
+          password: passwordHash,
+          role: data.role ?? 'Player',
         });
         const saved = await this.users.save(user);
         span.setAttribute('user.id', saved.id);

@@ -31,8 +31,10 @@ class InMemoryUserRepository {
 }
 
 class MockEmailService {
-  async sendResetCode() {
-    // noop
+  lastCode: string | null = null;
+
+  async sendResetCode(_email: string, code: string) {
+    this.lastCode = code;
   }
 }
 
@@ -98,6 +100,10 @@ describe('AuthController', () => {
       .expect(200);
     const parsed = LoginResponseSchema.parse(res.body);
     expect(parsed.token).toBeDefined();
+    const cookies = res.get('set-cookie');
+    expect(cookies).toBeDefined();
+    const cookieHeader = Array.isArray(cookies) ? cookies.join('; ') : cookies;
+    expect(cookieHeader).toContain('refreshToken=');
   });
 
   it('returns auth providers', async () => {
@@ -136,12 +142,18 @@ describe('AuthController', () => {
   it('invalidates refresh tokens after password reset', async () => {
     const auth = app.get(AuthService);
     const redis = app.get<MockRedis>('REDIS_CLIENT');
+    const email = app.get<MockEmailService>(EmailService as any);
     const tokens = await auth.login('user@example.com', 'secret');
     expect(tokens).toBeTruthy();
     await auth.requestPasswordReset('user@example.com');
-    const code = await redis.get('reset:user@example.com');
-    expect(code).toBeTruthy();
-    const ok = await auth.resetPassword('user@example.com', code!, 'new-secret');
+    const storedHash = await redis.get('reset:user@example.com');
+    expect(storedHash).toBeTruthy();
+    expect(email.lastCode).toBeTruthy();
+    const ok = await auth.resetPassword(
+      'user@example.com',
+      email.lastCode!,
+      'new-secret',
+    );
     expect(ok).toBe(true);
     const rotated = await auth.refresh(tokens.refreshToken);
     expect(rotated).toBeNull();
