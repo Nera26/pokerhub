@@ -49,7 +49,10 @@ import BonusForm from './forms/BonusForm';
 import StatusPill from './common/StatusPill';
 import AdminTableManager from './common/AdminTableManager';
 import { TableHead, TableRow, TableCell } from '../ui/Table';
-import { buildBonusUpdatePayload } from './bonusUpdatePayload';
+import {
+  buildBonusUpdatePayload,
+  type BonusUpdatePayload,
+} from './bonusUpdatePayload';
 
 type BonusStatus = 'active' | 'paused';
 type StatusFilter = BonusStatus | 'all' | 'expired';
@@ -274,7 +277,7 @@ export default function BonusManager() {
 
   const createMutation = useInvalidateMutation<
     Bonus,
-    Parameters<typeof createBonus>[0],
+    BonusUpdatePayload,
     Bonus[]
   >({
     mutationFn: createBonus,
@@ -297,7 +300,7 @@ export default function BonusManager() {
 
   const updateMutation = useInvalidateMutation<
     Bonus,
-    { id: number; data: Parameters<typeof updateBonus>[1] },
+    { id: number; data: BonusUpdatePayload },
     Bonus[]
   >({
     mutationFn: ({ id, data }) => updateBonus(id, data),
@@ -437,16 +440,11 @@ export default function BonusManager() {
   };
 
   const createPromotion = handleCreateSubmit((data) => {
-    createMutation.mutate({
+    const payload = buildBonusUpdatePayload({
+      ...data,
       name: data.name || 'Untitled Promotion',
-      type: data.type,
-      description: data.description,
-      bonusPercent: data.bonusPercent ?? undefined,
-      maxBonusUsd: data.maxBonusUsd ?? undefined,
-      expiryDate: data.expiryDate || undefined,
-      eligibility: data.eligibility,
-      status: data.status,
     });
+    createMutation.mutate(payload);
     resetCreate();
   });
 
