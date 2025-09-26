@@ -12,11 +12,14 @@ import { AnalyticsService } from '../src/analytics/analytics.service';
 import { RoomManager } from '../src/game/room.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Hand } from '../src/database/entities/hand.entity';
+import { GameState } from '../src/database/entities/game-state.entity';
+import { createInMemoryRedis } from './utils/mock-redis';
 
 class MockSocket extends EventEmitter {
   id = Math.random().toString(36).slice(2);
   emitted: Record<string, any[]> = {};
   handshake: any = { query: {}, auth: {} };
+  data: Record<string, any> = {};
   emit(event: string, payload: any) {
     if (!this.emitted[event]) this.emitted[event] = [];
     this.emitted[event].push(payload);
@@ -24,22 +27,21 @@ class MockSocket extends EventEmitter {
   }
 }
 
-function createRedis() {
-  const store = new Map<string, string>();
-  return {
-    hget: async (key: string, field: string) => store.get(`${key}:${field}`) ?? null,
-    hset: async (key: string, field: string, value: string) => {
-      store.set(`${key}:${field}`, value);
-      return 0 as any;
-    },
-  } as any;
-}
-
 describe('GameGateway auth', () => {
   let gateway: GameGateway;
   let roomApply: jest.Mock | undefined;
 
   beforeAll(async () => {
+    roomApply = jest.fn(() => ({
+      phase: 'DEAL',
+      street: 'preflop',
+      pot: 0,
+      sidePots: [],
+      currentBet: 0,
+      players: [],
+      communityCards: [],
+    }));
+    const { redis } = createInMemoryRedis();
     const moduleRef = await Test.createTestingModule({
       providers: [
         GameGateway,
@@ -49,15 +51,7 @@ describe('GameGateway auth', () => {
           provide: RoomManager,
           useValue: {
             get: () => ({
-              apply: (roomApply = jest.fn(async () => ({
-                phase: 'DEAL',
-                street: 'preflop',
-                pot: 0,
-                sidePots: [],
-                currentBet: 0,
-                players: [],
-                communityCards: [],
-              }))),
+              apply: roomApply!,
               getPublicState: async () => ({
                 phase: 'DEAL',
                 street: 'preflop',
@@ -71,11 +65,32 @@ describe('GameGateway auth', () => {
           },
         },
         { provide: getRepositoryToken(Hand), useValue: {} },
-        { provide: 'REDIS_CLIENT', useValue: createRedis() },
+        {
+          provide: getRepositoryToken(GameState),
+          useValue: {
+            find: jest.fn().mockResolvedValue([]),
+            save: jest.fn(),
+          },
+        },
+        { provide: 'REDIS_CLIENT', useValue: redis },
       ],
     }).compile();
 
     gateway = moduleRef.get(GameGateway);
+    (gateway as any).engines.set('t1', {
+      applyAction: roomApply!,
+      getHandId: jest.fn(() => 'hand-1'),
+      getHandLog: jest.fn(() => []),
+      getPublicState: jest.fn(() => ({
+        phase: 'DEAL',
+        street: 'preflop',
+        pot: 0,
+        sidePots: [],
+        currentBet: 0,
+        players: [],
+        communityCards: [],
+      })),
+    });
     jest.spyOn(gateway as any, 'isRateLimited').mockResolvedValue(false);
   });
 
