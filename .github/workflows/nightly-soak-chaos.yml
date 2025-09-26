@@ -43,14 +43,7 @@ jobs:
         run: |
           start=$(grep -m1 heap_used gc-heap-metrics.log | awk -F'heap_used=' '{print $2}' | awk '{print $1}')
           end=$(grep heap_used gc-heap-metrics.log | tail -1 | awk -F'heap_used=' '{print $2}' | awk '{print $1}')
-          python - "$start" "$end" <<'PY'
-import sys
-s=float(sys.argv[1]); e=float(sys.argv[2])
-growth=(e-s)*100/s
-print(f"heap growth: {growth}%")
-if growth > 1:
-    sys.exit("heap growth exceeded 1%")
-PY
+          python - "$start" "$end" -c 'import sys; s=float(sys.argv[1]); e=float(sys.argv[2]); growth=(e-s)*100/s; print(f"heap growth: {growth}%"); sys.exit("heap growth exceeded 1%") if growth > 1 else None'
       - uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
@@ -72,7 +65,8 @@ PY
           content-filepath: comparison.log
       - name: Prepare soak regression Slack payload
         if: failure() && steps.analyze_tables.outcome == 'failure'
-        run: jq -Rs '{channel: env.SLACK_CHANNEL_ID, text: .}' comparison.log > slack-payload.json
+        run: |
+          jq -Rs '{channel: env.SLACK_CHANNEL_ID, text: .}' comparison.log > slack-payload.json
         env:
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
       - name: Slack soak regression alert
@@ -127,14 +121,7 @@ PY
         run: |
           start=$(grep -m1 heap_used gc-heap-metrics.log | awk -F'heap_used=' '{print $2}' | awk '{print $1}')
           end=$(grep heap_used gc-heap-metrics.log | tail -1 | awk -F'heap_used=' '{print $2}' | awk '{print $1}')
-          python - "$start" "$end" <<'PY'
-import sys
-s=float(sys.argv[1]); e=float(sys.argv[2])
-growth=(e-s)*100/s
-print(f"heap growth: {growth}%")
-if growth > 1:
-    sys.exit("heap growth exceeded 1%")
-PY
+          python - "$start" "$end" -c 'import sys; s=float(sys.argv[1]); e=float(sys.argv[2]); growth=(e-s)*100/s; print(f"heap growth: {growth}%"); sys.exit("heap growth exceeded 1%") if growth > 1 else None'
       - uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
@@ -156,7 +143,8 @@ PY
           content-filepath: comparison.log
       - name: Prepare soak regression Slack payload
         if: failure() && steps.analyze_soak.outcome == 'failure'
-        run: jq -Rs '{channel: env.SLACK_CHANNEL_ID, text: .}' comparison.log > slack-payload.json
+        run: |
+          jq -Rs '{channel: env.SLACK_CHANNEL_ID, text: .}' comparison.log > slack-payload.json
         env:
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
       - name: Slack soak regression alert
@@ -233,7 +221,8 @@ PY
           content-filepath: comparison.log
       - name: Prepare soak regression Slack payload
         if: failure() && steps.analyze_chaos.outcome == 'failure'
-        run: jq -Rs '{channel: env.SLACK_CHANNEL_ID, text: .}' comparison.log > slack-payload.json
+        run: |
+          jq -Rs '{channel: env.SLACK_CHANNEL_ID, text: .}' comparison.log > slack-payload.json
         env:
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
       - name: Slack soak regression alert

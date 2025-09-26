@@ -85,7 +85,8 @@ jobs:
           fi
       - name: Artifact info
         if: always()
-        run: echo "Metrics artifact: k6-100k-chaos-${{ github.run_id }}" >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          echo "Metrics artifact: k6-100k-chaos-${{ github.run_id }}" >> "$GITHUB_STEP_SUMMARY"
 
   soak-metrics:
     needs: chaos

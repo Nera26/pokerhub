@@ -84,6 +84,7 @@ jobs:
       - run: TS_NODE_COMPILER_OPTIONS='{"module":"commonjs"}' npx ts-node scripts/ensure-ops-artifacts.ts
 
   ensure-ops-preflight:
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

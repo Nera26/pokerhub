@@ -2,7 +2,8 @@ process.env.DATABASE_URL = '';
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
 import { newDb } from 'pg-mem';
 import request from 'supertest';
@@ -12,9 +13,23 @@ import { BonusService } from '../src/services/bonus.service';
 import { AdminBonusesController } from '../src/routes/admin-bonuses.controller';
 import { BonusOptionEntity } from '../src/database/entities/bonus-option.entity';
 import { BonusEntity } from '../src/database/entities/bonus.entity';
+import { BonusDefaultEntity } from '../src/database/entities/bonus-default.entity';
+import { Transaction } from '../src/wallet/transaction.entity';
+
+const createMockRepository = () => ({
+  findOne: jest.fn().mockResolvedValue(null),
+  count: jest.fn().mockResolvedValue(0),
+  create: jest.fn((input) => input),
+  save: jest.fn(async (entity) => entity),
+  clear: jest.fn().mockResolvedValue(undefined),
+  find: jest.fn().mockResolvedValue([]),
+});
 
 function createTestModule() {
   let dataSource: DataSource;
+  const defaultsRepo = createMockRepository();
+  const transactionsRepo = createMockRepository();
+  const configService = { get: jest.fn() } as Partial<ConfigService>;
   @Module({
     imports: [
       TypeOrmModule.forRootAsync({
@@ -42,7 +57,21 @@ function createTestModule() {
       TypeOrmModule.forFeature([BonusOptionEntity, BonusEntity]),
     ],
     controllers: [AdminBonusesController],
-    providers: [BonusService],
+    providers: [
+      BonusService,
+      {
+        provide: getRepositoryToken(BonusDefaultEntity),
+        useValue: defaultsRepo,
+      },
+      {
+        provide: getRepositoryToken(Transaction),
+        useValue: transactionsRepo,
+      },
+      {
+        provide: ConfigService,
+        useValue: configService,
+      },
+    ],
   })
   class BonusCrudTestModule {}
   return { BonusCrudTestModule, getDataSource: () => dataSource };

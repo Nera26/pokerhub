@@ -231,7 +231,8 @@ jobs:
         if: failure()
         env:
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-        run: tail -n 40 dr-drill.log | jq -Rs '{channel: env.SLACK_CHANNEL_ID, text: "DR drill failed:\n" + .}' > dr-drill-slack.json
+        run: |
+          tail -n 40 dr-drill.log | jq -Rs '{channel: env.SLACK_CHANNEL_ID, text: "DR drill failed:\n" + .}' > dr-drill-slack.json
 
       - name: Slack alert (DR drill)
         if: failure()
