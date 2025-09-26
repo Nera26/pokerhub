@@ -121,9 +121,16 @@ const GAME_STATE_BROADCAST_LATENCY_MS =
 const WS_OUTBOUND_QUEUE_ALERT_THRESHOLD = Number(
   process.env.WS_OUTBOUND_QUEUE_ALERT_THRESHOLD ?? '80',
 );
-const GAME_ACTION_GLOBAL_LIMIT = Number(
-  process.env.GATEWAY_GLOBAL_LIMIT ?? '30',
-);
+const DEFAULT_GLOBAL_LIMIT = 30;
+
+function getGlobalLimit(): number {
+  const raw = process.env.GATEWAY_GLOBAL_LIMIT;
+  if (raw === undefined) {
+    return DEFAULT_GLOBAL_LIMIT;
+  }
+  const parsed = Number(raw);
+  return Number.isNaN(parsed) ? DEFAULT_GLOBAL_LIMIT : parsed;
+}
 
 @WebSocketGateway({ namespace: 'game' })
 export class GameGateway
@@ -396,7 +403,9 @@ export class GameGateway
 
   private readonly actionCounterKey = 'game:action_counter';
   private readonly globalActionCounterKey = 'game:action_counter:global';
-  private readonly globalLimit = GAME_ACTION_GLOBAL_LIMIT;
+  private get globalLimit(): number {
+    return getGlobalLimit();
+  }
 
   private readonly frameAcks = new Map<string, Map<string, FrameInfo>>();
   private readonly maxFrameAttempts = 5;

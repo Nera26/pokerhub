@@ -38,29 +38,28 @@ jobs:
         id: audit
         run: |
           set +e
-          out=$(bash <<'SCRIPT'
-          set -e
-          UBLA_OUTPUT=$(gsutil bucketpolicyonly get gs://$SPECTATOR_LOGS_BUCKET 2>&1)
-          echo "$UBLA_OUTPUT"
-          if ! echo "$UBLA_OUTPUT" | grep -qi 'enabled: true'; then
-            echo 'Uniform bucket-level access is disabled' >&2
-            exit 1
-          fi
-          ENC_OUTPUT=$(gsutil kms encryption gs://$SPECTATOR_LOGS_BUCKET 2>&1)
-          echo "$ENC_OUTPUT"
-          if ! echo "$ENC_OUTPUT" | grep -qi 'Default KMS key'; then
-            echo 'Bucket default KMS encryption key not set' >&2
-            exit 1
-          fi
-          RETENTION_OUTPUT=$(gsutil retention get gs://$SPECTATOR_LOGS_BUCKET 2>&1)
-          echo "$RETENTION_OUTPUT"
-          RETENTION_DAYS=$(echo "$RETENTION_OUTPUT" | grep -Eo '[0-9]+d' | head -n1 | tr -d 'd')
-          REQUIRED_DAYS=${SPECTATOR_LOGS_MIN_RETENTION_DAYS:-30}
-          if [ -z "$RETENTION_DAYS" ] || [ "$RETENTION_DAYS" -lt "$REQUIRED_DAYS" ]; then
-            echo "Bucket retention $RETENTION_DAYS d below required $REQUIRED_DAYS d" >&2
-            exit 1
-          fi
-SCRIPT
+          out=$(
+            set -e
+            UBLA_OUTPUT=$(gsutil bucketpolicyonly get gs://$SPECTATOR_LOGS_BUCKET 2>&1)
+            echo "$UBLA_OUTPUT"
+            if ! echo "$UBLA_OUTPUT" | grep -qi 'enabled: true'; then
+              echo 'Uniform bucket-level access is disabled' >&2
+              exit 1
+            fi
+            ENC_OUTPUT=$(gsutil kms encryption gs://$SPECTATOR_LOGS_BUCKET 2>&1)
+            echo "$ENC_OUTPUT"
+            if ! echo "$ENC_OUTPUT" | grep -qi 'Default KMS key'; then
+              echo 'Bucket default KMS encryption key not set' >&2
+              exit 1
+            fi
+            RETENTION_OUTPUT=$(gsutil retention get gs://$SPECTATOR_LOGS_BUCKET 2>&1)
+            echo "$RETENTION_OUTPUT"
+            RETENTION_DAYS=$(echo "$RETENTION_OUTPUT" | grep -Eo '[0-9]+d' | head -n1 | tr -d 'd')
+            REQUIRED_DAYS=${SPECTATOR_LOGS_MIN_RETENTION_DAYS:-30}
+            if [ -z "$RETENTION_DAYS" ] || [ "$RETENTION_DAYS" -lt "$REQUIRED_DAYS" ]; then
+              echo "Bucket retention $RETENTION_DAYS d below required $REQUIRED_DAYS d" >&2
+              exit 1
+            fi
           )
           status=$?
           echo "$out"
