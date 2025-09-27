@@ -57,10 +57,16 @@ describe('GameGateway idempotency', () => {
       players: [],
       communityCards: [],
     } as const;
-    const apply = jest.fn(async () => state);
-    const room = { apply, getPublicState: async () => state };
+    const applyAction = jest.fn(() => state);
+    const room = { apply: jest.fn(), getPublicState: async () => state };
     const moduleRef = await createModule(redis, room);
     const gateway = moduleRef.get(GameGateway);
+    (gateway as any).engines.set('t1', {
+      applyAction,
+      getPublicState: () => state,
+      getHandId: () => 'hand',
+      getHandLog: () => [],
+    });
     jest.spyOn(gateway as any, 'isRateLimited').mockResolvedValue(false);
 
     const socket = new MockSocket();
@@ -73,7 +79,7 @@ describe('GameGateway idempotency', () => {
     await gateway.handleAction(socket as any, action);
     await gateway.handleAction(socket as any, action);
 
-    expect(apply).toHaveBeenCalledTimes(1);
+    expect(applyAction).toHaveBeenCalledTimes(1);
     expect(socket.emitted['action:ack']).toEqual([
       { actionId: 'a1', version: '1' },
       { actionId: 'a1', duplicate: true, version: '1' },
@@ -93,10 +99,16 @@ describe('GameGateway idempotency', () => {
       players: [],
       communityCards: [],
     } as const;
-    const apply1 = jest.fn(async () => state);
-    const room1 = { apply: apply1, getPublicState: async () => state };
+    const apply1 = jest.fn(() => state);
+    const room1 = { apply: jest.fn(), getPublicState: async () => state };
     const module1 = await createModule(redis, room1);
     const gateway1 = module1.get(GameGateway);
+    (gateway1 as any).engines.set('t1', {
+      applyAction: apply1,
+      getPublicState: () => state,
+      getHandId: () => 'hand',
+      getHandLog: () => [],
+    });
     jest.spyOn(gateway1 as any, 'isRateLimited').mockResolvedValue(false);
     const socket1 = new MockSocket();
     (socket1 as any).data = {};
@@ -106,10 +118,16 @@ describe('GameGateway idempotency', () => {
     await gateway1.handleAction(socket1 as any, action);
     expect(apply1).toHaveBeenCalledTimes(1);
 
-    const apply2 = jest.fn(async () => state);
-    const room2 = { apply: apply2, getPublicState: async () => state };
+    const apply2 = jest.fn(() => state);
+    const room2 = { apply: jest.fn(), getPublicState: async () => state };
     const module2 = await createModule(redis, room2);
     const gateway2 = module2.get(GameGateway);
+    (gateway2 as any).engines.set('t1', {
+      applyAction: apply2,
+      getPublicState: () => state,
+      getHandId: () => 'hand',
+      getHandLog: () => [],
+    });
     jest.spyOn(gateway2 as any, 'isRateLimited').mockResolvedValue(false);
     const socket2 = new MockSocket();
     (socket2 as any).data = {};
