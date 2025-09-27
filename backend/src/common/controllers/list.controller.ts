@@ -27,7 +27,7 @@ export function createListController<
     @ApiResponse({ status: 200, description: metadata.description })
     async list(): Promise<R> {
       const data = (await this.service.list()) as T;
-      return transform ? transform(data) : data;
+      return transform ? transform(data) : ((data as unknown) as R);
     }
   }
 

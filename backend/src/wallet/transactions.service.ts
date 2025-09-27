@@ -21,7 +21,10 @@ import {
   type FilterOptions,
   type TransactionColumn,
 } from '@shared/transactions.schema';
-import type { TransactionTab } from '@shared/wallet.schema';
+import {
+  TransactionTabsResponseSchema,
+  type TransactionTab,
+} from '@shared/wallet.schema';
 import { TransactionColumnEntity } from './transaction-column.entity';
 
 @Injectable()
@@ -71,7 +74,9 @@ export class TransactionsService {
 
   async getTransactionTabs(): Promise<TransactionTab[]> {
     const tabs = await this.tabRepo.find();
-    return tabs.map((t) => ({ id: t.id, label: t.label }));
+    return TransactionTabsResponseSchema.parse(
+      tabs.map((t) => ({ id: t.id, label: t.label })),
+    );
   }
 
   async getTransactionColumns() {

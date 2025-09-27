@@ -89,7 +89,7 @@ export interface LeaderboardRow {
   hands: number;
   duration: number;
   buyIn: number;
-  finishes?: Record<number, number> | null;
+  finishes: Record<number, number>;
 }
 
 export function toLeaderboardRow(
@@ -108,7 +108,7 @@ export function toLeaderboardRow(
     hands: entry.hands,
     duration: entry.duration,
     buyIn: entry.buyIn,
-    finishes: entry.finishes,
+    finishes: entry.finishes ?? {},
   };
 }
 
@@ -123,7 +123,7 @@ export function toLeaderboardEntry(row: LeaderboardRow): LeaderboardEntry {
     bb100: row.hands ? (row.bb / row.hands) * 100 : 0,
     hours: row.duration / 3600000,
     roi: row.buyIn ? row.net / row.buyIn : 0,
-    finishes: row.finishes ?? {},
+    finishes: row.finishes,
   };
 }
 

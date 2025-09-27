@@ -22,6 +22,7 @@ import { FeatureFlagsService } from '../feature-flags/feature-flags.service';
 import { EventPublisher } from '../events/events.service';
 import { WalletService } from '../wallet/wallet.service';
 import {
+  AdminTournamentFiltersResponseSchema,
   TournamentFiltersResponseSchema,
   type TournamentFilterOption,
   type AdminTournament,
@@ -147,11 +148,17 @@ export class TournamentService implements OnModuleInit {
     });
 
     if (dbFilters && dbFilters.length > 0) {
-      return dbFilters.map(({ id, label, colorClass }) => ({
-        id,
-        label,
-        ...(colorClass ? { colorClass } : {}),
-      }));
+      const parsed = AdminTournamentFiltersResponseSchema.safeParse(
+        dbFilters.map(({ id, label, colorClass }) => ({
+          id,
+          label,
+          ...(colorClass ? { colorClass } : {}),
+        })),
+      );
+
+      if (parsed.success) {
+        return parsed.data;
+      }
     }
 
     return DEFAULT_ADMIN_TOURNAMENT_FILTERS.map((filter) => ({ ...filter }));
