@@ -6,6 +6,7 @@ import {
   UploadedFile,
   Body,
   HttpCode,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -24,8 +25,8 @@ import {
 } from '@shared/wallet.schema';
 import { MessageResponseSchema } from '../schemas/auth';
 import { API_CONTRACT_VERSION } from '@shared/constants';
-import type { Request } from 'express';
-import 'multer';
+import type { Express } from 'express';
+import { promises as fs } from 'fs';
 
 @ApiTags('admin')
 @UseGuards(AuthGuard, AdminGuard)
@@ -70,14 +71,29 @@ export class BankReconciliationController {
   })
   @ApiResponse({ status: 200, description: 'Reconciliation completed' })
   async reconcile(
-    @UploadedFile() file: Request['file'] | undefined,
+    @UploadedFile() file: Express.Multer.File | undefined,
     @Body() body: BankReconciliationRequest | unknown,
   ) {
-    if (file && file.buffer) {
-      await this.reconciliation.reconcileCsv(file.buffer.toString('utf-8'));
+    if (file) {
+      // Support both memory and disk storage
+      let csv: string | undefined;
+
+      if (file.buffer && file.buffer.length > 0) {
+        csv = file.buffer.toString('utf-8');
+      } else if (file.path) {
+        csv = await fs.readFile(file.path, 'utf-8');
+      }
+
+      if (!csv) {
+        throw new BadRequestException('Uploaded file is empty or unreadable.');
+      }
+
+      await this.reconciliation.reconcileCsv(csv);
     } else if (body && typeof body === 'object' && 'entries' in (body as any)) {
       const parsed = BankReconciliationRequestSchema.parse(body);
       await this.reconciliation.reconcileApi(parsed.entries);
+    } else {
+      throw new BadRequestException('Provide a CSV file or JSON entries.');
     }
 
     return MessageResponseSchema.parse({
