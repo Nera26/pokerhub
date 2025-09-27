@@ -16,10 +16,16 @@ describe('settlement', () => {
       ['C', 50],
     ]);
     const state: any = engine.getState();
-    state.board = [card(0, 0), card(7, 1), card(2, 2), card(6, 3), card(11, 3)];
-    state.players[0].cards = [card(1, 0), card(3, 1)]; // A
-    state.players[1].cards = [card(11, 1), card(5, 2)]; // B
-    state.players[2].cards = [card(12, 3), card(12, 2)]; // C
+    state.communityCards = [
+      card(0, 0),
+      card(7, 1),
+      card(2, 2),
+      card(6, 3),
+      card(11, 3),
+    ];
+    state.players[0].holeCards = [card(1, 0), card(3, 1)]; // A
+    state.players[1].holeCards = [card(11, 1), card(5, 2)]; // B
+    state.players[2].holeCards = [card(12, 3), card(12, 2)]; // C
     state.sidePots = [
       {
         amount: 150,
@@ -46,9 +52,15 @@ describe('settlement', () => {
   it('splits pots on ties', async () => {
     const engine = await GameEngine.create(['A', 'B'], config);
     const state: any = engine.getState();
-    state.board = [card(0, 0), card(7, 1), card(2, 2), card(6, 3), card(11, 3)];
-    state.players[0].cards = [card(12, 2), card(10, 0)];
-    state.players[1].cards = [card(12, 1), card(10, 1)];
+    state.communityCards = [
+      card(0, 0),
+      card(7, 1),
+      card(2, 2),
+      card(6, 3),
+      card(11, 3),
+    ];
+    state.players[0].holeCards = [card(12, 2), card(10, 0)];
+    state.players[1].holeCards = [card(12, 1), card(10, 1)];
     state.sidePots = [
       {
         amount: 100,
