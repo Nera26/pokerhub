@@ -42,7 +42,10 @@ describe('GameGateway with GameEngine', () => {
         { provide: AnalyticsService, useValue: { recordGameEvent: jest.fn() } },
         { provide: RoomManager, useValue: {} },
         { provide: getRepositoryToken(Hand), useValue: handsRepo },
-        { provide: getRepositoryToken(GameState), useValue: { find: jest.fn(), save: jest.fn() } },
+        {
+          provide: getRepositoryToken(GameState),
+          useValue: { find: jest.fn().mockResolvedValue([]), save: jest.fn() },
+        },
         { provide: 'REDIS_CLIENT', useValue: redis },
       ],
     }).compile();

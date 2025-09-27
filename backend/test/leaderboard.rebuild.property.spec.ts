@@ -58,7 +58,7 @@ describe('leaderboard rebuild', () => {
           } as any;
           const service = new LeaderboardService(
             cache as any,
-            { find: jest.fn() } as any,
+            { find: jest.fn().mockResolvedValue([]) } as any,
             repo,
             analytics as any,
             new ConfigService(),
@@ -185,7 +185,7 @@ describe('leaderboard rebuild', () => {
           } as any;
           const service1 = new LeaderboardService(
             cache1 as any,
-            { find: jest.fn() } as any,
+            { find: jest.fn().mockResolvedValue([]) } as any,
             repo1,
             analytics1 as any,
             new ConfigService(),
@@ -202,7 +202,7 @@ describe('leaderboard rebuild', () => {
           } as any;
           const service2 = new LeaderboardService(
             cache2 as any,
-            { find: jest.fn() } as any,
+            { find: jest.fn().mockResolvedValue([]) } as any,
             repo2,
             analytics2 as any,
             new ConfigService(),
@@ -226,7 +226,7 @@ describe('leaderboard rebuild', () => {
     } as any;
     const service = new LeaderboardService(
       cache as any,
-      { find: jest.fn() } as any,
+      { find: jest.fn().mockResolvedValue([]) } as any,
       repo,
       analytics as any,
       new ConfigService(),

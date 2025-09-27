@@ -108,7 +108,9 @@ describe('GameEngine hand lifecycle', () => {
       `${handId}.json`,
     );
     expect(existsSync(file)).toBe(true);
-    expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual(proof);
+    expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual(
+      JSON.parse(JSON.stringify(proof)),
+    );
     unlinkSync(file);
 
     spy.mockRestore();
