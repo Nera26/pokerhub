@@ -20,6 +20,10 @@ import { Pep } from '../database/entities/pep.entity';
 import { Onfido, Region } from 'onfido';
 import { createQueue } from '../redis/queue';
 
+const providerSchema = z.object({ status: z.string() }).passthrough();
+
+type ProviderData = z.infer<typeof providerSchema>;
+
 export interface VerificationJob {
   verificationId: string;
   accountId: string;
@@ -417,9 +421,9 @@ export class KycService implements OnModuleInit {
       const normalizedUrl = apiUrl.trim();
       const normalizedKey = apiKey.trim();
 
-      const providerData = await fetchJson(
+      const providerData = await fetchJson<ProviderData>(
         normalizedUrl,
-        z.object({ status: z.string() }).passthrough(),
+        providerSchema,
         {
           method: 'POST',
           headers: {
