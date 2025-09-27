@@ -11,12 +11,23 @@ export function setWithOptions(
   value: string,
   options?: RedisSetOptions,
 ) {
-  const args: (string | number)[] = [];
-  if (options?.ex !== undefined) {
-    args.push('EX', options.ex);
+  if (!options) {
+    return client.set(key, value);
   }
-  if (options?.nx) {
-    args.push('NX');
+
+  const { ex, nx } = options;
+
+  if (ex !== undefined && nx) {
+    return client.set(key, value, 'EX', ex, 'NX');
   }
-  return client.set(key, value, ...args);
+
+  if (ex !== undefined) {
+    return client.set(key, value, 'EX', ex);
+  }
+
+  if (nx) {
+    return client.set(key, value, 'NX');
+  }
+
+  return client.set(key, value);
 }
