@@ -5,6 +5,7 @@ import { metrics, type Counter, type Histogram, type ObservableResult } from '@o
 import {
   MeterProvider,
   PeriodicExportingMetricReader,
+  type PushMetricExporter,
 } from '@opentelemetry/sdk-metrics';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 import { logs } from '@opentelemetry/api-logs';
@@ -17,14 +18,14 @@ import {
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
-import type { Instrumentation } from '@opentelemetry/instrumentation';
+import type { InstrumentationBase } from '@opentelemetry/instrumentation';
 import type { Request, Response, NextFunction } from 'express';
 import { addSample, recordTimestamp, percentile } from './metrics';
 
 interface TelemetryOptions {
   serviceName: string;
   meterName: string;
-  instrumentations: Instrumentation[];
+  instrumentations: InstrumentationBase[];
   enableHttpMetrics?: boolean;
 }
 
@@ -104,7 +105,9 @@ export async function setupTelemetry({
   if (otlpMetricsEndpoint) {
     const otlpExporter = new OTLPMetricExporter({ url: otlpMetricsEndpoint });
     meterProvider.addMetricReader(
-      new PeriodicExportingMetricReader({ exporter: otlpExporter }),
+      new PeriodicExportingMetricReader({
+        exporter: otlpExporter as unknown as PushMetricExporter,
+      }),
     );
   }
   metrics.setGlobalMeterProvider(meterProvider);

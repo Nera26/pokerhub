@@ -8,7 +8,7 @@ import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { AmqplibInstrumentation } from '@opentelemetry/instrumentation-amqplib';
-import { KafkajsInstrumentation } from '@opentelemetry/instrumentation-kafkajs';
+import { KafkaJsInstrumentation } from '@opentelemetry/instrumentation-kafkajs';
 import { SocketIoInstrumentation } from '@opentelemetry/instrumentation-socket.io';
 import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
 import { NestInstrumentation } from '@opentelemetry/instrumentation-nestjs-core';
@@ -26,7 +26,7 @@ export function setupTelemetry(): Promise<void> {
       new IORedisInstrumentation(),
       new PgInstrumentation(),
       new AmqplibInstrumentation(),
-      new KafkajsInstrumentation(),
+      new KafkaJsInstrumentation(),
       new SocketIoInstrumentation(),
       new PinoInstrumentation(),
       new NestInstrumentation(),
