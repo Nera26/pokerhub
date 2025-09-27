@@ -3,7 +3,6 @@ import type { Queue } from 'bullmq';
 import { Worker } from 'bullmq';
 import { Logger } from '@nestjs/common';
 import type { LeaderboardService } from './leaderboard.service';
-import { logBootstrapNotice } from '../common/logging.utils';
 
 const logger = new Logger('LeaderboardRebuild');
 
@@ -58,8 +57,7 @@ export async function scheduleRebuild(
   const workerQueueName = queueName ?? queue.name ?? 'leaderboard-rebuild';
 
   if (!queue.opts.connection) {
-    logBootstrapNotice(
-      logger,
+    logger.warn(
       'Redis queue connection is unavailable; running leaderboard rebuild inline without scheduling.',
     );
     try {

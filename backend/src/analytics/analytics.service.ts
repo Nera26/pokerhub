@@ -889,7 +889,6 @@ export class AnalyticsService implements OnModuleInit {
     return /^\d+$/.test(id) ? id : JSON.stringify(id);
   }
 
-
   private buildSchema(record: Record<string, unknown>): ParquetSchema {
     const fields: Record<string, ParquetField> = {};
     for (const [key, value] of Object.entries(record)) {
@@ -923,7 +922,7 @@ export class AnalyticsService implements OnModuleInit {
     ).padStart(2, '0')}/${String(now.getUTCDate()).padStart(2, '0')}`;
     const key = `${prefix}/${event}-${Date.now()}.parquet`;
 
-    const schema = ParquetSchemas[event] ?? this.buildSchema(data);
+    const schema = ParquetSchemas[event as EventName] ?? this.buildSchema(data);
     const row =
       event === 'antiCheat.flag' && 'features' in data
         ? { ...data, features: JSON.stringify((data as any).features) }
@@ -1002,8 +1001,8 @@ export class AnalyticsService implements OnModuleInit {
 
   async recordCollusionTransfer(transfer: CollusionTransfer) {
     await this.redis.rpush(
-      this.collusionTransfersKey,
-      JSON.stringify(transfer),
+        this.collusionTransfersKey,
+        JSON.stringify(transfer),
     );
     await this.runCollusionHeuristics();
   }

@@ -14,7 +14,6 @@ import { BroadcastEntity } from '../database/entities/broadcast.entity';
 import { BroadcastTemplateEntity } from '../database/entities/broadcast-template.entity';
 import { BroadcastTypeEntity } from '../database/entities/broadcast-type.entity';
 import { SessionModule } from '../session/session.module';
-import { logBootstrapNotice } from '../common/logging.utils';
 
 const logger = new Logger('MessagingModule');
 
@@ -22,11 +21,9 @@ const hasAmqpConnectionManager = (() => {
   try {
     require.resolve('amqp-connection-manager');
     return true;
-  } catch (error) {
-    logBootstrapNotice(
-      logger,
+  } catch {
+    logger.warn(
       'amqp-connection-manager is not installed; RabbitMQ messaging client disabled.',
-      error,
     );
     return false;
   }
@@ -75,16 +72,8 @@ const tournamentsClientModule = hasAmqpConnectionManager
     AnalyticsModule,
     SessionModule,
   ],
-  providers: [
-    TournamentsProducer,
-    TournamentScheduler,
-    BroadcastsService,
-  ],
-  controllers: [
-    TournamentsConsumer,
-    BroadcastsController,
-    BroadcastMetadataController,
-  ],
+  providers: [TournamentsProducer, TournamentScheduler, BroadcastsService],
+  controllers: [TournamentsConsumer, BroadcastsController, BroadcastMetadataController],
   exports: [TournamentsProducer, BroadcastsService],
 })
 export class MessagingModule {}

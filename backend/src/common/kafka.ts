@@ -1,7 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Kafka, Producer, Consumer } from 'kafkajs';
-import { logBootstrapNotice } from './logging.utils';
 
 const logger = new Logger('Kafka');
 const missingKafkaConfigMessage = 'Missing analytics.kafkaBrokers configuration';
@@ -92,10 +91,7 @@ export function createKafkaProducer(
 ): Producer {
   if (!hasKafkaConfiguration(config)) {
     if (!missingProducerWarningLogged) {
-      logBootstrapNotice(
-        logger,
-        'analytics.kafkaBrokers not configured; Kafka producer will be disabled.',
-      );
+      logger.warn('analytics.kafkaBrokers not configured; Kafka producer will be disabled.');
       missingProducerWarningLogged = true;
     }
     return createNoopProducer();
@@ -113,8 +109,7 @@ export async function createKafkaConsumer(
 ): Promise<Consumer> {
   if (!hasKafkaConfiguration(config)) {
     if (!missingConsumerWarningsLogged.has(groupId)) {
-      logBootstrapNotice(
-        logger,
+      logger.warn(
         `analytics.kafkaBrokers not configured; Kafka consumer for group "${groupId}" will be disabled.`,
       );
       missingConsumerWarningsLogged.add(groupId);

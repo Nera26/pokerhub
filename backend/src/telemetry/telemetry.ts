@@ -14,7 +14,6 @@ import { SocketIoInstrumentation } from '@opentelemetry/instrumentation-socket.i
 import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
 import { NestInstrumentation } from '@opentelemetry/instrumentation-nestjs-core';
 import { RuntimeNodeInstrumentation } from '@opentelemetry/instrumentation-runtime-node';
-import { logBootstrapError } from '../common/logging.utils';
 
 const logger = new Logger('Telemetry');
 
@@ -40,13 +39,11 @@ export async function setupTelemetry(): Promise<void> {
       enableHttpMetrics: true,
     });
   } catch (err) {
-    // OpenTelemetry metrics have breaking changes across versions. Rather than
-    // crash the entire application when a local dev install mismatches the
-    // prebuilt dist bundle, fall back to disabling telemetry.
-    logBootstrapError(
-      logger,
-      'Telemetry setup failed; continuing without instrumentation.',
-      err,
+    // Don’t crash the app if local OTEL deps don’t match — just disable telemetry.
+    const message =
+      err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    logger.error(
+      `Telemetry setup failed; continuing without instrumentation. ${message}`,
     );
   }
 }

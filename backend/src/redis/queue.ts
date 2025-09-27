@@ -1,7 +1,6 @@
 import type { Queue } from 'bullmq';
 import Redis from 'ioredis';
 import { Logger } from '@nestjs/common';
-import { logBootstrapNotice } from '../common/logging.utils';
 
 let loggedInMemoryQueue = false;
 const logger = new Logger('RedisQueue');
@@ -14,8 +13,7 @@ class InMemoryQueue {
   constructor(private readonly name: string) {}
 
   async add(jobName: string, data: unknown, _opts?: unknown): Promise<unknown> {
-    logBootstrapNotice(
-      logger,
+    logger.warn(
       `Queue "${this.name}" is disabled because Redis is unavailable; job "${jobName}" will not be enqueued.`,
     );
     return { id: `${Date.now()}`, name: jobName, data };
@@ -41,9 +39,13 @@ class InMemoryQueue {
 export async function createQueue(name: string): Promise<Queue> {
   const bull = await import('bullmq');
   const nodeEnv = process.env.NODE_ENV ?? 'development';
+
   if (
     process.env.REDIS_IN_MEMORY === '1' ||
-    (!process.env.REDIS_URL && !process.env.REDIS_HOST && !process.env.REDIS_PORT && nodeEnv !== 'production')
+    (!process.env.REDIS_URL &&
+      !process.env.REDIS_HOST &&
+      !process.env.REDIS_PORT &&
+      nodeEnv !== 'production')
   ) {
     process.env.REDIS_IN_MEMORY = '1';
     if (!loggedInMemoryQueue) {
@@ -56,6 +58,7 @@ export async function createQueue(name: string): Promise<Queue> {
   const host = process.env.REDIS_HOST ?? 'localhost';
   const port = Number(process.env.REDIS_PORT ?? 6379);
   const url = process.env.REDIS_URL ?? `redis://${host}:${port}`;
+
   const connection = new Redis(url, {
     lazyConnect: true,
     connectTimeout: 500,
@@ -69,8 +72,7 @@ export async function createQueue(name: string): Promise<Queue> {
     return new bull.Queue(name, { connection });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    logBootstrapNotice(
-      logger,
+    logger.warn(
       `Redis queue connection failed (${message}); using in-memory queue stub for "${name}".`,
     );
     try {

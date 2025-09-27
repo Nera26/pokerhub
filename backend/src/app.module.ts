@@ -1,13 +1,11 @@
-import { Logger, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource, type DataSourceOptions } from 'typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { ThrottlerModule, ThrottlerModuleOptions } from '@nestjs/throttler';
-import helmet from 'helmet';
 import { APP_FILTER } from '@nestjs/core';
 import { randomUUID } from 'node:crypto';
-import { logBootstrapNotice } from './common/logging.utils';
 
 import {
   databaseConfig,
@@ -64,7 +62,6 @@ import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { UsersModule } from './users/users.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { MetricsModule } from './metrics/metrics.module';
-import { cookieSecurity } from './common/cookie-security.middleware';
 import { TiersModule } from './tiers/tiers.module';
 import { CtasModule } from './ctas/ctas.module';
 import { HistoryModule } from './history/history.module';
@@ -96,13 +93,13 @@ import { BlockedCountryEntity } from './database/entities/blocked-country.entity
 import { HistoryTabEntity } from './database/entities/history-tab.entity';
 import { DefaultAvatarEntity } from './database/entities/default-avatar.entity';
 import { NavModule } from './nav/nav.module';
-
-let cachedDataSource: DataSource | null = null;
-const databaseLogger = new Logger('Database');
 import { ChartPaletteEntity } from './database/entities/chart-palette.entity';
 import { PerformanceThresholdEntity } from './database/entities/performance-threshold.entity';
 import { Transaction } from './wallet/transaction.entity';
 import { TestSupportModule } from './test-support/test-support.module';
+
+let cachedDataSource: DataSource | null = null;
+const databaseLogger = new Logger('Database');
 
 const testModules =
   (process.env.ENABLE_TEST_ENDPOINTS ?? '').toLowerCase() === '1'
@@ -171,11 +168,12 @@ const testModules =
             error instanceof Error && error.message
               ? error.message
               : String(error ?? 'unknown postgres error');
-          logBootstrapNotice(
-            databaseLogger,
+
+          databaseLogger.warn(
             `Postgres connection failed (${message}); using in-memory pg-mem database instead.`,
-            error,
+            error as any,
           );
+
           const { newDb } = await import('pg-mem');
           const db = newDb({ autoCreateForeignKeyIndices: true });
           db.public.registerFunction({
@@ -198,9 +196,11 @@ const testModules =
             returns: 'uuid' as any,
             implementation: () => randomUUID(),
           });
+
           const { url: _url, ...rest } = (dataSourceOptions as DataSourceOptions & {
             url?: string;
           });
+
           const memDataSource = await db.adapters.createTypeormDataSource({
             ...rest,
             type: 'postgres',
@@ -257,23 +257,23 @@ const testModules =
     NavModule,
     ...testModules,
   ],
-    controllers: [
-      AppController,
-      AdminMessagesController,
-      AdminBonusController,
-      AdminBonusesController,
-      PromotionsController,
-      LanguagesController,
-      TranslationsController,
-      ConfigController,
-      PrecacheController,
-      NavIconsController,
-      AdminNavIconsController,
-      HistoryTabsController,
-      SettingsController,
-      MetadataController,
-      AdminBlockedCountriesController,
-    ],
+  controllers: [
+    AppController,
+    AdminMessagesController,
+    AdminBonusController,
+    AdminBonusesController,
+    PromotionsController,
+    LanguagesController,
+    TranslationsController,
+    ConfigController,
+    PrecacheController,
+    NavIconsController,
+    AdminNavIconsController,
+    HistoryTabsController,
+    SettingsController,
+    MetadataController,
+    AdminBlockedCountriesController,
+  ],
   providers: [
     AppService,
     { provide: 'API_CONTRACT_VERSION', useValue: API_CONTRACT_VERSION },
@@ -293,21 +293,4 @@ const testModules =
     BlockedCountriesService,
   ],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(
-        helmet({
-          contentSecurityPolicy: {
-            directives: { defaultSrc: ["'self'"] },
-          },
-          hsts: {
-            maxAge: 31536000,
-            includeSubDomains: true,
-          },
-        }),
-        cookieSecurity,
-      )
-      .forRoutes('*');
-  }
-}
+export class AppModule {}
