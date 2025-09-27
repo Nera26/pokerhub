@@ -4,7 +4,7 @@ import {
   GameAction,
   GameStateInternal,
 } from '../state-machine';
-import { SettlementJournal, recordDeltas } from '../settlement';
+import { SettlementJournal, recordDeltas, settlePots } from '../settlement';
 import { WalletService } from '../../wallet/wallet.service';
 import { SettlementService } from '../../wallet/settlement.service';
 import { writeHandLedger } from '../../wallet/hand-ledger';
@@ -227,6 +227,8 @@ export class GameEngine {
     const state = this.machine.getState();
     const active = state.players.filter((p) => !p.folded);
     if (active.length === 0) return;
+
+    settlePots(state);
 
     // Guard against double settlement from persistence races
     if (this.handRepo) {
