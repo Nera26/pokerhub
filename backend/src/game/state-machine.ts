@@ -131,6 +131,16 @@ export class HandStateMachine {
           default:
             throw new Error('invalid action for phase');
         }
+
+        if (this.state.phase === 'BETTING_ROUND' && this.activePlayers().length <= 1) {
+          const hasCommitted = this.state.players.some((p) => p.bet > 0);
+          if (hasCommitted) {
+            this.finishBettingRound();
+          } else {
+            this.state.currentBet = 0;
+          }
+          this.state.phase = 'SHOWDOWN';
+        }
         break;
       }
       case 'SHOWDOWN': {
