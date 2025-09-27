@@ -1,5 +1,7 @@
+import { Logger } from '@nestjs/common';
 import { registerAs } from '@nestjs/config';
-import { logInfrastructureNotice } from '../common/logging';
+
+const logger = new Logger('LoggingConfig');
 
 export default registerAs('logging', () => {
   const provider = process.env.LOG_PROVIDER ?? 'pino';
@@ -7,15 +9,13 @@ export default registerAs('logging', () => {
   const lokiUrl = process.env.LOKI_URL;
 
   if (!elasticUrl && !lokiUrl) {
-    logInfrastructureNotice(
-      'No ELASTIC_URL or LOKI_URL configured; defaulting to console logging.',
-    );
+    logger.warn('No ELASTIC_URL or LOKI_URL configured; defaulting to console logging.');
   } else {
     if (!elasticUrl) {
-      logInfrastructureNotice('ELASTIC_URL is not set; Elasticsearch logging disabled');
+      logger.warn('ELASTIC_URL is not set; Elasticsearch logging disabled');
     }
     if (!lokiUrl) {
-      logInfrastructureNotice('LOKI_URL is not set; Loki logging disabled');
+      logger.warn('LOKI_URL is not set; Loki logging disabled');
     }
   }
 

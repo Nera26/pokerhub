@@ -1,8 +1,10 @@
 import { metrics } from '@opentelemetry/api';
 import type { Queue } from 'bullmq';
 import { Worker } from 'bullmq';
-import { logInfrastructureNotice } from '../common/logging';
+import { Logger } from '@nestjs/common';
 import type { LeaderboardService } from './leaderboard.service';
+
+const logger = new Logger('LeaderboardRebuild');
 
 const meter = metrics.getMeter('leaderboard');
 const rebuildDuration = meter.createHistogram(
@@ -55,14 +57,14 @@ export async function scheduleRebuild(
   const workerQueueName = queueName ?? queue.name ?? 'leaderboard-rebuild';
 
   if (!queue.opts.connection) {
-    logInfrastructureNotice(
+    logger.warn(
       'Redis queue connection is unavailable; running leaderboard rebuild inline without scheduling.',
     );
     try {
       await performRebuild(leaderboard, days, assertDurationMs);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error(`Inline leaderboard rebuild failed: ${message}`);
+      logger.error(`Inline leaderboard rebuild failed: ${message}`);
     }
     return;
   }

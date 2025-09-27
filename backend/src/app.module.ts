@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource, type DataSourceOptions } from 'typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -37,7 +37,6 @@ import { TranslationsController } from './routes/translations.controller';
 import { ConfigController } from './routes/config.controller';
 import { PrecacheController } from './routes/precache.controller';
 import { NavIconsController } from './routes/nav-icons.controller';
-import { logInfrastructureNotice } from './common/logging';
 import { AdminNavIconsController } from './routes/admin-nav-icons.controller';
 import { AdminBlockedCountriesController } from './routes/admin-blocked-countries.controller';
 import { HistoryTabsController } from './routes/history-tabs.controller';
@@ -94,12 +93,13 @@ import { BlockedCountryEntity } from './database/entities/blocked-country.entity
 import { HistoryTabEntity } from './database/entities/history-tab.entity';
 import { DefaultAvatarEntity } from './database/entities/default-avatar.entity';
 import { NavModule } from './nav/nav.module';
-
-let cachedDataSource: DataSource | null = null;
 import { ChartPaletteEntity } from './database/entities/chart-palette.entity';
 import { PerformanceThresholdEntity } from './database/entities/performance-threshold.entity';
 import { Transaction } from './wallet/transaction.entity';
 import { TestSupportModule } from './test-support/test-support.module';
+
+let cachedDataSource: DataSource | null = null;
+const databaseLogger = new Logger('Database');
 
 const testModules =
   (process.env.ENABLE_TEST_ENDPOINTS ?? '').toLowerCase() === '1'
@@ -168,9 +168,12 @@ const testModules =
             error instanceof Error && error.message
               ? error.message
               : String(error ?? 'unknown postgres error');
-          logInfrastructureNotice(
+
+          databaseLogger.warn(
             `Postgres connection failed (${message}); using in-memory pg-mem database instead.`,
+            error as any,
           );
+
           const { newDb } = await import('pg-mem');
           const db = newDb({ autoCreateForeignKeyIndices: true });
           db.public.registerFunction({
@@ -193,9 +196,11 @@ const testModules =
             returns: 'uuid' as any,
             implementation: () => randomUUID(),
           });
+
           const { url: _url, ...rest } = (dataSourceOptions as DataSourceOptions & {
             url?: string;
           });
+
           const memDataSource = await db.adapters.createTypeormDataSource({
             ...rest,
             type: 'postgres',
@@ -252,23 +257,23 @@ const testModules =
     NavModule,
     ...testModules,
   ],
-    controllers: [
-      AppController,
-      AdminMessagesController,
-      AdminBonusController,
-      AdminBonusesController,
-      PromotionsController,
-      LanguagesController,
-      TranslationsController,
-      ConfigController,
-      PrecacheController,
-      NavIconsController,
-      AdminNavIconsController,
-      HistoryTabsController,
-      SettingsController,
-      MetadataController,
-      AdminBlockedCountriesController,
-    ],
+  controllers: [
+    AppController,
+    AdminMessagesController,
+    AdminBonusController,
+    AdminBonusesController,
+    PromotionsController,
+    LanguagesController,
+    TranslationsController,
+    ConfigController,
+    PrecacheController,
+    NavIconsController,
+    AdminNavIconsController,
+    HistoryTabsController,
+    SettingsController,
+    MetadataController,
+    AdminBlockedCountriesController,
+  ],
   providers: [
     AppService,
     { provide: 'API_CONTRACT_VERSION', useValue: API_CONTRACT_VERSION },

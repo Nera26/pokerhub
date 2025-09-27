@@ -35,7 +35,7 @@ import { EtlService } from './etl.service';
 import { QueryFailedError, Repository } from 'typeorm';
 import { AuditLogTypeClass } from './audit-log-type-class.entity';
 import { AuditLogTypeClassDefault } from './audit-log-type-class-default.entity';
-import { logInfrastructureNotice } from '../common/logging';
+import { logBootstrapNotice } from '../common/logging.utils';
 
 interface AuditLog {
   id: string;
@@ -761,9 +761,7 @@ export class AnalyticsService implements OnModuleInit {
 
   async ingest<T extends Record<string, unknown>>(table: string, data: T) {
     if (!this.client) {
-      logInfrastructureNotice('No ClickHouse client configured', {
-        logger: this.logger,
-      });
+      logBootstrapNotice(this.logger, 'No ClickHouse client configured');
       return;
     }
     await this.client.insert({
@@ -891,7 +889,6 @@ export class AnalyticsService implements OnModuleInit {
     return /^\d+$/.test(id) ? id : JSON.stringify(id);
   }
 
-
   private buildSchema(record: Record<string, unknown>): ParquetSchema {
     const fields: Record<string, ParquetField> = {};
     for (const [key, value] of Object.entries(record)) {
@@ -925,7 +922,7 @@ export class AnalyticsService implements OnModuleInit {
     ).padStart(2, '0')}/${String(now.getUTCDate()).padStart(2, '0')}`;
     const key = `${prefix}/${event}-${Date.now()}.parquet`;
 
-    const schema = ParquetSchemas[event] ?? this.buildSchema(data);
+    const schema = ParquetSchemas[event as EventName] ?? this.buildSchema(data);
     const row =
       event === 'antiCheat.flag' && 'features' in data
         ? { ...data, features: JSON.stringify((data as any).features) }
@@ -1004,8 +1001,8 @@ export class AnalyticsService implements OnModuleInit {
 
   async recordCollusionTransfer(transfer: CollusionTransfer) {
     await this.redis.rpush(
-      this.collusionTransfersKey,
-      JSON.stringify(transfer),
+        this.collusionTransfersKey,
+        JSON.stringify(transfer),
     );
     await this.runCollusionHeuristics();
   }
@@ -1094,9 +1091,7 @@ export class AnalyticsService implements OnModuleInit {
 
   async query(sql: string) {
     if (!this.client) {
-      logInfrastructureNotice('No ClickHouse client configured', {
-        logger: this.logger,
-      });
+      logBootstrapNotice(this.logger, 'No ClickHouse client configured');
       return;
     }
     await this.client.command({ query: sql });
@@ -1104,9 +1099,7 @@ export class AnalyticsService implements OnModuleInit {
 
   async select<T = Record<string, unknown>>(sql: string): Promise<T[]> {
     if (!this.client) {
-      logInfrastructureNotice('No ClickHouse client configured', {
-        logger: this.logger,
-      });
+      logBootstrapNotice(this.logger, 'No ClickHouse client configured');
       return [];
     }
     const result = await this.client.query({
@@ -1207,9 +1200,7 @@ export class AnalyticsService implements OnModuleInit {
 
   async rebuildStakeAggregates() {
     if (!this.client) {
-      logInfrastructureNotice('No ClickHouse client configured', {
-        logger: this.logger,
-      });
+      logBootstrapNotice(this.logger, 'No ClickHouse client configured');
       return;
     }
 

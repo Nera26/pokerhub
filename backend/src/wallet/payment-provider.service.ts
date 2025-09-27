@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { ProviderCallback } from '@shared/wallet.schema';
 import { Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
@@ -7,7 +7,6 @@ import { fetchJson } from '@shared/utils/http';
 import { verifySignature as verifyProviderSignature } from './verify-signature';
 import { setWithOptions } from '../redis/set-with-options';
 import { createQueue } from '../redis/queue';
-import { logInfrastructureNotice } from '../common/logging';
 
 export type ProviderStatus = 'approved' | 'risky' | 'chargeback';
 
@@ -17,11 +16,11 @@ export interface ProviderChallenge {
 
 @Injectable()
 export class PaymentProviderService {
+  private readonly logger = new Logger('PaymentProviderService');
   private readonly apiKey = process.env.STRIPE_API_KEY ?? '';
   private readonly baseUrl =
     process.env.PAYMENT_PROVIDER_BASE_URL ?? 'https://api.stripe.com/v1';
-  private readonly defaultCurrency =
-    process.env.DEFAULT_CURRENCY ?? 'usd';
+  private readonly defaultCurrency = process.env.DEFAULT_CURRENCY ?? 'usd';
 
   private handlers = new Map<string, (event: ProviderCallback) => Promise<void>>();
   private retryQueue?: Queue;
@@ -57,7 +56,7 @@ export class PaymentProviderService {
       }
     }
     const message =
-      lastError && typeof lastError === 'object' && 'message' in lastError
+      lastError && typeof lastError === 'object' && 'message' in (lastError as any)
         ? (lastError as any).message
         : String(lastError);
     throw new Error(
@@ -74,7 +73,7 @@ export class PaymentProviderService {
     this.retryQueue = await createQueue('provider-webhook-retry');
     const connection = this.retryQueue.opts.connection;
     if (!connection) {
-      logInfrastructureNotice(
+      this.logger.warn(
         'Redis queue connection is unavailable; provider webhook retries will be attempted inline.',
       );
       return;
@@ -134,6 +133,7 @@ export class PaymentProviderService {
   ): Promise<void> {
     await this.initQueue();
     await this.draining;
+
     const key = this.redisKey(event.idempotencyKey);
     const stored = await setWithOptions(
       this.redis,
@@ -141,9 +141,12 @@ export class PaymentProviderService {
       JSON.stringify(event),
       { nx: true, ex: 60 * 60 },
     );
+    // If NX failed (already exists), we've processed or queued it before.
     if (stored === null) return;
+
     const handler = this.handlers.get(handlerKey);
     if (!handler) throw new Error(`Missing handler for ${handlerKey}`);
+
     try {
       await handler(event);
       await this.redis.del(key);
@@ -151,9 +154,10 @@ export class PaymentProviderService {
       const queue = this.retryQueue!;
       if (!queue.opts?.connection) {
         const reason = err instanceof Error ? err.message : String(err);
-        logInfrastructureNotice(
+        this.logger.warn(
           `Redis queue connection is unavailable; provider webhook handler failed and will rely on upstream retry: ${reason}`,
         );
+        // Surface the error so upstream (provider) can trigger a retry
         throw err instanceof Error
           ? err
           : new Error('Provider webhook handler failed without Redis retry queue');

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Logger } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import type { RmqOptions } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
@@ -14,14 +14,15 @@ import { BroadcastEntity } from '../database/entities/broadcast.entity';
 import { BroadcastTemplateEntity } from '../database/entities/broadcast-template.entity';
 import { BroadcastTypeEntity } from '../database/entities/broadcast-type.entity';
 import { SessionModule } from '../session/session.module';
-import { logInfrastructureNotice } from '../common/logging';
+
+const logger = new Logger('MessagingModule');
 
 const hasAmqpConnectionManager = (() => {
   try {
     require.resolve('amqp-connection-manager');
     return true;
   } catch {
-    logInfrastructureNotice(
+    logger.warn(
       'amqp-connection-manager is not installed; RabbitMQ messaging client disabled.',
     );
     return false;
@@ -71,16 +72,8 @@ const tournamentsClientModule = hasAmqpConnectionManager
     AnalyticsModule,
     SessionModule,
   ],
-  providers: [
-    TournamentsProducer,
-    TournamentScheduler,
-    BroadcastsService,
-  ],
-  controllers: [
-    TournamentsConsumer,
-    BroadcastsController,
-    BroadcastMetadataController,
-  ],
+  providers: [TournamentsProducer, TournamentScheduler, BroadcastsService],
+  controllers: [TournamentsConsumer, BroadcastsController, BroadcastMetadataController],
   exports: [TournamentsProducer, BroadcastsService],
 })
 export class MessagingModule {}
