@@ -3,14 +3,16 @@ import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AdminController } from './admin-base.controller';
 import { BonusService } from '../services/bonus.service';
 import {
-  BonusDefaultsResponse,
   BonusDefaultsResponseSchema,
-  BonusOptionsResponse,
   BonusOptionsResponseSchema,
-  BonusDefaultsRequest,
   BonusDefaultsRequestSchema,
-  BonusStatsResponse,
   BonusStatsResponseSchema,
+} from '../schemas/bonus';
+import type {
+  BonusDefaultsResponse,
+  BonusOptionsResponse,
+  BonusDefaultsRequest,
+  BonusStatsResponse,
 } from '../schemas/bonus';
 import { MessageResponseSchema } from '../schemas/auth';
 

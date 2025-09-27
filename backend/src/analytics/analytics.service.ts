@@ -21,8 +21,10 @@ import {
   detectSharedIP,
   detectSynchronizedBetting,
 } from '@shared/analytics/collusion';
-import { AlertItem, AlertItemSchema } from '@shared/schemas/analytics';
-import { AdminEvent, AdminEventSchema } from '../schemas/admin';
+import { AlertItemSchema } from '@shared/schemas/analytics';
+import type { AlertItem } from '@shared/schemas/analytics';
+import { AdminEventSchema } from '../schemas/admin';
+import type { AdminEvent } from '../schemas/admin';
 import type {
   Session as CollusionSession,
   Transfer as CollusionTransfer,

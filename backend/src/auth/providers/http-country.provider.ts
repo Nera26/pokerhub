@@ -1,4 +1,4 @@
-import { CountryProvider } from './country-provider';
+import type { CountryProvider } from './country-provider';
 
 interface CountryResponse {
   countryCode?: string;

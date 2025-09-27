@@ -13,7 +13,7 @@ import type { Queue } from 'bullmq';
 import { Repository } from 'typeorm';
 import { KycVerification } from '../database/entities/kycVerification.entity';
 import { Account } from '../wallet/account.entity';
-import { CountryProvider } from '../auth/providers/country-provider';
+import type { CountryProvider } from '../auth/providers/country-provider';
 import { z } from 'zod';
 import { fetchJson } from '@shared/utils/http';
 import { Pep } from '../database/entities/pep.entity';

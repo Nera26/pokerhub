@@ -14,10 +14,11 @@ import { AdminGuard } from '../auth/admin.guard';
 import {
   AdminMessageSchema,
   AdminMessagesResponseSchema,
-  ReplyMessageRequest,
   ReplyMessageRequestSchema,
 } from '../schemas/messages';
-import { MessageResponse, MessageResponseSchema } from '../schemas/auth';
+import type { ReplyMessageRequest } from '../schemas/messages';
+import { MessageResponseSchema } from '../schemas/auth';
+import type { MessageResponse } from '../schemas/auth';
 import { AdminMessagesService } from '../notifications/admin-messages.service';
 
 @ApiTags('admin')

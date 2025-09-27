@@ -20,7 +20,7 @@ async function run(options: RebuildOptions = {}): Promise<{
   let app: INestApplicationContext | undefined;
   const service: LeaderboardService = options.service ??
     (await (async () => {
-      const { AppModule } = await import('../app.module');
+      const { AppModule } = await import('../app.module.js');
       app = await NestFactory.createApplicationContext(AppModule);
       return app.get(LeaderboardService);
     })());

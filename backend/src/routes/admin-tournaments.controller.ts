@@ -13,10 +13,10 @@ import { AdminGuard } from '../auth/admin.guard';
 import {
   AdminTournamentSchema,
   TournamentSimulateRequestSchema,
-  TournamentSimulateResponse,
   TournamentFormatsResponseSchema,
   AdminTournamentFiltersResponseSchema,
 } from '../schemas/tournaments';
+import type { TournamentSimulateResponse } from '../schemas/tournaments';
 import { ZodError } from 'zod';
 import { simulate, type BlindLevel } from '@shared/utils/tournamentSimulator';
 import { BotProfilesResponseSchema } from '@shared/types';

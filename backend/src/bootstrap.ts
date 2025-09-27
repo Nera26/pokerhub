@@ -13,7 +13,7 @@ export async function bootstrap(options: BootstrapOptions = {}) {
   const { telemetry = true } = options;
   let telemetryExports: any;
   if (telemetry) {
-    telemetryExports = await import('./telemetry/telemetry');
+    telemetryExports = await import('./telemetry/telemetry.js');
     await telemetryExports.setupTelemetry();
   }
   const app = await NestFactory.create(AppModule, { bufferLogs: true });

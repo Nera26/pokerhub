@@ -2,13 +2,12 @@ import { Post, Param, Body, Req, HttpCode } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { AdminController } from './admin-base.controller';
-import {
-  AdminBalanceRequest,
-  AdminBalanceRequestSchema,
-} from '@shared/wallet.schema';
+import { AdminBalanceRequestSchema } from '@shared/wallet.schema';
+import type { AdminBalanceRequest } from '@shared/wallet.schema';
 import { WalletService } from '../wallet/wallet.service';
 import { AnalyticsService } from '../analytics/analytics.service';
-import { MessageResponse, MessageResponseSchema } from '../schemas/auth';
+import { MessageResponseSchema } from '../schemas/auth';
+import type { MessageResponse } from '../schemas/auth';
 
 @AdminController('balance')
 export class AdminBalanceController {
