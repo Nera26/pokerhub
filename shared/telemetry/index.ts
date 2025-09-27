@@ -147,9 +147,24 @@ export async function setupTelemetry({
       );
     }
 
-    meterProvider = new MeterProvider({ resource });
-    for (const reader of metricReaders) {
-      meterProvider.addMetricReader(reader);
+    const supportsAddMetricReader = typeof (
+      MeterProvider.prototype as unknown as {
+        addMetricReader?: unknown;
+      }
+    ).addMetricReader === 'function';
+
+    if (supportsAddMetricReader) {
+      meterProvider = new MeterProvider({ resource });
+      for (const reader of metricReaders) {
+        (meterProvider as unknown as {
+          addMetricReader(reader: MetricReader): void;
+        }).addMetricReader(reader);
+      }
+    } else {
+      meterProvider = new MeterProvider({
+        resource,
+        readers: metricReaders,
+      } as ConstructorParameters<typeof MeterProvider>[0]);
     }
     metrics.setGlobalMeterProvider(meterProvider);
   }
