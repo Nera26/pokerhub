@@ -19,7 +19,17 @@ require_cmd docker
 require_cmd npm
 
 if ! docker compose version >/dev/null 2>&1; then
-  error "docker compose plugin is required but not installed."
+  cat <<'EOF' >&2
+Error: docker compose plugin is required but not installed.
+
+To replace the legacy docker-compose v1 binary and install Compose v2:
+  sudo apt remove docker-compose
+  sudo apt-get update
+  sudo apt-get install docker-compose-plugin
+
+After installing the plugin, rerun this script.
+EOF
+  exit 1
 fi
 
 if [ ! -f .env ]; then
