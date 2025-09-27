@@ -9,5 +9,12 @@ export async function startLeaderboardRebuildWorker(
   assertDurationMs = 30 * 60 * 1000,
 ) {
   const queue = await createQueue('leaderboard-rebuild');
-  await scheduleRebuild(queue, leaderboard, days, cron, assertDurationMs);
+  await scheduleRebuild(
+    queue,
+    leaderboard,
+    days,
+    cron,
+    assertDurationMs,
+    'leaderboard-rebuild',
+  );
 }
