@@ -91,16 +91,15 @@ If you prefer to perform the steps manually:
   The compose configuration uses health checks so the backend only starts once PostgreSQL, Redis, RabbitMQ, and the Cloud Storage emulator are
   ready. TypeORM's `synchronize` option is controlled by the `DB_SYNC` flag (defaults to `true` in this compose setup).
 
-  > ⚠️ **Troubleshooting**: Older `docker-compose` v1 binaries can crash with `KeyError: 'ContainerConfig'`. Uninstall the legacy package and install
-  > the Compose v2 plugin instead:
+  > ✅ **Recommended: Move to Docker Compose v2.** Compose v2 avoids the legacy `KeyError: 'ContainerConfig'` crash. Remove any v1 binary installed via `apt` or `pip`, then install the plugin:
   >
   > ```bash
-  > sudo apt remove docker-compose
+  > sudo apt remove docker-compose || pip uninstall docker-compose
   > sudo apt-get update
   > sudo apt-get install docker-compose-plugin
   > ```
   >
-  > After the plugin is installed, rerun `docker compose up`.
+  > After the plugin is installed, rerun `docker compose up -d` (note the space).
 
 ### Subtree Sync Scripts
 

@@ -23,11 +23,11 @@ if ! docker compose version >/dev/null 2>&1; then
 Error: docker compose plugin is required but not installed.
 
 To replace the legacy docker-compose v1 binary and install Compose v2:
-  sudo apt remove docker-compose
+  sudo apt remove docker-compose || pip uninstall docker-compose
   sudo apt-get update
   sudo apt-get install docker-compose-plugin
 
-After installing the plugin, rerun this script.
+After installing the plugin, rerun this script (Compose v2 uses `docker compose ...`).
 EOF
   exit 1
 fi
