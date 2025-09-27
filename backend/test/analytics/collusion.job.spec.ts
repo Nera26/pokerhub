@@ -16,6 +16,7 @@ describe('CollusionDetectionJob', () => {
     const analytics: Partial<AnalyticsService> = {
       rangeStream: jest.fn().mockResolvedValue([
         {
+          playerId: 'u1',
           sessionId: 's1',
           userId: 'u1',
           vpip: 0.5,
@@ -23,13 +24,14 @@ describe('CollusionDetectionJob', () => {
           timestamp: Date.now(),
         },
         {
+          playerId: 'u2',
           sessionId: 's1',
           userId: 'u2',
           vpip: 0.4,
           seat: 2,
           timestamp: Date.now(),
         },
-      ]),
+      ]) as unknown as AnalyticsService['rangeStream'],
     };
 
     const collusion: Partial<CollusionService> = {

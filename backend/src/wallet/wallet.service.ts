@@ -37,6 +37,7 @@ import type {
   WalletReconcileMismatchAcknowledgement,
 } from '@shared/wallet.schema';
 import type { PendingWithdrawal } from '@shared/types';
+import type { PendingDeposit as PendingDepositDto } from '@shared/wallet.schema';
 import type { Events } from '@shared/events';
 
 interface Movement {
@@ -1081,15 +1082,29 @@ async rejectExpiredPendingDeposits(): Promise<void> {
 }
 
 
-  async listPendingDeposits() {
+  async listPendingDeposits(): Promise<PendingDepositDto[]> {
     const deposits = await this.pendingDeposits.find({
       where: { status: 'pending', actionRequired: true },
       order: { createdAt: 'ASC' },
     });
-    return deposits.map((d) => ({
-      ...d,
+    return deposits.map<PendingDepositDto>((deposit) => ({
+      id: deposit.id,
+      userId: deposit.userId,
+      amount: deposit.amount,
+      currency: deposit.currency,
+      reference: deposit.reference,
+      status: deposit.status,
+      actionRequired: deposit.actionRequired,
+      expiresAt: deposit.expiresAt.toISOString(),
       avatar: '',
-      method: 'Bank Transfer',
+      method: 'bank-transfer',
+      confirmedBy: deposit.confirmedBy ?? undefined,
+      confirmedAt: deposit.confirmedAt?.toISOString(),
+      rejectedBy: deposit.rejectedBy ?? undefined,
+      rejectedAt: deposit.rejectedAt?.toISOString(),
+      rejectionReason: deposit.rejectionReason ?? undefined,
+      createdAt: deposit.createdAt.toISOString(),
+      updatedAt: deposit.updatedAt.toISOString(),
     }));
   }
 

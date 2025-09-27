@@ -22,6 +22,7 @@ import type {
   LeaderboardRangesResponse,
   LeaderboardModesResponse,
 } from '@shared/types';
+import { EventSchemas } from '@shared/events';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -157,7 +158,11 @@ export class LeaderboardService implements OnModuleInit {
   ): Promise<void> {
     const { days = 30, minSessions } = options;
     const since = Date.now() - days * DAY_MS;
-    const events = await this.analytics.rangeStream('analytics:game', since);
+    const events = await this.analytics.rangeStream(
+      'analytics:game',
+      since,
+      'game.event',
+    );
     await this.rebuildWithEvents(events, { minSessions });
   }
 
@@ -247,6 +252,14 @@ export class LeaderboardService implements OnModuleInit {
     const minSessionsCache = new Map<string, number>();
 
     for (const ev of events) {
+      const parsed = EventSchemas['game.event'].safeParse(ev);
+      if (!parsed.success) {
+        continue;
+      }
+      const event = parsed.data;
+      if (!event.sessionId) {
+        continue;
+      }
       const {
         playerId,
         sessionId,
@@ -258,18 +271,7 @@ export class LeaderboardService implements OnModuleInit {
         buyIn = 0,
         finish,
         ts = now,
-      } = ev as {
-        playerId: string;
-        sessionId: string;
-        points?: number;
-        net?: number;
-        bb?: number;
-        hands?: number;
-        duration?: number;
-        buyIn?: number;
-        finish?: number;
-        ts?: number;
-      };
+      } = event;
       const entry = scores.get(playerId) ?? initScoreEntry();
       entry.sessions.add(sessionId);
       const ageDays = (now - ts) / DAY_MS;

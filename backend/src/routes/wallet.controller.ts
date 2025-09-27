@@ -34,6 +34,8 @@ import {
   type TxRequest,
 } from '@shared/wallet.schema';
 import { ZodError } from '@shared/types';
+import { MessageResponseSchema } from '../schemas/auth';
+import { API_CONTRACT_VERSION } from '@shared/constants';
 
 @UseGuards(AuthGuard, RateLimitGuard, SelfGuard)
 @ApiTags('wallet')
@@ -55,7 +57,10 @@ export class WalletController {
     try {
       const parsed = TxSchema.parse(body);
       await this.wallet.reserve(id, parsed.amount, parsed.tx, parsed.currency);
-      return { message: 'reserved' };
+      return MessageResponseSchema.parse({
+        message: 'reserved',
+        contractVersion: API_CONTRACT_VERSION,
+      });
     } catch (err) {
       if (err instanceof ZodError) {
         throw new BadRequestException(err.errors);
@@ -74,8 +79,16 @@ export class WalletController {
   ) {
     try {
       const parsed = TxSchema.parse(body);
-      await this.wallet.commit(parsed.tx, parsed.amount, parsed.rake ?? 0, parsed.currency);
-      return { message: 'committed' };
+      await this.wallet.commit(
+        parsed.tx,
+        parsed.amount,
+        parsed.rake ?? 0,
+        parsed.currency,
+      );
+      return MessageResponseSchema.parse({
+        message: 'committed',
+        contractVersion: API_CONTRACT_VERSION,
+      });
     } catch (err) {
       if (err instanceof ZodError) {
         throw new BadRequestException(err.errors);
@@ -95,7 +108,10 @@ export class WalletController {
     try {
       const parsed = TxSchema.parse(body);
       await this.wallet.rollback(id, parsed.amount, parsed.tx, parsed.currency);
-      return { message: 'rolled back' };
+      return MessageResponseSchema.parse({
+        message: 'rolled back',
+        contractVersion: API_CONTRACT_VERSION,
+      });
     } catch (err) {
       if (err instanceof ZodError) {
         throw new BadRequestException(err.errors);
@@ -126,7 +142,10 @@ export class WalletController {
         parsed.currency,
         idempotencyKey,
       );
-      return { message: 'withdrawn' };
+      return MessageResponseSchema.parse({
+        message: 'withdrawn',
+        contractVersion: API_CONTRACT_VERSION,
+      });
     } catch (err) {
       if (err instanceof ZodError) {
         throw new BadRequestException(err.errors);
@@ -205,7 +224,10 @@ export class WalletController {
     @Req() _req: Request,
   ) {
     await this.wallet.cancelPendingDeposit(id, depositId);
-    return { message: 'cancelled' };
+    return MessageResponseSchema.parse({
+      message: 'cancelled',
+      contractVersion: API_CONTRACT_VERSION,
+    });
   }
 
   @Post(':id/kyc')
@@ -213,7 +235,10 @@ export class WalletController {
   @ApiResponse({ status: 200, description: 'KYC verification started' })
   async verify(@Param('id') id: string, @Req() _req: Request) {
     await this.kyc.verify(id);
-    return { message: 'verified' };
+    return MessageResponseSchema.parse({
+      message: 'verified',
+      contractVersion: API_CONTRACT_VERSION,
+    });
   }
 
   @Get(':id/status')

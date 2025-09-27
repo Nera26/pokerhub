@@ -22,6 +22,8 @@ import type {
 import type { Request } from 'express';
 import { TournamentFiltersResponseSchema } from '@shared/types';
 import { BotProfilesResponseSchema } from '@shared/types';
+import { MessageResponseSchema } from '../schemas/auth';
+import { API_CONTRACT_VERSION } from '@shared/constants';
 
 @UseGuards(RateLimitGuard)
 @ApiTags('tournaments')
@@ -74,7 +76,10 @@ export class TournamentController {
   @ApiResponse({ status: 200, description: 'Withdrawn from tournament' })
   async withdraw(@Param('id') id: string, @Req() req: Request) {
     await this.service.withdraw(id, req.userId);
-    return { message: 'tournament withdrawal' };
+    return MessageResponseSchema.parse({
+      message: 'tournament withdrawal',
+      contractVersion: API_CONTRACT_VERSION,
+    });
   }
 
   @Post(':id/cancel')
@@ -84,7 +89,10 @@ export class TournamentController {
   @ApiResponse({ status: 200, description: 'Tournament cancelled' })
   async cancel(@Param('id') id: string) {
     await this.service.cancel(id);
-    return { message: 'tournament cancelled' };
+    return MessageResponseSchema.parse({
+      message: 'tournament cancelled',
+      contractVersion: API_CONTRACT_VERSION,
+    });
   }
 
   @Post(':id/prizes')
@@ -138,6 +146,9 @@ export class TournamentController {
       })),
       start: new Date(body.startTime),
     });
-    return { message: 'tournament scheduled' };
+    return MessageResponseSchema.parse({
+      message: 'tournament scheduled',
+      contractVersion: API_CONTRACT_VERSION,
+    });
   }
 }

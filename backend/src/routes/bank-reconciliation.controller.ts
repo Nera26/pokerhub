@@ -22,6 +22,8 @@ import {
   BankReconciliationRequestSchema,
   type BankReconciliationRequest,
 } from '@shared/wallet.schema';
+import { MessageResponseSchema } from '../schemas/auth';
+import { API_CONTRACT_VERSION } from '@shared/constants';
 
 @ApiTags('admin')
 @UseGuards(AuthGuard, AdminGuard)
@@ -77,6 +79,9 @@ export class BankReconciliationController {
       const parsed = BankReconciliationRequestSchema.parse(body);
       await this.reconciliation.reconcileApi(parsed.entries);
     }
-    return { message: 'reconciled' };
+    return MessageResponseSchema.parse({
+      message: 'reconciled',
+      contractVersion: API_CONTRACT_VERSION,
+    });
   }
 }
