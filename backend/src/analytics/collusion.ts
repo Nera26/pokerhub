@@ -8,14 +8,14 @@ import type { Events } from '@shared/events';
 
 type GameEvent = Events['game.event'];
 
-interface CollusionGameEvent extends GameEvent {
+type CollusionGameEvent = GameEvent & {
   sessionId: string;
   userId: string;
   vpip: number;
   seat: number;
   timestamp: number;
   transfer?: Transfer;
-}
+};
 
 @Injectable()
 export class CollusionDetectionJob {
@@ -47,20 +47,30 @@ export class CollusionDetectionJob {
   }
 
   private isCollusionGameEvent(event: GameEvent): event is CollusionGameEvent {
-    return (
-      typeof event === 'object' &&
-      event !== null &&
-      typeof event.sessionId === 'string' &&
-      typeof event.userId === 'string' &&
-      typeof event.vpip === 'number' &&
-      typeof event.seat === 'number' &&
-      typeof event.timestamp === 'number'
-    );
+    if (typeof event !== 'object' || event === null) {
+      return false;
+    }
+    if (!('sessionId' in event) || typeof event.sessionId !== 'string') {
+      return false;
+    }
+    if (!('userId' in event) || typeof event.userId !== 'string') {
+      return false;
+    }
+    if (!('vpip' in event) || typeof event.vpip !== 'number') {
+      return false;
+    }
+    if (!('seat' in event) || typeof event.seat !== 'number') {
+      return false;
+    }
+    if (!('timestamp' in event) || typeof event.timestamp !== 'number') {
+      return false;
+    }
+    return true;
   }
 
   private async run() {
     const events = (await this.analytics.rangeStream(
-      'analytics:game',
+      'analytics:game.event',
       this.lastCheck,
       'game.event',
     )).filter((event): event is CollusionGameEvent =>

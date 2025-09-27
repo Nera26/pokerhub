@@ -1,8 +1,8 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
+import type { Cache } from 'cache-manager';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, Repository, type DeepPartial } from 'typeorm';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { metrics } from '@opentelemetry/api';
@@ -125,7 +125,11 @@ export class LeaderboardService implements OnModuleInit {
 
     await this._leaderboardRepo.clear();
     if (rows.length) {
-      await this._leaderboardRepo.insert(rows);
+      const payload = rows.map<DeepPartial<Leaderboard>>((row) => ({
+        ...row,
+        finishes: row.finishes ?? {},
+      }));
+      await this._leaderboardRepo.insert(payload);
     }
 
     const leaders = rows.slice(0, 100).map(toLeaderboardEntry);
@@ -160,7 +164,7 @@ export class LeaderboardService implements OnModuleInit {
     const { days = 30, minSessions } = options;
     const since = Date.now() - days * DAY_MS;
     const events = await this.analytics.rangeStream(
-      'analytics:game',
+      'analytics:game.event',
       since,
       'game.event',
     );

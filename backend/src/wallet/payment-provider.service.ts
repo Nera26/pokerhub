@@ -5,6 +5,7 @@ import Redis from 'ioredis';
 import { z, type ZodSchema } from 'zod';
 import { fetchJson } from '@shared/utils/http';
 import { verifySignature as verifyProviderSignature } from './verify-signature';
+import { setWithOptions } from '../redis/set-with-options';
 
 export type ProviderStatus = 'approved' | 'risky' | 'chargeback';
 
@@ -124,10 +125,12 @@ export class PaymentProviderService {
     await this.initQueue();
     await this.draining;
     const key = this.redisKey(event.idempotencyKey);
-    const stored = await this.redis.set(key, JSON.stringify(event), {
-      NX: true,
-      EX: 60 * 60,
-    });
+    const stored = await setWithOptions(
+      this.redis,
+      key,
+      JSON.stringify(event),
+      { nx: true, ex: 60 * 60 },
+    );
     if (stored === null) return;
     const handler = this.handlers.get(handlerKey);
     if (!handler) throw new Error(`Missing handler for ${handlerKey}`);

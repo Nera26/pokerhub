@@ -1,4 +1,9 @@
-import { DataSource, EntityTarget, Repository } from 'typeorm';
+import {
+  DataSource,
+  EntityTarget,
+  Repository,
+  type ObjectLiteral,
+} from 'typeorm';
 
 /**
  * Generic repository for history entities.
@@ -6,7 +11,7 @@ import { DataSource, EntityTarget, Repository } from 'typeorm';
  * Each history entity (game, tournament, wallet) can reuse this class
  * instead of having its own repository implementation.
  */
-export class HistoryRepository<T> extends Repository<T> {
+export class HistoryRepository<T extends ObjectLiteral> extends Repository<T> {
   constructor(entity: EntityTarget<T>, dataSource: DataSource) {
     super(entity, dataSource.createEntityManager());
   }

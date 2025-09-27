@@ -2,7 +2,7 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerModuleOptions } from '@nestjs/throttler';
 import helmet from 'helmet';
 import { APP_FILTER } from '@nestjs/core';
 
@@ -132,9 +132,13 @@ const testModules =
 
     ThrottlerModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        ttl: config.get<number>('rateLimit.window', 60),
-        limit: config.get<number>('rateLimit.max', 5),
+      useFactory: (config: ConfigService): ThrottlerModuleOptions => ({
+        throttlers: [
+          {
+            ttl: config.get<number>('rateLimit.window', 60),
+            limit: config.get<number>('rateLimit.max', 5),
+          },
+        ],
       }),
     }),
 

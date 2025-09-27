@@ -11,10 +11,10 @@ import {
   InjectThrottlerStorage,
   ThrottlerGuard,
   ThrottlerLimitDetail,
-  ThrottlerModuleOptions,
   ThrottlerRequest,
   ThrottlerStorage,
 } from '@nestjs/throttler';
+import type { ThrottlerModuleOptions } from '@nestjs/throttler';
 import type { MessageResponse } from '@shared/types';
 import { API_CONTRACT_VERSION } from '@shared/constants';
 

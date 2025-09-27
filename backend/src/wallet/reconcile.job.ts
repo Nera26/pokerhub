@@ -3,6 +3,7 @@ import path from 'path';
 import { Logger } from 'nestjs-pino';
 import { EventPublisher } from '../events/events.service';
 import { WalletService } from './wallet.service';
+import type { Events } from '@shared/events';
 
 export async function runReconcile(
   wallet: WalletService,
@@ -45,12 +46,12 @@ export async function runReconcile(
   const reportCount = report.length;
 
   if (reportCount > 0 || total !== 0) {
-    await events?.emit('wallet.reconcile.mismatch', {
+    const payload: Events['wallet.reconcile.mismatch'] = {
       date,
       total,
-      report,
-      reportCount,
-    });
+      ...(reportCount > 0 ? { report, reportCount } : {}),
+    };
+    await events?.emit('wallet.reconcile.mismatch', payload);
   }
 
   if (reportCount > 0 || total !== 0) {
