@@ -254,7 +254,7 @@ export class GameEngine {
       }
     }
 
-    let idx = 1;
+    let idx = 0;
     let totalLoss = 0;
     for (const { playerId, delta } of entries) {
       const initial = this.initialStacks.get(playerId) ?? 0;
