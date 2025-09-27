@@ -12,6 +12,7 @@ import * as sdkMetrics from '@opentelemetry/sdk-metrics';
 import {
   MeterProvider,
   PeriodicExportingMetricReader,
+  type MetricReader,
   type PushMetricExporter,
 } from '@opentelemetry/sdk-metrics';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
@@ -100,9 +101,23 @@ export async function setupTelemetry({
     [SemanticResourceAttributes.SERVICE_NAME]: serviceName,
   });
 
-  const aggregationApi = (sdkMetrics as unknown as {
+  let aggregationApi = (sdkMetrics as unknown as {
     aggregation?: { createAggregator?: unknown };
   }).aggregation;
+
+  if (typeof aggregationApi?.createAggregator !== 'function') {
+    try {
+      const viewAggregation = require('@opentelemetry/sdk-metrics/build/src/view/Aggregation') as {
+        DEFAULT_AGGREGATION?: { createAggregator?: unknown };
+      };
+      if (typeof viewAggregation.DEFAULT_AGGREGATION?.createAggregator === 'function') {
+        aggregationApi = viewAggregation.DEFAULT_AGGREGATION;
+      }
+    } catch (error) {
+      // ignore missing compat module and fall back to existing detection
+    }
+  }
+
   const metricsSupported = typeof aggregationApi?.createAggregator === 'function';
   if (!metricsSupported && !hasLoggedAggregationWarning) {
     hasLoggedAggregationWarning = true;
@@ -113,24 +128,26 @@ export async function setupTelemetry({
   }
 
   if (metricsSupported) {
+    const metricReaders: MetricReader[] = [];
+
     const prometheus = new PrometheusExporter({
       port: Number(process.env.OTEL_EXPORTER_PROMETHEUS_PORT) || 9464,
       host: process.env.OTEL_EXPORTER_PROMETHEUS_HOST ?? '0.0.0.0',
       endpoint: process.env.OTEL_EXPORTER_PROMETHEUS_ENDPOINT ?? '/metrics',
     });
-
-    meterProvider = new MeterProvider({ resource });
-    meterProvider.addMetricReader(prometheus);
+    metricReaders.push(prometheus);
 
     const otlpMetricsEndpoint = process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT;
     if (otlpMetricsEndpoint) {
       const otlpExporter = new OTLPMetricExporter({ url: otlpMetricsEndpoint });
-      meterProvider.addMetricReader(
+      metricReaders.push(
         new PeriodicExportingMetricReader({
           exporter: otlpExporter as unknown as PushMetricExporter,
         }),
       );
     }
+
+    meterProvider = new MeterProvider({ resource, readers: metricReaders });
     metrics.setGlobalMeterProvider(meterProvider);
   }
 
