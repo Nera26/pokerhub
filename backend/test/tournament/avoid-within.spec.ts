@@ -6,66 +6,12 @@ import { Tournament, TournamentState } from '../../src/database/entities/tournam
 import { ConfigService } from '@nestjs/config';
 import type Redis from 'ioredis';
 import { createInMemoryRedis } from '../utils/mock-redis';
-import { createSeatRepo, createTournamentRepo } from './helpers';
-
-function createTestTable(id: string, tournament: Tournament): Table {
-  return {
-    id,
-    name: id,
-    gameType: 'texas',
-    smallBlind: 1,
-    bigBlind: 2,
-    startingStack: 0,
-    playersCurrent: 0,
-    playersMax: 9,
-    minBuyIn: 0,
-    maxBuyIn: 0,
-    handsPerHour: 0,
-    avgPot: 0,
-    rake: 0,
-    tabs: ['history', 'chat', 'notes'],
-    createdAt: new Date(0),
-    tournament,
-    players: [],
-    seats: [],
-  } as Table;
-}
-
-function createTournamentServiceInstance({
-  tournamentsRepo,
-  seatsRepo,
-  tablesRepo,
-  scheduler = {},
-  rooms = { get: jest.fn() },
-  redis,
-}: {
-  tournamentsRepo?: any;
-  seatsRepo?: any;
-  tablesRepo?: any;
-  scheduler?: any;
-  rooms?: any;
-  redis?: Redis;
-} = {}): TournamentService {
-  return new TournamentService(
-    tournamentsRepo ?? ({} as any),
-    seatsRepo ?? ({} as any),
-    tablesRepo ?? ({ find: jest.fn() } as any),
-    scheduler as any,
-    rooms as any,
-    {} as any,
-    {} as any,
-    {} as any,
-    { emit: jest.fn() } as any,
-    {} as any,
-    {} as any,
-    {} as any,
-    {} as any,
-    undefined,
-    redis,
-    undefined,
-    undefined,
-  );
-}
+import {
+  createSeatRepo,
+  createTestTable,
+  createTournamentRepo,
+  createTournamentServiceInstance,
+} from './helpers';
 
 function createTournamentContext() {
   const tournament = {

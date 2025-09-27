@@ -1,42 +1,34 @@
 import { TournamentScheduler } from '../src/tournament/scheduler.service';
 import { TableBalancerService } from '../src/tournament/table-balancer.service';
-import { TournamentService } from '../src/tournament/tournament.service';
 import { Tournament, TournamentState } from '../src/database/entities/tournament.entity';
 import { Table } from '../src/database/entities/table.entity';
 import { Seat } from '../src/database/entities/seat.entity';
-import { Repository } from 'typeorm';
 import { RebuyService } from '../src/tournament/rebuy.service';
 import { PkoService } from '../src/tournament/pko.service';
+import type { EventPublisher } from '../src/events/events.service';
+import {
+  createSeatRepo,
+  createTestTable,
+  createTournamentRepo,
+  createTournamentServiceInstance,
+} from './tournament/helpers';
 
-function createTournamentRepo(initial: Tournament[]): any {
-  const items = new Map(initial.map((t) => [t.id, t]));
-  return {
-    find: jest.fn(async () => Array.from(items.values())),
-    findOne: jest.fn(async ({ where: { id } }) => items.get(id)),
-    save: jest.fn(async (obj: Tournament) => {
-      items.set(obj.id, obj);
-      return obj;
-    }),
-  } as Repository<Tournament>;
-}
-
-function createSeatRepo(tables: Table[]): any {
-  const seats = tables.flatMap((t) => t.seats);
-  const items = new Map(seats.map((s) => [s.id, s]));
-  return {
-    find: jest.fn(async () => Array.from(items.values())),
-    save: jest.fn(async (seat: Seat | Seat[]) => {
-      const arr = Array.isArray(seat) ? seat : [seat];
-      for (const s of arr) {
-        tables.forEach((tbl) => {
-          tbl.seats = tbl.seats.filter((seat) => seat.id !== s.id);
-        });
-        s.table.seats.push(s);
-        items.set(s.id, s);
-      }
-      return Array.isArray(seat) ? arr : arr[0];
-    }),
-  } as Repository<Seat>;
+function createTournamentContext(): { tournament: Tournament; tables: Table[] } {
+  const tournament = {
+    id: 't1',
+    title: 'Test',
+    buyIn: 0,
+    prizePool: 0,
+    maxPlayers: 100,
+    state: TournamentState.RUNNING,
+    tables: [] as Table[],
+  } as Tournament;
+  const tables = [
+    createTestTable('tbl1', tournament),
+    createTestTable('tbl2', tournament),
+  ];
+  tournament.tables = tables;
+  return { tournament, tables };
 }
 
 describe('Tournament scheduling and balancing', () => {
@@ -73,10 +65,7 @@ describe('Tournament scheduling and balancing', () => {
   });
 
   it('rebalanceIfNeeded moves players from fuller tables', async () => {
-    const tables: Table[] = [
-      { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
-      { id: 'tbl2', seats: [], tournament: { id: 't1' } as Tournament } as Table,
-    ];
+    const { tournament, tables } = createTournamentContext();
     const distribution = [5, 1];
     let seatId = 0;
     distribution.forEach((count, idx) => {
@@ -95,26 +84,16 @@ describe('Tournament scheduling and balancing', () => {
     });
     const seatsRepo = createSeatRepo(tables);
     const tablesRepo = { find: jest.fn(async () => tables) } as any;
-    const tournamentsRepo = createTournamentRepo([
-      {
-        id: 't1',
-        title: 'Test',
-        buyIn: 0,
-        prizePool: 0,
-        maxPlayers: 100,
-        state: TournamentState.RUNNING,
-        tables,
-      } as Tournament,
-    ]);
+    const tournamentsRepo = createTournamentRepo([tournament]);
     const scheduler: any = {};
     const rooms: any = { get: jest.fn() };
-    const service = new TournamentService(
+    const service = createTournamentServiceInstance({
       tournamentsRepo,
       seatsRepo,
       tablesRepo,
       scheduler,
       rooms,
-    );
+    });
     const balancer = new TableBalancerService(tablesRepo, service);
     const before = tables.map((t) => t.seats.length);
     expect(Math.max(...before) - Math.min(...before)).toBeGreaterThan(1);
@@ -126,10 +105,7 @@ describe('Tournament scheduling and balancing', () => {
   });
 
   it('rebalanceIfNeeded avoids moving recently relocated players', async () => {
-    const tables: Table[] = [
-      { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
-      { id: 'tbl2', seats: [], tournament: { id: 't1' } as Tournament } as Table,
-    ];
+    const { tournament, tables } = createTournamentContext();
     const distribution = [5, 1];
     const currentHand = 100;
     const avoidWithin = 10;
@@ -155,26 +131,16 @@ describe('Tournament scheduling and balancing', () => {
     });
     const seatsRepo = createSeatRepo(tables);
     const tablesRepo = { find: jest.fn(async () => tables) } as any;
-    const tournamentsRepo = createTournamentRepo([
-      {
-        id: 't1',
-        title: 'Test',
-        buyIn: 0,
-        prizePool: 0,
-        maxPlayers: 100,
-        state: TournamentState.RUNNING,
-        tables,
-      } as Tournament,
-    ]);
+    const tournamentsRepo = createTournamentRepo([tournament]);
     const scheduler: any = {};
     const rooms: any = { get: jest.fn() };
-    const service = new TournamentService(
+    const service = createTournamentServiceInstance({
       tournamentsRepo,
       seatsRepo,
       tablesRepo,
       scheduler,
       rooms,
-    );
+    });
     const redis = {
       hgetall: jest.fn(async () =>
         Object.fromEntries(
@@ -202,9 +168,17 @@ describe('Tournament scheduling and balancing', () => {
   });
 
   it('emits bubble event when players reach payout threshold', async () => {
-    const tables: Table[] = [
-      { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
-    ];
+    const tournament = {
+      id: 't1',
+      title: 'Bubble Test',
+      buyIn: 0,
+      prizePool: 0,
+      maxPlayers: 100,
+      state: TournamentState.RUNNING,
+      tables: [] as Table[],
+    } as Tournament;
+    const tables = [createTestTable('tbl1', tournament)];
+    tournament.tables = tables;
     for (let i = 0; i < 5; i++) {
       tables[0].seats.push({
         id: `s${i}`,
@@ -216,31 +190,21 @@ describe('Tournament scheduling and balancing', () => {
     }
     const seatsRepo = createSeatRepo(tables);
     const tablesRepo = { find: jest.fn(async () => tables) } as any;
-    const tournamentsRepo = createTournamentRepo([
-      {
-        id: 't1',
-        title: 'Bubble Test',
-        buyIn: 0,
-        prizePool: 0,
-        maxPlayers: 100,
-        state: TournamentState.RUNNING,
-        tables,
-      } as Tournament,
-    ]);
+    const tournamentsRepo = createTournamentRepo([tournament]);
     const scheduler: any = {};
     const rooms: any = { get: jest.fn() };
-    const events = { emit: jest.fn() };
-    const service = new TournamentService(
+    const events = { emit: jest.fn() } as unknown as EventPublisher;
+    const service = createTournamentServiceInstance({
       tournamentsRepo,
       seatsRepo,
       tablesRepo,
       scheduler,
       rooms,
-      new RebuyService(),
-      new PkoService(),
-      { get: jest.fn() } as any,
-      events as any,
-    );
+      rebuys: new RebuyService(),
+      pko: new PkoService(),
+      flags: { get: jest.fn().mockResolvedValue(true) } as any,
+      events,
+    });
     const balancer = new TableBalancerService(tablesRepo, service);
     await balancer.rebalanceIfNeeded('t1', 0, 10, 5);
     expect(events.emit).toHaveBeenCalledWith('tournament.bubble', {
