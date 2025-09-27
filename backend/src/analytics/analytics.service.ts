@@ -12,7 +12,6 @@ import { createClient, ClickHouseClient } from '@clickhouse/client';
 import { randomUUID } from 'crypto';
 import Redis from 'ioredis';
 import { EventSchemas, Events, EventName } from '@shared/events';
-import type { ZodType } from 'zod';
 import { GcsService } from '../storage/gcs.service';
 import { ParquetSchema, ParquetWriter, type ParquetField } from 'parquetjs-lite';
 import { PassThrough } from 'stream';
@@ -228,6 +227,11 @@ function scheduleDaily(task: () => void): void {
     setInterval(task, oneDay);
   }, delay);
 }
+
+const parseEvent = <E extends EventName>(eventName: E, data: unknown): Events[E] => {
+  const schema = EventSchemas[eventName];
+  return schema.parse(data) as Events[E];
+};
 
 @Injectable()
 export class AnalyticsService implements OnModuleInit {
@@ -844,8 +848,7 @@ export class AnalyticsService implements OnModuleInit {
   }
 
   async emit<E extends EventName>(event: E, data: Events[E]) {
-    const schema = EventSchemas[event] as ZodType<Events[E]>;
-    const payload = schema.parse(data);
+    const payload = parseEvent(event, data);
     await this.etl.runEtl(event, payload);
   }
 
@@ -854,8 +857,7 @@ export class AnalyticsService implements OnModuleInit {
     eventName: E,
     event: Events[E],
   ) {
-    const schema = EventSchemas[eventName] as ZodType<Events[E]>;
-    const payload = schema.parse(event);
+    const payload = parseEvent(eventName, event);
     await this.redis.xadd(
       `analytics:${stream}`,
       '*',
@@ -970,7 +972,6 @@ export class AnalyticsService implements OnModuleInit {
   ): Promise<Events[E][]> {
     const start = `${since}-0`;
     const entries = await this.redis.xrange(stream, start, '+');
-    const schema = EventSchemas[eventName] as ZodType<Events[E]>;
     const results: Events[E][] = [];
     for (const [, fields] of entries) {
       const raw = Array.isArray(fields) ? fields[1] : undefined;
@@ -979,7 +980,8 @@ export class AnalyticsService implements OnModuleInit {
       }
       try {
         const parsed = JSON.parse(raw) as unknown;
-        results.push(schema.parse(parsed));
+        const parsedEvent = parseEvent(eventName, parsed);
+        results.push(parsedEvent);
       } catch (err) {
         this.logger.warn(
           `Failed to parse ${eventName} payload: ${(err as Error).message}`,
