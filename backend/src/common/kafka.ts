@@ -58,24 +58,27 @@ function createNoopConsumer(): Consumer {
   } as unknown as Consumer;
 }
 
-export function createKafka(config: ConfigService): Kafka | null {
+function parseKafkaBrokers(rawValue?: string | null): string[] {
+  return rawValue
+    ?.split(',')
+    .map((s) => s.trim())
+    .filter(Boolean) ?? [];
+}
+
+export function createKafka(config: ConfigService): Kafka {
   const brokersConfig = config.get<string>('analytics.kafkaBrokers');
-  const brokers =
-    brokersConfig?.split(',').map((s) => s.trim()).filter(Boolean) ?? [];
+  const brokers = parseKafkaBrokers(brokersConfig);
   if (brokers.length === 0) {
-    console.warn(
-      'analytics.kafkaBrokers is not configured; Kafka messaging disabled.',
-    );
-    return null;
+    throw new Error('Missing analytics.kafkaBrokers configuration');
   }
   return new Kafka({ brokers });
 }
 
-export function createKafkaProducer(config: ConfigService): Producer {
-  const kafka = createKafka(config);
-  if (!kafka) {
-    return createNoopProducer();
-  }
+export function createKafkaProducer(
+  config: ConfigService,
+  factory: (config: ConfigService) => Kafka = createKafka,
+): Producer {
+  const kafka = factory(config);
   const producer = kafka.producer();
   void producer.connect();
   return producer;
@@ -84,12 +87,12 @@ export function createKafkaProducer(config: ConfigService): Producer {
 export async function createKafkaConsumer(
   config: ConfigService,
   groupId: string,
+  factory: (config: ConfigService) => Kafka = createKafka,
 ): Promise<Consumer> {
-  const kafka = createKafka(config);
-  if (!kafka) {
-    return createNoopConsumer();
-  }
+  const kafka = factory(config);
   const consumer = kafka.consumer({ groupId });
   await consumer.connect();
   return consumer;
 }
+
+export const __testUtils = { parseKafkaBrokers };
