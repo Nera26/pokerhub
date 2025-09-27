@@ -8,7 +8,7 @@ FROM alpine:3.20
 RUN apk add --no-cache ca-certificates curl
 
 # Copy the server binary from the upstream image
-COPY --from=upstream /fake-gcs-server /usr/local/bin/fake-gcs-server
+COPY --from=upstream /bin/fake-gcs-server /usr/local/bin/fake-gcs-server
 
 EXPOSE 4443
 ENTRYPOINT ["/usr/local/bin/fake-gcs-server"]
