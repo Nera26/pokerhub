@@ -4,6 +4,7 @@ import {
   GameAction,
   InternalGameState,
 } from '../../src/game/engine';
+import { standardDeck } from '@shared/verify';
 
 const players = ['p1', 'p2'];
 const config = { startingStack: 100, smallBlind: 1, bigBlind: 2 };
@@ -187,6 +188,66 @@ describe('GameEngine property tests', () => {
           });
         expect(distributed + remainingPot).toBe(totalContribution);
       }),
+    );
+  });
+
+  it('completes a full hand without exhausting the deck', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.tuple(
+          fc.integer({ min: 0, max: 52 }),
+          fc.integer({ min: 0, max: 52 }),
+          fc.integer({ min: 0, max: 52 }),
+        ),
+        async ([burnFlop, burnTurn, burnRiver]) => {
+          const engine = await GameEngine.create(players, config);
+          engine.applyAction({
+            type: 'postBlind',
+            playerId: players[0],
+            amount: config.smallBlind,
+          });
+          engine.applyAction({
+            type: 'postBlind',
+            playerId: players[1],
+            amount: config.bigBlind,
+          });
+
+          engine.applyAction({ type: 'next' });
+          engine.applyAction({ type: 'call', playerId: players[0] });
+          engine.applyAction({ type: 'next' });
+
+          const deck = engine.getState().deck;
+          deck.length = Math.max(deck.length - burnFlop, 0);
+          engine.applyAction({ type: 'next' });
+
+          engine.applyAction({ type: 'next' });
+          const turnDeck = engine.getState().deck;
+          turnDeck.length = Math.max(turnDeck.length - burnTurn, 0);
+          engine.applyAction({ type: 'next' });
+
+          engine.applyAction({ type: 'next' });
+          const riverDeck = engine.getState().deck;
+          riverDeck.length = Math.max(riverDeck.length - burnRiver, 0);
+          engine.applyAction({ type: 'next' });
+
+          engine.applyAction({ type: 'next' });
+
+          const finalState = engine.getState();
+          expect(finalState.communityCards.length).toBe(5);
+          finalState.players.forEach((p) => {
+            expect(p.holeCards?.length).toBe(2);
+          });
+
+          const holeCardCount = finalState.players.reduce(
+            (sum, player) => sum + (player.holeCards?.length ?? 0),
+            0,
+          );
+          const deckSize = standardDeck().length;
+          expect(finalState.deck.length).toBe(
+            deckSize - holeCardCount - finalState.communityCards.length,
+          );
+        },
+      ),
     );
   });
 });
