@@ -52,6 +52,7 @@ import {
   MessageResponse,
   MessageResponseSchema,
 } from '../schemas/auth';
+import { API_CONTRACT_VERSION } from '@shared/constants';
 import { KycService } from '../wallet/kyc.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { RevenueService } from '../wallet/revenue.service';
@@ -153,7 +154,10 @@ export class AdminController {
     @Param('id') id: string,
   ): Promise<MessageResponse> {
     await this.analytics.acknowledgeAdminEvent(id);
-    return MessageResponseSchema.parse({ message: 'acknowledged' });
+    return MessageResponseSchema.parse({
+      message: 'acknowledged',
+      contractVersion: API_CONTRACT_VERSION,
+    });
   }
 
   @Get('tabs')

@@ -11,6 +11,8 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { WithdrawalsService } from './withdrawals.service';
 import { WithdrawalDecisionRequestSchema } from '../schemas/withdrawals';
 import { AdminGuard } from '../auth/admin.guard';
+import { MessageResponseSchema } from '../schemas/auth';
+import { API_CONTRACT_VERSION } from '@shared/constants';
 
 @UseGuards(AdminGuard)
 @ApiTags('withdrawals')
@@ -29,7 +31,10 @@ export class WithdrawalsController {
   ) {
     const { comment } = WithdrawalDecisionRequestSchema.parse(body);
     await this.withdrawals.approve(user, req.userId, comment);
-    return { message: 'approved' };
+    return MessageResponseSchema.parse({
+      message: 'approved',
+      contractVersion: API_CONTRACT_VERSION,
+    });
   }
 
   @Post(':user/reject')
@@ -43,7 +48,10 @@ export class WithdrawalsController {
   ) {
     const { comment } = WithdrawalDecisionRequestSchema.parse(body);
     await this.withdrawals.reject(user, req.userId, comment);
-    return { message: 'rejected' };
+    return MessageResponseSchema.parse({
+      message: 'rejected',
+      contractVersion: API_CONTRACT_VERSION,
+    });
   }
 }
 

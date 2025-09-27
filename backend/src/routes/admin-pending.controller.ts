@@ -5,6 +5,8 @@ import type { ZodType } from 'zod';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { WalletService } from '../wallet/wallet.service';
+import { MessageResponseSchema } from '../schemas/auth';
+import { API_CONTRACT_VERSION } from '@shared/constants';
 
 interface AdminPendingControllerOpts<TListResponse, TRejectRequest> {
   path: string;
@@ -34,7 +36,7 @@ export default function AdminPendingTransactionsController<
   @ApiTags('admin')
   @UseGuards(AuthGuard, AdminGuard)
   class GenericPendingController {
-    constructor(private readonly wallet: WalletService) {}
+    constructor(readonly wallet: WalletService) {}
 
     @Get()
     @ApiOperation({ summary: 'List pending transactions' })
@@ -49,7 +51,10 @@ export default function AdminPendingTransactionsController<
     @ApiResponse({ status: 200, description: 'Transaction confirmed' })
     async confirm(@Param('id') id: string, @Req() req: Request) {
       await confirm(this.wallet, id, req);
-      return { message: 'confirmed' };
+      return MessageResponseSchema.parse({
+        message: 'confirmed',
+        contractVersion: API_CONTRACT_VERSION,
+      });
     }
 
     @Post(':id/reject')
@@ -62,7 +67,10 @@ export default function AdminPendingTransactionsController<
     ) {
       const parsed = request.parse(body);
       await reject(this.wallet, id, parsed, req);
-      return { message: 'rejected' };
+      return MessageResponseSchema.parse({
+        message: 'rejected',
+        contractVersion: API_CONTRACT_VERSION,
+      });
     }
   }
 

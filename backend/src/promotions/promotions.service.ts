@@ -2,6 +2,7 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import type { MessageResponse, Promotion } from '@shared/types';
+import { API_CONTRACT_VERSION } from '@shared/constants';
 import { PromotionEntity } from '../database/entities/promotion.entity';
 import { PromotionClaimEntity } from '../database/entities/promotion-claim.entity';
 
@@ -40,6 +41,7 @@ export class PromotionsService {
 
     return {
       message: `Promotion "${promotion.title}" claimed`,
+      contractVersion: API_CONTRACT_VERSION,
     };
   }
 }

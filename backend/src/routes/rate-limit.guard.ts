@@ -16,6 +16,7 @@ import {
   ThrottlerStorage,
 } from '@nestjs/throttler';
 import type { MessageResponse } from '@shared/types';
+import { API_CONTRACT_VERSION } from '@shared/constants';
 
 @Injectable()
 export class RateLimitGuard extends ThrottlerGuard {
@@ -40,7 +41,10 @@ export class RateLimitGuard extends ThrottlerGuard {
     _context: ExecutionContext,
     _detail: ThrottlerLimitDetail,
   ): Promise<void> {
-    const body: MessageResponse = { message: 'Too Many Requests' };
+    const body: MessageResponse = {
+      message: 'Too Many Requests',
+      contractVersion: API_CONTRACT_VERSION,
+    };
     throw new HttpException(body, HttpStatus.TOO_MANY_REQUESTS);
   }
 }
