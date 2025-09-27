@@ -25,6 +25,7 @@ import { Table } from '../src/database/entities/table.entity';
 import { Seat } from '../src/database/entities/seat.entity';
 import { Tournament } from '../src/database/entities/tournament.entity';
 import { Leaderboard } from '../src/database/entities/leaderboard.entity';
+import { TournamentDetail } from '../src/tournament/tournament-detail.entity';
 
 function createTestModule() {
   let dataSource: DataSource;
@@ -38,12 +39,20 @@ function createTestModule() {
             Seat,
             Tournament,
             Leaderboard,
+            TournamentDetail,
           ]);
           return dataSource.options;
         },
         dataSourceFactory: async () => dataSource,
       }),
-      TypeOrmModule.forFeature([User, Table, Seat, Tournament, Leaderboard]),
+      TypeOrmModule.forFeature([
+        User,
+        Table,
+        Seat,
+        Tournament,
+        Leaderboard,
+        TournamentDetail,
+      ]),
     ],
     controllers: [ProfileController],
     providers: [UsersService, UserRepository],
