@@ -22,7 +22,9 @@ services:
         condition: service_healthy
 
   load:
-    image: grafana/k6
+    build:
+      context: ./infra/load
+    image: pokerhub-load
     working_dir: /scripts
     volumes:
       - ./load:/scripts
