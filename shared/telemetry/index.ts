@@ -18,14 +18,14 @@ import {
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
-import type { InstrumentationBase } from '@opentelemetry/instrumentation';
+import type { Instrumentation } from '@opentelemetry/instrumentation';
 import type { Request, Response, NextFunction } from 'express';
 import { addSample, recordTimestamp, percentile } from './metrics';
 
 interface TelemetryOptions {
   serviceName: string;
   meterName: string;
-  instrumentations: InstrumentationBase[];
+  instrumentations: Array<Instrumentation | Instrumentation[]>;
   enableHttpMetrics?: boolean;
 }
 
