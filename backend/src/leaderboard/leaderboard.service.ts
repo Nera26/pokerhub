@@ -1,4 +1,5 @@
-import { CACHE_MANAGER, Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
@@ -130,7 +131,7 @@ export class LeaderboardService implements OnModuleInit {
 
     await Promise.all([
       this.cache.set(this.dataKey, leaders),
-      this.cache.set(this.cacheKey, leaders, { ttl: this.ttl }),
+      this.cache.set(this.cacheKey, leaders, this.ttl),
     ]);
   }
 
@@ -141,7 +142,7 @@ export class LeaderboardService implements OnModuleInit {
     }
 
     const top = await this.fetchTopPlayers();
-    await this.cache.set(this.cacheKey, top, { ttl: this.ttl });
+    await this.cache.set(this.cacheKey, top, this.ttl);
     return top;
   }
 

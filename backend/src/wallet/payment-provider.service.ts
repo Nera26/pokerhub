@@ -87,7 +87,11 @@ export class PaymentProviderService {
       },
       { connection },
     );
-    this.retryWorker.on('failed', (job) => void job.retry());
+    this.retryWorker.on('failed', (job) => {
+      if (job) {
+        void job.retry();
+      }
+    });
   }
 
   async drainQueue(): Promise<void> {
@@ -95,7 +99,9 @@ export class PaymentProviderService {
     const queue = this.retryQueue!;
     const failed = await queue.getFailed();
     for (const job of failed) {
-      await job.retry();
+      if (job) {
+        await job.retry();
+      }
     }
     this.draining = (async () => {
       while (true) {
@@ -118,13 +124,10 @@ export class PaymentProviderService {
     await this.initQueue();
     await this.draining;
     const key = this.redisKey(event.idempotencyKey);
-    const stored = await this.redis.set(
-      key,
-      JSON.stringify(event),
-      'NX',
-      'EX',
-      60 * 60,
-    );
+    const stored = await this.redis.set(key, JSON.stringify(event), {
+      NX: true,
+      EX: 60 * 60,
+    });
     if (stored === null) return;
     const handler = this.handlers.get(handlerKey);
     if (!handler) throw new Error(`Missing handler for ${handlerKey}`);
