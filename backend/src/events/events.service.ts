@@ -97,7 +97,7 @@ export class EventPublisher implements OnModuleDestroy {
     }
 
     const schema = EventSchemas[name];
-    const data = schema.parse(payload);
+    const data = schema.parse(payload) as Events[T];
 
     let lastError: unknown;
     const retries = 3;
@@ -129,7 +129,7 @@ export class EventPublisher implements OnModuleDestroy {
     const message =
       lastError instanceof Error ? lastError.message : String(lastError);
     this.logger.error(`Failed to publish ${name}: ${message}`);
-    await this.persistFailedEvent({ name, payload: data });
+    await this.persistFailedEvent<T>({ name, payload: data });
     throw new Error(
       `Failed to publish event ${name} after ${retries} attempts: ${message}`,
     );
