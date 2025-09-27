@@ -8,6 +8,7 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import { MetricsWriterService } from '../metrics/metrics-writer.service';
 import { UserRepository } from '../users/user.repository';
 import { EmailService } from './email.service';
+import { setWithOptions } from '../redis/set-with-options';
 import type { AuthProvider } from '../schemas/auth';
 import type { User } from '../database/entities/user.entity';
 
@@ -75,20 +76,22 @@ export class AuthService {
       return null;
     }
     const ttl = this.config.get<number>('auth.refreshTtl', 604800);
-    await this.redis.set(
+    await setWithOptions(
+      this.redis,
       `${this.revokedPrefix}${refreshToken}`,
       '1',
-      { EX: ttl },
+      { ex: ttl },
     );
     return rotated;
   }
 
   async logout(refreshToken: string) {
     const ttl = this.config.get<number>('auth.refreshTtl', 604800);
-    await this.redis.set(
+    await setWithOptions(
+      this.redis,
       `${this.revokedPrefix}${refreshToken}`,
       '1',
-      { EX: ttl },
+      { ex: ttl },
     );
     await this.sessions.revoke(refreshToken);
   }
@@ -119,7 +122,9 @@ export class AuthService {
     const code = randomInt(100000, 1000000).toString();
     const ttl = this.config.get<number>('auth.resetTtl', 900);
     const hash = this.hashCode(code);
-    await this.redis.set(`${this.resetPrefix}${email}`, hash, { EX: ttl });
+    await setWithOptions(this.redis, `${this.resetPrefix}${email}`, hash, {
+      ex: ttl,
+    });
     await this.email.sendResetCode(email, code);
   }
 
