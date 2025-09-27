@@ -24,6 +24,11 @@ function createTestModule() {
             returns: 'text',
             implementation: () => 'pg-mem',
           });
+          db.public.registerFunction({
+            name: 'current_database',
+            returns: 'text',
+            implementation: () => 'test',
+          });
           dataSource = db.adapters.createTypeormDataSource({
             type: 'postgres',
             entities: [Tier],
@@ -66,7 +71,9 @@ describe('TiersController', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    if (app) {
+      await app.close();
+    }
   });
 
   it('returns tier definitions', async () => {
