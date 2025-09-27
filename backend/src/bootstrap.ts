@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
+import { logBootstrapNotice } from './common/logging.utils';
 
 interface BootstrapOptions {
   telemetry?: boolean;
@@ -25,10 +26,10 @@ export async function bootstrap(options: BootstrapOptions = {}) {
   const config = app.get(ConfigService);
   const logger = app.get(Logger);
   if (!config.get<string>('logging.elasticUrl')) {
-    logger.warn('ELASTIC_URL is not set; Elasticsearch logging disabled');
+    logBootstrapNotice(logger, 'ELASTIC_URL is not set; Elasticsearch logging disabled');
   }
   if (!config.get<string>('logging.lokiUrl')) {
-    logger.warn('LOKI_URL is not set; Loki logging disabled');
+    logBootstrapNotice(logger, 'LOKI_URL is not set; Loki logging disabled');
   }
 
   app.use(cookieParser());

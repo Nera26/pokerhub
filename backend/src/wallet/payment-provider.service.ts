@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { ProviderCallback } from '@shared/wallet.schema';
 import { Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
@@ -7,6 +7,7 @@ import { fetchJson } from '@shared/utils/http';
 import { verifySignature as verifyProviderSignature } from './verify-signature';
 import { setWithOptions } from '../redis/set-with-options';
 import { createQueue } from '../redis/queue';
+import { logBootstrapNotice } from '../common/logging.utils';
 
 export type ProviderStatus = 'approved' | 'risky' | 'chargeback';
 
@@ -16,6 +17,7 @@ export interface ProviderChallenge {
 
 @Injectable()
 export class PaymentProviderService {
+  private readonly logger = new Logger('PaymentProviderService');
   private readonly apiKey = process.env.STRIPE_API_KEY ?? '';
   private readonly baseUrl =
     process.env.PAYMENT_PROVIDER_BASE_URL ?? 'https://api.stripe.com/v1';
@@ -73,7 +75,8 @@ export class PaymentProviderService {
     this.retryQueue = await createQueue('provider-webhook-retry');
     const connection = this.retryQueue.opts.connection;
     if (!connection) {
-      console.warn(
+      logBootstrapNotice(
+        this.logger,
         'Redis queue connection is unavailable; provider webhook retries will be attempted inline.',
       );
       return;
@@ -150,7 +153,8 @@ export class PaymentProviderService {
       const queue = this.retryQueue!;
       if (!queue.opts?.connection) {
         const reason = err instanceof Error ? err.message : String(err);
-        console.warn(
+        logBootstrapNotice(
+          this.logger,
           `Redis queue connection is unavailable; provider webhook handler failed and will rely on upstream retry: ${reason}`,
         );
         throw err instanceof Error

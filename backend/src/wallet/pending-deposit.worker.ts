@@ -1,11 +1,16 @@
+import { Logger } from '@nestjs/common';
 import { WalletService } from './wallet.service';
 import { createQueue } from '../redis/queue';
 import { Worker } from 'bullmq';
+import { logBootstrapNotice } from '../common/logging.utils';
+
+const logger = new Logger('PendingDepositWorker');
 
 export async function startPendingDepositWorker(wallet: WalletService) {
   const queue = await createQueue('pending-deposit');
   if (!queue.opts.connection) {
-    console.warn(
+    logBootstrapNotice(
+      logger,
       'Redis queue connection is unavailable; pending-deposit jobs will be processed inline.',
     );
   } else {
@@ -20,7 +25,8 @@ export async function startPendingDepositWorker(wallet: WalletService) {
 
   const expireQueue = await createQueue('pending-deposit-expire');
   if (!expireQueue.opts.connection) {
-    console.warn(
+    logBootstrapNotice(
+      logger,
       'Redis queue connection is unavailable; falling back to an interval scheduler for pending-deposit expiry.',
     );
     const run = async () => {
@@ -28,7 +34,7 @@ export async function startPendingDepositWorker(wallet: WalletService) {
         await wallet.rejectExpiredPendingDeposits();
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        console.error(`Failed to reject expired pending deposits: ${message}`);
+        logger.error(`Failed to reject expired pending deposits: ${message}`);
       }
     };
     void run();

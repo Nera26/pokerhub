@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { Logger, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource, type DataSourceOptions } from 'typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -7,6 +7,7 @@ import { ThrottlerModule, ThrottlerModuleOptions } from '@nestjs/throttler';
 import helmet from 'helmet';
 import { APP_FILTER } from '@nestjs/core';
 import { randomUUID } from 'node:crypto';
+import { logBootstrapNotice } from './common/logging.utils';
 
 import {
   databaseConfig,
@@ -97,6 +98,7 @@ import { DefaultAvatarEntity } from './database/entities/default-avatar.entity';
 import { NavModule } from './nav/nav.module';
 
 let cachedDataSource: DataSource | null = null;
+const databaseLogger = new Logger('Database');
 import { ChartPaletteEntity } from './database/entities/chart-palette.entity';
 import { PerformanceThresholdEntity } from './database/entities/performance-threshold.entity';
 import { Transaction } from './wallet/transaction.entity';
@@ -169,8 +171,10 @@ const testModules =
             error instanceof Error && error.message
               ? error.message
               : String(error ?? 'unknown postgres error');
-          console.warn(
+          logBootstrapNotice(
+            databaseLogger,
             `Postgres connection failed (${message}); using in-memory pg-mem database instead.`,
+            error,
           );
           const { newDb } = await import('pg-mem');
           const db = newDb({ autoCreateForeignKeyIndices: true });

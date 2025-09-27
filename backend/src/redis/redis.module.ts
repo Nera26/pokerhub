@@ -1,12 +1,14 @@
 import { CacheModule, CacheModuleOptions } from '@nestjs/cache-manager';
-import { Global, Module } from '@nestjs/common';
+import { Global, Module, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { redisStore } from 'cache-manager-ioredis';
 import Redis from 'ioredis';
 import RedisMock from 'ioredis-mock';
 import type { CacheManagerStore } from 'cache-manager';
+import { logBootstrapError, logBootstrapNotice } from '../common/logging.utils';
 
 const REDIS_MOCK_FLAG = Symbol.for('pokerhub.redisMock');
+const logger = new Logger('RedisModule');
 
 function createRedisMock(): Redis {
   const mock = new (RedisMock as typeof Redis)();
@@ -32,7 +34,8 @@ function createRedisMock(): Redis {
           if ((process.env.NODE_ENV ?? 'development') === 'production') {
             throw new Error('Missing redis.url configuration');
           }
-          console.info(
+          logBootstrapNotice(
+            logger,
             'REDIS_URL is not configured; falling back to in-memory cache store for local development.',
           );
           process.env.REDIS_IN_MEMORY = '1';
@@ -47,7 +50,8 @@ function createRedisMock(): Redis {
         }
         const port = parsed.port ? Number(parsed.port) : 6379;
         if (typeof redisStore !== 'function') {
-          console.warn(
+          logBootstrapNotice(
+            logger,
             'cache-manager-ioredis redisStore export is unavailable; falling back to in-memory cache store.',
           );
           return {};
@@ -62,7 +66,8 @@ function createRedisMock(): Redis {
           await probe.connect();
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
-          console.warn(
+          logBootstrapNotice(
+            logger,
             `Redis cache probe failed (${message}); falling back to in-memory cache store.`,
           );
           try {
@@ -72,7 +77,10 @@ function createRedisMock(): Redis {
               disconnectError instanceof Error
                 ? disconnectError.message
                 : String(disconnectError);
-            console.warn(`Failed to clean up Redis cache probe: ${disconnectMessage}`);
+            logBootstrapError(
+              logger,
+              `Failed to clean up Redis cache probe: ${disconnectMessage}`,
+            );
           }
           return {};
         }
@@ -91,7 +99,10 @@ function createRedisMock(): Redis {
               disconnectError instanceof Error
                 ? disconnectError.message
                 : String(disconnectError);
-            console.warn(`Failed to clean up Redis cache probe: ${disconnectMessage}`);
+            logBootstrapError(
+              logger,
+              `Failed to clean up Redis cache probe: ${disconnectMessage}`,
+            );
           }
         }
       },
@@ -106,7 +117,8 @@ function createRedisMock(): Redis {
           if ((process.env.NODE_ENV ?? 'development') === 'production') {
             throw new Error('Missing redis.url configuration');
           }
-          console.info(
+          logBootstrapNotice(
+            logger,
             'REDIS_URL is not configured; using in-memory Redis mock for local development.',
           );
           return createRedisMock();
@@ -121,22 +133,30 @@ function createRedisMock(): Redis {
           process.env.REDIS_IN_MEMORY = '0';
           client.on('error', (err) => {
             const message = err instanceof Error ? err.message : String(err);
-            console.warn(
+            logBootstrapNotice(
+              logger,
               `Redis connection failed (${message}); continuing with best-effort in-memory fallbacks.`,
+              err,
             );
           });
           return client;
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
-          console.warn(
+          logBootstrapNotice(
+            logger,
             `Redis connection failed (${message}); using in-memory Redis mock for local development.`,
+            err,
           );
           try {
             await client.disconnect();
           } catch (disconnectError) {
             const disconnectMessage =
               disconnectError instanceof Error ? disconnectError.message : String(disconnectError);
-            console.warn(`Failed to clean up Redis connection: ${disconnectMessage}`);
+            logBootstrapError(
+              logger,
+              `Failed to clean up Redis connection: ${disconnectMessage}`,
+              disconnectError,
+            );
           }
           return createRedisMock();
         }
