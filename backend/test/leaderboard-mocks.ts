@@ -38,7 +38,11 @@ export class MockLeaderboardRepo {
 export class MockAnalytics {
   events: any[] = [];
 
-  async rangeStream(_stream: string, since: number): Promise<any[]> {
+  async rangeStream(
+    _stream: string,
+    since: number,
+    _eventName: string,
+  ): Promise<any[]> {
     return this.events.filter((e) => e.ts >= since);
   }
 
