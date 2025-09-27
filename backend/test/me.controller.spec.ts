@@ -13,6 +13,7 @@ import { User } from '../src/database/entities/user.entity';
 import { Table } from '../src/database/entities/table.entity';
 import { Seat } from '../src/database/entities/seat.entity';
 import { Tournament } from '../src/database/entities/tournament.entity';
+import { TournamentDetail } from '../src/tournament/tournament-detail.entity';
 import { AuthGuard } from '../src/auth/auth.guard';
 
 function createTestModule() {
@@ -21,12 +22,18 @@ function createTestModule() {
     imports: [
       TypeOrmModule.forRootAsync({
         useFactory: async () => {
-          dataSource = await createDataSource([User, Table, Seat, Tournament]);
+          dataSource = await createDataSource([
+            User,
+            Table,
+            Seat,
+            Tournament,
+            TournamentDetail,
+          ]);
           return dataSource.options;
         },
         dataSourceFactory: async () => dataSource,
       }),
-      TypeOrmModule.forFeature([User, Table, Seat, Tournament]),
+      TypeOrmModule.forFeature([User, Table, Seat, Tournament, TournamentDetail]),
     ],
     controllers: [MeController],
     providers: [UsersService, UserRepository],
@@ -72,7 +79,9 @@ describe('MeController', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    if (app) {
+      await app.close();
+    }
     await destroyDataSource(dataSource);
   });
 
