@@ -45,6 +45,75 @@ describe('Hand state machine', () => {
     expect(settlements).toContainEqual({ playerId: 'B', delta: -11 });
   });
 
+  it('folding to the last player settles committed chips', async () => {
+    const players = ['A', 'B', 'C'];
+    const engine = await GameEngine.create(players, config);
+    const contributions: Record<string, number> = Object.fromEntries(
+      players.map((id) => [id, 0]),
+    );
+    let previous = structuredClone(engine.getState());
+
+    const apply = (action: GameAction) => {
+      const next = engine.applyAction(action);
+      next.players.forEach((player, idx) => {
+        const diff = previous.players[idx].stack - player.stack;
+        if (diff > 0) {
+          contributions[player.id] += diff;
+        }
+      });
+      previous = structuredClone(next);
+      return next;
+    };
+
+    apply({ type: 'postBlind', playerId: 'A', amount: 1 });
+    apply({ type: 'postBlind', playerId: 'B', amount: 2 });
+    apply({ type: 'postBlind', playerId: 'C', amount: 2 });
+    apply({ type: 'next' });
+
+    apply({ type: 'bet', playerId: 'B', amount: 3 });
+    apply({ type: 'call', playerId: 'C' });
+    apply({ type: 'call', playerId: 'A' });
+    apply({ type: 'next' });
+    apply({ type: 'next' });
+
+    apply({ type: 'bet', playerId: 'B', amount: 6 });
+    apply({ type: 'call', playerId: 'C' });
+    apply({ type: 'fold', playerId: 'A' });
+    apply({ type: 'next' });
+    apply({ type: 'next' });
+
+    apply({ type: 'bet', playerId: 'B', amount: 10 });
+    const finalState = apply({ type: 'fold', playerId: 'C' });
+
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(finalState.phase).toBe('SETTLE');
+    expect(finalState.players.filter((p) => !p.folded)).toHaveLength(1);
+
+    const settlements = engine.getSettlements();
+    const totalContribution = Object.values(contributions).reduce(
+      (sum, value) => sum + value,
+      0,
+    );
+    const distributed = settlements.reduce(
+      (sum, entry) => sum + entry.delta + contributions[entry.playerId],
+      0,
+    );
+    const state = engine.getState();
+    const remainingPot =
+      state.sidePots.length > 0
+        ? state.sidePots.reduce((sum, pot) => sum + pot.amount, 0)
+        : state.pot;
+
+    settlements
+      .filter((entry) => entry.delta < 0)
+      .forEach((entry) => {
+        expect(-entry.delta).toBe(contributions[entry.playerId]);
+      });
+
+    expect(distributed + remainingPot).toBe(totalContribution);
+  });
+
   it('advances from blinds to betting', async () => {
     const engine = await GameEngine.create(['A', 'B'], config);
     engine.applyAction({ type: 'postBlind', playerId: 'A', amount: 1 });
