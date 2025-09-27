@@ -17,6 +17,7 @@ import {
   NotificationFiltersResponseSchema,
 } from '@shared/types';
 import type { Request } from 'express';
+import { API_CONTRACT_VERSION } from '@shared/constants';
 
 @ApiTags('notifications')
 @Controller('notifications')
@@ -33,7 +34,10 @@ export class NotificationsController {
       ...n,
       timestamp: n.timestamp.toISOString(),
     }));
-    return NotificationsResponseSchema.parse({ notifications: formatted });
+    return NotificationsResponseSchema.parse({
+      contractVersion: API_CONTRACT_VERSION,
+      notifications: formatted,
+    });
   }
 
   @Get('filters')
@@ -41,7 +45,10 @@ export class NotificationsController {
   @ApiResponse({ status: 200, description: 'Notification filter options' })
   async getFilters(@Req() req: Request) {
     const filters = await this.notifications.getFilterOptions(req.userId);
-    return NotificationFiltersResponseSchema.parse(filters);
+    return NotificationFiltersResponseSchema.parse({
+      contractVersion: API_CONTRACT_VERSION,
+      filters,
+    });
   }
 
   @Get('unread')
@@ -49,7 +56,7 @@ export class NotificationsController {
   @ApiResponse({ status: 200, description: 'Unread notifications count' })
   async getUnread(@Req() req: Request): Promise<UnreadCountResponse> {
     const count = await this.notifications.countUnread(req.userId);
-    return { count };
+    return { count, contractVersion: API_CONTRACT_VERSION };
   }
 
   @Post('mark-all')
@@ -57,7 +64,7 @@ export class NotificationsController {
   @ApiResponse({ status: 200, description: 'All notifications marked' })
   async markAll(@Req() req: Request): Promise<StatusResponse> {
     await this.notifications.markAllRead(req.userId);
-    return { status: 'ok' };
+    return { status: 'ok', contractVersion: API_CONTRACT_VERSION };
   }
 
   @Post(':id')
@@ -68,7 +75,7 @@ export class NotificationsController {
     @Req() req: Request,
   ): Promise<StatusResponse> {
     await this.notifications.markRead(id, req.userId);
-    return { status: 'ok' };
+    return { status: 'ok', contractVersion: API_CONTRACT_VERSION };
   }
 }
 

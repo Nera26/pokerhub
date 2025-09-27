@@ -46,6 +46,23 @@ export class WalletController {
     private readonly kyc: KycService,
   ) {}
 
+  private getRequestIp(req: Request): string {
+    const candidates = [req.ip, req.socket?.remoteAddress];
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string' && candidate.trim() !== '') {
+        return candidate;
+      }
+    }
+    return '0.0.0.0';
+  }
+
+  private resolveIp(preferred: string | undefined, fallback: string): string {
+    if (typeof preferred === 'string' && preferred.trim() !== '') {
+      return preferred;
+    }
+    return fallback;
+  }
+
   @Post(':id/reserve')
   @ApiOperation({ summary: 'Reserve funds' })
   @ApiResponse({ status: 200, description: 'Funds reserved' })
@@ -134,11 +151,12 @@ export class WalletController {
         typeof (body as any).idempotencyKey === 'string'
           ? (body as any).idempotencyKey
           : undefined;
+      const ip = this.getRequestIp(req);
       await this.wallet.withdraw(
         id,
         parsed.amount,
         parsed.deviceId,
-        req.ip,
+        ip,
         parsed.currency,
         idempotencyKey,
       );
@@ -172,7 +190,7 @@ export class WalletController {
         id,
         parsed.amount,
         parsed.deviceId,
-        req.ip,
+        this.getRequestIp(req),
         parsed.currency,
         idempotencyKey,
       );
@@ -198,11 +216,12 @@ export class WalletController {
   ) {
     try {
       const parsed = BankTransferDepositRequestSchema.parse(body);
+      const requestIp = this.getRequestIp(req);
       const res = await this.wallet.initiateBankTransfer(
         id,
         parsed.amount,
         parsed.deviceId,
-        parsed.ip ?? req.ip,
+        this.resolveIp(parsed.ip, requestIp),
         parsed.currency,
         parsed.idempotencyKey,
       );

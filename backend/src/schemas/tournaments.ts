@@ -26,7 +26,13 @@ export const AdminTournamentSchema = z.object({
   description: z.string().optional(),
   rebuy: z.boolean(),
   addon: z.boolean(),
-  status: z.enum(['scheduled', 'running', 'finished', 'cancelled', 'auto-start']),
+  status: z.enum([
+    'scheduled',
+    'running',
+    'finished',
+    'cancelled',
+    'auto-start',
+  ]),
 });
 
 export type AdminTournament = z.infer<typeof AdminTournamentSchema>;
@@ -67,18 +73,16 @@ export type TournamentFormatsResponse = z.infer<
   typeof TournamentFormatsResponseSchema
 >;
 
-export const TournamentFilterSchema = z.enum([
-  'active',
-  'upcoming',
-  'past',
-]);
+export const TournamentFilterSchema = z.enum(['active', 'upcoming', 'past']);
 export type TournamentFilter = z.infer<typeof TournamentFilterSchema>;
 
 export const TournamentFilterOptionSchema = z.object({
   label: z.string(),
   value: TournamentFilterSchema,
 });
-export type TournamentFilterOption = z.infer<typeof TournamentFilterOptionSchema>;
+export type TournamentFilterOption = z.infer<
+  typeof TournamentFilterOptionSchema
+>;
 
 export const TournamentFiltersResponseSchema = z.array(
   TournamentFilterOptionSchema,
@@ -129,9 +133,9 @@ export type CalculatePrizesResponse = z.infer<
 >;
 
 export const HotPatchLevelRequestSchema = z.object({
-  level: z.number().int().nonnegative(),
-  smallBlind: z.number().int().nonnegative(),
-  bigBlind: z.number().int().nonnegative(),
+  level: z.number().int().positive(),
+  smallBlind: z.number().int().positive(),
+  bigBlind: z.number().int().positive(),
 });
 export type HotPatchLevelRequest = z.infer<typeof HotPatchLevelRequestSchema>;
 
@@ -147,10 +151,7 @@ export type TournamentState = z.infer<typeof TournamentStateSchema>;
 export const TournamentStatusSchema = z.enum(['upcoming', 'running', 'past']);
 export type TournamentStatus = z.infer<typeof TournamentStatusSchema>;
 
-export const TournamentStateMap: Record<
-  TournamentState,
-  TournamentStatus
-> = {
+export const TournamentStateMap: Record<TournamentState, TournamentStatus> = {
   REG_OPEN: 'upcoming',
   RUNNING: 'running',
   PAUSED: 'running',

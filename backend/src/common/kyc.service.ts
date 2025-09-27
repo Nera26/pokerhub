@@ -394,16 +394,24 @@ export class KycService implements OnModuleInit {
         job.birthdate,
       );
       const apiUrl = this.config.get<string>('kyc.apiUrl');
+      if (!apiUrl || apiUrl.trim() === '') {
+        throw new Error('KYC provider API URL not configured');
+      }
       const apiKey = this.config.get<string>('kyc.apiKey');
+      if (!apiKey || apiKey.trim() === '') {
+        throw new Error('KYC provider API key not configured');
+      }
+      const normalizedUrl = apiUrl.trim();
+      const normalizedKey = apiKey.trim();
 
       const providerData = await fetchJson(
-        apiUrl,
+        normalizedUrl,
         z.object({ status: z.string() }).passthrough(),
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
+            Authorization: `Bearer ${normalizedKey}`,
           },
           body: JSON.stringify({
             id: record.id,

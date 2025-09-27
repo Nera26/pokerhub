@@ -20,16 +20,21 @@ export const NotificationFilterSchema = z.object({
 export type NotificationFilter = z.infer<typeof NotificationFilterSchema>;
 
 export const NotificationsResponseSchema = z.object({
+  contractVersion: z.string(),
   notifications: z.array(NotificationSchema),
 });
 export type NotificationsResponse = z.infer<typeof NotificationsResponseSchema>;
 
-export const NotificationFiltersResponseSchema = z.array(NotificationFilterSchema);
+export const NotificationFiltersResponseSchema = z.object({
+  contractVersion: z.string(),
+  filters: z.array(NotificationFilterSchema),
+});
 export type NotificationFiltersResponse = z.infer<
   typeof NotificationFiltersResponseSchema
 >;
 
 export const UnreadCountResponseSchema = z.object({
+  contractVersion: z.string(),
   count: z.number().int().nonnegative(),
 });
 export type UnreadCountResponse = z.infer<typeof UnreadCountResponseSchema>;

@@ -24,6 +24,7 @@ import {
 } from '@shared/wallet.schema';
 import { MessageResponseSchema } from '../schemas/auth';
 import { API_CONTRACT_VERSION } from '@shared/constants';
+import type { Multer } from 'multer';
 
 @ApiTags('admin')
 @UseGuards(AuthGuard, AdminGuard)
@@ -70,7 +71,7 @@ export class BankReconciliationController {
   })
   @ApiResponse({ status: 200, description: 'Reconciliation completed' })
   async reconcile(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: Multer['File'] | undefined,
     @Body() body: BankReconciliationRequest | any,
   ) {
     if (file) {

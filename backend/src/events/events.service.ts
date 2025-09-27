@@ -59,9 +59,13 @@ export class EventPublisher implements OnModuleDestroy {
     return null;
   }
 
-  private async persistFailedEvent(event: FailedEvent): Promise<void> {
+  private async persistFailedEvent<T extends EventName>(event: {
+    name: T;
+    payload: Events[T];
+  }): Promise<void> {
+    const record: FailedEvent = event;
     if (this.redis) {
-      const payload = this.serializeFailedEvent(event);
+      const payload = this.serializeFailedEvent(record);
       try {
         await this.redis.rpush(this.failedEventsKey, payload);
         return;
@@ -72,7 +76,7 @@ export class EventPublisher implements OnModuleDestroy {
         );
       }
     }
-    this.fallbackFailedEvents.push(event);
+    this.fallbackFailedEvents.push(record);
   }
 
   private async removePersistedEvent(raw: string): Promise<void> {
@@ -125,7 +129,7 @@ export class EventPublisher implements OnModuleDestroy {
     const message =
       lastError instanceof Error ? lastError.message : String(lastError);
     this.logger.error(`Failed to publish ${name}: ${message}`);
-    await this.persistFailedEvent({ name, payload: data as any });
+    await this.persistFailedEvent({ name, payload: data });
     throw new Error(
       `Failed to publish event ${name} after ${retries} attempts: ${message}`,
     );

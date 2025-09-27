@@ -38,6 +38,7 @@ import { TournamentDetailType } from './tournament-detail.entity';
 import { TournamentFormatRepository } from './tournament-format.repository';
 import { AdminTournamentFilterRepository } from './admin-tournament-filter.repository';
 import { DEFAULT_ADMIN_TOURNAMENT_FILTERS } from './admin-tournament-filter.defaults';
+import type { HotPatchLevelRequest } from '@shared/types';
 
 function isWalletService(value: unknown): value is WalletService {
   return (
@@ -456,9 +457,9 @@ export class TournamentService implements OnModuleInit {
    */
   async hotPatchLevel(
     tournamentId: string,
-    level: number,
-    smallBlind: number,
-    bigBlind: number,
+    level: HotPatchLevelRequest['level'],
+    smallBlind: HotPatchLevelRequest['smallBlind'],
+    bigBlind: HotPatchLevelRequest['bigBlind'],
   ): Promise<void> {
     let levels = this.patchedLevels.get(tournamentId);
     if (!levels) {

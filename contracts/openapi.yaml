@@ -5886,19 +5886,25 @@ components:
     NotificationsResponse:
       type: object
       properties:
+        contractVersion:
+          type: string
         notifications:
           type: array
           items:
             $ref: '#/components/schemas/Notification'
       required:
+        - contractVersion
         - notifications
     UnreadCountResponse:
       type: object
       properties:
+        contractVersion:
+          type: string
         count:
           type: integer
           minimum: 0
       required:
+        - contractVersion
         - count
     BroadcastType:
       type: string
