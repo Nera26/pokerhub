@@ -24,7 +24,13 @@ nightly and uploads the `load/metrics/latest` contents as artifacts.
 
 ## Local endpoints
 
-Ensure the following services are running (see `docker-compose.test.yml`):
+Ensure the following services are running (see `docker-compose.test.yml`). You can start them with:
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.test.yml up -d
+```
+
+Services expected:
 
 - Redis: `localhost:6379`
 - Backend API: `http://localhost:4000`

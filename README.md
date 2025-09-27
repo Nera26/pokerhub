@@ -32,7 +32,7 @@ and execute the test suite:
 ./scripts/quickstart.sh
 ```
 
-The script verifies required dependencies (`docker-compose` and `npm`), copies
+The script verifies required dependencies (`docker compose` and `npm`), copies
 `.env.example` to `.env` if needed, starts the containers, and runs `npm test`.
 
 If you prefer to perform the steps manually:
@@ -83,7 +83,7 @@ If you prefer to perform the steps manually:
 2. Start all services:
 
    ```bash
-   docker-compose up
+   docker compose up
    ```
 
    Override values in `.env` or extend `docker-compose.override.yml` for local tweaks.
