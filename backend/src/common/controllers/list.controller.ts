@@ -20,7 +20,7 @@ export function createListController<
   @ApiTags(metadata.tag)
   @Controller(metadata.path)
   class ListController {
-    constructor(@Inject(Service) private readonly service: S) {}
+    constructor(@Inject(Service) readonly service: S) {}
 
     @Get()
     @ApiOperation({ summary: metadata.summary })
