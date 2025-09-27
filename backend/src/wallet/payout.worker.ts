@@ -5,7 +5,9 @@ import { Worker } from 'bullmq';
 export async function startPayoutWorker(wallet: WalletService) {
   const queue = await createQueue('payout');
   if (!queue.opts.connection) {
-    console.warn('Skipping payout worker startup; Redis queue connection is unavailable.');
+    console.warn(
+      'Redis queue connection is unavailable; payout jobs will be processed inline.',
+    );
     return;
   }
   new Worker(

@@ -5,7 +5,9 @@ import { Worker } from 'bullmq';
 export async function startPendingDepositWorker(wallet: WalletService) {
   const queue = await createQueue('pending-deposit');
   if (!queue.opts.connection) {
-    console.warn('Skipping pending-deposit worker startup; Redis queue connection is unavailable.');
+    console.warn(
+      'Redis queue connection is unavailable; pending-deposit jobs will be processed inline.',
+    );
   } else {
     new Worker(
       'pending-deposit',
@@ -18,7 +20,21 @@ export async function startPendingDepositWorker(wallet: WalletService) {
 
   const expireQueue = await createQueue('pending-deposit-expire');
   if (!expireQueue.opts.connection) {
-    console.warn('Skipping pending-deposit expire worker; Redis queue connection is unavailable.');
+    console.warn(
+      'Redis queue connection is unavailable; falling back to an interval scheduler for pending-deposit expiry.',
+    );
+    const run = async () => {
+      try {
+        await wallet.rejectExpiredPendingDeposits();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`Failed to reject expired pending deposits: ${message}`);
+      }
+    };
+    void run();
+    setInterval(() => {
+      void run();
+    }, 60_000);
     return;
   }
 

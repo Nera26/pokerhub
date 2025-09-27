@@ -161,7 +161,16 @@ export class KycService implements OnModuleInit {
     });
     const queue = await this.getQueue();
     if (!queue.opts.connection) {
-      this.logger.warn('Skipping KYC verification enqueue; Redis queue connection is unavailable.');
+      this.logger.warn(
+        'Redis queue connection is unavailable; processing KYC verification inline.',
+      );
+      await this.validateJob({
+        verificationId: record.id,
+        accountId,
+        name,
+        birthdate,
+        ip,
+      });
       return record;
     }
     await queue.add('verify', {

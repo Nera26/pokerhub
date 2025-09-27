@@ -110,6 +110,10 @@ export class WalletService {
 
   protected async enqueueDisbursement(id: string, currency: string): Promise<void> {
     const queue = await this.getQueue();
+    if (!queue.opts?.connection) {
+      await this.requestDisbursement(id, currency);
+      return;
+    }
     await queue.add(
       'payout',
       { id, currency },
@@ -999,6 +1003,9 @@ async initiateBankTransfer(
         removeOnFail: true,
       },
     );
+    if (!queue.opts?.connection) {
+      await this.markActionRequiredIfPending(deposit.id);
+    }
 
     const res = {
       reference: deposit.reference,

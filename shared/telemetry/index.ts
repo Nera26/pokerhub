@@ -233,9 +233,32 @@ export async function setupTelemetry({
 export async function shutdownTelemetry() {
   if (!sdk) return;
 
-  await sdk.shutdown();
-  await meterProvider?.shutdown();
-  await loggerProvider?.shutdown();
+  const warn = (message: string, err: unknown) => {
+    console.warn(message, err);
+  };
+
+  try {
+    await sdk.shutdown();
+  } catch (err) {
+    warn('Telemetry trace shutdown failed; continuing exit.', err);
+  }
+
+  if (meterProvider) {
+    try {
+      await meterProvider.shutdown();
+    } catch (err) {
+      warn('Telemetry metrics shutdown failed; continuing exit.', err);
+    }
+  }
+
+  if (loggerProvider) {
+    try {
+      await loggerProvider.shutdown();
+    } catch (err) {
+      warn('Telemetry logger shutdown failed; continuing exit.', err);
+    }
+  }
+
   sdk = undefined;
   meterProvider = undefined;
   loggerProvider = undefined;
