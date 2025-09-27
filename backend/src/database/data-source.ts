@@ -32,10 +32,11 @@ import { TournamentDetail } from '../tournament/tournament-detail.entity';
 import { PerformanceThresholdEntity } from './entities/performance-threshold.entity';
 import { TournamentFormatEntity } from '../tournament/tournament-format.entity';
 import { AdminTournamentFilterEntity } from '../tournament/admin-tournament-filter.entity';
+import { resolveDatabaseUrl } from '../config/database-url';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
-  url: process.env.DATABASE_URL,
+  url: resolveDatabaseUrl(),
   entities: [
     User,
     Tournament,
