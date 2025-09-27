@@ -74,7 +74,7 @@ export class PaymentProviderService {
     const connection = this.retryQueue.opts.connection;
     if (!connection) {
       console.warn(
-        'Provider webhook retry queue disabled; Redis queue connection is unavailable.',
+        'Redis queue connection is unavailable; provider webhook retries will be attempted inline.',
       );
       return;
     }
@@ -102,6 +102,11 @@ export class PaymentProviderService {
   async drainQueue(): Promise<void> {
     await this.initQueue();
     const queue = this.retryQueue!;
+    if (!queue.opts?.connection) {
+      this.draining = Promise.resolve();
+      await this.draining;
+      return;
+    }
     const failed = await queue.getFailed();
     for (const job of failed) {
       if (job) {
@@ -141,8 +146,18 @@ export class PaymentProviderService {
     try {
       await handler(event);
       await this.redis.del(key);
-    } catch {
-      await this.retryQueue!.add(
+    } catch (err) {
+      const queue = this.retryQueue!;
+      if (!queue.opts?.connection) {
+        const reason = err instanceof Error ? err.message : String(err);
+        console.warn(
+          `Redis queue connection is unavailable; provider webhook handler failed and will rely on upstream retry: ${reason}`,
+        );
+        throw err instanceof Error
+          ? err
+          : new Error('Provider webhook handler failed without Redis retry queue');
+      }
+      await queue.add(
         'retry',
         { event, handlerKey },
         { jobId: event.idempotencyKey },

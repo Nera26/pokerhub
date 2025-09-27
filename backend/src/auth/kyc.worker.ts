@@ -5,7 +5,7 @@ import { createQueue } from '../redis/queue';
 export async function startKycWorker(kyc: KycService) {
   const queue = await createQueue('kyc');
   if (!queue.opts.connection) {
-    console.warn('Skipping KYC worker startup; Redis queue connection is unavailable.');
+    console.warn('Redis queue connection is unavailable; KYC jobs will be processed inline.');
     return;
   }
   const bull = await import('bullmq');

@@ -55,8 +55,14 @@ export async function scheduleRebuild(
 
   if (!queue.opts.connection) {
     console.warn(
-      'Skipping leaderboard rebuild scheduling; Redis queue connection is unavailable.',
+      'Redis queue connection is unavailable; running leaderboard rebuild inline without scheduling.',
     );
+    try {
+      await performRebuild(leaderboard, days, assertDurationMs);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`Inline leaderboard rebuild failed: ${message}`);
+    }
     return;
   }
 

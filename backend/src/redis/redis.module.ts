@@ -8,6 +8,18 @@ import type { CacheManagerStore } from 'cache-manager';
 
 const REDIS_MOCK_FLAG = Symbol.for('pokerhub.redisMock');
 
+function createRedisMock(): Redis {
+  const mock = new (RedisMock as typeof Redis)();
+  (mock as any)[REDIS_MOCK_FLAG] = true;
+  if ((mock as any).options) {
+    delete (mock as any).options.host;
+    delete (mock as any).options.port;
+    (mock as any).options.path = ':memory:';
+  }
+  process.env.REDIS_IN_MEMORY = '1';
+  return mock;
+}
+
 @Global()
 @Module({
   imports: [
@@ -17,7 +29,14 @@ const REDIS_MOCK_FLAG = Symbol.for('pokerhub.redisMock');
       useFactory: async (config: ConfigService): Promise<CacheModuleOptions> => {
         const url = config.get<string>('redis.url');
         if (!url) {
-          throw new Error('Missing redis.url configuration');
+          if ((process.env.NODE_ENV ?? 'development') === 'production') {
+            throw new Error('Missing redis.url configuration');
+          }
+          console.info(
+            'REDIS_URL is not configured; falling back to in-memory cache store for local development.',
+          );
+          process.env.REDIS_IN_MEMORY = '1';
+          return {};
         }
         let parsed: URL;
         try {
@@ -84,7 +103,13 @@ const REDIS_MOCK_FLAG = Symbol.for('pokerhub.redisMock');
       useFactory: async (config: ConfigService) => {
         const url = config.get<string>('redis.url');
         if (!url) {
-          throw new Error('Missing redis.url configuration');
+          if ((process.env.NODE_ENV ?? 'development') === 'production') {
+            throw new Error('Missing redis.url configuration');
+          }
+          console.info(
+            'REDIS_URL is not configured; using in-memory Redis mock for local development.',
+          );
+          return createRedisMock();
         }
         const client = new Redis(url, {
           lazyConnect: true,
@@ -113,15 +138,7 @@ const REDIS_MOCK_FLAG = Symbol.for('pokerhub.redisMock');
               disconnectError instanceof Error ? disconnectError.message : String(disconnectError);
             console.warn(`Failed to clean up Redis connection: ${disconnectMessage}`);
           }
-          const mock = new (RedisMock as typeof Redis)();
-          (mock as any)[REDIS_MOCK_FLAG] = true;
-          if ((mock as any).options) {
-            delete (mock as any).options.host;
-            delete (mock as any).options.port;
-            (mock as any).options.path = ':memory:';
-          }
-          process.env.REDIS_IN_MEMORY = '1';
-          return mock;
+          return createRedisMock();
         }
       },
       inject: [ConfigService],

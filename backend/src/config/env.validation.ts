@@ -4,7 +4,7 @@ export const validationSchema = Joi.object({
   DATABASE_URL: Joi.string()
     .uri()
     .default('postgres://postgres:postgres@localhost:15432/pokerhub'),
-  REDIS_URL: Joi.string().uri().default('redis://localhost:6379'),
+  REDIS_URL: Joi.string().uri().optional().allow(''),
   REDIS_HOST: Joi.string().optional(),
   REDIS_PORT: Joi.number().integer().optional(),
   RABBITMQ_URL: Joi.string().uri().default('amqp://localhost:5672'),

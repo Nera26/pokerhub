@@ -1,6 +1,8 @@
 import type { Queue } from 'bullmq';
 import Redis from 'ioredis';
 
+let loggedInMemoryQueue = false;
+
 class InMemoryQueue {
   public readonly opts = { connection: undefined } as {
     connection?: Redis | Record<string, unknown>;
@@ -13,6 +15,10 @@ class InMemoryQueue {
       `Queue "${this.name}" is disabled because Redis is unavailable; job "${jobName}" will not be enqueued.`,
     );
     return { id: `${Date.now()}`, name: jobName, data };
+  }
+
+  async getJob(_id: string): Promise<undefined> {
+    return undefined;
   }
 
   async getFailed(): Promise<unknown[]> {
@@ -30,7 +36,16 @@ class InMemoryQueue {
  */
 export async function createQueue(name: string): Promise<Queue> {
   const bull = await import('bullmq');
-  if (process.env.REDIS_IN_MEMORY === '1') {
+  const nodeEnv = process.env.NODE_ENV ?? 'development';
+  if (
+    process.env.REDIS_IN_MEMORY === '1' ||
+    (!process.env.REDIS_URL && !process.env.REDIS_HOST && !process.env.REDIS_PORT && nodeEnv !== 'production')
+  ) {
+    process.env.REDIS_IN_MEMORY = '1';
+    if (!loggedInMemoryQueue) {
+      console.info(`Redis queues are disabled; using in-memory queue stub for "${name}".`);
+      loggedInMemoryQueue = true;
+    }
     return new InMemoryQueue(name) as unknown as Queue;
   }
 
@@ -40,6 +55,7 @@ export async function createQueue(name: string): Promise<Queue> {
   const connection = new Redis(url, {
     lazyConnect: true,
     connectTimeout: 500,
+    maxRetriesPerRequest: null,
     retryStrategy: () => null,
   });
 
