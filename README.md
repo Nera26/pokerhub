@@ -101,6 +101,30 @@ If you prefer to perform the steps manually:
   >
   > After the plugin is installed, rerun `docker compose up -d` (note the space).
 
+#### Cloud Storage Emulator Troubleshooting
+
+If the `storage` container repeatedly reports an `unhealthy` status, rebuild the
+service to make sure the fake GCS binary and the `curl` helper used by the
+health check are installed:
+
+```bash
+docker compose build storage
+docker compose up -d storage
+```
+
+Verify the health check manually to confirm the emulator is serving HTTP (the
+Compose configuration expects plain HTTP on port `4443`):
+
+```bash
+docker compose exec storage curl -v http://localhost:4443/storage/v1/b?project=test
+```
+
+The command should return JSON (an empty bucket list is fine). If it fails,
+ensure the service is still started with the default arguments from
+`docker-compose.yml` (`-scheme http -backend memory -port 4443`) so the health
+probe can succeed. Keep `GCS_EMULATOR_HOST=http://storage:4443` in your `.env`
+so the backend continues to talk to the emulator once it is healthy.
+
 ### Subtree Sync Scripts
 
 Use the provided npm scripts to synchronize the frontend and backend subtrees with their upstream repositories.
