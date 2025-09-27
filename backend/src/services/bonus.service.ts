@@ -184,10 +184,11 @@ export class BonusService {
 
   async create(payload: BonusCreateRequest): Promise<Bonus> {
     const parsed = BonusCreateRequestSchema.parse(payload);
+    const normalized = toBonusEntityInput(parsed);
     const entity = this.bonuses.create({
-      ...toBonusEntityInput(parsed),
-      claimsTotal: parsed.claimsTotal ?? 0,
-      claimsWeek: parsed.claimsWeek ?? 0,
+      ...normalized,
+      claimsTotal: normalized.claimsTotal ?? 0,
+      claimsWeek: normalized.claimsWeek ?? 0,
     });
     const saved = await this.bonuses.save(entity);
     return BonusSchema.parse(mapBonusEntity(saved));

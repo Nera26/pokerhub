@@ -3,6 +3,7 @@ import { MessageResponseSchema as AuthMessageResponseSchema } from '../backend/s
 import type { MessageResponse as AuthMessageResponse } from '../backend/src/schemas/auth';
 import { SidePotSchema } from './schemas/sidePot';
 import { GameTypeSchema } from '../backend/src/schemas/game-types';
+import type { BonusCreateRequest } from '../backend/src/schemas/bonus';
 import {
   GameHistoryEntrySchema,
   TournamentHistoryEntrySchema,
@@ -350,9 +351,10 @@ export type {
   Bonus,
   BonusesResponse,
   BonusStatsResponse,
-  BonusCreateRequest,
   BonusUpdateRequest,
 } from '../backend/src/schemas/bonus';
+
+export type { BonusCreateRequest } from '../backend/src/schemas/bonus';
 
 export type BonusUpdatePayload = BonusCreateRequest;
 
@@ -416,6 +418,7 @@ export {
   TournamentSimulateResponseSchema,
   CalculatePrizesRequestSchema,
   CalculatePrizesResponseSchema,
+  HotPatchLevelRequestSchema,
   TournamentScheduleRequestSchema,
   TournamentStateSchema,
   TournamentStatusSchema,
@@ -438,6 +441,7 @@ export type {
   TournamentSimulateResponse,
   CalculatePrizesRequest,
   CalculatePrizesResponse,
+  HotPatchLevelRequest,
   TournamentScheduleRequest,
   TournamentState,
   TournamentStatus,

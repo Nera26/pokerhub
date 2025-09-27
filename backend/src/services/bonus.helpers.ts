@@ -32,11 +32,16 @@ type BonusBaseFields = Pick<
   | 'status'
 >;
 
-function nullableNumber(value: number | null | undefined): number | null {
+function nullableNumber(value: unknown): number | null | undefined {
   if (typeof value === 'number') {
     return Number.isFinite(value) ? value : null;
   }
-  return null;
+
+  if (value === null) {
+    return null;
+  }
+
+  return undefined;
 }
 
 function mapBonusBaseFields(source: BonusBaseSource): BonusBaseFields {
@@ -81,10 +86,20 @@ export function toBonusEntityInput(
   if ('eligibility' in payload) prepared.eligibility = payload.eligibility;
   if ('status' in payload) prepared.status = payload.status;
   if ('claimsTotal' in payload) {
-    prepared.claimsTotal = nullableNumber(payload.claimsTotal);
+    const claimsTotal = nullableNumber(
+      (payload as { claimsTotal?: unknown }).claimsTotal,
+    );
+    if (claimsTotal !== undefined) {
+      prepared.claimsTotal = claimsTotal;
+    }
   }
   if ('claimsWeek' in payload) {
-    prepared.claimsWeek = nullableNumber(payload.claimsWeek);
+    const claimsWeek = nullableNumber(
+      (payload as { claimsWeek?: unknown }).claimsWeek,
+    );
+    if (claimsWeek !== undefined) {
+      prepared.claimsWeek = claimsWeek;
+    }
   }
 
   return prepared;

@@ -26,14 +26,23 @@ export const BonusDefaultsRequestSchema = BonusDefaultsResponseSchema;
 
 export type BonusDefaultsRequest = z.infer<typeof BonusDefaultsRequestSchema>;
 
+const NullableClaimSchema = z
+  .number()
+  .int()
+  .nonnegative()
+  .nullable()
+  .optional();
+
 const BonusBaseSchema = BonusDefaultsResponseSchema.extend({
   description: z.string(),
+  claimsTotal: NullableClaimSchema,
+  claimsWeek: NullableClaimSchema,
 });
 
 export const BonusSchema = BonusBaseSchema.extend({
   id: z.number().int(),
-  claimsTotal: z.number().int(),
-  claimsWeek: z.number().int(),
+  claimsTotal: z.number().int().nonnegative(),
+  claimsWeek: z.number().int().nonnegative(),
 });
 
 export type Bonus = z.infer<typeof BonusSchema>;
