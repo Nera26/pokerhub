@@ -25,6 +25,7 @@ import {
 import { MessageResponseSchema } from '../schemas/auth';
 import { API_CONTRACT_VERSION } from '@shared/constants';
 import type { Express } from 'express';
+import 'multer';
 
 @ApiTags('admin')
 @UseGuards(AuthGuard, AdminGuard)
