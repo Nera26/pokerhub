@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AnalyticsService } from './analytics.service';
 import { EtlService } from './etl.service';
@@ -20,7 +20,7 @@ import { AuditLogTypeClassDefault } from './audit-log-type-class-default.entity'
   imports: [
     ConfigModule,
     RedisModule,
-    WalletModule,
+    forwardRef(() => WalletModule),
     AuthModule,
     StorageModule,
     TypeOrmModule.forFeature([

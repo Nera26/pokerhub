@@ -6,13 +6,14 @@ export default registerAs('logging', () => {
   const lokiUrl = process.env.LOKI_URL;
 
   if (!elasticUrl && !lokiUrl) {
-    throw new Error('ELASTIC_URL or LOKI_URL must be set');
-  }
-  if (!elasticUrl) {
-    console.warn('ELASTIC_URL is not set; Elasticsearch logging disabled');
-  }
-  if (!lokiUrl) {
-    console.warn('LOKI_URL is not set; Loki logging disabled');
+    console.warn('No ELASTIC_URL or LOKI_URL configured; defaulting to console logging.');
+  } else {
+    if (!elasticUrl) {
+      console.warn('ELASTIC_URL is not set; Elasticsearch logging disabled');
+    }
+    if (!lokiUrl) {
+      console.warn('LOKI_URL is not set; Loki logging disabled');
+    }
   }
 
   return {

@@ -1,4 +1,4 @@
-import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Producer } from 'kafkajs';
 import { createKafkaProducer } from '../common/kafka';
@@ -34,7 +34,7 @@ export class EtlService {
     @Inject(forwardRef(() => AnalyticsService))
     private readonly analytics: AnalyticsService,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
-    producer?: Producer,
+    @Optional() producer?: Producer,
   ) {
     this.producer = producer ?? createKafkaProducer(config);
     const { ajv, validators } = createValidators();

@@ -16,22 +16,29 @@ import { RuntimeNodeInstrumentation } from '@opentelemetry/instrumentation-runti
 
 export { telemetryMiddleware, shutdownTelemetry };
 
-export function setupTelemetry(): Promise<void> {
-  return setupSharedTelemetry({
-    serviceName: process.env.OTEL_SERVICE_NAME ?? 'pokerhub-api',
-    meterName: 'backend',
-    instrumentations: [
-      new HttpInstrumentation(),
-      new ExpressInstrumentation(),
-      new IORedisInstrumentation(),
-      new PgInstrumentation(),
-      new AmqplibInstrumentation(),
-      new KafkaJsInstrumentation(),
-      new SocketIoInstrumentation(),
-      new PinoInstrumentation(),
-      new NestInstrumentation(),
-      new RuntimeNodeInstrumentation(),
-    ],
-    enableHttpMetrics: true,
-  });
+export async function setupTelemetry(): Promise<void> {
+  try {
+    await setupSharedTelemetry({
+      serviceName: process.env.OTEL_SERVICE_NAME ?? 'pokerhub-api',
+      meterName: 'backend',
+      instrumentations: [
+        new HttpInstrumentation(),
+        new ExpressInstrumentation(),
+        new IORedisInstrumentation(),
+        new PgInstrumentation(),
+        new AmqplibInstrumentation(),
+        new KafkaJsInstrumentation(),
+        new SocketIoInstrumentation(),
+        new PinoInstrumentation(),
+        new NestInstrumentation(),
+        new RuntimeNodeInstrumentation(),
+      ],
+      enableHttpMetrics: true,
+    });
+  } catch (err) {
+    // OpenTelemetry metrics have breaking changes across versions. Rather than
+    // crash the entire application when a local dev install mismatches the
+    // prebuilt dist bundle, fall back to disabling telemetry.
+    console.warn('Telemetry setup failed; continuing without instrumentation.', err);
+  }
 }

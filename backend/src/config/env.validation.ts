@@ -1,15 +1,17 @@
 import * as Joi from 'joi';
 
 export const validationSchema = Joi.object({
-  DATABASE_URL: Joi.string().uri().required(),
-  REDIS_URL: Joi.string().uri().required(),
+  DATABASE_URL: Joi.string()
+    .uri()
+    .default('postgres://postgres:postgres@localhost:15432/pokerhub'),
+  REDIS_URL: Joi.string().uri().default('redis://localhost:6379'),
   REDIS_HOST: Joi.string().optional(),
   REDIS_PORT: Joi.number().integer().optional(),
-  RABBITMQ_URL: Joi.string().uri().required(),
-  RABBITMQ_QUEUE: Joi.string().optional(),
-  GCP_PROJECT: Joi.string().required(),
-  GCS_BUCKET: Joi.string().required(),
-  GOOGLE_APPLICATION_CREDENTIALS: Joi.string().required(),
+  RABBITMQ_URL: Joi.string().uri().default('amqp://localhost:5672'),
+  RABBITMQ_QUEUE: Joi.string().default('tournaments'),
+  GCP_PROJECT: Joi.string().default('pokerhub-dev'),
+  GCS_BUCKET: Joi.string().default('pokerhub-dev'),
+  GOOGLE_APPLICATION_CREDENTIALS: Joi.string().allow('').default(''),
   GCS_EMULATOR_HOST: Joi.string().uri().optional(),
   CLICKHOUSE_URL: Joi.string().uri().optional(),
   KAFKA_BROKERS: Joi.string().optional(),

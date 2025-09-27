@@ -32,10 +32,10 @@ export class EventPublisher implements OnModuleDestroy {
 
   constructor(
     config: ConfigService,
-    producer: Producer = createKafkaProducer(config),
+    @Optional() producer?: Producer,
     @Optional() @Inject('REDIS_CLIENT') private readonly redis?: Redis,
   ) {
-    this.producer = producer;
+    this.producer = producer ?? createKafkaProducer(config);
     if (!this.redis) {
       this.logger.warn(
         'Redis client not available; failed events will not persist across restarts.',

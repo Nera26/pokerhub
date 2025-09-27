@@ -12,6 +12,8 @@ import type { GameAction, InternalGameState } from './engine';
 import type Redis from 'ioredis';
 import { createObservableGaugeSafe } from './metrics.util';
 
+const REDIS_MOCK_FLAG = Symbol.for('pokerhub.redisMock');
+
 class WorkerHost extends EventEmitter {
   private readonly worker: Worker;
   private seq = 0;
@@ -188,7 +190,8 @@ class RoomWorker extends EventEmitter {
     playerIds?: string[],
   ) {
     super();
-    const extra = redis ? { redisOptions: redis.options } : {};
+    const isRealRedis = redis ? !(redis as any)[REDIS_MOCK_FLAG] : false;
+    const extra = isRealRedis && redis?.options ? { redisOptions: redis.options } : {};
     this.primary = new WorkerHost(tableId, './room.worker.ts', playerIds, extra);
     this.follower = new WorkerHost(tableId, './room.follower.ts', playerIds, extra);
     this.primary.on('state', (s) => this.emit('state', s));
