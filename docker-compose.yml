@@ -35,7 +35,9 @@ services:
         condition: service_healthy
 
   db:
-    image: postgres:15
+    build:
+      context: ./infra/db
+    image: pokerhub-db
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
