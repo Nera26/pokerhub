@@ -122,7 +122,7 @@ describe('queue integration', () => {
     expect(createQueueMock).toHaveBeenCalledWith('leaderboard-rebuild');
     expect(add).toHaveBeenCalledWith(
       'rebuild',
-      {},
+      { days: 30 },
       {
         jobId: 'leaderboard-rebuild',
         repeat: { cron: expect.any(String) },
