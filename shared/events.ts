@@ -130,7 +130,20 @@ const WalletDepositConfirmedEvent = z.object({
 
 const AdminDepositPendingEvent = z.object({
   depositId: z.string().uuid(),
-  jobId: z.string(),
+  jobId: z.string().optional(),
+  userId: z.string().uuid(),
+  amount: z.number(),
+  currency: z.string().length(3),
+  expectedBalance: z.number().optional(),
+  confirmDeposit: z.any().optional(),
+  confirmedEvent: z
+    .object({
+      accountId: z.string().uuid(),
+      depositId: z.string().uuid(),
+      amount: z.number(),
+      currency: z.string().length(3),
+    })
+    .optional(),
 });
 
 const AdminDepositRejectedEvent = z.object({

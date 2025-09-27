@@ -123,10 +123,17 @@ describe('Pending deposits', () => {
     expect(updated.actionRequired).toBe(true);
     const listed = await ctx.service.listPendingDeposits();
     expect(listed.find((d) => d.id === dep.id)).toBeDefined();
-    expect(ctx.events.emit as jest.Mock).toHaveBeenCalledWith('admin.deposit.pending', {
-      depositId: dep.id,
-      jobId: 'job-123',
-    });
+    expect(ctx.events.emit as jest.Mock).toHaveBeenCalledWith(
+      'admin.deposit.pending',
+      expect.objectContaining({
+        depositId: dep.id,
+        jobId: 'job-123',
+        userId,
+        amount: dep.amount,
+        currency: dep.currency,
+        expectedBalance: dep.amount,
+      }),
+    );
   });
 
   it('cancels deposit and prevents action required/listing', async () => {
@@ -175,10 +182,17 @@ describe('Pending deposits', () => {
     await ctx.service.markActionRequiredIfPending(deposit.id, deposit.id);
     jobs.delete(deposit.id);
 
-    expect(ctx.events.emit as jest.Mock).toHaveBeenCalledWith('admin.deposit.pending', {
-      depositId: deposit.id,
-      jobId: deposit.id,
-    });
+    expect(ctx.events.emit as jest.Mock).toHaveBeenCalledWith(
+      'admin.deposit.pending',
+      expect.objectContaining({
+        depositId: deposit.id,
+        jobId: deposit.id,
+        userId,
+        amount: deposit.amount,
+        currency: deposit.currency,
+        expectedBalance: deposit.amount,
+      }),
+    );
 
     const controller = new AdminDepositsController(ctx.service);
     await controller.confirm(deposit.id, { userId: 'admin' } as any);
