@@ -160,7 +160,7 @@ export class LeaderboardService implements OnModuleInit {
     const { days = 30, minSessions } = options;
     const since = Date.now() - days * DAY_MS;
     const events = await this.analytics.rangeStream(
-      'analytics:game',
+      'analytics:game.event',
       since,
       'game.event',
     );

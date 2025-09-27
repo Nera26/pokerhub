@@ -24,7 +24,11 @@ import { Hand } from '../database/entities/hand.entity';
 import { GameState as GameStateEntity } from '../database/entities/game-state.entity';
 
 import { GameActionSchema, type GameAction as WireGameAction } from '@shared/schemas/game';
-import { GameStateSchema, type GameState as WireGameState } from '@shared/types';
+import {
+  GameStateSchema,
+  type GameState as WireGameState,
+  type ChatMessage,
+} from '@shared/types';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
 import {
   metrics,
@@ -71,6 +75,7 @@ interface ServerToClientEvents {
   proof: (payload: ProofPayload) => void;
   'server:Error': (message: string) => void;
   'server:Clock': (remaining: number) => void;
+  'chat:message': (payload: ChatMessage) => void;
 }
 
 interface ClientToServerEvents {
@@ -137,6 +142,90 @@ function getGlobalLimit(): number {
   }
   const parsed = Number(raw);
   return Number.isNaN(parsed) ? DEFAULT_GLOBAL_LIMIT : parsed;
+}
+
+function isInternalGameState(value: unknown): value is InternalGameState {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const state = value as Partial<InternalGameState> & {
+    players?: unknown;
+    communityCards?: unknown;
+    sidePots?: unknown;
+    deck?: unknown;
+  };
+  if (
+    typeof state.phase !== 'string' ||
+    typeof state.street !== 'string' ||
+    typeof state.pot !== 'number' ||
+    typeof state.currentBet !== 'number'
+  ) {
+    return false;
+  }
+  if (
+    !Array.isArray(state.players) ||
+    !state.players.every(
+      (player) =>
+        typeof player === 'object' &&
+        player !== null &&
+        typeof (player as { id?: unknown }).id === 'string' &&
+        typeof (player as { stack?: unknown }).stack === 'number' &&
+        typeof (player as { folded?: unknown }).folded === 'boolean' &&
+        typeof (player as { bet?: unknown }).bet === 'number' &&
+        typeof (player as { allIn?: unknown }).allIn === 'boolean' &&
+        (!('holeCards' in (player as Record<string, unknown>)) ||
+          (Array.isArray((player as Record<string, unknown>).holeCards) &&
+            (player as { holeCards?: unknown[] }).holeCards?.every(
+              (card) => typeof card === 'number',
+            )))
+    )
+  ) {
+    return false;
+  }
+  if (
+    !Array.isArray(state.communityCards) ||
+    !state.communityCards.every((card) => typeof card === 'number')
+  ) {
+    return false;
+  }
+  if (!Array.isArray(state.deck) || !state.deck.every((card) => typeof card === 'number')) {
+    return false;
+  }
+  if (
+    !Array.isArray(state.sidePots) ||
+    !state.sidePots.every((pot) => {
+      if (typeof pot !== 'object' || pot === null) {
+        return false;
+      }
+      const typed = pot as {
+        amount?: unknown;
+        players?: unknown;
+        contributions?: unknown;
+      };
+      if (typeof typed.amount !== 'number') {
+        return false;
+      }
+      if (
+        !Array.isArray(typed.players) ||
+        !typed.players.every((id) => typeof id === 'string')
+      ) {
+        return false;
+      }
+      if (
+        typeof typed.contributions !== 'object' ||
+        typed.contributions === null ||
+        !Object.values(typed.contributions as Record<string, unknown>).every(
+          (value) => typeof value === 'number',
+        )
+      ) {
+        return false;
+      }
+      return true;
+    })
+  ) {
+    return false;
+  }
+  return true;
 }
 
 @WebSocketGateway({ namespace: 'game' })
@@ -515,9 +604,14 @@ export class GameGateway
   private async restoreState() {
     const snaps = await this.gameStates.find({ order: { tick: 'DESC' } });
     for (const snap of snaps) {
-      if (!this.states.has(snap.tableId)) {
-        this.states.set(snap.tableId, snap.state as InternalGameState);
+      if (this.states.has(snap.tableId)) {
+        continue;
+      }
+      if (isInternalGameState(snap.state)) {
+        this.states.set(snap.tableId, snap.state);
         if (snap.tick > this.tick) this.tick = snap.tick;
+      } else {
+        this.logger.warn(`Skipping invalid snapshot for table ${snap.tableId}`);
       }
     }
 
@@ -532,10 +626,18 @@ export class GameGateway
         const raw = res[idx]?.[1];
         if (typeof raw === 'string') {
           try {
-            const state = JSON.parse(raw) as InternalGameState;
+            const parsed = JSON.parse(raw) as unknown;
             const tableId = key.substring(this.stateKeyPrefix.length + 1);
-            this.states.set(tableId, state);
-          } catch {}
+            if (isInternalGameState(parsed)) {
+              this.states.set(tableId, parsed);
+            } else {
+              this.logger.warn(
+                `Discarding invalid cached state for table ${tableId}`,
+              );
+            }
+          } catch (err) {
+            this.logger.warn('Failed to restore cached state', err as Error);
+          }
         }
       });
     }
@@ -631,8 +733,13 @@ export class GameGateway
       throw err;
     }
 
+    const actingPlayerId =
+      'playerId' in parsed && parsed.playerId ? parsed.playerId : undefined;
     const expectedPlayerId = this.socketPlayers.get(client.id);
-    if (!expectedPlayerId || parsed.playerId !== expectedPlayerId) {
+    if (
+      actingPlayerId &&
+      (!expectedPlayerId || actingPlayerId !== expectedPlayerId)
+    ) {
       void this.enqueue(client, 'server:Error', ['player mismatch']);
       void this.enqueue(client, 'action:ack', [
         { actionId } satisfies AckPayload,
@@ -657,8 +764,8 @@ export class GameGateway
     const now = Date.now();
     await this.redis.hset(this.actionHashKey, hash, now.toString());
 
-    if ('playerId' in parsed && parsed.playerId) {
-      this.clock.clearTimer(parsed.playerId, tableId);
+    if (actingPlayerId) {
+      this.clock.clearTimer(actingPlayerId, tableId);
     }
     const { tableId: parsedTableId, ...wire } = parsed;
     tableId = parsedTableId;
@@ -718,11 +825,13 @@ export class GameGateway
       void this.collusion.record(userId, deviceId, ip);
     }
 
-    const safe = sanitize(state, parsed.playerId);
+    const safe = sanitize(state, actingPlayerId);
     const tick = ++this.tick;
-    const basePayload = { version: EVENT_SCHEMA_VERSION, tick } as const;
-    const playerPayload = { ...basePayload, ...safe };
-    GameStateSchema.parse(playerPayload);
+    const playerPayload = GameStateSchema.parse({
+      ...safe,
+      tick,
+      version: EVENT_SCHEMA_VERSION,
+    });
     void this.enqueue(client, 'state', [playerPayload], true);
     this.recordStateLatency(start, tableId);
 
@@ -745,12 +854,15 @@ export class GameGateway
     if (this.server?.of) {
       // Send sanitized state to spectators as well
       const publicState = engine.getPublicState();
-      const spectatorPayload = {
-        ...basePayload,
+      const spectatorPayload = GameStateSchema.parse({
         ...sanitize(publicState),
-      };
-      GameStateSchema.parse(spectatorPayload);
-      this.server.of('/spectate').to(tableId).emit('state', spectatorPayload);
+        tick,
+        version: EVENT_SCHEMA_VERSION,
+      });
+      this.server
+        .of('/spectate')
+        .to(tableId)
+        .emit('state', spectatorPayload);
     }
 
     void this.enqueue(client, 'action:ack', [
@@ -758,12 +870,11 @@ export class GameGateway
     ]);
     this.recordAckLatency(start, tableId);
 
-    if ('playerId' in parsed && parsed.playerId && state.phase !== 'NEXT_HAND') {
-      const { playerId } = parsed;
+    if (actingPlayerId && state.phase !== 'NEXT_HAND') {
       this.clock.setTimer(
-        playerId,
+        actingPlayerId,
         tableId,
-        () => void this.handleTimeout(playerId, tableId),
+        () => void this.handleTimeout(actingPlayerId, tableId),
       );
     }
 
@@ -945,12 +1056,17 @@ export class GameGateway
         if (typeof first === 'object' && first !== null) {
           const enriched: Record<string, unknown> = {
             ...(first as Record<string, unknown>),
-            version: EVENT_SCHEMA_VERSION,
           };
+          if (!('version' in enriched)) {
+            enriched.version = EVENT_SCHEMA_VERSION;
+          }
           if (critical) {
             enriched.frameId = randomUUID();
           }
-          const finalArgs = [enriched, ...rest] as ServerEventParams<K>;
+          const finalArgs = [
+            enriched,
+            ...rest,
+          ] as unknown as ServerEventParams<K>;
           client.emit(event, ...finalArgs);
           if (critical) {
             this.trackFrame(client, event, finalArgs);

@@ -4,7 +4,8 @@ import type { Producer } from 'kafkajs';
 import { createKafkaProducer } from '../common/kafka';
 import Redis from 'ioredis';
 import Ajv, { ValidateFunction } from 'ajv';
-import { EventName } from '@shared/events';
+import { EventSchemas, Events, EventName } from '@shared/events';
+import type { ZodType } from 'zod';
 import { createValidators } from './validator';
 import { AnalyticsService } from './analytics.service';
 
@@ -22,7 +23,7 @@ export class EtlService {
     antiCheat: 'auth',
   };
   private readonly ajv: Ajv;
-  private readonly validators: Record<EventName, ValidateFunction>;
+  private readonly validators: Record<EventName, ValidateFunction | undefined>;
 
   constructor(
     config: ConfigService,
@@ -37,9 +38,12 @@ export class EtlService {
     this.validators = validators;
   }
 
-  async runEtl(event: string, data: Record<string, unknown>): Promise<void> {
-    const validate = this.validators[event as EventName];
-    if (validate && !validate(data)) {
+  async runEtl<E extends EventName>(event: E, data: Events[E]): Promise<void> {
+    const schema = EventSchemas[event] as ZodType<Events[E]>;
+    const payload = schema.parse(data);
+    const validate = this.validators[event];
+    const asRecord = payload as Record<string, unknown>;
+    if (validate && !validate(asRecord)) {
       const msg = this.ajv.errorsText(validate.errors);
       this.logger.warn(`Invalid event ${event}: ${msg}`);
       return;
@@ -52,17 +56,24 @@ export class EtlService {
     await Promise.all([
       this.producer.send({
         topic,
-        messages: [{ value: JSON.stringify({ event, data }) }],
+        messages: [{ value: JSON.stringify({ event, data: payload }) }],
       }),
-      this.analytics.ingest(event.replace('.', '_'), data),
-      this.analytics.archive(event, data),
+      this.analytics.ingest(event.replace('.', '_'), payload),
+      this.analytics.archive(event, asRecord),
     ]);
   }
 
   private async processEntry(event: string, fields: string[]) {
     try {
-      const data = JSON.parse(fields[1] as string) as Record<string, unknown>;
-      await this.runEtl(event, data);
+      const raw = JSON.parse(fields[1] as string) as unknown;
+      if (!(event in EventSchemas)) {
+        this.logger.warn(`Unknown event ${event} in analytics stream`);
+        return;
+      }
+      const typed = event as EventName;
+      const schema = EventSchemas[typed] as ZodType<Events[EventName]>;
+      const payload = schema.parse(raw) as Events[typeof typed];
+      await this.runEtl(typed, payload);
     } catch (err) {
       this.logger.error(err);
     }
