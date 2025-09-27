@@ -9,6 +9,9 @@ import { EventPublisher } from '../src/events/events.service';
 import { PaymentProviderService } from '../src/wallet/payment-provider.service';
 import { KycService } from '../src/wallet/kyc.service';
 import { SettlementJournal } from '../src/wallet/settlement-journal.entity';
+import { PendingDeposit } from '../src/wallet/pending-deposit.entity';
+import { SettlementService } from '../src/wallet/settlement.service';
+import { ConfigService } from '@nestjs/config';
 import { createInMemoryRedis } from './utils/mock-redis';
 
 jest.setTimeout(20000);
@@ -52,6 +55,7 @@ describe('WalletService reconciliation', () => {
     const journalRepo = dataSource.getRepository(JournalEntry);
     const disbRepo = dataSource.getRepository(Disbursement);
     const settleRepo = dataSource.getRepository(SettlementJournal);
+    const pendingRepo = dataSource.getRepository(PendingDeposit);
     const { redis } = createInMemoryRedis();
     const provider = {
       initiate3DS: jest.fn(),
@@ -61,15 +65,25 @@ describe('WalletService reconciliation', () => {
       validate: jest.fn().mockResolvedValue(undefined),
       isVerified: jest.fn().mockResolvedValue(true),
     } as unknown as KycService;
+    const settleSvc = new SettlementService(settleRepo);
+    const config = {
+      get: jest.fn().mockReturnValue(['reserve', 'house', 'rake', 'prize']),
+    } as unknown as ConfigService;
+
+    events.emit = jest.fn().mockResolvedValue(undefined);
+
     const service = new WalletService(
       accountRepo,
       journalRepo,
       disbRepo,
       settleRepo,
+      pendingRepo,
       events,
       redis,
       provider,
       kyc,
+      settleSvc,
+      config,
     );
     (service as any).enqueueDisbursement = jest.fn();
     await accountRepo.save([
