@@ -20,6 +20,7 @@ import { GameModule } from '../game/game.module';
 import { FeatureFlagsModule } from '../feature-flags/feature-flags.module';
 import { RateLimitGuard } from '../routes/rate-limit.guard';
 import { MessagingModule } from '../messaging/messaging.module';
+import { EventsModule } from '../events/events.module';
 import { TournamentFormatEntity } from './tournament-format.entity';
 import { TournamentFormatRepository } from './tournament-format.repository';
 import { AdminTournamentFilterEntity } from './admin-tournament-filter.entity';
@@ -40,6 +41,7 @@ import { AdminTournamentFilterRepository } from './admin-tournament-filter.repos
     GameModule,
     FeatureFlagsModule,
     MessagingModule,
+    EventsModule,
   ],
   controllers: [TournamentController, AdminTournamentsController],
   providers: [

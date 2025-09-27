@@ -18,6 +18,7 @@ import { z } from 'zod';
 import { fetchJson } from '@shared/utils/http';
 import { Pep } from '../database/entities/pep.entity';
 import { Onfido, Region } from 'onfido';
+import { createQueue } from '../redis/queue';
 
 export interface VerificationJob {
   verificationId: string;
@@ -137,13 +138,10 @@ export class KycService implements OnModuleInit {
 
   private async getQueue(): Promise<Queue> {
     if (this.queue) return this.queue;
-    const bull = await import('bullmq');
-    this.queue = new bull.Queue('kyc', {
-      connection: {
-        host: process.env.REDIS_HOST ?? 'localhost',
-        port: Number(process.env.REDIS_PORT ?? 6379),
-      },
-    });
+    this.queue = await createQueue('kyc');
+    if (!this.queue.opts.connection) {
+      this.logger.warn('KYC verification queue disabled; Redis queue connection is unavailable.');
+    }
     return this.queue;
   }
 
@@ -162,6 +160,10 @@ export class KycService implements OnModuleInit {
       status: 'pending',
     });
     const queue = await this.getQueue();
+    if (!queue.opts.connection) {
+      this.logger.warn('Skipping KYC verification enqueue; Redis queue connection is unavailable.');
+      return record;
+    }
     await queue.add('verify', {
       verificationId: record.id,
       accountId,

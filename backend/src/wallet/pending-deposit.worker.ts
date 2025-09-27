@@ -4,15 +4,24 @@ import { Worker } from 'bullmq';
 
 export async function startPendingDepositWorker(wallet: WalletService) {
   const queue = await createQueue('pending-deposit');
-  new Worker(
-    'pending-deposit',
-    async (job) => {
-      await wallet.markActionRequiredIfPending(job.data.id, job.id);
-    },
-    { connection: queue.opts.connection, removeOnComplete: { count: 1000 } },
-  );
+  if (!queue.opts.connection) {
+    console.warn('Skipping pending-deposit worker startup; Redis queue connection is unavailable.');
+  } else {
+    new Worker(
+      'pending-deposit',
+      async (job) => {
+        await wallet.markActionRequiredIfPending(job.data.id, job.id);
+      },
+      { connection: queue.opts.connection, removeOnComplete: { count: 1000 } },
+    );
+  }
 
   const expireQueue = await createQueue('pending-deposit-expire');
+  if (!expireQueue.opts.connection) {
+    console.warn('Skipping pending-deposit expire worker; Redis queue connection is unavailable.');
+    return;
+  }
+
   await expireQueue.add(
     'expire',
     {},

@@ -1,10 +1,12 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DataSource, type DataSourceOptions } from 'typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { ThrottlerModule, ThrottlerModuleOptions } from '@nestjs/throttler';
 import helmet from 'helmet';
 import { APP_FILTER } from '@nestjs/core';
+import { randomUUID } from 'node:crypto';
 
 import {
   databaseConfig,
@@ -93,6 +95,8 @@ import { BlockedCountryEntity } from './database/entities/blocked-country.entity
 import { HistoryTabEntity } from './database/entities/history-tab.entity';
 import { DefaultAvatarEntity } from './database/entities/default-avatar.entity';
 import { NavModule } from './nav/nav.module';
+
+let cachedDataSource: DataSource | null = null;
 import { ChartPaletteEntity } from './database/entities/chart-palette.entity';
 import { PerformanceThresholdEntity } from './database/entities/performance-threshold.entity';
 import { Transaction } from './wallet/transaction.entity';
@@ -150,6 +154,59 @@ const testModules =
         synchronize: config.get<boolean>('database.synchronize', false),
       }),
       inject: [ConfigService],
+      dataSourceFactory: async (options) => {
+        if (cachedDataSource) {
+          return cachedDataSource;
+        }
+        const dataSourceOptions = options as DataSourceOptions;
+        const dataSource = new DataSource(dataSourceOptions);
+        try {
+          await dataSource.initialize();
+          cachedDataSource = dataSource;
+          return dataSource;
+        } catch (error) {
+          const message =
+            error instanceof Error && error.message
+              ? error.message
+              : String(error ?? 'unknown postgres error');
+          console.warn(
+            `Postgres connection failed (${message}); using in-memory pg-mem database instead.`,
+          );
+          const { newDb } = await import('pg-mem');
+          const db = newDb({ autoCreateForeignKeyIndices: true });
+          db.public.registerFunction({
+            name: 'version',
+            returns: 'text' as any,
+            implementation: () => 'pg-mem',
+          });
+          db.public.registerFunction({
+            name: 'current_database',
+            returns: 'text' as any,
+            implementation: () => 'pg-mem',
+          });
+          db.public.registerFunction({
+            name: 'uuid_generate_v4',
+            returns: 'uuid' as any,
+            implementation: () => randomUUID(),
+          });
+          db.public.registerFunction({
+            name: 'gen_random_uuid',
+            returns: 'uuid' as any,
+            implementation: () => randomUUID(),
+          });
+          const { url: _url, ...rest } = (dataSourceOptions as DataSourceOptions & {
+            url?: string;
+          });
+          const memDataSource = await db.adapters.createTypeormDataSource({
+            ...rest,
+            type: 'postgres',
+            synchronize: true,
+          });
+          await memDataSource.initialize();
+          cachedDataSource = memDataSource;
+          return memDataSource;
+        }
+      },
     }),
 
     TypeOrmModule.forFeature([

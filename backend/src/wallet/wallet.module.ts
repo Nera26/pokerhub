@@ -1,4 +1,4 @@
-import { Module, Injectable, OnModuleInit } from '@nestjs/common';
+import { Module, Injectable, OnModuleInit, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Account } from './account.entity';
 import { JournalEntry } from './journal-entry.entity';
@@ -15,6 +15,7 @@ import { WebhookController } from './webhook.controller';
 import { RateLimitGuard } from '../routes/rate-limit.guard';
 import { EventsModule } from '../events/events.module';
 import { RedisModule } from '../redis/redis.module';
+import { SessionModule } from '../session/session.module';
 import { startPayoutWorker } from './payout.worker';
 import { startPendingDepositWorker } from './pending-deposit.worker';
 import { AdminDepositGateway } from './admin-deposit.gateway';
@@ -82,8 +83,9 @@ class PendingDepositWorker implements OnModuleInit {
       AdminTabEntity,
     ]),
     EventsModule,
+    SessionModule,
     RedisModule,
-    AnalyticsModule,
+    forwardRef(() => AnalyticsModule),
     MetricsModule,
   ],
   providers: [

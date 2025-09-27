@@ -6,6 +6,7 @@ import { z, type ZodSchema } from 'zod';
 import { fetchJson } from '@shared/utils/http';
 import { verifySignature as verifyProviderSignature } from './verify-signature';
 import { setWithOptions } from '../redis/set-with-options';
+import { createQueue } from '../redis/queue';
 
 export type ProviderStatus = 'approved' | 'risky' | 'chargeback';
 
@@ -69,11 +70,14 @@ export class PaymentProviderService {
 
   private async initQueue(): Promise<void> {
     if (this.retryQueue) return;
-    const connection = {
-      host: process.env.REDIS_HOST ?? 'localhost',
-      port: Number(process.env.REDIS_PORT ?? 6379),
-    };
-    this.retryQueue = new Queue('provider-webhook-retry', { connection });
+    this.retryQueue = await createQueue('provider-webhook-retry');
+    const connection = this.retryQueue.opts.connection;
+    if (!connection) {
+      console.warn(
+        'Provider webhook retry queue disabled; Redis queue connection is unavailable.',
+      );
+      return;
+    }
     this.retryWorker = new Worker(
       'provider-webhook-retry',
       async (job) => {

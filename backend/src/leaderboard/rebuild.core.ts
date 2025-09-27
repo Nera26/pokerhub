@@ -53,6 +53,13 @@ export async function scheduleRebuild(
 ): Promise<void> {
   const workerQueueName = queueName ?? queue.name ?? 'leaderboard-rebuild';
 
+  if (!queue.opts.connection) {
+    console.warn(
+      'Skipping leaderboard rebuild scheduling; Redis queue connection is unavailable.',
+    );
+    return;
+  }
+
   await queue.add(
     'rebuild',
     { days },

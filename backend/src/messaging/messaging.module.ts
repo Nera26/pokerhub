@@ -13,42 +13,62 @@ import { BroadcastMetadataController } from './metadata.controller';
 import { BroadcastEntity } from '../database/entities/broadcast.entity';
 import { BroadcastTemplateEntity } from '../database/entities/broadcast-template.entity';
 import { BroadcastTypeEntity } from '../database/entities/broadcast-type.entity';
+import { SessionModule } from '../session/session.module';
+
+const hasAmqpConnectionManager = (() => {
+  try {
+    require.resolve('amqp-connection-manager');
+    return true;
+  } catch {
+    console.warn(
+      'amqp-connection-manager is not installed; RabbitMQ messaging client disabled.',
+    );
+    return false;
+  }
+})();
+
+const tournamentsClientModule = hasAmqpConnectionManager
+  ? [
+      ClientsModule.registerAsync([
+        {
+          name: 'TOURNAMENTS_SERVICE',
+          useFactory: (config: ConfigService): RmqOptions => {
+            const urlsConfig = config.get<string | string[]>('rabbitmq.url');
+            const queue = config.get<string>('rabbitmq.queue');
+            const urls = (
+              Array.isArray(urlsConfig) ? urlsConfig : [urlsConfig]
+            ).filter((value): value is string => Boolean(value));
+            if (!urls.length) {
+              throw new Error('Missing rabbitmq.url configuration');
+            }
+            if (!queue) {
+              throw new Error('Missing rabbitmq.queue configuration');
+            }
+
+            return {
+              transport: Transport.RMQ,
+              options: {
+                urls,
+                queue,
+              },
+            };
+          },
+          inject: [ConfigService],
+        },
+      ]),
+    ]
+  : [];
 
 @Module({
   imports: [
-    ClientsModule.registerAsync([
-      {
-        name: 'TOURNAMENTS_SERVICE',
-        useFactory: (config: ConfigService): RmqOptions => {
-          const urlsConfig = config.get<string | string[]>('rabbitmq.url');
-          const queue = config.get<string>('rabbitmq.queue');
-          const urls = (Array.isArray(urlsConfig) ? urlsConfig : [urlsConfig]).filter(
-            (value): value is string => Boolean(value),
-          );
-          if (!urls.length) {
-            throw new Error('Missing rabbitmq.url configuration');
-          }
-          if (!queue) {
-            throw new Error('Missing rabbitmq.queue configuration');
-          }
-
-          return {
-            transport: Transport.RMQ,
-            options: {
-              urls,
-              queue,
-            },
-          };
-        },
-        inject: [ConfigService],
-      },
-    ]),
+    ...tournamentsClientModule,
     TypeOrmModule.forFeature([
       BroadcastEntity,
       BroadcastTemplateEntity,
       BroadcastTypeEntity,
     ]),
     AnalyticsModule,
+    SessionModule,
   ],
   providers: [
     TournamentsProducer,
