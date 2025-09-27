@@ -301,13 +301,13 @@ export class KycService implements OnModuleInit {
     const denialKey = `kyc:denial:${account.id}`;
     const regionReason = this.getRegionBlockReason(account);
     if (regionReason && this.cache) {
-      await this.cache.set(denialKey, regionReason, { ttl: 86400 });
+      await this.cache.set(denialKey, regionReason, 86400);
       throw new Error(regionReason);
     }
     if (ip) {
       const geoReason = await this.checkGeoIp(ip);
       if (geoReason && this.cache) {
-        await this.cache.set(denialKey, geoReason, { ttl: 86400 });
+        await this.cache.set(denialKey, geoReason, 86400);
         throw new Error(geoReason);
       }
     }
@@ -321,7 +321,7 @@ export class KycService implements OnModuleInit {
       'sanctions',
     );
     if (sanctionReason && this.cache) {
-      await this.cache.set(denialKey, sanctionReason, { ttl: 86400 });
+      await this.cache.set(denialKey, sanctionReason, 86400);
       throw new Error(sanctionReason);
     }
 
@@ -331,7 +331,7 @@ export class KycService implements OnModuleInit {
       'pep',
     );
     if (pepReason && this.cache) {
-      await this.cache.set(denialKey, pepReason, { ttl: 86400 });
+      await this.cache.set(denialKey, pepReason, 86400);
       throw new Error(pepReason);
     }
 
@@ -340,7 +340,7 @@ export class KycService implements OnModuleInit {
     if (!result) {
       result = await this.callProvider(account);
       if (this.cache) {
-        await this.cache.set(key, result, { ttl: 3600 });
+        await this.cache.set(key, result, 3600);
       }
     }
 
@@ -354,7 +354,7 @@ export class KycService implements OnModuleInit {
     } else {
       const reason = result.reason ?? 'KYC verification failed';
       if (this.cache) {
-        await this.cache.set(denialKey, reason, { ttl: 86400 });
+        await this.cache.set(denialKey, reason, 86400);
       }
       throw new Error(reason);
     }

@@ -11,7 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import { createClient, ClickHouseClient } from '@clickhouse/client';
 import { randomUUID } from 'crypto';
 import Redis from 'ioredis';
-import { Events, EventName } from '@shared/events';
+import { EventSchemas, Events, EventName } from '@shared/events';
 import { GcsService } from '../storage/gcs.service';
 import { ParquetSchema, ParquetWriter } from 'parquetjs-lite';
 import { PassThrough } from 'stream';
@@ -45,6 +45,18 @@ interface AuditLog {
   reviewed: boolean;
   reviewedBy: string | null;
   reviewedAt: string | null;
+}
+
+interface AuditLogPayload {
+  id: string | number;
+  timestamp: string;
+  type: string;
+  description: string;
+  user?: string | null;
+  ip?: string | null;
+  reviewed?: boolean | 0 | 1 | null;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
 }
 
 interface AuditSummaryRow {
@@ -149,7 +161,7 @@ const WalletChargebackFlagSchema = new ParquetSchema({
   limit: { type: 'INT64' },
 });
 
-const ParquetSchemas: Record<string, ParquetSchema> = {
+const ParquetSchemas: Partial<Record<EventName, ParquetSchema>> = {
   'hand.start': HandStartSchema,
   'hand.end': HandEndSchema,
   'hand.settle': HandSettleSchema,
@@ -450,9 +462,10 @@ export class AnalyticsService implements OnModuleInit {
     }
 
     const entries = await this.redis.lrange('audit-logs', 0, -1);
-    let logs = entries.map((e) =>
-      this.applyAuditLogDefaults(JSON.parse(e) as Record<string, any>),
-    );
+    const parsed = entries
+      .map((entry) => this.parseAuditLogEntry(entry))
+      .filter((log): log is AuditLogPayload => log !== null);
+    let logs = parsed.map((log) => this.applyAuditLogDefaults(log));
     if (search) {
       const s = search.toLowerCase();
       logs = logs.filter((l) =>
@@ -658,7 +671,10 @@ export class AnalyticsService implements OnModuleInit {
 
     const entries = await this.redis.lrange('audit-logs', 0, -1);
     for (let index = 0; index < entries.length; index++) {
-      const parsed = JSON.parse(entries[index]) as Record<string, any>;
+      const parsed = this.parseAuditLogEntry(entries[index]);
+      if (!parsed) {
+        continue;
+      }
       if (String(parsed.id) === id) {
         const normalized = this.applyAuditLogDefaults(parsed);
         const merged: AuditLog = {
@@ -721,17 +737,37 @@ export class AnalyticsService implements OnModuleInit {
     await this.auditLogSchemaReady;
   }
 
-  private applyAuditLogDefaults(log: {
-    id: string | number;
-    timestamp: string;
-    type: string;
-    description: string;
-    user?: string | null;
-    ip?: string | null;
-    reviewed?: boolean | 0 | 1 | null;
-    reviewedBy?: string | null;
-    reviewedAt?: string | null;
-  }): AuditLog {
+  private isAuditLogPayload(value: unknown): value is AuditLogPayload {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+    const log = value as Record<string, unknown>;
+    const { id, timestamp, type, description } = log;
+    const idValid = typeof id === 'string' || typeof id === 'number';
+    return (
+      idValid &&
+      typeof timestamp === 'string' &&
+      typeof type === 'string' &&
+      typeof description === 'string'
+    );
+  }
+
+  private parseAuditLogEntry(raw: string): AuditLogPayload | null {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (this.isAuditLogPayload(parsed)) {
+        return parsed;
+      }
+      this.logger.warn('Discarding malformed audit log payload');
+    } catch (err) {
+      this.logger.warn(
+        `Failed to parse audit log payload: ${(err as Error).message}`,
+      );
+    }
+    return null;
+  }
+
+  private applyAuditLogDefaults(log: AuditLogPayload): AuditLog {
     return {
       id: String(log.id),
       timestamp: log.timestamp,
@@ -807,45 +843,45 @@ export class AnalyticsService implements OnModuleInit {
   }
 
   async emit<E extends EventName>(event: E, data: Events[E]) {
-    await this.etl.runEtl(event, data as unknown as Record<string, unknown>);
+    const payload = EventSchemas[event].parse(data);
+    await this.etl.runEtl(event, payload as Record<string, unknown>);
   }
 
-  private async recordStream(
+  private async recordStream<E extends EventName>(
     stream: string,
-    eventName: EventName,
-    event: Record<string, unknown>,
+    eventName: E,
+    event: Events[E],
   ) {
+    const schema = EventSchemas[eventName];
+    const payload = schema.parse(event);
     await this.redis.xadd(
       `analytics:${stream}`,
       '*',
       'event',
-      JSON.stringify(event),
+      JSON.stringify(payload),
     );
 
-    await this.etl.runEtl(eventName, event);
+    await this.etl.runEtl(eventName, payload as Record<string, unknown>);
   }
 
-  async recordGameEvent<T extends Record<string, unknown>>(event: T) {
+  async recordGameEvent(event: Events['game.event']) {
     await this.recordStream('game', 'game.event', event);
 
-    if (
-      'handId' in event &&
-      'playerId' in event &&
-      typeof (event as any).timeMs === 'number'
-    ) {
+    const { handId, playerId, timeMs } = event;
+    if (handId && playerId && typeof timeMs === 'number') {
       await this.redis.rpush(
         this.collusionEventsKey,
         JSON.stringify({
-          handId: (event as any).handId,
-          playerId: (event as any).playerId,
-          timeMs: (event as any).timeMs,
+          handId,
+          playerId,
+          timeMs,
         }),
       );
       await this.runCollusionHeuristics();
     }
   }
 
-  async recordTournamentEvent<T extends Record<string, unknown>>(event: T) {
+  async recordTournamentEvent(event: Events['tournament.event']) {
     await this.recordStream('tournament', 'tournament.event', event);
   }
 
@@ -921,15 +957,37 @@ export class AnalyticsService implements OnModuleInit {
     );
   }
 
-  async rangeStream(
+  async rangeStream<E extends EventName>(
     stream: string,
     since: number,
-  ): Promise<Record<string, unknown>[]> {
+    eventName: E,
+  ): Promise<Events[E][]> {
     const start = `${since}-0`;
     const entries = await this.redis.xrange(stream, start, '+');
-    return entries.map(
-      ([, fields]) => JSON.parse(fields[1]) as Record<string, unknown>,
-    );
+    const schema = EventSchemas[eventName];
+    const results: Events[E][] = [];
+    for (const [, fields] of entries) {
+      const raw = Array.isArray(fields) ? fields[1] : undefined;
+      if (typeof raw !== 'string') {
+        continue;
+      }
+      try {
+        const parsed = JSON.parse(raw) as unknown;
+        const safe = schema.safeParse(parsed);
+        if (safe.success) {
+          results.push(safe.data);
+        } else {
+          this.logger.warn(
+            `Discarding invalid ${eventName} payload: ${safe.error.message}`,
+          );
+        }
+      } catch (err) {
+        this.logger.warn(
+          `Failed to parse ${eventName} payload: ${(err as Error).message}`,
+        );
+      }
+    }
+    return results;
   }
 
   async query(sql: string) {
@@ -1011,22 +1069,25 @@ export class AnalyticsService implements OnModuleInit {
       const dayLogins = await this.rangeStream(
         'analytics:auth.login',
         from.getTime(),
+        'auth.login',
       );
-      dau = new Set((dayLogins as any[]).map((e: any) => e.userId)).size;
+      dau = new Set(dayLogins.map((e) => e.userId)).size;
       const mauLogins = await this.rangeStream(
         'analytics:auth.login',
         from.getTime() - 29 * oneDay,
+        'auth.login',
       );
-      mau = new Set((mauLogins as any[]).map((e: any) => e.userId)).size;
+      mau = new Set(mauLogins.map((e) => e.userId)).size;
       regs = dau;
       const depositEvents = await this.rangeStream(
         'analytics:wallet.credit',
         from.getTime(),
+        'wallet.credit',
       );
       deps = new Set(
-        (depositEvents as any[])
-          .filter((e: any) => e.refType === 'deposit')
-          .map((e: any) => e.accountId),
+        depositEvents
+          .filter((e) => e.refType === 'deposit')
+          .map((e) => e.accountId),
       ).size;
       conversion = regs > 0 ? deps / regs : 0;
     }

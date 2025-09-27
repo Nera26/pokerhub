@@ -41,8 +41,30 @@ describe('collusion heuristics integration', () => {
     await analytics.recordCollusionSession({ playerId: 'p1', ip: '1.1.1.1' });
     await analytics.recordCollusionSession({ playerId: 'p2', ip: '1.1.1.1' });
     await analytics.recordCollusionTransfer({ from: 'p1', to: 'p2', amount: 200000 });
-    await analytics.recordGameEvent({ handId: 'h1', playerId: 'p1', timeMs: 0 });
-    await analytics.recordGameEvent({ handId: 'h1', playerId: 'p2', timeMs: 100 });
+    await analytics.recordGameEvent({
+      clientId: 'client-1',
+      action: {
+        actionId: 'a1',
+        type: 'check',
+        tableId: 't1',
+        playerId: 'p1',
+      },
+      handId: 'h1',
+      playerId: 'p1',
+      timeMs: 0,
+    });
+    await analytics.recordGameEvent({
+      clientId: 'client-2',
+      action: {
+        actionId: 'a2',
+        type: 'check',
+        tableId: 't1',
+        playerId: 'p2',
+      },
+      handId: 'h1',
+      playerId: 'p2',
+      timeMs: 100,
+    });
 
     expect(spy).toHaveBeenCalled();
     const calls = spy.mock.calls.map((c) => c[0]);
@@ -62,8 +84,30 @@ describe('collusion heuristics integration', () => {
       repo,
     );
     const spy2 = jest.spyOn(analytics2, 'emitAntiCheatFlag');
-    await analytics2.recordGameEvent({ handId: 'h2', playerId: 'p1', timeMs: 0 });
-    await analytics2.recordGameEvent({ handId: 'h2', playerId: 'p2', timeMs: 100 });
+    await analytics2.recordGameEvent({
+      clientId: 'client-3',
+      action: {
+        actionId: 'a3',
+        type: 'check',
+        tableId: 't2',
+        playerId: 'p1',
+      },
+      handId: 'h2',
+      playerId: 'p1',
+      timeMs: 0,
+    });
+    await analytics2.recordGameEvent({
+      clientId: 'client-4',
+      action: {
+        actionId: 'a4',
+        type: 'check',
+        tableId: 't2',
+        playerId: 'p2',
+      },
+      handId: 'h2',
+      playerId: 'p2',
+      timeMs: 100,
+    });
     expect(spy2).toHaveBeenCalled();
   });
 });

@@ -39,7 +39,7 @@ export class TranslationsService {
       messages = await this.get('en');
     }
 
-    await this.cache.set(key, messages, { ttl: CACHE_TTL });
+    await this.cache.set(key, messages, CACHE_TTL);
     return messages;
   }
 }

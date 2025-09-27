@@ -12,6 +12,8 @@ import type { Request } from 'express';
 import type { Redis } from 'ioredis';
 import { WalletService } from './wallet.service';
 import { PaymentProviderService } from './payment-provider.service';
+import { MessageResponseSchema } from '../schemas/auth';
+import { API_CONTRACT_VERSION } from '@shared/constants';
 
 @ApiTags('wallet')
 @Controller('wallet/provider')
@@ -39,11 +41,20 @@ export class WebhookController {
       throw new UnauthorizedException('invalid signature');
     }
     const key = `wallet:webhook:${eventId}`;
-    const stored = await this.redis.set(key, '1', 'NX', 'EX', 60 * 60 * 24);
+    const stored = await this.redis.set(key, '1', {
+      NX: true,
+      EX: 60 * 60 * 24,
+    });
     if (stored === null) {
-      return { message: 'acknowledged' };
+      return MessageResponseSchema.parse({
+        message: 'acknowledged',
+        contractVersion: API_CONTRACT_VERSION,
+      });
     }
     await this.provider.confirm3DS(body);
-    return { message: 'acknowledged' };
+    return MessageResponseSchema.parse({
+      message: 'acknowledged',
+      contractVersion: API_CONTRACT_VERSION,
+    });
   }
 }

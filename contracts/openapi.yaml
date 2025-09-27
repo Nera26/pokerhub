@@ -4394,11 +4394,40 @@ components:
           type: string
         avatarKey:
           type: string
+        email:
+          type: string
+          format: email
+          nullable: true
+        role:
+          $ref: '#/components/schemas/UserRole'
+        bank:
+          type: string
+          nullable: true
+        location:
+          type: string
+          nullable: true
+        joined:
+          type: string
+          format: date-time
+        bio:
+          type: string
+        experience:
+          type: integer
+        balance:
+          type: integer
         banned:
           type: boolean
       required:
         - id
         - username
+        - email
+        - role
+        - bank
+        - location
+        - joined
+        - bio
+        - experience
+        - balance
         - banned
     DashboardUser:
       type: object

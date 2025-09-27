@@ -33,6 +33,7 @@ import { AuthService } from './auth.service';
 import { GeoIpService } from './geoip.service';
 import type { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
+import { API_CONTRACT_VERSION } from '@shared/constants';
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
@@ -84,7 +85,10 @@ export class AuthController {
   async register(@Body() body: RegisterRequest): Promise<MessageResponse> {
     const parsed = RegisterRequestSchema.parse(body);
     await this.auth.register(parsed.email, parsed.password);
-    return { message: 'registered' };
+    return {
+      message: 'registered',
+      contractVersion: API_CONTRACT_VERSION,
+    };
   }
 
   @Post('refresh')
@@ -114,7 +118,10 @@ export class AuthController {
     const parsed = RefreshRequestSchema.parse(body);
     await this.auth.logout(parsed.refreshToken);
     this.setRefreshCookie(res, '', 0);
-    return { message: 'logged out' };
+    return {
+      message: 'logged out',
+      contractVersion: API_CONTRACT_VERSION,
+    };
   }
 
   @Post('request-reset')
@@ -131,7 +138,10 @@ export class AuthController {
       ? forwardedFor
       : req.ip ?? '';
     await this.auth.requestPasswordReset(parsed.email, ip);
-    return { message: 'reset requested' };
+    return {
+      message: 'reset requested',
+      contractVersion: API_CONTRACT_VERSION,
+    };
   }
 
   @Post('verify-reset-code')
@@ -144,7 +154,10 @@ export class AuthController {
     const parsed = VerifyResetCodeSchema.parse(body);
     const ok = await this.auth.verifyResetCode(parsed.email, parsed.code);
     if (!ok) throw new UnauthorizedException('Invalid code');
-    return { message: 'code verified' };
+    return {
+      message: 'code verified',
+      contractVersion: API_CONTRACT_VERSION,
+    };
   }
 
   @Post('reset-password')
@@ -161,7 +174,10 @@ export class AuthController {
       parsed.password,
     );
     if (!ok) throw new UnauthorizedException('Invalid code');
-    return { message: 'password reset' };
+    return {
+      message: 'password reset',
+      contractVersion: API_CONTRACT_VERSION,
+    };
   }
 
   @Get('providers')

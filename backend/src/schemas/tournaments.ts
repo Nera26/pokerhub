@@ -106,6 +106,28 @@ export type TournamentSimulateResponse = z.infer<
   typeof TournamentSimulateResponseSchema
 >;
 
+export const CalculatePrizesRequestSchema = z.object({
+  prizePool: z.number(),
+  payouts: z.array(z.number()),
+  bountyPct: z.number().optional(),
+  satelliteSeatCost: z.number().optional(),
+  method: z.enum(['topN', 'icm']).optional(),
+  stacks: z.array(z.number()).optional(),
+});
+export type CalculatePrizesRequest = z.infer<
+  typeof CalculatePrizesRequestSchema
+>;
+
+export const CalculatePrizesResponseSchema = z.object({
+  prizes: z.array(z.number()),
+  bountyPool: z.number().optional(),
+  seats: z.number().optional(),
+  remainder: z.number().optional(),
+});
+export type CalculatePrizesResponse = z.infer<
+  typeof CalculatePrizesResponseSchema
+>;
+
 export const TournamentStateSchema = z.enum([
   'REG_OPEN',
   'RUNNING',
@@ -157,3 +179,26 @@ export const TournamentDetailsSchema = TournamentSchema.extend({
   prizes: z.array(TournamentInfoSchema),
 });
 export type TournamentDetails = z.infer<typeof TournamentDetailsSchema>;
+
+const TournamentStructureLevelSchema = z.object({
+  level: z.number().int(),
+  durationMinutes: z.number().int().positive(),
+});
+
+const TournamentBreakSchema = z.object({
+  start: z.string().datetime(),
+  durationMs: z.number().int().nonnegative(),
+});
+
+export const TournamentScheduleRequestSchema = z.object({
+  startTime: z.string().datetime(),
+  registration: z.object({
+    open: z.string().datetime(),
+    close: z.string().datetime(),
+  }),
+  structure: z.array(TournamentStructureLevelSchema),
+  breaks: z.array(TournamentBreakSchema).optional(),
+});
+export type TournamentScheduleRequest = z.infer<
+  typeof TournamentScheduleRequestSchema
+>;

@@ -15,6 +15,7 @@ import type {
   BonusStatsResponse,
 } from '../schemas/bonus';
 import { MessageResponseSchema } from '../schemas/auth';
+import { API_CONTRACT_VERSION } from '@shared/constants';
 
 @AdminController('bonus')
 export class AdminBonusController {
@@ -77,6 +78,9 @@ export class AdminBonusController {
   @ApiResponse({ status: 200, description: 'Defaults deleted' })
   async remove() {
     await this.bonusService.deleteDefaults();
-    return MessageResponseSchema.parse({ message: 'deleted' });
+    return MessageResponseSchema.parse({
+      message: 'deleted',
+      contractVersion: API_CONTRACT_VERSION,
+    });
   }
 }

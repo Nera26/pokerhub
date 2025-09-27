@@ -14,6 +14,7 @@ import {
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 import type { Request } from 'express';
+
 import {
   KycDenialResponseSchema,
   WalletReconcileMismatchesResponseSchema,
@@ -24,6 +25,7 @@ import type {
   WalletReconcileMismatchesResponse,
   WalletReconcileMismatchAcknowledgement,
 } from '@shared/wallet.schema';
+
 import {
   AuditLogEntrySchema,
   AlertItemSchema,
@@ -39,6 +41,7 @@ import type {
   LogTypeClasses,
   RevenueTimeFilter,
 } from '@shared/types';
+
 import {
   AdminTabResponseSchema,
   AdminEventsResponseSchema,
@@ -54,8 +57,11 @@ import type {
   UpdateAdminTabRequest,
   AdminTabMeta,
 } from '../schemas/admin';
+
 import { MessageResponseSchema } from '../schemas/auth';
 import type { MessageResponse } from '../schemas/auth';
+import { API_CONTRACT_VERSION } from '@shared/constants';
+
 import { KycService } from '../wallet/kyc.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { RevenueService } from '../wallet/revenue.service';
@@ -153,11 +159,12 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Admin event acknowledged' })
   @ApiResponse({ status: 404, description: 'Admin event not found' })
   @HttpCode(200)
-  async acknowledgeAdminEvent(
-    @Param('id') id: string,
-  ): Promise<MessageResponse> {
+  async acknowledgeAdminEvent(@Param('id') id: string): Promise<MessageResponse> {
     await this.analytics.acknowledgeAdminEvent(id);
-    return MessageResponseSchema.parse({ message: 'acknowledged' });
+    return MessageResponseSchema.parse({
+      message: 'acknowledged',
+      contractVersion: API_CONTRACT_VERSION,
+    });
   }
 
   @Get('tabs')
@@ -269,10 +276,7 @@ export class AdminController {
     @Req() req: Request,
   ): Promise<WalletReconcileMismatchAcknowledgement> {
     const adminId = (req as Request & { userId?: string }).userId ?? 'admin';
-    const acknowledgement = await this.wallet.acknowledgeMismatch(
-      account,
-      adminId,
-    );
+    const acknowledgement = await this.wallet.acknowledgeMismatch(account, adminId);
     return WalletReconcileMismatchAcknowledgementSchema.parse(acknowledgement);
   }
 }

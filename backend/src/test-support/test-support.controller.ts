@@ -1,6 +1,8 @@
 import { Body, Controller, Delete, Param, Post } from '@nestjs/common';
 import { z } from 'zod';
 import { TestSupportService } from './test-support.service';
+import { MessageResponseSchema } from '../schemas/auth';
+import { API_CONTRACT_VERSION } from '@shared/constants';
 
 const SeedUserSchema = z.object({
   email: z.string().email(),
@@ -45,6 +47,9 @@ export class TestSupportController {
   @Delete('collusion/:sessionId')
   async deleteCollusion(@Param('sessionId') sessionId: string) {
     await this.support.deleteCollusion(sessionId);
-    return { message: 'deleted' };
+    return MessageResponseSchema.parse({
+      message: 'deleted',
+      contractVersion: API_CONTRACT_VERSION,
+    });
   }
 }

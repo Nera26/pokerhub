@@ -21,10 +21,10 @@ import { FeatureFlagsService } from '../feature-flags/feature-flags.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Hand } from '../database/entities/hand.entity';
-import { GameState } from '../database/entities/game-state.entity';
+import { GameState as GameStateEntity } from '../database/entities/game-state.entity';
 
 import { GameActionSchema, type GameAction as WireGameAction } from '@shared/schemas/game';
-import { GameStateSchema, type GameState } from '@shared/types';
+import { GameStateSchema, type GameState as WireGameState } from '@shared/types';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
 import {
   metrics,
@@ -50,7 +50,7 @@ interface FrameAckPayload {
   frameId: string;
 }
 
-interface GameStatePayload extends GameState {
+interface GameStatePayload extends WireGameState {
   tick: number;
   version: string;
 }
@@ -62,15 +62,15 @@ interface ProofPayload {
 }
 
 interface ServerToClientEvents {
-  state: GameStatePayload;
-  'action:ack': AckPayload;
-  'join:ack': AckPayload;
-  'buy-in:ack': AckPayload;
-  'sitout:ack': AckPayload;
-  'rebuy:ack': AckPayload;
-  proof: ProofPayload;
-  'server:Error': string;
-  'server:Clock': number;
+  state: (payload: GameStatePayload) => void;
+  'action:ack': (payload: AckPayload) => void;
+  'join:ack': (payload: AckPayload) => void;
+  'buy-in:ack': (payload: AckPayload) => void;
+  'sitout:ack': (payload: AckPayload) => void;
+  'rebuy:ack': (payload: AckPayload) => void;
+  proof: (payload: ProofPayload) => void;
+  'server:Error': (message: string) => void;
+  'server:Clock': (remaining: number) => void;
 }
 
 interface ClientToServerEvents {
@@ -107,9 +107,16 @@ type GameSocket = Socket<
   SocketData
 >;
 
+type ServerEventParams<K extends keyof ServerToClientEvents> = Parameters<
+  ServerToClientEvents[K]
+>;
+type AnyServerEventParams = Parameters<
+  ServerToClientEvents[keyof ServerToClientEvents]
+>;
+
 interface FrameInfo {
   event: keyof ServerToClientEvents;
-  payload: Record<string, unknown>;
+  args: AnyServerEventParams;
   attempt: number;
   timeout?: ReturnType<typeof setTimeout>;
 }
@@ -469,8 +476,8 @@ export class GameGateway
     @Optional()
     @InjectRepository(Hand)
     private readonly hands: Repository<Hand>,
-    @InjectRepository(GameState)
-    private readonly gameStates: Repository<GameState>,
+    @InjectRepository(GameStateEntity)
+    private readonly gameStates: Repository<GameStateEntity>,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
     @Optional() private readonly collusion?: CollusionService,
     @Optional() private readonly flags?: FeatureFlagsService,
@@ -540,7 +547,15 @@ export class GameGateway
   ): Promise<void> {
     const last = this.lastSnapshot.get(tableId) ?? 0;
     if (this.tick - last >= this.snapshotInterval) {
-      await this.gameStates.save({ tableId, tick: this.tick, state });
+      const snapshot = JSON.parse(JSON.stringify(state)) as Record<
+        string,
+        unknown
+      >;
+      await this.gameStates.save({
+        tableId,
+        tick: this.tick,
+        state: snapshot,
+      });
       this.lastSnapshot.set(tableId, this.tick);
     }
   }
@@ -609,15 +624,19 @@ export class GameGateway
       parsed = GameActionSchema.parse(rest);
       tableId = parsed.tableId;
     } catch (err) {
-      void this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+      void this.enqueue(client, 'action:ack', [
+        { actionId } satisfies AckPayload,
+      ]);
       this.recordAckLatency(start, tableId);
       throw err;
     }
 
     const expectedPlayerId = this.socketPlayers.get(client.id);
     if (!expectedPlayerId || parsed.playerId !== expectedPlayerId) {
-      void this.enqueue(client, 'server:Error', 'player mismatch');
-      void this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+      void this.enqueue(client, 'server:Error', ['player mismatch']);
+      void this.enqueue(client, 'action:ack', [
+        { actionId } satisfies AckPayload,
+      ]);
       this.recordAckLatency(start, tableId);
       return;
     }
@@ -625,10 +644,12 @@ export class GameGateway
     const hash = this.hashAction(actionId);
     const existing = await this.redis.hget(this.actionHashKey, hash);
     if (existing && Date.now() - Number(existing) < this.actionRetentionMs) {
-      void this.enqueue(client, 'action:ack', {
-        actionId,
-        duplicate: true,
-      } satisfies AckPayload);
+      void this.enqueue(client, 'action:ack', [
+        {
+          actionId,
+          duplicate: true,
+        } satisfies AckPayload,
+      ]);
       this.recordAckLatency(start, tableId);
       return;
     }
@@ -647,8 +668,10 @@ export class GameGateway
       (await this.flags?.get('dealing')) === false ||
       (await this.flags?.getRoom(tableId, 'dealing')) === false
     ) {
-      void this.enqueue(client, 'server:Error', 'dealing disabled');
-      void this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+      void this.enqueue(client, 'server:Error', ['dealing disabled']);
+      void this.enqueue(client, 'action:ack', [
+        { actionId } satisfies AckPayload,
+      ]);
       this.recordAckLatency(start, tableId);
       return;
     }
@@ -656,16 +679,20 @@ export class GameGateway
       (await this.flags?.get('settlement')) === false ||
       (await this.flags?.getRoom(tableId, 'settlement')) === false
     ) {
-      void this.enqueue(client, 'server:Error', 'settlement disabled');
-      void this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+      void this.enqueue(client, 'server:Error', ['settlement disabled']);
+      void this.enqueue(client, 'action:ack', [
+        { actionId } satisfies AckPayload,
+      ]);
       this.recordAckLatency(start, tableId);
       return;
     }
 
     const engine = this.engines.get(tableId);
     if (!engine) {
-      void this.enqueue(client, 'server:Error', 'engine not started');
-      void this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+      void this.enqueue(client, 'server:Error', ['engine not started']);
+      void this.enqueue(client, 'action:ack', [
+        { actionId } satisfies AckPayload,
+      ]);
       this.recordAckLatency(start, tableId);
       return;
     }
@@ -673,8 +700,10 @@ export class GameGateway
     try {
       state = engine.applyAction(gameAction);
     } catch (err) {
-      void this.enqueue(client, 'server:Error', (err as Error).message);
-      void this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+      void this.enqueue(client, 'server:Error', [(err as Error).message]);
+      void this.enqueue(client, 'action:ack', [
+        { actionId } satisfies AckPayload,
+      ]);
       this.recordAckLatency(start, tableId);
       return;
     }
@@ -690,9 +719,11 @@ export class GameGateway
     }
 
     const safe = sanitize(state, parsed.playerId);
-    const payload = { version: '1', ...safe, tick: ++this.tick };
-    GameStateSchema.parse(payload);
-    void this.enqueue(client, 'state', payload, true);
+    const tick = ++this.tick;
+    const basePayload = { version: EVENT_SCHEMA_VERSION, tick } as const;
+    const playerPayload = { ...basePayload, ...safe };
+    GameStateSchema.parse(playerPayload);
+    void this.enqueue(client, 'state', [playerPayload], true);
     this.recordStateLatency(start, tableId);
 
     this.states.set(tableId, state);
@@ -715,15 +746,16 @@ export class GameGateway
       // Send sanitized state to spectators as well
       const publicState = engine.getPublicState();
       const spectatorPayload = {
-        version: '1',
+        ...basePayload,
         ...sanitize(publicState),
-        tick: this.tick,
       };
       GameStateSchema.parse(spectatorPayload);
       this.server.of('/spectate').to(tableId).emit('state', spectatorPayload);
     }
 
-    void this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+    void this.enqueue(client, 'action:ack', [
+      { actionId } satisfies AckPayload,
+    ]);
     this.recordAckLatency(start, tableId);
 
     if ('playerId' in parsed && parsed.playerId && state.phase !== 'NEXT_HAND') {
@@ -784,22 +816,24 @@ export class GameGateway
   ) {
     if (await this.isRateLimited(client)) return;
     if (!this.hands) {
-      void this.enqueue(client, 'server:Error', 'proof unavailable');
+      void this.enqueue(client, 'server:Error', ['proof unavailable']);
       return;
     }
     const hand = await this.hands.findOne({ where: { id: payload.handId } });
     if (!hand || !hand.seed || !hand.nonce) {
-      void this.enqueue(client, 'server:Error', 'proof unavailable');
+      void this.enqueue(client, 'server:Error', ['proof unavailable']);
       return;
     }
     void this.enqueue(
       client,
       'proof',
-      {
-        commitment: hand.commitment,
-        seed: hand.seed,
-        nonce: hand.nonce,
-      },
+      [
+        {
+          commitment: hand.commitment,
+          seed: hand.seed,
+          nonce: hand.nonce,
+        },
+      ],
       true,
     );
   }
@@ -825,16 +859,20 @@ export class GameGateway
     const hash = this.hashAction(payload.actionId);
     const existing = await this.redis.hget(this.actionHashKey, hash);
     if (existing && Date.now() - Number(existing) < this.actionRetentionMs) {
-      void this.enqueue(client, `${event}:ack` as keyof ServerToClientEvents, {
-        actionId: payload.actionId,
-        duplicate: true,
-      } satisfies AckPayload);
+      void this.enqueue(client, `${event}:ack` as keyof ServerToClientEvents, [
+        {
+          actionId: payload.actionId,
+          duplicate: true,
+        } satisfies AckPayload,
+      ]);
       return;
     }
 
-    void this.enqueue(client, `${event}:ack` as keyof ServerToClientEvents, {
-      actionId: payload.actionId,
-    } satisfies AckPayload);
+    void this.enqueue(client, `${event}:ack` as keyof ServerToClientEvents, [
+      {
+        actionId: payload.actionId,
+      } satisfies AckPayload,
+    ]);
     const now = Date.now();
     await this.redis.hset(this.actionHashKey, hash, now.toString());
   }
@@ -867,7 +905,7 @@ export class GameGateway
   private async enqueue<K extends keyof ServerToClientEvents>(
     client: GameSocket,
     event: K,
-    data: ServerToClientEvents[K],
+    args: ServerEventParams<K>,
     critical = false,
   ): Promise<void> {
     const id = client.id;
@@ -901,20 +939,26 @@ export class GameGateway
       return;
     }
     void queue.add(() => {
-      let payload = data;
-      if (typeof payload === 'object' && payload !== null) {
-        payload = {
-          ...(payload as Record<string, unknown>),
-          version: EVENT_SCHEMA_VERSION,
-        } as ServerToClientEvents[K];
-        if (critical) {
-          (payload as Record<string, unknown>).frameId = randomUUID();
+      const copied = [...args] as unknown[];
+      if (copied.length > 0) {
+        const [first, ...rest] = copied;
+        if (typeof first === 'object' && first !== null) {
+          const enriched: Record<string, unknown> = {
+            ...(first as Record<string, unknown>),
+            version: EVENT_SCHEMA_VERSION,
+          };
+          if (critical) {
+            enriched.frameId = randomUUID();
+          }
+          const finalArgs = [enriched, ...rest] as ServerEventParams<K>;
+          client.emit(event, ...finalArgs);
+          if (critical) {
+            this.trackFrame(client, event, finalArgs);
+          }
+          return;
         }
       }
-      client.emit(event, payload);
-      if (critical && typeof payload === 'object' && payload !== null) {
-        this.trackFrame(client, event, payload as Record<string, unknown>);
-      }
+      client.emit(event, ...(copied as ServerEventParams<K>));
     });
     const depth = queue.size + queue.pending;
     this.maxQueueSizes.set(
@@ -926,13 +970,21 @@ export class GameGateway
   private trackFrame<K extends keyof ServerToClientEvents>(
     client: GameSocket,
     event: K,
-    payload: Record<string, unknown>,
+    args: ServerEventParams<K>,
   ) {
     const id = client.id;
-    const frameId = payload.frameId as string;
+    const [first] = args;
+    if (!first || typeof first !== 'object') return;
+    const payload = first as Record<string, unknown>;
+    const frameId = payload.frameId;
+    if (typeof frameId !== 'string') return;
     const frames = this.frameAcks.get(id) ?? new Map<string, FrameInfo>();
     this.frameAcks.set(id, frames);
-    const frame: FrameInfo = { event, payload, attempt: 1 };
+    const frame: FrameInfo = {
+      event,
+      args: args as AnyServerEventParams,
+      attempt: 1,
+    };
     frames.set(frameId, frame);
     const retry = () => {
       if (!frames.has(frameId)) return;
@@ -944,7 +996,7 @@ export class GameGateway
       const delay = Math.pow(2, frame.attempt) * 100;
       frame.timeout = setTimeout(() => {
         if (!frames.has(frameId)) return;
-        client.emit(event, payload as ServerToClientEvents[K]);
+        client.emit(event, ...(frame.args as ServerEventParams<K>));
         GameGateway.frameRetries.add(1, { event });
         frame.attempt++;
         retry();
@@ -1020,7 +1072,7 @@ export class GameGateway
       GameGateway.globalLimitExceeded.add(1, {
         socketId: client.id,
       } as Attributes);
-      void this.enqueue(client, 'server:Error', 'rate limit exceeded');
+      void this.enqueue(client, 'server:Error', ['rate limit exceeded']);
       return true;
     }
     if (count > 30) {
@@ -1041,18 +1093,18 @@ export class GameGateway
         (await this.flags?.get('dealing')) === false ||
         (await this.flags?.getRoom('default', 'dealing')) === false
       ) {
-        void this.enqueue(client, 'server:Error', 'dealing disabled');
+        void this.enqueue(client, 'server:Error', ['dealing disabled']);
         return;
       }
       const room = this.rooms.get('default');
       const state = await room.replay();
       const payload = {
-        version: '1',
+        version: EVENT_SCHEMA_VERSION,
         ...sanitize(state),
         tick: this.tick,
       };
       GameStateSchema.parse(payload);
-      void this.enqueue(client, 'state', payload);
+      void this.enqueue(client, 'state', [payload]);
     });
   }
 
@@ -1068,19 +1120,19 @@ export class GameGateway
         (await this.flags?.get('dealing')) === false ||
         (await this.flags?.getRoom('default', 'dealing')) === false
       ) {
-        void this.enqueue(client, 'server:Error', 'dealing disabled');
+        void this.enqueue(client, 'server:Error', ['dealing disabled']);
         return;
       }
       const room = this.rooms.get('default');
       const states = await room.resume(from);
       for (const [index, state] of states) {
         const payload = {
-          version: '1',
+          version: EVENT_SCHEMA_VERSION,
           ...sanitize(state),
           tick: index + 1,
         };
         GameStateSchema.parse(payload);
-        void this.enqueue(client, 'state', payload);
+        void this.enqueue(client, 'state', [payload]);
       }
     });
   }
@@ -1090,7 +1142,7 @@ export class GameGateway
     const state = await room.apply({ type: 'fold', playerId } as GameAction);
     if (this.server) {
       const payload = {
-        version: '1',
+        version: EVENT_SCHEMA_VERSION,
         ...sanitize(state),
         tick: ++this.tick,
       };

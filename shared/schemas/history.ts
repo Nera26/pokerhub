@@ -54,11 +54,17 @@ export const TournamentBracketMatchSchema = z.object({
   players: z.array(z.string()),
   winner: z.string().nullable(),
 });
+export type TournamentBracketMatch = z.infer<
+  typeof TournamentBracketMatchSchema
+>;
 
 export const TournamentBracketRoundSchema = z.object({
   name: z.string(),
   matches: z.array(TournamentBracketMatchSchema),
 });
+export type TournamentBracketRound = z.infer<
+  typeof TournamentBracketRoundSchema
+>;
 
 export const TournamentBracketResponseSchema = z.object({
   tournamentId: z.string(),

@@ -8,6 +8,7 @@ import { WalletService } from '../wallet/wallet.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { MessageResponseSchema } from '../schemas/auth';
 import type { MessageResponse } from '../schemas/auth';
+import { API_CONTRACT_VERSION } from '@shared/constants';
 
 @AdminController('balance')
 export class AdminBalanceController {
@@ -27,13 +28,19 @@ export class AdminBalanceController {
   ): Promise<MessageResponse> {
     const { action, amount, currency, notes } =
       AdminBalanceRequestSchema.parse(body);
+
     await this.wallet.adminAdjustBalance(userId, action, amount, currency);
+
     await this.analytics.addAuditLog({
       type: 'Balance',
       description: `${action} ${amount} ${currency}${notes ? ` - ${notes}` : ''}`,
-      user: req.userId ?? 'admin',
+      user: (req as any).userId ?? 'admin',
       ip: req.ip || null,
     });
-    return MessageResponseSchema.parse({ message: 'ok' });
+
+    return MessageResponseSchema.parse({
+      message: 'ok',
+      contractVersion: API_CONTRACT_VERSION,
+    });
   }
 }

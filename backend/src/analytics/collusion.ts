@@ -4,8 +4,11 @@ import { detectChipDump } from '@shared/analytics/collusion';
 import { AnalyticsService } from './analytics.service';
 import { CollusionService } from './collusion.service';
 import type { Transfer } from '@shared/analytics/collusion';
+import type { Events } from '@shared/events';
 
-interface GameEvent {
+type GameEvent = Events['game.event'];
+
+interface CollusionGameEvent extends GameEvent {
   sessionId: string;
   userId: string;
   vpip: number;
@@ -43,14 +46,29 @@ export class CollusionDetectionJob {
     setInterval(() => void this.run(), 10 * 60_000);
   }
 
+  private isCollusionGameEvent(event: GameEvent): event is CollusionGameEvent {
+    return (
+      typeof event === 'object' &&
+      event !== null &&
+      typeof event.sessionId === 'string' &&
+      typeof event.userId === 'string' &&
+      typeof event.vpip === 'number' &&
+      typeof event.seat === 'number' &&
+      typeof event.timestamp === 'number'
+    );
+  }
+
   private async run() {
     const events = (await this.analytics.rangeStream(
       'analytics:game',
       this.lastCheck,
-    )) as GameEvent[];
+      'game.event',
+    )).filter((event): event is CollusionGameEvent =>
+      this.isCollusionGameEvent(event),
+    );
     this.lastCheck = Date.now();
 
-    const sessions: Record<string, GameEvent[]> = {};
+    const sessions: Record<string, CollusionGameEvent[]> = {};
     for (const ev of events) {
       sessions[ev.sessionId] ??= [];
       sessions[ev.sessionId].push(ev);
@@ -68,8 +86,7 @@ export class CollusionDetectionJob {
           const seatsA = evts.filter((e) => e.userId === a).map((e) => e.seat);
           const seatsB = evts.filter((e) => e.userId === b).map((e) => e.seat);
           const transfers = evts
-            .filter((e) => e.transfer)
-            .map((e) => e.transfer as Transfer)
+            .flatMap((e) => (e.transfer ? [e.transfer] : []))
             .filter(
               (t) =>
                 (t.from === a && t.to === b) ||

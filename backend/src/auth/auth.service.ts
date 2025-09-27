@@ -78,8 +78,7 @@ export class AuthService {
     await this.redis.set(
       `${this.revokedPrefix}${refreshToken}`,
       '1',
-      'EX',
-      ttl,
+      { EX: ttl },
     );
     return rotated;
   }
@@ -89,8 +88,7 @@ export class AuthService {
     await this.redis.set(
       `${this.revokedPrefix}${refreshToken}`,
       '1',
-      'EX',
-      ttl,
+      { EX: ttl },
     );
     await this.sessions.revoke(refreshToken);
   }
@@ -121,7 +119,7 @@ export class AuthService {
     const code = randomInt(100000, 1000000).toString();
     const ttl = this.config.get<number>('auth.resetTtl', 900);
     const hash = this.hashCode(code);
-    await this.redis.set(`${this.resetPrefix}${email}`, hash, 'EX', ttl);
+    await this.redis.set(`${this.resetPrefix}${email}`, hash, { EX: ttl });
     await this.email.sendResetCode(email, code);
   }
 
