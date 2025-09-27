@@ -2,6 +2,7 @@ import Ajv, { ValidateFunction } from 'ajv';
 import addFormats from 'ajv-formats';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { EventSchemas, EventName } from '@shared/events';
+import type { JSONSchema7 } from 'json-schema';
 
 export function createValidators(): {
   ajv: Ajv;
@@ -15,7 +16,8 @@ export function createValidators(): {
   );
   const validators = {} as Record<EventName, ValidateFunction>;
   for (const [name, schema] of Object.entries(EventSchemas)) {
-    validators[name as EventName] = ajv.compile(zodToJsonSchema(schema, name));
+    const jsonSchema = zodToJsonSchema(schema, name) as JSONSchema7;
+    validators[name as EventName] = ajv.compile(jsonSchema);
   }
   return { ajv, validators };
 }
