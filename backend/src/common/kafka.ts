@@ -1,5 +1,11 @@
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Kafka, Producer, Consumer } from 'kafkajs';
+
+const logger = new Logger('Kafka');
+const missingKafkaConfigMessage = 'Missing analytics.kafkaBrokers configuration';
+let missingProducerWarningLogged = false;
+const missingConsumerWarningsLogged = new Set<string>();
 
 function createNoopProducer(): Producer {
   return {
@@ -65,11 +71,16 @@ function parseKafkaBrokers(rawValue?: string | null): string[] {
     .filter(Boolean) ?? [];
 }
 
+function hasKafkaConfiguration(config: ConfigService): boolean {
+  const brokersConfig = config.get<string>('analytics.kafkaBrokers');
+  return parseKafkaBrokers(brokersConfig).length > 0;
+}
+
 export function createKafka(config: ConfigService): Kafka {
   const brokersConfig = config.get<string>('analytics.kafkaBrokers');
   const brokers = parseKafkaBrokers(brokersConfig);
   if (brokers.length === 0) {
-    throw new Error('Missing analytics.kafkaBrokers configuration');
+    throw new Error(missingKafkaConfigMessage);
   }
   return new Kafka({ brokers });
 }
@@ -78,6 +89,15 @@ export function createKafkaProducer(
   config: ConfigService,
   factory: (config: ConfigService) => Kafka = createKafka,
 ): Producer {
+  if (!hasKafkaConfiguration(config)) {
+    if (!missingProducerWarningLogged) {
+      logger.warn(
+        'analytics.kafkaBrokers not configured; Kafka producer will be disabled.',
+      );
+      missingProducerWarningLogged = true;
+    }
+    return createNoopProducer();
+  }
   const kafka = factory(config);
   const producer = kafka.producer();
   void producer.connect();
@@ -89,10 +109,25 @@ export async function createKafkaConsumer(
   groupId: string,
   factory: (config: ConfigService) => Kafka = createKafka,
 ): Promise<Consumer> {
+  if (!hasKafkaConfiguration(config)) {
+    if (!missingConsumerWarningsLogged.has(groupId)) {
+      logger.warn(
+        `analytics.kafkaBrokers not configured; Kafka consumer for group "${groupId}" will be disabled.`,
+      );
+      missingConsumerWarningsLogged.add(groupId);
+    }
+    return createNoopConsumer();
+  }
   const kafka = factory(config);
   const consumer = kafka.consumer({ groupId });
   await consumer.connect();
   return consumer;
 }
 
-export const __testUtils = { parseKafkaBrokers };
+export const __testUtils = {
+  parseKafkaBrokers,
+  resetMissingKafkaWarnings: () => {
+    missingProducerWarningLogged = false;
+    missingConsumerWarningsLogged.clear();
+  },
+};

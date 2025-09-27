@@ -1,20 +1,38 @@
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as kafkaModule from '../../src/common/kafka';
 
 const { createKafkaProducer, createKafkaConsumer, __testUtils } = kafkaModule;
 
-const { parseKafkaBrokers } = __testUtils;
+const { parseKafkaBrokers, resetMissingKafkaWarnings } = __testUtils;
+
+beforeEach(() => {
+  resetMissingKafkaWarnings();
+});
 
 afterEach(() => {
   jest.restoreAllMocks();
 });
 
 describe('createKafkaProducer', () => {
-  it('throws when brokers are missing', () => {
+  it('returns a noop producer when brokers are missing', async () => {
     const config = new ConfigService({});
-    expect(() => createKafkaProducer(config)).toThrow(
-      'Missing analytics.kafkaBrokers configuration',
-    );
+    const factory = jest.fn();
+    const producer = createKafkaProducer(config, factory as any);
+    expect(factory).not.toHaveBeenCalled();
+    await expect(
+      producer.send({ topic: 'test', messages: [] } as any),
+    ).resolves.toEqual([]);
+  });
+
+  it('only logs the missing broker warning once', () => {
+    const warnSpy = jest.spyOn(Logger.prototype, 'warn');
+    const config = new ConfigService({});
+
+    createKafkaProducer(config, jest.fn() as any);
+    createKafkaProducer(config, jest.fn() as any);
+
+    expect(warnSpy).toHaveBeenCalledTimes(1);
   });
 
   it('delegates to createKafka', () => {
@@ -30,11 +48,31 @@ describe('createKafkaProducer', () => {
 });
 
 describe('createKafkaConsumer', () => {
-  it('throws when brokers are missing', async () => {
+  it('returns a noop consumer when brokers are missing', async () => {
     const config = new ConfigService({});
-    await expect(
-      createKafkaConsumer(config, 'test-group'),
-    ).rejects.toThrow('Missing analytics.kafkaBrokers configuration');
+    const factory = jest.fn();
+    const consumer = await createKafkaConsumer(config, 'test-group', factory as any);
+    expect(factory).not.toHaveBeenCalled();
+    await expect(consumer.connect()).resolves.toBeUndefined();
+  });
+
+  it('logs the missing broker warning per group only once', async () => {
+    const warnSpy = jest.spyOn(Logger.prototype, 'warn');
+    const config = new ConfigService({});
+
+    await createKafkaConsumer(config, 'group-a', jest.fn() as any);
+    await createKafkaConsumer(config, 'group-a', jest.fn() as any);
+    await createKafkaConsumer(config, 'group-b', jest.fn() as any);
+
+    expect(warnSpy).toHaveBeenCalledTimes(2);
+    expect(warnSpy).toHaveBeenNthCalledWith(
+      1,
+      'analytics.kafkaBrokers not configured; Kafka consumer for group "group-a" will be disabled.',
+    );
+    expect(warnSpy).toHaveBeenNthCalledWith(
+      2,
+      'analytics.kafkaBrokers not configured; Kafka consumer for group "group-b" will be disabled.',
+    );
   });
 
   it('delegates to createKafka', async () => {
