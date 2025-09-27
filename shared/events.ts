@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { NotificationTypeSchema } from "./types";
+import { GameActionSchema } from "./schemas/game";
 
 // Increment on breaking changes to websocket event frames
 export const EVENT_SCHEMA_VERSION = '1';
@@ -114,6 +115,42 @@ const NotificationCreateEvent = z.object({
   message: z.string(),
 });
 
+const GameAnalyticsActionSchema = z.intersection(
+  GameActionSchema,
+  z.object({ actionId: z.string() }),
+);
+
+const GameAnalyticsEvent = z
+  .object({
+    clientId: z.string(),
+    action: GameAnalyticsActionSchema,
+    stake: z.string().optional(),
+  })
+  .extend({
+    handId: z.string().optional(),
+    playerId: z.string().optional(),
+    timeMs: z.number().optional(),
+  });
+
+const TournamentAnalyticsEvent = z.object({
+  type: z.string(),
+  tournamentId: z.string(),
+  startDate: z.string().datetime().optional(),
+});
+
+const WalletDisbursementRequestEvent = z.object({
+  id: z.string().uuid(),
+  accountId: z.string().uuid(),
+  amount: z.number().int(),
+  currency: z.string().length(3),
+  idempotencyKey: z.string(),
+});
+
+const TournamentBubbleEvent = z.object({
+  tournamentId: z.string(),
+  remainingPlayers: z.number().int().nonnegative(),
+});
+
 const WalletDepositRejectedEvent = z.object({
   accountId: z.string().uuid(),
   depositId: z.string().uuid(),
@@ -160,9 +197,12 @@ export const EventSchemas = {
   "hand.end": HandEndEvent,
   "hand.settle": HandSettleEvent,
   "leaderboard.hand_settled": HandSettleEvent,
+  "game.event": GameAnalyticsEvent,
+  "tournament.event": TournamentAnalyticsEvent,
   "wallet.credit": WalletMovementEvent,
   "wallet.debit": WalletMovementEvent,
   "tournament.cancel": TournamentCancelEvent,
+  "tournament.bubble": TournamentBubbleEvent,
   "wallet.reserve": WalletReserveEvent,
   "wallet.rollback": WalletRollbackEvent,
   "wallet.commit": WalletCommitEvent,
@@ -173,6 +213,7 @@ export const EventSchemas = {
   "wallet.reconcile.mismatch.resolved": WalletReconcileMismatchAcknowledgedEvent,
   "wallet.chargeback_flag": WalletChargebackFlagEvent,
   "notification.create": NotificationCreateEvent,
+  "wallet.disbursement.request": WalletDisbursementRequestEvent,
   "wallet.deposit.rejected": WalletDepositRejectedEvent,
   "wallet.deposit.confirmed": WalletDepositConfirmedEvent,
   "admin.deposit.pending": AdminDepositPendingEvent,
@@ -185,9 +226,12 @@ export type Events = {
   "hand.end": z.infer<typeof HandEndEvent>;
   "hand.settle": z.infer<typeof HandSettleEvent>;
   "leaderboard.hand_settled": z.infer<typeof HandSettleEvent>;
+  "game.event": z.infer<typeof GameAnalyticsEvent>;
+  "tournament.event": z.infer<typeof TournamentAnalyticsEvent>;
   "wallet.credit": z.infer<typeof WalletMovementEvent>;
   "wallet.debit": z.infer<typeof WalletMovementEvent>;
   "tournament.cancel": z.infer<typeof TournamentCancelEvent>;
+  "tournament.bubble": z.infer<typeof TournamentBubbleEvent>;
   "wallet.reserve": z.infer<typeof WalletReserveEvent>;
   "wallet.rollback": z.infer<typeof WalletRollbackEvent>;
   "wallet.commit": z.infer<typeof WalletCommitEvent>;
@@ -200,6 +244,9 @@ export type Events = {
   >;
   "wallet.chargeback_flag": z.infer<typeof WalletChargebackFlagEvent>;
   "notification.create": z.infer<typeof NotificationCreateEvent>;
+  "wallet.disbursement.request": z.infer<
+    typeof WalletDisbursementRequestEvent
+  >;
   "wallet.deposit.rejected": z.infer<typeof WalletDepositRejectedEvent>;
   "wallet.deposit.confirmed": z.infer<typeof WalletDepositConfirmedEvent>;
   "admin.deposit.pending": z.infer<typeof AdminDepositPendingEvent>;
@@ -208,3 +255,5 @@ export type Events = {
 };
 
 export type EventName = keyof Events;
+
+export { NotificationCreateEvent };

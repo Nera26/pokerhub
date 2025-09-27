@@ -3789,6 +3789,16 @@ export interface components {
       id: string;
       username: string;
       avatarKey?: string;
+      /** Format: email */
+      email: string | null;
+      role: components["schemas"]["UserRole"];
+      bank: string | null;
+      location: string | null;
+      /** Format: date-time */
+      joined: string;
+      bio: string;
+      experience: number;
+      balance: number;
       banned: boolean;
     };
     DashboardUser: {

@@ -1,7 +1,6 @@
 import { z, ZodError } from 'zod';
 import { MessageResponseSchema as AuthMessageResponseSchema } from '../backend/src/schemas/auth';
 import type { MessageResponse as AuthMessageResponse } from '../backend/src/schemas/auth';
-import { GameActionSchema } from './schemas/game';
 import { SidePotSchema } from './schemas/sidePot';
 import { GameTypeSchema } from '../backend/src/schemas/game-types';
 import {
@@ -12,10 +11,7 @@ import {
   TournamentBracketRoundSchema,
   TournamentBracketResponseSchema,
 } from './schemas/history';
-import { CurrencySchema } from './wallet.schema';
 
-export type { GameAction } from './schemas/game';
-export { GameActionSchema };
 
 export { ZodError };
 
@@ -117,6 +113,17 @@ export const NavItemRequestSchema = NavItemSchema;
 export type NavItemRequest = z.infer<typeof NavItemRequestSchema>;
 
 export {
+  PendingWithdrawalSchema,
+  PendingWithdrawalsResponseSchema,
+  WithdrawalDecisionRequestSchema,
+} from './wallet.schema';
+export type {
+  PendingWithdrawal,
+  PendingWithdrawalsResponse,
+  WithdrawalDecisionRequest,
+} from './wallet.schema';
+
+export {
   SidebarTabSchema,
   SidebarItemSchema,
   SidebarItemsResponseSchema,
@@ -184,27 +191,6 @@ export type {
   DefaultAvatarResponse,
   PerformanceThresholdsResponse,
 } from '../backend/src/schemas/config';
-
-// Withdrawals
-export const PendingWithdrawalSchema = z.object({
-  id: z.string(),
-  userId: z.string(),
-  amount: z.number().int(),
-  currency: CurrencySchema,
-  status: z.enum(['pending', 'completed', 'rejected']),
-  createdAt: z.string().datetime(),
-  avatar: z.string(),
-  bank: z.string(),
-  maskedAccount: z.string(),
-  bankInfo: z.string().optional(),
-});
-export type PendingWithdrawal = z.infer<typeof PendingWithdrawalSchema>;
-export const PendingWithdrawalsResponseSchema = z.object({
-  withdrawals: z.array(PendingWithdrawalSchema),
-});
-export type PendingWithdrawalsResponse = z.infer<
-  typeof PendingWithdrawalsResponseSchema
->;
 
 // Backend re-exports
 export {
@@ -428,6 +414,9 @@ export {
   AdminTournamentFiltersResponseSchema,
   TournamentSimulateRequestSchema,
   TournamentSimulateResponseSchema,
+  CalculatePrizesRequestSchema,
+  CalculatePrizesResponseSchema,
+  TournamentScheduleRequestSchema,
   TournamentStateSchema,
   TournamentStatusSchema,
   TournamentStateMap,
@@ -447,6 +436,9 @@ export type {
   AdminTournamentFiltersResponse,
   TournamentSimulateRequest,
   TournamentSimulateResponse,
+  CalculatePrizesRequest,
+  CalculatePrizesResponse,
+  TournamentScheduleRequest,
   TournamentState,
   TournamentStatus,
 } from '../backend/src/schemas/tournaments';
@@ -578,8 +570,16 @@ export type UserMetaResponse = z.infer<typeof UserMetaResponseSchema>;
 export const UserSchema = z.object({
   id: z.string(),
   username: z.string(),
+  email: z.string().email().nullable(),
   avatarKey: z.string().optional(),
   banned: z.boolean(),
+  role: UserRoleSchema,
+  bank: z.string().nullable(),
+  location: z.string().nullable(),
+  joined: z.string().datetime(),
+  bio: z.string(),
+  experience: z.number().int(),
+  balance: z.number().int(),
 });
 export type User = z.infer<typeof UserSchema>;
 

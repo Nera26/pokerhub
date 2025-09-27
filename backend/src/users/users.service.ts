@@ -4,7 +4,6 @@ import { withSpan } from '../common/tracing';
 import {
   CreateUserRequest,
   UpdateUserRequest,
-  User,
   type UserProfile,
   type ProfileStatsResponse,
 } from '@shared/types';
@@ -13,6 +12,7 @@ import { QueryFailedError, In } from 'typeorm';
 import { Account } from '../wallet/account.entity';
 import { Leaderboard } from '../database/entities/leaderboard.entity';
 import * as bcrypt from 'bcrypt';
+import { User as UserEntity } from '../database/entities/user.entity';
 
 @Injectable()
 export class UsersService {
@@ -22,7 +22,7 @@ export class UsersService {
   private async withUser<T>(
     id: string,
     span: Span,
-    fn: (user: User) => Promise<T>,
+    fn: (user: UserEntity) => Promise<T>,
   ): Promise<T> {
     span.setAttribute('user.id', id);
     const user = await this.users.findOne({ where: { id } });
@@ -32,7 +32,7 @@ export class UsersService {
     return fn(user);
   }
 
-  async create(data: CreateUserRequest): Promise<User> {
+  async create(data: CreateUserRequest): Promise<UserEntity> {
     return withSpan('users.create', async (span) => {
       try {
         const passwordHash = data.password
@@ -61,7 +61,7 @@ export class UsersService {
     });
   }
 
-  async findById(id: string): Promise<User> {
+  async findById(id: string): Promise<UserEntity> {
     return withSpan('users.findById', async (span) => {
       span.setAttribute('user.id', id);
       const user = await this.users.findOne({ where: { id } });
@@ -122,7 +122,7 @@ export class UsersService {
     });
   }
 
-  async update(id: string, data: UpdateUserRequest): Promise<User> {
+  async update(id: string, data: UpdateUserRequest): Promise<UserEntity> {
     return withSpan('users.update', (span) => {
       return this.withUser(id, span, async (user) => {
         Object.assign(user, data);
@@ -131,7 +131,7 @@ export class UsersService {
     });
   }
 
-  async ban(id: string): Promise<User> {
+  async ban(id: string): Promise<UserEntity> {
     return withSpan('users.ban', (span) => {
       return this.withUser(id, span, async (user) => {
         user.banned = true;
@@ -140,7 +140,7 @@ export class UsersService {
     });
   }
 
-  async list(limit?: number): Promise<(User & { currency: string })[]> {
+  async list(limit?: number): Promise<(UserEntity & { currency: string })[]> {
     return withSpan('users.list', async (span) => {
       const users = await this.users.find({
         order: { joined: 'DESC' },
