@@ -1,12 +1,10 @@
 import { registerAs } from '@nestjs/config';
 
-export default registerAs('database', () => {
-  const localPort = process.env.DB_HOST_PORT ?? process.env.DB_PORT ?? '15432';
+import { resolveDatabaseUrl } from './database-url';
 
+export default registerAs('database', () => {
   return {
-    url:
-      process.env.DATABASE_URL ??
-      `postgres://postgres:postgres@localhost:${localPort}/pokerhub`,
+    url: resolveDatabaseUrl(),
     synchronize: process.env.DB_SYNC === 'true',
   };
 });
