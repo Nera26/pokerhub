@@ -2,7 +2,7 @@ version: '3.8'
 services:
   backend:
     ports:
-      - "${BACKEND_PORT}:3000"
+      - "${BACKEND_PORT:-3000}:3000"
     volumes:
       - ./backend:/app
     environment:
