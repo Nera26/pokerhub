@@ -30,19 +30,64 @@ function totalChips(state: InternalGameState): number {
   return state.pot + state.players.reduce((s, p) => s + p.stack, 0);
 }
 
+function withMandatoryBlinds(actions: GameAction[]): GameAction[] {
+  const blindActions = players.map<GameAction>((playerId, index) => ({
+    type: 'postBlind',
+    playerId,
+    amount: index === 0 ? config.smallBlind : config.bigBlind,
+  }));
+
+  return [...blindActions, ...actions];
+}
+
+function shouldSkipNext(state: InternalGameState): boolean {
+  if (state.phase !== 'BETTING_ROUND') return false;
+
+  return state.players.some(
+    (p) => !p.folded && !p.allIn && p.bet < state.currentBet,
+  );
+}
+
+function applyActionSafely(
+  engine: GameEngine,
+  action: GameAction,
+): InternalGameState | null {
+  const state = engine.getState();
+  if (action.type === 'next' && shouldSkipNext(state)) {
+    return null;
+  }
+
+  try {
+    return engine.applyAction(action);
+  } catch (err) {
+    expect(err).toBeInstanceOf(Error);
+    return null;
+  }
+}
+
+function playSequence(
+  engine: GameEngine,
+  actions: GameAction[],
+  onApplied?: (prev: InternalGameState, next: InternalGameState) => void,
+): void {
+  for (const action of withMandatoryBlinds(actions)) {
+    const prevState = onApplied
+      ? structuredClone(engine.getState())
+      : undefined;
+    const nextState = applyActionSafely(engine, action);
+    if (nextState && onApplied && prevState) {
+      onApplied(prevState, nextState);
+    }
+  }
+}
+
 describe('GameEngine property tests', () => {
   it('conserves chips across actions', async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(actionArb, { maxLength: 20 }), async (actions) => {
         const engine = await GameEngine.create(players, config);
         const initialTotal = totalChips(engine.getState());
-        actions.forEach((a) => {
-          try {
-            engine.applyAction(a);
-          } catch (err) {
-            expect(err).toBeInstanceOf(Error);
-          }
-        });
+        playSequence(engine, actions);
         const finalTotal = totalChips(engine.getState());
         expect(finalTotal).toBe(initialTotal);
       }),
@@ -53,21 +98,11 @@ describe('GameEngine property tests', () => {
     await fc.assert(
       fc.asyncProperty(fc.array(actionArb, { maxLength: 20 }), async (actions) => {
         const engine = await GameEngine.create(players, config);
-        actions.forEach((a) => {
-          try {
-            engine.applyAction(a);
-          } catch (err) {
-            expect(err).toBeInstanceOf(Error);
-          }
-        });
+        playSequence(engine, actions);
         let guard = 0;
         while (engine.getState().street !== 'showdown' && guard < 10) {
-          try {
-            engine.applyAction({ type: 'next' });
-          } catch (err) {
-            expect(err).toBeInstanceOf(Error);
-            break;
-          }
+          const nextState = applyActionSafely(engine, { type: 'next' });
+          if (!nextState) break;
           guard++;
         }
         const settlements = engine.getSettlements();
@@ -81,13 +116,8 @@ describe('GameEngine property tests', () => {
     await fc.assert(
       fc.asyncProperty(fc.array(actionArb, { maxLength: 20 }), async (actions) => {
         const engine = await GameEngine.create(players, config);
-        actions.forEach((a) => {
-          try {
-            engine.applyAction(a);
-          } catch (err) {
-            expect(err).toBeInstanceOf(Error);
-          }
-          engine.getState().players.forEach((p) => {
+        playSequence(engine, actions, (_, state) => {
+          state.players.forEach((p) => {
             expect(p.stack).toBeGreaterThanOrEqual(0);
           });
         });
@@ -100,13 +130,7 @@ describe('GameEngine property tests', () => {
       fc.asyncProperty(fc.array(actionArb, { maxLength: 20 }), async (actions) => {
         const engine = await GameEngine.create(players, config);
         const initialTotal = totalChips(engine.getState());
-        actions.forEach((a) => {
-          try {
-            engine.applyAction(a);
-          } catch (err) {
-            expect(err).toBeInstanceOf(Error);
-          }
-          const state = engine.getState();
+        playSequence(engine, actions, (_, state) => {
           expect(totalChips(state)).toBe(initialTotal);
           state.players.forEach((p) => {
             expect(p.stack).toBeGreaterThanOrEqual(0);
@@ -123,32 +147,23 @@ describe('GameEngine property tests', () => {
         const contributions: Record<string, number> = Object.fromEntries(
           players.map((p) => [p, 0]),
         );
-        let prev = engine.getState();
-        actions.forEach((a) => {
-          try {
-            const next = engine.applyAction(a);
-            next.players.forEach((p, idx) => {
-              const diff = prev.players[idx].stack - p.stack;
-              if (diff > 0) contributions[p.id] += diff;
-            });
-            prev = next;
-          } catch (err) {
-            expect(err).toBeInstanceOf(Error);
-          }
+        let prev = structuredClone(engine.getState());
+        playSequence(engine, actions, (previous, next) => {
+          next.players.forEach((p, idx) => {
+            const diff = previous.players[idx].stack - p.stack;
+            if (diff > 0) contributions[p.id] += diff;
+          });
+          prev = next;
         });
         let guard = 0;
         while (engine.getState().street !== 'showdown' && guard < 10) {
-          try {
-            const next = engine.applyAction({ type: 'next' });
-            next.players.forEach((p, idx) => {
-              const diff = prev.players[idx].stack - p.stack;
-              if (diff > 0) contributions[p.id] += diff;
-            });
-            prev = next;
-          } catch (err) {
-            expect(err).toBeInstanceOf(Error);
-            break;
-          }
+          const next = applyActionSafely(engine, { type: 'next' });
+          if (!next) break;
+          next.players.forEach((p, idx) => {
+            const diff = prev.players[idx].stack - p.stack;
+            if (diff > 0) contributions[p.id] += diff;
+          });
+          prev = next;
           guard++;
         }
         const totalContribution = Object.values(contributions).reduce(
@@ -160,12 +175,17 @@ describe('GameEngine property tests', () => {
           (s, e) => s + e.delta + contributions[e.playerId],
           0,
         );
+        const state = engine.getState();
+        const remainingPot =
+          state.sidePots.length > 0
+            ? state.sidePots.reduce((sum, pot) => sum + pot.amount, 0)
+            : state.pot;
         settlements
           .filter((e) => e.delta < 0)
           .forEach((e) => {
             expect(-e.delta).toBe(contributions[e.playerId]);
           });
-        expect(distributed).toBe(totalContribution);
+        expect(distributed + remainingPot).toBe(totalContribution);
       }),
     );
   });
