@@ -18,6 +18,11 @@ describe('SpectatorGateway', () => {
     addMock = jest.fn();
     const getMeterMock = jest.fn(() => ({
       createCounter: jest.fn(() => ({ add: addMock })),
+      createHistogram: jest.fn(() => ({ record: jest.fn() })),
+      createObservableGauge: jest.fn(() => ({
+        addCallback: jest.fn(),
+        removeCallback: jest.fn(),
+      })),
     }));
     jest.doMock('@opentelemetry/api', () => ({ metrics: { getMeter: getMeterMock } }));
     jest.doMock('../../src/game/room.service', () => ({ RoomManager: jest.fn() }));
@@ -62,10 +67,14 @@ describe('SpectatorGateway', () => {
     const states = client.emit.mock.calls
       .filter(([ev]) => ev === 'state')
       .map(([, s]) => s);
-    expect(states).toEqual([
+    const payloads = states.map(({ serverTime, ...rest }) => rest);
+    expect(payloads).toEqual([
       { n: 1, players: [] },
       { n: 2, players: [] },
     ]);
+    states.forEach((state) =>
+      expect(typeof state.serverTime === 'number').toBe(true),
+    );
   });
 
   it('increments dropped-frame metric when client is disconnected', async () => {
