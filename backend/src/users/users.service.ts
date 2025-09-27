@@ -16,7 +16,6 @@ import type { User as UserEntity } from '../database/entities/user.entity';
 
 @Injectable()
 export class UsersService {
-
   constructor(private readonly users: UserRepository) {}
 
   private async withUser<T>(
@@ -38,6 +37,7 @@ export class UsersService {
         const passwordHash = data.password
           ? await bcrypt.hash(data.password, 10)
           : undefined;
+
         const user = this.users.create({
           username: data.username,
           avatarKey: data.avatarKey,
@@ -46,14 +46,12 @@ export class UsersService {
           password: passwordHash,
           role: data.role ?? 'Player',
         });
+
         const saved = await this.users.save(user);
         span.setAttribute('user.id', saved.id);
         return saved;
       } catch (err) {
-        if (
-          err instanceof QueryFailedError &&
-          (err as any).driverError?.code === '23505'
-        ) {
+        if (err instanceof QueryFailedError && (err as any).driverError?.code === '23505') {
           throw new ConflictException('User already exists');
         }
         throw err;
@@ -73,90 +71,88 @@ export class UsersService {
   }
 
   async getProfile(id: string): Promise<UserProfile> {
-    return withSpan('users.getProfile', (span) => {
-      return this.withUser(id, span, async (user) => {
-        return {
-          username: user.username,
-          email: user.email ?? '',
-          avatarUrl: user.avatarKey ?? '',
-          bank: user.bank ?? '',
-          location: user.location ?? '',
-          joined: user.joined?.toISOString() ?? new Date(0).toISOString(),
-          bio: user.bio ?? '',
-          experience: user.experience,
-          balance: user.balance,
-        };
-      });
-    });
+    return withSpan('users.getProfile', (span) =>
+      this.withUser(id, span, async (user) => ({
+        username: user.username,
+        email: user.email ?? '',
+        avatarUrl: user.avatarKey ?? '',
+        bank: user.bank ?? '',
+        location: user.location ?? '',
+        joined: user.joined?.toISOString() ?? new Date(0).toISOString(),
+        bio: user.bio ?? '',
+        experience: user.experience,
+        balance: user.balance,
+      })),
+    );
   }
 
   async getStats(id: string): Promise<ProfileStatsResponse> {
-    return withSpan('users.getStats', (span) => {
-      return this.withUser(id, span, async () => {
+    return withSpan('users.getStats', (span) =>
+      this.withUser(id, span, async () => {
         const repo = this.users.manager.getRepository(Leaderboard);
         const lb = await repo.findOne({ where: { playerId: id } });
+
         const tournamentsPlayed = lb
           ? Object.values(lb.finishes || {}).reduce(
               (a, b) => a + (typeof b === 'number' ? b : 0),
               0,
             )
           : 0;
+
         const wins = lb?.finishes?.[1] ?? 0;
         const topThree =
-          (lb?.finishes?.[1] ?? 0) +
-          (lb?.finishes?.[2] ?? 0) +
-          (lb?.finishes?.[3] ?? 0);
-        const winRate = tournamentsPlayed
-          ? (wins / tournamentsPlayed) * 100
-          : 0;
-        const topThreeRate = tournamentsPlayed
-          ? (topThree / tournamentsPlayed) * 100
-          : 0;
+          (lb?.finishes?.[1] ?? 0) + (lb?.finishes?.[2] ?? 0) + (lb?.finishes?.[3] ?? 0);
+
+        const winRate = tournamentsPlayed ? (wins / tournamentsPlayed) * 100 : 0;
+        const topThreeRate = tournamentsPlayed ? (topThree / tournamentsPlayed) * 100 : 0;
+
         return {
           handsPlayed: lb?.hands ?? 0,
           winRate,
           tournamentsPlayed,
           topThreeRate,
         };
-      });
-    });
+      }),
+    );
   }
 
   async update(id: string, data: UpdateUserRequest): Promise<UserEntity> {
-    return withSpan('users.update', (span) => {
-      return this.withUser(id, span, async (user) => {
+    return withSpan('users.update', (span) =>
+      this.withUser(id, span, async (user) => {
         Object.assign(user, data);
         return this.users.save(user);
-      });
-    });
+      }),
+    );
   }
 
   async ban(id: string): Promise<UserEntity> {
-    return withSpan('users.ban', (span) => {
-      return this.withUser(id, span, async (user) => {
+    return withSpan('users.ban', (span) =>
+      this.withUser(id, span, async (user) => {
         user.banned = true;
         return this.users.save(user);
-      });
-    });
+      }),
+    );
   }
 
   async list(limit?: number): Promise<(UserEntity & { currency: string })[]> {
-    return withSpan('users.list', async (span) => {
+    return withSpan('users.list', async () => {
       const users = await this.users.find({
         order: { joined: 'DESC' },
         take: limit,
       });
+
       const accountRepo = this.users.manager.getRepository(Account);
       const accounts = await accountRepo.findBy({
         id: In(users.map((u) => u.id)),
       });
+
       const accountMap = new Map(accounts.map((a) => [a.id, a.currency]));
       return users.map((u) => ({ ...u, currency: accountMap.get(u.id) ?? 'USD' }));
     });
   }
 
   async reset() {
-    return withSpan('users.reset', async (span) => {
+    return withSpan('users.reset', async () => {
       await this.users
         .createQueryBuilder()
         .delete()
@@ -165,4 +161,3 @@ export class UsersService {
     });
   }
 }
-

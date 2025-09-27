@@ -36,7 +36,17 @@ export class UsersController {
   private parseUser(user: any): User {
     return UserSchema.parse({
       ...user,
+      email: user.email ?? null,
       avatarKey: user.avatarKey ?? undefined,
+      bank: user.bank ?? null,
+      location: user.location ?? null,
+      joined:
+        user.joined instanceof Date
+          ? user.joined.toISOString()
+          : user.joined ?? new Date(0).toISOString(),
+      bio: user.bio ?? '',
+      experience: user.experience ?? 0,
+      balance: user.balance ?? 0,
     });
   }
 
