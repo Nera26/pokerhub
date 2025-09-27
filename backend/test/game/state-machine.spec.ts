@@ -1,4 +1,5 @@
 import { GameEngine, GameAction } from '../../src/game/engine';
+import { standardDeck } from '@shared/verify';
 
 const config = { startingStack: 100, smallBlind: 1, bigBlind: 2 };
 
@@ -116,6 +117,51 @@ describe('Hand state machine', () => {
       .reduce((sum, s) => sum + s.delta, 0);
     const winnerDelta = Math.max(...settlements.map((s) => s.delta));
     expect(winnerDelta).toBe(pot);
+  });
+
+  it('rebuilds the shoe when depleted between streets', async () => {
+    const engine = await GameEngine.create(['A', 'B'], config);
+    engine.applyAction({ type: 'postBlind', playerId: 'A', amount: 1 });
+    engine.applyAction({ type: 'postBlind', playerId: 'B', amount: 2 });
+
+    // Preflop betting round
+    engine.applyAction({ type: 'next' });
+    engine.applyAction({ type: 'call', playerId: 'A' });
+    engine.applyAction({ type: 'next' });
+
+    const state = engine.getState();
+    state.deck.length = 0;
+
+    expect(() => engine.applyAction({ type: 'next' })).not.toThrow();
+    expect(engine.getState().communityCards.length).toBe(3);
+
+    engine.getState().deck.length = 0;
+    engine.applyAction({ type: 'next' });
+    expect(() => engine.applyAction({ type: 'next' })).not.toThrow();
+    expect(engine.getState().communityCards.length).toBe(4);
+
+    engine.getState().deck.length = 0;
+    engine.applyAction({ type: 'next' });
+    expect(() => engine.applyAction({ type: 'next' })).not.toThrow();
+
+    const finalState = engine.getState();
+    expect(finalState.communityCards.length).toBe(5);
+    for (const player of finalState.players) {
+      expect(player.holeCards?.length).toBe(2);
+    }
+
+    const totalHoleCards = finalState.players.reduce(
+      (sum, player) => sum + (player.holeCards?.length ?? 0),
+      0,
+    );
+    const deckSize = standardDeck().length;
+    expect(finalState.deck.length).toBe(
+      deckSize - totalHoleCards - finalState.communityCards.length,
+    );
+
+    expect(() => engine.applyAction({ type: 'next' })).not.toThrow();
+    expect(engine.getState().phase).toBe('SETTLE');
+    expect(engine.getState().street).toBe('showdown');
   });
 
   it('rejects invalid bet amounts', async () => {

@@ -65,7 +65,7 @@ export class HandStateMachine {
           this.placeBet(player, action.amount);
           this.blindsPosted.add(player.id);
           if (this.blindsPosted.size === this.state.players.length) {
-            this.state.deck = this.rng.shuffle(standardDeck());
+            this.state.deck = this.buildDeck(new Set());
             for (const p of this.state.players) {
               p.holeCards = [this.state.deck.pop()!, this.state.deck.pop()!];
             }
@@ -240,7 +240,83 @@ export class HandStateMachine {
     this.state.currentBet = 0;
   }
 
+  private expectedCommunityCountBeforeDeal(): number {
+    switch (this.state.street) {
+      case 'flop':
+        return 0;
+      case 'turn':
+        return 3;
+      case 'river':
+        return 4;
+      default:
+        return this.state.communityCards.length;
+    }
+  }
+
+  private ensureDeckCapacity(n: number) {
+    const sanitized = this.state.deck.filter(
+      (card): card is number => typeof card === 'number',
+    );
+    if (sanitized.length !== this.state.deck.length) {
+      this.state.deck = sanitized;
+    }
+
+    const used = new Set<number>();
+    const markUsed = (card?: number) => {
+      if (typeof card === 'number') {
+        used.add(card);
+      }
+    };
+    this.state.communityCards.forEach((card) => markUsed(card));
+    for (const player of this.state.players) {
+      player.holeCards?.forEach((card) => markUsed(card));
+    }
+
+    const deckSize = standardDeck().length;
+    const expectedRemaining = deckSize - used.size;
+
+    if (this.state.deck.length !== expectedRemaining || this.state.deck.length < n) {
+      const remainingShoe = standardDeck().filter((card) => !used.has(card));
+      if (remainingShoe.length < n) {
+        throw new Error('insufficient cards to continue hand');
+      }
+      this.state.deck = this.buildDeck(used);
+    }
+  }
+
+  private buildDeck(excluded: Set<number>): number[] {
+    const available = standardDeck().filter((card) => !excluded.has(card));
+    const shuffled = this.rng.shuffle(available);
+    const seen = new Set<number>();
+    const deck: number[] = [];
+
+    for (const card of shuffled) {
+      if (typeof card === 'number' && !excluded.has(card) && !seen.has(card)) {
+        seen.add(card);
+        deck.push(card);
+      }
+    }
+
+    if (deck.length < available.length) {
+      for (const card of available) {
+        if (!seen.has(card)) {
+          seen.add(card);
+          deck.push(card);
+        }
+      }
+    }
+
+    return deck;
+  }
+
   private dealCommunity(n: number) {
+    const expected = this.expectedCommunityCountBeforeDeal();
+    if (this.state.communityCards.length !== expected) {
+      throw new Error('community cards already dealt for street');
+    }
+
+    this.ensureDeckCapacity(n);
+
     for (let i = 0; i < n; i++) {
       const card = this.state.deck.pop();
       if (card === undefined) throw new Error('deck exhausted');
