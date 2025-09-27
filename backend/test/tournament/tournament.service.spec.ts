@@ -62,7 +62,7 @@ describe('TournamentService algorithms', () => {
       } as Tournament,
     ]);
     seatsRepo = createRepo<Seat>();
-    tablesRepo = { find: jest.fn() };
+    tablesRepo = { find: jest.fn().mockResolvedValue([]) };
     rooms = { get: jest.fn() };
     flags = { get: jest.fn(), getTourney: jest.fn() };
     events = { emit: jest.fn() };

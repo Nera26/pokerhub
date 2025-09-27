@@ -28,7 +28,7 @@ export async function createLeaderboardPerfService({
   } as any;
   const service = new LeaderboardService(
     cache as unknown as Cache,
-    { find: jest.fn() } as any,
+    { find: jest.fn().mockResolvedValue([]) } as any,
     repo,
     analytics as any,
     new ConfigService(),
