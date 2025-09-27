@@ -22,6 +22,11 @@ import { Table } from '../src/database/entities/table.entity';
 import { TournamentScheduler } from '../src/tournament/scheduler.service';
 import { RebuyService } from '../src/tournament/rebuy.service';
 import { PkoService } from '../src/tournament/pko.service';
+import { TournamentsProducer } from '../src/messaging/tournaments/tournaments.producer';
+import { BotProfileRepository } from '../src/tournament/bot-profile.repository';
+import { TournamentFilterOptionRepository } from '../src/tournament/tournament-filter-option.repository';
+import { TournamentFormatRepository } from '../src/tournament/tournament-format.repository';
+import { createInMemoryRedis } from './utils/mock-redis';
 
 class MockSocket extends EventEmitter {
   id = Math.random().toString(36).slice(2);
@@ -34,24 +39,6 @@ class MockSocket extends EventEmitter {
   handshake = { auth: {} } as any;
 }
 
-function createRedis() {
-  const store = new Map<string, string>();
-  return {
-    get: async (key: string) => store.get(key) ?? null,
-    set: async (key: string, value: string) => {
-      store.set(key, value);
-      return 'OK';
-    },
-    del: async (key: string) => {
-      store.delete(key);
-      return 1;
-    },
-    keys: async (pattern: string) =>
-      Array.from(store.keys()).filter((k) => k.startsWith(pattern.replace('*', ''))),
-    mget: async (keys: string[]) => keys.map((k) => store.get(k) ?? null),
-  } as any;
-}
-
 describe('Scoped feature flags', () => {
   describe('GameGateway', () => {
     let gateway: GameGateway;
@@ -59,6 +46,7 @@ describe('Scoped feature flags', () => {
     let replayMock: jest.Mock;
 
     beforeAll(async () => {
+      const { redis } = createInMemoryRedis();
       const moduleRef = await Test.createTestingModule({
         providers: [
           GameGateway,
@@ -94,7 +82,7 @@ describe('Scoped feature flags', () => {
               }),
             },
           },
-          { provide: 'REDIS_CLIENT', useValue: createRedis() },
+          { provide: 'REDIS_CLIENT', useValue: redis },
         ],
       }).compile();
 
@@ -122,6 +110,7 @@ describe('Scoped feature flags', () => {
     let pko: { settleBounty: jest.Mock };
 
     beforeAll(async () => {
+      const { redis } = createInMemoryRedis();
       const moduleRef = await Test.createTestingModule({
         providers: [
           TournamentService,
@@ -134,7 +123,11 @@ describe('Scoped feature flags', () => {
           { provide: RoomManager, useValue: {} },
           { provide: RebuyService, useValue: {} },
           { provide: PkoService, useValue: (pko = { settleBounty: jest.fn(() => ({ playerAward: 10, newBounty: 20 })) }) },
-          { provide: 'REDIS_CLIENT', useValue: createRedis() },
+          { provide: BotProfileRepository, useValue: { find: jest.fn() } },
+          { provide: TournamentFilterOptionRepository, useValue: { find: jest.fn() } },
+          { provide: TournamentFormatRepository, useValue: { find: jest.fn() } },
+          { provide: TournamentsProducer, useValue: { publish: jest.fn() } },
+          { provide: 'REDIS_CLIENT', useValue: redis },
         ],
       }).compile();
 
