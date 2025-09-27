@@ -147,7 +147,10 @@ export async function setupTelemetry({
       );
     }
 
-    meterProvider = new MeterProvider({ resource, readers: metricReaders });
+    meterProvider = new MeterProvider({ resource });
+    for (const reader of metricReaders) {
+      meterProvider.addMetricReader(reader);
+    }
     metrics.setGlobalMeterProvider(meterProvider);
   }
 
