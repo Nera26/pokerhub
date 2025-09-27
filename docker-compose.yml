@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   api-gateway:
     build: ./infra/api-gateway
@@ -75,11 +73,12 @@ services:
   storage:
     build: ./infra/storage
     image: pokerhub-fake-gcs
-    command: -scheme http -backend memory
+    command: -scheme http -backend memory -port 4443
     ports:
       - '4443:4443'
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:4443/storage/v1/b']
+      test: ['CMD-SHELL', 'curl -fsS http://localhost:4443/storage/v1/b >/dev/null']
       interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 5s
