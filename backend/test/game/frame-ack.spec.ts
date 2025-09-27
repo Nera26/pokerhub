@@ -48,7 +48,10 @@ describe('GameGateway frame ack', () => {
         { provide: AnalyticsService, useValue: { recordGameEvent: jest.fn() } },
         { provide: EventPublisher, useValue: { emit: jest.fn() } },
         { provide: getRepositoryToken(Hand), useValue: { findOne: jest.fn() } },
-        { provide: getRepositoryToken(GameState), useValue: { find: jest.fn(), save: jest.fn() } },
+        {
+          provide: getRepositoryToken(GameState),
+          useValue: { find: jest.fn().mockResolvedValue([]), save: jest.fn() },
+        },
         { provide: 'REDIS_CLIENT', useValue: redis },
       ],
     }).compile();

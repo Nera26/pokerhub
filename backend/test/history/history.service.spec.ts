@@ -15,9 +15,11 @@ describe('HistoryService.getTournamentBracket', () => {
   beforeEach(() => {
     bracketRepo = { findOne: jest.fn() };
     service = new HistoryService(
-      { find: jest.fn() } as unknown as HistoryRepository<GameHistory>,
-      { find: jest.fn() } as unknown as HistoryRepository<TournamentHistory>,
-      { find: jest.fn() } as unknown as HistoryRepository<WalletHistory>,
+      { find: jest.fn().mockResolvedValue([]) } as unknown as HistoryRepository<GameHistory>,
+      {
+        find: jest.fn().mockResolvedValue([]),
+      } as unknown as HistoryRepository<TournamentHistory>,
+      { find: jest.fn().mockResolvedValue([]) } as unknown as HistoryRepository<WalletHistory>,
       bracketRepo as unknown as HistoryRepository<TournamentBracket>,
     );
   });
