@@ -74,8 +74,7 @@ export class SessionService {
       await this.redis.set(
         `${this.refreshPrefix}${refreshToken}`,
         refreshValue,
-        'EX',
-        refreshTtl,
+        { EX: refreshTtl },
       );
       SessionService.tokensIssued.add(1);
       return { accessToken, refreshToken };

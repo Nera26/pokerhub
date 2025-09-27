@@ -41,7 +41,10 @@ export class WebhookController {
       throw new UnauthorizedException('invalid signature');
     }
     const key = `wallet:webhook:${eventId}`;
-    const stored = await this.redis.set(key, '1', 'NX', 'EX', 60 * 60 * 24);
+    const stored = await this.redis.set(key, '1', {
+      NX: true,
+      EX: 60 * 60 * 24,
+    });
     if (stored === null) {
       return MessageResponseSchema.parse({
         message: 'acknowledged',

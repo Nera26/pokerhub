@@ -379,7 +379,10 @@ export class WalletService {
 
   private async isDuplicateWebhook(eventId: string): Promise<boolean> {
     const key = `wallet:webhook:${eventId}`;
-    const res = await this.redis.set(key, '1', 'NX', 'EX', 60 * 60 * 24);
+    const res = await this.redis.set(key, '1', {
+      NX: true,
+      EX: 60 * 60 * 24,
+    });
     return res === null;
   }
 
@@ -726,7 +729,10 @@ export class WalletService {
             span.setStatus({ code: SpanStatusCode.OK });
             return JSON.parse(existing);
           }
-          const lock = await this.redis.set(redisKey, 'LOCK', 'NX', 'EX', 600);
+          const lock = await this.redis.set(redisKey, 'LOCK', {
+            NX: true,
+            EX: 600,
+          });
           if (lock === null) {
             const cached = await this.redis.get(redisKey);
             if (cached && cached !== 'LOCK') {
@@ -754,11 +760,10 @@ export class WalletService {
         await this.redis.set(
           this.challengeKey(challenge.id),
           JSON.stringify({ op: 'withdraw', accountId, amount, currency }),
-          'EX',
-          600,
+          { EX: 600 },
         );
         if (redisKey) {
-          await this.redis.set(redisKey, JSON.stringify(challenge), 'EX', 600);
+          await this.redis.set(redisKey, JSON.stringify(challenge), { EX: 600 });
         }
         span.setStatus({ code: SpanStatusCode.OK });
         return challenge;
@@ -795,7 +800,10 @@ export class WalletService {
             span.setStatus({ code: SpanStatusCode.OK });
             return JSON.parse(existing);
           }
-          const lock = await this.redis.set(redisKey, 'LOCK', 'NX', 'EX', 600);
+          const lock = await this.redis.set(redisKey, 'LOCK', {
+            NX: true,
+            EX: 600,
+          });
           if (lock === null) {
             const cached = await this.redis.get(redisKey);
             if (cached && cached !== 'LOCK') {
@@ -842,11 +850,10 @@ export class WalletService {
             currency,
             deviceId,
           }),
-          'EX',
-          600,
+          { EX: 600 },
         );
         if (redisKey) {
-          await this.redis.set(redisKey, JSON.stringify(challenge), 'EX', 600);
+          await this.redis.set(redisKey, JSON.stringify(challenge), { EX: 600 });
         }
         span.setStatus({ code: SpanStatusCode.OK });
         return challenge;
@@ -924,7 +931,10 @@ async initiateBankTransfer(
       if (existing && existing !== 'LOCK') {
         return JSON.parse(existing);
       }
-      const lock = await this.redis.set(redisKey, 'LOCK', 'NX', 'EX', 600);
+      const lock = await this.redis.set(redisKey, 'LOCK', {
+        NX: true,
+        EX: 600,
+      });
       if (lock === null) {
         const cached = await this.redis.get(redisKey);
         if (cached && cached !== 'LOCK') {
@@ -983,7 +993,7 @@ async initiateBankTransfer(
     };
 
     if (redisKey) {
-      await this.redis.set(redisKey, JSON.stringify(res), 'EX', 600);
+      await this.redis.set(redisKey, JSON.stringify(res), { EX: 600 });
     }
     return res;
   } catch (err) {
@@ -1110,7 +1120,10 @@ async rejectExpiredPendingDeposits(): Promise<void> {
 
   async confirmPendingDeposit(id: string, adminId: string): Promise<void> {
     const lockKey = `wallet:pending:${id}:lock`;
-    const lock = await this.redis.set(lockKey, '1', 'NX', 'EX', 30);
+    const lock = await this.redis.set(lockKey, '1', {
+      NX: true,
+      EX: 30,
+    });
     if (lock === null) throw new Error('Deposit locked');
     try {
       const deposit = await this.pendingDeposits.findOneBy({ id });
@@ -1164,7 +1177,10 @@ async rejectExpiredPendingDeposits(): Promise<void> {
     reason?: string,
   ): Promise<void> {
     const lockKey = `wallet:pending:${id}:lock`;
-    const lock = await this.redis.set(lockKey, '1', 'NX', 'EX', 30);
+    const lock = await this.redis.set(lockKey, '1', {
+      NX: true,
+      EX: 30,
+    });
     if (lock === null) throw new Error('Deposit locked');
     try {
       const deposit = await this.pendingDeposits.findOneBy({ id });
