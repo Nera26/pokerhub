@@ -22,6 +22,8 @@ spec:
                 configMapKeyRef:
                   name: db-endpoints
                   key: PRIMARY_ENDPOINT
+            - name: DATABASE_URL
+              value: postgres://postgres:postgres@$(DB_PRIMARY_HOST):5432/pokerhub
             - name: DB_REPLICA_HOST
               valueFrom:
                 configMapKeyRef:

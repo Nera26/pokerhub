@@ -18,6 +18,7 @@ services:
     command: npm run start:dev
     env_file: .env
     environment:
+      - DATABASE_URL=${DATABASE_URL:-postgres://postgres:postgres@db:5432/pokerhub}
       - GCP_PROJECT=${GCP_PROJECT}
       - GCS_BUCKET=${GCS_BUCKET}
       - GOOGLE_APPLICATION_CREDENTIALS=/secrets/gcp-service-account.json
