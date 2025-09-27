@@ -1,7 +1,9 @@
 import { ConfigService } from '@nestjs/config';
 import * as kafkaModule from '../../src/common/kafka';
 
-const { createKafkaProducer, createKafkaConsumer } = kafkaModule;
+const { createKafkaProducer, createKafkaConsumer, __testUtils } = kafkaModule;
+
+const { parseKafkaBrokers } = __testUtils;
 
 afterEach(() => {
   jest.restoreAllMocks();
@@ -20,9 +22,9 @@ describe('createKafkaProducer', () => {
     const kafka: any = {
       producer: jest.fn().mockReturnValue({ connect: jest.fn() }),
     };
-    const spy = jest.spyOn(kafkaModule, 'createKafka').mockReturnValue(kafka);
-    createKafkaProducer(config);
-    expect(spy).toHaveBeenCalledWith(config);
+    const factory = jest.fn().mockReturnValue(kafka);
+    createKafkaProducer(config, factory);
+    expect(factory).toHaveBeenCalledWith(config);
     expect(kafka.producer).toHaveBeenCalled();
   });
 });
@@ -41,11 +43,23 @@ describe('createKafkaConsumer', () => {
     const kafka: any = {
       consumer: jest.fn().mockReturnValue(consumerMock),
     };
-    const spy = jest.spyOn(kafkaModule, 'createKafka').mockReturnValue(kafka);
-    await createKafkaConsumer(config, 'group');
-    expect(spy).toHaveBeenCalledWith(config);
+    const factory = jest.fn().mockReturnValue(kafka);
+    await createKafkaConsumer(config, 'group', factory);
+    expect(factory).toHaveBeenCalledWith(config);
     expect(kafka.consumer).toHaveBeenCalledWith({ groupId: 'group' });
     expect(consumerMock.connect).toHaveBeenCalled();
+  });
+});
+
+describe('parseKafkaBrokers', () => {
+  it('splits comma separated values and trims whitespace', () => {
+    expect(parseKafkaBrokers('broker-a:9092, broker-b:9093 ,'))
+      .toEqual(['broker-a:9092', 'broker-b:9093']);
+  });
+
+  it('returns empty array when value is undefined or empty', () => {
+    expect(parseKafkaBrokers(undefined)).toEqual([]);
+    expect(parseKafkaBrokers('  ,  ')).toEqual([]);
   });
 });
 
