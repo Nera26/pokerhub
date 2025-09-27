@@ -3,70 +3,65 @@ import { Tournament, TournamentState } from '../src/database/entities/tournament
 import { Seat } from '../src/database/entities/seat.entity';
 import { Table } from '../src/database/entities/table.entity';
 import { Repository } from 'typeorm';
-import { RebuyService } from '../src/tournament/rebuy.service';
-import { PkoService } from '../src/tournament/pko.service';
+import type { WalletService } from '../src/wallet/wallet.service';
+import {
+  createTestTable,
+  createTournamentRepo,
+  createTournamentServiceInstance,
+} from './tournament/helpers';
 
 describe('TournamentService.join rollback', () => {
   let service: TournamentService;
-  let tournamentsRepo: any;
-  let seatsRepo: any;
-  let wallet: any;
+  let tournamentsRepo: Repository<Tournament>;
+  let seatsRepo: Repository<Seat>;
+  let tablesRepo: Repository<Table>;
+  let wallet: { reserve: jest.Mock; rollback: jest.Mock };
 
   beforeEach(() => {
-    tournamentsRepo = {
-      findOne: jest.fn(async ({ where: { id } }: any) => ({
-        id,
-        title: 'Daily Free Roll',
-        buyIn: 100,
-        prizePool: 1000,
-        currency: 'USD',
-        maxPlayers: 100,
-        state: TournamentState.REG_OPEN,
-        gameType: 'texas',
-        tables: [],
-      } as Tournament)),
-      save: jest.fn(),
-    } as Repository<Tournament>;
+    const tournament = {
+      id: 't1',
+      title: 'Daily Free Roll',
+      buyIn: 100,
+      prizePool: 1000,
+      currency: 'USD',
+      maxPlayers: 100,
+      state: TournamentState.REG_OPEN,
+      gameType: 'texas',
+      tables: [],
+      details: [],
+    } as Tournament;
+
+    const table = createTestTable('tbl1', tournament);
+    tournament.tables = [table];
+
+    tournamentsRepo = createTournamentRepo([tournament]);
 
     const seatStore = new Map<string, Seat>();
-    seatsRepo = {
+    const seatsRepoMock = {
       create: jest.fn((seat: Seat) => seat),
       save: jest.fn(async (_seat: Seat) => {
         throw new Error('save failed');
       }),
       find: jest.fn(async () => Array.from(seatStore.values())),
-    } as Repository<Seat>;
+      manager: {},
+    };
+    seatsRepo = seatsRepoMock as unknown as Repository<Seat>;
 
-    const tablesRepo = {
-      find: jest.fn(async () => [
-        { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
-      ]),
-    } as Repository<Table>;
+    tablesRepo = {
+      find: jest.fn(async () => [table]),
+    } as unknown as Repository<Table>;
 
     wallet = {
       reserve: jest.fn(async () => undefined),
       rollback: jest.fn(async () => undefined),
     };
 
-    const scheduler: any = {};
-    const rooms: any = { get: jest.fn() };
-    const flags: any = { get: jest.fn(), getTourney: jest.fn() };
-    const events: any = { emit: jest.fn() };
-
-    service = new TournamentService(
+    service = createTournamentServiceInstance({
       tournamentsRepo,
       seatsRepo,
       tablesRepo,
-      scheduler,
-      rooms,
-      new RebuyService(),
-      new PkoService(),
-      flags,
-      events,
-      undefined,
-      undefined,
-      wallet,
-    );
+      wallet: wallet as unknown as WalletService,
+    });
   });
 
   it('rolls back wallet on seat save failure', async () => {

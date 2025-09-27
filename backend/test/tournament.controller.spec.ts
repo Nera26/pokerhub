@@ -17,7 +17,7 @@ describe('TournamentController', () => {
     list: jest.fn(),
     get: jest.fn(),
     getFilterOptions: jest.fn(),
-  } as Partial<TournamentService>;
+  } as unknown as jest.Mocked<TournamentService>;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -69,7 +69,7 @@ describe('TournamentController', () => {
   });
 
   it('lists tournaments with state and gameType', async () => {
-    svc.list?.mockResolvedValue([
+    svc.list.mockResolvedValue([
       {
         id: 't1',
         title: 'T1',
@@ -86,7 +86,7 @@ describe('TournamentController', () => {
   });
 
   it('returns tournament filter options', async () => {
-    svc.getFilterOptions?.mockResolvedValue([
+    svc.getFilterOptions.mockResolvedValue([
       { label: 'Active', value: 'active' },
       { label: 'Upcoming', value: 'upcoming' },
     ]);
@@ -99,7 +99,7 @@ describe('TournamentController', () => {
   });
 
   it('gets tournament with state and gameType', async () => {
-    svc.get?.mockResolvedValue({
+    svc.get.mockResolvedValue({
       id: 't1',
       title: 'T1',
       buyIn: 100,
@@ -119,7 +119,7 @@ describe('TournamentController', () => {
 
 
   it('registers player', async () => {
-    svc.join?.mockResolvedValue({ id: 'seat1' } as any);
+    svc.join.mockResolvedValue({ id: 'seat1' } as any);
     await request(app.getHttpServer())
       .post('/tournaments/t1/register')
       .set('Authorization', 'Bearer u1')
@@ -128,7 +128,7 @@ describe('TournamentController', () => {
   });
 
   it('withdraws player', async () => {
-    svc.withdraw?.mockResolvedValue(undefined);
+    svc.withdraw.mockResolvedValue(undefined);
     await request(app.getHttpServer())
       .post('/tournaments/t1/withdraw')
       .set('Authorization', 'Bearer u1')
@@ -137,7 +137,7 @@ describe('TournamentController', () => {
   });
 
   it('schedules tournament', async () => {
-    svc.scheduleTournament?.mockResolvedValue(undefined);
+    svc.scheduleTournament.mockResolvedValue(undefined);
     const now = new Date();
     const payload = {
       startTime: now.toISOString(),
