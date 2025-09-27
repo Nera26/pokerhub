@@ -5,20 +5,35 @@ export type PQueueCtor = typeof import('p-queue').default;
 export type PQueueInstance = InstanceType<PQueueCtor>;
 
 let cachedCtor: PQueueCtor | undefined;
-let cachedRequire: NodeJS.Require | undefined;
+let cachedPromise: Promise<PQueueCtor> | undefined;
+let cachedEvalRequire: NodeJS.Require | null | undefined;
+let cachedCreateRequire: NodeJS.Require | undefined;
 
-function getRequireShim(): NodeJS.Require {
-  if (cachedRequire) {
-    return cachedRequire;
+const dynamicImport = Function(
+  'specifier',
+  'return import(specifier);',
+) as (specifier: string) => Promise<unknown>;
+
+function getEvalRequire(): NodeJS.Require | null {
+  if (cachedEvalRequire !== undefined) {
+    return cachedEvalRequire;
   }
 
   try {
-    cachedRequire = eval('require') as NodeJS.Require;
+    cachedEvalRequire = eval('require') as NodeJS.Require;
   } catch {
-    cachedRequire = createRequire(join(process.cwd(), 'noop.js'));
+    cachedEvalRequire = null;
   }
 
-  return cachedRequire;
+  return cachedEvalRequire;
+}
+
+function getCreateRequire(): NodeJS.Require {
+  if (!cachedCreateRequire) {
+    cachedCreateRequire = createRequire(join(process.cwd(), 'noop.js'));
+  }
+
+  return cachedCreateRequire;
 }
 
 function resolveCtor(module: unknown): PQueueCtor {
@@ -27,8 +42,39 @@ function resolveCtor(module: unknown): PQueueCtor {
 }
 
 function tryRequirePQueue(): PQueueCtor {
-  const required = getRequireShim()('p-queue');
+  const evalRequire = getEvalRequire();
+
+  if (evalRequire) {
+    try {
+      const required = evalRequire('p-queue');
+      return resolveCtor(required);
+    } catch (error) {
+      if (!shouldFallback(error)) {
+        throw error;
+      }
+    }
+  }
+
+  const required = getCreateRequire()('p-queue');
   return resolveCtor(required);
+}
+
+function shouldFallback(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  if (error instanceof SyntaxError) {
+    return true;
+  }
+
+  const { code, name } = error as { code?: unknown; name?: unknown };
+
+  if (code === 'ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG' || code === 'ERR_REQUIRE_ESM') {
+    return true;
+  }
+
+  return name === 'SyntaxError';
 }
 
 export async function loadPQueue(): Promise<PQueueCtor> {
@@ -36,23 +82,28 @@ export async function loadPQueue(): Promise<PQueueCtor> {
     return cachedCtor;
   }
 
-  try {
-    const module = await import('p-queue');
-    const ctor = resolveCtor(module);
-    cachedCtor = ctor;
-    return ctor;
-  } catch (error) {
-    if (
-      error &&
-      typeof error === 'object' &&
-      'code' in error &&
-      (error as { code?: unknown }).code === 'ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG'
-    ) {
-      const ctor = tryRequirePQueue();
-      cachedCtor = ctor;
-      return ctor;
-    }
+  if (!cachedPromise) {
+    cachedPromise = (async () => {
+      try {
+        const module = await dynamicImport('p-queue');
+        const ctor = resolveCtor(module);
+        cachedCtor = ctor;
+        return ctor;
+      } catch (error) {
+        if (shouldFallback(error)) {
+          const ctor = tryRequirePQueue();
+          cachedCtor = ctor;
+          return ctor;
+        }
 
-    throw error;
+        throw error;
+      } finally {
+        if (cachedCtor) {
+          cachedPromise = undefined;
+        }
+      }
+    })();
   }
+
+  return cachedPromise;
 }
