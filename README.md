@@ -45,11 +45,16 @@ If you prefer to perform the steps manually:
 
    The `.env` file uses URL-style connection strings:
 
-   ```
+    ```
     DATABASE_URL=postgres://postgres:postgres@db:5432/pokerhub
     REDIS_URL=redis://redis:6379
     RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     ```
+
+    By default the PostgreSQL container publishes on host port `15432` so it
+    does not collide with an existing local Postgres running on `5432`. Adjust
+    the `DB_HOST_PORT` value in `.env` if another process is already using
+    `15432`.
 
     Additional environment variables configure Google Cloud Storage:
 
