@@ -37,6 +37,7 @@ import type {
   WalletReconcileMismatchAcknowledgement,
 } from '@shared/wallet.schema';
 import type { PendingWithdrawal } from '@shared/types';
+import type { Events } from '@shared/events';
 
 interface Movement {
   account: Account;
@@ -1036,8 +1037,36 @@ async markActionRequiredIfPending(id: string, jobId?: string): Promise<void> {
     { actionRequired: true },
   );
   if (res.affected && res.affected > 0) {
-    const payload: { depositId: string; jobId?: string } = { depositId: id };
+    const deposit = await this.pendingDeposits.findOneBy({ id });
+    if (!deposit) {
+      return;
+    }
+
+    const account = await this.accounts.findOne({
+      where: { id: deposit.userId, currency: deposit.currency },
+    });
+
+    const payload: Events['admin.deposit.pending'] = {
+      depositId: id,
+      userId: deposit.userId,
+      amount: deposit.amount,
+      currency: deposit.currency,
+      expectedBalance:
+        account?.balance !== undefined
+          ? account.balance + deposit.amount
+          : undefined,
+      confirmDeposit: async (depositId: string, adminId = 'system') =>
+        this.confirmPendingDeposit(depositId, adminId),
+      confirmedEvent: {
+        accountId: deposit.userId,
+        depositId: deposit.id,
+        amount: deposit.amount,
+        currency: deposit.currency,
+      },
+    };
+
     if (jobId) payload.jobId = jobId;
+
     await this.events.emit('admin.deposit.pending', payload);
   }
 }

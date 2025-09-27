@@ -129,10 +129,17 @@ describe('AdminDepositGateway deposit.pending', () => {
       .findOneByOrFail({ reference: res.reference });
     await queue.advanceBy(10_000);
 
-    expect(gateway.server.emit).toHaveBeenCalledWith('deposit.pending', {
-      depositId: deposit.id,
-      jobId: deposit.id,
-    });
+    expect(gateway.server.emit).toHaveBeenCalledWith(
+      'deposit.pending',
+      expect.objectContaining({
+        depositId: deposit.id,
+        jobId: deposit.id,
+        userId,
+        amount: deposit.amount,
+        currency: 'USD',
+        expectedBalance: deposit.amount,
+      }),
+    );
   });
 });
 
