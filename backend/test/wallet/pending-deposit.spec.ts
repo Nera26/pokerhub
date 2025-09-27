@@ -106,6 +106,8 @@ describe('Pending deposits', () => {
     const res = await ctx.service.initiateBankTransfer(userId, 25, 'dev3', '1.1.1.3', 'USD');
     const repo = ctx.repos.pending;
     const dep = await repo.findOneByOrFail({ reference: res.reference });
+    const accountRepo = ctx.repos.account;
+    const { balance: startingBalance } = await accountRepo.findOneByOrFail({ id: userId });
 
     // not action-required initially
     expect(dep.actionRequired).toBe(false);
@@ -131,7 +133,13 @@ describe('Pending deposits', () => {
         userId,
         amount: dep.amount,
         currency: dep.currency,
-        expectedBalance: dep.amount,
+        expectedBalance: startingBalance + dep.amount,
+        confirmDeposit: expect.any(Function),
+        confirmedEvent: expect.objectContaining({
+          accountId: userId,
+          amount: dep.amount,
+          currency: dep.currency,
+        }),
       }),
     );
   });
@@ -190,7 +198,13 @@ describe('Pending deposits', () => {
         userId,
         amount: deposit.amount,
         currency: deposit.currency,
-        expectedBalance: deposit.amount,
+        expectedBalance: start.balance + deposit.amount,
+        confirmDeposit: expect.any(Function),
+        confirmedEvent: expect.objectContaining({
+          accountId: userId,
+          amount: deposit.amount,
+          currency: deposit.currency,
+        }),
       }),
     );
 
