@@ -70,16 +70,26 @@ describe('GeoIP restrictions', () => {
 
   it('blocks wallet operations from disallowed country', async () => {
     const geo = new GeoIpService(new MockConfigService() as any);
+    const repoStub = () =>
+      ({
+        findOneByOrFail: jest.fn(),
+        manager: { transaction: jest.fn() },
+      }) as any;
+    const { redis } = createInMemoryRedis();
     const wallet = new WalletService(
-      null as any,
-      null as any,
-      null as any,
-      null as any,
+      repoStub(),
+      repoStub(),
+      repoStub(),
+      repoStub(),
+      repoStub(),
       { emit: jest.fn() } as any,
+      redis,
+      { initiate3DS: jest.fn() } as any,
+      { isVerified: jest.fn() } as any,
       {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
+      new MockConfigService() as any,
+      { emit: jest.fn() } as any,
+      { check: jest.fn() } as any,
       geo,
     );
     await expect(
