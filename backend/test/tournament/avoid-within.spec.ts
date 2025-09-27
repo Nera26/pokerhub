@@ -8,6 +8,83 @@ import type Redis from 'ioredis';
 import { createInMemoryRedis } from '../utils/mock-redis';
 import { createSeatRepo, createTournamentRepo } from './helpers';
 
+function createTestTable(id: string, tournament: Tournament): Table {
+  return {
+    id,
+    name: id,
+    gameType: 'texas',
+    smallBlind: 1,
+    bigBlind: 2,
+    startingStack: 0,
+    playersCurrent: 0,
+    playersMax: 9,
+    minBuyIn: 0,
+    maxBuyIn: 0,
+    handsPerHour: 0,
+    avgPot: 0,
+    rake: 0,
+    tabs: ['history', 'chat', 'notes'],
+    createdAt: new Date(0),
+    tournament,
+    players: [],
+    seats: [],
+  } as Table;
+}
+
+function createTournamentServiceInstance({
+  tournamentsRepo,
+  seatsRepo,
+  tablesRepo,
+  scheduler = {},
+  rooms = { get: jest.fn() },
+  redis,
+}: {
+  tournamentsRepo?: any;
+  seatsRepo?: any;
+  tablesRepo?: any;
+  scheduler?: any;
+  rooms?: any;
+  redis?: Redis;
+} = {}): TournamentService {
+  return new TournamentService(
+    tournamentsRepo ?? ({} as any),
+    seatsRepo ?? ({} as any),
+    tablesRepo ?? ({ find: jest.fn() } as any),
+    scheduler as any,
+    rooms as any,
+    {} as any,
+    {} as any,
+    {} as any,
+    { emit: jest.fn() } as any,
+    {} as any,
+    {} as any,
+    {} as any,
+    {} as any,
+    undefined,
+    redis,
+    undefined,
+    undefined,
+  );
+}
+
+function createTournamentContext() {
+  const tournament = {
+    id: 't1',
+    title: 'Test',
+    buyIn: 0,
+    prizePool: 0,
+    maxPlayers: 1000,
+    state: TournamentState.RUNNING,
+    tables: [] as Table[],
+  } as Tournament;
+  const tables = [
+    createTestTable('tbl1', tournament),
+    createTestTable('tbl2', tournament),
+  ];
+  tournament.tables = tables;
+  return { tournament, tables };
+}
+
 describe('TableBalancerService avoidWithin', () => {
   test.each([false, true])(
     'avoids moving the same player twice across rapid rebalances (redis=%s)',
@@ -16,10 +93,7 @@ describe('TableBalancerService avoidWithin', () => {
       const redis = ctx?.redis as unknown as Redis | undefined;
       const config = new ConfigService({ tournament: { avoidWithin: 5 } });
 
-      const tables: Table[] = [
-        { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
-        { id: 'tbl2', seats: [], tournament: { id: 't1' } as Tournament } as Table,
-      ];
+      const { tournament, tables } = createTournamentContext();
       const players1 = ['p1', 'p2', 'p3', 'p4'];
       const players2 = ['p5', 'p6'];
       let seatId = 0;
@@ -45,30 +119,17 @@ describe('TableBalancerService avoidWithin', () => {
       });
       const seatsRepo = createSeatRepo(tables);
       const tablesRepo = { find: jest.fn(async () => tables) } as any;
-      const tournamentsRepo = createTournamentRepo([
-        {
-          id: 't1',
-          title: 'Test',
-          buyIn: 0,
-          prizePool: 0,
-          maxPlayers: 1000,
-          state: TournamentState.RUNNING,
-          tables,
-        } as Tournament,
-      ]);
+      const tournamentsRepo = createTournamentRepo([tournament]);
       const scheduler: any = {};
       const rooms: any = { get: jest.fn() };
-      const service = new TournamentService(
+      const service = createTournamentServiceInstance({
         tournamentsRepo,
         seatsRepo,
         tablesRepo,
         scheduler,
         rooms,
-        undefined,
-        undefined,
-        undefined,
         redis,
-      );
+      });
       const balancer = new TableBalancerService(
         tablesRepo,
         service,
@@ -123,10 +184,7 @@ describe('TableBalancerService avoidWithin', () => {
     const redisClient = redis as unknown as Redis;
     const config = new ConfigService({ tournament: { avoidWithin: 5 } });
 
-    const tables: Table[] = [
-      { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
-      { id: 'tbl2', seats: [], tournament: { id: 't1' } as Tournament } as Table,
-    ];
+    const { tournament, tables } = createTournamentContext();
     const players1 = ['p1', 'p2', 'p3', 'p4'];
     const players2 = ['p5', 'p6'];
     let seatId = 0;
@@ -152,30 +210,17 @@ describe('TableBalancerService avoidWithin', () => {
     });
     const seatsRepo = createSeatRepo(tables);
     const tablesRepo = { find: jest.fn(async () => tables) } as any;
-    const tournamentsRepo = createTournamentRepo([
-      {
-        id: 't1',
-        title: 'Test',
-        buyIn: 0,
-        prizePool: 0,
-        maxPlayers: 1000,
-        state: TournamentState.RUNNING,
-        tables,
-      } as Tournament,
-    ]);
+    const tournamentsRepo = createTournamentRepo([tournament]);
     const scheduler: any = {};
     const rooms: any = { get: jest.fn() };
-    const service1 = new TournamentService(
+    const service1 = createTournamentServiceInstance({
       tournamentsRepo,
       seatsRepo,
       tablesRepo,
       scheduler,
       rooms,
-      undefined,
-      undefined,
-      undefined,
-      redisClient,
-    );
+      redis: redisClient,
+    });
     const balancer1 = new TableBalancerService(
       tablesRepo,
       service1,
@@ -202,17 +247,14 @@ describe('TableBalancerService avoidWithin', () => {
       tables[0].seats.push(seat);
     });
 
-    const service2 = new TournamentService(
+    const service2 = createTournamentServiceInstance({
       tournamentsRepo,
       seatsRepo,
       tablesRepo,
       scheduler,
       rooms,
-      undefined,
-      undefined,
-      undefined,
-      redisClient,
-    );
+      redis: redisClient,
+    });
     const balancer2 = new TableBalancerService(
       tablesRepo,
       service2,
@@ -230,10 +272,7 @@ describe('TableBalancerService avoidWithin', () => {
   it('respects TOURNAMENT_AVOID_WITHIN when set via env', async () => {
     const original = process.env.TOURNAMENT_AVOID_WITHIN;
     process.env.TOURNAMENT_AVOID_WITHIN = '3';
-    const tables: Table[] = [
-      { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
-      { id: 'tbl2', seats: [], tournament: { id: 't1' } as Tournament } as Table,
-    ];
+    const { tournament, tables } = createTournamentContext();
     const players1 = ['p1', 'p2', 'p3', 'p4'];
     const players2 = ['p5', 'p6'];
     let seatId = 0;
@@ -259,26 +298,16 @@ describe('TableBalancerService avoidWithin', () => {
     });
     const seatsRepo = createSeatRepo(tables);
     const tablesRepo = { find: jest.fn(async () => tables) } as any;
-    const tournamentsRepo = createTournamentRepo([
-      {
-        id: 't1',
-        title: 'Test',
-        buyIn: 0,
-        prizePool: 0,
-        maxPlayers: 1000,
-        state: TournamentState.RUNNING,
-        tables,
-      } as Tournament,
-    ]);
+    const tournamentsRepo = createTournamentRepo([tournament]);
     const scheduler: any = {};
     const rooms: any = { get: jest.fn() };
-    const service = new TournamentService(
+    const service = createTournamentServiceInstance({
       tournamentsRepo,
       seatsRepo,
       tablesRepo,
       scheduler,
       rooms,
-    );
+    });
     const balancer = new TableBalancerService(
       tablesRepo,
       service,
@@ -332,16 +361,7 @@ describe('TableBalancerService avoidWithin', () => {
   });
 
   it('moves a player once avoidWithin hands have elapsed', () => {
-    const service = new TournamentService(
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-    );
+    const service = createTournamentServiceInstance();
     const tables = [
       ['p1', 'p2'],
       [] as string[],
@@ -363,16 +383,7 @@ describe('TableBalancerService avoidWithin', () => {
   });
 
   it('allows moving a player again when avoidWithin is 1', () => {
-    const service = new TournamentService(
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-    );
+    const service = createTournamentServiceInstance();
     const tables = [
       ['p1', 'p2'],
       [] as string[],
