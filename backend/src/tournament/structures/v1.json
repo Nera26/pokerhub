@@ -1,0 +1,710 @@
+{
+  "name": "standard",
+  "version": 1,
+  "description": "100 five-minute levels increasing blinds by 5% increments; antes begin at level 16.",
+  "levelMinutes": 5,
+  "increment": 0.05,
+  "expectedDurationMinutes": 130,
+  "levels": [
+    {
+      "level": 1,
+      "smallBlind": 100,
+      "bigBlind": 200,
+      "ante": 0,
+      "durationMinutes": 5
+    },
+    {
+      "level": 2,
+      "smallBlind": 105,
+      "bigBlind": 210,
+      "ante": 0,
+      "durationMinutes": 5
+    },
+    {
+      "level": 3,
+      "smallBlind": 110,
+      "bigBlind": 220,
+      "ante": 0,
+      "durationMinutes": 5
+    },
+    {
+      "level": 4,
+      "smallBlind": 115,
+      "bigBlind": 230,
+      "ante": 0,
+      "durationMinutes": 5
+    },
+    {
+      "level": 5,
+      "smallBlind": 120,
+      "bigBlind": 240,
+      "ante": 0,
+      "durationMinutes": 5
+    },
+    {
+      "level": 6,
+      "smallBlind": 125,
+      "bigBlind": 250,
+      "ante": 0,
+      "durationMinutes": 5
+    },
+    {
+      "level": 7,
+      "smallBlind": 130,
+      "bigBlind": 260,
+      "ante": 0,
+      "durationMinutes": 5
+    },
+    {
+      "level": 8,
+      "smallBlind": 135,
+      "bigBlind": 270,
+      "ante": 0,
+      "durationMinutes": 5
+    },
+    {
+      "level": 9,
+      "smallBlind": 140,
+      "bigBlind": 280,
+      "ante": 0,
+      "durationMinutes": 5
+    },
+    {
+      "level": 10,
+      "smallBlind": 145,
+      "bigBlind": 290,
+      "ante": 0,
+      "durationMinutes": 5
+    },
+    {
+      "level": 11,
+      "smallBlind": 150,
+      "bigBlind": 300,
+      "ante": 0,
+      "durationMinutes": 5
+    },
+    {
+      "level": 12,
+      "smallBlind": 160,
+      "bigBlind": 320,
+      "ante": 0,
+      "durationMinutes": 5
+    },
+    {
+      "level": 13,
+      "smallBlind": 170,
+      "bigBlind": 340,
+      "ante": 0,
+      "durationMinutes": 5
+    },
+    {
+      "level": 14,
+      "smallBlind": 180,
+      "bigBlind": 360,
+      "ante": 0,
+      "durationMinutes": 5
+    },
+    {
+      "level": 15,
+      "smallBlind": 190,
+      "bigBlind": 380,
+      "ante": 0,
+      "durationMinutes": 5
+    },
+    {
+      "level": 16,
+      "smallBlind": 200,
+      "bigBlind": 400,
+      "ante": 400,
+      "durationMinutes": 5
+    },
+    {
+      "level": 17,
+      "smallBlind": 210,
+      "bigBlind": 420,
+      "ante": 420,
+      "durationMinutes": 5
+    },
+    {
+      "level": 18,
+      "smallBlind": 220,
+      "bigBlind": 440,
+      "ante": 440,
+      "durationMinutes": 5
+    },
+    {
+      "level": 19,
+      "smallBlind": 230,
+      "bigBlind": 460,
+      "ante": 460,
+      "durationMinutes": 5
+    },
+    {
+      "level": 20,
+      "smallBlind": 240,
+      "bigBlind": 480,
+      "ante": 480,
+      "durationMinutes": 5
+    },
+    {
+      "level": 21,
+      "smallBlind": 250,
+      "bigBlind": 500,
+      "ante": 500,
+      "durationMinutes": 5
+    },
+    {
+      "level": 22,
+      "smallBlind": 260,
+      "bigBlind": 520,
+      "ante": 520,
+      "durationMinutes": 5
+    },
+    {
+      "level": 23,
+      "smallBlind": 275,
+      "bigBlind": 550,
+      "ante": 550,
+      "durationMinutes": 5
+    },
+    {
+      "level": 24,
+      "smallBlind": 290,
+      "bigBlind": 580,
+      "ante": 580,
+      "durationMinutes": 5
+    },
+    {
+      "level": 25,
+      "smallBlind": 305,
+      "bigBlind": 610,
+      "ante": 610,
+      "durationMinutes": 5
+    },
+    {
+      "level": 26,
+      "smallBlind": 320,
+      "bigBlind": 640,
+      "ante": 640,
+      "durationMinutes": 5
+    },
+    {
+      "level": 27,
+      "smallBlind": 335,
+      "bigBlind": 670,
+      "ante": 670,
+      "durationMinutes": 5
+    },
+    {
+      "level": 28,
+      "smallBlind": 350,
+      "bigBlind": 700,
+      "ante": 700,
+      "durationMinutes": 5
+    },
+    {
+      "level": 29,
+      "smallBlind": 370,
+      "bigBlind": 740,
+      "ante": 740,
+      "durationMinutes": 5
+    },
+    {
+      "level": 30,
+      "smallBlind": 390,
+      "bigBlind": 780,
+      "ante": 780,
+      "durationMinutes": 5
+    },
+    {
+      "level": 31,
+      "smallBlind": 410,
+      "bigBlind": 820,
+      "ante": 820,
+      "durationMinutes": 5
+    },
+    {
+      "level": 32,
+      "smallBlind": 430,
+      "bigBlind": 860,
+      "ante": 860,
+      "durationMinutes": 5
+    },
+    {
+      "level": 33,
+      "smallBlind": 450,
+      "bigBlind": 900,
+      "ante": 900,
+      "durationMinutes": 5
+    },
+    {
+      "level": 34,
+      "smallBlind": 470,
+      "bigBlind": 940,
+      "ante": 940,
+      "durationMinutes": 5
+    },
+    {
+      "level": 35,
+      "smallBlind": 495,
+      "bigBlind": 990,
+      "ante": 990,
+      "durationMinutes": 5
+    },
+    {
+      "level": 36,
+      "smallBlind": 520,
+      "bigBlind": 1040,
+      "ante": 1040,
+      "durationMinutes": 5
+    },
+    {
+      "level": 37,
+      "smallBlind": 545,
+      "bigBlind": 1090,
+      "ante": 1090,
+      "durationMinutes": 5
+    },
+    {
+      "level": 38,
+      "smallBlind": 570,
+      "bigBlind": 1140,
+      "ante": 1140,
+      "durationMinutes": 5
+    },
+    {
+      "level": 39,
+      "smallBlind": 600,
+      "bigBlind": 1200,
+      "ante": 1200,
+      "durationMinutes": 5
+    },
+    {
+      "level": 40,
+      "smallBlind": 630,
+      "bigBlind": 1260,
+      "ante": 1260,
+      "durationMinutes": 5
+    },
+    {
+      "level": 41,
+      "smallBlind": 660,
+      "bigBlind": 1320,
+      "ante": 1320,
+      "durationMinutes": 5
+    },
+    {
+      "level": 42,
+      "smallBlind": 695,
+      "bigBlind": 1390,
+      "ante": 1390,
+      "durationMinutes": 5
+    },
+    {
+      "level": 43,
+      "smallBlind": 730,
+      "bigBlind": 1460,
+      "ante": 1460,
+      "durationMinutes": 5
+    },
+    {
+      "level": 44,
+      "smallBlind": 765,
+      "bigBlind": 1530,
+      "ante": 1530,
+      "durationMinutes": 5
+    },
+    {
+      "level": 45,
+      "smallBlind": 805,
+      "bigBlind": 1610,
+      "ante": 1610,
+      "durationMinutes": 5
+    },
+    {
+      "level": 46,
+      "smallBlind": 845,
+      "bigBlind": 1690,
+      "ante": 1690,
+      "durationMinutes": 5
+    },
+    {
+      "level": 47,
+      "smallBlind": 885,
+      "bigBlind": 1770,
+      "ante": 1770,
+      "durationMinutes": 5
+    },
+    {
+      "level": 48,
+      "smallBlind": 930,
+      "bigBlind": 1860,
+      "ante": 1860,
+      "durationMinutes": 5
+    },
+    {
+      "level": 49,
+      "smallBlind": 975,
+      "bigBlind": 1950,
+      "ante": 1950,
+      "durationMinutes": 5
+    },
+    {
+      "level": 50,
+      "smallBlind": 1025,
+      "bigBlind": 2050,
+      "ante": 2050,
+      "durationMinutes": 5
+    },
+    {
+      "level": 51,
+      "smallBlind": 1075,
+      "bigBlind": 2150,
+      "ante": 2150,
+      "durationMinutes": 5
+    },
+    {
+      "level": 52,
+      "smallBlind": 1130,
+      "bigBlind": 2260,
+      "ante": 2260,
+      "durationMinutes": 5
+    },
+    {
+      "level": 53,
+      "smallBlind": 1185,
+      "bigBlind": 2370,
+      "ante": 2370,
+      "durationMinutes": 5
+    },
+    {
+      "level": 54,
+      "smallBlind": 1245,
+      "bigBlind": 2490,
+      "ante": 2490,
+      "durationMinutes": 5
+    },
+    {
+      "level": 55,
+      "smallBlind": 1305,
+      "bigBlind": 2610,
+      "ante": 2610,
+      "durationMinutes": 5
+    },
+    {
+      "level": 56,
+      "smallBlind": 1370,
+      "bigBlind": 2740,
+      "ante": 2740,
+      "durationMinutes": 5
+    },
+    {
+      "level": 57,
+      "smallBlind": 1440,
+      "bigBlind": 2880,
+      "ante": 2880,
+      "durationMinutes": 5
+    },
+    {
+      "level": 58,
+      "smallBlind": 1510,
+      "bigBlind": 3020,
+      "ante": 3020,
+      "durationMinutes": 5
+    },
+    {
+      "level": 59,
+      "smallBlind": 1585,
+      "bigBlind": 3170,
+      "ante": 3170,
+      "durationMinutes": 5
+    },
+    {
+      "level": 60,
+      "smallBlind": 1665,
+      "bigBlind": 3330,
+      "ante": 3330,
+      "durationMinutes": 5
+    },
+    {
+      "level": 61,
+      "smallBlind": 1750,
+      "bigBlind": 3500,
+      "ante": 3500,
+      "durationMinutes": 5
+    },
+    {
+      "level": 62,
+      "smallBlind": 1840,
+      "bigBlind": 3680,
+      "ante": 3680,
+      "durationMinutes": 5
+    },
+    {
+      "level": 63,
+      "smallBlind": 1930,
+      "bigBlind": 3860,
+      "ante": 3860,
+      "durationMinutes": 5
+    },
+    {
+      "level": 64,
+      "smallBlind": 2025,
+      "bigBlind": 4050,
+      "ante": 4050,
+      "durationMinutes": 5
+    },
+    {
+      "level": 65,
+      "smallBlind": 2125,
+      "bigBlind": 4250,
+      "ante": 4250,
+      "durationMinutes": 5
+    },
+    {
+      "level": 66,
+      "smallBlind": 2230,
+      "bigBlind": 4460,
+      "ante": 4460,
+      "durationMinutes": 5
+    },
+    {
+      "level": 67,
+      "smallBlind": 2340,
+      "bigBlind": 4680,
+      "ante": 4680,
+      "durationMinutes": 5
+    },
+    {
+      "level": 68,
+      "smallBlind": 2455,
+      "bigBlind": 4910,
+      "ante": 4910,
+      "durationMinutes": 5
+    },
+    {
+      "level": 69,
+      "smallBlind": 2580,
+      "bigBlind": 5160,
+      "ante": 5160,
+      "durationMinutes": 5
+    },
+    {
+      "level": 70,
+      "smallBlind": 2710,
+      "bigBlind": 5420,
+      "ante": 5420,
+      "durationMinutes": 5
+    },
+    {
+      "level": 71,
+      "smallBlind": 2845,
+      "bigBlind": 5690,
+      "ante": 5690,
+      "durationMinutes": 5
+    },
+    {
+      "level": 72,
+      "smallBlind": 2985,
+      "bigBlind": 5970,
+      "ante": 5970,
+      "durationMinutes": 5
+    },
+    {
+      "level": 73,
+      "smallBlind": 3135,
+      "bigBlind": 6270,
+      "ante": 6270,
+      "durationMinutes": 5
+    },
+    {
+      "level": 74,
+      "smallBlind": 3290,
+      "bigBlind": 6580,
+      "ante": 6580,
+      "durationMinutes": 5
+    },
+    {
+      "level": 75,
+      "smallBlind": 3455,
+      "bigBlind": 6910,
+      "ante": 6910,
+      "durationMinutes": 5
+    },
+    {
+      "level": 76,
+      "smallBlind": 3630,
+      "bigBlind": 7260,
+      "ante": 7260,
+      "durationMinutes": 5
+    },
+    {
+      "level": 77,
+      "smallBlind": 3810,
+      "bigBlind": 7620,
+      "ante": 7620,
+      "durationMinutes": 5
+    },
+    {
+      "level": 78,
+      "smallBlind": 4000,
+      "bigBlind": 8000,
+      "ante": 8000,
+      "durationMinutes": 5
+    },
+    {
+      "level": 79,
+      "smallBlind": 4200,
+      "bigBlind": 8400,
+      "ante": 8400,
+      "durationMinutes": 5
+    },
+    {
+      "level": 80,
+      "smallBlind": 4410,
+      "bigBlind": 8820,
+      "ante": 8820,
+      "durationMinutes": 5
+    },
+    {
+      "level": 81,
+      "smallBlind": 4630,
+      "bigBlind": 9260,
+      "ante": 9260,
+      "durationMinutes": 5
+    },
+    {
+      "level": 82,
+      "smallBlind": 4860,
+      "bigBlind": 9720,
+      "ante": 9720,
+      "durationMinutes": 5
+    },
+    {
+      "level": 83,
+      "smallBlind": 5105,
+      "bigBlind": 10210,
+      "ante": 10210,
+      "durationMinutes": 5
+    },
+    {
+      "level": 84,
+      "smallBlind": 5360,
+      "bigBlind": 10720,
+      "ante": 10720,
+      "durationMinutes": 5
+    },
+    {
+      "level": 85,
+      "smallBlind": 5630,
+      "bigBlind": 11260,
+      "ante": 11260,
+      "durationMinutes": 5
+    },
+    {
+      "level": 86,
+      "smallBlind": 5910,
+      "bigBlind": 11820,
+      "ante": 11820,
+      "durationMinutes": 5
+    },
+    {
+      "level": 87,
+      "smallBlind": 6205,
+      "bigBlind": 12410,
+      "ante": 12410,
+      "durationMinutes": 5
+    },
+    {
+      "level": 88,
+      "smallBlind": 6515,
+      "bigBlind": 13030,
+      "ante": 13030,
+      "durationMinutes": 5
+    },
+    {
+      "level": 89,
+      "smallBlind": 6840,
+      "bigBlind": 13680,
+      "ante": 13680,
+      "durationMinutes": 5
+    },
+    {
+      "level": 90,
+      "smallBlind": 7180,
+      "bigBlind": 14360,
+      "ante": 14360,
+      "durationMinutes": 5
+    },
+    {
+      "level": 91,
+      "smallBlind": 7540,
+      "bigBlind": 15080,
+      "ante": 15080,
+      "durationMinutes": 5
+    },
+    {
+      "level": 92,
+      "smallBlind": 7915,
+      "bigBlind": 15830,
+      "ante": 15830,
+      "durationMinutes": 5
+    },
+    {
+      "level": 93,
+      "smallBlind": 8310,
+      "bigBlind": 16620,
+      "ante": 16620,
+      "durationMinutes": 5
+    },
+    {
+      "level": 94,
+      "smallBlind": 8725,
+      "bigBlind": 17450,
+      "ante": 17450,
+      "durationMinutes": 5
+    },
+    {
+      "level": 95,
+      "smallBlind": 9160,
+      "bigBlind": 18320,
+      "ante": 18320,
+      "durationMinutes": 5
+    },
+    {
+      "level": 96,
+      "smallBlind": 9620,
+      "bigBlind": 19240,
+      "ante": 19240,
+      "durationMinutes": 5
+    },
+    {
+      "level": 97,
+      "smallBlind": 10100,
+      "bigBlind": 20200,
+      "ante": 20200,
+      "durationMinutes": 5
+    },
+    {
+      "level": 98,
+      "smallBlind": 10605,
+      "bigBlind": 21210,
+      "ante": 21210,
+      "durationMinutes": 5
+    },
+    {
+      "level": 99,
+      "smallBlind": 11135,
+      "bigBlind": 22270,
+      "ante": 22270,
+      "durationMinutes": 5
+    },
+    {
+      "level": 100,
+      "smallBlind": 11690,
+      "bigBlind": 23380,
+      "ante": 23380,
+      "durationMinutes": 5
+    }
+  ]
+}

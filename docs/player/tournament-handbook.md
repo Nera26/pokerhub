@@ -64,6 +64,10 @@ A Monte Carlo simulation with 10,000 entrants tested a standard blind structure 
 }
 ```
 
+Source of truth: [`backend/src/tournament/structures/v1.json`](../../backend/src/tournament/structures/v1.json)
+contains the full blind list (levels, antes and durations) consumed by the
+simulators.
+
 ## Dispute Resolution
 
 1. Players must pause the clock and call for a tournament director.
