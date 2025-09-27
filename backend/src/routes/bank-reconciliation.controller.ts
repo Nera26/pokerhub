@@ -25,8 +25,13 @@ import {
 } from '@shared/wallet.schema';
 import { MessageResponseSchema } from '../schemas/auth';
 import { API_CONTRACT_VERSION } from '@shared/constants';
-import type { Express } from 'express';
 import { promises as fs } from 'fs';
+
+/** Minimal type that matches what we actually read from Multer */
+type UploadLike = {
+  buffer?: Buffer;
+  path?: string;
+};
 
 @ApiTags('admin')
 @UseGuards(AuthGuard, AdminGuard)
@@ -71,11 +76,10 @@ export class BankReconciliationController {
   })
   @ApiResponse({ status: 200, description: 'Reconciliation completed' })
   async reconcile(
-    @UploadedFile() file: Express.Multer.File | undefined,
+    @UploadedFile() file: UploadLike | undefined,
     @Body() body: BankReconciliationRequest | unknown,
   ) {
     if (file) {
-      // Support both memory and disk storage
       let csv: string | undefined;
 
       if (file.buffer && file.buffer.length > 0) {
