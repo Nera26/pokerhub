@@ -40,6 +40,10 @@ function tryRequirePQueue(): PQueueCtor | null {
       if (!shouldFallback(error)) {
         throw error;
       }
+
+      if (isEsmSyntaxError(error)) {
+        return createFallbackPQueue();
+      }
     }
   }
 
@@ -55,13 +59,92 @@ function shouldFallback(error: unknown): boolean {
     return true;
   }
 
-  const { code, name } = error as { code?: unknown; name?: unknown };
+  const { code, name, message } = error as {
+    code?: unknown;
+    name?: unknown;
+    message?: unknown;
+  };
 
   if (code === 'ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG' || code === 'ERR_REQUIRE_ESM') {
     return true;
   }
 
+  if (
+    typeof message === 'string' &&
+    (message.includes('ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG') ||
+      message.includes('dynamic import callback was invoked without --experimental-vm-modules'))
+  ) {
+    return true;
+  }
+
   return name === 'SyntaxError';
+}
+
+function isEsmSyntaxError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const { message } = error as { message?: unknown };
+
+  if (typeof message !== 'string') {
+    return false;
+  }
+
+  return (
+    message.includes('Cannot use import statement outside a module') ||
+    (message.includes('Unexpected token') && message.includes('export'))
+  );
+}
+
+function createFallbackPQueue(): PQueueCtor {
+  class InlinePQueue {
+    size = 0;
+    pending = 0;
+    private queue: Array<() => void> = [];
+
+    constructor(_: unknown) {}
+
+    add<T>(fn: () => PromiseLike<T> | T): Promise<T> {
+      return new Promise<T>((resolve, reject) => {
+        const task = () => {
+          this.pending++;
+
+          Promise.resolve()
+            .then(fn)
+            .then(resolve, reject)
+            .finally(() => {
+              this.pending--;
+              this.processNext();
+            });
+        };
+
+        this.queue.push(task);
+        this.size = this.queue.length;
+        this.processNext();
+      });
+    }
+
+    clear() {
+      this.queue = [];
+      this.size = 0;
+    }
+
+    private processNext() {
+      if (this.pending > 0) {
+        return;
+      }
+
+      const next = this.queue.shift();
+      this.size = this.queue.length;
+
+      if (next) {
+        next();
+      }
+    }
+  }
+
+  return InlinePQueue as unknown as PQueueCtor;
 }
 
 export async function loadPQueue(): Promise<PQueueCtor> {
