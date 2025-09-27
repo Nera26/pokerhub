@@ -155,8 +155,18 @@ test('balancer avoids moving players twice within avoidWithin hands', async () =
       return [tableA, tableB];
     },
   };
+  const tables = [tableA, tableB];
   const seatsRepo = {
-    async save(_s: Seat[]) {},
+    async save(arg: Seat | Seat[]) {
+      const seats = Array.isArray(arg) ? arg : [arg];
+      for (const seat of seats) {
+        for (const table of tables) {
+          table.seats = table.seats.filter((existing) => existing.id !== seat.id);
+        }
+        seat.table.seats.push(seat);
+      }
+      return Array.isArray(arg) ? seats : seats[0];
+    },
   };
 
   const tService = new StubTournamentService(tablesRepo, seatsRepo);
