@@ -12,6 +12,7 @@ services:
       - GCS_BUCKET=${GCS_BUCKET}
       - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
       - GCS_EMULATOR_HOST=${GCS_EMULATOR_HOST}
+      - CLICKHOUSE_URL=${CLICKHOUSE_URL}
 
   db:
     ports:
@@ -31,4 +32,8 @@ services:
   storage:
     ports:
       - "4443:4443"
+
+  clickhouse:
+    ports:
+      - "8123:8123"
 
