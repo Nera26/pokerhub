@@ -14,6 +14,7 @@ const HandEndEvent = z.object({
   handId: z.string().uuid(),
   tableId: z.string().uuid().optional(),
   winners: z.array(z.string().uuid()).optional(),
+  stake: z.string().optional(),
 });
 
 const HandSettleEvent = z.object({
@@ -21,6 +22,7 @@ const HandSettleEvent = z.object({
   tableId: z.string().uuid().optional(),
   playerIds: z.array(z.string().uuid()),
   deltas: z.array(z.number()),
+  stake: z.string().optional(),
 });
 
 const WalletMovementEvent = z.object({
