@@ -30,6 +30,7 @@ services:
       - ./backend:/backend
       - ./shared:/shared
       - ./contracts:/contracts
+      - ./node_modules:/node_modules
     depends_on:
       db:
         condition: service_healthy
