@@ -1,10 +1,9 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource, type DataSourceOptions } from 'typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { ThrottlerModule, ThrottlerModuleOptions } from '@nestjs/throttler';
-import helmet from 'helmet';
 import { APP_FILTER } from '@nestjs/core';
 import { randomUUID } from 'node:crypto';
 
@@ -38,6 +37,7 @@ import { TranslationsController } from './routes/translations.controller';
 import { ConfigController } from './routes/config.controller';
 import { PrecacheController } from './routes/precache.controller';
 import { NavIconsController } from './routes/nav-icons.controller';
+import { logInfrastructureNotice } from './common/logging';
 import { AdminNavIconsController } from './routes/admin-nav-icons.controller';
 import { AdminBlockedCountriesController } from './routes/admin-blocked-countries.controller';
 import { HistoryTabsController } from './routes/history-tabs.controller';
@@ -63,7 +63,6 @@ import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { UsersModule } from './users/users.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { MetricsModule } from './metrics/metrics.module';
-import { cookieSecurity } from './common/cookie-security.middleware';
 import { TiersModule } from './tiers/tiers.module';
 import { CtasModule } from './ctas/ctas.module';
 import { HistoryModule } from './history/history.module';
@@ -169,7 +168,7 @@ const testModules =
             error instanceof Error && error.message
               ? error.message
               : String(error ?? 'unknown postgres error');
-          console.warn(
+          logInfrastructureNotice(
             `Postgres connection failed (${message}); using in-memory pg-mem database instead.`,
           );
           const { newDb } = await import('pg-mem');
@@ -289,21 +288,4 @@ const testModules =
     BlockedCountriesService,
   ],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(
-        helmet({
-          contentSecurityPolicy: {
-            directives: { defaultSrc: ["'self'"] },
-          },
-          hsts: {
-            maxAge: 31536000,
-            includeSubDomains: true,
-          },
-        }),
-        cookieSecurity,
-      )
-      .forRoutes('*');
-  }
-}
+export class AppModule {}

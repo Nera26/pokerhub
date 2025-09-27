@@ -14,13 +14,14 @@ import { BroadcastEntity } from '../database/entities/broadcast.entity';
 import { BroadcastTemplateEntity } from '../database/entities/broadcast-template.entity';
 import { BroadcastTypeEntity } from '../database/entities/broadcast-type.entity';
 import { SessionModule } from '../session/session.module';
+import { logInfrastructureNotice } from '../common/logging';
 
 const hasAmqpConnectionManager = (() => {
   try {
     require.resolve('amqp-connection-manager');
     return true;
   } catch {
-    console.warn(
+    logInfrastructureNotice(
       'amqp-connection-manager is not installed; RabbitMQ messaging client disabled.',
     );
     return false;

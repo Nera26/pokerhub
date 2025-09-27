@@ -5,6 +5,7 @@ import { redisStore } from 'cache-manager-ioredis';
 import Redis from 'ioredis';
 import RedisMock from 'ioredis-mock';
 import type { CacheManagerStore } from 'cache-manager';
+import { logInfrastructureNotice } from '../common/logging';
 
 const REDIS_MOCK_FLAG = Symbol.for('pokerhub.redisMock');
 
@@ -47,7 +48,7 @@ function createRedisMock(): Redis {
         }
         const port = parsed.port ? Number(parsed.port) : 6379;
         if (typeof redisStore !== 'function') {
-          console.warn(
+          logInfrastructureNotice(
             'cache-manager-ioredis redisStore export is unavailable; falling back to in-memory cache store.',
           );
           return {};
@@ -62,7 +63,7 @@ function createRedisMock(): Redis {
           await probe.connect();
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
-          console.warn(
+          logInfrastructureNotice(
             `Redis cache probe failed (${message}); falling back to in-memory cache store.`,
           );
           try {
@@ -72,7 +73,9 @@ function createRedisMock(): Redis {
               disconnectError instanceof Error
                 ? disconnectError.message
                 : String(disconnectError);
-            console.warn(`Failed to clean up Redis cache probe: ${disconnectMessage}`);
+            logInfrastructureNotice(
+              `Failed to clean up Redis cache probe: ${disconnectMessage}`,
+            );
           }
           return {};
         }
@@ -91,7 +94,9 @@ function createRedisMock(): Redis {
               disconnectError instanceof Error
                 ? disconnectError.message
                 : String(disconnectError);
-            console.warn(`Failed to clean up Redis cache probe: ${disconnectMessage}`);
+            logInfrastructureNotice(
+              `Failed to clean up Redis cache probe: ${disconnectMessage}`,
+            );
           }
         }
       },
@@ -121,14 +126,14 @@ function createRedisMock(): Redis {
           process.env.REDIS_IN_MEMORY = '0';
           client.on('error', (err) => {
             const message = err instanceof Error ? err.message : String(err);
-            console.warn(
+            logInfrastructureNotice(
               `Redis connection failed (${message}); continuing with best-effort in-memory fallbacks.`,
             );
           });
           return client;
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
-          console.warn(
+          logInfrastructureNotice(
             `Redis connection failed (${message}); using in-memory Redis mock for local development.`,
           );
           try {
@@ -136,7 +141,9 @@ function createRedisMock(): Redis {
           } catch (disconnectError) {
             const disconnectMessage =
               disconnectError instanceof Error ? disconnectError.message : String(disconnectError);
-            console.warn(`Failed to clean up Redis connection: ${disconnectMessage}`);
+            logInfrastructureNotice(
+              `Failed to clean up Redis connection: ${disconnectMessage}`,
+            );
           }
           return createRedisMock();
         }

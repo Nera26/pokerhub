@@ -35,6 +35,7 @@ import { EtlService } from './etl.service';
 import { QueryFailedError, Repository } from 'typeorm';
 import { AuditLogTypeClass } from './audit-log-type-class.entity';
 import { AuditLogTypeClassDefault } from './audit-log-type-class-default.entity';
+import { logInfrastructureNotice } from '../common/logging';
 
 interface AuditLog {
   id: string;
@@ -760,7 +761,9 @@ export class AnalyticsService implements OnModuleInit {
 
   async ingest<T extends Record<string, unknown>>(table: string, data: T) {
     if (!this.client) {
-      this.logger.warn('No ClickHouse client configured');
+      logInfrastructureNotice('No ClickHouse client configured', {
+        logger: this.logger,
+      });
       return;
     }
     await this.client.insert({
@@ -1091,7 +1094,9 @@ export class AnalyticsService implements OnModuleInit {
 
   async query(sql: string) {
     if (!this.client) {
-      this.logger.warn('No ClickHouse client configured');
+      logInfrastructureNotice('No ClickHouse client configured', {
+        logger: this.logger,
+      });
       return;
     }
     await this.client.command({ query: sql });
@@ -1099,7 +1104,9 @@ export class AnalyticsService implements OnModuleInit {
 
   async select<T = Record<string, unknown>>(sql: string): Promise<T[]> {
     if (!this.client) {
-      this.logger.warn('No ClickHouse client configured');
+      logInfrastructureNotice('No ClickHouse client configured', {
+        logger: this.logger,
+      });
       return [];
     }
     const result = await this.client.query({
@@ -1200,7 +1207,9 @@ export class AnalyticsService implements OnModuleInit {
 
   async rebuildStakeAggregates() {
     if (!this.client) {
-      this.logger.warn('No ClickHouse client configured');
+      logInfrastructureNotice('No ClickHouse client configured', {
+        logger: this.logger,
+      });
       return;
     }
 

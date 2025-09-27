@@ -13,6 +13,7 @@ import { SocketIoInstrumentation } from '@opentelemetry/instrumentation-socket.i
 import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
 import { NestInstrumentation } from '@opentelemetry/instrumentation-nestjs-core';
 import { RuntimeNodeInstrumentation } from '@opentelemetry/instrumentation-runtime-node';
+import { logInfrastructureNotice } from '../common/logging';
 
 export { telemetryMiddleware, shutdownTelemetry };
 
@@ -39,6 +40,8 @@ export async function setupTelemetry(): Promise<void> {
     // OpenTelemetry metrics have breaking changes across versions. Rather than
     // crash the entire application when a local dev install mismatches the
     // prebuilt dist bundle, fall back to disabling telemetry.
-    console.warn('Telemetry setup failed; continuing without instrumentation.', err);
+    logInfrastructureNotice('Telemetry setup failed; continuing without instrumentation.', {
+      details: [err],
+    });
   }
 }

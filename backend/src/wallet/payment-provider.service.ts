@@ -7,6 +7,7 @@ import { fetchJson } from '@shared/utils/http';
 import { verifySignature as verifyProviderSignature } from './verify-signature';
 import { setWithOptions } from '../redis/set-with-options';
 import { createQueue } from '../redis/queue';
+import { logInfrastructureNotice } from '../common/logging';
 
 export type ProviderStatus = 'approved' | 'risky' | 'chargeback';
 
@@ -73,7 +74,7 @@ export class PaymentProviderService {
     this.retryQueue = await createQueue('provider-webhook-retry');
     const connection = this.retryQueue.opts.connection;
     if (!connection) {
-      console.warn(
+      logInfrastructureNotice(
         'Redis queue connection is unavailable; provider webhook retries will be attempted inline.',
       );
       return;
@@ -150,7 +151,7 @@ export class PaymentProviderService {
       const queue = this.retryQueue!;
       if (!queue.opts?.connection) {
         const reason = err instanceof Error ? err.message : String(err);
-        console.warn(
+        logInfrastructureNotice(
           `Redis queue connection is unavailable; provider webhook handler failed and will rely on upstream retry: ${reason}`,
         );
         throw err instanceof Error
