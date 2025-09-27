@@ -9,6 +9,7 @@ import {
 import { WalletService } from '../wallet/wallet.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { MessageResponse, MessageResponseSchema } from '../schemas/auth';
+import { API_CONTRACT_VERSION } from '@shared/constants';
 
 @AdminController('balance')
 export class AdminBalanceController {
@@ -35,6 +36,9 @@ export class AdminBalanceController {
       user: req.userId ?? 'admin',
       ip: req.ip || null,
     });
-    return MessageResponseSchema.parse({ message: 'ok' });
+    return MessageResponseSchema.parse({
+      message: 'ok',
+      contractVersion: API_CONTRACT_VERSION,
+    });
   }
 }

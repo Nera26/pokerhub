@@ -13,6 +13,7 @@ import {
   type BonusUpdateRequest,
 } from '../schemas/bonus';
 import { MessageResponseSchema } from '../schemas/auth';
+import { API_CONTRACT_VERSION } from '@shared/constants';
 
 @AdminController('bonuses')
 export class AdminBonusesController {
@@ -54,6 +55,9 @@ export class AdminBonusesController {
   @ApiResponse({ status: 200, description: 'Bonus deleted' })
   async remove(@Param('id') id: string) {
     await this.bonusService.remove(Number(id));
-    return MessageResponseSchema.parse({ message: 'deleted' });
+    return MessageResponseSchema.parse({
+      message: 'deleted',
+      contractVersion: API_CONTRACT_VERSION,
+    });
   }
 }

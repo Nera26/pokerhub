@@ -16,6 +16,7 @@ export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 
 export const MessageResponseSchema = z.object({
   message: z.string(),
+  contractVersion: z.string(),
 });
 export type MessageResponse = z.infer<typeof MessageResponseSchema>;
 

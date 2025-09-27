@@ -18,6 +18,7 @@ import {
   ReplyMessageRequestSchema,
 } from '../schemas/messages';
 import { MessageResponse, MessageResponseSchema } from '../schemas/auth';
+import { API_CONTRACT_VERSION } from '@shared/constants';
 import { AdminMessagesService } from '../notifications/admin-messages.service';
 
 @ApiTags('admin')
@@ -48,7 +49,10 @@ export class AdminMessagesController {
       throw new NotFoundException('Message not found');
     }
     await this.service.markRead(Number(id));
-    return MessageResponseSchema.parse({ message: 'sent' });
+    return MessageResponseSchema.parse({
+      message: 'sent',
+      contractVersion: API_CONTRACT_VERSION,
+    });
   }
 
   @Post(':id/read')
