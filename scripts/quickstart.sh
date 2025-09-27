@@ -15,8 +15,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$SCRIPT_DIR/.."
 cd "$ROOT_DIR"
 
-require_cmd docker-compose
+require_cmd docker
 require_cmd npm
+
+if ! docker compose version >/dev/null 2>&1; then
+  error "docker compose plugin is required but not installed."
+fi
 
 if [ ! -f .env ]; then
   if [ -f .env.example ]; then
@@ -30,7 +34,7 @@ else
 fi
 
 echo "Starting Docker services..."
-docker-compose up -d || error "docker-compose up failed"
+docker compose up -d || error "docker compose up failed"
 
 echo "Running tests..."
 npm test || error "npm test failed"
