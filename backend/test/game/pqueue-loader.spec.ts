@@ -1,32 +1,34 @@
 describe('pqueue-loader', () => {
   const originalFunction = global.Function;
+  const originalEval = global.eval;
 
   afterEach(() => {
     global.Function = originalFunction;
     jest.resetModules();
     jest.clearAllMocks();
     jest.restoreAllMocks();
-    jest.unmock('node:module');
     jest.unmock('p-queue');
+    global.eval = originalEval;
   });
 
-  it('falls back to createRequire when require throws SyntaxError', async () => {
+  it('uses the jest CJS mock via eval(require) when dynamic import fails', async () => {
     const fakeCtor = jest.fn();
     const requireShim = jest.fn(() => ({ default: fakeCtor }));
-    const createRequireMock = jest.fn(() => requireShim);
-
-    jest.doMock('node:module', () => {
-      const actual = jest.requireActual('node:module');
-      return { ...actual, createRequire: createRequireMock };
-    });
-
-    jest.doMock('p-queue', () => {
-      throw new SyntaxError('Unexpected token export');
-    });
-
     const dynamicImportMock = jest.fn(() => {
       throw new SyntaxError('Unexpected token export');
     });
+
+    jest.doMock('p-queue', () => ({ default: fakeCtor }));
+
+    const evalSpy = jest
+      .spyOn(global, 'eval')
+      .mockImplementation(((code: string) => {
+        if (code === 'require') {
+          return requireShim;
+        }
+
+        return originalEval(code);
+      }) as typeof global.eval);
 
     (global as unknown as { Function: jest.Mock }).Function = jest
       .fn(() => dynamicImportMock)
@@ -37,7 +39,28 @@ describe('pqueue-loader', () => {
     await expect(loadPQueue()).resolves.toBe(fakeCtor);
 
     expect(dynamicImportMock).toHaveBeenCalledWith('p-queue');
-    expect(createRequireMock).toHaveBeenCalledTimes(1);
     expect(requireShim).toHaveBeenCalledWith('p-queue');
+    evalSpy.mockRestore();
+  });
+
+  it('loads the constructor via dynamic import when available', async () => {
+    const fakeCtor = jest.fn();
+    const dynamicImportMock = jest
+      .fn(async () => ({ default: fakeCtor }))
+      .mockName('DynamicImportMock');
+    const evalSpy = jest.spyOn(global, 'eval');
+
+    (global as unknown as { Function: jest.Mock }).Function = jest
+      .fn(() => dynamicImportMock)
+      .mockName('DynamicImportShimFactory');
+
+    const { loadPQueue } = require('../../src/game/pqueue-loader');
+
+    await expect(loadPQueue()).resolves.toBe(fakeCtor);
+    await expect(loadPQueue()).resolves.toBe(fakeCtor);
+
+    expect(dynamicImportMock).toHaveBeenCalledTimes(1);
+    expect(dynamicImportMock).toHaveBeenCalledWith('p-queue');
+    expect(evalSpy).not.toHaveBeenCalledWith('require');
   });
 });

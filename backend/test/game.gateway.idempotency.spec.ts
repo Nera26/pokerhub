@@ -27,6 +27,10 @@ class MockSocket extends EventEmitter {
   handshake = { auth: {} } as any;
 }
 
+function flushSocketTasks() {
+  return new Promise<void>((resolve) => setImmediate(resolve));
+}
+
 describe('GameGateway idempotency', () => {
   function createModule(redis: MockRedis, room: any) {
     return Test.createTestingModule({
@@ -78,6 +82,7 @@ describe('GameGateway idempotency', () => {
 
     await gateway.handleAction(socket as any, action);
     await gateway.handleAction(socket as any, action);
+    await flushSocketTasks();
 
     expect(applyAction).toHaveBeenCalledTimes(1);
     expect(socket.emitted['action:ack']).toEqual([
@@ -116,6 +121,7 @@ describe('GameGateway idempotency', () => {
     (socket1 as any).conn = { remoteAddress: '0.0.0.0' };
     (gateway1 as any).socketPlayers.set(socket1.id, 'p1');
     await gateway1.handleAction(socket1 as any, action);
+    await flushSocketTasks();
     expect(apply1).toHaveBeenCalledTimes(1);
 
     const apply2 = jest.fn(() => state);
@@ -135,6 +141,7 @@ describe('GameGateway idempotency', () => {
     (socket2 as any).conn = { remoteAddress: '0.0.0.0' };
     (gateway2 as any).socketPlayers.set(socket2.id, 'p1');
     await gateway2.handleAction(socket2 as any, action);
+    await flushSocketTasks();
 
     expect(apply2).not.toHaveBeenCalled();
     expect(socket2.emitted['action:ack']).toEqual([

@@ -1,13 +1,9 @@
-import { createRequire } from 'node:module';
-import { join } from 'node:path';
-
 export type PQueueCtor = typeof import('p-queue').default;
 export type PQueueInstance = InstanceType<PQueueCtor>;
 
 let cachedCtor: PQueueCtor | undefined;
 let cachedPromise: Promise<PQueueCtor> | undefined;
 let cachedEvalRequire: NodeJS.Require | null | undefined;
-let cachedCreateRequire: NodeJS.Require | undefined;
 
 const dynamicImport = Function(
   'specifier',
@@ -28,20 +24,12 @@ function getEvalRequire(): NodeJS.Require | null {
   return cachedEvalRequire;
 }
 
-function getCreateRequire(): NodeJS.Require {
-  if (!cachedCreateRequire) {
-    cachedCreateRequire = createRequire(join(process.cwd(), 'noop.js'));
-  }
-
-  return cachedCreateRequire;
-}
-
 function resolveCtor(module: unknown): PQueueCtor {
   const mod = module as { default?: PQueueCtor };
   return mod.default ?? (module as PQueueCtor);
 }
 
-function tryRequirePQueue(): PQueueCtor {
+function tryRequirePQueue(): PQueueCtor | null {
   const evalRequire = getEvalRequire();
 
   if (evalRequire) {
@@ -55,8 +43,7 @@ function tryRequirePQueue(): PQueueCtor {
     }
   }
 
-  const required = getCreateRequire()('p-queue');
-  return resolveCtor(required);
+  return null;
 }
 
 function shouldFallback(error: unknown): boolean {
@@ -92,8 +79,11 @@ export async function loadPQueue(): Promise<PQueueCtor> {
       } catch (error) {
         if (shouldFallback(error)) {
           const ctor = tryRequirePQueue();
-          cachedCtor = ctor;
-          return ctor;
+
+          if (ctor) {
+            cachedCtor = ctor;
+            return ctor;
+          }
         }
 
         throw error;
