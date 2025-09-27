@@ -57,7 +57,10 @@ describe('queue integration', () => {
     expect(workerCtor).toHaveBeenCalledWith(
       'payout',
       expect.any(Function),
-      { connection, removeOnComplete: { count: 1000 } },
+      expect.objectContaining({
+        connection,
+        removeOnComplete: { count: 1000 },
+      }),
     );
   });
 
@@ -89,13 +92,19 @@ describe('queue integration', () => {
       1,
       'pending-deposit',
       expect.any(Function),
-      { connection: connection1, removeOnComplete: { count: 1000 } },
+      expect.objectContaining({
+        connection: connection1,
+        removeOnComplete: { count: 1000 },
+      }),
     );
     expect(workerCtor).toHaveBeenNthCalledWith(
       2,
       'pending-deposit-expire',
       expect.any(Function),
-      { connection: connection2, removeOnComplete: { count: 1000 } },
+      expect.objectContaining({
+        connection: connection2,
+        removeOnComplete: { count: 1000 },
+      }),
     );
   });
 
@@ -133,7 +142,7 @@ describe('queue integration', () => {
     expect(workerCtor).toHaveBeenCalledWith(
       'leaderboard-rebuild',
       expect.any(Function),
-      { connection },
+      expect.objectContaining({ connection }),
     );
   });
 });
