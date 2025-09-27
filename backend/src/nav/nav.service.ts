@@ -25,6 +25,9 @@ export class NavService {
   async create(item: NavItemRequest): Promise<NavItem> {
     const entity = this.repo.create(item);
     const saved = await this.repo.save(entity);
+    if (Array.isArray(saved)) {
+      throw new Error('Unexpected array');
+    }
     const { flag, href, label, icon, order } = saved;
     return { flag, href, label, order, ...(icon ? { icon } : {}) };
   }
@@ -34,6 +37,9 @@ export class NavService {
     if (!existing) throw new NotFoundException('Nav item not found');
     const merged = { ...existing, ...item };
     const saved = await this.repo.save(merged);
+    if (Array.isArray(saved)) {
+      throw new Error('Unexpected array');
+    }
     const { href, label, icon, order: savedOrder } = saved;
     return {
       flag: saved.flag,
