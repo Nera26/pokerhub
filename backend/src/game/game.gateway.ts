@@ -12,6 +12,7 @@ import { Server, Socket } from 'socket.io';
 import { randomUUID, createHash } from 'crypto';
 import Redis from 'ioredis';
 import { GameEngine, GameAction, type InternalGameState } from './engine';
+import type { PlayerStateInternal } from './state-machine';
 import { RoomManager } from './room.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { CollusionService } from '../analytics/collusion.service';
@@ -54,10 +55,9 @@ interface FrameAckPayload {
   frameId: string;
 }
 
-interface GameStatePayload extends WireGameState {
+type GameStatePayload = WireGameState & {
   tick: number;
-  version: string;
-}
+};
 
 interface ProofPayload {
   commitment: string;
@@ -164,21 +164,30 @@ function isInternalGameState(value: unknown): value is InternalGameState {
   }
   if (
     !Array.isArray(state.players) ||
-    !state.players.every(
-      (player) =>
-        typeof player === 'object' &&
-        player !== null &&
-        typeof (player as { id?: unknown }).id === 'string' &&
-        typeof (player as { stack?: unknown }).stack === 'number' &&
-        typeof (player as { folded?: unknown }).folded === 'boolean' &&
-        typeof (player as { bet?: unknown }).bet === 'number' &&
-        typeof (player as { allIn?: unknown }).allIn === 'boolean' &&
-        (!('holeCards' in (player as Record<string, unknown>)) ||
-          (Array.isArray((player as Record<string, unknown>).holeCards) &&
-            (player as { holeCards?: unknown[] }).holeCards?.every(
-              (card) => typeof card === 'number',
-            )))
-    )
+    !state.players.every((player) => {
+      if (typeof player !== 'object' || player === null) {
+        return false;
+      }
+      const candidate =
+        player as Partial<PlayerStateInternal> & { holeCards?: unknown };
+      if (
+        typeof candidate.id !== 'string' ||
+        typeof candidate.stack !== 'number' ||
+        typeof candidate.folded !== 'boolean' ||
+        typeof candidate.bet !== 'number' ||
+        typeof candidate.allIn !== 'boolean'
+      ) {
+        return false;
+      }
+      if (
+        candidate.holeCards !== undefined &&
+        (!Array.isArray(candidate.holeCards) ||
+          !candidate.holeCards.every((card) => typeof card === 'number'))
+      ) {
+        return false;
+      }
+      return true;
+    })
   ) {
     return false;
   }
@@ -622,6 +631,9 @@ export class GameGateway
       const pipe = this.redis.pipeline();
       for (const key of keys) pipe.get(key);
       const res = await pipe.exec();
+      if (!res) {
+        return;
+      }
       keys.forEach((key, idx) => {
         const raw = res[idx]?.[1];
         if (typeof raw === 'string') {
@@ -830,7 +842,6 @@ export class GameGateway
     const playerPayload = GameStateSchema.parse({
       ...safe,
       tick,
-      version: EVENT_SCHEMA_VERSION,
     });
     void this.enqueue(client, 'state', [playerPayload], true);
     this.recordStateLatency(start, tableId);
@@ -857,7 +868,6 @@ export class GameGateway
       const spectatorPayload = GameStateSchema.parse({
         ...sanitize(publicState),
         tick,
-        version: EVENT_SCHEMA_VERSION,
       });
       this.server
         .of('/spectate')
@@ -1215,7 +1225,6 @@ export class GameGateway
       const room = this.rooms.get('default');
       const state = await room.replay();
       const payload = {
-        version: EVENT_SCHEMA_VERSION,
         ...sanitize(state),
         tick: this.tick,
       };
@@ -1243,7 +1252,6 @@ export class GameGateway
       const states = await room.resume(from);
       for (const [index, state] of states) {
         const payload = {
-          version: EVENT_SCHEMA_VERSION,
           ...sanitize(state),
           tick: index + 1,
         };
@@ -1258,7 +1266,6 @@ export class GameGateway
     const state = await room.apply({ type: 'fold', playerId } as GameAction);
     if (this.server) {
       const payload = {
-        version: EVENT_SCHEMA_VERSION,
         ...sanitize(state),
         tick: ++this.tick,
       };
