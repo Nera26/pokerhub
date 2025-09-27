@@ -1,7 +1,8 @@
 version: '3.8'
 services:
   api-gateway:
-    image: kong:3.7
+    build: ./infra/api-gateway
+    image: pokerhub-kong
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
@@ -49,7 +50,8 @@ services:
       retries: 5
 
   redis:
-    image: redis:7
+    build: ./infra/redis
+    image: pokerhub-redis
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
@@ -57,7 +59,8 @@ services:
       retries: 5
 
   rabbitmq:
-    image: rabbitmq:3-management
+    build: ./infra/rabbitmq
+    image: pokerhub-rabbitmq
     environment:
       - RABBITMQ_DEFAULT_USER=guest
       - RABBITMQ_DEFAULT_PASS=guest
@@ -67,7 +70,8 @@ services:
       timeout: 5s
       retries: 5
   storage:
-    image: fsouza/fake-gcs-server:latest
+    build: ./infra/storage
+    image: pokerhub-fake-gcs
     command: -scheme http -backend memory
     ports:
       - '4443:4443'
