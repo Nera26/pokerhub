@@ -15,8 +15,7 @@ describe('TournamentService.getFilterOptions', () => {
       {} as any,
       {} as any,
       filterRepo as any,
-      undefined,
-      undefined,
+      {} as any,
     );
   }
 

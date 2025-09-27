@@ -1,5 +1,4 @@
 import { TableBalancerService } from '../src/tournament/table-balancer.service';
-import { TournamentService } from '../src/tournament/tournament.service';
 import { Table } from '../src/database/entities/table.entity';
 import { Seat } from '../src/database/entities/seat.entity';
 import {
@@ -9,14 +8,28 @@ import {
 import { RebuyService } from '../src/tournament/rebuy.service';
 import { PkoService } from '../src/tournament/pko.service';
 import { icmRaw } from '@shared/utils/icm';
+import {
+  createSeatRepo,
+  createTestTable,
+  createTournamentRepo,
+  createTournamentServiceInstance,
+} from './tournament/helpers';
 
 describe('tournament simulation', () => {
   it('simulates 10k entrants with late registration and bubble payouts', async () => {
-    const tables: Table[] = Array.from({ length: 100 }, (_, i) => ({
-      id: `tbl${i}`,
-      seats: [],
-      tournament: { id: 't1' } as Tournament,
-    })) as Table[];
+    const tournament = {
+      id: 't1',
+      title: 'Mega',
+      buyIn: 100,
+      prizePool: 0,
+      maxPlayers: 10000,
+      state: TournamentState.RUNNING,
+      tables: [] as Table[],
+    } as Tournament;
+    const tables: Table[] = Array.from({ length: 100 }, (_, i) =>
+      createTestTable(`tbl${i}`, tournament),
+    );
+    tournament.tables = tables;
 
     const allSeats: Seat[] = [];
     let seatId = 0;
@@ -51,41 +64,22 @@ describe('tournament simulation', () => {
       seatId++;
     }
 
-    const seatsRepo = {
-      save: jest.fn(async (seatOrSeats: Seat | Seat[]) => {
-        const seats = Array.isArray(seatOrSeats) ? seatOrSeats : [seatOrSeats];
-        seats.forEach((seat) => {
-          tables.forEach((t) => {
-            t.seats = t.seats.filter((s) => s.id !== seat.id);
-          });
-          seat.table.seats.push(seat);
-        });
-        return seatOrSeats;
-      }),
-    } as any;
-
-    const tablesRepo = {
-      find: jest.fn(async () => tables),
-    } as any;
-
-    const tournamentsRepo: any = {
-      find: jest.fn(),
-      findOne: jest.fn(),
-      save: jest.fn(),
-    };
+    const seatsRepo = createSeatRepo(tables);
+    const tablesRepo = { find: jest.fn(async () => tables) } as any;
+    const tournamentsRepo = createTournamentRepo([tournament]);
     const scheduler: any = {};
     const rooms: any = { get: jest.fn() };
 
-    const service = new TournamentService(
+    const service = createTournamentServiceInstance({
       tournamentsRepo,
       seatsRepo,
       tablesRepo,
       scheduler,
       rooms,
-      new RebuyService(),
-      new PkoService(),
-      { get: jest.fn().mockResolvedValue(true) } as any,
-    );
+      rebuys: new RebuyService(),
+      pko: new PkoService(),
+      flags: { get: jest.fn().mockResolvedValue(true) } as any,
+    });
     const balancer = new TableBalancerService(tablesRepo, service);
 
     // balance after late registration
@@ -147,29 +141,32 @@ describe('tournament simulation', () => {
       find: jest.fn(async () => []),
     } as any;
     const seatsRepo = { manager: undefined } as any;
-    const tournamentsRepo = {
-      findOne: jest.fn().mockResolvedValue({
-        id: 't-empty',
-        state: TournamentState.REG_OPEN,
-        buyIn: 100,
-        currency: 'USD',
-      }),
-    } as any;
+    const tournament = {
+      id: 't-empty',
+      title: 'Empty',
+      state: TournamentState.REG_OPEN,
+      buyIn: 100,
+      currency: 'USD',
+      prizePool: 0,
+      maxPlayers: 9,
+      tables: [] as Table[],
+    } as Tournament;
+    const tournamentsRepo = createTournamentRepo([tournament]);
     const scheduler: any = {};
     const rooms: any = { get: jest.fn() };
     const events = { emit: jest.fn() } as any;
 
-    const service = new TournamentService(
+    const service = createTournamentServiceInstance({
       tournamentsRepo,
       seatsRepo,
       tablesRepo,
       scheduler,
       rooms,
-      new RebuyService(),
-      new PkoService(),
-      { get: jest.fn().mockResolvedValue(true) } as any,
+      rebuys: new RebuyService(),
+      pko: new PkoService(),
+      flags: { get: jest.fn().mockResolvedValue(true) } as any,
       events,
-    );
+    });
 
     await expect(service.join('t-empty', 'user1')).rejects.toThrow(
       'No tables available for tournament t-empty; cannot assign seat',
