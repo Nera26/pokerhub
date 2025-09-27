@@ -77,7 +77,7 @@ services:
     ports:
       - '4443:4443'
     healthcheck:
-      test: ['CMD-SHELL', 'curl -fsS http://localhost:4443/storage/v1/b >/dev/null']
+      test: ['CMD-SHELL', 'curl -fsS "http://localhost:4443/storage/v1/b?project=test" >/dev/null']
       interval: 5s
       timeout: 5s
       retries: 5
