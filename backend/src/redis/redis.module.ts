@@ -3,7 +3,7 @@ import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { redisStore } from 'cache-manager-ioredis';
 import Redis from 'ioredis';
-import type { CacheStore } from 'cache-manager';
+import type { CacheManagerStore } from 'cache-manager';
 
 @Global()
 @Module({
@@ -12,9 +12,6 @@ import type { CacheStore } from 'cache-manager';
       isGlobal: true,
       inject: [ConfigService],
       useFactory: async (config: ConfigService): Promise<CacheModuleOptions> => {
-        const redisStoreWrapper = redisStore as unknown as (
-          options: any,
-        ) => Promise<CacheStore>;
         const url = config.get<string>('redis.url');
         if (!url) {
           throw new Error('Missing redis.url configuration');
@@ -27,11 +24,10 @@ import type { CacheStore } from 'cache-manager';
           throw new Error(`Invalid redis.url configuration: ${reason}`);
         }
         const port = parsed.port ? Number(parsed.port) : 6379;
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const store = await redisStoreWrapper({
+        const store = (await redisStore({
           host: parsed.hostname,
           port,
-        });
+        })) as CacheManagerStore;
         const options: CacheModuleOptions = { store };
         return options;
       },
