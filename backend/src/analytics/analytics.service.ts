@@ -4,6 +4,7 @@ import {
   Logger,
   NotFoundException,
   OnModuleInit,
+  ServiceUnavailableException,
   forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -31,7 +32,7 @@ import type {
   BetEvent as CollusionBetEvent,
 } from '@shared/analytics/collusion';
 import { EtlService } from './etl.service';
-import { Repository } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
 import { AuditLogTypeClass } from './audit-log-type-class.entity';
 import { AuditLogTypeClassDefault } from './audit-log-type-class-default.entity';
 
@@ -267,6 +268,12 @@ export class AnalyticsService implements OnModuleInit {
 
   private async ensureDefaultLogTypeClassesSeeded(): Promise<void> {
     if (!this.logTypeClassDefaultRepo) return;
+    if (!(await this.hasLogTypeClassDefaultTable())) {
+      this.logger.warn(
+        'Skipping audit log default class seeding because the audit_log_type_class_default table is missing. Run database migrations to create it.',
+      );
+      return;
+    }
     await this.logTypeClassDefaultRepo
       .createQueryBuilder()
       .insert()
@@ -276,11 +283,30 @@ export class AnalyticsService implements OnModuleInit {
   }
 
   private async refreshDefaultLogTypeClasses(): Promise<Map<string, string>> {
-    const defaults = await this.logTypeClassDefaultRepo.find();
-    this.defaultLogTypeClassCache = new Map(
-      defaults.map(({ type, className }) => [type, className] as const),
-    );
-    return this.defaultLogTypeClassCache;
+    if (!(await this.hasLogTypeClassDefaultTable())) {
+      this.defaultLogTypeClassCache = new Map(
+        LOG_TYPE_CLASS_DEFAULT_SEED.map(({ type, className }) => [type, className] as const),
+      );
+      return this.defaultLogTypeClassCache;
+    }
+    try {
+      const defaults = await this.logTypeClassDefaultRepo.find();
+      this.defaultLogTypeClassCache = new Map(
+        defaults.map(({ type, className }) => [type, className] as const),
+      );
+      return this.defaultLogTypeClassCache;
+    } catch (error) {
+      if (this.isMissingRelationError(error)) {
+        this.logger.warn(
+          'audit_log_type_class_default table disappeared while refreshing cache; falling back to baked-in defaults.',
+        );
+        this.defaultLogTypeClassCache = new Map(
+          LOG_TYPE_CLASS_DEFAULT_SEED.map(({ type, className }) => [type, className] as const),
+        );
+        return this.defaultLogTypeClassCache;
+      }
+      throw error;
+    }
   }
 
   private async getDefaultLogTypeClassesMap(): Promise<Map<string, string>> {
@@ -311,29 +337,56 @@ export class AnalyticsService implements OnModuleInit {
   async listLogTypeClassDefaults(): Promise<
     Array<{ type: string; className: string }>
   > {
-    const defaults = await this.logTypeClassDefaultRepo.find({
-      order: { type: 'ASC' },
-    });
-    return defaults.map(({ type, className }) => ({ type, className }));
+    if (!(await this.hasLogTypeClassDefaultTable())) {
+      return [...LOG_TYPE_CLASS_DEFAULT_SEED];
+    }
+    try {
+      const defaults = await this.logTypeClassDefaultRepo.find({
+        order: { type: 'ASC' },
+      });
+      return defaults.map(({ type, className }) => ({ type, className }));
+    } catch (error) {
+      if (this.isMissingRelationError(error)) {
+        this.logger.warn(
+          'audit_log_type_class_default table disappeared while listing defaults; returning baked-in defaults.',
+        );
+        return [...LOG_TYPE_CLASS_DEFAULT_SEED];
+      }
+      throw error;
+    }
   }
 
   async upsertLogTypeClassDefault(
     type: string,
     className: string,
   ): Promise<{ type: string; className: string }> {
-    const existing = await this.logTypeClassDefaultRepo.findOne({
-      where: { type },
-    });
-    if (existing) {
-      existing.className = className;
-      const saved = await this.logTypeClassDefaultRepo.save(existing);
+    if (!(await this.hasLogTypeClassDefaultTable())) {
+      throw new ServiceUnavailableException(
+        'Audit log default classes are unavailable because the supporting table could not be initialized. Ensure database migrations have been run.',
+      );
+    }
+    try {
+      const existing = await this.logTypeClassDefaultRepo.findOne({
+        where: { type },
+      });
+      if (existing) {
+        existing.className = className;
+        const saved = await this.logTypeClassDefaultRepo.save(existing);
+        await this.refreshDefaultLogTypeClasses();
+        return { type: saved.type, className: saved.className };
+      }
+      const created = this.logTypeClassDefaultRepo.create({ type, className });
+      const saved = await this.logTypeClassDefaultRepo.save(created);
       await this.refreshDefaultLogTypeClasses();
       return { type: saved.type, className: saved.className };
+    } catch (error) {
+      if (this.isMissingRelationError(error)) {
+        throw new ServiceUnavailableException(
+          'Audit log default classes are unavailable because the supporting table could not be initialized. Ensure database migrations have been run.',
+        );
+      }
+      throw error;
     }
-    const created = this.logTypeClassDefaultRepo.create({ type, className });
-    const saved = await this.logTypeClassDefaultRepo.save(created);
-    await this.refreshDefaultLogTypeClasses();
-    return { type: saved.type, className: saved.className };
   }
 
   async getAuditLogTypeClasses(): Promise<Record<string, string>> {
@@ -740,6 +793,51 @@ export class AnalyticsService implements OnModuleInit {
       });
     }
     await this.auditLogSchemaReady;
+  }
+
+  private async hasLogTypeClassDefaultTable(): Promise<boolean> {
+    if (!this.logTypeClassDefaultRepo) {
+      return false;
+    }
+    try {
+      const [result] = await this.logTypeClassDefaultRepo.query(
+        `SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = current_schema()
+              AND table_name = $1
+          ) AS "exists"`,
+        ['audit_log_type_class_default'],
+      );
+      return this.toBoolean(result?.exists);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : String(error ?? 'unknown error');
+      this.logger.warn(
+        `Unable to verify presence of audit_log_type_class_default table: ${message}`,
+      );
+      return false;
+    }
+  }
+
+  private isMissingRelationError(error: unknown): boolean {
+    if (!(error instanceof QueryFailedError)) {
+      return false;
+    }
+    const driverError = (error as QueryFailedError & {
+      driverError?: { code?: string };
+    }).driverError;
+    return driverError?.code === '42P01';
+  }
+
+  private toBoolean(value: unknown): boolean {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value !== 0;
+    if (typeof value === 'string') {
+      const normalized = value.toLowerCase();
+      return normalized === 't' || normalized === 'true' || normalized === '1';
+    }
+    return false;
   }
 
   private isAuditLogPayload(value: unknown): value is AuditLogPayload {
