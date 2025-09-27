@@ -58,7 +58,7 @@ export async function scheduleRebuild(
     { days },
     {
       jobId: 'leaderboard-rebuild',
-      repeat: { cron },
+      repeat: { pattern: cron },
       removeOnComplete: true,
       removeOnFail: true,
     },
