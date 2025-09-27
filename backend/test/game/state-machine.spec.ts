@@ -45,6 +45,27 @@ describe('Hand state machine', () => {
     expect(settlements).toContainEqual({ playerId: 'B', delta: -11 });
   });
 
+  it('preserves chip totals when the big blind folds preflop', async () => {
+    const engine = await GameEngine.create(['A', 'B'], config);
+    engine.applyAction({ type: 'postBlind', playerId: 'A', amount: 1 });
+    engine.applyAction({ type: 'postBlind', playerId: 'B', amount: 2 });
+    engine.applyAction({ type: 'next' });
+    engine.applyAction({ type: 'fold', playerId: 'B' });
+
+    await new Promise((resolve) => setImmediate(resolve));
+
+    const state = engine.getState();
+    const totalChips = state.players.reduce(
+      (sum, player) => sum + player.stack,
+      state.pot,
+    );
+    expect(totalChips).toBe(200);
+
+    const settlements = engine.getSettlements();
+    const settlementSum = settlements.reduce((sum, entry) => sum + entry.delta, 0);
+    expect(settlementSum).toBe(0);
+  });
+
   it('folding to the last player settles committed chips', async () => {
     const players = ['A', 'B', 'C'];
     const engine = await GameEngine.create(players, config);
