@@ -1,12 +1,16 @@
 import { Test } from '@nestjs/testing';
 import { EventEmitter } from 'events';
 import { ClockService } from '../../src/game/clock.service';
-jest.mock('p-queue', () => {
-  return jest.fn().mockImplementation(() => ({
+jest.mock('../../src/game/pqueue-loader', () => {
+  const pQueueMock = jest.fn().mockImplementation(() => ({
     add: (fn: any) => Promise.resolve(fn()),
     size: 0,
     pending: 0,
+    clear: jest.fn(),
   }));
+  return {
+    loadPQueue: jest.fn(async () => pQueueMock),
+  };
 });
 import { GameGateway } from '../../src/game/game.gateway';
 import { AnalyticsService } from '../../src/analytics/analytics.service';

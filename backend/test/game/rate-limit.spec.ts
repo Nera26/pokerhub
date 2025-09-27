@@ -1,15 +1,17 @@
 import { RoomManager } from '../../src/game/room.service';
 import { ClockService } from '../../src/game/clock.service';
 
-jest.mock('p-queue', () => ({
-  __esModule: true,
-  default: jest.fn().mockImplementation(() => ({
+jest.mock('../../src/game/pqueue-loader', () => {
+  const pQueueMock = jest.fn().mockImplementation(() => ({
     add: (fn: any) => Promise.resolve().then(fn),
     size: 0,
     pending: 0,
     clear: jest.fn(),
-  })),
-}));
+  }));
+  return {
+    loadPQueue: jest.fn(async () => pQueueMock),
+  };
+});
 
 class DummyAnalytics {
   async recordGameEvent(): Promise<void> {}
@@ -67,6 +69,8 @@ class DummyRepo {
   }
   async save() {}
 }
+
+const flush = () => new Promise((resolve) => setImmediate(resolve));
 
 describe('GameGateway rate limits', () => {
   let GameGateway: any;
@@ -148,6 +152,7 @@ describe('GameGateway rate limits', () => {
       }
       await gateway.handleJoin(slow, { actionId: 'b1' });
 
+      await flush();
       const fastErrors = fast.emit.mock.calls.filter(([ev]: any[]) => ev === 'server:Error');
       const slowErrors = slow.emit.mock.calls.filter(([ev]: any[]) => ev === 'server:Error');
 
@@ -186,6 +191,7 @@ describe('GameGateway rate limits', () => {
       }
       await gateway.handleJoin(clients[5], { actionId: 'a5' });
 
+      await flush();
       const errors = clients[5].emit.mock.calls.filter(([ev]: any[]) => ev === 'server:Error');
       expect(errors.length).toBe(1);
       expect(globalMock).toHaveBeenCalledWith(1, { socketId: 'c5' });

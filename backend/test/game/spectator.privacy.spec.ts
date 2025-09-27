@@ -13,17 +13,23 @@ import { GameEngine, GameAction } from '../../src/game/engine';
 import { createInMemoryRedis } from '../utils/mock-redis';
 import { GameState } from '../../src/database/entities/game-state.entity';
 
-jest.mock('p-queue', () => ({
-  __esModule: true,
-  default: class {
+jest.mock('../../src/game/pqueue-loader', () => {
+  class ImmediateQueue {
     add<T>(fn: () => Promise<T> | T): Promise<T> | T {
       return fn();
     }
     clear() {}
-    size = 0;
-    pending = 0;
-  },
-}));
+    get size() {
+      return 0;
+    }
+    get pending() {
+      return 0;
+    }
+  }
+  return {
+    loadPQueue: jest.fn(async () => ImmediateQueue),
+  };
+});
 
 function waitForConnect(socket: Socket): Promise<void> {
   return new Promise((resolve) => socket.on('connect', () => resolve()));

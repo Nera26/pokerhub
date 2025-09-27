@@ -88,7 +88,9 @@ export function createQueueScenario(opts: QueueScenarioOpts) {
     },
     clear: jest.fn(),
   }));
-  jest.doMock('p-queue', () => ({ __esModule: true, default: pQueueMock }));
+  jest.doMock('../../src/game/pqueue-loader', () => ({
+    loadPQueue: jest.fn(async () => pQueueMock),
+  }));
 
   const getMeterMock = jest.fn(() => ({
     createHistogram: jest.fn(() => ({ record: jest.fn() })),

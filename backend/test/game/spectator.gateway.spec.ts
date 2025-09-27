@@ -6,14 +6,14 @@ describe('SpectatorGateway', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    jest.mock('p-queue', () => ({
-      __esModule: true,
-      default: jest.fn().mockImplementation(() => ({
-        add: (fn: any) => Promise.resolve().then(fn),
-        size: 0,
-        pending: 0,
-        clear: jest.fn(),
-      })),
+    const pQueueMock = jest.fn().mockImplementation(() => ({
+      add: (fn: any) => Promise.resolve().then(fn),
+      size: 0,
+      pending: 0,
+      clear: jest.fn(),
+    }));
+    jest.mock('../../src/game/pqueue-loader', () => ({
+      loadPQueue: jest.fn(async () => pQueueMock),
     }));
     addMock = jest.fn();
     const getMeterMock = jest.fn(() => ({

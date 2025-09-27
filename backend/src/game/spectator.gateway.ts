@@ -11,7 +11,7 @@ import {
   type Attributes,
   type ObservableResult,
 } from '@opentelemetry/api';
-import PQueue from 'p-queue';
+import { loadPQueue, type PQueueInstance } from './pqueue-loader';
 import type { InternalGameState } from './engine';
 import type { GameState } from '@shared/types';
 import { sanitize } from './state-sanitize';
@@ -175,7 +175,8 @@ export class SpectatorGateway
     );
   }
 
-  private readonly queues = new Map<string, PQueue>();
+  private readonly queues = new Map<string, PQueueInstance>();
+  private readonly queuePromises = new Map<string, Promise<PQueueInstance>>();
   private readonly maxQueueSizes = new Map<string, number>();
   private readonly queueLimit = Number(
     process.env.SPECTATOR_QUEUE_LIMIT ?? '100',
@@ -225,12 +226,12 @@ export class SpectatorGateway
     void client.join(tableId);
 
     const state = (await room.getPublicState()) as InternalGameState;
-    this.enqueue(client, 'state', sanitize(state));
+    await this.enqueue(client, 'state', sanitize(state));
 
     const listener = (s: InternalGameState) => {
       const safe = sanitize(s);
       if (client.connected) {
-        this.enqueue(client, 'state', safe);
+        void this.enqueue(client, 'state', safe);
       } else {
         SpectatorGateway.droppedFrames.add(1, { reason: 'disconnect' });
       }
@@ -243,20 +244,39 @@ export class SpectatorGateway
   handleDisconnect(client: Socket) {
     this.queues.get(client.id)?.clear();
     this.queues.delete(client.id);
+    this.queuePromises.delete(client.id);
     this.maxQueueSizes.delete(client.id);
   }
 
-  private enqueue(client: Socket, event: string, payload: unknown) {
+  private async enqueue(
+    client: Socket,
+    event: string,
+    payload: unknown,
+  ): Promise<void> {
     const id = client.id;
     let queue = this.queues.get(id);
     if (!queue) {
-      queue = new PQueue({
-        concurrency: 1,
-        intervalCap: this.intervalCap,
-        interval: this.interval,
-      });
-      this.queues.set(id, queue);
+      let creation = this.queuePromises.get(id);
+      if (!creation) {
+        creation = (async () => {
+          const PQueueCtor = await loadPQueue();
+          const created = new PQueueCtor({
+            concurrency: 1,
+            intervalCap: this.intervalCap,
+            interval: this.interval,
+          });
+          this.queues.set(id, created);
+          return created;
+        })();
+        this.queuePromises.set(id, creation);
+      }
+      try {
+        queue = await creation;
+      } finally {
+        this.queuePromises.delete(id);
+      }
     }
+    if (!queue) return;
     if (queue.size + queue.pending >= this.queueLimit) {
       SpectatorGateway.rateLimitHits.add(1);
       SpectatorGateway.droppedFrames.add(1, { reason: 'rate_limit' });

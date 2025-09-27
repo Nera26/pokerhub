@@ -1,15 +1,23 @@
 jest.mock('../../src/game/chat.service', () => ({
   ChatService: jest.fn(),
 }));
-jest.mock('p-queue', () => ({
-  __esModule: true,
-  default: class {
+jest.mock('../../src/game/pqueue-loader', () => {
+  class ImmediateQueue {
     add<T>(fn: () => Promise<T> | T): Promise<T> | T {
       return fn();
     }
     clear() {}
-  },
-}));
+    get size() {
+      return 0;
+    }
+    get pending() {
+      return 0;
+    }
+  }
+  return {
+    loadPQueue: jest.fn(async () => ImmediateQueue),
+  };
+});
 
 import { TablesService } from '../../src/game/tables.service';
 
