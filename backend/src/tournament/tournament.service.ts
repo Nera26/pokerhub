@@ -594,6 +594,11 @@ export class TournamentService implements OnModuleInit {
             where: { tournament: { id: tournamentId } } as any,
             relations: ['seats'],
           });
+      if (!tables.length) {
+        throw new Error(
+          `No tables available for tournament ${tournamentId}; cannot assign seat`,
+        );
+      }
       let target = tables[0];
       let min = tables[0]?.seats.length ?? 0;
       for (const tbl of tables) {
