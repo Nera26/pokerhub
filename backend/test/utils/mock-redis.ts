@@ -10,6 +10,38 @@ export class MockRedis {
   private expirations = new Map<string, number>();
   private seq = 0;
 
+  constructor() {
+    this.wrapMutableMethods();
+  }
+
+  private wrapMutableMethods() {
+    const mutableMethods: Array<keyof this> = [
+      'set',
+      'del',
+      'incr',
+      'incrby',
+      'incrbyfloat',
+      'decr',
+      'decrby',
+      'expire',
+      'hset',
+      'sadd',
+      'zadd',
+      'zremrangebyscore',
+      'rpush',
+      'lpush',
+      'ltrim',
+      'xadd',
+    ];
+
+    for (const method of mutableMethods) {
+      const original = (this as any)[method]?.bind(this);
+      if (typeof original === 'function') {
+        (this as any)[method] = jest.fn(original);
+      }
+    }
+  }
+
   async get(key: string) {
     return this.store.get(key) ?? null;
   }
@@ -68,6 +100,12 @@ export class MockRedis {
     ).toString();
     this.store.set(key, next);
     return parseFloat(next);
+  }
+
+  async decr(key: string) {
+    const next = (parseInt(this.store.get(key) ?? '0', 10) - 1).toString();
+    this.store.set(key, next);
+    return parseInt(next, 10);
   }
 
   async decrby(key: string, amount: number) {
@@ -264,6 +302,8 @@ export type InMemoryRedisStore = Map<string, string> & {
   lists: Map<string, string[]>;
   sortedSets: Map<string, { score: number; member: string }[]>;
   streams: Map<string, Array<[string, [string, string]]>>;
+  getString(key: string): string | undefined;
+  getNumber(key: string): number;
 };
 
 export function createInMemoryRedis(
@@ -291,6 +331,8 @@ export function createInMemoryRedis(
     string,
     Array<[string, [string, string]]>
   >;
+  store.getString = (key: string) => store.get(key);
+  store.getNumber = (key: string) => Number(store.get(key) ?? '0');
 
   return { redis: redis as unknown as Redis, store };
 }
