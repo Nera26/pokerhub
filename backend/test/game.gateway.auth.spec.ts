@@ -12,6 +12,7 @@ import { AnalyticsService } from '../src/analytics/analytics.service';
 import { RoomManager } from '../src/game/room.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Hand } from '../src/database/entities/hand.entity';
+import { GameState } from '../src/database/entities/game-state.entity';
 
 class MockSocket extends EventEmitter {
   id = Math.random().toString(36).slice(2);
@@ -32,12 +33,22 @@ function createRedis() {
       store.set(`${key}:${field}`, value);
       return 0 as any;
     },
+    set: async (key: string, value: string) => {
+      store.set(key, value);
+      return 'OK' as any;
+    },
+    get: async (key: string) => store.get(key) ?? null,
+    del: async (key: string) => {
+      const existed = store.delete(key);
+      return existed ? 1 : 0;
+    },
   } as any;
 }
 
 describe('GameGateway auth', () => {
   let gateway: GameGateway;
   let roomApply: jest.Mock | undefined;
+  let engineApply: jest.Mock | undefined;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -71,20 +82,39 @@ describe('GameGateway auth', () => {
           },
         },
         { provide: getRepositoryToken(Hand), useValue: {} },
+        { provide: getRepositoryToken(GameState), useValue: {} },
         { provide: 'REDIS_CLIENT', useValue: createRedis() },
       ],
     }).compile();
 
     gateway = moduleRef.get(GameGateway);
     jest.spyOn(gateway as any, 'isRateLimited').mockResolvedValue(false);
+    const state = {
+      phase: 'DEAL',
+      street: 'preflop',
+      pot: 0,
+      sidePots: [],
+      currentBet: 0,
+      players: [],
+      communityCards: [],
+    } as const;
+    engineApply = jest.fn(() => state);
+    (gateway as any).engines.set('t1', {
+      applyAction: engineApply,
+      getPublicState: () => state,
+      getHandId: () => 'hand',
+      getHandLog: () => [],
+    });
   });
 
   beforeEach(() => {
     roomApply?.mockClear();
+    engineApply?.mockClear();
   });
 
   it('accepts actions from authenticated player', async () => {
     const socket = new MockSocket();
+    (socket as any).data = {};
     socket.handshake.query = { tableId: 't1', playerId: 'p1' };
     gateway.handleConnection(socket as any);
 
@@ -96,12 +126,13 @@ describe('GameGateway auth', () => {
       type: 'check',
     });
 
-    expect(roomApply).toHaveBeenCalledTimes(1);
+    expect(engineApply).toHaveBeenCalledTimes(1);
     expect(socket.emitted['server:Error']).toBeUndefined();
   });
 
   it('rejects actions with mismatched playerId', async () => {
     const socket = new MockSocket();
+    (socket as any).data = {};
     socket.handshake.query = { tableId: 't1', playerId: 'p1' };
     gateway.handleConnection(socket as any);
 
@@ -113,7 +144,7 @@ describe('GameGateway auth', () => {
       type: 'check',
     });
 
-    expect(roomApply).not.toHaveBeenCalled();
+    expect(engineApply).not.toHaveBeenCalled();
     expect(socket.emitted['server:Error'][0]).toBeDefined();
   });
 });
