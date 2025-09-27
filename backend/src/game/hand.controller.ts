@@ -275,7 +275,7 @@ export class HandController {
     @Param('id') id: string,
     @Param('index') indexParam: string,
     @Req() req: Request,
-  ): Promise<GameState> {
+  ): Promise<Omit<GameState, 'serverTime'>> {
     const userId = await this.assertParticipantOrAdmin(
       id,
       req.headers['authorization'],
@@ -291,12 +291,16 @@ export class HandController {
       throw new NotFoundException('state not found');
     }
 
+    const sanitized = sanitize(state, userId);
+    const { serverTime: _serverTime, ...sanitizedState } = sanitized;
+
     const payload = {
       version: '1',
-      ...sanitize(state, userId),
+      ...sanitizedState,
       tick: index + 1,
-    } as GameState;
-    return GameStateSchema.parse(payload);
+    };
+
+    return GameStateSchema.omit({ serverTime: true }).parse(payload);
   }
 
   @Get(':id/log')

@@ -126,7 +126,10 @@ describe('HandController', () => {
       .get('/hands/hand-state/state/0')
       .set('Authorization', auth('u1'))
       .expect(200)
-      .expect(expectedState('u1'));
+      .expect(({ body }) => {
+        expect(body).toEqual(expectedState('u1'));
+        expect(body.serverTime).toBeUndefined();
+      });
 
     if (existsSync(file)) unlinkSync(file);
   });
