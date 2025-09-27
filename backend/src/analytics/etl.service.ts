@@ -5,9 +5,13 @@ import { createKafkaProducer } from '../common/kafka';
 import Redis from 'ioredis';
 import Ajv, { ValidateFunction } from 'ajv';
 import { EventSchemas, Events, EventName } from '@shared/events';
-import type { ZodType } from 'zod';
 import { createValidators } from './validator';
 import { AnalyticsService } from './analytics.service';
+
+const parseEvent = <E extends EventName>(eventName: E, data: unknown): Events[E] => {
+  const schema = EventSchemas[eventName];
+  return schema.parse(data) as Events[E];
+};
 
 @Injectable()
 export class EtlService {
@@ -39,8 +43,7 @@ export class EtlService {
   }
 
   async runEtl<E extends EventName>(event: E, data: Events[E]): Promise<void> {
-    const schema = EventSchemas[event] as ZodType<Events[E]>;
-    const payload = schema.parse(data);
+    const payload = parseEvent(event, data);
     const validate = this.validators[event];
     const asRecord = payload as Record<string, unknown>;
     if (validate && !validate(asRecord)) {
@@ -71,8 +74,7 @@ export class EtlService {
         return;
       }
       const typed = event as EventName;
-      const schema = EventSchemas[typed] as ZodType<Events[EventName]>;
-      const payload = schema.parse(raw) as Events[typeof typed];
+      const payload = parseEvent(typed, raw);
       await this.runEtl(typed, payload);
     } catch (err) {
       this.logger.error(err);
