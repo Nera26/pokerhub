@@ -1,4 +1,5 @@
 version: '3.8'
+
 services:
   api-gateway:
     build: ./infra/api-gateway
@@ -9,10 +10,11 @@ services:
     volumes:
       - ./infra/api-gateway/kong.yml:/usr/local/kong/declarative/kong.yml:ro
     ports:
-      - '8080:8000'
-      - '8443:8443'
+      - '8080:8000'   # proxy (HTTP)
+      - '8443:8443'   # proxy (HTTPS)
     depends_on:
       - backend
+
   backend:
     build: ./backend
     command: npm run start:dev
@@ -69,6 +71,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
   storage:
     build: ./infra/storage
     image: pokerhub-fake-gcs
@@ -80,4 +83,3 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
