@@ -184,6 +184,7 @@ describe('Wallet ledger invariants', () => {
 
   it('emits alert on log sum mismatch', async () => {
     (events.emit as jest.Mock).mockClear();
+    await resetLedger({ account: repos.account, journal: repos.journal });
     const day = new Date(Date.now() - 24 * 60 * 60 * 1000)
       .toISOString()
       .slice(0, 10);
@@ -198,7 +199,48 @@ describe('Wallet ledger invariants', () => {
     });
     expect(events.emit).toHaveBeenCalledWith(
       'wallet.reconcile.mismatch',
-      { date: day, total: 5 },
+      { date: day, total: 5, report: [], reportCount: 0 },
+    );
+  });
+
+  it('emits alert on report mismatch without log discrepancies', async () => {
+    (events.emit as jest.Mock).mockClear();
+    await resetLedger({ account: repos.account, journal: repos.journal });
+
+    const user = await repos.account.findOneByOrFail({ id: userId });
+    user.balance = 10;
+    await repos.account.save(user);
+
+    const day = new Date(Date.now() - 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+
+    await runInTmp(async () => {
+      await expect(runReconcile(service, events)).rejects.toThrow(
+        'wallet reconciliation discrepancies',
+      );
+    });
+
+    const payload = (events.emit as jest.Mock).mock.calls.find(
+      ([eventName]) => eventName === 'wallet.reconcile.mismatch',
+    )?.[1];
+
+    expect(payload).toBeDefined();
+    expect(payload).toEqual(
+      expect.objectContaining({
+        date: day,
+        total: 0,
+        reportCount: 1,
+      }),
+    );
+    expect(payload.report).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          account: 'user',
+          balance: 10,
+          journal: 0,
+        }),
+      ]),
     );
   });
 });

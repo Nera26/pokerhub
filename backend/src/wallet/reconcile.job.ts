@@ -42,11 +42,18 @@ export async function runReconcile(
     }
   }
 
-  if (total !== 0) {
-    await events?.emit('wallet.reconcile.mismatch', { date, total });
+  const reportCount = report.length;
+
+  if (reportCount > 0 || total !== 0) {
+    await events?.emit('wallet.reconcile.mismatch', {
+      date,
+      total,
+      report,
+      reportCount,
+    });
   }
 
-  if (report.length > 0 || total !== 0) {
+  if (reportCount > 0 || total !== 0) {
     throw new Error('wallet reconciliation discrepancies');
   }
 }
