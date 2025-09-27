@@ -1,4 +1,6 @@
 import assert from 'assert';
+import { readFileSync } from 'fs';
+import path from 'path';
 import { TableBalancerService } from '../../src/tournament/table-balancer.service';
 import { TournamentService } from '../../src/tournament/tournament.service';
 import { RebuyService } from '../../src/tournament/rebuy.service';
@@ -7,6 +9,19 @@ import { icmRaw } from '@shared/utils/icm';
 import { Seat } from '../../src/database/entities/seat.entity';
 import { Table } from '../../src/database/entities/table.entity';
 import { Tournament } from '../../src/database/entities/tournament.entity';
+
+interface StructureLevel {
+  level: number;
+  durationMinutes: number;
+}
+
+const structurePath = path.resolve(
+  __dirname,
+  '../../src/tournament/structures/v1.json',
+);
+const structure = JSON.parse(readFileSync(structurePath, 'utf8')) as {
+  levels: StructureLevel[];
+};
 
 async function runSimulation(players: number, assertIcm = false): Promise<number> {
   const start = Date.now();
@@ -66,7 +81,10 @@ async function runSimulation(players: number, assertIcm = false): Promise<number
   const balancer = new TableBalancerService(tablesRepo, service);
   await service.scheduleTournament('t1', {
     registration: { open: new Date(), close: new Date() },
-    structure: [{ level: 1, durationMinutes: 1 }],
+    structure: structure.levels.map((lvl) => ({
+      level: lvl.level,
+      durationMinutes: lvl.durationMinutes,
+    })),
     breaks: [],
     start: new Date(),
   });
