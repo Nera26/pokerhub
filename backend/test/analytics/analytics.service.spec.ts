@@ -130,6 +130,46 @@ describe('AnalyticsService rebuildEngagementMetrics', () => {
   });
 });
 
+describe('AnalyticsService ingest', () => {
+  it('inserts rows when ClickHouse is configured', async () => {
+    const insert = jest.fn().mockResolvedValue(undefined);
+    const service: any = {
+      client: { insert },
+      logger: { warn: jest.fn() },
+    };
+
+    await (AnalyticsService.prototype as any).ingest.call(
+      service,
+      'audit_log',
+      { foo: 'bar' },
+    );
+
+    expect(insert).toHaveBeenCalledWith({
+      table: 'audit_log',
+      values: [{ foo: 'bar' }],
+      format: 'JSONEachRow',
+    });
+    expect(service.logger.warn).not.toHaveBeenCalled();
+  });
+
+  it('logs a warning when ClickHouse is unavailable', async () => {
+    const service: any = {
+      client: null,
+      logger: { warn: jest.fn() },
+    };
+
+    await (AnalyticsService.prototype as any).ingest.call(
+      service,
+      'audit_log',
+      { foo: 'bar' },
+    );
+
+    expect(service.logger.warn).toHaveBeenCalledWith(
+      'No ClickHouse client configured',
+    );
+  });
+});
+
 describe('AnalyticsService getAuditLogTypes', () => {
   it('returns empty array when no types exist', async () => {
     const service: any = {
@@ -313,6 +353,8 @@ describe('AnalyticsService markAuditLogReviewed', () => {
       redis,
       applyAuditLogDefaults:
         (AnalyticsService.prototype as any).applyAuditLogDefaults,
+      parseAuditLogEntry: jest.fn().mockReturnValue(log),
+      logger: { warn: jest.fn(), error: jest.fn(), log: jest.fn() },
     };
     const result = await (AnalyticsService.prototype as any).markAuditLogReviewed.call(
       service,
@@ -352,6 +394,9 @@ describe('AnalyticsService markAuditLogReviewed', () => {
         (AnalyticsService.prototype as any).applyAuditLogDefaults,
       query: jest.fn(),
       formatAuditLogId: (AnalyticsService.prototype as any).formatAuditLogId,
+      parseAuditLogEntry:
+        (AnalyticsService.prototype as any).parseAuditLogEntry,
+      logger: { warn: jest.fn(), error: jest.fn(), log: jest.fn() },
     };
     const result = await (AnalyticsService.prototype as any).markAuditLogReviewed.call(
       service,
