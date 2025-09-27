@@ -67,7 +67,8 @@ services:
       timeout: 5s
       retries: 5
   storage:
-    image: fsouza/fake-gcs-server:latest
+    build: ./infra/storage
+    image: pokerhub/fake-gcs-server:dev
     command: -scheme http -backend memory
     ports:
       - '4443:4443'
