@@ -228,12 +228,23 @@ export class HandStateMachine {
     let previous = 0;
     for (const level of levels) {
       const contributors = bettors.filter((p) => p.bet >= level);
-      const contenders = contributors.filter((p) => !p.folded);
+      let contenders = contributors.filter((p) => !p.folded);
       const potAmount = (level - previous) * contributors.length;
       if (potAmount > 0) {
         const contributions: Record<string, number> = {};
         for (const player of contributors) {
           contributions[player.id] = level - previous;
+        }
+        if (contenders.length === 0) {
+          contenders = this.activePlayers();
+          for (const player of contenders) {
+            if (!(player.id in contributions)) {
+              contributions[player.id] = 0;
+            }
+          }
+        }
+        if (contenders.length === 0) {
+          contenders = contributors;
         }
         this.state.sidePots.push({
           amount: potAmount,
