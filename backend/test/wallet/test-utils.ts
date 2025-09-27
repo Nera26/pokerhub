@@ -7,6 +7,11 @@ import { JournalEntry } from '../../src/wallet/journal-entry.entity';
 import { Disbursement } from '../../src/wallet/disbursement.entity';
 import { SettlementJournal } from '../../src/wallet/settlement-journal.entity';
 import { PendingDeposit } from '../../src/wallet/pending-deposit.entity';
+import { Transaction } from '../../src/wallet/transaction.entity';
+import { TransactionType } from '../../src/wallet/transaction-type.entity';
+import { TransactionStatus } from '../../src/wallet/transaction-status.entity';
+import { TransactionTabEntity } from '../../src/wallet/transaction-tab.entity';
+import { TransactionColumnEntity } from '../../src/wallet/transaction-column.entity';
 import { WalletService } from '../../src/wallet/wallet.service';
 import { EventPublisher } from '../../src/events/events.service';
 import { PaymentProviderService } from '../../src/wallet/payment-provider.service';
@@ -19,14 +24,21 @@ import { verifySignature } from '../../src/wallet/verify-signature';
 import * as fc from 'fast-check';
 import { walletAccounts } from './accounts.fixture';
 
+const DEFAULT_WALLET_ENTITIES: EntityTarget<any>[] = [
+  Account,
+  JournalEntry,
+  Disbursement,
+  SettlementJournal,
+  PendingDeposit,
+  TransactionType,
+  Transaction,
+  TransactionStatus,
+  TransactionTabEntity,
+  TransactionColumnEntity,
+];
+
 export async function createInMemoryDb(
-  entities: EntityTarget<any>[] = [
-    Account,
-    JournalEntry,
-    Disbursement,
-    SettlementJournal,
-    PendingDeposit,
-  ],
+  entities: EntityTarget<any>[] = DEFAULT_WALLET_ENTITIES,
 ): Promise<DataSource> {
   return createDataSource(entities);
 }
@@ -171,13 +183,7 @@ export async function completeBankTransferDepositWorkflow(options: {
 }
 
 export async function createWalletTestContext() {
-  const dataSource = await createDataSource([
-    Account,
-    JournalEntry,
-    Disbursement,
-    SettlementJournal,
-    PendingDeposit,
-  ]);
+  const dataSource = await createDataSource([...DEFAULT_WALLET_ENTITIES]);
   return { dataSource, ...createWalletServices(dataSource) };
 }
 
