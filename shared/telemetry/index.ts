@@ -1,7 +1,13 @@
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
-import { metrics, type Counter, type Histogram, type ObservableResult } from '@opentelemetry/api';
+import {
+  metrics,
+  type Counter,
+  type Histogram,
+  type ObservableResult,
+  type Context,
+} from '@opentelemetry/api';
 import {
   MeterProvider,
   PeriodicExportingMetricReader,
@@ -12,20 +18,20 @@ import { logs } from '@opentelemetry/api-logs';
 import {
   LoggerProvider,
   BatchLogRecordProcessor,
-  LogRecordProcessor,
-  LogRecord,
+  type LogRecordProcessor,
+  type SdkLogRecord,
 } from '@opentelemetry/sdk-logs';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
-import { Resource } from '@opentelemetry/resources';
+import { resourceFromAttributes } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
-import type { Instrumentation } from '@opentelemetry/instrumentation';
+import type { NodeSDKConfiguration } from '@opentelemetry/sdk-node';
 import type { Request, Response, NextFunction } from 'express';
 import { addSample, recordTimestamp, percentile } from './metrics';
 
 interface TelemetryOptions {
   serviceName: string;
   meterName: string;
-  instrumentations: Array<Instrumentation | Instrumentation[]>;
+  instrumentations: NodeSDKConfiguration['instrumentations'];
   enableHttpMetrics?: boolean;
 }
 
@@ -59,7 +65,7 @@ function pruneTimestamps(now: number) {
 class LogCounterProcessor implements LogRecordProcessor {
   constructor(private counter: Counter) {}
 
-  onEmit(record: LogRecord) {
+  onEmit(record: SdkLogRecord, _context?: Context) {
     this.counter.add(1, { severity: record.severityText });
   }
 
@@ -88,7 +94,7 @@ export async function setupTelemetry({
 }: TelemetryOptions): Promise<void> {
   if (sdk) return;
 
-  const resource = new Resource({
+  const resource = resourceFromAttributes({
     [SemanticResourceAttributes.SERVICE_NAME]: serviceName,
   });
 
@@ -112,22 +118,24 @@ export async function setupTelemetry({
   }
   metrics.setGlobalMeterProvider(meterProvider);
 
-  loggerProvider = new LoggerProvider({ resource });
+  const logRecordProcessors: LogRecordProcessor[] = [];
   const otlpLogsEndpoint =
     process.env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT ??
     process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
   if (otlpLogsEndpoint) {
     const logExporter = new OTLPLogExporter({ url: otlpLogsEndpoint });
-    loggerProvider.addLogRecordProcessor(
-      new BatchLogRecordProcessor(logExporter),
-    );
+    logRecordProcessors.push(new BatchLogRecordProcessor(logExporter));
   }
 
   const meter = meterProvider.getMeter(meterName);
   const logCounter = meter.createCounter('log_records_total', {
     description: 'Total log records by severity',
   });
-  loggerProvider.addLogRecordProcessor(new LogCounterProcessor(logCounter));
+  logRecordProcessors.push(new LogCounterProcessor(logCounter));
+  loggerProvider = new LoggerProvider({
+    resource,
+    processors: logRecordProcessors,
+  });
   logs.setGlobalLoggerProvider(loggerProvider);
 
   if (enableHttpMetrics) {
