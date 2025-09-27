@@ -6,9 +6,10 @@ import { createKafkaProducer } from '../common/kafka';
 import { EventName, EventSchemas, Events } from '@shared/events';
 import type Redis from 'ioredis';
 
-type FailedEvent = {
-  [K in EventName]: { name: K; payload: Events[K] };
-}[EventName];
+type FailedEvent<T extends EventName = EventName> = {
+  name: T;
+  payload: Events[T];
+};
 
 @Injectable()
 export class EventPublisher implements OnModuleDestroy {
@@ -59,11 +60,10 @@ export class EventPublisher implements OnModuleDestroy {
     return null;
   }
 
-  private async persistFailedEvent<T extends EventName>(event: {
-    name: T;
-    payload: Events[T];
-  }): Promise<void> {
-    const record: FailedEvent = event;
+  private async persistFailedEvent<T extends EventName>(
+    event: FailedEvent<T>,
+  ): Promise<void> {
+    const record: FailedEvent<T> = event;
     if (this.redis) {
       const payload = this.serializeFailedEvent(record);
       try {
