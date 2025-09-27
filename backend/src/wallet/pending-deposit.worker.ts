@@ -1,11 +1,12 @@
 import { WalletService } from './wallet.service';
 import { createQueue } from '../redis/queue';
 import { Worker } from 'bullmq';
+import { logInfrastructureNotice } from '../common/logging';
 
 export async function startPendingDepositWorker(wallet: WalletService) {
   const queue = await createQueue('pending-deposit');
   if (!queue.opts.connection) {
-    console.warn(
+    logInfrastructureNotice(
       'Redis queue connection is unavailable; pending-deposit jobs will be processed inline.',
     );
   } else {
@@ -20,7 +21,7 @@ export async function startPendingDepositWorker(wallet: WalletService) {
 
   const expireQueue = await createQueue('pending-deposit-expire');
   if (!expireQueue.opts.connection) {
-    console.warn(
+    logInfrastructureNotice(
       'Redis queue connection is unavailable; falling back to an interval scheduler for pending-deposit expiry.',
     );
     const run = async () => {

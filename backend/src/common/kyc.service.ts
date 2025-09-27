@@ -19,6 +19,7 @@ import { fetchJson } from '@shared/utils/http';
 import { Pep } from '../database/entities/pep.entity';
 import { Onfido, Region } from 'onfido';
 import { createQueue } from '../redis/queue';
+import { logInfrastructureNotice } from './logging';
 
 export interface VerificationJob {
   verificationId: string;
@@ -102,7 +103,9 @@ export class KycService implements OnModuleInit {
     }
     if (!normalized || normalized.length === 0) {
       if (warnOnEmpty) {
-        this.logger.warn('No blocked countries configured; using empty list');
+        logInfrastructureNotice('No blocked countries configured; using empty list', {
+          logger: this.logger,
+        });
       }
       normalized = [];
     }
@@ -130,7 +133,9 @@ export class KycService implements OnModuleInit {
       sanctioned = await this.loadListFromDb('sanctioned_names', 'name');
     }
     if (!sanctioned || sanctioned.length === 0) {
-      this.logger.warn('No sanctioned names configured; using empty list');
+      logInfrastructureNotice('No sanctioned names configured; using empty list', {
+        logger: this.logger,
+      });
       sanctioned = [];
     }
     this.sanctionedNames = sanctioned.map((n) => n.toLowerCase());
@@ -140,7 +145,9 @@ export class KycService implements OnModuleInit {
     if (this.queue) return this.queue;
     this.queue = await createQueue('kyc');
     if (!this.queue.opts.connection) {
-      this.logger.warn('KYC verification queue disabled; Redis queue connection is unavailable.');
+      logInfrastructureNotice('KYC verification queue disabled; Redis queue connection is unavailable.', {
+        logger: this.logger,
+      });
     }
     return this.queue;
   }
@@ -161,8 +168,9 @@ export class KycService implements OnModuleInit {
     });
     const queue = await this.getQueue();
     if (!queue.opts.connection) {
-      this.logger.warn(
+      logInfrastructureNotice(
         'Redis queue connection is unavailable; processing KYC verification inline.',
+        { logger: this.logger },
       );
       await this.validateJob({
         verificationId: record.id,

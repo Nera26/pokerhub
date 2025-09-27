@@ -1,11 +1,12 @@
 import { KycService, VerificationJob } from '../common/kyc.service';
 import type { Job } from 'bullmq';
 import { createQueue } from '../redis/queue';
+import { logInfrastructureNotice } from '../common/logging';
 
 export async function startKycWorker(kyc: KycService) {
   const queue = await createQueue('kyc');
   if (!queue.opts.connection) {
-    console.warn('Redis queue connection is unavailable; KYC jobs will be processed inline.');
+    logInfrastructureNotice('Redis queue connection is unavailable; KYC jobs will be processed inline.');
     return;
   }
   const bull = await import('bullmq');

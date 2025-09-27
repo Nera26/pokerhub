@@ -1,5 +1,6 @@
 import type { Queue } from 'bullmq';
 import Redis from 'ioredis';
+import { logInfrastructureNotice } from '../common/logging';
 
 let loggedInMemoryQueue = false;
 
@@ -11,7 +12,7 @@ class InMemoryQueue {
   constructor(private readonly name: string) {}
 
   async add(jobName: string, data: unknown, _opts?: unknown): Promise<unknown> {
-    console.warn(
+    logInfrastructureNotice(
       `Queue "${this.name}" is disabled because Redis is unavailable; job "${jobName}" will not be enqueued.`,
     );
     return { id: `${Date.now()}`, name: jobName, data };
@@ -65,7 +66,7 @@ export async function createQueue(name: string): Promise<Queue> {
     return new bull.Queue(name, { connection });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.warn(
+    logInfrastructureNotice(
       `Redis queue connection failed (${message}); using in-memory queue stub for "${name}".`,
     );
     try {

@@ -1,6 +1,7 @@
 import { metrics } from '@opentelemetry/api';
 import type { Queue } from 'bullmq';
 import { Worker } from 'bullmq';
+import { logInfrastructureNotice } from '../common/logging';
 import type { LeaderboardService } from './leaderboard.service';
 
 const meter = metrics.getMeter('leaderboard');
@@ -54,7 +55,7 @@ export async function scheduleRebuild(
   const workerQueueName = queueName ?? queue.name ?? 'leaderboard-rebuild';
 
   if (!queue.opts.connection) {
-    console.warn(
+    logInfrastructureNotice(
       'Redis queue connection is unavailable; running leaderboard rebuild inline without scheduling.',
     );
     try {
