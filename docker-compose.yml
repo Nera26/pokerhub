@@ -27,6 +27,7 @@ services:
       - CLICKHOUSE_URL=${CLICKHOUSE_URL}
     volumes:
       - ${GOOGLE_APPLICATION_CREDENTIALS}:/secrets/gcp-service-account.json:ro
+      - ./backend:/backend
       - ./shared:/shared
       - ./contracts:/contracts
     depends_on:
