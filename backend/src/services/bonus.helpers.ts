@@ -32,16 +32,12 @@ type BonusBaseFields = Pick<
   | 'status'
 >;
 
-function nullableNumber(value: unknown): number | null | undefined {
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : null;
+function nullableNumber(value: unknown): number | undefined {
+  if (typeof value !== 'number') {
+    return undefined;
   }
 
-  if (value === null) {
-    return null;
-  }
-
-  return undefined;
+  return Number.isFinite(value) ? value : undefined;
 }
 
 function mapBonusBaseFields(source: BonusBaseSource): BonusBaseFields {
@@ -89,7 +85,7 @@ export function toBonusEntityInput(
     const claimsTotal = nullableNumber(
       (payload as { claimsTotal?: unknown }).claimsTotal,
     );
-    if (claimsTotal !== undefined) {
+    if (typeof claimsTotal === 'number') {
       prepared.claimsTotal = claimsTotal;
     }
   }
@@ -97,7 +93,7 @@ export function toBonusEntityInput(
     const claimsWeek = nullableNumber(
       (payload as { claimsWeek?: unknown }).claimsWeek,
     );
-    if (claimsWeek !== undefined) {
+    if (typeof claimsWeek === 'number') {
       prepared.claimsWeek = claimsWeek;
     }
   }
