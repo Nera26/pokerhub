@@ -11,6 +11,11 @@ import { PaymentProviderService } from '../../src/wallet/payment-provider.servic
 import { PendingDeposit } from '../../src/wallet/pending-deposit.entity';
 import type { SettlementService } from '../../src/wallet/settlement.service';
 import { SettlementJournal } from '../../src/wallet/settlement-journal.entity';
+import { Transaction } from '../../src/wallet/transaction.entity';
+import { TransactionType } from '../../src/wallet/transaction-type.entity';
+import { TransactionStatus } from '../../src/wallet/transaction-status.entity';
+import { TransactionTabEntity } from '../../src/wallet/transaction-tab.entity';
+import { TransactionColumnEntity } from '../../src/wallet/transaction-column.entity';
 import { WalletService } from '../../src/wallet/wallet.service';
 import { createInMemoryRedis } from '../utils/mock-redis';
 import { createPgMemDataSource } from '../utils/pgMemFactory';
@@ -58,6 +63,11 @@ export async function createWalletTestContext(): Promise<WalletTestContext> {
       Disbursement,
       SettlementJournal,
       PendingDeposit,
+      TransactionType,
+      Transaction,
+      TransactionStatus,
+      TransactionTabEntity,
+      TransactionColumnEntity,
     ],
   });
 
