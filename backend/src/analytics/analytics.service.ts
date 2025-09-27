@@ -12,8 +12,9 @@ import { createClient, ClickHouseClient } from '@clickhouse/client';
 import { randomUUID } from 'crypto';
 import Redis from 'ioredis';
 import { EventSchemas, Events, EventName } from '@shared/events';
+import type { ZodType } from 'zod';
 import { GcsService } from '../storage/gcs.service';
-import { ParquetSchema, ParquetWriter } from 'parquetjs-lite';
+import { ParquetSchema, ParquetWriter, type ParquetField } from 'parquetjs-lite';
 import { PassThrough } from 'stream';
 import path from 'path';
 import { promises as fs } from 'fs';
@@ -787,7 +788,7 @@ export class AnalyticsService implements OnModuleInit {
 
 
   private buildSchema(record: Record<string, unknown>): ParquetSchema {
-    const fields: Record<string, unknown> = {};
+    const fields: Record<string, ParquetField> = {};
     for (const [key, value] of Object.entries(record)) {
       if (Array.isArray(value)) {
         const first = value[0];
@@ -843,8 +844,9 @@ export class AnalyticsService implements OnModuleInit {
   }
 
   async emit<E extends EventName>(event: E, data: Events[E]) {
-    const payload = EventSchemas[event].parse(data);
-    await this.etl.runEtl(event, payload as Record<string, unknown>);
+    const schema = EventSchemas[event] as ZodType<Events[E]>;
+    const payload = schema.parse(data);
+    await this.etl.runEtl(event, payload);
   }
 
   private async recordStream<E extends EventName>(
@@ -852,7 +854,7 @@ export class AnalyticsService implements OnModuleInit {
     eventName: E,
     event: Events[E],
   ) {
-    const schema = EventSchemas[eventName];
+    const schema = EventSchemas[eventName] as ZodType<Events[E]>;
     const payload = schema.parse(event);
     await this.redis.xadd(
       `analytics:${stream}`,
@@ -861,11 +863,11 @@ export class AnalyticsService implements OnModuleInit {
       JSON.stringify(payload),
     );
 
-    await this.etl.runEtl(eventName, payload as Record<string, unknown>);
+    await this.etl.runEtl(eventName, payload);
   }
 
-  async recordGameEvent(event: Events['game.event']) {
-    await this.recordStream('game', 'game.event', event);
+  async recordGameEvent(event: Events['game.analytics']) {
+    await this.recordStream('game.analytics', 'game.analytics', event);
 
     const { handId, playerId, timeMs } = event;
     if (handId && playerId && typeof timeMs === 'number') {
@@ -881,8 +883,12 @@ export class AnalyticsService implements OnModuleInit {
     }
   }
 
-  async recordTournamentEvent(event: Events['tournament.event']) {
-    await this.recordStream('tournament', 'tournament.event', event);
+  async recordTournamentEvent(event: Events['tournament.analytics']) {
+    await this.recordStream(
+      'tournament.analytics',
+      'tournament.analytics',
+      event,
+    );
   }
 
   async recordCollusionSession(session: CollusionSession) {
@@ -964,7 +970,7 @@ export class AnalyticsService implements OnModuleInit {
   ): Promise<Events[E][]> {
     const start = `${since}-0`;
     const entries = await this.redis.xrange(stream, start, '+');
-    const schema = EventSchemas[eventName];
+    const schema = EventSchemas[eventName] as ZodType<Events[E]>;
     const results: Events[E][] = [];
     for (const [, fields] of entries) {
       const raw = Array.isArray(fields) ? fields[1] : undefined;
@@ -973,14 +979,7 @@ export class AnalyticsService implements OnModuleInit {
       }
       try {
         const parsed = JSON.parse(raw) as unknown;
-        const safe = schema.safeParse(parsed);
-        if (safe.success) {
-          results.push(safe.data);
-        } else {
-          this.logger.warn(
-            `Discarding invalid ${eventName} payload: ${safe.error.message}`,
-          );
-        }
+        results.push(schema.parse(parsed));
       } catch (err) {
         this.logger.warn(
           `Failed to parse ${eventName} payload: ${(err as Error).message}`,

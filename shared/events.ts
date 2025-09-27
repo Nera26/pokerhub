@@ -9,6 +9,7 @@ const HandStartEvent = z.object({
   handId: z.string().uuid(),
   tableId: z.string().uuid().optional(),
   players: z.array(z.string().uuid()),
+  stake: z.string().optional(),
 });
 
 const HandEndEvent = z.object({
@@ -141,6 +142,16 @@ const WalletChargebackFlagEvent = z.object({
 const WalletReconcileMismatchEvent = z.object({
   date: z.string(),
   total: z.number(),
+  report: z
+    .array(
+      z.object({
+        account: z.string(),
+        balance: z.number(),
+        journal: z.number(),
+      }),
+    )
+    .optional(),
+  reportCount: z.number().int().nonnegative().optional(),
 });
 
 const WalletReconcileMismatchAcknowledgedEvent = z.object({
@@ -165,18 +176,20 @@ const GameAnalyticsEvent = z
     clientId: z.string(),
     action: GameAnalyticsActionSchema,
     stake: z.string().optional(),
-  })
-  .extend({
     handId: z.string().optional(),
     playerId: z.string().optional(),
     timeMs: z.number().optional(),
-  });
+    tableId: z.string().optional(),
+  })
+  .passthrough();
 
-const TournamentAnalyticsEvent = z.object({
-  type: z.string(),
-  tournamentId: z.string(),
-  startDate: z.string().datetime().optional(),
-});
+const TournamentAnalyticsEvent = z
+  .object({
+    type: z.string(),
+    tournamentId: z.string(),
+    startDate: z.string().datetime().optional(),
+  })
+  .passthrough();
 
 const WalletDisbursementRequestEvent = z.object({
   id: z.string().uuid(),
@@ -237,8 +250,8 @@ export const EventSchemas = {
   "hand.end": HandEndEvent,
   "hand.settle": HandSettleEvent,
   "leaderboard.hand_settled": HandSettleEvent,
-  "game.event": GameAnalyticsEvent,
-  "tournament.event": TournamentAnalyticsEvent,
+  "game.analytics": GameAnalyticsEvent,
+  "tournament.analytics": TournamentAnalyticsEvent,
   "wallet.credit": WalletMovementEvent,
   "wallet.debit": WalletMovementEvent,
   "tournament.cancel": TournamentCancelEvent,
@@ -261,41 +274,12 @@ export const EventSchemas = {
   "admin.deposit.pending": AdminDepositPendingEvent,
   "admin.deposit.rejected": AdminDepositRejectedEvent,
   "admin.deposit.confirmed": AdminDepositConfirmedEvent,
-} as const;
+} as const satisfies Record<string, z.ZodTypeAny>;
+
+type EventSchemaMap = typeof EventSchemas;
 
 export type Events = {
-  "hand.start": z.infer<typeof HandStartEvent>;
-  "hand.end": z.infer<typeof HandEndEvent>;
-  "hand.settle": z.infer<typeof HandSettleEvent>;
-  "leaderboard.hand_settled": z.infer<typeof HandSettleEvent>;
-  "game.event": z.infer<typeof GameAnalyticsEvent>;
-  "tournament.event": z.infer<typeof TournamentAnalyticsEvent>;
-  "wallet.credit": z.infer<typeof WalletMovementEvent>;
-  "wallet.debit": z.infer<typeof WalletMovementEvent>;
-  "tournament.cancel": z.infer<typeof TournamentCancelEvent>;
-  "tournament.bubble": z.infer<typeof TournamentBubbleEvent>;
-  "wallet.reserve": z.infer<typeof WalletReserveEvent>;
-  "wallet.rollback": z.infer<typeof WalletRollbackEvent>;
-  "wallet.commit": z.infer<typeof WalletCommitEvent>;
-  "auth.login": z.infer<typeof AuthLoginEvent>;
-  "antiCheat.flag": z.infer<typeof AntiCheatFlagEvent>;
-  "game.event": z.infer<typeof GameEvent>;
-  "tournament.event": z.infer<typeof TournamentEvent>;
-  "wallet.velocity.limit": z.infer<typeof WalletVelocityLimitEvent>;
-  "wallet.reconcile.mismatch": z.infer<typeof WalletReconcileMismatchEvent>;
-  "wallet.reconcile.mismatch.resolved": z.infer<
-    typeof WalletReconcileMismatchAcknowledgedEvent
-  >;
-  "wallet.chargeback_flag": z.infer<typeof WalletChargebackFlagEvent>;
-  "notification.create": z.infer<typeof NotificationCreateEvent>;
-  "wallet.disbursement.request": z.infer<
-    typeof WalletDisbursementRequestEvent
-  >;
-  "wallet.deposit.rejected": z.infer<typeof WalletDepositRejectedEvent>;
-  "wallet.deposit.confirmed": z.infer<typeof WalletDepositConfirmedEvent>;
-  "admin.deposit.pending": z.infer<typeof AdminDepositPendingEvent>;
-  "admin.deposit.rejected": z.infer<typeof AdminDepositRejectedEvent>;
-  "admin.deposit.confirmed": z.infer<typeof AdminDepositConfirmedEvent>;
+  [K in keyof EventSchemaMap]: z.infer<EventSchemaMap[K]>;
 };
 
 export type EventName = keyof Events;

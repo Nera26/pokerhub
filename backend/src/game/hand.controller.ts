@@ -34,6 +34,7 @@ import type {
 import { HandLog } from './hand-log';
 import { sanitize } from './state-sanitize';
 import { GameStateSchema, type GameState } from '@shared/types';
+import { EVENT_SCHEMA_VERSION } from '@shared/events';
 
 interface JwtClaims extends JwtPayload {
   sub: string;
@@ -294,13 +295,11 @@ export class HandController {
     const sanitized = sanitize(state, userId);
     const { serverTime: _serverTime, ...sanitizedState } = sanitized;
 
-    const payload = {
-      version: '1',
+    return GameStateSchema.omit({ serverTime: true }).parse({
       ...sanitizedState,
       tick: index + 1,
-    };
-
-    return GameStateSchema.omit({ serverTime: true }).parse(payload);
+      version: EVENT_SCHEMA_VERSION,
+    });
   }
 
   @Get(':id/log')
