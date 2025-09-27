@@ -1,12 +1,14 @@
 declare module 'parquetjs-lite' {
-  type ParquetPrimitiveType =
+  import type { Writable } from 'stream';
+
+  export type ParquetPrimitiveType =
     | 'BOOLEAN'
     | 'INT32'
     | 'INT64'
     | 'DOUBLE'
     | 'UTF8';
 
-  interface ParquetField {
+  export interface ParquetField {
     type: ParquetPrimitiveType;
     optional?: boolean;
     repeated?: boolean;
@@ -18,10 +20,10 @@ declare module 'parquetjs-lite' {
   }
 
   export class ParquetWriter<T extends Record<string, unknown> = Record<string, unknown>> {
-    static openStream(
+    static openStream<TSchema extends Record<string, unknown> = Record<string, unknown>>(
       schema: ParquetSchema,
-      stream: NodeJS.WritableStream,
-    ): Promise<ParquetWriter>;
+      stream: Writable,
+    ): Promise<ParquetWriter<TSchema>>;
 
     appendRow(row: T): Promise<void>;
     close(): Promise<void>;

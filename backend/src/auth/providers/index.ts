@@ -1,8 +1,8 @@
 import { ConfigService } from '@nestjs/config';
-import { CountryProvider } from './country-provider';
+import type { CountryProvider } from './country-provider';
 import { createGbgProvider } from './gbg.provider';
 import { createTruliooProvider } from './trulioo.provider';
-export { CountryProvider } from './country-provider';
+export type { CountryProvider } from './country-provider';
 export { createGbgProvider } from './gbg.provider';
 export { createTruliooProvider } from './trulioo.provider';
 

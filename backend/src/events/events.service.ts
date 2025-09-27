@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger, OnModuleDestroy, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { metrics } from '@opentelemetry/api';
-import { Producer } from 'kafkajs';
+import type { Producer } from 'kafkajs';
 import { createKafkaProducer } from '../common/kafka';
 import { EventName, EventSchemas, Events } from '@shared/events';
 import type Redis from 'ioredis';
@@ -31,7 +31,7 @@ export class EventPublisher implements OnModuleDestroy {
 
   constructor(
     config: ConfigService,
-    producer = createKafkaProducer(config),
+    producer: Producer = createKafkaProducer(config),
     @Optional() @Inject('REDIS_CLIENT') private readonly redis?: Redis,
   ) {
     this.producer = producer;

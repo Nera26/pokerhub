@@ -1,6 +1,6 @@
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Producer } from 'kafkajs';
+import type { Producer } from 'kafkajs';
 import { createKafkaProducer } from '../common/kafka';
 import Redis from 'ioredis';
 import Ajv, { ValidateFunction } from 'ajv';

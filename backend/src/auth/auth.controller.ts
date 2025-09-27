@@ -11,26 +11,27 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
-  LoginRequest,
   LoginRequestSchema,
-  type LoginResponse,
-  RegisterRequest,
   RegisterRequestSchema,
+  RefreshRequestSchema,
+  RequestResetSchema,
+  VerifyResetCodeSchema,
+  ResetPasswordSchema,
+} from '../schemas/auth';
+import type {
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
   MessageResponse,
   RefreshRequest,
-  RefreshRequestSchema,
   RequestResetRequest,
-  RequestResetSchema,
   VerifyResetCodeRequest,
-  VerifyResetCodeSchema,
   ResetPasswordRequest,
-  ResetPasswordSchema,
   AuthProvidersResponse,
 } from '../schemas/auth';
 import { AuthService } from './auth.service';
 import { GeoIpService } from './geoip.service';
-import { Request } from 'express';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { API_CONTRACT_VERSION } from '@shared/constants';
 @ApiTags('auth')
@@ -64,7 +65,10 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<LoginResponse> {
-    const ip = (req.headers['x-forwarded-for'] as string) || req.ip;
+    const forwardedFor = req.headers['x-forwarded-for'];
+    const ip = typeof forwardedFor === 'string' && forwardedFor.length > 0
+      ? forwardedFor
+      : req.ip ?? '';
     if (!this.geo.isAllowed(ip)) throw new ForbiddenException('Country not allowed');
     const parsed = LoginRequestSchema.parse(body);
     const tokens = await this.auth.login(parsed.email, parsed.password);
@@ -129,7 +133,10 @@ export class AuthController {
     @Req() req: Request,
   ): Promise<MessageResponse> {
     const parsed = RequestResetSchema.parse(body);
-    const ip = (req.headers['x-forwarded-for'] as string) || req.ip;
+    const forwardedFor = req.headers['x-forwarded-for'];
+    const ip = typeof forwardedFor === 'string' && forwardedFor.length > 0
+      ? forwardedFor
+      : req.ip ?? '';
     await this.auth.requestPasswordReset(parsed.email, ip);
     return {
       message: 'reset requested',
