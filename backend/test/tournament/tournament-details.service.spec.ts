@@ -37,6 +37,7 @@ describe('TournamentService.get tournament details', () => {
       {} as any,
       {} as any,
       {} as any,
+      {} as any,
       detailsRepository as any,
     );
 
