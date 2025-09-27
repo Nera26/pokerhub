@@ -31,9 +31,7 @@ import 'multer';
 @UseGuards(AuthGuard, AdminGuard)
 @Controller('admin/deposits')
 export class BankReconciliationController {
-  constructor(
-    private readonly reconciliation: BankReconciliationService,
-  ) {}
+  constructor(private readonly reconciliation: BankReconciliationService) {}
 
   @Post('reconcile')
   @HttpCode(200)
@@ -72,15 +70,16 @@ export class BankReconciliationController {
   })
   @ApiResponse({ status: 200, description: 'Reconciliation completed' })
   async reconcile(
-    @UploadedFile() file: Request['file'],
-    @Body() body: BankReconciliationRequest | any,
+    @UploadedFile() file: Request['file'] | undefined,
+    @Body() body: BankReconciliationRequest | unknown,
   ) {
-    if (file) {
+    if (file && file.buffer) {
       await this.reconciliation.reconcileCsv(file.buffer.toString('utf-8'));
-    } else if (body && typeof body === 'object' && 'entries' in body) {
+    } else if (body && typeof body === 'object' && 'entries' in (body as any)) {
       const parsed = BankReconciliationRequestSchema.parse(body);
       await this.reconciliation.reconcileApi(parsed.entries);
     }
+
     return MessageResponseSchema.parse({
       message: 'reconciled',
       contractVersion: API_CONTRACT_VERSION,
