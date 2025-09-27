@@ -16,7 +16,10 @@ describe('TableBalancerService', () => {
       [],
     ]) as Repository<Table>;
     const tournamentService = createTournamentService(moved);
-    const { redis, store } = createRedis({ p1: '1' });
+    const { redis, store } = createRedis();
+    const key = 'tourney:t1:lastMoved';
+    await redis.hset(key, { p1: '1' });
+    expect(store.hashes.get(key)?.get('p1')).toBe('1');
     const service = new TableBalancerService(
       repo,
       tournamentService as any,
@@ -24,8 +27,9 @@ describe('TableBalancerService', () => {
     );
     await service.rebalanceIfNeeded('t1', 5);
     expect(moved).toEqual(['p2']);
-    expect(store.get('p1')).toBe('1');
-    expect(store.get('p2')).toBe('5');
+    const hash = store.hashes.get(key);
+    expect(hash?.get('p1')).toBe('1');
+    expect(hash?.get('p2')).toBe('5');
   });
 
   it('skips players moved recently using local state', async () => {

@@ -26,6 +26,7 @@ export function createTablesRepository(
 }
 
 export { createInMemoryRedis };
+export const createRedis = createInMemoryRedis;
 
 export function createTournamentService(moved: string[]): TournamentService {
   return {
