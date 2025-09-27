@@ -10,5 +10,5 @@ export async function setWithExpiry(
   value: string,
   ttlSeconds: number,
 ): Promise<void> {
-  await redis.set(key, value, { EX: ttlSeconds });
+  await redis.set(key, value, 'EX', ttlSeconds);
 }
