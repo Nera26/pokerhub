@@ -18,7 +18,10 @@ describe('PaymentProviderService', () => {
       .mockRejectedValueOnce(new Error('fail1'))
       .mockRejectedValueOnce(new Error('fail2'))
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ id: 'pi_success' }), { status: 200 }),
+        new Response(JSON.stringify({ id: 'pi_success' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
       );
     const result = await service.initiate3DS('acct1', 10);
     expect(result).toEqual({ id: 'pi_success' });
@@ -36,9 +39,13 @@ describe('PaymentProviderService', () => {
       const fetchMock = jest
         .spyOn(global, 'fetch' as any)
         .mockResolvedValueOnce(
-          new Response(JSON.stringify({ id: 'pi_env' }), { status: 200 }),
+          new Response(JSON.stringify({ id: 'pi_env' }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
         );
-      await service.initiate3DS('acct1', 10);
+      const result = await service.initiate3DS('acct1', 10);
+      expect(result).toEqual({ id: 'pi_env' });
       expect(fetchMock).toHaveBeenCalledWith(
         'https://example.com/payment_intents',
         expect.objectContaining({
