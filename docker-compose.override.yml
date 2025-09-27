@@ -32,6 +32,5 @@ services:
   storage:
     ports:
       - "4443:4443"
-
 volumes:
   db-data:
