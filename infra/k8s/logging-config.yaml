@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logging-config
+  labels:
+    app: api
+    component: logging
+    managed-by: infra
+  annotations:
+    description: "Endpoints for external log sinks used by the API deployment"
+data:
+  ELASTIC_URL: https://elastic.logging.svc.cluster.local:9200
+  LOKI_URL: https://loki.logging.svc.cluster.local:3100

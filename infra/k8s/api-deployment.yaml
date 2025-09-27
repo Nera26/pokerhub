@@ -31,6 +31,28 @@ spec:
               value: promote-replica
             - name: ALERTMANAGER_URL
               value: http://alertmanager:9093
+            - name: ELASTIC_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: logging-config
+                  key: ELASTIC_URL
+            - name: LOKI_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: logging-config
+                  key: LOKI_URL
+            - name: ELASTIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: logging-credentials
+                  key: ELASTIC_API_KEY
+            - name: LOKI_BASIC_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: logging-credentials
+                  key: LOKI_BASIC_AUTH
+            - name: NODE_EXTRA_CA_CERTS
+              value: /etc/pokerhub/certs/elastic-ca.pem
           resources:
             requests:
               cpu: "1"
@@ -38,6 +60,17 @@ spec:
               cpu: "1"
           ports:
             - containerPort: 3000
+          volumeMounts:
+            - name: elastic-ca
+              mountPath: /etc/pokerhub/certs
+              readOnly: true
+      volumes:
+        - name: elastic-ca
+          secret:
+            secretName: logging-credentials
+            items:
+              - key: ELASTIC_CA_CERT
+                path: elastic-ca.pem
 ---
 apiVersion: v1
 kind: Service

@@ -3,6 +3,12 @@
 
 Use this runbook to roll out a new release using a guarded canary.
 
+> ℹ️ Logging endpoints and credentials are supplied through the `logging-config`
+> ConfigMap and `logging-credentials` Secret defined under `infra/k8s/`.
+> Ensure both resources are applied to the target cluster before rolling a
+> deployment so that the backend boots without console warnings and ships logs
+> to Elasticsearch/Loki.
+
 ## Prerequisites
 
 - Set `ELASTIC_URL` and `LOKI_URL` to the logging endpoints. The backend refuses to
@@ -23,8 +29,13 @@ Use this runbook to roll out a new release using a guarded canary.
 ## Monitor
 
 1. The workflow polls Prometheus each minute for `game_action_ack_latency_ms` p95 and HTTP error rate.
-2. If latency rises above 120 ms or errors exceed 0.05 % (configurable via `$ERROR_RATE_THRESHOLD`), `scripts/rollback.sh` rolls back the canary and the workflow fails.
-3. When both metrics stay within SLO for the full window, the canary is promoted to 100 %.
+2. Tail the backend pods to confirm application logs are streamed to Elasticsearch/Loki and that no `ELASTIC_URL`/`LOKI_URL` warnings appear:
+   ```bash
+   kubectl logs deployment/api -n "$NAMESPACE" | grep -E "(ELASTIC_URL|LOKI_URL)"
+   ```
+   (the command should return no matches once the new configuration is applied).
+3. If latency rises above 120 ms or errors exceed 0.05 % (configurable via `$ERROR_RATE_THRESHOLD`), `scripts/rollback.sh` rolls back the canary and the workflow fails.
+4. When both metrics stay within SLO for the full window, the canary is promoted to 100 %.
 
 ## Observability
 
