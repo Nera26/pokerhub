@@ -4,6 +4,30 @@ export class PromotionClaims1757800000000 implements MigrationInterface {
   name = 'PromotionClaims1757800000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    const hasPromotions = await queryRunner.hasTable('promotions');
+    if (!hasPromotions) {
+      await queryRunner.query(`
+        CREATE TABLE "promotions" (
+          "id" character varying NOT NULL,
+          "category" character varying NOT NULL,
+          "title" character varying NOT NULL,
+          "description" character varying NOT NULL,
+          "reward" character varying NOT NULL,
+          "unlockText" character varying,
+          "statusText" character varying,
+          "progress" json,
+          "breakdown" json NOT NULL,
+          "eta" character varying,
+          CONSTRAINT "PK_promotions" PRIMARY KEY ("id")
+        )
+      `);
+    }
+
+    const hasPromotionClaims = await queryRunner.hasTable('promotion_claims');
+    if (hasPromotionClaims) {
+      return;
+    }
+
     await queryRunner.query(`
       CREATE TABLE "promotion_claims" (
         "promotionId" character varying NOT NULL,
@@ -16,6 +40,9 @@ export class PromotionClaims1757800000000 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query('DROP TABLE "promotion_claims"');
+    const hasPromotionClaims = await queryRunner.hasTable('promotion_claims');
+    if (hasPromotionClaims) {
+      await queryRunner.query('DROP TABLE "promotion_claims"');
+    }
   }
 }
