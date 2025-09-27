@@ -32,7 +32,7 @@ import {
   type Attributes,
 } from '@opentelemetry/api';
 import { withSpan } from '../common/tracing';
-import PQueue from 'p-queue';
+import { loadPQueue, type PQueueInstance } from './pqueue-loader';
 import { sanitize } from './state-sanitize';
 import {
   addSample,
@@ -393,7 +393,8 @@ export class GameGateway
   private readonly lastSnapshot = new Map<string, number>();
   private readonly snapshotInterval = 50;
 
-  private readonly queues = new Map<string, PQueue>();
+  private readonly queues = new Map<string, PQueueInstance>();
+  private readonly queuePromises = new Map<string, Promise<PQueueInstance>>();
   private readonly queueLimit = Number(
     process.env.GATEWAY_QUEUE_LIMIT ?? '100',
   );
@@ -590,6 +591,7 @@ export class GameGateway
 
     this.queues.get(client.id)?.clear();
     this.queues.delete(client.id);
+    this.queuePromises.delete(client.id);
     this.maxQueueSizes.delete(client.id);
   }
 
@@ -607,15 +609,15 @@ export class GameGateway
       parsed = GameActionSchema.parse(rest);
       tableId = parsed.tableId;
     } catch (err) {
-      this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+      void this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
       this.recordAckLatency(start, tableId);
       throw err;
     }
 
     const expectedPlayerId = this.socketPlayers.get(client.id);
     if (!expectedPlayerId || parsed.playerId !== expectedPlayerId) {
-      this.enqueue(client, 'server:Error', 'player mismatch');
-      this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+      void this.enqueue(client, 'server:Error', 'player mismatch');
+      void this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
       this.recordAckLatency(start, tableId);
       return;
     }
@@ -623,7 +625,7 @@ export class GameGateway
     const hash = this.hashAction(actionId);
     const existing = await this.redis.hget(this.actionHashKey, hash);
     if (existing && Date.now() - Number(existing) < this.actionRetentionMs) {
-      this.enqueue(client, 'action:ack', {
+      void this.enqueue(client, 'action:ack', {
         actionId,
         duplicate: true,
       } satisfies AckPayload);
@@ -645,8 +647,8 @@ export class GameGateway
       (await this.flags?.get('dealing')) === false ||
       (await this.flags?.getRoom(tableId, 'dealing')) === false
     ) {
-      this.enqueue(client, 'server:Error', 'dealing disabled');
-      this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+      void this.enqueue(client, 'server:Error', 'dealing disabled');
+      void this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
       this.recordAckLatency(start, tableId);
       return;
     }
@@ -654,16 +656,16 @@ export class GameGateway
       (await this.flags?.get('settlement')) === false ||
       (await this.flags?.getRoom(tableId, 'settlement')) === false
     ) {
-      this.enqueue(client, 'server:Error', 'settlement disabled');
-      this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+      void this.enqueue(client, 'server:Error', 'settlement disabled');
+      void this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
       this.recordAckLatency(start, tableId);
       return;
     }
 
     const engine = this.engines.get(tableId);
     if (!engine) {
-      this.enqueue(client, 'server:Error', 'engine not started');
-      this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+      void this.enqueue(client, 'server:Error', 'engine not started');
+      void this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
       this.recordAckLatency(start, tableId);
       return;
     }
@@ -671,8 +673,8 @@ export class GameGateway
     try {
       state = engine.applyAction(gameAction);
     } catch (err) {
-      this.enqueue(client, 'server:Error', (err as Error).message);
-      this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+      void this.enqueue(client, 'server:Error', (err as Error).message);
+      void this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
       this.recordAckLatency(start, tableId);
       return;
     }
@@ -690,7 +692,7 @@ export class GameGateway
     const safe = sanitize(state, parsed.playerId);
     const payload = { version: '1', ...safe, tick: ++this.tick };
     GameStateSchema.parse(payload);
-    this.enqueue(client, 'state', payload, true);
+    void this.enqueue(client, 'state', payload, true);
     this.recordStateLatency(start, tableId);
 
     this.states.set(tableId, state);
@@ -721,7 +723,7 @@ export class GameGateway
       this.server.of('/spectate').to(tableId).emit('state', spectatorPayload);
     }
 
-    this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
+    void this.enqueue(client, 'action:ack', { actionId } satisfies AckPayload);
     this.recordAckLatency(start, tableId);
 
     if ('playerId' in parsed && parsed.playerId && state.phase !== 'NEXT_HAND') {
@@ -782,15 +784,15 @@ export class GameGateway
   ) {
     if (await this.isRateLimited(client)) return;
     if (!this.hands) {
-      this.enqueue(client, 'server:Error', 'proof unavailable');
+      void this.enqueue(client, 'server:Error', 'proof unavailable');
       return;
     }
     const hand = await this.hands.findOne({ where: { id: payload.handId } });
     if (!hand || !hand.seed || !hand.nonce) {
-      this.enqueue(client, 'server:Error', 'proof unavailable');
+      void this.enqueue(client, 'server:Error', 'proof unavailable');
       return;
     }
-    this.enqueue(
+    void this.enqueue(
       client,
       'proof',
       {
@@ -823,14 +825,14 @@ export class GameGateway
     const hash = this.hashAction(payload.actionId);
     const existing = await this.redis.hget(this.actionHashKey, hash);
     if (existing && Date.now() - Number(existing) < this.actionRetentionMs) {
-      this.enqueue(client, `${event}:ack` as keyof ServerToClientEvents, {
+      void this.enqueue(client, `${event}:ack` as keyof ServerToClientEvents, {
         actionId: payload.actionId,
         duplicate: true,
       } satisfies AckPayload);
       return;
     }
 
-    this.enqueue(client, `${event}:ack` as keyof ServerToClientEvents, {
+    void this.enqueue(client, `${event}:ack` as keyof ServerToClientEvents, {
       actionId: payload.actionId,
     } satisfies AckPayload);
     const now = Date.now();
@@ -862,18 +864,36 @@ export class GameGateway
   }
 
 
-  private enqueue<K extends keyof ServerToClientEvents>(
+  private async enqueue<K extends keyof ServerToClientEvents>(
     client: GameSocket,
     event: K,
     data: ServerToClientEvents[K],
     critical = false,
-  ) {
+  ): Promise<void> {
     const id = client.id;
     let queue = this.queues.get(id);
     if (!queue) {
-      queue = new PQueue({ concurrency: 1, intervalCap: 30, interval: 10_000 });
-      this.queues.set(id, queue);
+      let creation = this.queuePromises.get(id);
+      if (!creation) {
+        creation = (async () => {
+          const PQueueCtor = await loadPQueue();
+          const created = new PQueueCtor({
+            concurrency: 1,
+            intervalCap: 30,
+            interval: 10_000,
+          });
+          this.queues.set(id, created);
+          return created;
+        })();
+        this.queuePromises.set(id, creation);
+      }
+      try {
+        queue = await creation;
+      } finally {
+        this.queuePromises.delete(id);
+      }
     }
+    if (!queue) return;
     if (queue.size + queue.pending >= this.queueLimit) {
       GameGateway.outboundRateLimitHits.add(1, { socketId: id } as Attributes);
       GameGateway.outboundQueueDropped.add(1, { socketId: id } as Attributes);
@@ -1000,7 +1020,7 @@ export class GameGateway
       GameGateway.globalLimitExceeded.add(1, {
         socketId: client.id,
       } as Attributes);
-      this.enqueue(client, 'server:Error', 'rate limit exceeded');
+      void this.enqueue(client, 'server:Error', 'rate limit exceeded');
       return true;
     }
     if (count > 30) {
@@ -1021,7 +1041,7 @@ export class GameGateway
         (await this.flags?.get('dealing')) === false ||
         (await this.flags?.getRoom('default', 'dealing')) === false
       ) {
-        this.enqueue(client, 'server:Error', 'dealing disabled');
+        void this.enqueue(client, 'server:Error', 'dealing disabled');
         return;
       }
       const room = this.rooms.get('default');
@@ -1032,7 +1052,7 @@ export class GameGateway
         tick: this.tick,
       };
       GameStateSchema.parse(payload);
-      this.enqueue(client, 'state', payload);
+      void this.enqueue(client, 'state', payload);
     });
   }
 
@@ -1048,7 +1068,7 @@ export class GameGateway
         (await this.flags?.get('dealing')) === false ||
         (await this.flags?.getRoom('default', 'dealing')) === false
       ) {
-        this.enqueue(client, 'server:Error', 'dealing disabled');
+        void this.enqueue(client, 'server:Error', 'dealing disabled');
         return;
       }
       const room = this.rooms.get('default');
@@ -1060,7 +1080,7 @@ export class GameGateway
           tick: index + 1,
         };
         GameStateSchema.parse(payload);
-        this.enqueue(client, 'state', payload);
+        void this.enqueue(client, 'state', payload);
       }
     });
   }

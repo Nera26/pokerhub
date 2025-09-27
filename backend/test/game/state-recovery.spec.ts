@@ -8,10 +8,21 @@ import { Hand } from '../../src/database/entities/hand.entity';
 import { GameState } from '../../src/database/entities/game-state.entity';
 import { createInMemoryRedis } from '../utils/mock-redis';
 
-jest.mock('p-queue', () => ({
-  __esModule: true,
-  default: jest.fn().mockImplementation(() => ({ add: (fn: any) => fn() })),
-}));
+jest.mock('../../src/game/pqueue-loader', () => {
+  const pQueueMock = jest.fn().mockImplementation(() => ({
+    add: (fn: any) => fn(),
+    get size() {
+      return 0;
+    },
+    get pending() {
+      return 0;
+    },
+    clear: jest.fn(),
+  }));
+  return {
+    loadPQueue: jest.fn(async () => pQueueMock),
+  };
+});
 
 describe('Game state recovery', () => {
   it('restores latest snapshot when redis empty', async () => {

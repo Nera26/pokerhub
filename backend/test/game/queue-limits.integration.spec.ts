@@ -43,7 +43,8 @@ describe.each([
     };
 
     for (let i = 0; i < scenario.enqueue; i++) {
-      (gateway as any).enqueue(client, 'state', {});
+      // eslint-disable-next-line no-await-in-loop
+      await (gateway as any).enqueue(client, 'state', {});
     }
 
     let limited = false;

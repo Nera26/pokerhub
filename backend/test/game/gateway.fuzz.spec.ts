@@ -2,10 +2,21 @@ import fc from 'fast-check';
 import { ZodFastCheck } from 'zod-fast-check';
 import { GameActionSchema as BackendActionSchema } from '@shared/schemas/game';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
-jest.mock('p-queue', () => ({
-  __esModule: true,
-  default: jest.fn().mockImplementation(() => ({ add: (fn: any) => fn() })),
-}));
+jest.mock('../../src/game/pqueue-loader', () => {
+  const pQueueMock = jest.fn().mockImplementation(() => ({
+    add: (fn: any) => fn(),
+    get size() {
+      return 0;
+    },
+    get pending() {
+      return 0;
+    },
+    clear: jest.fn(),
+  }));
+  return {
+    loadPQueue: jest.fn(async () => pQueueMock),
+  };
+});
 jest.mock('../../src/game/room.service', () => ({
   RoomManager: class {
     get() {

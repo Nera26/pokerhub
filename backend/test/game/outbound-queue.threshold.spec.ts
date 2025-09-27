@@ -116,7 +116,9 @@ describe('GameGateway threshold monitoring', () => {
       },
       clear: jest.fn(),
     }));
-    jest.doMock('p-queue', () => ({ __esModule: true, default: pQueueMock }));
+    jest.doMock('../../src/game/pqueue-loader', () => ({
+      loadPQueue: jest.fn(async () => pQueueMock),
+    }));
 
     let GameGateway: any;
     let RoomManager: any;
@@ -144,7 +146,7 @@ describe('GameGateway threshold monitoring', () => {
     };
 
     for (let i = 0; i < 50; i++) {
-      (gateway as any).enqueue(client, 'state', {});
+      await (gateway as any).enqueue(client, 'state', {});
     }
     for (let i = 0; i < 20; i++) {
       await gateway.handleJoin(client, { actionId: `a${i}` });

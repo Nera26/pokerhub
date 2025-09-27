@@ -85,7 +85,9 @@ describe('GameGateway outbound queue metrics', () => {
       },
       clear: jest.fn(),
     }));
-    jest.doMock('p-queue', () => ({ __esModule: true, default: pQueueMock }));
+    jest.doMock('../../src/game/pqueue-loader', () => ({
+      loadPQueue: jest.fn(async () => pQueueMock),
+    }));
 
     const getMeterMock = jest.fn(() => ({
       createHistogram: jest.fn(() => ({ record: jest.fn() })),
@@ -156,9 +158,9 @@ describe('GameGateway outbound queue metrics', () => {
 
     try {
       const client: any = { id: 'c1', emit: jest.fn() };
-      (gateway as any).enqueue(client, 'state', {});
-      (gateway as any).enqueue(client, 'state', {});
-      (gateway as any).enqueue(client, 'state', {});
+      await (gateway as any).enqueue(client, 'state', {});
+      await (gateway as any).enqueue(client, 'state', {});
+      await (gateway as any).enqueue(client, 'state', {});
       const observeDepth = jest.fn();
       depthCb?.({ observe: observeDepth });
       const observeMax = jest.fn();

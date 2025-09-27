@@ -29,26 +29,26 @@ describe('SpectatorGateway rate limiting', () => {
     jest.resetModules();
     queueResolvers = [];
     let pending = 0;
-    jest.mock('p-queue', () => ({
-      __esModule: true,
-      default: jest.fn().mockImplementation(() => ({
-        add: (fn: any) =>
-          new Promise<void>((resolve) => {
-            pending++;
-            queueResolvers.push(() => {
-              pending--;
-              fn();
-              resolve();
-            });
-          }),
-        get size() {
-          return 0;
-        },
-        get pending() {
-          return pending;
-        },
-        clear: jest.fn(),
-      })),
+    const pQueueMock = jest.fn().mockImplementation(() => ({
+      add: (fn: any) =>
+        new Promise<void>((resolve) => {
+          pending++;
+          queueResolvers.push(() => {
+            pending--;
+            fn();
+            resolve();
+          });
+        }),
+      get size() {
+        return 0;
+      },
+      get pending() {
+        return pending;
+      },
+      clear: jest.fn(),
+    }));
+    jest.mock('../../src/game/pqueue-loader', () => ({
+      loadPQueue: jest.fn(async () => pQueueMock),
     }));
     droppedMock = jest.fn();
     rateMock = jest.fn();
