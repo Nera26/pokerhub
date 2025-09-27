@@ -128,6 +128,13 @@ export type CalculatePrizesResponse = z.infer<
   typeof CalculatePrizesResponseSchema
 >;
 
+export const HotPatchLevelRequestSchema = z.object({
+  level: z.number().int().positive(),
+  smallBlind: z.number().int().positive(),
+  bigBlind: z.number().int().positive(),
+});
+export type HotPatchLevelRequest = z.infer<typeof HotPatchLevelRequestSchema>;
+
 export const TournamentStateSchema = z.enum([
   'REG_OPEN',
   'RUNNING',

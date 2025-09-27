@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { randomUUID } from 'crypto';
 import { metrics } from '@opentelemetry/api';
 import { withSpan } from '../common/tracing';
+import { setWithExpiry } from '../redis/value-store';
 
 @Injectable()
 export class SessionService {
@@ -56,25 +57,34 @@ export class SessionService {
     return withSpan('session.issueTokens', async (span) => {
       span.setAttribute('user.id', userId);
       const secrets = this.config.get<string[]>('auth.jwtSecrets');
-      const secret = secrets[0];
+      const availableSecrets = Array.isArray(secrets)
+        ? secrets.map((value) => value?.trim()).filter((value): value is string => !!value)
+        : [];
+      if (availableSecrets.length === 0) {
+        throw new Error('JWT secrets not configured');
+      }
+      const secret = availableSecrets[0];
       const accessTtl = this.config.get<number>('auth.accessTtl', 900);
       const refreshTtl = this.config.get<number>('auth.refreshTtl', 604800);
       const payload: Record<string, unknown> = { sub: userId };
       if (opts.role) {
         payload.role = opts.role;
       }
+      const algorithm = 'HS256';
       const accessToken = jwt.sign(payload, secret, {
         expiresIn: accessTtl,
-        header: { kid: '0' },
+        algorithm,
+        header: { kid: '0', alg: algorithm },
       });
       const refreshToken = randomUUID();
       const refreshValue = opts.role
         ? JSON.stringify({ userId, role: opts.role })
         : userId;
-      await this.redis.set(
+      await setWithExpiry(
+        this.redis,
         `${this.refreshPrefix}${refreshToken}`,
         refreshValue,
-        { EX: refreshTtl },
+        refreshTtl,
       );
       SessionService.tokensIssued.add(1);
       return { accessToken, refreshToken };
@@ -84,8 +94,12 @@ export class SessionService {
   verifyAccessToken(token: string): string | null {
     const secrets = this.config.get<string[]>('auth.jwtSecrets', []);
     for (const secret of secrets) {
+      if (typeof secret !== 'string' || secret.trim() === '') {
+        continue;
+      }
+      const normalizedSecret = secret.trim();
       try {
-        const payload = jwt.verify(token, secret) as any;
+        const payload = jwt.verify(token, normalizedSecret) as any;
         return payload.sub as string;
       } catch {
         continue;

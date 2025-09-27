@@ -28,6 +28,7 @@ import {
   CreateLogTypeClassOverrideSchema,
   UpdateLogTypeClassOverrideSchema,
 } from '@shared/schemas/analytics';
+import type { AuditSummary } from '@shared/schemas/analytics';
 import { AdminGuard } from '../auth/admin.guard';
 
 export async function getAuditLogsResponse(
@@ -170,7 +171,7 @@ export class AnalyticsController {
   @Get('summary')
   @ApiOperation({ summary: 'Get audit summary' })
   @ApiResponse({ status: 200, description: 'Audit summary' })
-  async summary() {
+  async summary(): Promise<AuditSummary> {
     return this.analytics.getAuditSummary();
   }
 

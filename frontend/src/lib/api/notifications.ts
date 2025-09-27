@@ -41,11 +41,12 @@ export async function markNotificationRead(
 export async function fetchNotificationFilters({
   signal,
 }: { signal?: AbortSignal } = {}): Promise<NotificationFilter[]> {
-  return apiClient(
+  const response = await apiClient(
     '/api/notifications/filters',
     NotificationFiltersResponseSchema,
     { signal },
   );
+  return response.filters;
 }
 
 export async function fetchUnreadCount({

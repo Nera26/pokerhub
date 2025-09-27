@@ -14,6 +14,7 @@ import { Notification } from '../src/notifications/notification.entity';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import type { Repository } from 'typeorm';
+import { API_CONTRACT_VERSION } from '@shared/constants';
 
 jest.setTimeout(10000);
 
@@ -105,7 +106,10 @@ describe('Notifications', () => {
       .get('/notifications/unread')
       .set('Authorization', `Bearer ${userId}`)
       .expect(200);
-    expect(unread.body).toEqual({ count: 1 });
+    expect(unread.body).toEqual({
+      count: 1,
+      contractVersion: API_CONTRACT_VERSION,
+    });
   });
 
   it('returns distinct filters for the current user', async () => {
@@ -148,7 +152,8 @@ describe('Notifications', () => {
       .set('Authorization', `Bearer ${userId}`)
       .expect(200);
 
-    expect(res.body).toEqual([
+    expect(res.body.contractVersion).toBe(API_CONTRACT_VERSION);
+    expect(res.body.filters).toEqual([
       { label: 'Bonuses', value: 'bonus' },
       { label: 'System', value: 'system' },
     ]);

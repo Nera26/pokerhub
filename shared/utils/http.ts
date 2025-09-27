@@ -100,5 +100,3 @@ export async function fetchJson<T>(
     throw err;
   }
 }
-
-export type { ApiError };

@@ -6,6 +6,7 @@ import {
 describe('NotificationsResponseSchema', () => {
   it('parses a valid response', () => {
     const data = {
+      contractVersion: '1.0.0',
       notifications: [
         {
           id: '1',
@@ -28,15 +29,21 @@ describe('NotificationsResponseSchema', () => {
 
 describe('NotificationFiltersResponseSchema', () => {
   it('parses valid filter options', () => {
-    const options = [
-      { label: 'Bonuses', value: 'bonus' },
-      { label: 'System', value: 'system' },
-    ];
+    const options = {
+      contractVersion: '1.0.0',
+      filters: [
+        { label: 'Bonuses', value: 'bonus' },
+        { label: 'System', value: 'system' },
+      ],
+    };
     expect(() => NotificationFiltersResponseSchema.parse(options)).not.toThrow();
   });
 
   it('rejects invalid filter options', () => {
-    const invalid = [{ label: 123, value: 'bonus' }] as any;
+    const invalid = {
+      contractVersion: '1.0.0',
+      filters: [{ label: 123, value: 'bonus' }],
+    } as any;
     expect(() => NotificationFiltersResponseSchema.parse(invalid)).toThrow();
   });
 });
