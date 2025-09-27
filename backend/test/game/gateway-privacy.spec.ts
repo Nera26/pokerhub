@@ -104,6 +104,7 @@ function wait(ms: number) {
 describe('GameGateway player privacy', () => {
   let app: INestApplication;
   let url: string;
+  let gateway: GameGateway;
 
   beforeAll(async () => {
     const { redis } = createInMemoryRedis();
@@ -124,6 +125,7 @@ describe('GameGateway player privacy', () => {
     }).compile();
 
     app = moduleRef.createNestApplication();
+    gateway = app.get(GameGateway);
     await app.init();
     const server = app.getHttpServer();
     await new Promise<void>((res) => server.listen(0, res));
@@ -136,10 +138,49 @@ describe('GameGateway player privacy', () => {
   });
 
   it('sanitizes state, revealing hole cards only to the acting player', async () => {
-    const client = io(url, { transports: ['websocket'] });
+    const baseState = {
+      phase: 'BETTING_ROUND',
+      street: 'preflop',
+      pot: 0,
+      sidePots: [],
+      currentBet: 0,
+      deck: [1, 2],
+      communityCards: [],
+      players: [
+        {
+          id: 'p1',
+          stack: 100,
+          folded: false,
+          bet: 0,
+          allIn: false,
+          holeCards: [1, 2],
+        },
+        {
+          id: 'p2',
+          stack: 100,
+          folded: false,
+          bet: 0,
+          allIn: false,
+          holeCards: [3, 4],
+        },
+      ],
+    } as const;
+    (gateway as any).engines.set('default', {
+      applyAction: () => baseState,
+      getPublicState: () => baseState,
+      getHandId: () => 'hand',
+      getHandLog: () => [],
+    });
+    const client = io(url, {
+      transports: ['websocket'],
+      auth: { playerId: 'p1' },
+    });
     await waitForConnect(client);
     const states: any[] = [];
     client.on('state', (s) => states.push(s));
+    const stateReceived = new Promise<void>((resolve) =>
+      client.once('state', () => resolve()),
+    );
     client.emit('action', {
       version: '1',
       type: 'bet',
@@ -148,8 +189,10 @@ describe('GameGateway player privacy', () => {
       amount: 1,
       actionId: 'a1',
     });
-    await wait(200);
+    await stateReceived;
+    await wait(50);
     client.disconnect();
+    (gateway as any).engines.delete('default');
 
     expect(states.length).toBeGreaterThan(0);
     for (const s of states) {
