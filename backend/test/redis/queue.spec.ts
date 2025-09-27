@@ -123,7 +123,8 @@ describe('queue integration', () => {
   it('startLeaderboardRebuildWorker schedules rebuild job', async () => {
     const connection = { host: 'c', port: 4 };
     const add = jest.fn();
-    createQueueMock.mockResolvedValueOnce({ add, opts: { connection } } as any);
+    const queueInstance = { add, opts: { connection }, name: 'stubbed-name' } as any;
+    createQueueMock.mockResolvedValueOnce(queueInstance);
     const leaderboard = {
       rebuildFromEvents: jest.fn().mockResolvedValue({ durationMs: 10 }),
     } as any;
@@ -144,5 +145,6 @@ describe('queue integration', () => {
       expect.any(Function),
       expect.objectContaining({ connection }),
     );
+    expect(queueInstance.name).toBe('stubbed-name');
   });
 });

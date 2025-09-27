@@ -49,7 +49,10 @@ export async function scheduleRebuild(
   days: number,
   cron: string,
   assertDurationMs?: number,
+  queueName?: string,
 ): Promise<void> {
+  const workerQueueName = queueName ?? queue.name ?? 'leaderboard-rebuild';
+
   await queue.add(
     'rebuild',
     { days },
@@ -62,7 +65,7 @@ export async function scheduleRebuild(
   );
 
   const worker = new Worker(
-    queue.name,
+    workerQueueName,
     async (job) => {
       const jobDays: number = job.data?.days ?? days;
       await performRebuild(leaderboard, jobDays, assertDurationMs);
