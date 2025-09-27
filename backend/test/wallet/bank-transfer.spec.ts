@@ -27,12 +27,13 @@ describe('WalletService initiateBankTransfer checks', () => {
     await dataSource.destroy();
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     redisStore.clear();
     jest.clearAllMocks();
     process.env.BANK_NAME = 'Test Bank';
     process.env.BANK_ACCOUNT_NUMBER = '123456789';
     process.env.BANK_ROUTING_CODE = '987654';
+    await repos.pending.clear();
   });
 
   it('throws when KYC not verified', async () => {

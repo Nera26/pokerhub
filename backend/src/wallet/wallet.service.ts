@@ -932,6 +932,13 @@ async initiateBankTransfer(
       }
     }
 
+    const bankName = process.env.BANK_NAME;
+    const accountNumber = process.env.BANK_ACCOUNT_NUMBER;
+    const routingCode = process.env.BANK_ROUTING_CODE;
+    if (!bankName || !accountNumber || !routingCode) {
+      throw new Error('Bank transfer configuration missing');
+    }
+
     await this.checkVelocity('deposit', deviceId, ip);
     await this.enforceVelocity('deposit', accountId, amount);
     await this.accounts.findOneByOrFail({ id: accountId, currency });
@@ -967,13 +974,6 @@ async initiateBankTransfer(
         removeOnFail: true,
       },
     );
-
-    const bankName = process.env.BANK_NAME;
-    const accountNumber = process.env.BANK_ACCOUNT_NUMBER;
-    const routingCode = process.env.BANK_ROUTING_CODE;
-    if (!bankName || !accountNumber || !routingCode) {
-      throw new Error('Bank transfer configuration missing');
-    }
 
     const res = {
       reference: deposit.reference,
