@@ -81,6 +81,44 @@ const AntiCheatFlagEvent = z.union([
   AntiCheatCollusionEvent,
 ]);
 
+const CollusionTransferEvent = z.object({
+  from: z.string(),
+  to: z.string(),
+  amount: z.number(),
+});
+
+const GameEvent = z
+  .object({
+  playerId: z.string(),
+  sessionId: z.string().optional(),
+  ts: z.number().optional(),
+  points: z.number().optional(),
+  net: z.number().optional(),
+  bb: z.number().optional(),
+  hands: z.number().optional(),
+  duration: z.number().optional(),
+  buyIn: z.number().optional(),
+  finish: z.number().optional(),
+  userId: z.string().optional(),
+  vpip: z.number().optional(),
+  seat: z.number().optional(),
+  timestamp: z.number().optional(),
+  handId: z.string().optional(),
+  timeMs: z.number().optional(),
+  transfer: CollusionTransferEvent.optional(),
+  clientId: z.string().optional(),
+  action: z.record(z.unknown()).optional(),
+  })
+  .passthrough();
+
+const TournamentEvent = z
+  .object({
+  type: z.string(),
+  tournamentId: z.string(),
+  startDate: z.string().optional(),
+  })
+  .passthrough();
+
 const WalletVelocityLimitEvent = z.object({
   accountId: z.string().uuid(),
   operation: z.enum(["deposit", "withdraw"]),
@@ -168,6 +206,8 @@ export const EventSchemas = {
   "wallet.commit": WalletCommitEvent,
   "auth.login": AuthLoginEvent,
   "antiCheat.flag": AntiCheatFlagEvent,
+  "game.event": GameEvent,
+  "tournament.event": TournamentEvent,
   "wallet.velocity.limit": WalletVelocityLimitEvent,
   "wallet.reconcile.mismatch": WalletReconcileMismatchEvent,
   "wallet.reconcile.mismatch.resolved": WalletReconcileMismatchAcknowledgedEvent,
@@ -193,6 +233,8 @@ export type Events = {
   "wallet.commit": z.infer<typeof WalletCommitEvent>;
   "auth.login": z.infer<typeof AuthLoginEvent>;
   "antiCheat.flag": z.infer<typeof AntiCheatFlagEvent>;
+  "game.event": z.infer<typeof GameEvent>;
+  "tournament.event": z.infer<typeof TournamentEvent>;
   "wallet.velocity.limit": z.infer<typeof WalletVelocityLimitEvent>;
   "wallet.reconcile.mismatch": z.infer<typeof WalletReconcileMismatchEvent>;
   "wallet.reconcile.mismatch.resolved": z.infer<

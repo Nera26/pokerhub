@@ -50,7 +50,7 @@ class MockCache {
 
 class MockAnalytics {
   events: any[] = [];
-  rangeStream(_stream: string, since: number): Promise<any[]> {
+  rangeStream(_stream: string, since: number, _eventName: string): Promise<any[]> {
     return Promise.resolve(this.events.filter((e) => e.ts >= since));
   }
   ingest(): Promise<void> {

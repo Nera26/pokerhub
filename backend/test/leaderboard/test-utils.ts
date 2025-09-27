@@ -40,7 +40,11 @@ export class ClickHouseAnalytics {
     }
   }
 
-  async rangeStream(): Promise<any[]> {
+  async rangeStream(
+    _stream?: string,
+    _since?: number,
+    _eventName?: string,
+  ): Promise<any[]> {
     return [];
   }
 
