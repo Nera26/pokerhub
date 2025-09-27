@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { randomUUID } from 'crypto';
 import { metrics } from '@opentelemetry/api';
 import { withSpan } from '../common/tracing';
+import { setWithOptions } from '../redis/set-with-options';
 
 @Injectable()
 export class SessionService {
@@ -71,10 +72,11 @@ export class SessionService {
       const refreshValue = opts.role
         ? JSON.stringify({ userId, role: opts.role })
         : userId;
-      await this.redis.set(
+      await setWithOptions(
+        this.redis,
         `${this.refreshPrefix}${refreshToken}`,
         refreshValue,
-        { EX: refreshTtl },
+        { ex: refreshTtl },
       );
       SessionService.tokensIssued.add(1);
       return { accessToken, refreshToken };

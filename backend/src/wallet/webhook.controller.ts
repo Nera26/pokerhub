@@ -14,6 +14,7 @@ import { WalletService } from './wallet.service';
 import { PaymentProviderService } from './payment-provider.service';
 import { MessageResponseSchema } from '../schemas/auth';
 import { API_CONTRACT_VERSION } from '@shared/constants';
+import { setWithOptions } from '../redis/set-with-options';
 
 @ApiTags('wallet')
 @Controller('wallet/provider')
@@ -41,9 +42,9 @@ export class WebhookController {
       throw new UnauthorizedException('invalid signature');
     }
     const key = `wallet:webhook:${eventId}`;
-    const stored = await this.redis.set(key, '1', {
-      NX: true,
-      EX: 60 * 60 * 24,
+    const stored = await setWithOptions(this.redis, key, '1', {
+      nx: true,
+      ex: 60 * 60 * 24,
     });
     if (stored === null) {
       return MessageResponseSchema.parse({

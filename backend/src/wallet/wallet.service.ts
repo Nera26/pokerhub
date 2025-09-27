@@ -16,6 +16,7 @@ import { metrics, SpanStatusCode } from '@opentelemetry/api';
 import { withSpan } from '../common/tracing';
 import type { Queue } from 'bullmq';
 import { createQueue } from '../redis/queue';
+import { setWithOptions } from '../redis/set-with-options';
 import {
   PaymentProviderService,
   ProviderStatus,
@@ -379,9 +380,9 @@ export class WalletService {
 
   private async isDuplicateWebhook(eventId: string): Promise<boolean> {
     const key = `wallet:webhook:${eventId}`;
-    const res = await this.redis.set(key, '1', {
-      NX: true,
-      EX: 60 * 60 * 24,
+    const res = await setWithOptions(this.redis, key, '1', {
+      nx: true,
+      ex: 60 * 60 * 24,
     });
     return res === null;
   }
@@ -729,9 +730,9 @@ export class WalletService {
             span.setStatus({ code: SpanStatusCode.OK });
             return JSON.parse(existing);
           }
-          const lock = await this.redis.set(redisKey, 'LOCK', {
-            NX: true,
-            EX: 600,
+          const lock = await setWithOptions(this.redis, redisKey, 'LOCK', {
+            nx: true,
+            ex: 600,
           });
           if (lock === null) {
             const cached = await this.redis.get(redisKey);
@@ -757,13 +758,19 @@ export class WalletService {
         await this.enforceVelocity('withdraw', accountId, amount);
         await this.enforceDailyLimit('withdraw', accountId, amount, currency);
         const challenge = await this.provider.initiate3DS(accountId, amount);
-        await this.redis.set(
+        await setWithOptions(
+          this.redis,
           this.challengeKey(challenge.id),
           JSON.stringify({ op: 'withdraw', accountId, amount, currency }),
-          { EX: 600 },
+          { ex: 600 },
         );
         if (redisKey) {
-          await this.redis.set(redisKey, JSON.stringify(challenge), { EX: 600 });
+          await setWithOptions(
+            this.redis,
+            redisKey,
+            JSON.stringify(challenge),
+            { ex: 600 },
+          );
         }
         span.setStatus({ code: SpanStatusCode.OK });
         return challenge;
@@ -800,9 +807,9 @@ export class WalletService {
             span.setStatus({ code: SpanStatusCode.OK });
             return JSON.parse(existing);
           }
-          const lock = await this.redis.set(redisKey, 'LOCK', {
-            NX: true,
-            EX: 600,
+          const lock = await setWithOptions(this.redis, redisKey, 'LOCK', {
+            nx: true,
+            ex: 600,
           });
           if (lock === null) {
             const cached = await this.redis.get(redisKey);
@@ -841,7 +848,8 @@ export class WalletService {
           throw new Error('Chargeback threshold exceeded');
         }
         const challenge = await this.provider.initiate3DS(accountId, amount);
-        await this.redis.set(
+        await setWithOptions(
+          this.redis,
           this.challengeKey(challenge.id),
           JSON.stringify({
             op: 'deposit',
@@ -850,10 +858,15 @@ export class WalletService {
             currency,
             deviceId,
           }),
-          { EX: 600 },
+          { ex: 600 },
         );
         if (redisKey) {
-          await this.redis.set(redisKey, JSON.stringify(challenge), { EX: 600 });
+          await setWithOptions(
+            this.redis,
+            redisKey,
+            JSON.stringify(challenge),
+            { ex: 600 },
+          );
         }
         span.setStatus({ code: SpanStatusCode.OK });
         return challenge;
@@ -931,9 +944,9 @@ async initiateBankTransfer(
       if (existing && existing !== 'LOCK') {
         return JSON.parse(existing);
       }
-      const lock = await this.redis.set(redisKey, 'LOCK', {
-        NX: true,
-        EX: 600,
+      const lock = await setWithOptions(this.redis, redisKey, 'LOCK', {
+        nx: true,
+        ex: 600,
       });
       if (lock === null) {
         const cached = await this.redis.get(redisKey);
@@ -993,7 +1006,12 @@ async initiateBankTransfer(
     };
 
     if (redisKey) {
-      await this.redis.set(redisKey, JSON.stringify(res), { EX: 600 });
+      await setWithOptions(
+        this.redis,
+        redisKey,
+        JSON.stringify(res),
+        { ex: 600 },
+      );
     }
     return res;
   } catch (err) {
@@ -1120,9 +1138,9 @@ async rejectExpiredPendingDeposits(): Promise<void> {
 
   async confirmPendingDeposit(id: string, adminId: string): Promise<void> {
     const lockKey = `wallet:pending:${id}:lock`;
-    const lock = await this.redis.set(lockKey, '1', {
-      NX: true,
-      EX: 30,
+    const lock = await setWithOptions(this.redis, lockKey, '1', {
+      nx: true,
+      ex: 30,
     });
     if (lock === null) throw new Error('Deposit locked');
     try {
@@ -1177,9 +1195,9 @@ async rejectExpiredPendingDeposits(): Promise<void> {
     reason?: string,
   ): Promise<void> {
     const lockKey = `wallet:pending:${id}:lock`;
-    const lock = await this.redis.set(lockKey, '1', {
-      NX: true,
-      EX: 30,
+    const lock = await setWithOptions(this.redis, lockKey, '1', {
+      nx: true,
+      ex: 30,
     });
     if (lock === null) throw new Error('Deposit locked');
     try {
