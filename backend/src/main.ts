@@ -1,3 +1,4 @@
+import './shims/crypto';
 import { Logger } from 'nestjs-pino';
 import { WalletService } from './wallet/wallet.service';
 import { scheduleReconcileJob } from './wallet/reconcile.job';
