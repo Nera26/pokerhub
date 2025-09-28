@@ -1,43 +1,59 @@
 import * as nodeCrypto from 'node:crypto';
 
-type CryptoWithRandomUUID = {
-  randomUUID: typeof nodeCrypto.randomUUID;
+type CryptoLike = {
+  randomUUID?: typeof nodeCrypto.randomUUID;
   [key: string]: unknown;
 };
 
-const globalWithCrypto = globalThis as typeof globalThis & {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  crypto?: any;
-};
-
-const ensureGlobalCrypto = () => {
-  const existing = globalWithCrypto.crypto as CryptoWithRandomUUID | undefined;
-
-  if (existing) {
-    if (typeof existing.randomUUID !== 'function') {
-      Object.defineProperty(existing, 'randomUUID', {
-        value: nodeCrypto.randomUUID.bind(nodeCrypto),
-        configurable: true,
-        writable: false,
-      });
-    }
-    return existing as CryptoWithRandomUUID;
+const defineRandomUUID = (cryptoTarget: CryptoLike) => {
+  if (typeof nodeCrypto.randomUUID !== 'function') {
+    return cryptoTarget;
   }
 
-  const fallback =
-    (nodeCrypto.webcrypto as unknown as CryptoWithRandomUUID | undefined) ??
-    ({} as CryptoWithRandomUUID);
-
-  if (typeof fallback.randomUUID !== 'function') {
-    Object.defineProperty(fallback, 'randomUUID', {
+  if (typeof cryptoTarget.randomUUID !== 'function') {
+    Object.defineProperty(cryptoTarget, 'randomUUID', {
       value: nodeCrypto.randomUUID.bind(nodeCrypto),
       configurable: true,
-      writable: false,
+      writable: true,
     });
   }
 
-  globalWithCrypto.crypto = fallback;
-  return globalWithCrypto.crypto;
+  return cryptoTarget;
 };
 
-ensureGlobalCrypto();
+const ensureGlobalCrypto = () => {
+  const globalObject = globalThis as typeof globalThis & {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    crypto?: any;
+  };
+
+  const existing = globalObject.crypto as CryptoLike | undefined;
+
+  if (existing) {
+    defineRandomUUID(existing);
+    return existing;
+  }
+
+  const fallback = defineRandomUUID(
+    (nodeCrypto.webcrypto as unknown as CryptoLike | undefined) ??
+      ({} as CryptoLike),
+  );
+
+  Object.defineProperty(globalObject, 'crypto', {
+    value: fallback,
+    configurable: true,
+    writable: true,
+  });
+
+  return fallback;
+};
+
+const cryptoGlobal = ensureGlobalCrypto();
+
+if (typeof globalThis.crypto === 'undefined') {
+  Object.defineProperty(globalThis, 'crypto', {
+    value: cryptoGlobal,
+    configurable: true,
+    writable: true,
+  });
+}
