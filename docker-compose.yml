@@ -16,7 +16,9 @@ services:
       - backend
 
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     command: npm run start:dev
     env_file:
       - ./backend/.env
