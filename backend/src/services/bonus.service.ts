@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository } from '../shims/typeorm';
 import { Repository } from 'typeorm';
 import { BonusOptionEntity } from '../database/entities/bonus-option.entity';
 import {

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule } from '../shims/typeorm';
 import { CtasController } from '../routes/ctas.controller';
 import { CTA } from '../database/entities/cta.entity';
 import { CTARepository } from './cta.repository';

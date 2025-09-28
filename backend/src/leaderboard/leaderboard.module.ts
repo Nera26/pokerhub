@@ -1,5 +1,5 @@
 import { Module, Injectable, OnModuleInit } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule } from '../shims/typeorm';
 import { RedisModule } from '../redis/redis.module';
 import { LeaderboardService } from './leaderboard.service';
 import { startLeaderboardRebuildWorker } from './rebuild.worker';

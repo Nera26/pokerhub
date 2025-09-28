@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository } from '../shims/typeorm';
 import { In, Repository } from 'typeorm';
 import { Table as TableEntity } from '../database/entities/table.entity';
 import { User } from '../database/entities/user.entity';

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository } from '../shims/typeorm';
 import { Repository } from 'typeorm';
 import { Notification } from './notification.entity';
 import type { NotificationFilter, NotificationType } from '../schemas/notifications';

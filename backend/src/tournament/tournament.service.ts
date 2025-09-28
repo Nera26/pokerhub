@@ -1,5 +1,5 @@
 import { Inject, Injectable, Optional, OnModuleInit } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository } from '../shims/typeorm';
 import type Redis from 'ioredis';
 import { saveRecentlyMoved } from './redis.util';
 import { Repository } from 'typeorm';

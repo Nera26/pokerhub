@@ -8,7 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository } from '../shims/typeorm';
 import type { Queue } from 'bullmq';
 import { Repository } from 'typeorm';
 import { KycVerification } from '../database/entities/kycVerification.entity';

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository } from '../shims/typeorm';
 import { Repository } from 'typeorm';
 import type { NavItem, NavItemRequest } from '@shared/types';
 import { NavItemEntity } from '../database/entities/nav-item.entity';

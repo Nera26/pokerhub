@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository } from '../shims/typeorm';
 import { Repository } from 'typeorm';
 import type { HistoryTabItem } from '@shared/types';
 import { HistoryTabEntity } from '../database/entities/history-tab.entity';

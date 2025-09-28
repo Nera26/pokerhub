@@ -1,6 +1,6 @@
 import { Inject, Injectable, ForbiddenException, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository } from '../shims/typeorm';
 import { Repository, In, LessThan } from 'typeorm';
 import { createHash, randomUUID } from 'crypto';
 import { Account } from './account.entity';

@@ -2,7 +2,7 @@ import { Module, Logger } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import type { RmqOptions } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule } from '../shims/typeorm';
 import { TournamentsProducer } from './tournaments/tournaments.producer';
 import { TournamentsConsumer } from './tournaments/tournaments.consumer';
 import { AnalyticsModule } from '../analytics/analytics.module';

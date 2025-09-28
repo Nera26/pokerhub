@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository } from '../shims/typeorm';
 import { Repository } from 'typeorm';
 import type { BlockedCountry } from '@shared/types';
 import { BlockedCountryEntity } from '../database/entities/blocked-country.entity';

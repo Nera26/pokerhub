@@ -19,7 +19,7 @@ import { CollusionService } from '../analytics/collusion.service';
 import { ClockService } from './clock.service';
 import { FeatureFlagsService } from '../feature-flags/feature-flags.service';
 
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository } from '../shims/typeorm';
 import { Repository } from 'typeorm';
 import { Hand } from '../database/entities/hand.entity';
 import { GameState as GameStateEntity } from '../database/entities/game-state.entity';

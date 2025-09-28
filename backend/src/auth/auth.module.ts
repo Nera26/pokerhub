@@ -8,7 +8,7 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule } from '../shims/typeorm';
 import { KycService } from '../common/kyc.service';
 import { providerFactory } from './providers';
 import { Account } from '../wallet/account.entity';
