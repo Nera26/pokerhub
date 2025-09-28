@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule } from '../../src/shims/typeorm';
 import { DataType, newDb } from 'pg-mem';
 import { AuthGuard } from '../../src/auth/auth.guard';
 import {

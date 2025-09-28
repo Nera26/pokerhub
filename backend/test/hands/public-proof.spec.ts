@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { getRepositoryToken } from '../../src/shims/typeorm';
 import request from 'supertest';
 import { Hand } from '../../src/database/entities/hand.entity';
 import { HandsController } from '../../src/routes/hands.controller';

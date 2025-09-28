@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
+import { TypeOrmModule, getRepositoryToken } from '../../src/shims/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { createInMemoryDb } from './test-utils';
 import { SettlementJournal } from '../../src/wallet/settlement-journal.entity';

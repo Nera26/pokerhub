@@ -3,7 +3,7 @@ process.env.DATABASE_URL = '';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule } from '../src/shims/typeorm';
 import { DataSource } from 'typeorm';
 import { DataType, newDb } from 'pg-mem';
 import request from 'supertest';

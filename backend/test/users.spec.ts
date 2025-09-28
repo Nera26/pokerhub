@@ -9,7 +9,7 @@ process.env.JWT_SECRET = 'secret';
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, Module, ExecutionContext } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule } from '../src/shims/typeorm';
 import { DataSource } from 'typeorm';
 import { DataType, newDb } from 'pg-mem';
 import request from 'supertest';

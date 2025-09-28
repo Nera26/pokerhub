@@ -5,7 +5,7 @@ process.env.PERF_THRESHOLD_CLS = '0.1';
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule } from '../src/shims/typeorm';
 import { DataSource } from 'typeorm';
 import { DataType, newDb } from 'pg-mem';
 import request from 'supertest';

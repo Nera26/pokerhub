@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { getRepositoryToken } from '../../src/shims/typeorm';
 import { existsSync, unlinkSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import request from 'supertest';

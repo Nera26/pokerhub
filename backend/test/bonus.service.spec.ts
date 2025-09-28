@@ -2,7 +2,7 @@ process.env.DATABASE_URL = '';
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule } from '../src/shims/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';

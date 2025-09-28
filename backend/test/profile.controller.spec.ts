@@ -12,7 +12,7 @@ import { webcrypto } from 'crypto';
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ExecutionContext, Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule } from '../src/shims/typeorm';
 import { DataSource } from 'typeorm';
 import { createDataSource, destroyDataSource } from './utils/pgMem';
 import request from 'supertest';

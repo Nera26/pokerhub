@@ -3,7 +3,7 @@ import { GameGateway } from '../../src/game/game.gateway';
 import { ClockService } from '../../src/game/clock.service';
 import { AnalyticsService } from '../../src/analytics/analytics.service';
 import { EventPublisher } from '../../src/events/events.service';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { getRepositoryToken } from '../../src/shims/typeorm';
 import { Hand } from '../../src/database/entities/hand.entity';
 import { RoomManager } from '../../src/game/room.service';
 import { EventEmitter } from 'events';

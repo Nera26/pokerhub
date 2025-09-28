@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { getRepositoryToken } from '../../src/shims/typeorm';
 import { TournamentService } from '../../src/tournament/tournament.service';
 import { Tournament } from '../../src/database/entities/tournament.entity';
 import { Seat } from '../../src/database/entities/seat.entity';

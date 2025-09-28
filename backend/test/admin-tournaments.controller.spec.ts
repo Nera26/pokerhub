@@ -3,7 +3,7 @@ process.env.DATABASE_URL = '';
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
+import { TypeOrmModule, getRepositoryToken } from '../src/shims/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { DataType, newDb } from 'pg-mem';
 import { AdminTournamentsController } from '../src/routes/admin-tournaments.controller';

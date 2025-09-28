@@ -6,7 +6,7 @@ import { RoomManager } from '../../../backend/src/game/room.service';
 import { ClockService } from '../../../backend/src/game/clock.service';
 import { AnalyticsService } from '../../../backend/src/analytics/analytics.service';
 import { EventPublisher } from '../../../backend/src/events/events.service';
-import { getRepositoryToken } from '../../../backend/node_modules/@nestjs/typeorm';
+import { getRepositoryToken } from '../../../backend/src/shims/typeorm';
 import { Hand } from '../../../backend/src/database/entities/hand.entity';
 
 interface Options {
