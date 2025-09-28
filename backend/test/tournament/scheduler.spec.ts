@@ -1,3 +1,5 @@
+import type { Queue } from 'bullmq';
+
 import { TournamentScheduler } from '../../src/tournament/scheduler.service';
 import { TableBalancerService } from '../../src/tournament/table-balancer.service';
 import { TournamentService } from '../../src/tournament/tournament.service';
@@ -8,10 +10,12 @@ import { RebuyService } from '../../src/tournament/rebuy.service';
 import { PkoService } from '../../src/tournament/pko.service';
 import { icmRaw } from '@shared/utils/icm';
 
+type FakeQueue = Pick<Queue<any, any, string>, 'add'>;
+
 describe('TournamentScheduler', () => {
   it('schedules level up jobs', async () => {
     const scheduler: any = new TournamentScheduler();
-    const fakeQueue = { add: jest.fn() };
+    const fakeQueue: FakeQueue = { add: jest.fn() };
     scheduler['queues'].set('level-up', fakeQueue);
     const start = new Date(Date.now() + 1000);
     await scheduler.scheduleLevelUps(
@@ -31,7 +35,7 @@ describe('TournamentScheduler', () => {
 
   it('schedules registration window', async () => {
     const scheduler: any = new TournamentScheduler();
-    const fakeQueue = { add: jest.fn() };
+    const fakeQueue: FakeQueue = { add: jest.fn() };
     scheduler['queues'].set('registration', fakeQueue);
     const now = 1000;
     jest.spyOn(Date, 'now').mockReturnValue(now);
@@ -55,7 +59,7 @@ describe('TournamentScheduler', () => {
 
   it('schedules late registration close', async () => {
     const scheduler: any = new TournamentScheduler();
-    const fakeQueue = { add: jest.fn() };
+    const fakeQueue: FakeQueue = { add: jest.fn() };
     scheduler['queues'].set('late-registration', fakeQueue);
     const now = 2000;
     jest.spyOn(Date, 'now').mockReturnValue(now);
@@ -71,7 +75,7 @@ describe('TournamentScheduler', () => {
 
   it('schedules breaks with correct timing', async () => {
     const scheduler: any = new TournamentScheduler();
-    const fakeQueue = { add: jest.fn() };
+    const fakeQueue: FakeQueue = { add: jest.fn() };
     scheduler['queues'].set('break', fakeQueue);
     const now = 4000;
     jest.spyOn(Date, 'now').mockReturnValue(now);
@@ -94,8 +98,8 @@ describe('TournamentScheduler', () => {
 
   it('simulates a full 10k entrant tournament and validates payouts', async () => {
     const scheduler = new TournamentScheduler();
-    const levelQueue = { add: jest.fn() };
-    const regQueue = { add: jest.fn() };
+    const levelQueue: FakeQueue = { add: jest.fn() };
+    const regQueue: FakeQueue = { add: jest.fn() };
     scheduler['queues'].set('level-up', levelQueue);
     scheduler['queues'].set('registration', regQueue);
     const now = Date.now();
