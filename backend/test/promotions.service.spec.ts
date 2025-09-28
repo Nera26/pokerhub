@@ -4,7 +4,7 @@ import { Module, ConflictException, NotFoundException, INestApplication } from '
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
+import { DataType, newDb } from 'pg-mem';
 import { PromotionsService } from '../src/promotions/promotions.service';
 import { PromotionEntity } from '../src/database/entities/promotion.entity';
 import { PromotionClaimEntity } from '../src/database/entities/promotion-claim.entity';
@@ -19,12 +19,12 @@ function createTestModule() {
           const db = newDb();
           db.public.registerFunction({
             name: 'version',
-            returns: 'text',
+            returns: DataType.text,
             implementation: () => 'pg-mem',
           });
           db.public.registerFunction({
             name: 'current_database',
-            returns: 'text',
+            returns: DataType.text,
             implementation: () => 'test',
           });
 

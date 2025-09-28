@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { newDb } from 'pg-mem';
+import { DataType, newDb } from 'pg-mem';
 import { TransactionsService } from '../src/wallet/transactions.service';
 import { TransactionType } from '../src/wallet/transaction-type.entity';
 import { Transaction } from '../src/wallet/transaction.entity';
@@ -36,22 +36,22 @@ describe('TransactionsService', () => {
             const db = newDb();
             db.public.registerFunction({
               name: 'now',
-              returns: 'timestamp',
+              returns: DataType.timestamp,
               implementation: () => new Date(),
             });
             db.public.registerFunction({
               name: 'version',
-              returns: 'text',
+              returns: DataType.text,
               implementation: () => 'pg-mem',
             });
             db.public.registerFunction({
               name: 'current_database',
-              returns: 'text',
+              returns: DataType.text,
               implementation: () => 'test',
             });
             db.public.registerFunction({
               name: 'uuid_generate_v4',
-              returns: 'uuid',
+              returns: DataType.uuid,
               impure: true,
               implementation: () => crypto.randomUUID(),
             });

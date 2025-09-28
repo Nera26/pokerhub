@@ -4,7 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
+import { DataType, newDb } from 'pg-mem';
 import request from 'supertest';
 import { TablesController } from '../../src/routes/tables.controller';
 import { TablesService } from '../../src/game/tables.service';
@@ -21,7 +21,7 @@ function createTestModule() {
           const db = newDb();
           db.public.registerFunction({
             name: 'version',
-            returns: 'text',
+            returns: DataType.text,
             implementation: () => 'pg-mem',
           });
           dataSource = db.adapters.createTypeormDataSource({

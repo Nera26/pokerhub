@@ -1,7 +1,7 @@
 import fc from 'fast-check';
 import { writeHandLedger } from '../src/wallet/hand-ledger';
 import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
+import { DataType, newDb } from 'pg-mem';
 import { Account } from '../src/wallet/account.entity';
 import { JournalEntry } from '../src/wallet/journal-entry.entity';
 import { Disbursement } from '../src/wallet/disbursement.entity';
@@ -81,18 +81,18 @@ describe('WalletService journal invariants', () => {
     const db = newDb();
     db.public.registerFunction({
       name: 'version',
-      returns: 'text',
+      returns: DataType.text,
       implementation: () => 'pg-mem',
     });
     db.public.registerFunction({
       name: 'current_database',
-      returns: 'text',
+      returns: DataType.text,
       implementation: () => 'test',
     });
     let seq = 1;
     db.public.registerFunction({
       name: 'uuid_generate_v4',
-      returns: 'text',
+      returns: DataType.uuid,
       implementation: () => {
         const id = seq.toString(16).padStart(32, '0');
         seq++;

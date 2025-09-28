@@ -7,7 +7,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
+import { DataType, newDb } from 'pg-mem';
 import request from 'supertest';
 
 import { ConfigController } from '../src/routes/config.controller';
@@ -64,16 +64,16 @@ function createTestModule() {
       TypeOrmModule.forRootAsync({
         useFactory: () => {
           const db = newDb();
-          db.public.registerFunction({
-            name: 'version',
-            returns: 'text',
-            implementation: () => 'pg-mem',
-          });
-          db.public.registerFunction({
-            name: 'current_database',
-            returns: 'text',
-            implementation: () => 'test',
-          });
+            db.public.registerFunction({
+              name: 'version',
+              returns: DataType.text,
+              implementation: () => 'pg-mem',
+            });
+            db.public.registerFunction({
+              name: 'current_database',
+              returns: DataType.text,
+              implementation: () => 'test',
+            });
 
           dataSource = db.adapters.createTypeormDataSource({
             type: 'postgres',

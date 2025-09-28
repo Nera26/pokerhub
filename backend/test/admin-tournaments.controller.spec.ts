@@ -5,7 +5,7 @@ import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { newDb } from 'pg-mem';
+import { DataType, newDb } from 'pg-mem';
 import { AdminTournamentsController } from '../src/routes/admin-tournaments.controller';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
@@ -105,12 +105,12 @@ describe('AdminTournamentsController filters integration', () => {
             const db = newDb();
             db.public.registerFunction({
               name: 'version',
-              returns: 'text',
+              returns: DataType.text,
               implementation: () => 'pg-mem',
             });
             db.public.registerFunction({
               name: 'current_database',
-              returns: 'text',
+              returns: DataType.text,
               implementation: () => 'test',
             });
             dataSource = db.adapters.createTypeormDataSource({

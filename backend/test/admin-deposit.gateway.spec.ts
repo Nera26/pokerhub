@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
+import { DataType, newDb } from 'pg-mem';
 import { Account } from '../src/wallet/account.entity';
 import { JournalEntry } from '../src/wallet/journal-entry.entity';
 import { Disbursement } from '../src/wallet/disbursement.entity';
@@ -67,9 +67,9 @@ describe('AdminDepositGateway deposit.pending', () => {
     process.env.BANK_ROUTING_CODE = '456';
 
     const db = newDb();
-    db.public.registerFunction({ name: 'version', returns: 'text', implementation: () => 'pg-mem' });
-    db.public.registerFunction({ name: 'current_database', returns: 'text', implementation: () => 'test' });
-    db.public.registerFunction({ name: 'uuid_generate_v4', returns: 'text', implementation: () => userId });
+    db.public.registerFunction({ name: 'version', returns: DataType.text, implementation: () => 'pg-mem' });
+    db.public.registerFunction({ name: 'current_database', returns: DataType.text, implementation: () => 'test' });
+    db.public.registerFunction({ name: 'uuid_generate_v4', returns: DataType.uuid, implementation: () => userId });
 
     dataSource = db.adapters.createTypeormDataSource({
       type: 'postgres',

@@ -2,7 +2,7 @@ import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { newDb } from 'pg-mem';
+import { DataType, newDb } from 'pg-mem';
 import { AuthGuard } from '../../src/auth/auth.guard';
 import {
   GameHistory,
@@ -37,22 +37,22 @@ describe('HistoryController', () => {
             const db = newDb();
             db.public.registerFunction({
               name: 'now',
-              returns: 'timestamp',
+              returns: DataType.timestamp,
               implementation: () => new Date(),
             });
             db.public.registerFunction({
               name: 'current_database',
-              returns: 'text',
+              returns: DataType.text,
               implementation: () => 'test',
             });
             db.public.registerFunction({
               name: 'version',
-              returns: 'text',
+              returns: DataType.text,
               implementation: () => 'pg-mem',
             });
             db.public.registerFunction({
               name: 'uuid_generate_v4',
-              returns: 'uuid',
+              returns: DataType.uuid,
               implementation: () => crypto.randomUUID(),
             });
             dataSource = db.adapters.createTypeormDataSource({

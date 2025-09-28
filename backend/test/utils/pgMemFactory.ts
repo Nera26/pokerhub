@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { IMemoryDb, newDb } from 'pg-mem';
+import { DataType, IMemoryDb, newDb } from 'pg-mem';
 import { DataSource, EntityTarget } from 'typeorm';
 
 export interface PgMemOptions {
@@ -15,13 +15,13 @@ export function registerPgMemExtensions(
 
   db.public.registerFunction({
     name: 'version',
-    returns: 'text',
+    returns: DataType.text,
     implementation: () => 'pg-mem',
   });
 
   db.public.registerFunction({
     name: 'current_database',
-    returns: 'text',
+    returns: DataType.text,
     implementation: () => 'test',
   });
 
@@ -29,7 +29,7 @@ export function registerPgMemExtensions(
     let seq = 1;
     db.public.registerFunction({
       name: 'uuid_generate_v4',
-      returns: 'text',
+      returns: DataType.uuid,
       implementation: () => {
         const id = seq.toString(16).padStart(32, '0');
         seq += 1;
@@ -39,7 +39,7 @@ export function registerPgMemExtensions(
   } else {
     db.public.registerFunction({
       name: 'uuid_generate_v4',
-      returns: 'text',
+      returns: DataType.uuid,
       implementation: () => randomUUID(),
     });
   }

@@ -11,7 +11,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, Module, ExecutionContext } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
+import { DataType, newDb } from 'pg-mem';
 import request from 'supertest';
 import { UsersService } from '../src/users/users.service';
 import { UsersController } from '../src/routes/users.controller';
@@ -34,17 +34,17 @@ function createTestModule() {
           const db = newDb();
           db.public.registerFunction({
             name: 'version',
-            returns: 'text',
+            returns: DataType.text,
             implementation: () => 'pg-mem',
           });
           db.public.registerFunction({
             name: 'current_database',
-            returns: 'text',
+            returns: DataType.text,
             implementation: () => 'test',
           });
           db.public.registerFunction({
             name: 'uuid_generate_v4',
-            returns: 'text',
+            returns: DataType.uuid,
             implementation: () => '00000000-0000-0000-0000-000000000000',
           });
           dataSource = db.adapters.createTypeormDataSource({

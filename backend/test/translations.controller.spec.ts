@@ -5,7 +5,7 @@ import { INestApplication } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
+import { DataType, newDb } from 'pg-mem';
 import request from 'supertest';
 import { TranslationsController } from '../src/routes/translations.controller';
 import {
@@ -27,12 +27,12 @@ describe('TranslationsController', () => {
             const db = newDb();
             db.public.registerFunction({
               name: 'version',
-              returns: 'text',
+              returns: DataType.text,
               implementation: () => 'pg-mem',
             });
             db.public.registerFunction({
               name: 'current_database',
-              returns: 'text',
+              returns: DataType.text,
               implementation: () => 'test',
             });
             dataSource = db.adapters.createTypeormDataSource({

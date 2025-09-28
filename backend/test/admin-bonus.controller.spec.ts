@@ -6,7 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
-import { newDb } from 'pg-mem';
+import { DataType, newDb } from 'pg-mem';
 import request from 'supertest';
 import { AdminBonusController } from '../src/routes/admin-bonus.controller';
 import { BonusService } from '../src/services/bonus.service';
@@ -37,17 +37,17 @@ function createTestModule() {
           const db = newDb();
           db.public.registerFunction({
             name: 'version',
-            returns: 'text',
+            returns: DataType.text,
             implementation: () => 'pg-mem',
           });
           db.public.registerFunction({
             name: 'current_database',
-            returns: 'text',
+            returns: DataType.text,
             implementation: () => 'test',
           });
           db.public.registerFunction({
             name: 'uuid_generate_v4',
-            returns: 'text',
+            returns: DataType.uuid,
             implementation: () => randomUUID(),
             impure: true,
           });
