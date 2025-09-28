@@ -11,7 +11,9 @@ services:
       retries: 5
 
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     command: npm run start:dev
     environment:
       - REDIS_HOST=redis
