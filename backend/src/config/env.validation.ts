@@ -25,6 +25,7 @@ export const validationSchema = Joi.object({
   OTEL_EXPORTER_PROMETHEUS_ENDPOINT: Joi.string().optional(),
   OTEL_SERVICE_NAME: Joi.string().optional(),
   LOG_PROVIDER: Joi.string().optional(),
+  BACKEND_PORT: Joi.number().integer().optional(),
   PORT: Joi.number().integer().optional(),
   JWT_SECRETS: Joi.string().default('dev-secret'),
   JWT_ACCESS_TTL: Joi.number().integer().optional(),
