@@ -1,3 +1,5 @@
+import './shims/crypto';
+
 import { Logger, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource, type DataSourceOptions } from 'typeorm';
