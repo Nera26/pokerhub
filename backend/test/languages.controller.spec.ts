@@ -4,7 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
+import { DataType, newDb } from 'pg-mem';
 import request from 'supertest';
 import { LanguagesController } from '../src/routes/languages.controller';
 import { LanguagesService } from '../src/services/languages.service';
@@ -23,12 +23,12 @@ describe('LanguagesController', () => {
             const db = newDb();
             db.public.registerFunction({
               name: 'version',
-              returns: 'text',
+              returns: DataType.text,
               implementation: () => 'pg-mem',
             });
             db.public.registerFunction({
               name: 'current_database',
-              returns: 'text',
+              returns: DataType.text,
               implementation: () => 'test',
             });
             dataSource = db.adapters.createTypeormDataSource({

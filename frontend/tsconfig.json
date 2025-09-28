@@ -24,7 +24,11 @@
       "@/test-utils/*": ["./test-utils/*"]
     },
     "types": ["node", "react", "jest"],
-    "typeRoots": ["./node_modules/@types", "../contracts/types"],
+    "typeRoots": [
+      "./node_modules/@types",
+      "../shared/@types",
+      "../contracts/types"
+    ],
     "allowJs": true
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

@@ -51,7 +51,8 @@ describe('GameGateway idempotency', () => {
   }
 
   it('acknowledges duplicates and only applies once', async () => {
-    const { redis } = createInMemoryRedis();
+    const { redis: redisClient } = createInMemoryRedis();
+    const redis = redisClient as unknown as MockRedis;
     const state = {
       phase: 'DEAL',
       street: 'preflop',
@@ -92,7 +93,8 @@ describe('GameGateway idempotency', () => {
   });
 
   it('deduplicates across process restarts via Redis', async () => {
-    const { redis } = createInMemoryRedis();
+    const { redis: redisClient } = createInMemoryRedis();
+    const redis = redisClient as unknown as MockRedis;
     const action = { type: 'check', tableId: 't1', version: '1', actionId: 'b1', playerId: 'p1' } as const;
 
     const state = {

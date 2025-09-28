@@ -7,7 +7,7 @@ import type { INestApplication, ExecutionContext } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
+import { DataType, newDb } from 'pg-mem';
 import request from 'supertest';
 import { NotificationsModule } from '../src/notifications/notifications.module';
 import { Notification } from '../src/notifications/notification.entity';
@@ -32,18 +32,18 @@ describe('Notifications', () => {
             const db = newDb();
             db.public.registerFunction({
               name: 'version',
-              returns: 'text',
+              returns: DataType.text,
               implementation: () => 'pg-mem',
             });
             db.public.registerFunction({
               name: 'current_database',
-              returns: 'text',
+              returns: DataType.text,
               implementation: () => 'test',
             });
             let seq = 1;
             db.public.registerFunction({
               name: 'uuid_generate_v4',
-              returns: 'text',
+              returns: DataType.uuid,
               implementation: () => {
                 const id = seq.toString(16).padStart(32, '0');
                 seq++;

@@ -1,7 +1,7 @@
 process.env.DATABASE_URL = '';
 
 import { AnalyticsService } from '../../src/analytics/analytics.service';
-import { newDb } from 'pg-mem';
+import { DataType, newDb } from 'pg-mem';
 import { DataSource } from 'typeorm';
 import type { ConfigService } from '@nestjs/config';
 import { AuditLogTypeClass } from '../../src/analytics/audit-log-type-class.entity';
@@ -24,12 +24,12 @@ describe('AnalyticsService log type class defaults (integration)', () => {
     const db = newDb();
     db.public.registerFunction({
       name: 'version',
-      returns: 'text',
+      returns: DataType.text,
       implementation: () => 'pg-mem',
     });
     db.public.registerFunction({
       name: 'current_database',
-      returns: 'text',
+      returns: DataType.text,
       implementation: () => 'test',
     });
 

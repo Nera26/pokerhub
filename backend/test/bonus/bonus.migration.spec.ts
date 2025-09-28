@@ -1,4 +1,4 @@
-import { newDb } from 'pg-mem';
+import { DataType, newDb } from 'pg-mem';
 import { DataSource } from 'typeorm';
 import { BonusEntity } from '../../src/database/entities/bonus.entity';
 import { Bonuses1757300000000 } from '../../src/database/migrations/1757300000000-Bonuses';
@@ -8,12 +8,12 @@ describe('Bonus migrations', () => {
     const db = newDb();
     db.public.registerFunction({
       name: 'version',
-      returns: 'text',
+      returns: DataType.text,
       implementation: () => 'pg-mem',
     });
     db.public.registerFunction({
       name: 'current_database',
-      returns: 'text',
+      returns: DataType.text,
       implementation: () => 'test',
     });
 

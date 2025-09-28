@@ -2,7 +2,7 @@ import { CollusionService } from '../../src/analytics/collusion.service';
 import type Redis from 'ioredis';
 import { createInMemoryRedis, MockRedis } from '../utils/mock-redis';
 import { DataSource } from 'typeorm';
-import { newDb } from 'pg-mem';
+import { DataType, newDb } from 'pg-mem';
 import { CollusionAudit } from '../../src/analytics/collusion-audit.entity';
 
 describe('CollusionService', () => {
@@ -16,17 +16,17 @@ describe('CollusionService', () => {
     db = newDb();
     db.public.registerFunction({
       name: 'version',
-      returns: 'text',
+      returns: DataType.text,
       implementation: () => 'pg-mem',
     });
     db.public.registerFunction({
       name: 'current_database',
-      returns: 'text',
+      returns: DataType.text,
       implementation: () => 'test',
     });
     db.public.registerFunction({
       name: 'uuid_generate_v4',
-      returns: 'text',
+      returns: DataType.uuid,
       implementation: () => '00000000-0000-0000-0000-000000000000',
     });
     dataSource = db.adapters.createTypeormDataSource({

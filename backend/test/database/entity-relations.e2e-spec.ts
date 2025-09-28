@@ -53,8 +53,10 @@ describe('Entity relations', () => {
       relations: ['tournament', 'players'],
     });
 
-    expect(loaded?.tournament.id).toBe(tournament.id);
+    expect(loaded).toBeDefined();
+    expect(loaded?.tournament).toBeDefined();
+    expect(loaded?.tournament?.id).toBe(tournament.id);
     expect(loaded?.players).toHaveLength(1);
-    expect(loaded?.players[0].id).toBe(user.id);
+    expect(loaded?.players[0]?.id).toBe(user.id);
   });
 });

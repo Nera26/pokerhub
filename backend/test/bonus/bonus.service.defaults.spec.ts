@@ -15,14 +15,16 @@ describe('BonusService.createDefaults', () => {
       count: jest.fn().mockResolvedValue(0),
       create: jest
         .fn()
-        .mockImplementation((input) => Object.assign(new BonusDefaultEntity(), input)),
-      save: jest.fn(async (entity) => entity),
-    } as Partial<Repository<BonusDefaultEntity>>;
+        .mockImplementation((input: Partial<BonusDefaultEntity>) =>
+          Object.assign(new BonusDefaultEntity(), input),
+        ),
+      save: jest.fn(async (entity: BonusDefaultEntity) => entity),
+    };
 
     const service = new BonusService(
       {} as Repository<BonusOptionEntity>,
       {} as Repository<BonusEntity>,
-      defaultsRepo as Repository<BonusDefaultEntity>,
+      defaultsRepo as unknown as Repository<BonusDefaultEntity>,
       {} as Repository<Transaction>,
       { get: jest.fn() } as unknown as ConfigService,
     );

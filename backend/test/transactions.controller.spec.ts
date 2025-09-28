@@ -13,7 +13,7 @@ import { TransactionTabEntity } from '../src/wallet/transaction-tab.entity';
 import { TransactionColumnEntity } from '../src/wallet/transaction-column.entity';
 import { TransactionColumnRepository } from '../src/wallet/transaction-column.repository';
 import { DataSource, Repository } from 'typeorm';
-import { newDb } from 'pg-mem';
+import { DataType, newDb } from 'pg-mem';
 import { TranslationsService } from '../src/services/translations.service';
 
 const translationsMock = {
@@ -46,22 +46,22 @@ describe('TransactionsController', () => {
             const db = newDb();
             db.public.registerFunction({
               name: 'now',
-              returns: 'timestamp',
+              returns: DataType.timestamp,
               implementation: () => new Date(),
             });
             db.public.registerFunction({
               name: 'version',
-              returns: 'text',
+              returns: DataType.text,
               implementation: () => 'pg-mem',
             });
             db.public.registerFunction({
               name: 'current_database',
-              returns: 'text',
+              returns: DataType.text,
               implementation: () => 'test',
             });
             db.public.registerFunction({
               name: 'uuid_generate_v4',
-              returns: 'uuid',
+              returns: DataType.uuid,
               implementation: () => crypto.randomUUID(),
             });
             dataSource = db.adapters.createTypeormDataSource({

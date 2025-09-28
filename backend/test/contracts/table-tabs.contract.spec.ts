@@ -8,7 +8,7 @@ import { Controller, Get, Param } from '@nestjs/common';
 import { TableTabsResponseSchema, type TabKey } from '@shared/types';
 
 class TablesServiceStub {
-  async getSidePanelTabs() {
+  async getSidePanelTabs(_id: string) {
     return ['history', 'chat', 'notes'];
   }
 }

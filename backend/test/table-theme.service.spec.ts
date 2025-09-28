@@ -1,6 +1,6 @@
 import { TableThemeService } from '../src/services/table-theme.service';
 import { TableThemeEntity } from '../src/database/entities/table-theme.entity';
-import { newDb } from 'pg-mem';
+import { DataType, newDb } from 'pg-mem';
 import { DataSource } from 'typeorm';
 import type { Repository } from 'typeorm';
 import {
@@ -61,12 +61,12 @@ describe('TableThemeService migrations', () => {
     const db = newDb();
     db.public.registerFunction({
       name: 'version',
-      returns: 'text',
+      returns: DataType.text,
       implementation: () => 'pg-mem',
     });
     db.public.registerFunction({
       name: 'current_database',
-      returns: 'text',
+      returns: DataType.text,
       implementation: () => 'test',
     });
 
