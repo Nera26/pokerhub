@@ -1,31 +1,29 @@
 import { TableBalancerService } from '../src/tournament/table-balancer.service';
 import { Table } from '../src/database/entities/table.entity';
 import { Seat } from '../src/database/entities/seat.entity';
-import {
-  Tournament,
-  TournamentState,
-} from '../src/database/entities/tournament.entity';
+import type { Tournament } from '../src/database/entities/tournament.entity';
+import { TournamentState } from '../src/database/entities/tournament.entity';
 import { RebuyService } from '../src/tournament/rebuy.service';
 import { PkoService } from '../src/tournament/pko.service';
 import { icmRaw } from '@shared/utils/icm';
 import {
   createSeatRepo,
   createTestTable,
+  createTestTournament,
   createTournamentRepo,
   createTournamentServiceInstance,
 } from './tournament/helpers';
 
 describe('tournament simulation', () => {
   it('simulates 10k entrants with late registration and bubble payouts', async () => {
-    const tournament = {
+    const tournament = createTestTournament({
       id: 't1',
       title: 'Mega',
       buyIn: 100,
       prizePool: 0,
       maxPlayers: 10000,
       state: TournamentState.RUNNING,
-      tables: [] as Table[],
-    } as Tournament;
+    });
     const tables: Table[] = Array.from({ length: 100 }, (_, i) =>
       createTestTable(`tbl${i}`, tournament),
     );
@@ -141,16 +139,14 @@ describe('tournament simulation', () => {
       find: jest.fn(async () => []),
     } as any;
     const seatsRepo = { manager: undefined } as any;
-    const tournament = {
+    const tournament = createTestTournament({
       id: 't-empty',
       title: 'Empty',
       state: TournamentState.REG_OPEN,
       buyIn: 100,
-      currency: 'USD',
       prizePool: 0,
       maxPlayers: 9,
-      tables: [] as Table[],
-    } as Tournament;
+    });
     const tournamentsRepo = createTournamentRepo([tournament]);
     const scheduler: any = {};
     const rooms: any = { get: jest.fn() };

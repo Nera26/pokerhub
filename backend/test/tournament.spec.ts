@@ -1,6 +1,7 @@
 import { TournamentScheduler } from '../src/tournament/scheduler.service';
 import { TableBalancerService } from '../src/tournament/table-balancer.service';
-import { Tournament, TournamentState } from '../src/database/entities/tournament.entity';
+import type { Tournament } from '../src/database/entities/tournament.entity';
+import { TournamentState } from '../src/database/entities/tournament.entity';
 import { Table } from '../src/database/entities/table.entity';
 import { Seat } from '../src/database/entities/seat.entity';
 import { RebuyService } from '../src/tournament/rebuy.service';
@@ -9,20 +10,20 @@ import type { EventPublisher } from '../src/events/events.service';
 import {
   createSeatRepo,
   createTestTable,
+  createTestTournament,
   createTournamentRepo,
   createTournamentServiceInstance,
 } from './tournament/helpers';
 
 function createTournamentContext(): { tournament: Tournament; tables: Table[] } {
-  const tournament = {
+  const tournament = createTestTournament({
     id: 't1',
     title: 'Test',
     buyIn: 0,
     prizePool: 0,
     maxPlayers: 100,
     state: TournamentState.RUNNING,
-    tables: [] as Table[],
-  } as Tournament;
+  });
   const tables = [
     createTestTable('tbl1', tournament),
     createTestTable('tbl2', tournament),
@@ -168,15 +169,14 @@ describe('Tournament scheduling and balancing', () => {
   });
 
   it('emits bubble event when players reach payout threshold', async () => {
-    const tournament = {
+    const tournament = createTestTournament({
       id: 't1',
       title: 'Bubble Test',
       buyIn: 0,
       prizePool: 0,
       maxPlayers: 100,
       state: TournamentState.RUNNING,
-      tables: [] as Table[],
-    } as Tournament;
+    });
     const tables = [createTestTable('tbl1', tournament)];
     tournament.tables = tables;
     for (let i = 0; i < 5; i++) {

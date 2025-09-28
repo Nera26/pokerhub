@@ -1,12 +1,10 @@
 import type { TournamentService } from '../../src/tournament/tournament.service';
-import {
-  Tournament,
-  TournamentState,
-} from '../../src/database/entities/tournament.entity';
+import type { Tournament } from '../../src/database/entities/tournament.entity';
+import { TournamentState } from '../../src/database/entities/tournament.entity';
 import { Seat } from '../../src/database/entities/seat.entity';
 import { Table } from '../../src/database/entities/table.entity';
 import { Repository } from 'typeorm';
-import { createTournamentServiceInstance } from './helpers';
+import { createTestTable, createTestTournament, createTournamentServiceInstance } from './helpers';
 
 interface SetupTournamentServiceOptions {
   useTransactionManager?: boolean;
@@ -41,17 +39,16 @@ function setupTournamentService({
   useTransactionManager = false,
   failSave = false,
 }: SetupTournamentServiceOptions = {}): SetupTournamentServiceResult {
-  const tournament: Tournament = {
+  const tournament = createTestTournament({
     id: 't1',
     title: 'Daily',
     buyIn: 100,
-    gameType: 'texas',
     prizePool: 1000,
     maxPlayers: 100,
     state: TournamentState.REG_OPEN,
-    tables: [],
-    currency: 'USD',
-  } as Tournament;
+  });
+  const table = createTestTable('tbl1', tournament);
+  tournament.tables = [table];
 
   const tournamentsRepo = {
     findOne: jest.fn(async ({ where: { id } }: any) =>
@@ -60,9 +57,7 @@ function setupTournamentService({
   };
 
   const tablesRepo = {
-    find: jest.fn(async () => [
-      { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
-    ]),
+    find: jest.fn(async () => [table]),
   };
 
   const seats = new Set<Seat>();
@@ -177,4 +172,3 @@ describe('manageSeat helper', () => {
     });
   });
 });
-

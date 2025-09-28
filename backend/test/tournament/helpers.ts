@@ -1,6 +1,6 @@
 import type { Repository, FindOneOptions, FindOptionsWhere } from 'typeorm';
 import type Redis from 'ioredis';
-import { Tournament } from '../../src/database/entities/tournament.entity';
+import { Tournament, TournamentState } from '../../src/database/entities/tournament.entity';
 import { Table } from '../../src/database/entities/table.entity';
 import { Seat } from '../../src/database/entities/seat.entity';
 import { TournamentService } from '../../src/tournament/tournament.service';
@@ -73,6 +73,27 @@ export function createSeatRepo(tables: Table[]): Repository<Seat> {
       return Array.isArray(seat) ? arr : arr[0];
     }),
   } as unknown as Repository<Seat>;
+}
+
+export function createTestTournament(
+  overrides: Partial<Tournament> = {},
+): Tournament {
+  const tournament: Tournament = {
+    id: 'tournament',
+    title: 'Test Tournament',
+    gameType: 'texas',
+    buyIn: 0,
+    currency: 'USD',
+    prizePool: 0,
+    maxPlayers: 0,
+    state: TournamentState.REG_OPEN,
+    tables: [],
+    details: [],
+    registrationOpen: undefined,
+    registrationClose: undefined,
+  } as Tournament;
+
+  return Object.assign(tournament, overrides);
 }
 
 export function createTestTable(id: string, tournament: Tournament): Table {

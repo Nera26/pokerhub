@@ -4,8 +4,12 @@ import { TableBalancerService } from '../../src/tournament/table-balancer.servic
 import { calculateIcmPayouts } from '@shared/utils/icm';
 import { Seat } from '../../src/database/entities/seat.entity';
 import { Table } from '../../src/database/entities/table.entity';
-import { Tournament } from '../../src/database/entities/tournament.entity';
-import { createTournamentServiceInstance } from './helpers';
+import {
+  createTestTable,
+  createTestTournament,
+  createTournamentServiceInstance,
+  createTournamentRepo,
+} from './helpers';
 
 async function runSimulation(players: number, checkIcm = false): Promise<number> {
   const start = Date.now();
@@ -18,11 +22,11 @@ async function runSimulation(players: number, checkIcm = false): Promise<number>
   };
 
   const tableCount = Math.max(1, Math.ceil(players / 100));
-  const tables: Table[] = Array.from({ length: tableCount }, (_, i) => ({
-    id: `tbl${i}`,
-    seats: [] as Seat[],
-    tournament: { id: 't1' } as Tournament,
-  })) as Table[];
+  const tournament = createTestTournament({ id: 't1' });
+  const tables: Table[] = Array.from({ length: tableCount }, (_, i) =>
+    createTestTable(`tbl${i}`, tournament),
+  );
+  tournament.tables = tables;
 
   let seatId = 0;
   for (let i = 0; i < players; i++) {
@@ -49,7 +53,8 @@ async function runSimulation(players: number, checkIcm = false): Promise<number>
   } as any;
 
   const tablesRepo = { find: async () => tables } as any;
-  const tournamentsRepo: any = {};
+  const tournamentsRepo = createTournamentRepo([tournament]) as any;
+
   const scheduler = {
     scheduleRegistration: async () => {},
     scheduleBreak: async () => {},

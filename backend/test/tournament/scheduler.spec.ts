@@ -4,9 +4,12 @@ import { TournamentScheduler } from '../../src/tournament/scheduler.service';
 import { TableBalancerService } from '../../src/tournament/table-balancer.service';
 import { Table } from '../../src/database/entities/table.entity';
 import { Seat } from '../../src/database/entities/seat.entity';
-import { Tournament } from '../../src/database/entities/tournament.entity';
 import { icmRaw } from '@shared/utils/icm';
-import { createTournamentServiceInstance } from './helpers';
+import {
+  createTestTable,
+  createTestTournament,
+  createTournamentServiceInstance,
+} from './helpers';
 
 type FakeQueue = Pick<Queue<any, any, string>, 'add'>;
 
@@ -105,11 +108,11 @@ describe('TournamentScheduler', () => {
       level: i + 1,
       durationMinutes: 1,
     }));
-    const tables: Table[] = Array.from({ length: 100 }, (_, i) => ({
-      id: `tbl${i}`,
-      seats: [],
-      tournament: { id: 't1' } as Tournament,
-    })) as Table[];
+    const tournament = createTestTournament({ id: 't1' });
+    const tables: Table[] = Array.from({ length: 100 }, (_, i) =>
+      createTestTable(`tbl${i}`, tournament),
+    );
+    tournament.tables = tables;
 
     const serviceDeps = {
       tournaments: { find: jest.fn(), findOne: jest.fn(), save: jest.fn() } as any,

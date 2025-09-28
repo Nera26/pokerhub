@@ -1,25 +1,28 @@
 import { TableBalancerService } from '../../src/tournament/table-balancer.service';
 import { Table } from '../../src/database/entities/table.entity';
 import { Seat } from '../../src/database/entities/seat.entity';
-import {
-  Tournament,
-  TournamentState,
-} from '../../src/database/entities/tournament.entity';
+import { TournamentState } from '../../src/database/entities/tournament.entity';
 import {
   createSeatRepo,
+  createTestTable,
+  createTestTournament,
   createTournamentRepo,
   createTournamentServiceInstance,
 } from './helpers';
 
 describe('TableBalancerService lastMovedHand persistence', () => {
   it('skips moves for players who recently moved even after restart', async () => {
+    const tournament = createTestTournament({ id: 't1', state: TournamentState.RUNNING });
     const tables: Table[] = [
-      { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
-      { id: 'tbl2', seats: [], tournament: { id: 't1' } as Tournament } as Table,
+      createTestTable('tbl1', tournament),
+      createTestTable('tbl2', tournament),
     ];
+    tournament.tables = tables;
+
     const players1 = ['p1', 'p2', 'p3', 'p4'];
     const players2 = ['p5', 'p6'];
     let seatId = 0;
+
     players1.forEach((id) => {
       const seat: Seat = {
         id: `s${seatId++}`,
@@ -30,6 +33,7 @@ describe('TableBalancerService lastMovedHand persistence', () => {
       } as Seat;
       tables[0].seats.push(seat);
     });
+
     players2.forEach((id) => {
       const seat: Seat = {
         id: `s${seatId++}`,
@@ -40,21 +44,13 @@ describe('TableBalancerService lastMovedHand persistence', () => {
       } as Seat;
       tables[1].seats.push(seat);
     });
+
     const seatsRepo = createSeatRepo(tables);
     const tablesRepo = { find: jest.fn(async () => tables) } as any;
-    const tournamentsRepo = createTournamentRepo([
-      {
-        id: 't1',
-        title: 'Test',
-        buyIn: 0,
-        prizePool: 0,
-        maxPlayers: 1000,
-        state: TournamentState.RUNNING,
-        tables,
-      } as Tournament,
-    ]);
+    const tournamentsRepo = createTournamentRepo([tournament]);
     const scheduler: any = {};
     const rooms: any = { get: jest.fn() };
+
     const service = createTournamentServiceInstance({
       tournamentsRepo,
       seatsRepo,
@@ -65,6 +61,7 @@ describe('TableBalancerService lastMovedHand persistence', () => {
     const balancer = new TableBalancerService(tablesRepo, service);
 
     await balancer.rebalanceIfNeeded('t1', 10, 5);
+
     const initialSecond = new Set(players2);
     const movedFirstSeat = tables[1].seats.find(
       (s) => !initialSecond.has(s.user.id),
@@ -100,4 +97,3 @@ describe('TableBalancerService lastMovedHand persistence', () => {
     expect(seat.lastMovedHand).toBe(10);
   });
 });
-

@@ -1,14 +1,16 @@
-import type { TournamentService } from '../../src/tournament/tournament.service';
-import {
-  Tournament,
-  TournamentState,
-} from '../../src/database/entities/tournament.entity';
+import { TournamentService } from '../../src/tournament/tournament.service';
+import type { Tournament } from '../../src/database/entities/tournament.entity';
+import { TournamentState } from '../../src/database/entities/tournament.entity';
 import { Seat } from '../../src/database/entities/seat.entity';
 import { Table } from '../../src/database/entities/table.entity';
 import { Repository } from 'typeorm';
 import * as fc from 'fast-check';
 import { icmRaw } from '@shared/utils/icm';
-import { createTournamentServiceInstance } from './helpers';
+import {
+  createTestTable,
+  createTestTournament,
+  createTournamentServiceInstance,
+} from './helpers';
 
 describe('TournamentService algorithms', () => {
   let service: TournamentService;
@@ -49,16 +51,14 @@ describe('TournamentService algorithms', () => {
       scheduleLevelUps: jest.fn(),
     };
     tournamentsRepo = createRepo<Tournament>([
-      {
+      createTestTournament({
         id: 't1',
         title: 'Daily Free Roll',
         buyIn: 100,
-        gameType: 'texas',
         prizePool: 1000,
         maxPlayers: 100,
         state: TournamentState.REG_OPEN,
-        tables: [],
-      } as Tournament,
+      }),
     ]);
     seatsRepo = createRepo<Seat>();
     tablesRepo = { find: jest.fn().mockResolvedValue([]) };
@@ -96,9 +96,10 @@ describe('TournamentService algorithms', () => {
 
   describe('seat assignment flow', () => {
     it('joins and withdraws a player', async () => {
-      tablesRepo.find.mockResolvedValue([
-        { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
-      ]);
+      const tournament = createTestTournament({ id: 't1' });
+      const table = createTestTable('tbl1', tournament);
+      tournament.tables = [table];
+      tablesRepo.find.mockResolvedValue([table]);
       const seat = await service.join('t1', 'u1');
       expect(wallet.reserve).toHaveBeenCalledWith('u1', 100, 't1', 'USD');
       expect(events.emit).toHaveBeenCalledWith('wallet.reserve', {
