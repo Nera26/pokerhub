@@ -1,13 +1,16 @@
 FROM node:20-alpine
+
 WORKDIR /app
 
-COPY backend/package*.json ./
-RUN npm install
+COPY backend/package*.json backend/
+RUN npm ci --prefix backend
 
-COPY backend/. .
-COPY shared ./shared
-COPY contracts ./contracts
+COPY backend/ backend/
+COPY shared/ shared/
+COPY contracts/ contracts/
 
+WORKDIR /app/backend
 RUN npm run build
+
 ENV DB_SYNC=false
 CMD ["npm", "run", "start:prod"]
