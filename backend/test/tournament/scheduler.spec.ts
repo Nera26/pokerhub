@@ -2,13 +2,11 @@ import type { Queue } from 'bullmq';
 
 import { TournamentScheduler } from '../../src/tournament/scheduler.service';
 import { TableBalancerService } from '../../src/tournament/table-balancer.service';
-import { TournamentService } from '../../src/tournament/tournament.service';
 import { Table } from '../../src/database/entities/table.entity';
 import { Seat } from '../../src/database/entities/seat.entity';
 import { Tournament } from '../../src/database/entities/tournament.entity';
-import { RebuyService } from '../../src/tournament/rebuy.service';
-import { PkoService } from '../../src/tournament/pko.service';
 import { icmRaw } from '@shared/utils/icm';
+import { createTournamentServiceInstance } from './helpers';
 
 type FakeQueue = Pick<Queue<any, any, string>, 'add'>;
 
@@ -131,16 +129,13 @@ describe('TournamentScheduler', () => {
     };
 
     const rooms: any = { get: jest.fn() };
-    const service = new TournamentService(
-      serviceDeps.tournaments,
-      serviceDeps.seats,
-      serviceDeps.tables,
+    const service = createTournamentServiceInstance({
+      tournamentsRepo: serviceDeps.tournaments,
+      seatsRepo: serviceDeps.seats,
+      tablesRepo: serviceDeps.tables,
       scheduler,
       rooms,
-      new RebuyService(),
-      new PkoService(),
-      { get: jest.fn().mockResolvedValue(true) } as any,
-    );
+    });
     await service.scheduleTournament('t1', {
       registration: { open: new Date(now + 1000), close: new Date(now + 2000) },
       structure,

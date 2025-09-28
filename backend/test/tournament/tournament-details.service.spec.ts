@@ -1,6 +1,6 @@
-import { TournamentService } from '../../src/tournament/tournament.service';
 import { TournamentState } from '../../src/database/entities/tournament.entity';
 import { TournamentDetailType } from '../../src/tournament/tournament-detail.entity';
+import { createTournamentServiceInstance } from './helpers';
 
 describe('TournamentService.get tournament details', () => {
   const baseTournament = {
@@ -24,22 +24,13 @@ describe('TournamentService.get tournament details', () => {
     const detailsRepository = {
       find: jest.fn().mockResolvedValue(detailRows),
     };
-    const service = new TournamentService(
-      { findOne: jest.fn() } as any,
-      seats as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      { get: jest.fn() } as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      detailsRepository as any,
-    );
+    const service = createTournamentServiceInstance({
+      tournamentsRepo: { findOne: jest.fn() } as any,
+      seatsRepo: seats as any,
+      tablesRepo: {} as any,
+      detailsOrWallet: detailsRepository as any,
+      flags: { get: jest.fn() } as any,
+    });
 
     jest
       .spyOn(service as any, 'getEntity')

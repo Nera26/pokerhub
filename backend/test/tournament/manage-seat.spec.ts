@@ -1,4 +1,4 @@
-import { TournamentService } from '../../src/tournament/tournament.service';
+import type { TournamentService } from '../../src/tournament/tournament.service';
 import {
   Tournament,
   TournamentState,
@@ -6,8 +6,7 @@ import {
 import { Seat } from '../../src/database/entities/seat.entity';
 import { Table } from '../../src/database/entities/table.entity';
 import { Repository } from 'typeorm';
-import { RebuyService } from '../../src/tournament/rebuy.service';
-import { PkoService } from '../../src/tournament/pko.service';
+import { createTournamentServiceInstance } from './helpers';
 
 interface SetupTournamentServiceOptions {
   useTransactionManager?: boolean;
@@ -90,22 +89,16 @@ function setupTournamentService({
   const flags = {};
   const events = { emit: jest.fn() } as any;
 
-  const service = new TournamentService(
-    tournamentsRepo as unknown as Repository<Tournament>,
-    seatRepo as unknown as Repository<Seat>,
-    tablesRepo as unknown as Repository<Table>,
-    scheduler as any,
-    rooms as any,
-    new RebuyService(),
-    new PkoService(),
-    flags as any,
+  const service = createTournamentServiceInstance({
+    tournamentsRepo: tournamentsRepo as unknown as Repository<Tournament>,
+    seatsRepo: seatRepo as unknown as Repository<Seat>,
+    tablesRepo: tablesRepo as unknown as Repository<Table>,
+    scheduler: scheduler as any,
+    rooms: rooms as any,
+    flags: flags as any,
     events,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    wallet as any,
-  );
+    wallet: wallet as any,
+  });
 
   if (useTransactionManager) {
     const txManager: TransactionManagerMocks = {

@@ -1,13 +1,15 @@
 import { TableBalancerService } from '../../src/tournament/table-balancer.service';
-import { TournamentService } from '../../src/tournament/tournament.service';
 import { Table } from '../../src/database/entities/table.entity';
 import { Seat } from '../../src/database/entities/seat.entity';
 import {
   Tournament,
   TournamentState,
 } from '../../src/database/entities/tournament.entity';
-import { Repository } from 'typeorm';
-import { createSeatRepo, createTournamentRepo } from './helpers';
+import {
+  createSeatRepo,
+  createTournamentRepo,
+  createTournamentServiceInstance,
+} from './helpers';
 
 describe('TableBalancerService lastMovedHand persistence', () => {
   it('skips moves for players who recently moved even after restart', async () => {
@@ -53,13 +55,13 @@ describe('TableBalancerService lastMovedHand persistence', () => {
     ]);
     const scheduler: any = {};
     const rooms: any = { get: jest.fn() };
-    const service = new TournamentService(
+    const service = createTournamentServiceInstance({
       tournamentsRepo,
       seatsRepo,
       tablesRepo,
       scheduler,
       rooms,
-    );
+    });
     const balancer = new TableBalancerService(tablesRepo, service);
 
     await balancer.rebalanceIfNeeded('t1', 10, 5);
@@ -82,13 +84,13 @@ describe('TableBalancerService lastMovedHand persistence', () => {
     });
 
     // simulate service restart
-    const service2 = new TournamentService(
+    const service2 = createTournamentServiceInstance({
       tournamentsRepo,
       seatsRepo,
       tablesRepo,
       scheduler,
       rooms,
-    );
+    });
     const balancer2 = new TableBalancerService(tablesRepo, service2);
 
     await balancer2.rebalanceIfNeeded('t1', 11, 5);
