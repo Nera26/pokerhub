@@ -14,7 +14,7 @@ jest.mock('../../src/game/pqueue-loader', () => {
 });
 import { GameGateway } from '../../src/game/game.gateway';
 import { AnalyticsService } from '../../src/analytics/analytics.service';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { getRepositoryToken } from '../../src/shims/typeorm';
 import { Hand } from '../../src/database/entities/hand.entity';
 import { GameState } from '../../src/database/entities/game-state.entity';
 import { RoomManager } from '../../src/game/room.service';

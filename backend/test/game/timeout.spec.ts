@@ -4,7 +4,7 @@ import { ClockService } from '../../src/game/clock.service';
 import { RoomManager } from '../../src/game/room.service';
 import { AnalyticsService } from '../../src/analytics/analytics.service';
 import { EventPublisher } from '../../src/events/events.service';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { getRepositoryToken } from '../../src/shims/typeorm';
 import { Hand } from '../../src/database/entities/hand.entity';
 import { createInMemoryRedis } from '../utils/mock-redis';
 import { ConfigService } from '@nestjs/config';

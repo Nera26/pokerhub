@@ -4,7 +4,7 @@ process.env.JWT_SECRET = 'secret';
 
 import { Test } from '@nestjs/testing';
 import type { INestApplication, ExecutionContext } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule } from '../src/shims/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { DataSource } from 'typeorm';
 import { DataType, newDb } from 'pg-mem';
@@ -12,7 +12,7 @@ import request from 'supertest';
 import { NotificationsModule } from '../src/notifications/notifications.module';
 import { Notification } from '../src/notifications/notification.entity';
 import { AuthGuard } from '../src/auth/auth.guard';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { getRepositoryToken } from '../src/shims/typeorm';
 import type { Repository } from 'typeorm';
 import { API_CONTRACT_VERSION } from '@shared/constants';
 

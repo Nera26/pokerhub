@@ -2,7 +2,7 @@ process.env.DATABASE_URL = '';
 
 import { Module, ConflictException, NotFoundException, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule } from '../src/shims/typeorm';
 import { DataSource } from 'typeorm';
 import { DataType, newDb } from 'pg-mem';
 import { PromotionsService } from '../src/promotions/promotions.service';

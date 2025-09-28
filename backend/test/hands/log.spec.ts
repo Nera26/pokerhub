@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { getRepositoryToken } from '../../src/shims/typeorm';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { HandController } from '../../src/game/hand.controller';

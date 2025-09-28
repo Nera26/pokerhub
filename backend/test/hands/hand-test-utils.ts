@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { getRepositoryToken } from '../../src/shims/typeorm';
 import { ConfigService } from '@nestjs/config';
 import jwt from 'jsonwebtoken';
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'fs';

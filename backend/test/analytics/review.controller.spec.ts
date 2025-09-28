@@ -9,7 +9,7 @@ import { AdminGuard } from '../../src/auth/admin.guard';
 import { createInMemoryRedis } from '../utils/mock-redis';
 import { DataSource } from 'typeorm';
 import { DataType, newDb } from 'pg-mem';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { getRepositoryToken } from '../../src/shims/typeorm';
 import { CollusionAudit } from '../../src/analytics/collusion-audit.entity';
 
 describe('ReviewController', () => {

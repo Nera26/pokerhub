@@ -4,7 +4,7 @@ import request from 'supertest';
 import { TransactionsController } from '../src/routes/transactions.controller';
 import { AuthGuard } from '../src/auth/auth.guard';
 import { AdminGuard } from '../src/auth/admin.guard';
-import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
+import { TypeOrmModule, getRepositoryToken } from '../src/shims/typeorm';
 import { TransactionsService } from '../src/wallet/transactions.service';
 import { TransactionType } from '../src/wallet/transaction-type.entity';
 import { Transaction } from '../src/wallet/transaction.entity';
