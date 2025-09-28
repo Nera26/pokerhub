@@ -1,12 +1,15 @@
 import { TableBalancerService } from '../../src/tournament/table-balancer.service';
-import { TournamentService } from '../../src/tournament/tournament.service';
 import { Repository } from 'typeorm';
 import { Table } from '../../src/database/entities/table.entity';
 import { Seat } from '../../src/database/entities/seat.entity';
 import { Tournament, TournamentState } from '../../src/database/entities/tournament.entity';
 import { createTablesRepository } from './test-utils';
 import { createInMemoryRedis } from '../utils/mock-redis';
-import { createSeatRepo, createTournamentRepo } from './helpers';
+import {
+  createSeatRepo,
+  createTournamentRepo,
+  createTournamentServiceInstance,
+} from './helpers';
 
 describe('TableBalancerService integration', () => {
   it('balances 120 entrants across 10 tables', async () => {
@@ -46,13 +49,13 @@ describe('TableBalancerService integration', () => {
     ]);
     const scheduler: any = {};
     const rooms: any = { get: jest.fn() };
-    const service = new TournamentService(
+    const service = createTournamentServiceInstance({
       tournamentsRepo,
       seatsRepo,
       tablesRepo,
       scheduler,
       rooms,
-    );
+    });
     const { redis } = createInMemoryRedis();
     const balancer = new TableBalancerService(tablesRepo, service, redis);
 
@@ -109,13 +112,13 @@ describe('TableBalancerService integration', () => {
     ]);
     const scheduler: any = {};
     const rooms: any = { get: jest.fn() };
-    const service = new TournamentService(
+    const service = createTournamentServiceInstance({
       tournamentsRepo,
       seatsRepo,
       tablesRepo,
       scheduler,
       rooms,
-    );
+    });
     const { redis } = createInMemoryRedis();
     const balancer = new TableBalancerService(tablesRepo, service, redis);
 
@@ -186,13 +189,13 @@ describe('TableBalancerService integration', () => {
     ]);
     const scheduler: any = {};
     const rooms: any = { get: jest.fn() };
-    const service = new TournamentService(
+    const service = createTournamentServiceInstance({
       tournamentsRepo,
       seatsRepo,
       tablesRepo,
       scheduler,
       rooms,
-    );
+    });
     const { redis } = createInMemoryRedis();
     const balancer = new TableBalancerService(tablesRepo, service, redis);
 
@@ -215,13 +218,13 @@ describe('TableBalancerService integration', () => {
     });
 
     // simulate service restart
-    const service2 = new TournamentService(
+    const service2 = createTournamentServiceInstance({
       tournamentsRepo,
       seatsRepo,
       tablesRepo,
       scheduler,
       rooms,
-    );
+    });
     const balancer2 = new TableBalancerService(tablesRepo, service2, redis);
 
     await balancer2.rebalanceIfNeeded('t1', 12, 5);

@@ -1,18 +1,9 @@
 import fc from 'fast-check';
 import { TableBalancerService } from '../../src/tournament/table-balancer.service';
-import { TournamentService } from '../../src/tournament/tournament.service';
+import { createTournamentServiceInstance } from './helpers';
 
 describe('table balancer repeat move property', () => {
-  const realTournament = new TournamentService(
-    {} as any,
-    {} as any,
-    {} as any,
-    {} as any,
-    {} as any,
-    {} as any,
-    {} as any,
-    {} as any,
-  );
+  const realTournament = createTournamentServiceInstance();
 
   it('avoids moving the same player twice within N hands', async () => {
     await fc.assert(

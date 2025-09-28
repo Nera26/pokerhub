@@ -1,19 +1,8 @@
-import { TournamentService } from '../../src/tournament/tournament.service';
-import { RebuyService } from '../../src/tournament/rebuy.service';
-import { PkoService } from '../../src/tournament/pko.service';
+import { createTournamentServiceInstance } from './helpers';
 import { icmRaw } from '@shared/utils/icm';
 
 describe('ICM payout accuracy', () => {
-  const service = new TournamentService(
-    {} as any,
-    {} as any,
-    {} as any,
-    {} as any,
-    {} as any,
-    new RebuyService(),
-    new PkoService(),
-    { get: jest.fn() } as any,
-  );
+  const service = createTournamentServiceInstance();
 
   function icmHelper(stacks: number[], payouts: number[]): number[] {
     return icmRaw(stacks, payouts);
