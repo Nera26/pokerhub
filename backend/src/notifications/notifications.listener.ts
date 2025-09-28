@@ -6,7 +6,7 @@ import {
   Logger,
   Inject,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository } from '../shims/typeorm';
 import { Repository } from 'typeorm';
 import { Consumer } from 'kafkajs';
 import { ConfigService } from '@nestjs/config';

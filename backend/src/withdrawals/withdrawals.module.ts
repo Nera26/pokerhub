@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule } from '../shims/typeorm';
 import { WithdrawalsController } from './withdrawals.controller';
 import { WithdrawalsService } from './withdrawals.service';
 import { WithdrawalDecision } from './withdrawal-decision.entity';

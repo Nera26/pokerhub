@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule } from '../shims/typeorm';
 import { Notification } from './notification.entity';
 import { NotificationsService } from './notifications.service';
 import { NotificationsController } from './notifications.controller';

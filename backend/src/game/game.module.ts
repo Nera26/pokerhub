@@ -4,7 +4,7 @@ import { SpectatorGateway } from './spectator.gateway';
 import { RoomManager } from './room.service';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { ClockService } from './clock.service';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule } from '../shims/typeorm';
 import { Hand } from '../database/entities/hand.entity';
 import { Table } from '../database/entities/table.entity';
 import { ChatMessage } from '../database/entities/chatMessage.entity';

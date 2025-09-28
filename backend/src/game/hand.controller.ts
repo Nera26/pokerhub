@@ -11,7 +11,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository } from '../shims/typeorm';
 import { createReadStream } from 'fs';
 import { readFile, readdir, stat } from 'fs/promises';
 import { Readable } from 'stream';

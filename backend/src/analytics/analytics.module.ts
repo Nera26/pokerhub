@@ -11,7 +11,7 @@ import { AnalyticsController } from './analytics.controller';
 import { WalletModule } from '../wallet/wallet.module';
 import { AuthModule } from '../auth/auth.module';
 import { StorageModule } from '../storage/storage.module';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule } from '../shims/typeorm';
 import { CollusionAudit } from './collusion-audit.entity';
 import { AuditLogTypeClass } from './audit-log-type-class.entity';
 import { AuditLogTypeClassDefault } from './audit-log-type-class-default.entity';

@@ -1,6 +1,6 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository } from '../shims/typeorm';
 import type Redis from 'ioredis';
 import { Repository } from 'typeorm';
 import { Table } from '../database/entities/table.entity';

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository } from '../shims/typeorm';
 import { Repository } from 'typeorm';
 import { ChatMessage } from '../database/entities/chatMessage.entity';
 import { Table } from '../database/entities/table.entity';

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule } from '../shims/typeorm';
 import { DataSource } from 'typeorm';
 import { HistoryController } from './history.controller';
 import { HistoryService } from './history.service';

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule } from '../shims/typeorm';
 import { UsersController } from '../routes/users.controller';
 import { AdminUsersController } from '../routes/admin-users.controller';
 import { ProfileController } from '../routes/profile.controller';

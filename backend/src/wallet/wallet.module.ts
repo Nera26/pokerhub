@@ -1,5 +1,5 @@
 import { Module, Injectable, OnModuleInit, forwardRef } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule } from '../shims/typeorm';
 import { Account } from './account.entity';
 import { JournalEntry } from './journal-entry.entity';
 import { Disbursement } from './disbursement.entity';

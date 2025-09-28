@@ -7,7 +7,7 @@ import {
   ServiceUnavailableException,
   forwardRef,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository } from '../shims/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { createClient, ClickHouseClient } from '@clickhouse/client';
 import { randomUUID } from 'crypto';

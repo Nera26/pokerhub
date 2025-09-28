@@ -8,7 +8,7 @@ import {
   clusterBySharedValues,
 } from '@shared/analytics/collusion';
 import { AnalyticsService } from './analytics.service';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository } from '../shims/typeorm';
 import { Repository } from 'typeorm';
 import {
   CollusionAudit,

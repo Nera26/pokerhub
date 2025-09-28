@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule } from '../shims/typeorm';
 import { TestSupportController } from './test-support.controller';
 import { TestSupportService } from './test-support.service';
 import { User } from '../database/entities/user.entity';

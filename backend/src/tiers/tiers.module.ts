@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule } from '../shims/typeorm';
 import { Tier } from '../database/entities/tier.entity';
 import { TierRepository } from './tier.repository';
 import { TierService } from './tier.service';
