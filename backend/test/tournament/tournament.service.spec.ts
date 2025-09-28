@@ -6,9 +6,11 @@ import { Table } from '../../src/database/entities/table.entity';
 import { Repository } from 'typeorm';
 import * as fc from 'fast-check';
 import { icmRaw } from '@shared/utils/icm';
-import { RebuyService } from '../../src/tournament/rebuy.service';
-import { PkoService } from '../../src/tournament/pko.service';
-import { createTestTable, createTestTournament } from './helpers';
+import {
+  createTestTable,
+  createTestTournament,
+  createTournamentServiceInstance,
+} from './helpers';
 
 describe('TournamentService algorithms', () => {
   let service: TournamentService;
@@ -76,24 +78,20 @@ describe('TournamentService algorithms', () => {
         balance += amount;
       }),
     };
-    service = new TournamentService(
-      tournamentsRepo as Repository<Tournament>,
-      seatsRepo as Repository<Seat>,
-      tablesRepo as Repository<Table>,
+    service = createTournamentServiceInstance({
+      tournamentsRepo: tournamentsRepo as Repository<Tournament>,
+      seatsRepo: seatsRepo as Repository<Seat>,
+      tablesRepo: tablesRepo as Repository<Table>,
       scheduler,
       rooms,
-      new RebuyService(),
-      new PkoService(),
       flags,
       events,
       producer,
-      botProfilesRepo,
-      filterOptionsRepo,
-      formatRepo,
-      undefined,
-      undefined,
+      botProfiles: botProfilesRepo,
+      filterOptions: filterOptionsRepo,
+      formatRepository: formatRepo,
       wallet,
-    );
+    });
   });
 
   describe('seat assignment flow', () => {
@@ -269,24 +267,20 @@ describe('TournamentService algorithms', () => {
       };
       const apply = jest.fn(async () => ({}));
       rooms.get.mockReturnValue({ apply });
-      service = new TournamentService(
-        tournamentsRepo as Repository<Tournament>,
-        seatsRepo as Repository<Seat>,
-        tablesRepo as Repository<Table>,
+      service = createTournamentServiceInstance({
+        tournamentsRepo: tournamentsRepo as Repository<Tournament>,
+        seatsRepo: seatsRepo as Repository<Seat>,
+        tablesRepo: tablesRepo as Repository<Table>,
         scheduler,
         rooms,
-        new RebuyService(),
-        new PkoService(),
         flags,
         events,
         producer,
-        botProfilesRepo,
-        filterOptionsRepo,
-        formatRepo,
-        undefined,
-        undefined,
+        botProfiles: botProfilesRepo,
+        filterOptions: filterOptionsRepo,
+        formatRepository: formatRepo,
         wallet,
-      );
+      });
 
       await service.autoFoldOnTimeout('s1');
 

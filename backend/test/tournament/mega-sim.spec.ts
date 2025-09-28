@@ -1,13 +1,15 @@
 import fs from 'fs';
 import path from 'path';
 import { TableBalancerService } from '../../src/tournament/table-balancer.service';
-import { TournamentService } from '../../src/tournament/tournament.service';
-import { RebuyService } from '../../src/tournament/rebuy.service';
-import { PkoService } from '../../src/tournament/pko.service';
 import { calculateIcmPayouts } from '@shared/utils/icm';
 import { Seat } from '../../src/database/entities/seat.entity';
 import { Table } from '../../src/database/entities/table.entity';
-import { createTestTable, createTestTournament } from './helpers';
+import {
+  createTestTable,
+  createTestTournament,
+  createTournamentServiceInstance,
+  createTournamentRepo,
+} from './helpers';
 
 async function runSimulation(players: number, checkIcm = false): Promise<number> {
   const start = Date.now();
@@ -51,7 +53,8 @@ async function runSimulation(players: number, checkIcm = false): Promise<number>
   } as any;
 
   const tablesRepo = { find: async () => tables } as any;
-  const tournamentsRepo: any = {};
+  const tournamentsRepo = createTournamentRepo([tournament]) as any;
+
   const scheduler = {
     scheduleRegistration: async () => {},
     scheduleBreak: async () => {},
@@ -61,17 +64,15 @@ async function runSimulation(players: number, checkIcm = false): Promise<number>
   const flags: any = { get: async () => true, getTourney: async () => true };
   const events: any = { emit: async () => {} };
 
-  const service = new TournamentService(
+  const service = createTournamentServiceInstance({
     tournamentsRepo,
     seatsRepo,
     tablesRepo,
     scheduler,
     rooms,
-    new RebuyService(),
-    new PkoService(),
     flags,
     events,
-  );
+  });
   const balancer = new TableBalancerService(tablesRepo, service);
 
   await service.scheduleTournament('t1', {

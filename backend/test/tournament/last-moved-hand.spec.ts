@@ -1,14 +1,13 @@
 import { TableBalancerService } from '../../src/tournament/table-balancer.service';
-import { TournamentService } from '../../src/tournament/tournament.service';
 import { Table } from '../../src/database/entities/table.entity';
 import { Seat } from '../../src/database/entities/seat.entity';
 import { TournamentState } from '../../src/database/entities/tournament.entity';
-import { Repository } from 'typeorm';
 import {
   createSeatRepo,
   createTestTable,
   createTestTournament,
   createTournamentRepo,
+  createTournamentServiceInstance,
 } from './helpers';
 
 describe('TableBalancerService lastMovedHand persistence', () => {
@@ -19,9 +18,11 @@ describe('TableBalancerService lastMovedHand persistence', () => {
       createTestTable('tbl2', tournament),
     ];
     tournament.tables = tables;
+
     const players1 = ['p1', 'p2', 'p3', 'p4'];
     const players2 = ['p5', 'p6'];
     let seatId = 0;
+
     players1.forEach((id) => {
       const seat: Seat = {
         id: `s${seatId++}`,
@@ -32,6 +33,7 @@ describe('TableBalancerService lastMovedHand persistence', () => {
       } as Seat;
       tables[0].seats.push(seat);
     });
+
     players2.forEach((id) => {
       const seat: Seat = {
         id: `s${seatId++}`,
@@ -42,21 +44,24 @@ describe('TableBalancerService lastMovedHand persistence', () => {
       } as Seat;
       tables[1].seats.push(seat);
     });
+
     const seatsRepo = createSeatRepo(tables);
     const tablesRepo = { find: jest.fn(async () => tables) } as any;
     const tournamentsRepo = createTournamentRepo([tournament]);
     const scheduler: any = {};
     const rooms: any = { get: jest.fn() };
-    const service = new TournamentService(
+
+    const service = createTournamentServiceInstance({
       tournamentsRepo,
       seatsRepo,
       tablesRepo,
       scheduler,
       rooms,
-    );
+    });
     const balancer = new TableBalancerService(tablesRepo, service);
 
     await balancer.rebalanceIfNeeded('t1', 10, 5);
+
     const initialSecond = new Set(players2);
     const movedFirstSeat = tables[1].seats.find(
       (s) => !initialSecond.has(s.user.id),
@@ -76,13 +81,13 @@ describe('TableBalancerService lastMovedHand persistence', () => {
     });
 
     // simulate service restart
-    const service2 = new TournamentService(
+    const service2 = createTournamentServiceInstance({
       tournamentsRepo,
       seatsRepo,
       tablesRepo,
       scheduler,
       rooms,
-    );
+    });
     const balancer2 = new TableBalancerService(tablesRepo, service2);
 
     await balancer2.rebalanceIfNeeded('t1', 11, 5);
@@ -92,4 +97,3 @@ describe('TableBalancerService lastMovedHand persistence', () => {
     expect(seat.lastMovedHand).toBe(10);
   });
 });
-

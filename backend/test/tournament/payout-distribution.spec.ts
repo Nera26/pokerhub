@@ -1,17 +1,7 @@
-import { TournamentService } from '../../src/tournament/tournament.service';
-import { RebuyService } from '../../src/tournament/rebuy.service';
-import { PkoService } from '../../src/tournament/pko.service';
+import { createTournamentServiceInstance } from './helpers';
 
 describe('Payout distribution', () => {
-  const service = new TournamentService(
-    {} as any,
-    {} as any,
-    {} as any,
-    {} as any,
-    { get: jest.fn() } as any,
-    new RebuyService(),
-    new PkoService(),
-  );
+  const service = createTournamentServiceInstance();
 
   it('ICM pays all remaining players compared to top-N', () => {
     const stacks = [5000, 3000, 2000, 1000];

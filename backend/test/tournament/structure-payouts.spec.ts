@@ -1,19 +1,8 @@
-import { TournamentService } from '../../src/tournament/tournament.service';
-import { RebuyService } from '../../src/tournament/rebuy.service';
-import { PkoService } from '../../src/tournament/pko.service';
+import { createTournamentServiceInstance } from './helpers';
 import { icmRaw } from '@shared/utils/icm';
 
 describe('tournament structure payouts', () => {
-  const service = new TournamentService(
-    {} as any,
-    {} as any,
-    {} as any,
-    {} as any,
-    {} as any,
-    new RebuyService(),
-    new PkoService(),
-    { get: jest.fn().mockResolvedValue(true) } as any,
-  );
+  const service = createTournamentServiceInstance();
 
   it('computes freezeout payouts via ICM with <1 chip error', () => {
     const stacks = [5000, 3000, 2000];
